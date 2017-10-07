@@ -46,7 +46,7 @@
 #endif
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief Creates a duplicate of the knob identified by knobName which is a knob in the internalNode onto the effect and add it to the given page.
@@ -388,8 +388,8 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     {
         std::vector<ChoiceOption> choices;
         choices.push_back(ChoiceOption(kTrackerParamMotionTypeNone, "", tr(kTrackerParamMotionTypeNoneHelp).toStdString()));
-        choices.push_back(ChoiceOption(kTrackerParamMotionTypeStabilize, "", tr(kTrackerParamMotionTypeStabilize).toStdString()));
-        choices.push_back(ChoiceOption(kTrackerParamMotionTypeMatchMove, "", tr(kTrackerParamMotionTypeMatchMove).toStdString()));
+        choices.push_back(ChoiceOption(kTrackerParamMotionTypeStabilize, "", tr(kTrackerParamMotionTypeStabilizeHelp).toStdString()));
+        choices.push_back(ChoiceOption(kTrackerParamMotionTypeMatchMove, "", tr(kTrackerParamMotionTypeMatchMoveHelp).toStdString()));
         choices.push_back(ChoiceOption(kTrackerParamMotionTypeRemoveJitter, "", tr(kTrackerParamMotionTypeRemoveJitterHelp).toStdString()));
         choices.push_back(ChoiceOption(kTrackerParamMotionTypeAddJitter, "", tr(kTrackerParamMotionTypeAddJitterHelp).toStdString()));
 
@@ -2639,6 +2639,6 @@ TrackerContextPrivate::setTransformOutOfDate(bool outdated)
     transformOutOfDateLabel.lock()->setSecret(!outdated);
 }
 
-NATRON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_USING
 #include "moc_TrackerContextPrivate.cpp"

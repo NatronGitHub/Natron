@@ -30,7 +30,7 @@
 #include <QtCore/QChar>
 #include <QtCore/QDebug>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /*!
    \fn QString NATRON_NAMESPACE::convertFromPlainText(const QString &plain, WhiteSpaceMode mode)
@@ -202,4 +202,4 @@ convertFromPlainTextToMarkdown(const QString &plain_, bool genHTML, bool isTable
     return escaped;
 } // convertFromPlainText
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

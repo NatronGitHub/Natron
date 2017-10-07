@@ -45,7 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief This class represents a multi-instance settings panel.
@@ -221,6 +221,6 @@ private:
     boost::scoped_ptr<TrackerPanelPrivateV1> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // MULTIINSTANCEPANEL_H

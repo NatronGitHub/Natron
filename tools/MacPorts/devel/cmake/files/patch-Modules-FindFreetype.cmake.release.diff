@@ -1,28 +1,6 @@
 --- Modules/FindFreetype.cmake.orig
 +++ Modules/FindFreetype.cmake
-@@ -57,10 +57,6 @@
-   HINTS
-     ENV FREETYPE_DIR
-   PATHS
--    /usr/X11R6
--    /usr/local/X11R6
--    /usr/local/X11
--    /usr/freeware
-     ENV GTKMM_BASEPATH
-     [HKEY_CURRENT_USER\\SOFTWARE\\gtkmm\\2.4;Path]
-     [HKEY_LOCAL_MACHINE\\SOFTWARE\\gtkmm\\2.4;Path]
-@@ -78,10 +74,6 @@
-   HINTS
-     ENV FREETYPE_DIR
-   PATHS
--    /usr/X11R6
--    /usr/local/X11R6
--    /usr/local/X11
--    /usr/freeware
-     ENV GTKMM_BASEPATH
-     [HKEY_CURRENT_USER\\SOFTWARE\\gtkmm\\2.4;Path]
-     [HKEY_LOCAL_MACHINE\\SOFTWARE\\gtkmm\\2.4;Path]
-@@ -99,10 +91,6 @@
+@@ -46,10 +46,6 @@
    HINTS
      ENV FREETYPE_DIR
    PATHS

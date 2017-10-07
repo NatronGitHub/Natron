@@ -48,7 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 typedef boost::shared_ptr<DopeSheetKey> DSKeyPtr;
 typedef std::list<DSKeyPtr> DSKeyPtrList;
@@ -412,6 +412,6 @@ private:
     DopeSheetEditor *_model;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // DOPESHEETEDITORUNDOREDO_H

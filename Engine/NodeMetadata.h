@@ -36,7 +36,7 @@
 #include "Engine/ImagePlaneDesc.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief These meta-data are represents what's flowing through a node. They change

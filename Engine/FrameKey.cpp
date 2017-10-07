@@ -29,7 +29,7 @@
 
 #include "Engine/ViewIdx.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 FrameKey::FrameKey()
     : KeyHelper<U64>()
@@ -136,4 +136,4 @@ FrameKey::operator==(const FrameKey & other) const
            _draftMode == other._draftMode;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

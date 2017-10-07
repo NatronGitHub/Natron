@@ -1,0 +1,7 @@
+bin/gcc-mp-7
+bin/cpp-mp-7
+bin/c++-mp-7
+bin/g++-mp-7
+-
+bin/gcov-mp-7
+bin/gfortran-mp-7

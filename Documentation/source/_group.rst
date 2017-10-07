@@ -10,14 +10,14 @@ The first section in this manual describes the various options available from th
 
     _prefs.rst
     _groupImage.rst
-    _groupColor.rst
-    _groupChannel.rst
-    _groupMerge.rst
-    _groupFilter.rst
-    _groupTransform.rst
-    _groupTime.rst
     _groupDraw.rst
+    _groupTime.rst
+    _groupChannel.rst
+    _groupColor.rst
+    _groupFilter.rst
     _groupKeyer.rst
+    _groupMerge.rst
+    _groupTransform.rst
     _groupViews.rst
     _groupOther.rst
     _groupExtra.rst

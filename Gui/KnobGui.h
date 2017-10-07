@@ -61,7 +61,7 @@ CLANG_DIAG_ON(uninitialized)
 //Define this if you want the spinbox to clamp to the plugin defined range
 //#define SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct KnobGuiPrivate;
 
@@ -512,6 +512,6 @@ private:
     boost::scoped_ptr<KnobGuiPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_GUI_KNOBGUI_H

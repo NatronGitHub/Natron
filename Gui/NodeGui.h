@@ -57,7 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct NodeGuiIndicatorPrivate;
 
@@ -687,6 +687,6 @@ private:
     boost::shared_ptr<NATRON_PYTHON_NAMESPACE::PyModalDialog> _activeNodeCustomModalDialog;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Natron_Gui_NodeGui_h

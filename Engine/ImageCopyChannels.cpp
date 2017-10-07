@@ -45,7 +45,7 @@ GCC_DIAG_OFF(unused-but-set-variable) // only on gcc >= 4.6
 // to get the values from input instead.
 //#define NATRON_COPY_CHANNELS_UNPREMULT
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult, bool ignorePremult>
 void
@@ -692,4 +692,4 @@ Image::copyUnProcessedChannels(const RectI& roi,
     }
 } // copyUnProcessedChannels
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

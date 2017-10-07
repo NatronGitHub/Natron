@@ -1,11 +1,11 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 147287 2016-04-01 15:47:32Z cal@macports.org $
 
 PortSystem          1.0
 PortGroup           muniversal 1.0
 
 name                ghostscript
-version             9.19
+version             9.21
+revision            2
 categories          print
 license             AGPL-3 BSD
 maintainers         nomaintainer
@@ -15,13 +15,13 @@ long_description    Ghostscript is the well-known PostScript interpreter which \
                     supports many different printers and some displays.
 platforms           darwin
 homepage            http://www.ghostscript.com/
-master_sites        https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs919:source \
+master_sites        https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs[strsed ${version} {g/\.//}]:source \
                     sourceforge:gs-fonts:fonts \
                     https://github.com/adobe-type-tools/mapping-resources-pdf/archive/:misc
 
 # Note: this needs to be manually updated for new upstream commits
 set mappingresources_commit \
-                    0bdcfbe5e394d4519e5969918c34d4eebf76a386
+                    28953f3423bd83688297c35129580ebb5fb9c948
 
 distfiles           ${distname}.tar.gz:source \
                     ghostscript-fonts-other-6.0.tar.gz:fonts \
@@ -32,8 +32,8 @@ patchfiles          patch-base_unix-dll.mak.diff \
                     no-werror.diff
 
 checksums           ${distname}.tar.gz \
-                    rmd160  26acb114f30cbfa8f0e4912829a4ac38a35f5ea0 \
-                    sha256  cf3c0dce67db1557a87366969945f9c5235887989c0b585e037af366dc035989 \
+                    rmd160  c389ab9346f86ba4ff9e5b80aca0dda7acb866a5 \
+                    sha256  02bceadbc4dddeb6f2eec9c8b1623d945d355ca11b8b4df035332b217d58ce85 \
                     ghostscript-fonts-other-6.0.tar.gz \
                     rmd160  ab60dbf71e7d91283a106c3df381cadfe173082f \
                     sha256  4fa051e341167008d37fe34c19d241060cd17b13909932cd7ca7fe759243c2de \
@@ -41,8 +41,8 @@ checksums           ${distname}.tar.gz \
                     rmd160  10a19a10d0388bc084a7c1d3da845068d7169054 \
                     sha256  0eb6f356119f2e49b2563210852e17f57f9dcc5755f350a69a46a0d641a0c401 \
                     ${mappingresources_commit}.zip \
-                    rmd160  ee0acf3e8a37c75db1a22af0248a0be25b31de93 \
-                    sha256  64b1a28060fe04518ee152d1d479a5e8989519db756c35848257d29478936d1c
+                    rmd160  3481a028bc1fa65ad42ed2b442b35072b99d8490 \
+                    sha256  1c97e565f5659224e6dcd404c17a3590b59c5e54e58e6c05253e0ac14905091c
 
 depends_lib         port:expat \
                     port:fontconfig \
@@ -81,10 +81,10 @@ post-patch {
     reinplace s|__PREFIX__|${prefix}| ${worksrcpath}/base/unix-dll.mak
     reinplace s|ZLIBDIR=src|ZLIBDIR=${prefix}/include| configure.ac
 
-    # Ensure that MacPorts perl is used
+    # Ensure that MacPorts perl is used everywhere
     fs-traverse f ${worksrcpath} {
         if [string match *.pl ${f}] {
-            reinplace s|#!/usr/bin/perl|#!${prefix}/bin/perl| ${f}
+            reinplace s|/usr/bin/perl|${prefix}/bin/perl| ${f}
         }
     }
 }
@@ -159,5 +159,5 @@ variant cups description {Enable CUPS driver} {
 default_variants    +x11
 
 livecheck.type      regex
-livecheck.url       http://downloads.ghostscript.com/public/
-livecheck.regex     ${name}-(\\d+(?:\\.\\d+)*)
+livecheck.url       http://www.ghostscript.com/Releases.html
+livecheck.regex     ">Ghostscript (\\d+(?:\\.\\d+)*)<"

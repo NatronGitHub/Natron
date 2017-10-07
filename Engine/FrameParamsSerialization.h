@@ -40,7 +40,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/FrameParams.h"
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // Note: these classes are used for cache serialization and do not have to maintain backward compatibility
 
@@ -53,6 +53,6 @@ FrameParams::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("Rod", _rod);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_FrameParamsSerialization_h

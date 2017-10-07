@@ -45,7 +45,7 @@
 
 #define CURVEWIDGET_DERIVATIVE_ROUND_PRECISION 3.
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 /*****************************CURVE WIDGET***********************************************/
@@ -194,6 +194,6 @@ public:
     CurveSelection* _selectionModel;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Gui_CurveWidgetPrivate_h

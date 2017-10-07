@@ -55,7 +55,7 @@
 #include "Gui/ActionShortcuts.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct ScriptEditorPrivate
 {
@@ -655,7 +655,7 @@ ScriptEditor::focusInEvent(QFocusEvent* e)
     QWidget::focusInEvent(e);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_ScriptEditor.cpp"

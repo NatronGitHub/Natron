@@ -34,7 +34,7 @@
 #include "Engine/OSGLContext.h"
 #include "Engine/Settings.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct GPUContextPoolPrivate
 {
@@ -208,4 +208,4 @@ GPUContextPool::releaseGLContextFromRender(const OSGLContextPtr& context)
 #endif
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

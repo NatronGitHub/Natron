@@ -65,7 +65,7 @@
 #include "Gui/ScriptEditor.h"
 #include "Gui/ViewerGL.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct RotoPaintData
 {
@@ -1656,7 +1656,7 @@ GuiAppInstance::reloadScriptEditorFonts()
     _imp->_gui->getScriptEditor()->reloadFont();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_GuiAppInstance.cpp"

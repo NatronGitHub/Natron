@@ -73,7 +73,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/Settings.h"
 #include "Engine/WriteNode.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 FlagSetter::FlagSetter(bool initialValue,
                        bool* p)
@@ -1407,15 +1407,16 @@ AppInstance::exportDocs(const QString path)
 {
     if ( !path.isEmpty() ) {
         QStringList groups;
+        // Group ordering is set at every place in the code where GROUP_ORDER appears in the comments
         groups << QString::fromUtf8(PLUGIN_GROUP_IMAGE);
-        groups << QString::fromUtf8(PLUGIN_GROUP_COLOR);
-        groups << QString::fromUtf8(PLUGIN_GROUP_CHANNEL);
-        groups << QString::fromUtf8(PLUGIN_GROUP_MERGE);
-        groups << QString::fromUtf8(PLUGIN_GROUP_FILTER);
-        groups << QString::fromUtf8(PLUGIN_GROUP_TRANSFORM);
-        groups << QString::fromUtf8(PLUGIN_GROUP_TIME);
         groups << QString::fromUtf8(PLUGIN_GROUP_PAINT);
+        groups << QString::fromUtf8(PLUGIN_GROUP_TIME);
+        groups << QString::fromUtf8(PLUGIN_GROUP_CHANNEL);
+        groups << QString::fromUtf8(PLUGIN_GROUP_COLOR);
+        groups << QString::fromUtf8(PLUGIN_GROUP_FILTER);
         groups << QString::fromUtf8(PLUGIN_GROUP_KEYER);
+        groups << QString::fromUtf8(PLUGIN_GROUP_MERGE);
+        groups << QString::fromUtf8(PLUGIN_GROUP_TRANSFORM);
         groups << QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW);
         groups << QString::fromUtf8(PLUGIN_GROUP_OTHER);
         groups << QString::fromUtf8("Extra"); // openfx-arena
@@ -2340,7 +2341,7 @@ AppInstance::recheckInvalidExpressions()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_AppInstance.cpp"

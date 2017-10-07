@@ -25,7 +25,7 @@
 #include "Global/Macros.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 namespace StrUtils {
 
@@ -47,6 +47,6 @@ void ensureLastPathSeparator(QString& path);
 
 } // namespace StrUtils
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // ifndef NATRON_GLOBAL_STRUTILS_H

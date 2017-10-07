@@ -29,7 +29,7 @@
 #include "Engine/GLShader.h"
 #include "Engine/OSGLContext.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked, bool maskInvert>
 void
@@ -297,4 +297,4 @@ Image::applyMaskMix(const RectI& roi,
     }
 } // applyMaskMix
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -69,7 +69,7 @@ public:
     std::list<Effect*> getChildren() const;
 };
 
-NATRON_PYTHON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_NodeGroupWrapper_h

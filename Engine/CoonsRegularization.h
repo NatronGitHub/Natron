@@ -36,7 +36,7 @@
 #include "Engine/EngineFwd.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 namespace CoonsRegularization {
 void regularize(const std::list<boost::shared_ptr<BezierCP> >& coonsPatch,
@@ -44,6 +44,6 @@ void regularize(const std::list<boost::shared_ptr<BezierCP> >& coonsPatch,
                 std::list<std::list<boost::shared_ptr<BezierCP> > >* fixedPatch);
 } // namespace CoonsRegularization
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // COONSREGULARIZATION_H

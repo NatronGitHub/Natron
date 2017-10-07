@@ -80,7 +80,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <ofxNatron.h>
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 using std::make_pair;
 
 
@@ -146,7 +146,11 @@ KnobGuiGroup::createWidget(QHBoxLayout* layout)
     if ( hasToolTip() ) {
         _button->setToolTip( toolTip() );
     }
-    _checked = _knob.lock()->getValue();
+    boost::shared_ptr<KnobGroup> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    _checked = knob->getValue();
     _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _button->setChecked(_checked);
     QObject::connect( _button, SIGNAL(checked(bool)), this, SLOT(onCheckboxChecked(bool)) );
@@ -215,7 +219,11 @@ KnobGuiGroup::eventFilter(QObject */*target*/,
 void
 KnobGuiGroup::updateGUI(int /*dimension*/)
 {
-    bool b = _knob.lock()->getValue(0);
+    boost::shared_ptr<KnobGroup> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool b = knob->getValue(0);
 
     setCheckedInternal(b, false);
     if (_button) {
@@ -312,7 +320,7 @@ KnobGuiGroup::getKnob() const
     return _knob.lock();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiGroup.cpp"

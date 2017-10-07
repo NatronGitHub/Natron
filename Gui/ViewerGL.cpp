@@ -107,7 +107,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 /*This class is the the core of the viewer : what displays images, overlays, etc...
    Everything related to OpenGL will (almost always) be in this class */
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 ViewerGL::ViewerGL(ViewerTab* parent,
@@ -3675,7 +3675,7 @@ ViewerGL::removeGUI()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    if ( _imp->viewerTab->getGui() ) {
+    if ( _imp->viewerTab && _imp->viewerTab->getGui() ) {
         _imp->viewerTab->discardInternalNodePointer();
         _imp->viewerTab->getGui()->removeViewerTab(_imp->viewerTab, true, true);
     }
@@ -4607,7 +4607,7 @@ ViewerGL::currentTimeForEvent(QInputEvent* e)
     return now.tv_sec + now.tv_usec / 1000000.0;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_ViewerGL.cpp"

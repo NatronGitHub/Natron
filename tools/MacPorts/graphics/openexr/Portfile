@@ -1,5 +1,4 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 149045 2016-05-26 11:03:20Z mcalhoun@macports.org $
 
 PortSystem 1.0
 
@@ -29,7 +28,7 @@ if {${subport} ne "ilmbase"} {
 }
 
 if {${subport} eq ${name}} {
-    revision 1
+    revision 2
 
     depends_lib-append port:ilmbase
 
@@ -62,6 +61,17 @@ if {${subport} eq ${name}} {
     # see #51470 for MacPorts report
     # see https://github.com/openexr/openexr/issues/128 for upstream report
         patchfiles-append patch-pic.diff
+
+    # code generated with -Os on clang-3.9 crashes openexr in
+    # #0  Imf_2_2::DwaCompressor::initializeFuncs () at ImfDwaCompressor.cpp:2865
+    # -O, -O2, -O3 work, though
+    if { ${configure.compiler} eq "macports-clang-3.9" } {
+        configure.optflags "-O2"
+    }
+    # clang-4.0 and later are not yet tested, use -O2 just to be on the safe side
+    if { ${configure.compiler} eq "macports-clang-4.0" || ${configure.compiler} eq "macports-clang-5.0" || ${configure.compiler} eq "macports-clang-6.0" } {
+        configure.optflags "-O2"
+    }
 }
 
 subport ilmbase {

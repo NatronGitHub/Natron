@@ -21,6 +21,9 @@ Local modifications:
 - Avoid attempt of acquiring mutex lock in FlagRegistry::GlobalRegistry when
   doing static flags initialization. See d81dd2d in Blender repository.
 
+- Made `google::{anonymous}::FlagValue::ValueSize() const` inlined, so it does
+  not trigger strict compiler warning.
+
 Extracted from Blender git repository under the extern/ folder.
 Git URL=https://git.blender.org/blender.git
-Git HEAD version=8f04a228f74c06972f94f100e7c787a06f0310e6 (2016-05-24)
+Git HEAD version=2ae39ff6b192b259e6a2c593d72a9c9008a029c4 (2017-01-23)

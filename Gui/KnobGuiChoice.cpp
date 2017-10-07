@@ -82,7 +82,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <ofxNatron.h>
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 using std::make_pair;
 
 
@@ -230,7 +230,11 @@ void
 KnobGuiChoice::createWidget(QHBoxLayout* layout)
 {
     _comboBox = new KnobComboBox( shared_from_this(), 0, layout->parentWidget() );
-    _comboBox->setCascading( _knob.lock()->isCascading() );
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    _comboBox->setCascading( knob->isCascading() );
     onEntriesPopulated();
 
     QObject::connect( _comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)) );
@@ -245,7 +249,11 @@ void
 KnobGuiChoice::onCurrentIndexChanged(int i)
 {
     setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
-    pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), _knob.lock()->getValue(0), i, 0, false, 0) );
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), knob->getValue(0), i, 0, false, 0) );
 }
 
 void
@@ -312,7 +320,11 @@ KnobGuiChoice::onItemNewSelected()
 
             return;
         }
-        KnobHolder* holder = _knob.lock()->getHolder();
+        boost::shared_ptr<KnobChoice> knob = _knob.lock();
+        if (!knob) {
+            return;
+        }
+        KnobHolder* holder = knob->getHolder();
         assert(holder);
         EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
         assert(effect);
@@ -330,7 +342,11 @@ KnobGuiChoice::reflectExpressionState(int /*dimension*/,
                                       bool hasExpr)
 {
     _comboBox->setAnimation(3);
-    bool isEnabled = _knob.lock()->isEnabled(0);
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool isEnabled = knob->isEnabled(0);
     _comboBox->setEnabled_natron(!hasExpr && isEnabled);
 }
 
@@ -340,6 +356,27 @@ KnobGuiChoice::updateToolTip()
     QString tt = toolTip();
 
     _comboBox->setToolTip( tt );
+}
+
+// The project only saves the choice ID that was selected and not the associated label.
+// If the ID cannot be found in the menu upon loading the project, then the ID of the choice
+// will be displayed in the menu.
+// For a plane selector, if the plane is not present in the menu when loading the project it will display
+// the raw ID of the plane which contains stuff that should not be displayed to the user.
+static void ensureUnknownChocieIsNotInternalPlaneID(QString& label)
+{
+    if (label.contains(QLatin1String(kNatronColorPlaneID))) {
+        label.replace(QLatin1String(kNatronColorPlaneID), QLatin1String(kNatronColorPlaneLabel)); ;
+    } else if (label.contains(QLatin1String(kNatronBackwardMotionVectorsPlaneID))) {
+        label.replace(QLatin1String(kNatronBackwardMotionVectorsPlaneID), QLatin1String(kNatronBackwardMotionVectorsPlaneLabel)); ;
+    } else if (label.contains(QLatin1String(kNatronForwardMotionVectorsPlaneID))) {
+        label.replace(QLatin1String(kNatronForwardMotionVectorsPlaneID), QLatin1String(kNatronForwardMotionVectorsPlaneLabel)); ;
+    } else if (label.contains(QLatin1String(kNatronDisparityLeftPlaneID))) {
+        label.replace(QLatin1String(kNatronDisparityLeftPlaneID), QLatin1String(kNatronDisparityLeftPlaneLabel)); ;
+    } else if (label.contains(QLatin1String(kNatronDisparityRightPlaneID))) {
+        label.replace(QLatin1String(kNatronDisparityRightPlaneID), QLatin1String(kNatronDisparityRightPlaneLabel)); ;
+    }
+
 }
 
 void
@@ -370,6 +407,7 @@ KnobGuiChoice::updateGUI(int /*dimension*/)
     if ( _comboBox->isCascading() || activeEntry.id.empty() ) {
         _comboBox->setCurrentIndex_no_emit( knob->getValue() );
     } else {
+        ensureUnknownChocieIsNotInternalPlaneID(activeEntryLabel);
         _comboBox->setCurrentText_no_emit( activeEntryLabel );
     }
 }
@@ -442,12 +480,16 @@ KnobGuiChoice::getKnob() const
 void
 KnobGuiChoice::reflectModificationsState()
 {
-    bool hasModif = _knob.lock()->hasModifications();
+    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool hasModif = knob->hasModifications();
 
     _comboBox->setAltered(!hasModif);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiChoice.cpp"

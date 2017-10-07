@@ -125,7 +125,7 @@ T noiseHelper(const T* X, const int* period = 0) {
     }
     // compute function values propagated from zero from each node
     int num = 1 << d;
-    T vals[num];
+    T vals[1 << d];
     for (int dummy = 0; dummy < num; dummy++) {
         int latticeIndex[d];
         int offset[d];

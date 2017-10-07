@@ -34,7 +34,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/EffectInstance.h"
 #include "Engine/PluginMemory.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 OfxMemory::OfxMemory(const EffectInstPtr& effect)
     : OFX::Host::Memory::Instance()
@@ -89,4 +89,4 @@ OfxMemory::unlock()
     _memory->unlock();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

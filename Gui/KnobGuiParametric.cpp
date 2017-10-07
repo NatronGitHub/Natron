@@ -80,7 +80,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <ofxNatron.h>
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 using std::make_pair;
 
 
@@ -184,7 +184,11 @@ KnobGuiParametric::onColorChanged(int dimension)
         return;
     }
     double r, g, b;
-    _knob.lock()->getCurveColor(dimension, &r, &g, &b);
+    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->getCurveColor(dimension, &r, &g, &b);
 
     CurveDescriptor& found = _curves[dimension];
     QColor c;
@@ -362,7 +366,7 @@ KnobGuiParametric::restoreOpenGLContext()
     _curveWidget->restoreOpenGLContext();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiParametric.cpp"

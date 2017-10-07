@@ -90,7 +90,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 using std::make_pair;
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 // called by NodeSettingsPanel::NodeSettingsPanel()
 DockablePanel::DockablePanel(Gui* gui,
@@ -196,7 +196,10 @@ DockablePanel::DockablePanel(Gui* gui,
             _imp->_headerLayout->addWidget(_imp->_iconLabel);
 
 
-            std::string iconFilePath = nodeForDocumentation->getPluginIconFilePath();
+            std::string iconFilePath;
+            if (nodeForDocumentation) {
+                iconFilePath = nodeForDocumentation->getPluginIconFilePath();
+            }
             if ( !iconFilePath.empty() ) {
                 QPixmap ic;
                 if ( ic.load( QString::fromUtf8( iconFilePath.c_str() ) ) ) {
@@ -1791,7 +1794,7 @@ struct ManageUserParamsDialogPrivate
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
-    NATRON_NAMESPACE_EXIT;
+    NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_DockablePanel.cpp"

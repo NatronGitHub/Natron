@@ -47,32 +47,33 @@
 #include "Engine/WriteNode.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 DocumentationManager::DocumentationManager(QObject *parent)
     : QObject(parent)
     , server(NULL)
 {
     // list of translatable group names
+    // Group ordering is set at every place in the code where GROUP_ORDER appears in the comments
     (void)QT_TR_NOOP(PLUGIN_GROUP_IMAGE);
     (void)QT_TR_NOOP(PLUGIN_GROUP_IMAGE_READERS);
     (void)QT_TR_NOOP(PLUGIN_GROUP_IMAGE_WRITERS);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_PAINT);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_TIME);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_CHANNEL);
     (void)QT_TR_NOOP(PLUGIN_GROUP_COLOR);
     (void)QT_TR_NOOP(PLUGIN_GROUP_COLOR "/Math");
     (void)QT_TR_NOOP(PLUGIN_GROUP_COLOR "/OCIO");
     (void)QT_TR_NOOP(PLUGIN_GROUP_COLOR "/Transform");
     (void)QT_TR_NOOP(PLUGIN_GROUP_FILTER);
     (void)QT_TR_NOOP(PLUGIN_GROUP_FILTER "/Merges");
-    (void)QT_TR_NOOP(PLUGIN_GROUP_TRANSFORM);
-    (void)QT_TR_NOOP(PLUGIN_GROUP_TIME);
-    (void)QT_TR_NOOP(PLUGIN_GROUP_PAINT);
     (void)QT_TR_NOOP(PLUGIN_GROUP_KEYER);
-    (void)QT_TR_NOOP(PLUGIN_GROUP_CHANNEL);
     (void)QT_TR_NOOP(PLUGIN_GROUP_MERGE);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_TRANSFORM);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_3D);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_DEEP);
     (void)QT_TR_NOOP(PLUGIN_GROUP_MULTIVIEW);
     (void)QT_TR_NOOP(PLUGIN_GROUP_MULTIVIEW "/Stereo");
-    (void)QT_TR_NOOP(PLUGIN_GROUP_DEEP);
     (void)QT_TR_NOOP(PLUGIN_GROUP_TOOLSETS);
-    (void)QT_TR_NOOP(PLUGIN_GROUP_3D);
     (void)QT_TR_NOOP(PLUGIN_GROUP_OTHER);
     (void)QT_TR_NOOP(PLUGIN_GROUP_DEFAULT);
     (void)QT_TR_NOOP(PLUGIN_GROUP_OFX);
@@ -441,15 +442,16 @@ DocumentationManager::handler(QHttpRequest *req,
             html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href=\"/_prefs.html\">%1</a></li>").arg( tr("%1 preferences").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) ) );
 
             QStringList groups;
+            // Group ordering is set at every place in the code where GROUP_ORDER appears in the comments
             groups << QString::fromUtf8(PLUGIN_GROUP_IMAGE);
-            groups << QString::fromUtf8(PLUGIN_GROUP_COLOR);
-            groups << QString::fromUtf8(PLUGIN_GROUP_CHANNEL);
-            groups << QString::fromUtf8(PLUGIN_GROUP_MERGE);
-            groups << QString::fromUtf8(PLUGIN_GROUP_FILTER);
-            groups << QString::fromUtf8(PLUGIN_GROUP_TRANSFORM);
-            groups << QString::fromUtf8(PLUGIN_GROUP_TIME);
             groups << QString::fromUtf8(PLUGIN_GROUP_PAINT);
+            groups << QString::fromUtf8(PLUGIN_GROUP_TIME);
+            groups << QString::fromUtf8(PLUGIN_GROUP_CHANNEL);
+            groups << QString::fromUtf8(PLUGIN_GROUP_COLOR);
+            groups << QString::fromUtf8(PLUGIN_GROUP_FILTER);
             groups << QString::fromUtf8(PLUGIN_GROUP_KEYER);
+            groups << QString::fromUtf8(PLUGIN_GROUP_MERGE);
+            groups << QString::fromUtf8(PLUGIN_GROUP_TRANSFORM);
             groups << QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW);
             groups << QString::fromUtf8(PLUGIN_GROUP_OTHER);
             groups << QString::fromUtf8("Extra"); // openfx-arena
@@ -652,7 +654,7 @@ DocumentationManager::serverPort()
     return server->serverPort();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_DocumentationManager.cpp"

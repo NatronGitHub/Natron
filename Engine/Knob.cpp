@@ -60,7 +60,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 using std::make_pair; using std::pair;
 
@@ -3890,7 +3890,7 @@ KnobHelper::cloneOneCurve(KnobI* other,
                           int otherDimension)
 {
     assert( dimension >= 0 && dimension < getDimension() &&
-            otherDimension >= 0 && otherDimension < getDimension() );
+            otherDimension >= 0 && otherDimension < other->getDimension() );
     boost::shared_ptr<Curve> thisCurve = getCurve(ViewIdx(0), dimension, true);
     boost::shared_ptr<Curve> otherCurve = other->getCurve(ViewIdx(0), otherDimension, true);
     if (thisCurve && otherCurve) {
@@ -3951,7 +3951,7 @@ KnobHelper::cloneOneCurveAndCheckIfChanged(KnobI* other,
                                            int otherDimension)
 {
     assert( dimension >= 0 && dimension < getDimension() &&
-            otherDimension >= 0 && otherDimension < getDimension() );
+            otherDimension >= 0 && otherDimension < other->getDimension() );
     bool cloningCurveChanged = false;
     boost::shared_ptr<Curve> thisCurve = getCurve(ViewIdx(0), dimension, true);
     boost::shared_ptr<Curve> otherCurve = other->getCurve(ViewIdx(0), otherDimension, true);
@@ -4026,7 +4026,7 @@ KnobHelper::cloneCurvesAndCheckIfChanged(KnobI* other,
             otherDimension = dimension;
         }
         assert( dimension >= 0 && dimension < getDimension() &&
-                otherDimension >= 0 && otherDimension < getDimension() );
+                otherDimension >= 0 && otherDimension < other->getDimension() );
         hasChanged |= cloneOneCurveAndCheckIfChanged(other, updateGui, dimension, otherDimension);
     }
 
@@ -6271,7 +6271,7 @@ template class Knob<double>;
 template class Knob<bool>;
 template class Knob<std::string>;
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_Knob.cpp"

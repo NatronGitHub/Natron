@@ -30,7 +30,7 @@
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct OneViewNodePrivate
 {
@@ -187,8 +187,8 @@ OneViewNode::onProjectViewsChanged()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 
 #include "moc_OneViewNode.cpp"

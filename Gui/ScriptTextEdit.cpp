@@ -46,7 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobWidgetDnD.h" // KNOB_DND_MIME_DATA_KEY
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct PyHighLightRule
@@ -539,7 +539,7 @@ OutputScriptTextEdit::scrollContentsBy(int dx,
     Q_EMIT userScrollChanged(v == max);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_ScriptTextEdit.cpp"

@@ -42,16 +42,17 @@
 #include <windows.h>
 #endif
 
-#include <QtCore/QFile>
-#include <QtCore/QMutex>
-#include <QtCore/QReadWriteLock>
-#include <QtCore/QDir>
-#include <QtCore/QDebug>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
+
+#include <QtCore/QFile>
+#include <QtCore/QMutex>
+#include <QtCore/QReadWriteLock>
+#include <QtCore/QDir>
+#include <QtCore/QDebug>
 
 #ifdef DEBUG
 #include <SequenceParsing.h> // for removePath
@@ -66,7 +67,7 @@
 #include "Global/GlobalDefines.h"
 #include "Global/StrUtils.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////BUFFER////////////////////////////////////////////////////
@@ -1168,8 +1169,9 @@ private:
     {
         CacheEntryStorageInfo& info = _params->getStorageInfo();
 
-        if (info.mode == eStorageModeDisk) {
-            if (_cache->isTileCache()) {
+        // _cache should be non-NULL for eStorageModeDisk
+        if (info.mode == eStorageModeDisk && _cache) {
+            if (_cache && _cache->isTileCache()) {
                 _data.allocateTileCache(this);
             } else {
                 std::string fileName;
@@ -1244,6 +1246,6 @@ protected:
     bool _removeBackingFileBeforeDestruction;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // CACHEENTRY_H

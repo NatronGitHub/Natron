@@ -81,7 +81,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <ofxNatron.h>
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 ColorPickerLabel::ColorPickerLabel(KnobGuiColor* knob,
@@ -208,8 +208,12 @@ KnobGuiColor::KnobGuiColor(KnobPtr knob,
     , _colorLabel(0)
     , _colorDialogButton(0)
     , _lastColor( knob->getDimension() )
-    , _useSimplifiedUI( isViewerUIKnob() || _knob.lock()->isSimplified() )
+    , _useSimplifiedUI(true)
 {
+    if (knob) {
+        boost::shared_ptr<KnobColor> k = _knob.lock();
+        _useSimplifiedUI = isViewerUIKnob() || ( k && k->isSimplified() );
+    }
 }
 
 void
@@ -224,7 +228,11 @@ KnobGuiColor::connectKnobSignalSlots()
 void
 KnobGuiColor::getIncrements(std::vector<double>* increments) const
 {
-    int nDims = _knob.lock()->getDimension();
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    int nDims = knob->getDimension();
 
     increments->resize(nDims);
     for (int i = 0; i < nDims; ++i) {
@@ -235,7 +243,11 @@ KnobGuiColor::getIncrements(std::vector<double>* increments) const
 void
 KnobGuiColor::getDecimals(std::vector<int>* decimals) const
 {
-    int nDims = _knob.lock()->getDimension();
+    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    int nDims = knob->getDimension();
 
     decimals->resize(nDims);
     for (int i = 0; i < nDims; ++i) {
@@ -524,10 +536,21 @@ KnobGuiColor::showColorDialog()
 bool
 KnobGuiColor::isAutoFoldDimensionsEnabled() const
 {
-    return _knob.lock()->getDimension() == 3;
+    // [FD] I think all color parameters should be folded automatically:
+    // Grade and ColorCorrect are some of the most used nodes,
+    // and they have "A" channel uncked by default, so we don't care if colors
+    // are folded.
+    // The only case where this could matter are the "Draw" nodes (Rectangle, Constant, etc.),
+    // but these are rarely used compared to "Color" nodes.
+    return true;
+    //boost::shared_ptr<KnobColor> knob = _knob.lock();
+    //if (!knob) {
+    //    return false;
+    //}
+    //return knob->getDimension() == 3;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiColor.cpp"

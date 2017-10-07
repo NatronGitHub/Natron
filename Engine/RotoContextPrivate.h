@@ -133,10 +133,10 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kRotoBrushSourceColor "sourceType"
 #define kRotoBrushSourceColorLabel "Source"
-#define kRotoBrushSourceColorHint "Source color used for painting the stroke when the Reveal/Clone tools are used:\n" \
-    "- foreground: the painted result at this point in the hierarchy\n" \
-    "- background: the original image unpainted connected to bg\n" \
-    "- backgroundN: the original image unpainted connected to bgN\n"
+#define kRotoBrushSourceColorHint "Source color used for painting the stroke when the Reveal/Clone tools are used."
+#define kRotoBrushSourceColorOptionForegroundHint "The painted result at this point in the hierarchy."
+#define kRotoBrushSourceColorOptionBackgroundHint "The original image unpainted connected to bg."
+#define kRotoBrushSourceColorOptionBackgroundNHint "The original image unpainted connected to bg%1."
 
 #define kRotoBrushSizeParam "brushSize"
 #define kRotoBrushSizeParamLabel "Brush Size"
@@ -364,7 +364,7 @@ CLANG_DIAG_ON(uninitialized)
     "which the shutter opens. The value is an offset in frames to the current frame, e.g: -1  would open the shutter 1 frame before the current frame."
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct RotoFeatherVertex
 {
@@ -1521,12 +1521,12 @@ public:
             sourceType->setDefaultValue(1);
             {
                 std::vector<ChoiceOption> choices;
-                choices.push_back(ChoiceOption("foreground"));
-                choices.push_back(ChoiceOption("background"));
+                choices.push_back( ChoiceOption( "foreground", "", tr(kRotoBrushSourceColorOptionForegroundHint).toStdString() ) );
+                choices.push_back( ChoiceOption( "background", "", tr(kRotoBrushSourceColorOptionBackgroundHint).toStdString() ) );
                 for (int i = 1; i < 10; ++i) {
                     std::stringstream ss;
                     ss << "background " << i + 1;
-                    choices.push_back( ChoiceOption(ss.str()) );
+                    choices.push_back( ChoiceOption( ss.str(), "", tr(kRotoBrushSourceColorOptionBackgroundNHint).arg(i).toStdString() ) );
                 }
                 sourceType->populateChoices(choices);
             }
@@ -2199,6 +2199,6 @@ public:
     static void applyAndDestroyMask(cairo_t* cr, cairo_pattern_t* mesh);
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // ROTOCONTEXTPRIVATE_H

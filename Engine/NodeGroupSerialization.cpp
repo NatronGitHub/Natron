@@ -40,7 +40,7 @@
 
 #include <SequenceParsing.h> // for removePath
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 NodeCollectionSerialization::initialize(const NodeCollection& group)
@@ -455,4 +455,4 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     return !mustShowErrorsLog;
 } // NodeCollectionSerialization::restoreFromSerialization
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

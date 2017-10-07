@@ -1,0 +1,207 @@
+--- .//src/gui/kernel/qmime_mac.cpp.orig	2015-05-07 07:14:43.000000000 -0700
++++ .//src/gui/kernel/qmime_mac.cpp	2016-10-10 04:12:17.000000000 -0700
+@@ -68,12 +68,6 @@
+ #include "qmap.h"
+ #include <private/qt_mac_p.h>
+ 
+-
+-#ifdef Q_WS_MAC32
+-#include <QuickTime/QuickTime.h>
+-#include <qlibrary.h>
+-#endif
+-
+ QT_BEGIN_NAMESPACE
+ 
+ extern CGImageRef qt_mac_createCGImageFromQImage(const QImage &img, const QImage **imagePtr = 0); // qpaintengine_mac.cpp
+@@ -501,147 +495,6 @@
+     return ret;
+ }
+ 
+-
+-#ifdef Q_WS_MAC32
+-
+-// This can be removed once 10.6 is the minimum (or we have to require 64-bit) whichever comes first.
+-
+-typedef ComponentResult (*PtrGraphicsImportSetDataHandle)(GraphicsImportComponent, Handle);
+-typedef ComponentResult (*PtrGraphicsImportCreateCGImage)(GraphicsImportComponent, CGImageRef*, UInt32);
+-typedef ComponentResult (*PtrGraphicsExportSetInputCGImage)(GraphicsExportComponent, CGImageRef);
+-typedef ComponentResult (*PtrGraphicsExportSetOutputHandle)(GraphicsExportComponent, Handle);
+-typedef ComponentResult (*PtrGraphicsExportDoExport)(GraphicsExportComponent, unsigned long *);
+-
+-static PtrGraphicsImportSetDataHandle ptrGraphicsImportSetDataHandle = 0;
+-static PtrGraphicsImportCreateCGImage ptrGraphicsImportCreateCGImage = 0;
+-static PtrGraphicsExportSetInputCGImage ptrGraphicsExportSetInputCGImage = 0;
+-static PtrGraphicsExportSetOutputHandle ptrGraphicsExportSetOutputHandle = 0;
+-static PtrGraphicsExportDoExport ptrGraphicsExportDoExport = 0;
+-
+-static bool resolveMimeQuickTimeSymbols()
+-{
+-    static bool triedResolve = false;
+-    if (!triedResolve) {
+-        QLibrary library(QLatin1String("/System/Library/Frameworks/QuickTime.framework/QuickTime"));
+-        ptrGraphicsImportSetDataHandle = reinterpret_cast<PtrGraphicsImportSetDataHandle>(library.resolve("GraphicsImportSetDataHandle"));
+-        ptrGraphicsImportCreateCGImage = reinterpret_cast<PtrGraphicsImportCreateCGImage>(library.resolve("GraphicsImportCreateCGImage"));
+-        ptrGraphicsExportSetInputCGImage = reinterpret_cast<PtrGraphicsExportSetInputCGImage>(library.resolve("GraphicsExportSetInputCGImage"));
+-        ptrGraphicsExportSetOutputHandle = reinterpret_cast<PtrGraphicsExportSetOutputHandle>(library.resolve("GraphicsExportSetOutputHandle"));
+-        ptrGraphicsExportDoExport = reinterpret_cast<PtrGraphicsExportDoExport>(library.resolve("GraphicsExportDoExport"));
+-        triedResolve = true;
+-    }
+-
+-    return ptrGraphicsImportSetDataHandle != 0
+-           && ptrGraphicsImportCreateCGImage != 0 && ptrGraphicsExportSetInputCGImage != 0
+-           && ptrGraphicsExportSetOutputHandle != 0 && ptrGraphicsExportDoExport != 0;
+-}
+-
+-class QMacPasteboardMimePict : public QMacPasteboardMime {
+-public:
+-    QMacPasteboardMimePict() : QMacPasteboardMime(MIME_ALL) { }
+-    QString convertorName();
+-
+-    QString flavorFor(const QString &mime);
+-    QString mimeFor(QString flav);
+-    bool canConvert(const QString &mime, QString flav);
+-    QVariant convertToMime(const QString &mime, QList<QByteArray> data, QString flav);
+-    QList<QByteArray> convertFromMime(const QString &mime, QVariant data, QString flav);
+-};
+-
+-QString QMacPasteboardMimePict::convertorName()
+-{
+-    return QLatin1String("Pict");
+-}
+-
+-QString QMacPasteboardMimePict::flavorFor(const QString &mime)
+-{
+-    if(mime.startsWith(QLatin1String("application/x-qt-image")))
+-        return QLatin1String("com.apple.pict");
+-    return QString();
+-}
+-
+-QString QMacPasteboardMimePict::mimeFor(QString flav)
+-{
+-    if(flav == QLatin1String("com.apple.pict"))
+-        return QLatin1String("application/x-qt-image");
+-    return QString();
+-}
+-
+-bool QMacPasteboardMimePict::canConvert(const QString &mime, QString flav)
+-{
+-    return flav == QLatin1String("com.apple.pict")
+-            && mime == QLatin1String("application/x-qt-image");
+-}
+-
+-
+-QVariant QMacPasteboardMimePict::convertToMime(const QString &mime, QList<QByteArray> data, QString flav)
+-{
+-    if(data.count() > 1)
+-        qWarning("QMacPasteboardMimePict: Cannot handle multiple member data");
+-    QVariant ret;
+-    if (!resolveMimeQuickTimeSymbols())
+-        return ret;
+-
+-    if(!canConvert(mime, flav))
+-        return ret;
+-    const QByteArray &a = data.first();
+-
+-    // This function expects the 512 header (just to skip it, so create the extra space for it).
+-    Handle pic = NewHandle(a.size() + 512);
+-    memcpy(*pic + 512, a.constData(), a.size());
+-
+-    GraphicsImportComponent graphicsImporter;
+-    ComponentResult result = OpenADefaultComponent(GraphicsImporterComponentType,
+-                                                   kQTFileTypePicture, &graphicsImporter);
+-    QCFType<CGImageRef> cgImage;
+-    if (!result)
+-        result = ptrGraphicsImportSetDataHandle(graphicsImporter, pic);
+-    if (!result)
+-        result = ptrGraphicsImportCreateCGImage(graphicsImporter, &cgImage,
+-                                             kGraphicsImportCreateCGImageUsingCurrentSettings);
+-    if (!result)
+-        ret = QVariant(QPixmap::fromMacCGImageRef(cgImage).toImage());
+-    CloseComponent(graphicsImporter);
+-    DisposeHandle(pic);
+-    return ret;
+-}
+-
+-QList<QByteArray> QMacPasteboardMimePict::convertFromMime(const QString &mime, QVariant variant,
+-                                                          QString flav)
+-{
+-    QList<QByteArray> ret;
+-    if (!resolveMimeQuickTimeSymbols())
+-        return ret;
+-
+-    if (!canConvert(mime, flav))
+-        return ret;
+-    QCFType<CGImageRef> cgimage = qt_mac_createCGImageFromQImage(qvariant_cast<QImage>(variant));
+-    Handle pic = NewHandle(0);
+-    GraphicsExportComponent graphicsExporter;
+-    ComponentResult result = OpenADefaultComponent(GraphicsExporterComponentType,
+-                                                   kQTFileTypePicture, &graphicsExporter);
+-    if (!result) {
+-        unsigned long sizeWritten;
+-        result = ptrGraphicsExportSetInputCGImage(graphicsExporter, cgimage);
+-        if (!result)
+-            result = ptrGraphicsExportSetOutputHandle(graphicsExporter, pic);
+-        if (!result)
+-            result = ptrGraphicsExportDoExport(graphicsExporter, &sizeWritten);
+-
+-        CloseComponent(graphicsExporter);
+-    }
+-
+-    int size = GetHandleSize((Handle)pic);
+-    // Skip the Picture File header (512 bytes) and feed the raw data
+-    QByteArray ar(reinterpret_cast<char *>(*pic + 512), size - 512);
+-    ret.append(ar);
+-    DisposeHandle(pic);
+-    return ret;
+-}
+-
+-
+-#endif //Q_WS_MAC32
+-
+ class QMacPasteboardMimeTiff : public QMacPasteboardMime {
+ public:
+     QMacPasteboardMimeTiff() : QMacPasteboardMime(MIME_ALL) { }
+@@ -734,30 +587,7 @@
+         ret.append(ar);
+     } else
+ #endif
+-    {
+-#ifdef Q_WS_MAC32
+-        Handle tiff = NewHandle(0);
+-        if (resolveMimeQuickTimeSymbols()) {
+-            GraphicsExportComponent graphicsExporter;
+-            ComponentResult result = OpenADefaultComponent(GraphicsExporterComponentType,
+-                                                           kQTFileTypeTIFF, &graphicsExporter);
+-            if (!result) {
+-                unsigned long sizeWritten;
+-                result = ptrGraphicsExportSetInputCGImage(graphicsExporter, cgimage);
+-                if (!result)
+-                    result = ptrGraphicsExportSetOutputHandle(graphicsExporter, tiff);
+-                if (!result)
+-                    result = ptrGraphicsExportDoExport(graphicsExporter, &sizeWritten);
+ 
+-                CloseComponent(graphicsExporter);
+-            }
+-        }
+-        int size = GetHandleSize((Handle)tiff);
+-        QByteArray ar(reinterpret_cast<char *>(*tiff), size);
+-        ret.append(ar);
+-        DisposeHandle(tiff);
+-#endif
+-    }
+     return ret;
+ }
+ 
+@@ -1158,12 +988,6 @@
+ 
+         //standard types that we wrap
+         new QMacPasteboardMimeTiff;
+-#ifdef Q_WS_MAC32
+-        // 10.6 does automatic synthesis to and from PICT to standard image types (like TIFF),
+-        // so don't bother doing it ourselves, especially since it's not available in 64-bit.
+-        if (QSysInfo::MacintoshVersion < QSysInfo::MV_10_6)
+-            new QMacPasteboardMimePict;
+-#endif
+         new QMacPasteboardMimeUnicodeText;
+         new QMacPasteboardMimePlainText;
+         new QMacPasteboardMimeHTMLText;

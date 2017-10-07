@@ -55,7 +55,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 //#define NATRON_ROTO_INVERTIBLE
 //#define NATRON_ROTO_ENABLE_MOTION_BLUR
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 //Small RAII class that properly destroys the cairo image upon destruction
 class CairoImageWrapper
@@ -464,6 +464,6 @@ private:
     boost::scoped_ptr<RotoContextPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_RotoContext_h

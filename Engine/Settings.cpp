@@ -74,7 +74,7 @@
 
 #define NATRON_CUSTOM_HOST_NAME_ENTRY "Custom..."
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 Settings::Settings()
     : KnobHolder( AppInstPtr() ) // < Settings are process wide and do not belong to a single AppInstance
@@ -203,7 +203,7 @@ Settings::initializeKnobsGeneral()
     _knownHostNames.clear();
     std::vector<ChoiceOption> visibleHostEntries;
     assert(visibleHostEntries.size() == (int)eKnownHostNameNatron);
-    visibleHostEntries.push_back(ChoiceOption(NATRON_APPLICATION_NAME, NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME, ""));
+    visibleHostEntries.push_back(ChoiceOption(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME, NATRON_APPLICATION_NAME, ""));
     assert(visibleHostEntries.size() == (int)eKnownHostNameNuke);
     visibleHostEntries.push_back(ChoiceOption("uk.co.thefoundry.nuke", "Nuke", ""));
     assert(visibleHostEntries.size() == (int)eKnownHostNameFusion);
@@ -471,11 +471,17 @@ Settings::initializeKnobsGPU()
     {
         std::vector<ChoiceOption> entries;
         assert(entries.size() == (int)Settings::eEnableOpenGLEnabled);
-        entries.push_back(ChoiceOption("Enabled", "",  tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString()));
+        entries.push_back(ChoiceOption("enabled",
+                                       tr("Enabled").toStdString(),
+                                       tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString()));
         assert(entries.size() == (int)Settings::eEnableOpenGLDisabled);
-        entries.push_back(ChoiceOption("Disabled", "", tr("Disable GPU rendering for all plug-ins.").toStdString()));
+        entries.push_back(ChoiceOption("disabled",
+                                       tr("Disabled").toStdString(),
+                                       tr("Disable GPU rendering for all plug-ins.").toStdString()));
         assert(entries.size() == (int)Settings::eEnableOpenGLDisabledIfBackground);
-        entries.push_back(ChoiceOption("Disabled If Background", "", tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString()));
+        entries.push_back(ChoiceOption("foreground",
+                                       tr("Disabled If Background").toStdString(),
+                                       tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString()));
         _enableOpenGL->populateChoices(entries);
     }
     _enableOpenGL->setHintToolTip( tr("Select whether to activate OpenGL rendering or not. If disabled, even though a Project enable GPU rendering, it will not be activated.") );
@@ -524,9 +530,15 @@ Settings::initializeKnobsDocumentation()
     _documentationSource = AppManager::createKnob<KnobChoice>( this, tr("Documentation Source") );
     _documentationSource->setName("documentationSource");
     _documentationSource->setHintToolTip( tr("Documentation source.") );
-    _documentationSource->appendChoice(ChoiceOption("Local"));
-    _documentationSource->appendChoice(ChoiceOption("Online"));
-    _documentationSource->appendChoice(ChoiceOption("None"));
+    _documentationSource->appendChoice(ChoiceOption("local",
+                                                    tr("Local").toStdString(),
+                                                    tr("Use the documentation distributed with the software.").toStdString()));
+    _documentationSource->appendChoice(ChoiceOption("online",
+                                                    tr("Online").toStdString(),
+                                                    tr("Use the online version of the documentation (requires an internet connection).").toStdString()));
+    _documentationSource->appendChoice(ChoiceOption("none",
+                                                    tr("None").toStdString(),
+                                                    tr("Disable documentation").toStdString()));
     _documentationPage->addKnob(_documentationSource);
 #endif
 
@@ -1026,12 +1038,17 @@ Settings::initializeKnobsViewers()
     _texturesMode = AppManager::createKnob<KnobChoice>( this, tr("Viewer textures bit depth") );
     _texturesMode->setName("texturesBitDepth");
     std::vector<ChoiceOption> textureModes;
-    textureModes.push_back(ChoiceOption("Byte", "", tr("Post-processing done by the viewer (such as colorspace conversion) is done "
-                                                       "by the CPU. As a results, the size of cached textures is smaller.").toStdString() ));
+    textureModes.push_back(ChoiceOption("8u",
+                                        tr("8-bit").toStdString(),
+                                        tr("Post-processing done by the viewer (such as colorspace conversion) is done "
+                                           "by the CPU. The size of cached textures is thus smaller.").toStdString() ));
+
     //textureModes.push_back("16bits half-float");
     //helpStringsTextureModes.push_back("Not available yet. Similar to 32bits fp.");
-    textureModes.push_back(ChoiceOption("32bits floating-point", "",tr("Post-processing done by the viewer (such as colorspace conversion) is done "
-                                                                       "by the GPU, using GLSL. As a results, the size of cached textures is larger.").toStdString()));
+    textureModes.push_back(ChoiceOption("32f",
+                                        tr("32-bit floating-point").toStdString(),
+                                        tr("Post-processing done by the viewer (such as colorspace conversion) is done "
+                                           "by the GPU, using GLSL. The size of cached textures is thus larger.").toStdString()));
     _texturesMode->populateChoices(textureModes);
 
 
@@ -2231,7 +2248,9 @@ Settings::onKnobValueChanged(KnobI* k,
         }
         setCachingLabels();
     } else if ( k == _diskCachePath.get() ) {
-        appPTR->setDiskCacheLocation( QString::fromUtf8( _diskCachePath->getValue().c_str() ) );
+        QString path = QString::fromUtf8(_diskCachePath->getValue().c_str());
+        qputenv(NATRON_DISK_CACHE_PATH_ENV_VAR, path.toUtf8());
+        appPTR->refreshDiskCacheLocation();
     } else if ( k == _wipeDiskCache.get() ) {
         appPTR->wipeAndCreateDiskCacheStructure();
     } else if ( k == _numberOfThreads.get() ) {
@@ -3675,7 +3694,7 @@ Settings::isDriveLetterToUNCPathConversionEnabled() const
     return !_enableMappingFromDriveLettersToUNCShareNames->getValue();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_Settings.cpp"

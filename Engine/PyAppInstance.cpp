@@ -40,8 +40,8 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+NATRON_PYTHON_NAMESPACE_ENTER
 
 App::App(const AppInstPtr& instance)
     : Group()
@@ -482,5 +482,5 @@ App::addProjectLayer(const ImageLayer& layer)
     getInternalApp()->getProject()->addProjectDefaultLayer( layer.getInternalComps() );
 }
 
-NATRON_PYTHON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
+NATRON_NAMESPACE_EXIT

@@ -105,7 +105,7 @@ class SequenceFromFiles;
 
 // Natron Engine
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 class AbortableRenderInfo;
 class AbortableThread;
 class AbstractOfxEffectInstance;
@@ -249,7 +249,7 @@ struct OSGLContext_wgl_data;
 class OSGLContext_glx_data;
 #endif
 
-NATRON_PYTHON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER
 class App;
 class AppSettings;
 class BezierCurve;
@@ -282,7 +282,7 @@ class Track;
 class Tracker;
 class UserParamHolder;
 
-NATRON_PYTHON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
 
 typedef boost::shared_ptr<OSGLContext> OSGLContextPtr;
 typedef boost::shared_ptr<PluginMemory> PluginMemoryPtr;
@@ -308,6 +308,6 @@ typedef std::list<ImagePtr> ImageList;
 typedef boost::shared_ptr<Texture> GLTexturePtr;
 typedef boost::shared_ptr<FrameEntry> FrameEntryPtr;
 typedef boost::shared_ptr<Settings> SettingsPtr;
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_EngineFwd_h

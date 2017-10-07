@@ -1,23 +1,22 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 148394 2016-05-07 00:56:38Z ryandesign@macports.org $
 
 PortSystem 1.0
 PortGroup select 1.0
 PortGroup compiler_blacklist_versions 1.0
 
 name                gcc6
-subport             libgcc {}
+subport             libgcc6 { revision 1 }
 
 epoch               2
-version             6.1.0
+version             6.4.0
 platforms           darwin
 categories          lang
-maintainers         mww openmaintainer
+maintainers         nomaintainer
 # an exception in the license allows dependents to not be GPL
 license             {GPL-3+ Permissive}
 description         The GNU compiler collection
 long_description    The GNU compiler collection, including front ends for \
-                    C, C++, Objective-C, Objective-C++, Fortran and Java.
+                    C, C++, Objective-C, Objective-C++, and Fortran.
 
 homepage            http://gcc.gnu.org/
 master_sites        ftp://ftp.funet.fi/pub/mirrors/sources.redhat.com/pub/gcc/releases/gcc-${version}/ \
@@ -27,10 +26,10 @@ master_sites        ftp://ftp.funet.fi/pub/mirrors/sources.redhat.com/pub/gcc/re
                     gnu:gcc/gcc-${version}
 
 distname            gcc-${version}
-use_bzip2           yes
+use_xz              yes
 
-checksums           rmd160  6bf64177557e7485450fa09fb018019f2297f952 \
-                    sha256  09c4c85cabebb971b1de732a0219609f93fc0af5f86f6e437fd8d7f832f1a351
+checksums           rmd160  63c16a8f5df0c2c2db3355ff1e984ad6b3653ab3 \
+                    sha256  850bf21eafdfe5cd5f6827148184c08c4a0852a37ccf36ce69855334d2c914d4
 
 depends_lib         port:cctools \
                     port:gmp \
@@ -48,11 +47,14 @@ set major           [lindex [split ${version} .-] 0]
 
 platform darwin {
     configure.pre_args-append --build=${build_arch}-apple-darwin${os.major}
+
+    # see https://gcc.gnu.org/ml/gcc-patches/2012-05/msg00672.html
+    patchfiles-append         patch-float128.diff
 }
 
 configure.dir       ${workpath}/build
 configure.cmd       ${worksrcpath}/configure
-configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
+configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran \
                     --libdir=${prefix}/lib/${name} \
                     --includedir=${prefix}/include/${name} \
                     --infodir=${prefix}/share/info \
@@ -78,9 +80,11 @@ configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
                     --with-ar=${prefix}/bin/ar \
                     --with-bugurl=https://trac.macports.org/newticket
 
-if {${configure.sdkroot} ne ""} { 
-    configure.args-append     --with-sysroot=${configure.sdkroot} 
-} 
+# see https://lists.macports.org/pipermail/macports-dev/2017-August/036209.html
+# --disable-tls does not limit functionality
+# it only determines how std::call_once works
+configure.args-append \
+                    --disable-tls
 
 configure.env-append \
                     AR_FOR_TARGET=${prefix}/bin/ar \
@@ -95,6 +99,23 @@ configure.env-append \
 
 pre-configure {
     configure.args-append --with-pkgversion="MacPorts ${name} ${version}_${revision}${portvariants}"
+
+    if {${configure.sdkroot} ne ""} {
+        # We should be using --with-build-sysroot here.  Using --with-sysroot
+        # changes the behavior of the installed gcc to look in that sysroot
+        # by default instead of /.  Using --with-build-sysroot is supposed
+        # to be used during the build but not impact the installed product.
+        # Unfortunately, the build fails because the value doesn't get
+        # plumbed everywhere it is supposed to.
+        #
+        # https://trac.macports.org/ticket/53726
+        # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79885
+        #
+        # Note that macports toolchains will fail to compile gcc unless
+        # the DevSDK is installed due to another gcc build system bug:
+        # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80203
+        configure.args-append --with-sysroot="${configure.sdkroot}"
+    }
 
     # TODO: Remove when base automatically creates configure.dir (2.2.1?).
     file mkdir ${configure.dir}
@@ -118,9 +139,7 @@ use_parallel_build  yes
 
 destroot.target     install install-info-host
 
-if {${subport} eq "libgcc"} {
-    conflicts       libgcc-devel
-
+if {${subport} eq "libgcc6"} {
     # http://trac.macports.org/ticket/35770
     # http://trac.macports.org/ticket/38814
     # While there can be multiple versions of these runtimes in a single
@@ -133,13 +152,11 @@ if {${subport} eq "libgcc"} {
     # version should continue to provide a subport for that and older gcc
     # versions.
 
-    depends_lib-delete path:lib/libgcc/libgcc_s.1.dylib:libgcc
-
     configure.args-delete --libdir=${prefix}/lib/${name}
     configure.args-append --libdir=${prefix}/lib/libgcc
 
-    configure.args-delete --enable-languages=c,c++,objc,obj-c++,lto,fortran,java
-    configure.args-append --enable-languages=c,c++,objc,obj-c++,lto,fortran
+    configure.args-delete --enable-languages=c,c++,objc,obj-c++,lto,fortran
+    configure.args-append --enable-languages=fortran
 
     # TODO: Possibly disable bootstrap with appropriate configure flags.
     #       the problem is that libstdc++'s configure script tests for tls support
@@ -153,13 +170,12 @@ if {${subport} eq "libgcc"} {
     post-destroot {
         file mkdir ${destroot}${prefix}/lib/libgcc.merged
 
-        # Note that we really don't want to include libgcc_ext.10.[45].dylib here, but install_name_tool
-        # doesn't know how to change the id of stubs, and it's easier than recreating them for each
-        # gcc port.
-        set dylibs {libgcc_ext.10.4.dylib libgcc_ext.10.5.dylib libgcc_s.1.dylib libgfortran.3.dylib libquadmath.0.dylib libstdc++.6.dylib libobjc-gnu.4.dylib libgomp.1.dylib libitm.1.dylib libssp.0.dylib libasan.0.dylib libatomic.1.dylib}
+        # We need to list libquadmath.0.dylib here even though it isn't installed in order to make sure we cleanup libgfortran.3.dylib's linkage when +universal
+        # See https://trac.macports.org/ticket/54768
+        set dylibs {libgfortran.3.dylib libquadmath.0.dylib}
 
         foreach dylib ${dylibs} {
-            # Different OS versions (eg: Leopard) or architectures (eg: PPC) don't produce all the dylibs
+            # Different OS versions (e.g. Leopard) or architectures (e.g. PPC) don't produce all the dylibs
             # https://trac.macports.org/ticket/40098
             # https://trac.macports.org/ticket/40100
             if {! [file exists ${destroot}${prefix}/lib/libgcc/${dylib}]} {
@@ -187,7 +203,7 @@ if {${subport} eq "libgcc"} {
             }
         }
 
-        file delete -force ${destroot}${prefix}/bin              
+        file delete -force ${destroot}${prefix}/bin
         file delete -force ${destroot}${prefix}/share
         file delete -force ${destroot}${prefix}/include
         file delete -force ${destroot}${prefix}/lib/libgcc
@@ -195,11 +211,12 @@ if {${subport} eq "libgcc"} {
 
         move ${destroot}${prefix}/lib/libgcc.merged ${destroot}${prefix}/lib/libgcc
 
-        # For binary compatibility with binaries that linked against the old libstdcxx port
-        ln -s libgcc/libstdc++.6.dylib ${destroot}${prefix}/lib/libstdc++.6.dylib
+        # This is provided by the libgcc port
+        file delete -force ${destroot}${prefix}/lib/libgcc/libquadmath.0.dylib
     }
 } else {
-depends_run-append         port:gcc_select
+depends_run-append         port:gcc_select \
+                           port:libgcc6
 
 post-destroot {
     file delete ${destroot}${prefix}/share/info/dir
@@ -212,7 +229,7 @@ post-destroot {
     }
 
     foreach dylib {libgcc_ext.10.4.dylib libgcc_ext.10.5.dylib libgcc_s.1.dylib libgfortran.3.dylib libquadmath.0.dylib libstdc++.6.dylib libobjc-gnu.4.dylib libgomp.1.dylib libitm.1.dylib libssp.0.dylib libasan.0.dylib libatomic.1.dylib} {
-        # Different OS versions (eg: Leopard) or architectures (eg: PPC) don't produce all the dylibs
+        # Different OS versions (e.g. Leopard) or architectures (e.g. PPC) don't produce all the dylibs
         # https://trac.macports.org/ticket/40098
         # https://trac.macports.org/ticket/40100
         if {[file exists ${destroot}${prefix}/lib/${name}/${dylib}]} {
@@ -229,7 +246,6 @@ post-destroot {
             }
         }
     }
-    move ${destroot}${prefix}/lib/${name}/pkgconfig/libgcj-${major}.pc ${destroot}${prefix}/lib/pkgconfig/
 }
 
 select.group        gcc
@@ -247,8 +263,12 @@ variant universal {
     configure.args-delete --disable-multilib
 }
 # the generated compiler doesn't accept -arch
-configure.env-append CPP="${configure.cc} -E"
-build.env-append CPP="${configure.cc} -E"
+configure.env-append \
+    CPP="${configure.cc} -E" \
+    CXXCPP="${configure.cxx} -E"
+build.env-append \
+    CPP="${configure.cc} -E" \
+    CXXCPP="${configure.cxx} -E"
 configure.cc-append [get_canonical_archflags]
 configure.cc_archflags
 configure.cxx-append ${configure.cxx_archflags}

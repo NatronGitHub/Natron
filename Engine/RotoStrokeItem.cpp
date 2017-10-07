@@ -92,7 +92,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ////////////////////////////////////Stroke//////////////////////////////////
 
@@ -356,7 +356,7 @@ RotoStrokeItem::appendPoint(bool newStroke,
         }
         stroke = &_imp->strokes.back();
         assert(stroke);
-        if (!stroke) {
+        if (!stroke || !stroke->xCurve || !stroke->yCurve) {
             throw std::logic_error("");
         }
 
@@ -589,7 +589,7 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
         stroke = &_imp->strokes[lastMultiStrokeIndex];
         *strokeIndex = lastMultiStrokeIndex;
     }
-    if (!stroke) {
+    if (!stroke || !stroke->xCurve || !stroke->yCurve) {
         return false;
     }
     assert( stroke && stroke->xCurve->getKeyFramesCount() == stroke->yCurve->getKeyFramesCount() && stroke->xCurve->getKeyFramesCount() == stroke->pressureCurve->getKeyFramesCount() );
@@ -932,5 +932,5 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel,
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

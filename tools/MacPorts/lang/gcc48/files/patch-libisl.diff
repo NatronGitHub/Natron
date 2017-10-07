@@ -1,0 +1,44 @@
+--- configure.orig	2015-05-03 10:26:29.000000000 -0700
++++ configure	2017-03-05 10:09:47.000000000 -0700
+@@ -5855,7 +5855,7 @@
+
+     CFLAGS="${_isl_saved_CFLAGS} ${islinc} ${gmpinc}"
+     LDFLAGS="${_isl_saved_LDFLAGS} ${isllibs}"
+-    LIBS="${_isl_saved_LIBS} -lisl"
++    LIBS="${_isl_saved_LIBS} -lisl.13"
+
+     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for version 0.10 of ISL" >&5
+ $as_echo_n "checking for version 0.10 of ISL... " >&6; }
+@@ -5903,7 +5903,7 @@
+
+     CFLAGS="${_isl_saved_CFLAGS} ${islinc} ${gmpinc}"
+     LDFLAGS="${_isl_saved_LDFLAGS} ${isllibs}"
+-    LIBS="${_isl_saved_LIBS} -lisl"
++    LIBS="${_isl_saved_LIBS} -lisl.13"
+
+     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for version 0.11 of ISL" >&5
+ $as_echo_n "checking for version 0.11 of ISL... " >&6; }
+@@ -5951,7 +5951,7 @@
+
+     CFLAGS="${_isl_saved_CFLAGS} ${islinc} ${gmpinc}"
+     LDFLAGS="${_isl_saved_LDFLAGS} ${isllibs}"
+-    LIBS="${_isl_saved_LIBS} -lisl"
++    LIBS="${_isl_saved_LIBS} -lisl.13"
+
+     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for version 0.12 of ISL" >&5
+ $as_echo_n "checking for version 0.12 of ISL... " >&6; }
+@@ -5999,7 +5999,7 @@
+
+     CFLAGS="${_isl_saved_CFLAGS} ${islinc} ${gmpinc}"
+     LDFLAGS="${_isl_saved_LDFLAGS} ${isllibs}"
+-    LIBS="${_isl_saved_LIBS} -lisl"
++    LIBS="${_isl_saved_LIBS} -lisl.13"
+
+     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for version 0.14 of ISL" >&5
+ $as_echo_n "checking for version 0.14 of ISL... " >&6; }
+@@ -6124,7 +6124,7 @@
+   fi
+
+   clooginc="-DCLOOG_INT_GMP ${clooginc}"
+-  clooglibs="${clooglibs} -lcloog-isl ${isllibs} -lisl"
++  clooglibs="${clooglibs} -lcloog-isl ${isllibs} -lisl.13"

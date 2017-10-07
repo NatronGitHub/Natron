@@ -40,12 +40,12 @@ Controls
 | Center / ``center``                     | Boolean   | Off               | Center each input/frame within its cell.                                               |
 +-----------------------------------------+-----------+-------------------+----------------------------------------------------------------------------------------+
 | Row Order / ``rowOrder``                | Choice    | TopBottom         | | How image rows are populated.                                                        |
-|                                         |           |                   | | **TopBottom**: From top to bottom row.                                               |
-|                                         |           |                   | | **BottomTop**: From bottom to top row.                                               |
+|                                         |           |                   | | **TopBottom (topbottom)**: From top to bottom row.                                   |
+|                                         |           |                   | | **BottomTop (bottomtop)**: From bottom to top row.                                   |
 +-----------------------------------------+-----------+-------------------+----------------------------------------------------------------------------------------+
 | Column Order / ``colOrder``             | Choice    | LeftRight         | | How image columns are populated.                                                     |
-|                                         |           |                   | | **LeftRight**: From left to right column.                                            |
-|                                         |           |                   | | **RightLeft**: From right to left column.                                            |
+|                                         |           |                   | | **LeftRight (leftright)**: From left to right column.                                |
+|                                         |           |                   | | **RightLeft (rightleft)**: From right to left column.                                |
 +-----------------------------------------+-----------+-------------------+----------------------------------------------------------------------------------------+
 | Show Layer Names / ``showLayerNames``   | Boolean   | Off               | Display the layer name in the bottom left of each frame.                               |
 +-----------------------------------------+-----------+-------------------+----------------------------------------------------------------------------------------+

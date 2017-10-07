@@ -37,7 +37,7 @@
 #include "Engine/OSGLContext.h"
 #include "Engine/GLShader.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 #define BM_GET(i, j) (&_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )])
 
@@ -201,31 +201,6 @@ minimalNonMarkedBbox_internal(const RectI& roi,
     return bbox;
 } // minimalNonMarkedBbox_internal
 
-#ifndef NDEBUG
-static bool
-isNonMarked_internal(const RectI & roi,
-                     const RectI& _bounds,
-                     const std::vector<char>& _map)
-{
-    int x1 = std::max(roi.x1, _bounds.x1);
-    int y1 = std::max(roi.y1, _bounds.y1);
-    int x2 = std::min(roi.x2, _bounds.x2);
-    int y2 = std::min(roi.y2, _bounds.y2);
-
-    const char* buf = &_map[( x1 - _bounds.bottom() ) * _bounds.width() + ( y1 - _bounds.left() )];
-    int w = _bounds.width();
-    int roiw = x2 - x1;
-
-    for (int i = y1; i < y2; ++i, buf += w) {
-        for (int j = 0; j < roiw; ++j) {
-            if (buf[j]) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-#endif
 
 template <int trimap>
 void
@@ -1821,10 +1796,10 @@ Image::halveRoIForDepth(const RectI & roi,
     RectI srcRoI = roi;
     srcRoI.intersect(srcBounds, &srcRoI); // intersect srcRoI with the region of definition
 
-    dstRoI.x1 = std::floor(srcRoI.x1 / 2.);
-    dstRoI.y1 = std::floor(srcRoI.y1 / 2.);
-    dstRoI.x2 = std::ceil(srcRoI.x2 / 2.);
-    dstRoI.y2 = std::ceil(srcRoI.y2 / 2.);
+    dstRoI.x1 = (srcRoI.x1 + 1) / 2; // equivalent to ceil(srcRoI.x1/2.0)
+    dstRoI.y1 = (srcRoI.y1 + 1) / 2; // equivalent to ceil(srcRoI.y1/2.0)
+    dstRoI.x2 = srcRoI.x2 / 2; // equivalent to floor(srcRoI.x2/2.0)
+    dstRoI.y2 = srcRoI.y2 / 2; // equivalent to floor(srcRoI.y2/2.0)
 
 
     const PIX* const srcPixels      = (const PIX*)pixelAt(srcBounds.x1,   srcBounds.y1);
@@ -2416,4 +2391,4 @@ Image::unpremultImage(const RectI& roi)
     premultForDepth<false>(roi);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

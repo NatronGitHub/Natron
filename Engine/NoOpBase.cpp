@@ -30,7 +30,7 @@
 #include "Engine/Transform.h" // Matrix3x3
 #include "Engine/ViewIdx.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 NoOpBase::NoOpBase(NodePtr n)
     : OutputEffectInstance(n)
@@ -107,4 +107,4 @@ NoOpBase::getInputsHoldingTransform(std::list<int>* inputs) const
     return true;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

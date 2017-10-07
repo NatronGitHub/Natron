@@ -12,12 +12,6 @@ Description
 
 Texture/Background generator node.
 
-Powered by ImageMagick 6.9.7-8 Q32 x86\_64 2017-02-17 http://www.imagemagick.org
-
-ImageMagick (R) is Copyright 1999-2015 ImageMagick Studio LLC, a non-profit organization dedicated to making software imaging solutions freely available.
-
-ImageMagick is distributed under the Apache 2.0 license.
-
 Inputs
 ------
 
@@ -37,7 +31,19 @@ Controls
 +-------------------------------+-----------+----------------+-----------------------------------------------------------------------------------------------------------------------------------------------+
 | Parameter / script name       | Type      | Default        | Function                                                                                                                                      |
 +===============================+===========+================+===============================================================================================================================================+
-| Background / ``background``   | Choice    | Misc/Stripes   | Background type                                                                                                                               |
+| Background / ``background``   | Choice    | Misc/Stripes   | | Background type                                                                                                                             |
+|                               |           |                | | **Plasma/Regular**                                                                                                                          |
+|                               |           |                | | **Plasma/Fractal**                                                                                                                          |
+|                               |           |                | | **Noise/Gaussian**                                                                                                                          |
+|                               |           |                | | **Noise/Impulse**                                                                                                                           |
+|                               |           |                | | **Noise/Laplacian**                                                                                                                         |
+|                               |           |                | | **Misc/Checkerboard**                                                                                                                       |
+|                               |           |                | | **Misc/Stripes**                                                                                                                            |
+|                               |           |                | | **Gradient/Regular**                                                                                                                        |
+|                               |           |                | | **Gradient/Radial**                                                                                                                         |
+|                               |           |                | | **Misc/Loops 1**                                                                                                                            |
+|                               |           |                | | **Misc/Loops 2**                                                                                                                            |
+|                               |           |                | | **Misc/Loops 3**                                                                                                                            |
 +-------------------------------+-----------+----------------+-----------------------------------------------------------------------------------------------------------------------------------------------+
 | Seed / ``seed``               | Integer   | 0              | Seed the random generator                                                                                                                     |
 +-------------------------------+-----------+----------------+-----------------------------------------------------------------------------------------------------------------------------------------------+

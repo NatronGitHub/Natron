@@ -12,12 +12,6 @@ Description
 
 Polaroid image effect node.
 
-Powered by ImageMagick 6.9.7-8 Q32 x86\_64 2017-02-17 http://www.imagemagick.org
-
-ImageMagick (R) is Copyright 1999-2015 ImageMagick Studio LLC, a non-profit organization dedicated to making software imaging solutions freely available.
-
-ImageMagick is distributed under the Apache 2.0 license.
-
 Inputs
 ------
 
@@ -43,7 +37,7 @@ Controls
 +---------------------------+-----------+--------------+---------------------------------------------------------------------------------------------------------+
 | Caption / ``caption``     | String    | Enter text   | Add caption to polaroid                                                                                 |
 +---------------------------+-----------+--------------+---------------------------------------------------------------------------------------------------------+
-| Font family / ``font``    | Choice    | A/Arial      | The name of the font to be used                                                                         |
+| Font family / ``font``    | Choice    |              | The name of the font to be used                                                                         |
 +---------------------------+-----------+--------------+---------------------------------------------------------------------------------------------------------+
 | Font size / ``size``      | Integer   | 64           | The height of the characters to render in pixels                                                        |
 +---------------------------+-----------+--------------+---------------------------------------------------------------------------------------------------------+

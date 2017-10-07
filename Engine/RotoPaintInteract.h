@@ -41,7 +41,7 @@
 #include "Engine/BezierCP.h"
 #include "Engine/Bezier.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 #define kControlPointMidSize 3
@@ -767,6 +767,6 @@ public:
     void removeCurve(const boost::shared_ptr<RotoDrawableItem>& curve);
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // ROTOPAINTINTERACT_H

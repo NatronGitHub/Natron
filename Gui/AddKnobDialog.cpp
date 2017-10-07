@@ -53,7 +53,7 @@
 #include "Gui/SpinBox.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct AddKnobDialogPrivate
@@ -605,11 +605,11 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     {
         _imp->menuItemsLabel = new Label(tr("Menu items:"), this);
         _imp->menuItemsEdit = new QTextEdit(this);
-        QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("The entries that will be available in the drop-down menu. \n"
+        QString tt = NATRON_NAMESPACE::convertFromPlainText(tr("The entries of the drop-down menu. \n"
                                                        "Each line defines a new menu entry. You can specify a specific help tooltip for each entry "
                                                        "by separating the entry text from the help with the following characters on the line: "
                                                        "<?> \n\n"
-                                                       "E.g: Special function<?>Will use our very own special function."), NATRON_NAMESPACE::WhiteSpaceNormal);
+                                                       "e.g.: Special function<?>Will use our very own special function."), NATRON_NAMESPACE::WhiteSpaceNormal);
         _imp->menuItemsEdit->setToolTip(tt);
         _imp->mainLayout->addRow(_imp->menuItemsLabel, _imp->menuItemsEdit);
 
@@ -2143,7 +2143,7 @@ AddKnobDialogPrivate::setVisibleDefaultValues(bool visible,
     }
 } // AddKnobDialogPrivate::setVisibleDefaultValues
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_AddKnobDialog.cpp"

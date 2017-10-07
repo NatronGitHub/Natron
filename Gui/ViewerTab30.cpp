@@ -62,7 +62,7 @@
 #endif
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 bool
 ViewerTab::isClippedToProject() const
@@ -1204,4 +1204,4 @@ ViewerTab::onClipPreferencesChanged()
 
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

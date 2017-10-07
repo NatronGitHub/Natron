@@ -46,7 +46,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 typedef std::list<boost::shared_ptr<DSKnob> > DSKnobPtrList;
 
@@ -1115,7 +1115,7 @@ HierarchyView::onSelectionChanged()
     _imp->selectKeyframes( selectedItems() );
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_DopeSheetHierarchyView.cpp"

@@ -1,0 +1,55 @@
+--- macosx/graphviz.xcodeproj/project.pbxproj.orig	2012-08-13 15:14:54.000000000 -0500
++++ macosx/graphviz.xcodeproj/project.pbxproj	2012-08-14 13:59:30.000000000 -0500
+@@ -380,12 +380,10 @@
+ 				INFOPLIST_FILE = Info.plist;
+ 				INSTALL_PATH = "$(HOME)/Applications";
+ 				LIBRARY_SEARCH_PATHS = (
+-					../lib/cdt/.libs,
+-					../lib/cgraph/.libs,
+-					../lib/gvc/.libs,
++					"$(PREFIX)/lib",
+ 				);
+ 				PRODUCT_NAME = Graphviz;
+-				USER_HEADER_SEARCH_PATHS = "../lib/common ../lib/cdt ../lib/pathplan ../lib/cgraph ../lib/gvc";
++				USER_HEADER_SEARCH_PATHS = "$(PREFIX)/include/graphviz";
+ 				WRAPPER_EXTENSION = app;
+ 				ZERO_LINK = YES;
+ 			};
+@@ -403,13 +401,10 @@
+ 				INFOPLIST_FILE = Info.plist;
+ 				INSTALL_PATH = "$(HOME)/Applications";
+ 				LIBRARY_SEARCH_PATHS = (
+-					../lib/cdt/.libs,
+-					../lib/cgraph/.libs,
+-					../lib/gvc/.libs,
++					"$(PREFIX)/lib",
+ 				);
+ 				PRODUCT_NAME = Graphviz;
+-				USER_HEADER_SEARCH_PATHS = "../lib/common ../lib/cdt ../lib/pathplan ../lib/cgraph ../lib/gvc";
+-				VALID_ARCHS = "i386 x86_64";
++				USER_HEADER_SEARCH_PATHS = "$(PREFIX)/include/graphviz";
+ 				WRAPPER_EXTENSION = app;
+ 			};
+ 			name = Release;
+@@ -420,21 +415,15 @@
+ 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+ 				GCC_WARN_UNUSED_VARIABLE = YES;
+ 				PREBINDING = NO;
+-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
+ 			};
+ 			name = Debug;
+ 		};
+ 		C05733CD08A9546B00998B17 /* Release */ = {
+ 			isa = XCBuildConfiguration;
+ 			buildSettings = {
+-				ARCHS = (
+-					ppc,
+-					i386,
+-				);
+ 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+ 				GCC_WARN_UNUSED_VARIABLE = YES;
+ 				PREBINDING = NO;
+-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
+ 			};
+ 			name = Release;
+ 		};

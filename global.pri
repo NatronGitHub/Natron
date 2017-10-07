@@ -19,7 +19,7 @@
 # libs may modify the config (eg openmp), so it must be included before
 include(libs.pri)
 
-CONFIG += warn_on no_keywords
+CONFIG += exceptions warn_on no_keywords
 DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SUPPORTS_PARAMETRIC OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_NATRON OFX_EXTENSIONS_RESOLVE OFX_SUPPORTS_OPENGLRENDER
 DEFINES += OFX_SUPPORTS_MULTITHREAD
 DEFINES += OFX_SUPPORTS_DIALOG
@@ -36,12 +36,18 @@ run-without-python {
     DEFINES += NATRON_RUN_WITHOUT_PYTHON
 }
 
-*g++* | *clang* {
+*g++* | *clang* | *xcode* {
 #See https://bugreports.qt.io/browse/QTBUG-35776 we cannot use
 # QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO
 # QMAKE_CXXFLAGS_RELEASE_WITH_DEBUGINFO
 # QMAKE_OBJECTIVE_CFLAGS_RELEASE_WITH_DEBUGINFO
 # QMAKE_LFLAGS_RELEASE_WITH_DEBUGINFO
+
+    QMAKE_CFLAGS_WARN_ON += -Wall -Wextra -Wmissing-prototypes -Wmissing-declarations -Wno-multichar -Winit-self -Wno-long-long
+    QMAKE_CXXFLAGS_WARN_ON += -Wall -Wextra -Wno-multichar -Winit-self -Wno-long-long
+    #QMAKE_CFLAGS_WARN_ON += -pedantic
+    #QMAKE_CXXFLAGS_WARN_ON += -pedantic
+    #QMAKE_CXXFLAGS_WARN_ON += -Weffc++
 
     CONFIG(relwithdebinfo) {
         CONFIG += release
@@ -127,13 +133,16 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
 
 *g++* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
-  QMAKE_CFLAGS_WARN_ON += -Wextra -Wmissing-prototypes -Wmissing-declarations -Wno-multichar
-  QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-multichar
   GCCVer = $$system($$QMAKE_CXX --version)
   contains(GCCVer,[0-3]\\.[0-9]+.*) {
   } else {
     contains(GCCVer,4\\.7.*) {
       QMAKE_CXXFLAGS += -Wno-c++11-extensions
+    }
+    contains(GCCVer,[6-9]\\.[0-9]+.*) {
+      # GCC 6 and later are C++14 by default, but Qt 4 is C++98
+      # see https://github.com/MrKepzie/Natron/issues/1659
+      lessThan(QT_MAJOR_VERSION, 5): QMAKE_CXXFLAGS += -std=gnu++98 -fpermissive
     }
   }
   c++11 {
@@ -367,12 +376,16 @@ unix {
   QMAKE_CFLAGS -= -O2
   QMAKE_CXXFLAGS -= -O2
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
+
+  # all libraries in Natron are static, so visibility can be hidden by default.
+  symbols_hidden_by_default.name = GCC_SYMBOLS_PRIVATE_EXTERN
+  symbols_hidden_by_default.value = YES
+  QMAKE_MAC_XCODE_SETTINGS += symbols_hidden_by_default
 }
 
 *clang* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
-  QMAKE_CFLAGS_WARN_ON += -Wextra
-  QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
+  QMAKE_CXXFLAGS_WARN_ON += -Wno-c++11-extensions
   c++11 {
     QMAKE_CXXFLAGS += -std=c++11
   }

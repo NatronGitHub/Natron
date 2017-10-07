@@ -27,11 +27,13 @@
 
 #include "Global/Macros.h"
 
-#include "Engine/TrackerContext.h"
+#include "TrackerContext.h"
 
 #include <list>
 
-#include "Global/Macros.h"
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/utility.hpp>
+#endif
 
 GCC_DIAG_OFF(unused-function)
 GCC_DIAG_OFF(unused-parameter)
@@ -322,7 +324,7 @@ GCC_DIAG_ON(maybe-uninitialized)
 #define kCornerPinParamMatrix "transform"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 enum TrackerMotionTypeEnum
@@ -687,6 +689,6 @@ public Q_SLOTS:
     void onTransformSolverWatcherProgress(int progress);
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // TRACKERCONTEXTPRIVATE_H

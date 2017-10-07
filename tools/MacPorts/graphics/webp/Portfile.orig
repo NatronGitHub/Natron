@@ -1,10 +1,9 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 150291 2016-07-15 08:04:42Z ryandesign@macports.org $
 
 PortSystem              1.0
 
 name                    webp
-version                 0.5.1
+version                 0.6.0
 categories              graphics science devel
 platforms               darwin
 maintainers             ryandesign openmaintainer
@@ -28,15 +27,24 @@ long_description        WebP is a new image format that provides lossy \
 homepage                https://developers.google.com/speed/webp/
 master_sites            http://downloads.webmproject.org/releases/webp/
 
-checksums               rmd160  2d14736f3de77475f04d3aa46121aa571a1245f5 \
-                        sha256  6ad66c6fcd60a023de20b6856b03da8c7d347269d76b1fd9c3287e8b5e8813df
+checksums               rmd160  82c3c6d5031de162b5282be49619ac1c343598b2 \
+                        sha256  c928119229d4f8f35e20113ffb61f281eda267634a8dc2285af4b0ee27cf2b40
 
-depends_lib             port:zlib \
-                        port:libpng \
+depends_lib             port:giflib \
                         port:jpeg \
+                        port:libpng \
                         port:tiff
 
 distname                libwebp-${version}
+
+patchfiles              configure.patch
+
+configure.args-append       \
+    --enable-libwebpmux     \
+    --enable-libwebpdemux   \
+    --enable-libwebpdecoder \
+    --enable-libwebpextras \
+    --disable-silent-rules
 
 post-destroot {
     set docdir ${destroot}${prefix}/share/doc/${name}
@@ -48,6 +56,7 @@ post-destroot {
         NEWS \
         PATENTS \
         README \
+        README.mux \
         ${docdir}
 }
 

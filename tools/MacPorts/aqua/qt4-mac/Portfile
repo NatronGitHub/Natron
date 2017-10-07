@@ -1,5 +1,4 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 153015 2016-09-22 11:34:56Z michaelld@macports.org $
 
 PortSystem          1.0
 
@@ -12,7 +11,7 @@ PortGroup           compiler_blacklist_versions 1.0
 
 name                qt4-mac
 version             4.8.7
-revision            106
+revision            115
 set branch          [join [lrange [split ${version} .] 0 1] .]
 
 categories          aqua
@@ -155,13 +154,19 @@ patchfiles-append   \
 
 patchfiles-append   patch-qmake_project.cpp.diff
 
-# (13) In QMake: (a) enable correct "-framework foo,bar" parsing as
+# (13a) In QMake: (a) enable correct "-framework foo,bar" parsing as
 # specified by Apple's LD; (b) disable "/Library/Frameworks" as a
 # default search path; use "PREFIX/Library/Frameworks" and replace
 # PREFIX in post-patch.  Also set "PREFIX/lib" as a default library
 # search path.
 
-patchfiles-append   patch-qmake_generators_unix_unixmakke.cpp.diff
+patchfiles-append   patch-qmake_generators_unix_unixmake.cpp.framework.diff
+
+# (13b) In QMake: fix issue for when LFLAGS and env LDFLAGS contain
+# multiple "-arch FOO" duplicate flags, which would result in output
+# such as "-arch x86_64 -arch -Xarch_x86_64 ...".
+
+patchfiles-append   patch-qmake_generators_unix_unixmake.cpp.fix_arch.diff
 
 # (14) Allow easy replacement of MACOSX_DEPLOYMENT_TARGET: build for
 # just the user's current OS.
@@ -212,7 +217,8 @@ patchfiles-append   \
 
 platform darwin {
     if {${MINOR} == 4} {
-        patchfiles-append patch-QtHelp_10.4_only.diff
+        # this breaks the framework build
+        #patchfiles-append patch-QtHelp_10.4_only.diff
     }
 }
 
@@ -267,12 +273,55 @@ patchfiles-append   \
 patchfiles-append   \
     patch-src_gui_dialogs_qfiledialog_mac.mm.diff
 
-# fix default thread stack size
+# (27) QTKit no longer exists as of macOS 10.12 (Sierra)
+# https://trac.macports.org/ticket/52332
+
+platform darwin {
+    if {${MINOR} >= 12} {
+        patchfiles-append patch-src_gui_kernel_qmime_mac.cpp.diff
+    }
+}
+
+# (28) Better invalid fonttable handling
+# Qt commit 0a2f2382 on July 10, 2015 at 7:22:32 AM EDT.
+# not included in 4.8.7 release.
+
+patchfiles-append patch-better-invalid-fonttable-handling.diff
+
+# (29) Fix pointer comparison with 0
+# These error out on clang 4.0, whereas they didn't in 3.9.
+
+patchfiles-append patch-fix_pointer_comparison_to_0.diff
+
+# (30) Backport of Qt5 patch to fix an issue with null bytes in QSetting strings (QTBUG-56124).
+patchfiles-append patch-qsettings-null.diff
+
+# (31) Patch to fix build on macOS High Sierra
+patchfiles-append patch-qt4-versions-without-underscores.diff
+
+# (32) Mac OS X 10.4 Tiger patches
+#platform darwin {
+#    if {${MINOR} == 4} {
+        patchfiles-append patch-src_corelib_io_qfilesystemengine_unix.cpp-tiger.diff
+        patchfiles-append patch-src_network_kernel_qnetworkproxy_mac.cpp-tiger.diff
+        patchfiles-append patch-src_gui_painting_qprintengine_mac.mm-tiger.diff
+        patchfiles-append patch-src_gui_dialogs_qfontdialog_mac.mm-tiger.diff
+        patchfiles-append patch-src_gui_text_qfontdatabase_mac.cpp-tiger.diff
+        patchfiles-append patch-src_gui_painting_qpaintengine_mac.cpp-tiger.diff
+        patchfiles-append patch-webkit-tiger.diff
+#    }
+#}
+
+# Qt4 enhancements (do not alter existing functionality):
+
+# Fix default thread stack size on Mac OS X (QTBUG-49607)
+# https://bugreports.qt.io/secure/attachment/52520/patch-qthread-stacksize.diff
+# Note that Qt 5.10 and later implement QThreadPool:stackSize to set the
+# stack size (QTBUG-2568).
 patchfiles-append patch-qthread-stacksize.diff
 
 # Add possibility to set a custom global thread pool
 patchfiles-append patch-qt-custom-threadpool.diff
-
 
 # error out if trying to build on a new OSX version (> 10.12).
 

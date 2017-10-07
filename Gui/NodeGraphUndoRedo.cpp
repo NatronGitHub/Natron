@@ -54,7 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #define MINIMUM_VERTICAL_SPACE_BETWEEN_NODES 10
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 MoveMultipleNodesCommand::MoveMultipleNodesCommand(const NodesGuiList & nodes,
                                                    double dx,
@@ -1685,7 +1685,7 @@ GroupFromSelectionCommand::redo()
                         offsetY = inputY - originalY;
                     } else {
                         offsetX = originalX;
-                        offsetX = originalY - 100;
+                        offsetY = originalY;
                     }
                     double thisInputX, thisInputY;
                     it2->node->getPosition(&thisInputX, &thisInputY);
@@ -2079,4 +2079,4 @@ InlineGroupCommand::redo()
     _firstRedoCalled = true;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

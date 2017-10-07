@@ -1,0 +1,105 @@
+--- build/make/configure.sh.orig	2016-07-20 18:15:41.000000000 -0700
++++ build/make/configure.sh	2016-11-28 08:49:54.000000000 -0800
+@@ -704,29 +704,9 @@
+ 
+     # detect tgt_os
+     case "$gcctarget" in
+-      *darwin10*)
++      *darwin*)
+         tgt_isa=x86_64
+-        tgt_os=darwin10
+-        ;;
+-      *darwin11*)
+-        tgt_isa=x86_64
+-        tgt_os=darwin11
+-        ;;
+-      *darwin12*)
+-        tgt_isa=x86_64
+-        tgt_os=darwin12
+-        ;;
+-      *darwin13*)
+-        tgt_isa=x86_64
+-        tgt_os=darwin13
+-        ;;
+-      *darwin14*)
+-        tgt_isa=x86_64
+-        tgt_os=darwin14
+-        ;;
+-      *darwin15*)
+-        tgt_isa=x86_64
+-        tgt_os=darwin15
++        tgt_os=darwin
+         ;;
+       x86_64*mingw32*)
+         tgt_os=win64
+@@ -793,70 +773,6 @@
+     IOS_VERSION_MIN="6.0"
+   fi
+ 
+-  # Handle darwin variants. Newer SDKs allow targeting older
+-  # platforms, so use the newest one available.
+-  case ${toolchain} in
+-    arm*-darwin*)
+-      add_cflags "-miphoneos-version-min=${IOS_VERSION_MIN}"
+-      iphoneos_sdk_dir="$(show_darwin_sdk_path iphoneos)"
+-      if [ -d "${iphoneos_sdk_dir}" ]; then
+-        add_cflags  "-isysroot ${iphoneos_sdk_dir}"
+-        add_ldflags "-isysroot ${iphoneos_sdk_dir}"
+-      fi
+-      ;;
+-    x86*-darwin*)
+-      osx_sdk_dir="$(show_darwin_sdk_path macosx)"
+-      if [ -d "${osx_sdk_dir}" ]; then
+-        add_cflags  "-isysroot ${osx_sdk_dir}"
+-        add_ldflags "-isysroot ${osx_sdk_dir}"
+-      fi
+-      ;;
+-  esac
+-
+-  case ${toolchain} in
+-    *-darwin8-*)
+-      add_cflags  "-mmacosx-version-min=10.4"
+-      add_ldflags "-mmacosx-version-min=10.4"
+-      ;;
+-    *-darwin9-*)
+-      add_cflags  "-mmacosx-version-min=10.5"
+-      add_ldflags "-mmacosx-version-min=10.5"
+-      ;;
+-    *-darwin10-*)
+-      add_cflags  "-mmacosx-version-min=10.6"
+-      add_ldflags "-mmacosx-version-min=10.6"
+-      ;;
+-    *-darwin11-*)
+-      add_cflags  "-mmacosx-version-min=10.7"
+-      add_ldflags "-mmacosx-version-min=10.7"
+-      ;;
+-    *-darwin12-*)
+-      add_cflags  "-mmacosx-version-min=10.8"
+-      add_ldflags "-mmacosx-version-min=10.8"
+-      ;;
+-    *-darwin13-*)
+-      add_cflags  "-mmacosx-version-min=10.9"
+-      add_ldflags "-mmacosx-version-min=10.9"
+-      ;;
+-    *-darwin14-*)
+-      add_cflags  "-mmacosx-version-min=10.10"
+-      add_ldflags "-mmacosx-version-min=10.10"
+-      ;;
+-    *-darwin15-*)
+-      add_cflags  "-mmacosx-version-min=10.11"
+-      add_ldflags "-mmacosx-version-min=10.11"
+-      ;;
+-    *-iphonesimulator-*)
+-      add_cflags  "-miphoneos-version-min=${IOS_VERSION_MIN}"
+-      add_ldflags "-miphoneos-version-min=${IOS_VERSION_MIN}"
+-      iossim_sdk_dir="$(show_darwin_sdk_path iphonesimulator)"
+-      if [ -d "${iossim_sdk_dir}" ]; then
+-        add_cflags  "-isysroot ${iossim_sdk_dir}"
+-        add_ldflags "-isysroot ${iossim_sdk_dir}"
+-      fi
+-      ;;
+-  esac
+-
+   # Handle Solaris variants. Solaris 10 needs -lposix4
+   case ${toolchain} in
+     sparc-solaris-*)

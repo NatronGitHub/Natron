@@ -38,6 +38,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/replace.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
@@ -61,7 +62,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 //using std::make_pair;
 //using std::pair;
@@ -971,6 +972,9 @@ entryStr(const ChoiceOption& opt, int s)
     return s == 0 ? opt.id : opt.label;
 }
 
+static
+bool BothAreSpaces(char lhs, char rhs) { return (lhs == rhs) && (lhs == ' '); }
+
 // Choice restoration tries several options to restore a choice value:
 // 1- exact string match, same index
 // 2- exact string match, other index
@@ -979,11 +983,20 @@ entryStr(const ChoiceOption& opt, int s)
 // 5- paren/bracket-insensitive match (for WriteFFmpeg's format and codecs)
 // 6- if the choice ends with " 1" try to match exactly everything before that  (for formats with PAR=1, where the PAR was removed)
 // returns index if choice was matched, -1 if not matched
+#pragma message WARN("choiceMatch() should be moved into filterKnobChoiceOptionCompat().")
+// TODO: choiceMatch() should be moved into filterKnobChoiceOptionCompat()
+// TODO: filterKnobChoiceOptionCompat() should be used everywhere instead of choiceMatch()
 int
 KnobChoice::choiceMatch(const std::string& choice,
                         const std::vector<ChoiceOption>& entries,
                         ChoiceOption* matchedEntry)
 {
+    if (entries.size() == 0) {
+        // no match
+
+        return -1;
+    }
+    
     // try to match entry id first, then label
     for (int s = 0; s < 2; ++s) {
         // 2- try exact match, other index
@@ -1001,8 +1014,21 @@ KnobChoice::choiceMatch(const std::string& choice,
         std::string choicemain = choice.substr(0, choicetab); // gives the entire string if no tabs were found
         for (std::size_t i = 0; i < entries.size(); ++i) {
             const ChoiceOption& entry(entries[i]);
-            std::size_t entrytab = entry.id.find('\t'); // returns string::npos if no tab was found
-            std::string entrymain = entry.id.substr(0, entrytab); // gives the entire string if no tabs were found
+
+            // There is no real reason for an id to contain a tab, but let us search for it anyway
+            std::size_t entryidtab = entry.id.find('\t'); // returns string::npos if no tab was found
+            std::string entryidmain = entry.id.substr(0, entryidtab); // gives the entire string if no tabs were found
+
+            if (entryidmain == choicemain) {
+                if (matchedEntry) {
+                    *matchedEntry = entries[i];
+                }
+                return i;
+            }
+
+            // The label may contain a tab
+            std::size_t entrytab = entry.label.find('\t'); // returns string::npos if no tab was found
+            std::string entrymain = entry.label.substr(0, entrytab); // gives the entire string if no tabs were found
 
             if (entrymain == choicemain) {
                 if (matchedEntry) {
@@ -1022,7 +1048,7 @@ KnobChoice::choiceMatch(const std::string& choice,
             }
         }
 
-        // 5- paren/bracket-insensitive match (for WriteFFmpeg's format and codecs)
+        // 5- paren/bracket-insensitive match (for WriteFFmpeg's format and codecs, parameter names "format" and "codec" in fr.inria.openfx.WriteFFmpeg)
         std::string choiceparen = choice;
         std::replace( choiceparen.begin(), choiceparen.end(), '[', '(');
         std::replace( choiceparen.begin(), choiceparen.end(), ']', ')');
@@ -1039,17 +1065,39 @@ KnobChoice::choiceMatch(const std::string& choice,
             }
         }
 
-        // 6- if the choice ends with " 1" try to match exactly everything before that  (for formats with par=1, where the PAR was removed)
-        if ( boost::algorithm::ends_with(choice, " 1") ) {
-            std::string choicenopar(choice, 0, choice.size()-2);
-            boost::trim(choicenopar);
-            boost::erase_all(choicenopar, " ");
-            for (std::size_t i = 0; i < entries.size(); ++i) {
-                if (entryStr(entries[i], s) == choicenopar) {
-                    if (matchedEntry) {
-                        *matchedEntry = entries[i];
+        // 6- handle old format strings, like "square_256  256 x 256  1":
+        // - remove duplicate spaces
+        // - if the choice ends with " 1" try to match exactly everything before that  (for formats with par=1, where the PAR was removed)
+        // - if the choice contains " x ", try to remove one space before and after the x
+        // Note: the parameter name is "outputFormat" in project serialization
+        {
+            bool choiceformatfound = false;
+            std::string choiceformat = boost::trim_copy(choice); // trim leading and trailing whitespace
+            if (choiceformat != choice) {
+                choiceformatfound = true;
+            }
+            if (choiceformat.find("  ") != std::string::npos) { // remove duplicate spaces
+                std::string::iterator new_end = std::unique(choiceformat.begin(), choiceformat.end(), BothAreSpaces);
+                choiceformat.erase(new_end, choiceformat.end());
+                choiceformatfound = true;
+            }
+            if ( boost::algorithm::ends_with(choiceformat, " 1") ) { // remove " 1" at the end
+                choiceformat.resize(choiceformat.size()-2);
+                choiceformatfound = true;
+            }
+            if (choiceformat.find(" x ") != std::string::npos) { // remove spaces around 'x'
+                boost::replace_first(choiceformat, " x ", "x");
+                choiceformatfound = true;
+            }
+            if (choiceformatfound) {
+                for (std::size_t i = 0; i < entries.size(); ++i) {
+                    if (entryStr(entries[i], s) == choiceformat) {
+                        if (matchedEntry) {
+                            *matchedEntry = entries[i];
+                        }
+                        return i;
+
                     }
-                    return i;
                 }
             }
         }
@@ -2150,7 +2198,7 @@ KnobParametric::cloneExtraData(KnobI* other,
         if (otherDimension == -1) {
             otherDimension = dimension;
         }
-        assert( dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < getDimension() );
+        assert( dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < other->getDimension() );
         _curves[dimension]->clone(*isParametric->_curves[otherDimension]);
     }
 }
@@ -2176,7 +2224,7 @@ KnobParametric::cloneExtraDataAndCheckIfChanged(KnobI* other,
         if (otherDimension == -1) {
             otherDimension = dimension;
         }
-        assert( dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < getDimension() );
+        assert( dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < other->getDimension() );
         hasChanged |= _curves[dimension]->cloneAndCheckIfChanged(*isParametric->_curves[otherDimension]);
     }
 
@@ -2204,7 +2252,7 @@ KnobParametric::cloneExtraData(KnobI* other,
         if (otherDimension == -1) {
             otherDimension = dimension;
         }
-        assert( dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < getDimension() );
+        assert( dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < other->getDimension() );
         _curves[dimension]->clone(*isParametric->_curves[otherDimension], offset, range);
     }
 }
@@ -2533,7 +2581,7 @@ KnobLayers::typeNameStatic()
     return _typeNameStr;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobTypes.cpp"

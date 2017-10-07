@@ -75,21 +75,22 @@
 
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/other_grouping_" NATRON_ICON_SET_NUMBER ".png"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
+// Group ordering is set at every place in the code where GROUP_ORDER appears in the comments
 static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_IMAGE,
-    PLUGIN_GROUP_COLOR,
-    PLUGIN_GROUP_CHANNEL,
-    PLUGIN_GROUP_MERGE,
-    PLUGIN_GROUP_FILTER,
-    PLUGIN_GROUP_TRANSFORM,
-    PLUGIN_GROUP_TIME,
     PLUGIN_GROUP_PAINT,
+    PLUGIN_GROUP_TIME,
+    PLUGIN_GROUP_CHANNEL,
+    PLUGIN_GROUP_COLOR,
+    PLUGIN_GROUP_FILTER,
     PLUGIN_GROUP_KEYER,
-    PLUGIN_GROUP_MULTIVIEW,
-    PLUGIN_GROUP_DEEP,
+    PLUGIN_GROUP_MERGE,
+    PLUGIN_GROUP_TRANSFORM,
     PLUGIN_GROUP_3D,
+    PLUGIN_GROUP_DEEP,
+    PLUGIN_GROUP_MULTIVIEW,
     PLUGIN_GROUP_TOOLSETS,
     PLUGIN_GROUP_OTHER,
     PLUGIN_GROUP_DEFAULT
@@ -103,34 +104,35 @@ getPixmapForGrouping(QPixmap* pixmap,
 {
     PixmapEnum e = NATRON_PIXMAP_OTHER_PLUGINS;
 
-    if ( grouping == QString::fromUtf8(PLUGIN_GROUP_COLOR) ) {
+    // Group ordering is set at every place in the code where GROUP_ORDER appears in the comments
+    if ( grouping == QString::fromUtf8(PLUGIN_GROUP_IMAGE) ) {
+        e = NATRON_PIXMAP_IO_GROUPING;
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_PAINT) ) {
+        e = NATRON_PIXMAP_PAINT_GROUPING;
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_TIME) ) {
+        e = NATRON_PIXMAP_TIME_GROUPING;
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_CHANNEL) ) {
+        e = NATRON_PIXMAP_CHANNEL_GROUPING;
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_COLOR) ) {
         e = NATRON_PIXMAP_COLOR_GROUPING;
     } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_FILTER) ) {
         e = NATRON_PIXMAP_FILTER_GROUPING;
-    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_IMAGE) ) {
-        e = NATRON_PIXMAP_IO_GROUPING;
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_KEYER) ) {
+        e = NATRON_PIXMAP_KEYER_GROUPING;
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_MERGE) ) {
+        e = NATRON_PIXMAP_MERGE_GROUPING;
     } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_TRANSFORM) ) {
         e = NATRON_PIXMAP_TRANSFORM_GROUPING;
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_3D) ) {
+        e = NATRON_PIXMAP_3D_GROUPING;
     } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_DEEP) ) {
         e = NATRON_PIXMAP_DEEP_GROUPING;
     } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW) ) {
         e = NATRON_PIXMAP_MULTIVIEW_GROUPING;
-    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_TIME) ) {
-        e = NATRON_PIXMAP_TIME_GROUPING;
-    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_PAINT) ) {
-        e = NATRON_PIXMAP_PAINT_GROUPING;
-    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_OTHER) ) {
-        e = NATRON_PIXMAP_MISC_GROUPING;
-    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_KEYER) ) {
-        e = NATRON_PIXMAP_KEYER_GROUPING;
     } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_TOOLSETS) ) {
         e = NATRON_PIXMAP_TOOLSETS_GROUPING;
-    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_3D) ) {
-        e = NATRON_PIXMAP_3D_GROUPING;
-    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_CHANNEL) ) {
-        e = NATRON_PIXMAP_CHANNEL_GROUPING;
-    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_MERGE) ) {
-        e = NATRON_PIXMAP_MERGE_GROUPING;
+    } else if ( grouping == QString::fromUtf8(PLUGIN_GROUP_OTHER) ) {
+        e = NATRON_PIXMAP_MISC_GROUPING;
     }
     appPTR->getIcon(e, size, pixmap);
 }
@@ -480,6 +482,9 @@ Gui::removeViewerTab(ViewerTab* tab,
                      bool deleteData)
 {
     assert(tab);
+    if (!tab) {
+        throw std::logic_error("");
+    }
     unregisterTab(tab);
 
     if (tab == _imp->_activeViewer) {
@@ -1458,5 +1463,5 @@ Gui::isAboutToClose() const
     return _imp->_aboutToClose;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

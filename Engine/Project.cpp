@@ -84,7 +84,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewIdx.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 using std::cout; using std::endl;
 using std::make_pair;
@@ -151,7 +151,7 @@ Project::~Project()
     //removeAutoSaves();
 }
 
-NATRON_NAMESPACE_ANONYMOUS_ENTER;
+NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 class LoadProjectSplashScreen_RAII
 {
@@ -178,7 +178,7 @@ public:
     }
 };
 
-NATRON_NAMESPACE_ANONYMOUS_EXIT;
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 bool
 Project::loadProject(const QString & path,
@@ -909,7 +909,7 @@ Project::initializeKnobs()
     _imp->colorSpace8u->setHintToolTip( tr("Defines the color-space in which 8-bit images are assumed to be by default.") );
     _imp->colorSpace8u->setAnimationEnabled(false);
     _imp->colorSpace8u->populateChoices(colorSpaces);
-    _imp->colorSpace8u->setDefaultValue(0);
+    _imp->colorSpace8u->setDefaultValue(1);
     lutPages->addKnob(_imp->colorSpace8u);
 
     _imp->colorSpace16u = AppManager::createKnob<KnobChoice>( this, tr("16-Bit Colorspace") );
@@ -925,7 +925,7 @@ Project::initializeKnobs()
     _imp->colorSpace32f->setHintToolTip( tr("Defines the color-space in which 32-bit floating point images are assumed to be by default.") );
     _imp->colorSpace32f->setAnimationEnabled(false);
     _imp->colorSpace32f->populateChoices(colorSpaces);
-    _imp->colorSpace32f->setDefaultValue(1);
+    _imp->colorSpace32f->setDefaultValue(0);
     lutPages->addKnob(_imp->colorSpace32f);
 
     boost::shared_ptr<KnobPage> infoPage = AppManager::createKnob<KnobPage>( this, tr("Info").toStdString() );
@@ -2096,20 +2096,34 @@ Project::getProjectCreationTime() const
     return _imp->projectCreationTime.toMSecsSinceEpoch();
 }
 
+inline ViewerColorSpaceEnum colorspaceParamIndexToEnum(int index)
+{
+    switch (index) {
+        case 0:
+            return eViewerColorSpaceLinear;
+        case 1:
+            return eViewerColorSpaceSRGB;
+        case 2:
+            return eViewerColorSpaceRec709;
+        default:
+            return eViewerColorSpaceLinear;
+    }
+}
+
 ViewerColorSpaceEnum
 Project::getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const
 {
     switch (bitdepth) {
     case eImageBitDepthByte:
 
-        return (ViewerColorSpaceEnum)_imp->colorSpace8u->getValue();
+        return colorspaceParamIndexToEnum(_imp->colorSpace8u->getValue());
     case eImageBitDepthShort:
 
-        return (ViewerColorSpaceEnum)_imp->colorSpace16u->getValue();
+        return colorspaceParamIndexToEnum(_imp->colorSpace16u->getValue());
     case eImageBitDepthHalf: // same colorspace as float
     case eImageBitDepthFloat:
 
-        return (ViewerColorSpaceEnum)_imp->colorSpace32f->getValue();
+        return colorspaceParamIndexToEnum(_imp->colorSpace32f->getValue());
     case eImageBitDepthNone:
         assert(false);
         break;
@@ -2747,7 +2761,7 @@ Project::setTimeLine(const boost::shared_ptr<TimeLine>& timeline)
     _imp->timeline = timeline;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_Project.cpp"

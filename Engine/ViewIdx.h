@@ -31,7 +31,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class ViewSpec
 {
@@ -107,6 +107,6 @@ private:
     static ViewIdx current(); // overload with no implementation
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_ViewIdx_h

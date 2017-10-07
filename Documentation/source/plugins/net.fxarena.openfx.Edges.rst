@@ -12,12 +12,6 @@ Description
 
 Edge extraction node.
 
-Powered by ImageMagick 6.9.7-8 Q32 x86\_64 2017-02-17 http://www.imagemagick.org
-
-ImageMagick (R) is Copyright 1999-2015 ImageMagick Studio LLC, a non-profit organization dedicated to making software imaging solutions freely available.
-
-ImageMagick is distributed under the Apache 2.0 license.
-
 Inputs
 ------
 
@@ -47,7 +41,36 @@ Controls
 +-------------------------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
 | Grayscale / ``gray``          | Boolean   | Off             | Convert to grayscale before effect                                                                      |
 +-------------------------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
-| Kernel / ``kernel``           | Choice    | DiamondKernel   | Convolution Kernel                                                                                      |
+| Kernel / ``kernel``           | Choice    | DiamondKernel   | | Convolution Kernel                                                                                    |
+|                               |           |                 | | **BinomialKernel**                                                                                    |
+|                               |           |                 | | **LaplacianKernel**                                                                                   |
+|                               |           |                 | | **SobelKernel**                                                                                       |
+|                               |           |                 | | **FreiChenKernel**                                                                                    |
+|                               |           |                 | | **RobertsKernel**                                                                                     |
+|                               |           |                 | | **PrewittKernel**                                                                                     |
+|                               |           |                 | | **CompassKernel**                                                                                     |
+|                               |           |                 | | **KirschKernel**                                                                                      |
+|                               |           |                 | | **DiamondKernel**                                                                                     |
+|                               |           |                 | | **SquareKernel**                                                                                      |
+|                               |           |                 | | **RectangleKernel**                                                                                   |
+|                               |           |                 | | **OctagonKernel**                                                                                     |
+|                               |           |                 | | **DiskKernel**                                                                                        |
+|                               |           |                 | | **PlusKernel**                                                                                        |
+|                               |           |                 | | **CrossKernel**                                                                                       |
+|                               |           |                 | | **RingKernel**                                                                                        |
+|                               |           |                 | | **EdgesKernel**                                                                                       |
+|                               |           |                 | | **CornersKernel**                                                                                     |
+|                               |           |                 | | **DiagonalsKernel**                                                                                   |
+|                               |           |                 | | **LineEndsKernel**                                                                                    |
+|                               |           |                 | | **LineJunctionsKernel**                                                                               |
+|                               |           |                 | | **RidgesKernel**                                                                                      |
+|                               |           |                 | | **ConvexHullKernel**                                                                                  |
+|                               |           |                 | | **ThinSEKernel**                                                                                      |
+|                               |           |                 | | **SkeletonKernel**                                                                                    |
+|                               |           |                 | | **ChebyshevKernel**                                                                                   |
+|                               |           |                 | | **ManhattanKernel**                                                                                   |
+|                               |           |                 | | **OctagonalKernel**                                                                                   |
+|                               |           |                 | | **EuclideanKernel**                                                                                   |
 +-------------------------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
 | OpenMP / ``openmp``           | Boolean   | Off             | Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.   |
 +-------------------------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+

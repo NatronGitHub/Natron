@@ -95,7 +95,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define ROTO_PRESSURE_LEVELS 512
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 ////////////////////////////////////RotoDrawableItem////////////////////////////////////
@@ -1515,7 +1515,7 @@ RotoDrawableItem::resetTransformCenter()
     centerKnob->endChanges();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_RotoDrawableItem.cpp"

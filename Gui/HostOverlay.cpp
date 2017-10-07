@@ -61,7 +61,7 @@ CLANG_DIAG_ON(deprecated)
 #define M_PI 3.14159265358979323846264338327950288419717
 #endif
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 DefaultInteractI::DefaultInteractI(HostOverlay* overlay)
     : _overlay(overlay)
@@ -2986,4 +2986,4 @@ HostOverlay::isEmpty() const
     return false;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

@@ -24,6 +24,8 @@
 
 #include "TrackerFrameAccessor.h"
 
+#include <boost/utility.hpp>
+
 GCC_DIAG_OFF(unused-function)
 GCC_DIAG_OFF(unused-parameter)
 #include <libmv/image/array_nd.h>
@@ -43,7 +45,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/Node.h"
 #include "Engine/TrackerContext.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 namespace  {
 struct FrameAccessorCacheKey
@@ -440,6 +442,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     return (mv::FrameAccessor::Key)entry.image.get();
 } // TrackerFrameAccessor::GetImage
 
+
 void
 TrackerFrameAccessor::ReleaseImage(Key key)
 {
@@ -456,6 +459,53 @@ TrackerFrameAccessor::ReleaseImage(Key key)
             }
         }
     }
+}
+
+/*
+ * @brief This is called by LibMV to retrieve an the mask, which is always defined in the reference frame.
+ */
+// Get mask image for the given track.
+//
+// Implementation of this method should sample mask associated with the track
+// within given region to the given destination.
+//
+// Result is supposed to be a single channel image.
+//
+// If region is NULL, it it assumed to be full-frame.
+mv::FrameAccessor::Key
+TrackerFrameAccessor::GetMaskForTrack(int clip,
+                                      int frame,
+                                      int track,
+                                      const mv::Region* region,
+                                      mv::FloatImage* destination)
+{
+    Q_UNUSED(clip);
+    Q_UNUSED(frame);
+    Q_UNUSED(track);
+    Q_UNUSED(region);
+    Q_UNUSED(destination);
+
+    // no mask yet
+
+    // This feature was lost in libmv/blander when the autotrack API changed, and was
+    // re-introduced by this commit:
+    // https://developer.blender.org/rBb0015686e2e48a384a0b2a03a75f6daaad7271c0
+    //
+
+#pragma message WARN("TODO: implement TrackerFrameAccessor::GetMaskForTrack")
+
+    return NULL;
+}
+
+// Release a specified mask.
+//
+// Non-caching implementation may free used memory immediately.
+void
+TrackerFrameAccessor::ReleaseMask(mv::FrameAccessor::Key key)
+{
+    Q_UNUSED(key);
+
+    // no mask yet
 }
 
 // Not used in LibMV
@@ -481,4 +531,4 @@ TrackerFrameAccessor::NumFrames(int /*clip*/)
     return 0;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

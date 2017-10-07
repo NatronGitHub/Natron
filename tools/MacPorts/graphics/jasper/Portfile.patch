@@ -1,11 +1,11 @@
---- Portfile.orig	2016-05-09 10:07:08.000000000 +0200
-+++ Portfile	2016-05-09 10:07:18.000000000 +0200
-@@ -24,7 +24,7 @@
-                 sha1    9c5735f773922e580bf98c7c7dfda9bbed4c5191 \
-                 rmd160  fb2c188abf5b8c297078ac1f913101734f72db5c
+--- Portfile.orig	2016-11-10 17:53:21.000000000 +0100
++++ Portfile	2016-11-10 17:53:28.000000000 +0100
+@@ -21,7 +21,7 @@
+ checksums       rmd160 f082cb4febf1670cb234d03fab6f04a38544855b \
+                 sha256 e9c8a241f80d1cc190c308f5efc6669a98776ed27458643553abee823fadd7b3
  
 -depends_lib     port:jpeg
 +depends_lib     path:lib/libjpeg.dylib:jpeg
  
- patchfiles      patch-src_libjasper_base_jas_cm.c.diff \
-                 patch-src_libjasper_jpc_jpc_dec.c.diff
+ configure.args  --disable-opengl --disable-strict
+ 

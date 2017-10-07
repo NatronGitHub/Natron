@@ -1,0 +1,22 @@
+--- configure.orig	2017-01-30 14:41:24.000000000 -0600
++++ configure	2017-02-07 19:28:50.000000000 -0600
+@@ -13347,8 +13347,8 @@
+     darwin*)
+       # Special case for OSX builds. Append these to give the user a chance to
+       # override with --with-gl*
+-      glut_cflags="$glut_cflags|-framework GLUT -framework OpenGL"
+-      glut_ldflags="$glut_ldflags|-framework GLUT -framework OpenGL"
++      glut_cflags="-framework GLUT -framework OpenGL"
++      glut_ldflags="-framework GLUT -framework OpenGL"
+       ;;
+   esac
+ 
+@@ -13365,7 +13365,7 @@
+       none) ;;
+       *) CPPFLAGS="$flag $CPPFLAGS";;
+     esac
+-    for ac_header in GL/glut.h GLUT/glut.h OpenGL/glut.h
++    for ac_header in GLUT/glut.h OpenGL/glut.h
+ do :
+   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"

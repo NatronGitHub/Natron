@@ -29,7 +29,7 @@
 #include "Engine/KnobTypes.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct HostOverlayKnobDescription
 {
@@ -197,4 +197,4 @@ HostOverlayKnobsPosition::describeOverlayKnobs()
     describeKnob(eKnobsEnumerationInteractive, KnobBool::typeNameStatic(), 1, true);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

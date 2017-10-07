@@ -14,13 +14,12 @@ PortGroup       compiler_blacklist_versions 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.6.18 tags/Release-
+github.setup     OpenImageIO oiio 1.7.17 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
 name             openimageio
-#version          1.4.5.91
-#revision         1
+#revision         2
 categories       graphics
 platforms           darwin
 license          BSD
@@ -49,11 +48,20 @@ depends_skip_archcheck txt2man
 # tested with openimageio 1.4.6rc1:
 # macports-clang-3.3 and later work
 # gcc-4.2 doesn't work
-# llvm-gcc-4.2 works
+# llvm-gcc-4.2 doesn't work
 # macports-clang < 3.3 untested
 # clang < 300 doesn't work
-#compiler.fallback-append macports-gcc-4.8 macports-gcc-4.9 macports-clang-3.3 macports-clang-3.4 macports-clang-3.5
-compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-gcc-4.0 macports-gcc-4.2 {clang < 300}
+# see also https://github.com/OpenImageIO/oiio/issues/1363
+# for some reason, if we compile oiio with gcc 4.9 and boost with gcc 4.2, idiff a.png b.png crashes
+#compiler.fallback-append macports-clang-3.4 macports-gcc-4.8 macports-gcc-4.9 macports-clang-3.3 macports-clang-3.4 macports-clang-3.5
+if {${configure.cxx_stdlib} eq "libstdc++"} {
+  if {[vercmp $xcodeversion 3.0] >= 0} {
+    compiler.fallback-append macports-clang-3.4
+  } else {
+    compiler.fallback-append macports-clang-3.3
+  }
+}
+compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-gcc-4.0 macports-gcc-4.2 llvm-gcc-4.2 {clang < 300}
 
 # The PowerPC build requires GCC >= 4.8, which doesn't recognize the -arch flag, and requires libatomic
 # Unfortunately, the resulting binaries don't work (at least on PPC), so we build without threads
@@ -89,11 +97,10 @@ if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
 
 patch.pre_args	-p1
 patchfiles \
-    oiio-1.5.23-checkmaxmem.patch \
     oiio-1.5.23-invalidatespec.patch \
-    oiio-1.6.18-fix_read_tiles_prefix_bytes.patch \
-    oiio-1.6.18-fix-safe_tiffgetfield.patch \
-    oiio-nothreads.patch
+    oiio-1.7.10-c99math.patch \
+    oiio-1.7.10-nothreads.patch \
+    oiio-1.7.12-tiffposition.patch
 
 cmake.out_of_source yes
 
@@ -119,13 +126,13 @@ configure.args-append \
 
 default_variants    +opencolorio +openjpeg +qt4 +freetype
 
-variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype universal description {Natron version} {
-    # configure with GCC 4.9 for proper OpenMP support
-    configure.compiler macports-gcc-4.9
-    # use the driverdriver (built using https://github.com/devernay/macportsGCCfixup) to be able to build universal binaries
-    configure.args-append   -DCMAKE_C_COMPILER=${configure.cc}-dd -DCMAKE_CXX_COMPILER=${configure.cxx}-dd
-    #configure.args-append   CC=${configure.cc}-dd CXX=${configure.cxx}-dd
-    #configure.args-append --enable-openmp
+variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype description {Natron version} {
+    if {${configure.cxx_stdlib} eq "libstdc++"} {
+        # configure with GCC 4.9 for proper GCC intrinsics support
+        #configure.compiler macports-gcc-4.9
+        # but disable C++11 if not required (OIIO 1.8 requires C++11)
+        configure.args-append -DUSE_CPP11:BOOL=FALSE
+    }
 }
 
 variant opencolorio description {Add OpenColorIO support.} {
@@ -143,7 +150,7 @@ variant ffmpeg description {Add FFmpeg support.} {
 variant openjpeg description {Add OpenJPEG support.} {
     depends_lib-append  port:openjpeg
     configure.args-delete       -DUSE_OPENJPEG:BOOL=FALSE
-    configure.args-append       -DUSE_OPENJPEG:BOOL=TRUE -DOPENJPEG_INCLUDE_DIR=${prefix}/include/openjpeg-1.5
+    configure.args-append       -DUSE_OPENJPEG:BOOL=TRUE -DOPENJPEG_HOME=${prefix}
 }
 
 variant python26 conflicts python27 description {Add Python 2.6 bindings.} {
@@ -186,8 +193,6 @@ variant freetype description {Use FreeType.} {
     depends_lib-append port:freetype
 }
 
-variant natron require field3d description {Compile a version to be included in Natron} {
-}
 #configure.args   --enable-bsdtar=shared --enable-bsdcpio=shared \
 #                 --without-lzmadec --without-lzma
 #use_autoreconf	yes

@@ -45,7 +45,7 @@ CLANG_DIAG_ON(deprecated)
 #define NATRON_COLOR_HUE_CIRCLE 1. // if hue should be between 0 and 1
 //#define NATRON_COLOR_HUE_CIRCLE 360. // if hue should be in degrees
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 namespace Color {
 /// @enum An enum describing supported pixels packing formats
 enum PixelPackingEnum
@@ -580,6 +580,6 @@ charToUint8xx(unsigned char quantum)
 }
 }     //namespace Color
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif //NATRON_ENGINE_LUT_H

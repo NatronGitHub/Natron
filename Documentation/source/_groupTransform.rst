@@ -18,6 +18,7 @@ The following sections contain documentation about every node in the  Transform 
     plugins/net.sf.openfx.Reformat.rst
     plugins/fr.inria.openfx.OIIOResize.rst
     plugins/net.sf.openfx.STMap.rst
+    plugins/net.sf.openfx.SpriteSheet.rst
     plugins/fr.inria.built-in.Tracker.rst
     plugins/net.sf.openfx.TransformPlugin.rst
     plugins/net.sf.openfx.TransformMaskedPlugin.rst

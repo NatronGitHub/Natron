@@ -1,6 +1,6 @@
 --- configure.ac.orig	2015-03-30 19:21:24.000000000 +1100
 +++ configure.ac	2015-05-20 12:57:22.000000000 +1000
-@@ -195,8 +195,8 @@
+@@ -329,8 +329,8 @@
  if test $ac_cv_prog_gcc = yes; then
      cflags_to_try="-Wall -Wstrict-prototypes -Wundef \
  -Wmissing-declarations -Wmissing-prototypes -Wwrite-strings \

@@ -49,7 +49,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/GuiApplicationManager.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 struct PasteUndoCommandPrivate
 {
     KnobGuiWPtr knob;
@@ -742,4 +742,4 @@ SetExpressionCommand::redo()
     setText( tr("Set expression") );
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

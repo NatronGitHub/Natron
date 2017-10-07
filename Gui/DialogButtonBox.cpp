@@ -27,7 +27,7 @@
 #include <QApplication>
 #include <QPushButton>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 DialogButtonBox::DialogButtonBox(StandardButtons buttons,
                                  Qt::Orientation orientation,
@@ -78,5 +78,5 @@ DialogButtonBox::setStandardButtons(StandardButtons buttons)
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

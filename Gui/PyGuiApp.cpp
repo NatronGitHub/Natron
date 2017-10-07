@@ -51,8 +51,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+NATRON_PYTHON_NAMESPACE_ENTER
 
 GuiApp::GuiApp(const GuiAppInstPtr& app)
     : App(app)
@@ -822,5 +822,5 @@ PyViewer::getCurrentView() const
     return _viewer->getCurrentView().value();
 }
 
-NATRON_PYTHON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
+NATRON_NAMESPACE_EXIT

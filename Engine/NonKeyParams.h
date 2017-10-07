@@ -34,7 +34,7 @@
 #include "Engine/RectI.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 inline int
 getSizeOfForBitDepth(ImageBitDepthEnum bitdepth)
@@ -121,6 +121,6 @@ private:
     CacheEntryStorageInfo _storageInfo;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NONKEYPARAMS_H

@@ -12,12 +12,6 @@ Description
 
 Mirror/Reflection tranform node.
 
-Powered by ImageMagick 6.9.7-8 Q32 x86\_64 2017-02-17 http://www.imagemagick.org
-
-ImageMagick (R) is Copyright 1999-2015 ImageMagick Studio LLC, a non-profit organization dedicated to making software imaging solutions freely available.
-
-ImageMagick is distributed under the Apache 2.0 license.
-
 Inputs
 ------
 
@@ -47,7 +41,19 @@ Controls
 +------------------------------------+-----------+-------------+---------------------------------------------------------------------------------------------------------+
 | Matte / ``matte``                  | Boolean   | Off         | Merge Alpha before applying effect                                                                      |
 +------------------------------------+-----------+-------------+---------------------------------------------------------------------------------------------------------+
-| Mirror / ``mirror``                | Choice    | Undefined   | Select mirror type                                                                                      |
+| Mirror / ``mirror``                | Choice    | Undefined   | | Select mirror type                                                                                    |
+|                                    |           |             | | **Undefined**                                                                                         |
+|                                    |           |             | | **North**                                                                                             |
+|                                    |           |             | | **South**                                                                                             |
+|                                    |           |             | | **East**                                                                                              |
+|                                    |           |             | | **West**                                                                                              |
+|                                    |           |             | | **NorthWest**                                                                                         |
+|                                    |           |             | | **NorthEast**                                                                                         |
+|                                    |           |             | | **SouthWest**                                                                                         |
+|                                    |           |             | | **SouthEast**                                                                                         |
+|                                    |           |             | | **Flip**                                                                                              |
+|                                    |           |             | | **Flop**                                                                                              |
+|                                    |           |             | | **Flip+Flop**                                                                                         |
 +------------------------------------+-----------+-------------+---------------------------------------------------------------------------------------------------------+
 | OpenMP / ``openmp``                | Boolean   | Off         | Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.   |
 +------------------------------------+-----------+-------------+---------------------------------------------------------------------------------------------------------+

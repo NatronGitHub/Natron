@@ -24,7 +24,7 @@
 
 #include "ColoredFrame.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ColoredFrame::ColoredFrame(QWidget* parent)
     : QFrame(parent)
@@ -50,6 +50,6 @@ ColoredFrame::setFrameColor(const QColor& color)
     setStyleSheet( QString::fromUtf8("ColoredFrame { border:1px solid rgb(%1, %2, %3); border-radius: 2px; }").arg( color.red() ).arg( color.green() ).arg( color.blue() ) );
 }
 
-NATRON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_USING
 #include "moc_ColoredFrame.cpp"

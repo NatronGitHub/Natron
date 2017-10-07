@@ -12,12 +12,6 @@ Description
 
 Arc Distort transform node.
 
-Powered by ImageMagick 6.9.7-8 Q32 x86\_64 2017-02-17 http://www.imagemagick.org
-
-ImageMagick (R) is Copyright 1999-2015 ImageMagick Studio LLC, a non-profit organization dedicated to making software imaging solutions freely available.
-
-ImageMagick is distributed under the Apache 2.0 license.
-
 Inputs
 ------
 
@@ -51,7 +45,23 @@ Controls
 +------------------------------+-----------+---------------+---------------------------------------------------------------------------------------------------------+
 | Matte / ``matte``            | Boolean   | Off           | Merge Alpha before applying effect                                                                      |
 +------------------------------+-----------+---------------+---------------------------------------------------------------------------------------------------------+
-| Virtual Pixel / ``pixel``    | Choice    | Transparent   | Virtual Pixel Method                                                                                    |
+| Virtual Pixel / ``pixel``    | Choice    | Transparent   | | Virtual Pixel Method                                                                                  |
+|                              |           |               | | **Undefined**                                                                                         |
+|                              |           |               | | **Background**                                                                                        |
+|                              |           |               | | **Black**                                                                                             |
+|                              |           |               | | **CheckerTile**                                                                                       |
+|                              |           |               | | **Dither**                                                                                            |
+|                              |           |               | | **Edge**                                                                                              |
+|                              |           |               | | **Gray**                                                                                              |
+|                              |           |               | | **HorizontalTile**                                                                                    |
+|                              |           |               | | **HorizontalTileEdge**                                                                                |
+|                              |           |               | | **Mirror**                                                                                            |
+|                              |           |               | | **Random**                                                                                            |
+|                              |           |               | | **Tile**                                                                                              |
+|                              |           |               | | **Transparent**                                                                                       |
+|                              |           |               | | **VerticalTile**                                                                                      |
+|                              |           |               | | **VerticalTileEdge**                                                                                  |
+|                              |           |               | | **White**                                                                                             |
 +------------------------------+-----------+---------------+---------------------------------------------------------------------------------------------------------+
 | OpenMP / ``openmp``          | Boolean   | Off           | Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.   |
 +------------------------------+-----------+---------------+---------------------------------------------------------------------------------------------------------+

@@ -78,7 +78,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <ofxNatron.h>
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 using std::make_pair;
 
 //==========================KnobBool_GUI======================================
@@ -237,7 +237,11 @@ KnobGuiBool::removeSpecificGui()
 void
 KnobGuiBool::updateGUI(int /*dimension*/)
 {
-    _checkBox->setChecked( _knob.lock()->getValue(0) );
+    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    _checkBox->setChecked( knob->getValue(0) );
 }
 
 void
@@ -268,7 +272,11 @@ KnobGuiBool::reflectAnimationLevel(int /*dimension*/,
 void
 KnobGuiBool::onLabelChangedInternal()
 {
-    const std::string& label = _knob.lock()->getLabel();
+    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    const std::string& label = knob->getLabel();
 
     if ( (label == "R") || (label == "r") || (label == "red") ) {
         QColor color;
@@ -298,13 +306,21 @@ KnobGuiBool::onLabelClicked(bool b)
         return;
     }
     _checkBox->setChecked(b);
-    pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), _knob.lock()->getValue(0), b, 0, false) );
+    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), knob->getValue(0), b, 0, false) );
 }
 
 void
 KnobGuiBool::onCheckBoxStateChanged(bool b)
 {
-    pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), _knob.lock()->getValue(0), b, 0, false) );
+    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), knob->getValue(0), b, 0, false) );
 }
 
 void
@@ -351,7 +367,11 @@ void
 KnobGuiBool::reflectExpressionState(int /*dimension*/,
                                     bool hasExpr)
 {
-    bool isEnabled = _knob.lock()->isEnabled(0);
+    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool isEnabled = knob->isEnabled(0);
 
     _checkBox->setAnimation(3);
     _checkBox->setReadOnly(hasExpr || !isEnabled);
@@ -362,13 +382,17 @@ KnobGuiBool::updateToolTip()
 {
     if ( hasToolTip() ) {
         QString tt = toolTip();
-        for (int i = 0; i < _knob.lock()->getDimension(); ++i) {
+        boost::shared_ptr<KnobBool> knob = _knob.lock();
+        if (!knob) {
+            return;
+        }
+        for (int i = 0; i < knob->getDimension(); ++i) {
             _checkBox->setToolTip( tt );
         }
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiBool.cpp"

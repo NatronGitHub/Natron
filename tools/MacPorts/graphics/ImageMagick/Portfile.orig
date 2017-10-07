@@ -1,5 +1,4 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 153157 2016-09-26 05:01:10Z ryandesign@macports.org $
 
 PortSystem                  1.0
 PortGroup                   conflicts_build 1.0
@@ -10,11 +9,12 @@ PortGroup                   conflicts_build 1.0
 # PHP Warning:  Version warning: Imagick was compiled against Image Magick version XXXX but version YYYY is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
 
 name                        ImageMagick
-version                     6.9.5-10
+version                     6.9.9-11
+revision                    1
 set reasonable_version      [lindex [split ${version} -] 0]
 homepage                    http://www.imagemagick.org/
 categories                  graphics devel
-maintainers                 ryandesign
+maintainers                 {ryandesign @ryandesign}
 license                     Apache-2
 use_xz                      yes
 platforms                   darwin
@@ -42,8 +42,8 @@ master_sites                http://www.imagemagick.org/download/ \
                             ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
                             ftp://sunsite.icm.edu.pl/packages/ImageMagick
 
-checksums                   rmd160  72b7ccd4251b456b80afc418bdf69fec0dc1d119 \
-                            sha256  2805ab7945ca92251172335da992df800bcc09fee993eeb4711b20c53efeb233
+checksums                   rmd160  8067d7b652ca7e410ca39249bc2d11c916d1b79b \
+                            sha256  b78415bf49eb34c06247010ca2d564a055ae8c2384f7b3166c8a8f7910eee732
 
 depends_lib                 port:bzip2 \
                             port:djvulibre \
@@ -52,6 +52,7 @@ depends_lib                 port:bzip2 \
                             port:jpeg \
                             port:lcms2 \
                             port:libpng \
+                            port:libraw \
                             port:tiff \
                             port:webp \
                             port:zlib \

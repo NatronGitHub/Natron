@@ -59,7 +59,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 void
 NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode)
@@ -86,7 +86,10 @@ NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode)
                     assert(tab);
 
                     TabWidget* foundTab = 0;
-                    QWidget* parent = tab->parentWidget();
+                    QWidget* parent = 0;
+                    if (tab) {
+                        parent = tab->parentWidget();
+                    }
                     while (parent) {
                         foundTab = dynamic_cast<TabWidget*>(parent);
                         if (foundTab) {
@@ -99,7 +102,9 @@ NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode)
                     } else {
                         //try to find a floating window
                         FloatingWidget* floating = 0;
-                        parent = tab->parentWidget();
+                        if (tab) {
+                            parent = tab->parentWidget();
+                        }
                         while (parent) {
                             floating = dynamic_cast<FloatingWidget*>(parent);
                             if (floating) {
@@ -467,4 +472,4 @@ NodeGraph::selectAllNodes(bool onlyInVisiblePortion)
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT

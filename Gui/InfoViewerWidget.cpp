@@ -42,7 +42,7 @@
 #include "Gui/Label.h"
 
 using std::cout; using std::endl;
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 InfoViewerWidget::InfoViewerWidget(const QString & description,
                                    QWidget* parent)
@@ -440,7 +440,7 @@ InfoViewerWidget::setImageFormat(const ImagePlaneDesc& comp,
     _comp = comp;
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_InfoViewerWidget.cpp"

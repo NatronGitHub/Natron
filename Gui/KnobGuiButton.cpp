@@ -77,7 +77,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <ofxNatron.h>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 using std::make_pair;
 
 //=============================BUTTON_KNOB_GUI===================================
@@ -183,7 +183,7 @@ KnobGuiButton::emitValueChanged(bool clicked)
         _button->setDown(clicked);
         _button->setChecked(clicked);
 
-        pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), _knob.lock()->getValue(), clicked, 0, false) );
+        pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), k->getValue(), clicked, 0, false) );
     } else {
         k->trigger();
     }
@@ -247,7 +247,7 @@ KnobGuiButton::onLabelChangedInternal()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiButton.cpp"

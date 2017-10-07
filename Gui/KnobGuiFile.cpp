@@ -59,7 +59,7 @@
 
 #include <SequenceParsing.h>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 //===========================FILE_KNOB_GUI=====================================
@@ -452,7 +452,11 @@ void
 KnobGuiFile::reflectExpressionState(int /*dimension*/,
                                     bool hasExpr)
 {
-    bool isEnabled = _knob.lock()->isEnabled(0);
+    boost::shared_ptr<KnobFile> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool isEnabled = knob->isEnabled(0);
 
     _lineEdit->setAnimation(3);
     _lineEdit->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
@@ -538,7 +542,11 @@ KnobGuiOutputFile::createWidget(QHBoxLayout* layout)
 void
 KnobGuiOutputFile::onButtonClicked()
 {
-    open_file( _knob.lock()->isSequencesDialogEnabled() );
+    boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    open_file( knob->isSequencesDialogEnabled() );
 }
 
 void
@@ -555,9 +563,13 @@ KnobGuiOutputFile::onRewriteClicked()
 void
 KnobGuiOutputFile::open_file(bool openSequence)
 {
+    boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     std::vector<std::string> filters;
 
-    if ( !_knob.lock()->isOutputImageFile() ) {
+    if ( !knob->isOutputImageFile() ) {
         filters.push_back("*");
     } else {
         appPTR->getSupportedWriterFileFormats(&filters);
@@ -585,7 +597,11 @@ KnobGuiOutputFile::updateLastOpened(const QString &str)
 void
 KnobGuiOutputFile::updateGUI(int /*dimension*/)
 {
-    _lineEdit->setText( QString::fromUtf8( _knob.lock()->getValue().c_str() ) );
+    boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    _lineEdit->setText( QString::fromUtf8( knob->getValue().c_str() ) );
 }
 
 void
@@ -720,7 +736,11 @@ void
 KnobGuiOutputFile::reflectExpressionState(int /*dimension*/,
                                           bool hasExpr)
 {
-    bool isEnabled = _knob.lock()->isEnabled(0);
+    boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool isEnabled = knob->isEnabled(0);
 
     _lineEdit->setAnimation(3);
     _lineEdit->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
@@ -810,7 +830,11 @@ KnobGuiPath::onOpenFileButtonClicked()
         std::string dirPath = dialog.selectedDirectory();
         updateLastOpened( QString::fromUtf8( dirPath.c_str() ) );
 
-        std::string oldValue = _knob.lock()->getValue();
+        boost::shared_ptr<KnobPath> knob = _knob.lock();
+        if (!knob) {
+            return;
+        }
+        std::string oldValue = knob->getValue();
 
         pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(), oldValue, dirPath ) );
     }
@@ -974,7 +998,11 @@ KnobGuiPath::_show()
 void
 KnobGuiPath::setEnabled()
 {
-    if ( _knob.lock()->isMultiPath() ) {
+    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    if ( knob->isMultiPath() ) {
         KnobGuiTable::setEnabled();
     } else {
         bool enabled = getKnob()->isEnabled(0);
@@ -987,7 +1015,11 @@ void
 KnobGuiPath::setReadOnly(bool readOnly,
                          int dimension)
 {
-    if ( _knob.lock()->isMultiPath() ) {
+    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    if ( knob->isMultiPath() ) {
         KnobGuiTable::setReadOnly(readOnly, dimension);
     } else {
         _lineEdit->setReadOnly_NoFocusRect(readOnly);
@@ -1009,7 +1041,11 @@ KnobGuiPath::getKnob() const
 void
 KnobGuiPath::addRightClickMenuEntries(QMenu* menu)
 {
-    if ( !_knob.lock()->isMultiPath() ) {
+    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    if ( !knob->isMultiPath() ) {
         QAction* makeAbsoluteAction = new QAction(tr("Make absolute"), menu);
         QObject::connect( makeAbsoluteAction, SIGNAL(triggered()), this, SLOT(onMakeAbsoluteTriggered()) );
         makeAbsoluteAction->setToolTip( tr("Make the file-path absolute if it was previously relative to any project path") );
@@ -1074,7 +1110,11 @@ void
 KnobGuiPath::reflectAnimationLevel(int /*dimension*/,
                                    AnimationLevelEnum /*level*/)
 {
-    if ( !_knob.lock()->isMultiPath() ) {
+    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    if ( !knob->isMultiPath() ) {
         _lineEdit->setAnimation(0);
     }
 }
@@ -1086,7 +1126,7 @@ KnobGuiPath::reflectExpressionState(int /*dimension*/,
     boost::shared_ptr<KnobPath> knob = _knob.lock();
 
     if ( !knob->isMultiPath() ) {
-        bool isEnabled = _knob.lock()->isEnabled(0);
+        bool isEnabled = knob->isEnabled(0);
         _lineEdit->setAnimation(3);
         _lineEdit->setReadOnly_NoFocusRect(hasExpr || !isEnabled);
         _openFileButton->setEnabled(!hasExpr || isEnabled);
@@ -1098,7 +1138,11 @@ KnobGuiPath::updateToolTip()
 {
     if ( hasToolTip() ) {
         QString tt = toolTip();
-        if ( !_knob.lock()->isMultiPath() ) {
+        boost::shared_ptr<KnobPath> knob = _knob.lock();
+        if (!knob) {
+            return;
+        }
+        if ( !knob->isMultiPath() ) {
             _lineEdit->setToolTip(tt);
         } else {
             KnobGuiTable::updateToolTip();
@@ -1106,7 +1150,7 @@ KnobGuiPath::updateToolTip()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiFile.cpp"

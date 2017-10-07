@@ -61,7 +61,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 /*****************************CURVE WIDGET***********************************************/
 
@@ -2409,7 +2409,7 @@ CurveWidget::addKey(const boost::shared_ptr<CurveGui>& curve, double xCurve, dou
     _imp->insertSelectedKeyFrameConditionnaly(selected);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_CurveWidget.cpp"

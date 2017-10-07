@@ -152,7 +152,7 @@ static PyObject* Sbk_PathParamFunc_setTable(PyObject* self, PyObject* pyArg)
 
 
                 PyObject* subList = PyList_GET_ITEM(pyArg,i);
-                if (!subList) {
+                if (!subList || !PyList_Check(subList)) {
                     PyErr_SetString(PyExc_TypeError, "table must be a list of list objects.");
                     return 0;
                 }
@@ -161,8 +161,14 @@ static PyObject* Sbk_PathParamFunc_setTable(PyObject* self, PyObject* pyArg)
 
                 for (int j = 0; j < subSize; ++j) {
                     PyObject* pyString = PyList_GET_ITEM(subList,j);
-                    if ( PyUnicode_Check(pyString) ) {
-
+                    if ( PyString_Check(pyString) ) {
+                        char* buf = PyString_AsString(pyString);
+                        if (buf) {
+                            std::string ret;
+                            ret.append(buf);
+                            rowVec[j] = ret;
+                            }
+                    } else if (PyUnicode_Check(pyString) ) {
                         PyObject* utf8pyobj = PyUnicode_AsUTF8String(pyString); // newRef
                         if (utf8pyobj) {
                             char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
@@ -173,6 +179,7 @@ static PyObject* Sbk_PathParamFunc_setTable(PyObject* self, PyObject* pyArg)
                         }
                     }
                 }
+                table.push_back(rowVec);
             }
 
             cppSelf->setTable(table);

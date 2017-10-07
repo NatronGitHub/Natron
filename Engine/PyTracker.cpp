@@ -29,8 +29,8 @@
 #include "Engine/TrackerContext.h"
 
 
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
+NATRON_PYTHON_NAMESPACE_ENTER
 
 Track::Track(const boost::shared_ptr<TrackMarker>& marker)
     : _marker(marker)
@@ -206,5 +206,5 @@ Tracker::createTrack()
     return new Track(track);
 }
 
-NATRON_PYTHON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_EXIT;
+NATRON_PYTHON_NAMESPACE_EXIT
+NATRON_NAMESPACE_EXIT

@@ -1,5 +1,4 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 149296 2016-06-10 04:41:29Z ryandesign@macports.org $
 
 PortSystem 1.0
 PortGroup select 1.0
@@ -9,9 +8,10 @@ name                gcc5
 
 epoch               2
 version             5.4.0
+revision            2
 platforms           darwin
 categories          lang
-maintainers         mww openmaintainer
+maintainers         nomaintainer
 # an exception in the license allows dependents to not be GPL
 license             {GPL-3+ Permissive}
 description         The GNU compiler collection
@@ -39,6 +39,8 @@ depends_lib         port:cctools \
                     port:libiconv \
                     port:libmpc \
                     port:mpfr
+depends_run         port:gcc_select \
+                    port:libgcc6
 
 depends_skip_archcheck-append gcc_select ld64 cctools
 license_noconflict  gmp mpfr ppl libmpc
@@ -81,9 +83,11 @@ configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
                     --with-ar=${prefix}/bin/ar \
                     --with-bugurl=https://trac.macports.org/newticket
 
-if {${configure.sdkroot} ne ""} { 
-    configure.args-append     --with-sysroot=${configure.sdkroot} 
-} 
+# see https://lists.macports.org/pipermail/macports-dev/2017-August/036209.html
+# --disable-tls does not limit functionality
+# it only determines how std::call_once works
+configure.args-append \
+                    --disable-tls
 
 configure.env-append \
                     AR_FOR_TARGET=${prefix}/bin/ar \
@@ -98,6 +102,23 @@ configure.env-append \
 
 pre-configure {
     configure.args-append --with-pkgversion="MacPorts ${name} ${version}_${revision}${portvariants}"
+
+    if {${configure.sdkroot} ne ""} {
+        # We should be using --with-build-sysroot here.  Using --with-sysroot
+        # changes the behavior of the installed gcc to look in that sysroot
+        # by default instead of /.  Using --with-build-sysroot is supposed
+        # to be used during the build but not impact the installed product.
+        # Unfortunately, the build fails because the value doesn't get
+        # plumbed everywhere it is supposed to.
+        #
+        # https://trac.macports.org/ticket/53726
+        # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79885
+        #
+        # Note that macports toolchains will fail to compile gcc unless
+        # the DevSDK is installed due to another gcc build system bug:
+        # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80203
+        configure.args-append --with-sysroot="${configure.sdkroot}"
+    }
 
     # TODO: Remove when base automatically creates configure.dir (2.2.1?).
     file mkdir ${configure.dir}
@@ -121,8 +142,6 @@ use_parallel_build  yes
 
 destroot.target     install install-info-host
 
-depends_run-append         port:gcc_select
-
 post-destroot {
     file delete ${destroot}${prefix}/share/info/dir
 
@@ -134,7 +153,7 @@ post-destroot {
     }
 
     foreach dylib {libgcc_ext.10.4.dylib libgcc_ext.10.5.dylib libgcc_s.1.dylib libgfortran.3.dylib libquadmath.0.dylib libstdc++.6.dylib libobjc-gnu.4.dylib libgomp.1.dylib libitm.1.dylib libssp.0.dylib libasan.0.dylib libatomic.1.dylib} {
-        # Different OS versions (eg: Leopard) or architectures (eg: PPC) don't produce all the dylibs
+        # Different OS versions (e.g. Leopard) or architectures (e.g. PPC) don't produce all the dylibs
         # https://trac.macports.org/ticket/40098
         # https://trac.macports.org/ticket/40100
         if {[file exists ${destroot}${prefix}/lib/${name}/${dylib}]} {
@@ -167,8 +186,12 @@ variant universal {
     configure.args-delete --disable-multilib
 }
 # the generated compiler doesn't accept -arch
-configure.env-append CPP="${configure.cc} -E"
-build.env-append CPP="${configure.cc} -E"
+configure.env-append \
+    CPP="${configure.cc} -E" \
+    CXXCPP="${configure.cxx} -E"
+build.env-append \
+    CPP="${configure.cc} -E" \
+    CXXCPP="${configure.cxx} -E"
 configure.cc-append [get_canonical_archflags]
 configure.cc_archflags
 configure.cxx-append ${configure.cxx_archflags}

@@ -81,7 +81,7 @@ CLANG_DIAG_ON(deprecated)
 
 #define TAB_DRAG_WIDGET_PERCENT_FOR_SPLITTING 0.13
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class TransparentDropRect
     : public QWidget
@@ -2179,7 +2179,7 @@ TabWidgetPrivate::removeTabToPython(PanelWidget* widget,
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_TabWidget.cpp"

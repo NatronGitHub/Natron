@@ -55,7 +55,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class OfxImageCommon;
 struct OfxClipInstancePrivate;
@@ -313,7 +313,7 @@ private:
     bool getImagePlaneInternal(OfxTime time, ViewSpec view, const OfxRectD *optionalBounds, const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
 
 private:
-    friend class OfxClipInstancePrivate;
+    friend struct OfxClipInstancePrivate;
     boost::scoped_ptr<OfxClipInstancePrivate> _imp;
 };
 
@@ -379,6 +379,6 @@ public:
     }
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_OFXCLIPINSTANCE_H

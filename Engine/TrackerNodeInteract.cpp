@@ -42,7 +42,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TrackMarker.h"
 #include "Engine/ViewerInstance.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 TrackerNodePrivate::TrackerNodePrivate(TrackerNode* publicInterface)
     : publicInterface(publicInterface)
@@ -1810,6 +1810,6 @@ TrackerNodeInteract::onAllKeyframesRemovedOnTrack(const TrackMarkerPtr& marker)
     _p->publicInterface->redrawOverlayInteract();
 }
 
-NATRON_NAMESPACE_EXIT;
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_EXIT
+NATRON_NAMESPACE_USING
 #include "moc_TrackerNodeInteract.cpp"

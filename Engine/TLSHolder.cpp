@@ -38,7 +38,7 @@
 #include <QtCore/QThread>
 #include <QtCore/QDebug>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 AppTLS::AppTLS()
@@ -195,5 +195,5 @@ template class TLSHolder<Project::ProjectTLSData>;
 template class TLSHolder<OfxClipInstance::ClipTLSData>;
 template class TLSHolder<OfxParamToKnob::OfxParamTLSData>;
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 

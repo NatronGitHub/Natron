@@ -67,7 +67,7 @@
 
 #define NUM_COLS 16
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 enum ItemsRoleEnum
 {
@@ -1084,7 +1084,7 @@ RenderStatsDialog::onIDLineEditChanged(const QString& filter)
     _imp->updateVisibleRowsInternal(_imp->nameFilterEdit->text(), filter);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_RenderStatsDialog.cpp"

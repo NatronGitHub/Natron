@@ -35,7 +35,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class ViewerToolButton
     : public QToolButton
@@ -70,6 +70,6 @@ private:
     bool wasMouseReleased;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // VIEWERTOOLBUTTON_H

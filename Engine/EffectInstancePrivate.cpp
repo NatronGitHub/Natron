@@ -34,7 +34,7 @@
 #include "Engine/ViewIdx.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ActionsCache::ActionsCacheInstance::ActionsCacheInstance()
     : _hash(0)
@@ -587,6 +587,7 @@ EffectInstance::Implementation::waitForImageBeingRenderedElsewhere(const RectI &
         QMutexLocker kk(&ibr->lock);
         while (!ab && isBeingRenderedElseWhere && !ibr->failed && ibr->refCount > 1) {
             ibr->cond.wait(&ibr->lock, 50);
+            restToRender.clear();
             isBeingRenderedElseWhere = false;
             img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
             ab = _publicInterface->aborted();
@@ -704,6 +705,6 @@ EffectInstance::Implementation::clearInputImagePointers()
     tls->currentRenderArgs.inputImages.clear();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 

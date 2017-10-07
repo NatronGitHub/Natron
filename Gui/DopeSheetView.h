@@ -53,7 +53,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 class DopeSheetViewPrivate;
 
@@ -342,6 +342,6 @@ private: /* attributes */
     boost::scoped_ptr<DopeSheetViewPrivate> _imp;
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // DOPESHEETVIEW_H

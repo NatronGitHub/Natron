@@ -82,7 +82,7 @@ static NSString* const NSBackingPropertyOldScaleFactorKey =
 
 #endif  // MAC_OS_X_VERSION_10_7
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 bool
 QtMac::isHighDPIInternal(const QWidget* w) {
@@ -94,6 +94,6 @@ QtMac::isHighDPIInternal(const QWidget* w) {
     return (scaleFactor > 1.0);
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif

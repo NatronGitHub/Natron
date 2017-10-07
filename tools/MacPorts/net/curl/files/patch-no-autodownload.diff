@@ -1,6 +1,6 @@
---- Makefile.orig	2015-02-25 01:37:20.000000000 -0600
-+++ Makefile	2015-04-21 17:00:14.000000000 -0500
-@@ -568,7 +568,7 @@
+--- Makefile.orig	2017-06-14 06:13:06.000000000 +0000
++++ Makefile	2017-07-25 15:30:42.000000000 +0000
+@@ -144,7 +144,7 @@
  
  ca-bundle: lib/mk-ca-bundle.pl
  	@echo "generate a fresh ca-bundle.crt"
@@ -9,13 +9,3 @@
  
  ca-firefox: lib/firefox-db2pem.sh
  	@echo "generate a fresh ca-bundle.crt"
---- lib/mk-ca-bundle.pl.orig	2015-02-03 03:51:41.000000000 -0600
-+++ lib/mk-ca-bundle.pl	2015-04-21 17:00:14.000000000 -0500
-@@ -32,7 +32,6 @@
- #
- use Getopt::Std;
- use MIME::Base64;
--use LWP::UserAgent;
- use strict;
- use vars qw($opt_b $opt_d $opt_f $opt_h $opt_i $opt_l $opt_n $opt_p $opt_q $opt_s $opt_t $opt_u $opt_v $opt_w);
- use List::Util;

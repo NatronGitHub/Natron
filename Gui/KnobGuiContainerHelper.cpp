@@ -49,7 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct KnobGuiContainerHelperPrivate
 {
@@ -191,7 +191,7 @@ KnobGuiContainerHelper::getOrCreateDefaultPage()
     // The plug-in didn't specify any page, it should have been caught before in Node::getOrCreateMainPage for nodes
     // Anyway create one.
 
-    boost::shared_ptr<KnobPage> mainPage = AppManager::createKnob<KnobPage>( _imp->holder, _imp->holder->tr("Settings") );
+    boost::shared_ptr<KnobPage> mainPage = AppManager::createKnob<KnobPage>( _imp->holder, KnobHolder::tr("Settings") );
     if (mainPage) {
         return getOrCreatePage(mainPage);
     }
@@ -1231,7 +1231,7 @@ KnobGuiContainerSignalsHandler::onPageLabelChangedInternally()
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiContainerHelper.cpp"

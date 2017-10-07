@@ -79,7 +79,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <ofxNatron.h>
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 using std::make_pair;
 
 
@@ -540,7 +540,11 @@ KnobGuiString::onLineChanged()
     if ( !_lineEdit->isEnabled() || _lineEdit->isReadOnly() ) {
         return;
     }
-    std::string oldText = _knob.lock()->getValue(0);
+    boost::shared_ptr<KnobString> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    std::string oldText = knob->getValue(0);
     std::string newText = _lineEdit->text().toStdString();
 
     if (oldText != newText) {
@@ -585,10 +589,14 @@ KnobGuiString::onTextChanged()
     QString txt = _textEdit->toPlainText();
 
     //txt = stripWhitespaces(txt);
-    if ( _knob.lock()->usesRichText() ) {
+    boost::shared_ptr<KnobString> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    if ( knob->usesRichText() ) {
         txt = addHtmlTags(txt);
     }
-    pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(), _knob.lock()->getValue(0), txt.toStdString() ) );
+    pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(), knob->getValue(0), txt.toStdString() ) );
 }
 
 QString
@@ -609,7 +617,11 @@ KnobGuiString::addHtmlTags(QString text) const
     }
 
     ///if the knob had custom data, set them
-    QString knobOldtext = QString::fromUtf8( _knob.lock()->getValue(0).c_str() );
+    boost::shared_ptr<KnobString> knob = _knob.lock();
+    if (!knob) {
+        return text;
+    }
+    QString knobOldtext = QString::fromUtf8( knob->getValue(0).c_str() );
     QString startCustomTag( QString::fromUtf8(NATRON_CUSTOM_HTML_TAG_START) );
     int startCustomData = knobOldtext.indexOf(startCustomTag);
     if (startCustomData != -1) {
@@ -1129,7 +1141,7 @@ KnobGuiString::updateGUI(int /*dimension*/)
         int selectionStart = cursor.selectionStart();
         int selectionEnd = cursor.selectionEnd();
         QString txt = QString::fromUtf8( value.c_str() );
-        if ( _knob.lock()->usesRichText() ) {
+        if ( knob->usesRichText() ) {
             txt = removeAutoAddedHtmlTags(txt);
         }
 
@@ -1267,12 +1279,16 @@ void
 KnobGuiString::setReadOnly(bool readOnly,
                            int /*dimension*/)
 {
+    boost::shared_ptr<KnobString> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
     if (_textEdit) {
-        if ( !_knob.lock()->isCustomHTMLText() ) {
+        if ( !knob->isCustomHTMLText() ) {
             _textEdit->setReadOnlyNatron(readOnly);
         }
     } else if (_lineEdit) {
-        if ( !_knob.lock()->isCustomKnob() ) {
+        if ( !knob->isCustomKnob() ) {
             _lineEdit->setReadOnly_NoFocusRect(readOnly);
         }
     }
@@ -1298,11 +1314,15 @@ void
 KnobGuiString::reflectExpressionState(int /*dimension*/,
                                       bool hasExpr)
 {
-    bool isEnabled = _knob.lock()->isEnabled(0);
+    boost::shared_ptr<KnobString> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool isEnabled = knob->isEnabled(0);
 
     if (_textEdit) {
         _textEdit->setAnimation(3);
-        if ( !_knob.lock()->isCustomHTMLText() ) {
+        if ( !knob->isCustomHTMLText() ) {
             _textEdit->setReadOnlyNatron(hasExpr || !isEnabled);
         }
     } else if (_lineEdit) {
@@ -1317,7 +1337,11 @@ KnobGuiString::updateToolTip()
     if ( hasToolTip() ) {
         QString tt = toolTip();
         if (_textEdit) {
-            bool useRichText = _knob.lock()->usesRichText();
+            boost::shared_ptr<KnobString> knob = _knob.lock();
+            if (!knob) {
+                return;
+            }
+            bool useRichText = knob->usesRichText();
             if (useRichText) {
                 tt += tr("This text area supports html encoding. "
                          "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info.");
@@ -1336,14 +1360,18 @@ KnobGuiString::updateToolTip()
 void
 KnobGuiString::reflectModificationsState()
 {
-    bool hasModif = _knob.lock()->hasModifications();
+    boost::shared_ptr<KnobString> knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    bool hasModif = knob->hasModifications();
 
     if (_lineEdit) {
         _lineEdit->setAltered(!hasModif);
     }
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_KnobGuiString.cpp"

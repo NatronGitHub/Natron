@@ -108,7 +108,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 ///at most every...
 #define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 1
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 using std::make_pair;
 using std::cout; using std::endl;
@@ -3326,7 +3326,7 @@ Node::makeInfoForInput(int inputNumber) const
         }
         for (std::list<ImagePlaneDesc>::iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
 
-            ss << " "  << it->getPlaneID();
+            ss << " "  << it->getPlaneLabel() << '.' << it->getChannelsLabel();
             if ( next != availableLayers.end() ) {
                 ss << ", ";
                 ++next;
@@ -4026,9 +4026,8 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
         inputLabels[i] = _imp->effect->getInputLabel(i);
 
         assert( i < (int)_imp->inputsComponents.size() );
-        const std::list<ImagePlaneDesc>& inputSupportedComps = _imp->inputsComponents[i];
         bool isMask = _imp->effect->isInputMask(i);
-        bool supportsOnlyAlpha = inputSupportedComps.size() == 1 && inputSupportedComps.front().getNumComponents() == 1;
+        bool supportsOnlyAlpha = isInputOnlyAlpha(i);
 
         hasMaskChannelSelector[i].first = false;
         hasMaskChannelSelector[i].second = isMask;
@@ -4345,6 +4344,31 @@ Node::refreshPreviewsAfterProjectLoad()
     Q_EMIT s_refreshPreviewsAfterProjectLoadRequested();
 }
 
+// those parameters should be ignored (they are always secret in Natron)
+#define kOCIOParamInputSpace "ocioInputSpace"
+#define kOCIOParamOutputSpace "ocioOutputSpace"
+
+// those parameters should not have their options in the help file if generating markdown,
+// because the options are dinamlically constructed at run-time from the OCIO config.
+#define kOCIOParamInputSpaceChoice "ocioInputSpaceIndex"
+#define kOCIOParamOutputSpaceChoice "ocioOutputSpaceIndex"
+
+#define kOCIODisplayPluginIdentifier "fr.inria.openfx.OCIODisplay"
+#define kOCIODisplayParamDisplay "display"
+#define kOCIODisplayParamDisplayChoice "displayIndex"
+#define kOCIODisplayParamView "view"
+#define kOCIODisplayParamViewChoice "viewIndex"
+
+// not yet implemented (see OCIOCDLTransform.cpp)
+//#define kOCIOCDLTransformPluginIdentifier "fr.inria.openfx.OCIOCDLTransform"
+//#define kOCIOCDLTransformParamCCCID "cccId"
+//#define kOCIOCDLTransformParamCCCIDChoice "cccIdIndex"
+
+#define kOCIOFileTransformPluginIdentifier "fr.inria.openfx.OCIOFileTransform"
+#define kOCIOFileTransformParamCCCID "cccId"
+#define kOCIOFileTransformParamCCCIDChoice "cccIdIndex"
+
+// genHTML: true for live HTML output for the internal web-server, false for markdown output
 QString
 Node::makeDocumentation(bool genHTML) const
 {
@@ -4439,7 +4463,20 @@ Node::makeDocumentation(bool genHTML) const
         QString knobLabel = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getLabel().c_str() ), genHTML, true);
         QString knobHint = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getHintToolTip().c_str() ), genHTML, true);
 
-        if ( knobScriptName.startsWith( QString::fromUtf8("NatronOfxParam") ) || knobScriptName == QString::fromUtf8("exportAsPyPlug") ) {
+        // totally ignore the documentation for these parameters (which are always secret in Natron)
+        if ( knobScriptName.startsWith( QString::fromUtf8("NatronOfxParam") ) ||
+             knobScriptName == QString::fromUtf8("exportAsPyPlug") ||
+             knobScriptName == QString::fromUtf8(kOCIOParamInputSpace) ||
+             knobScriptName == QString::fromUtf8(kOCIOParamOutputSpace) ||
+             ( ( pluginID == QString::fromUtf8(kOCIODisplayPluginIdentifier) ) &&
+               ( knobScriptName == QString::fromUtf8(kOCIODisplayParamDisplay) ) ) ||
+             ( ( pluginID == QString::fromUtf8(kOCIODisplayPluginIdentifier) ) &&
+               ( knobScriptName == QString::fromUtf8(kOCIODisplayParamView) ) ) ||
+             //( ( pluginID == QString::fromUtf8(kOCIOCDLTransformPluginIdentifier) ) &&
+             //  ( knobScriptName == QString::fromUtf8(kOCIOCDLTransformParamCCCID) ) ) ||
+             ( ( pluginID == QString::fromUtf8(kOCIOFileTransformPluginIdentifier) ) &&
+               ( knobScriptName == QString::fromUtf8(kOCIOFileTransformParamCCCID) ) ) ||
+             false ) {
             continue;
         }
 
@@ -4488,7 +4525,28 @@ Node::makeDocumentation(bool genHTML) const
                 QString valueStr;
 
                 if (!isBtn && !isSep && !isParametric) {
-                    if (isChoice) {
+                    // If this is a ChoiceParam and we are not generating live HTML doc,
+                    // only add the list of entries and their halp if this node should not be
+                    // ignored (eg. OCIO colorspace knobs).
+                    if ( isChoice &&
+                         (genHTML || !( knobScriptName == QString::fromUtf8(kOCIOParamInputSpaceChoice) ||
+                                        knobScriptName == QString::fromUtf8(kOCIOParamOutputSpaceChoice) ||
+                                        ( ( pluginID == QString::fromUtf8(kOCIODisplayPluginIdentifier) ) &&
+                                          ( knobScriptName == QString::fromUtf8(kOCIODisplayParamDisplayChoice) ) ) ||
+                                        ( ( pluginID == QString::fromUtf8(kOCIODisplayPluginIdentifier) ) &&
+                                          ( knobScriptName == QString::fromUtf8(kOCIODisplayParamViewChoice) ) ) ||
+                                        //( ( pluginID == QString::fromUtf8(kOCIOCDLTransformPluginIdentifier) ) &&
+                                        //   ( knobScriptName == QString::fromUtf8(kOCIOCDLTransformParamCCCIDChoice) ) ) ||
+                                        ( ( pluginID == QString::fromUtf8(kOCIOFileTransformPluginIdentifier) ) &&
+                                          ( knobScriptName == QString::fromUtf8(kOCIOFileTransformParamCCCIDChoice) ) ) ||
+                                        ( ( pluginID == QString::fromUtf8("net.fxarena.openfx.Text") ) &&
+                                          ( knobScriptName == QString::fromUtf8("name") ) ) || // font family from Text plugin
+                                        ( ( pluginID == QString::fromUtf8("net.fxarena.openfx.Polaroid") ) &&
+                                          ( knobScriptName == QString::fromUtf8("font") ) ) || // font family from Polaroid plugin
+                                        ( ( pluginID == QString::fromUtf8(PLUGINID_NATRON_PRECOMP) ) &&
+                                          ( knobScriptName == QString::fromUtf8("writeNode") ) ) ||
+                                        ( ( pluginID == QString::fromUtf8(PLUGINID_NATRON_ONEVIEW) ) &&
+                                          ( knobScriptName == QString::fromUtf8("view") ) ) ) ) ) {
                         // see also KnobChoice::getHintToolTipFull()
                         int index = isChoice->getDefaultValue(i);
                         std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
@@ -4508,15 +4566,23 @@ Node::makeDocumentation(bool genHTML) const
                                 if (first) {
                                     // empty line before the option descriptions
                                     if (genHTML) {
-                                        knobHint.append( QString::fromUtf8("<br />") + tr("Possible values:") + QString::fromUtf8("<br />") );
+                                        if ( !knobHint.isEmpty() ) {
+                                            knobHint.append( QString::fromUtf8("<br />") );
+                                        }
+                                        // "Possible values:" clutters the documentation.
+                                        //knobHint.append( tr("Possible values:") + QString::fromUtf8("<br />") );
                                     } else {
                                         // we do a hack for multiline elements, because the markdown->rst conversion by pandoc doesn't use the line block syntax.
                                         // what we do here is put a supplementary dot at the beginning of each line, which is then converted to a pipe '|' in the
                                         // genStaticDocs.sh script by a simple sed command after converting to RsT
-                                        if (!knobHint.startsWith( QString::fromUtf8(". ") )) {
-                                            knobHint.prepend( QString::fromUtf8(". ") );
+                                        if ( !knobHint.isEmpty() ) {
+                                            if (!knobHint.startsWith( QString::fromUtf8(". ") )) {
+                                                knobHint.prepend( QString::fromUtf8(". ") );
+                                            }
+                                            knobHint.append( QString::fromUtf8("\\\n") );
                                         }
-                                        knobHint.append( QString::fromUtf8("\\\n") + tr("Possible values:") +  QString::fromUtf8("\\\n") );
+                                        // "Possible values:" clutters the documentation.
+                                        //knobHint.append( QString::fromUtf8(". ") + tr("Possible values:") +  QString::fromUtf8("\\\n") );
                                     }
                                     first = false;
                                 }
@@ -5346,6 +5412,15 @@ Node::getInputNumberFromLabel(const std::string& inputLabel) const
     }
 
     return -1;
+}
+
+bool
+Node::isInputOnlyAlpha(int inputNb) const
+{
+    assert(_imp->inputsInitialized);
+
+    const std::list<ImagePlaneDesc>& inputSupportedComps = _imp->inputsComponents[inputNb];
+    return (inputSupportedComps.size() == 1 && inputSupportedComps.front().getNumComponents() == 1);
 }
 
 bool
@@ -11739,7 +11814,7 @@ InspectorNode::setInputB(int inputNb)
     Q_EMIT refreshOptionalState();
 }
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING;
+NATRON_NAMESPACE_USING
 #include "moc_Node.cpp"

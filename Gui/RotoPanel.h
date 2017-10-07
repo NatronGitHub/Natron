@@ -46,7 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 struct RotoPanelPrivate;
 
@@ -208,6 +208,6 @@ public:
 
 typedef boost::shared_ptr<DroppedTreeItem> DroppedTreeItemPtr;
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // ROTOPANEL_H

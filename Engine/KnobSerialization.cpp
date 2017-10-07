@@ -58,8 +58,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TrackerContext.h"
 
 
-
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 ValueSerialization::ValueSerialization()
 : _serialization(0)
@@ -336,12 +335,13 @@ endsWith(const std::string &str,
     return ( ( str.size() >= suffix.size() ) &&
             (str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0) );
 }
-
+#if 0
 static bool
 containsString(const std::string& str, const std::string& substring)
 {
     return str.find(substring) != std::string::npos;
 }
+#endif
 
 static bool
 equalsStringCaseSensitive(const std::string& str1, const std::string& str2)
@@ -512,33 +512,113 @@ public:
         {
             KnobNameFilter f;
             f.replacement = kNatronOfxParamProcessR;
-            addKnobFilter(f, "r", equalsStringCaseSensitive);
-            addKnobFilter(f, "doRed", equalsStringCaseSensitive);
-            setNatronVersionMax(f, 1);
+            {
+                KnobMatch& m = addKnobFilter(f, "r", equalsStringCaseSensitive); // Natron 1.0
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.");
+                    p.func = startsWith;
+                }
+                {
+                    PluginMatch& p = addPluginMatch(m, "net.sf.openfx.");
+                    p.func = startsWith;
+                }
+            }
+            {
+                KnobMatch& m = addKnobFilter(f, "doRed", equalsStringCaseSensitive); // Natron 2.0-2.2 (Roto)
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.");
+                    p.func = startsWith;
+                }
+                {
+                    PluginMatch& p = addPluginMatch(m, "net.sf.openfx.");
+                    p.func = startsWith;
+                }
+            }
+            setNatronVersionMax(f, 2, 2, 99);
             filters.push_back(f);
         }
         {
             KnobNameFilter f;
             f.replacement = kNatronOfxParamProcessG;
-            addKnobFilter(f, "g", equalsStringCaseSensitive);
-            addKnobFilter(f, "doGreen", equalsStringCaseSensitive);
-            setNatronVersionMax(f, 1);
+            {
+                KnobMatch& m = addKnobFilter(f, "g", equalsStringCaseSensitive); // Natron 1.0
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.");
+                    p.func = startsWith;
+                }
+                {
+                    PluginMatch& p = addPluginMatch(m, "net.sf.openfx.");
+                    p.func = startsWith;
+                }
+            }
+            {
+                KnobMatch& m = addKnobFilter(f, "doGreen", equalsStringCaseSensitive); // Natron 2.0-2.2 (Roto)
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.");
+                    p.func = startsWith;
+                }
+                {
+                    PluginMatch& p = addPluginMatch(m, "net.sf.openfx.");
+                    p.func = startsWith;
+                }
+            }
+            setNatronVersionMax(f, 2, 2, 99);
             filters.push_back(f);
         }
         {
             KnobNameFilter f;
             f.replacement = kNatronOfxParamProcessB;
-            addKnobFilter(f, "b", equalsStringCaseSensitive);
-            addKnobFilter(f, "doBlue", equalsStringCaseSensitive);
-            setNatronVersionMax(f, 1);
+            {
+                KnobMatch& m = addKnobFilter(f, "b", equalsStringCaseSensitive); // Natron 1.0
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.");
+                    p.func = startsWith;
+                }
+                {
+                    PluginMatch& p = addPluginMatch(m, "net.sf.openfx.");
+                    p.func = startsWith;
+                }
+            }
+            {
+                KnobMatch& m = addKnobFilter(f, "doBlue", equalsStringCaseSensitive); // Natron 2.0-2.2 (Roto)
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.");
+                    p.func = startsWith;
+                }
+                {
+                    PluginMatch& p = addPluginMatch(m, "net.sf.openfx.");
+                    p.func = startsWith;
+                }
+            }
+            setNatronVersionMax(f, 2, 2, 99);
             filters.push_back(f);
         }
         {
             KnobNameFilter f;
             f.replacement = kNatronOfxParamProcessA;
-            addKnobFilter(f, "a", equalsStringCaseSensitive);
-            addKnobFilter(f, "doAlpha", equalsStringCaseSensitive);
-            setNatronVersionMax(f, 1);
+            {
+                KnobMatch& m = addKnobFilter(f, "a", equalsStringCaseSensitive); // Natron 1.0
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.");
+                    p.func = startsWith;
+                }
+                {
+                    PluginMatch& p = addPluginMatch(m, "net.sf.openfx.");
+                    p.func = startsWith;
+                }
+            }
+            {
+                KnobMatch& m = addKnobFilter(f, "doAlpha", equalsStringCaseSensitive); // Natron 2.0-2.2 (Roto)
+                {
+                    PluginMatch& p = addPluginMatch(m, "fr.inria.");
+                    p.func = startsWith;
+                }
+                {
+                    PluginMatch& p = addPluginMatch(m, "net.sf.openfx.");
+                    p.func = startsWith;
+                }
+            }
+            setNatronVersionMax(f, 2, 2, 99);
             filters.push_back(f);
         }
     }
@@ -557,7 +637,10 @@ public:
             f.replacement = kNatronColorPlaneID;
             addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
             addKnobFilter(f, "channels", endsWith);
-            setNatronVersionMax(f, 2, 2, 8);
+            setNatronVersionMax(f, 2, 2, 99);
+            addOptionFilter(f, "RGBA", equalsStringCaseInsensitive);
+            addOptionFilter(f, "RGB", equalsStringCaseInsensitive);
+            addOptionFilter(f, "Alpha", equalsStringCaseInsensitive);
             addOptionFilter(f, "Color.RGBA", equalsStringCaseInsensitive);
             addOptionFilter(f, "Color.RGB", equalsStringCaseInsensitive);
             addOptionFilter(f, "Color.Alpha", equalsStringCaseInsensitive);
@@ -568,7 +651,7 @@ public:
             f.replacement = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
             addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
             addKnobFilter(f, "channels", endsWith);
-            setNatronVersionMax(f, 2, 2, 8);
+            setNatronVersionMax(f, 2, 2, 99);
             addOptionFilter(f, "Backward.Motion", equalsStringCaseInsensitive);
             filters.push_back(f);
         }
@@ -577,7 +660,7 @@ public:
             f.replacement = kNatronForwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
             addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
             addKnobFilter(f, "channels", endsWith);
-            setNatronVersionMax(f, 2, 2, 8);
+            setNatronVersionMax(f, 2, 2, 99);
             addOptionFilter(f, "Forward.Motion", equalsStringCaseInsensitive);
             filters.push_back(f);
         }
@@ -586,7 +669,7 @@ public:
             f.replacement = kNatronDisparityLeftPlaneID "." kNatronDisparityComponentsLabel;
             addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
             addKnobFilter(f, "channels", endsWith);
-            setNatronVersionMax(f, 2, 2, 8);
+            setNatronVersionMax(f, 2, 2, 99);
             addOptionFilter(f, "DisparityLeft.Disparity", equalsStringCaseInsensitive);
             filters.push_back(f);
         }
@@ -595,7 +678,7 @@ public:
             f.replacement = kNatronDisparityRightPlaneID "." kNatronDisparityComponentsLabel;
             addKnobFilter(f, "outputChannels", equalsStringCaseSensitive);
             addKnobFilter(f, "channels", endsWith);
-            setNatronVersionMax(f, 2, 2, 8);
+            setNatronVersionMax(f, 2, 2, 99);
             addOptionFilter(f, "DisparityRight.Disparity", equalsStringCaseInsensitive);
             filters.push_back(f);
         }
@@ -623,7 +706,15 @@ public:
                 KnobMatch& m = addKnobFilter(f, "outputG", equalsStringCaseSensitive);
                 addPluginMatch(m, "net.sf.openfx.ShufflePlugin", 2);
             }
-            setNatronVersionMax(f, 2, 2, 8);
+            {
+                KnobMatch& m = addKnobFilter(f, "outputB", equalsStringCaseSensitive);
+                addPluginMatch(m, "net.sf.openfx.ShufflePlugin", 2);
+            }
+            {
+                KnobMatch& m = addKnobFilter(f, "outputA", equalsStringCaseSensitive);
+                addPluginMatch(m, "net.sf.openfx.ShufflePlugin", 2);
+            }
+            setNatronVersionMax(f, 2, 2, 99);
         }
         {
             KnobChoiceOptionFilter f = channelsFilterBase;
@@ -716,7 +807,7 @@ public:
                 KnobMatch& m = addKnobFilter(f, "frameRange", equalsStringCaseSensitive);
                 {
                     PluginMatch& p = addPluginMatch(m, "fr.inria."); // fr.inria.openfx.Write* and fr.inria.built-in.Write
-                    p.func = containsString;
+                    p.func = startsWith;
                 }
             }
             addOptionFilter(f, "Timeline bounds", equalsStringCaseInsensitive);
@@ -730,7 +821,7 @@ public:
                 KnobMatch& m = addKnobFilter(f, "bitDepth", equalsStringCaseSensitive);
                 {
                     PluginMatch& p = addPluginMatch(m, "fr.inria."); // fr.inria.openfx.Write* and fr.inria.built-in.Write
-                    p.func = containsString;
+                    p.func = startsWith;
                 }
             }
             addOptionFilter(f, "8i", equalsStringCaseInsensitive);
@@ -744,7 +835,7 @@ public:
                 KnobMatch& m = addKnobFilter(f, "bitDepth", equalsStringCaseSensitive);
                 {
                     PluginMatch& p = addPluginMatch(m, "fr.inria."); // fr.inria.openfx.Write* and fr.inria.built-in.Write
-                    p.func = containsString;
+                    p.func = startsWith;
                 }
             }
             addOptionFilter(f, "16i", equalsStringCaseInsensitive);
@@ -878,4 +969,4 @@ filterKnobChoiceOptionCompat(const std::string& pluginID, int pluginVersionMajor
 }
 
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
