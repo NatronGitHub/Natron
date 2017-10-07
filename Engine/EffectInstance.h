@@ -1136,6 +1136,7 @@ private:
     ActionRetCodeEnum requestRenderInternal(const RectD & roiCanonical,
                                             AcceptedRequestConcatenationFlags concatenationFlags,
                                             const FrameViewRequestPtr& requestData,
+                                            const FrameViewRequestPtr& requesterFrameViewRequest,
                                             const TreeRenderExecutionDataPtr& requestPassSharedData);
     
 public:

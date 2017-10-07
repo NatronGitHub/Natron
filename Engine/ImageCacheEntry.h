@@ -108,12 +108,13 @@ public:
      * @brief Fetch possibly cached tiles from the cache and update the tiles state for the given mipmap level.
      * This function will mark unrendered tiles as being rendered: any other thread/process trying to access them will
      * wait for this thread to finish.
+     * @param readOnly If true, this function will not mark any tile pending, even if there's still tiles to compute
      * @param tileStatus[out] If non null, will be set to the local tiles status map
      * @param hasUnRenderedTile[out] If set to true, there's at least one tile left to render in the roi given in the ctor
      * @param hasPendingResults[out] If set to true, then the caller should, after rendering the given rectangles
      * call waitForPendingTiles() and then afterwards recheck the rectangles left to render with this function
      **/
-    ActionRetCodeEnum fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults);
+    ActionRetCodeEnum fetchCachedTilesAndUpdateStatus(bool readOnly, TileStateHeader* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults);
 
     /**
      * @brief Same as fetchCachedTilesAndUpdateStatus except that it does not fetch anything from the cache, it just returns previously

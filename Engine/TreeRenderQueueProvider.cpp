@@ -71,9 +71,10 @@ TreeRenderQueueProvider::launchSubRender(const EffectInstancePtr& treeRoot,
                                          const ImagePlaneDesc* planeParam,
                                          const RectD* canonicalRoIParam,
                                          const TreeRenderPtr& render,
-                                         int concatenationFlags)
+                                         int concatenationFlags,
+                                         bool createTreeRenderIfUnrenderedImage)
 {
-   return appPTR->getTasksQueueManager()->launchSubRender(treeRoot, time, view, proxyScale, mipMapLevel, planeParam, canonicalRoIParam, render, concatenationFlags);
+   return appPTR->getTasksQueueManager()->launchSubRender(treeRoot, time, view, proxyScale, mipMapLevel, planeParam, canonicalRoIParam, render, concatenationFlags, createTreeRenderIfUnrenderedImage);
 }
 
 ActionRetCodeEnum

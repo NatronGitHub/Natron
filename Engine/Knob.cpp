@@ -122,6 +122,16 @@ KnobHelper::KnobHelper(const KnobHolderPtr& holder, const KnobIPtr& mainKnob)
 
 KnobHelper::~KnobHelper()
 {
+#ifdef DEBUG
+    // For a render-clone, check that it is no longer registered in the clones map
+    KnobHolderPtr holder = getHolder();
+    if (holder && holder->getMainInstance()) {
+        QMutexLocker locker(&_imp->common->renderClonesMapMutex);
+        std::map<KnobHolderWPtr, KnobIWPtr>::iterator found = _imp->common->renderClonesMap.find(holder);
+        assert(found == _imp->common->renderClonesMap.end());
+    }
+
+#endif
 }
 
 void
@@ -473,7 +483,8 @@ KnobHelper::populate()
 
     KnobHolderPtr holder = getHolder();
 
-    if (holder) {
+    KnobHelperPtr mainInstance = _imp->mainInstance.lock();
+    if (holder && !mainInstance) {
         // When knob value changes, the holder needs to be invalidated aswell
         addHashListener(holder);
         holder->addHashDependency(thisKnob);
@@ -482,10 +493,12 @@ KnobHelper::populate()
     // Register the knob in the render clones map
     {
         QMutexLocker locker(&_imp->common->renderClonesMapMutex);
+        assert(_imp->common->renderClonesMap.find(holder) == _imp->common->renderClonesMap.end());
         _imp->common->renderClonesMap[holder] = thisKnob;
     }
 
-    if (_imp->mainInstance.lock()) {
+    // Do not set attributes on a render clone
+    if (mainInstance) {
         return;
     }
     boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(thisKnob) );
@@ -1419,14 +1432,12 @@ KnobHelper::getCloneForHolderInternal(const KnobHolderPtr& holder) const
     if (!thisHolder || thisHolder == holder) {
         return boost::const_pointer_cast<KnobI>(shared_from_this());
     }
-    if (thisHolder->isRenderClone()) {
-        assert(getMainInstance());
-        thisHolder = getMainInstance()->getHolder();
-    }
     QMutexLocker k(&_imp->common->renderClonesMapMutex);
     std::map<KnobHolderWPtr, KnobIWPtr>::const_iterator found = _imp->common->renderClonesMap.find(holder);
     if (found != _imp->common->renderClonesMap.end()) {
-        return found->second.lock();
+        KnobIPtr ret = found->second.lock();
+        assert(ret);
+        return ret;
     }
     return KnobIPtr();
 }
@@ -5257,17 +5268,16 @@ KnobHolder::createRenderClone(const FrameViewRenderKey& key) const
         KnobHolderConstPtr thisShared = shared_from_this();
         return boost::const_pointer_cast<KnobHolder>(thisShared);
     }
-    {
-        QMutexLocker k(&_imp->common->renderClonesMutex);
-        RenderCloneMap::iterator found = _imp->common->renderClones.find(key);
-        if (found != _imp->common->renderClones.end()) {
-            KnobHolderPtr clone = found->second.lock();
-            if (clone) {
-                clone->initializeKnobsPublic();
-                return clone;
-            }
+
+    QMutexLocker k(&_imp->common->renderClonesMutex);
+    RenderCloneMap::iterator found = _imp->common->renderClones.find(key);
+    if (found != _imp->common->renderClones.end()) {
+        KnobHolderPtr clone = found->second.lock();
+        if (clone) {
+            return clone;
         }
     }
+
 
     KnobHolderPtr copy = createRenderCopy(key);
     if (!copy) {
@@ -5278,10 +5288,10 @@ KnobHolder::createRenderClone(const FrameViewRenderKey& key) const
         return copy;
     }
     key.render.lock()->registerRenderClone(copy);
-    {
-        QMutexLocker k(&_imp->common->renderClonesMutex);
-        _imp->common->renderClones[key] = copy;
-    }
+
+
+    _imp->common->renderClones[key] = copy;
+
     copy->initializeKnobsPublic();
     return copy;
 }

@@ -255,6 +255,36 @@ EffectInstance::Implementation::shouldRenderUseCache(const TreeRenderExecutionDa
     return ret;
 } // shouldRenderUseCache
 
+ActionRetCodeEnum
+EffectInstance::Implementation::launchIsolatedRender(const FrameViewRequestPtr& requestPassData)
+{
+    // We are not during a render, create one.
+    TreeRender::CtorArgsPtr rargs(new TreeRender::CtorArgs());
+    rargs->provider = _publicInterface->getThisTreeRenderQueueProviderShared();
+    rargs->time = _publicInterface->getCurrentRenderTime();
+    rargs->view = _publicInterface->getCurrentRenderView();
+    assert(_publicInterface->isRenderClone());
+    rargs->treeRootEffect = toEffectInstance(_publicInterface->getMainInstance());
+    rargs->canonicalRoI = requestPassData->getCurrentRoI();
+    rargs->proxyScale = requestPassData->getProxyScale();
+    rargs->mipMapLevel = requestPassData->getMipMapLevel();
+    rargs->plane = requestPassData->getPlaneDesc();
+    rargs->draftMode = requestPassData->getParentRender()->isDraftRender();
+    rargs->playback = requestPassData->getParentRender()->isPlayback();
+    rargs->byPassCache = false;
+    TreeRenderPtr renderObject = TreeRender::create(rargs);
+    _publicInterface->launchRender(renderObject);
+    ActionRetCodeEnum status = _publicInterface->waitForRenderFinished(renderObject);
+    if (isFailureRetCode(status)) {
+        return status;
+    }
+    FrameViewRequestPtr outputRequest = renderObject->getOutputRequest();
+    assert(outputRequest);
+    requestPassData->setFullscaleImagePlane(outputRequest->getFullscaleImagePlane());
+    requestPassData->setRequestedScaleImagePlane(outputRequest->getRequestedScaleImagePlane());
+    requestPassData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
+    return eActionStatusOK;
+} // launchIsolatedRender
 
 ActionRetCodeEnum
 EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectToRender,
@@ -284,7 +314,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
     // If this tile is identity, copy input image instead
     ActionRetCodeEnum stat;
-    //qDebug() << QThread::currentThread() << (U64)render.get() <<  _publicInterface << _publicInterface->getScriptName_mt_safe().c_str() << "render" << args.cachedPlanes.begin()->first.getPlaneLabel().c_str() << rectToRender.rect.x1 << rectToRender.rect.y1 << rectToRender.rect.x2 << rectToRender.rect.y2 << "(identity ? " << (rectToRender.identityInputNumber !=-1)<< ")" ;
+    /*qDebug() << QThread::currentThread() << (U64)render.get() <<  _publicInterface << _publicInterface->getScriptName_mt_safe().c_str() << "render" << (double)_publicInterface->getCurrentRenderTime() << args.cachedPlanes.begin()->first.getPlaneLabel().c_str() << rectToRender.rect.x1 << rectToRender.rect.y1 << rectToRender.rect.x2 << rectToRender.rect.y2 << "(identity ? " << (rectToRender.identityInputNumber !=-1)<< ")" ;*/
 
     if (_publicInterface->isAccumulationEnabled()) {
         render->setOrUnionActiveStrokeUpdateArea(rectToRender.rect);

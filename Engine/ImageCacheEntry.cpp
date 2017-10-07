@@ -347,6 +347,9 @@ struct ImageCacheEntryPrivate
     // If set to eCacheAccessModeReadWrite, the entry will be read from the cache and written to if needed
     CacheAccessModeEnum cachePolicy;
 
+    // True if we should not mark any tile pending within the next call to readAndUpdateStateMap()
+    bool updateStateMapReadOnly;
+
     // Pointer to the image holding this ImageCacheEntry
     ImageWPtr image;
 
@@ -386,6 +389,7 @@ struct ImageCacheEntryPrivate
     , tilesToFetch()
     , tilesToDownscale()
     , cachePolicy(cachePolicy)
+    , updateStateMapReadOnly(false)
     , image(image)
     {
         assert(perMipMapPixelRod.size() >= mipMapLevel + 1);
@@ -1280,6 +1284,10 @@ ImageCacheEntryPrivate::UpdateStateMapRetCodeEnum
 ImageCacheEntryPrivate::readAndUpdateStateMap(bool hasExclusiveLock, bool allTilesMustBeNotRendered)
 {
 
+    if (hasExclusiveLock && updateStateMapReadOnly) {
+        hasExclusiveLock = false;
+    }
+
     // Ensure we have at least the desired mipmap level in the cache entry
     if (internalCacheEntry->perMipMapTilesState.size() < mipMapLevel + 1) {
         if (!hasExclusiveLock) {
@@ -1782,7 +1790,7 @@ ImageCacheEntryPrivate::fetchAndCopyCachedTiles()
 } // fetchAndCopyCachedTiles
 
 ActionRetCodeEnum
-ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults)
+ImageCacheEntry::fetchCachedTilesAndUpdateStatus(bool readOnly, TileStateHeader* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults)
 {
 #if defined(TRACE_TILES_STATUS) || defined(TRACE_TILES_STATUS_SHORT)
     _imp->writeDebugStatus("fetchCachedTilesAndUpdateStatus", true);
@@ -1801,6 +1809,7 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
             }
         }
 
+        _imp->updateStateMapReadOnly = readOnly;
 
         if (_imp->cachePolicy == eCacheAccessModeNone) {
             // When not interacting with the cache, the internalCacheEntry is actually local to this object
@@ -1882,8 +1891,10 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
                             assert(false);
                             break;
                         case ImageCacheEntryPrivate::eUpdateStateMapRetCodeNeedWriteLock:
-                            // We must update the state map but cannot do so under a read lock
-                            mustCallUnderWriteLock = true;
+                            if (!_imp->updateStateMapReadOnly) {
+                                // We must update the state map but cannot do so under a read lock
+                                mustCallUnderWriteLock = true;
+                            }
                             break;
                         case ImageCacheEntryPrivate::eUpdateStateMapRetCodeFailed:
                             return eActionStatusFailed;
@@ -1926,12 +1937,15 @@ ImageCacheEntry::fetchCachedTilesAndUpdateStatus(TileStateHeader* tileStatus, bo
 
                 // All tiles should be eTileStatusNotRendered and thus we set them all to eTileStatusPending and must insert the results in te cache
                 assert(stat == ImageCacheEntryPrivate::eUpdateStateMapRetCodeMustWriteToCache ||
-                       stat == ImageCacheEntryPrivate::eUpdateStateMapRetCodeFailed);
+                       stat == ImageCacheEntryPrivate::eUpdateStateMapRetCodeFailed ||
+                       (_imp->updateStateMapReadOnly && stat == ImageCacheEntryPrivate::eUpdateStateMapRetCodeNeedWriteLock));
                 (void)stat;
-                cacheAccess->insertInCache();
+                if (!_imp->updateStateMapReadOnly) {
+                    cacheAccess->insertInCache();
+                }
             }
 
-            if (!_imp->tilesToDownscale.empty() || !_imp->tilesToFetch.empty()) {
+            if (!_imp->updateStateMapReadOnly && (!_imp->tilesToDownscale.empty() || !_imp->tilesToFetch.empty())) {
                 boost::scoped_ptr<boost::unique_lock<boost::shared_mutex> > writeLock;
                 if (!_imp->internalCacheEntry->isPersistent()) {
                     // In non-persistent mode, lock the cache entry since it's shared across threads.
@@ -2456,7 +2470,7 @@ ImageCacheEntry::waitForPendingTiles()
     do {
         hasUnrenderedTile = false;
         hasPendingResults = false;
-        ActionRetCodeEnum stat = fetchCachedTilesAndUpdateStatus(NULL, &hasUnrenderedTile, &hasPendingResults);
+        ActionRetCodeEnum stat = fetchCachedTilesAndUpdateStatus(false, NULL, &hasUnrenderedTile, &hasPendingResults);
         if (isFailureRetCode(stat)) {
             return true;
         }

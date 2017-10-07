@@ -49,14 +49,19 @@ NATRON_NAMESPACE_ENTER
 
 
 /**
- * @brief Ordered tasks (FrameViewRenderRunnable) list (with their dependencies) produced by building a topological sort of the TreeRender 
+ * @brief A sub-execution of a render in a TreeRender. Typically this is created when calling getImagePlane()
  **/
 struct TreeRenderExecutionDataPrivate;
 class TreeRenderExecutionData : public boost::enable_shared_from_this<TreeRenderExecutionData>
 {
 public:
 
-    TreeRenderExecutionData();
+    /**
+     * @brief @param createTreeRenderIfUnrenderedImage If true, anything that request new images
+     * to be rendered from within the execution should create a new TreeRender instead. 
+     * See discussion in @FrameViewRequest: this is to overcome thread-safety for host frame-threading effects.
+     **/
+    TreeRenderExecutionData(bool createTreeRenderIfUnrenderedImage);
 
     virtual ~TreeRenderExecutionData();
 
@@ -82,6 +87,8 @@ public:
      **/
     FrameViewRequestPtr getOutputRequest() const;
 
+    bool isNewTreeRenderUponUnrenderedImageEnabled() const;
+
     /**
      * @brief Starts tasks that are available for rendering and queue them in the thread pool
      * @param launchAllTasksPossible A boolean indicating how many tasks to start. If -1 is passed, all available tasks
@@ -89,11 +96,6 @@ public:
      * @returns The number of parallel tasks that were queued.
      **/
     int executeAvailableTasks(int nTasksToLaunch);
-
-    /**
-     *
-     **/
-    void waitForExecutionFinished();
 
 private:
 
@@ -387,7 +389,8 @@ private:
                                                       unsigned int mipMapLevel,
                                                       const ImagePlaneDesc* planeParam,
                                                       const RectD* canonicalRoIParam,
-                                                      int concatenationFlags);
+                                                      int concatenationFlags,
+                                                      bool createTreeRenderIfUnrenderedImage);
 
     /**
      * @brief Calls createSubExecutionData for each extra requested node result

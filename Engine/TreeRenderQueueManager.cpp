@@ -222,7 +222,8 @@ TreeRenderQueueManager::launchSubRender(const EffectInstancePtr& treeRoot,
                                         const ImagePlaneDesc* planeParam,
                                         const RectD* canonicalRoIParam,
                                         const TreeRenderPtr& render,
-                                        int concatenationFlags)
+                                        int concatenationFlags,
+                                        bool createTreeRenderIfUnrenderedImage)
 {
     assert(render && render->getProvider());
 
@@ -237,7 +238,7 @@ TreeRenderQueueManager::launchSubRender(const EffectInstancePtr& treeRoot,
 #endif
 
 
-    TreeRenderExecutionDataPtr execData = render->createSubExecutionData(treeRoot, time, view, proxyScale, mipMapLevel, planeParam, canonicalRoIParam, concatenationFlags);
+    TreeRenderExecutionDataPtr execData = render->createSubExecutionData(treeRoot, time, view, proxyScale, mipMapLevel, planeParam, canonicalRoIParam, concatenationFlags, createTreeRenderIfUnrenderedImage);
     if (isFailureRetCode(execData->getStatus())) {
         render->setResults(FrameViewRequestPtr(), execData);
     } else {

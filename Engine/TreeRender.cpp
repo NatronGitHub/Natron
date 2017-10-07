@@ -151,7 +151,8 @@ struct TreeRenderPrivate
                                                            unsigned int mipMapLevel,
                                                            const ImagePlaneDesc* planeParam,
                                                            const RectD* canonicalRoIParam,
-                                                           EffectInstance::AcceptedRequestConcatenationFlags concatenationFlags);
+                                                           EffectInstance::AcceptedRequestConcatenationFlags concatenationFlags,
+                                                           bool createTreeRenderIfUnrenderedImage);
 
 
 };
@@ -567,7 +568,11 @@ struct TreeRenderExecutionDataPrivate
     // Instead we explicitly manage them and ensure they do not hold any external strong refs.
     std::set<FrameViewRenderRunnablePtr> launchedRunnables;
 
-    TreeRenderExecutionDataPrivate(TreeRenderExecutionData* publicInterface)
+    // If true, anything that request new images to be rendered from within the execution should create a new TreeRender
+    // instead. See discussion in @FrameViewRequest: this is to overcome thread-safety for host frame-threading effects.
+    bool createTreeRenderIfUnrenderedImage;
+
+    TreeRenderExecutionDataPrivate(TreeRenderExecutionData* publicInterface, bool createTreeRenderIfUnrenderedImage)
     : _publicInterface(publicInterface)
     , isMainExecutionOfTree(false)
     , dependencyFreeRendersMutex()
@@ -578,6 +583,7 @@ struct TreeRenderExecutionDataPrivate
     , plane()
     , outputRequest()
     , launchedRunnables()
+    , createTreeRenderIfUnrenderedImage(createTreeRenderIfUnrenderedImage)
     {
         
     }
@@ -589,8 +595,8 @@ struct TreeRenderExecutionDataPrivate
 
 };
 
-TreeRenderExecutionData::TreeRenderExecutionData()
-: _imp(new TreeRenderExecutionDataPrivate(this))
+TreeRenderExecutionData::TreeRenderExecutionData(bool createTreeRenderIfUnrenderedImage)
+: _imp(new TreeRenderExecutionDataPrivate(this, createTreeRenderIfUnrenderedImage))
 {
 
 }
@@ -622,6 +628,12 @@ FrameViewRequestPtr
 TreeRenderExecutionData::getOutputRequest() const
 {
     return _imp->outputRequest;
+}
+
+bool
+TreeRenderExecutionData::isNewTreeRenderUponUnrenderedImageEnabled() const
+{
+    return _imp->createTreeRenderIfUnrenderedImage;
 }
 
 void
@@ -760,9 +772,10 @@ TreeRenderPrivate::createExecutionDataInternal(bool isMainExecution,
                                                unsigned int mipMapLevel,
                                                const ImagePlaneDesc* planeParam,
                                                const RectD* canonicalRoIParam,
-                                               EffectInstance::AcceptedRequestConcatenationFlags concatenationFlags)
+                                               EffectInstance::AcceptedRequestConcatenationFlags concatenationFlags,
+                                               bool createTreeRenderIfUnrenderedImage)
 {
-    TreeRenderExecutionDataPtr requestData(new TreeRenderExecutionData());
+    TreeRenderExecutionDataPtr requestData(new TreeRenderExecutionData(createTreeRenderIfUnrenderedImage));
 
     TreeRenderPtr thisShared = _publicInterface->shared_from_this();
     requestData->_imp->treeRender = thisShared;
@@ -832,11 +845,12 @@ TreeRender::createSubExecutionData(const EffectInstancePtr& treeRoot,
                                    unsigned int mipMapLevel,
                                    const ImagePlaneDesc* planeParam,
                                    const RectD* canonicalRoIParam,
-                                   int concatenationFlags)
+                                   int concatenationFlags,
+                                   bool createTreeRenderIfUnrenderedImage)
 {
 
 
-    return _imp->createExecutionDataInternal(/*removeRenderClonesWhenFinished*/ false, treeRoot, time, view, proxyScale, mipMapLevel, planeParam, canonicalRoIParam, (EffectInstance::AcceptedRequestConcatenationFlags)concatenationFlags);
+    return _imp->createExecutionDataInternal(/*removeRenderClonesWhenFinished*/ false, treeRoot, time, view, proxyScale, mipMapLevel, planeParam, canonicalRoIParam, (EffectInstance::AcceptedRequestConcatenationFlags)concatenationFlags, createTreeRenderIfUnrenderedImage);
 }
 
 TreeRenderExecutionDataPtr
@@ -844,7 +858,7 @@ TreeRender::createMainExecutionData()
 {
     EffectInstance::AcceptedRequestConcatenationFlags concatenationFlags = EffectInstance::eAcceptedRequestConcatenationNone;
 
-    return _imp->createExecutionDataInternal(true /*removeRenderClonesWhenFinished*/, _imp->ctorArgs->treeRootEffect, _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane.getNumComponents() == 0 ? 0 : &_imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI.isNull() ? 0 : &_imp->ctorArgs->canonicalRoI, concatenationFlags);
+    return _imp->createExecutionDataInternal(true /*removeRenderClonesWhenFinished*/, _imp->ctorArgs->treeRootEffect, _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane.getNumComponents() == 0 ? 0 : &_imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI.isNull() ? 0 : &_imp->ctorArgs->canonicalRoI, concatenationFlags, false);
 }
 
 std::list<TreeRenderExecutionDataPtr>
@@ -856,7 +870,7 @@ TreeRender::getExtraRequestedResultsExecutionData()
     // Now if the image to render was cached, we may not have retrieved the requested color picker images, in which case we have to render them
     for (std::map<NodePtr, FrameViewRequestPtr>::iterator it = _imp->extraRequestedResults.begin(); it != _imp->extraRequestedResults.end(); ++it) {
         if (!it->second) {
-            TreeRenderExecutionDataPtr execData =  createSubExecutionData(it->first->getEffectInstance(), _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane.getNumComponents() == 0 ? 0 : &_imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI.isNull() ? 0 : &_imp->ctorArgs->canonicalRoI, concatenationFlags);
+            TreeRenderExecutionDataPtr execData =  createSubExecutionData(it->first->getEffectInstance(), _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane.getNumComponents() == 0 ? 0 : &_imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI.isNull() ? 0 : &_imp->ctorArgs->canonicalRoI, concatenationFlags, false);
             ret.push_back(execData);
         }
     }
@@ -907,8 +921,8 @@ TreeRenderExecutionData::executeAvailableTasks(int nTasksToLaunch)
         qDebug() << this <<  "Queuing " << request->getEffect()->getScriptName_mt_safe().c_str() << " in task pool";
 #endif
         FrameViewRenderRunnablePtr runnable = FrameViewRenderRunnable::create(thisShared, request);
-
-        if ((request->getStatus() == FrameViewRequest::eFrameViewRequestStatusNotRendered || request->getStatus() == FrameViewRequest::eFrameViewRequestStatusPending) && !isFailureRetCode(_imp->status)) {
+        FrameViewRequest::FrameViewRequestStatusEnum requestStatus = request->getStatus();
+        if ((requestStatus != FrameViewRequest::eFrameViewRequestStatusPassThrough) && !isFailureRetCode(_imp->status)) {
             // Only launch the runnable in a separate thread if its actually going to do any rendering.
             runnable->setAutoDelete(false);
             _imp->launchedRunnables.insert(runnable);

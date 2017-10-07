@@ -84,7 +84,8 @@ private:
                                                        const ImagePlaneDesc* planeParam,
                                                        const RectD* canonicalRoIParam,
                                                        const TreeRenderPtr& render,
-                                                       int concatenationFlags) OVERRIDE FINAL;
+                                                       int concatenationFlags,
+                                                       bool createTreeRenderIfUnrenderedImage) OVERRIDE FINAL;
     virtual ActionRetCodeEnum waitForRenderFinished(const TreeRenderPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     ///

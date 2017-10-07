@@ -441,6 +441,12 @@ public:
      **/
     CacheAccessModeEnum shouldRenderUseCache(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData);
 
+    /**
+     * @brief If a plug-in is using host frame-threading, potentially concurrent threads are calling getImagePlane().
+     * If they all need to perform modification to the same image, we need to return individual images (and FrameViewRequest).
+     **/
+    ActionRetCodeEnum launchIsolatedRender(const FrameViewRequestPtr& requestPassData);
+
     ActionRetCodeEnum handleUpstreamFramesNeeded(const TreeRenderExecutionDataPtr& requestPassSharedData,
                                                  const FrameViewRequestPtr& requestPassData,
                                                  const RenderScale& proxyScale,
@@ -505,6 +511,7 @@ public:
                                         const RectI& pixelRoi,
                                         CacheAccessModeEnum cachePolicy,
                                         RenderBackendTypeEnum backend,
+                                        bool readOnly,
                                         ImagePtr* image,
                                         bool* hasPendingTiles,
                                         bool* hasUnrenderedTiles);

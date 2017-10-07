@@ -147,6 +147,9 @@ struct FrameViewRequestPrivate
     // Protects the FrameViewRequest against multiple threads trying to render it
     mutable QMutex renderLock;
 
+    // True if requestRenderInternal() was run at least once on this request
+    bool isDrescribed;
+
     // Weak reference to the render local arguments for the corresponding effect
     EffectInstanceWPtr renderClone;
 
@@ -210,6 +213,10 @@ struct FrameViewRequestPrivate
     std::string nodeName;
 #endif
 
+    // RoD at each mipmap level
+    std::vector<RectD> canonicalRoDs;
+    std::vector<RectI> pixelRoDs;
+
     // True if cache write is allowed but not cache read
     bool byPassCache;
 
@@ -220,6 +227,7 @@ struct FrameViewRequestPrivate
                             const TreeRenderPtr& render)
     : lock()
     , renderLock()
+    , isDrescribed(false)
     , renderClone(effect)
     , parentRender(render)
     , plane(plane)
@@ -241,6 +249,8 @@ struct FrameViewRequestPrivate
     , neededComps()
     , distortion()
     , distortionStack()
+    , canonicalRoDs()
+    , pixelRoDs()
     , byPassCache(false)
     {
 #ifdef TRACE_REQUEST_LIFETIME
@@ -297,12 +307,14 @@ FrameViewRequest::getMipMapLevel() const
 unsigned int
 FrameViewRequest::getRenderMappedMipMapLevel() const
 {
+    assert(!_imp->renderLock.tryLock());
     return _imp->renderMappedMipMapLevel;
 }
 
 void
 FrameViewRequest::setRenderMappedMipMapLevel(unsigned int mipMapLevel) const
 {
+    QMutexLocker k(&_imp->lock);
     _imp->renderMappedMipMapLevel = mipMapLevel;
 }
 
@@ -321,6 +333,7 @@ FrameViewRequest::getPlaneDesc() const
 void
 FrameViewRequest::setPlaneDesc(const ImagePlaneDesc& plane)
 {
+    assert(!_imp->renderLock.tryLock());
     _imp->plane = plane;
 }
 
@@ -364,6 +377,7 @@ FrameViewRequest::getCachePolicy() const
 void
 FrameViewRequest::setCachePolicy(CacheAccessModeEnum policy)
 {
+    assert(!_imp->renderLock.tryLock());
     _imp->cachingPolicy = policy;
 }
 
@@ -372,6 +386,20 @@ FrameViewRequest::getStatus() const
 {
     QMutexLocker k(&_imp->lock);
     return _imp->status;
+}
+
+void
+FrameViewRequest::setDescribedOnce(bool described)
+{
+    assert(!_imp->renderLock.tryLock());
+    _imp->isDrescribed = described;
+}
+
+bool
+FrameViewRequest::getDescribedOnce() const
+{
+    QMutexLocker k(&_imp->lock);
+    return _imp->isDrescribed;
 }
 
 FrameViewRequestLocker::FrameViewRequestLocker(const FrameViewRequestPtr& request, bool doLock)
@@ -427,53 +455,46 @@ FrameViewRequestLocker::unlockRequest()
 }
 
 void
-FrameViewRequestLocker::initStatus(FrameViewRequest::FrameViewRequestStatusEnum status)
+FrameViewRequest::initStatus(FrameViewRequest::FrameViewRequestStatusEnum status)
 {
-    assert(locked);
-    QMutexLocker k(&request->_imp->lock);
-    request->_imp->status = status;
+    assert(!_imp->renderLock.tryLock());
+    _imp->status = status;
 }
 
 FrameViewRequest::FrameViewRequestStatusEnum
-FrameViewRequestLocker::notifyRenderStarted()
+FrameViewRequest::notifyRenderStarted()
 {
-    assert(locked);
-    QMutexLocker k(&request->_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     // Only one single thread should be computing a FrameViewRequest
-    assert(request->_imp->status != FrameViewRequest::eFrameViewRequestStatusPending);
-    if (request->_imp->status == FrameViewRequest::eFrameViewRequestStatusNotRendered) {
-        request->_imp->status = FrameViewRequest::eFrameViewRequestStatusPending;
+    assert(_imp->status != FrameViewRequest::eFrameViewRequestStatusPending);
+    if (_imp->status == FrameViewRequest::eFrameViewRequestStatusNotRendered) {
+        _imp->status = FrameViewRequest::eFrameViewRequestStatusPending;
         return FrameViewRequest::eFrameViewRequestStatusNotRendered;
     }
-    return request->_imp->status;
+    return _imp->status;
 }
 
 
 void
-FrameViewRequestLocker::notifyRenderFinished(ActionRetCodeEnum stat)
+FrameViewRequest::notifyRenderFinished(ActionRetCodeEnum stat)
 {
-    assert(locked);
-    QMutexLocker k(&request->_imp->lock);
-    assert(request->_imp->status == FrameViewRequest::eFrameViewRequestStatusPending);
-    request->_imp->retCode = stat;
-    request->_imp->status = FrameViewRequest::eFrameViewRequestStatusRendered;
+    assert(!_imp->renderLock.tryLock());
+    assert(_imp->status == FrameViewRequest::eFrameViewRequestStatusPending);
+    _imp->retCode = stat;
+    _imp->status = FrameViewRequest::eFrameViewRequestStatusRendered;
 }
 
 
 RectD
 FrameViewRequest::getCurrentRoI() const
 {
-
-    {
-        QMutexLocker k(&_imp->lock);
-        return _imp->finalRoi;
-    }
+    return _imp->finalRoi;
 }
 
 void
 FrameViewRequest::setCurrentRoI(const RectD& roi)
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     _imp->finalRoi = roi;
 }
 
@@ -557,7 +578,7 @@ FrameViewRequest::getListeners(const TreeRenderExecutionDataPtr& request) const
 std::size_t
 FrameViewRequest::getNumListeners(const TreeRenderExecutionDataPtr& request) const
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     PerLaunchRequestData& data = _imp->requestData[request];
     return data.listeners.size();
 }
@@ -565,7 +586,7 @@ FrameViewRequest::getNumListeners(const TreeRenderExecutionDataPtr& request) con
 bool
 FrameViewRequest::checkIfByPassCacheEnabledAndTurnoff() const
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     if (_imp->byPassCache) {
         _imp->byPassCache = false;
         return true;
@@ -576,7 +597,7 @@ FrameViewRequest::checkIfByPassCacheEnabledAndTurnoff() const
 void
 FrameViewRequest::setByPassCacheEnabled(bool enabled)
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     _imp->byPassCache = enabled;
 }
 
@@ -589,7 +610,7 @@ FrameViewRequest::setFallbackRenderDevice(RenderBackendTypeEnum device)
 void
 FrameViewRequest::setRenderDevice(RenderBackendTypeEnum device)
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     _imp->renderDevice = device;
     _imp->renderDeviceSet = true;
 }
@@ -597,21 +618,21 @@ FrameViewRequest::setRenderDevice(RenderBackendTypeEnum device)
 bool
 FrameViewRequest::isRenderDeviceSet() const
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     return _imp->renderDeviceSet;
 }
 
 RenderBackendTypeEnum
 FrameViewRequest::getRenderDevice() const
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     return _imp->renderDevice;
 }
 
 RenderBackendTypeEnum
 FrameViewRequest::getFallbackRenderDevice() const
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     return _imp->fallbackRenderDevice;
 }
 
@@ -619,21 +640,21 @@ FrameViewRequest::getFallbackRenderDevice() const
 void
 FrameViewRequest::setFallbackRenderDeviceEnabled(bool enabled)
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     _imp->fallbackRenderDeviceEnabled = enabled;
 }
 
 bool
 FrameViewRequest::isFallbackRenderDeviceEnabled() const
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     return _imp->fallbackRenderDeviceEnabled;
 }
 
 GetFramesNeededResultsPtr
 FrameViewRequest::getFramesNeededResults() const
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     return _imp->frameViewsNeeded;
 
 }
@@ -641,52 +662,69 @@ FrameViewRequest::getFramesNeededResults() const
 void
 FrameViewRequest::setFramesNeededResults(const GetFramesNeededResultsPtr& framesNeeded)
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     _imp->frameViewsNeeded = framesNeeded;
 }
 
 GetComponentsResultsPtr
 FrameViewRequest::getComponentsResults() const
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     return _imp->neededComps;
 }
 
 void
 FrameViewRequest::setComponentsNeededResults(const GetComponentsResultsPtr& comps)
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     _imp->neededComps = comps;
 }
 
 GetDistortionResultsPtr
 FrameViewRequest::getDistortionResults() const
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     return _imp->distortion;
 }
 
 void
 FrameViewRequest::setDistortionResults(const GetDistortionResultsPtr& results)
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     _imp->distortion = results;
 }
 
 Distortion2DStackPtr
 FrameViewRequest::getDistorsionStack() const
 {
-    QMutexLocker k(&_imp->lock);
     return _imp->distortionStack;
 }
 
 void
 FrameViewRequest::setDistorsionStack(const Distortion2DStackPtr& stack)
 {
-    QMutexLocker k(&_imp->lock);
+    assert(!_imp->renderLock.tryLock());
     _imp->distortionStack = stack;
 }
 
+bool
+FrameViewRequest::getRoDAtEachMipMapLevel(std::vector<RectD>* canonicalRoDs, std::vector<RectI>* pixelRoDs) const
+{
+    assert(!_imp->renderLock.tryLock());
+    if (_imp->canonicalRoDs.empty()) {
+        return false;
+    }
+    *canonicalRoDs = _imp->canonicalRoDs;
+    *pixelRoDs = _imp->pixelRoDs;
+    return true;
+}
 
+void
+FrameViewRequest::setRoDAtEachMipMapLevel(const std::vector<RectD>& canonicalRoDs, const std::vector<RectI>& pixelRoDs)
+{
+    assert(!_imp->renderLock.tryLock());
+    _imp->canonicalRoDs = canonicalRoDs;
+    _imp->pixelRoDs = pixelRoDs;
+}
 
 NATRON_NAMESPACE_EXIT

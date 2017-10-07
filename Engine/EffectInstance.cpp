@@ -846,7 +846,9 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
             AcceptedRequestConcatenationFlags concatFlags = _imp->getConcatenationFlagsForInput(inArgs.inputNb);
 
-            TreeRenderExecutionDataPtr subLaunchData = launchSubRender(inputEffect, inputTime, inputView, inputProxyScale, inputMipMapLevel, inArgs.plane, &roiCanonical, currentRender, concatFlags);
+            const bool isPotentialHostFrameThreadingRender = getRenderThreadSafety() == eRenderSafetyFullySafeFrame && (!inArgs.renderBackend || *inArgs.renderBackend == eRenderBackendTypeCPU);
+
+            TreeRenderExecutionDataPtr subLaunchData = launchSubRender(inputEffect, inputTime, inputView, inputProxyScale, inputMipMapLevel, inArgs.plane, &roiCanonical, currentRender, concatFlags, isPotentialHostFrameThreadingRender);
             outputRequest = subLaunchData->getOutputRequest();
             status = subLaunchData->getStatus();
         } else {

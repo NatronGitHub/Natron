@@ -64,6 +64,10 @@ public:
      * already for this TreeRender. this is used in the implementation of getImagePlane to re-use the same render clones
      * for the same TreeRender.
      * Note that this function is blocking and will return only once the execution is finished.
+     *
+     * @param createTreeRenderIfUnrenderedImage If true, anything that request new images
+     * to be rendered from within the execution should create a new TreeRender instead.
+     * See discussion in @FrameViewRequest: this is to overcome thread-safety for host frame-threading effects.
      **/
     virtual TreeRenderExecutionDataPtr launchSubRender(const EffectInstancePtr& treeRoot,
                                                        TimeValue time,
@@ -73,7 +77,8 @@ public:
                                                        const ImagePlaneDesc* planeParam,
                                                        const RectD* canonicalRoIParam,
                                                        const TreeRenderPtr& render,
-                                                       int concatenationFlags) = 0;
+                                                       int concatenationFlags,
+                                                       bool createTreeRenderIfUnrenderedImage) = 0;
     
     
     /**
@@ -109,7 +114,8 @@ public:
                                                        const ImagePlaneDesc* planeParam,
                                                        const RectD* canonicalRoIParam,
                                                        const TreeRenderPtr& render,
-                                                       int concatenationFlags) OVERRIDE FINAL;
+                                                       int concatenationFlags,
+                                                       bool createTreeRenderIfUnrenderedImage) OVERRIDE FINAL;
     virtual ActionRetCodeEnum waitForRenderFinished(const TreeRenderPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
     bool hasTreeRendersFinished() const;
     bool hasTreeRendersLaunched() const;

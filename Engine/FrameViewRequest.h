@@ -175,11 +175,44 @@ struct FrameViewRenderKey_compare_less
 
 
 /**
- * @brief These are datas related to a single frame/view render of a node.
- * A request has a set of dependencies (other frame/view of other effects) which need to be rendered
- * before this one. Once the request is out of dependencies (they all have been rendered) it can be 
- * rendered. @see TreeRender::launchRenderInternal
- * This is thread-safe.
+ * @brief A FrameViewRequest represents a task to be rendered by an effect.
+ * A FrameViewRequest only lives into an EffectInstance render clone. Since
+ * each EffectInstance is unique for a FrameViewRenderKey (time, view, render),
+ * a FrameViewRequest thus only has identify against remaining render parameters, 
+ * i.e: proxyScale, mipMapLevel, plane.
+ *
+ * One could argue that the FrameViewRequest object could not exist and instead we should use
+ * an EffectInstance clone for all the parameters above. 
+ * The reason I split these like this is because all knob values and things that are accessed by the plug-in
+ * are keyed against a [time,view] parameters pair. 
+ * The other parameters do not require cloning the EffectInstance again because the underlying data and values
+ * are not affected by those parameters.
+ *
+ * Thus an EffectInstance render clone, may have multiple FrameViewRequest concurrently running.
+ * Moreover, an EffectInstance that performs host frame-threading will have multiple threads using the
+ * same FrameViewRequest.
+ *
+ * Note that a FrameViewRequest is NOT thread-safe. The FrameViewRequestLocker RAII style class
+ * can be used to serialize access to the FrameViewRequest.
+ * This also means that the image(s) buffers associated to the FrameViewRequest are not multi-thread safe
+ * either.
+ *
+ * Warning for host frame-threading plug-ins:
+ *
+ * Since getImagePlane() tries to re-use the same FrameViewRequest that were already created in requestRender(),
+ * a host frame-threading effect may be calling requestRender() concurrently for the same FrameViewRequest from
+ * within getImagePlane(). In practise this should be fine as the image was already computed and the threads should
+ * just read-data. However if any image modification has to be done, for instance because a portion was not rendered,
+ * we cannot modify the image from within getImagePlane() while another thread may already be in the render action
+ * using that image.
+ * A possible solution would be to always launch a new TreeRender object in getImagePlane(), so that it would create 
+ * fresh new FrameViewRequest that are independant for each thread. While this would entirely resolve the thread-safety
+ * issue, this would not be efficient: getImagePlane() would always re-read from the cache, meaning tile puzzling etc..
+ *
+ * The solution adopted here is to always attempt to re-use a pre-computed FrameViewRequest in getImagePlane(). In 95% of the
+ * cases, the image buffer can be re-used as it is and it has 0 cost. 
+ * If an image needs to be modified from within getImagePlane() AND the plug-in is known to do host frame-threading, we
+ * ensure thread safety by launching a new TreeRender context, thus isolating the thread.
  **/
 struct FrameViewRequestPrivate;
 class FrameViewRequest
@@ -233,9 +266,6 @@ public:
      **/
     FrameViewRequestStatusEnum getStatus() const;
 
-
-
-public:
 
     /**
      * @brief Get the render mapped mipmap level (i.e: 0 if the node
@@ -343,7 +373,6 @@ public:
      **/
     void setRenderDevice(RenderBackendTypeEnum device);
     RenderBackendTypeEnum getRenderDevice() const;
-
     bool isRenderDeviceSet() const;
 
     /**
@@ -351,6 +380,12 @@ public:
      **/
     void setFallbackRenderDeviceEnabled(bool enabled);
     bool isFallbackRenderDeviceEnabled() const;
+
+    /**
+     * @brief Get/Set whether the FrameViewRequest has been run in EffectInstance::requestRenderInternal once
+     **/
+    void setDescribedOnce(bool described);
+    bool getDescribedOnce() const;
 
     /**
      * @brief Retrieves the bounding box of all region of interest requested for this time/view.
@@ -399,6 +434,32 @@ public:
     Distortion2DStackPtr getDistorsionStack() const;
     void setDistorsionStack(const Distortion2DStackPtr& stack);
 
+    /**
+     * @brief The RoD of the associated effect at each mipmap level
+     **/
+    bool getRoDAtEachMipMapLevel(std::vector<RectD>* canonicalRoDs, std::vector<RectI>* pixelRoDs) const;
+    void setRoDAtEachMipMapLevel(const std::vector<RectD>& canonicalRoDs, const std::vector<RectI>& pixelRoDs);
+
+
+    /**
+     * @brief Called in requestRender to initialize the status of this object.
+     **/
+    void initStatus(FrameViewRequest::FrameViewRequestStatusEnum status);
+
+    /**
+     * @brief Called on startup of launchRender() function to
+     * determine what next to do.
+     * @see FrameViewRequestStatusEnum for what to do given the status.
+     **/
+    FrameViewRequest::FrameViewRequestStatusEnum notifyRenderStarted();
+
+    /**
+     * @brief Called when launchRender() ends when it was rendering a frame.
+     * This is only needed if the status returned by notifyRenderStarted() is
+     * eFrameViewRequestStatusNotRendered.
+     **/
+    void notifyRenderFinished(ActionRetCodeEnum stat);
+
 private:
 
     friend class FrameViewRequestLocker;
@@ -424,24 +485,6 @@ public:
 
     void unlockRequest();
 
-    /**
-     * @brief Called in requestRender to initialize the status of this object.
-     **/
-    void initStatus(FrameViewRequest::FrameViewRequestStatusEnum status);
-
-    /**
-     * @brief Called on startup of launchRender() function to
-     * determine what next to do.
-     * @see FrameViewRequestStatusEnum for what to do given the status.
-     **/
-    FrameViewRequest::FrameViewRequestStatusEnum notifyRenderStarted();
-
-    /**
-     * @brief Called when launchRender() ends when it was rendering a frame.
-     * This is only needed if the status returned by notifyRenderStarted() is
-     * eFrameViewRequestStatusNotRendered.
-     **/
-    void notifyRenderFinished(ActionRetCodeEnum stat);
 
 };
 
