@@ -19,21 +19,21 @@ Features
 - Colorspace management handled by the OpenColorIO library.
 - Dozens of file formats supported: EXR, DPX,TIFF, JPG, PNG…thanks to OpenImageIO and FFmpeg.
 - Support for many free and open-source OpenFX plugins:
- * [TuttleOFX](https://sites.google.com/site/tuttleofx/)
- * [OpenFX-IO](https://github.com/MrKepzie/openfx-io) to read anything else
+  * [TuttleOFX](https://sites.google.com/site/tuttleofx/)
+  * [OpenFX-IO](https://github.com/MrKepzie/openfx-io) to read anything else
    than standard 8-bits images
- * [OpenFX-Misc](https://github.com/devernay/openfx-misc)
- * [OpenFX-Yadif deinterlacer](https://github.com/devernay/openfx-yadif)
- * [OpenFX-Vegas SDK samples](https://github.com/devernay/openfx-vegas)
- * [OpenFX samples](https://github.com/devernay/openfx) (in the Support and Examples directories)
+  * [OpenFX-Misc](https://github.com/devernay/openfx-misc)
+  * [OpenFX-Yadif deinterlacer](https://github.com/devernay/openfx-yadif)
+  * [OpenFX-Vegas SDK samples](https://github.com/devernay/openfx-vegas)
+  * [OpenFX samples](https://github.com/devernay/openfx) (in the Support and Examples directories)
 
 - Support for commercial OpenFX plugins:
- * [All OFX products from RevisionFX](http://www.revisionfx.com)
- * [Furnace by The Foundry](http://www.thefoundry.co.uk/products/furnace/)
- * [KeyLight by The Foundry](http://www.thefoundry.co.uk/products/plugins/keylight/)
- * [GenArts Sapphire](http://www.genarts.com/software/sapphire/overview)
- * [Other GenArts products](http://www.genarts.com/software/other-vfx-products)
- * And many more. Please tell us if you successfully tested other commercial plugins.
+  * [All OFX products from RevisionFX](http://www.revisionfx.com)
+  * [Furnace by The Foundry](http://www.thefoundry.co.uk/products/furnace/)
+  * [KeyLight by The Foundry](http://www.thefoundry.co.uk/products/plugins/keylight/)
+  * [GenArts Sapphire](http://www.genarts.com/software/sapphire/overview)
+  * [Other GenArts products](http://www.genarts.com/software/other-vfx-products)
+  * And many more. Please tell us if you successfully tested other commercial plugins.
 
 - OpenFX: Currently almost all features of OpenFX v1.4 are supported
 
