@@ -34,7 +34,8 @@ Natron multiple times on the same computer, the different processes will share t
 
 ## Version 2.3.3
 
-- WriteFFmpeg: support 10-bit DNxHR 444 and DNxHR HQX (requires FFmpeg 3.3, only available in macOS binaries for now)
+- ColorLookup: add "Master Curve Mode" parameter, which enable selecting different algorithms to apply the tone curve with more or less color shifting. These curve modes are inspired by [RawTherapee](http://rawpedia.rawtherapee.com/Exposure#Curve_Mode). Also add the possibility to compute and display the RGB histogram of the source input.
+- WriteFFmpeg: support 10-bit DNxHR 444 and DNxHR HQX.
 - Shadertoy: rework many presets so that they work better with Natron, especially the effects in the Blur, Effect, and Source categories. Most blur effects can also be modulated per-pixel using the "Modulate" input to get Z-dependent blur.
 - Shadertoy: new presets: Blur/Bokeh Disc, Blur/Mipmap Blur, Effect/Anaglyphic, Effect/Bloom Paint, Effect/Sawnbringer 4bit, Effect/Sharpen, Effect/CRT, Effect/Fisheye, Effect/Image Cel Shade, Effect/Kaleidoscope, Effect/Noisy Mirror, Effect/Quad Mirror, Effect/Q*Bert-ify, Effect/Stripes, Effect/Vignette, Source/Cloud, Source/Cloudy Sky, Source/Disks, Source/Fireball, Source/Flash, Source/Seascape, Source/Star Nest, Source/Voronoi
 - Shadertoy: add iChannelOffset extension.
