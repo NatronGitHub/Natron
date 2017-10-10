@@ -872,7 +872,7 @@ Image::pasteFromForDepth(const Image & srcImg,
     // NOTE: before removing the following asserts, please explain why an empty image may happen
 
     QWriteLocker k(&_entryLock);
-    boost::shared_ptr<QReadLocker> k2;
+    boost::scoped_ptr<QReadLocker> k2;
     if (takeSrcLock && &srcImg != this) {
         k2.reset( new QReadLocker(&srcImg._entryLock) );
     }

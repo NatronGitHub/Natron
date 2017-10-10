@@ -199,8 +199,8 @@ Image::applyMaskMix(const RectI& roi,
     }
 
     QWriteLocker k(&_entryLock);
-    boost::shared_ptr<QReadLocker> originalLock;
-    boost::shared_ptr<QReadLocker> maskLock;
+    boost::scoped_ptr<QReadLocker> originalLock;
+    boost::scoped_ptr<QReadLocker> maskLock;
     if (originalImg) {
         originalLock.reset( new QReadLocker(&originalImg->_entryLock) );
     }
