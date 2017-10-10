@@ -680,6 +680,7 @@ void
 OutputSchedulerThread::pushFramesToRenderInternal(int startingFrame,
                                                   int nThreads)
 {
+    // QMutexLocker l(&_imp->framesToRenderMutex); already locked (check below)
     assert( !_imp->framesToRenderMutex.tryLock() );
 
     ///Make sure at least 1 frame is pushed
