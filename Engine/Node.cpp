@@ -285,7 +285,7 @@ public:
         , rotoContext()
         , trackContext()
         , imagesBeingRenderedMutex()
-        , imageBeingRenderedCond()
+        , imagesBeingRenderedCond()
         , imagesBeingRendered()
         , supportedDepths()
         , isMultiInstance(false)
@@ -484,7 +484,7 @@ public:
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
     boost::shared_ptr<TrackerContext> trackContext;
     mutable QMutex imagesBeingRenderedMutex;
-    QWaitCondition imageBeingRenderedCond;
+    QWaitCondition imagesBeingRenderedCond;
     std::list< boost::shared_ptr<Image> > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
     std::list <ImageBitDepthEnum> supportedDepths;
 
@@ -8014,7 +8014,7 @@ Node::lock(const boost::shared_ptr<Image> & image)
         std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
 
     while ( it != _imp->imagesBeingRendered.end() ) {
-        _imp->imageBeingRenderedCond.wait(&_imp->imagesBeingRenderedMutex);
+        _imp->imagesBeingRenderedCond.wait(&_imp->imagesBeingRenderedMutex);
         it = std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
     }
     ///Okay the image is not used by any other thread, claim that we want to use it
@@ -8050,7 +8050,7 @@ Node::unlock(const boost::shared_ptr<Image> & image)
     assert( it != _imp->imagesBeingRendered.end() );
     _imp->imagesBeingRendered.erase(it);
     ///Notify all waiting threads that we're finished
-    _imp->imageBeingRenderedCond.wakeAll();
+    _imp->imagesBeingRenderedCond.wakeAll();
 }
 
 boost::shared_ptr<Image>
