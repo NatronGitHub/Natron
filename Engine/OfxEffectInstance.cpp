@@ -1742,7 +1742,9 @@ OfxEffectInstance::render(const RenderActionArgs& args)
     } else {
         if (isRenderAborted()) {
             return eActionStatusAborted;
-        }  else {
+        } else if (stat == kOfxStatGLRenderFailed || stat == kOfxStatGLOutOfMemory) {
+            return eActionStatusOutOfMemory;
+        } else {
             if ( !getNode()->hasPersistentMessage(kNatronPersistentErrorOpenFXPlugin) ) {
                 QString err;
                 if (stat == kOfxStatErrImageFormat) {
