@@ -1,0 +1,93 @@
+https://github.com/FFmpeg/FFmpeg/commit/078322f33ced4b2db6ac3e5002f98233d6fbf643
+--- configure.orig	2017-07-29 12:49:29.000000000 -0500
++++ configure	2017-08-18 02:42:12.000000000 -0500
+@@ -1875,6 +1875,7 @@
+     machine_ioctl_meteor_h
+     malloc_h
+     opencv2_core_core_c_h
++    openjpeg_2_3_openjpeg_h
+     openjpeg_2_1_openjpeg_h
+     openjpeg_2_0_openjpeg_h
+     openjpeg_1_5_openjpeg_h
+@@ -5805,7 +5806,9 @@
+                                  require opencv opencv2/core/core_c.h cvCreateImageHeader -lopencv_core -lopencv_imgproc; } ||
+                                require_pkg_config opencv opencv/cxcore.h cvCreateImageHeader; }
+ enabled libopenh264       && require_pkg_config openh264 wels/codec_api.h WelsGetCodecVersion
+-enabled libopenjpeg       && { { check_lib openjpeg-2.1/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
++enabled libopenjpeg       && { { check_lib openjpeg-2.3/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
++                               check_lib openjpeg-2.3/openjpeg.h opj_version -lopenjp2 ||
++                               { check_lib openjpeg-2.1/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
+                                check_lib openjpeg-2.1/openjpeg.h opj_version -lopenjp2 ||
+                                { check_lib openjpeg-2.0/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
+                                { check_lib openjpeg-1.5/openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
+--- libavcodec/libopenjpegdec.c.orig	2017-07-29 12:49:30.000000000 -0500
++++ libavcodec/libopenjpegdec.c	2017-08-18 02:43:23.000000000 -0500
+@@ -34,7 +34,9 @@
+ #include "internal.h"
+ #include "thread.h"
+ 
+-#if HAVE_OPENJPEG_2_1_OPENJPEG_H
++#if HAVE_OPENJPEG_2_3_OPENJPEG_H
++#  include <openjpeg-2.3/openjpeg.h>
++#elif HAVE_OPENJPEG_2_1_OPENJPEG_H
+ #  include <openjpeg-2.1/openjpeg.h>
+ #elif HAVE_OPENJPEG_2_0_OPENJPEG_H
+ #  include <openjpeg-2.0/openjpeg.h>
+@@ -44,7 +46,7 @@
+ #  include <openjpeg.h>
+ #endif
+ 
+-#if HAVE_OPENJPEG_2_1_OPENJPEG_H || HAVE_OPENJPEG_2_0_OPENJPEG_H
++#if HAVE_OPENJPEG_2_3_OPENJPEG_H || HAVE_OPENJPEG_2_1_OPENJPEG_H || HAVE_OPENJPEG_2_0_OPENJPEG_H
+ #  define OPENJPEG_MAJOR_VERSION 2
+ #  define OPJ(x) OPJ_##x
+ #else
+@@ -429,7 +431,7 @@
+     opj_stream_set_read_function(stream, stream_read);
+     opj_stream_set_skip_function(stream, stream_skip);
+     opj_stream_set_seek_function(stream, stream_seek);
+-#if HAVE_OPENJPEG_2_1_OPENJPEG_H
++#if HAVE_OPENJPEG_2_3_OPENJPEG_H || HAVE_OPENJPEG_2_1_OPENJPEG_H
+     opj_stream_set_user_data(stream, &reader, NULL);
+ #elif HAVE_OPENJPEG_2_0_OPENJPEG_H
+     opj_stream_set_user_data(stream, &reader);
+--- libavcodec/libopenjpegenc.c.orig	2017-07-29 12:49:30.000000000 -0500
++++ libavcodec/libopenjpegenc.c	2017-08-18 02:43:23.000000000 -0500
+@@ -32,7 +32,9 @@
+ #include "avcodec.h"
+ #include "internal.h"
+ 
+-#if HAVE_OPENJPEG_2_1_OPENJPEG_H
++#if HAVE_OPENJPEG_2_3_OPENJPEG_H
++#  include <openjpeg-2.3/openjpeg.h>
++#elif HAVE_OPENJPEG_2_1_OPENJPEG_H
+ #  include <openjpeg-2.1/openjpeg.h>
+ #elif HAVE_OPENJPEG_2_0_OPENJPEG_H
+ #  include <openjpeg-2.0/openjpeg.h>
+@@ -42,7 +44,7 @@
+ #  include <openjpeg.h>
+ #endif
+ 
+-#if HAVE_OPENJPEG_2_1_OPENJPEG_H || HAVE_OPENJPEG_2_0_OPENJPEG_H
++#if HAVE_OPENJPEG_2_3_OPENJPEG_H || HAVE_OPENJPEG_2_1_OPENJPEG_H || HAVE_OPENJPEG_2_0_OPENJPEG_H
+ #  define OPENJPEG_MAJOR_VERSION 2
+ #  define OPJ(x) OPJ_##x
+ #else
+@@ -305,7 +307,7 @@
+ 
+     opj_set_default_encoder_parameters(&ctx->enc_params);
+ 
+-#if HAVE_OPENJPEG_2_1_OPENJPEG_H
++#if HAVE_OPENJPEG_2_3_OPENJPEG_H || HAVE_OPENJPEG_2_1_OPENJPEG_H
+     switch (ctx->cinema_mode) {
+     case OPJ_CINEMA2K_24:
+         ctx->enc_params.rsiz = OPJ_PROFILE_CINEMA_2K;
+@@ -769,7 +771,7 @@
+     opj_stream_set_write_function(stream, stream_write);
+     opj_stream_set_skip_function(stream, stream_skip);
+     opj_stream_set_seek_function(stream, stream_seek);
+-#if HAVE_OPENJPEG_2_1_OPENJPEG_H
++#if HAVE_OPENJPEG_2_3_OPENJPEG_H || HAVE_OPENJPEG_2_1_OPENJPEG_H
+     opj_stream_set_user_data(stream, &writer, NULL);
+ #elif HAVE_OPENJPEG_2_0_OPENJPEG_H
+     opj_stream_set_user_data(stream, &writer);

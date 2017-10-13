@@ -1,0 +1,13 @@
+Work around parallel building issue on APFS
+https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81797
+--- libstdc++-v3/include/Makefile.in.orig	2017-07-25 14:05:07.000000000 -0400
++++ libstdc++-v3/include/Makefile.in	2017-09-02 12:22:08.000000000 -0400
+@@ -1764,6 +1764,8 @@
+ @GLIBCXX_HOSTED_TRUE@install-data-local: install-headers
+ @GLIBCXX_HOSTED_FALSE@install-data-local: install-freestanding-headers
+ 
++.NOTPARALLEL: install-headers
++
+ # This is a subset of the full install-headers rule.  We only need <ciso646>,
+ # <cstddef>, <cfloat>, <limits>, <climits>, <cstdint>, <cstdlib>, <new>,
+ # <typeinfo>, <exception>, <initializer_list>, <cstdalign>, <cstdarg>,

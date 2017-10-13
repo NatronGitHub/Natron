@@ -1,0 +1,22 @@
+--- libjava/Makefile.am.orig	2015-10-12 10:28:24.000000000 -0400
++++ libjava/Makefile.am	2015-10-12 10:29:10.000000000 -0400
+@@ -494,7 +494,7 @@
+ libgcj_la_LDFLAGS = -rpath $(toolexeclibdir) $(THREADLDFLAGS) $(extra_ldflags) $(THREADLIBS) \
+ 	$(LIBLTDL) $(SYS_ZLIBS) $(LIBJAVA_LDFLAGS_NOUNDEF) \
+ 	-version-info `grep -v '^\#' $(srcdir)/libtool-version` \
+-	$(LIBGCJ_LD_SYMBOLIC_FUNCTIONS) $(LIBGCJ_LD_EXPORT_ALL)
++	$(LIBGCJ_LD_SYMBOLIC_FUNCTIONS) $(LIBGCJ_LD_EXPORT_ALL) $(LDLIBICONV)
+ libgcj_la_LIBADD = \
+ 	classpath/native/fdlibm/libfdlibm.la \
+ 	java/lang/Object.lo \
+--- libjava/Makefile.in.orig	2015-10-12 10:29:29.000000000 -0400
++++ libjava/Makefile.in	2015-10-12 10:30:42.000000000 -0400
+@@ -1080,7 +1080,7 @@
+ libgcj_la_LDFLAGS = -rpath $(toolexeclibdir) $(THREADLDFLAGS) $(extra_ldflags) $(THREADLIBS) \
+ 	$(LIBLTDL) $(SYS_ZLIBS) $(LIBJAVA_LDFLAGS_NOUNDEF) \
+ 	-version-info `grep -v '^\#' $(srcdir)/libtool-version` \
+-	$(LIBGCJ_LD_SYMBOLIC_FUNCTIONS) $(LIBGCJ_LD_EXPORT_ALL)
++	$(LIBGCJ_LD_SYMBOLIC_FUNCTIONS) $(LIBGCJ_LD_EXPORT_ALL) $(LDLIBICONV)
+ 
+ libgcj_la_LIBADD = \
+ 	classpath/native/fdlibm/libfdlibm.la \
