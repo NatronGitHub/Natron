@@ -602,7 +602,6 @@ bool
 Node::checkIfConnectingInputIsOk(const NodePtr& input) const
 {
     ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     if (!input || input.get() == this) {
         return false;
     }
@@ -611,27 +610,28 @@ Node::checkIfConnectingInputIsOk(const NodePtr& input) const
 }
 
 bool
-Node::isNodeUpstreamInternal(const NodeConstPtr& input, std::list<const Node*>& markedNodes) const
+Node::isNodeUpstreamInternal(const NodeConstPtr& input, std::set<NodeConstPtr>& markedNodes) const
 {
     if (!input) {
         return false;
     }
 
-    if (std::find(markedNodes.begin(), markedNodes.end(), this) != markedNodes.end()) {
+    NodeConstPtr thisShared = shared_from_this();
+    std::pair< std::set<NodeConstPtr>::iterator, bool> insertOk = markedNodes.insert(thisShared);
+    if (!insertOk.second) {
         return false;
     }
 
-    markedNodes.push_back(this);
 
-    // No need to lock inputs is only written to by the main-thread
-    for (std::size_t i = 0; i  < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].lock() == input) {
+    std::vector<NodeWPtr > inputs = getInputs_copy();
+    for (std::size_t i = 0; i  < inputs.size(); ++i) {
+        if (inputs[i].lock() == input) {
             return true;
         }
     }
 
-    for (std::size_t i = 0; i  < _imp->inputs.size(); ++i) {
-        NodePtr in = _imp->inputs[i].lock();
+    for (std::size_t i = 0; i  < inputs.size(); ++i) {
+        NodePtr in = inputs[i].lock();
         if (in) {
             if (in->isNodeUpstreamInternal(input, markedNodes)) {
                 return true;
@@ -644,9 +644,7 @@ Node::isNodeUpstreamInternal(const NodeConstPtr& input, std::list<const Node*>& 
 bool
 Node::isNodeUpstream(const NodeConstPtr& input) const
 {
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    std::list<const Node*> markedNodes;
+    std::set<NodeConstPtr> markedNodes;
     return isNodeUpstreamInternal(input, markedNodes);
 }
 

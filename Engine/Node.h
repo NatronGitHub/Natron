@@ -1031,7 +1031,7 @@ private:
      * @brief If the node is an input of this node, set ok to true, otherwise
      * calls this function recursively on all inputs.
      **/
-    bool isNodeUpstreamInternal(const NodeConstPtr& input, std::list<const Node*>& markedNodes) const;
+    bool isNodeUpstreamInternal(const NodeConstPtr& input, std::set<NodeConstPtr>& markedNodes) const;
 
     bool setStreamWarningInternal(StreamWarningEnum warning, const QString& message);
 
