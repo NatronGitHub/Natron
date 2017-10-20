@@ -4,6 +4,11 @@ PortSystem          1.0
 PortGroup           muniversal 1.0
 PortGroup           compiler_blacklist_versions 1.0
 
+# require C++11 as of 2017-08-21
+# release 3.9.3 was 2017-09-20
+# https://gitlab.kitware.com/cmake/cmake/commit/c1f3eb9f2d628b2911aa17f65012fab0befc4b87
+PortGroup cxx11 1.1
+
 name                cmake
 
 categories          devel
@@ -29,9 +34,9 @@ if {${subport} eq ${name}} {
 
     # release
 
-    version         ${branch}.3
-    checksums       rmd160 c1396d63aa32d43891dac04133fb477997c39c35 \
-                    sha256 8eaf75e1e932159aae98ab5e7491499545554be62a08cbcbc7c75c84b999f28a
+    version         ${branch}.4
+    checksums       rmd160 bb9c30f2726413f0d7d7b92e0294b61438151d62 \
+                    sha256 b5d86f12ae0072db520fdbdad67405f799eb728b610ed66043c20a92b4906ca1
 
     master_sites    http://www.cmake.org/files/v${branch}/
     conflicts       cmake-devel
@@ -59,10 +64,10 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20170928
-    set commit      50e4a45b9f7028d4476cf370caf5fa73ffedd95b
-    checksums       rmd160 0527981c220e4161d4dfaae9a6ca9be3b5705c95 \
-                    sha256 51b35cdced1b7fb99077fe9e191c94ba3f41672de3717982d321dd0962273e0b
+    version         20171017
+    set commit      7a67f5c599adfec5be97343293548b08b7637093
+    checksums       rmd160 b539ab83a6feea1a21edb8142594afa2f29e99bc \
+                    sha256 55749a1b122e516e9a3f043019905a2edd90f158ce63f5cd98d935449286b305
 
     master_sites    https://gitlab.kitware.com/cmake/cmake/repository/archive.tar.bz2?ref=${commit}&
     distname        ${name}-${commit}
@@ -82,10 +87,6 @@ if {${subport} eq ${name}} {
         patch-Modules-noArchCheck.devel.diff \
         patch-CMakeFindFrameworks.cmake.devel.diff \
         patch-Source_CMakeVersionCompute.cmake.devel.diff
-
-    # require C++11 as of 2017-08-21
-    # https://gitlab.kitware.com/cmake/cmake/commit/c1f3eb9f2d628b2911aa17f65012fab0befc4b87
-    PortGroup cxx11 1.1
 
     livecheck.type  regex
     livecheck.regex /cmake/cmake/commit/(\[0-9a-g\]+)

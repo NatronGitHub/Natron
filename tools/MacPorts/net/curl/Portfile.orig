@@ -3,7 +3,7 @@
 PortSystem                      1.0
 
 name                            curl
-version                         7.55.1
+version                         7.56.0
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -26,8 +26,8 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  d60d416611adf59b212534a3cd652a0ea29599d1 \
-                                sha256  3eafca6e84ecb4af5f35795dee84e643d5428287e88c041122bb8dac18676bb7
+                                rmd160  3d046d82b3cbe49985274e90e268f05c415db702 \
+                                sha256  32437bcca0e9434384329fdc733547879d25ba70335b3cf9e3d9cbc3e71fd172
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
@@ -37,8 +37,6 @@ if {${name} eq ${subport}} {
     depends_build               port:pkgconfig
 
     depends_lib                 port:zlib
-
-    patchfiles                  patch-include-curl-system.h.diff
 
     configure.args              --disable-silent-rules \
                                 --enable-ipv6 \

@@ -6,8 +6,7 @@ PortGroup           gobject_introspection 1.0
 name                gdk-pixbuf2
 set my_name         gdk-pixbuf
 epoch               2
-version             2.36.10
-revision            1
+version             2.36.11
 license             LGPL
 set branch          [join [lrange [split ${version} .] 0 1] .]
 categories          graphics
@@ -23,8 +22,8 @@ long_description    ${description}
 
 master_sites        gnome:sources/${my_name}/${branch}/
 
-checksums           rmd160  58225e5de78bce771b304eb29d6a820e4f1f7a20 \
-                    sha256  f8f6fa896b89475c73b6e9e8d2a2b062fc359c4b4ccb8e96470d6ab5da949ace
+checksums           rmd160  855d1321e3f74b41fa4e80e3c4abddc1147f59f7 \
+                    sha256  ae62ab87250413156ed72ef756347b10208c00e76b222d82d9ed361ed9dde2f3
 
 depends_build       port:pkgconfig
 
@@ -35,8 +34,7 @@ depends_lib         path:lib/pkgconfig/glib-2.0.pc:glib2 \
                     port:jpeg \
                     port:tiff
 
-patchfiles          patch-tests-pixbuf-readonly-to-mutable.c.diff \
-                    patch-shared-mime-info.diff
+patchfiles          patch-tests-pixbuf-readonly-to-mutable.c.diff
 
 gobject_introspection yes
 

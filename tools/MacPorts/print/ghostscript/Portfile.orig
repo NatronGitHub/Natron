@@ -4,8 +4,7 @@ PortSystem          1.0
 PortGroup           muniversal 1.0
 
 name                ghostscript
-version             9.21
-revision            2
+version             9.22
 categories          print
 license             AGPL-3 BSD
 maintainers         nomaintainer
@@ -32,8 +31,8 @@ patchfiles          patch-base_unix-dll.mak.diff \
                     no-werror.diff
 
 checksums           ${distname}.tar.gz \
-                    rmd160  c389ab9346f86ba4ff9e5b80aca0dda7acb866a5 \
-                    sha256  02bceadbc4dddeb6f2eec9c8b1623d945d355ca11b8b4df035332b217d58ce85 \
+                    rmd160  ece611db0c38de2e8061560c50cd16265144d50f \
+                    sha256  7f5f4487c0df9dce37481e4c8f192c0322e4c69f5a2ba900a7833c992331bcf4 \
                     ghostscript-fonts-other-6.0.tar.gz \
                     rmd160  ab60dbf71e7d91283a106c3df381cadfe173082f \
                     sha256  4fa051e341167008d37fe34c19d241060cd17b13909932cd7ca7fe759243c2de \

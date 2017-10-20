@@ -1,6 +1,6 @@
 --- configure.old	2015-09-27 18:43:30.000000000 +0200
 +++ configure	2015-09-27 18:44:18.000000000 +0200
-@@ -5672,7 +5672,6 @@
+@@ -6480,7 +6480,6 @@
      check_optflags -fno-tree-vectorize
      check_cflags -Werror=format-security
      check_cflags -Werror=implicit-function-declaration
