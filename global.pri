@@ -202,6 +202,15 @@ macx {
 macx-clang-libc++ {
     # in Qt 4.8.7, objective-C misses the stdlib and macos version flags
     QMAKE_OBJECTIVE_CFLAGS += -stdlib=libc++ -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
+    
+    #// Disable availability macros on macOS
+    #// because we may be using libc++ on an older macOS,
+    #// so that std::locale::numeric may be available
+    #// even on macOS < 10.9.
+    #// see _LIBCPP_AVAILABILITY_LOCALE_CATEGORY
+    #// in /opt/local-libc++/libexec/llvm-5.0/include/c++/v1/__config
+    #// and /opt/local-libc++/libexec/llvm-5.0/include/c++/v1/__locale
+    DEFINES += _LIBCPP_DISABLE_AVAILABILITY
 }
 
 macx-clang {
