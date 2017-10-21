@@ -43,6 +43,10 @@ depends_lib         port:cctools \
 depends_skip_archcheck-append gcc_select ld64 cctools
 license_noconflict  gmp mpfr ppl libmpc
 
+# Work around parallel building issue on APFS
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81797
+patchfiles-append   notparallel-install-headers.patch
+
 set major           [lindex [split ${version} .-] 0]
 
 platform darwin {
@@ -135,15 +139,7 @@ configure.cxx_stdlib
 
 build.dir           ${configure.dir}
 build.target        bootstrap-lean
-
-# Temporary fix to disable parallel builds on macOS 10.13
-# See https://trac.macports.org/ticket/54829
-#     https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81797
-if { ${os.major} < 17 } {
-    use_parallel_build yes
-} else {
-    use_parallel_build no
-}
+use_parallel_build  yes
 
 destroot.target     install install-info-host
 

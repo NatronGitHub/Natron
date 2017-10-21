@@ -96,6 +96,11 @@ variant doc description {Build documentation} {
     }
 }
 
+variant guile description {Build guile bindings} {
+    depends_lib-append      port:guile
+    configure.args-replace  --disable-guile --enable-guile
+}
+
 if {[variant_isset universal]} {
     set merger_host(x86_64) x86_64-apple-${os.platform}${os.major}
     set merger_host(i386) i686-apple-${os.platform}${os.major}

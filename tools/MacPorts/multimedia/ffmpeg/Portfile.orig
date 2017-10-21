@@ -9,7 +9,7 @@ PortGroup           active_variants 1.1
 name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
-version             3.3.4
+version             3.4
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -51,8 +51,8 @@ master_sites        http://www.ffmpeg.org/releases/
 
 use_xz              yes
 
-checksums           rmd160  d206ec78c62f0d9377d3a2a36e6b576e4ab2a444 \
-                    sha256  98b97e1b908dfeb6aeb6d407e5a5eacdfc253a40c2d195f5867ed2d1d46ea957
+checksums           rmd160  e554cb80356779de57b24c97d0ccb485a0b144eb \
+                    sha256  aeee06e4d8b18d852c61ebbfe5e1bb7014b1e118e8728c1c2115f91e51bffbef
 
 # root directory of extracted tarball is owned by root and has permissions 700
 # set to 755 to facilitate maintenance
@@ -75,9 +75,9 @@ depends_lib         port:lame \
                     port:libvorbis \
                     port:libopus \
                     port:libogg \
+                    port:librsvg \
                     port:libtheora \
                     port:libmodplug \
-                    port:schroedinger \
                     port:libass \
                     port:libbluray \
                     port:gnutls \
@@ -92,7 +92,6 @@ depends_lib         port:lame \
                     port:zlib
 
 patchfiles          patch-libavcodec-audiotoolboxenc.c.diff \
-                    patch-openjpeg-2.2.diff \
                     patch-configure-no-static-libopenjpeg.diff
 
 #
@@ -118,8 +117,8 @@ configure.args      --enable-swscale \
                     --enable-libmp3lame \
                     --enable-libvorbis \
                     --enable-libopus \
+                    --enable-librsvg \
                     --enable-libtheora \
-                    --enable-libschroedinger \
                     --enable-libopenjpeg \
                     --enable-libmodplug \
                     --enable-libvpx \
@@ -176,7 +175,10 @@ platform darwin {
     # More information: https://github.com/mpv-player/mpv/issues/2299
     if {${os.major} > 10 || (${os.major} == 10 && ${os.minor} >= 3)} {
         configure.args-delete --disable-vda
-        configure.args-append --enable-vda
+    # configure now fails on 10.11+ if --enable-vda is forced citing missing vda dependencies
+    # if we just remove --disable-vda, ffmpeg will auto configure vda if the required dependencies are available
+    # this allows ffmpeg to configure and build, effect on the bug cited above not verified
+    #   configure.args-append --enable-vda
     }
 
     # AudiotoolBox support requires CoreMedia Framework available on 10.7+
@@ -248,14 +250,14 @@ if {[variant_isset universal]} {
     if {[string match "*86*" ${configure.universal_archs}]} {
         depends_build-append port:yasm
     }
-    lappend merger_configure_args(i386) --enable-yasm
-    lappend merger_configure_args(x86_64) --enable-yasm
+    lappend merger_configure_args(i386) --enable-x86asm
+    lappend merger_configure_args(x86_64) --enable-x86asm
 } else {
     configure.args-append --arch=${configure.build_arch}
     configure.env-append  ASFLAGS='[get_canonical_archflags]'
     if {${build_arch} eq "i386" || ${build_arch} eq "x86_64"} {
         depends_build-append port:yasm
-        configure.args-append --enable-yasm
+        configure.args-append --enable-x86asm
     }
 }
 
