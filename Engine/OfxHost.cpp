@@ -944,6 +944,10 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         if (p->getContexts().size() == 0) {
             continue;
         }
+        assert( p->getBinary() );
+        if ( !p->getBinary() ) {
+            continue;
+        }
 
         std::string openfxId = p->getIdentifier();
         const std::string & grouping = p->getDescriptor().getPluginGrouping();
@@ -958,8 +962,8 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
             groups[i] = groups[i].trimmed();
         }
 
-        assert( p->getBinary() );
-        QString resourcesPath = QString::fromUtf8( bundlePath.c_str() ) + QString::fromUtf8("/Contents/Resources/");
+        const std::string resourcesPathStr(bundlePath + "/Contents/Resources/");
+        QString resourcesPath = QString::fromUtf8( resourcesPathStr.c_str() );
         QString iconFileName;
         std::string pngIcon;
         try {
