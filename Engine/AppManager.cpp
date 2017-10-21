@@ -25,6 +25,24 @@
 #include "AppManager.h"
 #include "AppManagerPrivate.h"
 
+#if defined(__APPLE__) && defined(_LIBCPP_VERSION)
+#include <AvailabilityMacros.h>
+#if __MAC_OS_X_VERSION_MIN_REQUIRED < 1090
+// Disable availability macros on macOS
+// because we may be using libc++ on an older macOS,
+// so that std::locale::numeric may be available
+// even on macOS < 10.9.
+// see _LIBCPP_AVAILABILITY_LOCALE_CATEGORY
+// in /opt/local/libexec/llvm-5.0/include/c++/v1/__config
+// and /opt/local/libexec/llvm-5.0/include/c++/v1/__locale
+#if defined(_LIBCPP_USE_AVAILABILITY_APPLE)
+#error "this must be compiled with _LIBCPP_DISABLE_AVAILABILITY defined"
+#else
+#define _LIBCPP_DISABLE_AVAILABILITY
+#endif
+#endif
+#endif
+
 #include <clocale>
 #include <csignal>
 #include <cstddef>
@@ -32,6 +50,7 @@
 #include <stdexcept>
 #include <cstring> // for std::memcpy, strlen
 #include <sstream> // stringstream
+#include <locale>
 
 #if defined(Q_OS_LINUX)
 #include <sys/signal.h>
@@ -805,6 +824,13 @@ AppManager::setApplicationLocale()
     // See also https://stackoverflow.com/questions/22753707/is-ostream-operator-in-libstdc-thread-hostile
 
     // set the C++ locale first
+#if defined(__APPLE__) && definef(_LIBCPP_VERSION) && (defined(_LIBCPP_USE_AVAILABILITY_APPLE) || !defined(_LIBCPP_DISABLE_AVAILABILITY)) && (__MAC_OS_X_VERSION_MIN_REQUIRED < 1090)
+    try {
+        std::locale::global( std::locale("C") );
+    } catch (std::runtime_error) {
+        qDebug() << "Could not set C++ locale!";
+    }
+#else
     try {
         std::locale::global( std::locale(std::locale("en_US.UTF-8"), "C", std::locale::numeric) );
     } catch (std::runtime_error) {
@@ -822,6 +848,7 @@ AppManager::setApplicationLocale()
             }
         }
     }
+#endif
 
     // set the C locale second, because it will not overwrite the changes you made to the C++ locale
     // see https://stackoverflow.com/questions/12373341/does-stdlocaleglobal-make-affect-to-printf-function
