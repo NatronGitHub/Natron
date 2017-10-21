@@ -824,7 +824,7 @@ AppManager::setApplicationLocale()
     // See also https://stackoverflow.com/questions/22753707/is-ostream-operator-in-libstdc-thread-hostile
 
     // set the C++ locale first
-#if defined(__APPLE__) && definef(_LIBCPP_VERSION) && (defined(_LIBCPP_USE_AVAILABILITY_APPLE) || !defined(_LIBCPP_DISABLE_AVAILABILITY)) && (__MAC_OS_X_VERSION_MIN_REQUIRED < 1090)
+#if defined(__APPLE__) && defined(_LIBCPP_VERSION) && (defined(_LIBCPP_USE_AVAILABILITY_APPLE) || !defined(_LIBCPP_DISABLE_AVAILABILITY)) && (__MAC_OS_X_VERSION_MIN_REQUIRED < 1090)
     try {
         std::locale::global( std::locale("C") );
     } catch (std::runtime_error) {
