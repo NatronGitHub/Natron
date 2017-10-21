@@ -886,6 +886,10 @@ OfxHost::loadOFXPlugins()
         if (p->getContexts().size() == 0) {
             continue;
         }
+        assert( p->getBinary() );
+        if ( !p->getBinary() ) {
+            continue;
+        }
 
         const std::string& openfxId = p->getIdentifier();
         const std::string & grouping = p->getDescriptor().getPluginGrouping();
@@ -896,10 +900,7 @@ OfxHost::loadOFXPlugins()
         std::vector<std::string> groups = OfxEffectInstance::makePluginGrouping(p->getIdentifier(),
                                                                    p->getVersionMajor(), p->getVersionMinor(),
                                                                    pluginLabel, grouping);
-
-
-        assert( p->getBinary() );
-        std::string resourcesPath = bundlePath+ "/Contents/Resources/";
+        const std::string resourcesPath(bundlePath + "/Contents/Resources/");
         std::string iconFileName;
         {
             try {
