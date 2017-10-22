@@ -504,7 +504,7 @@ DopeSheet::isPartOfGroup(DSNode *dsNode) const
 {
     boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>( dsNode->getInternalNode()->getGroup() );
 
-    return (parentGroup);
+    return bool(parentGroup);
 }
 
 boost::shared_ptr<DSNode> DopeSheet::getGroupDSNode(DSNode *dsNode) const

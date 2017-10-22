@@ -139,10 +139,24 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
     contains(GCCVer,4\\.7.*) {
       QMAKE_CXXFLAGS += -Wno-c++11-extensions
     }
+    contains(GCCVer,[5-9]\\.[0-9]+.*) {
+      # Eigen uses std::binder1st which is deprecated in C++11
+      QMAKE_CXXFLAGS += -Wno-deprecated-declarations
+    }
     contains(GCCVer,[6-9]\\.[0-9]+.*) {
-      # GCC 6 and later are C++14 by default, but Qt 4 is C++98
+      # older versions of boost (at least up to 1.65.1) fail to compile with:
+      # /usr/include/boost/crc.hpp:350:9: error: right operand of shift expression '(18446744073709551615 << 64)' is >= than the precision of the left operand [-fpermissive]
       # see https://github.com/MrKepzie/Natron/issues/1659
-      lessThan(QT_MAJOR_VERSION, 5): QMAKE_CXXFLAGS += -std=gnu++98 -fpermissive
+      # -fpermissive turns it into a warning
+      QMAKE_CXXFLAGS += -fpermissive
+      # GCC 6 and later are C++14 by default, but Qt 4 is C++98
+      # Note: disabled, because qmake should put the right flags anyway
+      #lessThan(QT_MAJOR_VERSION, 5): QMAKE_CXXFLAGS += -std=gnu++98
+    }
+    contains(GCCVer,[7-9]\\.[0-9]+.*) {
+      # clear a lot of boost warnings
+      QMAKE_CFLAGS += -Wno-expansion-to-defined
+      QMAKE_CXXFLAGS += -Wno-expansion-to-defined
     }
   }
   c++11 {
