@@ -81,12 +81,12 @@ DocumentationManager::DocumentationManager(QObject *parent)
     (void)QT_TR_NOOP(PLUGIN_GROUP_OFX);
     // openfx-arena
     (void)QT_TR_NOOP("Extra");
-    (void)QT_TR_NOOP("Extra/"PLUGIN_GROUP_COLOR);
+    (void)QT_TR_NOOP("Extra/" PLUGIN_GROUP_COLOR);
     (void)QT_TR_NOOP("Extra/Distort");
-    (void)QT_TR_NOOP("Extra/"PLUGIN_GROUP_PAINT);
-    (void)QT_TR_NOOP("Extra/"PLUGIN_GROUP_FILTER);
-    (void)QT_TR_NOOP("Extra/"PLUGIN_GROUP_DEFAULT);
-    (void)QT_TR_NOOP("Extra/"PLUGIN_GROUP_TRANSFORM);
+    (void)QT_TR_NOOP("Extra/" PLUGIN_GROUP_PAINT);
+    (void)QT_TR_NOOP("Extra/" PLUGIN_GROUP_FILTER);
+    (void)QT_TR_NOOP("Extra/" PLUGIN_GROUP_DEFAULT);
+    (void)QT_TR_NOOP("Extra/" PLUGIN_GROUP_TRANSFORM);
 }
 
 DocumentationManager::~DocumentationManager()
