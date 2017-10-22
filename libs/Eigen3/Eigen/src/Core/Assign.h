@@ -47,14 +47,14 @@ private:
     StorageOrdersAgree = (int(Derived::IsRowMajor) == int(OtherDerived::IsRowMajor)),
     MightVectorize = StorageOrdersAgree
                   && (int(Derived::Flags) & int(OtherDerived::Flags) & ActualPacketAccessBit),
-    MayInnerVectorize  = MightVectorize && int(InnerSize)!=Dynamic && int(InnerSize)%int(PacketSize)==0
+    MayInnerVectorize  = bool(MightVectorize) && int(InnerSize)!=Dynamic && int(InnerSize)%int(PacketSize)==0
                        && int(DstIsAligned) && int(SrcIsAligned),
     MayLinearize = StorageOrdersAgree && (int(Derived::Flags) & int(OtherDerived::Flags) & LinearAccessBit),
-    MayLinearVectorize = MightVectorize && MayLinearize && DstHasDirectAccess
-                       && (DstIsAligned || MaxSizeAtCompileTime == Dynamic),
+    MayLinearVectorize = bool(MightVectorize) && bool(MayLinearize) && bool(DstHasDirectAccess)
+                       && (bool(DstIsAligned) || MaxSizeAtCompileTime == Dynamic),
       /* If the destination isn't aligned, we have to do runtime checks and we don't unroll,
          so it's only good for large enough sizes. */
-    MaySliceVectorize  = MightVectorize && DstHasDirectAccess
+    MaySliceVectorize  = bool(MightVectorize) && bool(DstHasDirectAccess)
                        && (int(InnerMaxSize)==Dynamic || int(InnerMaxSize)>=3*PacketSize)
       /* slice vectorization can be slow, so we only want it if the slices are big, which is
          indicated by InnerMaxSize rather than InnerSize, think of the case of a dynamic block
@@ -399,7 +399,7 @@ struct assign_impl<Derived1, Derived2, LinearVectorizedTraversal, NoUnrolling, V
       dstAlignment = PacketTraits::AlignedOnScalar ? Aligned : int(assign_traits<Derived1,Derived2>::DstIsAligned) ,
       srcAlignment = assign_traits<Derived1,Derived2>::JointAlignment
     };
-    const Index alignedStart = assign_traits<Derived1,Derived2>::DstIsAligned ? 0
+    const Index alignedStart = bool(assign_traits<Derived1,Derived2>::DstIsAligned) ? 0
                              : internal::first_aligned(&dst.coeffRef(0), size);
     const Index alignedEnd = alignedStart + ((size-alignedStart)/packetSize)*packetSize;
 
