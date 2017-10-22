@@ -497,7 +497,7 @@ KnobGuiColor::showColorDialog()
         } else if (nDims == 4) {
             knob->setValues(_lastColor[0], _lastColor[1], _lastColor[2], _lastColor[3], ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
         } else if (nDims == 1) {
-            knob->setValue(_lastColor[0], ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited);
+            knob->setValue(_lastColor[0], ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, NULL);
         }
     } else {
         QColor userColor = dialog.currentColor();
