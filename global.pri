@@ -158,6 +158,10 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
       # GCC 6 and later are C++14 by default, but Qt 4 is C++98
       # Note: disabled, because qmake should put the right flags anyway
       #lessThan(QT_MAJOR_VERSION, 5): QMAKE_CXXFLAGS += -std=gnu++98
+
+      # clear some Eigen3 warnings
+      QMAKE_CFLAGS += -Wno-int-in-bool-context
+      QMAKE_CXXFLAGS += -Wno-int-in-bool-context
     }
     contains(GCCVer,[7-9]\\.[0-9]+.*) {
       # clear a lot of boost warnings
