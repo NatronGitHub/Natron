@@ -1842,42 +1842,80 @@ QtEnumConvert::toQtCursor(CursorEnum c,
     switch (c) {
     case eCursorArrow:
         *ret = Qt::ArrowCursor;
+        break;
+
     case eCursorBDiag:
         *ret = Qt::SizeBDiagCursor;
+        break;
+
     case eCursorFDiag:
         *ret = Qt::SizeFDiagCursor;
+        break;
+
     case eCursorBlank:
         *ret = Qt::BlankCursor;
+        break;
+
     case eCursorBusy:
         *ret = Qt::BusyCursor;
+        break;
+
     case eCursorClosedHand:
         *ret = Qt::ClosedHandCursor;
+        break;
+
     case eCursorCross:
         *ret = Qt::CrossCursor;
+        break;
+
     case eCursorForbidden:
         *ret = Qt::ForbiddenCursor;
+        break;
+
     case eCursorIBeam:
         *ret = Qt::IBeamCursor;
+        break;
+
     case eCursorOpenHand:
         *ret = Qt::OpenHandCursor;
+        break;
+
     case eCursorPointingHand:
         *ret = Qt::PointingHandCursor;
+        break;
+
     case eCursorSizeAll:
         *ret = Qt::SizeAllCursor;
+        break;
+
     case eCursorSizeHor:
         *ret = Qt::SizeHorCursor;
+        break;
+
     case eCursorSizeVer:
         *ret = Qt::SizeVerCursor;
+        break;
+
     case eCursorSplitH:
         *ret = Qt::SplitHCursor;
+        break;
+
     case eCursorSplitV:
         *ret = Qt::SplitVCursor;
+        break;
+
     case eCursorUpArrow:
         *ret = Qt::UpArrowCursor;
+        break;
+
     case eCursorWait:
         *ret = Qt::WaitCursor;
+        break;
+
     case eCursorWhatsThis:
         *ret = Qt::WhatsThisCursor;
+        break;
+
     case eCursorDefault:
     default:
         b = false;
