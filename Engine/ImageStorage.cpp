@@ -96,7 +96,7 @@ bool
 ImageStorageBase::hasAllocateMemoryArgs() const
 {
     QMutexLocker k(&_imp->allocatedLock);
-    return _imp->allocArgs;
+    return bool(_imp->allocArgs);
 }
 
 void
