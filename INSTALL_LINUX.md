@@ -112,19 +112,20 @@ You can find more examples specific to distributions below.
 INCLUDEPATH is the path to the include files
 
 LIBS is the path to the libs
-
-    ----- copy and paste the following in a terminal -----
-    cat > config.pri << EOF
-    boost: LIBS += -lboost_serialization
-    expat: LIBS += -lexpat
-    expat: PKGCONFIG -= expat
-    cairo: PKGCONFIG -= cairo
-    PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
-    pyside: PKGCONFIG += pyside
-    pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
-    pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-    EOF
-    ----- end -----
+```
+----- copy and paste the following in a terminal -----
+cat > config.pri << EOF
+boost: LIBS += -lboost_serialization
+expat: LIBS += -lexpat
+expat: PKGCONFIG -= expat
+cairo: PKGCONFIG -= cairo
+PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
+pyside: PKGCONFIG += pyside
+pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
+pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
+EOF
+----- end -----
+```
 
 ***note:*** *the last line for cairo is only necessary if the package for cairo in your distribution
 is lower than version 1.12 (as it is on Ubuntu 12.04 LTS for example).*

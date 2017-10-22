@@ -1698,7 +1698,7 @@ FileSystemModel::filesListFromPattern(const std::string& pattern, SequenceParsin
 
     QStringList files = dir.entryList(QDir::Files | QDir::NoDotAndDotDot);
 
-    StringList filesList;
+    SequenceParsing::StringList filesList;
     for (QStringList::iterator it = files.begin(); it!=files.end(); ++it) {
         filesList.push_back(it->toStdString());
     }
