@@ -1278,6 +1278,7 @@ ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive(
             return retCode;
         } // eTileStatusNotRendered
     } // switch(foundTile->status)
+    throw std::runtime_error("ImageCacheEntryPrivate::lookupTileStateInPyramidRecursive: unknown tile status");
 } // lookupTileStateInPyramidRecursive
 
 ImageCacheEntryPrivate::UpdateStateMapRetCodeEnum

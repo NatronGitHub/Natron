@@ -1727,6 +1727,7 @@ handleExprTkReturn(exprtk_expression_t& expressionObject,
     }
     case type_t::e_vector:
     case type_t::e_unknown:
+    default:
         *error = "The expression must either return a scalar or string value depending on the parameter type";
 
         return KnobHelper::eExpressionReturnValueTypeError;
