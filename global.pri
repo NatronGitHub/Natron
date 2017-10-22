@@ -35,8 +35,8 @@ run-without-python {
     message("Natron will run (not build) without Python")
     DEFINES += NATRON_RUN_WITHOUT_PYTHON
 } else {
-    // from <https://docs.python.org/3/c-api/intro.html#include-files>:
-    // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+    # from <https://docs.python.org/3/c-api/intro.html#include-files>:
+    # "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
     CONFIG += python
     QMAKE_CFLAGS += -include Python.h
     QMAKE_CXXFLAGS += -include Python.h
