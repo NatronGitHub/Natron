@@ -661,11 +661,11 @@ OSGLContext::unsetCurrentContext()
 bool
 OSGLContext::hasCreatedContext() const
 {
-    return _imp->_platformContext
 #ifdef HAVE_OSMESA
-    || _imp->_osmesaContext
+    return bool(_imp->_platformContext) || bool(_imp->_osmesaContext);
+#else
+    return bool(_imp->_platformContext);
 #endif
-    ;
 }
 
 QThread*
