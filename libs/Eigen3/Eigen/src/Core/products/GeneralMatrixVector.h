@@ -405,8 +405,8 @@ EIGEN_DONT_INLINE void general_matrix_vector_product<Index,LhsScalar,RowMajor,Co
     alignmentPattern = AllAligned;
   }
 
-  Index offset1 = (FirstAligned && alignmentStep==1?3:1);
-  Index offset3 = (FirstAligned && alignmentStep==1?1:3);
+  Index offset1 = (bool(FirstAligned) && alignmentStep==1?3:1);
+  Index offset3 = (bool(FirstAligned) && alignmentStep==1?1:3);
 
   Index rowBound = ((rows-skipRows)/rowsAtOnce)*rowsAtOnce + skipRows;
   for (Index i=skipRows; i<rowBound; i+=rowsAtOnce)
