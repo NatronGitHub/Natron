@@ -520,7 +520,9 @@ floatToInt(float value)
         return numvals - 1;
     }
 
-    return value * (numvals - 1) + 0.5;
+    //return value * (numvals - 1) + 0.5; // gives a bad result with gcc 7.2.0 32 bits for value=intToFloat<0xff01>(0x8080)
+    float v = value * (numvals - 1) + 0.5f;
+    return int(v);
 }
 
 /// maps 0x0-0xffff to 0x0-0xff
