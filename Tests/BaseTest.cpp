@@ -232,7 +232,7 @@ TEST_F(BaseTest, GenerateDot)
     KnobIPtr frameRange = generator->getApp()->getProject()->getKnobByName("frameRange");
     ASSERT_TRUE( bool(frameRange) );
     KnobIntPtr knob = toKnobInt(frameRange);
-    ASSERT_TRUE(knob);
+    ASSERT_TRUE( bool(knob) );
     knob->setValue(1, ViewSetSpec::all(), DimIdx(0));
     knob->setValue(1, ViewSetSpec::all(), DimIdx(1));
 

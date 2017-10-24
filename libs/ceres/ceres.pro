@@ -58,7 +58,6 @@ SOURCES += \
 	internal/ceres/implicit_schur_complement.cc \
 	internal/ceres/is_close.cc \
 	internal/ceres/iterative_schur_complement_solver.cc \
-	internal/ceres/is_close.cc \
 	internal/ceres/lapack.cc \
 	internal/ceres/levenberg_marquardt_strategy.cc \
 	internal/ceres/line_search.cc \
