@@ -81,6 +81,8 @@ strippedText(QString s)
     return s.trimmed();
 }
 
+
+#if 0
 static bool isEqualIntVec(const std::vector<int>& lhs, const std::vector<int>& rhs)
 {
     if (lhs.size() != rhs.size()) {
@@ -103,6 +105,7 @@ static bool isEqualIntVec(const std::vector<int>& lhs, const std::vector<int>& r
     }
     return true;
 }
+#endif
 
 
 struct ComboBoxMenuNode

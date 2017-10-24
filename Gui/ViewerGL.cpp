@@ -2807,7 +2807,7 @@ void
 ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
                                       const QPoint & widgetPos)
 {
-    bool isDrawing = _imp->viewerTab->getGui()->getApp()->getActiveRotoDrawingStroke();
+    bool isDrawing = bool( _imp->viewerTab->getGui()->getApp()->getActiveRotoDrawingStroke() );
 
 
     if (!isDrawing) {

@@ -323,7 +323,7 @@ Edge::computeVisibility(bool hovered) const
     NodeGuiPtr src = _imp->source.lock();
 
     //The viewer does not hide its optional edges
-    bool isViewer = effect ? boost::dynamic_pointer_cast<ViewerInstancePtr>(effect) : false;
+    bool isViewer = effect ? bool( boost::dynamic_pointer_cast<ViewerInstancePtr>(effect) ) : false;
     bool isReader = effect ? effect->isReader() : false;
     bool autoHide = areOptionalInputsAutoHidden();
     bool isSelected = dst->getIsSelected();
