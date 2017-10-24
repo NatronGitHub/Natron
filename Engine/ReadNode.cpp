@@ -388,7 +388,7 @@ ReadNodePrivate::placeReadNodeKnobsInPage()
                 isSecret = children[foundSep]->getIsSecret();
             }
             if (foundSep < (int)children.size()) {
-                separatorKnob.lock()->setSecret(toKnobSeparator(children[foundSep]));
+                separatorKnob.lock()->setSecret( bool( toKnobSeparator(children[foundSep]) ) );
             } else {
                 separatorKnob.lock()->setSecret(true);
             }
