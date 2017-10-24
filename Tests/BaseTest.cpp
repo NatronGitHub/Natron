@@ -263,7 +263,7 @@ TEST_F(BaseTest, SetValues)
 
     assert(generator);
     KnobDoublePtr knob = toKnobDouble(generator->getKnobByName("noiseZ"));
-    EXPECT_TRUE(knob);
+    EXPECT_TRUE( bool(knob) );
     if (!knob) {
         return;
     }

@@ -115,7 +115,8 @@ LIBS is the path to the libs
 ```
 ----- copy and paste the following in a terminal -----
 cat > config.pri << EOF
-boost: LIBS += -lboost_serialization
+boost-serialization-lib: LIBS += -lboost_serialization
+boost: LIBS += -lboost_thread -lboost_system
 expat: LIBS += -lexpat
 expat: PKGCONFIG -= expat
 cairo: PKGCONFIG -= cairo
@@ -191,7 +192,8 @@ It should be installed in `/usr/local/lib`
 For the config.pri, use the following:
 
 ```pri
-boost: LIBS += -lboost_serialization
+boost-serialization-lib: LIBS += -lboost_serialization
+boost: LIBS += -lboost_thread -lboost_system
 expat: LIBS += -lexpat
 expat: PKGCONFIG -= expat
 cairo {
@@ -231,13 +233,14 @@ sudo add-apt-repository -y ppa:irie/boost
 ```
 Install the required packages:
 ```
-sudo apt-get install libqt4-dev libboost-serialization-dev libexpat1-dev libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev
+sudo apt-get install libqt4-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev
 ```
 
 For the config.pri use:
 
 ```
-boost: LIBS += -lboost_serialization
+boost-serialization-lib: LIBS += -lboost_serialization
+boost: LIBS += -lboost_thread -lboost_system
 expat: LIBS += -lexpat
 expat: PKGCONFIG -= expat
 cairo: PKGCONFIG -= cairo
@@ -260,7 +263,8 @@ yum install fontconfig-devel gcc-c++ expat-devel python-pyside-devel shiboken-de
 
 config.pri:
 ```pri
-boost: LIBS += -lboost_serialization
+boost-serialization-lib: LIBS += -lboost_serialization
+boost: LIBS += -lboost_thread -lboost_system
 PKGCONFIG += expat
 PKGCONFIG += fontconfig
 cairo {

@@ -38,7 +38,8 @@ INCLUDEPATH is the path to the include files
 LIBS is the path to the libs
 
 ```pri
-boost: LIBS += -lboost_serialization
+boost-serialization-lib: LIBS += -lboost_serialization
+boost: LIBS += -lboost_thread -lboost_system
 PKGCONFIG += expat
 PKGCONFIG += fontconfig
 cairo {

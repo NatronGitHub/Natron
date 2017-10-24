@@ -80,14 +80,17 @@ INCLUDEPATH is the path to the include files
 
 LIBS is the path to the libs
 
-    ----- copy and paste the following in a terminal -----
-    cat > config.pri << EOF
-    boost: LIBS += -lboost_serialization
-    expat: LIBS += -lexpat
-    expat: PKGCONFIG -= expat
-    cairo: PKGCONFIG -= cairo
-    EOF
-    ----- end -----
+```
+----- copy and paste the following in a terminal -----
+cat > config.pri << EOF
+boost-serialization-lib: LIBS += -lboost_serialization
+boost: LIBS += -lboost_thread -lboost_system
+expat: LIBS += -lexpat
+expat: PKGCONFIG -= expat
+cairo: PKGCONFIG -= cairo
+EOF
+----- end -----
+```
 
 ***note:*** *the last line for cairo is only necessary if the package for cairo in your distribution
 is lower than version 1.12 (as it is on Ubuntu 12.04 LTS for example).*
@@ -225,8 +228,8 @@ Here's an example of a config.pri file that supports both 32bit and 64bit builds
 
 boost {
         INCLUDEPATH +=  $$quote(C:\\boost)
-        CONFIG(release, debug|release): LIBS += -L$$quote(C:\\boost\\x64) -lboost_serialization-vc100-mt-1_57
-		CONFIG(debug, debug|release):  LIBS += -L$$quote(C:\\boost\\x64) -lboost_serialization-vc100-mt-gd-1_57
+        CONFIG(release, debug|release): LIBS += -L$$quote(C:\\boost\\x64) -lboost_serialization-vc100-mt-1_57 -lboost_thread-vc100-mt-1_57 -lboost_system-vc100-mt-1_57
+		CONFIG(debug, debug|release):  LIBS += -L$$quote(C:\\boost\\x64) -lboost_serialization-vc100-mt-gd-1_57 -lboost_thread-vc100-mt-gd-1_57 -lboost_system-vc100-mt-gd-1_57
 }
 
 expat{
@@ -265,8 +268,8 @@ shiboken {
 
 boost {
         INCLUDEPATH +=  $$quote(C:\\boost)
-        CONFIG(release, debug|release): LIBS += -L$$quote(C:\\boost\\win32) -lboost_serialization-vc100-mt-1_57
-		CONFIG(debug, debug|release): LIBS += -L$$quote(C:\\boost\\win32) -lboost_serialization-vc100-mt-gd-1_57
+        CONFIG(release, debug|release): LIBS += -L$$quote(C:\\boost\\win32) -lboost_serialization-vc100-mt-1_57 -lboost_thread-vc100-mt-1_57 -lboost_system-vc100-mt-1_57
+		CONFIG(debug, debug|release): LIBS += -L$$quote(C:\\boost\\win32) -lboost_serialization-vc100-mt-gd-1_57 -lboost_thread-vc100-mt-gd-1_57 -lboost_system-vc100-mt-gd-1_57
 }
 
 expat{

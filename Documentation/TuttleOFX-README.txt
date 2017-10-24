@@ -294,9 +294,10 @@ launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sb
 (cd Natron;git checkout workshop;git submodule update -i; git submodule foreach git pull origin master)
 cd Natron
 cat > config.pri << EOF
+boost-serialization-lib: LIBS += -L/opt/local/lib -lboost_serialization-mt
 boost{
     INCLUDEPATH += /opt/local/include
-    LIBS += -L/opt/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
+    LIBS += -L/opt/local/lib -lboost_thread-mt -lboost_system-mt
 }
 EOF
 

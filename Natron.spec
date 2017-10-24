@@ -35,7 +35,8 @@ Open source compositing software. Node-graph based. Similar in functionalities t
 %build
 mv Natron-OpenColorIO-Configs-2.1.0 OpenColorIO-Configs
 cat << 'EOF' > config.pri
-boost: LIBS += -lboost_serialization
+boost-serialization-lib: LIBS += -lboost_serialization
+boost: LIBS += -lboost_thread -lboost_system
 PKGCONFIG += expat
 PKGCONFIG += fontconfig
 cairo {
