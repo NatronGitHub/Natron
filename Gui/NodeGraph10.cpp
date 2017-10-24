@@ -284,7 +284,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                 BackdropGuiPtr isBd = toBackdropGui(it->lock());
                 if (isBd) {
                     NodesGuiList nodesWithin = getNodesWithinBackdrop(isBd);
-                    _imp->_nodesWithinBDAtPenDown.insert( std::make_pair(*it, nodesWithin) );
+                    _imp->_nodesWithinBDAtPenDown.insert( std::make_pair(isBd, nodesWithin) );
                 }
             }
         } else if ( buttonDownIsRight(e) ) {
