@@ -229,7 +229,7 @@ private:
                     } else if (srcNComps == 4 && _takeDstFromAlpha) {
                         *dst_pixels = Image::convertPixelDepth<PIX, float>(*src_pixels[3]);
                     } else {
-                        float tmpPix[3] = {0.f, 0.f, 0.f};
+                        float tmpPix[4] = {0.f, 0.f, 0.f, 0.f};
                         for (int c = 0; c < srcNComps; ++c) {
                             tmpPix[c] = doR ? Image::convertPixelDepth<PIX, float>(*src_pixels[c]) : 0.f;
                         }
