@@ -139,7 +139,7 @@ ViewerTab::drawOverlays(TimeValue time,
         return;
     }
 
-    bool isDrawing = app->getActiveRotoDrawingStroke();
+    bool isDrawing = bool( app->getActiveRotoDrawingStroke() );
 
     if ( !_imp->viewer ||
          app->isClosing() ||
