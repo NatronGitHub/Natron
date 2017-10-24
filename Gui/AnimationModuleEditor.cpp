@@ -1007,7 +1007,7 @@ void
 AnimationModuleEditor::refreshKeyFrameWidgetsEnabledNess()
 {
     CurveTypeEnum dataType = eCurveTypeString;
-    bool showKeyframeWidgets = _imp->selectedKeyFrame.id.item;
+    bool showKeyframeWidgets = bool(_imp->selectedKeyFrame.id.item);
     if (_imp->selectedKeyFrame.id.item) {
         dataType = _imp->selectedKeyFrame.id.item->getInternalAnimItem()->getKeyFrameDataType();
     }
