@@ -386,7 +386,12 @@ CLANG_DIAG_PRAGMA( ignored CLANG_DIAG_JOINSTR(-W, x) )
 #  define CLANG_DIAG_OFF(x)
 #  define CLANG_DIAG_ON(x)
 #  define CLANG_DIAG_PRAGMA(x)
-#  define GCC_DIAG_PEDANTIC "-pedantic"
+#  if (__GNUC__ >= 7)
+#    define GCC_DIAG_PEDANTIC "-Wpedantic"
+#  else
+// GCC before ~4.8 does not accept "-Wpedantic" quietly.
+#    define GCC_DIAG_PEDANTIC "-pedantic"
+#  endif
 #endif
 
 
