@@ -301,6 +301,10 @@ public:
 
     bool setAsAlias(Param* other);
 
+    void beginChanges();
+
+    void endChanges();
+
 protected:
 
     /**

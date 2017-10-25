@@ -970,9 +970,38 @@ Param::setIconFilePath(const QString& icon, bool checked)
     KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
+        PythonSetNullError();
         return;
     }
     knob->setIconLabel( icon.toStdString(), checked, false );
+}
+
+void
+Param::beginChanges()
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    knob->beginChanges();
+    knob->blockValueChanges();
+    knob->setAdjustFoldExpandStateAutomatically(false);
+}
+
+void
+Param::endChanges()
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        PythonSetNullError();
+        return;
+    }
+    knob->endChanges();
+    knob->unblockValueChanges();
+    knob->setAdjustFoldExpandStateAutomatically(true);
 }
 
 AnimatedParam::AnimatedParam(const KnobIPtr& knob)

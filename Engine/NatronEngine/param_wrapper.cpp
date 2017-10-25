@@ -106,6 +106,29 @@ static PyObject* Sbk_ParamFunc__addAsDependencyOf(PyObject* self, PyObject* args
         return 0;
 }
 
+static PyObject* Sbk_ParamFunc_beginChanges(PyObject* self)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // beginChanges()
+            cppSelf->beginChanges();
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+}
+
 static PyObject* Sbk_ParamFunc_copy(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ParamWrapper* cppSelf = 0;
@@ -373,6 +396,29 @@ static PyObject* Sbk_ParamFunc_curve(PyObject* self, PyObject* args, PyObject* k
         const char* overloads[] = {"float, int = 0, unicode = QLatin1String(\"Main\")", "int, int = 0, unicode = QLatin1String(\"Main\")", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.curve", overloads);
         return 0;
+}
+
+static PyObject* Sbk_ParamFunc_endChanges(PyObject* self)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // endChanges()
+            cppSelf->endChanges();
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
 }
 
 static PyObject* Sbk_ParamFunc_getAddNewLine(PyObject* self)
@@ -2292,8 +2338,10 @@ static PyObject* Sbk_ParamFunc_unlink(PyObject* self, PyObject* args, PyObject* 
 
 static PyMethodDef Sbk_Param_methods[] = {
     {"_addAsDependencyOf", (PyCFunction)Sbk_ParamFunc__addAsDependencyOf, METH_VARARGS},
+    {"beginChanges", (PyCFunction)Sbk_ParamFunc_beginChanges, METH_NOARGS},
     {"copy", (PyCFunction)Sbk_ParamFunc_copy, METH_VARARGS|METH_KEYWORDS},
     {"curve", (PyCFunction)Sbk_ParamFunc_curve, METH_VARARGS|METH_KEYWORDS},
+    {"endChanges", (PyCFunction)Sbk_ParamFunc_endChanges, METH_NOARGS},
     {"getAddNewLine", (PyCFunction)Sbk_ParamFunc_getAddNewLine, METH_NOARGS},
     {"getApp", (PyCFunction)Sbk_ParamFunc_getApp, METH_NOARGS},
     {"getCanAnimate", (PyCFunction)Sbk_ParamFunc_getCanAnimate, METH_NOARGS},

@@ -15,8 +15,10 @@ panel of a node. See :ref:`details here<details>`.
 Functions
 ^^^^^^^^^
 
+*    def :meth:`beginChanges<NatronEngine.Param.beginChanges>` ()
 *    def :meth:`copy<NatronEngine.Param.copy>` (param[, thisDimension=-1, otherDimension=-1, thisView="All", otherView="All"])
 *    def :meth:`curve<NatronEngine.Param.curve>` (time[, dimension=-1, view="Main"])
+*    def :meth:`endChanges<NatronEngine.Param.endChanges>` ()
 *    def :meth:`getAddNewLine<NatronEngine.Param.getAddNewLine>` ()
 *    def :meth:`getCanAnimate<NatronEngine.Param.getCanAnimate>` ()
 *    def :meth:`getEvaluateOnChange<NatronEngine.Param.getEvaluateOnChange>` ()
@@ -158,6 +160,16 @@ and :func:`setViewerUILabel(label)<NatronEngine.Param.setViewerUILabel>`.
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. method:: NatronEngine.Param.beginChanges()
+
+    This can be called before making heavy changes to a parameter, such as setting thousands
+    of keyframes. This call prevent the parameter from doing the following:
+    - Trigger a new render when changed
+    - Call the paramChanged callback when changed
+    - Adjusting the folded/expanded state automatically for multi-dimensional parameters.
+    
+    Make sure to call the corresponding :func:`endChanges()<NatronEngine.Param.endChanges>`
+    function when done
 
 .. method:: NatronEngine.Param.copy(other [, dimension=-1])
 
@@ -200,7 +212,14 @@ This function returns **True** upon success and **False** otherwise.
 	curve will still be returned. 
 	This is useful to write custom expressions for motion design such as looping, reversing, etc...
 	
+.. method:: NatronEngine.Param.endChanges()
 
+    To be called when finished making heavy changes to a parameter, such as setting thousands
+    of keyframes. 
+
+    A call to endChanges should always match a corresponding previous call to :func:`beginChanges()<NatronEngine.Param.beginChanges>`
+    Note that they can be nested.
+    
 .. method:: NatronEngine.Param.getAddNewLine()
 
 
