@@ -428,8 +428,36 @@ AppManager::takeNatronGIL()
 void
 AppManager::releaseNatronGIL()
 {
-    _imp->natronPythonGIL.unlock();
+    assert(_imp->pythonGILRCount > 0);
     --_imp->pythonGILRCount;
+    if (_imp->pythonGILRCount == 0) {
+        // reset stdout/stderr
+        PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+        PyObject *errCatcher = 0;
+        PyObject *outCatcher = 0;
+
+        if ( PyObject_HasAttrString(mainModule, "catchErr") ) {
+            errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
+        }
+
+        if ( PyObject_HasAttrString(mainModule, "catchOut") ) {
+            outCatcher = PyObject_GetAttrString(mainModule, "catchOut"); //get our catchOutErr created above, new ref
+        }
+        if (errCatcher) {
+            // Clear stderr if we are the last script call in the stack
+            PyObject* unicode = PyUnicode_FromString("");
+            PyObject_SetAttrString(errCatcher, "value", unicode);
+            Py_DECREF(errCatcher);
+        }
+        if (outCatcher) {
+            // Clear stderr if we are the last script call in the stack
+            PyObject* unicode = PyUnicode_FromString("");
+            PyObject_SetAttrString(outCatcher, "value", unicode);
+            Py_DECREF(outCatcher);
+        }
+    }
+    _imp->natronPythonGIL.unlock();
+
 }
 
 int
@@ -3782,11 +3810,7 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
         if (error) {
             *error = tmpError;
         }
-        if (appPTR->getGILLockedCount() == 1) {
-            // Clear stderr if we are the last script call in the stack
-            PyObject* unicode = PyUnicode_FromString("");
-            PyObject_SetAttrString(errCatcher, "value", unicode);
-        }
+
         Py_DECREF(errorObj);
         Py_DECREF(errCatcher);
     }
@@ -3797,11 +3821,7 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
         if (output) {
             *output = PyStringToStdString(outObj);
         }
-        if (appPTR->getGILLockedCount() == 1) {
-            // Clear stdout if we are the last script call in the stack
-            PyObject* unicode = PyUnicode_FromString("");
-            PyObject_SetAttrString(outCatcher, "value", unicode);
-        }
+
         Py_DECREF(outObj);
         Py_DECREF(outCatcher);
     }
