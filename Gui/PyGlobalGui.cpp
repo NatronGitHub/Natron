@@ -75,7 +75,7 @@ PyGuiApplication::getGuiInstance(int idx) const
 
     // Clear errors if our call to interpretPythonScript failed, we don't want the
     // calling function to fail aswell.
-    NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut();
+    NATRON_PYTHON_NAMESPACE::clearPythonStdErr();
     if (ok) {
         PyObject* pyApp = 0;
         PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
@@ -90,7 +90,7 @@ PyGuiApplication::getGuiInstance(int idx) const
             cppApp = (GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)pyApp);
         }
         NATRON_PYTHON_NAMESPACE::interpretPythonScript("del " kPythonTmpCheckerVariable, 0, 0);
-        NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut();
+        NATRON_PYTHON_NAMESPACE::clearPythonStdErr();
         if (cppApp) {
             return cppApp;
         }

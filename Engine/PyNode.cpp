@@ -589,7 +589,7 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
 
         // Clear errors if our call to interpretPythonScript failed, we don't want the
         // calling function to fail aswell.
-        NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut();
+        NATRON_PYTHON_NAMESPACE::clearPythonStdErr();
         if (ok) {
 
             // Check if the kPythonTmpCheckerVariable was correctly assigned
@@ -610,7 +610,7 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
 
             // Ensure we remove the kPythonTmpCheckerVariable attribute
             NATRON_PYTHON_NAMESPACE::interpretPythonScript("del " kPythonTmpCheckerVariable, 0, 0);
-            NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut();
+            NATRON_PYTHON_NAMESPACE::clearPythonStdErr();
             if (cppParam) {
                 return cppParam;
             }
@@ -1428,7 +1428,7 @@ Effect::createItemsTableWrapper(const KnobItemsTablePtr& table)
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, 0, 0);
     // Clear errors if our call to interpretPythonScript failed, we don't want the
     // calling function to fail aswell.
-    NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut();
+    NATRON_PYTHON_NAMESPACE::clearPythonStdErr();
     if (ok) {
         PyObject* pyTable = 0;
         PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
@@ -1443,7 +1443,7 @@ Effect::createItemsTableWrapper(const KnobItemsTablePtr& table)
             cppTable = (ItemsTable*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMSTABLE_IDX], (SbkObject*)pyTable);
         }
         NATRON_PYTHON_NAMESPACE::interpretPythonScript("del " kPythonTmpCheckerVariable, 0, 0);
-        NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut();
+        NATRON_PYTHON_NAMESPACE::clearPythonStdErr();
         if (cppTable) {
             return cppTable;
         }

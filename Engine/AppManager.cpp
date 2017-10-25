@@ -431,7 +431,8 @@ AppManager::releaseNatronGIL()
     assert(_imp->pythonGILRCount > 0);
     --_imp->pythonGILRCount;
     if (_imp->pythonGILRCount == 0) {
-        NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut();
+        NATRON_PYTHON_NAMESPACE::clearPythonStdErr();
+        NATRON_PYTHON_NAMESPACE::clearPythonStdOut();
     }
     _imp->natronPythonGIL.unlock();
 
@@ -1729,7 +1730,8 @@ AppManager::findAndRunScriptFile(const QString& path,
                 std::string error = NATRON_PYTHON_NAMESPACE::getPythonStdErr();
                 std::string output = NATRON_PYTHON_NAMESPACE::getPythonStdOut();
 
-                NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut();
+                NATRON_PYTHON_NAMESPACE::clearPythonStdErr();
+                NATRON_PYTHON_NAMESPACE::clearPythonStdOut();
 
                 if ( !error.empty() ) {
                     QString message(tr("Failed to load %1: %2").arg(absolutePath).arg(QString::fromUtf8( error.c_str() )) );
@@ -4166,6 +4168,24 @@ static std::string getPythonStdStream(const std::string& streamName)
     return ret;
 } // getPythonStdStream
 
+static void clearPythonStdStream(const std::string& streamName)
+{
+    PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+
+    PyObject *catcher = 0;
+
+    if ( PyObject_HasAttrString(mainModule, streamName.c_str()) ) {
+        catcher = PyObject_GetAttrString(mainModule, streamName.c_str());
+    }
+
+    if (catcher) {
+        PyObject* unicode = PyUnicode_FromString("");
+        PyObject_SetAttrString(catcher, "value", unicode);
+        Py_DECREF(catcher);
+    }
+} // clearPythonStdStream
+
+
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 std::string
@@ -4182,31 +4202,19 @@ NATRON_PYTHON_NAMESPACE::getPythonStdErr()
 }
 
 void
-NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut()
+NATRON_PYTHON_NAMESPACE::clearPythonStdOut()
 {
-    // reset stdout/stderr
-    PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+   clearPythonStdStream("catchOut");
+} // clearPythonStdOut
 
-    static const char* variables[] = {"catchErr", "catchOut", NULL};
+void
+NATRON_PYTHON_NAMESPACE::clearPythonStdErr()
+{
 
-    int i = 0;
     PyErr_Clear();
-    while (variables[i]) {
-        PyObject *catcher = 0;
+    clearPythonStdStream("catchErr");
+} // clearPythonStdOut
 
-        if ( PyObject_HasAttrString(mainModule, variables[i]) ) {
-            catcher = PyObject_GetAttrString(mainModule, variables[i]);
-        }
-
-        std::string ret;
-        if (catcher) {
-            PyObject* unicode = PyUnicode_FromString("");
-            PyObject_SetAttrString(catcher, "value", unicode);
-            Py_DECREF(catcher);
-        }
-        ++i;
-    }
-} // clearPythonStdErrOut
 
 NATRON_NAMESPACE_EXIT
 

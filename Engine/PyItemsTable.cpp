@@ -368,7 +368,7 @@ ItemsTable::createPyItemWrapper(const KnobTableItemPtr& item)
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, 0, 0);
     // Clear errors if our call to interpretPythonScript failed, we don't want the
     // calling function to fail aswell.
-    NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut();
+    NATRON_PYTHON_NAMESPACE::clearPythonStdErr();
     if (ok) {
         PyObject* pyItem = 0;
         PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
@@ -383,7 +383,7 @@ ItemsTable::createPyItemWrapper(const KnobTableItemPtr& item)
             cppItem = (ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)pyItem);
         }
         NATRON_PYTHON_NAMESPACE::interpretPythonScript("del " kPythonTmpCheckerVariable, 0, 0);
-        NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut();
+        NATRON_PYTHON_NAMESPACE::clearPythonStdErr();
         if (cppItem) {
             return cppItem;
         }
