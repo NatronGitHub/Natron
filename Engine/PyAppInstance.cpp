@@ -181,7 +181,7 @@ App::createEffectFromNodeWrapper(const NodePtr& node)
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, 0, 0);
     // Clear errors if our call to interpretPythonScript failed, we don't want the
     // calling function to fail aswell.
-    PyErr_Clear();
+    NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut();
     if (ok) {
         PyObject* pyEffect = 0;
         PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
@@ -197,7 +197,7 @@ App::createEffectFromNodeWrapper(const NodePtr& node)
         }
 
         NATRON_PYTHON_NAMESPACE::interpretPythonScript("del " kPythonTmpCheckerVariable, 0, 0);
-
+        NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut();
         if (cppEffect) {
             return cppEffect;
         }
@@ -220,7 +220,7 @@ App::createAppFromAppInstance(const AppInstancePtr& app)
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, 0, 0);
     // Clear errors if our call to interpretPythonScript failed, we don't want the
     // calling function to fail aswell.
-    PyErr_Clear();
+    NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut();
     if (ok) {
         PyObject* pyApp = 0;
         PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
@@ -235,7 +235,7 @@ App::createAppFromAppInstance(const AppInstancePtr& app)
             cppApp = (App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)pyApp);
         }
         NATRON_PYTHON_NAMESPACE::interpretPythonScript("del " kPythonTmpCheckerVariable, 0, 0);
-
+        NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut();
         if (cppApp) {
             return cppApp;
         }

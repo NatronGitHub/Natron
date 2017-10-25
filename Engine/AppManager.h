@@ -673,6 +673,11 @@ PyObject* getMainModule();
  **/
 bool interpretPythonScript(const std::string& script, std::string* error, std::string* output);
 
+// Clear Python error state and output
+void clearPythonStdErrOut();
+
+std::string getPythonStdOut();
+std::string getPythonStdErr();
 
 //void compilePyScript(const std::string& script,PyObject** code);
 

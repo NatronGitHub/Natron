@@ -431,30 +431,7 @@ AppManager::releaseNatronGIL()
     assert(_imp->pythonGILRCount > 0);
     --_imp->pythonGILRCount;
     if (_imp->pythonGILRCount == 0) {
-        // reset stdout/stderr
-        PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
-        PyObject *errCatcher = 0;
-        PyObject *outCatcher = 0;
-
-        if ( PyObject_HasAttrString(mainModule, "catchErr") ) {
-            errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
-        }
-
-        if ( PyObject_HasAttrString(mainModule, "catchOut") ) {
-            outCatcher = PyObject_GetAttrString(mainModule, "catchOut"); //get our catchOutErr created above, new ref
-        }
-        if (errCatcher) {
-            // Clear stderr if we are the last script call in the stack
-            PyObject* unicode = PyUnicode_FromString("");
-            PyObject_SetAttrString(errCatcher, "value", unicode);
-            Py_DECREF(errCatcher);
-        }
-        if (outCatcher) {
-            // Clear stderr if we are the last script call in the stack
-            PyObject* unicode = PyUnicode_FromString("");
-            PyObject_SetAttrString(outCatcher, "value", unicode);
-            Py_DECREF(outCatcher);
-        }
+        NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut();
     }
     _imp->natronPythonGIL.unlock();
 
@@ -1749,44 +1726,10 @@ AppManager::findAndRunScriptFile(const QString& path,
 
 
                 PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
-                std::string error, output;
+                std::string error = NATRON_PYTHON_NAMESPACE::getPythonStdErr();
+                std::string output = NATRON_PYTHON_NAMESPACE::getPythonStdOut();
 
-                ///Gui session, do stdout, stderr redirection
-                PyObject *errCatcher = 0;
-                PyObject *outCatcher = 0;
-
-                if ( PyObject_HasAttrString(mainModule, "catchErr") ) {
-                    errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
-                }
-
-                if ( PyObject_HasAttrString(mainModule, "catchOut") ) {
-                    outCatcher = PyObject_GetAttrString(mainModule, "catchOut"); //get our catchOutErr created above, new ref
-                }
-
-                PyErr_Print(); //make python print any errors
-
-                PyObject *errorObj = 0;
-                if (errCatcher) {
-                    errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
-                    assert(errorObj);
-
-                    error = NATRON_PYTHON_NAMESPACE::PyStringToStdString(errorObj);
-                    PyObject* unicode = PyUnicode_FromString("");
-                    PyObject_SetAttrString(errCatcher, "value", unicode);
-                    Py_DECREF(errorObj);
-                    Py_DECREF(errCatcher);
-                }
-                PyObject *outObj = 0;
-                if (outCatcher) {
-                    outObj = PyObject_GetAttrString(outCatcher, "value"); //get the stdout from our catchOut object, new ref
-                    assert(outObj);
-                    output = NATRON_PYTHON_NAMESPACE::PyStringToStdString(outObj);
-                    PyObject* unicode = PyUnicode_FromString("");
-                    PyObject_SetAttrString(outCatcher, "value", unicode);
-                    Py_DECREF(outObj);
-                    Py_DECREF(outCatcher);
-                }
-
+                NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut();
 
                 if ( !error.empty() ) {
                     QString message(tr("Failed to load %1: %2").arg(absolutePath).arg(QString::fromUtf8( error.c_str() )) );
@@ -3788,49 +3731,28 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
         Py_DECREF(v);
     }
 
-    PyObject *errCatcher = 0;
-    PyObject *outCatcher = 0;
-
-    if ( PyObject_HasAttrString(mainModule, "catchErr") ) {
-        errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
+    if (error) {
+        *error = NATRON_PYTHON_NAMESPACE::getPythonStdErr();
+    }
+    if (output) {
+        *output = NATRON_PYTHON_NAMESPACE::getPythonStdOut();
     }
 
-    if ( PyObject_HasAttrString(mainModule, "catchOut") ) {
-        outCatcher = PyObject_GetAttrString(mainModule, "catchOut"); //get our catchOutErr created above, new ref
-    }
 
-    PyErr_Print(); //make python print any errors
+    if (error && !error->empty()) {
+        std::stringstream ss;
+        ss << "While executing script:" << std::endl;
 
-    PyObject *errorObj = 0;
-    std::string tmpError;
-    if (errCatcher) {
-        errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
-        assert(errorObj);
-        tmpError = PyStringToStdString(errorObj);
-        if (error) {
-            *error = tmpError;
+        if (script.size() > 500) {
+            std::string truncScript = script.substr(0,500);
+            ss << truncScript << "...";
+        } else {
+            ss << script;
         }
-
-        Py_DECREF(errorObj);
-        Py_DECREF(errCatcher);
-    }
-    PyObject *outObj = 0;
-    if (outCatcher) {
-        outObj = PyObject_GetAttrString(outCatcher, "value"); //get the stdout from our catchOut object, new ref
-        assert(outObj);
-        if (output) {
-            *output = PyStringToStdString(outObj);
-        }
-
-        Py_DECREF(outObj);
-        Py_DECREF(outCatcher);
-    }
-
-    if ( !tmpError.empty() ) {
-        if (error) {
-            *error = "While executing script:\n" + script + "Python error:\n" + *error;
-        }
-
+        ss << std::endl;
+        ss << "Python error:" << std::endl;
+        ss << *error;
+        *error = ss.str();
         return false;
     }
 
@@ -4218,6 +4140,73 @@ NATRON_PYTHON_NAMESPACE::getAttrRecursive(const std::string& fullyQualifiedName,
         }
     }
 }
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+static std::string getPythonStdStream(const std::string& streamName)
+{
+
+    PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+    PyObject *catcher = 0;
+
+    if ( PyObject_HasAttrString(mainModule, streamName.c_str()) ) {
+        catcher = PyObject_GetAttrString(mainModule, streamName.c_str());
+    }
+
+    std::string ret;
+    if (catcher) {
+        PyObject* valueObj = PyObject_GetAttrString(catcher, "value"); //get the  stderr from our catchErr object, new ref
+        assert(valueObj);
+
+        ret = NATRON_PYTHON_NAMESPACE::PyStringToStdString(valueObj);
+        PyObject* unicode = PyUnicode_FromString("");
+        PyObject_SetAttrString(catcher, "value", unicode);
+        Py_DECREF(valueObj);
+        Py_DECREF(catcher);
+    }
+    return ret;
+} // getPythonStdStream
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
+std::string
+NATRON_PYTHON_NAMESPACE::getPythonStdOut()
+{
+    return getPythonStdStream("catchOut");
+}
+
+std::string
+NATRON_PYTHON_NAMESPACE::getPythonStdErr()
+{
+    PyErr_Print();
+    return getPythonStdStream("catchErr");
+}
+
+void
+NATRON_PYTHON_NAMESPACE::clearPythonStdErrOut()
+{
+    // reset stdout/stderr
+    PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+
+    static const char* variables[] = {"catchErr", "catchOut", NULL};
+
+    int i = 0;
+    PyErr_Clear();
+    while (variables[i]) {
+        PyObject *catcher = 0;
+
+        if ( PyObject_HasAttrString(mainModule, variables[i]) ) {
+            catcher = PyObject_GetAttrString(mainModule, variables[i]);
+        }
+
+        std::string ret;
+        if (catcher) {
+            PyObject* unicode = PyUnicode_FromString("");
+            PyObject_SetAttrString(catcher, "value", unicode);
+            Py_DECREF(catcher);
+        }
+        ++i;
+    }
+} // clearPythonStdErrOut
 
 NATRON_NAMESPACE_EXIT
 
