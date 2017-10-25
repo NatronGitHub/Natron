@@ -359,7 +359,7 @@ Node::makeDocumentation(bool genHTML) const
             ms << tr("The *%1* node is a convenience node identical to the %2, except that the operator is set to *%3* by default.")
             .arg(pluginLabel)
             .arg(genHTML ? QString::fromUtf8("<a href=\"" PLUGINID_OFX_MERGE ".html\">Merge node</a>") :
-                 QString::fromUtf8(":ref:`"PLUGINID_OFX_MERGE"`")
+                 QString::fromUtf8(":ref:`" PLUGINID_OFX_MERGE "`")
                  //QString::fromUtf8("[Merge node](http::/plugins/" PLUGINID_OFX_MERGE ".html)")
                  )
             .arg( QString::fromUtf8( op.c_str() ) );
