@@ -344,9 +344,14 @@ public:
 
     virtual void reloadStylesheets() {}
 
+private:
+    friend class PythonGILLocker;
     void takeNatronGIL();
 
     void releaseNatronGIL();
+public:
+
+    int getGILLockedCount() const;
 
 #ifdef __NATRON_WIN32__
     void registerUNCPath(const QString& path, const QChar& driveLetter);

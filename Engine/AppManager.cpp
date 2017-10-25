@@ -422,12 +422,22 @@ void
 AppManager::takeNatronGIL()
 {
     _imp->natronPythonGIL.lock();
+    ++_imp->pythonGILRCount;
 }
 
 void
 AppManager::releaseNatronGIL()
 {
     _imp->natronPythonGIL.unlock();
+    --_imp->pythonGILRCount;
+}
+
+int
+AppManager::getGILLockedCount() const
+{
+    // Must be within takeNatronGIL() and releaseNatronGIL()
+    assert(_imp->pythonGILRCount > 0);
+    return _imp->pythonGILRCount;
 }
 
 void
@@ -3772,8 +3782,11 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
         if (error) {
             *error = tmpError;
         }
-        PyObject* unicode = PyUnicode_FromString("");
-        PyObject_SetAttrString(errCatcher, "value", unicode);
+        if (appPTR->getGILLockedCount() == 1) {
+            // Clear stderr if we are the last script call in the stack
+            PyObject* unicode = PyUnicode_FromString("");
+            PyObject_SetAttrString(errCatcher, "value", unicode);
+        }
         Py_DECREF(errorObj);
         Py_DECREF(errCatcher);
     }
@@ -3784,8 +3797,11 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
         if (output) {
             *output = PyStringToStdString(outObj);
         }
-        PyObject* unicode = PyUnicode_FromString("");
-        PyObject_SetAttrString(outCatcher, "value", unicode);
+        if (appPTR->getGILLockedCount() == 1) {
+            // Clear stdout if we are the last script call in the stack
+            PyObject* unicode = PyUnicode_FromString("");
+            PyObject_SetAttrString(outCatcher, "value", unicode);
+        }
         Py_DECREF(outObj);
         Py_DECREF(outCatcher);
     }

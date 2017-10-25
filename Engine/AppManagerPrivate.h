@@ -162,6 +162,7 @@ public:
 #endif
 
     QMutex natronPythonGIL;
+    int pythonGILRCount;
 
 #ifdef Q_OS_WIN32
     //On Windows only, track the UNC path we came across because the WIN32 API does not provide any function to map

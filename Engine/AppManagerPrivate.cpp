@@ -108,6 +108,7 @@ AppManagerPrivate::AppManagerPrivate()
     , breakpadAliveThread()
 #endif
     , natronPythonGIL(QMutex::Recursive)
+    , pythonGILRCount(0)
     , glRequirements()
     , glHasTextureFloat(false)
     , hasInitializedOpenGLFunctions(false)
