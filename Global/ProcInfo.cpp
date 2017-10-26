@@ -18,19 +18,18 @@
 
 #include "ProcInfo.h"
 
+#include "Global/Macros.h"
+
 #include <cassert>
 #include <sstream> // stringstream
 #include <iostream>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp
+#include <vector>
+#include <cstdlib>
+#include <cstdio>
 #include <cmath>
 
-#include <QtCore/QtGlobal> // Q_OS_WIN, Q_OS_UNIX
-
-#if defined(Q_OS_WIN)
-#include <windows.h>
-#endif
-
-#ifdef Q_OS_UNIX
+#ifdef __NATRON_UNIX__
 #include <unistd.h>
 #include <sys/stat.h>
 #include <cerrno>
@@ -38,17 +37,15 @@
 #include <string.h> // strdup
 #endif
 
-#include <QtCore/QDir>
-#include <QtCore/QStringList>
-#include <QtCore/QDebug>
+#include "StrUtils.h"
 
 NATRON_NAMESPACE_ENTER
 
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
-#if defined(Q_OS_WIN)
-static QString
+#if defined(__NATRON_WIN32__)
+static std::string
 applicationFileName()
 {
     // We do MAX_PATH + 2 here, and request with MAX_PATH + 1, so we can handle all paths
@@ -67,9 +64,11 @@ applicationFileName()
     buffer[MAX_PATH + 1] = 0;
 
     if (v == 0) {
-        return QString();
+        return std::string();
     } else if (v <= MAX_PATH) {
-        return QString::fromWCharArray(buffer);
+        std::wstring wret(buffer);
+        std::string ret = StrUtils::utf16_to_utf8(wret);
+        return ret;
     }
 
     // MAX_PATH sized buffer wasn't large enough to contain the full path, use heap
@@ -88,16 +87,16 @@ applicationFileName()
     if (b) {
         *(b + size) = 0;
     }
-    QString res = QString::fromWCharArray(b);
+    std::wstring wideRet(b);
+    std::string ret = StrUtils::utf16_to_utf8(wideRet);
     free(b);
-
-    return res;
+    return ret;
 }
 
-#endif // defined(Q_OS_WIN)
+#endif // defined(__NATRON_WIN32__)
 
 
-#ifdef Q_OS_UNIX
+#ifdef __NATRON_UNIX__
 // Copyright (C) 2011-2017 Free Software Foundation, Inc.
 // getcwd-lgpl.c from
 // https://raw.githubusercontent.com/coreutils/gnulib/master/lib/getcwd-lgpl.c
@@ -191,29 +190,29 @@ rpl_getcwd (char *buf, size_t size)
 #endif
 
 
-#if defined( Q_OS_UNIX )
-static QString
+#if defined( __NATRON_UNIX__ )
+static std::string
 applicationFilePath_fromArgv(const char* argv0Param)
 {
-    QString argv0;
+    std::string argv0;
     if (argv0Param) {
-        argv0 = QString::fromUtf8(argv0Param);
+        argv0 = std::string(argv0Param);
     }
-    QString absPath;
+    std::string absPath;
 
-    if ( !argv0.isEmpty() && ( argv0.at(0) == QLatin1Char('/') ) ) {
+    if ( !argv0.empty() && ( argv0[0] == '/' ) ) {
         /*
            If argv0 starts with a slash, it is already an absolute
            file path.
          */
         absPath = argv0;
-    } else if ( argv0.contains( QLatin1Char('/') ) ) {
+    } else if ( argv0.find_first_of("/") != std::string::npos ) {
         /*
            If argv0 contains one or more slashes, it is a file path
            relative to the current directory.
          */
         char* cwd = rpl_getcwd(NULL, 0);
-        absPath = QString::fromUtf8(cwd);
+        absPath = cwd;
         std::free(cwd);
         absPath.append(argv0);
     } else {
@@ -221,20 +220,20 @@ applicationFilePath_fromArgv(const char* argv0Param)
            Otherwise, the file path has to be determined using the
            PATH environment variable.
          */
-        QByteArray pEnv = qgetenv("PATH");
+        std::string pEnv = getenv("PATH");
         char* cwd = rpl_getcwd(NULL, 0);
-        QString currentDirPath = QString::fromUtf8(cwd);
+        std::string currentDirPath = cwd;
         std::free(cwd);
-        QStringList paths = QString::fromLocal8Bit( pEnv.constData() ).split( QLatin1Char(':') );
-        for (QStringList::const_iterator p = paths.constBegin(); p != paths.constEnd(); ++p) {
-            if ( (*p).isEmpty() ) {
+        std::vector<std::string> paths = StrUtils::split(pEnv, ':');
+        for (std::vector<std::string>::const_iterator it = paths.begin(); it != paths.end(); ++it) {
+            if (it->empty()) {
                 continue;
             }
-            QString candidate = currentDirPath;
-            candidate.append(*p + QLatin1Char('/') + argv0);
+            std::string candidate = currentDirPath;
+            candidate.append(*it + '/' + argv0);
 
             struct stat _s;
-            if (stat(candidate.toStdString().c_str(), &_s) == -1) {
+            if (stat(candidate.c_str(), &_s) == -1) {
                 continue;
             }
             if ( S_ISDIR(_s.st_mode) ) {
@@ -246,15 +245,15 @@ applicationFilePath_fromArgv(const char* argv0Param)
         }
     }
 
-    absPath = QDir::cleanPath(absPath);
+    absPath = StrUtils::cleanPath(absPath);
 
     return absPath;
 } // applicationFilePath_fromArgv
 
-#endif // defined(Q_OS_UNIX)
+#endif // defined(__NATRON_UNIX__)
 
 
-#if defined(Q_OS_MAC)
+#if defined(__NATRON_OSX__)
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreServices/CoreServices.h>
@@ -330,7 +329,7 @@ class NatronCFString
 : public NatronCFType<CFStringRef>
 {
 public:
-    inline NatronCFString(const QString &str)
+    inline NatronCFString(const std::string &str)
     : NatronCFType<CFStringRef>(0), string(str) {}
 
     inline NatronCFString(const CFStringRef cfstr = 0)
@@ -339,46 +338,51 @@ public:
     inline NatronCFString(const NatronCFType<CFStringRef> &other)
     : NatronCFType<CFStringRef>(other) {}
 
-    operator QString() const;
+    operator std::string() const;
     operator CFStringRef() const;
-    static QString toQString(CFStringRef cfstr);
-    static CFStringRef toCFStringRef(const QString &str);
+    static std::string toStdString(CFStringRef cfstr);
+    static CFStringRef toCFStringRef(const std::string &str);
 
 private:
-    QString string;
+    std::string string;
 };
 
-QString
-NatronCFString::toQString(CFStringRef str)
+std::string
+NatronCFString::toStdString(CFStringRef str)
 {
     if (!str) {
-        return QString();
+        return std::string();
     }
 
-    CFIndex length = CFStringGetLength(str);
+    CFIndex length = CFStringGetLength(str) + 1;
     if (length == 0) {
-        return QString();
+        return std::string();
     }
 
-    QString string(length, Qt::Uninitialized);
-    CFStringGetCharacters( str, CFRangeMake(0, length), reinterpret_cast<UniChar *>( const_cast<QChar *>( string.unicode() ) ) );
+    char *buffer = (char*)std::malloc(sizeof(char) * (length));
 
-    return string;
-} // toQString
+    //CFStringGetCharacters( str, CFRangeMake(0, length), reinterpret_cast<UniChar *>( const_cast<char *>( string.c_str() ) ) );
+    int ok = CFStringGetCString(str, buffer, length, kCFStringEncodingUTF8);
+    assert(ok);
+    std::string ret(buffer, length - 1);
+    std::free(buffer);
 
-NatronCFString::operator QString() const
+    return ret;
+} // toStdString
+
+NatronCFString::operator std::string() const
 {
-    if (string.isEmpty() && type) {
-        const_cast<NatronCFString*>(this)->string = toQString(type);
+    if (string.empty() && type) {
+        const_cast<NatronCFString*>(this)->string = toStdString(type);
     }
 
     return string;
 }
 
 CFStringRef
-NatronCFString::toCFStringRef(const QString &string)
+NatronCFString::toCFStringRef(const std::string &string)
 {
-    return CFStringCreateWithCharacters( 0, reinterpret_cast<const UniChar *>( string.unicode() ),
+    return CFStringCreateWithCharacters( 0, reinterpret_cast<const UniChar *>( string.c_str() ),
                                         string.length() );
 }
 
@@ -387,7 +391,7 @@ NatronCFString::operator CFStringRef() const
     if (!type) {
         const_cast<NatronCFString*>(this)->type =
         CFStringCreateWithCharactersNoCopy(0,
-                                           reinterpret_cast<const UniChar *>( string.unicode() ),
+                                           reinterpret_cast<const UniChar *>( string.c_str() ),
                                            string.length(),
                                            kCFAllocatorNull);
     }
@@ -395,24 +399,24 @@ NatronCFString::operator CFStringRef() const
     return type;
 }
 
-#endif // defined(Q_OS_MAC)
+#endif // defined(__NATRON_OSX__)
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
-QString
+std::string
 ProcInfo::applicationFilePath(const char* argv0Param)
 {
-#if defined(Q_OS_WIN)
-    Q_UNUSED(argv0Param);
+#if defined(__NATRON_WIN32__)
+    (void)argv0Param;
     
     //The only viable solution
     return applicationFileName();
-#elif defined(Q_OS_MAC)
+#elif defined(__NATRON_OSX__)
     //First guess this way, then use the fallback solution
-    static QString appFileName;
+    static std::string appFileName;
 
-    if ( appFileName.isEmpty() ) {
+    if ( appFileName.empty() ) {
         NatronCFType<CFURLRef> bundleURL( CFBundleCopyExecutableURL( CFBundleGetMainBundle() ) );
         if (bundleURL) {
             NatronCFString cfPath( CFURLCopyFileSystemPath(bundleURL, kCFURLPOSIXPathStyle) );
@@ -421,12 +425,12 @@ ProcInfo::applicationFilePath(const char* argv0Param)
             }
         }
     }
-    if ( !appFileName.isEmpty() ) {
+    if ( !appFileName.empty() ) {
         return appFileName;
     } else {
         return applicationFilePath_fromArgv(argv0Param);
     }
-#elif defined(Q_OS_LINUX)
+#elif defined(__NATRON_LINUX__)
     // Try looking for a /proc/<pid>/exe symlink first which points to
     // the absolute path of the executable
     std::stringstream ss;
@@ -437,48 +441,173 @@ ProcInfo::applicationFilePath(const char* argv0Param)
     ssize_t size = readlink(filename.c_str(), buf, sizeofbuf);
     if ( (size != 0) && (size != sizeofbuf) ) {
         //detected symlink
-        return QString::fromUtf8( QByteArray(buf) );
+        std::string ret(buf);
+        return ret;
     } else {
         return applicationFilePath_fromArgv(argv0Param);
     }
 #endif
 }
 
-QString
+std::string
 ProcInfo::applicationDirPath(const char* argv0Param)
 {
-    QString filePath = ProcInfo::applicationFilePath(argv0Param);
-    int foundSlash = filePath.lastIndexOf( QLatin1Char('/') );
 
-    if (foundSlash == -1) {
-        return QString();
+    std::string filePath = ProcInfo::applicationFilePath(argv0Param);
+    std::size_t foundSlash = filePath.find_last_of('/');
+
+    if (foundSlash == std::string::npos) {
+#ifdef __NATRON_WIN32__
+        foundSlash = filePath.find_last_of('\\');
+        if (foundSlash == std::string::npos) {
+            return std::string();
+        }
+#else
+        return std::string();
+#endif
     }
 
-    return filePath.mid(0, foundSlash);
+    return filePath.substr(0, foundSlash);
+}
+
+
+bool
+ProcInfo::putenv_wrapper(const char *varName, const std::string& value)
+{
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+    return _putenv_s(varName, value.c_str()) == 0;
+#else
+    std::string buffer(varName);
+    buffer += '=';
+    buffer += value;
+    char* envVar = strdup(buffer.c_str());
+    int result = putenv(envVar);
+    if (result != 0) // error. we have to delete the string.
+        delete[] envVar;
+    return result == 0;
+#endif
+}
+
+std::string
+ProcInfo::getenv_wrapper(const char *varName)
+{
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+    size_t requiredSize = 0;
+    std::vector<char> buffer;
+    getenv_s(&requiredSize, 0, 0, varName);
+    if (requiredSize == 0)
+        return buffer;
+    buffer.resize(requiredSize);
+    getenv_s(&requiredSize, &buffer[0], requiredSize, varName);
+    // requiredSize includes the terminating null, which we don't want.
+    assert(buffer[requiredSize - 1] == '\0');
+    std::string ret(&buffer[0]);
+    return ret;
+#else
+    char* v = ::getenv(varName);
+    if (!v) {
+        return std::string();
+    } else {
+        return std::string(v);
+    }
+#endif
+}
+
+
+/**
+ * @brief Ensures that the command line arguments passed to main are Utf8 encoded. On Windows
+ * the command line arguments must be processed to be safe.
+ **/
+void
+ProcInfo::ensureCommandLineArgsUtf8(int argc, char **argv, std::vector<std::string>* utf8Args)
+{
+    assert(utf8Args);
+#ifndef __NATRON_WIN32__
+    // On Unix, command line args are Utf8
+    assert(!argc || argv);
+    for (int i = 0; i < argc; ++i) {
+        std::string str(argv[i]);
+        assert(StrUtils::is_utf8(str.c_str()));
+        utf8Args->push_back(str);
+    }
+#else
+    // On Windows, it must be converted: http://stackoverflow.com/questions/5408730/what-is-the-encoding-of-argv
+    (void)argc;
+    (void)argv;
+
+    int nArgsOut;
+    wchar_t** argList = CommandLineToArgvW(GetCommandLineW(), &nArgsOut);
+    for (int i = 0; i < nArgsOut; ++i) {
+        std::wstring wide(argList[i]);
+        std::string utf8Str = StrUtils::utf16_to_utf8(wide);
+        assert(StrUtils::is_utf8(utf8Str.c_str()));
+        utf8Args->push_back(utf8Str);
+        if (argv) {
+            std::cout << "Non UTF-8 arg: " <<  argv[i] << std::endl;
+        }
+        std::cout << "UTF-8 arg: " <<  utf8Args->back() << std::endl;
+    }
+    // Free memory allocated for CommandLineToArgvW arguments.
+    LocalFree(argList);
+
+
+#endif
+    
+}
+
+void
+ProcInfo::ensureCommandLineArgsUtf8(int argc, wchar_t **argv, std::vector<std::string>* utf8Args)
+{
+    for (int i = 0; i < argc; ++i) {
+        std::wstring ws(argv[i]);
+        std::string utf8Str = StrUtils::utf16_to_utf8(ws);
+        assert(StrUtils::is_utf8(utf8Str.c_str()));
+        utf8Args->push_back(utf8Str);
+    }
+}
+
+long long
+ProcInfo::getCurrentProcessPID()
+{
+#if defined(__NATRON_WIN32__)
+    return GetCurrentProcessId();
+#else
+    return getpid();
+#endif
 }
 
 bool
-ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
-                                  Q_PID /*pid*/)
+ProcInfo::checkIfProcessIsRunning(const char* processAbsoluteFilePath,
+                                  long long pid)
 {
-    //Not working yet
-    return true;
-#if 0
-#if defined(Q_OS_WIN)
+#if defined(__NATRON_WIN32__)
+    (void)processAbsoluteFilePath;
+    HANDLE processHandle = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
+    if (!processHandle) {
+#ifdef DEBUG
+        std::cerr << "checkIfProcessIsRunning: process " << pid << " is not running." << std::endl;
+#endif
+        return false;
+    }
     DWORD dwExitCode = 9999;
     //See https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=12&checkda=1&ct=1451385015&rver=6.0.5276.0&wp=MCMBI&wlcxt=msdn%24msdn%24msdn&wreply=https%3a%2f%2fmsdn.microsoft.com%2fen-us%2flibrary%2fwindows%2fdesktop%2fms683189%2528v%3dvs.85%2529.aspx&lc=1033&id=254354&mkt=en-US
-    if ( GetExitCodeProcess(pid, &dwExitCode) ) {
+
+    bool caughtExitCode = GetExitCodeProcess(processHandle, &dwExitCode);
+    CloseHandle(processHandle);
+    if (caughtExitCode) {
+
         if (dwExitCode == STILL_ACTIVE) {
             return true;
         }
 
         return false;
     } else {
-        qDebug() << "Call to GetExitCodeProcess failed.";
-
+#ifdef DEBUG
+        std::cerr << "Call to GetExitCodeProcess failed." << std::endl;
+#endif
         return false;
     }
-#elif defined(Q_OS_LINUX)
+#elif defined(__NATRON_LINUX__)
     std::stringstream ss;
     ss << "/proc/" << (long)pid << "/stat";
     std::string procFile = ss.str();
@@ -505,8 +634,10 @@ ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
     char pname[512] = {0, };
     char state;
     //See http://man7.org/linux/man-pages/man5/proc.5.html
-    if ( ( fscanf(fp, "%ld (%[^)]) %c", &pid, pname, &state) ) != 3 ) {
-        qDebug() << "ProcInfo::checkIfProcessIsRunning(): fscanf call on" << procFile << "failed";
+    if ( ( fscanf(fp, "%lld (%[^)]) %c", &pid, pname, &state) ) != 3 ) {
+#ifdef DEBUG
+        std::cerr << "ProcInfo::checkIfProcessIsRunning(): fscanf call on " << procFile << " failed";
+#endif
         fclose(fp);
 
         return false;
@@ -516,7 +647,7 @@ ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
     fclose(fp);
 
     return ret;
-#elif defined(Q_OS_MAC)
+#elif defined(__NATRON_OSX__)
     //See https://developer.apple.com/legacy/library/qa/qa2001/qa1123.html
     static const int name[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)pid };
     // Declaring name as const requires us to cast it when passing it to
@@ -527,7 +658,8 @@ ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
     if ( (err == 0) && (procBufferSize != 0) ) {
         //Process exist and is running, now check that it's actual path is the given one
         char pathbuf[PROC_PIDPATHINFO_MAXSIZE];
-        if ( proc_pidpath ( pid, pathbuf, (sizeof(pathbuf) > 0) ) ) {
+        int len = proc_pidpath ( pid, pathbuf, sizeof(pathbuf));
+        if (len > 0) {
             return !std::strcmp(pathbuf, processAbsoluteFilePath);
         }
 
@@ -541,7 +673,6 @@ ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
 
     return false;
 #endif // ifdef Q_OS_WIN
-#endif // if 0
 } // ProcInfo::checkIfProcessIsRunning
 
 NATRON_NAMESPACE_EXIT

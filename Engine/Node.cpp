@@ -52,6 +52,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <ofxNatron.h>
 
+#include "Global/FStreamsSupport.h"
+
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -62,7 +64,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/EffectInstance.h"
 #include "Engine/Format.h"
 #include "Engine/FileSystemModel.h"
-#include "Engine/FStreamsSupport.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"

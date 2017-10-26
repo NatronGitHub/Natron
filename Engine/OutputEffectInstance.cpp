@@ -48,6 +48,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <SequenceParsing.h> // for removePath
 
 #include "Global/QtCompat.h"
+#include "Global/FStreamsSupport.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -61,7 +62,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
-#include "Engine/FStreamsSupport.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/PluginMemory.h"

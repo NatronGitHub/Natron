@@ -62,6 +62,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <ofxhXml.h> // OFX::XML::escape
 
 #include "Global/StrUtils.h"
+#include "Global/FStreamsSupport.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -69,7 +70,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/BezierCPSerialization.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/FormatSerialization.h"
-#include "Engine/FStreamsSupport.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Node.h"

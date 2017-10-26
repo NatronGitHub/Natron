@@ -407,6 +407,17 @@ AppManager::releaseNatronGIL()
     _imp->natronPythonGIL.unlock();
 }
 
+void
+StrUtils::ensureLastPathSeparator(QString& path)
+{
+    static const QChar separator( QLatin1Char('/') );
+
+    if ( !path.endsWith(separator) ) {
+        path += separator;
+    }
+}
+
+
 bool
 AppManager::loadFromArgs(const CLArgs& cl)
 {

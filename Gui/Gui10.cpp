@@ -35,9 +35,10 @@
 #include <QApplication> // qApp
 #include <QDesktopWidget>
 
+#include "Global/FStreamsSupport.h"
+
 #include "Engine/NodeSerialization.h"
 #include "Engine/RotoLayer.h"
-#include "Engine/FStreamsSupport.h"
 
 #include "Gui/CurveEditor.h"
 #include "Gui/DockablePanel.h"

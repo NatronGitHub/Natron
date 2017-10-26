@@ -20,9 +20,9 @@
 #define NATRON_GLOBAL_STRUTILS_H
 
 #include <string>
-#include <QtCore/QString>
+#include <vector>
 
-#include "Global/Macros.h"
+#include "../Global/Macros.h"
 
 
 NATRON_NAMESPACE_ENTER
@@ -42,8 +42,47 @@ std::string utf16_to_utf8 (const std::wstring& str);
 std::string GetLastErrorAsString();
 #endif // __NATRON_WIN32__
 
-// Ensure that path ends with a '/' character
-void ensureLastPathSeparator(QString& path);
+/*
+ Removes all multiple directory separators "/" and resolves any
+ "."s or ".."s found in the path, \a path.
+
+ Symbolic links are kept. This function does not return the
+ canonical path, but rather the simplest version of the input.
+ For example, "./local" becomes "local", "local/../bin" becomes
+ "bin" and "/local/usr/../bin" becomes "/local/bin".
+
+*/
+std::string cleanPath(const std::string &path);
+
+/*
+
+ Returns \a pathName with the '/' separators converted to
+ separators that are appropriate for the underlying operating
+ system.
+
+ On Windows, toNativeSeparators("c:/winnt/system32") returns
+ "c:\\winnt\\system32".
+
+ The returned string may be the same as the argument on some
+ operating systems, for example on Unix.
+
+*/
+std::string toNativeSeparators(const std::string &pathName);
+
+/*
+ Returns \a pathName using '/' as file separator. On Windows,
+ for instance, fromNativeSeparators("\c{c:\\winnt\\system32}") returns
+ "c:/winnt/system32".
+
+ The returned string may be the same as the argument on some
+ operating systems, for example on Unix.
+
+ */
+std::string fromNativeSeparators(const std::string &pathName);
+
+std::vector<std::string> split(const std::string &text, char sep);
+
+std::string join(const std::vector<std::string> &text, char sep);
 
 } // namespace StrUtils
 
