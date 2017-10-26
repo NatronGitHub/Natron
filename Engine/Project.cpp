@@ -66,13 +66,13 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Global/StrUtils.h"
 #include "Global/GitVersion.h"
+#include "Global/FStreamsSupport.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/DockablePanelI.h"
 #include "Engine/EffectInstance.h"
-#include "Global/FStreamsSupport.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
 #include "Engine/MemoryInfo.h" // isApplication32Bits

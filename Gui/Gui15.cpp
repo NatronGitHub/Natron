@@ -36,8 +36,9 @@
 #include <QScrollArea>
 #include <QAction>
 
-#include "Engine/Settings.h"
 #include "Global/FStreamsSupport.h"
+
+#include "Engine/Settings.h"
 #include "Engine/ViewIdx.h"
 
 #include "Gui/DockablePanel.h"

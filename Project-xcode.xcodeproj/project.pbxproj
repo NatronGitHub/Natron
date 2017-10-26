@@ -240,6 +240,13 @@
 			remoteGlobalIDString = 1E5F8F5118AA91330045A477;
 			remoteInfo = libs;
 		};
+		1E7DE01E1FA1FCDB0060E9E7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1EE439561FA1FC690027344A /* natron-python.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 4A14BB0D5723D26F545CC2E0;
+			remoteInfo = "natron-python";
+		};
 		1EADE5CE18AA403700EF3180 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C118AA403700EF3180 /* Engine.xcodeproj */;
@@ -717,6 +724,7 @@
 		1EADE5B718AA400B00EF3180 = {
 			isa = PBXGroup;
 			children = (
+				1EE439561FA1FC690027344A /* natron-python.xcodeproj */,
 				1E70D1631CF33B22000D2932 /* Documentation */,
 				1E1FB61F1DA7BB8B009F547D /* PyPlugs */,
 				1E70D1621CF33AF3000D2932 /* QMake files */,
@@ -769,6 +777,14 @@
 			isa = PBXGroup;
 			children = (
 				1EE90EF71DD79AB400FA7BFE /* libyaml-cpp-natron.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1EE439571FA1FC690027344A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1EE4395D1FA1FC690027344A /* natron-python */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1213,6 +1229,11 @@
 			isa = PBXTargetDependency;
 			target = 1E5F8F5118AA91330045A477 /* libs */;
 			targetProxy = 1E5F8F5B18AA91430045A477 /* PBXContainerItemProxy */;
+		};
+		1E7DE01F1FA1FCDB0060E9E7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "natron-python";
+			targetProxy = 1E7DE01E1FA1FCDB0060E9E7 /* PBXContainerItemProxy */;
 		};
 		1EADE5FF18AA408B00EF3180 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

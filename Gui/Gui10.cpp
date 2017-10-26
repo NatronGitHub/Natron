@@ -35,8 +35,9 @@
 #include <QApplication> // qApp
 #include <QDesktopWidget>
 
-#include "Engine/RotoLayer.h"
 #include "Global/FStreamsSupport.h"
+
+#include "Engine/RotoLayer.h"
 
 #include "Gui/DockablePanel.h"
 #include "Gui/AnimationModuleEditor.h"

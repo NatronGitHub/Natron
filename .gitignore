@@ -57,6 +57,7 @@ HostSupport.xcodeproj/
 Gui.xcodeproj/
 Engine.xcodeproj/
 Project.xcodeproj/
+natron-python.xcodeproj/
 *.sln
 *.xcworkspace
 *xcuserdata

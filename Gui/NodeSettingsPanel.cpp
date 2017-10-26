@@ -39,8 +39,9 @@
 #include <QGridLayout>
 #include <QDialogButtonBox>
 
-#include "Engine/EffectInstance.h"
 #include "Global/FStreamsSupport.h"
+
+#include "Engine/EffectInstance.h"
 #include "Engine/Knob.h" // KnobHolder
 #include "Engine/Node.h"
 #include "Engine/Plugin.h"

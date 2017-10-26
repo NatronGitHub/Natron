@@ -89,13 +89,13 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhParametricParam.h> //our version of parametric param suite support
 
 #include "Global/GlobalDefines.h"
+#include "Global/FStreamsSupport.h"
 #include "Global/QtCompat.h"
 #include "Global/KeySymbols.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
-#include "Global/FStreamsSupport.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/EffectDescription.h"
