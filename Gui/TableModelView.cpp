@@ -942,6 +942,7 @@ TableModel::hasChildren(const QModelIndex & parent) const
         case TableItem::eChildIndicatorVisibilityShowNever:
             return false;
     }
+    return false;
 }
 
 QModelIndex
