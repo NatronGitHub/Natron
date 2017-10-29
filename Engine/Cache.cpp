@@ -3091,7 +3091,7 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
                 _imp->globalFileLock.reset(new bip::file_lock(fileLockFilename.c_str()));
             } catch (...) {
                 assert(false);
-                throw std::runtime_error("Failed to initialize shared memory file lock, exiting.");
+                throw std::runtime_error( QCoreApplication::translate("Cache", "Failed to initialize shared memory file lock, exiting.").toStdString() );
             }
         }
     } // persistent
@@ -3105,7 +3105,7 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
         try {
             gotFileLock = _imp->globalFileLock->try_lock();
         } catch (...) {
-            throw std::runtime_error("Failure while attempting to call try_lock() on the cache file lock");
+            throw std::runtime_error( QCoreApplication::translate("Cache", "Failure while attempting to call try_lock() on the cache file lock").toStdString() );
         }
 
 
@@ -3113,7 +3113,7 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
 
         // If we did not get the file lock
         if (!gotFileLock) {
-            std::cerr << "Another " << NATRON_APPLICATION_NAME << " process is active, this process will fallback on a local cache instead of a persistent cache." << std::endl;
+            std::cerr << QCoreApplication::translate("Cache", "Another %1 process is active, this process will fallback on a local cache instead of a persistent cache.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() << std::endl;
             _imp->globalFileLock.reset();
             throw BusyCacheException();
         }
@@ -3171,10 +3171,14 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
             _imp->ipc = _imp->globalMemorySegment->template find_or_construct<CacheIPCData>("CacheData")();
 #endif
             _imp->processesData = _imp->globalMemorySegment->template find_or_construct<MappedProcessData>("ProcessesData")(allocator);
+        } catch (const std::exception& e) {
+            assert(false);
+            bip::shared_memory_object::remove(sharedMemoryName.c_str());
+            throw std::runtime_error( QCoreApplication::translate("Cache", "Error: failed to initialize managed shared memory (%1)").arg( QString::fromUtf8( e.what() ) ).toStdString() );
         } catch (...) {
             assert(false);
             bip::shared_memory_object::remove(sharedMemoryName.c_str());
-            throw std::runtime_error("Failed to initialize managed shared memory, exiting.");
+            throw std::runtime_error( QCoreApplication::translate("Cache", "Error: failed to initialize managed shared memory (%1)").arg( QString::fromUtf8("unknown exception") ).toStdString() );
         }
     }
 
@@ -3183,7 +3187,7 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
         try {
             _imp->globalFileLock->unlock();
         } catch (...) {
-            throw std::runtime_error("Failed to unlock the cache file lock");
+            throw std::runtime_error( QCoreApplication::translate("Cache", "Failed to unlock the cache file lock").toStdString() );
         }
         try {
             // Indicate that we use the shared memory by taking the file lock in read mode.
@@ -3191,7 +3195,7 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
                 _imp->globalFileLock->lock_sharable();
             }
         } catch (...) {
-            throw std::runtime_error("Failed to lock for sharing the cache file lock");
+            throw std::runtime_error( QCoreApplication::translate("Cache", "Failed to lock for sharing the cache file lock").toStdString() );
         }
 
     }
@@ -3213,7 +3217,7 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
 
         std::pair<MappedProcessSet::iterator, bool> insertOk = _imp->processesData->mappedProcesses.insert(info);
         if (!insertOk.second) {
-            std::cerr << "[WARNING]: Another " << NATRON_APPLICATION_NAME << " process is already registered with the uuid " << _imp->sessionUUID << std::endl;
+            std::cerr << QCoreApplication::translate("Cache", "Warning: Another %1 process is already registered with the uuid %2").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( boost::uuids::to_string(_imp->sessionUUID).c_str() ) ).toStdString() << std::endl;
             throw BusyCacheException();
         }
 
@@ -4338,10 +4342,14 @@ CachePrivate<persistent>::ensureSharedMemoryIntegrity()
                 ipc = globalMemorySegment->find_or_construct<CacheIPCData>("CacheData")();
 #endif
                 processesData = globalMemorySegment->find_or_construct<MappedProcessData>("ProcessesData")(allocator);
+            } catch (const std::exception& e) {
+                assert(false);
+                bip::shared_memory_object::remove(sharedMemoryName.c_str());
+                throw std::runtime_error( QCoreApplication::translate("Cache", "Error: failed to initialize managed shared memory (%1)").arg( QString::fromUtf8( e.what() ) ).toStdString() );
             } catch (...) {
                 assert(false);
                 bip::shared_memory_object::remove(sharedMemoryName.c_str());
-                throw std::runtime_error("Failed to initialize managed shared memory, exiting.");
+                throw std::runtime_error( QCoreApplication::translate("Cache", "Error: failed to initialize managed shared memory (%1)").arg( QString::fromUtf8("unknown exception") ).toStdString() );
             }
 
             // Re-register the process in the mappedProcess set, since we cleaned-up the globalMemorySegment
