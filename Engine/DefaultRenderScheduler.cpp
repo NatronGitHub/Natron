@@ -256,28 +256,31 @@ DefaultScheduler::onFrameProcessed(const ProcessFrameArgsBase& inArgs)
         renderFinished = _imp->nFramesRendered == nbTotalFrames;
     }
 
-    double percentage = (double)nbFramesRendered / nbTotalFrames;
-
-
+    double fractionDone = (double)nbFramesRendered / nbTotalFrames;
 
     // If running in background, notify to the pipe that we rendered a frame
     if (appPTR->isBackground()) {
         assert(_imp->renderTimer);
         double timeSpentSinceStartSec = _imp->renderTimer->getTimeSinceCreation();
         double estimatedFps = (double)nbFramesRendered / timeSpentSinceStartSec;
-        double timeRemaining = timeSpentSinceStartSec * (1. - percentage);
+        // total estimated time is: timeSpentSinceStartSec / fractionDone
+        // remaning time is thus:
+        double timeRemaining = (nbTotalFrames <= 0 || _imp->nFramesRendered <= 0) ? -1. : timeSpentSinceStartSec / fractionDone - timeSpentSinceStartSec;
 
         QString longMessage;
-        QTextStream ts(&longMessage);
         QString frameStr = QString::number(results->time);
         QString fpsStr = QString::number(estimatedFps, 'f', 1);
-        QString percentageStr = QString::number(percentage * 100, 'f', 1);
+        QString percentageStr = QString::number(fractionDone * 100, 'f', 1);
         QString timeRemainingStr = Timer::printAsTime(timeRemaining, true);
 
-        ts << effect->getScriptName_mt_safe().c_str() << tr(" ==> Frame: ");
-        ts << frameStr << tr(", Progress: ") << percentageStr << "%, " << fpsStr << tr(" Fps, Time Remaining: ") << timeRemainingStr;
+        longMessage = (tr("%1 ==> Frame: %2, Progress: %3%, %4 Fps, Time Remaining: %5")
+                       .arg(QString::fromUtf8(effect->getScriptName_mt_safe().c_str()))
+                       .arg(frameStr)
+                       .arg(percentageStr)
+                       .arg(fpsStr)
+                       .arg(timeRemainingStr));
 
-        QString shortMessage = QString::fromUtf8(kFrameRenderedStringShort) + frameStr + QString::fromUtf8(kProgressChangedStringShort) + QString::number(percentage);
+        QString shortMessage = QString::fromUtf8(kFrameRenderedStringShort) + frameStr + QString::fromUtf8(kProgressChangedStringShort) + QString::number(fractionDone);
         {
             QMutexLocker l(&_imp->bufferedOutputMutex);
             std::string toPrint = longMessage.toStdString();
@@ -300,7 +303,7 @@ DefaultScheduler::onFrameProcessed(const ProcessFrameArgsBase& inArgs)
     }
 
     // Fire the frameRendered signal on the RenderEngine
-    engine->s_frameRendered(results->time, percentage);
+    engine->s_frameRendered(results->time, fractionDone);
 
     // Call Python after frame rendered callback
     runAfterFrameRenderedCallback(results->time);
