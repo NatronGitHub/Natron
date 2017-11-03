@@ -64,10 +64,10 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20171017
-    set commit      7a67f5c599adfec5be97343293548b08b7637093
-    checksums       rmd160 b539ab83a6feea1a21edb8142594afa2f29e99bc \
-                    sha256 55749a1b122e516e9a3f043019905a2edd90f158ce63f5cd98d935449286b305
+    version         20171031
+    set commit      a0d00a17102d2740c1cf4b55fbf37308c7283f20
+    checksums       rmd160 28e6869f8e81cfa0d105ff1b02e841f9b1dc8389 \
+                    sha256 139ed0ef796437924c3c04cd4ece220065a3b7706cbb7bb80b85d0770940f888
 
     master_sites    https://gitlab.kitware.com/cmake/cmake/repository/archive.tar.bz2?ref=${commit}&
     distname        ${name}-${commit}
@@ -86,7 +86,8 @@ if {${subport} eq ${name}} {
         patch-Modules-FindFreetype.cmake.devel.diff \
         patch-Modules-noArchCheck.devel.diff \
         patch-CMakeFindFrameworks.cmake.devel.diff \
-        patch-Source_CMakeVersionCompute.cmake.devel.diff
+        patch-Source_CMakeVersionCompute.cmake.devel.diff \
+        patch-Source_CMakeLists.txt.diff
 
     livecheck.type  regex
     livecheck.regex /cmake/cmake/commit/(\[0-9a-g\]+)
