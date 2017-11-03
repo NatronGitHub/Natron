@@ -1,0 +1,11 @@
+--- oiio-Release-1.7.17/src/libutil/strutil.cpp.orig	2017-09-17 22:50:09.099409700 +0300
++++ oiio-Release-1.7.17/src/libutil/strutil.cpp	2017-09-17 22:50:28.792536000 +0300
+@@ -916,7 +916,7 @@
+     const char* end = str.end();
+     uint32_t state = 0;
+     for (; begin != end; ++begin) {
+-        uint32_t codepoint;
++        uint32_t codepoint = 0;
+         if (!decode(&state, &codepoint, (unsigned char) *begin))
+             uvec.push_back(codepoint);
+     }

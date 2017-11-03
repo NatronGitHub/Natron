@@ -19,7 +19,7 @@ github.setup     OpenImageIO oiio 1.7.17 tags/Release-
 #github.tarball_from downloads
 
 name             openimageio
-#revision         2
+revision         1
 categories       graphics
 platforms           darwin
 license          BSD
@@ -86,17 +86,14 @@ if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
 #    system "touch ${worksrcpath}/LICENSE  ${workpath}/${worksrcdir}/LICENSE"
 #}
 
-# Those are Debian patches, which require -p1
-#patch.pre_args	-p1
-#patchfiles \
-#     build_in_sources.patch
-#    0001-Fix_docs_generation.patch \
-#    0002-Fix_IlmBase_issue.patch \
-#    0003-Fix_multiarch_paths.patch \
-#    0004-Fix_FTBFS_on_atomic_operations.patch \
+# As of 1.7.17, there is only one debian patch:
+# 0001-Fix_documentation_generation.patch
+# see https://packages.debian.org/source/sid/openimageio
 
 patch.pre_args	-p1
 patchfiles \
+    0003-boost-latest.patch \
+    0005-fix-initialization.patch \
     oiio-1.5.23-invalidatespec.patch \
     oiio-1.7.10-c99math.patch \
     oiio-1.7.10-nothreads.patch \
