@@ -43,7 +43,7 @@ Controls how many threads Natron should use to render.
 
 -1: Disable multithreading totally (useful for debugging)
 
-0: Guess the thread count from the number of cores. The ideal threads count for this hardware is 8.
+0: Guess the thread count from the number of cores.
 
 **Number of parallel renders (0=“guess”)**
 
