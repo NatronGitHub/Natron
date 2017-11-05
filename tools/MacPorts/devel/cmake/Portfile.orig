@@ -34,9 +34,9 @@ if {${subport} eq ${name}} {
 
     # release
 
-    version         ${branch}.4
-    checksums       rmd160 bb9c30f2726413f0d7d7b92e0294b61438151d62 \
-                    sha256 b5d86f12ae0072db520fdbdad67405f799eb728b610ed66043c20a92b4906ca1
+    version         ${branch}.5
+    checksums       rmd160 1f1afb148830b70f1457c4d3928b33dd1ff9c759 \
+                    sha256 6220c1683b4e6bb8f38688fa3ffb17a7cf39f36317c2ddfdc3f12f09d086c166
 
     master_sites    http://www.cmake.org/files/v${branch}/
     conflicts       cmake-devel
@@ -64,10 +64,10 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20171031
-    set commit      a0d00a17102d2740c1cf4b55fbf37308c7283f20
-    checksums       rmd160 28e6869f8e81cfa0d105ff1b02e841f9b1dc8389 \
-                    sha256 139ed0ef796437924c3c04cd4ece220065a3b7706cbb7bb80b85d0770940f888
+    version         20171104
+    set commit      c2e130e8f4c09c20fadf67c6c12a3734261c4803
+    checksums       rmd160 dba3f4a58562759c77b7c10a7a65d8e858819580 \
+                    sha256 ab2273aade362c90f3c93a5fa6b50201c9d445172d62c5d93396ec899b7dd021
 
     master_sites    https://gitlab.kitware.com/cmake/cmake/repository/archive.tar.bz2?ref=${commit}&
     distname        ${name}-${commit}

@@ -8,6 +8,7 @@ PortGroup       snowleopard_fixes 1.0
 
 name            gnutls
 version         3.5.16
+revision        1
 set branch      [join [lrange [split ${version} .] 0 1] .]
 categories      devel security
 # yes, some of the libs are GPL only
@@ -37,7 +38,7 @@ depends_build-append \
 
 depends_lib-append \
                 port:gmp \
-                port:libidn \
+                port:libidn2 \
                 port:libtasn1 \
                 port:libunistring \
                 port:p11-kit \
