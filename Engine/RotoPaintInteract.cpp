@@ -693,7 +693,7 @@ RotoPaintInteract::onToolChangedInternal(const KnobButtonPtr& actionButton)
         }
     }
 
-    // Clear all selection if we were building a new bezier
+    // Clear all selection if we were building a new Bezier
     if ( (selectedRole == eRotoRoleBezierEdition) &&
         ( ( selectedTool == eRotoToolDrawBezier) || ( selectedTool == eRotoToolOpenBezier) ) &&
         builtBezier &&
@@ -811,7 +811,7 @@ RotoPaintInteract::getSelectedCpsBBOXCenter()
 void
 RotoPaintInteract::handleBezierSelection(const BezierPtr & curve)
 {
-    // find out if the bezier is already selected.
+    // find out if the Bezier is already selected.
     bool found = _imp->knobsTable->isItemSelected(curve);
     if (!found) {
         ///clear previous selection if the SHIFT modifier isn't held
@@ -1392,12 +1392,12 @@ RotoPaintInteract::isNearbyFeatherBar(TimeValue time,
         }
 
         /*
-         For each selected bezier, we compute the extent of the feather bars and check if the mouse would be nearby one of these bars.
-         The feather bar of a control point is only displayed is the feather point is equal to the bezier control point.
-         In order to give it the  correc direction we use the derivative of the bezier curve at the control point and then use
+         For each selected Bezier, we compute the extent of the feather bars and check if the mouse would be nearby one of these bars.
+         The feather bar of a control point is only displayed is the feather point is equal to the Bezier control point.
+         In order to give it the  correc direction we use the derivative of the Bezier curve at the control point and then use
          the pointInPolygon function to make sure the feather bar is always oriented on the outter part of the polygon.
-         The pointInPolygon function needs the polygon of the bezier to test whether the point is inside or outside the polygon
-         hence in this loop we compute the polygon for each bezier.
+         The pointInPolygon function needs the polygon of the Bezier to test whether the point is inside or outside the polygon
+         hence in this loop we compute the polygon for each Bezier.
          */
 
         Transform::Matrix3x3 transform;
@@ -1940,7 +1940,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
                     }
                 }
 
-                ///draw the control points if the bezier is selected
+                ///draw the control points if the Bezier is selected
                 bool selected = _imp->knobsTable->isItemSelected(isBezier);
                 if (selected && !locked) {
                     Transform::Matrix3x3 transform;
@@ -2337,7 +2337,7 @@ RotoPaintInteract::onOverlayPenDoubleClicked(TimeValue time,
         isNearbyBezier(pos.x(), pos.y(), time, view, bezierSelectionTolerance, &nearbyBezierCPIndex, &nearbyBezierT, &isFeather);
 
         if (nearbyBezier) {
-            ///If the bezier is already selected and we re-click on it, change the transform mode
+            ///If the Bezier is already selected and we re-click on it, change the transform mode
             handleBezierSelection(nearbyBezier);
             clearCPSSelection();
             const std::list<BezierCPPtr > & cps = nearbyBezier->getControlPoints(view);
@@ -2398,7 +2398,7 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
 
     //////////////////BEZIER SELECTION
     /////Check if the point is nearby a bezier
-    ///tolerance for bezier selection
+    ///tolerance for Bezier selection
     double bezierSelectionTolerance = kBezierSelectionTolerance * pixelScale.first;
     double nearbyBezierT;
     int nearbyBezierCPIndex;
@@ -2409,7 +2409,7 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
     int nearbyCpIndex = -1;
     if (!didSomething && nearbyBezier) {
         /////////////////CONTROL POINT SELECTION
-        //////Check if the point is nearby a control point of a selected bezier
+        //////Check if the point is nearby a control point of a selected Bezier
         ///Find out if the user selected a control point
 
         Bezier::ControlPointSelectionPrefEnum pref = Bezier::eControlPointSelectionPrefWhateverFirst;
@@ -2556,7 +2556,7 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
         case eRotoToolSelectCurves:
 
             if (nearbyBezier && !didSomething) {
-                ///If the bezier is already selected and we re-click on it, change the transform mode
+                ///If the Bezier is already selected and we re-click on it, change the transform mode
                 bool found = _imp->knobsTable->isItemSelected(nearbyBezier);
                 if (!found) {
                     handleBezierSelection(nearbyBezier);
@@ -2580,7 +2580,7 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
             }
             break;
         case eRotoToolAddPoints:
-            ///If the user clicked on a bezier and this bezier is selected add a control point by
+            ///If the user clicked on a Bezier and this Bezier is selected add a control point by
             ///splitting up the targeted segment
             if (nearbyBezier && !didSomething) {
                 bool found = _imp->knobsTable->isItemSelected(nearbyBezier);
@@ -2658,7 +2658,7 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
                 return true;
             }
             if (builtBezier) {
-                ///if the user clicked on a control point of the bezier, select the point instead.
+                ///if the user clicked on a control point of the Bezier, select the point instead.
                 ///if that point is the starting point of the curve, close the curve
                 const std::list<BezierCPPtr > & cps = builtBezier->getControlPoints(view);
                 int i = 0;

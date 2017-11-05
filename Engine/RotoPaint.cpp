@@ -3178,7 +3178,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
             isBezier->removeKeyFrame(time, view);
         }
     } else if ( k == _imp->ui->removeItemsMenuAction.lock() ) {
-        ///if control points are selected, delete them, otherwise delete the selected beziers
+        ///if control points are selected, delete them, otherwise delete the selected Beziers
         if ( !_imp->ui->selectedCps.empty() ) {
             pushUndoCommand( new RemovePointUndoCommand(_imp->ui, _imp->ui->selectedCps, view_i) );
         } else {
@@ -3219,7 +3219,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
         }
     } else if ( k == _imp->ui->selectAllMenuAction.lock() ) {
         _imp->ui->iSelectingwithCtrlA = true;
-        ///if no bezier are selected, select all beziers
+        ///if no Bezier are selected, select all Beziers
         SelectedItems selection = _imp->knobsTable->getSelectedDrawableItems();
 
         if ( selection.empty() ) {
@@ -3237,7 +3237,7 @@ RotoPaint::knobChanged(const KnobIPtr& k,
             }
             _imp->knobsTable->endEditSelection(eTableChangeReasonInternal);
         } else {
-            ///select all the control points of all selected beziers
+            ///select all the control points of all selected Beziers
             _imp->ui->selectedCps.clear();
             for (SelectedItems::iterator it = selection.begin(); it != selection.end(); ++it) {
                 BezierPtr isBezier = toBezier(*it);

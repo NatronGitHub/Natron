@@ -159,7 +159,7 @@ typedef std::set<KeyFrame, KeyFrame_compare_time> KeyFrameSet;
 /**
  * @brief A small listener class interface to inherit from to listen to a curve changes.
  * This is used for example for a Bezier so that the internal control point keyframes are in sync
- * with the keyframes of the bezier.
+ * with the keyframes of the Bezier.
  **/
 class CurveChangesListener
 {

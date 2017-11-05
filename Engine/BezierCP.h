@@ -50,8 +50,8 @@ NATRON_NAMESPACE_ENTER
 
 /**
  * @class A Bezier is an animated control point of a Bezier. It is the starting point
- * and/or the ending point of a bezier segment. (It would correspond to P0/P3).
- * The left bezier point/right bezier point we refer to in the functions below
+ * and/or the ending point of a Bezier segment. (It would correspond to P0/P3).
+ * The left Bezier point/right Bezier point we refer to in the functions below
  * are respectively the P2 and P1 point.
  *
  * Note on multi-thread:
@@ -150,7 +150,7 @@ public:
     void getKeyframeTimes(std::set<double>* keys) const;
 
     /**
-     * @brief Pointer to the bezier holding this control point. This is not protected by a mutex
+     * @brief Pointer to the Bezier holding this control point. This is not protected by a mutex
      * since it never changes.
      **/
     BezierPtr getBezier() const;

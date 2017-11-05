@@ -235,7 +235,7 @@ NATRON_NAMESPACE_ENTER
 
 #define kRotoUIParamPencilToolButtonAction "PencilTool"
 #define kRotoUIParamPencilToolButtonActionLabel "Pencil Tool"
-#define kRotoUIParamPencilToolButtonActionHint "Draw open bezier"
+#define kRotoUIParamPencilToolButtonActionHint "Draw open Bezier"
 
 #define kRotoUIParamEraserToolButtonAction "EraserTool"
 #define kRotoUIParamEraserToolButtonActionLabel "Eraser Tool"
@@ -935,7 +935,7 @@ public:
     ////This is by default eSelectedCpsTransformModeTranslateAndScale. When clicking the cross-hair in the center this will toggle the transform mode
     ////like it does in inkscape.
     SelectedCpsTransformModeEnum transformMode;
-    BezierPtr builtBezier; //< the bezier currently being built
+    BezierPtr builtBezier; //< the Bezier currently being built
     BezierPtr bezierBeingDragged;
     SelectedCP cpBeingDragged; //< the cp being dragged
     BezierCPPtr tangentBeingDragged; //< the control point whose tangent is being dragged.
@@ -1148,8 +1148,8 @@ public:
 
 
     /**
-    * @brief Returns a bezier curves nearby the point (x,y) and the parametric value
-    * which would be used to find the exact bezier point lying on the curve.
+    * @brief Returns a Bezier curves nearby the point (x,y) and the parametric value
+    * which would be used to find the exact Bezier point lying on the curve.
     **/
     BezierPtr isNearbyBezier(double x, double y, TimeValue time, ViewIdx view, double acceptance, int* index, double* t, bool *feather) const;
 
@@ -1171,7 +1171,7 @@ public:
 
 
     /**
-     * @brief Set the selection to be the given beziers and the given control points.
+     * @brief Set the selection to be the given Beziers and the given control points.
      * This can only be called on the main-thread.
      **/
     void setSelection(const std::list<RotoDrawableItemPtr > & selectedBeziers,

@@ -103,7 +103,7 @@ public:
     static void applyAndDestroyMask(cairo_t* cr, cairo_pattern_t* mesh);
 
     /**
-     * @brief High level: split a closed bezier represented by a list of control points into coons patchs
+     * @brief High level: split a closed Bezier represented by a list of control points into coons patchs
      **/
     static void bezulate(TimeValue time, const BezierCPs& cps, std::list<BezierCPs>* patches);
 
@@ -125,29 +125,29 @@ public:
                                    Point* lastCenterPoint);
 
     /**
-     * @brief Low level: renders the given bezier with motion blur onto the given cairo image
+     * @brief Low level: renders the given Bezier with motion blur onto the given cairo image
      **/
     static void renderBezier_cairo(cairo_t* cr, const BezierPtr& bezier, double opacity, TimeValue time, ViewIdx view, const RenderScale& scale);
 
     /**
-     * @brief Low level: renders the given bezier feather onto the given mesh pattern. This uses the old algorithm which does not use triangulation.
+     * @brief Low level: renders the given Bezier feather onto the given mesh pattern. This uses the old algorithm which does not use triangulation.
      **/
     static void renderFeather_old_cairo(const BezierPtr& bezier, TimeValue time, ViewIdx view, const RenderScale& scale,  double opacity, double fallOff, cairo_pattern_t * mesh);
 
 
     /**
-    * @brief Low level: renders the given internal bezier shape onto the given mesh pattern. This uses the old algorithm which does not use triangulation.
+    * @brief Low level: renders the given internal Bezier shape onto the given mesh pattern. This uses the old algorithm which does not use triangulation.
     **/
     static void renderInternalShape_old_cairo(TimeValue time, const RenderScale& scale,  double opacity, const Transform::Matrix3x3 & transform, cairo_t * cr, cairo_pattern_t * mesh, const BezierCPs &cps);
 
 
     /**
-     * @brief Low level: renders the given bezier feather onto the given mesh pattern. This uses the new algorithm which does use triangulation.
+     * @brief Low level: renders the given Bezier feather onto the given mesh pattern. This uses the new algorithm which does use triangulation.
      **/
     static void renderFeather_cairo(const RotoBezierTriangulation::PolygonData& inArgs, double fallOff, cairo_pattern_t * mesh);
 
     /**
-     * @brief Low level: renders the given internal bezier shape onto the given mesh pattern. This uses the new algorithm which does use triangulation.
+     * @brief Low level: renders the given internal Bezier shape onto the given mesh pattern. This uses the new algorithm which does use triangulation.
      **/
     static void renderInternalShape_cairo(const RotoBezierTriangulation::PolygonData& inArgs,
                                           cairo_pattern_t * mesh);

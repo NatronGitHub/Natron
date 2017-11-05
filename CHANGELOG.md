@@ -593,14 +593,14 @@ You can by-pass this behaviour and come-back to the original "Aggressive caching
 - When zooming out of the node-graph, all texts on nodes / arrows will be hidden to increase performances when handling huge compositions.
 - Tracker: all tracks are now multi-threaded for better performances. Also fixed a bug where the overlay displayed while tracking wasn't matching the underlying displayed image.
 - Roto: Selected points can now be dragged from everywhere within the bounding box instead of only the cross-hair.
-- Roto: It is now possible to move a bezier just by dragging a part of the curve where there is no control point.
+- Roto: It is now possible to move a Bezier just by dragging a part of the curve where there is no control point.
 - Roto: Holding shift while dragging a scale handle of the bounding box will now scale only the half of the shape on the side of the handle
 - Improved parameters alignment and spacing in the settings panel 
 - A new tab in the preferences is now dedicated to plug-ins management. You can now choose to enable/disable a plug-in. This can be seen as a blacklist of the plug-ins you don't want to use. By default most TuttleOFX nodes that are redundant with the bundled nodes will be disabled. 
 - Also another per plug-in control has been added to regulate whether the a plug-in should be aware of zoom levels or not. Zoom level aware means that a plug-in will attempt to render images at lower resolution if the viewer is zoomed-out or if proxy mode is enabled. This setting is set by the plug-in internally, but some plug-ins are known to be bugged (they flag that do support zoom levels but in fact they don't). 
 - A new changelog tab in the About window is now available
 - Roto: When restoring a project, the default tool will be "Select All" instead of "Bezier"
-to avoid creating new beziers by mistake
+to avoid creating new Beziers by mistake
 - Timeline: when pressing the left and right arrows of the keyboard, the cursor will no longer cross the bounds of the timeline but loop over the range instead.
 - Viewer: the drop-down to select the currently visualized channels now reflects the current choice with a specific border color for each options. 
 - A new Auto-turbo setting has been added: when enabled, the Turbo-mode (originally toggable with the button on the right of the media player) will be enabled/disabled automatically when playback is started/finished. You can turn on/off this preference in the settings (NodeGraph tab) or in the right click menu of the node-graph.
@@ -637,7 +637,7 @@ scroll the items by pressing the up/down arrows. Checkbox can now also have focu
 - The backdrop node now has its name in the header affected by the font family and color. However the size of the name is controlled by a different parameter so the name and the content can have different font sizes.
 - Roto: when selecting points with the selection rectangle, only points that belong to selected curves will be eligible for selection, unless no curve is selected, in which case all the points are eligible.
 - Roto : when selecting points with the selection rectangle, if the SHIFT modifier is held down, it will not clear the previous selection. Also when holding down SHIFT, clicking on a selected point will remove it from the selection. Similarly, if selecting points with the selection rectangle but while holding down both SHIFT and CTRL will now allow to keep the previous selection but remove from the selection the newly selected points.
-- Roto : the beziers animation can now be controlled in the curve editor, as well as the per-shape parameters.
+- Roto : the Beziers animation can now be controlled in the curve editor, as well as the per-shape parameters.
 - The ColorCorrect and Grade nodes can now choose on which channels to operate on, including the alpha channel
 - The viewer info bar font has been changed to the same font of the rest of the application and a line of 1 pixel now separates the Viewer from the informations.
 - The viewer refresh button will now be red when it is actively rendering (not using the cache).
@@ -664,7 +664,7 @@ scroll the items by pressing the up/down arrows. Checkbox can now also have focu
 - The tracker node now once again works on Windows.
 - Fixed a bug where color dialogs wouldn't refresh the color until the OK button was pressed
 - Fixed a bug where the bounding box of the image wasn't correct when using motion blur of the Transform node.
-- Fixed a bug where the bounding box of roto beziers wouldn't take the feather distance into account.
+- Fixed a bug where the bounding box of roto Beziers wouldn't take the feather distance into account.
 - Fixed a bug where changing the number of panels in the property bin wouldn't have any effect
 - Fixed a bug where CImg channels parameter wouldn't be saved into the project
 - The ColorLookUp node’s curve editor now properly gets keyboard focus
@@ -764,7 +764,7 @@ Then all file-paths that depended on this variable will be updated to point to t
 - File-paths are now "watched" by Natron: When a file changes outside of Natron, for example because another software have overwritten it or modified it, Natron will be notified and will reload the images.
 - New shortcuts editor: you can now customise the entire keyboard layout for the application.
 - Caching has been improved and should now be more aware of your system capabilities. It should strive for being as close possible to what the settings in the preferences are set to. Note that it might still need some tweeking on some platforms though because we're using system-dependents informations to make the Cache work.
-- You can now add control points/keyframes to curves by double-clicking on them. However, it doesn't apply for the Roto beziers.
+- You can now add control points/keyframes to curves by double-clicking on them. However, it doesn't apply for the Roto Beziers.
 - File dialog speed has been increased drastically
 - ReadFFMPEG: improve stability a lot
 - Parameters links and expressions are now displayed in the nodegraph (you can disable them in the right click menu).
@@ -783,7 +783,7 @@ anything any word , e.g: "Blur" and it will propose all types of Blurs.
 
 ## Version 0.96
 
-- Roto can now output RGBA colors and all beziers have a blending mode. It is now easier to layer your work within the same roto node.
+- Roto can now output RGBA colors and all Beziers have a blending mode. It is now easier to layer your work within the same roto node.
 - New Dot node to break connections and make cleaner graphs
 - New OCIOCDLTransform to apply an ASC Color decision list, it also supports the .ccc (Color correction collection) or .cc (Color correction) file formats.
 - New OCIOFileTransform to apply a transform from a given file. Supported formats:

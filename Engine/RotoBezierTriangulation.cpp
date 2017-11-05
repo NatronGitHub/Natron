@@ -120,7 +120,7 @@ struct PolygonCSGData
 
     RotoBezierTriangulation::PolygonData* outArgs;
     
-    // The polygon of the bezier and feather with parametric t and flag indicating the color of each point
+    // The polygon of the Bezier and feather with parametric t and flag indicating the color of each point
     std::vector<PolygonVertex> originalBezierPolygon, originalFeatherPolygon, modifiedBezierPolygon, modifiedFeatherPolygon;
 
     // The bezierPolygon and featherPolygon contour(s) in output of ensurePolygonWindingNumberEqualsOne
@@ -304,8 +304,8 @@ static void tess_intersection_combine_callback(double coords[3],
                                                void **dataOut,
                                                void *polygonData)
 {
-    // We are at an intersection of the feather and internal bezier.
-    // We add a point to the bezier polygon.
+    // We are at an intersection of the feather and internal Bezier.
+    // We add a point to the Bezier polygon.
     // We are not going to use it anyway afterwards, 
     PolygonCSGData* myData = (PolygonCSGData*)polygonData;
     assert(myData);
@@ -927,7 +927,7 @@ static void computeInternalPolygon(PolygonCSGData& data, bool clockWise, RotoBez
 static void computeFeatherTriangles(PolygonCSGData &data, RotoBezierTriangulation::PolygonData* outArgs)
 {
 
-    // The discretized bezier polygon and feather polygon must have the same number of samples.
+    // The discretized Bezier polygon and feather polygon must have the same number of samples.
     assert( !data.originalFeatherPolygon.empty() && !data.originalBezierPolygon.empty());
 
     // In output, each unique feather vertex
@@ -945,7 +945,7 @@ static void computeFeatherTriangles(PolygonCSGData &data, RotoBezierTriangulatio
 
     // inner = 0, outter = 1
 
-    // Points to the current feather bezier segment
+    // Points to the current feather Bezier segment
     vector<PolygonVertex>::iterator it[2];
     for (int i = 0; i < 2; ++i) {
         it[i] = iteratorEnd[i];
@@ -1039,7 +1039,7 @@ static void computeFeatherTriangles(PolygonCSGData &data, RotoBezierTriangulatio
 
 
         if (isInner[0] != isInner[1]) {
-            // Regular case: remember which polygon was the inner polygon (it is possible that the bezier polygon becomes the outter polygon if the user applied a negative feather)
+            // Regular case: remember which polygon was the inner polygon (it is possible that the Bezier polygon becomes the outter polygon if the user applied a negative feather)
             lastIterationInnerPolygon = isInner[0] ? 0 : 1;
         } else if (!isInner[0] && !isInner[1]) {
 
@@ -1210,7 +1210,7 @@ RotoBezierTriangulation::tesselate(const BezierPtr& bezier,
 #endif
 
 
-    // Copy the feather and bezier polygon and introduce a isInner flag to determine if a point should be drawn with an inside color (full opacity) or outter
+    // Copy the feather and Bezier polygon and introduce a isInner flag to determine if a point should be drawn with an inside color (full opacity) or outter
     // color (black)
     // Initialize the isInner flag to false and libtess will inform us of the internal points with the vertex callback
 

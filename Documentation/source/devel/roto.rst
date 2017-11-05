@@ -50,7 +50,7 @@ To create a new :ref:`BezierCurve<BezierCurve>`, use one of the following functi
 	* :func:`createEllipse(x,y,diameter,fromCenter,time)<>`
 	* :func:`createRectangle(x,y,size,time)<>`
 	
-Once created, the bezier will have at least 1 control point (4 for ellipses and rectangles) and one keyframe
+Once created, the Bezier will have at least 1 control point (4 for ellipses and rectangles) and one keyframe
 at the time specified in parameter.
 
 	

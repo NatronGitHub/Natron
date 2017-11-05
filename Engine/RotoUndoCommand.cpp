@@ -470,7 +470,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(const RotoPaintInteractPtr& roto,
         }
         assert( cp && cp->getBezier() && roto );
 
-        // Get the bezier curve for this selected control point
+        // Get the Bezier curve for this selected control point
         BezierPtr curve = cp->getBezier();
         assert(curve);
         if (!curve) {
@@ -485,12 +485,12 @@ RemovePointUndoCommand::RemovePointUndoCommand(const RotoPaintInteractPtr& roto,
             }
         }
 
-        // The index of the control point in the bezier
+        // The index of the control point in the Bezier
         int indexToRemove = curve->getControlPointIndex(cp, _view);
 
 
         if ( foundCurve == _curves.end() ) {
-            // First time we encounter this bezier
+            // First time we encounter this Bezier
             CurveDesc curveDesc;
             curveDesc.curveRemoved = false; //set in the redo()
             curveDesc.parentLayer = toRotoLayer(curve->getParent());
@@ -498,7 +498,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(const RotoPaintInteractPtr& roto,
             curveDesc.points.push_back(indexToRemove);
             curveDesc.curve = curve;
 
-            // Make a copy of the current state of this bezier
+            // Make a copy of the current state of this Bezier
             curveDesc.oldCurve.reset( new Bezier(curve->getModel(), curve->getBaseItemName(), curve->isOpenBezier()) );
             curveDesc.oldCurve->copyItem(*curve);
 
@@ -509,7 +509,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(const RotoPaintInteractPtr& roto,
         }
     }
 
-    // For each bezier, sort the indices of the points to remove so that we remove them with the correct ordering
+    // For each Bezier, sort the indices of the points to remove so that we remove them with the correct ordering
     // so they stay valid
     for (std::list<CurveDesc>::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         it->points.sort();
@@ -576,7 +576,7 @@ RemovePointUndoCommand::redo()
                 // If there is a single point, mark the curve unfinished
                 it->curve->setCurveFinished(false, _view);
             } else if (cpCount == 0) {
-                // Remove the bezier if we removed all control points
+                // Remove the Bezier if we removed all control points
                 it->curveRemoved = true;
                 std::list<BezierPtr >::iterator found = std::find( toRemove.begin(), toRemove.end(), it->curve );
                 if ( found == toRemove.end() ) {
@@ -1584,7 +1584,7 @@ MakeEllipseUndoCommand::redo()
         bottom->getPositionAtTime(_time, &btmX, &btmY);
         left->getPositionAtTime(_time, &leftX, &leftY);
 
-        // The bezier control points should be:
+        // The Bezier control points should be:
         // P_0 = (0,1), P_1 = (c,1), P_2 = (1,c), P_3 = (1,0)
         // with c = 0.551915024494
         // See http://spencermortensen.com/articles/bezier-circle/

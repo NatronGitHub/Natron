@@ -1421,7 +1421,7 @@ RotoDrawableItem::fetchRenderCloneKnobs()
     // The comp item doesn't have a vector graphics mask hence cannot have a transform on it
     if (type != eRotoStrokeTypeComp) {
 
-        // Brush: only for strokes or open beziers
+        // Brush: only for strokes or open Beziers
         _imp->brushSize = getKnobByNameAndType<KnobDouble>(kRotoBrushSizeParam);
         _imp->brushSpacing = getKnobByNameAndType<KnobDouble>(kRotoBrushSpacingParam);
         _imp->brushHardness = getKnobByNameAndType<KnobDouble>(kRotoBrushHardnessParam);
@@ -1559,7 +1559,7 @@ RotoDrawableItem::initializeKnobs()
     // The comp item doesn't have a vector graphics mask hence cannot have a transform on it
     if (type != eRotoStrokeTypeComp) {
 
-        // Brush: only for strokes or open beziers
+        // Brush: only for strokes or open Beziers
         _imp->brushSize = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushSizeParam);
         _imp->brushSpacing = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushSpacingParam);
         _imp->brushHardness = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushHardnessParam);

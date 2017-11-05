@@ -523,7 +523,7 @@ public:
     RotoLayerPtr addLayerInternal();
 
     /**
-     * @brief Make a new bezier curve and append it into the currently selected layer.
+     * @brief Make a new Bezier curve and append it into the currently selected layer.
      * @param baseName A hint to name the item. It can be something like "Bezier", "Ellipse", "Rectangle" , etc...
      **/
     BezierPtr makeBezier(double x, double y, const std::string & baseName, TimeValue time, bool isOpenBezier);

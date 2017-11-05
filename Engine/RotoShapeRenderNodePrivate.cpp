@@ -101,7 +101,7 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
         }
 
 
-        // This function is also used for opened bezier which do not have pressure.
+        // This function is also used for opened Bezier which do not have pressure.
         RotoStrokeItemPtr isStroke = toRotoStrokeItem(stroke);
         if (!isStroke) {
             pressureAffectsOpacity = false;

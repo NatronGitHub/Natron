@@ -60,8 +60,8 @@ NATRON_NAMESPACE_ENTER
 
 
 /**
- * @class This class represents a bezier curve.
- * Note that the bezier also supports feather points.
+ * @class This class represents a Bezier curve.
+ * Note that the Bezier also supports feather points.
  * This class is MT-safe
  *
  * The curve supports animation, and by default once the first control point is added the curve
@@ -192,9 +192,9 @@ public:
 
     /**
      * @brief Given the (x,y) coordinates of a point, this function returns whether a point lies on
-     * the cubic bezier curve of the feather points or of the control points or not.
-     * @returns The index of the starting control point (P0) of the bezier segment on which the given
-     * point lies. If the point doesn't belong to any bezier segment of this curve then it will return -1.
+     * the cubic Bezier curve of the feather points or of the control points or not.
+     * @returns The index of the starting control point (P0) of the Bezier segment on which the given
+     * point lies. If the point doesn't belong to any Bezier segment of this curve then it will return -1.
      **/
     int isPointOnCurve(double x, double y, double acceptance, TimeValue time, ViewIdx view, double *t, bool* feather) const;
 
@@ -255,7 +255,7 @@ public:
 
 
     /**
-     * @brief Moves the left bezier point of the control point at the given index by the given deltas
+     * @brief Moves the left Bezier point of the control point at the given index by the given deltas
      * and at the given time.
      * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
@@ -263,7 +263,7 @@ public:
     void moveLeftBezierPoint(int index, TimeValue time, ViewSetSpec view, double dx, double dy);
 
     /**
-     * @brief Moves the right bezier point of the control point at the given index by the given deltas
+     * @brief Moves the right Bezier point of the control point at the given index by the given deltas
      * and at the given time.
      * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
@@ -309,7 +309,7 @@ private:
 public:
     
     /**
-     * @brief Provided for convenience. It set the left bezier point of the control point at the given index to
+     * @brief Provided for convenience. It set the left Bezier point of the control point at the given index to
      * the position given by (x,y) at the given time.
      * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
@@ -318,7 +318,7 @@ public:
     void setLeftBezierPoint(int index, TimeValue time, ViewSetSpec view, double x, double y);
 
     /**
-     * @brief Provided for convenience. It set the right bezier point of the control point at the given index to
+     * @brief Provided for convenience. It set the right Bezier point of the control point at the given index to
      * the position given by (x,y) at the given time.
      * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
@@ -342,7 +342,7 @@ public:
 
 
     /**
-     * @brief Set the left and right bezier point of the control point.
+     * @brief Set the left and right Bezier point of the control point.
      **/
     void movePointLeftAndRightIndex(BezierCP & cp,
                                     BezierCP & fp,
@@ -370,7 +370,7 @@ public:
     //void expandFeatherAtIndex(int index,double distance);
 
     /**
-     * @brief Smooth the curvature of the bezier at the given index by expanding the tangents.
+     * @brief Smooth the curvature of the Bezier at the given index by expanding the tangents.
      * This is also applied to the feather points.
      * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
@@ -378,7 +378,7 @@ public:
     void smoothPointAtIndex(int index, TimeValue time, ViewSetSpec view, const std::pair<double, double>& pixelScale);
 
     /**
-     * @brief Cusps the curvature of the bezier at the given index by reducing the tangents.
+     * @brief Cusps the curvature of the Bezier at the given index by reducing the tangents.
      * This is also applied to the feather points.
      * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
@@ -401,13 +401,13 @@ public:
     };
 
     /**
-     * @brief The internal bezier subdivision algorithm.
+     * @brief The internal Bezier subdivision algorithm.
      * @param isOpenBezier Whether the shape is supposed to be closed (i.e: the last control point is connected to the first) or not
-     * @param cps The list of controls points of the bezier, in the order of drawing by the user
+     * @param cps The list of controls points of the Bezier, in the order of drawing by the user
      * @param time The time at which to sample each control point on the timeline
      * @param scale The render scale to apply to the points
-     * @param finished For a closed bezier, indicates whether the shape is finished or not
-     * @param nbPointsPerSegment If iterative, this the number of points in output for each bezier segment. If -1, this is automatically
+     * @param finished For a closed Bezier, indicates whether the shape is finished or not
+     * @param nbPointsPerSegment If iterative, this the number of points in output for each Bezier segment. If -1, this is automatically
      * using the sum of the euclidean distance of the P0-P1, P1-P2, P2-P3, P3-P0 distances:  http://antigrain.com/research/adaptive_bezier/
      * @param errorScale If recursive, this parameter influences whether we should subdivise or not the segment at one recursion step.
      * The greater it is, the smoother the curve will be.
@@ -450,7 +450,7 @@ public:
 
 
     /**
-     * @brief Evaluates the bezier formed by the feather points.
+     * @brief Evaluates the Bezier formed by the feather points.
      * See deCasteljau for details about each parameter
      * Note: the generated points, nor the bounding box will not be offset by the feather distance in output.
      **/
@@ -467,7 +467,7 @@ public:
 public:
 
     /**
-     * @brief Returns the bounding box of the bezier.
+     * @brief Returns the bounding box of the Bezier.
      **/
     virtual RectD getBoundingBox(TimeValue time,ViewIdx view) const OVERRIDE;
 
@@ -477,7 +477,7 @@ public:
                                           const Transform::Matrix3x3& transform);
 
     /**
-     * @brief Returns the control points of the bezier curve. This can only ever be called on the main thread.
+     * @brief Returns the control points of the Bezier curve. This can only ever be called on the main thread.
      **/
     std::list< BezierCPPtr >  getControlPoints(ViewIdx view) const;
 
@@ -488,7 +488,7 @@ protected:
 public:
 
     /**
-     * @brief Returns the feather points of the bezier curve. This can only ever be called on the main thread.
+     * @brief Returns the feather points of the Bezier curve. This can only ever be called on the main thread.
      **/
     std::list< BezierCPPtr > getFeatherPoints(ViewIdx view) const;
 
@@ -548,10 +548,10 @@ public:
     /**
      * @brief Computes the location of the feather extent relative to the current feather point position and
      * the given feather distance.
-     * In the case the control point and the feather point of the bezier are distinct, this function just makes use
+     * In the case the control point and the feather point of the Bezier are distinct, this function just makes use
      * of Thales theorem.
        >     * If the feather point and the control point are equal then this function computes the left and right derivative
-     * of the bezier at that point to determine the direction in which the extent is.
+     * of the Bezier at that point to determine the direction in which the extent is.
      * @returns The delta from the given feather point to apply to find out the extent position.
      *
      * Note that the delta will be applied to fp.
@@ -561,7 +561,7 @@ public:
                                          double featherDistance_x,         //< feather distance
                                          double featherDistance_y,         //< feather distance
                                          TimeValue time,         //< time
-                                         bool clockWise,         //< is the bezier  clockwise oriented or not
+                                         bool clockWise,         //< is the Bezier  clockwise oriented or not
                                          const Transform::Matrix3x3& transform,
                                          std::list<BezierCPPtr >::const_iterator prevFp,         //< iterator pointing to the feather before curFp
                                          std::list<BezierCPPtr >::const_iterator curFp,         //< iterator pointing to fp

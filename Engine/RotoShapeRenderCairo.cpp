@@ -43,7 +43,7 @@
 
 
 
-//This will enable correct evaluation of beziers
+//This will enable correct evaluation of Beziers
 //#define ROTO_USE_MESH_PATTERN_ONLY
 
 
@@ -1113,16 +1113,16 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
                                               double fallOff,
                                               cairo_pattern_t* mesh)
 {
-    ///Note that we do not use the opacity when rendering the bezier, it is rendered with correct floating point opacity/color when converting
+    ///Note that we do not use the opacity when rendering the Bezier, it is rendered with correct floating point opacity/color when converting
     ///to the Natron image.
 
     double fallOffInverse = 1. / fallOff;
     /*
      * We descretize the feather control points to obtain a polygon so that the feather distance will be of the same thickness around all the shape.
-     * If we were to extend only the end points, the resulting bezier interpolation would create a feather with different thickness around the shape,
+     * If we were to extend only the end points, the resulting Bezier interpolation would create a feather with different thickness around the shape,
      * yielding an unwanted behaviour for the end user.
      */
-    ///here is the polygon of the feather bezier
+    ///here is the polygon of the feather Bezier
     ///This is used only if the feather distance is different of 0 and the feather points equal
     ///the control points in order to still be able to apply the feather distance.
     std::vector<ParametricPoint> featherPolygon;

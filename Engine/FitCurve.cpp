@@ -576,7 +576,7 @@ FitCurve::fit_cubic(const std::vector<Point>& points,
                 }
                 newPoints.erase(newPoints.begin(), next);
 
-                //If only a single point remains, just add it to this bezier curve
+                //If only a single point remains, just add it to this Bezier curve
                 if (newPoints.size() == 1) {
                     subset.push_back( newPoints.front() );
                     newPoints.clear();

@@ -117,7 +117,7 @@ struct BezierPrivate
     mutable QMutex itemMutex; //< protects points & featherPoits
     PerViewBezierShapeMap viewShapes;
 
-    bool isOpenBezier; // when true the bezier will be rendered even if not closed
+    bool isOpenBezier; // when true the Bezier will be rendered even if not closed
 
     std::string baseName;
 
@@ -587,7 +587,7 @@ bezierBounds(double p0,
 }
 
 
-// compute a bounding box for the bezier segment
+// compute a bounding box for the Bezier segment
 // algorithm:
 // - compute extrema of the cubic, i.e. values of t for
 // which the derivative of the x or y coordinate of the
@@ -755,7 +755,7 @@ inline void addPointConditionnally(const Point& p, double t, int segmentIndex, s
 }
 
 /**
- * @brief Recursively subdivide the bezier segment p0,p1,p2,p3 until the cubic curve is assumed to be flat. The errorScale is used to determine the stopping criterion.
+ * @brief Recursively subdivide the Bezier segment p0,p1,p2,p3 until the cubic curve is assumed to be flat. The errorScale is used to determine the stopping criterion.
  * The greater it is, the smoother the curve will be.
  **/
 static void
@@ -1062,9 +1062,9 @@ bezierSegmentEval(const Point& p0,
 } // bezierSegmentEval
 
 /**
- * @brief Determines if the point (x,y) lies on the bezier curve segment defined by first and last.
+ * @brief Determines if the point (x,y) lies on the Bezier curve segment defined by first and last.
  * @returns True if the point is close (according to the acceptance) to the curve, false otherwise.
- * @param param[out] It is set to the parametric value at which the subdivision of the bezier segment
+ * @param param[out] It is set to the parametric value at which the subdivision of the Bezier segment
  * yields the closest point to (x,y) on the curve.
  **/
 static bool
@@ -2179,7 +2179,7 @@ Bezier::moveBezierPointInternalForView(BezierCP* cpParam,
                 }
             }
         } else {
-            ///this function is called when building a new bezier we must
+            ///this function is called when building a new Bezier we must
             ///move the static position if there is no keyframe, otherwise the
             ///curve would never be built
             if (moveControlPoint) {
@@ -3119,7 +3119,7 @@ Bezier::deCasteljau(bool isOpenBezier,
 
 
     {
-        // Do not expand the control polygon points to the feather distance otherwise the feather will have a bezier that differs from the original bezier
+        // Do not expand the control polygon points to the feather distance otherwise the feather will have a Bezier that differs from the original bezier
         // instead, we expand each discretized point.
         std::list<BezierPoint> evaluatedPoints;
         getBezierPoints(cps, time, transform, evaluatedPoints);
@@ -3665,7 +3665,7 @@ Bezier::leftDerivativeAtPoint(TimeValue time,
                               double *dx,
                               double *dy)
 {
-    ///First-off, determine if the segment is a linear/quadratic/cubic bezier segment.
+    ///First-off, determine if the segment is a linear/quadratic/cubic Bezier segment.
     assert( !p.equalsAtTime(time,  prev) );
     bool p0equalsP1, p1equalsP2, p2equalsP3;
     Transform::Point3D p0, p1, p2, p3;
@@ -3719,7 +3719,7 @@ Bezier::rightDerivativeAtPoint(TimeValue time,
                                double *dx,
                                double *dy)
 {
-    ///First-off, determine if the segment is a linear/quadratic/cubic bezier segment.
+    ///First-off, determine if the segment is a linear/quadratic/cubic Bezier segment.
     assert( !p.equalsAtTime(time, next) );
     bool p0equalsP1, p1equalsP2, p2equalsP3;
     Transform::Point3D p0, p1, p2, p3;
@@ -3954,7 +3954,7 @@ Bezier::isClockwiseOriented(TimeValue time, ViewIdx view) const
             allPoints.push_back(p1);
             allPoints.push_back(p2);
 
-            // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
+            // If we are a closed Bezier or we are not on the last segment, remove the last point so we don't add duplicates
             if (shape->finished && next == cps.end()) {
                 Point p3;
                 (*next)->getPositionAtTime(time, &p3.x, &p3.y);
@@ -4006,10 +4006,10 @@ Bezier::isClockwiseOriented(TimeValue time, ViewIdx view) const
 /**
  * @brief Computes the location of the feather extent relative to the current feather point position and
  * the given feather distance.
- * In the case the control point and the feather point of the bezier are distinct, this function just makes use
+ * In the case the control point and the feather point of the Bezier are distinct, this function just makes use
  * of Thales theorem.
  * If the feather point and the control point are equal then this function computes the left and right derivative
- * of the bezier at that point to determine the direction in which the extent is.
+ * of the Bezier at that point to determine the direction in which the extent is.
  * @returns The delta from the given feather point to apply to find out the extent position.
  *
  * Note that the delta will be applied to fp.
@@ -4020,7 +4020,7 @@ Bezier::expandToFeatherDistance(const Point & cp, //< the point
                                 double featherDistance_x,         //< feather distance
                                 double featherDistance_y,         //< feather distance
                                 TimeValue time, //< time
-                                bool clockWise, //< is the bezier  clockwise oriented or not
+                                bool clockWise, //< is the Bezier  clockwise oriented or not
                                 const Transform::Matrix3x3& transform,
                                 BezierCPs::const_iterator prevFp, //< iterator pointing to the feather before curFp
                                 BezierCPs::const_iterator curFp, //< iterator pointing to fp

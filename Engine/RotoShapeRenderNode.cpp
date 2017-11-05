@@ -566,7 +566,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     assert(_imp->renderType.lock());
     RotoShapeRenderTypeEnum type = (RotoShapeRenderTypeEnum)_imp->renderType.lock()->getValue();
 
-    // We only support rendering bezier or strokes
+    // We only support rendering Bezier or strokes
     RotoStrokeItemPtr isStroke = toRotoStrokeItem(rotoItem);
     BezierPtr isBezier = toBezier(rotoItem);
 
@@ -684,7 +684,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 // Figure out the opacity
                 double opacity = rotoItem->getOpacityKnob() ? rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view) : 1.;
 
-                // For a stroke or an opened bezier, use the generic stroke algorithm
+                // For a stroke or an opened Bezier, use the generic stroke algorithm
                 if ( isStroke || ( isBezier && (isBezier->isOpenBezier() || !isBezier->isFillEnabled()) ) ) {
                     const bool doBuildUp = !isStroke ? false : isStroke->getBuildupKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
                     RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, isDuringPainting, distNextIn, lastCenterIn, rotoItem, doBuildUp, opacity, args.time, args.view, range, divisions, combinedScale, &distToNextOut, &lastCenterOut);
@@ -694,7 +694,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                         nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut, isStroke->getRenderCloneCurrentStrokeEndPointIndex());
                     }
                 } else {
-                    // Render a bezier
+                    // Render a Bezier
                     //qDebug() << QThread::currentThread() << this  << isBezier.get()<< "RoD while render:";
                     //isBezier->getBoundingBox(args.time, args.view).debug();
                     RotoShapeRenderGL::renderBezier_gl(glContext, glData,

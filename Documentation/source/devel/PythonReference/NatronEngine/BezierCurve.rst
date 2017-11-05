@@ -9,7 +9,7 @@ BezierCurve
 Synopsis
 --------
 
-A BezierCurve is the class used for beziers, ellipses and rectangles.
+A BezierCurve is the class used for Beziers, ellipses and rectangles.
 See :ref:`detailed<bezier.details>` description....
 
 Functions
@@ -39,16 +39,16 @@ Functions
 Detailed Description
 --------------------
 
-A bezier initially is in an *opened* state, meaning it doesn't produce a shape yet. 
+A Bezier initially is in an *opened* state, meaning it doesn't produce a shape yet. 
 At this stage you can then add control points using the :func`addControlPoint(x,y)<NatronEngine.BezierCurve.addControlPoint>`
 function.
 Once you are done adding control points, call the function :func:`setCurveFinished(finished)<NatronEngine.BezierCurve.setCurveFinished>`
 to close the shape by connecting the last control point with the first.
 
-Once finished, you can refine the bezier curve by adding control points with the :func:`addControlPointOnSegment(index,t)<NatronEngine.BezierCurve.addControlPointOnSegment>` function.
-You can then move and remove control points of the bezier.
+Once finished, you can refine the Bezier curve by adding control points with the :func:`addControlPointOnSegment(index,t)<NatronEngine.BezierCurve.addControlPointOnSegment>` function.
+You can then move and remove control points of the Bezier.
 
-To get the position of the control points of the bezier as well as the position of the feather
+To get the position of the control points of the Bezier as well as the position of the feather
 points, use the functions :func:`getControlPointPosition<NatronEngine.BezierCurve.getControlPointPosition>` and
 :func:`getFeatherPointPosition<NatronEngine.BezierCurve.getFeatherPointPosition>`.
 The *index* passed to the function must be between 0 and :func:`getNumControlPoints<NatronEngine.BezierCurve.getNumControlPoints>` -1.
@@ -58,7 +58,7 @@ otherwise the position is sampled between the surrounding keyframes.
 
 To get a list of all keyframes time for a Bezier call the function :func:`getUserKeyframes()<NatronEngine.ItemBase.getUserKeyframes>`.
 
-Each property of a bezier is a 	regular :ref:`parameter<NatronEngine.Param>`.
+Each property of a Bezier is a 	regular :ref:`parameter<NatronEngine.Param>`.
 All parameters can be retrieved with their *script-name* with the function :func:`getParam(scriptName)<NatronEngine.ItemBase.getParam>`.
 
 
@@ -89,7 +89,7 @@ the timeline's current time for this shape.
 	:param view: :class:`view<PySide.QtCore.QString>`	
 	
 Adds a new control point to a *closed* shape (see :func:`isCurveFinished()<NatronEngine.BezierCurve.isCurveFinished>`).
-The *index* is the index of the bezier segment linking the control points at *index* and *index + 1*.
+The *index* is the index of the Bezier segment linking the control points at *index* and *index + 1*.
 *t* is a value between [0,1] indicating the distance from the control point *index* the new control point should be.
 The closer to 1 *t* is, the closer the new control point will be to the control point at *index +1*.
 By default the feather point attached to this point will be equivalent to the control point.
@@ -174,8 +174,8 @@ Returns the number of control points for this shape.
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
 
-Returns whether the curve is finished or not. A finished curve will have a bezier segment between
-the last control point and the first control point and the bezier will be rendered in the image.
+Returns whether the curve is finished or not. A finished curve will have a Bezier segment between
+the last control point and the first control point and the Bezier will be rendered in the image.
 
 
 
@@ -203,7 +203,7 @@ The *time* parameter is given so that if auto-keying is enabled a new keyframe w
     :param dy: :class:`float<PySide.QtCore.double>`
 	:param view: :class:`view<PySide.QtCore.QString>`	
 
-Moves the left bezier point of the control point at the given *index* by the given delta.
+Moves the left Bezier point of the control point at the given *index* by the given delta.
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
 
 
@@ -231,7 +231,7 @@ The *time* parameter is given so that if auto-keying is enabled a new keyframe w
     :param dy: :class:`float<PySide.QtCore.double>`
     :param view: :class:`view<PySide.QtCore.QString>`	
 
-Moves the right bezier point at the given *index* (zero-based) by the given delta (dx,dy). 
+Moves the right Bezier point at the given *index* (zero-based) by the given delta (dx,dy). 
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
 
 
@@ -271,8 +271,8 @@ Set whether the curve should be finished or not. See :func:`isCurveFinished()<Na
     :param ry: :class:`float<PySide.QtCore.double>`
     :param view: :class:`view<PySide.QtCore.QString>`	
 
-Set the feather point at the given *index* at  the position (x,y) with the left bezier point
-at (lx,ly) and right bezier point at (rx,ry).
+Set the feather point at the given *index* at  the position (x,y) with the left Bezier point
+at (lx,ly) and right Bezier point at (rx,ry).
 
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
 
@@ -291,8 +291,8 @@ The *time* parameter is given so that if auto-keying is enabled a new keyframe w
     :param ry: :class:`float<PySide.QtCore.double>`
 	:param view: :class:`view<PySide.QtCore.QString>`	
 
-Set the point at the given *index* at  the position (x,y) with the left bezier point
-at (lx,ly) and right bezier point at (rx,ry).
+Set the point at the given *index* at  the position (x,y) with the left Bezier point
+at (lx,ly) and right Bezier point at (rx,ry).
 
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
 
@@ -300,7 +300,7 @@ The *time* parameter is given so that if auto-keying is enabled a new keyframe w
 	
 	:param view: :class:`view<PySide.QtCore.QString>`	
 	
-Split-off the given *view* in the bezier so that it can be assigned different shape
+Split-off the given *view* in the Bezier so that it can be assigned different shape
 and animation than the *Main* view.
 See :ref:`the section on multi-view<multiViewParams>` for more infos.
 
@@ -318,6 +318,6 @@ See :ref:`the section on multi-view<multiViewParams>` for more infos.
 
 	:rtype: :class:`Sequence`
 	
-Returns a list of all views that have a different shape in the bezier. All views
+Returns a list of all views that have a different shape in the Bezier. All views
 of the project that do not appear in this list are considered to be the same as
 the first view returned by this function.
