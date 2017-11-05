@@ -8,16 +8,16 @@ Dot node
 Description
 -----------
 
-Doesn't do anything to the input image, this is used in the node graph to make bends in the links.
+Does not do anything to the input image, this is used in the node graph to make bends in the links.
 
 Inputs
 ------
 
-+---------+---------------+------------+
-| Input   | Description   | Optional   |
-+=========+===============+============+
-|         |               | No         |
-+---------+---------------+------------+
++-------+-------------+----------+
+| Input | Description | Optional |
++=======+=============+==========+
+|       |             | No       |
++-------+-------------+----------+
 
 Controls
 --------
@@ -26,7 +26,7 @@ Controls
 
 .. cssclass:: longtable
 
-+---------------------------+--------+-----------+------------+
-| Parameter / script name   | Type   | Default   | Function   |
-+===========================+========+===========+============+
-+---------------------------+--------+-----------+------------+
++-------------------------+------+---------+----------+
+| Parameter / script name | Type | Default | Function |
++=========================+======+=========+==========+
++-------------------------+------+---------+----------+

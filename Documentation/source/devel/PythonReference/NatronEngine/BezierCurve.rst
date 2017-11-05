@@ -39,7 +39,7 @@ Functions
 Detailed Description
 --------------------
 
-A Bezier initially is in an *opened* state, meaning it doesn't produce a shape yet. 
+A Bezier initially is in an *opened* state, meaning it doesn't produce a shape yet.
 At this stage you can then add control points using the :func`addControlPoint(x,y)<NatronEngine.BezierCurve.addControlPoint>`
 function.
 Once you are done adding control points, call the function :func:`setCurveFinished(finished)<NatronEngine.BezierCurve.setCurveFinished>`
@@ -231,7 +231,7 @@ The *time* parameter is given so that if auto-keying is enabled a new keyframe w
     :param dy: :class:`float<PySide.QtCore.double>`
     :param view: :class:`view<PySide.QtCore.QString>`	
 
-Moves the right Bezier point at the given *index* (zero-based) by the given delta (dx,dy). 
+Moves the right Bezier point at the given *index* (zero-based) by the given delta (dx,dy).
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
 
 

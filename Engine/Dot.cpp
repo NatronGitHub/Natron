@@ -37,7 +37,7 @@ Dot::createPlugin()
     grouping.push_back(PLUGIN_GROUP_OTHER);
     PluginPtr ret = Plugin::create(Dot::create, Dot::createRenderClone, PLUGINID_NATRON_DOT, "Dot", 1, 0, grouping);
 
-    QString desc = tr("Doesn't do anything to the input image, this is used in the node graph to make bends in the links.");
+    QString desc = tr("Does not do anything to the input image, this is used in the node graph to make bends in the links.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
     EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
     effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);

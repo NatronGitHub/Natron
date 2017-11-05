@@ -53,4 +53,5 @@ To create a new :ref:`BezierCurve<BezierCurve>`, use one of the following functi
 Once created, the Bezier will have at least 1 control point (4 for ellipses and rectangles) and one keyframe
 at the time specified in parameter.
 
-	
+
+

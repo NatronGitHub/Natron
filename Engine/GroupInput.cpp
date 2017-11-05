@@ -67,7 +67,7 @@ GroupInput::initializeKnobs()
 
     KnobBoolPtr optKnob = createKnob<KnobBool>(kNatronGroupInputIsOptionalParamName);
     optKnob->setLabel(tr("Optional"));
-    optKnob->setHintToolTip( tr("When checked, this input of the group will be optional, i.e it will not be required that it is connected "
+    optKnob->setHintToolTip( tr("When checked, this input of the group will be optional, i.e. it will not be required that it is connected "
                                 "for the render to work.") );
     optKnob->setAnimationEnabled(false);
     page->addKnob(optKnob);
