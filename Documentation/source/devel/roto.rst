@@ -55,21 +55,21 @@ To create a new :ref:`BezierCurve<BezierCurve>`, use one of the following functi
 	* :func:`createEllipse(x,y,diameter,fromCenter,time)<>`
 	* :func:`createRectangle(x,y,size,time)<>`
 	
-Once created, the bezier will have at least 1 control point (4 for ellipses and rectangles) and one keyframe
+Once created, the Bezier will have at least 1 control point (4 for ellipses and rectangles) and one keyframe
 at the time specified in parameter.
 
-A bezier initially is in an *opened* state, meaning it doesn't produce a shape yet (unless it is a rectangle or ellipse). 
+A Bezier initially is in an *opened* state, meaning it doesn't produce a shape yet (unless it is a rectangle or ellipse). 
 At this stage you can then add control points using the :func`addControlPoint(x,y)<NatronEngine.BezierCurve.addControlPoint>`
 function.
 Once you're one adding control points, call the function :func:`setCurveFinished(finished)<NatronEngine.BezierCurve.setCurveFinished>`
 to close the shape by connecting the last control point with the first.
 
-Once finished, you can refine the bezier curve by adding control points with the :func:`addControlPointOnSegment(index,t)<NatronEngine.BezierCurve.addControlPointOnSegment>` function.
-You can then move and remove control points of the bezier.
+Once finished, you can refinethe Bezier curve by adding control points with the :func:`addControlPointOnSegment(index,t)<NatronEngine.BezierCurve.addControlPointOnSegment>` function.
+You can then move and remove control points of the Bezier.
 
 You can also slave a control point to a track using the :func:`slavePointToTrack(index,trackTime,trackCenter)<NatronEngine.BezierCurve.slavePointToTrac>` function.
 
-A bezier curve has several properties that the API allows you to modify:
+A Bezier curve has several properties that the API allows you to modify:
 
 	* opacity
 	* color

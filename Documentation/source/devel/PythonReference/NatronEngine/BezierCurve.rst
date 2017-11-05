@@ -62,16 +62,16 @@ although in practise making a shape just by calling functions might be tedious d
 potential huge number of control points and keyframes. You can use the Natron Group node's export
 functionality to generate automatically a script from a Roto node within that group.
 
-A bezier initially is in an *opened* state, meaning it doesn't produce a shape yet. 
+A Bezier initially is in an *opened* state, meaning it doesn't produce a shape yet.
 At this stage you can then add control points using the :func`addControlPoint(x,y)<NatronEngine.BezierCurve.addControlPoint>`
 function.
 Once you're one adding control points, call the function :func:`setCurveFinished(finished)<NatronEngine.BezierCurve.setCurveFinished>`
 to close the shape by connecting the last control point with the first.
 
-Once finished, you can refine the bezier curve by adding control points with the :func:`addControlPointOnSegment(index,t)<NatronEngine.BezierCurve.addControlPointOnSegment>` function.
-You can then move and remove control points of the bezier.
+Once finished, you can refinethe Bezier curve by adding control points with the :func:`addControlPointOnSegment(index,t)<NatronEngine.BezierCurve.addControlPointOnSegment>` function.
+You can then move and remove control points of the Bezier.
 
-To get the position of the control points of the bezier as well as the position of the feather
+To get the position of the control points of the Bezier as well as the position of the feather
 points, use the functions :func:`getControlPointPosition<NatronEngine.BezierCurve.getControlPointPosition>` and
 :func:`getFeatherPointPosition<NatronEngine.BezierCurve.getFeatherPointPosition>`.
 The *index* passed to the function must be between 0 and :func:`getNumControlPoints<NatronEngine.BezierCurve.getNumControlPoints>` -1.
@@ -82,7 +82,7 @@ otherwise the position is sampled between the surrounding keyframes.
 
 To get a list of all keyframes time for a Bezier call the function :func:`getKeyframes()<NatronEngine.BezierCurve.getKeyframes>`.
 
-A bezier curve has several parameters that the API allows you to modify:
+A Bezier curve has several parameters that the API allows you to modify:
 
 	* opacity
 	* color
@@ -131,7 +131,7 @@ the timeline's current time for this shape.
     :param t: :class:`PySide.QtCore.double`
 
 Adds a new control point to a *closed* shape (see :func:`isCurveFinished()<NatronEngine.BezierCurve.isCurveFinished>`).
-The *index* is the index of the bezier segment linking the control points at *index* and *index + 1*.
+The *index* is the index of the Bezier segment linking the control points at *index* and *index + 1*.
 *t* is a value between [0,1] indicating the distance from the control point *index* the new control point should be.
 The closer to 1 *t* is, the closer the new control point will be to the control point at *index +1*.
 By default the feather point attached to this point will be equivalent to the control point.
@@ -145,7 +145,7 @@ the timeline's current time for this shape.
 
     :rtype: :class:`BooleanParam<NatronEngine.BooleanParam>`
 
-Returns the :doc:`Param` controlling the enabled state of the bezier.
+Returns the :doc:`Param` controlling the enabled state of the Bezier.
 
 
 
@@ -166,7 +166,7 @@ alpha will always be 1.
 
     :rtype: :class:`ColorParam<NatronEngine.ColorParam>`
 
-Returns the :doc:`Param` controlling the color of the bezier.
+Returns the :doc:`Param` controlling the color of the Bezier.
 
 
 
@@ -188,7 +188,7 @@ to see the different values possible.
     :rtype: :class:`NatronEngine.ChoiceParam`
 
 
-Returns the :doc:`Param` controlling the blending mode of the bezier.
+Returns the :doc:`Param` controlling the blending mode of the Bezier.
 
 .. method:: NatronEngine.BezierCurve.getControlPointPosition(index, time)
 
@@ -230,7 +230,7 @@ Returns the feather distance of this shape at the given *time*.
     :rtype: :class:`NatronEngine.DoubleParam`
 
 
-Returns the :doc:`Param` controlling the feather distance of the bezier.
+Returns the :doc:`Param` controlling the feather distance of the Bezier.
 
 
 
@@ -252,7 +252,7 @@ Returns the feather fall-off of this shape at the given *time*.
     :rtype: :class:`DoubleParam<NatronEngine.DoubleParam>`
 
 
-Returns the :doc:`Param` controlling the color of the bezier.
+Returns the :doc:`Param` controlling the color of the Bezier.
 
 
 .. method:: NatronEngine.BezierCurve.getFeatherPointPosition(index, time)
@@ -325,7 +325,7 @@ Returns the opacity of the curve at the given *time*.
     :rtype: :class:`DoubleParam<NatronEngine.DoubleParam>`
 
 
-Returns the :doc:`Param` controlling the opacity of the bezier.
+Returns the :doc:`Param` controlling the opacity of the Bezier.
 
 
 
@@ -345,8 +345,8 @@ Returns the overlay color of this shape as a [R,G,B,A] tuple. Alpha will always 
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
 
-Returns whether the curve is finished or not. A finished curve will have a bezier segment between
-the last control point and the first control point and the bezier will be rendered in the image.
+Returns whether the curve is finished or not. A finished curve will have a Bezier segment between
+the last control point and the first control point and the Bezier will be rendered in the image.
 
 
 
@@ -373,7 +373,7 @@ The *time* parameter is given so that if auto-keying is enabled a new keyframe w
     :param dy: :class:`float<PySide.QtCore.double>`
 
 
-Moves the left bezier point of the control point at the given *index* by the given delta.
+Moves the left Bezier point of the control point at the given *index* by the given delta.
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
 
 
@@ -399,7 +399,7 @@ The *time* parameter is given so that if auto-keying is enabled a new keyframe w
     :param dx: :class:`float<PySide.QtCore.double>`
     :param dy: :class:`float<PySide.QtCore.double>`
 
-Moves the right bezier point at the given *index* (zero-based) by the given delta (dx,dy). 
+Moves the right Bezier point at the given *index* (zero-based) by the given delta (dx,dy).
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
 
 
@@ -493,8 +493,8 @@ Set a new keyframe for the *feather fall-off* parameter at the given *time*
     :param rx: :class:`float<PySide.QtCore.double>`
     :param ry: :class:`float<PySide.QtCore.double>`
 
-Set the feather point at the given *index* at  the position (x,y) with the left bezier point
-at (lx,ly) and right bezier point at (rx,ry).
+Set the feather point at the given *index* at  the position (x,y) with the left Bezier point
+at (lx,ly) and right Bezier point at (rx,ry).
 
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
 
@@ -535,8 +535,8 @@ Set the overlay color of this shape
     :param ry: :class:`float<PySide.QtCore.double>`
 
 
-Set the point at the given *index* at  the position (x,y) with the left bezier point
-at (lx,ly) and right bezier point at (rx,ry).
+Set the point at the given *index* at  the position (x,y) with the left Bezier point
+at (lx,ly) and right Bezier point at (rx,ry).
 
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
 

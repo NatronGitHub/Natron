@@ -12,22 +12,22 @@ KeyMix takes two images and layers them together according to a third input. It 
 
 It copies the pixel from A to B only where the Mask is non-zero. It is the same as the Matte operation, but alpha for input A is taken from an external mask, and the output alpha is mixed between A and B. The output bounding box is the union of A and B.
 
-As well as functioning as a layering node, it can also be used to integrate two color operations with one mask. This guards against 'recycled masks', where two consecutive color filters are masked using the same mask, which may generate strange artifacts.
+As well as functioning as a layering node, it can also be used to integrate two color operations with one mask. This guards against ‘recycled masks’, where two consecutive color filters are masked using the same mask, which may generate strange artifacts.
 
 See also: http://opticalenquiry.com/nuke/index.php?title=KeyMix
 
 Inputs
 ------
 
-+---------+----------------------------------------------------------------------------------+------------+
-| Input   | Description                                                                      | Optional   |
-+=========+==================================================================================+============+
-| B       | The main input. This input is passed through when the KeyMix node is disabled.   | Yes        |
-+---------+----------------------------------------------------------------------------------+------------+
-| A       | The image sequence to mix with input B.                                          | Yes        |
-+---------+----------------------------------------------------------------------------------+------------+
-| Mask    |                                                                                  | Yes        |
-+---------+----------------------------------------------------------------------------------+------------+
++-------+--------------------------------------------------------------------------------+----------+
+| Input | Description                                                                    | Optional |
++=======+================================================================================+==========+
+| B     | The main input. This input is passed through when the KeyMix node is disabled. | Yes      |
++-------+--------------------------------------------------------------------------------+----------+
+| A     | The image sequence to mix with input B.                                        | Yes      |
++-------+--------------------------------------------------------------------------------+----------+
+| Mask  |                                                                                | Yes      |
++-------+--------------------------------------------------------------------------------+----------+
 
 Controls
 --------
@@ -36,10 +36,10 @@ Controls
 
 .. cssclass:: longtable
 
-+--------------------------------+-----------+-----------+------------------------------------------------------------------+
-| Parameter / script name        | Type      | Default   | Function                                                         |
-+================================+===========+===========+==================================================================+
-| Invert Mask / ``maskInvert``   | Boolean   | Off       | When checked, the effect is fully applied where the mask is 0.   |
-+--------------------------------+-----------+-----------+------------------------------------------------------------------+
-| Mix / ``mix``                  | Double    | 1         | Mix factor between the original and the transformed image.       |
-+--------------------------------+-----------+-----------+------------------------------------------------------------------+
++------------------------------+---------+---------+----------------------------------------------------------------+
+| Parameter / script name      | Type    | Default | Function                                                       |
++==============================+=========+=========+================================================================+
+| Invert Mask / ``maskInvert`` | Boolean | Off     | When checked, the effect is fully applied where the mask is 0. |
++------------------------------+---------+---------+----------------------------------------------------------------+
+| Mix / ``mix``                | Double  | 1       | Mix factor between the original and the transformed image.     |
++------------------------------+---------+---------+----------------------------------------------------------------+

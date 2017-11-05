@@ -32,32 +32,32 @@ When activated Natron will auto-save projects that have never been saved and wil
 
 **Appear to plug-ins as**
 
-Natron will appear with the name of the selected application to the OpenFX plug-ins. Changing it to the name of another application can help loading plugins which restrict their usage to specific OpenFX host(s). If a Host is not listed here, use the "Custom" entry to enter a custom host name. Changing this requires a restart of the application and requires clearing the OpenFX plugins cache from the Cache menu.
+Natron will appear with the name of the selected application to the OpenFX plug-ins. Changing it to the name of another application can help loading plugins which restrict their usage to specific OpenFX host(s). If a Host is not listed here, use the “Custom” entry to enter a custom host name. Changing this requires a restart of the application and requires clearing the OpenFX plugins cache from the Cache menu.
 
 Threading
 ---------
 
-**Number of render threads (0="guess")**
+**Number of render threads (0=“guess”)**
 
 Controls how many threads Natron should use to render.
 
 -1: Disable multithreading totally (useful for debugging)
 
-0: Guess the thread count from the number of cores.
+0: Guess the thread count from the number of cores. The ideal threads count for this hardware is 8.
 
-**Number of parallel renders (0="guess")**
+**Number of parallel renders (0=“guess”)**
 
-Controls the number of parallel frame that will be rendered at the same time by the renderer.A value of 0 indicate that Natron should automatically determine the best number of parallel renders to launch given your CPU activity. Setting a value different than 0 should be done only if you know what you're doing and can lead in some situations to worse performances. Overall to get the best performances you should have your CPU at 100% activity without idle times.
+Controls the number of parallel frame that will be rendered at the same time by the renderer.A value of 0 indicate that Natron should automatically determine the best number of parallel renders to launch given your CPU activity. Setting a value different than 0 should be done only if you know what you’re doing and can lead in some situations to worse performances. Overall to get the best performances you should have your CPU at 100% activity without idle times.
 
 **Effects use the thread-pool**
 
 When checked, all effects will use a global thread-pool to do their processing instead of launching their own threads. This suppresses the overhead created by the operating system creating new threads on demand for each rendering of a special effect. As a result of this, the rendering might be faster on systems with a lot of cores (>= 8).
 
-WARNING: This is known not to work when using The Foundry's Furnace plug-ins (and potentially some other plug-ins that the dev team hasn't not tested against it). When using these plug-ins, make sure to uncheck this option first otherwise it will crash Natron.
+WARNING: This is known not to work when using The Foundry’s Furnace plug-ins (and potentially some other plug-ins that the dev team hasn’t not tested against it). When using these plug-ins, make sure to uncheck this option first otherwise it will crash Natron.
 
-**Max threads usable per effect (0="guess")**
+**Max threads usable per effect (0=“guess”)**
 
-Controls how many threads a specific effect can use at most to do its processing. A high value will allow 1 effect to spawn lots of thread and might not be efficient because the time spent to launch all the threads might exceed the time spent actually processing.By default (0) the renderer applies an heuristic to determine what's the best number of threads for an effect.
+Controls how many threads a specific effect can use at most to do its processing. A high value will allow 1 effect to spawn lots of thread and might not be efficient because the time spent to launch all the threads might exceed the time spent actually processing.By default (0) the renderer applies an heuristic to determine what’s the best number of threads for an effect.
 
 **Render in a separate process**
 
@@ -148,13 +148,13 @@ When checked, opens-up a file dialog when creating a Write node
 
 **Refresh viewer only when editing is finished**
 
-When checked, the viewer triggers a new render only when mouse is released when editing parameters, curves or the timeline. This setting doesn't apply to roto splines editing.
+When checked, the viewer triggers a new render only when mouse is released when editing parameters, curves or the timeline. This setting doesn’t apply to roto splines editing.
 
 **Linear color pickers**
 
 When activated, all colors picked from the color parameters are linearized before being fetched. Otherwise they are in the same colorspace as the viewer they were picked from.
 
-**Maximum number of open settings panels (0="unlimited")**
+**Maximum number of open settings panels (0=“unlimited”)**
 
 This property holds the maximum number of settings panels that can be held by the properties dock at the same time.The special value of 0 indicates there can be an unlimited number of panels opened.
 
@@ -177,11 +177,11 @@ Color Management
 
 **OpenColorIO configuration**
 
-Select the OpenColorIO configuration you would like to use globally for all operators and plugins that use OpenColorIO, by setting the "OCIO" environment variable. Only nodes created after changing this parameter will take it into account, and it is better to restart the application after changing it. When "Custom config" is selected, the "Custom OpenColorIO config file" parameter is used.
+Select the OpenColorIO configuration you would like to use globally for all operators and plugins that use OpenColorIO, by setting the “OCIO” environment variable. Only nodes created after changing this parameter will take it into account, and it is better to restart the application after changing it. When “Custom config” is selected, the “Custom OpenColorIO config file” parameter is used.
 
 **Custom OpenColorIO configuration file**
 
-OpenColorIO configuration file (\*.ocio) to use when "Custom config" is selected as the OpenColorIO config.
+OpenColorIO configuration file (*.ocio) to use when “Custom config” is selected as the OpenColorIO config.
 
 **Warn on OpenColorIO config change**
 
@@ -192,13 +192,13 @@ Caching
 
 **Aggressive caching**
 
-When checked, Natron will cache the output of all images rendered by all nodes, regardless of their "Force caching" parameter. When enabling this option you need to have at least 8GiB of RAM, and 16GiB is recommended.
+When checked, Natron will cache the output of all images rendered by all nodes, regardless of their “Force caching” parameter. When enabling this option you need to have at least 8GiB of RAM, and 16GiB is recommended.
 
-If not checked, Natron will only cache the nodes which have multiple outputs, or their parameter "Force caching" checked or if one of its output has its settings panel opened.
+If not checked, Natron will only cache the nodes which have multiple outputs, or their parameter “Force caching” checked or if one of its output has its settings panel opened.
 
 **Maximum amount of RAM memory used for caching (% of total RAM)**
 
-This setting indicates the percentage of the total RAM which can be used by the memory caches.
+This setting indicates the percentage of the total RAM which can be used by the memory caches. This system has 16.00 GiB of RAM.
 
 **System RAM to keep free (% of total RAM)**
 
@@ -305,11 +305,11 @@ Plug-ins
 
 When checked, Natron also uses the plug-ins bundled with the binary distribution.
 
-When unchecked, only system-wide plug-ins found in are loaded (more information can be found in the help for the "Extra plug-ins search paths" setting).
+When unchecked, only system-wide plug-ins found in are loaded (more information can be found in the help for the “Extra plug-ins search paths” setting).
 
 **Prefer bundled plug-ins over system-wide plug-ins**
 
-When checked, and if "Use bundled plug-ins" is also checked, plug-ins bundled with the Natron binary distribution will take precedence over system-wide plug-ins if they have the same internal ID.
+When checked, and if “Use bundled plug-ins” is also checked, plug-ins bundled with the Natron binary distribution will take precedence over system-wide plug-ins if they have the same internal ID.
 
 **Enable default OpenFX plugins location**
 
@@ -317,30 +317,30 @@ When checked, Natron also uses the OpenFX plug-ins found in the default location
 
 **OpenFX plug-ins search path**
 
-Extra search paths where Natron should scan for OpenFX plug-ins. Extra plug-ins search paths can also be specified using the OFX\_PLUGIN\_PATH environment variable.
+Extra search paths where Natron should scan for OpenFX plug-ins. Extra plug-ins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.
 
 The priority order for system-wide plug-ins, from high to low, is:
 
-- plugins bundled with the binary distribution of Natron (if "Prefer bundled plug-ins over system-wide plug-ins" is checked)
+- plugins bundled with the binary distribution of Natron (if “Prefer bundled plug-ins over system-wide plug-ins” is checked)
 
-- plug-ins found in OFX\_PLUGIN\_PATH
+- plug-ins found in OFX_PLUGIN_PATH
 
-- plug-ins found in /Library/OFX/Plugins (if "Enable default OpenFX plug-ins location" is checked)
+- plug-ins found in /Library/OFX/Plugins (if “Enable default OpenFX plug-ins location” is checked)
 
-- plugins bundled with the binary distribution of Natron (if "Prefer bundled plug-ins over system-wide plug-ins" is not checked)
+- plugins bundled with the binary distribution of Natron (if “Prefer bundled plug-ins over system-wide plug-ins” is not checked)
 
 Any change will take effect on the next launch of Natron.
 
 **PyPlugs search path**
 
-Search path where Natron should scan for Python group scripts (PyPlugs). The search paths for groups can also be specified using the NATRON\_PLUGIN\_PATH environment variable.
+Search path where Natron should scan for Python group scripts (PyPlugs). The search paths for groups can also be specified using the NATRON_PLUGIN_PATH environment variable.
 
 Python
 ------
 
 **After project created**
 
-Callback called once a new project is created (this is never called when "After project loaded" is called.)
+Callback called once a new project is created (this is never called when “After project loaded” is called.)
 
 The signature of the callback is : callback(app) where:
 

@@ -16,16 +16,16 @@ Hue and saturation are computed from the the source RGB values. Depending on the
 
 amount: output transparency for the given hue (amount=1 means alpha=0).
 
-sat\_thrsh: if source saturation is below this value, the output transparency is gradually decreased.
+sat_thrsh: if source saturation is below this value, the output transparency is gradually decreased.
 
 Inputs
 ------
 
-+----------+---------------+------------+
-| Input    | Description   | Optional   |
-+==========+===============+============+
-| Source   |               | No         |
-+----------+---------------+------------+
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -34,13 +34,13 @@ Controls
 
 .. cssclass:: longtable
 
-+---------------------------+--------------+---------------------------+----------------------------------------------------------------------------------------------------+
-| Parameter / script name   | Type         | Default                   | Function                                                                                           |
-+===========================+==============+===========================+====================================================================================================+
-| Hue Curves / ``hue``      | Parametric   | amount:   sat\_thrsh:     | | Hue-dependent alpha lookup curves:                                                               |
-|                           |              |                           | | amount: transparency (1-alpha) amount for the given hue                                          |
-|                           |              |                           | | sat\_thrsh: if source saturation is below this value, transparency is decreased progressively.   |
-+---------------------------+--------------+---------------------------+----------------------------------------------------------------------------------------------------+
++-------------------------+------------+------------------------+-------------------------------------------------------------------------------------------------+
+| Parameter / script name | Type       | Default                | Function                                                                                        |
++=========================+============+========================+=================================================================================================+
+| Hue Curves / ``hue``    | Parametric | amount:   sat_thrsh:   | | Hue-dependent alpha lookup curves:                                                            |
+|                         |            |                        | | amount: transparency (1-alpha) amount for the given hue                                       |
+|                         |            |                        | | sat_thrsh: if source saturation is below this value, transparency is decreased progressively. |
++-------------------------+------------+------------------------+-------------------------------------------------------------------------------------------------+
 
 .. |pluginIcon| image:: net.sf.openfx.HueKeyer.png
    :width: 10.0%

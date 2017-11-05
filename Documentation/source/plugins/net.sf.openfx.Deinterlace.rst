@@ -14,13 +14,13 @@ Deinterlace input stream.
 
 The following deinterlacing algorithms are supported:
 
-- Weave: This is what 100fps.com calls "do nothing". Other names: "disabled" or "no deinterlacing". Should be used for PsF content.
+- Weave: This is what 100fps.com calls “do nothing”. Other names: “disabled” or “no deinterlacing”. Should be used for PsF content.
 
 - Blend: Blender (full resolution). Each line of the picture is created as the average of a line from the odd and a line from the even half-pictures. This ignores the fact that they are supposed to be displayed at different times.
 
 - Bob: Doubler. Display each half-picture like a full picture, by simply displaying each line twice. Preserves temporal resolution of interlaced video.
 
-- Discard: Only display one of the half-pictures, discard the other. Other name: "single field". Both temporal and vertical spatial resolutions are halved. Can be used for slower computers or to give interlaced video movie-like look with characteristic judder.
+- Discard: Only display one of the half-pictures, discard the other. Other name: “single field”. Both temporal and vertical spatial resolutions are halved. Can be used for slower computers or to give interlaced video movie-like look with characteristic judder.
 
 - Linear: Doubler. Bob with linear interpolation: instead of displaying each line twice, line 2 is created as the average of line 1 and 3, etc.
 
@@ -31,11 +31,11 @@ The following deinterlacing algorithms are supported:
 Inputs
 ------
 
-+----------+---------------+------------+
-| Input    | Description   | Optional   |
-+==========+===============+============+
-| Source   |               | No         |
-+----------+---------------+------------+
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -44,22 +44,22 @@ Controls
 
 .. cssclass:: longtable
 
-+-----------------------------------------+----------+----------------------+-------------------------------------------------------------------------------------------------+
-| Parameter / script name                 | Type     | Default              | Function                                                                                        |
-+=========================================+==========+======================+=================================================================================================+
-| Field Order / ``fieldOrder``            | Choice   | HD=upper,SD=lower    | | Interlaced field order                                                                        |
-|                                         |          |                      | | **Lower field first (lower)**: Lower field first.                                             |
-|                                         |          |                      | | **Upper field first (upper)**: Upper field first                                              |
-|                                         |          |                      | | **HD=upper,SD=lower (auto)**: Automatic.                                                      |
-+-----------------------------------------+----------+----------------------+-------------------------------------------------------------------------------------------------+
-| Parity / ``parity``                     | Choice   | Lower                | | Field to interpolate.                                                                         |
-|                                         |          |                      | | **Lower (lower)**: Interpolate lower field.                                                   |
-|                                         |          |                      | | **Upper (upper)**: Interpolate upper field.                                                   |
-+-----------------------------------------+----------+----------------------+-------------------------------------------------------------------------------------------------+
-| Yadif Processing Mode / ``yadifMode``   | Choice   | Temporal & spatial   | | Mode of checking fields                                                                       |
-|                                         |          |                      | | **Temporal & spatial (temporalspatial)**: Temporal and spatial interlacing check (default).   |
-|                                         |          |                      | | **Temporal only (temporal)**: Skips spatial interlacing check.                                |
-+-----------------------------------------+----------+----------------------+-------------------------------------------------------------------------------------------------+
++---------------------------------------+--------+--------------------+-----------------------------------------------------------------------------------------------+
+| Parameter / script name               | Type   | Default            | Function                                                                                      |
++=======================================+========+====================+===============================================================================================+
+| Field Order / ``fieldOrder``          | Choice | HD=upper,SD=lower  | | Interlaced field order                                                                      |
+|                                       |        |                    | | **Lower field first (lower)**: Lower field first.                                           |
+|                                       |        |                    | | **Upper field first (upper)**: Upper field first                                            |
+|                                       |        |                    | | **HD=upper,SD=lower (auto)**: Automatic.                                                    |
++---------------------------------------+--------+--------------------+-----------------------------------------------------------------------------------------------+
+| Parity / ``parity``                   | Choice | Lower              | | Field to interpolate.                                                                       |
+|                                       |        |                    | | **Lower (lower)**: Interpolate lower field.                                                 |
+|                                       |        |                    | | **Upper (upper)**: Interpolate upper field.                                                 |
++---------------------------------------+--------+--------------------+-----------------------------------------------------------------------------------------------+
+| Yadif Processing Mode / ``yadifMode`` | Choice | Temporal & spatial | | Mode of checking fields                                                                     |
+|                                       |        |                    | | **Temporal & spatial (temporalspatial)**: Temporal and spatial interlacing check (default). |
+|                                       |        |                    | | **Temporal only (temporal)**: Skips spatial interlacing check.                              |
++---------------------------------------+--------+--------------------+-----------------------------------------------------------------------------------------------+
 
 .. |pluginIcon| image:: net.sf.openfx.Deinterlace.png
    :width: 10.0%

@@ -16,18 +16,18 @@ Alpha values lower or equal to 0 and greater or equal to 1 are leaved untouched,
 
 The output of this plugin should not be used for firther processing, but only for viewing.
 
-The Matte Monitor is described in "Digital Compositing for Film and Video" by Steve Wright (Sec. 3.1).
+The Matte Monitor is described in “Digital Compositing for Film and Video” by Steve Wright (Sec. 3.1).
 
-See also the video at http://www.vfxio.com/images/movies/Comp\_Tip\_2.mov
+See also the video at http://www.vfxio.com/images/movies/Comp_Tip_2.mov
 
 Inputs
 ------
 
-+----------+---------------+------------+
-| Input    | Description   | Optional   |
-+==========+===============+============+
-| Source   |               | No         |
-+----------+---------------+------------+
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -36,8 +36,8 @@ Controls
 
 .. cssclass:: longtable
 
-+---------------------------+----------+-----------+------------------------------------------------------------+
-| Parameter / script name   | Type     | Default   | Function                                                   |
-+===========================+==========+===========+============================================================+
-| Slope / ``slope``         | Double   | 0.5       | Slope applied to alpha values striuctly between 0 and 1.   |
-+---------------------------+----------+-----------+------------------------------------------------------------+
++-------------------------+--------+---------+----------------------------------------------------------+
+| Parameter / script name | Type   | Default | Function                                                 |
++=========================+========+=========+==========================================================+
+| Slope / ``slope``       | Double | 0.5     | Slope applied to alpha values striuctly between 0 and 1. |
++-------------------------+--------+---------+----------------------------------------------------------+
