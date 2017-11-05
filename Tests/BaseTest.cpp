@@ -249,10 +249,10 @@ TEST_F(BaseTest, GenerateDot)
     ///create the writer and set its output filename
     NodePtr writer = createNode(_writeOIIOPluginID);
 
-    ASSERT_TRUE(generator && writer);
+    ASSERT_TRUE( bool(generator) && bool(writer) );
 
     KnobPtr frameRange = generator->getApp()->getProject()->getKnobByName("frameRange");
-    ASSERT_TRUE(frameRange);
+    ASSERT_TRUE( bool(frameRange) );
     KnobInt* knob = dynamic_cast<KnobInt*>( frameRange.get() );
     ASSERT_TRUE(knob);
     knob->setValue(1, ViewSpec::all(), 0);

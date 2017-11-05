@@ -49,7 +49,7 @@ GroupInput::initializeKnobs()
     page->setName("controls");
 
     boost::shared_ptr<KnobBool> optKnob = AppManager::createKnob<KnobBool>( this, tr("Optional") );
-    optKnob->setHintToolTip( tr("When checked, this input of the group will be optional, i.e it will not be required that it is connected "
+    optKnob->setHintToolTip( tr("When checked, this input of the group will be optional, i.e. it will not be required that it is connected "
                                 "for the render to work.") );
     optKnob->setAnimationEnabled(false);
     optKnob->setName(kNatronGroupInputIsOptionalParamName);

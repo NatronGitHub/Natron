@@ -56,8 +56,8 @@ GCC_DIAG_ON(unused-parameter)
 #include "Global/GLIncludes.h"
 #include "Global/ProcInfo.h"
 #include "Global/StrUtils.h"
+#include "Global/FStreamsSupport.h"
 
-#include "Engine/FStreamsSupport.h"
 #include "Engine/CacheSerialization.h"
 #include "Engine/CLArgs.h"
 #include "Engine/ExistenceCheckThread.h"
@@ -913,8 +913,8 @@ AppManagerPrivate::handleCommandLineArgs(int argc, char** argv)
     } else {
         // If the user didn't specify launch arguments (e.g unit testing),
         // At least append the binary path
-        QString path = ProcInfo::applicationDirPath(0);
-        utf8Args.push_back(path.toStdString());
+        std::string path = ProcInfo::applicationDirPath(0);
+        utf8Args.push_back(path);
     }
 
     copyUtf8ArgsToMembers(utf8Args);
@@ -934,8 +934,8 @@ AppManagerPrivate::handleCommandLineArgsW(int argc, wchar_t** argv)
     } else {
         // If the user didn't specify launch arguments (e.g unit testing),
         // At least append the binary path
-        QString path = ProcInfo::applicationDirPath(0);
-        utf8Args.push_back(path.toStdString());
+        std::string path = ProcInfo::applicationDirPath(0);
+        utf8Args.push_back(path);
     }
 
     copyUtf8ArgsToMembers(utf8Args);

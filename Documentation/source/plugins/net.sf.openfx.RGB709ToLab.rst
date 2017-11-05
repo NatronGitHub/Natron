@@ -10,16 +10,16 @@ RGB709ToLab node
 Description
 -----------
 
-Convert from RGB (Rec.709 with D65 illuminant) to L\*a\*b color model. L\*a\*b coordinates are divided by 100 for better visualization.
+Convert from RGB (Rec.709 with D65 illuminant) to L*a*b color model. L*a*b coordinates are divided by 100 for better visualization.
 
 Inputs
 ------
 
-+----------+---------------+------------+
-| Input    | Description   | Optional   |
-+==========+===============+============+
-| Source   |               | No         |
-+----------+---------------+------------+
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -28,11 +28,11 @@ Controls
 
 .. cssclass:: longtable
 
-+---------------------------+-----------+-----------+-------------------------------------------------------------------------------------------------------+
-| Parameter / script name   | Type      | Default   | Function                                                                                              |
-+===========================+===========+===========+=======================================================================================================+
-| Unpremult / ``premult``   | Boolean   | Off       | Divide the image by the alpha channel before processing. Use if the input images are premultiplied.   |
-+---------------------------+-----------+-----------+-------------------------------------------------------------------------------------------------------+
++-------------------------+---------+---------+-----------------------------------------------------------------------------------------------------+
+| Parameter / script name | Type    | Default | Function                                                                                            |
++=========================+=========+=========+=====================================================================================================+
+| Unpremult / ``premult`` | Boolean | Off     | Divide the image by the alpha channel before processing. Use if the input images are premultiplied. |
++-------------------------+---------+---------+-----------------------------------------------------------------------------------------------------+
 
 .. |pluginIcon| image:: net.sf.openfx.RGB709ToLab.png
    :width: 10.0%

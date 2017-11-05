@@ -36,6 +36,7 @@ SUBDIRS += \
     Renderer \
     Gui \
     Tests \
+    PythonBin \
     App
 
 # where to find the sub projects - give the folders

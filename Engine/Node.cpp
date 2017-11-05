@@ -52,6 +52,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <ofxNatron.h>
 
+#include "Global/FStreamsSupport.h"
+
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -62,7 +64,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/EffectInstance.h"
 #include "Engine/Format.h"
 #include "Engine/FileSystemModel.h"
-#include "Engine/FStreamsSupport.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"
@@ -285,7 +286,7 @@ public:
         , rotoContext()
         , trackContext()
         , imagesBeingRenderedMutex()
-        , imageBeingRenderedCond()
+        , imagesBeingRenderedCond()
         , imagesBeingRendered()
         , supportedDepths()
         , isMultiInstance(false)
@@ -484,7 +485,7 @@ public:
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
     boost::shared_ptr<TrackerContext> trackContext;
     mutable QMutex imagesBeingRenderedMutex;
-    QWaitCondition imageBeingRenderedCond;
+    QWaitCondition imagesBeingRenderedCond;
     std::list< boost::shared_ptr<Image> > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
     std::list <ImageBitDepthEnum> supportedDepths;
 
@@ -4674,13 +4675,13 @@ Node::makeDocumentation(bool genHTML) const
             op = "screen";
         }
         if ( !op.empty() ) {
-            // we should use the custom link "[Merge node](|http::/plugins/"PLUGINID_OFX_MERGE".html||rst::net.sf.openfx.MergePlugin|)"
+            // we should use the custom link "[Merge node](|http::/plugins/" PLUGINID_OFX_MERGE ".html||rst::net.sf.openfx.MergePlugin|)"
             // but pandoc borks it
             ms << tr("The *%1* node is a convenience node identical to the %2, except that the operator is set to *%3* by default.")
             .arg(pluginLabel)
-            .arg(genHTML ? QString::fromUtf8("<a href=\""PLUGINID_OFX_MERGE".html\">Merge node</a>") :
-                 QString::fromUtf8(":ref:`"PLUGINID_OFX_MERGE"`")
-                 //QString::fromUtf8("[Merge node](http::/plugins/"PLUGINID_OFX_MERGE".html)")
+            .arg(genHTML ? QString::fromUtf8("<a href=\"" PLUGINID_OFX_MERGE ".html\">Merge node</a>") :
+                 QString::fromUtf8(":ref:`" PLUGINID_OFX_MERGE "`")
+                 //QString::fromUtf8("[Merge node](http::/plugins/" PLUGINID_OFX_MERGE ".html)")
                  )
             .arg( QString::fromUtf8( op.c_str() ) );
             goto OUTPUT;
@@ -8014,7 +8015,7 @@ Node::lock(const boost::shared_ptr<Image> & image)
         std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
 
     while ( it != _imp->imagesBeingRendered.end() ) {
-        _imp->imageBeingRenderedCond.wait(&_imp->imagesBeingRenderedMutex);
+        _imp->imagesBeingRenderedCond.wait(&_imp->imagesBeingRenderedMutex);
         it = std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
     }
     ///Okay the image is not used by any other thread, claim that we want to use it
@@ -8050,7 +8051,7 @@ Node::unlock(const boost::shared_ptr<Image> & image)
     assert( it != _imp->imagesBeingRendered.end() );
     _imp->imagesBeingRendered.erase(it);
     ///Notify all waiting threads that we're finished
-    _imp->imageBeingRenderedCond.wakeAll();
+    _imp->imagesBeingRenderedCond.wakeAll();
 }
 
 boost::shared_ptr<Image>

@@ -29,6 +29,28 @@
 #include <climits>
 #endif
 
+#include <vector>
+#include <algorithm>
+
+
+
+static char separator()
+{
+#if defined (__NATRON_WIN32__)
+    return '\\';
+#else
+    return '/';
+#endif
+}
+
+static bool
+endsWith(const std::string& str,
+         const std::string& suffix)
+{
+    return ( ( str.size() >= suffix.size() ) &&
+            (str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0) );
+}
+
 NATRON_NAMESPACE_ENTER
 
 namespace StrUtils {
@@ -175,15 +197,7 @@ namespace StrUtils {
 #endif
     } // utf16_to_utf8
 
-    void ensureLastPathSeparator(QString& path)
-    {
-        static const QChar separator( QLatin1Char('/') );
-
-        if ( !path.endsWith(separator) ) {
-            path += separator;
-        }
-    }
-
+  
 #ifdef __NATRON_WIN32__
 
 
@@ -209,6 +223,205 @@ namespace StrUtils {
     } // GetLastErrorAsString
 
 #endif // __NATRON_WIN32__
-}
+
+
+    std::string cleanPath(const std::string &path)
+    {
+        if (path.empty())
+            return path;
+        std::string name = path;
+        char dir_separator = separator();
+        if (dir_separator != '/') {
+            std::replace( name.begin(), name.end(), dir_separator, '/');
+        }
+
+        int used = 0, levels = 0;
+        const int len = name.length();
+        std::vector<char> outVector(len);
+        char *out = &outVector[0];
+
+        const char *p = name.c_str();
+        for (int i = 0, last = -1, iwrite = 0; i < len; ++i) {
+            if (p[i] == '/') {
+                while (i+1 < len && p[i+1] == '/') {
+#if defined(__NATRON_WIN32__) //allow unc paths
+                    if (!i)
+                        break;
+#endif
+                    i++;
+                }
+                bool eaten = false;
+                if (i+1 < len && p[i+1] == '.') {
+                    int dotcount = 1;
+                    if (i+2 < len && p[i+2] == '.')
+                        dotcount++;
+                    if (i == len - dotcount - 1) {
+                        if (dotcount == 1) {
+                            break;
+                        } else if (levels) {
+                            if (last == -1) {
+                                for (int i2 = iwrite-1; i2 >= 0; i2--) {
+                                    if (out[i2] == '/') {
+                                        last = i2;
+                                        break;
+                                    }
+                                }
+                            }
+                            used -= iwrite - last - 1;
+                            break;
+                        }
+                    } else if (p[i+dotcount+1] == '/') {
+                        if (dotcount == 2 && levels) {
+                            if (last == -1 || iwrite - last == 1) {
+                                for (int i2 = (last == -1) ? (iwrite-1) : (last-1); i2 >= 0; i2--) {
+                                    if (out[i2] == '/') {
+                                        eaten = true;
+                                        last = i2;
+                                        break;
+                                    }
+                                }
+                            } else {
+                                eaten = true;
+                            }
+                            if (eaten) {
+                                levels--;
+                                used -= iwrite - last;
+                                iwrite = last;
+                                last = -1;
+                            }
+                        } else if (dotcount == 2 && i > 0 && p[i - 1] != '.') {
+                            eaten = true;
+                            used -= iwrite - std::max(0, last);
+                            iwrite = std::max(0, last);
+                            last = -1;
+                            ++i;
+                        } else if (dotcount == 1) {
+                            eaten = true;
+                        }
+                        if (eaten)
+                            i += dotcount;
+                    } else {
+                        levels++;
+                    }
+                } else if (last != -1 && iwrite - last == 1) {
+#if defined(__NATRON_WIN32__)
+                    eaten = (iwrite > 2);
+#else
+                    eaten = true;
+#endif
+                    last = -1;
+                } else if (last != -1 && i == len-1) {
+                    eaten = true;
+                } else {
+                    levels++;
+                }
+                if (!eaten)
+                    last = i - (i - iwrite);
+                else
+                    continue;
+            } else if (!i && p[i] == '.') {
+                int dotcount = 1;
+                if (len >= 1 && p[1] == '.')
+                    dotcount++;
+                if (len >= dotcount && p[dotcount] == '/') {
+                    if (dotcount == 1) {
+                        i++;
+                        while (i+1 < len-1 && p[i+1] == '/')
+                            i++;
+                        continue;
+                    }
+                }
+            }
+            out[iwrite++] = p[i];
+            used++;
+        }
+
+        std::string ret;
+        if (used == len) {
+            ret = name;
+        } else {
+            for (int i = 0; i < used; ++i) {
+                ret.push_back(out[i]);
+            }
+        }
+        // Strip away last slash except for root directories
+        if (ret.length() > 1 && endsWith(ret, std::string("/"))) {
+#if defined(__NATRON_WIN32__)
+            if (!(ret.length() == 3 && ret.at(1) == ':'))
+#endif
+                ret.resize(ret.size() - 1);
+        }
+
+        return ret;
+    } // cleanPath
+
+
+
+    std::string toNativeSeparators(const std::string &pathName)
+    {
+#if defined(__NATRON_WIN32__)
+        std::size_t i = pathName.find_first_of("/");
+        if (i != std::string::npos) {
+            std::string n(pathName);
+            n[i++] = '\\';
+
+            for (; i < n.length(); ++i) {
+                if (n[i] == '/')
+                    n[i] = '\\';
+            }
+            
+            return n;
+        }
+#endif
+        return pathName;
+    }
+
+    std::string fromNativeSeparators(const std::string &pathName)
+    {
+#if defined(__NATRON_WIN32__)
+        std::size_t i = pathName.find_first_of("\\");
+        if (i != std::string::npos) {
+            std::string n(pathName);
+            n[i++] = '/';
+
+            for (; i < n.length(); ++i) {
+                if (n[i] == '\\')
+                    n[i] = '/';
+            }
+
+            return n;
+        }
+#endif
+        return pathName;
+    }
+
+    std::vector<std::string> split(const std::string &text, char sep) {
+        std::vector<std::string> tokens;
+        std::size_t start = 0, end = 0;
+        while ((end = text.find(sep, start)) != std::string::npos) {
+            if (end != start) {
+                tokens.push_back(text.substr(start, end - start));
+            }
+            start = end + 1;
+        }
+        if (end != start) {
+            tokens.push_back(text.substr(start));
+        }
+        return tokens;
+    }
+
+    std::string join(const std::vector<std::string> &text, char sep)
+    {
+        std::string ret;
+        for (std::size_t i = 0; i < text.size(); ++i) {
+            ret += text[i];
+            if (i < text.size() - 1) {
+                ret += sep;
+            }
+        }
+        return ret;
+    }
+
+} // StrUtils
 
 NATRON_NAMESPACE_EXIT

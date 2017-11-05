@@ -548,20 +548,26 @@ EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr
     QMutexLocker k(&imagesBeingRenderedMutex);
     IBRMap::iterator found = imagesBeingRendered.find(img);
     if ( found != imagesBeingRendered.end() ) {
-        ++(found->second->refCount);
+        IBRPtr ibr = found->second;
+        k.unlock(); // imagesBeingRenderedMutex
+        QMutexLocker k2(&ibr->lock);
+        ++(ibr->refCount);
+        img->getRestToRender_trimap(roi, *restToRender, renderedElsewhere);
+        for (std::list<RectI>::const_iterator it = restToRender->begin(); it!=restToRender->end();++it) {
+            img->markForRendering(*it);
+        }
     } else {
         IBRPtr ibr(new Implementation::ImageBeingRendered);
         ++ibr->refCount;
         std::pair<IBRMap::iterator, bool> ok = imagesBeingRendered.insert( std::make_pair(img, ibr) );
         assert(ok.second);
-        found = ok.first;
+        k.unlock(); // imagesBeingRenderedMutex
+        QMutexLocker k2(&ibr->lock);
+        img->getRestToRender_trimap(roi, *restToRender, renderedElsewhere);
+        for (std::list<RectI>::const_iterator it = restToRender->begin(); it!=restToRender->end();++it) {
+            img->markForRendering(*it);
+        }
     }
-    QMutexLocker k2(&found->second->lock);
-    img->getRestToRender_trimap(roi, *restToRender, renderedElsewhere);
-    for (std::list<RectI>::const_iterator it = restToRender->begin(); it!=restToRender->end();++it) {
-        img->markForRendering(*it);
-    }
-
 }
 
 bool
@@ -572,28 +578,29 @@ EffectInstance::Implementation::waitForImageBeingRenderedElsewhere(const RectI &
         return true;
     }
     IBRPtr ibr;
-    {
-        QMutexLocker k(&imagesBeingRenderedMutex);
-        IBRMap::iterator found = imagesBeingRendered.find(img);
-        assert( found != imagesBeingRendered.end() );
+    QMutexLocker k(&imagesBeingRenderedMutex);
+    IBRMap::iterator found = imagesBeingRendered.find(img);
+    if( found != imagesBeingRendered.end() ) {
         ibr = found->second;
     }
+    if (!ibr) {
+        return true;
+    }
+    k.unlock(); // imagesBeingRenderedMutex
     std::list<RectI> restToRender;
     bool isBeingRenderedElseWhere = false;
     img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
 
     bool ab = _publicInterface->aborted();
-    {
-        QMutexLocker kk(&ibr->lock);
-        while (!ab && isBeingRenderedElseWhere && !ibr->failed && ibr->refCount > 1) {
-            ibr->cond.wait(&ibr->lock, 50);
-            restToRender.clear();
-            isBeingRenderedElseWhere = false;
-            img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
-            ab = _publicInterface->aborted();
-        }
-    }
 
+    QMutexLocker kk(&ibr->lock);
+    while (!ab && isBeingRenderedElseWhere && !ibr->failed && ibr->refCount > 1) {
+        ibr->cond.wait(&ibr->lock, 50);
+        restToRender.clear();
+        isBeingRenderedElseWhere = false;
+        img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
+        ab = _publicInterface->aborted();
+    }
     ///Everything should be rendered now unless we are aborted
     return restToRender.empty() && !ibr->failed && !ab;
 }
@@ -606,13 +613,19 @@ EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_p
     if ( !img->usesBitMap() ) {
         return;
     }
+    IBRPtr ibr;
     QMutexLocker k(&imagesBeingRenderedMutex);
     IBRMap::iterator found = imagesBeingRendered.find(img);
-    assert( found != imagesBeingRendered.end() );
-
-    QMutexLocker kk(&found->second->lock);
+    if( found != imagesBeingRendered.end() ) {
+        ibr = found->second;
+    }
+    if (!ibr) {
+        return;
+    }
+    k.unlock(); // imagesBeingRenderedMutex
+    QMutexLocker kk(&ibr->lock);
     if (renderFailed) {
-        found->second->failed = true;
+        ibr->failed = true;
     }
     for (std::list<RectI>::const_iterator it = rects.begin(); it!=rects.end();++it) {
         if (renderFailed) {
@@ -622,11 +635,15 @@ EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_p
         }
     }
 
-    found->second->cond.wakeAll();
-    --found->second->refCount;
-    if (!found->second->refCount) {
+    --ibr->refCount;
+    ibr->cond.wakeAll();
+    if (!ibr->refCount) {
         kk.unlock(); // < unlock before erase which is going to delete the lock
-        imagesBeingRendered.erase(found);
+        k.relock(); // imagesBeingRenderedMutex
+        IBRMap::iterator found = imagesBeingRendered.find(img);
+        if( found != imagesBeingRendered.end() ) {
+            imagesBeingRendered.erase(found);
+        }
     }
 }
 

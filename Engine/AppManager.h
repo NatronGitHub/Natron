@@ -699,6 +699,12 @@ private:
 
 // AppManager
 
+namespace StrUtils {
+
+    // Ensure that path ends with a '/' character
+    void ensureLastPathSeparator(QString& path);
+
+}
 
 struct PyCallback
 {

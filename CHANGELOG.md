@@ -7,10 +7,16 @@
 
 ## Version 2.3.3
 
-- WriteFFmpeg: support 10-bit DNxHR 444 and DNxHR HQX (requires FFmpeg 3.3, only available in macOS binaries for now)
+- Fix computation of remaining time when rendering.
+
+### Plugins
+
+- ColorLookup: add "Master Curve Mode" parameter, which enable selecting different algorithms to apply the tone curve with more or less color shifting. These curve modes are inspired by [RawTherapee](http://rawpedia.rawtherapee.com/Exposure#Curve_Mode). Also add the possibility to compute and display the RGB histogram of the source input.
+- WriteFFmpeg: support 10-bit DNxHR 444 and DNxHR HQX (and fix a related FFmpeg bug).
 - Shadertoy: rework many presets so that they work better with Natron, especially the effects in the Blur, Effect, and Source categories. Most blur effects can also be modulated per-pixel using the "Modulate" input to get Z-dependent blur.
 - Shadertoy: new presets: Blur/Bokeh Disc, Blur/Mipmap Blur, Effect/Anaglyphic, Effect/Bloom Paint, Effect/Sawnbringer 4bit, Effect/Sharpen, Effect/CRT, Effect/Fisheye, Effect/Image Cel Shade, Effect/Kaleidoscope, Effect/Noisy Mirror, Effect/Quad Mirror, Effect/Q*Bert-ify, Effect/Stripes, Effect/Vignette, Source/Cloud, Source/Cloudy Sky, Source/Disks, Source/Fireball, Source/Flash, Source/Seascape, Source/Star Nest, Source/Voronoi
 - Shadertoy: add iChannelOffset extension.
+- LensDistortion: add cropToFormat parameter (true by default), to avoid computing areas outside of the project frame.
 
 
 ## Version 2.3.2
@@ -560,7 +566,7 @@ You can by-pass this behaviour and come-back to the original "Aggressive caching
 - When zooming out of the node-graph, all texts on nodes / arrows will be hidden to increase performances when handling huge compositions.
 - Tracker: all tracks are now multi-threaded for better performances. Also fixed a bug where the overlay displayed while tracking wasn't matching the underlying displayed image.
 - Roto: Selected points can now be dragged from everywhere within the bounding box instead of only the cross-hair.
-- Roto: It is now possible to move a bezier just by dragging a part of the curve where there is no control point.
+- Roto: It is now possible to move a Bezier just by dragging a part of the curve where there is no control point.
 - Roto: Holding shift while dragging a scale handle of the bounding box will now scale only the half of the shape on the side of the handle
 - Improved parameters alignment and spacing in the settings panel 
 - A new tab in the preferences is now dedicated to plug-ins management. You can now choose to enable/disable a plug-in. This can be seen as a blacklist of the plug-ins you don't want to use. By default most TuttleOFX nodes that are redundant with the bundled nodes will be disabled. 

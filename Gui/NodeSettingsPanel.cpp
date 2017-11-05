@@ -37,8 +37,9 @@
 #include <QtGui/QStyle>
 #endif
 
+#include "Global/FStreamsSupport.h"
+
 #include "Engine/EffectInstance.h"
-#include "Engine/FStreamsSupport.h"
 #include "Engine/Knob.h" // KnobHolder
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"

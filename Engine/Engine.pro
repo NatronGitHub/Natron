@@ -95,7 +95,6 @@ SOURCES += \
     FrameEntry.cpp \
     FrameKey.cpp \
     FrameParamsSerialization.cpp \
-    FStreamsSupport.cpp \
     GenericSchedulerThread.cpp \
     GenericSchedulerThreadWatcher.cpp \
     GPUContextPool.cpp \
@@ -200,6 +199,7 @@ SOURCES += \
     ViewerInstance.cpp \
     WriteNode.cpp \
     ../Global/glad_source.c \
+    ../Global/FStreamsSupport.cpp \
     ../Global/ProcInfo.cpp \
     ../Global/StrUtils.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
@@ -298,7 +298,6 @@ HEADERS += \
     FrameEntrySerialization.h \
     FrameParams.h \
     FrameParamsSerialization.h \
-    FStreamsSupport.h \
     fstream_mingw.h \
     GenericSchedulerThread.h \
     GenericSchedulerThreadWatcher.h \
@@ -438,6 +437,7 @@ HEADERS += \
     ViewIdx.h \
     WriteNode.h \
     ../Global/Enums.h \
+    ../Global/FStreamsSupport.h \
     ../Global/GitVersion.h \
     ../Global/GLIncludes.h \
     ../Global/GlobalDefines.h \

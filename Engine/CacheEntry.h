@@ -837,6 +837,9 @@ public:
                 }
             }
             QWriteLocker k(&_entryLock);
+            if ( _data.isAllocated() ) {
+                return;
+            }
             allocate();
             onMemoryAllocated(false);
         }
@@ -954,11 +957,11 @@ public:
     void deallocate()
     {
         std::size_t sz = size();
-        bool dataAllocated = _data.isAllocated();
+        bool dataAllocated;
         double time = getTime();
         {
             QWriteLocker k(&_entryLock);
-
+            dataAllocated = _data.isAllocated();
             _data.deallocate();
         }
 
@@ -1044,10 +1047,11 @@ public:
             return;
         }
 
-        bool isAlloc = _data.isAllocated();
+        bool isAlloc;
         bool hasRemovedFile;
         {
             QWriteLocker k(&_entryLock);
+            isAlloc = _data.isAllocated();
             hasRemovedFile = _data.removeAnyBackingFile();
         }
 

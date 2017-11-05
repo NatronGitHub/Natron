@@ -190,7 +190,7 @@ public:
 
     /**
      * @brief Returns a bezier curves nearby the point (x,y) and the parametric value
-     * which would be used to find the exact bezier point lying on the curve.
+     * which would be used to find the exact Bezier point lying on the curve.
      **/
     boost::shared_ptr<Bezier> isNearbyBezier(double x, double y, double acceptance, int* index, double* t, bool *feather) const;
 

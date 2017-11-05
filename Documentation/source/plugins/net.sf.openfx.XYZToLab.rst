@@ -8,16 +8,16 @@ XYZToLab node
 Description
 -----------
 
-Convert from CIE XYZ color space to CIE L\*a\*b color space. L\*a\*b coordinates are divided by 100 for better visualization.
+Convert from CIE XYZ color space to CIE L*a*b color space. L*a*b coordinates are divided by 100 for better visualization.
 
 Inputs
 ------
 
-+----------+---------------+------------+
-| Input    | Description   | Optional   |
-+==========+===============+============+
-| Source   |               | No         |
-+----------+---------------+------------+
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -26,7 +26,7 @@ Controls
 
 .. cssclass:: longtable
 
-+---------------------------+--------+-----------+------------+
-| Parameter / script name   | Type   | Default   | Function   |
-+===========================+========+===========+============+
-+---------------------------+--------+-----------+------------+
++-------------------------+------+---------+----------+
+| Parameter / script name | Type | Default | Function |
++=========================+======+=========+==========+
++-------------------------+------+---------+----------+
