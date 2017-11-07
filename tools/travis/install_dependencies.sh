@@ -215,7 +215,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # Pin qt4, prioritizing its formulae over core when formula names are supplied
     brew tap-pin cartr/qt4
     # brew list -1 | while read line; do brew unlink $line; brew link --force $line; done
-    # brew upgrade --cleanup
+    brew upgrade
     echo "* Brew doctor"
     brew doctor || true
     
