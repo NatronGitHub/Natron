@@ -193,10 +193,10 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # sudo install_xquartz &
     # XQ_INSTALL_PID=$!
 
-    echo "* Brew update"
-    brew update >/dev/null
+    #echo "* Brew update"
+    #brew update >/dev/null
     brew --config
-    brew upgrade xctool || true
+    brew outdated xctool || brew upgrade xctool || true
     echo "* Adding brew taps"
     brew tap homebrew/python
     brew tap homebrew/science
@@ -215,10 +215,16 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # Pin qt4, prioritizing its formulae over core when formula names are supplied
     brew tap-pin cartr/qt4
     # brew list -1 | while read line; do brew unlink $line; brew link --force $line; done
+
+    # Upgrade the essential packages
+    echo "* Brew upgrade selected packages"
+    for p in boost giflib jpeg libpng libtiff libxml2 openssl pcre python readline sqlite; do
+	brew outdated $p || brew upgrade $p
+    done
     # On Nov. 7 2017, the following caused 49 upgrades.
     # ==> Upgrading 49 outdated packages, with result:
     # automake 1.15.1, boost 1.65.1, carthage 0.26.2, cgal 4.11, cmake 3.9.5, coreutils 8.28_1, dirmngr 1.1.1_3, freexl 1.0.4, gdal 1.11.5_3, gdbm 1.13, geos 3.6.2, giflib 5.1.4, git 2.15.0, gmp 6.1.2_1, gnupg 2.2.1, go 1.9.2, gpg-agent 2.0.30_3, jpeg 9b, json-c 0.12.1, libevent 2.1.8, libgcrypt 1.8.1, libgeotiff 1.4.2_1, libgpg-error 1.27, libpng 1.6.34, libssh 0.7.5, libtiff 4.0.8_5, libusb 1.0.21, libusb-compat 0.1.5_1, libxml2 2.9.7, lzlib 1.9, maven 3.5.2, mercurial 4.4, mpfr 3.1.6, msgpack 2.1.5, node 8.9.0, openssl 1.0.2m, pcre 8.41, pinentry 1.0.0, pkg-config 0.29.2, postgis 2.4.0_1, postgresql 10.0, pyenv 1.1.5, python 2.7.14, readline 7.0.3_1, sfcgal 1.3.2, sqlite 3.21.0, swiftlint 0.23.1, tmate 2.2.1_3, wget 1.19.2
-    brew upgrade
+    #brew upgrade
     echo "* Brew doctor"
     brew doctor || true
     
