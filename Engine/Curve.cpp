@@ -2079,7 +2079,6 @@ Curve::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
         for (std::list<SERIALIZATION_NAMESPACE::KeyFrameSerialization>::const_iterator it = s->keys.begin(); it != s->keys.end(); ++it) {
             KeyFrame k;
             k.setTime(TimeValue(it->time));
-            k.setValue(it->value);
 
             switch (s->curveType) {
                 case SERIALIZATION_NAMESPACE::eCurveSerializationTypeString: {

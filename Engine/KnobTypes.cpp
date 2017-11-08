@@ -676,7 +676,7 @@ int
 ChoiceKnobDimView::getValueFromKeyFrame(const KeyFrame& k)
 {
     std::string optionID;
-    getPropertySafe(kKeyFramePropString, 0, &optionID);
+    k.getPropertySafe(kKeyFramePropString, 0, &optionID);
     {
         QMutexLocker k(&valueMutex);
         for (std::size_t i = 0 ; i < menuOptions.size(); ++i) {
