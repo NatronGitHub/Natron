@@ -532,6 +532,7 @@ public:
         
     }
 
+    virtual int getValueFromKeyFrame(const KeyFrame& k) OVERRIDE FINAL;
 
     virtual KeyFrame makeKeyFrame(TimeValue time, const int& value) OVERRIDE FINAL;
 
