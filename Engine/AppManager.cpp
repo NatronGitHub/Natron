@@ -571,7 +571,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
         QString path = QCoreApplication::applicationDirPath() + QString::fromUtf8("/../Resources/etc/fonts");
         QFileInfo fileInfo(path);
         if ( !fileInfo.exists() ) {
-            std::cerr <<  "Fontconfig configuration file " << fileInfo.canonicalFilePath().toStdString() << " does not exist, not setting FONTCONFIG_PATH "<< std::endl;
+            std::cerr <<  "Fontconfig configuration file " << path.toStdString() << " does not exist, not setting FONTCONFIG_PATH "<< std::endl;
         } else {
             QString fcPath = fileInfo.canonicalFilePath();
 

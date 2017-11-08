@@ -35,6 +35,7 @@ Natron multiple times on the same computer, the different processes will share t
 ## Version 2.3.3
 
 - Fix computation of remaining time when rendering.
+- Fix loading third-party plugins on Linux #1682
 
 ### Plugins
 
