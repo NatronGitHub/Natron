@@ -100,7 +100,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # - openexr
     if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS libopenexr-dev libilmbase-dev"; fi
     # - openimageio
-    if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS libopenjpeg-dev libtiff4-dev libjpeg-dev libpng-dev libraw-dev libboost-filesystem${BOOSTVER}-dev libboost-regex${BOOSTVER}-dev libboost-thread${BOOSTVER}-dev libboost-system${BOOSTVER}-dev libwebp-dev libfreetype6-dev libssl-dev"; fi
+    if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS libopenjpeg2-dev libtiff4-dev libjpeg-dev libpng-dev libraw-dev libjasper-dev libboost-filesystem${BOOSTVER}-dev libboost-regex${BOOSTVER}-dev libboost-thread${BOOSTVER}-dev libboost-system${BOOSTVER}-dev libwebp-dev libfreetype6-dev libssl-dev"; fi
 
 
 
