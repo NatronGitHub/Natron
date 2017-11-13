@@ -24,7 +24,7 @@ long_description \
     not include any patented algorithms \
     and is available under the GNU Lesser General Public License (LGPL).
 
-master_sites    ftp://ftp.gnutls.org/gcrypt/gnutls/v${branch}/ \
+master_sites    https://www.gnupg.org/ftp/gcrypt/gnutls/v${branch}/ \
                 http://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
 checksums       rmd160  96fdda2cec8344e37a046c8e5d68bdc8f3df00d0 \

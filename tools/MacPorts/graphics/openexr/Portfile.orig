@@ -66,6 +66,7 @@ if {${subport} eq ${name}} {
 }
 
 subport ilmbase {
+    revision    0
     distname    ilmbase-${version}
     checksums   \
         rmd160  b1adb0c96eff6b3554ddaf8f8bafe2cba8c114e3 \
@@ -80,6 +81,7 @@ set python_versions {27 34 35}
 foreach pver ${python_versions} {
     subport py${pver}-pyilmbase {
         PortGroup   active_variants 1.1
+        revision    1
         distname    pyilmbase-${version}
         checksums                \
             rmd160  9a6b711a2842b1e0124a43fc1c2148a2e7802710 \
@@ -110,6 +112,7 @@ foreach pver ${python_versions} {
 }
 
 subport openexr_viewers {
+    revision    0
     distname    openexr_viewers-${version}
     checksums   rmd160  5f3edc7a0c706faa75a9cd205c0ac85e988c6e09 \
                 sha256  f73fe2e4d19e8fc9317d6c34f156598ad43497bb9549f03feacb8ba095dd04e9
