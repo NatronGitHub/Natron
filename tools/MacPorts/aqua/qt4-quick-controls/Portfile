@@ -20,3 +20,5 @@ homepage         http://wiki.qt.io/QtDesktopComponents
 
 # commit d41f99efdb99b337761f0575ad28434f6aaa07ba is the HEAD of branch old/qt4
 github.setup qt qtquickcontrols d41f99efdb99b337761f0575ad28434f6aaa07ba
+checksums           rmd160  05e5a7846a50ef0ea69b3ff15b297bd3c3ddc794 \
+                    sha256  671fed06394df099bf322ea1bd18e15d0fd8a20919d506c9aa52266a600b501e
