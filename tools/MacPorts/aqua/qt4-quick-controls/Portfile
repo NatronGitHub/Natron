@@ -18,6 +18,12 @@ description      A Desktop Qt Quick Component
 long_description ${description}
 homepage         http://wiki.qt.io/QtDesktopComponents
 
+# TODO: really install stuff!
+# References:
+# - http://blog.qt.io/blog/2011/03/10/qml-components-for-desktop/
+# - http://blog.qt.io/blog/2011/05/26/table-view-with-qt-quick/
+# - http://blog.qt.io/blog/2011/08/26/toplevel-windows-and-menus-with-qt-quick/
+
 # commit d41f99efdb99b337761f0575ad28434f6aaa07ba is the HEAD of branch old/qt4
 github.setup qt qtquickcontrols d41f99efdb99b337761f0575ad28434f6aaa07ba
 checksums           rmd160  05e5a7846a50ef0ea69b3ff15b297bd3c3ddc794 \
