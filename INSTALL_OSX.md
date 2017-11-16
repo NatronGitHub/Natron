@@ -82,7 +82,7 @@ EOF
 
 If you intend to build the [openfx-io](https://github.com/MrKepzie/openfx-io) plugins too, you will need these additional packages:
 
-    sudo port -v -N install x264 +high10 libvpx +highbitdepth libraw +gpl2 openexr ffmpeg +gpl2 +high10 +highbitdepth opencolorio openimageio +natron seexpr
+    sudo port -v -N install x264 libvpx +highbitdepth libraw +gpl2 openexr ffmpeg +gpl2 +highbitdepth opencolorio openimageio +natron seexpr
 
 and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
@@ -92,7 +92,7 @@ and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it inst
 
 Install homebrew from <http://brew.sh/>
 
-macOS 10.12 and later: Qt 4 is not supported in homebrew on masOS 10.12 and later, please enable the community-maintained recipe using:
+Qt 4 is not supported in homebrew. Please enable the community-maintained recipe using:
 
     brew tap cartr/qt4
     brew tap-pin cartr/qt4
@@ -102,7 +102,7 @@ Patch the qt4 recipe to fix the stack overflow issue (see [QTBUG-49607](https://
 
 Patching a homebrew recipe is explained in the [homebrew FAQ](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md).
 
-    brew edit qt (on macOS 10.12 and later: brew edit cartr/qt4/qt)
+    brew edit qt@4
 
 and before the line that starts with `head`, add the following code:
 
