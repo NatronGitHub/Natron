@@ -26,9 +26,6 @@ worksrcdir          SeExpr-${version}
 
 depends_lib         port:libpng
 depends_build       port:doxygen
-if {${configure.cxx_stdlib} eq "libc++"} {
-    configure.args-append -DCMAKE_CXX_FLAGS="-stdlib=libc++"
-}
 
 patchfiles          0001-seexpr-2.11-fix-cxxflags.patch \
                     0002-seexpr-2.11-fix-inline-error.patch
