@@ -21,7 +21,7 @@ platforms           darwin
 master_sites        https://github.com/wdas/SeExpr/archive/
 distname            v${version}
 
-checksums           sha1  80890cedd684a93b012b0964dc3b59910aaf5a10
+checksums           sha1  ff397b05a2bdce17c34cf91148dbc1fec5160fff
 worksrcdir          SeExpr-${version}
 
 depends_lib         port:libpng
