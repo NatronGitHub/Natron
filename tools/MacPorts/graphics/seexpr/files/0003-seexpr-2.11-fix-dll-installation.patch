@@ -1,0 +1,9 @@
+--- SeExpr-2.11/src/SeExpr/CMakeLists-orig.txt	2016-06-27 16:30:39.000000000 -0400
++++ SeExpr-2.11/src/SeExpr/CMakeLists.txt	2017-09-06 15:41:26.056887000 -0400
+@@ -30,5 +30,5 @@
+ ENDIF(NOT WIN32)
+ ## Install binary and includes
+ FILE(GLOB public_includes "*.h")
+-INSTALL (TARGETS SeExpr SeExpr-static DESTINATION ${CMAKE_INSTALL_LIBDIR})
++INSTALL (TARGETS SeExpr SeExpr-static RUNTIME DESTINATION bin LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ INSTALL (FILES ${public_includes} DESTINATION include)

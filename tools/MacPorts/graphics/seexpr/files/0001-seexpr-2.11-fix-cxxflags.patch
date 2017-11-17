@@ -1,0 +1,19 @@
+--- SeExpr-2.11/CMakeLists.txt.orig	2015-08-28 22:32:38 UTC
++++ SeExpr-2.11/CMakeLists.txt
+@@ -46,7 +46,10 @@ ELSE(WIN32)
+   ADD_DEFINITIONS (-Wall  -Wextra)
+   ADD_DEFINITIONS (-pthread)
+ 
+-  SET( CMAKE_CXX_FLAGS "-fPIC -msse4.1")
++  SET( CMAKE_CXX_FLAGS -fPIC )
++  IF(USE_SSE41)
++    SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1" )
++  ENDIF()
+ ENDIF(WIN32)
+ 
+ ## Choose build options
+@@ -99,4 +102,3 @@ ADD_SUBDIRECTORY (src/SeExpr)
+ ADD_SUBDIRECTORY (src/SeExprEditor)
+ ADD_SUBDIRECTORY (src/doc)
+ ADD_SUBDIRECTORY (src/demos)
+-ADD_SUBDIRECTORY (src/tests)
