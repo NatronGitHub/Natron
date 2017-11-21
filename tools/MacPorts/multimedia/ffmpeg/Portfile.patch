@@ -1,6 +1,14 @@
---- Portfile.orig	2017-10-24 10:59:59.000000000 +0200
-+++ Portfile	2017-11-16 16:24:33.000000000 +0100
-@@ -114,6 +114,11 @@
+--- Portfile.orig	2017-10-24 10:13:17.000000000 +0200
++++ Portfile	2017-11-18 19:36:13.000000000 +0100
+@@ -81,6 +81,7 @@
+                     port:libass \
+                     port:libbluray \
+                     port:gnutls \
++                    port:openh264 \
+                     port:openjpeg \
+                     port:fontconfig \
+                     port:freetype \
+@@ -114,6 +115,11 @@
      universal_variant     no
  }
  
@@ -12,7 +20,15 @@
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
  default_variants-append +gpl2
-@@ -142,6 +147,7 @@
+@@ -128,6 +134,7 @@
+                     --enable-librsvg \
+                     --enable-libtheora \
+                     --enable-libopenjpeg \
++                    --enable-libopenh264 \
+                     --enable-libmodplug \
+                     --enable-libvpx \
+                     --enable-libsoxr \
+@@ -142,6 +149,7 @@
                      --disable-libxcb \
                      --disable-libxcb-shm \
                      --disable-libxcb-xfixes \
@@ -20,7 +36,7 @@
                      --disable-indev=jack \
                      --disable-outdev=xv \
                      --disable-vda \
-@@ -150,6 +156,7 @@
+@@ -150,6 +158,7 @@
                      --disable-sdl2 \
                      --mandir=${prefix}/share/man \
                      --enable-shared --enable-pthreads \
@@ -28,7 +44,7 @@
                      --cc=${configure.cc}
  
  
-@@ -226,6 +233,17 @@
+@@ -226,6 +235,17 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -46,7 +62,7 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -250,6 +268,15 @@
+@@ -250,6 +270,15 @@
  configure.universal_args-delete --disable-dependency-tracking
  
  if {[variant_isset universal]} {
@@ -62,7 +78,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -275,11 +302,53 @@
+@@ -275,11 +304,53 @@
  #
      depends_lib-append      port:xorg-libxcb \
                              port:xorg-libXext \
@@ -116,7 +132,7 @@
  }
  
  if {[variant_isset x11]} {
-@@ -323,6 +392,14 @@
+@@ -323,6 +394,14 @@
      require_active_variants x264 "" high10
  }
  
@@ -131,7 +147,7 @@
  variant gpl2 description {Enable GPL code, license will be GPL-2+} {
      configure.args-append   --enable-gpl \
                              --enable-postproc \
-@@ -344,6 +421,12 @@
+@@ -344,6 +423,12 @@
                              port:samba3
  
      license                 GPL-3+
