@@ -32,6 +32,13 @@ Natron multiple times on the same computer, the different processes will share t
 - For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
 
 
+## Version 2.3.4
+
+- Binaries distributed through Natron's web site are now built with 8-bit x264. 10-bit x264 (introduced with 2.2.6) causes too many compatibility issues. There are other codecs that support 10-bit output (especially ProRes, vc2, libopenjpeg, libvpx-vp9, and x265 on some systems). In order to get 10-bit x264, it is recommended to encode a quasi-lossless using one of these codecs, and then transcode with a ffmpeg binary capable of encoding 10-bit x264.
+- Upgrade SeExpr to version 2.11.
+- workaround a possible Qt/Linux  bug where tablet events have a negative pressure on Wacom Intuos tablet #1697
+
+
 ## Version 2.3.3
 
 - Fix computation of remaining time when rendering.
