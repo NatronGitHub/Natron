@@ -10,7 +10,7 @@ name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
 version             3.4
-revision            1
+revision            2
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -83,6 +83,7 @@ depends_lib         port:lame \
                     port:libbluray \
                     port:gnutls \
                     port:openh264 \
+                    port:snappy \
                     port:openjpeg \
                     port:fontconfig \
                     port:freetype \
@@ -136,6 +137,7 @@ configure.args      --enable-swscale \
                     --enable-libtheora \
                     --enable-libopenjpeg \
                     --enable-libopenh264 \
+                    --enable-libsnappy \
                     --enable-libmodplug \
                     --enable-libvpx \
                     --enable-libsoxr \
