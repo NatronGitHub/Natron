@@ -38,7 +38,9 @@
 #if defined(_LIBCPP_USE_AVAILABILITY_APPLE)
 #error "this must be compiled with _LIBCPP_DISABLE_AVAILABILITY defined"
 #else
+#ifndef _LIBCPP_DISABLE_AVAILABILITY
 #define _LIBCPP_DISABLE_AVAILABILITY
+#endif
 #endif
 #endif
 #endif

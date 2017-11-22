@@ -296,9 +296,9 @@ tracker and in CImg-based plugins.
 
 However, the unit tests don't pass yet with clang/libomp 4.0 on OS X 10.6, so be sure tu run the unit tests from https://github.com/MrKepzie/Natron-Tests to validate any clang/macOS combination.
 
-First, install clang 4.0. On OS X 10.9 and later, simply execute:
+First, install clang 5.0. On OS X 10.9 and later, simply execute:
 
-    sudo port -v install clang-4.0
+    sudo port -v install clang-5.0
 
 On older systems, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)", and install and set clang-4.0 as the default compiler in the end. Note that we noticed clang 3.9.1 generates wrong code with `-Os` when compiling openexr (clang 4.0 was not checked), so it is safer to also change `default configure.optflags      {-Os}` to `default configure.optflags      {-O2}` in `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` (type `sudo nano /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` to edit it).
 
@@ -306,17 +306,17 @@ On older systems, if you also want to install clang-4.0, check that bug [https:/
 
 Then, configure using the following qmake command:
 
-    /opt/local/libexec/qt4/bin/qmake -spec unsupported/macx-clang-libc++ QMAKE_CXX=clang++-mp-4.0 QMAKE_CXX=clang++-mp-4.0 QMAKE_CC=clang-mp-4.0 QMAKE_OBJECTIVE_CXX=clang++-mp-4.0 QMAKE_OBJECTIVE_CC=clang-mp-4.0 QMAKE_LD=clang++-mp-4.0 -r CONFIG+=openmp
+    /opt/local/libexec/qt4/bin/qmake -spec unsupported/macx-clang-libc++ QMAKE_CXX=clang++-mp-5.0 QMAKE_CXX=clang++-mp-5.0 QMAKE_CC=clang-mp-5.0 QMAKE_OBJECTIVE_CXX=clang++-mp-5.0 QMAKE_OBJECTIVE_CC=clang-mp-5.0 QMAKE_LD=clang++-mp-5.0 -r CONFIG+=openmp
 
 To build the plugins, use the following command-line:
 
-    make CXX=clang++-mp-4.0 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp"
+    make CXX=clang++-mp-5.0 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp"
 
 Or, if you have MangledOSMesa32 installed in `OSMESA_PATH` and LLVM installed in `LLVM_PATH` (MangledOSMesa32 and LLVM build script is available from [https://github.com/devernay/osmesa-install](github:devernay/osmesa-install) :
 
     OSMESA_PATH=/opt/osmesa
     LLVM_PATH=/opt/llvm
-    make CXX=clang++-mp-4.0 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp" CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
+    make CXX=clang++-mp-5.0 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp" CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
 
 
 ## Build on Xcode
@@ -357,7 +357,7 @@ build files are somewhere under `~/Library/Developer/Xcode`.
 See instructions under "Using clang-omp with Xcode" at the following page https://clang-omp.github.io
 
 On Macports clang now ships with openmp by default, to install:
-sudo port install clang-4.0
+sudo port install clang-5.0
 
 
 In your config.pri file, add the following lines and change the paths according to your installation of clang
@@ -367,9 +367,9 @@ INCLUDEPATH += /opt/local/include/libomp
 LIBS += -L/opt/local/lib/libomp -liomp5
 
 cc_setting.name = CC
-cc_setting.value = /opt/local/bin/clang-mp-4.0
+cc_setting.value = /opt/local/bin/clang-mp-5.0
 cxx_setting.name = CXX
-cxx_setting.value = /opt/local/bin/clang++-mp-4.0
+cxx_setting.value = /opt/local/bin/clang++-mp-5.0 -stdlib=libc++
 QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting
 QMAKE_LFLAGS += "-B /usr/bin"
 
