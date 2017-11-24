@@ -263,7 +263,7 @@ subport curl-ca-bundle {
     }
 
     livecheck.type              regexm
-    livecheck.url               http://hg.mozilla.org/mozilla-central/log/tip/${certdata_path}
+    livecheck.url               https://hg.mozilla.org/mozilla-central/log/tip/${certdata_path}
     livecheck.version           ${certdata_version}
     livecheck.regex             {/rev/([0-9a-f]+)"}
 }
