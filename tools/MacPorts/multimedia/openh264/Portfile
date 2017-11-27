@@ -24,6 +24,8 @@ depends_build-append port:nasm
 
 use_configure no
 
+patchfiles          0001-openh264-1.7.0-leopardinstall.patch
+
 # AVX2 is only supported from Kaby Lake on
 # see https://en.wikipedia.org/wiki/Intel_Core
 
