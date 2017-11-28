@@ -97,6 +97,8 @@ public:
     static const Lut* AlexaV3LogCLut();
     static const Lut* SLog1Lut();
     static const Lut* SLog2Lut();
+    static const Lut* SLog3Lut();
+    static const Lut* VLogLut();
 
 private:
     LutManager &operator= (const LutManager &)

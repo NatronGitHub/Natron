@@ -1560,6 +1560,57 @@ LutManager::SLog2Lut()
     return LutManager::m_instance.getLut("SLog2", from_func_SLog2, to_func_SLog2);
 }
 
+/// from SLog3 to Linear Electro-Optical Transfer Function (EOTF)
+static
+float
+from_func_SLog3(float v)
+{
+    // http://www.sony.co.uk/pro/support/attachment/1237494271390/1237494271406/technical-summary-for-s-gamut3-cine-s-log3-and-s-gamut3-s-log3.pdf
+    return v >= 171.2102946929 / 1023.0 ? std::pow(10.0, ((v * 1023.0 - 420.0) / 261.5)) * (0.18 + 0.01) - 0.01
+          : (v * 1023.0 - 95.0) * 0.01125000 / (171.2102946929 - 95.0);
+}
+
+/// from Linear to SLog3 Opto-Electronic Transfer Function (OETF)
+static
+float
+to_func_SLog3(float v)
+{
+    // http://www.sony.co.uk/pro/support/attachment/1237494271390/1237494271406/technical-summary-for-s-gamut3-cine-s-log3-and-s-gamut3-s-log3.pdf
+    return v >= 0.01125000 ? (420.0 + std::log10((v + 0.01) / (0.18 + 0.01)) * 261.5) / 1023.0
+         : (v * (171.2102946929 - 95.0)/0.01125000 + 95.0) / 1023.0;
+}
+
+const Lut*
+LutManager::SLog3Lut()
+{
+    return LutManager::m_instance.getLut("SLog3", from_func_SLog3, to_func_SLog3);
+}
+
+// from V-Log to Linear Electro-Optical Transfer Function (EOTF)
+static
+float
+from_func_VLog(float v)
+{
+    // http://pro-av.panasonic.net/en/varicam/common/pdf/VARICAM_V-Log_V-Gamut.pdf
+    const float cut2 = 0.181, b = 0.00873, c = 0.241514, d = 0.598206;
+    return v < cut2 ? ( (v - 0.125) / 5.6 ) : (std::pow(10.0, ( (v - d) / c) ) - b);
+}
+
+/// from Linear to VLog Opto-Electronic Transfer Function (OETF)
+static
+float
+to_func_VLog(float v)
+{
+    // http://pro-av.panasonic.net/en/varicam/common/pdf/VARICAM_V-Log_V-Gamut.pdf
+    const float cut1 = 0.01, b = 0.00873, c = 0.241514, d = 0.598206;
+    return v < cut1 ? (5.6 * v + 0.125) : (c * std::log10(v + b) + d);
+}
+
+const Lut*
+LutManager::VLogLut()
+{
+    return LutManager::m_instance.getLut("V-Log", from_func_VLog, to_func_VLog);
+}
 
 // r,g,b values are from 0 to 1
 // h = [0,OFXS_HUE_CIRCLE], s = [0,1], v = [0,1]
