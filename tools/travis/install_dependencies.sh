@@ -35,20 +35,24 @@ fi
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     TEST_CC=gcc
     lsb_release -a
-    GCC_VERSION=4.9
+    #GCC_VERSION=4.9
+    GCC_VERSION=5
     PKGS=
     # Natron requires boost >= 1.49 to compile in C++11 mode
     # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
     ## we used the irie/boost ppa for that purpose
     #sudo add-apt-repository -y ppa:irie/boost
     if [ `lsb_release -cs` = "trusty" ]; then
-	# samuel-bachmann/boost has a backport of boost 1.60
-	sudo add-apt-repository -y ppa:samuel-bachmann/boost
-	BOOSTVER=1.60
-    else
-    # now we use ppa:boost-latest/ppa (contains boost 1.55)
-	sudo add-apt-repository -y ppa:boost-latest/ppa
-	BOOSTVER=1.55
+        # samuel-bachmann/boost has a backport of boost 1.60
+        sudo add-apt-repository -y ppa:samuel-bachmann/boost
+        BOOSTVER=1.60
+        sudo add-apt-repository -y ppa:george-edison55/cmake-3.x
+    elif [ `lsb_release -cs` = "precise" ]; then
+        # 12.04LTS Precise
+        # now we use ppa:boost-latest/ppa (contains boost 1.55)
+        sudo add-apt-repository -y ppa:boost-latest/ppa
+        BOOSTVER=1.55
+        sudo add-apt-repository -y ppa:kalakris-cmake
     fi
     PKGS="$PKGS libboost${BOOSTVER}-dev libboost-math${BOOSTVER}-dev libboost-serialization${BOOSTVER}-dev"
 
@@ -69,9 +73,9 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi #2.5.1
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:pavlyshko/precise; fi #2.6.1
     if [ `lsb_release -cs` = "trusty" ]; then
-	if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:jonathonf/ffmpeg-3; fi #3.2.4
+        if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:jonathonf/ffmpeg-3; fi #3.2.4
     else
-	if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:spvkgn/ffmpeg-dev; fi #2.8.6 (on precise)
+        if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:spvkgn/ffmpeg-dev; fi #2.8.6 (on precise)
     fi
 
     # Note: Python 3 packages are python3-dev and python3-pyside
@@ -89,18 +93,28 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # OpenFX-IO
     # - ffmpeg
     if [ `lsb_release -cs` = "trusty" ]; then
-	if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev"; fi
+        if [ "$CC" = "$TEST_CC" ]; then
+            PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev"
+        fi
     else
-	if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev"; fi
+        if [ "$CC" = "$TEST_CC" ]; then
+            PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev"
+        fi
     fi
     # - opencolorio (available as libopencolorio-dev on trusty)
     if [ `lsb_release -cs` = "trusty" ]; then
-        if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS libopencolorio-dev"; OCIO_HOME=/usr; fi
+        if [ "$CC" = "$TEST_CC" ]; then
+            PKGS="$PKGS libopencolorio-dev"; OCIO_HOME=/usr
+        fi
     fi
     # - openexr
-    if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS libopenexr-dev libilmbase-dev"; fi
+    if [ "$CC" = "$TEST_CC" ]; then
+        PKGS="$PKGS libopenexr-dev libilmbase-dev"
+    fi
     # - openimageio
-    if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS libopenjpeg2-dev libtiff4-dev libjpeg-dev libpng-dev libraw-dev libjasper-dev libboost-filesystem${BOOSTVER}-dev libboost-regex${BOOSTVER}-dev libboost-thread${BOOSTVER}-dev libboost-system${BOOSTVER}-dev libwebp-dev libfreetype6-dev libssl-dev"; fi
+    if [ "$CC" = "$TEST_CC" ]; then
+        PKGS="$PKGS libopenjp2-7-dev libtiff4-dev libjpeg-dev libpng-dev libraw-dev libboost-filesystem${BOOSTVER}-dev libboost-regex${BOOSTVER}-dev libboost-thread${BOOSTVER}-dev libboost-system${BOOSTVER}-dev libwebp-dev libfreetype6-dev libssl-dev"
+    fi
 
 
 
@@ -131,12 +145,41 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "$TEST_CC" ]; then mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support;  fi
     # - opencolorio (build on precise)
     if [ `lsb_release -cs` = "precise" ]; then
-        if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/imageworks/OpenColorIO/archive/v1.0.9.tar.gz -O /tmp/ocio-1.0.9.tar.gz; tar zxf /tmp/ocio-1.0.9.tar.gz; cd OpenColorIO-1.0.9; mkdir _build; cd _build; cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/ocio -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF; make $J && make install; cd ../..; OCIO_HOME=$HOME/ocio; fi
+        if [ "$CC" = "$TEST_CC" ]; then
+            wget https://github.com/imageworks/OpenColorIO/archive/v1.0.9.tar.gz -O /tmp/ocio-1.0.9.tar.gz
+            tar zxf /tmp/ocio-1.0.9.tar.gz
+            pushd OpenColorIO-1.0.9
+            mkdir _build
+            pushd _build
+            cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/ocio -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF
+            make $J && make install
+            popd
+            popd
+            OCIO_HOME=$HOME/ocio
+        fi
     fi
     # - openimageio
-    if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/OpenImageIO/oiio/archive/Release-1.7.17.tar.gz -O /tmp/OpenImageIO-1.7.17.tar.gz; tar zxf /tmp/OpenImageIO-1.7.17.tar.gz; cd oiio-Release-1.7.17; make $J USE_QT=0 USE_TBB=0 USE_PYTHON=0 USE_PYTHON3=0 USE_FIELD3D=0 USE_FFMPEG=0 USE_OPENJPEG=0 USE_OCIO=1 USE_OPENCV=0 USE_OPENSSL=0 USE_FREETYPE=1 USE_GIF=0 USE_PTEX=0 USE_LIBRAW=1 USE_NUKE=0 STOP_ON_WARNING=0 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=$OCIO_HOME INSTALLDIR=$HOME/oiio dist_dir=. cmake; make $J dist_dir=.; cd ..; fi
+    if [ "$CC" = "$TEST_CC" ]; then
+        wget https://github.com/OpenImageIO/oiio/archive/Release-1.7.17.tar.gz -O /tmp/OpenImageIO-1.7.17.tar.gz
+        tar zxf /tmp/OpenImageIO-1.7.17.tar.gz
+        pushd oiio-Release-1.7.17
+        make $J USE_QT=0 USE_PYTHON=0 USE_PYTHON3=0 USE_FIELD3D=0 USE_FFMPEG=0 USE_OPENJPEG=0 USE_OCIO=1 USE_OPENCV=0 USE_OPENSSL=0 USE_FREETYPE=1 USE_GIF=0 USE_PTEX=0 USE_LIBRAW=1 USE_NUKE=0 STOP_ON_WARNING=0 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=$OCIO_HOME INSTALLDIR=$HOME/oiio dist_dir=. cmake
+        make $J dist_dir=.
+        popd
+    fi
     # - SeExpr
-    if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/wdas/SeExpr/archive/rel-1.0.1.tar.gz -O /tmp/SeExpr-1.0.1.tar.gz; tar zxf /tmp/SeExpr-1.0.1.tar.gz; cd SeExpr-rel-1.0.1; mkdir _build; cd _build; cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/seexpr; make $J && make install; cd ../..; fi
+    if [ "$CC" = "$TEST_CC" ]; then
+        wget https://github.com/wdas/SeExpr/archive/v2.11.tar.gz -O /tmp/SeExpr-2.11.tar.gz
+        tar zxf /tmp/SeExpr-2.11.tar.gz
+        pushd SeExpr-2.11
+        sed -i -e '/SeExprEditor/d' -e '/demos/d' -e '/tests/d' ./CMakeLists.txt
+        mkdir _build
+        pushd _build
+        cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/seexpr
+        make $J && make install
+        popd
+        popd
+    fi
     # config.pri
     # Ubuntu 12.04 precise doesn't have a pkg-config file for expat (expat.pc)
     echo 'boost: LIBS += -lboost_serialization' > config.pri
@@ -162,9 +205,21 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     . $TRAVIS_BUILD_DIR/Global/plugin-branches.sh
     
     # build OpenFX-IO
-    if [ "$CC" = "$TEST_CC" ]; then (cd $TRAVIS_BUILD_DIR; git clone https://github.com/MrKepzie/openfx-io.git; (cd openfx-io; git checkout "$IO_BRANCH"; git submodule update --init --recursive)) ; fi
-    if [ "$CC" = "$TEST_CC" ]; then env PKG_CONFIG_PATH=$HOME/ocio/lib/pkgconfig make -C openfx-io SEEXPR_HOME=$HOME/seexpr OIIO_HOME=$HOME/oiio; fi
-    if [ "$CC" = "$TEST_CC" ]; then mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO;  fi
+    if [ "$CC" = "$TEST_CC" ]; then
+        pushd $TRAVIS_BUILD_DIR
+        git clone https://github.com/MrKepzie/openfx-io.git
+        pushd openfx-io
+        git checkout "$IO_BRANCH"
+        git submodule update --init --recursive
+        popd
+        popd
+    fi
+    if [ "$CC" = "$TEST_CC" ]; then
+        env PKG_CONFIG_PATH=$HOME/ocio/lib/pkgconfig make -C openfx-io SEEXPR_HOME=$HOME/seexpr OIIO_HOME=$HOME/oiio
+    fi
+    if [ "$CC" = "$TEST_CC" ]; then
+        mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO
+    fi
 
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     TEST_CC=clang
@@ -219,7 +274,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # Upgrade the essential packages
     echo "* Brew upgrade selected packages"
     for p in boost giflib jpeg libpng libtiff libxml2 openssl pcre python readline sqlite; do
-	brew outdated $p || brew upgrade $p
+        brew outdated $p || brew upgrade $p
     done
     # On Nov. 7 2017, the following caused 49 upgrades.
     # ==> Upgrading 49 outdated packages, with result:
@@ -234,7 +289,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # brew install numpy  # Compilation errors with gfortran
     echo " - install brew packages"
     # TuttleOFX's dependencies:
-    #brew install scons swig ilmbase openexr jasper little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
+    #brew install scons swig ilmbase openexr little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
     # Natron's dependencies only
     # install qt-webkit@2.3 if needed
     brew install qt@4 expat cairo gnu-sed glew numpy boost
@@ -301,3 +356,10 @@ cat config.pri
 echo "GCC/G++ versions:"
 gcc --version
 g++ --version
+
+# Local variables:
+# mode: shell-script
+# sh-basic-offset: 4
+# sh-indent-comment: t
+# indent-tabs-mode: nil
+# End:

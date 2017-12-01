@@ -21,9 +21,11 @@ addons:
     sources:
     # Natron requires boost >= 1.49 to compile in C++11 mode
     # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
-    # we use the ppa:boost-latest/ppa for that purpose (boost 1.55)
+    # we could use the ppa:boost-latest/ppa for that purpose (boost 1.55), but this is for precise only
     # (ppa:afrank/boost offers 1.57, but is not whitelisted)
-    - boost-latest
+    #- boost-latest
+    # samuel-bachmann/boost has a backport of boost 1.60.0 for trusty (not whitelisted)
+    #- sourceline "ppa:samuel-bachmann/boost"
     # kubuntu-ppa/backports contains OpenCV
     - kubuntu-backports
     # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
@@ -37,21 +39,23 @@ addons:
     #- sourceline: 'ppa:spvkgn/ffmpeg-dev'
     # this one is for trusty ffmpeg
     - sourceline: 'ppa:jonathonf/ffmpeg-3'
-    - kalakris-cmake
+    #- kalakris-cmake
     - pythonxy-devel
     packages:
-    - gcc-4.9
-    - g++-4.9
+    #- gcc-4.9
+    #- g++-4.9
+    - gcc-5
+    - g++-5
     - libqt4-dev
     - libqt4-opengl-dev
     - libglew-dev
-    - libboost1.55-dev
-    - libboost-math1.55-dev
-    - libboost-serialization1.55-dev
-    - libboost-filesystem1.55-dev
-    - libboost-regex1.55-dev
-    - libboost-thread1.55-dev
-    - libboost-system1.55-dev
+    #- libboost1.55-dev
+    #- libboost-math1.55-dev
+    #- libboost-serialization1.55-dev
+    #- libboost-filesystem1.55-dev
+    #- libboost-regex1.55-dev
+    #- libboost-thread1.55-dev
+    #- libboost-system1.55-dev
     - libexpat1-dev
     - gdb
     - libcairo2-dev
@@ -110,7 +114,7 @@ matrix:
       # see https://docs.travis-ci.com/user/osx-ci-environment/
       # we use macOS 10.12 to get the precompiled pyside bottles from
       # https://github.com/cartr/homebrew-qt4
-      osx_image: xcode8.2
+      osx_image: xcode8.3
       compiler: clang
   exclude:
     - os: osx

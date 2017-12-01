@@ -56,7 +56,7 @@ Now, if you want to use turbojpeg instead of jpeg:
     
 And finally install the required packages:
 
-    yes | sudo port -v install qt4-mac boost cairo expat gsed py27-pyside py27-sphinx
+    sudo port -v -N install qt4-mac boost cairo expat gsed py27-pyside py27-sphinx
     sudo ln -s python2.7-config /opt/local/bin/python2-config
 
 Create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
@@ -82,7 +82,7 @@ EOF
 
 If you intend to build the [openfx-io](https://github.com/MrKepzie/openfx-io) plugins too, you will need these additional packages:
 
-    yes | sudo port -v install x264 +high10 libvpx +highbitdepth libraw +gpl2 openexr ffmpeg +gpl2 +high10 +highbitdepth opencolorio openimageio +natron seexpr
+    yes | sudo port -v install x264 libvpx +highbitdepth libraw +gpl2 openexr ffmpeg +gpl2 +highbitdepth opencolorio openimageio +natron seexpr
 
 and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
@@ -92,7 +92,7 @@ and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it inst
 
 Install homebrew from <http://brew.sh/>
 
-macOS 10.12 and later: Qt 4 is not supported in homebrew on masOS 10.12 and later, please enable the community-maintained recipe using:
+Qt 4 is not supported in homebrew. Please enable the community-maintained recipe using:
 
     brew tap cartr/qt4
     brew tap-pin cartr/qt4
@@ -102,7 +102,7 @@ Patch the qt4 recipe to fix the stack overflow issue (see [QTBUG-49607](https://
 
 Patching a homebrew recipe is explained in the [homebrew FAQ](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md).
 
-    brew edit qt (on macOS 10.12 and later: brew edit cartr/qt4/qt)
+    brew edit qt@4
 
 and before the line that starts with `head`, add the following code:
 
@@ -294,9 +294,9 @@ tracker and in CImg-based plugins.
 
 However, the unit tests don't pass yet with clang/libomp 4.0 on OS X 10.6, so be sure tu run the unit tests from https://github.com/MrKepzie/Natron-Tests to validate any clang/macOS combination.
 
-First, install clang 4.0. On OS X 10.9 and later, simply execute:
+First, install clang 5.0. On OS X 10.9 and later, simply execute:
 
-    sudo port -v install clang-4.0
+    sudo port -v install clang-5.0
 
 On older systems, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)", and install and set clang-4.0 as the default compiler in the end. Note that we noticed clang 3.9.1 generates wrong code with `-Os` when compiling openexr (clang 4.0 was not checked), so it is safer to also change `default configure.optflags      {-Os}` to `default configure.optflags      {-O2}` in `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` (type `sudo nano /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` to edit it).
 
@@ -304,17 +304,17 @@ On older systems, if you also want to install clang-4.0, check that bug [https:/
 
 Then, configure using the following qmake command:
 
-    /opt/local/libexec/qt4/bin/qmake -spec unsupported/macx-clang-libc++ QMAKE_CXX=clang++-mp-4.0 QMAKE_CXX=clang++-mp-4.0 QMAKE_CC=clang-mp-4.0 QMAKE_OBJECTIVE_CXX=clang++-mp-4.0 QMAKE_OBJECTIVE_CC=clang-mp-4.0 QMAKE_LD=clang++-mp-4.0 -r CONFIG+=openmp
+    /opt/local/libexec/qt4/bin/qmake -spec unsupported/macx-clang-libc++ QMAKE_CXX=clang++-mp-5.0 QMAKE_CXX=clang++-mp-5.0 QMAKE_CC=clang-mp-5.0 QMAKE_OBJECTIVE_CXX=clang++-mp-5.0 QMAKE_OBJECTIVE_CC=clang-mp-5.0 QMAKE_LD=clang++-mp-5.0 -r CONFIG+=openmp
 
 To build the plugins, use the following command-line:
 
-    make CXX=clang++-mp-4.0 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp"
+    make CXX=clang++-mp-5.0 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp"
 
 Or, if you have MangledOSMesa32 installed in `OSMESA_PATH` and LLVM installed in `LLVM_PATH` (MangledOSMesa32 and LLVM build script is available from [https://github.com/devernay/osmesa-install](github:devernay/osmesa-install) :
 
     OSMESA_PATH=/opt/osmesa
     LLVM_PATH=/opt/llvm
-    make CXX=clang++-mp-4.0 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp" CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
+    make CXX=clang++-mp-5.0 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp" CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
 
 ## Build on Xcode
 
@@ -354,7 +354,7 @@ build files are somewhere under `~/Library/Developer/Xcode`.
 See instructions under "Using clang-omp with Xcode" at the following page https://clang-omp.github.io
 
 On Macports clang now ships with openmp by default, to install:
-sudo port install clang-4.0
+sudo port install clang-5.0
 
 
 In your config.pri file, add the following lines and change the paths according to your installation of clang
@@ -364,9 +364,9 @@ INCLUDEPATH += /opt/local/include/libomp
 LIBS += -L/opt/local/lib/libomp -liomp5
 
 cc_setting.name = CC
-cc_setting.value = /opt/local/bin/clang-mp-4.0
+cc_setting.value = /opt/local/bin/clang-mp-5.0
 cxx_setting.name = CXX
-cxx_setting.value = /opt/local/bin/clang++-mp-4.0
+cxx_setting.value = /opt/local/bin/clang++-mp-5.0 -stdlib=libc++
 QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting
 QMAKE_LFLAGS += "-B /usr/bin"
 

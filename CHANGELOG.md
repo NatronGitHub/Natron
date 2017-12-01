@@ -5,6 +5,17 @@
 # History
 
 
+## Version 2.3.4
+
+- Binaries distributed through Natron's web site are now built with 8-bit x264. 10-bit x264 (introduced with 2.2.6) causes too many compatibility issues. There are other codecs that support 10-bit output (especially ProRes, vc2, libopenjpeg, libvpx-vp9, and x265 on some systems). In order to get 10-bit x264, it is recommended to encode a quasi-lossless using one of these codecs, and then transcode with a ffmpeg binary capable of encoding 10-bit x264.
+- Work around a possible Qt/Linux  bug where tablet events have a negative pressure on Wacom Intuos tablet #1697
+- Binaries: add 10-bit HEVC encoding, Cisco openh264 encoding, VidVox Hap encoding.
+
+### Plugins
+
+- Upgrade SeExpr to version 2.11.
+- Grade: add a "Normalize" button to automatically compute the clack and white points.
+
 ## Version 2.3.3
 
 - Fix computation of remaining time when rendering.

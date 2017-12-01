@@ -2087,6 +2087,12 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
 void
 ViewerGL::tabletEvent(QTabletEvent* e)
 {
+    qreal pressure = e->pressure();
+    if (pressure <= 0.) {
+        // Some tablets seem to return pressure between -0.5 and 0.5
+        // This is probably a Qt bug, see https://github.com/MrKepzie/Natron/issues/1697
+        pressure += 1.;
+    }
     switch ( e->type() ) {
     case QEvent::TabletPress: {
         switch ( e->pointerType() ) {
@@ -2101,17 +2107,17 @@ ViewerGL::tabletEvent(QTabletEvent* e)
             _imp->pointerTypeOnPress  = ePenTypePen;
             break;
         }
-        _imp->pressureOnPress = e->pressure();
+        _imp->pressureOnPress = pressure;
         QGLWidget::tabletEvent(e);
         break;
     }
     case QEvent::TabletRelease: {
-        _imp->pressureOnRelease = e->pressure();
+        _imp->pressureOnRelease = pressure;
         QGLWidget::tabletEvent(e);
         break;
     }
     case QEvent::TabletMove: {
-        if ( !penMotionInternal(e->x(), e->y(), e->pressure(), currentTimeForEvent(e), e) ) {
+        if ( !penMotionInternal(e->x(), e->y(), pressure, currentTimeForEvent(e), e) ) {
             QGLWidget::tabletEvent(e);
         } else {
             e->accept();

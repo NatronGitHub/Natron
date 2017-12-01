@@ -41,6 +41,7 @@ Natron binaries include components from the following libraries:
 ### Video codecs and formats
 
 * x264 (GPLv2) http://www.videolan.org/developers/x264.html (used by openfx-io via FFmpeg) 
+* x265 (GPLv2) http://x265.org/ (used by openfx-io via FFmpeg) 
 * libogg (3-clause BSD) https://xiph.org/ogg/ (used by openfx-io via FFmpeg)
 * libvorbis (3-clause BSD) https://xiph.org/vorbis/ (used by openfx-io via FFmpeg)
 * libtheora (3-clause BSD) http://www.theora.org/ (used by openfx-io via FFmpeg)
@@ -50,7 +51,7 @@ Natron binaries include components from the following libraries:
 * libmp3lame (LGPL 2.1) http://lame.sourceforge.net/ (used by openfx-io via FFmpeg) 
 * openh264 (BSD) http://www.openh264.org/ (used by openfx-io via FFmpeg)
 * orc (BSD) http://code.entropywave.com/orc/ (used by openfx-io via FFmpeg and schroedinger) 
-* Schroedinger (MIT) http://diracvideo.org/ (used by openfx-io via FFmpeg) 
+* Snappy (3-clause BSD) http://diracvideo.org/ (used by openfx-io via FFmpeg) 
 
 ### Image formats
 

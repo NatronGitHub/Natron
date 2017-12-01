@@ -150,6 +150,21 @@ Average pixels over the previous, current and next frame
     next = cpixel(1,frame + 1,x,y);
     (prev + cur + next) / 3;
 
+“Wave” - displace columns of pixels vertically according to a sine wave function
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*SeExpr:*
+
+::
+
+    cpixel(1,frame,x,y+x2*sy*sin(2*3.1416*(x/sx - x3)/x1),2)
+
+Set the No. of scalar params to 3.
+
+-  x1 is the horizontal wavelength in pixels.
+-  x2 is the vertical amplitude in pixels.
+-  x3 is the horizontal shift in pixels.
+
 Custom parameters
 ~~~~~~~~~~~~~~~~~
 

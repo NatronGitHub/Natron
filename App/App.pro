@@ -21,7 +21,7 @@ TARGET = Natron
 # the list of currently maintained versions (those that have to be merged into the master branch)
 VERSION_21 = 2.1.10
 VERSION_22 = 2.2.10
-VERSION_23 = 2.3.3
+VERSION_23 = 2.3.4
 VERSION_30 = 3.0.0
 
 # The version for this branch
