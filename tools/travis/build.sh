@@ -83,6 +83,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         # don't build the tests on coverity, so that we do not exceed the time limit
 	make $J -C Tests;
         make $J
+	rm -rf "$HOME/.cache/INRIA/Natron"* &> /dev/null || true
         if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins OCIO=./nuke-default/config.ocio ./Tests; cd ..; fi
     fi
     
@@ -111,5 +112,6 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     make -C App; # linking Natron may break the 3Gb limit
     make $J -C Tests;
     make $J
+    rm -rf  "$HOME/Library/Caches/INRIA/Natron"* &> /dev/null || true
     if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins OCIO=./nuke-default/config.ocio ./Tests; cd ..; fi
 fi
