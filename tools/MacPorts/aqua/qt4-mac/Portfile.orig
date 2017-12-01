@@ -990,7 +990,7 @@ post-destroot {
         set dest_dir ${dr_qt_frameworks_dir}/${include_dir}.framework/Headers/private
         xinstall -m 755 -d ${dest_dir}
         set files [exec find ${worksrcpath}/src/${src_dir} -type f -name "*_p.h"]
-        eval xinstall -m 644 [split ${files}] ${dest_dir}
+        xinstall -m 644 {*}[split ${files}] ${dest_dir}
     }
 
     # Move .apps into the applications_dir, and link each .apps'
