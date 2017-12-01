@@ -166,6 +166,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         wget https://github.com/wdas/SeExpr/archive/v2.11.tar.gz -O /tmp/SeExpr-2.11.tar.gz
         tar zxf /tmp/SeExpr-2.11.tar.gz
         pushd SeExpr-2.11
+        sed -i -e '/SeExprEditor/d' -e '/demos/d' -e '/tests/d' ./CMakeLists.txt
         mkdir _build
         pushd _build
         cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/seexpr
@@ -349,3 +350,10 @@ cat config.pri
 echo "GCC/G++ versions:"
 gcc --version
 g++ --version
+
+# Local variables:
+# mode: shell-script
+# sh-basic-offset: 4
+# sh-indent-comment: t
+# indent-tabs-mode: nil
+# End:
