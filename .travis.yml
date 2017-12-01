@@ -114,7 +114,7 @@ matrix:
       # see https://docs.travis-ci.com/user/osx-ci-environment/
       # we use macOS 10.12 to get the precompiled pyside bottles from
       # https://github.com/cartr/homebrew-qt4
-      osx_image: xcode8.2
+      osx_image: xcode8.3
       compiler: clang
   exclude:
     - os: osx
