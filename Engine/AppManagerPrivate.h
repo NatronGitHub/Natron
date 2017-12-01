@@ -38,20 +38,6 @@
 #include <QtCore/QCoreApplication>
 
 
-#ifdef NATRON_USE_BREAKPAD
-#if defined(Q_OS_MAC)
-GCC_DIAG_OFF(deprecated)
-#include "client/mac/handler/exception_handler.h"
-GCC_DIAG_ON(deprecated)
-#elif defined(Q_OS_LINUX)
-#include <fcntl.h>
-#include "client/linux/handler/exception_handler.h"
-#include "client/linux/crash_generation/crash_generation_server.h"
-#elif defined(Q_OS_WIN32)
-#include "client/windows/handler/exception_handler.h"
-#endif
-#endif
-
 #ifdef Q_OS_LINUX
 #include "Engine/OSGLContext_x11.h"
 #elif defined(Q_OS_WIN32)
@@ -66,8 +52,24 @@ GCC_DIAG_ON(deprecated)
 #include "Engine/Image.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/TLSHolder.h"
+
+// include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
+#ifdef NATRON_USE_BREAKPAD
+#if defined(Q_OS_MAC)
+GCC_DIAG_OFF(deprecated)
+#include "client/mac/handler/exception_handler.h"
+GCC_DIAG_ON(deprecated)
+#elif defined(Q_OS_LINUX)
+#include <fcntl.h>
+#include "client/linux/handler/exception_handler.h"
+#include "client/linux/crash_generation/crash_generation_server.h"
+#elif defined(Q_OS_WIN32)
+#include "client/windows/handler/exception_handler.h"
+#endif
+#endif
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
 

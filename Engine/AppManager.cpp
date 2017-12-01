@@ -23,7 +23,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "AppManager.h"
-#include "AppManagerPrivate.h"
+//#include "AppManagerPrivate.h" // include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
 
 #if defined(__APPLE__) && defined(_LIBCPP_VERSION)
 #include <AvailabilityMacros.h>
@@ -132,6 +132,8 @@
 #include "Engine/WriteNode.h"
 
 #include "sbkversion.h" // shiboken/pyside version
+
+#include "AppManagerPrivate.h" // include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
 
 #if QT_VERSION < 0x050000
 Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
