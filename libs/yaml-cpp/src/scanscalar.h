@@ -19,7 +19,7 @@ enum FOLD { DONT_FOLD, FOLD_BLOCK, FOLD_FLOW };
 
 struct ScanScalarParams {
   ScanScalarParams()
-      : end(nullptr),
+      : end(NULL),
         eatEnd(false),
         indent(0),
         detectIndent(false),
