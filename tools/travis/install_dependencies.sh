@@ -113,7 +113,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     fi
     # - openimageio
     if [ "$CC" = "$TEST_CC" ]; then
-        PKGS="$PKGS libopenjp2-7-dev libtiff4-dev libjpeg-dev libpng-dev libraw-dev libjasper-dev libboost-filesystem${BOOSTVER}-dev libboost-regex${BOOSTVER}-dev libboost-thread${BOOSTVER}-dev libboost-system${BOOSTVER}-dev libwebp-dev libfreetype6-dev libssl-dev"
+        PKGS="$PKGS libopenjp2-7-dev libtiff4-dev libjpeg-dev libpng-dev libraw-dev libboost-filesystem${BOOSTVER}-dev libboost-regex${BOOSTVER}-dev libboost-thread${BOOSTVER}-dev libboost-system${BOOSTVER}-dev libwebp-dev libfreetype6-dev libssl-dev"
     fi
 
 
@@ -289,7 +289,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # brew install numpy  # Compilation errors with gfortran
     echo " - install brew packages"
     # TuttleOFX's dependencies:
-    #brew install scons swig ilmbase openexr jasper little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
+    #brew install scons swig ilmbase openexr little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
     # Natron's dependencies only
     # install qt-webkit@2.3 if needed
     brew install qt@4 expat cairo gnu-sed glew numpy boost
