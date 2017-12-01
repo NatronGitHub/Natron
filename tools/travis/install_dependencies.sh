@@ -103,12 +103,18 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     fi
     # - opencolorio (available as libopencolorio-dev on trusty)
     if [ `lsb_release -cs` = "trusty" ]; then
-        if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS libopencolorio-dev"; OCIO_HOME=/usr; fi
+        if [ "$CC" = "$TEST_CC" ]; then
+            PKGS="$PKGS libopencolorio-dev"; OCIO_HOME=/usr
+        fi
     fi
     # - openexr
-    if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS libopenexr-dev libilmbase-dev"; fi
+    if [ "$CC" = "$TEST_CC" ]; then
+        PKGS="$PKGS libopenexr-dev libilmbase-dev"
+    fi
     # - openimageio
-    if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS libopenjpeg-dev libtiff4-dev libjpeg-dev libpng-dev libraw-dev libjasper-dev libboost-filesystem${BOOSTVER}-dev libboost-regex${BOOSTVER}-dev libboost-thread${BOOSTVER}-dev libboost-system${BOOSTVER}-dev libwebp-dev libfreetype6-dev libssl-dev"; fi
+    if [ "$CC" = "$TEST_CC" ]; then
+        PKGS="$PKGS libopenjp2-7-dev libtiff4-dev libjpeg-dev libpng-dev libraw-dev libboost-filesystem${BOOSTVER}-dev libboost-regex${BOOSTVER}-dev libboost-thread${BOOSTVER}-dev libboost-system${BOOSTVER}-dev libwebp-dev libfreetype6-dev libssl-dev"
+    fi
 
 
 
@@ -166,6 +172,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         wget https://github.com/wdas/SeExpr/archive/v2.11.tar.gz -O /tmp/SeExpr-2.11.tar.gz
         tar zxf /tmp/SeExpr-2.11.tar.gz
         pushd SeExpr-2.11
+        sed -i -e '/SeExprEditor/d' -e '/demos/d' -e '/tests/d' ./CMakeLists.txt
         mkdir _build
         pushd _build
         cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/seexpr
@@ -283,7 +290,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # brew install numpy  # Compilation errors with gfortran
     echo " - install brew packages"
     # TuttleOFX's dependencies:
-    #brew install scons swig ilmbase openexr jasper little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
+    #brew install scons swig ilmbase openexr little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
     # Natron's dependencies only
     # install qt-webkit@2.3 if needed
     brew install qt@4 expat cairo gnu-sed glew numpy boost
@@ -351,3 +358,10 @@ cat config.pri
 echo "GCC/G++ versions:"
 gcc --version
 g++ --version
+
+# Local variables:
+# mode: shell-script
+# sh-basic-offset: 4
+# sh-indent-comment: t
+# indent-tabs-mode: nil
+# End:
