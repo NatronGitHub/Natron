@@ -18,9 +18,10 @@ github.setup     OpenImageIO oiio 1.6.18 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
-name             openimageio
+name             openimageio16
+conflicts        openimageio
 #version          1.4.5.91
-revision         2
+#revision         1
 categories       graphics
 platforms           darwin
 license          BSD
@@ -52,13 +53,14 @@ depends_skip_archcheck txt2man
 # llvm-gcc-4.2 works
 # macports-clang < 3.3 untested
 # clang < 300 doesn't work
-#compiler.fallback-append macports-gcc-4.8 macports-gcc-4.9 macports-clang-3.3 macports-clang-3.4 macports-clang-3.5
-compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-gcc-4.0 macports-gcc-4.2 {clang < 300}
+# see also https://github.com/OpenImageIO/oiio/issues/1363
+#compiler.blacklist-append {*gcc-3*} {*gcc-4.[0-1]} {macports-gcc-4.[2-7]} {gcc-4.[2-7]} {apple-gcc-4.[2-7]} cc {clang < 300}
 
 # The PowerPC build requires GCC >= 4.8, which doesn't recognize the -arch flag, and requires libatomic
 # Unfortunately, the resulting binaries don't work (at least on PPC), so we build without threads
 if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
-     compiler.blacklist-append macports-clang-3.3 macports-clang-3.4 macports-clang-3.5
+    # there is no known working clang compiler for ppc
+    compiler.blacklist-append {macports-clang*}
 #    compiler.blacklist-append macports-gcc-4.3 macports-gcc-4.4 macports-gcc-4.5 macports-gcc-4.6 macports-gcc-4.7
 #    # the following removes the flag "-arch ppc" put by cmake-1.0 portgroup in the pre-configure phase
 #    pre-configure {
@@ -67,7 +69,7 @@ if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
 #    ## -latomic is necessary on ppc for __atomic_fetch_add_8 and __atomic_exchange_8
 #    configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
     # env PATH=/opt/local/libexec/qt4/bin:$PATH cmake .. -DNOTHREADS=ON -DCMAKE_BUILD_TYPE=Debug -DSTOP_ON_WARNING=OFF
-    configure.args-append -DNOTHREADS=ON -DSTOP_ON_WARNING=OFF
+    #configure.args-append -DNOTHREADS=ON -DSTOP_ON_WARNING=OFF
     ## uncomment the following to compile with buggy thread support
     # env PATH=/opt/local/libexec/qt4/bin:$PATH cmake .. -DCMAKE_C_COMPILER=gcc-mp-4.9 -DCMAKE_CXX_COMPILER=g++-mp-4.9 -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic -DCMAKE_BUILD_TYPE=Debug -DSTOP_ON_WARNING=OFF
     ## -latomic is necessary on ppc for __atomic_fetch_add_8 and __atomic_exchange_8
@@ -91,8 +93,12 @@ patch.pre_args	-p1
 patchfiles \
     oiio-1.5.23-checkmaxmem.patch \
     oiio-1.5.23-invalidatespec.patch \
-    oiio-1.6.18-fix_read_tiles_prefix_bytes.patch \
+    oiio-1.6.11-fix_exr_threads.patch \
     oiio-1.6.18-fix-safe_tiffgetfield.patch \
+    oiio-1.6.18-fix_read_tiles_prefix_bytes.patch \
+    oiio-1.6.18-libraw.patch \
+    oiio-1.6.18-tiffposition.patch \
+    oiio-1.6.18-ppcatomics.patch \
     oiio-nothreads.patch
 
 cmake.out_of_source yes
@@ -120,10 +126,10 @@ configure.args-append \
 default_variants    +opencolorio +openjpeg +qt4 +freetype
 
 variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype description {Natron version} {
-    if {${configure.cxx_stdlib} eq "libstdc++"} {
-        # configure with GCC 4.9 for proper GCC intrinsics support
-        configure.compiler macports-gcc-4.9
-    }
+    #if {${configure.cxx_stdlib} eq "libstdc++"} {
+    #    # configure with GCC 4.9 for proper GCC intrinsics support
+    #    configure.compiler macports-gcc-4.9
+    #}
 }
 
 variant opencolorio description {Add OpenColorIO support.} {
@@ -141,7 +147,7 @@ variant ffmpeg description {Add FFmpeg support.} {
 variant openjpeg description {Add OpenJPEG support.} {
     depends_lib-append  port:openjpeg
     configure.args-delete       -DUSE_OPENJPEG:BOOL=FALSE
-    configure.args-append       -DUSE_OPENJPEG:BOOL=TRUE -DOPENJPEG_INCLUDE_DIR=${prefix}/include/openjpeg-1.5
+    configure.args-append       -DUSE_OPENJPEG:BOOL=TRUE -DOPENJPEG_HOME=${prefix} -DOPENJPEG_INCLUDE_DIR=`pkg-config --variable=includedir libopenjp2`
 }
 
 variant python26 conflicts python27 description {Add Python 2.6 bindings.} {

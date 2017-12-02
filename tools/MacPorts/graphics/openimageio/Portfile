@@ -19,6 +19,7 @@ github.setup     OpenImageIO oiio 1.7.17 tags/Release-
 #github.tarball_from downloads
 
 name             openimageio
+conflicts        openimageio16
 revision         2
 categories       graphics
 platforms           darwin
@@ -52,22 +53,29 @@ depends_skip_archcheck txt2man
 # macports-clang < 3.3 untested
 # clang < 300 doesn't work
 # see also https://github.com/OpenImageIO/oiio/issues/1363
-# for some reason, if we compile oiio with gcc 4.9 and boost with gcc 4.2, idiff a.png b.png crashes
-#compiler.fallback-append macports-clang-3.4 macports-gcc-4.8 macports-gcc-4.9 macports-clang-3.3 macports-clang-3.4 macports-clang-3.5
-if {${configure.cxx_stdlib} eq "libstdc++"} {
-  if {[vercmp $xcodeversion 3.0] >= 0} {
-    compiler.fallback-append macports-clang-3.4
-  } else {
-    compiler.fallback-append macports-clang-3.3
-  }
-}
-compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-gcc-4.0 macports-gcc-4.2 llvm-gcc-4.2 {clang < 300}
+compiler.blacklist-append {*gcc-3*} {*gcc-4.[0-1]} {macports-gcc-4.[2-7]} {gcc-4.[2-7]} {apple-gcc-4.[2-7]} cc {clang < 300}
 
-# The PowerPC build requires GCC >= 4.8, which doesn't recognize the -arch flag, and requires libatomic
+# for some reason, if we compile oiio with gcc 4.9 and boost with gcc 4.2, idiff a.png b.png crashes
+if {${configure.cxx_stdlib} eq "libstdc++"} {
+    # disable C++11 if not required (OIIO 1.8 requires C++11)
+    configure.args-append -DUSE_CPP11:BOOL=FALSE
+    if {[vercmp $xcodeversion 3.0] >= 0} {
+        compiler.fallback-append macports-clang-3.4
+    } else {
+        compiler.fallback-append macports-clang-3.3
+    }
+}
+
+# GCC < 4.9 does not have proper GCC intrinsics support
+compiler.blacklist-append {*gcc-4.8}
+compiler.fallback-append macports-clang-5 macports-clang-4 macports-clang-3.[5-9]
+compiler.fallback-append {*gcc-[5-9]} {*gcc-4.9}
+
+# The PowerPC build requires GCC >= 4.9, which doesn't recognize the -arch flag, and requires libatomic
 # Unfortunately, the resulting binaries don't work (at least on PPC), so we build without threads
 if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
-     compiler.blacklist-append macports-clang-3.3 macports-clang-3.4 macports-clang-3.5
-#    compiler.blacklist-append macports-gcc-4.3 macports-gcc-4.4 macports-gcc-4.5 macports-gcc-4.6 macports-gcc-4.7
+    # there is no known working clang compiler for ppc
+    compiler.blacklist-append {macports-clang*}
 #    # the following removes the flag "-arch ppc" put by cmake-1.0 portgroup in the pre-configure phase
 #    pre-configure {
 #        configure.args-delete -DCMAKE_OSX_ARCHITECTURES="${configure.build_arch}"
@@ -125,10 +133,6 @@ default_variants    +opencolorio +openjpeg +qt4 +freetype
 
 variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype description {Natron version} {
     if {${configure.cxx_stdlib} eq "libstdc++"} {
-        # configure with GCC 4.9 for proper GCC intrinsics support
-        #configure.compiler macports-gcc-4.9
-        # but disable C++11 if not required (OIIO 1.8 requires C++11)
-        configure.args-append -DUSE_CPP11:BOOL=FALSE
     }
 }
 
