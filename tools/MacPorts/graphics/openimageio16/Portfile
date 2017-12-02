@@ -93,7 +93,6 @@ patch.pre_args	-p1
 patchfiles \
     oiio-1.5.23-checkmaxmem.patch \
     oiio-1.5.23-invalidatespec.patch \
-    oiio-1.6.11-fix_exr_threads.patch \
     oiio-1.6.18-fix-safe_tiffgetfield.patch \
     oiio-1.6.18-fix_read_tiles_prefix_bytes.patch \
     oiio-1.6.18-libraw.patch \
@@ -107,7 +106,6 @@ configure.args-append \
     -DOIIO_BUILD_TESTS:BOOL=FALSE \
     -DBOOST_ROOT=${prefix} \
     -DUSE_QT:BOOL=FALSE \
-    -DUSE_TBB:BOOL=FALSE \
     -DUSE_PYTHON:BOOL=FALSE \
     -DUSE_PYTHON3:BOOL=FALSE \
     -DUSE_FIELD3D:BOOL=FALSE \
