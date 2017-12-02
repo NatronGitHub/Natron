@@ -68,7 +68,7 @@ if {${configure.cxx_stdlib} eq "libstdc++"} {
 
 # GCC < 4.9 does not have proper GCC intrinsics support
 compiler.blacklist-append {*gcc-4.8}
-compiler.fallback-append macports-clang-5 macports-clang-4 macports-clang-3.[5-9]
+compiler.fallback-append macports-clang-5 macports-clang-4 {macports-clang-3.[5-9]}
 compiler.fallback-append {*gcc-[5-9]} {*gcc-4.9}
 
 # The PowerPC build requires GCC >= 4.9, which doesn't recognize the -arch flag, and requires libatomic

@@ -190,8 +190,3 @@ variant freetype description {Use FreeType.} {
     depends_lib-append port:freetype
 }
 
-variant natron require field3d description {Compile a version to be included in Natron} {
-}
-#configure.args   --enable-bsdtar=shared --enable-bsdcpio=shared \
-#                 --without-lzmadec --without-lzma
-#use_autoreconf	yes
