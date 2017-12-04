@@ -15,6 +15,7 @@
 
 - Upgrade SeExpr to version 2.11.
 - Grade: add a "Normalize" button to automatically compute the clack and white points.
+- Matrix3x3, Matrix5x5: new plugins, apply a 3x3 or 5x5 custom filter.
 
 ## Version 2.3.3
 
