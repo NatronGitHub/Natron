@@ -63,6 +63,12 @@ run-without-python {
         #Remove the -s flag passed in release mode by qmake so binaries don't get stripped
         QMAKE_LFLAGS_RELEASE =
     }
+    CONFIG(fast-math) {
+        QMAKE_CFLAGS += -Ofast
+        QMAKE_CFLAGS -= -O2 -O3
+        QMAKE_CXXFLAGS += -Ofast
+        QMAKE_CXXFLAGS -= -O2 -O3
+    }
 }
 
 win32-g++ {
