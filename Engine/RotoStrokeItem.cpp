@@ -603,8 +603,8 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         double dt = xNext->getTime() - xIt->getTime();
         double pressp0 = pIt->getValue();
         double pressp3 = pNext->getValue();
-        double pressp1 = pressp0 + dt * pIt->getRightDerivative() / 3.;
-        double pressp2 = pressp3 - dt * pNext->getLeftDerivative() / 3.;
+        double pressp1 = pressp0 + dt * pIt->getRightDerivative() * (1. / 3);
+        double pressp2 = pressp3 - dt * pNext->getLeftDerivative() * (1. / 3);
 
         pressure = std::max(pressure, pressureAffectsSize ? std::max(pressp0, pressp3) : 1.);
 
@@ -612,12 +612,12 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         p0.z = p1.z = p2.z = p3.z = 1;
         p0.x = xIt->getValue();
         p0.y = yIt->getValue();
-        p1.x = p0.x + dt * xIt->getRightDerivative() / 3.;
-        p1.y = p0.y + dt * yIt->getRightDerivative() / 3.;
+        p1.x = p0.x + dt * xIt->getRightDerivative() * (1. / 3);
+        p1.y = p0.y + dt * yIt->getRightDerivative() * (1. / 3);
         p3.x = xNext->getValue();
         p3.y = yNext->getValue();
-        p2.x = p3.x - dt * xNext->getLeftDerivative() / 3.;
-        p2.y = p3.y - dt * yNext->getLeftDerivative() / 3.;
+        p2.x = p3.x - dt * xNext->getLeftDerivative() * (1. / 3);
+        p2.y = p3.y - dt * yNext->getLeftDerivative() * (1. / 3);
 
 
         p0 = Transform::matApply(transform, p0);
@@ -1212,12 +1212,12 @@ RotoStrokeItemPrivate::computeBoundingBox(TimeValue time, ViewIdx view) const
             p0.z = p1.z = p2.z = p3.z = 1;
             p0.x = xIt->getValue();
             p0.y = yIt->getValue();
-            p1.x = p0.x + dt * xIt->getRightDerivative() / 3.;
-            p1.y = p0.y + dt * yIt->getRightDerivative() / 3.;
+            p1.x = p0.x + dt * xIt->getRightDerivative() * (1. / 3);
+            p1.y = p0.y + dt * yIt->getRightDerivative() * (1. / 3);
             p3.x = xNext->getValue();
             p3.y = yNext->getValue();
-            p2.x = p3.x - dt * xNext->getLeftDerivative() / 3.;
-            p2.y = p3.y - dt * yNext->getLeftDerivative() / 3.;
+            p2.x = p3.x - dt * xNext->getLeftDerivative() * (1. / 3);
+            p2.y = p3.y - dt * yNext->getLeftDerivative() * (1. / 3);
 
 
             p0 = Transform::matApply(transform, p0);

@@ -2386,9 +2386,9 @@ KnobString::parseFont(const QString & label, int* fontSize, QString* fontFamily,
             }
             int red, green, blue;
             ColorParser::parseColor(currentColor, &red, &green, &blue);
-            *r = red / 255.0;
-            *g = green / 255.0;
-            *b = blue / 255.0;
+            *r = red * (1. / 255);
+            *g = green * (1. / 255);
+            *b = blue * (1. / 255);
         }
     }
     return true;

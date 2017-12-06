@@ -379,8 +379,8 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
     // Hermite coefficients P0' and P3' are for t normalized in [0,1]
     double P3pl = vnextDerivLeft / normalizeTimeRange; // normalize for t \in [0,1]
     double P0pr = vprevDerivRight / normalizeTimeRange; // normalize for t \in [0,1]
-    double secondDer = 6. * (1. - t) * (P3 - P3pl / 3. - P0 - 2. * P0pr / 3.) +
-    6. * t * (P0 - P3 + 2 * P3pl / 3. + P0pr / 3. );
+    double secondDer = 6. * (1. - t) * (P3 - P3pl * (1. / 3) - P0 - P0pr * (2. / 3)) +
+    6. * t * (P0 - P3 + P3pl * (2. / 3) + P0pr * (1. / 3) );
 
     double secondDerWidgetCoord = _imp->curveWidget->toWidgetCoordinates(0, secondDer).y();
     double normalizedSecondDerWidgetCoord = std::abs(secondDerWidgetCoord / normalizeTimeRange);

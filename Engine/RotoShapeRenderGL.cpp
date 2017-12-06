@@ -1308,22 +1308,35 @@ static void renderDot_gl(RenderStrokeGLData& data, const Point &center, double r
  */
 static int getNbPointPerSegment(const double brushSizePixel)
 {
-    double radius = brushSizePixel / 2.;
-    Point p0 = {radius, 0.};
-    Point p3 = {0., radius};
-    Point p1 = {1. / .3 * p3.x + 2. / 3 * p0.x, 1. / .3 * p3.y + 2. / 3 * p0.y};
-    Point p2 = {1. / .3 * p0.x + 2. / 3 * p3.x, 1. / .3 * p0.y + 2. / 3 * p3.y};
+#if 0
+    // Approximation with a Bezier
+
+    // The Bezier control points should be:
+    // P_0 = (0,1), P_1 = (c,1), P_2 = (1,c), P_3 = (1,0)
+    // with c = 0.551915024494
+    // See http://spencermortensen.com/articles/bezier-circle/
+    const double c = 0.551915024494;
+
+    Point p0 = {0., 1.};
+    Point p1 = {0.551915024494, 1.};
+    Point p2 = {1., 0.551915024494};
+    Point p3 = {1., 0.};
     double dx1, dy1, dx2, dy2, dx3, dy3;
-    dx1 = p1.x - p0.x;
-    dy1 = p1.y - p0.y;
-    dx2 = p2.x - p1.x;
-    dy2 = p2.y - p1.y;
-    dx3 = p3.x - p2.x;
-    dy3 = p3.y - p2.y;
-    double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
-    std::sqrt(dx2 * dx2 + dy2 * dy2) +
-    std::sqrt(dx3 * dx3 + dy3 * dy3);
-    return (int)std::max(length * 0.1 /*0.25*/, 2.);
+    dx1 = p1.x - p0.x; // 0.551915024494
+    dy1 = p1.y - p0.y; // 0.
+    dx2 = p2.x - p1.x; // 0.448084975506
+    dy2 = p2.y - p1.y; // -0.448084975506
+    dx3 = p3.x - p2.x; // 0.
+    dy3 = p3.y - p2.y; // -0.551915024494
+    const double length = (std::sqrt(dx1 * dx1 + dy1 * dy1) +
+                           std::sqrt(dx2 * dx2 + dy2 * dy2) +
+                           std::sqrt(dx3 * dx3 + dy3 * dy3)); // 1.73751789844420129815
+#else
+    // actually it's just a quarter cirle, we know its length is exactly pi/2 !
+    const double length = M_PI_2;
+#endif
+    double radius = brushSizePixel / 2.;
+    return (int)std::max(length * radius * 0.25, 2.);
 }
 
 static void

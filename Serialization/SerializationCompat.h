@@ -1229,9 +1229,9 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
         if (!fontColorString.isEmpty()) {
             int r,g,b;
             NATRON_NAMESPACE::ColorParser::parseColor(fontColorString, &r, &g, &b);
-            data->fontColor[0] = r / 255.0;
-            data->fontColor[1] = g / 255.0;
-            data->fontColor[2] = b / 255.0;
+            data->fontColor[0] = r * (1. / 255);
+            data->fontColor[1] = g * (1. / 255);
+            data->fontColor[2] = b * (1. / 255);
         }
         data->boldActivated = boldActivated;
         data->italicActivated = italicActivated;

@@ -86,7 +86,7 @@ applyMaskMixForMaskInvert(const void* originalImgPtrs[4],
                 if (!maskPixelPtrs[0]) {
                     maskScale = maskInvert ? 1.f : 0.f;
                 } else {
-                    maskScale = *maskPixelPtrs[0] / float(maxValue);
+                    maskScale = *maskPixelPtrs[0] * (1.f / maxValue);
                     if (maskInvert) {
                         maskScale = 1.f - maskScale;
                     }

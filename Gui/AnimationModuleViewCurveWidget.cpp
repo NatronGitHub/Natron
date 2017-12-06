@@ -868,7 +868,7 @@ AnimationModuleView::getKeyTangentPoints(KeyFrameSet::const_iterator it,
         if (hasPrevious) {
             double prevKeyXWidgetCoord = _imp->curveEditorZoomContext.toWidgetCoordinates(prevTime, 0).x();
             //set the left derivative X to be at 1/3 of the interval [prev,k], and clamp it to 1/8 of the widget width.
-            leftTanXWidgetDiffMax = std::min(leftTanXWidgetDiffMax, (keyWidgetCoord.x() - prevKeyXWidgetCoord) / 3.);
+            leftTanXWidgetDiffMax = std::min(leftTanXWidgetDiffMax, (keyWidgetCoord.x() - prevKeyXWidgetCoord) * (1. / 3));
         }
         //clamp the left derivative Y to 1/8 of the widget height.
         double leftTanYWidgetDiffMax = std::min( h / 8., leftTanXWidgetDiffMax);
@@ -906,7 +906,7 @@ AnimationModuleView::getKeyTangentPoints(KeyFrameSet::const_iterator it,
         if (hasNext) {
             double nextKeyXWidgetCoord = _imp->curveEditorZoomContext.toWidgetCoordinates(nextTime, 0).x();
             //set the right derivative X to be at 1/3 of the interval [k,next], and clamp it to 1/8 of the widget width.
-            rightTanXWidgetDiffMax = std::min(rightTanXWidgetDiffMax, ( nextKeyXWidgetCoord - keyWidgetCoord.x() ) / 3.);
+            rightTanXWidgetDiffMax = std::min(rightTanXWidgetDiffMax, ( nextKeyXWidgetCoord - keyWidgetCoord.x() ) * (1. / 3));
         }
         //clamp the right derivative Y to 1/8 of the widget height.
         double rightTanYWidgetDiffMax = std::min( h / 8., rightTanXWidgetDiffMax);

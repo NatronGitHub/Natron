@@ -149,10 +149,10 @@ KnobGuiButton::loadPixmapInternal(bool checked, bool applyColorOverlay, const QC
                     QRgb* pix = (QRgb*)img.scanLine(y);
                     for (int x = 0; x < img.width(); ++x) {
                         QRgb srcPix = pix[x];
-                        double a = qAlpha(srcPix) / 255.f;
-                        double r = qRed(srcPix) / 255.f * a;
-                        double g = qGreen(srcPix) / 255.f * a;
-                        double b = qBlue(srcPix) / 255.f * a;
+                        double a = qAlpha(srcPix) * (1. / 255);
+                        double r = qRed(srcPix) * a * (1. / 255);
+                        double g = qGreen(srcPix) * a * (1. / 255);
+                        double b = qBlue(srcPix) * a * (1. / 255);
 
                         r = Image::clamp(overFunctor(overlayColor.redF(), r, overlayColor.alphaF()), 0., 1.);
                         g = Image::clamp(overFunctor(overlayColor.greenF(), g, overlayColor.alphaF()), 0., 1.);

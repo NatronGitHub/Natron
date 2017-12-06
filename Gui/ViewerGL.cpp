@@ -3033,10 +3033,10 @@ ViewerGL::getTextureColorAt(int x,
         green |= (pixel >> 8);
         red |= (pixel >> 16);
         alpha |= (pixel >> 24);
-        *r = (double)red / 255.;
-        *g = (double)green / 255.;
-        *b = (double)blue / 255.;
-        *a = (double)alpha / 255.;
+        *r = (double)red * (1. / 255);
+        *g = (double)green * (1. / 255);
+        *b = (double)blue * (1. / 255);
+        *a = (double)alpha * (1. / 255);
         glCheckError(GL_GPU);
     } else if (bitDepth == eImageBitDepthFloat) {
         GLfloat pixel[4];
@@ -3178,22 +3178,22 @@ getColorAtSinglePixel(const Image::CPUData& image,
     Image::getChannelPointers<PIX>((const PIX**)image.ptrs, x, y, image.bounds, image.nComps, (PIX**)pix, &pixelStride);
 
     if (image.nComps >= 4) {
-        *r = *pix[0] / (float)maxValue;
-        *g = *pix[1] / (float)maxValue;
-        *b = *pix[2] / (float)maxValue;
-        *a = *pix[3] / (float)maxValue;
+        *r = *pix[0] * (1.f / maxValue);
+        *g = *pix[1] * (1.f / maxValue);
+        *b = *pix[2] * (1.f / maxValue);
+        *a = *pix[3] * (1.f / maxValue);
     } else if (image.nComps == 3) {
-        *r = *pix[0] / (float)maxValue;
-        *g = *pix[1] / (float)maxValue;
-        *b = *pix[2] / (float)maxValue;
+        *r = *pix[0] * (1.f / maxValue);
+        *g = *pix[1] * (1.f / maxValue);
+        *b = *pix[2] * (1.f / maxValue);
         *a = 1.;
     } else if (image.nComps == 2) {
-        *r = *pix[0] / (float)maxValue;
-        *g = *pix[1] / (float)maxValue;
+        *r = *pix[0] * (1.f / maxValue);
+        *g = *pix[1] * (1.f / maxValue);
         *b = 1.;
         *a = 1.;
     } else {
-        *r = *g = *b = *a = *pix[0] / (float)maxValue;
+        *r = *g = *b = *a = *pix[0] * (1.f / maxValue);
     }
 
     // Convert to linear

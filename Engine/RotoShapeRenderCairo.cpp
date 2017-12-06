@@ -268,7 +268,7 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
                     dstPix[0] = Image::convertPixelDepth<float, unsigned char>(Image::convertPixelDepth<PIX, float>(*src_pixels[2]));
                     dstPix[1] = Image::convertPixelDepth<float, unsigned char>(Image::convertPixelDepth<PIX, float>(*src_pixels[1]));
                     dstPix[2] = Image::convertPixelDepth<float, unsigned char>(Image::convertPixelDepth<PIX, float>(*src_pixels[0]));
-                    dstPix[3] = 255; //(float)srcPix[x * srcNComps + 3] / maxValue * 255.f;
+                    dstPix[3] = 255; //(float)srcPix[x * srcNComps + 3] * (255.f / maxValue);
 
                 } else {
                     float pix = Image::convertPixelDepth<PIX, unsigned char>(*src_pixels[0]);
