@@ -6801,9 +6801,9 @@ renderPreview(const Image & srcImg,
                     dst_pixels[j] = toBGRA(0, 0, 0, 255);
 #endif
                 } else {
-                    float rFilt = src_pixels[xi * srcNComps] / (float)maxValue;
-                    float gFilt = srcNComps < 2 ? 0 : src_pixels[xi * srcNComps + 1] / (float)maxValue;
-                    float bFilt = srcNComps < 3 ? 0 : src_pixels[xi * srcNComps + 2] / (float)maxValue;
+                    float rFilt = src_pixels[xi * srcNComps] * (1.f / maxValue);
+                    float gFilt = srcNComps < 2 ? 0 : src_pixels[xi * srcNComps + 1] * (1.f / maxValue);
+                    float bFilt = srcNComps < 3 ? 0 : src_pixels[xi * srcNComps + 2] * (1.f / maxValue);
                     if (srcNComps == 1) {
                         gFilt = bFilt = rFilt;
                     }

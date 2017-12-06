@@ -69,7 +69,7 @@ Image::applyMaskMixForMaskInvert(const RectI& roi,
                 if (maskPixels == 0) {
                     maskScale = maskInvert ? 1.f : 0.f;
                 } else {
-                    maskScale = *maskPixels / float(maxValue);
+                    maskScale = *maskPixels * (1.f / maxValue);
                     if (maskInvert) {
                         maskScale = 1.f - maskScale;
                     }

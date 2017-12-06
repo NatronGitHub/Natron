@@ -103,10 +103,10 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
     else {                                                    \
         if (premult) {                                          \
             if (doA) {                                          \
-                dst_pixels[c] = (src_pixels[c] / (float)maxValue) * srcA;         /* dst will have same alpha as src, just premult src with its alpha */ \
+                dst_pixels[c] = (src_pixels[c] * (1.f / maxValue)) * srcA;         /* dst will have same alpha as src, just premult src with its alpha */ \
             } \
             else {                                            \
-                dst_pixels[c] = (src_pixels[c] / (float)maxValue) * dstAorig;         /* dst keeps its alpha, premult src with dst's alpha */ \
+                dst_pixels[c] = (src_pixels[c] * (1.f / maxValue)) * dstAorig;         /* dst keeps its alpha, premult src with dst's alpha */ \
             }                                                   \
         } \
         else {                                                \

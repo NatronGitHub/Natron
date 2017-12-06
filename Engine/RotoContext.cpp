@@ -2171,7 +2171,7 @@ convertCairoImageToNatronImageForInverted_noColor(cairo_surface_t* cairoImg,
         for (int x = 0; x < width; ++x,
              dstPix += dstNComps,
              srcPix += srcNComps) {
-            float cairoPixel = !inverted ? ( (float)*srcPix / 255.f ) * maxValue : 1. - ( (float)*srcPix / 255.f ) * maxValue;
+            float cairoPixel = !inverted ? ( (float)*srcPix * (maxValue / 255.f) ) : 1. - ( (float)*srcPix * (maxValue / 255.f) );
             switch (dstNComps) {
             case 4:
                 dstPix[0] = PIX(cairoPixel * r);
@@ -2310,25 +2310,25 @@ convertCairoImageToNatronImageForDstComponents(cairo_surface_t* cairoImg,
             case 4:
                 assert(srcNComps == dstNComps);
                 // cairo's format is ARGB (that is BGRA when interpreted as bytes)
-                dstPix[x * dstNComps + 3] = PIX( (float)srcPix[x * pixelSize + 3] / 255.f ) * maxValue;
-                dstPix[x * dstNComps + 0] = PIX( (float)srcPix[x * pixelSize + 2] / 255.f ) * maxValue;
-                dstPix[x * dstNComps + 1] = PIX( (float)srcPix[x * pixelSize + 1] / 255.f ) * maxValue;
-                dstPix[x * dstNComps + 2] = PIX( (float)srcPix[x * pixelSize + 0] / 255.f ) * maxValue;
+                dstPix[x * dstNComps + 3] = PIX( (float)srcPix[x * pixelSize + 3] * (maxValue / 255.f) );
+                dstPix[x * dstNComps + 0] = PIX( (float)srcPix[x * pixelSize + 2] * (maxValue / 255.f) );
+                dstPix[x * dstNComps + 1] = PIX( (float)srcPix[x * pixelSize + 1] * (maxValue / 255.f) );
+                dstPix[x * dstNComps + 2] = PIX( (float)srcPix[x * pixelSize + 0] * (maxValue / 255.f) );
                 break;
             case 1:
                 assert(srcNComps == dstNComps);
-                dstPix[x] = PIX( (float)srcPix[x] / 255.f ) * maxValue;
+                dstPix[x] = PIX( (float)srcPix[x] * (1.f / 255) ) * maxValue;
                 break;
             case 3:
                 assert(srcNComps == dstNComps);
-                dstPix[x * dstNComps + 0] = PIX( (float)srcPix[x * pixelSize + 2] / 255.f ) * maxValue;
-                dstPix[x * dstNComps + 1] = PIX( (float)srcPix[x * pixelSize + 1] / 255.f ) * maxValue;
-                dstPix[x * dstNComps + 2] = PIX( (float)srcPix[x * pixelSize + 0] / 255.f ) * maxValue;
+                dstPix[x * dstNComps + 0] = PIX( (float)srcPix[x * pixelSize + 2] * (maxValue / 255.f) );
+                dstPix[x * dstNComps + 1] = PIX( (float)srcPix[x * pixelSize + 1] * (maxValue / 255.f) );
+                dstPix[x * dstNComps + 2] = PIX( (float)srcPix[x * pixelSize + 0] * (maxValue / 255.f) );
                 break;
             case 2:
                 assert(srcNComps == 3);
-                dstPix[x * dstNComps + 0] = PIX( (float)srcPix[x * pixelSize + 2] / 255.f ) * maxValue;
-                dstPix[x * dstNComps + 1] = PIX( (float)srcPix[x * pixelSize + 1] / 255.f ) * maxValue;
+                dstPix[x * dstNComps + 0] = PIX( (float)srcPix[x * pixelSize + 2] * (maxValue / 255.f) );
+                dstPix[x * dstNComps + 1] = PIX( (float)srcPix[x * pixelSize + 1] * (maxValue / 255.f) );
                 break;
             default:
                 break;
@@ -2422,21 +2422,21 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
             }
 #         endif
             if (dstNComps == 1) {
-                dstPix[x] = (float)srcPix[x * srcNComps] / maxValue * 255.f;
+                dstPix[x] = (float)srcPix[x * srcNComps] * (255.f / maxValue);
             } else if (dstNComps == 4) {
                 if (srcNComps == 4) {
                     //We are in the !buildUp case, do exactly the opposite that is done in convertNatronImageToCairoImageForComponents
-                    dstPix[x * dstNComps + 0] = shapeColor[2] == 0 ? 0 : (float)(srcPix[x * srcNComps + 2] / maxValue) / shapeColor[2] * 255.f;
-                    dstPix[x * dstNComps + 1] = shapeColor[1] == 0 ? 0 : (float)(srcPix[x * srcNComps + 1] / maxValue) / shapeColor[1] * 255.f;
-                    dstPix[x * dstNComps + 2] = shapeColor[0] == 0 ? 0 : (float)(srcPix[x * srcNComps + 0] / maxValue) / shapeColor[0] * 255.f;
-                    dstPix[x * dstNComps + 3] = 255; //(float)srcPix[x * srcNComps + 3] / maxValue * 255.f;
+                    dstPix[x * dstNComps + 0] = shapeColor[2] == 0 ? 0 : (float)(srcPix[x * srcNComps + 2] * (255.f / maxValue) ) / shapeColor[2];
+                    dstPix[x * dstNComps + 1] = shapeColor[1] == 0 ? 0 : (float)(srcPix[x * srcNComps + 1] * (255.f / maxValue) ) / shapeColor[1];
+                    dstPix[x * dstNComps + 2] = shapeColor[0] == 0 ? 0 : (float)(srcPix[x * srcNComps + 0] * (255.f / maxValue) ) / shapeColor[0];
+                    dstPix[x * dstNComps + 3] = 255; //(float)srcPix[x * srcNComps + 3] * (255.f / maxValue);
                 } else {
                     assert(srcNComps == 1);
                     float pix = (float)srcPix[x];
-                    dstPix[x * dstNComps + 0] = pix / maxValue * 255.f;
-                    dstPix[x * dstNComps + 1] = pix / maxValue * 255.f;
-                    dstPix[x * dstNComps + 2] = pix / maxValue * 255.f;
-                    dstPix[x * dstNComps + 3] = pix / maxValue * 255.f;
+                    dstPix[x * dstNComps + 0] = pix * (255.f / maxValue);
+                    dstPix[x * dstNComps + 1] = pix * (255.f / maxValue);
+                    dstPix[x * dstNComps + 2] = pix * (255.f / maxValue);
+                    dstPix[x * dstNComps + 3] = pix * (255.f / maxValue);
                 }
             }
             // no need to check for NaN, dstPix is unsigned char
