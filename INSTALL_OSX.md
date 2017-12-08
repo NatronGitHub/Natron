@@ -216,7 +216,10 @@ config.pri:
 cat > config.pri << EOF
 boost: INCLUDEPATH += /opt/local/include
 boost: LIBS += -L/opt/local/lib -lboost_serialization-mt
-openmp {
+macx:openmp {
+  QMAKE_CC=/opt/local/bin/clang-mp-5.0
+  QMAKE_CXX=/opt/local/bin/clang++-mp-5.0
+  
   INCLUDEPATH += /opt/local/include/libomp
   LIBS += -L/opt/local/lib/libomp -liomp5
   cc_setting.name = CC
@@ -246,7 +249,10 @@ boost: LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboo
 expat: PKGCONFIG -= expat
 expat: INCLUDEPATH += /usr/local/opt/expat/include
 expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
-openmp {
+macx:openmp {
+  QMAKE_CC=/usr/local/opt/llvm/bin/clang
+  QMAKE_CXX=/usr/local/opt/llvm/bin/clang++
+
   LIBS += -L/usr/local/opt/llvm/lib -liomp5
   cc_setting.name = CC
   cc_setting.value = /usr/local/opt/llvm/bin/clang
