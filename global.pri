@@ -64,10 +64,16 @@ run-without-python {
         QMAKE_LFLAGS_RELEASE =
     }
     CONFIG(fast) {
-        QMAKE_CFLAGS += -Ofast
-        QMAKE_CFLAGS -= -O2 -O3
-        QMAKE_CXXFLAGS += -Ofast
-        QMAKE_CXXFLAGS -= -O2 -O3
+        QMAKE_CFLAGS_RELEASE += -Ofast
+        QMAKE_CFLAGS_RELEASE -= -O -O2 -O3
+        QMAKE_CXXFLAGS_RELEASE += -Ofast
+        QMAKE_CXXFLAGS_RELEASE -= -O -O2 -O3
+        QMAKE_CFLAGS_DEBUG += -Ofast
+        QMAKE_CFLAGS_DEBUG -= -O -O2 -O3
+        QMAKE_CXXFLAGS_DEBUG += -Ofast
+        QMAKE_CXXFLAGS_DEBUG -= -O -O2 -O3
+        QMAKE_CXXFLAGS -= -O -O2 -O3
+        QMAKE_CFLAGS -= -O -O2 -O3
     }
 }
 
