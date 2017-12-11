@@ -16,6 +16,7 @@
 - Upgrade SeExpr to version 2.11.
 - Grade: add a "Normalize" button to automatically compute the clack and white points.
 - Matrix3x3, Matrix5x5: new plugins, apply a 3x3 or 5x5 custom filter.
+- ColorCorrect: Fix wrong render for input values outside the [0-1] range #1703
 
 ## Version 2.3.3
 
