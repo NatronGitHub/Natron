@@ -51,7 +51,7 @@ copyright = u'2013-2017 The Natron documentation authors, licensed under CC BY-S
 # the list of currently maintained versions (those that have to be merged into the master branch)
 version_21 = '2.1.10'
 version_22 = '2.2.10'
-version_23 = '2.3.4'
+version_23 = '2.3.5'
 version_30 = '3.0.0'
 
 # The version for this branch
