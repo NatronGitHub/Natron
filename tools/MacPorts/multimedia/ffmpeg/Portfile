@@ -9,8 +9,7 @@ PortGroup           active_variants 1.1
 name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
-version             3.4
-revision            2
+version             3.4.1
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -52,8 +51,8 @@ master_sites        http://www.ffmpeg.org/releases/
 
 use_xz              yes
 
-checksums           rmd160  e554cb80356779de57b24c97d0ccb485a0b144eb \
-                    sha256  aeee06e4d8b18d852c61ebbfe5e1bb7014b1e118e8728c1c2115f91e51bffbef
+checksums           rmd160  0cad66d5bee31586fa1885794140ccad1a348b0b \
+                    sha256  5a77278a63741efa74e26bf197b9bb09ac6381b9757391b922407210f0f991c0
 
 # root directory of extracted tarball is owned by root and has permissions 700
 # set to 755 to facilitate maintenance

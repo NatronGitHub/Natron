@@ -1,6 +1,6 @@
---- configure.orig	2017-10-15 08:59:36.000000000 -0700
-+++ configure	2017-10-18 13:31:34.000000000 -0700
-@@ -5955,10 +5955,10 @@
+--- configure.orig	2017-12-10 21:35:18.000000000 +0000
++++ configure	2017-12-11 14:32:27.000000000 +0000
+@@ -5956,10 +5956,10 @@
                                   require opencv opencv2/core/core_c.h cvCreateImageHeader -lopencv_core -lopencv_imgproc; } ||
                                 require_pkg_config libopencv opencv opencv/cxcore.h cvCreateImageHeader; }
  enabled libopenh264       && require_pkg_config libopenh264 openh264 wels/codec_api.h WelsGetCodecVersion
