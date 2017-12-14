@@ -9,7 +9,7 @@ PortGroup                   conflicts_build 1.0
 # PHP Warning:  Version warning: Imagick was compiled against Image Magick version XXXX but version YYYY is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
 
 name                        ImageMagick
-version                     6.9.9-19
+version                     6.9.9-26
 set reasonable_version      [lindex [split ${version} -] 0]
 homepage                    http://www.imagemagick.org/
 categories                  graphics devel
@@ -41,9 +41,9 @@ master_sites                http://www.imagemagick.org/download/ \
                             ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
                             ftp://sunsite.icm.edu.pl/packages/ImageMagick
 
-checksums                   rmd160  ad2bc2b31e82afa543c1dfbb52700d809e25edc1 \
-                            sha256  330efe70c38d86b95337f67015c465c8d910d8e96632ee72e09017120546d1ab \
-                            size    8789980
+checksums                   rmd160  4058b96fb5e3bf030648d84a25b709b65f1cd578 \
+                            sha256  dcf23a7356a970e613a9fa2cfaa64c999ea8e278a45aec4905e54398d6c12c83 \
+                            size    8799740
 
 depends_lib                 port:bzip2 \
                             port:djvulibre \
@@ -74,12 +74,6 @@ depends_lib-append          port:pkgconfig
 
 depends_run                 port:urw-fonts
 
-# On case-insensitive filesystems, ImageMagick finds cryptlib's libcl and
-# tries to use it as if it were Apple's OpenCL, which fails; see #23354.
-if {[file exists ${prefix}/lib/libCL.dylib]} {
-    conflicts_build         cryptlib
-}
-
 configure.ccache            no
 
 use_autoreconf              yes
@@ -87,7 +81,6 @@ autoreconf.args             -fvi
 
 configure.args              --enable-shared \
                             --enable-static \
-                            --disable-ltdl-install \
                             --disable-silent-rules \
                             --with-frozenpaths \
                             --with-openexr \
@@ -118,6 +111,17 @@ configure.args              --enable-shared \
                             --without-pango \
                             --without-x \
                             --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
+
+if {${os.platform} eq "darwin" && ${os.major} < 11} {
+    configure.args-append   --disable-opencl
+} else {
+    configure.args-append   --enable-opencl
+    # On case-insensitive filesystems, ImageMagick finds cryptlib's libcl and
+    # tries to use it as if it were Apple's OpenCL, which fails; see #23354.
+    if {[file exists ${prefix}/lib/libCL.dylib]} {
+        conflicts_build         cryptlib
+    }
+}
 
 variant natron conflicts x11 requires pango rsvg q32 hdri description {Natron version} {
     if {${configure.cxx_stdlib} eq "libstdc++"} {
