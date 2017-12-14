@@ -10,6 +10,7 @@
 ### Plugins
 
 - DenoiseSharpen: fix a bug where the plugin would not abort processing when required.
+- ColorCorrect: fix luminance computation when applying saturation #1706
 
 
 ## Version 2.3.4
