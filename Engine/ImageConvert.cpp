@@ -180,7 +180,7 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
             while ( x != end && x >= 0 && x < intersection.width() ) {
                 for (int k = 0; k < nComp; ++k) {
 #                 ifdef DEBUG
-                    assert(srcPixels[k] == srcPixels[k]); // check for NaN
+                    assert(!boost::math::isnan(srcPixels[k])); // check for NaN
 #                 endif
                     DSTPIX pix;
                     if ( (k == 3) || (!srcLut && !dstLut) ) {
