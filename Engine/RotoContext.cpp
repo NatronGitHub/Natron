@@ -34,16 +34,15 @@
 #include <sstream> // stringstream
 
 #include <boost/scoped_ptr.hpp>
-
-#include <QtCore/QLineF>
-#include <QtCore/QDebug>
-
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
+#include <QtCore/QLineF>
+#include <QtCore/QDebug>
 
 //#define ROTO_RENDER_TRIANGLES_ONLY
 
@@ -2197,7 +2196,7 @@ convertCairoImageToNatronImageForInverted_noColor(cairo_surface_t* cairoImg,
             }
 #         ifdef DEBUG
             for (int c = 0; c < dstNComps; ++c) {
-                assert(dstPix[c] == dstPix[c]); // check for NaN
+                assert( !boost::math::isnan(dstPix[c]) ); // check for NaN
             }
 #         endif
         }
@@ -2335,7 +2334,7 @@ convertCairoImageToNatronImageForDstComponents(cairo_surface_t* cairoImg,
             }
 #         ifdef DEBUG
             for (int c = 0; c < dstNComps; ++c) {
-                assert(dstPix[x * dstNComps + c] == dstPix[x * dstNComps + c]); // check for NaN
+                assert( !boost::math::isnan(dstPix[x * dstNComps + c]) ); // check for NaN
             }
 #         endif
         }
@@ -2418,7 +2417,7 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
         for (int x = 0; x < roi.width(); ++x) {
 #         ifdef DEBUG
             for (int c = 0; c < srcNComps; ++c) {
-                assert(srcPix[x * srcNComps + c] == srcPix[x * srcNComps + c]); // check for NaN
+                assert( !boost::math::isnan(srcPix[x * srcNComps + c]) ); // check for NaN
             }
 #         endif
             if (dstNComps == 1) {

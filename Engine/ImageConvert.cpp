@@ -180,7 +180,7 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
             while ( x != end && x >= 0 && x < intersection.width() ) {
                 for (int k = 0; k < nComp; ++k) {
 #                 ifdef DEBUG
-                    assert(!boost::math::isnan(srcPixels[k])); // check for NaN
+                    assert( !boost::math::isnan(srcPixels[k]) ); // check for NaN
 #                 endif
                     DSTPIX pix;
                     if ( (k == 3) || (!srcLut && !dstLut) ) {
@@ -217,7 +217,7 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
                     }
                     dstPixels[k] =  pix;
 #                 ifdef DEBUG
-                    assert(dstPixels[k] == dstPixels[k]); // check for NaN
+                    assert( !boost::math::isnan(dstPixels[k]) ); // check for NaN
 #                 endif
                 }
 
@@ -354,7 +354,7 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
 
                     dstPixels[0] = pix;
 #                 ifdef DEBUG
-                    assert(dstPixels[0] == dstPixels[0]); // check for NaN
+                    assert( !boost::math::isnan(dstPixels[0]) ); // check for NaN
 #                 endif
                 } else { // if (dstNComps == 1) {
                     if (srcNComps == 1) {
@@ -362,7 +362,7 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                         for (int k = 0; k < dstNComps; ++k) {
                             dstPixels[k] = pix;
 #                         ifdef DEBUG
-                            assert(dstPixels[k] == dstPixels[k]); // check for NaN
+                            assert(  !boost::math::isnan(dstPixels[k]) ); // check for NaN
 #                         endif
                         }
                     } else {
@@ -433,7 +433,7 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                             } // if (!useColorspaces || (!srcLut && !dstLut)) {
                             dstPixels[k] =  pix;
 #                 ifdef DEBUG
-                            assert(srcPixels[k] != srcPixels[k] || dstPixels[k] == dstPixels[k]); // check for NaN
+                            assert( boost::math::isnan(srcPixels[k]) || !boost::math::isnan(dstPixels[k]) ); // check for NaN
 #                 endif
                         } // for (int k = 0; k < k < 3 && k < dstNComps; ++k) {
 

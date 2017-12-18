@@ -1952,9 +1952,9 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
 {
     ///Mt-safe as Curve is MT-safe
     if ( ( dimension >= (int)_curves.size() ) ||
-         ( key != key) || // check for NaN
+         boost::math::isnan(key) || // check for NaN
          boost::math::isinf(key) ||
-         ( value != value) || // check for NaN
+         boost::math::isnan(value) || // check for NaN
          boost::math::isinf(value) ) {
         return eStatusFailed;
     }
@@ -1979,9 +1979,9 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
 {
     ///Mt-safe as Curve is MT-safe
     if ( ( dimension >= (int)_curves.size() ) ||
-         ( key != key) || // check for NaN
+         boost::math::isnan(key) || // check for NaN
          boost::math::isinf(key) ||
-         ( value != value) || // check for NaN
+         boost::math::isnan(value) || // check for NaN
          boost::math::isinf(value) ) {
         return eStatusFailed;
     }

@@ -29,6 +29,12 @@
 #include <cstring> // for std::memcpy, std::memset
 #include <stdexcept>
 
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/math/special_functions/fpclassify.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
 #include <QtCore/QDebug>
 
 #include "Engine/AppManager.h"
@@ -2068,7 +2074,7 @@ Image::checkForNaNs(const RectI& roi)
         for (; pix < end; ++pix) {
             // we remove NaNs, but infinity values should pose no problem
             // (if they do, please explain here which ones)
-            if (*pix != *pix) { // check for NaN
+            if ( boost::math::isnan(*pix) ) { // check for NaN (boost::math::isnan(x) is not slower than x != x and works with -Ofast)
                 *pix = 1.;
                 hasnan = true;
             }
