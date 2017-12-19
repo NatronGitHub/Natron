@@ -5257,7 +5257,7 @@ OfxParametricInstance::addControlPoint(int curveIndex,
          (boost::math::isinf)(key) ||
          (boost::math::isnan)(value) || // check for NaN
          (boost::math::isinf)(value) ) {
-        return eActionStatusFailed;
+        return kOfxStatFailed;
     }
 
     KnobParametricPtr knob = resolveRenderKnob<KnobParametric>(_knob.lock());
