@@ -9,8 +9,8 @@ PortGroup           active_variants 1.1
 name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
-version             3.4
-revision            2
+version             3.4.1
+revision            1
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -52,8 +52,8 @@ master_sites        http://www.ffmpeg.org/releases/
 
 use_xz              yes
 
-checksums           rmd160  e554cb80356779de57b24c97d0ccb485a0b144eb \
-                    sha256  aeee06e4d8b18d852c61ebbfe5e1bb7014b1e118e8728c1c2115f91e51bffbef
+checksums           rmd160  0cad66d5bee31586fa1885794140ccad1a348b0b \
+                    sha256  5a77278a63741efa74e26bf197b9bb09ac6381b9757391b922407210f0f991c0
 
 # root directory of extracted tarball is owned by root and has permissions 700
 # set to 755 to facilitate maintenance
@@ -154,6 +154,7 @@ configure.args      --enable-swscale \
                     --disable-libxcb-xfixes \
                     --disable-xlib \
                     --disable-indev=jack \
+                    --disable-opencl \
                     --disable-outdev=xv \
                     --disable-vda \
                     --disable-audiotoolbox \
@@ -170,16 +171,14 @@ platform darwin {
     # libblueray doesn't build on Tiger so disable for now (#39442)
     if {${os.major} < 9} {
         depends_lib-delete    port:libbluray
-        configure.args-delete --enable-libbluray
-        configure.args-append --disable-libbluray
+        configure.args-replace --enable-libbluray --disable-libbluray
         configure.args-append --disable-asm
     }
 
     # as of 1.6.0 libvpx only supports darwin 10 or later
     if {${os.major} < 10} {
         depends_build-delete port:libvpx
-        configure.args-delete --enable-libvpx
-        configure.args-append --disable-libvpx
+        configure.args-replace --enable-libvpx --disable-libvpx
     }
 
     # filters coreimage and coreimagesrc don't build on 10.6
@@ -201,7 +200,7 @@ platform darwin {
     #   configure.args-append --enable-vda
     }
 
-    # AudiotoolBox support requires CoreMedia Framework available on 10.7+
+    # AudioToolbox support requires CoreMedia Framework available on 10.7+
     # libsdl2 requires minimum Xcode 10.7 SDK to build successfully
     if {${os.major} > 10} {
         configure.args-replace --disable-audiotoolbox --enable-audiotoolbox
@@ -209,11 +208,15 @@ platform darwin {
         depends_lib-append     port:libsdl2
     }
 
-    # VideotoolBox, a new hardware acceleration framework, is supported on 10.8+ and "here to stay".
+    # VideoToolbox, a new hardware acceleration framework, is supported on 10.8+ and "here to stay".
     # It provides support for H264, H263, MPEG1, MPEG2 and MPEG4.
     if {${os.major} > 11} {
-        configure.args-delete --disable-videotoolbox
-        configure.args-append --enable-videotoolbox
+        configure.args-replace --disable-videotoolbox --enable-videotoolbox
+    }
+
+    # OpenCL support requires version 1.2 available 10.8+
+    if {${os.major} > 11} {
+        configure.args-replace --disable-opencl --enable-opencl
     }
 
     # Apple GCC has problems with SIMD intrinsics and -Werror=no-missing-prototypes.

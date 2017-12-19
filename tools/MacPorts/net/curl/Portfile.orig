@@ -33,7 +33,7 @@ checksums                       ${curl_distfile} \
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
 
-    revision                    1
+    revision                    2
 
     depends_build               port:pkgconfig
 
@@ -43,6 +43,7 @@ if {${name} eq ${subport}} {
 
     configure.args              --disable-silent-rules \
                                 --enable-ipv6 \
+                                --without-brotli \
                                 --without-cyassl \
                                 --without-gnutls \
                                 --without-gssapi \
