@@ -16,8 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
-
 #ifndef IMAGECACHEENTRYPROCESSING_H
 #define IMAGECACHEENTRYPROCESSING_H
 
@@ -26,6 +24,14 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/math/special_functions/fpclassify.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
 
 #include "Engine/EngineFwd.h"
 #include "Engine/RectI.h"
@@ -61,7 +67,7 @@ static void copyPixelsForDepth(const RectI& renderWindow,
 #ifdef DEBUG
             const PIX* p = src_pixels;
             for (int x = renderWindow.x1; x < renderWindow.x2; ++x, p += srcXStride) {
-                assert(*p == *p); // NaN check
+                assert( !(boost::math::isnan)(*p) ); // NaN check
             }
 #endif
         }
@@ -70,7 +76,7 @@ static void copyPixelsForDepth(const RectI& renderWindow,
             for (int x = renderWindow.x1; x < renderWindow.x2; ++x,
                  src_pixels += srcXStride,
                  dst_pixels += dstXStride) {
-                assert(*src_pixels == *src_pixels); // NaN check
+                assert( !(boost::math::isnan)(*src_pixels) ); // NaN check
                 *dst_pixels = *src_pixels;
             }
 
@@ -123,7 +129,7 @@ static void fillWithConstant(PIX val,
                              const RectI& bounds)
 {
 
-    assert(val == val); // NaN check
+    assert( !(boost::math::isnan)(val) ); // NaN check
     PIX* pix = getPix(ptr, roi.x1, roi.y1, bounds);
     for (int y = roi.y1; y < roi.y2; ++y) {
         for (int x = roi.x1; x < roi.x2; ++x) {
@@ -179,7 +185,7 @@ static void repeatEdgesForDepth(PIX* ptr,
             for (int y = roi.y1; y < roi.y2; ++y) {
                 PIX* srcPix = origPix;
                 for (int x = roi.x1; x < roi.x2; ++x) {
-                    assert(*srcPix == *srcPix); // NaN check
+                    assert( !(boost::math::isnan)(*srcPix) ); // NaN check
                     *pix = *srcPix;
                     ++pix;
                     ++srcPix;
@@ -206,7 +212,7 @@ static void repeatEdgesForDepth(PIX* ptr,
             PIX* dst_pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
             for (int y = roi.y1; y < roi.y2; ++y) {
                 PIX val = *getPix(ptr, bounds.x1, y, roundedBounds);
-                assert(val == val); // NaN check
+                assert( !(boost::math::isnan)(val) ); // NaN check
                 for (int x = roi.x1; x < roi.x2; ++x) {
                     *dst_pix = val;
                     ++dst_pix;
@@ -224,7 +230,7 @@ static void repeatEdgesForDepth(PIX* ptr,
             PIX* pix = getPix(ptr, roi.x1, roi.y1, roundedBounds);
             for (int y = roi.y1; y < roi.y2; ++y) {
                 PIX val = *getPix(ptr, bounds.x2 - 1, y, roundedBounds);
-                assert(val == val); // NaN check
+                assert( !(boost::math::isnan)(val) ); // NaN check
                 for (int x = roi.x1; x < roi.x2; ++x) {
                     *pix = val;
                     ++pix;
@@ -255,7 +261,7 @@ static void repeatEdgesForDepth(PIX* ptr,
             for (int y = roi.y1; y < roi.y2; ++y) {
                 PIX* srcPix = origPix;
                 for (int x = roi.x1; x < roi.x2; ++x) {
-                    assert(*srcPix == *srcPix); // NaN check
+                    assert( !(boost::math::isnan)(*srcPix) ); // NaN check
                     *dst_pix = *srcPix;
                     ++dst_pix;
                     ++srcPix;
@@ -351,10 +357,10 @@ static void downscaleMipMapForDepth(const PIX* srcTilesPtr[4],
             for (int y = 0; y < halfTileSizeY; ++y) {
                 for (int x = 0; x < halfTileSizeX; ++x) {
                     
-                    assert(*src_pixels == *src_pixels); // NaN check
-                    assert(*(src_pixels + 1) == *(src_pixels + 1)); // NaN check
-                    assert(*(src_pixels_next) == *(src_pixels_next)); // NaN check
-                    assert(*(src_pixels_next + 1) == *(src_pixels_next + 1)); // NaN check
+                    assert( !(boost::math::isnan)(*src_pixels) ); // NaN check
+                    assert( !(boost::math::isnan)(*(src_pixels + 1)) ); // NaN check
+                    assert( !(boost::math::isnan)(*(src_pixels_next)) ); // NaN check
+                    assert( !(boost::math::isnan)(*(src_pixels_next + 1)) ); // NaN check
 
                     double sum = (double)*src_pixels + (double)*(src_pixels + 1);
                     sum += ((double)*src_pixels_next + (double)*(src_pixels_next + 1));
