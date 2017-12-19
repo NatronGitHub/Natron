@@ -32,6 +32,14 @@ Natron multiple times on the same computer, the different processes will share t
 - For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
 
 
+## Version 2.3.5
+
+### Plugins
+
+- DenoiseSharpen: fix a bug where the plugin would not abort processing when required.
+- ColorCorrect: fix luminance computation when applying saturation #1706
+
+
 ## Version 2.3.4
 
 - Binaries distributed through Natron's web site are now built with 8-bit x264. 10-bit x264 (introduced with 2.2.6) causes too many compatibility issues. There are other codecs that support 10-bit output (especially ProRes, vc2, libopenjpeg, libvpx-vp9, and x265 on some systems). In order to get 10-bit x264, it is recommended to encode a quasi-lossless using one of these codecs, and then transcode with a ffmpeg binary capable of encoding 10-bit x264.
@@ -43,6 +51,9 @@ Natron multiple times on the same computer, the different processes will share t
 - Upgrade SeExpr to version 2.11.
 - Grade: add a "Normalize" button to automatically compute the clack and white points.
 - Matrix3x3, Matrix5x5: new plugins, apply a 3x3 or 5x5 custom filter.
+- ColorCorrect: Fix wrong render for input values outside the [0-1] range #1703
+- ReadOIIO: Adjust Maximum Thr. (used when reading RAW camera files) should defaut to 0.0 #1705
+
 
 
 ## Version 2.3.3

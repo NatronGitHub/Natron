@@ -30,6 +30,10 @@
 #include <cstring> // for std::memcpy
 #include <cfloat> // DBL_MAX
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/math/special_functions/fpclassify.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Image.h"
@@ -52,7 +56,6 @@
 #ifndef M_LN2
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
 #endif
-
 
 NATRON_NAMESPACE_ENTER
 
@@ -405,7 +408,7 @@ ViewerInstancePrivate::buildGammaLut(double gamma, RamBuffer<float>* gammaLookup
 float
 ViewerInstancePrivate::lookupGammaLut(float value, const float* gammaLookupBuffer)
 {
-    assert(value == value); // check for NaN
+    assert( !(boost::math::isnan)(value) ); // check for NaN
     if (value < 0.) {
         return 0.;
     } else if (value > 1.) {
@@ -1090,7 +1093,7 @@ genericViewerProcessFunctor(const RenderViewerArgs& args,
         case eDisplayChannelsMatte:
             for (int i = 0; i < 3; ++i) {
                 if (color_pixels[i]) {
-                    assert(*color_pixels[i] == *color_pixels[i]); // check for NaNs
+                    assert( !(boost::math::isnan)(*color_pixels[i]) ); // check for NaNs
                     tmpPix[i] = Image::convertPixelDepth<PIX, float>(*color_pixels[i]);
                     if (args.srcColorspace) {
                         tmpPix[i] = args.srcColorspace->fromColorSpaceFloatToLinearFloat(tmpPix[i]);

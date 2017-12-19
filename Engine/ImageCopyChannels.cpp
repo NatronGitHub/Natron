@@ -27,11 +27,16 @@
 #include <cassert>
 #include <stdexcept>
 
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/math/special_functions/fpclassify.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
 #include <QtCore/QDebug>
 
 #include "Engine/OSGLContext.h"
 #include "Engine/OSGLFunctions.h"
-
 
 // disable some warnings due to unused parameters
 GCC_DIAG_OFF(unused-parameter)
@@ -87,7 +92,7 @@ copyUnProcessedChannels_templated(const void* originalImgPtrs[4],
             if ( srcNComps > 0 && ( (srcNComps == 1) || (srcNComps == 4) ) && srcPixelPtrs[srcNComps - 1] ) {
                 srcA = *srcPixelPtrs[srcNComps - 1];
 #             ifdef DEBUG
-                assert(srcA == srcA); // check for NaN
+                assert( !(boost::math::isnan)(srcA) ); // check for NaN
 #             endif
             }
 
@@ -147,47 +152,47 @@ copyUnProcessedChannels_templated(const void* originalImgPtrs[4],
             if ( (dstNComps == 1) || (dstNComps == 4) ) {
                 dstAorig = *dstPixelPtrs[dstNComps - 1];
 #             ifdef DEBUG
-                assert(dstAorig == dstAorig); // check for NaN
+                assert( !(boost::math::isnan)(dstAorig) ); // check for NaN
 #             endif
             }
 #             endif // NATRON_COPY_CHANNELS_UNPREMULT
 
             if (doR) {
 #             ifdef DEBUG
-                assert(!srcPixelPtrs[0] || *srcPixelPtrs[0] == *srcPixelPtrs[0]); // check for NaN
-                assert(*dstPixelPtrs[0] == *dstPixelPtrs[0]); // check for NaN
+                assert( !srcPixelPtrs[0] || !(boost::math::isnan)(*srcPixelPtrs[0]) ); // check for NaN
+                assert( !(boost::math::isnan)(*dstPixelPtrs[0]) ); // check for NaN
 #             endif
 
                 DOCHANNEL(0);
 
 #             ifdef DEBUG
-                assert(*dstPixelPtrs[0] == *dstPixelPtrs[0]); // check for NaN
+                assert( !(boost::math::isnan)(*dstPixelPtrs[0]) ); // check for NaN
 #             endif
             }
 
             if (doG) {
 #             ifdef DEBUG
-                assert(!srcPixelPtrs[1] || *srcPixelPtrs[1] == *srcPixelPtrs[1]); // check for NaN
-                assert(*dstPixelPtrs[1] == *dstPixelPtrs[1]); // check for NaN
+                assert( !srcPixelPtrs[1] || !(boost::math::isnan)(*srcPixelPtrs[1]) ); // check for NaN
+                assert( !(boost::math::isnan)(*dstPixelPtrs[1]) ); // check for NaN
 #             endif
 
                 DOCHANNEL(1);
 
 #             ifdef DEBUG
-                assert(*dstPixelPtrs[1] == *dstPixelPtrs[1]); // check for NaN
-#             endif           
+                assert( !(boost::math::isnan)(*dstPixelPtrs[1]) ); // check for NaN
+#             endif
             }
 
             if (doB) {
 #             ifdef DEBUG
-                assert(!srcPixelPtrs[2] || *srcPixelPtrs[2] == *srcPixelPtrs[2]); // check for NaN
-                assert(*dstPixelPtrs[2] == *dstPixelPtrs[2]); // check for NaN
+                assert( !srcPixelPtrs[2] || !(boost::math::isnan)(*srcPixelPtrs[2]) ); // check for NaN
+                assert( !(boost::math::isnan)(*dstPixelPtrs[2]) ); // check for NaN
 #             endif
 
                 DOCHANNEL(2);
 
 #             ifdef DEBUG
-                assert(*dstPixelPtrs[2] == *dstPixelPtrs[2]); // check for NaN
+                assert( !(boost::math::isnan)(*dstPixelPtrs[2]) ); // check for NaN
 #             endif
             }
 
@@ -200,19 +205,19 @@ copyUnProcessedChannels_templated(const void* originalImgPtrs[4],
                         if ( (dstNComps >= 2) && !doR ) {
                             dst_pixels[0] = (dst_pixels[0] / (float)dstAorig) * srcA;
 #                         ifdef DEBUG
-                            assert(dst_pixels[0] == dst_pixels[0]); // check for NaN
+                            assert( !(boost::math::isnan)(dst_pixels[0]) ); // check for NaN
 #                         endif
                         }
                         if ( (dstNComps >= 2) && !doG ) {
                             dst_pixels[1] = (dst_pixels[1] / (float)dstAorig) * srcA;
 #                         ifdef DEBUG
-                            assert(dst_pixels[1] == dst_pixels[1]); // check for NaN
+                            assert( !(boost::math::isnan)(dst_pixels[1]) ); // check for NaN
 #                         endif
                         }
                         if ( (dstNComps >= 2) && !doB ) {
                             dst_pixels[2] = (dst_pixels[2] / (float)dstAorig) * srcA;
 #                         ifdef DEBUG
-                            assert(dst_pixels[2] == dst_pixels[2]); // check for NaN
+                            assert( !(boost::math::isnan)(dst_pixels[2]) ); // check for NaN
 #                         endif
                         }
                     }
@@ -221,7 +226,7 @@ copyUnProcessedChannels_templated(const void* originalImgPtrs[4],
 
                 if ( (dstNComps == 1) || (dstNComps == 4) ) {
 #                 ifdef DEBUG
-                    assert(srcA == srcA); // check for NaN
+                    assert( !(boost::math::isnan)(srcA) ); // check for NaN
 #                 endif
                     *dstPixelPtrs[dstNComps - 1] = srcA;
                 }
@@ -303,8 +308,8 @@ copyUnProcessedChannels_nonTemplated(const void* originalImgPtrs[4],
 
             if ( ( (srcNComps == 1) || (srcNComps == 4) ) && srcPixelPtrs[3] ) {
                 srcA = *srcPixelPtrs[srcNComps - 1];
-#             ifdef  DEBUG
-                assert(srcA == srcA); // check for NaN
+#             ifdef DEBUG
+                assert( !(boost::math::isnan)(srcA) ); // check for NaN
 #             endif
             }
 #         ifdef NATRON_COPY_CHANNELS_UNPREMULT
@@ -313,45 +318,45 @@ copyUnProcessedChannels_nonTemplated(const void* originalImgPtrs[4],
             if ( (dstNComps == 1) || (dstNComps == 4) ) {
 #             ifdef NATRON_COPY_CHANNELS_UNPREMULT
                 dstAorig = *dst_pixels[dstNComps - 1];
-#             ifdef DEBUG
-                assert(dstAorig == dstAorig); // check for NaN
-#             endif
+#              ifdef DEBUG
+                assert( !(boost::math::isnan)(dstAorig) ); // check for NaN
+#              endif
 #             endif
             }
             if (doR) {
 #             ifdef DEBUG
-                assert(!srcPixelPtrs[0] || *srcPixelPtrs[0] == *srcPixelPtrs[0]); // check for NaN
-                assert(*dstPixelPtrs[0] == *dstPixelPtrs[0]); // check for NaN
+                assert( !srcPixelPtrs[0] || !(boost::math::isnan)(*srcPixelPtrs[0]) ); // check for NaN
+                assert( !(boost::math::isnan)(*dstPixelPtrs[0]) ); // check for NaN
 #             endif
 
                 DOCHANNEL(0);
 
 #             ifdef DEBUG
-                assert(*dstPixelPtrs[0] == *dstPixelPtrs[0]); // check for NaN
+                assert( !(boost::math::isnan)(*dstPixelPtrs[0]) ); // check for NaN
 #             endif
             }
             if (doG) {
 #             ifdef DEBUG
-                assert(!srcPixelPtrs[1] || *srcPixelPtrs[1] == *srcPixelPtrs[1]); // check for NaN
-                assert(*dstPixelPtrs[1] == *dstPixelPtrs[1]); // check for NaN
+                assert( !srcPixelPtrs[1] || !(boost::math::isnan)(*srcPixelPtrs[1]) ); // check for NaN
+                assert( !(boost::math::isnan)(*dstPixelPtrs[1]) ); // check for NaN
 #             endif
 
                 DOCHANNEL(1);
 
 #             ifdef DEBUG
-                assert(*dstPixelPtrs[1] == *dstPixelPtrs[1]); // check for NaN
+                assert( !(boost::math::isnan)(*dstPixelPtrs[1]) ); // check for NaN
 #             endif
             }
             if (doB) {
 #             ifdef DEBUG
-                assert(!srcPixelPtrs[2] || *srcPixelPtrs[2] == *srcPixelPtrs[2]); // check for NaN
-                assert(*dstPixelPtrs[2] == *dstPixelPtrs[2]); // check for NaN
+                assert( !srcPixelPtrs[2] || !(boost::math::isnan)(*srcPixelPtrs[2]) ); // check for NaN
+                assert( !(boost::math::isnan)(*dstPixelPtrs[2]) ); // check for NaN
 #             endif
 
                 DOCHANNEL(2);
 
 #             ifdef DEBUG
-                assert(*dstPixelPtrs[2] == *dstPixelPtrs[2]); // check for NaN
+                assert( !(boost::math::isnan)(*dstPixelPtrs[2]) ); // check for NaN
 #             endif
             }
             if (doA) {
@@ -362,19 +367,19 @@ copyUnProcessedChannels_nonTemplated(const void* originalImgPtrs[4],
                         if ( (dstNComps >= 2) && !doR ) {
                             dst_pixels[0] = (dst_pixels[0] / (float)dstAorig) * srcA;
 #                         ifdef DEBUG
-                            assert(dst_pixels[0] == dst_pixels[0]); // check for NaN
+                            assert( !(boost::math::isnan)(dst_pixels[0]) ); // check for NaN
 #                         endif
                         }
                         if ( (dstNComps >= 2) && !doG ) {
                             dst_pixels[1] = (dst_pixels[1] / (float)dstAorig) * srcA;
 #                         ifdef DEBUG
-                            assert(dst_pixels[1] == dst_pixels[1]); // check for NaN
+                            assert( !(boost::math::isnan)(dst_pixels[1]) ); // check for NaN
 #                         endif
                         }
                         if ( (dstNComps >= 2) && !doB ) {
                             dst_pixels[2] = (dst_pixels[2] / (float)dstAorig) * srcA;
 #                         ifdef DEBUG
-                            assert(dst_pixels[2] == dst_pixels[2]); // check for NaN
+                            assert( !(boost::math::isnan)(dst_pixels[2]) ); // check for NaN
 #                         endif
                         }
                     }
@@ -383,7 +388,7 @@ copyUnProcessedChannels_nonTemplated(const void* originalImgPtrs[4],
                 // coverity[dead_error_line]
 
 #              ifdef DEBUG
-                assert(srcA == srcA); // check for NaN
+                assert( !(boost::math::isnan)(srcA) ); // check for NaN
 #              endif
                 *dstPixelPtrs[dstNComps - 1] = srcA;
             } // doA

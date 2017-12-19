@@ -26,6 +26,10 @@
 
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/math/special_functions/fpclassify.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include <QLineF>
 
 #include <cairo/cairo.h>
@@ -40,8 +44,6 @@
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/RotoShapeRenderNode.h"
 #include "Engine/KnobTypes.h"
-
-
 
 //This will enable correct evaluation of Beziers
 //#define ROTO_USE_MESH_PATTERN_ONLY
@@ -137,7 +139,7 @@ convertCairoImageToNatronImageForAccum_noColor(cairo_surface_t* cairoImg,
                 }
             }
             for (int c = 0; c < dstNComps; ++c) {
-                assert(*dst_pixels[c] == *dst_pixels[c]); // check for NaN
+                assert( !(boost::math::isnan)(*dst_pixels[c]) ); // check for NaN
                 dst_pixels[c] += dstPixelStride;
             }
             srcPix += srcNComps;

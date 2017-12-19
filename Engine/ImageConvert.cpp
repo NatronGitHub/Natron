@@ -200,7 +200,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
                         DSTPIX* dst_pix = dstPixelPtrs[c];
                         for (int x = renderWindow.x1; x < renderWindow.x2; ++x) {
                             // They are of the same bitdepth since srcMaxValue == dstMaxValue was checked above
-                            assert(*src_pix == *src_pix); // check for NaNs
+                            assert( !(boost::math::isnan)(*src_pix) ); // check for NaNs
                             *dst_pix = (DSTPIX)*src_pix;
                             src_pix += srcPixelStride;
                             dst_pix += dstPixelStride;
@@ -244,7 +244,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
                         SRCPIX sourcePixel;
                         if (srcPixelPtrs[k]) {
                             sourcePixel = *srcPixelPtrs[k];
-                            assert(sourcePixel == sourcePixel); // check for NaNs
+                            assert( !(boost::math::isnan)(sourcePixel) ); // check for NaNs
                         } else {
                             sourcePixel = 0;
                         }
@@ -283,9 +283,9 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
                             }
                         }
                         *dstPixelPtrs[k] =  pix;
-#                 ifdef DEBUG
-                        assert(pix == pix); // check for NaN
-#                 endif
+#                     ifdef DEBUG
+                        assert( !(boost::math::isnan)(pix) ); // check for NaN
+#                     endif
                     }
 
                     if (backward) {
@@ -452,7 +452,7 @@ convertToFormatInternal(const RectI & renderWindow,
 
                     *dstPixelPtrs[k] =  pix;
 #                 ifdef DEBUG
-                    assert(*dstPixelPtrs[k] == *dstPixelPtrs[k]); // check for NaN
+                    assert( !(boost::math::isnan)(*dstPixelPtrs[k]) ); // check for NaN
 #                 endif
 
 
@@ -566,7 +566,7 @@ convertToMonoImage(const RectI & renderWindow,
                     break;
                     
             }
-            assert(pix == pix); // Check for NaNs
+            assert( !(boost::math::isnan)(pix) ); // Check for NaNs
             *dstPixelPtrs[0] = pix;
             dstPixelPtrs[0] += dstPixelStride;
         }
@@ -971,7 +971,7 @@ convertRGBAPackedCPUBufferToGLTextureInternal(const float* srcData,
                 const float* srcLineData = (const float*)srcPixels;
                 for (int x = roi.x1; x < roi.x2; ++x, dstLineData += 4, srcLineData += srcNComps) {
                     for (int c = 0; c < 4; ++c) {
-                        assert(srcLineData[c] == srcLineData[c]); // Check for NaNs
+                        assert( !(boost::math::isnan)(srcLineData[c]) ); // Check for NaNs
                         dstLineData[c] = srcLineData[c];
                     }
                 }

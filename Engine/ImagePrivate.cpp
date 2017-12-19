@@ -22,13 +22,19 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-
 #include "ImagePrivate.h"
+
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/math/special_functions/fpclassify.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
+#include <QDebug>
+#include <QThread>
 
 #include "Engine/Hash64.h"
 #include "Engine/Node.h"
-#include <QDebug>
-#include <QThread>
 
 NATRON_NAMESPACE_ENTER
 
@@ -490,7 +496,7 @@ checkForNaNsInternal(void* ptrs[4],
             for (int k = 0; k < nComps; ++k) {
                 // we remove NaNs, but infinity values should pose no problem
                 // (if they do, please explain here which ones)
-                if (*dstPixelPtrs[k] != *dstPixelPtrs[k]) { // check for NaN
+                if ( (boost::math::isnan)(*dstPixelPtrs[k]) ) { // check for NaN
                     *dstPixelPtrs[k] = 1.;
                     *foundNan = true;
                 }

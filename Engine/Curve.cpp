@@ -91,10 +91,10 @@ KeyFrame::KeyFrame(double time,
     , _rightDerivative(rightDerivative)
     , _interpolation(interpolation)
 {
-    assert( !boost::math::isnan(_time) && !boost::math::isinf(_time) );
-    assert( !boost::math::isnan(_value) && !boost::math::isinf(_value) );
-    assert( !boost::math::isnan(_leftDerivative) && !boost::math::isinf(_leftDerivative) );
-    assert( !boost::math::isnan(_rightDerivative) && !boost::math::isinf(_rightDerivative) );
+    assert( !(boost::math::isnan)(_time) && !(boost::math::isinf)(_time) );
+    assert( !(boost::math::isnan)(_value) && !(boost::math::isinf)(_value) );
+    assert( !(boost::math::isnan)(_leftDerivative) && !(boost::math::isinf)(_leftDerivative) );
+    assert( !(boost::math::isnan)(_rightDerivative) && !(boost::math::isinf)(_rightDerivative) );
 }
 
 KeyFrame::KeyFrame(const KeyFrame & other)
@@ -105,10 +105,10 @@ KeyFrame::KeyFrame(const KeyFrame & other)
     , _rightDerivative(other._rightDerivative)
     , _interpolation(other._interpolation)
 {
-    assert( !boost::math::isnan(_time) && !boost::math::isinf(_time) );
-    assert( !boost::math::isnan(_value) && !boost::math::isinf(_value) );
-    assert( !boost::math::isnan(_leftDerivative) && !boost::math::isinf(_leftDerivative) );
-    assert( !boost::math::isnan(_rightDerivative) && !boost::math::isinf(_rightDerivative) );
+    assert( !(boost::math::isnan)(_time) && !(boost::math::isinf)(_time) );
+    assert( !(boost::math::isnan)(_value) && !(boost::math::isinf)(_value) );
+    assert( !(boost::math::isnan)(_leftDerivative) && !(boost::math::isinf)(_leftDerivative) );
+    assert( !(boost::math::isnan)(_rightDerivative) && !(boost::math::isinf)(_rightDerivative) );
 }
 
 void
@@ -120,10 +120,10 @@ KeyFrame::operator=(const KeyFrame & o)
     _leftDerivative = o._leftDerivative;
     _rightDerivative = o._rightDerivative;
     _interpolation = o._interpolation;
-    assert( !boost::math::isnan(_time) && !boost::math::isinf(_time) );
-    assert( !boost::math::isnan(_value) && !boost::math::isinf(_value) );
-    assert( !boost::math::isnan(_leftDerivative) && !boost::math::isinf(_leftDerivative) );
-    assert( !boost::math::isnan(_rightDerivative) && !boost::math::isinf(_rightDerivative) );
+    assert( !(boost::math::isnan)(_time) && !(boost::math::isinf)(_time) );
+    assert( !(boost::math::isnan)(_value) && !(boost::math::isinf)(_value) );
+    assert( !(boost::math::isnan)(_leftDerivative) && !(boost::math::isinf)(_leftDerivative) );
+    assert( !(boost::math::isnan)(_rightDerivative) && !(boost::math::isinf)(_rightDerivative) );
 }
 
 KeyFrame::~KeyFrame()
@@ -134,28 +134,28 @@ void
 KeyFrame::setLeftDerivative(double leftDerivative)
 {
     _leftDerivative = leftDerivative;
-    assert( !boost::math::isnan(_leftDerivative) && !boost::math::isinf(_leftDerivative) );
+    assert( !(boost::math::isnan)(_leftDerivative) && !(boost::math::isinf)(_leftDerivative) );
 }
 
 void
 KeyFrame::setRightDerivative(double rightDerivative)
 {
     _rightDerivative = rightDerivative;
-    assert( !boost::math::isnan(_rightDerivative) && !boost::math::isinf(_rightDerivative) );
+    assert( !(boost::math::isnan)(_rightDerivative) && !(boost::math::isinf)(_rightDerivative) );
 }
 
 void
 KeyFrame::setValue(double value)
 {
     _value = value;
-    assert( !boost::math::isnan(_value) && !boost::math::isinf(_value) );
+    assert( !(boost::math::isnan)(_value) && !(boost::math::isinf)(_value) );
 }
 
 void
 KeyFrame::setTime(TimeValue time)
 {
     _time = time;
-    assert( !boost::math::isnan(_time) && !boost::math::isinf(_time) );
+    assert( !(boost::math::isnan)(_time) && !(boost::math::isinf)(_time) );
 }
 
 void
@@ -582,9 +582,10 @@ Curve::setOrAddKeyframe(const KeyFrame& key, SetKeyFrameFlags flags, int *keyfra
 {
 
     // check for NaN or infinity
-    if ( (key.getValue() != key.getValue()) || boost::math::isinf(key.getValue()) ) {
+    double val = key.getValue();
+    if ( (boost::math::isnan)(val) || (boost::math::isinf)(val) ) {
         KeyFrame tmp = key;
-        tmp.setValue(key.getValue());
+        tmp.setValue(val);
         return setOrAddKeyframe(tmp, flags, keyframeIndex);
     }
 

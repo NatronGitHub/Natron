@@ -31,6 +31,12 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/math/special_functions/fpclassify.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
 #include <QtCore/QTextStream>
 #include <QtCore/QDebug>
 #include <QtCore/QCoreApplication>
@@ -719,7 +725,7 @@ OfxClipInstance::getImagePlane(OfxTime time,
                                const std::string& plane,
                                const OfxRectD *optionalBounds)
 {
-    if (time != time) {
+    if ( (boost::math::isnan)(time) ) {
         // time is NaN
 
         return NULL;
@@ -748,7 +754,7 @@ OfxClipInstance::getImagePlaneInternal(OfxTime time,
                                        OFX::Host::ImageEffect::Image** image,
                                        OFX::Host::ImageEffect::Texture** texture)
 {
-    if (time != time) {
+    if ( (boost::math::isnan)(time) ) {
         // time is NaN
 
         return false;
