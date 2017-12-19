@@ -2196,7 +2196,7 @@ convertCairoImageToNatronImageForInverted_noColor(cairo_surface_t* cairoImg,
             }
 #         ifdef DEBUG
             for (int c = 0; c < dstNComps; ++c) {
-                assert( !boost::math::isnan(dstPix[c]) ); // check for NaN
+                assert( !(boost::math::isnan)(dstPix[c]) ); // check for NaN
             }
 #         endif
         }
@@ -2334,7 +2334,7 @@ convertCairoImageToNatronImageForDstComponents(cairo_surface_t* cairoImg,
             }
 #         ifdef DEBUG
             for (int c = 0; c < dstNComps; ++c) {
-                assert( !boost::math::isnan(dstPix[x * dstNComps + c]) ); // check for NaN
+                assert( !(boost::math::isnan)(dstPix[x * dstNComps + c]) ); // check for NaN
             }
 #         endif
         }
@@ -2417,7 +2417,7 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
         for (int x = 0; x < roi.width(); ++x) {
 #         ifdef DEBUG
             for (int c = 0; c < srcNComps; ++c) {
-                assert( !boost::math::isnan(srcPix[x * srcNComps + c]) ); // check for NaN
+                assert( !(boost::math::isnan)(srcPix[x * srcNComps + c]) ); // check for NaN
             }
 #         endif
             if (dstNComps == 1) {

@@ -2074,7 +2074,7 @@ Image::checkForNaNs(const RectI& roi)
         for (; pix < end; ++pix) {
             // we remove NaNs, but infinity values should pose no problem
             // (if they do, please explain here which ones)
-            if ( boost::math::isnan(*pix) ) { // check for NaN (boost::math::isnan(x) is not slower than x != x and works with -Ofast)
+            if ( (boost::math::isnan)(*pix) ) { // check for NaN ((boost::math::isnan)(x) is not slower than x != x and works with -Ofast)
                 *pix = 1.;
                 hasnan = true;
             }

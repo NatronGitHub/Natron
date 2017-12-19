@@ -1108,7 +1108,7 @@ Interpolation::autoComputeDerivatives(KeyframeTypeEnum interpPrev,
 
     *vcurDerivRight = P0pr / (tnext - tcur); // denormalize for t \in [tcur,tnext]
     *vcurDerivLeft = Q3pl / (tcur - tprev); // denormalize for t \in [tprev,tcur]
-    assert( !boost::math::isnan(*vcurDerivRight) && !boost::math::isnan(*vcurDerivLeft) );
+    assert( !(boost::math::isnan)(*vcurDerivRight) && !(boost::math::isnan)(*vcurDerivLeft) );
 } // autoComputeDerivatives
 
 NATRON_NAMESPACE_EXIT

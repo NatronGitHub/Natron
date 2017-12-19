@@ -96,10 +96,10 @@ KeyFrame::KeyFrame(double time,
     , _rightDerivative(rightDerivative)
     , _interpolation(interpolation)
 {
-    assert( !boost::math::isnan(_time) && !boost::math::isinf(_time) );
-    assert( !boost::math::isnan(_value) && !boost::math::isinf(_value) );
-    assert( !boost::math::isnan(_leftDerivative) && !boost::math::isinf(_leftDerivative) );
-    assert( !boost::math::isnan(_rightDerivative) && !boost::math::isinf(_rightDerivative) );
+    assert( !(boost::math::isnan)(_time) && !(boost::math::isinf)(_time) );
+    assert( !(boost::math::isnan)(_value) && !(boost::math::isinf)(_value) );
+    assert( !(boost::math::isnan)(_leftDerivative) && !(boost::math::isinf)(_leftDerivative) );
+    assert( !(boost::math::isnan)(_rightDerivative) && !(boost::math::isinf)(_rightDerivative) );
 }
 
 KeyFrame::KeyFrame(const KeyFrame & other)
@@ -109,10 +109,10 @@ KeyFrame::KeyFrame(const KeyFrame & other)
     , _rightDerivative(other._rightDerivative)
     , _interpolation(other._interpolation)
 {
-    assert( !boost::math::isnan(_time) && !boost::math::isinf(_time) );
-    assert( !boost::math::isnan(_value) && !boost::math::isinf(_value) );
-    assert( !boost::math::isnan(_leftDerivative) && !boost::math::isinf(_leftDerivative) );
-    assert( !boost::math::isnan(_rightDerivative) && !boost::math::isinf(_rightDerivative) );
+    assert( !(boost::math::isnan)(_time) && !(boost::math::isinf)(_time) );
+    assert( !(boost::math::isnan)(_value) && !(boost::math::isinf)(_value) );
+    assert( !(boost::math::isnan)(_leftDerivative) && !(boost::math::isinf)(_leftDerivative) );
+    assert( !(boost::math::isnan)(_rightDerivative) && !(boost::math::isinf)(_rightDerivative) );
 }
 
 void
@@ -123,10 +123,10 @@ KeyFrame::operator=(const KeyFrame & o)
     _leftDerivative = o._leftDerivative;
     _rightDerivative = o._rightDerivative;
     _interpolation = o._interpolation;
-    assert( !boost::math::isnan(_time) && !boost::math::isinf(_time) );
-    assert( !boost::math::isnan(_value) && !boost::math::isinf(_value) );
-    assert( !boost::math::isnan(_leftDerivative) && !boost::math::isinf(_leftDerivative) );
-    assert( !boost::math::isnan(_rightDerivative) && !boost::math::isinf(_rightDerivative) );
+    assert( !(boost::math::isnan)(_time) && !(boost::math::isinf)(_time) );
+    assert( !(boost::math::isnan)(_value) && !(boost::math::isinf)(_value) );
+    assert( !(boost::math::isnan)(_leftDerivative) && !(boost::math::isinf)(_leftDerivative) );
+    assert( !(boost::math::isnan)(_rightDerivative) && !(boost::math::isinf)(_rightDerivative) );
 }
 
 KeyFrame::~KeyFrame()
@@ -137,28 +137,28 @@ void
 KeyFrame::setLeftDerivative(double leftDerivative)
 {
     _leftDerivative = leftDerivative;
-    assert( !boost::math::isnan(_leftDerivative) && !boost::math::isinf(_leftDerivative) );
+    assert( !(boost::math::isnan)(_leftDerivative) && !(boost::math::isinf)(_leftDerivative) );
 }
 
 void
 KeyFrame::setRightDerivative(double rightDerivative)
 {
     _rightDerivative = rightDerivative;
-    assert( !boost::math::isnan(_rightDerivative) && !boost::math::isinf(_rightDerivative) );
+    assert( !(boost::math::isnan)(_rightDerivative) && !(boost::math::isinf)(_rightDerivative) );
 }
 
 void
 KeyFrame::setValue(double value)
 {
     _value = value;
-    assert( !boost::math::isnan(_value) && !boost::math::isinf(_value) );
+    assert( !(boost::math::isnan)(_value) && !(boost::math::isinf)(_value) );
 }
 
 void
 KeyFrame::setTime(double time)
 {
     _time = time;
-    assert( !boost::math::isnan(_time) && !boost::math::isinf(_time) );
+    assert( !(boost::math::isnan)(_time) && !(boost::math::isinf)(_time) );
 }
 
 void

@@ -766,7 +766,7 @@ OfxClipInstance::getImagePlane(OfxTime time,
                                const std::string& plane,
                                const OfxRectD *optionalBounds)
 {
-    if ( boost::math::isnan(time) ) {
+    if ( (boost::math::isnan)(time) ) {
         // time is NaN
 
         return NULL;
@@ -797,7 +797,7 @@ OfxClipInstance::getImagePlaneInternal(OfxTime time,
                                        OFX::Host::ImageEffect::Image** image,
                                        OFX::Host::ImageEffect::Texture** texture)
 {
-    if ( boost::math::isnan(time) ) {
+    if ( (boost::math::isnan)(time) ) {
         // time is NaN
 
         return false;
@@ -893,7 +893,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     if (comp.getNumComponents() == 0) {
         return false;
     }
-    if ( boost::math::isnan(time) ) {
+    if ( (boost::math::isnan)(time) ) {
         // time is NaN
         return false;
     }
