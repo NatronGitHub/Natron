@@ -154,7 +154,7 @@ public:
     virtual std::string getDefaultValue(DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getInitialDefaultValue(DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setDefaultValue(const std::string & v, DimSpec dimension = DimSpec(0)) OVERRIDE FINAL;
-    virtual void setDefaultValues(const std::vector<std::string>& values, DimIdx dimensionStartOffset) OVERRIDE FINAL;
+    virtual void setDefaultValues(const std::vector<std::string>& values, DimIdx dimensionStartOffset = DimIdx(0)) OVERRIDE FINAL;
     virtual void setDefaultValueWithoutApplying(const std::string& v, DimSpec dimension = DimSpec(0)) OVERRIDE FINAL;
     virtual void setDefaultValuesWithoutApplying(const std::vector<std::string>& values, DimIdx dimensionStartOffset = DimIdx(0)) OVERRIDE FINAL;
 

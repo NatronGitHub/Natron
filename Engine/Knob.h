@@ -1967,7 +1967,7 @@ public:
      * Note that it will also restore the knob to its defaults
      **/
     virtual void setDefaultValue(const T & v, DimSpec dimension = DimSpec(0));
-    virtual void setDefaultValues(const std::vector<T>& values, DimIdx dimensionStartOffset);
+    virtual void setDefaultValues(const std::vector<T>& values, DimIdx dimensionStartOffset = DimIdx(0));
 
     /**
      * @brief Same as setDefaultValue except that it does not restore the knob to its defaults
