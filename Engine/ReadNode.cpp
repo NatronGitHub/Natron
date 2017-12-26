@@ -1017,7 +1017,9 @@ ReadNode::knobChanged(const KnobIPtr& k,
         } else {
             if ( isVideoReader( p->getPluginID() ) ) {
                 QString ffprobePath = ReadNodePrivate::getFFProbeBinaryPath();
-                assert( QFile::exists(ffprobePath) );
+                if( !QFile::exists(ffprobePath) ) {
+                    throw std::runtime_error( tr("Error: ffprobe binary not available").toStdString() );
+                }
                 QProcess proc;
                 QStringList ffprobeArgs;
                 ffprobeArgs << QString::fromUtf8("-show_streams");
