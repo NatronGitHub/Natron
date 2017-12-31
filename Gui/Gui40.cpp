@@ -159,22 +159,34 @@ Gui::openRecentFile()
 void
 Gui::updateRecentFileActions()
 {
-    QSettings settings;
-    QStringList files = settings.value( QString::fromUtf8("recentFileList") ).toStringList();
-    int numRecentFiles = std::min(files.size(), (int)NATRON_MAX_RECENT_FILES);
-
     // if there are two files with the same filename, give the dirname too
     QStringList fileNames;
     QStringList dirNames;
     std::map<QString,QStringList> allDirNames;
-    for (int i = 0; i < numRecentFiles; ++i) {
-        QFileInfo fi(files[i]);
-        fileNames.push_back(fi.fileName());
-        QString dirName = fi.dir().canonicalPath();
-        dirNames.push_back(dirName);
-        allDirNames[fi.fileName()] << dirName;
+
+    {
+        QSettings settings;
+        QStringList files = settings.value( QString::fromUtf8("recentFileList") ).toStringList();
+        int numFiles = files.size();
+        int iTotal = 0;
+
+        for (int i = 0; i < numFiles && iTotal < NATRON_MAX_RECENT_FILES; ++i) {
+            QFileInfo fi(files[i]);
+            if ( fi.exists() ) {
+                fileNames.push_back(fi.fileName());
+                QString dirName = fi.dir().canonicalPath();
+                dirNames.push_back(dirName);
+                allDirNames[fi.fileName()] << dirName;
+                ++iTotal;
+            }
+        }
     }
-    // TODO: the dirname can be the same too. for each fileName with count > 1, collect the indices of the identical filenames. if dirname and directory up-level is the same for at least two files, raise the directory level up until the two dirnames are different
+
+    assert(fileNames.size() < (int)NATRON_MAX_RECENT_FILES);
+    assert(dirNames.size() == fileNames.size());
+    int numRecentFiles = std::min(fileNames.size(), (int)NATRON_MAX_RECENT_FILES);
+
+    // the dirname can be the same too. for each fileName with count > 1, collect the indices of the identical filenames. if dirname and directory up-level is the same for at least two files, raise the directory level up until the two dirnames are different
     for (std::map<QString,QStringList>::const_iterator it = allDirNames.begin(); it != allDirNames.end(); ++it) {
         // dirs contains the list of dirs for that dirname
         const QStringList& dirs = it->second;
@@ -223,7 +235,7 @@ Gui::updateRecentFileActions()
             text = fileNames[i];
         }
         _imp->actionsOpenRecentFile[i]->setText(text);
-        _imp->actionsOpenRecentFile[i]->setData(files[i]);
+        _imp->actionsOpenRecentFile[i]->setData(fileNames[i]);
         _imp->actionsOpenRecentFile[i]->setVisible(true);
     }
     for (int j = numRecentFiles; j < NATRON_MAX_RECENT_FILES; ++j) {
