@@ -177,7 +177,7 @@ Gui::updateRecentFileActions()
         }
     }
 
-    assert(fileNames.size() < (int)NATRON_MAX_RECENT_FILES);
+    assert(fileNames.size() <= (int)NATRON_MAX_RECENT_FILES);
     assert(dirNames.size() == fileNames.size());
     int numRecentFiles = std::min(fileNames.size(), (int)NATRON_MAX_RECENT_FILES);
 
