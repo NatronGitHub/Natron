@@ -2950,7 +2950,7 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
             serialization->_serializeValue = (serialization->_value.isTable != defValue.value.isTable);
         } else if (isStringBase) {
             if (isFile) {
-                serialization->_value.isString = isFile->getRawFileName(dimension, view);
+                serialization->_value.isString = isFile->getFileNameWithoutVariablesExpension(dimension, view);
             } else {
                 serialization->_value.isString = isStringBase->getValue(dimension, view);
             }
