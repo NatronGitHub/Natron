@@ -321,15 +321,12 @@ public:
 
     virtual ~SequenceFileDialog();
 
-    ///set the view to show this model index which is a directory
-    void setRootIndex(const QModelIndex & index);
-
-
+public:
     ///Returns the selected pattern sequence or file name.
     ///Works only in eFileDialogModeOpen mode.
     std::string selectedFiles();
 
-    ///Returns  the content of the selection line edit.
+   ///Returns  the content of the selection line edit.
     ///Works only in eFileDialogModeSave mode.
     std::string filesToSave();
 
@@ -341,83 +338,21 @@ public:
     ///This can be used for a eFileDialogModeDir to retrieve the value selected by the user.
     QDir currentDirectory() const;
 
-    void addFavorite(const QString & name, const QString & path);
-
-    bool sequenceModeEnabled() const;
-
-    bool isDirectory(const QString & name) const;
-
     inline QString rootPath() const;
-    QFileSystemModel* getFavoriteSystemModel() const;
+
     QFileSystemModel* getLookingFileSystemModel() const;
+
     FileSystemModel* getFileSystemModel() const
     {
         return _model.get();
-    }
-
-    SequenceDialogView* getSequenceView() const
-    {
-        return _view;
-    }
-
-    static inline QString toInternal(const QString &path)
-    {
-#if defined(Q_OS_WIN)
-        QString n(path);
-        n.replace( QLatin1Char('\\'), QLatin1Char('/') );
-#if defined(Q_OS_WINCE)
-        if ( (n.size() > 1) && n.startsWith( QLatin1String("//") ) ) {
-            n = n.mid(1);
-        }
-#endif
-
-        return n;
-#else
-
-        return path;
-#endif
-    }
-
-    void setHistory(const QStringList &paths);
-    QStringList history() const;
-
-    QStringList typedFiles() const;
-
-    QString getEnvironmentVariable(const QString &string);
-
-    FileDialogModeEnum getDialogMode() const
-    {
-        return _dialogMode;
     }
 
     /**
      * @brief Append all files in the current directory and all its sub-directories recursively.
      **/
     static void appendFilesFromDirRecursively(QDir* currentDir, QStringList* files);
+
     static std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >fileSequencesFromFilesList(const QStringList & files, const QStringList & supportedFileTypes);
-
-    /**
-     * @brief Get the user preference regarding how the file should be fetched.
-     * @returns False if the file path should be absolute. When true the varName and varValue
-     * will be set to the project path desired.
-     **/
-    bool getRelativeChoiceProjectPath(std::string& varName, std::string& varValue) const;
-
-    /**
-     * @brief Returns the order for the sort indicator. If no section has a sort indicator the return value of this function is undefined.
-     **/
-    virtual Qt::SortOrder sortIndicatorOrder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Returns the logical index of the section that has a sort indicator. By default this is section 0.
-     **/
-    virtual int sortIndicatorSection() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Called when the section containing the sort indicator or the order indicated is changed.
-     * The section's logical index is specified by logicalIndex and the sort order is specified by order.
-     **/
-    virtual void onSortIndicatorChanged(int logicalIndex, Qt::SortOrder order) OVERRIDE FINAL;
 
 public Q_SLOTS:
 
@@ -510,6 +445,74 @@ public Q_SLOTS:
     virtual void done(int r) OVERRIDE FINAL;
 
 private:
+    ///set the view to show this model index which is a directory
+    void setRootIndex(const QModelIndex & index);
+
+    void addFavorite(const QString & name, const QString & path);
+
+    bool sequenceModeEnabled() const;
+
+    bool isDirectory(const QString & name) const;
+
+    QFileSystemModel* getFavoriteSystemModel() const;
+
+    SequenceDialogView* getSequenceView() const
+    {
+        return _view;
+    }
+
+    static inline QString toInternal(const QString &path)
+    {
+#     if defined(Q_OS_WIN)
+        QString n(path);
+        n.replace( QLatin1Char('\\'), QLatin1Char('/') );
+#      if defined(Q_OS_WINCE)
+        if ( (n.size() > 1) && n.startsWith( QLatin1String("//") ) ) {
+            n = n.mid(1);
+        }
+#      endif
+
+        return n;
+#     else
+
+        return path;
+#     endif
+    }
+
+    void setHistory(const QStringList &paths);
+    QStringList history() const;
+
+    QStringList typedFiles() const;
+
+    QString getEnvironmentVariable(const QString &string);
+
+    FileDialogModeEnum getDialogMode() const
+    {
+        return _dialogMode;
+    }
+
+    /**
+     * @brief Get the user preference regarding how the file should be fetched.
+     * @returns False if the file path should be absolute. When true the varName and varValue
+     * will be set to the project path desired.
+     **/
+    bool getRelativeChoiceProjectPath(std::string& varName, std::string& varValue) const;
+
+    /**
+     * @brief Returns the order for the sort indicator. If no section has a sort indicator the return value of this function is undefined.
+     **/
+    virtual Qt::SortOrder sortIndicatorOrder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Returns the logical index of the section that has a sort indicator. By default this is section 0.
+     **/
+    virtual int sortIndicatorSection() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Called when the section containing the sort indicator or the order indicated is changed.
+     * The section's logical index is specified by logicalIndex and the sort order is specified by order.
+     **/
+    virtual void onSortIndicatorChanged(int logicalIndex, Qt::SortOrder order) OVERRIDE FINAL;
 
     /**
      * @brief Tries to find if text starts with a project path and if so replaces it,
