@@ -61,6 +61,6 @@
 #define NATRON_FONT_SIZE_13 13
 #define NATRON_FONT_SIZE_DEFAULT NATRON_FONT_SIZE_11 // the sliders font becomes undreadable below 11 on non-HiDPI mac displays
 
-#define NATRON_MAX_RECENT_FILES 5
+#define NATRON_MAX_RECENT_FILES 10 // 10 is the default is most apps
 
 #endif // Gui_GuiDefines_h
