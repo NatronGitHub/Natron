@@ -580,7 +580,7 @@ KnobItemsTable::getAllItems() const
     }
 }
 
-bool
+int
 KnobItemsTable::getNumTopLevelItems() const
 {
     QMutexLocker k(&_imp->common->topLevelItemsLock);

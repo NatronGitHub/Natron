@@ -548,7 +548,7 @@ public:
     /**
      * @brief Returns the number of top level items
      **/
-    bool getNumTopLevelItems() const;
+    int getNumTopLevelItems() const;
 
     /**
      * @brief Remove the item from the model. The model will no longer hold a strong
