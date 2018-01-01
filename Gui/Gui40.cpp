@@ -160,19 +160,21 @@ void
 Gui::updateRecentFileActions()
 {
     // if there are two files with the same filename, give the dirname too
+    QStringList files;
     QStringList fileNames;
     QStringList dirNames;
     std::map<QString,QStringList> allDirNames;
 
     {
         QSettings settings;
-        QStringList files = settings.value( QString::fromUtf8("recentFileList") ).toStringList();
-        int numFiles = files.size();
+        QStringList allfiles = settings.value( QString::fromUtf8("recentFileList") ).toStringList();
+        int numFiles = allfiles.size();
         int iTotal = 0;
 
         for (int i = 0; i < numFiles && iTotal < NATRON_MAX_RECENT_FILES; ++i) {
-            QFileInfo fi(files[i]);
+            QFileInfo fi(allfiles[i]);
             if ( fi.exists() ) {
+                files.push_back(allfiles[i]);
                 fileNames.push_back(fi.fileName());
                 QString dirName = fi.dir().canonicalPath();
                 dirNames.push_back(dirName);
@@ -182,7 +184,8 @@ Gui::updateRecentFileActions()
         }
     }
 
-    assert(fileNames.size() <= (int)NATRON_MAX_RECENT_FILES);
+    assert(files.size() <= (int)NATRON_MAX_RECENT_FILES);
+    assert(files.size() == fileNames.size());
     assert(dirNames.size() == fileNames.size());
     int numRecentFiles = std::min(fileNames.size(), (int)NATRON_MAX_RECENT_FILES);
 
@@ -235,7 +238,7 @@ Gui::updateRecentFileActions()
             text = fileNames[i];
         }
         _imp->actionsOpenRecentFile[i]->setText(text);
-        _imp->actionsOpenRecentFile[i]->setData(fileNames[i]);
+        _imp->actionsOpenRecentFile[i]->setData(files[i]);
         _imp->actionsOpenRecentFile[i]->setVisible(true);
     }
     for (int j = numRecentFiles; j < NATRON_MAX_RECENT_FILES; ++j) {
