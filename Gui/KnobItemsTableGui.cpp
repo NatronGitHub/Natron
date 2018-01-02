@@ -775,7 +775,11 @@ KnobItemsTableView::drawRow(QPainter * painter, const QStyleOptionViewItem & opt
 
     // Draw the label section which is the only one using a regular item and not a KnobGui
     KnobTableItemPtr internalItem = found->internalItem.lock();
-    bool isSelected = internalItem->getModel()->isItemSelected(internalItem);
+    KnobItemsTablePtr model = internalItem->getModel();
+    if (!model) {
+        return;
+    }
+    bool isSelected = model->isItemSelected(internalItem);
     int labelCol = internalItem->getLabelColumnIndex();
     int xOffset = itemRect.x();
     {
