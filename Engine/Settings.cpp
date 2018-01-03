@@ -2170,7 +2170,7 @@ SettingsPrivate::initializeKnobsCaching()
 
     // The disk should at least allow storage of 1000 tiles accross each bucket
     std::size_t cacheMinSize = NATRON_TILE_SIZE_BYTES;
-    cacheMinSize = cacheMinSize * 1024 * 256;
+    cacheMinSize = (cacheMinSize * 1024 * 256) / (1024 * 1024 * 1024);
     _maxDiskCacheSizeGb->setRange(cacheMinSize, INT_MAX);
     _maxDiskCacheSizeGb->setHintToolTip( tr("The maximum Disk size that may be used by the Cache (in GiB)") );
     _maxDiskCacheSizeGb->setDefaultValue(8);
