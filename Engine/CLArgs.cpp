@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -244,7 +244,7 @@ void
 CLArgs::printBackGroundWelcomeMessage()
 {
     QString msg = tr("%1 Version %2\n"
-                     "Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat\n"
+                     "Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat\n"
                      ">>>Use the --help or -h option to print usage.<<<").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) );
     std::cout << msg.toStdString() << std::endl;
 }
