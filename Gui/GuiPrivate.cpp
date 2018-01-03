@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -187,7 +187,7 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , _lastPluginDir()
     , _nextViewerTabPlace(0)
     , _leftRightSplitter(0)
-    , _viewerTabsMutex()
+    , _viewerTabsMutex(QMutex::Recursive) // Gui::createNodeViewerInterface() may cause a resizeEvent, which calls Gui:redrawAllViewers()
     , _viewerTabs()
     , _activeViewer(0)
     , _histogramsMutex()

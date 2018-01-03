@@ -496,7 +496,7 @@ OUTPUT:
                "    </div>\n"
                "\n"
                "    <div class=\"footer\" role=\"contentinfo\">\n"
-               "        &#169; Copyright 2013-2017 The Natron documentation authors, licensed under CC BY-SA 4.0.\n"
+               "        &#169; Copyright 2013-2018 The Natron documentation authors, licensed under CC BY-SA 4.0.\n"
                "    </div>\n"
                "  </body>\n"
                "</html>");

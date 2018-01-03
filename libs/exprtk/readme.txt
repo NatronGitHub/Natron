@@ -499,7 +499,7 @@ of C++ compilers:
 |          | eg:                                                     |
 |          | 1. if (x > y) z; else w;                                |
 |          | 2. if (x > y) z; else if (w != u) v;                    |
-|          | 3. if (x < y) {z; w + 1;} else u;                       |
+|          | 3. if (x < y) { z; w + 1; } else u;                     |
 |          | 4. if ((x != y) and (z > w))                            |
 |          |    {                                                    |
 |          |      y := sin(x) / u;                                   |
@@ -1347,7 +1347,7 @@ conditional  statement, that  takes exactly  three input  expressions:
 condition, consequent  and alternative.  The following  is an  example
 expression that utilises the function based if-statement.
 
-   x := if (y < z, y + 1, 2* z)
+   x := if (y < z, y + 1, 2 * z)
 
 
 In the  example above,  if the  condition 'y  < z'  is true,  then the
@@ -1358,7 +1358,7 @@ essentially the  simplest form of  an if-then-else statement. A simple
 variation of  the expression  where the  value of  the if-statement is
 used within another statement is as follows:
 
-   x := 3 * if (y < z, y + 1, 2* z) / 2
+   x := 3 * if (y < z, y + 1, 2 * z) / 2
 
 
 The second form of if-statement resembles the standard syntax found in
@@ -1414,37 +1414,29 @@ The second variation of  the if-statement is to  allow for the use  of
 Else and If-Else cascading statements. Examples of such statements are
 as follows:
 
-   Example 1:           Example 2:
-   if (x < y)           if (x < y)
-     z := x + 3;        {
-   else                   y := z + x;
-     y := x - z;          z := x + 3;
-                        }
-                        else
-                          y := x - z;
+  Example 1:             Example 2:         Example 3:
+  if (x < y)             if (x < y)         if (x > y + 1)
+    z := x + 3;          {                    y := abs(x - z);
+  else                     y := z + x;      else
+    y := x - z;            z := x + 3;      {
+                         }                    y := z + x;
+                         else                 z := x + 3;
+                           y := x - z;      };
 
-   Example 3:           Example 4:
-   if (x > y + 1)       if (2 * x < max(y,3))
-     y := abs(x - z);   {
-   else                   y := z + x;
-   {                      z := x + 3;
-     y := z + x;        }
-     z := x + 3;        else if (2y - z)
-   };                     y := x - z;
 
-   Example 5:           Example 6:
-   if (x < y)           if (x < y or (x + z) > y)
-     z := x + 3;        {
-   else if (2y != z)      z := x + 3;
-   {                      y := x - z;
-     z := x + 3;        }
-     y := x - z;        else if (abs(2y - z) >= 3)
-   }                       y := x - z;
-   else                 else
-     x * x;             {
-                           z := abs(x * x);
-                           x * y * z;
-                        };
+  Example 4:             Example 5:         Example 6:
+  if (2 * x < max(y,3))  if (x < y)         if (x < y or (x + z) > y)
+  {                        z := x + 3;      {
+    y := z + x;          else if (2y != z)    z := x + 3;
+    z := x + 3;          {                    y := x - z;
+  }                        z := x + 3;      }
+  else if (2y - z)         y := x - z;      else if (abs(2y - z) >= 3)
+    y := x - z;          }                    y := x - z;
+                         else               else
+                           x * x;           {
+                                              z := abs(x * x);
+                                              x * y * z;
+                                            };
 
 
 In  the case  where  there  is no  final else  statement and  the flow
@@ -2351,6 +2343,42 @@ Note: For  the igeneric_function  type, there  also needs  to be a 'Z'
 parameter sequence  defined in order for the  zero parameter  trait to
 properly take effect otherwise a compilation error will occur.
 
+
+(9) Free Functions
+The ExprTk symbol  table supports the  registration of free  functions
+and lambdas  (anonymous functors)  for use  in expressions.  The basic
+requirements  are similar  to those  found in  ifunction derived  user
+defined  functions. This  includes  support  for free  functions using
+anywhere from zero up to fifteen input parameters of scalar type, with
+a return type that is also scalar. Furthermore such functions will  by
+default be assumed to have side-effects and hence will not participate
+in constant folding optimisations.
+
+In the following  example, a two  input parameter free  function named
+'compute', and a three input parameter lambda will be registered  with
+the given symbol_table instance:
+
+
+   double compute(double v0, double v1)
+   {
+      return 2.0 * v0 + v1 / 3.0;
+   }
+
+   .
+   .
+   .
+
+   typedef exprtk::symbol_table<double> symbol_table_t;
+
+   symbol_table_t symbol_table;
+
+   symbol_table.add_function("compute", compute);
+
+   symbol_table.add_function("lambda",
+                             [](double v0, double v1, double v2) -> double
+                             { return v0 / v1 + v2; });
+
+
      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [SECTION 16 - EXPRESSION DEPENDENTS]
@@ -2459,7 +2487,7 @@ associated assignments:
    (5) None          x + y + z
 
 
-Note: In expression 4, both variables 'z' and 'w' are denoted as being
+Note: In expression 4, both variables 'w' and 'z' are denoted as being
 assignments even though only one of  them can ever be modified at  the
 time of evaluation. Furthermore the determination of which of the  two
 variables the  modification will  occur upon  can only  be known  with
@@ -2575,7 +2603,7 @@ own instances of those variables. Examples of such variables could be:
    (2) customer_name
 
 
-The  following is  a diagram  depicting the  possible version  of the
+The  following is  a  diagram  depicting the  possible version  of the
 denoted symbol table hierarchies. In the diagram there are two  unique
 expressions, each of  which have a  reference to the  Global constant,
 functions and variables symbol tables and an exclusive reference to  a
@@ -2605,8 +2633,8 @@ local symbol table.
 
 
 Bringing  all of  the above  together, in  the following  example the
-hierarchy  of  symbol  tables  are  instantiated  and  initialised. An
-expression that makes use of various elements of each symbol table  is
+hierarchy  of  symbol  tables  are instantiated  and  initialised. An
+expression that makes use of various elements of each symbol table is
 then compiled and later on evaluated:
 
    typedef exprtk::symbol_table<double> symbol_table_t;
@@ -3443,8 +3471,8 @@ values.
 
    expression.value();
 
-   printf("Result0: %15.5f\n",result0        );
-   printf("Result1: %s\n"    ,result1.c_str());
+   printf("Result0: %15.5f\n", result0        );
+   printf("Result1: %s\n"    , result1.c_str());
 
 
 In the example above, the expression will compute two results. As such
@@ -3769,12 +3797,12 @@ overloads, the definitions of which are:
 
    (1) No variables
    (2) One variable called x
-   (3) Two variable called x and y
-   (3) Three variable called x, y and z
+   (3) Two variables called x and y
+   (3) Three variables called x, y and z
 
 
-An example use of each of the three overloads for the compute  routine
-is as follows:
+Example uses of  each of the  three overloads for  the compute routine
+are as follows:
 
    T result = T(0);
 
@@ -3819,11 +3847,11 @@ is as follows:
 
 (d) integrate
 This free function will attempt to perform a numerical integration  of
-a single variable compiled expression  over a defined range and  given
-step size. The numerical integration is based on the three point  form
-of the Simpson's rule. The integrate function has two overloads, where
-the variable of integration can either be passed as a reference or  as
-a name in string form. Example usage of the function is as follows:
+a single variable compiled expression over a specified range and  step
+size. The numerical  integration is based  on the three  point form of
+Simpson's rule. The  integrate function has  two overloads, where  the
+variable of integration can  either be passed as  a reference or as  a
+name in string form. Example usage of the function is as follows:
 
    typedef exprtk::parser<T>             parser_t;
    typedef exprtk::expression<T>     expression_t;
@@ -3879,7 +3907,7 @@ function is as follows:
 
    ....
 
-   // Differentiate expression where value of x = 12.3 using a reference
+   // Differentiate expression at value of x = 12.3 using a reference
    // to the x variable
    x = T(12.3);
    T derivative1 = exprtk::derivative(expression,x);
@@ -4305,7 +4333,15 @@ into account when using ExprTk:
       performance  critical  code  paths, and  should  instead  occur
       entirely either before or after such code paths.
 
- (32) Before jumping in and using ExprTk, do take the time to  peruse
+ (32) Deep  copying  an  expression  instance  for  the  purposes  of
+      persisting to disk or otherwise transmitting elsewhere with the
+      intent to 'resurrect' the  expression instance later on  is not
+      possible due  to the  reasons described  in the  final note  of
+      Section 10. The recommendation is to instead simply persist the
+      string form  of the  expression and  compile the  expression at
+      run-time on the target.
+
+ (33) Before jumping in and using ExprTk, do take the time to  peruse
       the documentation and all of the examples, both in the main and
       the extras  distributions. Having  an informed  general view of
       what can and  can't be done,  and how something  should be done
