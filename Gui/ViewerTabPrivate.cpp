@@ -106,7 +106,7 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
         if (isFailureRetCode(stat)) {
             return false;
         }
-        if (results) {
+        if (stat != eActionStatusReplyDefault && results) {
             disto = results->getResults();
         }
         if (disto && disto->inputNbToDistort != -1) {

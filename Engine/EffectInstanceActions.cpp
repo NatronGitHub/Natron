@@ -762,9 +762,11 @@ EffectInstance::getInverseDistortion_public(TimeValue inArgsTime,
                                             const RenderScale & renderScale,
                                             bool draftRender,
                                             ViewIdx view,
-                                            GetDistortionResultsPtr* results) {
+                                            GetDistortionResultsPtr* results)
+{
     assert(results);
     
+    ActionRetCodeEnum stat = eActionStatusOK;
     TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
@@ -792,7 +794,7 @@ EffectInstance::getInverseDistortion_public(TimeValue inArgsTime,
         identityWindow.y2 = INT_MAX;
         RenderScale scale(1.);
         IsIdentityResultsPtr identityResults;
-        ActionRetCodeEnum stat = isIdentity_public(true, time, scale, identityWindow, view, 0, &identityResults);
+        stat = isIdentity_public(true, time, scale, identityWindow, view, 0, &identityResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -855,21 +857,23 @@ EffectInstance::getInverseDistortion_public(TimeValue inArgsTime,
 
         DistortionFunction2DPtr disto(new DistortionFunction2D);
         // Call the action
-        ActionRetCodeEnum stat = getInverseDistortion(time, mappedScale, draftRender, view, disto.get());
+        stat = getInverseDistortion(time, mappedScale, draftRender, view, disto.get());
         if (isFailureRetCode(stat)) {
             return stat;
         }
 
-        // Either the matrix or the distortion functor should be set
-        assert(disto->transformMatrix || disto->func);
+        if (stat != eActionStatusReplyDefault) {
 
-        (*results)->setResults(disto);
+            // Either the matrix or the distortion functor should be set
+            assert(disto->transformMatrix || disto->func);
+
+            (*results)->setResults(disto);
+        }
 
         cacheAccess->insertInCache();
     }
     
-    return eActionStatusOK;
-
+    return stat;
 } // getDistortion_public
 
 ActionRetCodeEnum
