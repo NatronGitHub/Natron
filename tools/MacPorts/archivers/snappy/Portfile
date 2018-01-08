@@ -26,7 +26,7 @@ long_description    Snappy is a compression/decompression library. It does \
                     Snappy compresses at about 250 MB/sec or more and \
                     decompresses at about 500 MB/sec or more.
 
-homepage            http://google.github.io/snappy/
+homepage            https://google.github.io/snappy/
 
 checksums           rmd160  a512cb6b3954ef42a8a54c30787fda79d430bb20 \
                     sha256  3dfa02e873ff51a11ee02b9ca391807f0c8ea0529a4924afa645fbf97163f9d4
