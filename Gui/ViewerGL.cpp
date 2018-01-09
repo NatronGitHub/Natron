@@ -1647,7 +1647,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     glCheckError();
     assert(ret);
     assert(ramBuffer);
-    if (ret) {
+    if (ret && ramBuffer) {
         // update data directly on the mapped buffer
         std::memcpy(ret, (void*)ramBuffer, bytesCount);
         GLboolean result = glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
