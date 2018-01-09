@@ -3738,6 +3738,60 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     }
 
     if (error) {
+        error->clear();
+    }
+    PyObject* ex = PyErr_Occurred();
+    if (ex) {
+        assert(v == NULL);
+        if (!error) {
+            PyErr_Clear();
+        } else {
+            PyObject *pyExcType;
+            PyObject *pyExcValue;
+            PyObject *pyExcTraceback;
+            PyErr_Fetch(&pyExcType, &pyExcValue, &pyExcTraceback); // also clears the error indicator
+            //PyErr_NormalizeException(&pyExcType, &pyExcValue, &pyExcTraceback);
+
+            PyObject* pyStr = PyObject_Str(pyExcValue);
+            if (pyStr) {
+                const char* str = PyString_AsString(pyStr);
+                if (error && str) {
+                    *error += std::string("Python exception: ") + str + '\n';
+                }
+                Py_DECREF(pyStr);
+
+                // See if we can get a full traceback
+                PyObject* module_name = PyString_FromString("traceback");
+                PyObject* pyth_module = PyImport_Import(module_name);
+                Py_DECREF(module_name);
+
+                if (pyth_module != NULL) {
+                    PyObject* pyth_func = PyObject_GetAttrString(pyth_module, "format_exception");
+                    Py_DECREF(pyth_module);
+                    if (pyth_func && PyCallable_Check(pyth_func)) {
+                        PyObject *pyth_val = PyObject_CallFunctionObjArgs(pyth_func, pyExcType, pyExcValue, pyExcTraceback, NULL);
+                        if (pyth_val) {
+                            PyObject *emptyString = PyString_FromString("");
+                            PyObject *strList = PyObject_CallMethod(emptyString, (char*)"join", (char*)"(O)", pyth_val);
+                            Py_DECREF(emptyString);
+                            Py_DECREF(pyth_val);
+                            pyStr = PyObject_Str(strList);
+                            Py_DECREF(strList);
+                            if (pyStr) {
+                                str = PyString_AsString(pyStr);
+                                Py_DECREF(pyStr);
+                                if (error && str) {
+                                    *error += std::string(str) + '\n';
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (error) {
         *error = NATRON_PYTHON_NAMESPACE::getPythonStdErr();
     }
     if (output) {
@@ -3762,7 +3816,7 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
         return false;
     }
 
-    return true;
+    return v != NULL;
 
 } // NATRON_PYTHON_NAMESPACE::interpretPythonScript
 
