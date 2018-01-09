@@ -1274,10 +1274,13 @@ ViewerGL::transferBufferFromRAMtoGPU(const TextureTransferArgs& args)
     if (ret) {
         // update data directly on the mapped buffer
         unsigned char* srcpixels = Image::pixelAtStatic(imageData.bounds.x1, imageData.bounds.y1, imageData.bounds, imageData.nComps, dataSizeOf, (unsigned char*)imageData.ptrs[0]);
-        std::memcpy(ret, srcpixels, bytesCount);
-        GLboolean result = GL_GPU::UnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
-        assert(result == GL_TRUE);
-        Q_UNUSED(result);
+        assert(srcpixels);
+        if (srcpixels) {
+            std::memcpy(ret, srcpixels, bytesCount);
+            GLboolean result = GL_GPU::UnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+            assert(result == GL_TRUE);
+            Q_UNUSED(result);
+        }
     }
     glCheckError(GL_GPU);
 
