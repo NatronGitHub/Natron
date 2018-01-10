@@ -3265,6 +3265,20 @@ KnobHelper::getPixelScale(double & xScale,
     }
 }
 
+#ifdef OFX_EXTENSIONS_NATRON
+double
+KnobHelper::getScreenPixelRatio() const
+{
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
+    if (hasGui) {
+        return hasGui->getScreenPixelRatio();
+    } else {
+        return 1.;
+    }
+}
+#endif
+
 void
 KnobHelper::getBackgroundColour(double &r,
                                 double &g,
