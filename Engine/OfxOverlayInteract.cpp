@@ -287,6 +287,18 @@ NatronOverlayInteractSupport::n_getPixelScale(double & xScale,
     }
 }
 
+#ifdef OFX_EXTENSIONS_NATRON
+// hooks to live kOfxInteractPropScreenPixelRatio in the property set
+double
+NatronOverlayInteractSupport::n_getScreenPixelRatio() const
+{
+    if (_viewport) {
+        return _viewport->getScreenPixelRatio();
+    }
+    return 1.;
+}
+#endif
+
 void
 NatronOverlayInteractSupport::n_getBackgroundColour(double &r,
                                                     double &g,

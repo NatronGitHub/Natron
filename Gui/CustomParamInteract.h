@@ -79,6 +79,9 @@ public:
      **/
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
 
+#ifdef OFX_EXTENSIONS_NATRON
+    virtual double getScreenPixelRatio() const OVERRIDE FINAL;
+#endif
     /**
      * @brief Returns the colour of the background (i.e: clear color) of the viewport.
      **/

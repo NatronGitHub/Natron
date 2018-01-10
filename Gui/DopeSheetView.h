@@ -140,6 +140,9 @@ public:
     void swapOpenGLBuffers() OVERRIDE FINAL;
     void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
     void getPixelScale(double &xScale, double &yScale) const OVERRIDE FINAL;
+#ifdef OFX_EXTENSIONS_NATRON
+    double getScreenPixelRatio() const OVERRIDE FINAL;
+#endif
     void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     void saveOpenGLContext() OVERRIDE FINAL;
     void restoreOpenGLContext() OVERRIDE FINAL;

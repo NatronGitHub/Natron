@@ -49,6 +49,9 @@ public:
     virtual void redraw() OVERRIDE = 0;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE = 0;
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE = 0;
+#ifdef OFX_EXTENSIONS_NATRON
+    virtual double getScreenPixelRatio() const OVERRIDE = 0;
+#endif
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE = 0;
     virtual void copyAnimationToClipboard(int /* dimension = -1*/) const {}
 

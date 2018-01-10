@@ -2703,6 +2703,18 @@ DopeSheetView::getPixelScale(double &xScale,
     yScale = _imp->zoomContext.screenPixelHeight();
 }
 
+#ifdef OFX_EXTENSIONS_NATRON
+double
+DopeSheetView::getScreenPixelRatio() const
+{
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    return windowHandle()->devicePixelRatio()
+#else
+    return 1.;
+#endif
+}
+#endif
+
 /**
  * @brief DopeSheetView::getBackgroundColour
  *

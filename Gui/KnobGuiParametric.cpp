@@ -346,6 +346,14 @@ KnobGuiParametric::getPixelScale(double & xScale,
     _curveWidget->getPixelScale(xScale, yScale);
 }
 
+#ifdef OFX_EXTENSIONS_NATRON
+double
+KnobGuiParametric::getScreenPixelRatio() const
+{
+    return _curveWidget->getScreenPixelRatio();
+}
+#endif
+
 void
 KnobGuiParametric::getBackgroundColour(double &r,
                                        double &g,

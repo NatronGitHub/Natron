@@ -98,6 +98,14 @@ DefaultInteractI::getPixelScale(double& scaleX,
     _overlay->n_getPixelScale(scaleX, scaleY);
 }
 
+#ifdef OFX_EXTENSIONS_NATRON
+double
+DefaultInteractI::getScreenPixelRatio() const
+{
+    return _overlay->n_getScreenPixelRatio();
+}
+#endif
+
 void
 DefaultInteractI::draw(double /*time*/,
                        const RenderScale& /*renderScale*/,

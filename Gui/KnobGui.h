@@ -270,7 +270,10 @@ public:
     virtual void redraw() OVERRIDE;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE;
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE;
-    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE;
+#ifdef OFX_EXTENSIONS_NATRON
+    virtual double getScreenPixelRatio() const OVERRIDE;
+#endif
+   virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE;
     virtual void saveOpenGLContext() OVERRIDE;
     virtual void restoreOpenGLContext() OVERRIDE;
 

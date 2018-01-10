@@ -515,6 +515,17 @@ KnobGui::getPixelScale(double & xScale,
     }
 }
 
+#ifdef OFX_EXTENSIONS_NATRON
+double
+KnobGui::getScreenPixelRatio() const
+{
+    if (_imp->customInteract) {
+        return _imp->customInteract->getScreenPixelRatio();
+    }
+    return 1.;
+}
+#endif
+
 void
 KnobGui::getBackgroundColour(double &r,
                              double &g,

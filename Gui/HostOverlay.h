@@ -132,6 +132,10 @@ protected:
     void requestRedraw();
 
     void getPixelScale(double& scaleX, double& scaleY) const;
+
+#ifdef OFX_EXTENSIONS_NATRON
+    double getScreenPixelRatio() const;
+#endif
 };
 
 
