@@ -208,7 +208,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # build OpenFX-IO
     if [ "$CC" = "$TEST_CC" ]; then
         pushd $TRAVIS_BUILD_DIR
-        git clone https://github.com/MrKepzie/openfx-io.git
+        git clone https://github.com/NatronGitHub/openfx-io.git
         pushd openfx-io
         git checkout "$IO_BRANCH"
         git submodule update --init --recursive
@@ -336,7 +336,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     if [ "$CC" = "$TEST_CC" ]; then mv libs/OpenFX/Examples/*/*-64-debug/*.ofx.bundle Tests/Plugins/Examples; fi
     if [ "$CC" = "$TEST_CC" ]; then mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support;  fi
     # OpenFX-IO
-    if [ "$CC" = "$TEST_CC" ]; then (cd $TRAVIS_BUILD_DIR; git clone https://github.com/MrKepzie/openfx-io.git; (cd openfx-io; git submodule update --init --recursive)) ; fi
+    if [ "$CC" = "$TEST_CC" ]; then (cd $TRAVIS_BUILD_DIR; git clone https://github.com/NatronGitHub/openfx-io.git; (cd openfx-io; git submodule update --init --recursive)) ; fi
     if [ "$CC" = "$TEST_CC" ]; then make -C openfx-io OIIO_HOME=/usr/local; fi
     if [ "$CC" = "$TEST_CC" ]; then mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO;  fi
 
