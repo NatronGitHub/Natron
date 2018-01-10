@@ -3766,7 +3766,12 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
                 Py_DECREF(module_name);
 
                 if (pyth_module != NULL) {
-                    PyObject* pyth_func = PyObject_GetAttrString(pyth_module, "format_exception");
+                    PyObject* pyth_func;
+                    if (!pyExcTraceback) {
+                        pyth_func = PyObject_GetAttrString(pyth_module, "format_exception_only");
+                    } else {
+                        pyth_func = PyObject_GetAttrString(pyth_module, "format_exception");
+                    }
                     Py_DECREF(pyth_module);
                     if (pyth_func && PyCallable_Check(pyth_func)) {
                         PyObject *pyth_val = PyObject_CallFunctionObjArgs(pyth_func, pyExcType, pyExcValue, pyExcTraceback, NULL);
@@ -3792,7 +3797,7 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     }
 
     if (error) {
-        *error = NATRON_PYTHON_NAMESPACE::getPythonStdErr();
+        *error += NATRON_PYTHON_NAMESPACE::getPythonStdErr();
     }
     if (output) {
         *output = NATRON_PYTHON_NAMESPACE::getPythonStdOut();
