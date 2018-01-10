@@ -1,4 +1,4 @@
-Natron [![GPL2 License](http://img.shields.io/:license-gpl2-blue.svg?style=flat-square)](https://github.com/MrKepzie/Natron/blob/master/LICENSE) [![Build Status](https://api.travis-ci.org/MrKepzie/Natron.png?branch=master)](https://travis-ci.org/MrKepzie/Natron)  [![Coverage Status](https://coveralls.io/repos/MrKepzie/Natron/badge.png?branch=master)](https://coveralls.io/r/MrKepzie/Natron?branch=master) [![Coverity Scan Build Status](https://scan.coverity.com/projects/2940/badge.svg)](https://scan.coverity.com/projects/2940 "Coverity Badge") [![Documentation Status](https://readthedocs.org/projects/natron/badge/?version=master)](https://readthedocs.org/projects/natron/?badge=master) [![Stories in Ready](https://badge.waffle.io/MrKepzie/Natron.png?label=ready&title=Ready)](https://waffle.io/MrKepzie/Natron)
+Natron [![GPL2 License](http://img.shields.io/:license-gpl2-blue.svg?style=flat-square)](https://github.com/NatronGitHub/Natron/blob/master/LICENSE) [![Build Status](https://api.travis-ci.org/NatronGitHub/Natron.png?branch=master)](https://travis-ci.org/NatronGitHub/Natron)  [![Coverage Status](https://coveralls.io/repos/NatronGitHub/Natron/badge.png?branch=master)](https://coveralls.io/r/NatronGitHub/Natron?branch=master) [![Coverity Scan Build Status](https://scan.coverity.com/projects/2940/badge.svg)](https://scan.coverity.com/projects/2940 "Coverity Badge") [![Documentation Status](https://readthedocs.org/projects/natron/badge/?version=master)](https://readthedocs.org/projects/natron/?badge=master) [![Stories in Ready](https://badge.waffle.io/NatronGitHub/Natron.png?label=ready&title=Ready)](https://waffle.io/NatronGitHub/Natron)
 ======
 
 
@@ -10,7 +10,7 @@ It is portable and cross-platform (GNU/Linux, OS X, Microsoft Windows).
 
 The project home page is http://natron.fr
 
-The project source code repository is https://github.com/MrKepzie/Natron
+The project source code repository is https://github.com/NatronGitHub/Natron
 
 Features
 --------
@@ -20,12 +20,11 @@ Features
 - Dozens of file formats supported: EXR, DPX,TIFF, JPG, PNG…thanks to OpenImageIO and FFmpeg.
 - Support for many free and open-source OpenFX plugins:
   * [TuttleOFX](https://sites.google.com/site/tuttleofx/)
-  * [OpenFX-IO](https://github.com/MrKepzie/openfx-io) to read anything else
+  * [OpenFX-IO](https://github.com/NatronGitHub/openfx-io) to read anything else
    than standard 8-bits images
-  * [OpenFX-Misc](https://github.com/devernay/openfx-misc)
-  * [OpenFX-Yadif deinterlacer](https://github.com/devernay/openfx-yadif)
-  * [OpenFX-Vegas SDK samples](https://github.com/devernay/openfx-vegas)
-  * [OpenFX samples](https://github.com/devernay/openfx) (in the Support and Examples directories)
+  * [OpenFX-Misc](https://github.com/NatronGitHub/openfx-misc)
+  * [OpenFX-Vegas SDK samples](https://github.com/NatronGitHub/openfx-vegas)
+  * [OpenFX samples](https://github.com/NatronGitHub/openfx) (in the Support and Examples directories)
 
 - Support for commercial OpenFX plugins:
   * [All OFX products from RevisionFX](http://www.revisionfx.com)
@@ -120,9 +119,9 @@ Installing
 
 Standalone binary distributions of Natron are available for [GNU/Linux](http://downloads.natron.fr/Linux/),
 [Windows](http://downloads.natron.fr/Windows/) and [OS X](http://downloads.natron.fr/Mac/). These distributions contain Natron and three basic sets of OpenFX plugins:
-* [openfx-io](https://github.com/MrKepzie/openfx-io/),
-* [openfx-misc](https://github.com/devernay/openfx-misc),
-* [openfx-arena](https://github.com/olear/openfx-arena).
+* [openfx-io](https://github.com/NatronGitHub/openfx-io/),
+* [openfx-misc](https://github.com/NatronGitHub/openfx-misc),
+* [openfx-arena](https://github.com/NatronGitHub/openfx-arena).
 
 For each architecture / operating system, you can either download a stable release, a release candidate (if available), or one of the latest snapshots. Note that snapshots contain the latest features and bug fixes, but may be unstable.
 
@@ -160,11 +159,11 @@ Contributing
 ------------
 
 We coordinate development through the [GitHub issue
-tracker](https://github.com/MrKepzie/Natron/issues).
+tracker](https://github.com/NatronGitHub/Natron/issues).
 
 The main development branch is called
-["master"](https://github.com/MrKepzie/Natron/tree/master).
-The stable version is on branch RB-2.1.
+["master"](https://github.com/NatronGitHub/Natron/tree/master).
+The stable version is on branch ["RB-2"](https://github.com/NatronGitHub/Natron/tree/RB-2).
 
 Additionally each stable release supported has a branch on its own.
 For example the stable release of the v1.0. and all its bug fixes should go into that
@@ -176,8 +175,8 @@ You can check out the easy tasks left to do [here](https://natron.fr/easy-task-l
 
 Feel free to report bugs, discuss tasks, or pick up work there. If you want to make
 changes, please fork, edit, and [send us a pull
-request](https://github.com/MrKepzie/Natron/pull/new/master),
-preferably on the ["master"](https://github.com/MrKepzie/Natron/tree/master)
+request](https://github.com/NatronGitHub/Natron/pull/new/master),
+preferably on the ["master"](https://github.com/NatronGitHub/Natron/tree/master)
 branch.
 
 There's a `.git-hooks` directory in the root. This contains a `pre-commit`
