@@ -7,7 +7,7 @@ OS X 10.6 (a.k.a. Snow Leopard) and newer are supported when building with MacPo
 
 ## Checkout sources
 
-    git clone https://github.com/MrKepzie/Natron.git
+    git clone https://github.com/NatronGitHub/Natron.git
     cd Natron
 
 If you want to compile the bleeding edge version, use the master
@@ -80,7 +80,7 @@ Name: glu
 EOF
 ```
 
-If you intend to build the [openfx-io](https://github.com/MrKepzie/openfx-io) plugins too, you will need these additional packages:
+If you intend to build the [openfx-io](https://github.com/NatronGitHub/openfx-io) plugins too, you will need these additional packages:
 
     yes | sudo port -v install x264 libvpx +highbitdepth libraw +gpl2 openexr ffmpeg +gpl2 +highbitdepth opencolorio openimageio +natron seexpr
 
@@ -130,7 +130,7 @@ Then install pyside (the boneyard tap is for pyside, which does not yet build wi
 
 The last command above will take a while, since it builds from sources, and should finally tell you do do the following if the `homebrew.pth` file does not exist:
 
-    mkdir -p /Users/devernay/Library/Python/2.7/lib/python/site-packages
+    mkdir -p ~/Library/Python/2.7/lib/python/site-packages
     echo 'import site; site.addsitedir("/usr/local/lib/python2.7/site-packages")' >> ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth
     sudo ln -s ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth /Library/Python/2.7/lib/python/site-packages/homebrew.pth
 
@@ -185,10 +185,10 @@ And install (after making sure `/opt/qt4` is user-writable) using:
 ### Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
+to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
 Place it at the root of Natron source tree:
 
-    curl -k -L https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz | tar zxf -
+    curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz | tar zxf -
     mv OpenColorIO-Configs-Natron-v2.1 OpenColorIO-Configs
 
 
@@ -298,7 +298,7 @@ version 4.0 is recommended) with OpenMP support on
 MacPorts (or homebrew for OS X 10.9 or later).  OpenMP brings speed improvements in the
 tracker and in CImg-based plugins.
 
-However, the unit tests don't pass yet with clang/libomp 4.0 on OS X 10.6, so be sure tu run the unit tests from https://github.com/MrKepzie/Natron-Tests to validate any clang/macOS combination.
+However, the unit tests don't pass yet with clang/libomp 4.0 on OS X 10.6, so be sure tu run the unit tests from https://github.com/NatronGitHub/Natron-Tests to validate any clang/macOS combination.
 
 First, install clang 5.0. On OS X 10.9 and later, simply execute:
 
@@ -437,7 +437,7 @@ Shiboken has a few glitches which needs fixing with some sed commands, run tools
 
 ## OpenFX plugins
 
-Instructions to build the [openfx-io](https://github.com/MrKepzie/openfx-io) and [openfx-misc](https://github.com/devernay/openfx-misc) sets of plugins can also be found in the [tools/packageOSX.sh](https://github.com/MrKepzie/Natron/blob/master/tools/packageOSX.sh) script if you are using MacPorts, or in the .travis.yml file in their respective github repositories if you are using homebrew ([openfx-misc/.travis.yml](https://github.com/devernay/openfx-misc/blob/master/.travis.yml), [openfx-io/.travis.yml](https://github.com/MrKepzie/openfx-io/blob/master/.travis.yml).
+Instructions to build the [openfx-io](https://github.com/NatronGitHub/openfx-io) and [openfx-misc](https://github.com/NatronGitHub/openfx-misc) sets of plugins can also be found in the [tools/packageOSX.sh](https://github.com/NatronGitHub/Natron/blob/master/tools/packageOSX.sh) script if you are using MacPorts, or in the .travis.yml file in their respective github repositories if you are using homebrew ([openfx-misc/.travis.yml](https://github.com/NatronGitHub/openfx-misc/blob/master/.travis.yml), [openfx-io/.travis.yml](https://github.com/NatronGitHub/openfx-io/blob/master/.travis.yml).
 
 
 You can install [TuttleOFX](http://www.tuttleofx.org/) using homebrew:

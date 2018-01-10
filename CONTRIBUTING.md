@@ -10,7 +10,7 @@ Bug Reports and Issue Tracking
 ------------------------------
 
 We use GitHub's issue tracking system for bugs and enhancements:
-https://github.com/MrKepzie/Natron/issues
+https://github.com/NatronGitHub/Natron/issues
 
 **If you are merely asking a question ("how do I...")**, please do not file an
 issue, but instead ask the question on the [forum](http://forum.natron.fr).
@@ -47,7 +47,7 @@ The best way to submit changes is via GitHub Pull Request.
 
 All code must be formally reviewed before being merged into the official repository. The protocol is like this:
 
-1. Get a GitHub account, fork MrKepzie/Natron to create your own repository on GitHub, and then clone it to get a repository on your local machine.
+1. Get a GitHub account, fork NatronGitHub/Natron to create your own repository on GitHub, and then clone it to get a repository on your local machine.
 
 2. Edit, compile, and test your changes.
 
