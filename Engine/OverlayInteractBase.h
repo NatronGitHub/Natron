@@ -242,6 +242,10 @@ public:
      **/
     void getPixelScale(double & xScale, double & yScale) const;
 
+#ifdef OFX_EXTENSIONS_NATRON
+    double getScreenPixelRatio() const;
+#endif
+
     /**
      * @brief Return the viewport background color
      **/

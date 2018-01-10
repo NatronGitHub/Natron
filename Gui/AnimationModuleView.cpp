@@ -378,7 +378,17 @@ AnimationModuleView::getPixelScale(double & xScale, double & yScale) const
     yScale = _imp->curveEditorZoomContext.screenPixelHeight();
 }
 
-
+#ifdef OFX_EXTENSIONS_NATRON
+double
+AnimationModuleView::getScreenPixelRatio() const
+{
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    return windowHandle()->devicePixelRatio()
+#else
+    return 1.;
+#endif
+}
+#endif
 
 RectD
 AnimationModuleView::getViewportRect() const

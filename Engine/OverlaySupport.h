@@ -82,7 +82,11 @@ public:
      **/
     virtual void getPixelScale(double & xScale, double & yScale) const  = 0;
 
-    /**
+#ifdef OFX_EXTENSIONS_NATRON
+    virtual double getScreenPixelRatio() const = 0;
+#endif
+
+   /**
      * @brief Returns the colour of the background (i.e: clear color) of the viewport.
      **/
     virtual void getBackgroundColour(double &r, double &g, double &b) const = 0;

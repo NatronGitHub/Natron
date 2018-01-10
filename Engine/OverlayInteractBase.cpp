@@ -308,6 +308,18 @@ OverlayInteractBase::getPixelScale(double & xScale, double & yScale) const
     }
 }
 
+#ifdef OFX_EXTENSIONS_NATRON
+double
+OverlayInteractBase::getScreenPixelRatio() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    if (_imp->currentViewport) {
+        return _imp->currentViewport->getScreenPixelRatio();
+    }
+    return 1.;
+}
+#endif
+
 void
 OverlayInteractBase::getBackgroundColour(double &r, double &g, double &b) const
 {

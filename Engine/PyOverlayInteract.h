@@ -64,6 +64,10 @@ public:
 
     Double2DTuple getPixelScale() const;
 
+#ifdef OFX_EXTENSIONS_NATRON
+    double getScreenPixelRatio() const;
+#endif
+
     Int2DTuple getViewportSize() const;
 
     bool getSuggestedColor(ColorTuple* color) const;

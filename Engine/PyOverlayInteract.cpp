@@ -235,6 +235,14 @@ PyOverlayInteract::getPixelScale() const
     return ret;
 }
 
+#ifdef OFX_EXTENSIONS_NATRON
+double
+PyOverlayInteract::getScreenPixelRatio() const
+{
+    return _imp->ui->getScreenPixelRatio();
+}
+#endif
+
 ColorTuple
 PyOverlayInteract::getColorPicker() const
 {

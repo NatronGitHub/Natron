@@ -150,7 +150,10 @@ public:
     virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE FINAL;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
     virtual void getPixelScale(double & xScale, double & yScale) const  OVERRIDE FINAL;
-    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
+#ifdef OFX_EXTENSIONS_NATRON
+    virtual double getScreenPixelRatio() const OVERRIDE FINAL;
+#endif
+   virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
     virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
