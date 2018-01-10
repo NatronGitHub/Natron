@@ -1,12 +1,12 @@
 [submodule "Tests/google-test"]
 	path = Tests/google-test
-	url = https://github.com/MrKepzie/google-test.git
+	url = https://github.com/NatronGitHub/google-test.git
 [submodule "Tests/google-mock"]
 	path = Tests/google-mock
-	url = https://github.com/MrKepzie/google-mock
+	url = https://github.com/NatronGitHub/google-mock
 [submodule "libs/SequenceParsing"]
 	path = libs/SequenceParsing
-	url = https://github.com/MrKepzie/SequenceParsing
+	url = https://github.com/NatronGitHub/SequenceParsing
 [submodule "libs/OpenFX"]
 	path = libs/OpenFX
-   	url = https://github.com/devernay/openfx
+   	url = https://github.com/NatronGitHub/openfx
