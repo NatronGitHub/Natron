@@ -3731,6 +3731,8 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
     PyObject* dict = PyModule_GetDict(mainModule);
 
+    PyErr_Clear();
+
     ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
     PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, 0);
     if (v) {
