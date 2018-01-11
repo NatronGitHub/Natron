@@ -2476,20 +2476,6 @@ KnobHelper::setHasModifications(DimIdx dimension,
     return ret;
 }
 
-#ifdef OFX_EXTENSIONS_NATRON
-double
-KnobHelper::getScreenPixelRatio() const
-{
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
-
-    if (hasGui) {
-        return hasGui->getScreenPixelRatio();
-    } else {
-        return 1.;
-    }
-}
-#endif
-
 void
 KnobHolder::getUserPages(std::list<KnobPagePtr>& userPages) const {
     const KnobsVec& knobs = getKnobs();
