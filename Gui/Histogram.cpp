@@ -1213,7 +1213,9 @@ Histogram::resizeGL(int width,
         return;
     }
 
-
+    if (width == 0) {
+        width = 1;
+    }
     if (height == 0) { // prevent division by 0
         height = 1;
     }
