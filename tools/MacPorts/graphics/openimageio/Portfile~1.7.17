@@ -14,7 +14,7 @@ PortGroup       compiler_blacklist_versions 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.8.7 tags/Release-
+github.setup     OpenImageIO oiio 1.7.17 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
@@ -57,6 +57,8 @@ compiler.blacklist-append {*gcc-3*} {*gcc-4.[0-1]} {macports-gcc-4.[2-7]} {gcc-4
 
 # for some reason, if we compile oiio with gcc 4.9 and boost with gcc 4.2, idiff a.png b.png crashes
 if {${configure.cxx_stdlib} eq "libstdc++"} {
+    # disable C++11 if not required (OIIO 1.8 requires C++11)
+    configure.args-append -DUSE_CPP11:BOOL=FALSE
     if {[vercmp $xcodeversion 3.0] >= 0} {
         compiler.fallback-append macports-clang-3.4
     } else {
@@ -97,9 +99,12 @@ if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
 
 patch.pre_args	-p1
 patchfiles \
+    0003-boost-latest.patch \
+    0005-fix-initialization.patch \
     oiio-1.5.23-invalidatespec.patch \
-    oiio-1.8.7-c99math.patch \
-    oiio-1.8.7-nothreads.patch
+    oiio-1.7.10-c99math.patch \
+    oiio-1.7.10-nothreads.patch \
+    oiio-1.7.12-tiffposition.patch
 
 cmake.out_of_source yes
 
