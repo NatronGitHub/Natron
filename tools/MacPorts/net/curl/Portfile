@@ -205,7 +205,7 @@ if {${name} eq ${subport}} {
 }
 
 subport curl-ca-bundle {
-    revision                    0
+    revision                    1
     categories                  net
     license                     {MPL-2 LGPL-2.1+}
     supported_archs             noarch
@@ -225,8 +225,8 @@ subport curl-ca-bundle {
     set certdata_file           certdata.txt
     # The output of the Tcl command "clock seconds" (you can run it in tclsh) when
     # the certdata.txt file in the port was last updated.
-    set certdata_updated        1511922000
-    set certdata_version        0c40802096cd
+    set certdata_updated        1516361900
+    set certdata_version        92dcb99abd05
     set certdata_extract_cmd    bzip2
     set certdata_extract_suffix .tar.bz2
     set certdata_distfile       certdata-${certdata_version}${certdata_extract_suffix}
@@ -242,9 +242,9 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  63750aca6b860a9c013fd66844589729f0b1d159 \
-                                sha256  1f8b7f879bdc800e03c98c98101e84ef5729938f021af803b53d63c91ce5eef1 \
-                                size    199664
+                                rmd160  534aab36b62694cac4b7b10c6f5acf9ed9803354 \
+                                sha256  f8eb21750d06183174abed84da8e9c99f18a0c785775ff3d0a7762d36d8fc74e \
+                                size    194520
 
     extract.only                ${curl_distfile}
     set curl_mk_ca_bundle_files "${worksrcdir}/Makefile ${worksrcdir}/lib/mk-ca-bundle.pl"

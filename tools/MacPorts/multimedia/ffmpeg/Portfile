@@ -10,7 +10,7 @@ name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
 version             3.4.1
-revision            2
+revision            3
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -149,6 +149,7 @@ configure.args      --enable-swscale \
                     --enable-fontconfig \
                     --enable-libfreetype \
                     --enable-libfribidi \
+                    --disable-jack \
                     --disable-libopencore-amrnb \
                     --disable-libopencore-amrwb \
                     --disable-libxcb \
@@ -400,6 +401,13 @@ if {[variant_isset high10]} {
     require_active_variants x264 high10
 } else {
     require_active_variants x264 "" high10
+}
+
+variant jack description {Enable jack library and indev support} {
+# jack will autoconfigure if not disabled
+    depends_lib-append      port:jack
+    configure.args-delete   --disable-jack \
+                            --disable-indev=jack
 }
 
 variant highbitdepth description {Build using libvpx with 10/12-bit output} {}
