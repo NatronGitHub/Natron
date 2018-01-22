@@ -98,6 +98,7 @@ if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
 
 patch.pre_args	-p1
 patchfiles \
+    0003-boost-latest.patch \
     oiio-1.5.23-invalidatespec.patch \
     oiio-1.8.7-c99math.patch \
     oiio-1.8.7-nothreads.patch
