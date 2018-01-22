@@ -20,7 +20,8 @@ github.setup     OpenImageIO oiio 1.8.7 tags/Release-
 
 name             openimageio
 conflicts        openimageio16
-revision         2
+conflicts        openimageio17
+#revision         1
 categories       graphics
 platforms           darwin
 license          BSD

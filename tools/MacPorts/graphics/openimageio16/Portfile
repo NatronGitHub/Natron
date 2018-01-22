@@ -19,6 +19,7 @@ github.setup     OpenImageIO oiio 1.6.18 tags/Release-
 #github.tarball_from downloads
 
 name             openimageio16
+conflicts        openimageio17
 conflicts        openimageio
 #version          1.4.5.91
 #revision         1
