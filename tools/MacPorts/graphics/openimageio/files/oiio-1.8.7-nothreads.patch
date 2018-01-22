@@ -1,0 +1,111 @@
+diff -ur oiio-Release-1.8.7.orig/src/include/OpenImageIO/imagebufalgo_util.h oiio-Release-1.8.7/src/include/OpenImageIO/imagebufalgo_util.h
+--- oiio-Release-1.8.7.orig/src/include/OpenImageIO/imagebufalgo_util.h	2018-01-02 06:08:01.000000000 +0100
++++ oiio-Release-1.8.7/src/include/OpenImageIO/imagebufalgo_util.h	2018-01-22 13:53:55.000000000 +0100
+@@ -97,6 +97,9 @@
+ parallel_image (ROI roi, parallel_image_options opt,
+                 std::function<void(ROI)> f)
+ {
++#ifdef NOTHREADS
++    f (roi);
++#else // !NOTHREADS
+     thread_pool *pool = opt.pool ? opt.pool : default_thread_pool();
+     // Special case: threads <= 0 means to use the pool size
+     int nthreads = (opt.maxthreads > 0) ? opt.maxthreads : pool->size();
+@@ -136,6 +139,7 @@
+     };
+     parallel_for_chunked_2D (roi.xbegin, roi.xend, xchunk,
+                              roi.ybegin, roi.yend, ychunk, task);
++#endif // !NOTHREADS
+ }
+ 
+ 
+diff -ur oiio-Release-1.8.7.orig/src/include/OpenImageIO/thread.h oiio-Release-1.8.7/src/include/OpenImageIO/thread.h
+--- oiio-Release-1.8.7.orig/src/include/OpenImageIO/thread.h	2018-01-02 06:08:01.000000000 +0100
++++ oiio-Release-1.8.7/src/include/OpenImageIO/thread.h	2018-01-22 13:54:41.000000000 +0100
+@@ -434,6 +434,7 @@
+ 
+ 
+ 
++#ifndef NOTHREADS
+ /// Simple thread group class: lets you spawn a group of new threads,
+ /// then wait for them to all complete.
+ class thread_group {
+@@ -610,6 +611,7 @@
+     // Utility function that helps us hide the implementation
+     void push_queue_and_notify (std::function<void(int id)> *f);
+ };
++#endif // NOTHREADS
+ 
+ 
+ 
+diff -ur oiio-Release-1.8.7.orig/src/libOpenImageIO/imagebufalgo_compare.cpp oiio-Release-1.8.7/src/libOpenImageIO/imagebufalgo_compare.cpp
+--- oiio-Release-1.8.7.orig/src/libOpenImageIO/imagebufalgo_compare.cpp	2018-01-02 06:08:01.000000000 +0100
++++ oiio-Release-1.8.7/src/libOpenImageIO/imagebufalgo_compare.cpp	2018-01-22 13:58:11.000000000 +0100
+@@ -796,6 +796,11 @@
+     if (blocksize <= 0 || blocksize >= roi.height())
+         return simplePixelHashSHA1 (src, extrainfo, roi);
+ 
++#ifdef NOTHREADS
++    int nblocks = 1;
++    std::vector<std::string> results (1);
++    results[0] = simplePixelHashSHA1 (src, "", roi);
++#else // !NOTHREADS
+     int nblocks = (roi.height()+blocksize-1) / blocksize;
+     std::vector<std::string> results (nblocks);
+     parallel_for_chunked (roi.ybegin, roi.yend, blocksize,
+@@ -806,6 +811,7 @@
+         broi.yend = yend;
+         results[b] = simplePixelHashSHA1 (src, "", broi);
+     });
++#endif // !NOTHREADS
+ 
+ #ifdef USE_OPENSSL
+     // If OpenSSL was available at build time, use its SHA-1
+diff -ur oiio-Release-1.8.7.orig/src/testtex/testtex.cpp oiio-Release-1.8.7/src/testtex/testtex.cpp
+--- oiio-Release-1.8.7.orig/src/testtex/testtex.cpp	2018-01-02 06:08:01.000000000 +0100
++++ oiio-Release-1.8.7/src/testtex/testtex.cpp	2018-01-22 13:51:05.000000000 +0100
+@@ -194,7 +194,9 @@
+                   "--derivs", &test_derivs, "Test returning derivatives of texture lookups",
+                   "--resetstats", &resetstats, "Print and reset statistics on each iteration",
+                   "--testhash", &testhash, "Test the tile hashing function",
++#ifndef NOTHREADS
+                   "--threadtimes %d", &threadtimes, "Do thread timings (arg = workload profile)",
++#endif // NOTHREADS
+                   "--trials %d", &ntrials, "Number of trials for timings",
+                   "--wedge", &wedge, "Wedge test",
+                   "--testicwrite %d", &testicwrite, "Test ImageCache write ability (1=seeded, 2=generated)",
+@@ -1093,6 +1095,7 @@
+ 
+ 
+ 
++#ifndef NOTHREADS
+ static const char *workload_names[] = {
+     /*0*/ "None",
+     /*1*/ "Everybody accesses the same spot in one file (handles)",
+@@ -1240,6 +1243,7 @@
+     ASSERT ((int)threads.size() == numthreads);
+     threads.join_all ();
+ }
++#endif // NOTHREADS
+ 
+ 
+ 
+@@ -1432,6 +1436,7 @@
+     xform = persp * rot * trans * scale;
+     xform.invert();
+ 
++#ifndef NOTHREADS
+     if (threadtimes) {
+         // If the --iters flag was used, do that number of iterations total
+         // (divided among the threads). If not supplied (iters will be 1),
+@@ -1464,7 +1469,9 @@
+         }
+         std::cout << "\n";
+ 
+-    } else if (iters > 0 && filenames.size()) {
++    } else
++#endif // NOTHREADS
++    if (iters > 0 && filenames.size()) {
+         ustring filename (filenames[0]);
+         test_gettextureinfo (filenames[0]);
+         const char *texturetype = "Plain Texture";
