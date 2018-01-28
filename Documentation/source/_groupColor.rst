@@ -58,4 +58,3 @@ The following sections contain documentation about every node in the  Color grou
     plugins/net.sf.openfx.YUVToRGB601.rst
     plugins/net.sf.openfx.YUVToRGB709.rst
     plugins/net.sf.openfx.xyYToXYZ.rst
-

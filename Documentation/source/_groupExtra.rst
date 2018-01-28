@@ -21,4 +21,3 @@ The following sections contain documentation about every node in the  Extra grou
     plugins/net.fxarena.openfx.Texture.rst
     plugins/net.fxarena.openfx.Tile.rst
     plugins/net.fxarena.openfx.Wave.rst
-

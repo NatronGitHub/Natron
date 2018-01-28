@@ -15,4 +15,3 @@ The following sections contain documentation about every node in the  Other grou
     plugins/net.sf.openfx.NoOpPlugin.rst
     plugins/fr.inria.built-in.Output.rst
     plugins/fr.inria.built-in.Precomp.rst
-

@@ -16,4 +16,3 @@ The following sections contain documentation about every node in the  Time group
     plugins/net.sf.openfx.SlitScan.rst
     plugins/net.sf.openfx.TimeBlur.rst
     plugins/net.sf.openfx.timeOffset.rst
-

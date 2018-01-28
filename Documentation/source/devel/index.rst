@@ -11,9 +11,8 @@ Developers Guide
 ================
 
 .. toctree::
-	:maxdepth: 2
+    :maxdepth: 2
 
-	APIReference
-	introduction
-	gettingstarted
-	
+    APIReference
+    introduction
+    gettingstarted
