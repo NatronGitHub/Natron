@@ -11,4 +11,3 @@ The following sections contain documentation about every node in the  Views grou
     plugins/net.sf.openfx.mixViewsPlugin.rst
     plugins/fr.inria.built-in.OneView.rst
     plugins/net.sf.openfx.sideBySidePlugin.rst
-

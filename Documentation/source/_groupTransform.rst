@@ -22,4 +22,3 @@ The following sections contain documentation about every node in the  Transform 
     plugins/fr.inria.built-in.Tracker.rst
     plugins/net.sf.openfx.TransformPlugin.rst
     plugins/net.sf.openfx.TransformMaskedPlugin.rst
-

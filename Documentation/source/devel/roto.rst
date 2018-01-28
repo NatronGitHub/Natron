@@ -8,17 +8,17 @@ For now, only the roto node can have a :ref:`Roto<Roto>` object.
 The :ref:`Roto<Roto>`object is :ref:`auto-declared<autoVar>` by Natron and can be accessed
 as an attribute of the roto node::
 
-	app.Roto1.roto
-	
+    app.Roto1.roto
+
 All the objects hierarchy in the :ref:`Roto<Roto>` object is broken up in 2 classes:
 
-	* :ref:`BezierCurve<BezierCurve>`: This class represents a single bezier, may it be an ellipse, rectangle or bezier.
-	* :ref:`Layer<Layer>` : This is a container for BezierCurves and Layers
-	
+    * :ref:`BezierCurve<BezierCurve>`: This class represents a single bezier, may it be an ellipse, rectangle or bezier.
+    * :ref:`Layer<Layer>` : This is a container for BezierCurves and Layers
+
 :ref:`Beziers<BezierCurve>` and :ref:`layers<Layer>` can be accessed via their script-name directly::
 
-	app.Roto1.roto.Layer1.Bezier1
-	
+    app.Roto1.roto.Layer1.Bezier1
+
 The *script-name* of the roto items can be found in the :ref:`settings panel<rotoScriptName>` of the Roto node.
 
 
@@ -32,33 +32,33 @@ You can re-organize the tree using the functions available in the :ref:`Layer<La
 
 .. warning::
 
-	Removing an item from a layer or inserting it in a layer will change the auto-declared variable, e.g::
-	
-		fromLayer = app.Roto1.roto.Layer1
-		toLayer = app.Roto1.roto.Layer2
-		item = app.Roto1.roto.Layer1.Bezier1
-		toLayer.addItem(item)
-		
-		#Now item is referenced from app.Roto1.roto.Layer2.Bezier1
-		
+    Removing an item from a layer or inserting it in a layer will change the auto-declared variable, e.g::
+
+        fromLayer = app.Roto1.roto.Layer1
+        toLayer = app.Roto1.roto.Layer2
+        item = app.Roto1.roto.Layer1.Bezier1
+        toLayer.addItem(item)
+
+        #Now item is referenced from app.Roto1.roto.Layer2.Bezier1
+
 Creating layers
 ----------------
-		
+
 To create a new :ref:`BezierCurve<BezierCurve>`, use the :func:`createLayer()<>` function made available by the :ref:`Roto<Roto>` class.
-		
+
 Creating shapes
 ----------------
 
 To create a new :ref:`BezierCurve<BezierCurve>`, use one of the following functions made available by the :ref:`Roto<Roto>` class:
 
-	* :func:`createBezier(x,y,time)<>`
-	* :func:`createEllipse(x,y,diameter,fromCenter,time)<>`
-	* :func:`createRectangle(x,y,size,time)<>`
-	
+    * :func:`createBezier(x,y,time)<>`
+    * :func:`createEllipse(x,y,diameter,fromCenter,time)<>`
+    * :func:`createRectangle(x,y,size,time)<>`
+
 Once created, the Bezier will have at least 1 control point (4 for ellipses and rectangles) and one keyframe
 at the time specified in parameter.
 
-A Bezier initially is in an *opened* state, meaning it doesn't produce a shape yet (unless it is a rectangle or ellipse). 
+A Bezier initially is in an *opened* state, meaning it doesn't produce a shape yet (unless it is a rectangle or ellipse).
 At this stage you can then add control points using the :func`addControlPoint(x,y)<NatronEngine.BezierCurve.addControlPoint>`
 function.
 Once you're one adding control points, call the function :func:`setCurveFinished(finished)<NatronEngine.BezierCurve.setCurveFinished>`
@@ -71,16 +71,15 @@ You can also slave a control point to a track using the :func:`slavePointToTrack
 
 A Bezier curve has several properties that the API allows you to modify:
 
-	* opacity
-	* color
-	* feather distance
-	* feather fall-off
-	* enable state
-	* overlay color
-	* compositing operator
-	
+    * opacity
+    * color
+    * feather distance
+    * feather fall-off
+    * enable state
+    * overlay color
+    * compositing operator
+
 Most of them are available via a :ref:`parameter<Param>`, e.g::
-	
-	colorParam = bezier.getColorParam()
-	bezierColor = colorParam.get(time)
-	
+
+    colorParam = bezier.getColorParam()
+    bezierColor = colorParam.get(time)

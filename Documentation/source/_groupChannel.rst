@@ -7,4 +7,3 @@ The following sections contain documentation about every node in the  Channel gr
     :maxdepth: 1
 
     plugins/net.sf.openfx.ShufflePlugin.rst
-
