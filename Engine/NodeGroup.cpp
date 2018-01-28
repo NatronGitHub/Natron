@@ -2791,7 +2791,7 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     WRITE_STATIC_LINE();
     QString handWrittenStr = QString::fromUtf8("# Hand-written code should be added in a separate file named %1.py").arg(extModule);
     WRITE_STRING(handWrittenStr);
-    WRITE_STATIC_LINE("# See http://natron.readthedocs.org/en/master/groups.html#adding-hand-written-code-callbacks-etc");
+    WRITE_STATIC_LINE("# See http://natron.readthedocs.org/en/master/devel/groups.html#adding-hand-written-code-callbacks-etc");
     WRITE_STATIC_LINE("# Note that Viewers are never exported");
     WRITE_STATIC_LINE();
     WRITE_STATIC_LINE("import " NATRON_ENGINE_PYTHON_MODULE_NAME);
