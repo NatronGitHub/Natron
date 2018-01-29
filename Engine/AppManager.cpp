@@ -1696,6 +1696,7 @@ AppManager::loadBuiltinNodePlugins()
     ADD_PLUGIN_SAFE(DiskCacheNode);
     ADD_PLUGIN_SAFE(RotoPaint);
     ADD_PLUGIN_SAFE(RotoNode);
+    ADD_PLUGIN_SAFE(LayeredCompNode);
     ADD_PLUGIN_SAFE(RotoShapeRenderNode);
     ADD_PLUGIN_SAFE(PrecompNode);
     ADD_PLUGIN_SAFE(TrackerNode);
