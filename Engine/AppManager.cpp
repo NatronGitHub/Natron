@@ -3786,10 +3786,10 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
                             Py_DECREF(strList);
                             if (pyStr) {
                                 str = PyString_AsString(pyStr);
-                                Py_DECREF(pyStr);
                                 if (error && str) {
                                     *error += std::string(str) + '\n';
                                 }
+                                Py_DECREF(pyStr);
                             }
                         }
                     }
