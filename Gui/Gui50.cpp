@@ -253,31 +253,13 @@ void
 Gui::clearAllVisiblePanels()
 {
     std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
-    bool foundNonFloating = true;
-    while ( !panels.empty() && foundNonFloating) {
-        std::list<DockablePanelI*>::iterator it = panels.begin();
-        DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it);
-        if (isPanel) {
-            if ( !isPanel->isFloating() ) {
-                isPanel->setClosed(true);
-            }
+    for (std::list<DockablePanelI*>::iterator it2 = panels.begin(); it2 != panels.end(); ++it2) {
+        DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it2);
+        if (!isPanel) {
+            continue;
         }
-
-        foundNonFloating = false;
-        panels = getApp()->getOpenedSettingsPanels();
-        for (std::list<DockablePanelI*>::iterator it2 = panels.begin(); it2 != panels.end(); ++it2) {
-            DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it2);
-            if (!isPanel) {
-                continue;
-            }
-            if ( !isPanel->isFloating() ) {
-                foundNonFloating = true;
-                break;
-            }
-        }
-        ///only floating windows left
-        if (!foundNonFloating) {
-            break;
+        if ( !isPanel->isFloating() ) {
+            isPanel->setClosed(true);
         }
     }
     getApp()->redrawAllViewers();
