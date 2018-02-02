@@ -30,6 +30,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
 #include <QtCore/QMutex>
@@ -60,22 +61,22 @@ struct BezierCPPrivate
 
     BezierCPPrivate(const boost::shared_ptr<Bezier>& curve)
         : holder(curve)
-        , curveX(new Curve)
-        , curveY(new Curve)
-        , guiCurveX(new Curve)
-        , guiCurveY(new Curve)
+        , curveX()
+        , curveY()
+        , guiCurveX()
+        , guiCurveY()
         , x(0)
         , y(0)
         , guiX(0)
         , guiY(0)
-        , curveLeftBezierX(new Curve)
-        , curveRightBezierX(new Curve)
-        , curveLeftBezierY(new Curve)
-        , curveRightBezierY(new Curve)
-        , guiCurveLeftBezierX(new Curve)
-        , guiCurveRightBezierX(new Curve)
-        , guiCurveLeftBezierY(new Curve)
-        , guiCurveRightBezierY(new Curve)
+        , curveLeftBezierX()
+        , curveRightBezierX()
+        , curveLeftBezierY()
+        , curveRightBezierY()
+        , guiCurveLeftBezierX()
+        , guiCurveRightBezierX()
+        , guiCurveLeftBezierY()
+        , guiCurveRightBezierY()
         , staticPositionMutex()
         , leftX(0)
         , rightX(0)
@@ -86,6 +87,18 @@ struct BezierCPPrivate
         , guiLeftY(0)
         , guiRightY(0)
     {
+        curveX= boost::make_shared<Curve>();
+        curveY= boost::make_shared<Curve>();
+        guiCurveX= boost::make_shared<Curve>();
+        guiCurveY= boost::make_shared<Curve>();
+        curveLeftBezierX= boost::make_shared<Curve>();
+        curveRightBezierX= boost::make_shared<Curve>();
+        curveLeftBezierY= boost::make_shared<Curve>();
+        curveRightBezierY= boost::make_shared<Curve>();
+        guiCurveLeftBezierX= boost::make_shared<Curve>();
+        guiCurveRightBezierX= boost::make_shared<Curve>();
+        guiCurveLeftBezierY= boost::make_shared<Curve>();
+        guiCurveRightBezierY= boost::make_shared<Curve>();
     }
 };
 

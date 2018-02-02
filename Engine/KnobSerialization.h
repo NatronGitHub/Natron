@@ -1195,11 +1195,11 @@ private:
             ar & ::boost::serialization::make_nvp("Type", type);
 
             if (type == "Group") {
-                boost::shared_ptr<GroupKnobSerialization> knob(new GroupKnobSerialization);
+                boost::shared_ptr<GroupKnobSerialization> knob = boost::make_shared<GroupKnobSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *knob);
                 _children.push_back(knob);
             } else {
-                boost::shared_ptr<KnobSerialization> knob(new KnobSerialization);
+                boost::shared_ptr<KnobSerialization> knob = boost::make_shared<KnobSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *knob);
                 _children.push_back(knob);
             }

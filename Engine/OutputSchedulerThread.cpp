@@ -2833,7 +2833,7 @@ private:
         BufferableObjectList toAppend;
 
         for (int i = 0; i < 2; ++i) {
-            args[i].reset(new ViewerArgs);
+            args[i] = boost::make_shared<ViewerArgs>();
             status[i] = viewer->getRenderViewerArgsAndCheckCache_public( time, true, view, i, viewerHash, true, NodePtr(), stats, args[i].get() );
             clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
             if (status[i] == ViewerInstance::eViewerRenderRetCodeFail) {
@@ -3671,7 +3671,7 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
 #endif
 
     ///Wait for the work to be done
-    boost::shared_ptr<ViewerCurrentFrameRequestSchedulerExecOnMT> mtArgs(new ViewerCurrentFrameRequestSchedulerExecOnMT);
+    boost::shared_ptr<ViewerCurrentFrameRequestSchedulerExecOnMT> mtArgs = boost::make_shared<ViewerCurrentFrameRequestSchedulerExecOnMT>();
     {
         QMutexLocker k(&_imp->producedFramesMutex);
         ProducedFrameSet::iterator found = _imp->producedFrames.end();
@@ -3872,7 +3872,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         bool clearTexture[2] = {false, false};
 
         for (int i = 0; i < 2; ++i) {
-            args[i].reset(new ViewerArgs);
+            args[i] = boost::make_shared<ViewerArgs>();
             status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public( frame, false, view, i, viewerHash, canAbort, rotoPaintNode, stats, args[i].get() );
 
             clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
@@ -3955,7 +3955,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         task.run();
     } else {
         // Identify this render request with an age
-        boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> request(new ViewerCurrentFrameRequestSchedulerStartArgs);
+        boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> request = boost::make_shared<ViewerCurrentFrameRequestSchedulerStartArgs>();
         request->age = _imp->ageCounter;
 
         // If we reached the max amount of age, reset to 0... should never happen anyway

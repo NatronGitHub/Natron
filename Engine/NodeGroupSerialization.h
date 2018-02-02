@@ -119,7 +119,7 @@ private:
         ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
 
         for (int i = 0; i < nodesCount; ++i) {
-            boost::shared_ptr<NodeSerialization> s(new NodeSerialization);
+            boost::shared_ptr<NodeSerialization> s = boost::make_shared<NodeSerialization>();
             ar & ::boost::serialization::make_nvp("item", *s);
             _serializedNodes.push_back(s);
         }

@@ -651,7 +651,7 @@ AppManager::quitNow(const AppInstPtr& instance)
             (*it)->quitAnyProcessing_blocking(false);
         }
     }
-    boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
+    boost::shared_ptr<QuitInstanceArgs> args = boost::make_shared<QuitInstanceArgs>();
     args->instance = instance;
     afterQuitProcessingCallback(args);
 }
@@ -659,7 +659,7 @@ AppManager::quitNow(const AppInstPtr& instance)
 void
 AppManager::quit(const AppInstPtr& instance)
 {
-    boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
+    boost::shared_ptr<QuitInstanceArgs> args = boost::make_shared<QuitInstanceArgs>();
 
     args->instance = instance;
     if ( !instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {

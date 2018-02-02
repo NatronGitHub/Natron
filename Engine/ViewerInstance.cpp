@@ -440,7 +440,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
     NodePtr thisNode = getNode();
     boost::shared_ptr<ViewerArgs> args[2];
     for (int i = 0; i < 2; ++i) {
-        args[i].reset(new ViewerArgs);
+        args[i] = boost::make_shared<ViewerArgs>();
         if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == eViewerCompositingOperatorNone) ) {
             break;
         }
@@ -900,7 +900,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     // Did the user enabled the user roi from the viewer UI?
     outArgs->userRoIEnabled = _imp->uiContext->isUserRegionOfInterestEnabled();
 
-    outArgs->params.reset(new UpdateViewerParams);
+    outArgs->params = boost::make_shared<UpdateViewerParams>();
 
     // The PAR of the input image
     outArgs->params->pixelAspectRatio = outArgs->activeInputToRender->getAspectRatio(-1);
@@ -1247,7 +1247,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
 {
     // Just redraw if the viewer is paused
     if ( isViewerPaused(textureIndex) ) {
-        outArgs->params.reset(new UpdateViewerParams);
+        outArgs->params = boost::make_shared<UpdateViewerParams>();
         outArgs->params->isViewerPaused = true;
         outArgs->params->time = time;
         outArgs->params->setUniqueID(textureIndex);

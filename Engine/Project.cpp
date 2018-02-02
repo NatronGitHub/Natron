@@ -656,7 +656,7 @@ Project::onAutoSaveTimerTriggered()
     bool canAutoSave = !hasNodeRendering() && !getApp()->isShowingDialog();
 
     if (canAutoSave) {
-        boost::shared_ptr<QFutureWatcher<void> > watcher(new QFutureWatcher<void>);
+        boost::shared_ptr<QFutureWatcher<void> > watcher = boost::make_shared<QFutureWatcher<void> >();
         QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onAutoSaveFutureFinished()) );
         watcher->setFuture( QtConcurrent::run(this, &Project::autoSave) );
         _imp->autoSaveFutures.push_back(watcher);

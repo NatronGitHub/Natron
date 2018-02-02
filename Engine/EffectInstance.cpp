@@ -40,6 +40,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/bind.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/make_shared.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
@@ -298,7 +299,7 @@ EffectInstance::setParallelRenderArgsTLS(double time,
 {
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     std::list<boost::shared_ptr<ParallelRenderArgs> >& argsList = tls->frameArgs;
-    boost::shared_ptr<ParallelRenderArgs> args(new ParallelRenderArgs);
+    boost::shared_ptr<ParallelRenderArgs> args = boost::make_shared<ParallelRenderArgs>();
 
     args->time = time;
     args->timeline = timeline;
@@ -1958,7 +1959,7 @@ EffectInstance::tryConcatenateTransforms(double time,
                 assert(im.newInputEffect);
 
                 ///Now actually concatenate matrices together
-                im.cat.reset(new Transform::Matrix3x3);
+                im.cat= boost::make_shared<Transform::Matrix3x3>();
                 std::list<Transform::Matrix3x3>::iterator it2 = matricesByOrder.begin();
                 *im.cat = *it2;
                 ++it2;

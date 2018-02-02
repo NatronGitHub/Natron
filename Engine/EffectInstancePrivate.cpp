@@ -388,7 +388,7 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , pluginMemoryChunksMutex()
     , pluginMemoryChunks()
     , supportsRenderScale(eSupportsMaybe)
-    , actionsCache(new ActionsCache(appPTR->getHardwareIdealThreadCount() * 2))
+    , actionsCache()
 #if NATRON_ENABLE_TRIMAP
     , imagesBeingRenderedMutex()
     , imagesBeingRendered()
@@ -405,6 +405,7 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , renderClonesMutex()
     , renderClonesPool()
 {
+    actionsCache = boost::make_shared<ActionsCache>(appPTR->getHardwareIdealThreadCount() * 2);
 }
 
 EffectInstance::Implementation::Implementation(const Implementation& other)
@@ -557,7 +558,7 @@ EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr
             img->markForRendering(*it);
         }
     } else {
-        IBRPtr ibr(new Implementation::ImageBeingRendered);
+        IBRPtr ibr = boost::make_shared<Implementation::ImageBeingRendered>();
         ++ibr->refCount;
         std::pair<IBRMap::iterator, bool> ok = imagesBeingRendered.insert( std::make_pair(img, ibr) );
         assert(ok.second);

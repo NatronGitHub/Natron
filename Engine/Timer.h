@@ -42,6 +42,7 @@
 
 #include <QtCore/QString>
 #include <QtCore/QObject>
+#include <QtCore/QMutex>
 
 #include "Engine/EngineFwd.h"
 
@@ -117,7 +118,7 @@ private:
     timeval _lastFpsFrameTime;      // state to keep track of the
     int _framesSinceLastFpsFrame;       // actual frame rate, averaged
     double _actualFrameRate;         // over several frames
-    QMutex* _mutex; //< protects _spf and _actualFrameRate
+    mutable QMutex _mutex; //< protects _spf and _actualFrameRate
 };
 
 

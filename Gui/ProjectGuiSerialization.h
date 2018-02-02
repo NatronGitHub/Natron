@@ -716,7 +716,7 @@ class ProjectGuiSerialization
             int numPyPanels;
             ar & ::boost::serialization::make_nvp("NumPyPanels", numPyPanels);
             for (int i = 0; i < numPyPanels; ++i) {
-                boost::shared_ptr<PythonPanelSerialization> s(new PythonPanelSerialization);
+                boost::shared_ptr<PythonPanelSerialization> s = boost::make_shared<PythonPanelSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *s);
                 _pythonPanels.push_back(s);
             }

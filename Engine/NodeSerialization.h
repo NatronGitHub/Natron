@@ -351,7 +351,7 @@ private:
         ar & ::boost::serialization::make_nvp("Plugin_minor_version", _pluginMinorVersion);
         ar & ::boost::serialization::make_nvp("KnobsCount", _nbKnobs);
         for (int i = 0; i < _nbKnobs; ++i) {
-            boost::shared_ptr<KnobSerialization> ks(new KnobSerialization);
+            boost::shared_ptr<KnobSerialization> ks = boost::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("item", *ks);
             _knobsValues.push_back(ks);
         }
@@ -418,7 +418,7 @@ private:
             ar & ::boost::serialization::make_nvp("Children", nodesCount);
 
             for (int i = 0; i < nodesCount; ++i) {
-                boost::shared_ptr<NodeSerialization> s(new NodeSerialization);
+                boost::shared_ptr<NodeSerialization> s = boost::make_shared<NodeSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *s);
                 _children.push_back(s);
             }

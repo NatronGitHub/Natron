@@ -401,7 +401,7 @@ HistogramCPU::run()
                 return;
             }
         }
-        boost::shared_ptr<FinishedHistogram> ret(new FinishedHistogram);
+        boost::shared_ptr<FinishedHistogram> ret = boost::make_shared<FinishedHistogram>();
         ret->binsCount = request.binsCount;
         ret->mode = request.mode;
         ret->vmin = request.vmin;

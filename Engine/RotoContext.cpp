@@ -3772,7 +3772,7 @@ static void tess_intersection_combine_callback(double coords[3], void */*data*/[
     tessPolygonData* myData = (tessPolygonData*)polygonData;
     assert(myData);
 
-    boost::shared_ptr<Point> ret(new Point);
+    boost::shared_ptr<Point> ret = boost::make_shared<Point>();
     ret->x = coords[0];
     ret->y = coords[1];
     /*new->r = w[0]*d[0]->r + w[1]*d[1]->r + w[2]*d[2]->r + w[3]*d[3]->r;
@@ -4532,7 +4532,7 @@ RotoContextPrivate::bezulate(double time,
                 (*next)->getLeftBezierPointAtTime(false, time, ViewIdx(0), &p2.x, &p2.y);
                 (*next)->getPositionAtTime(false, time, ViewIdx(0), &p3.x, &p3.y);
                 Bezier::bezierFullPoint(p0, p1, p2, p3, 0.5, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
-                boost::shared_ptr<BezierCP> controlPoint(new BezierCP);
+                boost::shared_ptr<BezierCP> controlPoint = boost::make_shared<BezierCP>();
                 controlPoint->setStaticPosition(false, dest.x, dest.y);
                 controlPoint->setLeftBezierStaticPosition(false, p0p1_p1p2.x, p0p1_p1p2.y);
                 controlPoint->setRightBezierStaticPosition(false, p1p2_p2p3.x, p1p2_p2p3.y);

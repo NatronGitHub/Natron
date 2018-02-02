@@ -495,7 +495,7 @@ WriteNodePrivate::destroyWriteNode()
         int n ;
         iArchive >> boost::serialization::make_nvp("numItems", n);
         for (int i = 0; i < n; ++i) {
-            boost::shared_ptr<KnobSerialization> s(new KnobSerialization);
+            boost::shared_ptr<KnobSerialization> s = boost::make_shared<KnobSerialization>();
             iArchive >> boost::serialization::make_nvp("item", *s);
             genericKnobsSerialization.push_back(s);
 

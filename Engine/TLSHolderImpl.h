@@ -183,7 +183,7 @@ TLSHolder<T>::getOrCreateTLSData() const
     ThreadData data;
     boost::shared_ptr<const TLSHolderBase> thisShared = shared_from_this();
     appPTR->getAppTLS()->registerTLSHolder(thisShared);
-    data.value.reset(new T);
+    data.value = boost::make_shared<T>();
     {
         QWriteLocker k(&perThreadDataMutex);
         perThreadData.insert( std::make_pair(curThread, data) );

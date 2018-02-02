@@ -38,7 +38,7 @@ class BlockingBackgroundRender
 {
     bool _running;
     QWaitCondition _runningCond;
-    QMutex _runningMutex;
+    mutable QMutex _runningMutex;
     OutputEffectInstance* _writer;
 
 public:

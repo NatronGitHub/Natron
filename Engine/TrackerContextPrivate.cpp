@@ -1190,7 +1190,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
             (*it)->setEnabledAtTime(start, true);
         }
         
-        boost::shared_ptr<TrackMarkerAndOptions> t(new TrackMarkerAndOptions);
+        boost::shared_ptr<TrackMarkerAndOptions> t = boost::make_shared<TrackMarkerAndOptions>();
         t->natronMarker = *it;
 
         // Set a keyframe on the marker to initialize its position

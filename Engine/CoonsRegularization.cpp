@@ -55,6 +55,9 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <boost/make_shared.hpp>
+
+
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Interpolation.h"
@@ -472,7 +475,7 @@ makeBezierCPFromPoint(const Point& p,
                       const Point& left,
                       const Point& right)
 {
-    boost::shared_ptr<BezierCP> ret(new BezierCP);
+    boost::shared_ptr<BezierCP> ret = boost::make_shared<BezierCP>();
 
     ret->setStaticPosition(false, p.x, p.y);
     ret->setLeftBezierStaticPosition(false, left.x, left.y);

@@ -130,7 +130,7 @@ Timer::Timer ()
     _timingError (0),
     _framesSinceLastFpsFrame (0),
     _actualFrameRate (0),
-    _mutex(new QMutex)
+    _mutex()
 {
     gettimeofday (&_lastFrameTime, 0);
     _lastFpsFrameTime = _lastFrameTime;
@@ -138,7 +138,6 @@ Timer::Timer ()
 
 Timer::~Timer()
 {
-    delete _mutex;
 }
 
 void
@@ -161,7 +160,7 @@ Timer::waitUntilNextFrameIsDue ()
 
     double spf;
     {
-        QMutexLocker l(_mutex);
+        QMutexLocker l(&_mutex);
         spf = _spf;
     }
     //
@@ -232,7 +231,7 @@ Timer::waitUntilNextFrameIsDue ()
         double curActualFrameRate;
         double desiredFrameRate;
         {
-            QMutexLocker l(_mutex);
+            QMutexLocker l(&_mutex);
             if (actualFrameRate != _actualFrameRate) {
                 _actualFrameRate = actualFrameRate;
             }
@@ -255,7 +254,7 @@ Timer::waitUntilNextFrameIsDue ()
 double
 Timer::getActualFrameRate() const
 {
-    QMutexLocker l(_mutex);
+    QMutexLocker l(&_mutex);
 
     return _actualFrameRate;
 }
@@ -263,7 +262,7 @@ Timer::getActualFrameRate() const
 void
 Timer::setDesiredFrameRate (double fps)
 {
-    QMutexLocker l(_mutex);
+    QMutexLocker l(&_mutex);
 
     _spf = 1 / fps;
 }
@@ -271,7 +270,7 @@ Timer::setDesiredFrameRate (double fps)
 double
 Timer::getDesiredFrameRate() const
 {
-    QMutexLocker l(_mutex);
+    QMutexLocker l(&_mutex);
 
     return 1.f / _spf;
 }

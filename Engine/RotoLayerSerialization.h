@@ -136,15 +136,15 @@ private:
                 ar & ::boost::serialization::make_nvp("Type", type);
             }
             if (type == 0) {
-                boost::shared_ptr<BezierSerialization> b(new BezierSerialization);
+                boost::shared_ptr<BezierSerialization> b = boost::make_shared<BezierSerialization>();
                 ar & ::boost::serialization::make_nvp("Item", *b);
                 children.push_back(b);
             } else if (type == 1) {
-                boost::shared_ptr<RotoStrokeItemSerialization> b(new RotoStrokeItemSerialization);
+                boost::shared_ptr<RotoStrokeItemSerialization> b = boost::make_shared<RotoStrokeItemSerialization>();
                 ar & ::boost::serialization::make_nvp("Item", *b);
                 children.push_back(b);
             } else {
-                boost::shared_ptr<RotoLayerSerialization> l(new RotoLayerSerialization);
+                boost::shared_ptr<RotoLayerSerialization> l = boost::make_shared<RotoLayerSerialization>();
                 ar & ::boost::serialization::make_nvp("Item", *l);
                 children.push_back(l);
             }

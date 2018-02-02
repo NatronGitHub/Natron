@@ -336,7 +336,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     } else {
         ///Setup global data for the node for the whole frame render
 
-        boost::shared_ptr<NodeFrameRequest> tmp(new NodeFrameRequest);
+        boost::shared_ptr<NodeFrameRequest> tmp = boost::make_shared<NodeFrameRequest>();
         tmp->mappedScale.x = tmp->mappedScale.y = Image::getScaleFromMipMapLevel(mappedLevel);
         tmp->nodeHash = effect->getRenderHash();
 
@@ -405,7 +405,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
 
         ///Concatenate transforms if needed
         if (useTransforms) {
-            fvRequest->globalData.transforms.reset(new InputMatrixMap);
+            fvRequest->globalData.transforms = boost::make_shared<InputMatrixMap>();
 #pragma message WARN("TODO: can set draftRender properly here?")
             effect->tryConcatenateTransforms( time, /*draftRender=*/false, view, nodeRequest->mappedScale, fvRequest->globalData.transforms.get() );
         }

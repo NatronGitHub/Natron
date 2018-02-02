@@ -337,7 +337,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     if ( tls->frameArgs.empty() ) {
         qDebug() << QThread::currentThread() << "[BUG]:" << getScriptName_mt_safe().c_str() <<  "Thread-storage for the render of the frame was not set.";
 
-        frameArgs.reset(new ParallelRenderArgs);
+        frameArgs = boost::make_shared<ParallelRenderArgs>();
         {
             NodesWList outputs;
             getNode()->getOutputs_mt_safe(outputs);
@@ -444,7 +444,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
 
     ///Determine needed planes
-    boost::shared_ptr<ComponentsNeededMap> neededComps(new ComponentsNeededMap);
+    boost::shared_ptr<ComponentsNeededMap> neededComps = boost::make_shared<ComponentsNeededMap>();
     ComponentsNeededMap::iterator foundOutputNeededComps;
     std::bitset<4> processChannels;
     std::list<ImagePlaneDesc> passThroughPlanes;
@@ -729,7 +729,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         SettingsPtr settings = appPTR->getCurrentSettings();
         useTransforms = settings && settings->isTransformConcatenationEnabled();
         if (useTransforms) {
-            tls->currentRenderArgs.transformRedirections.reset(new InputMatrixMap);
+            tls->currentRenderArgs.transformRedirections = boost::make_shared<InputMatrixMap>();
             tryConcatenateTransforms( args.time, frameArgs->draftMode, args.view, args.scale, tls->currentRenderArgs.transformRedirections.get() );
         }
     }
@@ -913,9 +913,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ImageBitDepthEnum outputDepth = getBitDepth(-1);
     ImagePlaneDesc outputClipPrefComps, outputClipPrefCompsPaired;
     getMetadataComponents(-1, &outputClipPrefComps, &outputClipPrefCompsPaired);
-    boost::shared_ptr<ImagePlanesToRender> planesToRender(new ImagePlanesToRender);
+    boost::shared_ptr<ImagePlanesToRender> planesToRender = boost::make_shared<ImagePlanesToRender>();
     planesToRender->useOpenGL = storage == eStorageModeGLTex;
-    boost::shared_ptr<FramesNeededMap> framesNeeded(new FramesNeededMap);
+    boost::shared_ptr<FramesNeededMap> framesNeeded = boost::make_shared<FramesNeededMap>();
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Look-up the cache ///////////////////////////////////////////////////////////////
 
@@ -1904,7 +1904,7 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
 
     boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > > tlsCopy;
     if (safety == eRenderSafetyFullySafeFrame) {
-        tlsCopy.reset(new std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >);
+        tlsCopy = boost::make_shared<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > >();
         /*
          * Since we're about to start new threads potentially, copy all the thread local storage on all nodes (any node may be involved in
          * expressions, and we need to retrieve the exact local time of render).
