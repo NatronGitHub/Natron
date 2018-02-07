@@ -24,6 +24,8 @@
 
 #include "WorkspaceSerialization.h"
 
+#include <boost/make_shared.hpp>
+
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/yaml.h>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
@@ -86,7 +88,7 @@ PythonPanelSerialization::decode(const YAML::Node& node)
     if (node["Params"]) {
         const YAML::Node& paramsNode = node["Params"];
         for (std::size_t i = 0; i < paramsNode.size(); ++i) {
-            KnobSerializationPtr s(new KnobSerialization);
+            KnobSerializationPtr s = boost::make_shared<KnobSerialization>();
             s->decode(paramsNode[i]);
             knobs.push_back(s);
         }
@@ -179,18 +181,18 @@ WidgetSplitterSerialization::decode(const YAML::Node& node)
     }
     leftChild.type = node["LeftType"].as<std::string>();
     if (leftChild.type == kSplitterChildTypeSplitter) {
-        leftChild.childIsSplitter.reset(new WidgetSplitterSerialization);
+        leftChild.childIsSplitter = boost::make_shared<WidgetSplitterSerialization>();
         leftChild.childIsSplitter->decode(node["LeftChild"]);
     } else if (leftChild.type == kSplitterChildTypeTabWidget) {
-        leftChild.childIsTabWidget.reset(new TabWidgetSerialization);
+        leftChild.childIsTabWidget = boost::make_shared<TabWidgetSerialization>();
         leftChild.childIsTabWidget->decode(node["LeftChild"]);
     }
     rightChild.type = node["RightType"].as<std::string>();
     if (rightChild.type == kSplitterChildTypeSplitter) {
-        rightChild.childIsSplitter.reset(new WidgetSplitterSerialization);
+        rightChild.childIsSplitter = boost::make_shared<WidgetSplitterSerialization>();
         rightChild.childIsSplitter->decode(node["RightChild"]);
     } else if (rightChild.type == kSplitterChildTypeTabWidget) {
-        rightChild.childIsTabWidget.reset(new TabWidgetSerialization);
+        rightChild.childIsTabWidget = boost::make_shared<TabWidgetSerialization>();
         rightChild.childIsTabWidget->decode(node["RightChild"]);
     }
 
@@ -238,10 +240,10 @@ WindowSerialization::decode(const YAML::Node& node)
     childType = node["ChildType"].as<std::string>();
     const YAML::Node& childNode = node["Child"];
     if (childType == kSplitterChildTypeSplitter) {
-        isChildSplitter.reset(new WidgetSplitterSerialization);
+        isChildSplitter = boost::make_shared<WidgetSplitterSerialization>();
         isChildSplitter->decode(childNode);
     } else if (childType == kSplitterChildTypeTabWidget) {
-        isChildTabWidget.reset(new TabWidgetSerialization);
+        isChildTabWidget = boost::make_shared<TabWidgetSerialization>();
         isChildTabWidget->decode(childNode);
     } else if (childType == kSplitterChildTypeSettingsPanel) {
         isChildSettingsPanel = childNode.as<std::string>();
@@ -306,13 +308,13 @@ WorkspaceSerialization::decode(const YAML::Node& node)
         }
     }
     if (node["MainWindow"]) {
-        _mainWindowSerialization.reset(new WindowSerialization);
+        _mainWindowSerialization = boost::make_shared<WindowSerialization>();
         _mainWindowSerialization->decode(node["MainWindow"]);
     }
     if (node["FloatingWindows"]) {
         const YAML::Node& n = node["FloatingWindows"];
         for (std::size_t i = 0; i < n[i].size(); ++i) {
-            boost::shared_ptr<WindowSerialization> p(new WindowSerialization);
+            boost::shared_ptr<WindowSerialization> p = boost::make_shared<WindowSerialization>();
             p->decode(n[i]);
             _floatingWindowsSerialization.push_back(p);
         }

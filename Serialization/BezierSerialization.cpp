@@ -22,8 +22,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-
 #include "BezierSerialization.h"
+
+#include <boost/make_shared.hpp>
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/yaml.h>
@@ -99,7 +100,7 @@ static void decodeShape(const YAML::Node& shapeNode, BezierSerialization::Shape*
                 cp.innerPoint.decode(cpNode["Inner"]);
             }
             if (cpNode["Feather"]) {
-                cp.featherPoint.reset(new BezierCPSerialization);
+                cp.featherPoint = boost::make_shared<BezierCPSerialization>();
                 cp.featherPoint->decode(cpNode["Feather"]);
             }
             shape->controlPoints.push_back(cp);

@@ -26,6 +26,8 @@
 
 #include <iostream>
 
+#include <boost/make_shared.hpp>
+
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/yaml.h>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
@@ -38,13 +40,13 @@ SERIALIZATION_NAMESPACE_ENTER
 static KnobTableItemSerializationPtr createSerializationObjectForItemTag(const std::string& tag)
 {
     if (tag == kSerializationRotoGroupTag || tag == kSerializationCompLayerTag || tag == kSerializationRotoPlanarTrackGroupTag) {
-        KnobTableItemSerializationPtr ret(new KnobTableItemSerialization);
+        KnobTableItemSerializationPtr ret = boost::make_shared<KnobTableItemSerialization>();
         return ret;
     } else if (tag == kSerializationClosedBezierTag) {
-        BezierSerializationPtr ret(new BezierSerialization(false));
+        BezierSerializationPtr ret = boost::make_shared<BezierSerialization>(false);
         return ret;
     } else if (tag == kSerializationOpenedBezierTag) {
-        BezierSerializationPtr ret(new BezierSerialization(true));
+        BezierSerializationPtr ret = boost::make_shared<BezierSerialization>(true);
         return ret;
     } else if (tag == kSerializationStrokeBrushTypeSolid ||
                tag == kSerializationStrokeBrushTypeEraser ||
@@ -55,10 +57,10 @@ static KnobTableItemSerializationPtr createSerializationObjectForItemTag(const s
                tag == kSerializationStrokeBrushTypeSmear ||
                tag == kSerializationStrokeBrushTypeDodge ||
                tag == kSerializationStrokeBrushTypeBurn) {
-        RotoStrokeItemSerializationPtr ret(new RotoStrokeItemSerialization);
+        RotoStrokeItemSerializationPtr ret = boost::make_shared<RotoStrokeItemSerialization>();
         return ret;
     } else if (tag == kSerializationTrackTag) {
-        KnobTableItemSerializationPtr ret(new KnobTableItemSerialization);
+        KnobTableItemSerializationPtr ret = boost::make_shared<KnobTableItemSerialization>();
         return ret;
     } else {
         std::cerr << "Unknown YAML tag " << tag << std::endl;
@@ -168,7 +170,7 @@ KnobTableItemSerialization::decode(const YAML::Node& node)
     if (node["Params"]) {
         const YAML::Node& paramsNode = node["Params"];
         for (std::size_t i = 0; i < paramsNode.size(); ++i) {
-            KnobSerializationPtr child(new KnobSerialization);
+            KnobSerializationPtr child = boost::make_shared<KnobSerialization>();
             child->decode(paramsNode[i]);
             knobs.push_back(child);
         }

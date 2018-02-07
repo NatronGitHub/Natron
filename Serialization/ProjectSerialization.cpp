@@ -24,6 +24,8 @@
 
 #include "ProjectSerialization.h"
 
+#include <boost/make_shared.hpp>
+
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/yaml.h>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
@@ -124,7 +126,7 @@ ProjectSerialization::decode(const YAML::Node& node)
     if (node["Nodes"]) {
         const YAML::Node& n = node["Nodes"];
         for (std::size_t i = 0; i < n.size(); ++i) {
-            NodeSerializationPtr ns(new NodeSerialization);
+            NodeSerializationPtr ns = boost::make_shared<NodeSerialization>();
             ns->decode(n[i]);
             _nodes.push_back(ns);
         }
@@ -140,7 +142,7 @@ ProjectSerialization::decode(const YAML::Node& node)
     if (node["Params"]) {
         const YAML::Node& n = node["Params"];
         for (std::size_t i = 0; i < n.size(); ++i) {
-            KnobSerializationPtr s(new KnobSerialization);
+            KnobSerializationPtr s = boost::make_shared<KnobSerialization>();
             s->decode(n[i]);
             _projectKnobs.push_back(s);
         }
@@ -154,7 +156,7 @@ ProjectSerialization::decode(const YAML::Node& node)
         }
     }
     if (node["Workspace"]) {
-        _projectWorkspace.reset(new WorkspaceSerialization);
+        _projectWorkspace = boost::make_shared<WorkspaceSerialization>();
         _projectWorkspace->decode(node["Workspace"]);
     }
     if (node["Viewports"]) {

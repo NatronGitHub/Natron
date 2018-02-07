@@ -33,6 +33,8 @@
 
 #include "Global/Macros.h"
 
+#include <boost/make_shared.hpp>
+
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/yaml.h>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
@@ -1061,11 +1063,11 @@ GroupKnobSerialization::decode(const YAML::Node& node)
             }
 
             if (typeName == kKnobPageTypeName || typeName == kKnobGroupTypeName) {
-                GroupKnobSerializationPtr s(new GroupKnobSerialization);
+                GroupKnobSerializationPtr s = boost::make_shared<GroupKnobSerialization>();
                 s->decode(paramsNode[i]);
                 _children.push_back(s);
             } else {
-                KnobSerializationPtr s (new KnobSerialization);
+                KnobSerializationPtr s  = boost::make_shared<KnobSerialization>();
                 s->decode(paramsNode[i]);
                 _children.push_back(s);
             }

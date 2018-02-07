@@ -24,6 +24,8 @@
 
 #include "RotoStrokeItemSerialization.h"
 
+#include <boost/make_shared.hpp>
+
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/yaml.h>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
@@ -73,9 +75,9 @@ RotoStrokeItemSerialization::decode(const YAML::Node& node)
         for (std::size_t i = 0; i < strokesNode.size(); ++i) {
             const YAML::Node& strokeN = strokesNode[i];
             PointCurves p;
-            p.x.reset(new CurveSerialization);
-            p.y.reset(new CurveSerialization);
-            p.pressure.reset(new CurveSerialization);
+            p.x = boost::make_shared<CurveSerialization>();
+            p.y = boost::make_shared<CurveSerialization>();
+            p.pressure = boost::make_shared<CurveSerialization>();
             p.x->decode(strokeN["x"]);
             p.y->decode(strokeN["y"]);
             p.pressure->decode(strokeN["pressure"]);

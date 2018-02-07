@@ -24,6 +24,8 @@
 
 #include "SettingsSerialization.h"
 
+#include <boost/make_shared.hpp>
+
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/yaml.h>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
@@ -110,7 +112,7 @@ SettingsSerialization::decode(const YAML::Node& node)
     if (node["Settings"]) {
         const YAML::Node& knobsNode = node["Settings"];
         for (std::size_t i = 0; i < knobsNode.size(); ++i) {
-            KnobSerializationPtr n(new KnobSerialization);
+            KnobSerializationPtr n = boost::make_shared<KnobSerialization>();
             n->decode(knobsNode[i]);
             knobs.push_back(n);
         }

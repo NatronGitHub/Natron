@@ -26,6 +26,8 @@
 
 #include <cmath>
 
+#include <boost/make_shared.hpp>
+
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/yaml.h>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
@@ -325,7 +327,7 @@ NodeSerialization::decode(const YAML::Node& node)
     if (node["Params"]) {
         const YAML::Node& paramsNode = node["Params"];
         for (std::size_t i = 0; i < paramsNode.size(); ++i) {
-            KnobSerializationPtr s(new KnobSerialization);
+            KnobSerializationPtr s = boost::make_shared<KnobSerialization>();
             s->decode(paramsNode[i]);
             _knobsValues.push_back(s);
         }
@@ -333,7 +335,7 @@ NodeSerialization::decode(const YAML::Node& node)
     if (node["UserPages"]) {
         const YAML::Node& pagesNode = node["UserPages"];
         for (std::size_t i = 0; i < pagesNode.size(); ++i) {
-            GroupKnobSerializationPtr s(new GroupKnobSerialization);
+            GroupKnobSerializationPtr s = boost::make_shared<GroupKnobSerialization>();
             s->decode(pagesNode[i]);
             _userPages.push_back(s);
         }
@@ -347,7 +349,7 @@ NodeSerialization::decode(const YAML::Node& node)
     if (node["Children"]) {
         const YAML::Node& childrenNode = node["Children"];
         for (std::size_t i = 0; i < childrenNode.size(); ++i) {
-            NodeSerializationPtr s(new NodeSerialization);
+            NodeSerializationPtr s = boost::make_shared<NodeSerialization>();
             s->decode(childrenNode[i]);
             _children.push_back(s);
         }
@@ -355,7 +357,7 @@ NodeSerialization::decode(const YAML::Node& node)
     if (node["Tables"]) {
         const YAML::Node& tablesNode = node["Tables"];
         for (std::size_t i = 0; i < tablesNode.size(); ++i) {
-            KnobItemsTableSerializationPtr table(new KnobItemsTableSerialization);
+            KnobItemsTableSerializationPtr table = boost::make_shared<KnobItemsTableSerialization>();
             table->decode(tablesNode[i]);
             _tables.push_back(table);
         }

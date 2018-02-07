@@ -24,6 +24,8 @@
 
 #include "NodeClipBoard.h"
 
+#include <boost/make_shared.hpp>
+
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/yaml.h>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
@@ -58,12 +60,12 @@ NodeClipBoard::decode(const YAML::Node& node)
     nodes.clear();
     if (node.IsSequence()) {
         for (std::size_t i = 0; i < node.size(); ++i) {
-            NodeSerializationPtr n(new NodeSerialization);
+            NodeSerializationPtr n = boost::make_shared<NodeSerialization>();
             n->decode(node[i]);
             nodes.push_back(n);
         }
     } else {
-        NodeSerializationPtr n(new NodeSerialization);
+        NodeSerializationPtr n = boost::make_shared<NodeSerialization>();
         n->decode(node);
         nodes.push_back(n);
 
