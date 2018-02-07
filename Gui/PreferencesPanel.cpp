@@ -27,6 +27,10 @@
 #include <map>
 #include <stdexcept>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/make_shared.hpp>
+#endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
@@ -625,7 +629,7 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
     _imp->shortcutButtonsLayout->addWidget(_imp->restoreShortcutsDefaultsButton);
     _imp->shortcutButtonsLayout->addStretch();
 
-    KnobPageGuiPtr page(new KnobPageGui);
+    KnobPageGuiPtr page = boost::make_shared<KnobPageGui>();
     page->gridLayout = 0;
     page->tab = _imp->shortcutsFrame;
     PreferenceTab tab;

@@ -221,7 +221,7 @@ NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection, std::list<std
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         if ( (*it)->isVisible() ) {
             NodePtr internalNode = (*it)->getNode();
-            SERIALIZATION_NAMESPACE::NodeSerializationPtr ns( new SERIALIZATION_NAMESPACE::NodeSerialization);
+            SERIALIZATION_NAMESPACE::NodeSerializationPtr ns = boost::make_shared<SERIALIZATION_NAMESPACE::NodeSerialization>();
             internalNode->toSerialization(ns.get());
             clipboard->push_back(std::make_pair(internalNode, ns));
         }

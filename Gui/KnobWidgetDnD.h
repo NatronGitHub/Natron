@@ -30,6 +30,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
 #include <QtCore/QCoreApplication>
@@ -48,6 +49,10 @@ class KnobWidgetDnD : public boost::enable_shared_from_this<KnobWidgetDnD>
 {
     Q_DECLARE_TR_FUNCTIONS(KnobWidgetDnD)
 
+    friend boost::shared_ptr<KnobWidgetDnD> boost::make_shared<KnobWidgetDnD>(const boost::shared_ptr<Natron::KnobGui> &, int &, QWidget *&);
+    friend boost::shared_ptr<KnobWidgetDnD> boost::make_shared<Natron::KnobWidgetDnD>(const boost::shared_ptr<Natron::KnobGui> &, Natron::DimSpec &, Natron::ViewSetSpec &, QWidget *&);
+    
+    // used by boost::make_shared
     KnobWidgetDnD(const KnobGuiPtr& knob,
                   DimSpec dimension,
                   ViewSetSpec view,
@@ -61,7 +66,7 @@ public:
                                                    ViewSetSpec view,
                                                    QWidget* widget)
     {
-        return boost::shared_ptr<KnobWidgetDnD>(new KnobWidgetDnD(knob, dimension, view, widget));
+        return boost::make_shared<KnobWidgetDnD>(knob, dimension, view, widget);
     }
     
 

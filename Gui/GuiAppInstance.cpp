@@ -124,7 +124,7 @@ struct GuiAppInstancePrivate
         , _isClosing(false)
         , _showingDialog(0)
         , _showingDialogMutex()
-        , _previewProvider(new FileDialogPreviewProvider)
+        , _previewProvider()
         , lastTimelineViewerMutex()
         , lastTimelineViewer()
         , loadProjectSplash(0)
@@ -150,7 +150,7 @@ void
 GuiAppInstance::resetPreviewProvider()
 {
     deletePreviewProvider();
-    _imp->_previewProvider.reset(new FileDialogPreviewProvider);
+    _imp->_previewProvider = boost::make_shared<FileDialogPreviewProvider>();
 }
 
 void
