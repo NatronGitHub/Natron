@@ -241,7 +241,7 @@ Bezier::createRenderCopy(const FrameViewRenderKey& render) const
     if (!mainInstance) {
         mainInstance = toBezier(boost::const_pointer_cast<KnobHolder>(shared_from_this()));
     }
-    BezierPtr ret(new Bezier(mainInstance, render));
+    BezierPtr ret = boost::make_shared<Bezier>(mainInstance, render);
     return ret;
 }
 
@@ -3797,7 +3797,7 @@ Bezier::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
                 (*it2)->toSerialization(&c.innerPoint);
                 if (useFeather) {
                     if (**it2 != **fp) {
-                        c.featherPoint.reset(new SERIALIZATION_NAMESPACE::BezierCPSerialization);
+                        c.featherPoint = boost::make_shared<SERIALIZATION_NAMESPACE::BezierCPSerialization>();
                         (*fp)->toSerialization(c.featherPoint.get());
                     }
                     ++fp;
@@ -4171,12 +4171,12 @@ Bezier::fetchRenderCloneKnobs()
             BezierShape& thisShape = _imp->viewShapes[it->first];
             thisShape.finished = it->second.finished;
             for (BezierCPs::const_iterator it2 = it->second.points.begin(); it2 != it->second.points.end(); ++it2) {
-                BezierCPPtr copy(new BezierCP());
+                BezierCPPtr copy = boost::make_shared<BezierCP>();
                 copy->copyControlPoint(**it2, &range);
                 thisShape.points.push_back(copy);
             }
             for (BezierCPs::const_iterator it2 = it->second.featherPoints.begin(); it2 != it->second.featherPoints.end(); ++it2) {
-                BezierCPPtr copy(new BezierCP());
+                BezierCPPtr copy = boost::make_shared<BezierCP>();
                 copy->copyControlPoint(**it2, &range);
                 thisShape.featherPoints.push_back(copy);
             }

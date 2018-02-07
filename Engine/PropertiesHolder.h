@@ -33,6 +33,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
 
@@ -95,7 +96,7 @@ public:
 
         virtual boost::shared_ptr<PropertyBase> createDuplicate() const OVERRIDE FINAL
         {
-            boost::shared_ptr<Property<T> > ret(new Property<T>());
+            boost::shared_ptr<Property<T> > ret = boost::make_shared<Property<T> >();
             ret->value = value;
             return ret;
         }
@@ -186,7 +187,7 @@ protected:
         if (found != _properties->end()) {
             propTemplate = boost::dynamic_pointer_cast<Property<T> >(found->second);
         } else {
-            propTemplate.reset(new Property<T>);
+            propTemplate = boost::make_shared<Property<T> >();
             _properties->insert(std::make_pair(name, propTemplate));
         }
         assert(propTemplate);

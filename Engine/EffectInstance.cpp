@@ -118,7 +118,7 @@ EffectInstance::EffectInstance(const EffectInstancePtr& other, const FrameViewRe
 
     {
         QMutexLocker k(&_imp->common->pluginsPropMutex);
-        _imp->descriptionPtr.reset(new EffectDescription);
+        _imp->descriptionPtr = boost::make_shared<EffectDescription>();
         _imp->descriptionPtr->cloneProperties(*_imp->common->descriptor);
     }
 }
@@ -299,7 +299,7 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
     // If we used getFramesNeeded, cache it now if possible
     if (framesNeededResults) {
         GetFramesNeededKeyPtr cacheKey;
-        cacheKey.reset(new GetFramesNeededKey(hashValue, getNode()->getPluginID()));
+        cacheKey = boost::make_shared<GetFramesNeededKey>(hashValue, getNode()->getPluginID() );
 
 
         CacheEntryLockerBasePtr cacheAccess = appPTR->getGeneralPurposeCache()->get(framesNeededResults);
@@ -854,7 +854,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             status = subLaunchData->getStatus();
         } else {
             // We are not during a render, create one.
-            TreeRender::CtorArgsPtr rargs(new TreeRender::CtorArgs());
+            TreeRender::CtorArgsPtr rargs = boost::make_shared<TreeRender::CtorArgs>();
             rargs->provider = getThisTreeRenderQueueProviderShared();
             rargs->time = inputTime;
             rargs->view = inputView;

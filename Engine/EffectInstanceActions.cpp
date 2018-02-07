@@ -482,7 +482,7 @@ EffectInstance::getLayersProducedAndNeeded_public(TimeValue inArgsTime, ViewIdx 
 
 
     GetComponentsKeyPtr cacheKey;
-    cacheKey.reset(new GetComponentsKey(hash,  getNode()->getPluginID()));
+    cacheKey = boost::make_shared<GetComponentsKey>(hash,  getNode()->getPluginID());
 
 
     *results = GetComponentsResults::create(cacheKey);
@@ -806,8 +806,8 @@ EffectInstance::getInverseDistortion_public(TimeValue inArgsTime,
     }
 
     if (identityInputNb >= 0) {
-        DistortionFunction2DPtr disto(new DistortionFunction2D);
-        disto->transformMatrix.reset(new Transform::Matrix3x3);
+        DistortionFunction2DPtr disto = boost::make_shared<DistortionFunction2D>();
+        disto->transformMatrix = boost::make_shared<Transform::Matrix3x3>();
         disto->transformMatrix->setIdentity();
 
         // Do not cache the results
@@ -828,7 +828,7 @@ EffectInstance::getInverseDistortion_public(TimeValue inArgsTime,
 
         GetDistortionKeyPtr cacheKey;
         {
-            cacheKey.reset(new GetDistortionKey(hash, renderScale, getNode()->getPluginID()));
+            cacheKey = boost::make_shared<GetDistortionKey>(hash, renderScale, getNode()->getPluginID());
         }
 
 
@@ -855,7 +855,7 @@ EffectInstance::getInverseDistortion_public(TimeValue inArgsTime,
             assert(cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute);
         }
 
-        DistortionFunction2DPtr disto(new DistortionFunction2D);
+        DistortionFunction2DPtr disto = boost::make_shared<DistortionFunction2D>();
         // Call the action
         stat = getInverseDistortion(time, mappedScale, draftRender, view, disto.get());
         if (isFailureRetCode(stat)) {
@@ -933,7 +933,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     IsIdentityKeyPtr cacheKey;
     {
-        cacheKey.reset(new IsIdentityKey(hash, time, plane ? *plane : ImagePlaneDesc::getNoneComponents(), getNode()->getPluginID()));
+        cacheKey = boost::make_shared<IsIdentityKey>(hash, time, plane ? *plane : ImagePlaneDesc::getNoneComponents(), getNode()->getPluginID());
     }
 
 
@@ -1069,7 +1069,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
     }
 
     GetRegionOfDefinitionKeyPtr cacheKey;
-    cacheKey.reset(new GetRegionOfDefinitionKey(hash, mappedScale, getNode()->getPluginID()));
+    cacheKey = boost::make_shared<GetRegionOfDefinitionKey>(hash, mappedScale, getNode()->getPluginID());
 
 
     *results = GetRegionOfDefinitionResults::create(cacheKey);
@@ -1464,7 +1464,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     NodePtr thisNode = getNode();
 
     GetFramesNeededKeyPtr cacheKey;
-    cacheKey.reset(new GetFramesNeededKey(hash, getNode()->getPluginID()));
+    cacheKey = boost::make_shared<GetFramesNeededKey>(hash, getNode()->getPluginID());
 
     *results = GetFramesNeededResults::create(cacheKey);
 
@@ -1570,7 +1570,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
 
 
     if (!cacheKey) {
-        cacheKey.reset(new GetFramesNeededKey(0,  getNode()->getPluginID()));
+        cacheKey = boost::make_shared<GetFramesNeededKey>(0,  getNode()->getPluginID());
 
     }
     
@@ -1647,7 +1647,7 @@ EffectInstance::getFrameRange_public(GetFrameRangeResultsPtr* results)
         hash = computeHash(hashArgs);
     }
 
-    GetFrameRangeKeyPtr cacheKey(new GetFrameRangeKey(hash, getNode()->getPluginID()));
+    GetFrameRangeKeyPtr cacheKey = boost::make_shared<GetFrameRangeKey>(hash, getNode()->getPluginID());
     *results = GetFrameRangeResults::create(cacheKey);
 
     CacheEntryLockerBasePtr cacheAccess = (*results)->getFromCache();
@@ -1946,9 +1946,9 @@ EffectInstance::getTimeInvariantMetadata_public(GetTimeInvariantMetadataResultsP
         hash = computeHash(hashArgs);
     }
 
-    GetTimeInvariantMetadataKeyPtr cacheKey(new GetTimeInvariantMetadataKey(hash, getNode()->getPluginID()));
+    GetTimeInvariantMetadataKeyPtr cacheKey = boost::make_shared<GetTimeInvariantMetadataKey>(hash, getNode()->getPluginID());
     *results = GetTimeInvariantMetadataResults::create(cacheKey);
-    NodeMetadataPtr metadata(new NodeMetadata);
+    NodeMetadataPtr metadata = boost::make_shared<NodeMetadata>();
     (*results)->setMetadataResults(metadata);
 
 

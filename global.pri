@@ -467,6 +467,9 @@ unix {
   symbols_hidden_by_default.name = GCC_SYMBOLS_PRIVATE_EXTERN
   symbols_hidden_by_default.value = YES
   QMAKE_MAC_XCODE_SETTINGS += symbols_hidden_by_default
+  c++11 {
+    QMAKE_CXXFLAGS += -std=c++11
+  }
 }
 
 *clang* {

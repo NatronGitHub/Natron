@@ -85,7 +85,7 @@ AppManagerPrivate::AppManagerPrivate()
     , readerPlugins()
     , writerPlugins()
     , ofxHost( new OfxHost() )
-    , pythonTLS(new TLSHolder<AppManager::PythonTLSData>())
+    , pythonTLS()
     , multiThreadSuite(new MultiThread())
     , _knobFactory( new KnobFactory() )
     , generalPurposeCache()
@@ -119,8 +119,9 @@ AppManagerPrivate::AppManagerPrivate()
     , openGLRenderers()
     , tasksQueueManager()
 {
+    pythonTLS = boost::make_shared<TLSHolder<AppManager::PythonTLSData> >();
     setMaxCacheFiles();
-    tasksQueueManager.reset(new TreeRenderQueueManager);
+    tasksQueueManager = boost::make_shared<TreeRenderQueueManager>();
 }
 
 AppManagerPrivate::~AppManagerPrivate()

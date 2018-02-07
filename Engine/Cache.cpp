@@ -1656,7 +1656,7 @@ CacheEntryLocker<persistent>::create(const boost::shared_ptr<Cache<persistent> >
     if (!entry) {
         throw std::invalid_argument("CacheEntryLocker::create: no entry");
     }
-    boost::shared_ptr<CacheEntryLocker<persistent> >  ret(new CacheEntryLocker<persistent>(cache, entry));
+    boost::shared_ptr<CacheEntryLocker<persistent> >  ret = boost::make_shared<CacheEntryLocker<persistent> >(cache, entry);
 
 
     // Lookup and find an existing entry.
@@ -1780,9 +1780,9 @@ static void reOpenToCData(CacheBucket<persistent>* bucket, bool create)
         std::size_t dataNumBytes = bucket->tocFile->size();
 
         if (create) {
-            bucket->tocFileManager.reset(new ExternalSegmentType(bip::create_only, data, dataNumBytes));
+            bucket->tocFileManager = boost::make_shared<ExternalSegmentType>(bip::create_only, data, dataNumBytes);
         } else {
-            bucket->tocFileManager.reset(new ExternalSegmentType(bip::open_only, data, dataNumBytes));
+            bucket->tocFileManager = boost::make_shared<ExternalSegmentType>(bip::open_only, data, dataNumBytes);
         }
         {
             std::size_t curSize = bucket->tocFileManager->get_size();
@@ -3241,7 +3241,7 @@ Cache<persistent>::initialize(const boost::shared_ptr<Cache<persistent> >& thisS
         _imp->buckets[i].bucketIndex = i;
         
 
-        _imp->buckets[i].tocFile.reset(new typename CacheBucket<persistent>::StorageType);
+        _imp->buckets[i].tocFile = boost::make_shared<typename CacheBucket<persistent>::StorageType>();
 
         if (persistent) {
             // Get the bucket directory path. It ends with a separator.
@@ -3315,7 +3315,7 @@ template <bool persistent>
 CacheBasePtr
 Cache<persistent>::create(bool enableTileStorage)
 {
-    boost::shared_ptr<Cache<persistent> > ret (new Cache<persistent>(enableTileStorage));
+    boost::shared_ptr<Cache<persistent> > ret  = boost::make_shared<Cache<persistent> >(enableTileStorage);
     ret->initialize(ret);
     return ret;
 } // create
@@ -3368,7 +3368,7 @@ CachePrivate<persistent>::createTileStorageInternal(
 
     U64 fileIndex;
     {
-        StoragePtrType data(new StorageType);
+        StoragePtrType data = boost::make_shared<StorageType>();
         if (persistent) {
             std::stringstream ss;
             ss << directoryContainingCachePath << "/" <<  NATRON_CACHE_DIRECTORY_NAME << "/TilesStorage" << tilesStorage.size() + 1;
@@ -3623,7 +3623,7 @@ CachePrivate<true>::reOpenTileStorage()
     files.sort();
     for (QStringList::iterator it = files.begin(); it != files.end(); ++it) {
         if (it->startsWith(QLatin1String("TilesStorage"))) {
-            MemoryFilePtr data(new MemoryFile);
+            MemoryFilePtr data = boost::make_shared<MemoryFile>();
             std::string filePath = dirPath.toStdString() + "/" + it->toStdString();
             (data)->open(filePath, MemoryFile::eFileOpenModeOpenOrCreate);
             if ((data)->size() != NATRON_TILE_STORAGE_FILE_SIZE) {

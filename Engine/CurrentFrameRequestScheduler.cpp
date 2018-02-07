@@ -287,7 +287,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats)
     }
 
 
-    boost::shared_ptr<CurrentFrameRequestStartArgs> args(new CurrentFrameRequestStartArgs);
+    boost::shared_ptr<CurrentFrameRequestStartArgs> args = boost::make_shared<CurrentFrameRequestStartArgs>();
 
     args->frame = TimeValue(viewerNode->getTimeline()->currentFrame());;
     args->enableRenderStats = enableRenderStats;
@@ -403,11 +403,11 @@ ViewerCurrentFrameRequestScheduler::onTreeRenderFinished(const TreeRenderPtr& re
 
     } else {
 
-        boost::shared_ptr<ViewerCurrentFrameRenderProcessFrameArgs> processArgs(new ViewerCurrentFrameRenderProcessFrameArgs);
+        boost::shared_ptr<ViewerCurrentFrameRenderProcessFrameArgs> processArgs = boost::make_shared<ViewerCurrentFrameRenderProcessFrameArgs>();
         processArgs->age = renderAge;
         processArgs->results = results;
 
-        ProcessFrameThreadStartArgsPtr processStartArgs(new ProcessFrameThreadStartArgs);
+        ProcessFrameThreadStartArgsPtr processStartArgs = boost::make_shared<ProcessFrameThreadStartArgs>();
         processStartArgs->args = processArgs;
         processStartArgs->executeOnMainThread = true;
         processStartArgs->processor = this;

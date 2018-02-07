@@ -1439,7 +1439,7 @@ SERIALIZATION_NAMESPACE::GroupKnobSerialization::serialize(Archive & ar, const u
             ar & ::boost::serialization::make_nvp("item", *knob);
             _children.push_back(knob);
         } else {
-            KnobSerializationPtr knob(new KnobSerialization);
+            KnobSerializationPtr knob = boost::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("item", *knob);
             _children.push_back(knob);
         }
@@ -1500,7 +1500,7 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
     int nbKnobs;
     ar & ::boost::serialization::make_nvp("KnobsCount", nbKnobs);
     for (int i = 0; i < nbKnobs; ++i) {
-        KnobSerializationPtr ks(new KnobSerialization);
+        KnobSerializationPtr ks = boost::make_shared<KnobSerialization>();
         ar & ::boost::serialization::make_nvp("item", *ks);
         _knobsValues.push_back(ks);
     }
@@ -1570,7 +1570,7 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
         ar & ::boost::serialization::make_nvp("HasRotoContext", hasRotoContext);
         if (hasRotoContext) {
             Compat::RotoContextSerialization rotoContext;
-            KnobItemsTableSerializationPtr tableModel(new KnobItemsTableSerialization);
+            KnobItemsTableSerializationPtr tableModel = boost::make_shared<KnobItemsTableSerialization>();
             ar & ::boost::serialization::make_nvp("RotoContext", rotoContext);
             rotoContext.convertRotoContext(tableModel.get());
             _tables.push_back(tableModel);
@@ -1582,7 +1582,7 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
             if (hasTrackerContext) {
 
                 Compat::TrackerContextSerialization trackerContext;
-                KnobItemsTableSerializationPtr tableModel(new KnobItemsTableSerialization);
+                KnobItemsTableSerializationPtr tableModel = boost::make_shared<KnobItemsTableSerialization>();
                 ar & boost::serialization::make_nvp("TrackerContext", trackerContext);
                 trackerContext.convertTrackerContext(tableModel.get());
                 _tables.push_back(tableModel);
@@ -1622,7 +1622,7 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
         ar & ::boost::serialization::make_nvp("Children", nodesCount);
 
         for (int i = 0; i < nodesCount; ++i) {
-            NodeSerializationPtr s(new NodeSerialization);
+            NodeSerializationPtr s = boost::make_shared<NodeSerialization>();
             ar & ::boost::serialization::make_nvp("item", *s);
             _children.push_back(s);
         }
@@ -1736,7 +1736,7 @@ SERIALIZATION_NAMESPACE::ProjectSerialization::serialize(Archive & ar,
         int nodesCount;
         ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
         for (int i = 0; i < nodesCount; ++i) {
-            NodeSerializationPtr ns(new NodeSerialization);
+            NodeSerializationPtr ns = boost::make_shared<NodeSerialization>();
             ar & ::boost::serialization::make_nvp("item", *ns);
             _nodes.push_back(ns);
         }
@@ -1750,7 +1750,7 @@ SERIALIZATION_NAMESPACE::ProjectSerialization::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("ProjectKnobsCount", knobsCount);
 
     for (int i = 0; i < knobsCount; ++i) {
-        KnobSerializationPtr ks(new KnobSerialization);
+        KnobSerializationPtr ks = boost::make_shared<KnobSerialization>();
         ar & ::boost::serialization::make_nvp("item", *ks);
         _projectKnobs.push_back(ks);
     }
@@ -1795,7 +1795,7 @@ void SERIALIZATION_NAMESPACE::PythonPanelSerialization::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("NumParams", nKnobs);
 
     for (int i = 0; i < nKnobs; ++i) {
-        KnobSerializationPtr k(new KnobSerialization);
+        KnobSerializationPtr k = boost::make_shared<KnobSerialization>();
         ar & ::boost::serialization::make_nvp("item", *k);
         knobs.push_back(k);
     }

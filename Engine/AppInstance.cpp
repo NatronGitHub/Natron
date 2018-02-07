@@ -561,7 +561,7 @@ AppInstance::load(const CLArgs& cl,
     _imp->_currentProject = Project::create( shared_from_this() );
     _imp->_currentProject->initializeKnobsPublic();
 
-    _imp->renderQueue.reset(new RenderQueue(shared_from_this()));
+    _imp->renderQueue = boost::make_shared<RenderQueue>( shared_from_this() );
 
     loadInternal(cl, makeEmptyInstance);
 }
@@ -748,7 +748,7 @@ AddCreateNode_RAII::AddCreateNode_RAII(const AppInstancePtr& app,
 : _imp(app->_imp.get())
 , _item()
 {
-    _item.reset(new CreateNodeStackItem);
+    _item = boost::shared_ptr<CreateNodeStackItem>();
     _item->args = args;
     _item->node = node;
 
@@ -855,7 +855,7 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
         NodePtr containerNode;
         CreateNodeArgsPtr groupArgs;
         if (!istoolsetScript) {
-            groupArgs.reset(new CreateNodeArgs(*args));
+            groupArgs = boost::make_shared<CreateNodeArgs>(*args);
             groupArgs->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
             groupArgs->setProperty<std::string>(kCreateNodeArgsPropPluginID, originalPluginID);
             groupArgs->setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, true);
@@ -2111,7 +2111,7 @@ AppInstance::saveApplicationWorkspace(SERIALIZATION_NAMESPACE::WorkspaceSerializ
     // Floating windows
     std::list<SerializableWindow*> floatingWindows = getFloatingWindowsSerialization();
     for (std::list<SerializableWindow*>::iterator it = floatingWindows.begin(); it!=floatingWindows.end(); ++it) {
-        boost::shared_ptr<SERIALIZATION_NAMESPACE::WindowSerialization> s(new SERIALIZATION_NAMESPACE::WindowSerialization);
+        boost::shared_ptr<SERIALIZATION_NAMESPACE::WindowSerialization> s = boost::make_shared<SERIALIZATION_NAMESPACE::WindowSerialization>();
         (*it)->toSerialization(s.get());
         serialization->_floatingWindowsSerialization.push_back(s);
 

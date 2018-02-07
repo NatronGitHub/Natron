@@ -285,6 +285,8 @@ class CacheEntryLocker : public CacheEntryLockerBase
     // For create
     friend class Cache<persistent>;
 
+    friend boost::shared_ptr<CacheEntryLocker> boost::make_shared<CacheEntryLocker>(const boost::shared_ptr<Cache<persistent> >& cache, const CacheEntryBasePtr& entry);
+
     CacheEntryLocker(const boost::shared_ptr<Cache<persistent> >& cache, const CacheEntryBasePtr& entry);
 
     static boost::shared_ptr<CacheEntryLocker<persistent> > create(const boost::shared_ptr<Cache<persistent> >& cache, const CacheEntryBasePtr& entry);
@@ -567,14 +569,13 @@ class Cache
     friend struct CacheEntryLockerPrivate<persistent>;
     friend class CacheEntryLocker<persistent>;
     friend struct CacheBucket<persistent>;
-
+    
     void initialize(const boost::shared_ptr<Cache<persistent> >& thisShared);
 
-    Cache(bool enableTileStorage);
 
 public:
-
-
+    // used by make_shared
+    Cache(bool enableTileStorage);
 
     virtual ~Cache();
 

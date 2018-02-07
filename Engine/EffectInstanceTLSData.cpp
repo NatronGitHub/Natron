@@ -78,7 +78,7 @@ EffectInstanceTLSData::pushActionArgs(const std::string& actionName, TimeValue t
 #endif
                               )
 {
-    GenericActionTLSArgsPtr args(new GenericActionTLSArgs);
+    GenericActionTLSArgsPtr args = boost::make_shared<GenericActionTLSArgs>();
     args->time = time;
     args->view = view;
     args->scale = scale;
@@ -100,7 +100,7 @@ EffectInstanceTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, const 
                                             const RectI& renderWindow,
                                             const std::map<ImagePlaneDesc, ImagePtr>& outputPlanes)
 {
-    RenderActionTLSDataPtr args(new RenderActionTLSData);
+    RenderActionTLSDataPtr args = boost::make_shared<RenderActionTLSData>();
     args->time = time;
     args->view = view;
     args->scale = proxyScale;

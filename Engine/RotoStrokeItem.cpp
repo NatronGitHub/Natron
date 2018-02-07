@@ -1135,7 +1135,7 @@ RotoStrokeItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationOb
             RotoStrokeItemPrivate::StrokeCurves stroke;
             stroke.xCurve = boost::make_shared<Curve>();
             stroke.yCurve = boost::make_shared<Curve>();
-            stroke.pressureCurve = boost::make_shared<Curve<();
+            stroke.pressureCurve = boost::make_shared<Curve>();
             stroke.xCurve->fromSerialization(*it->x);
             stroke.yCurve->fromSerialization(*it->y);
             stroke.pressureCurve->fromSerialization(*it->pressure);

@@ -690,14 +690,16 @@ public:
 
 
 private:
+    friend boost::shared_ptr<TrackerNodePrivate> boost::make_shared<TrackerNodePrivate,TrackerNode*&>(TrackerNode*& publicInterface);
 
+    // used by boost::make_shared<>
     TrackerNodePrivate(TrackerNode* publicInterface);
 
 public:
 
     static boost::shared_ptr<TrackerNodePrivate> create(TrackerNode* publicInterface)
     {
-        return boost::shared_ptr<TrackerNodePrivate>(new TrackerNodePrivate(publicInterface));
+        return boost::make_shared<TrackerNodePrivate>(publicInterface);
     }
 
     virtual ~TrackerNodePrivate();

@@ -151,17 +151,17 @@ DefaultScheduler::createFrameRenderResults(TimeValue time, const std::vector<Vie
 
     TreeRenderQueueProviderPtr thisShared = shared_from_this();
 
-    future->reset(new RenderFrameResultsContainer(thisShared));
+    *future = boost::make_shared<RenderFrameResultsContainer>(thisShared);
     (*future)->time = time;
 
     for (std::size_t view = 0; view < viewsToRender.size(); ++view) {
 
-        boost::shared_ptr<DefaultRenderFrameSubResult> subResults(new DefaultRenderFrameSubResult);
+        boost::shared_ptr<DefaultRenderFrameSubResult> subResults = boost::make_shared<DefaultRenderFrameSubResult>();
         subResults->view = viewsToRender[view];
         subResults->stats = stats;
 
         {
-            TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
+            TreeRender::CtorArgsPtr args = boost::make_shared<TreeRender::CtorArgs>();
             args->provider = thisShared;
             args->treeRootEffect = outputNode->getEffectInstance();
             args->time = time;
@@ -211,7 +211,7 @@ public:
 ProcessFrameArgsBasePtr
 DefaultScheduler::createProcessFrameArgs(const OutputSchedulerThreadStartArgsPtr& runArgs, const RenderFrameResultsContainerPtr& results)
 {
-    boost::shared_ptr<DefaultSchedulerProcessFrameArgs> processArgs(new DefaultSchedulerProcessFrameArgs);
+    boost::shared_ptr<DefaultSchedulerProcessFrameArgs> processArgs = boost::make_shared<DefaultSchedulerProcessFrameArgs>();
     processArgs->results = results;
     processArgs->runArgs = runArgs;
     return processArgs;

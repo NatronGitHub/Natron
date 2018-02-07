@@ -24,6 +24,8 @@
 
 #include "NodeSerialization.h"
 
+#include <cmath>
+
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <yaml-cpp/yaml.h>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON

@@ -30,6 +30,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
 GCC_DIAG_OFF(unused-function)
@@ -78,9 +79,10 @@ class TrackerFrameAccessor
 : public mv::FrameAccessor
 , public boost::enable_shared_from_this<TrackerFrameAccessor>
 {
+    friend TrackerFrameAccessorPtr boost::make_shared<Natron::TrackerFrameAccessor>(const boost::shared_ptr<Natron::Node> &, const boost::shared_ptr<Natron::Node> &, const Natron::ImagePlaneDesc &, int &, bool *&, int &);
 
 protected:
-
+    // used by boost::make_shared<TrackerFrameAccessor>
     TrackerFrameAccessor(const NodePtr& sourceImageProvider,
                          const NodePtr& maskImageProvider,
                          const ImagePlaneDesc& maskImagePlane,
@@ -89,7 +91,6 @@ protected:
                          int formatHeight);
 
 public:
-
     static TrackerFrameAccessorPtr create(const NodePtr& sourceImageProvider,
                          const NodePtr& maskImageProvider,
                          const ImagePlaneDesc& maskImagePlane,
@@ -97,7 +98,7 @@ public:
                          bool enabledChannels[3],
                          int formatHeight)
     {
-        return TrackerFrameAccessorPtr(new TrackerFrameAccessor(sourceImageProvider, maskImageProvider, maskImagePlane, maskPlaneIndex, enabledChannels, formatHeight));
+        return boost::make_shared<TrackerFrameAccessor>(sourceImageProvider, maskImageProvider, maskImagePlane, maskPlaneIndex, enabledChannels, formatHeight);
     }
 
 

@@ -31,6 +31,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
@@ -120,13 +121,16 @@ class FrameViewRenderRunnable
 {
     struct Implementation;
 
+    friend FrameViewRenderRunnablePtr boost::make_shared<FrameViewRenderRunnable>(const TreeRenderExecutionDataPtr& sharedData, const FrameViewRequestPtr& request);
+    
+    // used by boost::make_shared<>
     FrameViewRenderRunnable(const TreeRenderExecutionDataPtr& sharedData, const FrameViewRequestPtr& request);
 
 public:
 
     static FrameViewRenderRunnablePtr create(const TreeRenderExecutionDataPtr& sharedData, const FrameViewRequestPtr& request)
     {
-        return FrameViewRenderRunnablePtr(new FrameViewRenderRunnable(sharedData, request));
+        return boost::make_shared<FrameViewRenderRunnable>(sharedData, request);
     }
 
 

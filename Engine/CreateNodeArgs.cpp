@@ -45,7 +45,7 @@ CreateNodeArgs::~CreateNodeArgs()
 CreateNodeArgsPtr
 CreateNodeArgs::create(const std::string& pluginID, const NodeCollectionPtr& group)
 {
-    CreateNodeArgsPtr ret(new CreateNodeArgs);
+    CreateNodeArgsPtr ret = boost::make_shared<CreateNodeArgs>();
     ret->setProperty(kCreateNodeArgsPropPluginID, pluginID);
     if (group) {
         ret->setProperty(kCreateNodeArgsPropGroupContainer, group);

@@ -29,6 +29,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -54,20 +55,18 @@ class RenderEngine
 {
     Q_OBJECT
 
-
     friend class OutputSchedulerThread;
     friend class ViewerDisplayScheduler;
+    friend RenderEnginePtr boost::make_shared<RenderEngine>(const NodePtr&);
 
 protected:
-    
+    // used by boost::make_shared
     RenderEngine(const NodePtr& output);
 
-
 public:
-
     static RenderEnginePtr create(const NodePtr& output)
     {
-        return RenderEnginePtr(new RenderEngine(output));
+        return boost::make_shared<RenderEngine>(output);
     }
 
     virtual ~RenderEngine();
@@ -312,8 +311,10 @@ private:
 class ViewerRenderEngine
 : public RenderEngine
 {
-protected:
+    friend boost::shared_ptr<ViewerRenderEngine> boost::make_shared<ViewerRenderEngine,const NodePtr&>(const NodePtr&);
 
+protected:
+    // used by boost::make_shared
     ViewerRenderEngine(const NodePtr& output)
     : RenderEngine(output)
     {}
@@ -321,7 +322,7 @@ public:
 
     static RenderEnginePtr create(const NodePtr& output)
     {
-        return RenderEnginePtr(new ViewerRenderEngine(output));
+        return boost::make_shared<ViewerRenderEngine>(output);
     }
 
     virtual ~ViewerRenderEngine() {}
