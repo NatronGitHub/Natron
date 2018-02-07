@@ -478,7 +478,7 @@ ReadNodePrivate::destroyReadNode()
                         (*it)->setSecret(false);
                     }
 
-                    SERIALIZATION_NAMESPACE::KnobSerializationPtr s( new SERIALIZATION_NAMESPACE::KnobSerialization );
+                    SERIALIZATION_NAMESPACE::KnobSerializationPtr s = boost::make_shared<SERIALIZATION_NAMESPACE::KnobSerialization>();
                     (*it)->toSerialization(s.get());
                     genericKnobsSerialization.push_back(s);
                 }

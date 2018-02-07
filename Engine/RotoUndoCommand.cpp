@@ -240,7 +240,7 @@ TransformUndoCommand::TransformUndoCommand(const RotoPaintInteractPtr& roto,
     , _roto(roto)
     , _rippleEditEnabled( roto->rippleEditEnabledButton.lock()->getValue() )
     , _selectedTool(roto->selectedToolAction)
-    , _matrix(new Transform::Matrix3x3)
+    , _matrix()
     , _time(time)
     , _view(view)
     , _selectedCurves()

@@ -40,6 +40,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/bind.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/make_shared.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 

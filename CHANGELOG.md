@@ -40,6 +40,7 @@ Natron multiple times on the same computer, the different processes will share t
 - DenoiseSharpen: fix a bug where the plugin would not abort processing when required.
 - ColorCorrect: fix luminance computation when applying saturation #1706
 - Reformat: add a checkbox to use the input RoD instead of the input format (useful when preceded by a crop)
+- ContactSheet/LayerContactSheet: correctly set the format when the output size is changed
 
 
 ## Version 2.3.4

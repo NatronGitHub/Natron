@@ -1890,7 +1890,7 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
             assert(undoRedoState);
 
             if (undoRedoState && reason == eValueChangedReasonPluginEdited) {
-                UndoCommandPtr cmd(new OfxUndoCommand(undoRedoText, undoRedoState));
+                UndoCommandPtr cmd = boost::make_shared<OfxUndoCommand>(undoRedoText, undoRedoState);
                 pushUndoCommand(cmd);
                 return true;
             }

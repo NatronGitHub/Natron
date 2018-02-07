@@ -529,7 +529,7 @@ HistogramCPUThread::run()
             continue;
         }
         
-        FinishedHistogramPtr ret(new FinishedHistogram);
+        FinishedHistogramPtr ret = boost::make_shared<FinishedHistogram>();
         ret->binsCount = request.binsCount;
         ret->mode = request.mode;
         ret->vmin = request.vmin;

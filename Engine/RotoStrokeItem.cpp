@@ -1054,9 +1054,9 @@ RotoStrokeItem::copyItem(const KnobTableItem& other)
         for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = otherStroke->_imp->strokes.begin();
              it != otherStroke->_imp->strokes.end(); ++it) {
             RotoStrokeItemPrivate::StrokeCurves s;
-            s.xCurve.reset(new Curve);
-            s.yCurve.reset(new Curve);
-            s.pressureCurve.reset(new Curve);
+            s.xCurve = boost::make_shared<Curve>();
+            s.yCurve = boost::make_shared<Curve>();
+            s.pressureCurve = boost::make_shared<Curve>();
             s.xCurve->clone( *(it->xCurve) );
             s.yCurve->clone( *(it->yCurve) );
             s.pressureCurve->clone( *(it->pressureCurve) );
@@ -1085,9 +1085,9 @@ RotoStrokeItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase
         for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin();
              it != _imp->strokes.end(); ++it) {
             SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization::PointCurves p;
-            p.x.reset(new SERIALIZATION_NAMESPACE::CurveSerialization);
-            p.y.reset(new SERIALIZATION_NAMESPACE::CurveSerialization);
-            p.pressure.reset(new SERIALIZATION_NAMESPACE::CurveSerialization);
+            p.x = boost::make_shared<SERIALIZATION_NAMESPACE::CurveSerialization>();
+            p.y = boost::make_shared<SERIALIZATION_NAMESPACE::CurveSerialization>();
+            p.pressure = boost::make_shared<SERIALIZATION_NAMESPACE::CurveSerialization>();
             it->xCurve->toSerialization(p.x.get());
             it->yCurve->toSerialization(p.y.get());
             it->pressureCurve->toSerialization(p.pressure.get());
@@ -1133,9 +1133,9 @@ RotoStrokeItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationOb
         QMutexLocker k(&_imp->lock);
         for (std::list<SERIALIZATION_NAMESPACE::RotoStrokeItemSerialization::PointCurves>::const_iterator it = s->_subStrokes.begin(); it!=s->_subStrokes.end(); ++it) {
             RotoStrokeItemPrivate::StrokeCurves stroke;
-            stroke.xCurve.reset(new Curve);
-            stroke.yCurve.reset(new Curve);
-            stroke.pressureCurve.reset(new Curve);
+            stroke.xCurve = boost::make_shared<Curve>();
+            stroke.yCurve = boost::make_shared<Curve>();
+            stroke.pressureCurve = boost::make_shared<Curve<();
             stroke.xCurve->fromSerialization(*it->x);
             stroke.yCurve->fromSerialization(*it->y);
             stroke.pressureCurve->fromSerialization(*it->pressure);

@@ -30,6 +30,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
 #include <QtCore/QMutex>
@@ -57,20 +58,26 @@ struct BezierCPPrivate
 
     BezierCPPrivate(const BezierPtr& curve)
         : holder(curve)
-        , curveX(new Curve)
-        , curveY(new Curve)
+        , curveX()
+        , curveY()
         , x(0)
         , y(0)
-        , curveLeftBezierX(new Curve)
-        , curveRightBezierX(new Curve)
-        , curveLeftBezierY(new Curve)
-        , curveRightBezierY(new Curve)
+        , curveLeftBezierX()
+        , curveRightBezierX()
+        , curveLeftBezierY()
+        , curveRightBezierY()
         , lock()
         , leftX(0)
         , rightX(0)
         , leftY(0)
         , rightY(0)
     {
+        curveX= boost::make_shared<Curve>();
+        curveY= boost::make_shared<Curve>();
+        curveLeftBezierX= boost::make_shared<Curve>();
+        curveRightBezierX= boost::make_shared<Curve>();
+        curveLeftBezierY= boost::make_shared<Curve>();
+        curveRightBezierY= boost::make_shared<Curve>();
     }
 };
 
