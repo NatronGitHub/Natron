@@ -32,6 +32,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
 
@@ -62,6 +63,8 @@ class TableItem : public boost::enable_shared_from_this<TableItem>
     friend class TableModel;
     friend class TableView;
     friend struct TableItemPrivate;
+
+    friend TableItemPtr boost::make_shared<TableItem>(const boost::shared_ptr<TableModel> &);
 
     TableItem(const TableModelPtr& model);
 
@@ -458,7 +461,9 @@ public:
     };
 
 protected:
+    friend TableModelPtr boost::make_shared<Natron::TableModel>(int &, Natron::TableModel::TableModelTypeEnum &);
     
+    // used by boost::make_shared
     TableModel(int cols, TableModelTypeEnum type);
 
 public:
@@ -466,7 +471,7 @@ public:
    
     static TableModelPtr create(int columns, TableModelTypeEnum type)
     {
-        return TableModelPtr(new TableModel(columns, type));
+        return boost::make_shared<TableModel>(columns, type);
     }
 
     virtual ~TableModel();

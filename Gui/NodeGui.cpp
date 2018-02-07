@@ -621,7 +621,7 @@ NodeGui::createGui()
     animGrad.push_back( qMakePair( 0., QColor(Qt::white) ) );
     animGrad.push_back( qMakePair( 0.3, QColor(Qt::red) ) );
     animGrad.push_back( qMakePair( 1., QColor(192, 64, 64) ) );
-    _animationIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, QString::fromUtf8("A"), bbox.topRight(), ellipseDiam, ellipseDiam, animGrad, QColor(255, 255, 255), this) );
+    _animationIndicator = boost::make_shared<NodeGuiIndicator>(getDagGui(), depth + 2, QString::fromUtf8("A"), bbox.topRight(), ellipseDiam, ellipseDiam, animGrad, QColor(255, 255, 255), this);
     _animationIndicator->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("This node has one or several parameters with an animation"), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _animationIndicator->setActive(false);
 

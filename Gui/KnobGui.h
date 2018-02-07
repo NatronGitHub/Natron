@@ -95,20 +95,22 @@ public:
         // there should be a single widget so the table is not cluttered
         eKnobLayoutTypeTableItemWidget
     };
+
 private:
+    friend KnobGuiPtr boost::make_shared<Natron::KnobGui>(const boost::shared_ptr<Natron::KnobI> &, Natron::KnobGui::KnobLayoutTypeEnum &, Natron::KnobGuiContainerI *&);
 
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
+    // used by make_shared
     KnobGui(const KnobIPtr& knob, KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container);
 
     void initialize();
 
 
 public:
-
     static KnobGuiPtr create(const KnobIPtr& knob, KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container)
     {
-        KnobGuiPtr ret(new KnobGui(knob,layoutType,container));
+        KnobGuiPtr ret = boost::make_shared<KnobGui>(knob,layoutType,container);
         ret->initialize();
         return ret;
     }

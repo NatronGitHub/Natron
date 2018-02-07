@@ -208,8 +208,8 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
 
     layout->addWidget(_imp->treeColumn);
 
-    _imp->model.reset(new KnobGuiParametricAnimationModel(knobUI->getGui(), _imp.get()));
-    _imp->selectionModel.reset(new AnimationModuleSelectionModel(_imp->model));
+    _imp->model = boost::make_shared<KnobGuiParametricAnimationModel>(knobUI->getGui(), _imp.get());
+    _imp->selectionModel = boost::make_shared<AnimationModuleSelectionModel>(_imp->model);
     _imp->curveWidget = new AnimationModuleView(layout->parentWidget());
 
     _imp->animRoot = KnobAnim::create(_imp->model, KnobsHolderAnimBasePtr(), 0 /*parentTreeItem*/, knob);

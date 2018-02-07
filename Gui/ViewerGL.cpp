@@ -1204,7 +1204,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const TextureTransferArgs& args)
 
 
                         // Make a temporary texture, fill it with black and copy the origin texture into it before uploading the image
-                        GLTexturePtr tmpTex(new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, bitdepth, format, internalFormat, glType, true) );
+                        GLTexturePtr tmpTex = boost::make_shared<Texture>(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, bitdepth, format, internalFormat, glType, true);
                         tmpTex->ensureTextureHasSize(unionedBounds, 0);
 
                         saveOpenGLContext();

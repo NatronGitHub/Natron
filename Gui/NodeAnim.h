@@ -40,6 +40,7 @@ class NodeAnim : public QObject,  public boost::enable_shared_from_this<NodeAnim
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+    friend NodeAnimPtr boost::make_shared<Natron::NodeAnim>(const boost::shared_ptr<Natron::AnimationModule> &, const boost::shared_ptr<Natron::NodeGui> &);
 
     NodeAnim(const AnimationModulePtr& model,
              const NodeGuiPtr &nodeGui);
@@ -50,7 +51,7 @@ public:
                               AnimatedItemTypeEnum itemType,
                               const NodeGuiPtr &nodeGui)
     {
-        NodeAnimPtr ret(new NodeAnim(model, nodeGui));
+        NodeAnimPtr ret = boost::make_shared<NodeAnim>(model, nodeGui);
         ret->initialize(itemType);
         return ret;
     }

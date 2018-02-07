@@ -125,7 +125,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     sizeH.setWidth(10000);
     sizeH.setHeight(10000);
 
-    glContextWrapper.reset(new GuiGLContext(this_));
+    glContextWrapper = boost::make_shared<GuiGLContext>(this_);
 }
 
 ViewerGL::Implementation::~Implementation()

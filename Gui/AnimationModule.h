@@ -58,6 +58,7 @@ class AnimationModule
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+    friend AnimationModulePtr boost::make_shared<Natron::AnimationModule>(Natron::Gui *&, Natron::AnimationModuleEditor *&, const boost::shared_ptr<Natron::TimeLine> &);
 
     AnimationModule(Gui *gui,
                     AnimationModuleEditor* editor,
@@ -69,7 +70,7 @@ public:
                                      AnimationModuleEditor* editor,
                                      const TimeLinePtr &timeline)
     {
-        AnimationModulePtr ret(new AnimationModule(gui, editor, timeline));
+        AnimationModulePtr ret = boost::make_shared<AnimationModule>(gui, editor, timeline);
         ret->ensureSelectionModel();
         return ret;
     }

@@ -154,7 +154,7 @@ AddMultipleNodesCommand::undo()
         if (!node) {
             continue;
         }
-        it->serialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+        it->serialization = boost::make_shared<SERIALIZATION_NAMESPACE::NodeSerialization>();
         it->serialization->_encodeFlags = SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsSerializeOutputs;
         node->toSerialization(it->serialization.get());
         if (_nodes.size() == 1) {
@@ -277,7 +277,7 @@ RemoveMultipleNodesCommand::redo()
         if (!node) {
             continue;
         }
-        it->serialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+        it->serialization = boost::make_shared<SERIALIZATION_NAMESPACE::NodeSerialization>();
         it->serialization->_encodeFlags = SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsSerializeOutputs;
         node->toSerialization(it->serialization.get());
         if (_nodes.size() == 1) {
@@ -1721,7 +1721,7 @@ InlineGroupCommand::redo()
         }
 
         // Deactivate the group node
-        it->groupNodeSerialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+        it->groupNodeSerialization = boost::make_shared<SERIALIZATION_NAMESPACE::NodeSerialization>();
         it->groupNodeSerialization->_encodeFlags = SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsSerializeOutputs;
         group->getNode()->toSerialization(it->groupNodeSerialization.get());
         group->getNode()->connectOutputsToMainInput();
@@ -1744,7 +1744,7 @@ RestoreNodeToDefaultCommand::RestoreNodeToDefaultCommand(const NodesGuiList & no
     for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodeDefaults d;
         d.node = *it;
-        d.serialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+        d.serialization = boost::make_shared<SERIALIZATION_NAMESPACE::NodeSerialization>();
         (*it)->getNode()->toSerialization(d.serialization.get());
         _nodes.push_back(d);
     }

@@ -135,7 +135,7 @@ NodeGraph::NodeGraph(Gui* gui,
     QObject::connect( &_imp->_refreshCacheTextTimer, SIGNAL(timeout()), this, SLOT(updateCacheSizeText()) );
     _imp->_refreshCacheTextTimer.start(NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS);
 
-    _imp->_undoStack.reset(new QUndoStack(this));
+    _imp->_undoStack = boost::make_shared<QUndoStack>(this);
     _imp->_undoStack->setUndoLimit( appPTR->getCurrentSettings()->getMaximumUndoRedoNodeGraph() );
     getGui()->registerNewUndoStack(_imp->_undoStack);
 

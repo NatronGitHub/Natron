@@ -107,6 +107,8 @@ private:
 
     std::vector<NodeWPtr > rows;
 
+    friend StatsTableModelPtr boost::make_shared<Natron::StatsTableModel>(int &);
+
     StatsTableModel(int cols)
     : TableModel(cols, eTableModelTypeTable)
     , rows()
@@ -118,7 +120,7 @@ public:
 
     static StatsTableModelPtr create(int cols)
     {
-        return StatsTableModelPtr(new StatsTableModel(cols));
+        return boost::make_shared<StatsTableModel>(cols);
     }
 
 

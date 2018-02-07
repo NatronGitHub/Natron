@@ -241,7 +241,7 @@ TableItem::~TableItem()
 TableItemPtr
 TableItem::create(const TableModelPtr& model, const TableItemPtr& parent)
 {
-    TableItemPtr ret(new TableItem(model));
+    TableItemPtr ret = boost::make_shared<TableItem>(model);
     if (parent) {
         // Inserting the item in the parent may not succeed if parent is not in a model already.
         parent->insertChild(-1, ret);

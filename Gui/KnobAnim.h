@@ -39,6 +39,9 @@ class KnobAnim : public QObject, public AnimItemBase
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+    friend KnobAnimPtr boost::make_shared<Natron::KnobAnim>(const boost::shared_ptr<Natron::AnimationModuleBase> &, const boost::shared_ptr<Natron::KnobsHolderAnimBase> &, QTreeWidgetItem *&, const boost::shared_ptr<Natron::KnobI> &);
+
+    // used by make_shared
     KnobAnim(const AnimationModuleBasePtr& model,
              const KnobsHolderAnimBasePtr& holder,
              QTreeWidgetItem *parentItem,
@@ -52,7 +55,7 @@ public:
                               QTreeWidgetItem *parentItem,
                               const KnobIPtr& knob)
     {
-        KnobAnimPtr ret(new KnobAnim(model, holder, parentItem, knob));
+        KnobAnimPtr ret = boost::make_shared<KnobAnim>(model, holder, parentItem, knob);
         ret->initialize();
         return ret;
     }
