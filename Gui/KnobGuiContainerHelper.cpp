@@ -81,7 +81,7 @@ struct KnobGuiContainerHelperPrivate
         if (stack) {
             undoStack = stack;
         } else {
-            undoStack.reset(new QUndoStack);
+            undoStack = boost::make_shared<QUndoStack>();
         }
     }
 

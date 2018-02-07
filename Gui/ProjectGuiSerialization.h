@@ -272,7 +272,7 @@ struct PythonPanelSerialization
         ar & ::boost::serialization::make_nvp("NumParams", nKnobs);
 
         for (int i = 0; i < nKnobs; ++i) {
-            boost::shared_ptr<KnobSerialization> k(new KnobSerialization);
+            boost::shared_ptr<KnobSerialization> k = boost::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("item", *k);
             knobs.push_back(k);
         }

@@ -83,10 +83,10 @@ public:
         int nNodes;
         ar & ::boost::serialization::make_nvp("NbNodes", nNodes);
         for (int i = 0; i < nNodes; ++i) {
-            boost::shared_ptr<NodeSerialization> nS(new NodeSerialization);
+            boost::shared_ptr<NodeSerialization> nS = boost::make_shared<NodeSerialization>();
             ar & ::boost::serialization::make_nvp("Node", *nS);
             nodes.push_back(nS);
-            boost::shared_ptr<NodeGuiSerialization> nGui(new NodeGuiSerialization);
+            boost::shared_ptr<NodeGuiSerialization> nGui = boost::make_shared<NodeGuiSerialization>();
             ar & ::boost::serialization::make_nvp("NodeUI", *nGui);
             nodesUI.push_back(nGui);
         }

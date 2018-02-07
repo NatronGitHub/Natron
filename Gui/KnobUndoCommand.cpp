@@ -64,8 +64,9 @@ struct PasteUndoCommandPrivate
         , type(eKnobClipBoardTypeCopyLink)
         , fromDimension(-1)
         , targetDimension(-1)
-        , originalSerialization(new KnobSerialization)
+        , originalSerialization()
     {
+        originalSerialization = boost::make_shared<KnobSerialization>();
     }
 };
 
@@ -94,7 +95,7 @@ PasteUndoCommand::PasteUndoCommand(const KnobGuiPtr& knob,
                 assert(false);
             }
         }
-        _imp->originalSerialization.reset(new KnobSerialization);
+        _imp->originalSerialization = boost::make_shared<KnobSerialization>();
         std::string str = ss.str();
         {
             try {

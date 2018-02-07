@@ -2014,7 +2014,7 @@ TreeWidget::dragAndDropHandler(const QMimeData* mime,
             QMap<int, QVariant>::Iterator it = roleDataMap.find(0);
 
             if ( it != roleDataMap.end() ) {
-                DroppedTreeItemPtr ret(new DroppedTreeItem);
+                DroppedTreeItemPtr ret = boost::make_shared<DroppedTreeItem>();
 
                 ///The target item
                 QTreeWidgetItem* into = itemAt(pos);

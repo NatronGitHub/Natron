@@ -143,7 +143,7 @@ struct GuiAppInstancePrivate
         , _isClosing(false)
         , _showingDialog(0)
         , _showingDialogMutex()
-        , _previewProvider(new FileDialogPreviewProvider)
+        , _previewProvider()
         , lastTimelineViewerMutex()
         , lastTimelineViewer()
         , loadProjectSplash(0)
@@ -155,6 +155,7 @@ struct GuiAppInstancePrivate
         , timelineUserKeys()
         , knobDnd()
     {
+        _previewProvider = boost::make_shared<FileDialogPreviewProvider>();
         rotoData.turboAlreadyActiveBeforePainting = false;
     }
 
@@ -172,7 +173,7 @@ void
 GuiAppInstance::resetPreviewProvider()
 {
     deletePreviewProvider();
-    _imp->_previewProvider.reset(new FileDialogPreviewProvider);
+    _imp->_previewProvider = boost::make_shared<FileDialogPreviewProvider>();
 }
 
 void
