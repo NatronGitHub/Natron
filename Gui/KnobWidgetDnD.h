@@ -49,9 +49,8 @@ class KnobWidgetDnD : public boost::enable_shared_from_this<KnobWidgetDnD>
 {
     Q_DECLARE_TR_FUNCTIONS(KnobWidgetDnD)
 
-    friend boost::shared_ptr<KnobWidgetDnD> boost::make_shared<KnobWidgetDnD>(const boost::shared_ptr<Natron::KnobGui> &, int &, QWidget *&);
-    friend boost::shared_ptr<KnobWidgetDnD> boost::make_shared<Natron::KnobWidgetDnD>(const boost::shared_ptr<Natron::KnobGui> &, Natron::DimSpec &, Natron::ViewSetSpec &, QWidget *&);
-    
+    struct MakeSharedEnabler;
+
     // used by boost::make_shared
     KnobWidgetDnD(const KnobGuiPtr& knob,
                   DimSpec dimension,
@@ -64,11 +63,7 @@ public:
     static boost::shared_ptr<KnobWidgetDnD> create(const KnobGuiPtr& knob,
                                                    DimSpec dimension,
                                                    ViewSetSpec view,
-                                                   QWidget* widget)
-    {
-        return boost::make_shared<KnobWidgetDnD>(knob, dimension, view, widget);
-    }
-    
+                                                   QWidget* widget);
 
     ~KnobWidgetDnD();
 

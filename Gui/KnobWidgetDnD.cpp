@@ -96,6 +96,23 @@ public:
     }
 };
 
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct KnobWidgetDnD::MakeSharedEnabler: public KnobWidgetDnD
+{
+    MakeSharedEnabler(const KnobGuiPtr& knob,
+                      int dimension,
+                      QWidget* widget) : KnobWidgetDnD(knob, dimension, widget) {
+    }
+};
+
+boost::shared_ptr<KnobWidgetDnD> KnobWidgetDnD::create(const KnobGuiPtr& knob,
+                                                       int dimension,
+                                                       QWidget* widget)
+{
+    return boost::make_shared<KnobWidgetDnD::MakeSharedEnabler>(knob, dimension, widget);
+}
+
 KnobWidgetDnD::KnobWidgetDnD(const KnobGuiPtr& knob,
                              DimSpec dimension,
                              ViewSetSpec view,
