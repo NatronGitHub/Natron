@@ -2473,7 +2473,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         }
         assert( !comps.empty() );
         std::map<ImagePlaneDesc, ImagePtr> identityPlanes;
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
+        // scoped_ptr
         boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(tls->currentRenderArgs.identityTime,
                                                                                                        actionArgs.originalScale,
                                                                                                        mipMapLevel,
@@ -2487,21 +2487,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                                                                                        _publicInterface,
                                                                                                        planes.useOpenGL ? eStorageModeGLTex : eStorageModeRAM,
                                                                                                        time) );
-#else
-        boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs = boost::make_shared<EffectInstance::RenderRoIArgs>(tls->currentRenderArgs.identityTime,
-                                                                                                                        actionArgs.originalScale,
-                                                                                                                        mipMapLevel,
-                                                                                                                        view,
-                                                                                                                        false,
-                                                                                                                        downscaledRectToRender,
-                                                                                                                        RectD(),
-                                                                                                                        comps,
-                                                                                                                        outputClipPrefDepth,
-                                                                                                                        false,
-                                                                                                                        _publicInterface,
-                                                                                                                        planes.useOpenGL ? eStorageModeGLTex : eStorageModeRAM,
-                                                                                                                        time);
-#endif
         if (!tls->currentRenderArgs.identityInput) {
             for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
                 it->second.renderMappedImage->fillZero(renderMappedRectToRender, glContext);
