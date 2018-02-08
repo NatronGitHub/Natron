@@ -730,12 +730,31 @@ struct FrameViewRenderRunnable::Implementation
     }
 };
 
+
 FrameViewRenderRunnable::FrameViewRenderRunnable(const TreeRenderExecutionDataPtr& sharedData, const FrameViewRequestPtr& request)
 : QRunnable()
 , _imp(new FrameViewRenderRunnable::Implementation(sharedData, request))
 {
     assert(request);
 }
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct FrameViewRenderRunnable::MakeSharedEnabler: public FrameViewRenderRunnable
+{
+    MakeSharedEnabler(const TreeRenderExecutionDataPtr& sharedData,
+                      const FrameViewRequestPtr& request) : FrameViewRenderRunnable(sharedData, request) {
+    }
+};
+
+
+FrameViewRenderRunnablePtr
+FrameViewRenderRunnable::create(const TreeRenderExecutionDataPtr& sharedData, const FrameViewRequestPtr& request)
+{
+    return boost::make_shared<FrameViewRenderRunnable::MakeSharedEnabler>(sharedData, request);
+}
+
 
 FrameViewRenderRunnable::~FrameViewRenderRunnable()
 {

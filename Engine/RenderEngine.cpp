@@ -95,11 +95,29 @@ struct RenderEnginePrivate
     }
 };
 
+
 RenderEngine::RenderEngine(const NodePtr& output)
 : _imp( new RenderEnginePrivate(output) )
 {
     QObject::connect(this, SIGNAL(currentFrameRenderRequestPosted()), this, SLOT(onCurrentFrameRenderRequestPosted()), Qt::QueuedConnection);
 }
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct RenderEngine::MakeSharedEnabler: public RenderEngine
+{
+    MakeSharedEnabler(const NodePtr& output) : RenderEngine(output) {
+    }
+};
+
+
+RenderEnginePtr
+RenderEngine::create(const NodePtr& output)
+{
+    return boost::make_shared<RenderEngine::MakeSharedEnabler>(output);
+}
+
 
 RenderEngine::~RenderEngine()
 {
@@ -107,6 +125,7 @@ RenderEngine::~RenderEngine()
     assert(!_imp->scheduler || !_imp->scheduler->hasTreeRendersLaunched());
     assert(!_imp->currentFrameScheduler || !_imp->currentFrameScheduler->hasTreeRendersLaunched());
 }
+
 
 OutputSchedulerThreadPtr
 RenderEngine::createScheduler(const NodePtr& effect)
@@ -543,6 +562,23 @@ RenderEngine::reportStats(TimeValue time,
         ofile << "Time spent rendering: " << Timer::printAsTime(it->second.getTotalTimeSpentRendering(), false).toStdString() << std::endl;
     }
 } // reportStats
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct ViewerRenderEngine::MakeSharedEnabler: public ViewerRenderEngine
+{
+    MakeSharedEnabler(const NodePtr& output) : ViewerRenderEngine(output)
+    {
+    }
+};
+
+RenderEnginePtr
+ViewerRenderEngine::create(const NodePtr& output)
+{
+    return boost::make_shared<ViewerRenderEngine::MakeSharedEnabler>(output);
+}
+
 
 OutputSchedulerThreadPtr
 ViewerRenderEngine::createScheduler(const NodePtr& effect)

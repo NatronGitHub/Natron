@@ -57,17 +57,14 @@ class RenderEngine
 
     friend class OutputSchedulerThread;
     friend class ViewerDisplayScheduler;
-    friend RenderEnginePtr boost::make_shared<RenderEngine>(const NodePtr&);
+    struct MakeSharedEnabler;
 
 protected:
     // used by boost::make_shared
     RenderEngine(const NodePtr& output);
 
 public:
-    static RenderEnginePtr create(const NodePtr& output)
-    {
-        return boost::make_shared<RenderEngine>(output);
-    }
+    static RenderEnginePtr create(const NodePtr& output);
 
     virtual ~RenderEngine();
 
@@ -311,19 +308,17 @@ private:
 class ViewerRenderEngine
 : public RenderEngine
 {
-    friend boost::shared_ptr<ViewerRenderEngine> boost::make_shared<ViewerRenderEngine,const NodePtr&>(const NodePtr&);
+    struct MakeSharedEnabler;
 
 protected:
     // used by boost::make_shared
     ViewerRenderEngine(const NodePtr& output)
-    : RenderEngine(output)
-    {}
-public:
-
-    static RenderEnginePtr create(const NodePtr& output)
+        : RenderEngine(output)
     {
-        return boost::make_shared<ViewerRenderEngine>(output);
     }
+
+public:
+    static RenderEnginePtr create(const NodePtr& output);
 
     virtual ~ViewerRenderEngine() {}
     

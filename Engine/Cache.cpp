@@ -1639,14 +1639,27 @@ CacheEntryLockerPrivate<persistent>::CacheEntryLockerPrivate(CacheEntryLocker<pe
 , bucket(0)
 , status(CacheEntryLockerBase::eCacheEntryStatusMustCompute)
 {
-
 }
+
 template <bool persistent>
 CacheEntryLocker<persistent>::CacheEntryLocker(const boost::shared_ptr<Cache<persistent> >& cache, const CacheEntryBasePtr& entry)
 : _imp(new CacheEntryLockerPrivate<persistent>(this, cache, entry))
 {
-
 }
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+template <bool persistent>
+struct CacheEntryLocker<persistent>::MakeSharedEnabler
+    : public CacheEntryLocker<persistent>
+{
+    MakeSharedEnabler(const boost::shared_ptr<Cache<persistent> >& cache,
+                      const CacheEntryBasePtr& entry)
+        : CacheEntryLocker<persistent>(cache, entry)
+    {
+    }
+};
+
 
 template <bool persistent>
 boost::shared_ptr<CacheEntryLocker<persistent> >
@@ -1656,7 +1669,7 @@ CacheEntryLocker<persistent>::create(const boost::shared_ptr<Cache<persistent> >
     if (!entry) {
         throw std::invalid_argument("CacheEntryLocker::create: no entry");
     }
-    boost::shared_ptr<CacheEntryLocker<persistent> >  ret = boost::make_shared<CacheEntryLocker<persistent> >(cache, entry);
+    boost::shared_ptr<CacheEntryLocker<persistent> >  ret = boost::make_shared<CacheEntryLocker<persistent>::MakeSharedEnabler>(cache, entry);
 
 
     // Lookup and find an existing entry.

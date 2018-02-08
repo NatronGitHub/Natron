@@ -128,13 +128,27 @@ TrackerNode::createPlugin()
     return ret;
 } // createPlugin
 
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct TrackerNodePrivate::MakeSharedEnabler: public TrackerNodePrivate
+{
+    MakeSharedEnabler(TrackerNode* publicInterface) : TrackerNodePrivate(publicInterface) {
+    }
+};
+
+
+boost::shared_ptr<TrackerNodePrivate>
+TrackerNodePrivate::create(TrackerNode* publicInterface)
+{
+    return boost::make_shared<TrackerNodePrivate::MakeSharedEnabler>(publicInterface);
+}
+
 
 TrackerNode::TrackerNode(const NodePtr& node)
     : NodeGroup(node)
     , _imp( TrackerNodePrivate::create(this) )
 {
     _imp->ui.reset(new TrackerNodeInteract(_imp.get()));
-
 }
 
 TrackerNode::~TrackerNode()
@@ -150,6 +164,7 @@ TrackerNode::initializeOverlayInteract()
 {
     registerOverlay(eOverlayViewportTypeViewer, _imp->ui, std::map<std::string, std::string>());
 }
+
 
 void
 TrackerNode::setupInitialSubGraphState()

@@ -156,6 +156,31 @@ KnobAnim::KnobAnim(const AnimationModuleBasePtr& model,
 
 }
 
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct KnobAnim::MakeSharedEnabler: public KnobAnim
+{
+    MakeSharedEnabler(const AnimationModuleBasePtr& model,
+                      const KnobsHolderAnimBasePtr& holder,
+                      QTreeWidgetItem *parentItem,
+                      const KnobIPtr& knob) : KnobAnim(model, holder, parentItem, knob) {
+    }
+};
+
+
+KnobAnimPtr
+KnobAnim::create(const AnimationModuleBasePtr& model,
+                 const KnobsHolderAnimBasePtr& holder,
+                 QTreeWidgetItem *parentItem,
+                 const KnobIPtr& knob)
+{
+    KnobAnimPtr ret = boost::make_shared<KnobAnim::MakeSharedEnabler>(model, holder, parentItem, knob);
+    ret->initialize();
+    return ret;
+}
+
+
 KnobAnim::~KnobAnim()
 {
     destroyItems();

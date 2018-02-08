@@ -93,9 +93,6 @@ struct CacheKey_compare_less
 };
 
 
-
-
-
 struct FrameAccessorCacheEntry
 {
     boost::shared_ptr<MvFloatImage> image;
@@ -105,7 +102,9 @@ struct FrameAccessorCacheEntry
     unsigned int referenceCount;
 };
 
+
 typedef std::multimap<FrameAccessorCacheKey, FrameAccessorCacheEntry, CacheKey_compare_less > FrameAccessorCache;
+
 
 class ConvertToLibMVImageProcessorBase : public ImageMultiThreadProcessorBase
 {
@@ -362,6 +361,33 @@ TrackerFrameAccessor::TrackerFrameAccessor(const NodePtr& sourceImageProvider,
     , _imp( new TrackerFrameAccessorPrivate(sourceImageProvider, maskImageProvider, maskImagePlane, maskPlaneIndex, enabledChannels, formatHeight) )
 {
 }
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct TrackerFrameAccessor::MakeSharedEnabler: public TrackerFrameAccessor
+{
+    MakeSharedEnabler(const NodePtr& sourceImageProvider,
+                      const NodePtr& maskImageProvider,
+                      const ImagePlaneDesc& maskImagePlane,
+                      int maskPlaneIndex,
+                      bool enabledChannels[3],
+                      int formatHeight) : TrackerFrameAccessor(sourceImageProvider, maskImageProvider, maskImagePlane, maskPlaneIndex, enabledChannels, formatHeight) {
+    }
+};
+
+
+TrackerFrameAccessorPtr
+TrackerFrameAccessor::create(const NodePtr& sourceImageProvider,
+                                      const NodePtr& maskImageProvider,
+                                      const ImagePlaneDesc& maskImagePlane,
+                                      int maskPlaneIndex,
+                                      bool enabledChannels[3],
+                                      int formatHeight)
+{
+    return boost::make_shared<TrackerFrameAccessor::MakeSharedEnabler>(sourceImageProvider, maskImageProvider, maskImagePlane, maskPlaneIndex, enabledChannels, formatHeight);
+}
+
 
 TrackerFrameAccessor::~TrackerFrameAccessor()
 {

@@ -121,8 +121,7 @@ typedef boost::shared_ptr<ViewerRenderFrameResultsContainer> ViewerRenderFrameRe
 class ViewerDisplayScheduler
 : public OutputSchedulerThread
 {
-    friend boost::shared_ptr<ViewerDisplayScheduler> boost::make_shared<ViewerDisplayScheduler>(const RenderEnginePtr& engine,
-                                                                               const NodePtr& viewer);
+    struct MakeSharedEnabler;
 
 protected:
     // used by boost::make_shared<>
@@ -131,10 +130,7 @@ protected:
 
 public:
     static OutputSchedulerThreadPtr create(const RenderEnginePtr& engine,
-                                           const NodePtr& viewer)
-    {
-        return boost::make_shared<ViewerDisplayScheduler>(engine, viewer);
-    }
+                                           const NodePtr& viewer);
 
 
     virtual ~ViewerDisplayScheduler();

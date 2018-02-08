@@ -65,15 +65,40 @@ KnobGui::KnobGui(const KnobIPtr& knob,
 {
 }
 
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct KnobGui::MakeSharedEnabler: public KnobGui
+{
+    MakeSharedEnabler(const KnobIPtr& knob,
+                      KnobLayoutTypeEnum layoutType,
+                      KnobGuiContainerI* container) : KnobGui(knob, layoutType, container) {
+    }
+};
+
+
+KnobGuiPtr
+KnobGui::create(const KnobIPtr& knob,
+                KnobLayoutTypeEnum layoutType,
+                KnobGuiContainerI* container)
+{
+    KnobGuiPtr ret = boost::make_shared<KnobGui::MakeSharedEnabler>(knob, layoutType, container);
+    ret->initialize();
+    return ret;
+}
+
+
 KnobGui::~KnobGui()
 {
 }
+
 
 KnobIPtr
 KnobGui::getKnob() const
 {
     return _imp->knob.lock();
 }
+
 
 void
 KnobGui::initialize()

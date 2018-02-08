@@ -75,11 +75,12 @@ public:
 
 
 struct TrackerFrameAccessorPrivate;
+
 class TrackerFrameAccessor
-: public mv::FrameAccessor
-, public boost::enable_shared_from_this<TrackerFrameAccessor>
+    : public mv::FrameAccessor
+    , public boost::enable_shared_from_this<TrackerFrameAccessor>
 {
-    friend TrackerFrameAccessorPtr boost::make_shared<Natron::TrackerFrameAccessor>(const boost::shared_ptr<Natron::Node> &, const boost::shared_ptr<Natron::Node> &, const Natron::ImagePlaneDesc &, int &, bool *&, int &);
+    struct MakeSharedEnabler;
 
 protected:
     // used by boost::make_shared<TrackerFrameAccessor>
@@ -92,15 +93,11 @@ protected:
 
 public:
     static TrackerFrameAccessorPtr create(const NodePtr& sourceImageProvider,
-                         const NodePtr& maskImageProvider,
-                         const ImagePlaneDesc& maskImagePlane,
-                         int maskPlaneIndex,
-                         bool enabledChannels[3],
-                         int formatHeight)
-    {
-        return boost::make_shared<TrackerFrameAccessor>(sourceImageProvider, maskImageProvider, maskImagePlane, maskPlaneIndex, enabledChannels, formatHeight);
-    }
-
+                                          const NodePtr& maskImageProvider,
+                                          const ImagePlaneDesc& maskImagePlane,
+                                          int maskPlaneIndex,
+                                          bool enabledChannels[3],
+                                          int formatHeight);
 
     virtual ~TrackerFrameAccessor();
 

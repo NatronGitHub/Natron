@@ -130,6 +130,29 @@ AnimationModule::AnimationModule(Gui *gui,
     gui->registerNewUndoStack(_imp->undoStack);
 }
 
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct AnimationModule::MakeSharedEnabler: public AnimationModule
+{
+    MakeSharedEnabler(Gui *gui,
+                      AnimationModuleEditor* editor,
+                      const TimeLinePtr &timeline) : AnimationModule(gui, editor, timeline) {
+    }
+};
+
+
+AnimationModulePtr
+AnimationModule::create(Gui *gui,
+                        AnimationModuleEditor* editor,
+                        const TimeLinePtr &timeline)
+{
+    AnimationModulePtr ret = boost::make_shared<AnimationModule::MakeSharedEnabler>(gui, editor, timeline);
+    ret->ensureSelectionModel();
+    return ret;
+}
+
+
 AnimationModule::~AnimationModule()
 {
     if (!_imp->editor->getGui()->getApp()->isClosing()) {

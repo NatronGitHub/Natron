@@ -226,28 +226,38 @@ struct TableModelPrivate
     }
 };
 
+
 TableItem::TableItem(const TableModelPtr& model)
 : _imp(new TableItemPrivate(model))
 {
-    
 }
 
 
 TableItem::~TableItem()
 {
-
 }
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct TableItem::MakeSharedEnabler: public TableItem
+{
+    MakeSharedEnabler(const TableModelPtr& model) : TableItem(model) {
+    }
+};
+
 
 TableItemPtr
 TableItem::create(const TableModelPtr& model, const TableItemPtr& parent)
 {
-    TableItemPtr ret = boost::make_shared<TableItem>(model);
+    TableItemPtr ret = boost::make_shared<TableItem::MakeSharedEnabler>(model);
     if (parent) {
         // Inserting the item in the parent may not succeed if parent is not in a model already.
         parent->insertChild(-1, ret);
     }
     return ret;
 }
+
 
 TableItemPtr
 TableItem::getParentItem() const
@@ -459,6 +469,23 @@ TableModel::TableModel(int columns, TableModelTypeEnum type)
 {
     QObject::connect( this, SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(onDataChanged(QModelIndex, QModelIndex)) );
 }
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct TableModel::MakeSharedEnabler: public TableModel
+{
+    MakeSharedEnabler(int columns, TableModelTypeEnum type) : TableModel(columns, type) {
+    }
+};
+
+
+TableModelPtr
+TableModel::create(int columns, TableModelTypeEnum type)
+{
+    return boost::make_shared<TableModel::MakeSharedEnabler>(columns, type);
+}
+
 
 TableModel::~TableModel()
 {

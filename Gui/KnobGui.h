@@ -97,7 +97,7 @@ public:
     };
 
 private:
-    friend KnobGuiPtr boost::make_shared<Natron::KnobGui>(const boost::shared_ptr<Natron::KnobI> &, Natron::KnobGui::KnobLayoutTypeEnum &, Natron::KnobGuiContainerI *&);
+    struct MakeSharedEnabler;
 
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
@@ -108,12 +108,7 @@ private:
 
 
 public:
-    static KnobGuiPtr create(const KnobIPtr& knob, KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container)
-    {
-        KnobGuiPtr ret = boost::make_shared<KnobGui>(knob,layoutType,container);
-        ret->initialize();
-        return ret;
-    }
+    static KnobGuiPtr create(const KnobIPtr& knob, KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container);
 
     virtual ~KnobGui() OVERRIDE;
 

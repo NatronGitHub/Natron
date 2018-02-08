@@ -105,6 +105,32 @@ TableItemAnim::TableItemAnim(const AnimationModuleBasePtr& model,
     connect(item->getApp()->getProject().get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()));
 }
 
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct TableItemAnim::MakeSharedEnabler: public TableItemAnim
+{
+    MakeSharedEnabler(const AnimationModuleBasePtr& model,
+                      const KnobItemsTableGuiPtr& table,
+                      const NodeAnimPtr &parentNode,
+                      const KnobTableItemPtr& item) : TableItemAnim(model, table, parentNode, item) {
+    }
+};
+
+
+TableItemAnimPtr
+TableItemAnim::create(const AnimationModuleBasePtr& model,
+                        const KnobItemsTableGuiPtr& table,
+                        const NodeAnimPtr &parentNode,
+                        const KnobTableItemPtr& item,
+                        QTreeWidgetItem* parentItem)
+{
+    TableItemAnimPtr ret = boost::make_shared<TableItemAnim::MakeSharedEnabler>(model, table, parentNode, item);
+    ret->initialize(parentItem);
+    return ret;
+}
+
+
 TableItemAnim::~TableItemAnim()
 {
     destroyItems();

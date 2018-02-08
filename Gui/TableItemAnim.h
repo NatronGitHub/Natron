@@ -43,7 +43,7 @@ class TableItemAnim : public QObject, public KnobsHolderAnimBase, public boost::
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-    friend TableItemAnimPtr boost::make_shared<Natron::TableItemAnim>(const boost::shared_ptr<Natron::AnimationModuleBase> &, const boost::shared_ptr<Natron::KnobItemsTableGui> &, const boost::shared_ptr<Natron::NodeAnim> &, const boost::shared_ptr<Natron::KnobTableItem> &);
+    struct MakeSharedEnabler;
 
     TableItemAnim(const AnimationModuleBasePtr& model,
                   const KnobItemsTableGuiPtr& table,
@@ -51,17 +51,11 @@ class TableItemAnim : public QObject, public KnobsHolderAnimBase, public boost::
                   const KnobTableItemPtr& item);
 
 public:
-
     static TableItemAnimPtr create(const AnimationModuleBasePtr& model,
                                    const KnobItemsTableGuiPtr& table,
                                    const NodeAnimPtr &parentNode,
                                    const KnobTableItemPtr& item,
-                                   QTreeWidgetItem* parentItem)
-    {
-        TableItemAnimPtr ret = boost::make_shared<TableItemAnim>(model, table, parentNode, item);
-        ret->initialize(parentItem);
-        return ret;
-    }
+                                   QTreeWidgetItem* parentItem);
 
     virtual ~TableItemAnim();
 

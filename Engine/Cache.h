@@ -285,7 +285,7 @@ class CacheEntryLocker : public CacheEntryLockerBase
     // For create
     friend class Cache<persistent>;
 
-    friend boost::shared_ptr<CacheEntryLocker> boost::make_shared<CacheEntryLocker>(const boost::shared_ptr<Cache<persistent> >& cache, const CacheEntryBasePtr& entry);
+    struct MakeSharedEnabler;
 
     CacheEntryLocker(const boost::shared_ptr<Cache<persistent> >& cache, const CacheEntryBasePtr& entry);
 

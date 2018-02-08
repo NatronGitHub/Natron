@@ -234,6 +234,16 @@ Bezier::~Bezier()
  
 }
 
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct Bezier::MakeSharedEnabler: public Bezier
+{
+    MakeSharedEnabler(const BezierPtr& other, const FrameViewRenderKey& key) : Bezier(other, key) {
+    }
+};
+
+
 KnobHolderPtr
 Bezier::createRenderCopy(const FrameViewRenderKey& render) const
 {
@@ -241,9 +251,10 @@ Bezier::createRenderCopy(const FrameViewRenderKey& render) const
     if (!mainInstance) {
         mainInstance = toBezier(boost::const_pointer_cast<KnobHolder>(shared_from_this()));
     }
-    BezierPtr ret = boost::make_shared<Bezier>(mainInstance, render);
+    BezierPtr ret = boost::make_shared<Bezier::MakeSharedEnabler>(mainInstance, render);
     return ret;
 }
+
 
 RotoStrokeType
 Bezier::getBrushType() const

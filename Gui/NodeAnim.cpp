@@ -124,6 +124,28 @@ NodeAnim::NodeAnim(const AnimationModulePtr &model,
 
 }
 
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct NodeAnim::MakeSharedEnabler: public NodeAnim
+{
+    MakeSharedEnabler(const AnimationModulePtr &model,
+                      const NodeGuiPtr &nodeGui) : NodeAnim(model, nodeGui) {
+    }
+};
+
+
+NodeAnimPtr
+NodeAnim::create(const AnimationModulePtr& model,
+                   AnimatedItemTypeEnum itemType,
+                   const NodeGuiPtr &nodeGui)
+{
+    NodeAnimPtr ret = boost::make_shared<NodeAnim::MakeSharedEnabler>(model, nodeGui);
+    ret->initialize(itemType);
+    return ret;
+}
+
+
 NodeAnim::~NodeAnim()
 {
     // Kill sub items first before killing the top level item

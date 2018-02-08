@@ -83,14 +83,14 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+    struct MakeSharedEnabler;
+
 public:
     Bezier(const KnobItemsTablePtr& model,
            const std::string& baseName,
            bool isOpenBezier);
 
 private:
-    friend BezierPtr boost::make_shared<Bezier>(boost::shared_ptr<Bezier>& other, const FrameViewRenderKey& key);
-    
     // used by boost::make_shared
     Bezier(const BezierPtr& other, const FrameViewRenderKey& key);
 

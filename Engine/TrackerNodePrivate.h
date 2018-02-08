@@ -604,9 +604,10 @@ struct SolveRequest
 class TrackerKnobItemsTable;
 class TrackerNode;
 class TrackerNodeInteract;
+
 class TrackerNodePrivate
-: public TrackerParamsProvider
-, public boost::enable_shared_from_this<TrackerNodePrivate>
+    : public TrackerParamsProvider
+    , public boost::enable_shared_from_this<TrackerNodePrivate>
 {
     Q_DECLARE_TR_FUNCTIONS(TrackerNodePrivate)
 
@@ -688,19 +689,13 @@ public:
 
     SolveRequest lastSolveRequest;
 
-
-private:
-    friend boost::shared_ptr<TrackerNodePrivate> boost::make_shared<TrackerNodePrivate,TrackerNode*&>(TrackerNode*& publicInterface);
+    struct MakeSharedEnabler;
 
     // used by boost::make_shared<>
     TrackerNodePrivate(TrackerNode* publicInterface);
 
 public:
-
-    static boost::shared_ptr<TrackerNodePrivate> create(TrackerNode* publicInterface)
-    {
-        return boost::make_shared<TrackerNodePrivate>(publicInterface);
-    }
+    static boost::shared_ptr<TrackerNodePrivate> create(TrackerNode* publicInterface);
 
     virtual ~TrackerNodePrivate();
 

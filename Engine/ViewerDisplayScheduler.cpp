@@ -169,6 +169,25 @@ ViewerDisplayScheduler::ViewerDisplayScheduler(const RenderEnginePtr& engine,
     setProcessFrameEnabled(true, eProcessFrameByMainThread);
 }
 
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct ViewerDisplayScheduler::MakeSharedEnabler: public ViewerDisplayScheduler
+{
+    MakeSharedEnabler(const RenderEnginePtr& engine,
+                      const NodePtr& viewer) : ViewerDisplayScheduler(engine, viewer) {
+    }
+};
+
+
+OutputSchedulerThreadPtr
+ViewerDisplayScheduler::create(const RenderEnginePtr& engine,
+                               const NodePtr& viewer)
+{
+    return boost::make_shared<ViewerDisplayScheduler::MakeSharedEnabler>(engine, viewer);
+}
+
+
 ViewerDisplayScheduler::~ViewerDisplayScheduler()
 {
 }
