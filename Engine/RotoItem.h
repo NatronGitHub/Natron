@@ -34,6 +34,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
@@ -93,7 +94,7 @@ public:
                                                const std::string & name,
                                                boost::shared_ptr<RotoLayer> parent = boost::shared_ptr<RotoLayer>() )
     {
-        return boost::shared_ptr<RotoItem>( new RotoItem(context, name, parent) );
+        return boost::make_shared<RotoItem>(context, name, parent);
     }
 
     virtual ~RotoItem();

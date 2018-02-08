@@ -131,6 +131,7 @@ generateUserFriendlyNatronVersionName()
     return ret;
 }
 
+
 Project::Project(const AppInstPtr& appInstance)
     : KnobHolder(appInstance)
     , NodeCollection(appInstance)
@@ -138,6 +139,23 @@ Project::Project(const AppInstPtr& appInstance)
 {
     QObject::connect( _imp->autoSaveTimer.get(), SIGNAL(timeout()), this, SLOT(onAutoSaveTimerTriggered()) );
 }
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct Project::MakeSharedEnabler: public Project
+{
+    MakeSharedEnabler(const AppInstPtr& appInstance) : Project(appInstance) {
+    }
+};
+
+
+boost::shared_ptr<Project>
+Project::create(const AppInstPtr& appInstance)
+{
+    return boost::make_shared<Project::MakeSharedEnabler>(appInstance);
+}
+
 
 Project::~Project()
 {

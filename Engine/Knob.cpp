@@ -382,7 +382,7 @@ struct KnobHelperPrivate
         , expressionMutex()
         , expressions()
         , lastRandomHash(0)
-        , tlsData( new TLSHolder<KnobHelper::KnobTLSData>() )
+        , tlsData()
         , hasModificationsMutex()
         , hasModifications()
         , valueChangedBlockedMutex()
@@ -390,6 +390,7 @@ struct KnobHelperPrivate
         , listenersNotificationBlocked(0)
         , isClipPreferenceSlave(false)
     {
+        tlsData = boost::make_shared<TLSHolder<KnobHelper::KnobTLSData> >();
         if ( holder && !holder->canKnobsAnimate() ) {
             isAnimationEnabled = false;
         }
@@ -625,7 +626,7 @@ KnobHelper::populate()
     for (int i = 0; i < _imp->dimension; ++i) {
         _imp->enabled[i] = true;
         if ( canAnimate() ) {
-            _imp->curves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
+            _imp->curves[i] = boost::make_shared<Curve>(this, i);
         }
         _imp->animationLevel[i] = eAnimationLevelNone;
 
@@ -6191,13 +6192,12 @@ AnimatingKnobStringHelper::AnimatingKnobStringHelper(KnobHolder* holder,
                                                      int dimension,
                                                      bool declaredByPlugin)
     : Knob<std::string>(holder, description, dimension, declaredByPlugin)
-    , _animation( new StringAnimationManager(this) )
+    , _animation( new StringAnimationManager(this) ) // scoped_ptr
 {
 }
 
 AnimatingKnobStringHelper::~AnimatingKnobStringHelper()
 {
-    delete _animation;
 }
 
 void

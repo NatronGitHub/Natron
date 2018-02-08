@@ -68,7 +68,7 @@ public:
     // Note: when switching to C++11, we can add variadic templates:
     //template<typename ... T>
     //static boost::shared_ptr<FileSystemItem> create( T&& ... all ) {
-    //    return boost::shared_ptr<FileSystemItem>( new FileSystemItem( std::forward<T>(all)... ) );
+    //    return boost::make_shared<FileSystemItem>( std::forward<T>(all)... );
     //}
     static boost::shared_ptr<FileSystemItem> create( const boost::shared_ptr<FileSystemModel>& model,
                                                      bool isDir,

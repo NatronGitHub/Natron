@@ -27,6 +27,8 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
+#include <boost/make_shared.hpp>
+
 #include <QtCore/QDebug>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
@@ -460,7 +462,7 @@ OSGLContext::getOrCreateFillShader()
     if (_imp->fillImageShader) {
         return _imp->fillImageShader;
     }
-    _imp->fillImageShader.reset( new GLShader() );
+    _imp->fillImageShader = boost::make_shared<GLShader>();
 #ifdef DEBUG
     std::string error;
     bool ok = _imp->fillImageShader->addShader(GLShader::eShaderTypeFragment, fillConstant_FragmentShader, &error);
@@ -494,7 +496,7 @@ OSGLContext::getOrCreateMaskMixShader(bool maskEnabled)
     if (_imp->applyMaskMixShader[shader_i]) {
         return _imp->applyMaskMixShader[shader_i];
     }
-    _imp->applyMaskMixShader[shader_i].reset( new GLShader() );
+    _imp->applyMaskMixShader[shader_i] = boost::make_shared<GLShader>();
 
     std::string fragmentSource;
     if (maskEnabled) {
@@ -550,7 +552,7 @@ OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
     if (_imp->copyUnprocessedChannelsShader[index]) {
         return _imp->copyUnprocessedChannelsShader[index];
     }
-    _imp->copyUnprocessedChannelsShader[index].reset( new GLShader() );
+    _imp->copyUnprocessedChannelsShader[index] = boost::make_shared<GLShader>();
 
     std::string fragmentSource;
     if (!doR) {

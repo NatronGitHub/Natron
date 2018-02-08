@@ -116,6 +116,22 @@ RotoContext::RotoContext(const NodePtr& node)
     QObject::connect( _imp->lifeTime.lock()->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onLifeTimeKnobValueChanged(ViewSpec,int,int)) );
 }
 
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct RotoContext::MakeSharedEnabler: public RotoContext
+{
+    MakeSharedEnabler(const NodePtr& node) : RotoContext(node) {
+    }
+};
+
+
+boost::shared_ptr<RotoContext>
+RotoContext::create(const NodePtr& node)
+{
+    return boost::make_shared<RotoContext::MakeSharedEnabler>(node);
+}
+
 bool
 RotoContext::isRotoPaint() const
 {

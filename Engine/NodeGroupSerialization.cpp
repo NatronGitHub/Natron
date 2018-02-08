@@ -53,7 +53,7 @@ NodeCollectionSerialization::initialize(const NodeCollection& group)
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( !(*it)->getParentMultiInstance() && (*it)->isPartOfProject() ) {
-            boost::shared_ptr<NodeSerialization> state( new NodeSerialization(*it) );
+            boost::shared_ptr<NodeSerialization> state = boost::make_shared<NodeSerialization>(*it);
             _serializedNodes.push_back(state);
         }
     }

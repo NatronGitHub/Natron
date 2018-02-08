@@ -2266,9 +2266,7 @@ protected:
     virtual void animationRemoved_virtual(int dimension) OVERRIDE;
 
 private:
-
-
-    StringAnimationManager* _animation;
+    boost::scoped_ptr<StringAnimationManager> _animation;
 };
 
 

@@ -1081,7 +1081,7 @@ public:
             }
             boost::shared_ptr<KnobGroup> isGrp = boost::dynamic_pointer_cast<KnobGroup>(children[i]);
             if (isGrp) {
-                boost::shared_ptr<GroupKnobSerialization> serialisation( new GroupKnobSerialization(isGrp) );
+                boost::shared_ptr<GroupKnobSerialization> serialisation = boost::make_shared<GroupKnobSerialization>(isGrp);
                 _children.push_back(serialisation);
             } else {
                 //KnobChoice* isChoice = dynamic_cast<KnobChoice*>(children[i].get());

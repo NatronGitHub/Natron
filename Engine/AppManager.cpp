@@ -443,6 +443,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
     // the XUniqueContext created by Qt
+    // scoped_ptr
     _imp->renderingContextPool.reset( new GPUContextPool() );
     initializeOpenGLFunctionsOnce(true);
 
@@ -698,6 +699,7 @@ AppManager::initializeQApp(int &argc,
                            char **argv)
 {
     assert(!_imp->_qApp);
+    // scoped_ptr
     _imp->_qApp.reset( new QCoreApplication(argc, argv) );
 }
 
@@ -833,7 +835,7 @@ AppManager::loadInternal(const CLArgs& cl)
 # endif
 
 
-    _imp->_settings.reset( new Settings() );
+    _imp->_settings = boost::make_shared<Settings>();
     _imp->_settings->initializeKnobsPublic();
 
     bool hasGLForRendering = hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, 0);
@@ -1055,9 +1057,9 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         U64 viewerCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
         U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
 
-        _imp->_nodeCache.reset( new Cache<Image>("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.) );
-        _imp->_diskCache.reset( new Cache<Image>("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.) );
-        _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.) );
+        _imp->_nodeCache = boost::make_shared<Cache<Image> >("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.);
+        _imp->_diskCache = boost::make_shared<Cache<Image> >("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.);
+        _imp->_viewerCache = boost::make_shared<Cache<FrameEntry> >("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.);
         _imp->setViewerCacheTileSize();
     } catch (std::logic_error) {
         // ignore
@@ -1213,7 +1215,7 @@ AppManager::newAppInstanceInternal(const CLArgs& cl,
     if (!alwaysBackground) {
         instance = makeNewInstance(_imp->_availableID);
     } else {
-        instance.reset( new AppInstance(_imp->_availableID) );
+        instance = boost::make_shared<AppInstance>(_imp->_availableID);
     }
 
     {
@@ -2576,7 +2578,7 @@ AppManager::setLoadingStatus(const QString & str)
 AppInstPtr
 AppManager::makeNewInstance(int appID) const
 {
-    return AppInstPtr( new AppInstance(appID) );
+    return boost::make_shared<AppInstance>(appID);
 }
 
 void

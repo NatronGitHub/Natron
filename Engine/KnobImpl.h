@@ -1170,7 +1170,7 @@ Knob<T>::setValue(const T & v,
             returnValue =  eValueChangedReturnCodeNoKeyframeAdded;
         }
 
-        boost::shared_ptr<QueuedSetValue> qv( new QueuedSetValue( view, dimension, v, k, returnValue != eValueChangedReturnCodeNoKeyframeAdded, reason, isValueChangesBlocked() ) );
+        boost::shared_ptr<QueuedSetValue> qv = boost::make_shared<QueuedSetValue>( view, dimension, v, k, returnValue != eValueChangedReturnCodeNoKeyframeAdded, reason, isValueChangesBlocked() );
 #ifdef DEBUG
         debugHook();
 #endif
@@ -1541,7 +1541,7 @@ Knob<T>::setValueAtTime(double time,
             holder->abortAnyEvaluation();
         }
 
-        boost::shared_ptr<QueuedSetValueAtTime> qv( new QueuedSetValueAtTime( time, view, dimension, v, *newKey, reason, isValueChangesBlocked() ) );
+        boost::shared_ptr<QueuedSetValueAtTime> qv = boost::make_shared<QueuedSetValueAtTime>( time, view, dimension, v, *newKey, reason, isValueChangesBlocked() );
 #ifdef DEBUG
         debugHook();
 #endif

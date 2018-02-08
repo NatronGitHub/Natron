@@ -115,7 +115,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
         _nbKnobs = (int)_knobsValues.size();
 
         for (std::list<KnobPtr >::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
-            boost::shared_ptr<GroupKnobSerialization> s( new GroupKnobSerialization(*it) );
+            boost::shared_ptr<GroupKnobSerialization> s = boost::make_shared<GroupKnobSerialization>(*it);
             _userPages.push_back(s);
         }
 
@@ -173,7 +173,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
 
             for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
                 if ( (*it)->isPartOfProject() ) {
-                    boost::shared_ptr<NodeSerialization> state( new NodeSerialization(*it) );
+                    boost::shared_ptr<NodeSerialization> state = boost::make_shared<NodeSerialization>(*it);
                     _children.push_back(state);
                 }
             }
@@ -188,7 +188,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
             for (NodesList::iterator it = childrenMultiInstance.begin(); it != childrenMultiInstance.end(); ++it) {
                 assert( (*it)->getParentMultiInstance() );
                 if ( (*it)->isActivated() ) {
-                    boost::shared_ptr<NodeSerialization> state( new NodeSerialization(*it) );
+                    boost::shared_ptr<NodeSerialization> state = boost::make_shared<NodeSerialization>(*it);
                     _children.push_back(state);
                 }
             }

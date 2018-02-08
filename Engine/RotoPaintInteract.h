@@ -617,15 +617,14 @@ struct RotoPaintInteract
 
 
 private:
+    struct MakeSharedEnabler;
+
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     RotoPaintInteract(RotoPaintPrivate* p);
 
 public:
-    static boost::shared_ptr<RotoPaintInteract> create(RotoPaintPrivate* p)
-    {
-        return boost::shared_ptr<RotoPaintInteract>( new RotoPaintInteract(p) );
-    }
+    static boost::shared_ptr<RotoPaintInteract> create(RotoPaintPrivate* p);
 
     bool isFeatherVisible() const;
 

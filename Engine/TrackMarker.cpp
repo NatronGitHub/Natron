@@ -134,6 +134,22 @@ TrackMarker::TrackMarker(const boost::shared_ptr<TrackerContext>& context)
 {
 }
 
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct TrackMarker::MakeSharedEnabler: public TrackMarker
+{
+    MakeSharedEnabler(const boost::shared_ptr<TrackerContext>& context) : TrackMarker(context) {
+    }
+};
+
+
+boost::shared_ptr<TrackMarker>
+TrackMarker::create(const boost::shared_ptr<TrackerContext>& context)
+{
+    return boost::make_shared<TrackMarker::MakeSharedEnabler>(context);
+}
+
 TrackMarker::~TrackMarker()
 {
 }
@@ -1185,6 +1201,22 @@ TrackMarkerPM::TrackMarkerPM(const boost::shared_ptr<TrackerContext>& context)
     : TrackMarker(context)
 {
 }
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct TrackMarkerPM::MakeSharedEnabler: public TrackMarkerPM
+{
+    MakeSharedEnabler(const boost::shared_ptr<TrackerContext>& context) : TrackMarkerPM(context) {
+    }
+};
+
+boost::shared_ptr<TrackMarker>
+TrackMarkerPM::create(const boost::shared_ptr<TrackerContext>& context)
+{
+    return boost::make_shared<TrackMarkerPM::MakeSharedEnabler>(context);
+}
+
 
 TrackMarkerPM::~TrackMarkerPM()
 {

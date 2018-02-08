@@ -1798,8 +1798,8 @@ KnobParametric::KnobParametric(KnobHolder* holder,
         RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
-        _curves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
-        _defaultCurves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
+        _curves[i] = boost::make_shared<Curve>(this, i);
+        _defaultCurves[i] = boost::make_shared<Curve>(this, i);
     }
 }
 
@@ -1817,8 +1817,8 @@ KnobParametric::KnobParametric(KnobHolder* holder,
         RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
-        _curves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
-        _defaultCurves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
+        _curves[i] = boost::make_shared<Curve>(this, i);
+        _defaultCurves[i] = boost::make_shared<Curve>(this, i);
     }
 }
 
@@ -2324,7 +2324,7 @@ KnobParametric::onKnobAboutToAlias(const KnobPtr& slave)
         _curvesColor.resize( isParametric->_curvesColor.size() );
         assert( _curvesColor.size() == _defaultCurves.size() );
         for (std::size_t i = 0; i < isParametric->_defaultCurves.size(); ++i) {
-            _defaultCurves[i].reset( new Curve(this, i) );
+            _defaultCurves[i] = boost::make_shared<Curve>(this, i);
             _defaultCurves[i]->clone(*isParametric->_defaultCurves[i]);
             _curvesColor[i] = isParametric->_curvesColor[i];
         }

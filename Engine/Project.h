@@ -70,14 +70,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-private:
+    struct MakeSharedEnabler;
+
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     Project(const AppInstPtr& appInstance);
 
 public:
-    static boost::shared_ptr<Project> create(const AppInstPtr& appInstance) {
-        return boost::shared_ptr<Project>( new Project(appInstance) );
-    }
+    static boost::shared_ptr<Project> create(const AppInstPtr& appInstance);
 
     virtual ~Project();
 

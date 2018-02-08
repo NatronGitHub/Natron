@@ -294,7 +294,7 @@ public:
         {
             for (std::list< boost::shared_ptr<RenderActionData> >::const_iterator it = other.renderData.begin();
                  it != other.renderData.end(); ++it) {
-                boost::shared_ptr<RenderActionData> d( new RenderActionData(**it) );
+                boost::shared_ptr<RenderActionData> d = boost::make_shared<RenderActionData>(**it);
                 renderData.push_back(d);
             }
         }

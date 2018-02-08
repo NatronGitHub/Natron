@@ -37,6 +37,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
 #include <QtCore/QMutex>
@@ -126,14 +127,14 @@ public:
     };
 
 private:
+    struct MakeSharedEnabler;
+
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     TrackerContext(const boost::shared_ptr<Node> &node);
 
 public:
-    static boost::shared_ptr<TrackerContext> create(const boost::shared_ptr<Node> &node) {
-        return boost::shared_ptr<TrackerContext>( new TrackerContext(node) );
-    }
+    static boost::shared_ptr<TrackerContext> create(const boost::shared_ptr<Node> &node);
 
     virtual ~TrackerContext();
 

@@ -6726,7 +6726,7 @@ Node::destroyNode(bool blockingDestroy, bool autoReconnect)
         }
         _imp->renderWatcher.reset( new NodeRenderWatcher(nodesToWatch) );
         QObject::connect( _imp->renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int,WatcherCallerArgsPtr)) );
-        boost::shared_ptr<NodeDestroyNodeInternalArgs> args( new NodeDestroyNodeInternalArgs() );
+        boost::shared_ptr<NodeDestroyNodeInternalArgs> args = boost::make_shared<NodeDestroyNodeInternalArgs>();
         args->autoReconnect = autoReconnect;
         _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
 
@@ -8612,7 +8612,7 @@ Node::addPositionInteract(const boost::shared_ptr<KnobDouble>& position,
         return;
     }
 
-    boost::shared_ptr<HostOverlayKnobsPosition> knobs( new HostOverlayKnobsPosition() );
+    boost::shared_ptr<HostOverlayKnobsPosition> knobs = boost::make_shared<HostOverlayKnobsPosition>();
     knobs->addKnob(position, HostOverlayKnobsPosition::eKnobsEnumerationPosition);
     if (interactive) {
         knobs->addKnob(interactive, HostOverlayKnobsPosition::eKnobsEnumerationInteractive);
@@ -8642,7 +8642,7 @@ Node::addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
         return;
     }
 
-    boost::shared_ptr<HostOverlayKnobsTransform> knobs( new HostOverlayKnobsTransform() );
+    boost::shared_ptr<HostOverlayKnobsTransform> knobs = boost::make_shared<HostOverlayKnobsTransform>();
     knobs->addKnob(translate, HostOverlayKnobsTransform::eKnobsEnumerationTranslate);
     knobs->addKnob(scale, HostOverlayKnobsTransform::eKnobsEnumerationScale);
     knobs->addKnob(scaleUniform, HostOverlayKnobsTransform::eKnobsEnumerationUniform);
@@ -8686,7 +8686,7 @@ Node::addCornerPinInteract(const boost::shared_ptr<KnobDouble>& from1,
     if ( appPTR->isBackground() ) {
         return;
     }
-    boost::shared_ptr<HostOverlayKnobsCornerPin> knobs( new HostOverlayKnobsCornerPin() );
+    boost::shared_ptr<HostOverlayKnobsCornerPin> knobs = boost::make_shared<HostOverlayKnobsCornerPin>();
     knobs->addKnob(from1, HostOverlayKnobsCornerPin::eKnobsEnumerationFrom1);
     knobs->addKnob(from2, HostOverlayKnobsCornerPin::eKnobsEnumerationFrom2);
     knobs->addKnob(from3, HostOverlayKnobsCornerPin::eKnobsEnumerationFrom3);

@@ -89,6 +89,23 @@ RotoPaintInteract::RotoPaintInteract(RotoPaintPrivate* p)
     cloneOffset.first = cloneOffset.second = 0.;
 }
 
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct RotoPaintInteract::MakeSharedEnabler: public RotoPaintInteract
+{
+    MakeSharedEnabler(RotoPaintPrivate* p) : RotoPaintInteract(p) {
+    }
+};
+
+
+boost::shared_ptr<RotoPaintInteract>
+RotoPaintInteract::create(RotoPaintPrivate* p)
+{
+    return boost::make_shared<RotoPaintInteract::MakeSharedEnabler>(p);
+}
+
+
 void
 RotoPaintInteract::evaluate(bool redraw)
 {

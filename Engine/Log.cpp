@@ -179,7 +179,8 @@ public:
 };
 
 Log::Log()
-    : Singleton<Log>(), _imp( new LogPrivate() )
+    : Singleton<Log>()
+    , _imp( new LogPrivate() )
 {
 }
 

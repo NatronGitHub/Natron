@@ -398,7 +398,7 @@ private:
             int userPagesCount;
             ar & ::boost::serialization::make_nvp("UserPagesCount", userPagesCount);
             for (int i = 0; i < userPagesCount; ++i) {
-                boost::shared_ptr<GroupKnobSerialization> s( new GroupKnobSerialization() );
+                boost::shared_ptr<GroupKnobSerialization> s = boost::make_shared<GroupKnobSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *s);
                 _userPages.push_back(s);
             }

@@ -1275,7 +1275,7 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
             } else {
                 nbIterationsWithoutProcessing = 0;
             }
-            boost::shared_ptr<OutputSchedulerThreadExecMTArgs> framesToRender( new OutputSchedulerThreadExecMTArgs() );
+            boost::shared_ptr<OutputSchedulerThreadExecMTArgs> framesToRender = boost::make_shared<OutputSchedulerThreadExecMTArgs>();
             {
                 QMutexLocker l(&_imp->bufMutex);
                 _imp->getFromBufferAndErase(expectedTimeToRender, framesToRender->frames);
@@ -1834,7 +1834,7 @@ OutputSchedulerThread::renderFrameRange(bool isBlocking,
         timelineGoTo(lastFrame);
     }
 
-    boost::shared_ptr<OutputSchedulerThreadStartArgs> args( new OutputSchedulerThreadStartArgs(isBlocking, enableRenderStats, firstFrame, lastFrame, frameStep, viewsToRender, direction) );
+    boost::shared_ptr<OutputSchedulerThreadStartArgs> args = boost::make_shared<OutputSchedulerThreadStartArgs>(isBlocking, enableRenderStats, firstFrame, lastFrame, frameStep, viewsToRender, direction);
 
     {
         QMutexLocker k(&_imp->renderFinishedMutex);
@@ -1862,7 +1862,7 @@ OutputSchedulerThread::renderFromCurrentFrame(bool enableRenderStats,
     ///Make sure current frame is in the frame range
     int currentTime = timelineGetTime();
     OutputSchedulerThreadPrivate::getNearestInSequence(timelineDirection, currentTime, firstFrame, lastFrame, &currentTime);
-    boost::shared_ptr<OutputSchedulerThreadStartArgs> args( new OutputSchedulerThreadStartArgs(false, enableRenderStats, firstFrame, lastFrame, 1, viewsToRender, timelineDirection) );
+    boost::shared_ptr<OutputSchedulerThreadStartArgs> args = boost::make_shared<OutputSchedulerThreadStartArgs>(false, enableRenderStats, firstFrame, lastFrame, 1, viewsToRender, timelineDirection);
     startTask(args);
 }
 
@@ -2195,7 +2195,7 @@ private:
 
         ///Even if enableRenderStats is false, we at least profile the time spent rendering the frame when rendering with a Write node.
         ///Though we don't enable render stats for sequential renders (e.g: WriteFFMPEG) since this is 1 file.
-        RenderStatsPtr stats( new RenderStats(enableRenderStats) );
+        RenderStatsPtr stats = boost::make_shared<RenderStats>(enableRenderStats);
         NodePtr outputNode = output->getNode();
         std::string cb = outputNode->getBeforeFrameRenderCallback();
         if ( !cb.empty() ) {
@@ -2814,7 +2814,7 @@ private:
         RenderStatsPtr stats;
 
         if (enableRenderStats) {
-            stats.reset( new RenderStats(enableRenderStats) );
+            stats = boost::make_shared<RenderStats>(enableRenderStats);
         }
         ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
         ///it calls appendToBuffer by itself
@@ -3937,6 +3937,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
             return;
         }
     }
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
     boost::shared_ptr<CurrentFrameFunctorArgs> functorArgs( new CurrentFrameFunctorArgs(view,
                                                                                         frame,
                                                                                         stats,
@@ -3947,6 +3948,18 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
                                                                                         rotoPaintNode,
                                                                                         curStroke,
                                                                                         isRotoNeatRender) );
+#else
+    boost::shared_ptr<CurrentFrameFunctorArgs> functorArgs = boost::make_shared<CurrentFrameFunctorArgs>(view,
+                                                                                                         frame,
+                                                                                                         stats,
+                                                                                                         _imp->viewer,
+                                                                                                         viewerHash,
+                                                                                                         _imp.get(),
+                                                                                                         canAbort,
+                                                                                                         rotoPaintNode,
+                                                                                                         curStroke,
+                                                                                                         isRotoNeatRender);
+#endif
     functorArgs->args[0] = args[0];
     functorArgs->args[1] = args[1];
 
