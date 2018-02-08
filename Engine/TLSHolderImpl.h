@@ -59,7 +59,7 @@ TLSHolder<EffectInstance::EffectTLSData>::copyAndReturnNewTLS(const QThread* fro
 
     ThreadData data;
     //Copy constructor
-    data.value.reset( new EffectInstance::EffectTLSData( *(found->second.value) ) );
+    data.value = boost::make_shared<EffectInstance::EffectTLSData>( *(found->second.value) );
     perThreadData[toThread] = data;
 
     return data.value;

@@ -51,7 +51,7 @@ ProjectSerialization::initialize(const Project* project)
         if ( knobs[i]->getIsPersistent() &&
              !isGroup && !isPage && !isButton &&
              knobs[i]->hasModificationsForSerialization() ) {
-            boost::shared_ptr<KnobSerialization> newKnobSer( new KnobSerialization(knobs[i]) );
+            boost::shared_ptr<KnobSerialization> newKnobSer = boost::make_shared<KnobSerialization>(knobs[i]);
             _projectKnobs.push_back(newKnobSer);
         }
     }

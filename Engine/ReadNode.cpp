@@ -501,7 +501,7 @@ ReadNodePrivate::destroyReadNode()
                     (*it)->setSecret(false);
                 }*/
 
-                boost::shared_ptr<KnobSerialization> s( new KnobSerialization(*it) );
+                boost::shared_ptr<KnobSerialization> s = boost::make_shared<KnobSerialization>(*it);
                 serialized.push_back(s);
             }
             if (!isGeneric) {

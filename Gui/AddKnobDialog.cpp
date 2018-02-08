@@ -1021,7 +1021,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     onTypeCurrentIndexChanged( (int)t );
 
     if (knob) {
-        _imp->originalKnobSerialization.reset( new KnobSerialization(knob) );
+        _imp->originalKnobSerialization = boost::make_shared<KnobSerialization>(knob);
     }
 }
 

@@ -24,6 +24,8 @@
 
 #include "GenericSchedulerThread.h"
 
+#include <boost/make_shared.hpp>
+
 #include <QtCore/QCoreApplication>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
@@ -178,7 +180,7 @@ GenericSchedulerThread::quitThread(bool allowRestarts)
     {
         QMutexLocker k(&_imp->enqueuedTasksMutex);
         _imp->enqueuedTasks.clear();
-        boost::shared_ptr<GenericThreadStartArgs> stubArgs( new GenericThreadStartArgs(true) );
+        boost::shared_ptr<GenericThreadStartArgs> stubArgs = boost::make_shared<GenericThreadStartArgs>(true);
         _imp->enqueuedTasks.push_back(stubArgs);
     }
 

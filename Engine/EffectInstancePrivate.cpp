@@ -382,7 +382,7 @@ EffectInstance::RenderArgs::RenderArgs(const RenderArgs & o)
 
 EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     : _publicInterface(publicInterface)
-    , tlsData( new TLSHolder<EffectTLSData>() )
+    , tlsData()
     , duringInteractActionMutex()
     , duringInteractAction(false)
     , pluginMemoryChunksMutex()
@@ -405,6 +405,7 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , renderClonesMutex()
     , renderClonesPool()
 {
+    tlsData = boost::make_shared<TLSHolder<EffectTLSData> >();
     actionsCache = boost::make_shared<ActionsCache>(appPTR->getHardwareIdealThreadCount() * 2);
 }
 

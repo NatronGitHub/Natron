@@ -1120,8 +1120,8 @@ EffectInstance::getImage(int inputNb,
         ImageBitDepthEnum bitdepth = inputImg->getBitDepth();
         RectI bounds;
         inputImg->getRoD().toPixelEnclosing(0, par, &bounds);
-        ImagePtr rescaledImg( new Image( inputImg->getComponents(), inputImg->getRoD(),
-                                         bounds, 0, par, bitdepth, inputImg->getPremultiplication(), inputImg->getFieldingOrder() ) );
+        ImagePtr rescaledImg = boost::make_shared<Image>( inputImg->getComponents(), inputImg->getRoD(),
+                                                         bounds, 0, par, bitdepth, inputImg->getPremultiplication(), inputImg->getFieldingOrder() );
         inputImg->upscaleMipMap( inputImg->getBounds(), inputImgMipMapLevel, 0, rescaledImg.get() );
         if (roiPixel) {
             RectD canonicalPixelRoI;
@@ -1478,7 +1478,7 @@ getOrCreateFromCacheInternal(const ImageKey & key,
                              ImagePtr* image)
 {
     if (!useCache) {
-        image->reset( new Image(key, params) );
+        *image = boost::make_shared<Image>(key, params);
     } else {
         assert(params->getStorageInfo().mode != eStorageModeGLTex);
 
@@ -1521,7 +1521,7 @@ EffectInstance::convertOpenGLTextureToCachedRAMImage(const ImagePtr& image)
 {
     assert(image->getStorageMode() == eStorageModeGLTex);
 
-    boost::shared_ptr<ImageParams> params( new ImageParams( *image->getParams() ) );
+    boost::shared_ptr<ImageParams> params = boost::make_shared<ImageParams>( *image->getParams() );
     CacheEntryStorageInfo& info = params->getStorageInfo();
     info.mode = eStorageModeRAM;
 
@@ -1548,7 +1548,7 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
 {
     assert(image->getStorageMode() != eStorageModeGLTex);
 
-    boost::shared_ptr<ImageParams> params( new ImageParams( *image->getParams() ) );
+    boost::shared_ptr<ImageParams> params = boost::make_shared<ImageParams>( *image->getParams() );
     CacheEntryStorageInfo& info = params->getStorageInfo();
     info.mode = eStorageModeGLTex;
     info.textureTarget = GL_TEXTURE_2D;
@@ -1580,7 +1580,11 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     bool useTmpImage = image->getComponentsCount() != 4;
     ImagePtr tmpImg;
     if (useTmpImage) {
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
         tmpImg.reset( new Image( ImagePlaneDesc::getRGBAComponents(), image->getRoD(), bounds, 0, image->getPixelAspectRatio(), image->getBitDepth(), image->getPremultiplication(), image->getFieldingOrder(), false, eStorageModeRAM) );
+#else
+        tmpImg = boost::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), image->getRoD(), bounds, 0, image->getPixelAspectRatio(), image->getBitDepth(), image->getPremultiplication(), image->getFieldingOrder(), false, eStorageModeRAM);
+#endif
         tmpImg->setKey(image->getKey());
         if (tmpImg->getComponents() == image->getComponents()) {
             tmpImg->pasteFrom(*image, bounds);
@@ -1995,7 +1999,7 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
     //If we're rendering full scale and with input images at full scale, don't cache the downscale image since it is cheap to
     //recreate, instead cache the full-scale image
     if (renderFullScaleThenDownscale) {
-        downscaleImage->reset( new Image(components, rod, downscaleImageBounds, mipmapLevel, par, depth, premult, fielding, true) );
+        *downscaleImage = boost::make_shared<Image>(components, rod, downscaleImageBounds, mipmapLevel, par, depth, premult, fielding, true);
         boost::shared_ptr<ImageParams> upscaledImageParams = Image::makeParams(rod,
                                                                                fullScaleImageBounds,
                                                                                par,
@@ -2398,7 +2402,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
     const boost::shared_ptr<ParallelRenderArgs>& frameArgs = tls->frameArgs.back();
 
     if (frameArgs->stats) {
-        timeRecorder.reset( new TimeLapse() );
+        timeRecorder = boost::make_shared<TimeLapse>();
     }
 
     const EffectInstance::PlaneToRender & firstPlane = planes.planes.begin()->second;
@@ -2439,6 +2443,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         assert(glContext);
 
         // Ensure the context is current
+        // scoped_ptr
         glContextAttacher.reset( new OSGLContextAttacher(glContext, abortInfo
 #ifdef DEBUG
                                                          , frameArgs->time
@@ -2468,6 +2473,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         }
         assert( !comps.empty() );
         std::map<ImagePlaneDesc, ImagePtr> identityPlanes;
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
         boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(tls->currentRenderArgs.identityTime,
                                                                                                        actionArgs.originalScale,
                                                                                                        mipMapLevel,
@@ -2481,6 +2487,21 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                                                                                        _publicInterface,
                                                                                                        planes.useOpenGL ? eStorageModeGLTex : eStorageModeRAM,
                                                                                                        time) );
+#else
+        boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs = boost::make_shared<EffectInstance::RenderRoIArgs>(tls->currentRenderArgs.identityTime,
+                                                                                                                        actionArgs.originalScale,
+                                                                                                                        mipMapLevel,
+                                                                                                                        view,
+                                                                                                                        false,
+                                                                                                                        downscaledRectToRender,
+                                                                                                                        RectD(),
+                                                                                                                        comps,
+                                                                                                                        outputClipPrefDepth,
+                                                                                                                        false,
+                                                                                                                        _publicInterface,
+                                                                                                                        planes.useOpenGL ? eStorageModeGLTex : eStorageModeRAM,
+                                                                                                                        time);
+#endif
         if (!tls->currentRenderArgs.identityInput) {
             for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
                 it->second.renderMappedImage->fillZero(renderMappedRectToRender, glContext);
@@ -2526,15 +2547,15 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                         ///Convert format first if needed
                         ImagePtr sourceImage;
                         if ( ( it->second.fullscaleImage->getComponents() != idIt->second->getComponents() ) || ( it->second.fullscaleImage->getBitDepth() != idIt->second->getBitDepth() ) ) {
-                            sourceImage.reset( new Image(it->second.fullscaleImage->getComponents(),
-                                                         idIt->second->getRoD(),
-                                                         idIt->second->getBounds(),
-                                                         idIt->second->getMipMapLevel(),
-                                                         idIt->second->getPixelAspectRatio(),
-                                                         it->second.fullscaleImage->getBitDepth(),
-                                                         idIt->second->getPremultiplication(),
-                                                         idIt->second->getFieldingOrder(),
-                                                         false) );
+                            sourceImage = boost::make_shared<Image>(it->second.fullscaleImage->getComponents(),
+                                                                    idIt->second->getRoD(),
+                                                                    idIt->second->getBounds(),
+                                                                    idIt->second->getMipMapLevel(),
+                                                                    idIt->second->getPixelAspectRatio(),
+                                                                    it->second.fullscaleImage->getBitDepth(),
+                                                                    idIt->second->getPremultiplication(),
+                                                                    idIt->second->getFieldingOrder(),
+                                                                    false);
 
                             ViewerColorSpaceEnum colorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( idIt->second->getBitDepth() );
                             ViewerColorSpaceEnum dstColorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth() );
@@ -2547,7 +2568,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                         const RectD & rod = sourceImage->getRoD();
                         RectI bounds;
                         rod.toPixelEnclosing(it->second.renderMappedImage->getMipMapLevel(), it->second.renderMappedImage->getPixelAspectRatio(), &bounds);
-                        ImagePtr inputPlane( new Image(it->first,
+                        ImagePtr inputPlane = boost::make_shared<Image>(it->first,
                                                        rod,
                                                        bounds,
                                                        it->second.renderMappedImage->getMipMapLevel(),
@@ -2555,7 +2576,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                                        it->second.renderMappedImage->getBitDepth(),
                                                        it->second.renderMappedImage->getPremultiplication(),
                                                        it->second.renderMappedImage->getFieldingOrder(),
-                                                       false) );
+                                                       false);
                         sourceImage->upscaleMipMap( sourceImage->getBounds(), sourceImage->getMipMapLevel(), inputPlane->getMipMapLevel(), inputPlane.get() );
                         it->second.fullscaleImage->pasteFrom(*inputPlane, renderMappedRectToRender, false);
                     } else {
@@ -2603,15 +2624,15 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         // OpenGL render never use the cache and bitmaps, all images are local to a render.
         if ( ( it->second.renderMappedImage->usesBitMap() || ( prefComp != it->second.renderMappedImage->getComponents() ) ||
                ( outputClipPrefDepth != it->second.renderMappedImage->getBitDepth() ) ) && !_publicInterface->isPaintingOverItselfEnabled() && !planes.useOpenGL ) {
-            it->second.tmpImage.reset( new Image(prefComp,
-                                                 it->second.renderMappedImage->getRoD(),
-                                                 actionArgs.roi,
-                                                 it->second.renderMappedImage->getMipMapLevel(),
-                                                 it->second.renderMappedImage->getPixelAspectRatio(),
-                                                 outputClipPrefDepth,
-                                                 it->second.renderMappedImage->getPremultiplication(),
-                                                 it->second.renderMappedImage->getFieldingOrder(),
-                                                 false) ); //< no bitmap
+            it->second.tmpImage = boost::make_shared<Image>(prefComp,
+                                                            it->second.renderMappedImage->getRoD(),
+                                                            actionArgs.roi,
+                                                            it->second.renderMappedImage->getMipMapLevel(),
+                                                            it->second.renderMappedImage->getPixelAspectRatio(),
+                                                            outputClipPrefDepth,
+                                                            it->second.renderMappedImage->getPremultiplication(),
+                                                            it->second.renderMappedImage->getFieldingOrder(),
+                                                 false); //< no bitmap
         } else {
             it->second.tmpImage = it->second.renderMappedImage;
         }
@@ -2803,7 +2824,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                         ///but originalInputImage is not in the correct mipMapLevel, upscale it
                         assert(originalInputImage->getMipMapLevel() > it->second.tmpImage->getMipMapLevel() &&
                                originalInputImage->getMipMapLevel() == mipMapLevel);
-                        ImagePtr tmp( new Image(it->second.tmpImage->getComponents(),
+                        ImagePtr tmp = boost::make_shared<Image>(it->second.tmpImage->getComponents(),
                                                 it->second.tmpImage->getRoD(),
                                                 renderMappedRectToRender,
                                                 0,
@@ -2811,7 +2832,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                                 it->second.tmpImage->getBitDepth(),
                                                 it->second.tmpImage->getPremultiplication(),
                                                 it->second.tmpImage->getFieldingOrder(),
-                                                false) );
+                                                false);
                         originalInputImage->upscaleMipMap( downscaledRectToRender, originalInputImage->getMipMapLevel(), 0, tmp.get() );
                         mappedOriginalInputImage = tmp;
                     }
@@ -2828,6 +2849,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                     /*
                      * BitDepth/Components conversion required as well as downscaling, do conversion to a tmp buffer
                      */
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
                     ImagePtr tmp( new Image(it->second.fullscaleImage->getComponents(),
                                             it->second.tmpImage->getRoD(),
                                             renderMappedRectToRender,
@@ -2837,6 +2859,17 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                             it->second.fullscaleImage->getPremultiplication(),
                                             it->second.fullscaleImage->getFieldingOrder(),
                                             false) );
+#else
+                    ImagePtr tmp = boost::make_shared<Image>(it->second.fullscaleImage->getComponents(),
+                                                             it->second.tmpImage->getRoD(),
+                                                             renderMappedRectToRender,
+                                                             mipMapLevel,
+                                                             it->second.tmpImage->getPixelAspectRatio(),
+                                                             it->second.fullscaleImage->getBitDepth(),
+                                                             it->second.fullscaleImage->getPremultiplication(),
+                                                             it->second.fullscaleImage->getFieldingOrder(),
+                                                             false);
+#endif
 
                     it->second.tmpImage->convertToFormat( renderMappedRectToRender,
                                                           _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
@@ -2956,6 +2989,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
          * Allocate a temporary image for rendering only if using cache
          */
         if (useCache) {
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
             p.tmpImage.reset( new Image(p.renderMappedImage->getComponents(),
                                         p.renderMappedImage->getRoD(),
                                         tls->currentRenderArgs.renderWindowPixel,
@@ -2966,6 +3000,18 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
                                         p.renderMappedImage->getFieldingOrder(),
                                         false /*useBitmap*/,
                                         img->getParams()->getStorageInfo().mode) );
+#else
+            p.tmpImage.reset = boost::make_shared<Image>(p.renderMappedImage->getComponents(),
+                                                         p.renderMappedImage->getRoD(),
+                                                         tls->currentRenderArgs.renderWindowPixel,
+                                                         p.renderMappedImage->getMipMapLevel(),
+                                                         p.renderMappedImage->getPixelAspectRatio(),
+                                                         p.renderMappedImage->getBitDepth(),
+                                                         p.renderMappedImage->getPremultiplication(),
+                                                         p.renderMappedImage->getFieldingOrder(),
+                                                         false /*useBitmap*/,
+                                                         img->getParams()->getStorageInfo().mode);
+#endif
         } else {
             p.tmpImage = p.renderMappedImage;
         }
@@ -3183,7 +3229,7 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
 PluginMemoryPtr
 EffectInstance::newMemoryInstance(size_t nBytes)
 {
-    PluginMemoryPtr ret( new PluginMemory( shared_from_this() ) ); //< hack to get "this" as a shared ptr
+    PluginMemoryPtr ret = boost::make_shared<PluginMemory>( shared_from_this() ); //< hack to get "this" as a shared ptr
 
     addPluginMemoryPointer(ret);
     bool wasntLocked = ret->alloc(nBytes);
@@ -4745,6 +4791,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             if (isAbortable) {
                 isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
             }
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
             setter.reset( new ParallelRenderArgsSetter( time,
                                                         viewIdx, //view
                                                         isRenderUserInteraction, // isRenderUserInteraction
@@ -4757,6 +4804,20 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                         true, // isAnalysis
                                                         false, // draftMode
                                                         boost::shared_ptr<RenderStats>() ) );
+#else
+            setter = boost::make_shared<ParallelRenderArgsSetter>( time,
+                                                                  viewIdx, //view
+                                                                  isRenderUserInteraction, // isRenderUserInteraction
+                                                                  isSequentialRender, // isSequential
+                                                                  abortInfo, // abortInfo
+                                                                  node, // treeRoot
+                                                                  0, //texture index
+                                                                  getApp()->getTimeLine().get(),
+                                                                  NodePtr(), // activeRotoPaintNode
+                                                                  true, // isAnalysis
+                                                                  false, // draftMode
+                                                                  boost::shared_ptr<RenderStats>() );
+#endif
         }
         {
             RECURSIVE_ACTION();

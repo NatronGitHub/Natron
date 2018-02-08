@@ -51,7 +51,8 @@ struct FileSystemItemPrivate;
 class FileSystemItem
     : public boost::enable_shared_from_this<FileSystemItem>
 {
-private:
+    struct MakeSharedEnabler;
+
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     FileSystemItem( const boost::shared_ptr<FileSystemModel>& model,
                     bool isDir,
@@ -76,10 +77,7 @@ public:
                                                      const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
                                                      const QDateTime& dateModified,
                                                      quint64 size,
-                                                     const boost::shared_ptr<FileSystemItem>& parent = boost::shared_ptr<FileSystemItem>() )
-    {
-        return boost::shared_ptr<FileSystemItem>( new FileSystemItem(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent) );
-    }
+                                                    const boost::shared_ptr<FileSystemItem>& parent = boost::shared_ptr<FileSystemItem>() );
 
     ~FileSystemItem();
 

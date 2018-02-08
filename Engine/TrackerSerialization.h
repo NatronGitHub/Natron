@@ -111,7 +111,7 @@ private:
         int nbItems;
         ar & boost::serialization::make_nvp("NbItems", nbItems);
         for (int i = 0; i < nbItems; ++i) {
-            boost::shared_ptr<KnobSerialization> s( new KnobSerialization() );
+            boost::shared_ptr<KnobSerialization> s = boost::make_shared<KnobSerialization>();
             ar & boost::serialization::make_nvp("Item", *s);
             _knobs.push_back(s);
         }

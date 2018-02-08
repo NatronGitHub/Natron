@@ -439,9 +439,9 @@ createElementsForKnob(QTreeWidgetItem* parent,
 
     if (k->getDimension() == 1) {
         if (kgui) {
-            knobCurve.reset( new KnobCurveGui(curveWidget, kgui->getCurve(ViewIdx(0), 0), kgui, 0, QString::fromUtf8( k->getLabel().c_str() ), QColor(255, 255, 255), 1.) );
+            knobCurve = boost::make_shared<KnobCurveGui>(curveWidget, kgui->getCurve(ViewIdx(0), 0), kgui, 0, QString::fromUtf8( k->getLabel().c_str() ), QColor(255, 255, 255), 1.) ;
         } else {
-            knobCurve.reset( new KnobCurveGui(curveWidget, k->getCurve(ViewIdx(0), 0, true), k, rotoctx, 0, QString::fromUtf8( k->getLabel().c_str() ), QColor(255, 255, 255), 1.) );
+            knobCurve = boost::make_shared<KnobCurveGui>(curveWidget, k->getCurve(ViewIdx(0), 0, true), k, rotoctx, 0, QString::fromUtf8( k->getLabel().c_str() ), QColor(255, 255, 255), 1.);
         }
         curveWidget->addCurveAndSetColor(knobCurve);
 
@@ -462,10 +462,10 @@ createElementsForKnob(QTreeWidgetItem* parent,
             NodeCurveEditorElement* elem;
             boost::shared_ptr<KnobCurveGui> dimCurve;
             if (kgui) {
-                dimCurve.reset( new KnobCurveGui(curveWidget, kgui->getCurve(ViewIdx(0), j), kgui, j, curveName, QColor(255, 255, 255), 1.) );
+                dimCurve = boost::make_shared<KnobCurveGui>(curveWidget, kgui->getCurve(ViewIdx(0), j), kgui, j, curveName, QColor(255, 255, 255), 1.);
                 elem = new NodeCurveEditorElement(tree, curveEditor, kgui, j, dimItem, dimCurve);
             } else {
-                dimCurve.reset( new KnobCurveGui(curveWidget, k->getCurve(ViewIdx(0), j, true), k, rotoctx, j, curveName, QColor(255, 255, 255), 1.) );
+                dimCurve = boost::make_shared<KnobCurveGui>(curveWidget, k->getCurve(ViewIdx(0), j, true), k, rotoctx, j, curveName, QColor(255, 255, 255), 1.);
                 elem = new NodeCurveEditorElement(tree, curveEditor, k, j, dimItem, dimCurve);
             }
             curveWidget->addCurveAndSetColor(dimCurve);

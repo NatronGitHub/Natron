@@ -608,7 +608,7 @@ void
 KnobHelper::populate()
 {
     KnobPtr thisKnob = shared_from_this();
-    boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(thisKnob) );
+    boost::shared_ptr<KnobSignalSlotHandler> handler = boost::make_shared<KnobSignalSlotHandler>(thisKnob);
 
     setSignalSlotHandler(handler);
 

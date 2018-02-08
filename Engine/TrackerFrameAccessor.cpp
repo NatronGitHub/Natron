@@ -417,7 +417,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
        Copy the Natron image to the LivMV float image
      */
     FrameAccessorCacheEntry entry;
-    entry.image.reset( new MvFloatImage( intersectedRoI.height(), intersectedRoI.width() ) );
+    entry.image = boost::make_shared<MvFloatImage>( intersectedRoI.height(), intersectedRoI.width() );
     entry.bounds = intersectedRoI;
     entry.referenceCount = 1;
     natronImageToLibMvFloatImage(_imp->enabledChannels,

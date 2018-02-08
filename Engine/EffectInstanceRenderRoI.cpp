@@ -187,7 +187,8 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstPtr& app,
          **/
         Image::ReadAccess acc = inputImage->getReadRights();
         RectI bounds = inputImage->getBounds();
-        ImagePtr tmp( new Image(targetComponents,
+#if 0 //def BOOST_NO_CXX11_VARIADIC_TEMPLATES
+       ImagePtr tmp( new Image(targetComponents,
                                 inputImage->getRoD(),
                                 bounds,
                                 inputImage->getMipMapLevel(),
@@ -196,6 +197,18 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstPtr& app,
                                 inputImage->getPremultiplication(),
                                 inputImage->getFieldingOrder(),
                                 false) );
+#else
+        ImagePtr tmp = boost::make_shared<Image>(targetComponents,
+                                                 inputImage->getRoD(),
+                                                 bounds,
+                                                 inputImage->getMipMapLevel(),
+                                                 inputImage->getPixelAspectRatio(),
+                                                 targetDepth,
+                                                 inputImage->getPremultiplication(),
+                                                 inputImage->getFieldingOrder(),
+                                                 false);
+
+#endif
         tmp->setKey(inputImage->getKey());
         RectI clippedRoi;
         roi.intersect(bounds, &clippedRoi);
@@ -1470,15 +1483,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if ( renderFullScaleThenDownscale && (it->second.fullscaleImage->getMipMapLevel() == 0) ) {
                     RectI bounds;
                     rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
-                    it->second.downscaleImage.reset( new Image(*components,
-                                                               rod,
-                                                               downscaledImageBounds,
-                                                               args.mipMapLevel,
-                                                               it->second.fullscaleImage->getPixelAspectRatio(),
-                                                               outputDepth,
-                                                               planesToRender->outputPremult,
-                                                               fieldingOrder,
-                                                               true) );
+                    it->second.downscaleImage = boost::make_shared<Image>(*components,
+                                                                          rod,
+                                                                          downscaledImageBounds,
+                                                                          args.mipMapLevel,
+                                                                          it->second.fullscaleImage->getPixelAspectRatio(),
+                                                                          outputDepth,
+                                                                          planesToRender->outputPremult,
+                                                                          fieldingOrder,
+                                                                          true);
 
                     it->second.fullscaleImage->downscaleMipMap( rod, it->second.fullscaleImage->getBounds(), 0, args.mipMapLevel, true, it->second.downscaleImage.get() );
                 }
@@ -1743,15 +1756,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
              !hasSomethingToRender ) {
             assert(it->second.fullscaleImage->getMipMapLevel() == 0);
             if (it->second.downscaleImage == it->second.fullscaleImage) {
-                it->second.downscaleImage.reset( new Image(it->second.fullscaleImage->getComponents(),
-                                                           it->second.fullscaleImage->getRoD(),
-                                                           downscaledImageBounds,
-                                                           args.mipMapLevel,
-                                                           it->second.fullscaleImage->getPixelAspectRatio(),
-                                                           it->second.fullscaleImage->getBitDepth(),
-                                                           it->second.fullscaleImage->getPremultiplication(),
-                                                           it->second.fullscaleImage->getFieldingOrder(),
-                                                           false) );
+                it->second.downscaleImage = boost::make_shared<Image>(it->second.fullscaleImage->getComponents(),
+                                                                      it->second.fullscaleImage->getRoD(),
+                                                                      downscaledImageBounds,
+                                                                      args.mipMapLevel,
+                                                                      it->second.fullscaleImage->getPixelAspectRatio(),
+                                                                      it->second.fullscaleImage->getBitDepth(),
+                                                                      it->second.fullscaleImage->getPremultiplication(),
+                                                                      it->second.fullscaleImage->getFieldingOrder(),
+                                                                      false);
                 it->second.downscaleImage->setKey(it->second.fullscaleImage->getKey());
             }
 

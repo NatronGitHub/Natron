@@ -107,7 +107,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
                 continue;
             }
 
-            boost::shared_ptr<KnobSerialization> newKnobSer( new KnobSerialization(knobs[i]) );
+            boost::shared_ptr<KnobSerialization> newKnobSer = boost::make_shared<KnobSerialization>(knobs[i]);
             _knobsValues.push_back(newKnobSer);
 
         }

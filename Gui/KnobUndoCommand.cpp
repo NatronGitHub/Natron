@@ -270,25 +270,25 @@ MultipleKnobEditsUndoCommand::createCopyForKnob(const KnobPtr & originalKnob)
     int dimension = originalKnob->getDimension();
 
     if ( typeName == KnobInt::typeNameStatic() ) {
-        copy.reset( new KnobInt(NULL, std::string(), dimension, false) );
+        copy = boost::make_shared<KnobInt>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobBool::typeNameStatic() ) {
-        copy.reset( new KnobBool(NULL, std::string(), dimension, false) );
+        copy = boost::make_shared<KnobBool>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobDouble::typeNameStatic() ) {
-        copy.reset( new KnobDouble(NULL, std::string(), dimension, false) );
+        copy = boost::make_shared<KnobDouble>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobChoice::typeNameStatic() ) {
-        copy.reset( new KnobChoice(NULL, std::string(), dimension, false) );
+        copy = boost::make_shared<KnobChoice>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobString::typeNameStatic() ) {
-        copy.reset( new KnobString(NULL, std::string(), dimension, false) );
+        copy = boost::make_shared<KnobString>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobParametric::typeNameStatic() ) {
-        copy.reset( new KnobParametric(NULL, std::string(), dimension, false) );
+        copy = boost::make_shared<KnobParametric>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobColor::typeNameStatic() ) {
-        copy.reset( new KnobColor(NULL, std::string(), dimension, false) );
+        copy = boost::make_shared<KnobColor>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobPath::typeNameStatic() ) {
-        copy.reset( new KnobPath(NULL, std::string(), dimension, false) );
+        copy = boost::make_shared<KnobPath>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobFile::typeNameStatic() ) {
-        copy.reset( new KnobFile(NULL, std::string(), dimension, false) );
+        copy = boost::make_shared<KnobFile>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobOutputFile::typeNameStatic() ) {
-        copy.reset( new KnobOutputFile(NULL, std::string(), dimension, false) );
+        copy = boost::make_shared<KnobOutputFile>((KnobHolder*)NULL, std::string(), dimension, false);
     }
 
     ///If this is another type of knob this is wrong since they do not hold any value

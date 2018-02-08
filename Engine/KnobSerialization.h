@@ -1002,12 +1002,12 @@ createDefaultValueForParam(const std::string& paramName,
                            const T& value0,
                            const T& value1)
 {
-    boost::shared_ptr< Knob<T> > knob( new Knob<T>(NULL, paramName, 2, false) );
+    boost::shared_ptr< Knob<T> > knob = boost::make_shared<Knob<T> >(NULL, paramName, 2, false);
 
     knob->populate();
     knob->setName(paramName);
     knob->setValues(value0, value1, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-    boost::shared_ptr<KnobSerialization> ret( new KnobSerialization(knob) );
+    boost::shared_ptr<KnobSerialization> ret = boost::make_shared<KnobSerialization>(knob);
 
     return ret;
 }
@@ -1017,12 +1017,12 @@ boost::shared_ptr<KnobSerialization>
 createDefaultValueForParam(const std::string& paramName,
                            const T& value)
 {
-    boost::shared_ptr< Knob<T> > knob( new Knob<T>(NULL, paramName, 1, false) );
+    boost::shared_ptr< Knob<T> > knob = boost::make_shared<Knob<T> >(NULL, paramName, 1, false);
 
     knob->populate();
     knob->setName(paramName);
     knob->setValue(value);
-    boost::shared_ptr<KnobSerialization> ret( new KnobSerialization(knob) );
+    boost::shared_ptr<KnobSerialization> ret = boost::make_shared<KnobSerialization>(knob);
 
     return ret;
 }
@@ -1086,7 +1086,7 @@ public:
             } else {
                 //KnobChoice* isChoice = dynamic_cast<KnobChoice*>(children[i].get());
                 //bool copyKnob = false;//isChoice != NULL;
-                boost::shared_ptr<KnobSerialization> serialisation( new KnobSerialization(children[i]) );
+                boost::shared_ptr<KnobSerialization> serialisation = boost::make_shared<KnobSerialization>(children[i]);
                 _children.push_back(serialisation);
             }
         }

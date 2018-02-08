@@ -260,7 +260,7 @@ KnobGuiContainerHelper::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)
     tabLayout->setSpacing( TO_DPIY(NATRON_FORM_LAYOUT_LINES_SPACING) );
 
     // Create the page gui
-    KnobPageGuiPtr pageGui( new KnobPageGui() );
+    KnobPageGuiPtr pageGui = boost::make_shared<KnobPageGui>();
     pageGui->currentRow = 0;
     pageGui->tab = newTab;
     pageGui->pageKnob = page;
