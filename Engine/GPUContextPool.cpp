@@ -124,7 +124,7 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
     if ( _imp->glContextPool.empty() ) {
         assert( (int)_imp->attachedGLContexts.size() < maxContexts );
         //  Create a new one
-        newContext.reset = boost::make_shared<OSGLContext>( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID );
+        newContext = boost::make_shared<OSGLContext>( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID );
     } else {
         std::set<OSGLContextPtr>::iterator it = _imp->glContextPool.begin();
         newContext = *it;

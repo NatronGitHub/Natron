@@ -2986,16 +2986,16 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
                                         false /*useBitmap*/,
                                         img->getParams()->getStorageInfo().mode) );
 #else
-            p.tmpImage.reset = boost::make_shared<Image>(p.renderMappedImage->getComponents(),
-                                                         p.renderMappedImage->getRoD(),
-                                                         tls->currentRenderArgs.renderWindowPixel,
-                                                         p.renderMappedImage->getMipMapLevel(),
-                                                         p.renderMappedImage->getPixelAspectRatio(),
-                                                         p.renderMappedImage->getBitDepth(),
-                                                         p.renderMappedImage->getPremultiplication(),
-                                                         p.renderMappedImage->getFieldingOrder(),
-                                                         false /*useBitmap*/,
-                                                         img->getParams()->getStorageInfo().mode);
+            p.tmpImage = boost::make_shared<Image>(p.renderMappedImage->getComponents(),
+                                                   p.renderMappedImage->getRoD(),
+                                                   tls->currentRenderArgs.renderWindowPixel,
+                                                   p.renderMappedImage->getMipMapLevel(),
+                                                   p.renderMappedImage->getPixelAspectRatio(),
+                                                   p.renderMappedImage->getBitDepth(),
+                                                   p.renderMappedImage->getPremultiplication(),
+                                                   p.renderMappedImage->getFieldingOrder(),
+                                                   false /*useBitmap*/,
+                                                   img->getParams()->getStorageInfo().mode);
 #endif
         } else {
             p.tmpImage = p.renderMappedImage;
