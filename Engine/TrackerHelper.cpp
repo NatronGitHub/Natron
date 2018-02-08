@@ -28,7 +28,7 @@
 #include <set>
 #include <sstream>
 
-
+#include <boost/make_shared.hpp>
 
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
@@ -219,7 +219,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 
     /// The accessor and its cache is local to a track operation, it is wiped once the whole sequence track is finished.
     TrackerFrameAccessorPtr accessor = TrackerFrameAccessor::create(trackerNodeSource, trackerNodeMask, maskImagePlane, maskPlaneIndex, enabledChannels, formatHeight);
-    boost::shared_ptr<mv::AutoTrack> trackContext( new mv::AutoTrack( accessor.get() ) );
+    boost::shared_ptr<mv::AutoTrack> trackContext = boost::make_shared<mv::AutoTrack>( accessor.get() );
     std::vector<TrackMarkerAndOptionsPtr > trackAndOptions;
     mv::TrackRegionOptions mvOptions;
     /*
@@ -408,7 +408,12 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
     /*
      Launch tracking in the scheduler thread.
      */
+
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
     boost::shared_ptr<TrackArgs> args( new TrackArgs(start, end, frameStep, trackerNodeSource->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight, autoKeyingOnEnabledParamEnabled) );
+#else
+    boost::shared_ptr<TrackArgs> args = boost::make_shared<TrackArgs>(start, end, frameStep, trackerNodeSource->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight, autoKeyingOnEnabledParamEnabled);
+#endif
     _imp->scheduler->track(args);
 } // TrackerHelper::trackMarkers
 

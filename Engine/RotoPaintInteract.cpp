@@ -980,7 +980,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
             ///We already have a fresh stroke prepared for that type
             return;
         }
-        strokeBeingPaint.reset( new RotoStrokeItem( strokeType, _imp->knobsTable ) );
+        strokeBeingPaint = boost::make_shared<RotoStrokeItem>( strokeType, _imp->knobsTable );
         strokeBeingPaint->initializeKnobsPublic();
     }
 

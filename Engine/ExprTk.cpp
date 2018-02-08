@@ -874,11 +874,11 @@ addGenericFunctions(TimeValue time,
     registerFunction<numtostr>("str", functions);
     
     {
-        shared_ptr<exprtk_igeneric_function_t> ptr( new random_func(time) );
+        shared_ptr<exprtk_igeneric_function_t> ptr = boost::make_shared<random_func>(time);
         functions->push_back( make_pair("random", ptr) );
     }
     {
-        shared_ptr<exprtk_igeneric_function_t> ptr( new randomInt_func(time) );
+        shared_ptr<exprtk_igeneric_function_t> ptr = boost::make_shared<randomInt_func>(time);
         functions->push_back( make_pair("randomInt", ptr) );
     }
 }
@@ -1590,7 +1590,7 @@ struct UnknownSymbolResolver
                 }
                 // Create a function that will return the value of the knob
                 KnobFunctionData funcData;
-                funcData.function.reset( new KnobValueFunction(_threadData, resolver._targetKnob, resolver._targetDimension, _time, _view, returnString) );
+                funcData.function = boost::make_shared<KnobValueFunction>(_threadData, resolver._targetKnob, resolver._targetDimension, _time, _view, returnString);
                 funcData.symbolName = unknown_symbol;
 
                 // If this is a render clone, getMainInstance() returns the main instance, otherwise it returns NULL, meaning the caller
@@ -1783,7 +1783,7 @@ KnobHelperPrivate::validateExprTkExpression(const string& expression,
         addStandardFunctions(expression, time, symbol_table, data->functions, data->varargFunctions, data->genericFunctions, &ret->modifiedExpression);
 
 
-        exprtk_igeneric_function_ptr curveFunc( new curve_func(data, thisShared, view) );
+        exprtk_igeneric_function_ptr curveFunc = boost::make_shared<curve_func>(data, thisShared, view);
         data->genericFunctions.push_back( make_pair("curve", curveFunc) );
         symbol_table.add_function("curve", *curveFunc);
 
@@ -1918,7 +1918,7 @@ KnobHelper::executeExprTkExpression(TimeValue time,
 
 
         KnobIPtr thisShared = shared_from_this();
-        exprtk_igeneric_function_ptr curveFunc( new curve_func(data, thisShared, view) );
+        exprtk_igeneric_function_ptr curveFunc = boost::make_shared<curve_func>(data, thisShared, view);
         data->genericFunctions.push_back( make_pair("curve", curveFunc) );
         symbol_table->add_function("curve", *curveFunc);
 

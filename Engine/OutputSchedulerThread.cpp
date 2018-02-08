@@ -1319,7 +1319,7 @@ OutputSchedulerThreadPrivate::launchNextSequentialRender()
     }
     _publicInterface->timelineGoTo(args.startingFrame);
 
-    OutputSchedulerThreadStartArgsPtr threadArgs( new OutputSchedulerThreadStartArgs(args.blocking, args.useStats, args.firstFrame, args.lastFrame, args.startingFrame, args.frameStep, args.viewsToRender, args.direction) );
+    OutputSchedulerThreadStartArgsPtr threadArgs = boost::make_shared<OutputSchedulerThreadStartArgs>(args.blocking, args.useStats, args.firstFrame, args.lastFrame, args.startingFrame, args.frameStep, args.viewsToRender, args.direction);
     _publicInterface->startTask(threadArgs);
 
 } // launchNextSequentialRender

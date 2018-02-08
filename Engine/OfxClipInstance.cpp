@@ -88,8 +88,9 @@ public:
         , aspectRatio(1.)
         , optional(false)
         , mask(false)
-        , tlsData( new TLSHolder<OfxClipInstance::ClipTLSData>() )
+        , tlsData()
     {
+        tlsData = boost::make_shared<TLSHolder<OfxClipInstance::ClipTLSData> >();
     }
 
     const std::vector<std::string>& getComponentsPresentInternal(const OfxClipInstance::ClipDataTLSPtr& tls) const;

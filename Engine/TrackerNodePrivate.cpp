@@ -1128,7 +1128,7 @@ TrackerNodeInteract::refreshSelectedMarkerTextureNow()
 
     selectedMarkerImg.reset();
 
-    imageGetterWatcher.reset( new TrackWatcher() );
+    imageGetterWatcher = boost::make_shared<TrackWatcher>();
     QObject::connect( imageGetterWatcher.get(), SIGNAL(finished()), this, SLOT(onTrackImageRenderingFinished()) );
     imageGetterWatcher->setFuture( QtConcurrent::run(marker.get(), &TrackMarker::getMarkerImage, time, roi) );
 }
@@ -1158,7 +1158,7 @@ TrackerNodeInteract::makeMarkerKeyTexture(TimeValue time,
     }
 
     if ( !k.roi.isNull() ) {
-        TrackWatcherPtr watcher( new TrackWatcher() );
+        TrackWatcherPtr watcher = boost::make_shared<TrackWatcher>();
         QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onKeyFrameImageRenderingFinished()) );
         trackRequestsMap[k] = watcher;
         watcher->setFuture( QtConcurrent::run(track.get(), &TrackMarker::getMarkerImage, time, k.roi) );
@@ -1417,8 +1417,8 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
     if (!selectedMarkerTexture) {
         int format, internalFormat, glType;
         Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-        selectedMarkerTexture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, eImageBitDepthByte,
-                                                 format, internalFormat, glType, true /*useGL*/) );
+        selectedMarkerTexture = boost::make_shared<Texture>(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, eImageBitDepthByte,
+                                                 format, internalFormat, glType, true /*useGL*/);
     }
 
     RectI roi;
@@ -1460,8 +1460,8 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
             TrackerNodeInteract::KeyFrameTexIDs& keyTextures = trackTextures[track];
             int format, internalFormat, glType;
             Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-            GLTexturePtr tex( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, eImageBitDepthByte,
-                                          format, internalFormat, glType, true) );
+            GLTexturePtr tex = boost::make_shared<Texture>(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, eImageBitDepthByte,
+                                          format, internalFormat, glType, true);
             keyTextures[it->first.time] = tex;
 
             RectI roi;

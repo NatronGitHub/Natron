@@ -1261,7 +1261,7 @@ EffectInstance::createMemoryChunk(size_t nBytes)
 PluginMemoryPtr
 EffectInstance::createPluginMemory()
 {
-    PluginMemoryPtr ret( new PluginMemory() );
+    PluginMemoryPtr ret = boost::make_shared<PluginMemory>();
     return ret;
 }
 

@@ -28,6 +28,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <boost/make_shared.hpp>
+
 #ifdef __NATRON_WIN32__
 #include <windows.h>
 #endif
@@ -242,6 +244,37 @@ FileSystemItem::FileSystemItem(const FileSystemModelPtr& model,
 {
 }
 
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct FileSystemItem::MakeSharedEnabler: public FileSystemItem
+{
+    MakeSharedEnabler(const FileSystemModelPtr& model,
+                      bool isDir,
+                      const QString& filename,
+                      const QString& userFriendlySequenceName,
+                      const SequenceParsing::SequenceFromFilesPtr& sequence,
+                      const QDateTime& dateModified,
+                      quint64 size,
+                      const FileSystemItemPtr& parent) : FileSystemItem(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent) {
+    }
+};
+
+
+FileSystemItemPtr
+FileSystemItem::create(const FileSystemModelPtr& model,
+                       bool isDir,
+                       const QString& filename,
+                       const QString& userFriendlySequenceName,
+                       const SequenceParsing::SequenceFromFilesPtr& sequence,
+                       const QDateTime& dateModified,
+                       quint64 size,
+                       const FileSystemItemPtr& parent)
+{
+    return boost::make_shared<FileSystemItem::MakeSharedEnabler>(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent);
+}
+
+
 FileSystemItem::~FileSystemItem()
 {
     FileSystemModelPtr model = _imp->model.lock();
@@ -400,14 +433,14 @@ FileSystemItem::addChild(const SequenceParsing::SequenceFromFilesPtr& sequence,
 
 
     ///Create the child
-    FileSystemItemPtr child( new FileSystemItem( model,
-                                                                 isDir,
-                                                                 filename,
-                                                                 userFriendlyFilename,
-                                                                 sequence,
-                                                                 info.lastModified(),
-                                                                 size,
-                                                                 shared_from_this() ) );
+    FileSystemItemPtr child = create( model,
+                                     isDir,
+                                     filename,
+                                     userFriendlyFilename,
+                                     sequence,
+                                     info.lastModified(),
+                                     size,
+                                     shared_from_this() );
     model->_imp->registerItem(child);
     _imp->children.push_back(child);
 } // FileSystemItem::addChild
@@ -1221,6 +1254,7 @@ void
 FileSystemModel::initGatherer()
 {
     if (!_imp->gatherer) {
+        // scoped_ptr
         _imp->gatherer.reset( new FileGathererThread( shared_from_this() ) );
         assert(_imp->gatherer);
         QObject::connect( _imp->gatherer.get(), SIGNAL(directoryLoaded(QString)), this, SLOT(onDirectoryLoadedByGatherer(QString)) );
@@ -1652,7 +1686,7 @@ FileGathererThread::gatheringKernel(const FileSystemItemPtr& item)
             }
 
             if (!foundMatchingSequence) {
-                SequenceParsing::SequenceFromFilesPtr newSequence( new SequenceParsing::SequenceFromFiles(fileContent, true) );
+                SequenceParsing::SequenceFromFilesPtr newSequence = boost::make_shared<SequenceParsing::SequenceFromFiles>(fileContent, true);
                 sequences.push_back( std::make_pair(newSequence, all[i]) );
             }
         }

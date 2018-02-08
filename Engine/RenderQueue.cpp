@@ -242,7 +242,7 @@ RenderQueuePrivate::dispatchQueue(bool doBlockingRender, const std::list<RenderQ
         item.savePath = savePath;
 
         if (renderInSeparateProcess) {
-            item.process.reset( new ProcessHandler(savePath, item.work.treeRoot) );
+            item.process = boost::make_shared<ProcessHandler>(savePath, item.work.treeRoot);
             QObject::connect( item.process.get(), SIGNAL(processFinished(int)), _publicInterface, SLOT(onBackgroundRenderProcessFinished()) );
         } else {
             QObject::connect(item.work.treeRoot->getRenderEngine().get(), SIGNAL(renderFinished(int)), _publicInterface, SLOT(onQueuedRenderFinished(int)), Qt::UniqueConnection);

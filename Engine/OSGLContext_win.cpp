@@ -744,6 +744,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 
                 GLRendererID gid;
                 gid.rendererHandle = info.rendererID.rendererHandle;
+                // scoped_ptr
                 context.reset( new OSGLContext_win(FramebufferConfig(), appPTR->getOpenGLVersionMajor(), appPTR->getOpenGLVersionMinor(), false, gid, 0) );
             } catch (const std::exception& e) {
                 continue;
@@ -823,6 +824,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                 GLRendererID gid;
                 gid.renderID = info.rendererID.renderID;
                 try {
+                    // scoped_ptr
                     context.reset( new OSGLContext_win(FramebufferConfig(), appPTR->getOpenGLVersionMajor(), appPTR->getOpenGLVersionMinor(), false, gid, 0) );
                 } catch (const std::exception& e) {
                     continue;
@@ -854,6 +856,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         // No extension, use default
         boost::scoped_ptr<OSGLContext_win> context;
         try {
+            // scoped_ptr
             context.reset( new OSGLContext_win(FramebufferConfig(), appPTR->getOpenGLVersionMajor(), appPTR->getOpenGLVersionMinor(), false, GLRendererID(), 0) );
         } catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;

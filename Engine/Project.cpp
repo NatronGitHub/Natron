@@ -1914,7 +1914,7 @@ Project::reset(bool aboutToQuit, bool blocking)
     }
 
     if (!blocking) {
-        boost::shared_ptr<ResetWatcherArgs> args( new ResetWatcherArgs() );
+        boost::shared_ptr<ResetWatcherArgs> args = boost::make_shared<ResetWatcherArgs>();
         args->aboutToQuit = aboutToQuit;
         if ( !quitAnyProcessingForAllNodes(this, args) ) {
             doResetEnd(aboutToQuit);
@@ -2017,7 +2017,7 @@ Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
     if ( nodesToWatch.empty() ) {
         return false;
     }
-    boost::shared_ptr<NodeRenderWatcher> renderWatcher( new NodeRenderWatcher(nodesToWatch) );
+    boost::shared_ptr<NodeRenderWatcher> renderWatcher = boost::make_shared<NodeRenderWatcher>(nodesToWatch);
     QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,WatcherCallerArgsPtr)), Qt::UniqueConnection);
     ProjectPrivate::RenderWatcher p;
     p.receiver = receiver;
@@ -2717,7 +2717,7 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
                         continue;
                     }
                 } else {
-                    state.reset( new SERIALIZATION_NAMESPACE::NodeSerialization );
+                    state = boost::make_shared<SERIALIZATION_NAMESPACE::NodeSerialization>();
                     (*it)->toSerialization(state.get());
                 }
                 
@@ -2762,7 +2762,7 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
         }
 
 
-        SERIALIZATION_NAMESPACE::KnobSerializationPtr newKnobSer( new SERIALIZATION_NAMESPACE::KnobSerialization );
+        SERIALIZATION_NAMESPACE::KnobSerializationPtr newKnobSer = boost::make_shared<SERIALIZATION_NAMESPACE::KnobSerialization>();
         knobs[i]->toSerialization(newKnobSer.get());
         if (newKnobSer->_mustSerialize) {
 

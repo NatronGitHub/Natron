@@ -501,7 +501,7 @@ KnobHelper::populate()
     if (mainInstance) {
         return;
     }
-    boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(thisKnob) );
+    boost::shared_ptr<KnobSignalSlotHandler> handler = boost::make_shared<KnobSignalSlotHandler>(thisKnob);
 
     setSignalSlotHandler(handler);
 
@@ -3178,13 +3178,13 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
             }
             KnobGroupPtr isGrp = toKnobGroup(child);
             if (isGrp) {
-                boost::shared_ptr<GroupKnobSerialization> childSer( new GroupKnobSerialization );
+                boost::shared_ptr<GroupKnobSerialization> childSer = boost::make_shared<GroupKnobSerialization>();
                 isGrp->toSerialization(childSer.get());
                 groupSerialization->_children.push_back(childSer);
             } else {
                 //KnobChoicePtr isChoice = toKnobChoice(children[i].get());
                 //bool copyKnob = false;//isChoice != NULL;
-                KnobSerializationPtr childSer( new KnobSerialization );
+                KnobSerializationPtr childSer = boost::make_shared<KnobSerialization>();
 
                 // At this point we might be exporting an already existing PyPlug and knobs that were created
                 // by the PyPlugs could be user knobs but were marked declared by plug-in. In order to force the

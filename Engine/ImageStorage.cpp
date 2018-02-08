@@ -420,15 +420,15 @@ GLImageStorage::allocateMemoryImpl(const AllocateMemoryArgs& args)
     glType = GL_FLOAT;
 
 
-    _imp->texture.reset( new Texture(glArgs->textureTarget,
-                                     GL_NONE,
-                                     GL_NONE,
-                                     GL_NONE,
-                                     eImageBitDepthFloat,
-                                     format,
-                                     internalFormat,
-                                     glType,
-                                     glArgs->glContext->isGPUContext() /*useOpenGL*/) );
+    _imp->texture = boost::make_shared<Texture>(glArgs->textureTarget,
+                                                GL_NONE,
+                                                GL_NONE,
+                                                GL_NONE,
+                                                eImageBitDepthFloat,
+                                                format,
+                                                internalFormat,
+                                                glType,
+                                                glArgs->glContext->isGPUContext() /*useOpenGL*/);
 
 
     // This calls glTexImage2D and allocates a RGBA image

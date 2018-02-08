@@ -427,7 +427,7 @@ PrecompNodePrivate::reloadProject(bool setWriteNodeChoice)
     {
         //Set a temporary timeline that will be used while loading the project.
         //This is to avoid that the seekFrame call has an effect on this project since they share the same timeline
-        TimeLinePtr tmpTimeline( new TimeLine( project.get() ) );
+        TimeLinePtr tmpTimeline = boost::make_shared<TimeLine>( project.get() );
         project->setTimeLine(tmpTimeline);
     }
 

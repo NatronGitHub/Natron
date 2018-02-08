@@ -693,7 +693,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             continue;
         }
 
-        SERIALIZATION_NAMESPACE::KnobSerializationPtr newKnobSer( new SERIALIZATION_NAMESPACE::KnobSerialization );
+        SERIALIZATION_NAMESPACE::KnobSerializationPtr newKnobSer = boost::make_shared<SERIALIZATION_NAMESPACE::KnobSerialization>();
         knob->toSerialization(newKnobSer.get());
         if (newKnobSer->_mustSerialize) {
             serialization->_knobsValues.push_back(newKnobSer);
@@ -703,7 +703,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     // Serialize user pages now
     for (std::list<KnobIPtr>::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
-        boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization> s( new SERIALIZATION_NAMESPACE::GroupKnobSerialization );
+        boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization> s = boost::make_shared<SERIALIZATION_NAMESPACE::GroupKnobSerialization>();
         (*it)->toSerialization(s.get());
         serialization->_userPages.push_back(s);
     }
@@ -776,7 +776,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
                         continue;
                     }
                 } else {
-                    state.reset( new SERIALIZATION_NAMESPACE::NodeSerialization );
+                    state = boost::make_shared<SERIALIZATION_NAMESPACE::NodeSerialization>();
                     (*it)->toSerialization(state.get());
                 }
 

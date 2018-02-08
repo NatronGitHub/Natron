@@ -4082,8 +4082,9 @@ struct OfxStringInstancePrivate
         : fileKnob()
         , stringKnob()
         , pathKnob()
-        , tlsData( new TLSHolder<OfxParamToKnob::OfxParamTLSData>() )
+        , tlsData()
     {
+        tlsData = boost::make_shared<TLSHolder<OfxParamToKnob::OfxParamTLSData> >();
     }
 };
 
@@ -4723,8 +4724,9 @@ struct OfxCustomInstancePrivate
     OfxCustomInstancePrivate()
         : knob()
         , customParamInterpolationV1Entry(0)
-        , tlsData( new TLSHolder<OfxParamToKnob::OfxParamTLSData>() )
+        , tlsData()
     {
+        tlsData = boost::make_shared<TLSHolder<OfxParamToKnob::OfxParamTLSData> >();
     }
 };
 

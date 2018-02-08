@@ -326,7 +326,7 @@ template <typename GL>
 static GLShaderBasePtr
 getOrCreateFeatherRampShaderInternal(RampTypeEnum type)
 {
-    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
+    boost::shared_ptr<GLShader<GL> > shader = boost::make_shared<GLShader<GL> >();
 
     std::string fragmentSource;
 
@@ -395,7 +395,7 @@ template <typename GL>
 static GLShaderBasePtr
 getOrCreateStrokeDotShaderInternal(bool buildUp)
 {
-    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
+    boost::shared_ptr<GLShader<GL> > shader = boost::make_shared<GLShader<GL> >();
 
     std::string vertexSource;
     vertexSource += std::string(rotoDrawDot_VertexShader);
@@ -461,7 +461,7 @@ template <typename GL>
 static GLShaderBasePtr
 getOrCreateAccumShaderInternal()
 {
-    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
+    boost::shared_ptr<GLShader<GL> > shader = boost::make_shared<GLShader<GL> >();
     bool ok;
     std::string fragmentSource;
     fragmentSource += std::string(roto_AccumulateShader);
@@ -493,7 +493,7 @@ template <typename GL>
 static GLShaderBasePtr
 getOrCreateDivideShaderInternal()
 {
-    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
+    boost::shared_ptr<GLShader<GL> > shader = boost::make_shared<GLShader<GL> >();
     bool ok;
     std::string fragmentSource;
 
@@ -554,7 +554,7 @@ template <typename GL>
 static GLShaderBasePtr
 getOrCreateStrokeSecondPassShaderInternal()
 {
-    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
+    boost::shared_ptr<GLShader<GL> > shader = boost::make_shared<GLShader<GL> >();
 
     bool ok;
     std::string fragmentSource;
@@ -604,7 +604,7 @@ template <typename GL>
 static GLShaderBasePtr
 getOrCreateSmearShaderInternal()
 {
-    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
+    boost::shared_ptr<GLShader<GL> > shader = boost::make_shared<GLShader<GL> >();
 
     std::string vertexSource;
     vertexSource += std::string(rotoSmearDot_VertexShader);

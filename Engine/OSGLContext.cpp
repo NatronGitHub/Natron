@@ -374,14 +374,18 @@ OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs,
 
     if (useGPUContext) {
 #ifdef __NATRON_WIN32__
+        // scoped_ptr
         _imp->_platformContext.reset( new OSGLContext_win(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
 #elif defined(__NATRON_OSX__)
+        // scoped_ptr
         _imp->_platformContext.reset( new OSGLContext_mac(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
 #elif defined(__NATRON_LINUX__)
+        // scoped_ptr
         _imp->_platformContext.reset( new OSGLContext_x11(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
 #endif
     } else {
 #ifdef HAVE_OSMESA
+        // scoped_ptr
         _imp->_osmesaContext.reset( new OSGLContext_osmesa(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_osmesaContext.get() : 0) );
         _imp->_osmesaStubBuffer.resize(4);
 #else
@@ -724,7 +728,7 @@ static boost::shared_ptr<GLShader<GL> >
 getOrCreateFillShaderInternal()
 {
 
-    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
+    boost::shared_ptr<GLShader<GL> > shader = boost::make_shared<GLShader<GL> >();
 #ifdef DEBUG
     std::string error;
     bool ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, fillConstant_FragmentShader, &error);
@@ -755,7 +759,7 @@ static boost::shared_ptr<GLShader<GL> >
 getOrCreateCopyTexShaderInternal()
 {
 
-    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
+    boost::shared_ptr<GLShader<GL> > shader = boost::make_shared<GLShader<GL> >();
 #ifdef DEBUG
     std::string error;
     bool ok = shader->addShader(GLShader<GL>::eShaderTypeFragment, copyTex_FragmentShader, &error);
@@ -786,7 +790,7 @@ template <typename GL>
 static boost::shared_ptr<GLShader<GL> >
 getOrCreateMaskMixShaderInternal(bool maskEnabled, bool maskInvert)
 {
-    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
+    boost::shared_ptr<GLShader<GL> > shader = boost::make_shared<GLShader<GL> >();
 
     std::string fragmentSource;
     if (maskEnabled) {
@@ -845,7 +849,7 @@ getOrCreateCopyUnprocessedChannelsShaderInternal(bool doR,
         index |= 0x08;
     }
 
-    boost::shared_ptr<GLShader<GL> > shader( new GLShader<GL>() );
+    boost::shared_ptr<GLShader<GL> > shader = boost::make_shared<GLShader<GL> >();
 
     std::string fragmentSource;
     if (!doR) {

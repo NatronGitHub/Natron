@@ -152,9 +152,9 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath,
        We check periodically that the crash reporter process is still alive. If the user killed it somehow, then we want
        the Natron process to terminate
      */
-    breakpadAliveThread.reset( new ExistenceCheckerThread(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
-                                                          QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK),
-                                                          breakpadComPipePath) );
+    breakpadAliveThread = boost::make_shared<ExistenceCheckerThread>(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
+                                                                     QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK),
+                                                                     breakpadComPipePath);
     QObject::connect( breakpadAliveThread.get(), SIGNAL(otherProcessUnreachable()), appPTR, SLOT(onCrashReporterNoLongerResponding()) );
     breakpadAliveThread->start();
 }
@@ -169,30 +169,30 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
     try {
 #if defined(Q_OS_MAC)
         Q_UNUSED(breakpad_client_fd);
-        breakpadHandler.reset( new google_breakpad::ExceptionHandler( dumpPath.toStdString(),
-                                                                      0,
-                                                                      0 /*dmpcb*/,
-                                                                      0,
-                                                                      true,
-                                                                      breakpadPipePath.toStdString().c_str() ) );
+        breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler>( dumpPath.toStdString(),
+                                                                                0,
+                                                                                0 /*dmpcb*/,
+                                                                                0,
+                                                                                true,
+                                                                                breakpadPipePath.toStdString().c_str() );
 #elif defined(Q_OS_LINUX)
         Q_UNUSED(breakpadPipePath);
-        breakpadHandler.reset( new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor( dumpPath.toStdString() ),
-                                                                      0,
-                                                                      0 /*dmpCb*/,
-                                                                      0,
-                                                                      true,
-                                                                      breakpad_client_fd) );
+        breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor( dumpPath.toStdString() ),
+                                                                               0,
+                                                                               0 /*dmpCb*/,
+                                                                               0,
+                                                                               true,
+                                                                               breakpad_client_fd);
 #elif defined(Q_OS_WIN32)
         Q_UNUSED(breakpad_client_fd);
-        breakpadHandler.reset( new google_breakpad::ExceptionHandler( dumpPath.toStdWString(),
-                                                                      0, //filter callback
-                                                                      0 /*dmpcb*/,
-                                                                      0, //context
-                                                                      google_breakpad::ExceptionHandler::HANDLER_ALL,
-                                                                      MiniDumpNormal,
-                                                                      breakpadPipePath.toStdWString().c_str(),
-                                                                      0) );
+        breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler( dumpPath.toStdWString(),
+                                                                               0, //filter callback
+                                                                               0 /*dmpcb*/,
+                                                                               0, //context
+                                                                               google_breakpad::ExceptionHandler::HANDLER_ALL,
+                                                                               MiniDumpNormal,
+                                                                               breakpadPipePath.toStdWString().c_str(),
+                                                                               0);
 #endif
     } catch (const std::exception& e) {
         qDebug() << e.what();

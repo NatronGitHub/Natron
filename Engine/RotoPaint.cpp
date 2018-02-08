@@ -4387,7 +4387,7 @@ RotoPaint::makeBezier(double x,
 {
 
     RotoLayerPtr parentLayer = getLayerForNewItem();
-    BezierPtr curve( new Bezier(_imp->knobsTable, baseName,  isOpenBezier) );
+    BezierPtr curve = boost::make_shared<Bezier>(_imp->knobsTable, baseName,  isOpenBezier);
     _imp->knobsTable->insertItem(0, curve, parentLayer, eTableChangeReasonInternal);
 
     _imp->knobsTable->beginEditSelection();
@@ -4408,7 +4408,7 @@ RotoPaint::makeStroke(RotoStrokeType type,
                         bool clearSel)
 {
     RotoLayerPtr parentLayer = getLayerForNewItem();
-    RotoStrokeItemPtr curve( new RotoStrokeItem(type, _imp->knobsTable) );
+    RotoStrokeItemPtr curve = boost::make_shared<RotoStrokeItem>(type, _imp->knobsTable);
     _imp->knobsTable->insertItem(0, curve, parentLayer, eTableChangeReasonInternal);
 
     if (clearSel) {

@@ -79,7 +79,7 @@ ImageLayer::ImageLayer(const QString& layerName,
     for (QStringList::const_iterator it = componentsName.begin(); it != componentsName.end(); ++it, ++i) {
         channels[i] = it->toStdString();
     }
-    _comps.reset( new ImagePlaneDesc(layerName.toStdString(), "", componentsPrettyName.toStdString(), channels) );
+    _comps = boost::make_shared<ImagePlaneDesc>(layerName.toStdString(), "", componentsPrettyName.toStdString(), channels);
 
 }
 
@@ -92,7 +92,7 @@ ImageLayer::ImageLayer(const ImagePlaneDesc& comps)
     for (std::size_t i = 0; i < channels.size(); ++i) {
         _componentsName.push_back( QString::fromUtf8( channels[i].c_str() ) );
     }
-    _comps.reset( new ImagePlaneDesc(comps) );
+    _comps = boost::make_shared<ImagePlaneDesc>(comps);
 }
 
 int

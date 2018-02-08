@@ -47,10 +47,13 @@ NATRON_NAMESPACE_ENTER
 
 class FileSystemModel;
 struct FileSystemItemPrivate;
+
 class FileSystemItem
     : public boost::enable_shared_from_this<FileSystemItem>
 {
 private:
+    struct MakeSharedEnabler;
+
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     FileSystemItem( const FileSystemModelPtr& model,
                     bool isDir,
@@ -70,16 +73,13 @@ public:
     //    return FileSystemItemPtr( new FileSystemItem( std::forward<T>(all)... ) );
     //}
     static FileSystemItemPtr create( const FileSystemModelPtr& model,
-                                                     bool isDir,
-                                                     const QString& filename,
-                                                     const QString& userFriendlySequenceName,
-                                                     const SequenceParsing::SequenceFromFilesPtr& sequence,
-                                                     const QDateTime& dateModified,
-                                                     quint64 size,
-                                                     const FileSystemItemPtr& parent = FileSystemItemPtr() ) WARN_UNUSED_RETURN
-    {
-        return FileSystemItemPtr( new FileSystemItem(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent) );
-    }
+                                    bool isDir,
+                                    const QString& filename,
+                                    const QString& userFriendlySequenceName,
+                                    const SequenceParsing::SequenceFromFilesPtr& sequence,
+                                    const QDateTime& dateModified,
+                                    quint64 size,
+                                    const FileSystemItemPtr& parent = FileSystemItemPtr() ) WARN_UNUSED_RETURN;
 
     ~FileSystemItem();
 

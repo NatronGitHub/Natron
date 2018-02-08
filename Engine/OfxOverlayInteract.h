@@ -46,13 +46,13 @@ class OfxOverlayInteract
 {
 public:
 
-    OfxOverlayInteract(OfxImageEffectInstance &v,
+    OfxOverlayInteract(OfxImageEffectInstance* v,
                        int bitDepthPerComponent,
                        bool hasAlpha);
 
     OfxOverlayInteract(const KnobIPtr& knob,
-                        OFX::Host::Interact::Descriptor &desc,
-                        OfxImageEffectInstance &v);
+                        OFX::Host::Interact::Descriptor* desc,
+                        OfxImageEffectInstance* v);
 
     virtual ~OfxOverlayInteract()
     {

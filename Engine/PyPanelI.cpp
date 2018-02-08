@@ -46,7 +46,7 @@ PyPanelI::toSerialization(SerializationObjectBase* serializationBase)
         KnobPagePtr isPage = toKnobPage(*it);
 
         if (!isGroup && !isPage) {
-            KnobSerializationPtr k( new KnobSerialization );
+            KnobSerializationPtr k = boost::make_shared<KnobSerialization>();
             (*it)->toSerialization(k.get());
             if (k->_mustSerialize) {
                 serialization->knobs.push_back(k);

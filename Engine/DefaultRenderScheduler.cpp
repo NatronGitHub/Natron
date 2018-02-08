@@ -146,7 +146,7 @@ DefaultScheduler::createFrameRenderResults(TimeValue time, const std::vector<Vie
     assert(outputNode);
 
     if (isWrite) {
-        stats.reset( new RenderStats(enableRenderStats) );
+        stats = boost::make_shared<RenderStats>(enableRenderStats);
     }
 
     TreeRenderQueueProviderPtr thisShared = shared_from_this();

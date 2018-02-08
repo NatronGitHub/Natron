@@ -1206,11 +1206,11 @@ Bezier::copyItem(const KnobTableItem& other)
 
             BezierCPs::const_iterator itF = itViews->second.featherPoints.begin();
             for (BezierCPs::const_iterator it = itViews->second.points.begin(); it != itViews->second.points.end(); ++it) {
-                BezierCPPtr cp( new BezierCP(this_shared) );
+                BezierCPPtr cp = boost::make_shared<BezierCP>(this_shared);
                 cp->copyControlPoint(**it);
                 thisShape.points.push_back(cp);
                 if (useFeather) {
-                    BezierCPPtr fp( new BezierCP(this_shared) );
+                    BezierCPPtr fp = boost::make_shared<BezierCP>(this_shared);
                     fp->copyControlPoint(**itF);
                     thisShape.featherPoints.push_back(fp);
                     ++itF;
@@ -1293,7 +1293,7 @@ Bezier::addControlPointInternal(double x, double y, TimeValue time, ViewIdx view
             }
         }
 
-        p.reset( new BezierCP(this_shared) );
+        p = boost::make_shared<BezierCP>(this_shared);
         if (autoKeying) {
             p->setPositionAtTime(keyframeTime, x, y);
             p->setLeftBezierPointAtTime(keyframeTime, x, y);
@@ -1306,7 +1306,7 @@ Bezier::addControlPointInternal(double x, double y, TimeValue time, ViewIdx view
         shape->points.insert(shape->points.end(), p);
 
         if ( useFeatherPoints() ) {
-            BezierCPPtr fp( new FeatherPoint(this_shared) );
+            BezierCPPtr fp = boost::make_shared<FeatherPoint>(this_shared);
             if (autoKeying) {
                 fp->setPositionAtTime(keyframeTime, x, y);
                 fp->setLeftBezierPointAtTime(keyframeTime, x, y);
@@ -1374,11 +1374,11 @@ Bezier::addControlPointAfterIndexInternal(int index, double t, ViewIdx view)
     BezierPtr this_shared = toBezier( shared_from_this() );
     assert(this_shared);
 
-    BezierCPPtr p( new BezierCP(this_shared) );
+    BezierCPPtr p = boost::make_shared<BezierCP>(this_shared);
     BezierCPPtr fp;
 
     if ( useFeatherPoints() ) {
-        fp.reset( new FeatherPoint(this_shared) );
+        fp = boost::make_shared<FeatherPoint>(this_shared);
     }
     {
         QMutexLocker l(&_imp->itemMutex);
@@ -3855,12 +3855,12 @@ Bezier::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase
             bool useFeather = useFeatherPoints();
 
             for (std::list<SERIALIZATION_NAMESPACE::BezierSerialization::ControlPoint>::const_iterator it2 = it->second.controlPoints.begin(); it2 != it->second.controlPoints.end(); ++it2) {
-                BezierCPPtr cp( new BezierCP(this_shared) );
+                BezierCPPtr cp = boost::make_shared<BezierCP>(this_shared);
                 cp->fromSerialization(it2->innerPoint);
                 shape.points.push_back(cp);
 
                 if (useFeather) {
-                    BezierCPPtr fp( new FeatherPoint(this_shared) );
+                    BezierCPPtr fp = boost::make_shared<FeatherPoint>(this_shared);
                     if (it2->featherPoint) {
                         fp->fromSerialization(*it2->featherPoint);
                     } else {

@@ -728,7 +728,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         OfxPageInstance* isPage = dynamic_cast<OfxPageInstance*>(*it);
         if (isPage) {
             const std::map<int, OFX::Host::Param::Instance*>& children = isPage->getChildren();
-            PageOrderedPtr pageData( new PageOrdered() );
+            PageOrderedPtr pageData = boost::make_shared<PageOrdered>();
             pageData->page = toKnobPage(associatedKnob);
             assert(pageData->page);
             std::map<OfxParamToKnob*, int> childrenList;
@@ -783,7 +783,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
     } else {
         KnobPagePtr page = effect->createKnob<KnobPage>("settingsPage");
         page->setLabel(tr("Settings"));
-        PageOrderedPtr pageData( new PageOrdered() );
+        PageOrderedPtr pageData = boost::make_shared<PageOrdered>();
         pageData->page = page;
         finalPages.push_back(pageData);
         mainPage = finalPages.begin();

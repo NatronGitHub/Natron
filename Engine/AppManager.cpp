@@ -552,6 +552,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
     // the XUniqueContext created by Qt
+    // scoped_ptr
     _imp->renderingContextPool.reset( new GPUContextPool() );
     initializeOpenGLFunctionsOnce(true);
 

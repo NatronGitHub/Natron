@@ -877,6 +877,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
     if (!glxInfo->_imp->MESA_query_renderer) {
         boost::scoped_ptr<OSGLContext_x11> context;
         try {
+            // scoped_ptr
             context.reset( new OSGLContext_x11(FramebufferConfig(), appPTR->getOpenGLVersionMajor(), appPTR->getOpenGLVersionMinor(), false, GLRendererID(), 0) );
         } catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;
@@ -976,6 +977,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     // Now create a context with the renderer ID
                     boost::scoped_ptr<OSGLContext_x11> context;
                     try {
+                        // scoped_ptr
                         context.reset( new OSGLContext_x11(FramebufferConfig(), appPTR->getOpenGLVersionMajor(), appPTR->getOpenGLVersionMinor(), false, GLRendererID( (int)renderer ), 0) );
                     } catch (const std::exception& e) {
 #ifndef DEBUG

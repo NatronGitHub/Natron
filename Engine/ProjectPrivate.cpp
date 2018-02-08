@@ -85,18 +85,22 @@ ProjectPrivate::ProjectPrivate(Project* project)
     , onProjectCloseCB()
     , onNodeCreated()
     , onNodeDeleted()
-    , timeline( new TimeLine(project) )
+    , timeline()
     , autoSetProjectFormat( appPTR->getCurrentSettings()->isAutoProjectFormatEnabled() )
     , isLoadingProjectMutex()
     , isLoadingProject(false)
     , isLoadingProjectInternal(false)
     , isSavingProjectMutex()
     , isSavingProject(false)
-    , autoSaveTimer( new QTimer() )
+    , autoSaveTimer()
     , projectClosing(false)
-    , tlsData( new TLSHolder<Project::ProjectTLSData>() )
+    , tlsData()
 
 {
+    timeline = boost::make_shared<TimeLine>(project);
+    autoSaveTimer = boost::make_shared<QTimer>();
+    tlsData = boost::make_shared<TLSHolder<Project::ProjectTLSData> >();
+
     autoSaveTimer->setSingleShot(true);
 }
 

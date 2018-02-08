@@ -1365,7 +1365,7 @@ KnobTableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase*
         }
 
 
-        SERIALIZATION_NAMESPACE::KnobSerializationPtr newKnobSer( new SERIALIZATION_NAMESPACE::KnobSerialization );
+        SERIALIZATION_NAMESPACE::KnobSerializationPtr newKnobSer = boost::make_shared<SERIALIZATION_NAMESPACE::KnobSerialization>();
         knobs[i]->toSerialization(newKnobSer.get());
         if (newKnobSer->_mustSerialize) {
             serialization->knobs.push_back(newKnobSer);

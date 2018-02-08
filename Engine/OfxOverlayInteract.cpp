@@ -44,10 +44,10 @@ NATRON_NAMESPACE_ENTER
 
 
 
-OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
+OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance* v,
                                        int bitDepthPerComponent,
                                        bool hasAlpha)
-    : OFX::Host::Interact::Instance(v.getOverlayDescriptor(bitDepthPerComponent, hasAlpha), (void *)(v.getHandle()))
+    : OFX::Host::Interact::Instance(v->getOverlayDescriptor(bitDepthPerComponent, hasAlpha), (void *)(v->getHandle()))
     , Natron::OverlayInteractBase()
 {
 }
@@ -55,10 +55,10 @@ OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
 
 
 OfxOverlayInteract::OfxOverlayInteract(const KnobIPtr& knob,
-                                       OFX::Host::Interact::Descriptor &desc,
-                                       OfxImageEffectInstance &v)
-: OFX::Host::Interact::Instance(desc, &v)
-, Natron::OverlayInteractBase(knob)
+                                       OFX::Host::Interact::Descriptor* desc,
+                                       OfxImageEffectInstance* v)
+    : OFX::Host::Interact::Instance(*desc, v)
+    , Natron::OverlayInteractBase(knob)
 {
 }
 
