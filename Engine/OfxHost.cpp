@@ -173,7 +173,7 @@ struct OfxHostPrivate
 OfxHost::OfxHost()
     : _imp( new OfxHostPrivate() )
 {
-    _imp->imageEffectPluginCache.reset( new OFX::Host::ImageEffect::PluginCache(this) );
+    _imp->imageEffectPluginCache = boost::make_shared<OFX::Host::ImageEffect::PluginCache>((OFX::Host::ImageEffect::Host*)this);
 }
 
 OfxHost::~OfxHost()
