@@ -26,6 +26,10 @@
 
 #include <sstream> // stringstream
 
+#if defined(CERES_USE_OPENMP) && defined(_OPENMP)
+#include <omp.h>
+#endif
+
 #include <QtCore/QThreadPool>
 
 #include "Engine/AppInstance.h"
@@ -1019,7 +1023,7 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex,
 {
     assert( trackIndex >= 0 && trackIndex < args.getNumTracks() );
 
-#ifdef CERES_USE_OPENMP
+#if defined(CERES_USE_OPENMP) && defined(_OPENMP)
     // Set the number of threads Ceres may use
     QThreadPool* tp = QThreadPool::globalInstance();
     omp_set_num_threads(tp->maxThreadCount() - tp->activeThreadCount() - 1);
