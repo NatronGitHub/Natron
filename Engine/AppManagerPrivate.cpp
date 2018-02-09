@@ -185,29 +185,29 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
 #if defined(Q_OS_MAC)
         Q_UNUSED(breakpad_client_fd);
         breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler>( dumpPath.toStdString(),
-                                                                      0,
-                                                                      0 /*dmpcb*/,
-                                                                      0,
+                                                                      (FilterCallback)NULL,
+                                                                      (MinidumpCallback)NULL /*dmpcb*/,
+                                                                      (void*)NULL,
                                                                       true,
                                                                       breakpadPipePath.toStdString().c_str() );
 #elif defined(Q_OS_LINUX)
         Q_UNUSED(breakpadPipePath);
         breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler>( google_breakpad::MinidumpDescriptor( dumpPath.toStdString() ),
-                                                                      0,
-                                                                      0 /*dmpCb*/,
-                                                                      0,
+                                                                      (FilterCallback)NULL,
+                                                                      (MinidumpCallback)NULL /*dmpCb*/,
+                                                                      (void*)NULL,
                                                                       true,
                                                                       breakpad_client_fd);
 #elif defined(Q_OS_WIN32)
         Q_UNUSED(breakpad_client_fd);
         breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler>( dumpPath.toStdWString(),
-                                                                      0, //filter callback
-                                                                      0 /*dmpcb*/,
-                                                                      0, //context
+                                                                      (FilterCallback)NULL, //filter callback
+                                                                      (MinidumpCallback)NULL /*dmpcb*/,
+                                                                      (void*)NULL, //context
                                                                       google_breakpad::ExceptionHandler::HANDLER_ALL,
                                                                       MiniDumpNormal,
                                                                       breakpadPipePath.toStdWString().c_str(),
-                                                                      0);
+                                                                      (CustomClientInfo*)NULL);
 #endif
     } catch (const std::exception& e) {
         qDebug() << e.what();
