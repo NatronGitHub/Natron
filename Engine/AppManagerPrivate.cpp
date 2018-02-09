@@ -207,7 +207,7 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
                                                                                  google_breakpad::ExceptionHandler::HANDLER_ALL,
                                                                                  MiniDumpNormal,
                                                                                  breakpadPipePath.toStdWString().c_str(),
-                                                                                 (google_breakpad::ExceptionHandler::CustomClientInfo*)NULL);
+                                                                                 (google_breakpad::CustomClientInfo*)NULL);
 #endif
     } catch (const std::exception& e) {
         qDebug() << e.what();
