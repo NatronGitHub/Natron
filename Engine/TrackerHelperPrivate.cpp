@@ -39,7 +39,7 @@
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerHelper.h"
 
-#ifdef CERES_USE_OPENMP
+#if defined(CERES_USE_OPENMP) && defined(_OPENMP)
 #include <omp.h>
 #endif
 
@@ -442,7 +442,7 @@ TrackerHelperPrivate::trackStepLibMV(int trackIndex,
 #endif
 
 
-#ifdef CERES_USE_OPENMP
+#if defined(CERES_USE_OPENMP) && defined(_OPENMP)
         // Set the number of threads Ceres may use
         QThreadPool* tp = QThreadPool::globalInstance();
 
