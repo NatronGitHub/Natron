@@ -482,8 +482,10 @@ ProcInfo::putenv_wrapper(const char *varName, const std::string& value)
     buffer += value;
     char* envVar = strdup(buffer.c_str());
     int result = putenv(envVar);
-    if (result != 0) // error. we have to delete the string.
-        delete[] envVar;
+    if (result != 0) {
+        // error. we have to delete the string.
+        free(envVar);
+    }
     return result == 0;
 #endif
 }
@@ -649,29 +651,93 @@ ProcInfo::checkIfProcessIsRunning(const char* processAbsoluteFilePath,
     return ret;
 #elif defined(__NATRON_OSX__)
     //See https://developer.apple.com/legacy/library/qa/qa2001/qa1123.html
-    static const int name[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)pid };
+    int err;
+    struct kinfo_proc * result;
+    bool done;
+    static const int name[] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)pid, 0 };
     // Declaring name as const requires us to cast it when passing it to
     // sysctl because the prototype doesn't include the const modifier.
-    struct kinfo_proc process;
-    size_t procBufferSize = sizeof(process);
-    int err = sysctl( (int *)name, 4, NULL, &procBufferSize, NULL, 0 );
-    if ( (err == 0) && (procBufferSize != 0) ) {
+    size_t length;
+
+    //struct kinfo_proc process;
+    //size_t procBufferSize = sizeof(process);
+    // We start by calling sysctl with result == NULL and length == 0.
+    // That will succeed, and set length to the appropriate length.
+    // We then allocate a buffer of that size and call sysctl again
+    // with that buffer.  If that succeeds, we're done.  If that fails
+    // with ENOMEM, we have to throw away our buffer and loop.  Note
+    // that the loop causes use to call sysctl with NULL again; this
+    // is necessary because the ENOMEM failure case sets length to
+    // the amount of data returned, not the amount of data that
+    // could have been returned.
+
+    result = NULL;
+    done = false;
+    do {
+        assert(result == NULL);
+
+        // Call sysctl with a NULL buffer.
+
+        length = 0;
+        err = sysctl( (int *) name, (sizeof(name) / sizeof(*name)) - 1,
+                     NULL, &length,
+                     NULL, 0);
+        if (err == -1) {
+            err = errno;
+        }
+
+        // Allocate an appropriately sized buffer based on the results
+        // from the previous call.
+
+        if (err == 0) {
+            result = (struct kinfo_proc *)malloc(length);
+            if (result == NULL) {
+                err = ENOMEM;
+            }
+        }
+
+        // Call sysctl again with the new buffer.  If we get an ENOMEM
+        // error, toss away our buffer and start again.
+
+        if (err == 0) {
+            err = sysctl( (int *) name, (sizeof(name) / sizeof(*name)) - 1,
+                         result, &length,
+                         NULL, 0);
+            if (err == -1) {
+                err = errno;
+            }
+            if (err == 0) {
+                done = true;
+            } else if (err == ENOMEM) {
+                assert(result != NULL);
+                free(result);
+                result = NULL;
+                err = 0;
+            }
+        }
+    } while (err == 0 && ! done);
+
+    bool retval = false;
+
+    if ( (err == 0) && (length != 0) ) {
         //Process exist and is running, now check that it's actual path is the given one
         char pathbuf[PROC_PIDPATHINFO_MAXSIZE];
         int len = proc_pidpath ( pid, pathbuf, sizeof(pathbuf));
         if (len > 0) {
-            return !std::strcmp(pathbuf, processAbsoluteFilePath);
-        }
-
-        if ( (process.kp_proc.p_stat != SRUN) && (process.kp_proc.p_stat != SIDL) ) {
+            retval = !std::strcmp(pathbuf, processAbsoluteFilePath);
+        } else if ( (result->kp_proc.p_stat != SRUN) && (result->kp_proc.p_stat != SIDL) ) {
             //Process is not running
-            return false;
+            retval = false;
+        } else {
+            retval = true;
         }
-
-        return true;
+    }
+    if (err != 0 && result != NULL) {
+        free(result);
+        result = NULL;
     }
 
-    return false;
+    return retval;
 #endif // ifdef Q_OS_WIN
 } // ProcInfo::checkIfProcessIsRunning
 
