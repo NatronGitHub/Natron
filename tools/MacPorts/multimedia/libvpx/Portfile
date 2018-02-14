@@ -60,7 +60,7 @@ patchfiles          patch-build-make-configure.sh.diff \
 # vp9/encoder/x86/vp9_frame_scale_ssse3.c: In function ‘eight_tap_row_ssse3’:
 # vp9/encoder/x86/vp9_frame_scale_ssse3.c:93: internal compiler error: Segmentation fault
 # {standard input}:unknown:Undefined local symbol LC2
-compiler.blacklist  *gcc* {clang < 500}
+compiler.blacklist  *gcc* {clang < 800}
 
 # As of 1.7.0: builds both static and shared libraries
 # doesn't install docs or examples correctly, so disable them.

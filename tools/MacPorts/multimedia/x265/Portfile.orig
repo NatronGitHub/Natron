@@ -3,13 +3,14 @@
 PortSystem          1.0
 
 PortGroup           muniversal 1.0
-PortGroup           cmake 1.0
+PortGroup           cmake 1.1
 
 name                x265
-version             2.5
+version             2.6
 
-checksums           rmd160  612e545199dcaadef782ca0a71a5ade679876509 \
-                    sha256  2e53259b504a7edb9b21b9800163b1ff4c90e60c74e23e7001d423c69c5d3d17
+checksums           rmd160  9bffc2a99c576a99a49d2ce8d8dd690c375a3972 \
+                    sha256  1bf0036415996af841884802161065b9e6be74f5f6808ac04831363e2549cdbf \
+                    size    1271976
 
 categories          multimedia
 platforms           darwin
@@ -24,11 +25,11 @@ long_description    x265 is a free software library and application for \
 homepage            https://www.videolan.org/developers/x265.html
 master_sites        http://ftp.videolan.org/pub/videolan/x265/
 distname            ${name}_${version}
-worksrcdir          ${distname}/source
+worksrcdir          ${name}_v${version}/source
 
 depends_build-append \
                     port:yasm
-cmake.out_of_source yes
+
 compiler.blacklist  *llvm-gcc-4.2
 
 #    error: illegal text-relocation to '_x265_pw_1'

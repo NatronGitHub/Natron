@@ -9,8 +9,7 @@ PortGroup           active_variants 1.1
 name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
-version             3.4.1
-revision            4
+version             3.4.2
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -52,9 +51,9 @@ master_sites        http://www.ffmpeg.org/releases/
 
 use_xz              yes
 
-checksums           rmd160  0cad66d5bee31586fa1885794140ccad1a348b0b \
-                    sha256  5a77278a63741efa74e26bf197b9bb09ac6381b9757391b922407210f0f991c0 \
-                    size    8481964
+checksums           rmd160  97751ae03808242ced7cc9495f999a3b1760325c \
+                    sha256  2b92e9578ef8b3e49eeab229e69305f5f4cbc1fdaa22e927fc7fca18acccd740 \
+                    size    8478376
 
 # root directory of extracted tarball is owned by root and has permissions 700
 # set to 755 to facilitate maintenance
@@ -294,7 +293,7 @@ if {[variant_isset universal]} {
         lappend merger_configure_env($arch)  ASFLAGS='-arch ${arch}'
     }
     if {[string match "*86*" ${configure.universal_archs}]} {
-        depends_build-append port:yasm
+        depends_build-append port:nasm
     }
     lappend merger_configure_args(i386) --enable-x86asm
     lappend merger_configure_args(x86_64) --enable-x86asm
@@ -302,7 +301,7 @@ if {[variant_isset universal]} {
     configure.args-append --arch=${configure.build_arch}
     configure.env-append  ASFLAGS='[get_canonical_archflags]'
     if {${build_arch} eq "i386" || ${build_arch} eq "x86_64"} {
-        depends_build-append port:yasm
+        depends_build-append port:nasm
         configure.args-append --enable-x86asm
     }
 }
