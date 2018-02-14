@@ -5,7 +5,7 @@ Resize node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Resize.*
+*This documentation is for version 2.0 of Resize.*
 
 Description
 -----------
@@ -70,8 +70,8 @@ Controls
 +--------------------------------+---------+------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Scale / ``scale``              | Double  | x: 1 y: 1        | The scale factor to apply to the image.                                                                                                                                    |
 +--------------------------------+---------+------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Filter / ``filter``            | Choice  | lanczos3         | | The filter used to resize. Lanczos3 is great for downscaling and blackman-harris is great for upscaling.                                                                 |
-|                                |         |                  | | **Impulse (no interpolation)**                                                                                                                                           |
+| Filter / ``filter``            | Choice  | Default          | | The filter used to resize. Lanczos3 is great for downscaling and blackman-harris is great for upscaling.                                                                 |
+|                                |         |                  | | **Impulse (impulse)**: No interpolation.                                                                                                                                 |
 |                                |         |                  | | **box**                                                                                                                                                                  |
 |                                |         |                  | | **triangle**                                                                                                                                                             |
 |                                |         |                  | | **gaussian**                                                                                                                                                             |
@@ -88,6 +88,7 @@ Controls
 |                                |         |                  | | **keys**                                                                                                                                                                 |
 |                                |         |                  | | **simon**                                                                                                                                                                |
 |                                |         |                  | | **rifman**                                                                                                                                                               |
+|                                |         |                  | | **Default (default)**: blackman-harris when increasing resolution, lanczos3 when decreasing resolution.                                                                  |
 +--------------------------------+---------+------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 .. |pluginIcon| image:: fr.inria.openfx.OIIOResize.png

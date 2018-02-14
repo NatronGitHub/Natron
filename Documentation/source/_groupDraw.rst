@@ -18,3 +18,4 @@ The following sections contain documentation about every node in the  Draw group
     plugins/net.sf.openfx.SeGrain.rst
     plugins/net.sf.openfx.SeNoise.rst
     plugins/net.fxarena.openfx.Text.rst
+

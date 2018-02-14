@@ -28,3 +28,4 @@ The following sections contain documentation about every node in the  Merge grou
     plugins/net.sf.openfx.switchPlugin.rst
     plugins/net.sf.openfx.TimeDissolvePlugin.rst
     plugins/net.sf.openfx.Unpremult.rst
+
