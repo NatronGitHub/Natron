@@ -37,6 +37,7 @@ Natron multiple times on the same computer, the different processes will share t
 ### Plugins
 
 - ReadOIIO: fix a bug where the Read nodes are not properly restored when timeOffset is used #1711
+- ReadOIIO: add options for reading RAW files: rawUserSat, rawHighlightMode, rawHighlightRebuildLevel
 - DenoiseSharpen: fix a bug where the plugin would not abort processing when required.
 - ColorCorrect: fix luminance computation when applying saturation #1706
 - Reformat: add a checkbox to use the input RoD instead of the input format (useful when preceded by a crop)
