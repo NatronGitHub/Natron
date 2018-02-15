@@ -147,11 +147,24 @@ install:
         exit 0;
     fi
   - tools/travis/install_dependencies.sh
-  - curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz | tar zxf -
-  - mv OpenColorIO-Configs-Natron-v2.3 OpenColorIO-Configs
+  - if [ ! -d "$HOME/OpenColorIO-Configs" ]; then
+      pushd $HOME;
+      curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz | tar -xvzf -;
+      mv OpenColorIO-Configs-Natron-v2.3 OpenColorIO-Configs;
+      popd;
+    else
+      echo 'Using cached OpenColorIO-Configs';
+    fi
 
 # OSX build will timeout if we redirect its output
 #> install_dependencies.log 2>&1
+
+cache:
+  directories:
+    - $HOME/openexr
+    - $HOME/ocio
+    - $HOME/oiio
+    - $HOME/seexpr
 
 script:
   - if [[ ${COVERITY_SCAN_BRANCH} == 1 ]];
