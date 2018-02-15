@@ -291,11 +291,12 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # TODO: maintain a Natron-ports-cache, linke FreeCD-ports-cache https://github.com/FreeCAD/FreeCAD-ports-cache
     #brew tap FreeCAD/freecad
 
-    # cartr/qt4 provides qt4 bottles for macOS Yosemite 10.10,
-    # El Capitan 10.11, and Sierra 10.12, but pyside is for sierra only,
+    # cartr/qt4 provides qt4 and pyside bottles for macOS Yosemite 10.10,
+    # El Capitan 10.11, and Sierra 10.12,
     # see https://bintray.com/cartr/bottle-qt4/pyside#files
-    # To force Sierra (default is 10.11), we specify xcode 8.2 in the .travis.yml
-    #       osx_image: xcode8.2
+    # To force Sierra (default is 10.11), we specify xcode 9.2 in the .travis.yml
+    #       osx_image: xcode9.2
+    # see https://docs.travis-ci.com/user/reference/osx/#OS-X-Version
     brew tap cartr/qt4
     # Pin qt4, prioritizing its formulae over core when formula names are supplied
     brew tap-pin cartr/qt4
