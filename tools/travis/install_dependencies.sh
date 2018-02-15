@@ -105,11 +105,11 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         fi
     fi
     # - opencolorio (available as libopencolorio-dev on trusty)
-    if [ `lsb_release -cs` = "trusty" ]; then
-        if [ "$CC" = "$TEST_CC" ]; then
-            PKGS="$PKGS libopencolorio-dev"; OCIO_HOME=/usr
-        fi
-    fi
+    #if [ `lsb_release -cs` = "trusty" ]; then
+    #    if [ "$CC" = "$TEST_CC" ]; then
+    #        PKGS="$PKGS libopencolorio-dev"; OCIO_HOME=/usr
+    #    fi
+    #fi
     # - openexr (disabled, because 2.0 is required)
     #if [ "$CC" = "$TEST_CC" ]; then
     #    PKGS="$PKGS libopenexr-dev libilmbase-dev"
@@ -181,13 +181,13 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         tar -xvzf /tmp/oiio.tgz -C $HOME;
         pushd $HOME/oiio-Release-1.8.8;
         mkdir _build && cd _build;
-        cmake -DCMAKE_INSTALL_PREFIX=$HOME/oiio -DILMBASE_HOME=$HOME/openexr -DOPENEXR_HOME=$HOME/openexr -DOCIO_HOME=$HOME/ocio -DUSE_QT=OFF -DUSE_PYTHON=OFF -DUSE_PYTHON3=OFF -DUSE_FIELD3D=OFF -DUSE_FFMPEG=OFF -DUSE_OPENJPEG=ON -DUSE_OCIO=ON -DUSE_OPENCV=OFF -DUSE_OPENSSL=OFF -DUSE_FREETYPE=ON -DUSE_GIF=OFF -DUSE_PTEX=OFF -DUSE_LIBRAW=ON -DOIIO_BUILD_TESTS=OFF -DOIIO_BUILD_TOOLS=OFF ..;
+        cmake -DCMAKE_INSTALL_PREFIX=$HOME/oiio -DILMBASE_HOME=$HOME/openexr -DOPENEXR_HOME=$HOME/openexr -DOCIO_PATH=$HOME/ocio -DUSE_QT=OFF -DUSE_PYTHON=OFF -DUSE_PYTHON3=OFF -DUSE_FIELD3D=OFF -DUSE_FFMPEG=OFF -DUSE_OPENJPEG=ON -DUSE_OCIO=ON -DUSE_OPENCV=OFF -DUSE_OPENSSL=OFF -DUSE_FREETYPE=ON -DUSE_GIF=OFF -DUSE_PTEX=OFF -DUSE_LIBRAW=ON -DOIIO_BUILD_TESTS=OFF -DOIIO_BUILD_TOOLS=OFF ..;
         make $J && make install;
         popd;
     fi
     # - SeExpr
     if [ "$CC" = "$TEST_CC" ] && [ ! -d "$HOME/seexpr/lib" ]; then
-        wget https://github.com/wdas/SeExpr/archive/v2.11.tar.gz -O /tmp/seexpr.tgz
+        wget https://github.com/wdas/SeExpr/archive/v2.11.tar.gz -O /tmp/seexpr.tgz;
         tar -xvzf /tmp/seexpr.tgz -C $HOME;
         pushd $HOME/SeExpr-2.11;
         sed -i -e '/SeExprEditor/d' -e '/demos/d' -e '/tests/d' ./CMakeLists.txt;
