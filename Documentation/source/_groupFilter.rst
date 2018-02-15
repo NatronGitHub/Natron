@@ -43,3 +43,4 @@ The following sections contain documentation about every node in the  Filter gro
     plugins/net.sf.cimg.CImgSoften.rst
     plugins/fr.inria.ZMask.rst
     plugins/fr.inria.ZRemap.rst
+

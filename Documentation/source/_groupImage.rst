@@ -29,3 +29,4 @@ The following sections contain documentation about every node in the  Image grou
     plugins/fr.inria.openfx.WriteOIIO.rst
     plugins/fr.inria.openfx.WritePFM.rst
     plugins/fr.inria.openfx.WritePNG.rst
+

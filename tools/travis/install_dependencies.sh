@@ -146,9 +146,9 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # - opencolorio (build on precise)
     if [ `lsb_release -cs` = "precise" ]; then
         if [ "$CC" = "$TEST_CC" ]; then
-            wget https://github.com/imageworks/OpenColorIO/archive/v1.0.9.tar.gz -O /tmp/ocio-1.0.9.tar.gz
-            tar zxf /tmp/ocio-1.0.9.tar.gz
-            pushd OpenColorIO-1.0.9
+            wget https://github.com/imageworks/OpenColorIO/archive/v1.1.0.tar.gz -O /tmp/ocio-1.1.0.tar.gz
+            tar zxf /tmp/ocio-1.1.0.tar.gz
+            pushd OpenColorIO-1.1.0
             mkdir _build
             pushd _build
             cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/ocio -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF
@@ -160,9 +160,9 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     fi
     # - openimageio
     if [ "$CC" = "$TEST_CC" ]; then
-        wget https://github.com/OpenImageIO/oiio/archive/Release-1.7.17.tar.gz -O /tmp/OpenImageIO-1.7.17.tar.gz
-        tar zxf /tmp/OpenImageIO-1.7.17.tar.gz
-        pushd oiio-Release-1.7.17
+        wget https://github.com/OpenImageIO/oiio/archive/Release-1.8.8.tar.gz -O /tmp/OpenImageIO-1.8.8.tar.gz
+        tar zxf /tmp/OpenImageIO-1.8.8.tar.gz
+        pushd oiio-Release-1.8.8
         make $J USE_QT=0 USE_PYTHON=0 USE_PYTHON3=0 USE_FIELD3D=0 USE_FFMPEG=0 USE_OPENJPEG=0 USE_OCIO=1 USE_OPENCV=0 USE_OPENSSL=0 USE_FREETYPE=1 USE_GIF=0 USE_PTEX=0 USE_LIBRAW=1 USE_NUKE=0 STOP_ON_WARNING=0 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=$OCIO_HOME INSTALLDIR=$HOME/oiio dist_dir=. cmake
         make $J dist_dir=.
         popd
@@ -327,7 +327,9 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     echo "PySide libs:"
     env PKG_CONFIG_PATH=`python-config --prefix`/lib/pkgconfig pkg-config --libs pyside
 
-
+    # OpenImageIO 1.8 requires c++11
+    CXX="$CXX -std=c++11"
+    
     # OpenFX
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Examples; fi
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Support/Plugins; fi
@@ -337,7 +339,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     if [ "$CC" = "$TEST_CC" ]; then mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support;  fi
     # OpenFX-IO
     if [ "$CC" = "$TEST_CC" ]; then (cd $TRAVIS_BUILD_DIR; git clone https://github.com/NatronGitHub/openfx-io.git; (cd openfx-io; git submodule update --init --recursive)) ; fi
-    if [ "$CC" = "$TEST_CC" ]; then make -C openfx-io OIIO_HOME=/usr/local; fi
+    if [ "$CC" = "$TEST_CC" ]; then make -C openfx-io OIIO_HOME=/usr/local SEEXPR_HOME=/usr/local; fi
     if [ "$CC" = "$TEST_CC" ]; then mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO;  fi
 
     # wait $XQ_INSTALL_PID || true
