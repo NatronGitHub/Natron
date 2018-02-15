@@ -44,8 +44,14 @@ addons:
     packages:
     #- gcc-4.9
     #- g++-4.9
-    - gcc-5
-    - g++-5
+    #- gcc-5
+    #- g++-5
+    #- gcc-6
+    #- g++-6
+    - gcc-7
+    - g++-7
+    #- gcc-8
+    #- g++-8
     - libqt4-dev
     - libqt4-opengl-dev
     - libglew-dev

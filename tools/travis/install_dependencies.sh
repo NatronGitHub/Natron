@@ -36,7 +36,10 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     TEST_CC=gcc
     lsb_release -a
     #GCC_VERSION=4.9
-    GCC_VERSION=5
+    #GCC_VERSION=5
+    #GCC_VERSION=6
+    GCC_VERSION=7
+    #GCC_VERSION=8
     PKGS=
     # Natron requires boost >= 1.49 to compile in C++11 mode
     # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11

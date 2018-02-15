@@ -55,9 +55,9 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "${COVERITY_SCAN_BRANCH}" == 1 ]; then
         qmake -r CONFIG+="$BREAKPAD $SILENT precompile_header";
     elif [ "$CC" = "gcc" ]; then
-        qmake -r CONFIG+="nopch coverage debug $BREAKPAD $SILENT"; # pch config disables precompiled headers
+        qmake -r CONFIG+="nopch coverage c++11 debug $BREAKPAD $SILENT"; # pch config disables precompiled headers
     else
-        qmake -r -spec unsupported/linux-clang CONFIG+="nopch debug $BREAKPAD $SILENT";
+        qmake -r -spec unsupported/linux-clang CONFIG+="nopch c++11 debug $BREAKPAD $SILENT";
     fi
     export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
     make $J -C libs/gflags
