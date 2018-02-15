@@ -36,7 +36,10 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     TEST_CC=gcc
     lsb_release -a
     #GCC_VERSION=4.9
-    GCC_VERSION=5
+    #GCC_VERSION=5
+    #GCC_VERSION=6
+    GCC_VERSION=7
+    #GCC_VERSION=8
     PKGS=
     # Natron requires boost >= 1.49 to compile in C++11 mode
     # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
@@ -102,15 +105,15 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         fi
     fi
     # - opencolorio (available as libopencolorio-dev on trusty)
-    if [ `lsb_release -cs` = "trusty" ]; then
-        if [ "$CC" = "$TEST_CC" ]; then
-            PKGS="$PKGS libopencolorio-dev"; OCIO_HOME=/usr
-        fi
-    fi
-    # - openexr
-    if [ "$CC" = "$TEST_CC" ]; then
-        PKGS="$PKGS libopenexr-dev libilmbase-dev"
-    fi
+    #if [ `lsb_release -cs` = "trusty" ]; then
+    #    if [ "$CC" = "$TEST_CC" ]; then
+    #        PKGS="$PKGS libopencolorio-dev"; OCIO_HOME=/usr
+    #    fi
+    #fi
+    # - openexr (disabled, because 2.0 is required)
+    #if [ "$CC" = "$TEST_CC" ]; then
+    #    PKGS="$PKGS libopenexr-dev libilmbase-dev"
+    #fi
     # - openimageio
     if [ "$CC" = "$TEST_CC" ]; then
         PKGS="$PKGS libopenjp2-7-dev libtiff4-dev libjpeg-dev libpng-dev libraw-dev libboost-filesystem${BOOSTVER}-dev libboost-regex${BOOSTVER}-dev libboost-thread${BOOSTVER}-dev libboost-system${BOOSTVER}-dev libwebp-dev libfreetype6-dev libssl-dev"
@@ -145,40 +148,53 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "$TEST_CC" ]; then mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support;  fi
     # - opencolorio (build on precise)
     if [ `lsb_release -cs` = "precise" ]; then
-        if [ "$CC" = "$TEST_CC" ]; then
-            wget https://github.com/imageworks/OpenColorIO/archive/v1.1.0.tar.gz -O /tmp/ocio-1.1.0.tar.gz
-            tar zxf /tmp/ocio-1.1.0.tar.gz
-            pushd OpenColorIO-1.1.0
-            mkdir _build
-            pushd _build
-            cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/ocio -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF
-            make $J && make install
-            popd
-            popd
-            OCIO_HOME=$HOME/ocio
+        if [ "$CC" = "$TEST_CC" ] && [ ! -d "$HOME/ocio/lib" ]; then
+            wget https://github.com/imageworks/OpenColorIO/archive/v1.1.0.tar.gz -O /tmp/ocio.tgz;
+            tar -zvzf /tmp/ocio.tgz -C $HOME;
+            pushd $HOME/OpenColorIO-1.1.0;
+            mkdir _build && cd _build;
+            cmake -DCMAKE_INSTALL_PREFIX=$HOME/ocio -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF ..;
+            make $J && make install;
+            popd;
+            OCIO_HOME=$HOME/ocio;
         fi
     fi
+    # OpenEXR
+    # see https://github.com/PixarAnimationStudios/USD/blob/master/.travis.yml
+    if [ "$CC" = "$TEST_CC" ] && [ ! -d "$HOME/openexr/lib" ]; then
+        wget http://download.savannah.nongnu.org/releases/openexr/ilmbase-2.2.0.tar.gz -O /tmp/ilmbase.tgz;
+        tar -xvzf /tmp/ilmbase.tgz -C $HOME;
+        pushd $HOME/ilmbase-2.2.0;
+        ./configure --prefix=$HOME/openexr;
+        make && make install;
+        popd;
+        wget http://download.savannah.nongnu.org/releases/openexr/openexr-2.2.0.tar.gz -O /tmp/openexr.tgz;
+        tar -xvzf /tmp/openexr.tgz -C $HOME;
+        pushd $HOME/openexr-2.2.0;
+        ./configure --prefix=$HOME/openexr --with-pkg-config=no LDFLAGS="-Wl,-rpath -Wl,$HOME/openexr/lib";
+        make $J && make install;
+        popd;
+    fi
     # - openimageio
-    if [ "$CC" = "$TEST_CC" ]; then
-        wget https://github.com/OpenImageIO/oiio/archive/Release-1.8.8.tar.gz -O /tmp/OpenImageIO-1.8.8.tar.gz
-        tar zxf /tmp/OpenImageIO-1.8.8.tar.gz
-        pushd oiio-Release-1.8.8
-        make $J USE_QT=0 USE_PYTHON=0 USE_PYTHON3=0 USE_FIELD3D=0 USE_FFMPEG=0 USE_OPENJPEG=0 USE_OCIO=1 USE_OPENCV=0 USE_OPENSSL=0 USE_FREETYPE=1 USE_GIF=0 USE_PTEX=0 USE_LIBRAW=1 USE_NUKE=0 STOP_ON_WARNING=0 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=$OCIO_HOME INSTALLDIR=$HOME/oiio dist_dir=. cmake
-        make $J dist_dir=.
-        popd
+    if [ "$CC" = "$TEST_CC" ] && [ ! -d "$HOME/oiio/lib" ]; then
+        wget https://github.com/OpenImageIO/oiio/archive/Release-1.8.8.tar.gz -O /tmp/oiio.tgz;
+        tar -xvzf /tmp/oiio.tgz -C $HOME;
+        pushd $HOME/oiio-Release-1.8.8;
+        mkdir _build && cd _build;
+        cmake -DCMAKE_INSTALL_PREFIX=$HOME/oiio -DILMBASE_HOME=$HOME/openexr -DOPENEXR_HOME=$HOME/openexr -DOCIO_PATH=$HOME/ocio -DUSE_QT=OFF -DUSE_PYTHON=OFF -DUSE_PYTHON3=OFF -DUSE_FIELD3D=OFF -DUSE_FFMPEG=OFF -DUSE_OPENJPEG=ON -DUSE_OCIO=ON -DUSE_OPENCV=OFF -DUSE_OPENSSL=OFF -DUSE_FREETYPE=ON -DUSE_GIF=OFF -DUSE_PTEX=OFF -DUSE_LIBRAW=ON -DOIIO_BUILD_TESTS=OFF -DOIIO_BUILD_TOOLS=OFF ..;
+        make $J && make install;
+        popd;
     fi
     # - SeExpr
-    if [ "$CC" = "$TEST_CC" ]; then
-        wget https://github.com/wdas/SeExpr/archive/v2.11.tar.gz -O /tmp/SeExpr-2.11.tar.gz
-        tar zxf /tmp/SeExpr-2.11.tar.gz
-        pushd SeExpr-2.11
-        sed -i -e '/SeExprEditor/d' -e '/demos/d' -e '/tests/d' ./CMakeLists.txt
-        mkdir _build
-        pushd _build
-        cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/seexpr
-        make $J && make install
-        popd
-        popd
+    if [ "$CC" = "$TEST_CC" ] && [ ! -d "$HOME/seexpr/lib" ]; then
+        wget https://github.com/wdas/SeExpr/archive/v2.11.tar.gz -O /tmp/seexpr.tgz;
+        tar -xvzf /tmp/seexpr.tgz -C $HOME;
+        pushd $HOME/SeExpr-2.11;
+        sed -i -e '/SeExprEditor/d' -e '/demos/d' -e '/tests/d' ./CMakeLists.txt;
+        mkdir _build && cd _build;
+        cmake -DCMAKE_INSTALL_PREFIX=$HOME/seexpr ..;
+        make $J && make install;
+        popd;
     fi
     # config.pri
     # Ubuntu 12.04 precise doesn't have a pkg-config file for expat (expat.pc)
@@ -216,7 +232,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         popd
     fi
     if [ "$CC" = "$TEST_CC" ]; then
-        env PKG_CONFIG_PATH=$HOME/ocio/lib/pkgconfig make -C openfx-io SEEXPR_HOME=$HOME/seexpr OIIO_HOME=$HOME/oiio
+        env PKG_CONFIG_PATH=$HOME/ocio/lib/pkgconfig:$HOME/openexr/lib/pkgconfig make -C openfx-io SEEXPR_HOME=$HOME/seexpr OIIO_HOME=$HOME/oiio
     fi
     if [ "$CC" = "$TEST_CC" ]; then
         mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO
