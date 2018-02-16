@@ -52,6 +52,8 @@ git submodule update --init --recursive
 (cd Tests; svn export --non-interactive --trust-server-cert https://github.com/imageworks/OpenColorIO-Configs/trunk/nuke-default)
 
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
+    export PKG_CONFIG_PATH=$HOME/ocio/lib/pkgconfig:$HOME/oiio/lib/pkgconfig:$HOME/openexr/lib/pkgconfig:$HOME/seexpr/lib/pkgconfig
+    export LD_LIBRARY_PATH=$HOME/ocio/lib:$HOME/oiio/lib:$HOME/openexr/lib:$HOME/seexpr/lib
     if [ "${COVERITY_SCAN_BRANCH}" == 1 ]; then
         qmake -r CONFIG+="$BREAKPAD $SILENT precompile_header";
     elif [ "$CC" = "gcc" ]; then
