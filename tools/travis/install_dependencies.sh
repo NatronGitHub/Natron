@@ -283,7 +283,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     brew --config
     brew outdated xctool || brew upgrade xctool || true
     echo "* Adding brew taps"
-    brew tap homebrew/python
+    #brew tap homebrew/python
     brew tap homebrew/science
     #brew tap homebrew/boneyard # pyside was moved to boneyard
 
