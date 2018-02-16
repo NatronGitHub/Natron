@@ -91,13 +91,13 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # Note: Python 3 packages are python3-dev and python3-pyside
     PKGS="$PKGS libqt4-dev libqt4-opengl-dev libglew-dev libexpat1-dev gdb libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev"
 
-    echo "*** Python version:"
-    python --version
-    python -c "from PySide import QtGui, QtCore, QtOpenGL"
+    echo "*** Python 2 version:"
+    python2 --version
+    python2 -c "from PySide import QtGui, QtCore, QtOpenGL"
     echo "*** PySide:"
-    env PKG_CONFIG_PATH=`python-config --prefix`/lib/pkgconfig pkg-config --libs pyside
+    env PKG_CONFIG_PATH=`python2-config --prefix`/lib/pkgconfig pkg-config --libs pyside
     echo "*** Shiboken:"
-    pkg-config --libs shiboken
+    env PKG_CONFIG_PATH=`python2-config --prefix`/lib/pkgconfig pkg-config --libs shiboken
     cat /usr/lib/x86_64-linux-gnu/pkgconfig/shiboken.pc
 
     # OpenFX-IO
@@ -173,15 +173,15 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         # OpenEXR
         # see https://github.com/PixarAnimationStudios/USD/blob/master/.travis.yml
         if [ ! -d "$HOME/openexr/lib" ]; then
-            wget http://download.savannah.nongnu.org/releases/openexr/ilmbase-2.2.0.tar.gz -O /tmp/ilmbase.tgz;
+            wget http://download.savannah.nongnu.org/releases/openexr/ilmbase-2.2.1.tar.gz -O /tmp/ilmbase.tgz;
             tar -xvzf /tmp/ilmbase.tgz -C $HOME;
-            pushd $HOME/ilmbase-2.2.0;
+            pushd $HOME/ilmbase-2.2.1;
             ./configure --prefix=$HOME/openexr;
             make && make install;
             popd;
-            wget http://download.savannah.nongnu.org/releases/openexr/openexr-2.2.0.tar.gz -O /tmp/openexr.tgz;
+            wget http://download.savannah.nongnu.org/releases/openexr/openexr-2.2.1.tar.gz -O /tmp/openexr.tgz;
             tar -xvzf /tmp/openexr.tgz -C $HOME;
-            pushd $HOME/openexr-2.2.0;
+            pushd $HOME/openexr-2.2.1;
             ./configure --prefix=$HOME/openexr --with-pkg-config=no LDFLAGS="-Wl,-rpath -Wl,$HOME/openexr/lib";
             make $J && make install;
             popd;
@@ -352,14 +352,16 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     fi
 
     PATH=/usr/local/bin:"$PATH"
-    echo "Path: $PATH"
-    ls -l /usr/local/bin/python
-    echo "Python version:"
-    type python
-    python --version
-    python -c "from PySide import QtGui, QtCore, QtOpenGL"
-    echo "PySide libs:"
-    env PKG_CONFIG_PATH=`python-config --prefix`/lib/pkgconfig pkg-config --libs pyside
+    echo "*** Path: $PATH"
+    ls -l /usr/local/bin/python2
+    echo "*** Python 2 version:"
+    type python2
+    python2 --version
+    python2 -c "from PySide import QtGui, QtCore, QtOpenGL"
+    echo "*** PySide:"
+    env PKG_CONFIG_PATH=`python2-config --prefix`/lib/pkgconfig pkg-config --libs pyside
+    echo "*** Shiboken:"
+    env PKG_CONFIG_PATH=`python2-config --prefix`/lib/pkgconfig pkg-config --libs shiboken
 
     # OpenImageIO 1.8 requires c++11
     CXX="$CXX -std=c++11"

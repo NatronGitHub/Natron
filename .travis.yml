@@ -78,8 +78,8 @@ addons:
     - libtinyxml-dev
     - liblcms2-dev
     - libyaml-cpp-dev
-    - libopenexr-dev
-    - libilmbase-dev
+    #- libopenexr-dev
+    #- libilmbase-dev
     - libopenjpeg-dev
     - libtiff4-dev
     - libjpeg-dev
