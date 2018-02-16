@@ -18,9 +18,9 @@
 # ***** END LICENSE BLOCK *****
 
 # Exit immediately if a command exits with a non-zero status
-#set -e
+set -e
 # Print commands and their arguments as they are executed.
-#set -x
+set -x
 
 # enable testing locally or on forks without multi-os enabled
 if [[ "${TRAVIS_OS_NAME:-false}" == false ]]; then
@@ -64,9 +64,14 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     PKGS="$PKGS libcairo2-dev"
 
     # ubuntu-toolchain-r/test contains recent versions of gcc
-    if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; PKGS="$PKGS gcc-${GCC_VERSION} g++-${GCC_VERSION}"; fi
+    if [ "$CC" = "$TEST_CC" ]; then
+        sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test;
+        PKGS="$PKGS gcc-${GCC_VERSION} g++-${GCC_VERSION}";
+    fi
 
-    if [ "$CC" = "$TEST_CC" ]; then sudo -H pip install cpp-coveralls; fi
+    if [ "$CC" = "$TEST_CC" ]; then
+        sudo -H pip install cpp-coveralls;
+    fi
     ## Python 3.4
     ##sudo add-apt-repository --yes ppa:fkrull/deadsnakes # python3.x
     # we get libyaml-cpp-dev from kubuntu backports (for OpenColorIO)
@@ -75,32 +80,32 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:jon-severinsson/ffmpeg; fi #not available
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi #2.5.1
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:pavlyshko/precise; fi #2.6.1
-    if [ `lsb_release -cs` = "trusty" ]; then
-        if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:jonathonf/ffmpeg-3; fi #3.2.4
-    else
-        if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:spvkgn/ffmpeg-dev; fi #2.8.6 (on precise)
+    if [ "$CC" = "$TEST_CC" ]; then
+        if [ `lsb_release -cs` = "trusty" ]; then
+            sudo add-apt-repository -y ppa:jonathonf/ffmpeg-3; #3.2.4
+        else
+            sudo add-apt-repository -y ppa:spvkgn/ffmpeg-dev; #2.8.6 (on precise)
+        fi
     fi
 
     # Note: Python 3 packages are python3-dev and python3-pyside
     PKGS="$PKGS libqt4-dev libqt4-opengl-dev libglew-dev libexpat1-dev gdb libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev"
 
-    echo "*** Python version:"
-    python --version
-    python -c "from PySide import QtGui, QtCore, QtOpenGL"
+    echo "*** Python 2 version:"
+    python2 --version
+    python2 -c "from PySide import QtGui, QtCore, QtOpenGL"
     echo "*** PySide:"
-    env PKG_CONFIG_PATH=`python-config --prefix`/lib/pkgconfig pkg-config --libs pyside
+    env PKG_CONFIG_PATH=`python2-config --prefix`/lib/pkgconfig pkg-config --libs pyside
     echo "*** Shiboken:"
-    pkg-config --libs shiboken
+    env PKG_CONFIG_PATH=`python2-config --prefix`/lib/pkgconfig pkg-config --libs shiboken
     cat /usr/lib/x86_64-linux-gnu/pkgconfig/shiboken.pc
 
     # OpenFX-IO
     # - ffmpeg
-    if [ `lsb_release -cs` = "trusty" ]; then
-        if [ "$CC" = "$TEST_CC" ]; then
+    if [ "$CC" = "$TEST_CC" ]; then
+        if [ `lsb_release -cs` = "trusty" ]; then
             PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev"
-        fi
-    else
-        if [ "$CC" = "$TEST_CC" ]; then
+        else
             PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev"
         fi
     fi
@@ -136,66 +141,80 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # build dependencies that cannot be fetched from apt
     
     # ubuntu-toolchain-r/test contains recent versions of gcc
-    if [ "$CC" = "$TEST_CC" ]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 90; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GCC_VERSION} 90; fi
+    if [ "$CC" = "$TEST_CC" ]; then
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 90;
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GCC_VERSION} 90;
+    fi
 
     echo "*** build dependencies"
     # OpenFX
-    if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Examples; fi
-    if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Support/Plugins; fi
-    if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Support/PropTester; fi
-    if [ "$CC" = "$TEST_CC" ]; then rm -rf Tests/Plugins; mkdir -p Tests/Plugins/Examples Tests/Plugins/Support Tests/Plugins/IO; fi
-    if [ "$CC" = "$TEST_CC" ]; then mv libs/OpenFX/Examples/*/*-64-debug/*.ofx.bundle Tests/Plugins/Examples; fi
-    if [ "$CC" = "$TEST_CC" ]; then mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support;  fi
-    # - opencolorio (build on precise)
-    if [ `lsb_release -cs` = "precise" ]; then
-        if [ "$CC" = "$TEST_CC" ] && [ ! -d "$HOME/ocio/lib" ]; then
+    if [ "$CC" = "$TEST_CC" ]; then
+        make -C libs/OpenFX/Examples;
+        make -C libs/OpenFX/Support/Plugins;
+        make -C libs/OpenFX/Support/PropTester;
+        rm -rf Tests/Plugins;
+        mkdir -p Tests/Plugins/Examples Tests/Plugins/Support Tests/Plugins/IO;
+        mv libs/OpenFX/Examples/*/*-64-debug/*.ofx.bundle Tests/Plugins/Examples;
+        mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support;
+        # - opencolorio
+        if [ ! -d "$HOME/ocio/lib" ]; then
             wget https://github.com/imageworks/OpenColorIO/archive/v1.1.0.tar.gz -O /tmp/ocio.tgz;
-            tar -zvzf /tmp/ocio.tgz -C $HOME;
+            tar -xvzf /tmp/ocio.tgz -C $HOME;
             pushd $HOME/OpenColorIO-1.1.0;
+            find . -name CMakeLists.txt -exec sed -e s/-Werror// -i {} \; ;
             mkdir _build && cd _build;
             cmake -DCMAKE_INSTALL_PREFIX=$HOME/ocio -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF ..;
             make $J && make install;
             popd;
-            OCIO_HOME=$HOME/ocio;
+        else
+            echo 'Using cached OpenColorIO';
         fi
-    fi
-    # OpenEXR
-    # see https://github.com/PixarAnimationStudios/USD/blob/master/.travis.yml
-    if [ "$CC" = "$TEST_CC" ] && [ ! -d "$HOME/openexr/lib" ]; then
-        wget http://download.savannah.nongnu.org/releases/openexr/ilmbase-2.2.0.tar.gz -O /tmp/ilmbase.tgz;
-        tar -xvzf /tmp/ilmbase.tgz -C $HOME;
-        pushd $HOME/ilmbase-2.2.0;
-        ./configure --prefix=$HOME/openexr;
-        make && make install;
-        popd;
-        wget http://download.savannah.nongnu.org/releases/openexr/openexr-2.2.0.tar.gz -O /tmp/openexr.tgz;
-        tar -xvzf /tmp/openexr.tgz -C $HOME;
-        pushd $HOME/openexr-2.2.0;
-        ./configure --prefix=$HOME/openexr --with-pkg-config=no LDFLAGS="-Wl,-rpath -Wl,$HOME/openexr/lib";
-        make $J && make install;
-        popd;
-    fi
-    # - openimageio
-    if [ "$CC" = "$TEST_CC" ] && [ ! -d "$HOME/oiio/lib" ]; then
-        wget https://github.com/OpenImageIO/oiio/archive/Release-1.8.8.tar.gz -O /tmp/oiio.tgz;
-        tar -xvzf /tmp/oiio.tgz -C $HOME;
-        pushd $HOME/oiio-Release-1.8.8;
-        mkdir _build && cd _build;
-        cmake -DCMAKE_INSTALL_PREFIX=$HOME/oiio -DILMBASE_HOME=$HOME/openexr -DOPENEXR_HOME=$HOME/openexr -DOCIO_PATH=$HOME/ocio -DUSE_QT=OFF -DUSE_PYTHON=OFF -DUSE_PYTHON3=OFF -DUSE_FIELD3D=OFF -DUSE_FFMPEG=OFF -DUSE_OPENJPEG=ON -DUSE_OCIO=ON -DUSE_OPENCV=OFF -DUSE_OPENSSL=OFF -DUSE_FREETYPE=ON -DUSE_GIF=OFF -DUSE_PTEX=OFF -DUSE_LIBRAW=ON -DOIIO_BUILD_TESTS=OFF -DOIIO_BUILD_TOOLS=OFF ..;
-        make $J && make install;
-        popd;
-    fi
-    # - SeExpr
-    if [ "$CC" = "$TEST_CC" ] && [ ! -d "$HOME/seexpr/lib" ]; then
-        wget https://github.com/wdas/SeExpr/archive/v2.11.tar.gz -O /tmp/seexpr.tgz;
-        tar -xvzf /tmp/seexpr.tgz -C $HOME;
-        pushd $HOME/SeExpr-2.11;
-        sed -i -e '/SeExprEditor/d' -e '/demos/d' -e '/tests/d' ./CMakeLists.txt;
-        mkdir _build && cd _build;
-        cmake -DCMAKE_INSTALL_PREFIX=$HOME/seexpr ..;
-        make $J && make install;
-        popd;
-    fi
+        OCIO_HOME=$HOME/ocio;
+        # OpenEXR
+        # see https://github.com/PixarAnimationStudios/USD/blob/master/.travis.yml
+        if [ ! -d "$HOME/openexr/lib" ]; then
+            wget http://download.savannah.nongnu.org/releases/openexr/ilmbase-2.2.1.tar.gz -O /tmp/ilmbase.tgz;
+            tar -xvzf /tmp/ilmbase.tgz -C $HOME;
+            pushd $HOME/ilmbase-2.2.1;
+            ./configure --prefix=$HOME/openexr;
+            make && make install;
+            popd;
+            wget http://download.savannah.nongnu.org/releases/openexr/openexr-2.2.1.tar.gz -O /tmp/openexr.tgz;
+            tar -xvzf /tmp/openexr.tgz -C $HOME;
+            pushd $HOME/openexr-2.2.1;
+            ./configure --prefix=$HOME/openexr --with-pkg-config=no LDFLAGS="-Wl,-rpath -Wl,$HOME/openexr/lib";
+            make $J && make install;
+            popd;
+        else
+            echo 'Using cached OpenEXR';
+        fi
+        # - openimageio
+        if [ ! -d "$HOME/oiio/lib" ]; then
+            wget https://github.com/OpenImageIO/oiio/archive/Release-1.8.8.tar.gz -O /tmp/oiio.tgz;
+            tar -xvzf /tmp/oiio.tgz -C $HOME;
+            pushd $HOME/oiio-Release-1.8.8;
+            mkdir _build && cd _build;
+            cmake -DCMAKE_INSTALL_PREFIX=$HOME/oiio -DILMBASE_HOME=$HOME/openexr -DOPENEXR_HOME=$HOME/openexr -DOCIO_PATH=$HOME/ocio -DUSE_QT=OFF -DUSE_PYTHON=OFF -DUSE_PYTHON3=OFF -DUSE_FIELD3D=OFF -DUSE_FFMPEG=OFF -DUSE_OPENJPEG=ON -DUSE_OCIO=ON -DUSE_OPENCV=OFF -DUSE_OPENSSL=OFF -DUSE_FREETYPE=ON -DUSE_GIF=OFF -DUSE_PTEX=OFF -DUSE_LIBRAW=ON -DOIIO_BUILD_TESTS=OFF -DOIIO_BUILD_TOOLS=OFF -DSTOP_ON_WARNING=OFF ..;
+            make $J && make install;
+            popd;
+        else
+            echo 'Using cached OpenImageIO';
+        fi
+        # - SeExpr
+        if [ ! -d "$HOME/seexpr/lib" ]; then
+            wget https://github.com/wdas/SeExpr/archive/v2.11.tar.gz -O /tmp/seexpr.tgz;
+            tar -xvzf /tmp/seexpr.tgz -C $HOME;
+            pushd $HOME/SeExpr-2.11;
+            sed -i -e '/SeExprEditor/d' -e '/demos/d' -e '/tests/d' ./CMakeLists.txt;
+            mkdir _build && cd _build;
+            cmake -DCMAKE_INSTALL_PREFIX=$HOME/seexpr ..;
+            make $J && make install;
+            popd;
+        else
+            echo 'Using cached SeExpr';
+        fi
+    fi # [ "$CC" = "$TEST_CC" ]
+
     # config.pri
     # Ubuntu 12.04 precise doesn't have a pkg-config file for expat (expat.pc)
     echo 'boost: LIBS += -lboost_thread -lboost_system' > config.pri
@@ -230,11 +249,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         git submodule update --init --recursive
         popd
         popd
-    fi
-    if [ "$CC" = "$TEST_CC" ]; then
         env PKG_CONFIG_PATH=$HOME/ocio/lib/pkgconfig:$HOME/openexr/lib/pkgconfig make -C openfx-io SEEXPR_HOME=$HOME/seexpr OIIO_HOME=$HOME/oiio
-    fi
-    if [ "$CC" = "$TEST_CC" ]; then
         mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO
     fi
 
@@ -270,19 +285,20 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     brew --config
     brew outdated xctool || brew upgrade xctool || true
     echo "* Adding brew taps"
-    brew tap homebrew/python
-    brew tap homebrew/science
+    #brew tap homebrew/python # deprecated
+    #brew tap homebrew/science # deprecated
     #brew tap homebrew/boneyard # pyside was moved to boneyard
 
     # FreeCAD has a bottled pyside for OS X 10.10 Yosemite, see https://github.com/FreeCAD/homebrew-freecad/issues/32
     # TODO: maintain a Natron-ports-cache, linke FreeCD-ports-cache https://github.com/FreeCAD/FreeCAD-ports-cache
     #brew tap FreeCAD/freecad
 
-    # cartr/qt4 provides qt4 bottles for macOS Yosemite 10.10,
-    # El Capitan 10.11, and Sierra 10.12, but pyside is for sierra only,
+    # cartr/qt4 provides qt4 and pyside bottles for macOS Yosemite 10.10,
+    # El Capitan 10.11, and Sierra 10.12,
     # see https://bintray.com/cartr/bottle-qt4/pyside#files
-    # To force Sierra (default is 10.11), we specify xcode 8.2 in the .travis.yml
-    #       osx_image: xcode8.2
+    # To force Sierra (default is 10.11), we specify xcode 9.2 in the .travis.yml
+    #       osx_image: xcode9.2
+    # see https://docs.travis-ci.com/user/reference/osx/#OS-X-Version
     brew tap cartr/qt4
     # Pin qt4, prioritizing its formulae over core when formula names are supplied
     brew tap-pin cartr/qt4
@@ -309,7 +325,10 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #brew install scons swig ilmbase openexr little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
     # Natron's dependencies only
     # install qt-webkit@2.3 if needed
-    brew install qt@4 expat cairo gnu-sed glew numpy boost
+    brew install qt@4 expat cairo gnu-sed glew
+    brew install numpy || true
+    brew link --overwrite numpy || true
+    brew install boost
     # pyside/shiboken with python3 support take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
     #brew install pyside --with-python3 --without-python &
     #while true; do
@@ -325,7 +344,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     brew install python pyside@1.2 shiboken@1.2
     if [ "$CC" = "$TEST_CC" ]; then
         # dependencies for building all OpenFX plugins
-        brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio seexpr
+        brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openjpeg libraw openimageio seexpr
         # let OIIO work even if the package is not up to date (happened once, when hdf5 was upgraded to 5.10 but oiio was still using 5.9)
         hdf5lib=`otool -L /usr/local/lib/libOpenImageIO.dylib |fgrep hdf5 | awk '{print $1}'`
         if [ "$hdf5lib" -a ! -f "$hdf5lib" ]; then
@@ -334,29 +353,36 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     fi
 
     PATH=/usr/local/bin:"$PATH"
-    echo "Path: $PATH"
-    ls -l /usr/local/bin/python
-    echo "Python version:"
-    type python
-    python --version
-    python -c "from PySide import QtGui, QtCore, QtOpenGL"
-    echo "PySide libs:"
-    env PKG_CONFIG_PATH=`python-config --prefix`/lib/pkgconfig pkg-config --libs pyside
+    echo "*** Path: $PATH"
+    ls -l /usr/local/bin/python2
+    echo "*** Python 2 version:"
+    type python2
+    python2 --version
+    python2 -c "from PySide import QtGui, QtCore, QtOpenGL"
+    echo "*** PySide:"
+    env PKG_CONFIG_PATH=`python2-config --prefix`/lib/pkgconfig pkg-config --libs pyside
+    echo "*** Shiboken:"
+    env PKG_CONFIG_PATH=`python2-config --prefix`/lib/pkgconfig pkg-config --libs shiboken
 
     # OpenImageIO 1.8 requires c++11
     CXX="$CXX -std=c++11"
     
     # OpenFX
-    if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Examples; fi
-    if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Support/Plugins; fi
-    if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Support/PropTester; fi
-    if [ "$CC" = "$TEST_CC" ]; then rm -rf Tests/Plugins; mkdir -p Tests/Plugins/Examples Tests/Plugins/Support Tests/Plugins/IO; fi
-    if [ "$CC" = "$TEST_CC" ]; then mv libs/OpenFX/Examples/*/*-64-debug/*.ofx.bundle Tests/Plugins/Examples; fi
-    if [ "$CC" = "$TEST_CC" ]; then mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support;  fi
-    # OpenFX-IO
-    if [ "$CC" = "$TEST_CC" ]; then (cd $TRAVIS_BUILD_DIR; git clone https://github.com/NatronGitHub/openfx-io.git; (cd openfx-io; git submodule update --init --recursive)) ; fi
-    if [ "$CC" = "$TEST_CC" ]; then make -C openfx-io OIIO_HOME=/usr/local SEEXPR_HOME=/usr/local; fi
-    if [ "$CC" = "$TEST_CC" ]; then mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO;  fi
+    if [ "$CC" = "$TEST_CC" ]; then
+        make -C libs/OpenFX/Examples;
+        make -C libs/OpenFX/Support/Plugins;
+        make -C libs/OpenFX/Support/PropTester;
+        rm -rf Tests/Plugins;
+        mkdir -p Tests/Plugins/Examples Tests/Plugins/Support Tests/Plugins/IO;
+        mv libs/OpenFX/Examples/*/*-64-debug/*.ofx.bundle Tests/Plugins/Examples;
+        mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support;
+        # OpenFX-IO
+        (cd $TRAVIS_BUILD_DIR;
+         git clone https://github.com/NatronGitHub/openfx-io.git;
+         (cd openfx-io; git submodule update --init --recursive));
+        make -C openfx-io OIIO_HOME=/usr/local SEEXPR_HOME=/usr/local;
+        mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO;
+    fi
 
     # wait $XQ_INSTALL_PID || true
 
