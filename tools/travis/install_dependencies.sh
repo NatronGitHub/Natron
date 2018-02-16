@@ -159,7 +159,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         # - opencolorio
         if [ ! -d "$HOME/ocio/lib" ]; then
             wget https://github.com/imageworks/OpenColorIO/archive/v1.1.0.tar.gz -O /tmp/ocio.tgz;
-            tar -zvzf /tmp/ocio.tgz -C $HOME;
+            tar -xvzf /tmp/ocio.tgz -C $HOME;
             pushd $HOME/OpenColorIO-1.1.0;
             mkdir _build && cd _build;
             cmake -DCMAKE_INSTALL_PREFIX=$HOME/ocio -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF ..;
