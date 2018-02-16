@@ -88,7 +88,8 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         make $J -C Tests;
         make $J
         rm -rf "$HOME/.cache/INRIA/Natron"* &> /dev/null || true
-        if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins OCIO=./nuke-default/config.ocio ./Tests; cd ..; fi
+        #if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins OCIO=./nuke-default/config.ocio ./Tests; cd ..; fi
+        if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
     fi
     
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
@@ -117,7 +118,8 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     make $J -C Tests;
     make $J
     rm -rf  "$HOME/Library/Caches/INRIA/Natron"* &> /dev/null || true
-    if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins OCIO=./nuke-default/config.ocio ./Tests; cd ..; fi
+    #if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins OCIO=./nuke-default/config.ocio ./Tests; cd ..; fi
+    if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
 fi
 
 # Local variables:
