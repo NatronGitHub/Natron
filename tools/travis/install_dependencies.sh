@@ -283,8 +283,8 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     brew --config
     brew outdated xctool || brew upgrade xctool || true
     echo "* Adding brew taps"
-    #brew tap homebrew/python
-    brew tap homebrew/science
+    #brew tap homebrew/python # deprecated
+    #brew tap homebrew/science # deprecated
     #brew tap homebrew/boneyard # pyside was moved to boneyard
 
     # FreeCAD has a bottled pyside for OS X 10.10 Yosemite, see https://github.com/FreeCAD/homebrew-freecad/issues/32
