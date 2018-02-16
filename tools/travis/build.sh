@@ -49,7 +49,9 @@ CMAKE_PREFIX_PATH=$(echo /usr/local/Cellar/*/* | sed 's/ /;/g')
 git submodule update --init --recursive
 
 # get a minimal OCIO config (--trust-server-cert is equivalent to --trust-server-cert-failures=unknown-ca)
-(cd Tests; svn export --non-interactive --trust-server-cert https://github.com/imageworks/OpenColorIO-Configs/trunk/nuke-default)
+#(cd Tests; svn export --non-interactive --trust-server-cert https://github.com/imageworks/OpenColorIO-Configs/trunk/nuke-default)
+ln -s $HOME/OpenColorIO-Configs .
+export OCIO=$HOME/OpenColorIO-Configs/blender/config.ocio
 
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     export PKG_CONFIG_PATH=$HOME/ocio/lib/pkgconfig:$HOME/oiio/lib/pkgconfig:$HOME/openexr/lib/pkgconfig:$HOME/seexpr/lib/pkgconfig
