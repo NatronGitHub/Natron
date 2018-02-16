@@ -325,9 +325,8 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # Natron's dependencies only
     # install qt-webkit@2.3 if needed
     brew install qt@4 expat cairo gnu-sed glew
-    brew instamm numpy || true
-    brew link --overwrite --dry-run numpy
-    brew link --overwrite numpy
+    brew install numpy || true
+    brew link --overwrite numpy || true
     brew install boost
     # pyside/shiboken with python3 support take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
     #brew install pyside --with-python3 --without-python &
