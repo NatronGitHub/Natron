@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,6 +54,9 @@
 #include <algorithm> // min, max
 #include <cassert>
 #include <stdexcept>
+
+#include <boost/make_shared.hpp>
+
 
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
@@ -472,7 +475,7 @@ makeBezierCPFromPoint(const Point& p,
                       const Point& left,
                       const Point& right)
 {
-    boost::shared_ptr<BezierCP> ret(new BezierCP);
+    boost::shared_ptr<BezierCP> ret = boost::make_shared<BezierCP>();
 
     ret->setStaticPosition(false, p.x, p.y);
     ret->setLeftBezierStaticPosition(false, left.x, left.y);

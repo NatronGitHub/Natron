@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@
 
 #include <set>
 #include <stdexcept>
+
+#include <boost/make_shared.hpp>
 
 #include <QMutex>
 #include <QWaitCondition>
@@ -122,7 +124,7 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
     if ( _imp->glContextPool.empty() ) {
         assert( (int)_imp->attachedGLContexts.size() < maxContexts );
         //  Create a new one
-        newContext.reset( new OSGLContext( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID ) );
+        newContext = boost::make_shared<OSGLContext>( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID );
     } else {
         std::set<OSGLContextPtr>::iterator it = _imp->glContextPool.begin();
         newContext = *it;
@@ -133,7 +135,7 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
 
     if ( (int)_imp->glContextPool.size() < maxContexts ) {
         //  Create a new one
-        newContext.reset( new OSGLContext( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID ) );
+        newContext = boost::make_shared<OSGLContext>( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID );
         _imp->glContextPool.insert(newContext);
     } else {
         while ((int)_imp->glContextPool.size() > maxContexts) {

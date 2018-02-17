@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1011,7 +1011,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr > & node
 
     for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( !hasNodeOutputsInList( nodes, (*it) ) ) {
-            boost::shared_ptr<Tree> newTree(new Tree);
+            boost::shared_ptr<Tree> newTree = boost::make_shared<Tree>();
             newTree->buildTree(*it, nodes, usedNodes);
             trees.push_back(newTree);
         }

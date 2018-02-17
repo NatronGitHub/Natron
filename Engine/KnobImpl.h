@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1170,7 +1170,7 @@ Knob<T>::setValue(const T & v,
             returnValue =  eValueChangedReturnCodeNoKeyframeAdded;
         }
 
-        boost::shared_ptr<QueuedSetValue> qv( new QueuedSetValue( view, dimension, v, k, returnValue != eValueChangedReturnCodeNoKeyframeAdded, reason, isValueChangesBlocked() ) );
+        boost::shared_ptr<QueuedSetValue> qv = boost::make_shared<QueuedSetValue>( view, dimension, v, k, returnValue != eValueChangedReturnCodeNoKeyframeAdded, reason, isValueChangesBlocked() );
 #ifdef DEBUG
         debugHook();
 #endif
@@ -1417,7 +1417,7 @@ Knob<T>::makeKeyFrame(Curve* curve,
     } else {
         keyFrameValue = (double)v;
     }
-    if ( (keyFrameValue != keyFrameValue) || boost::math::isinf(keyFrameValue) ) { // check for NaN or infinity
+    if ( (keyFrameValue != keyFrameValue) || (boost::math::isinf)(keyFrameValue) ) { // check for NaN or infinity
         *key = KeyFrame( (double)time, getMaximum(0) );
     } else {
         *key = KeyFrame( (double)time, keyFrameValue );
@@ -1541,7 +1541,7 @@ Knob<T>::setValueAtTime(double time,
             holder->abortAnyEvaluation();
         }
 
-        boost::shared_ptr<QueuedSetValueAtTime> qv( new QueuedSetValueAtTime( time, view, dimension, v, *newKey, reason, isValueChangesBlocked() ) );
+        boost::shared_ptr<QueuedSetValueAtTime> qv = boost::make_shared<QueuedSetValueAtTime>( time, view, dimension, v, *newKey, reason, isValueChangesBlocked() );
 #ifdef DEBUG
         debugHook();
 #endif

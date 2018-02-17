@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -4817,12 +4817,12 @@ OfxParametricInstance::addControlPoint(int curveIndex,
                                        double value,
                                        bool /* addAnimationKey*/)
 {
-    if ( (time != time) || // check for NaN
-         boost::math::isinf(time) ||
-         ( key != key) || // check for NaN
-         boost::math::isinf(key) ||
-         ( value != value) || // check for NaN
-         boost::math::isinf(value) ) {
+    if ( (boost::math::isnan)(time) || // check for NaN
+         (boost::math::isinf)(time) ||
+         (boost::math::isnan)(key) || // check for NaN
+         (boost::math::isinf)(key) ||
+         (boost::math::isnan)(value) || // check for NaN
+         (boost::math::isinf)(value) ) {
         return kOfxStatFailed;
     }
 

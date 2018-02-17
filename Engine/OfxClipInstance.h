@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -294,7 +294,7 @@ public:
         {
             for (std::list< boost::shared_ptr<RenderActionData> >::const_iterator it = other.renderData.begin();
                  it != other.renderData.end(); ++it) {
-                boost::shared_ptr<RenderActionData> d( new RenderActionData(**it) );
+                boost::shared_ptr<RenderActionData> d = boost::make_shared<RenderActionData>(**it);
                 renderData.push_back(d);
             }
         }

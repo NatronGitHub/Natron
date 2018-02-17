@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
 #include <QtCore/QMutex>
@@ -126,14 +127,14 @@ public:
     };
 
 private:
+    struct MakeSharedEnabler;
+
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     TrackerContext(const boost::shared_ptr<Node> &node);
 
 public:
-    static boost::shared_ptr<TrackerContext> create(const boost::shared_ptr<Node> &node) {
-        return boost::shared_ptr<TrackerContext>( new TrackerContext(node) );
-    }
+    static boost::shared_ptr<TrackerContext> create(const boost::shared_ptr<Node> &node);
 
     virtual ~TrackerContext();
 

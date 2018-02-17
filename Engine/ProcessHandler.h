@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -245,13 +245,13 @@ private:
     void initialize();
 
     QString _mainProcessServerName;
-    QMutex* _backgroundOutputPipeMutex;
+    mutable QMutex _backgroundOutputPipeMutex;
     QLocalSocket* _backgroundOutputPipe; //< if the process is background but managed by a gui process then this
                                          //pipe is used to output messages
     QLocalServer* _backgroundIPCServer; //< for a background app used to manage input IPC  with the gui app
     QLocalSocket* _backgroundInputPipe; //<if the process is bg but managed by a gui process then the pipe is used
                                         //to read input messages
-    QMutex _mustQuitMutex;
+    mutable QMutex _mustQuitMutex;
     QWaitCondition _mustQuitCond;
     bool _mustQuit;
 };

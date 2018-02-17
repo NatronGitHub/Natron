@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -443,6 +443,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
     // the XUniqueContext created by Qt
+    // scoped_ptr
     _imp->renderingContextPool.reset( new GPUContextPool() );
     initializeOpenGLFunctionsOnce(true);
 
@@ -651,7 +652,7 @@ AppManager::quitNow(const AppInstPtr& instance)
             (*it)->quitAnyProcessing_blocking(false);
         }
     }
-    boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
+    boost::shared_ptr<QuitInstanceArgs> args = boost::make_shared<QuitInstanceArgs>();
     args->instance = instance;
     afterQuitProcessingCallback(args);
 }
@@ -659,7 +660,7 @@ AppManager::quitNow(const AppInstPtr& instance)
 void
 AppManager::quit(const AppInstPtr& instance)
 {
-    boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
+    boost::shared_ptr<QuitInstanceArgs> args = boost::make_shared<QuitInstanceArgs>();
 
     args->instance = instance;
     if ( !instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {
@@ -698,6 +699,7 @@ AppManager::initializeQApp(int &argc,
                            char **argv)
 {
     assert(!_imp->_qApp);
+    // scoped_ptr
     _imp->_qApp.reset( new QCoreApplication(argc, argv) );
 }
 
@@ -833,7 +835,7 @@ AppManager::loadInternal(const CLArgs& cl)
 # endif
 
 
-    _imp->_settings.reset( new Settings() );
+    _imp->_settings = boost::make_shared<Settings>();
     _imp->_settings->initializeKnobsPublic();
 
     bool hasGLForRendering = hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, 0);
@@ -1055,9 +1057,9 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         U64 viewerCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
         U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
 
-        _imp->_nodeCache.reset( new Cache<Image>("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.) );
-        _imp->_diskCache.reset( new Cache<Image>("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.) );
-        _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.) );
+        _imp->_nodeCache = boost::make_shared<Cache<Image> >("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.);
+        _imp->_diskCache = boost::make_shared<Cache<Image> >("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.);
+        _imp->_viewerCache = boost::make_shared<Cache<FrameEntry> >("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.);
         _imp->setViewerCacheTileSize();
     } catch (std::logic_error) {
         // ignore
@@ -1213,7 +1215,7 @@ AppManager::newAppInstanceInternal(const CLArgs& cl,
     if (!alwaysBackground) {
         instance = makeNewInstance(_imp->_availableID);
     } else {
-        instance.reset( new AppInstance(_imp->_availableID) );
+        instance = boost::make_shared<AppInstance>(_imp->_availableID);
     }
 
     {
@@ -2576,7 +2578,7 @@ AppManager::setLoadingStatus(const QString & str)
 AppInstPtr
 AppManager::makeNewInstance(int appID) const
 {
-    return AppInstPtr( new AppInstance(appID) );
+    return boost::make_shared<AppInstance>(appID);
 }
 
 void
@@ -3926,6 +3928,65 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     if (v) {
         Py_DECREF(v);
     }
+
+    if (error) {
+        error->clear();
+    }
+    PyObject* ex = PyErr_Occurred();
+    if (ex) {
+        assert(v == NULL);
+        if (!error) {
+            PyErr_Clear();
+        } else {
+            PyObject *pyExcType;
+            PyObject *pyExcValue;
+            PyObject *pyExcTraceback;
+            PyErr_Fetch(&pyExcType, &pyExcValue, &pyExcTraceback); // also clears the error indicator
+            //PyErr_NormalizeException(&pyExcType, &pyExcValue, &pyExcTraceback);
+
+            PyObject* pyStr = PyObject_Str(pyExcValue);
+            if (pyStr) {
+                const char* str = PyString_AsString(pyStr);
+                if (error && str) {
+                    *error += std::string("Python exception: ") + str + '\n';
+                }
+                Py_DECREF(pyStr);
+
+                // See if we can get a full traceback
+                PyObject* module_name = PyString_FromString("traceback");
+                PyObject* pyth_module = PyImport_Import(module_name);
+                Py_DECREF(module_name);
+
+                if (pyth_module != NULL) {
+                    PyObject* pyth_func;
+                    if (!pyExcTraceback) {
+                        pyth_func = PyObject_GetAttrString(pyth_module, "format_exception_only");
+                    } else {
+                        pyth_func = PyObject_GetAttrString(pyth_module, "format_exception");
+                    }
+                    Py_DECREF(pyth_module);
+                    if (pyth_func && PyCallable_Check(pyth_func)) {
+                        PyObject *pyth_val = PyObject_CallFunctionObjArgs(pyth_func, pyExcType, pyExcValue, pyExcTraceback, NULL);
+                        if (pyth_val) {
+                            PyObject *emptyString = PyString_FromString("");
+                            PyObject *strList = PyObject_CallMethod(emptyString, (char*)"join", (char*)"(O)", pyth_val);
+                            Py_DECREF(emptyString);
+                            Py_DECREF(pyth_val);
+                            pyStr = PyObject_Str(strList);
+                            Py_DECREF(strList);
+                            if (pyStr) {
+                                str = PyString_AsString(pyStr);
+                                if (error && str) {
+                                    *error += std::string(str) + '\n';
+                                }
+                                Py_DECREF(pyStr);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     if ( !appPTR->isBackground() ) {
         ///Gui session, do stdout, stderr redirection
         PyObject *errCatcher = 0;
@@ -3945,7 +4006,7 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
         if (errCatcher && error) {
             errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
             assert(errorObj);
-            *error = PyStringToStdString(errorObj);
+            *error += PyStringToStdString(errorObj);
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(errCatcher, "value", unicode);
             Py_DECREF(errorObj);
@@ -3968,14 +4029,14 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
             return false;
         }
 
-        return true;
+        return v != NULL;
     } else {
-        if ( PyErr_Occurred() ) {
+        if (ex) {
             PyErr_Print();
 
             return false;
         } else {
-            return true;
+            return v != NULL;
         }
     }
 } // NATRON_PYTHON_NAMESPACE::interpretPythonScript

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,8 @@
 // ***** END PYTHON BLOCK *****
 
 #include "GenericSchedulerThread.h"
+
+#include <boost/make_shared.hpp>
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QMutex>
@@ -178,7 +180,7 @@ GenericSchedulerThread::quitThread(bool allowRestarts)
     {
         QMutexLocker k(&_imp->enqueuedTasksMutex);
         _imp->enqueuedTasks.clear();
-        boost::shared_ptr<GenericThreadStartArgs> stubArgs( new GenericThreadStartArgs(true) );
+        boost::shared_ptr<GenericThreadStartArgs> stubArgs = boost::make_shared<GenericThreadStartArgs>(true);
         _imp->enqueuedTasks.push_back(stubArgs);
     }
 

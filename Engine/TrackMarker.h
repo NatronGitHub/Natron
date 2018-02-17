@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
 #include "Engine/EngineFwd.h"
@@ -108,16 +109,15 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 protected:
+    struct MakeSharedEnabler;
+
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     TrackMarker(const boost::shared_ptr<TrackerContext>& context);
 
 public:
-    static boost::shared_ptr<TrackMarker> create(const boost::shared_ptr<TrackerContext>& context)
-    {
-        return boost::shared_ptr<TrackMarker>( new TrackMarker(context) );
-    }
-
+    static boost::shared_ptr<TrackMarker> create(const boost::shared_ptr<TrackerContext>& context);
+    
     virtual ~TrackMarker();
 
     void clone(const TrackMarker& other);
@@ -262,15 +262,14 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     boost::weak_ptr<KnobDouble> searchWindowBtmLeftKnob, searchWindowTopRightKnob;
 
 private:
+    struct MakeSharedEnabler;
+    
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     TrackMarkerPM(const boost::shared_ptr<TrackerContext>& context);
 
 public:
-    static boost::shared_ptr<TrackMarker> create(const boost::shared_ptr<TrackerContext>& context)
-    {
-        return boost::shared_ptr<TrackMarker>( new TrackMarkerPM(context) );
-    }
+    static boost::shared_ptr<TrackMarker> create(const boost::shared_ptr<TrackerContext>& context);
 
     virtual ~TrackMarkerPM();
 

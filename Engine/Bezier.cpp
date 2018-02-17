@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1068,11 +1068,11 @@ Bezier::clone(const RotoItem* other)
         _imp->points.clear();
         BezierCPs::const_iterator itF = otherBezier->_imp->featherPoints.begin();
         for (BezierCPs::const_iterator it = otherBezier->_imp->points.begin(); it != otherBezier->_imp->points.end(); ++it) {
-            boost::shared_ptr<BezierCP> cp( new BezierCP(this_shared) );
+            boost::shared_ptr<BezierCP> cp = boost::make_shared<BezierCP>(this_shared);
             cp->clone(**it);
             _imp->points.push_back(cp);
             if (useFeather) {
-                boost::shared_ptr<BezierCP> fp( new BezierCP(this_shared) );
+                boost::shared_ptr<BezierCP> fp = boost::make_shared<BezierCP>(this_shared);
                 fp->clone(**itF);
                 _imp->featherPoints.push_back(fp);
                 ++itF;
@@ -1132,7 +1132,7 @@ Bezier::addControlPoint(double x,
             }
         }
 
-        p.reset( new BezierCP(this_shared) );
+        p = boost::make_shared<BezierCP>(this_shared);
         if (autoKeying) {
             p->setPositionAtTime(useGuiCurve, keyframeTime, x, y);
             p->setLeftBezierPointAtTime(useGuiCurve, keyframeTime, x, y);
@@ -1145,7 +1145,7 @@ Bezier::addControlPoint(double x,
         _imp->points.insert(_imp->points.end(), p);
 
         if ( useFeatherPoints() ) {
-            boost::shared_ptr<BezierCP> fp( new FeatherPoint(this_shared) );
+            boost::shared_ptr<BezierCP> fp = boost::make_shared<FeatherPoint>(this_shared);
             if (autoKeying) {
                 fp->setPositionAtTime(useGuiCurve, keyframeTime, x, y);
                 fp->setLeftBezierPointAtTime(useGuiCurve, keyframeTime, x, y);
@@ -1178,7 +1178,7 @@ Bezier::addControlPointAfterIndex(int index,
     boost::shared_ptr<Bezier> this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
     assert(this_shared);
 
-    boost::shared_ptr<BezierCP> p( new BezierCP(this_shared) );
+    boost::shared_ptr<BezierCP> p = boost::make_shared<BezierCP>(this_shared);
     boost::shared_ptr<BezierCP> fp;
     bool useGuiCurve = !canSetInternalPoints();
     if (useGuiCurve) {
@@ -1186,7 +1186,7 @@ Bezier::addControlPointAfterIndex(int index,
     }
 
     if ( useFeatherPoints() ) {
-        fp.reset( new FeatherPoint(this_shared) );
+        fp = boost::make_shared<FeatherPoint>(this_shared);
     }
     {
         QMutexLocker l(&itemMutex);
@@ -3329,12 +3329,12 @@ Bezier::load(const RotoItemSerialization & obj)
         bool useFeather = useFeatherPoints();
         std::list<BezierCP>::const_iterator itF = s._featherPoints.begin();
         for (std::list<BezierCP>::const_iterator it = s._controlPoints.begin(); it != s._controlPoints.end(); ++it) {
-            boost::shared_ptr<BezierCP> cp( new BezierCP(this_shared) );
+            boost::shared_ptr<BezierCP> cp = boost::make_shared<BezierCP>(this_shared);
             cp->clone(*it);
             _imp->points.push_back(cp);
 
             if (useFeather) {
-                boost::shared_ptr<BezierCP> fp( new FeatherPoint(this_shared) );
+                boost::shared_ptr<BezierCP> fp = boost::make_shared<FeatherPoint>(this_shared);
                 fp->clone(*itF);
                 _imp->featherPoints.push_back(fp);
                 ++itF;

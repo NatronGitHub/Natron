@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,7 +51,8 @@ struct FileSystemItemPrivate;
 class FileSystemItem
     : public boost::enable_shared_from_this<FileSystemItem>
 {
-private:
+    struct MakeSharedEnabler;
+
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     FileSystemItem( const boost::shared_ptr<FileSystemModel>& model,
                     bool isDir,
@@ -67,7 +68,7 @@ public:
     // Note: when switching to C++11, we can add variadic templates:
     //template<typename ... T>
     //static boost::shared_ptr<FileSystemItem> create( T&& ... all ) {
-    //    return boost::shared_ptr<FileSystemItem>( new FileSystemItem( std::forward<T>(all)... ) );
+    //    return boost::make_shared<FileSystemItem>( std::forward<T>(all)... );
     //}
     static boost::shared_ptr<FileSystemItem> create( const boost::shared_ptr<FileSystemModel>& model,
                                                      bool isDir,
@@ -76,10 +77,7 @@ public:
                                                      const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
                                                      const QDateTime& dateModified,
                                                      quint64 size,
-                                                     const boost::shared_ptr<FileSystemItem>& parent = boost::shared_ptr<FileSystemItem>() )
-    {
-        return boost::shared_ptr<FileSystemItem>( new FileSystemItem(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent) );
-    }
+                                                    const boost::shared_ptr<FileSystemItem>& parent = boost::shared_ptr<FileSystemItem>() );
 
     ~FileSystemItem();
 

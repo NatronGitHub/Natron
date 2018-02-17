@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -213,7 +213,7 @@ NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection,
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         if ( (*it)->isVisible() ) {
             boost::shared_ptr<NodeSerialization> ns( new NodeSerialization( (*it)->getNode(), true ) );
-            boost::shared_ptr<NodeGuiSerialization> nGuiS(new NodeGuiSerialization);
+            boost::shared_ptr<NodeGuiSerialization> nGuiS = boost::make_shared<NodeGuiSerialization>();
             (*it)->serialize( nGuiS.get() );
             clipboard.nodes.push_back(ns);
             clipboard.nodesUI.push_back(nGuiS);

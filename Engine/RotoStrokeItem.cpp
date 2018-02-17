@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -349,9 +349,9 @@ RotoStrokeItem::appendPoint(bool newStroke,
         RotoStrokeItemPrivate::StrokeCurves* stroke = 0;
         if (newStroke) {
             RotoStrokeItemPrivate::StrokeCurves s;
-            s.xCurve.reset(new Curve);
-            s.yCurve.reset(new Curve);
-            s.pressureCurve.reset(new Curve);
+            s.xCurve = boost::make_shared<Curve>();
+            s.yCurve = boost::make_shared<Curve>();
+            s.pressureCurve = boost::make_shared<Curve>();
             _imp->strokes.push_back(s);
         }
         stroke = &_imp->strokes.back();
@@ -666,9 +666,9 @@ RotoStrokeItem::clone(const RotoItem* other)
         for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = otherStroke->_imp->strokes.begin();
              it != otherStroke->_imp->strokes.end(); ++it) {
             RotoStrokeItemPrivate::StrokeCurves s;
-            s.xCurve.reset(new Curve);
-            s.yCurve.reset(new Curve);
-            s.pressureCurve.reset(new Curve);
+            s.xCurve = boost::make_shared<Curve>();
+            s.yCurve = boost::make_shared<Curve>();
+            s.pressureCurve = boost::make_shared<Curve>();
             s.xCurve->clone( *(it->xCurve) );
             s.yCurve->clone( *(it->yCurve) );
             s.pressureCurve->clone( *(it->pressureCurve) );
@@ -697,9 +697,9 @@ RotoStrokeItem::save(RotoItemSerialization* obj) const
         s->_brushType = (int)_imp->type;
         for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin();
              it != _imp->strokes.end(); ++it) {
-            boost::shared_ptr<Curve> xCurve(new Curve);
-            boost::shared_ptr<Curve> yCurve(new Curve);
-            boost::shared_ptr<Curve> pressureCurve(new Curve);
+            boost::shared_ptr<Curve> xCurve = boost::make_shared<Curve>();
+            boost::shared_ptr<Curve> yCurve = boost::make_shared<Curve>();
+            boost::shared_ptr<Curve> pressureCurve = boost::make_shared<Curve>();
             xCurve->clone( *(it->xCurve) );
             yCurve->clone( *(it->yCurve) );
             pressureCurve->clone( *(it->pressureCurve) );
@@ -730,9 +730,9 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
         for (std::list<boost::shared_ptr<Curve> >::const_iterator it = s->_xCurves.begin();
              it != s->_xCurves.end(); ++it, ++itY, ++itP) {
             RotoStrokeItemPrivate::StrokeCurves s;
-            s.xCurve.reset(new Curve);
-            s.yCurve.reset(new Curve);
-            s.pressureCurve.reset(new Curve);
+            s.xCurve = boost::make_shared<Curve>();
+            s.yCurve = boost::make_shared<Curve>();
+            s.pressureCurve = boost::make_shared<Curve>();
             s.xCurve->clone( **(it) );
             s.yCurve->clone( **(itY) );
             s.pressureCurve->clone( **(itP) );

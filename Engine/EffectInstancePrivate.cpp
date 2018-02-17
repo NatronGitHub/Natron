@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -382,13 +382,13 @@ EffectInstance::RenderArgs::RenderArgs(const RenderArgs & o)
 
 EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     : _publicInterface(publicInterface)
-    , tlsData( new TLSHolder<EffectTLSData>() )
+    , tlsData()
     , duringInteractActionMutex()
     , duringInteractAction(false)
     , pluginMemoryChunksMutex()
     , pluginMemoryChunks()
     , supportsRenderScale(eSupportsMaybe)
-    , actionsCache(new ActionsCache(appPTR->getHardwareIdealThreadCount() * 2))
+    , actionsCache()
 #if NATRON_ENABLE_TRIMAP
     , imagesBeingRenderedMutex()
     , imagesBeingRendered()
@@ -405,6 +405,8 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , renderClonesMutex()
     , renderClonesPool()
 {
+    tlsData = boost::make_shared<TLSHolder<EffectTLSData> >();
+    actionsCache = boost::make_shared<ActionsCache>(appPTR->getHardwareIdealThreadCount() * 2);
 }
 
 EffectInstance::Implementation::Implementation(const Implementation& other)
@@ -557,7 +559,7 @@ EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr
             img->markForRendering(*it);
         }
     } else {
-        IBRPtr ibr(new Implementation::ImageBeingRendered);
+        IBRPtr ibr = boost::make_shared<Implementation::ImageBeingRendered>();
         ++ibr->refCount;
         std::pair<IBRMap::iterator, bool> ok = imagesBeingRendered.insert( std::make_pair(img, ibr) );
         assert(ok.second);

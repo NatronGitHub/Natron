@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,6 +61,6 @@
 #define NATRON_FONT_SIZE_13 13
 #define NATRON_FONT_SIZE_DEFAULT NATRON_FONT_SIZE_11 // the sliders font becomes undreadable below 11 on non-HiDPI mac displays
 
-#define NATRON_MAX_RECENT_FILES 5
+#define NATRON_MAX_RECENT_FILES 10 // 10 is the default is most apps
 
 #endif // Gui_GuiDefines_h

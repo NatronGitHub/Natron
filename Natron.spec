@@ -3,7 +3,7 @@ Name: Natron
 # The two actively maintained versions (that are merged into master)
 Version21: 2.1.10
 Version22: 2.2.10
-Version23: 2.3.4
+Version23: 2.3.5
 Version30: 3.0.0
 
 # The version for this branch of the sources
@@ -16,9 +16,9 @@ License: GPLv2
 Group: System Environment/Base
 URL: http://natron.fr
 
-# https://github.com/MrKepzie/Natron/releases/download/%{version}/Natron-%{version}.tar.xz
+# https://github.com/NatronGitHub/Natron/releases/download/%{version}/Natron-%{version}.tar.xz
 Source0: %{name}-%{version}.tar.xz
-# https://github.com/MrKepzie/Natron/releases/download/2.1.0/Natron-OpenColorIO-Configs-2.1.0.tar.xz
+# https://github.com/NatronGitHub/Natron/releases/download/2.1.0/Natron-OpenColorIO-Configs-2.1.0.tar.xz
 Source1: %{name}-OpenColorIO-Configs-2.1.0.tar.xz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 

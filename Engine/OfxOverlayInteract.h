@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -90,7 +90,11 @@ public:
     // hooks to live kOfxInteractPropPixelScale in the property set
     void n_getPixelScale(double & xScale, double & yScale) const;
 
-    // hooks to kOfxInteractPropBackgroundColour in the property set
+#ifdef OFX_EXTENSIONS_NATRON
+    // hooks to live kOfxInteractPropScreenPixelRatio in the property set
+    double n_getScreenPixelRatio() const;
+#endif
+   // hooks to kOfxInteractPropBackgroundColour in the property set
     void n_getBackgroundColour(double &r, double &g, double &b) const;
 
     // hooks to kOfxInteractPropSuggestedColour and kOfxPropOverlayColour in the property set
@@ -149,7 +153,15 @@ public:
         n_getPixelScale(xScale, yScale);
     }
 
-    // hooks to kOfxInteractPropBackgroundColour in the property set
+#ifdef OFX_EXTENSIONS_NATRON
+    // hooks to live kOfxInteractPropScreenPixelRatio in the property set
+    virtual double getScreenPixelRatio() const OVERRIDE FINAL
+    {
+        return n_getScreenPixelRatio();
+    }
+#endif
+
+   // hooks to kOfxInteractPropBackgroundColour in the property set
     virtual void getBackgroundColour(double &r,
                                      double &g,
                                      double &b) const OVERRIDE FINAL
@@ -338,6 +350,14 @@ public:
     {
         n_getPixelScale(xScale, yScale);
     }
+
+#ifdef OFX_EXTENSIONS_NATRON
+    // hooks to live kOfxInteractPropScreenPixelRatio in the property set
+    virtual double getScreenPixelRatio() const OVERRIDE FINAL
+    {
+        return n_getScreenPixelRatio();
+    }
+#endif
 
     // hooks to kOfxInteractPropBackgroundColour in the property set
     virtual void getBackgroundColour(double &r,

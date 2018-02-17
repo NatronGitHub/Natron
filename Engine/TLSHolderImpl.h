@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ TLSHolder<EffectInstance::EffectTLSData>::copyAndReturnNewTLS(const QThread* fro
 
     ThreadData data;
     //Copy constructor
-    data.value.reset( new EffectInstance::EffectTLSData( *(found->second.value) ) );
+    data.value = boost::make_shared<EffectInstance::EffectTLSData>( *(found->second.value) );
     perThreadData[toThread] = data;
 
     return data.value;
@@ -183,7 +183,7 @@ TLSHolder<T>::getOrCreateTLSData() const
     ThreadData data;
     boost::shared_ptr<const TLSHolderBase> thisShared = shared_from_this();
     appPTR->getAppTLS()->registerTLSHolder(thisShared);
-    data.value.reset(new T);
+    data.value = boost::make_shared<T>();
     {
         QWriteLocker k(&perThreadDataMutex);
         perThreadData.insert( std::make_pair(curThread, data) );

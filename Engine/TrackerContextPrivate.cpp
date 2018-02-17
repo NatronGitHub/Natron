@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,10 @@
 #include "TrackerContextPrivate.h"
 
 #include <sstream> // stringstream
+
+#if defined(CERES_USE_OPENMP) && defined(_OPENMP)
+#include <omp.h>
+#endif
 
 #include <QtCore/QThreadPool>
 
@@ -1019,7 +1023,7 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex,
 {
     assert( trackIndex >= 0 && trackIndex < args.getNumTracks() );
 
-#ifdef CERES_USE_OPENMP
+#if defined(CERES_USE_OPENMP) && defined(_OPENMP)
     // Set the number of threads Ceres may use
     QThreadPool* tp = QThreadPool::globalInstance();
     omp_set_num_threads(tp->maxThreadCount() - tp->activeThreadCount() - 1);
@@ -1190,7 +1194,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
             (*it)->setEnabledAtTime(start, true);
         }
         
-        boost::shared_ptr<TrackMarkerAndOptions> t(new TrackMarkerAndOptions);
+        boost::shared_ptr<TrackMarkerAndOptions> t = boost::make_shared<TrackMarkerAndOptions>();
         t->natronMarker = *it;
 
         // Set a keyframe on the marker to initialize its position

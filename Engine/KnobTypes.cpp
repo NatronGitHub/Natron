@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1798,8 +1798,8 @@ KnobParametric::KnobParametric(KnobHolder* holder,
         RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
-        _curves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
-        _defaultCurves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
+        _curves[i] = boost::make_shared<Curve>(this, i);
+        _defaultCurves[i] = boost::make_shared<Curve>(this, i);
     }
 }
 
@@ -1817,8 +1817,8 @@ KnobParametric::KnobParametric(KnobHolder* holder,
         RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
-        _curves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
-        _defaultCurves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
+        _curves[i] = boost::make_shared<Curve>(this, i);
+        _defaultCurves[i] = boost::make_shared<Curve>(this, i);
     }
 }
 
@@ -1952,10 +1952,10 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
 {
     ///Mt-safe as Curve is MT-safe
     if ( ( dimension >= (int)_curves.size() ) ||
-         ( key != key) || // check for NaN
-         boost::math::isinf(key) ||
-         ( value != value) || // check for NaN
-         boost::math::isinf(value) ) {
+         (boost::math::isnan)(key) || // check for NaN
+         (boost::math::isinf)(key) ||
+         (boost::math::isnan)(value) || // check for NaN
+         (boost::math::isinf)(value) ) {
         return eStatusFailed;
     }
 
@@ -1979,10 +1979,10 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
 {
     ///Mt-safe as Curve is MT-safe
     if ( ( dimension >= (int)_curves.size() ) ||
-         ( key != key) || // check for NaN
-         boost::math::isinf(key) ||
-         ( value != value) || // check for NaN
-         boost::math::isinf(value) ) {
+         (boost::math::isnan)(key) || // check for NaN
+         (boost::math::isinf)(key) ||
+         (boost::math::isnan)(value) || // check for NaN
+         (boost::math::isinf)(value) ) {
         return eStatusFailed;
     }
 
@@ -2324,7 +2324,7 @@ KnobParametric::onKnobAboutToAlias(const KnobPtr& slave)
         _curvesColor.resize( isParametric->_curvesColor.size() );
         assert( _curvesColor.size() == _defaultCurves.size() );
         for (std::size_t i = 0; i < isParametric->_defaultCurves.size(); ++i) {
-            _defaultCurves[i].reset( new Curve(this, i) );
+            _defaultCurves[i] = boost::make_shared<Curve>(this, i);
             _defaultCurves[i]->clone(*isParametric->_defaultCurves[i]);
             _curvesColor[i] = isParametric->_curvesColor[i];
         }

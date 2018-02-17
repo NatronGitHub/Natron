@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
@@ -93,7 +94,7 @@ public:
                                                const std::string & name,
                                                boost::shared_ptr<RotoLayer> parent = boost::shared_ptr<RotoLayer>() )
     {
-        return boost::shared_ptr<RotoItem>( new RotoItem(context, name, parent) );
+        return boost::make_shared<RotoItem>(context, name, parent);
     }
 
     virtual ~RotoItem();

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1099,7 +1099,7 @@ TrackerNodeInteract::refreshSelectedMarkerTexture()
 
     selectedMarkerImg.reset();
 
-    imageGetterWatcher.reset( new TrackWatcher() );
+    imageGetterWatcher = boost::make_shared<TrackWatcher>();
     QObject::connect( imageGetterWatcher.get(), SIGNAL(finished()), this, SLOT(onTrackImageRenderingFinished()) );
     imageGetterWatcher->setFuture( QtConcurrent::run(marker.get(), &TrackMarker::getMarkerImage, time, roi) );
 }
@@ -1353,8 +1353,8 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
     if (!selectedMarkerTexture) {
         int format, internalFormat, glType;
         Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-        selectedMarkerTexture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
-                                                 format, internalFormat, glType) );
+        selectedMarkerTexture = boost::make_shared<Texture>(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
+                                                            format, internalFormat, glType);
     }
     selectedMarkerTextureTime = (int)ret.first->getTime();
     selectedMarkerTextureRoI = ret.second;

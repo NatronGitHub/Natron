@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
 #include <QtCore/QCoreApplication>
@@ -46,6 +47,9 @@ class KnobWidgetDnD : public boost::enable_shared_from_this<KnobWidgetDnD>
 {
     Q_DECLARE_TR_FUNCTIONS(KnobWidgetDnD)
 
+    struct MakeSharedEnabler;
+
+    // used by boost::make_shared
     KnobWidgetDnD(const KnobGuiPtr& knob,
                   int dimension,
                   QWidget* widget);
@@ -55,11 +59,7 @@ public:
 
     static boost::shared_ptr<KnobWidgetDnD> create(const KnobGuiPtr& knob,
                                             int dimension,
-                                            QWidget* widget)
-    {
-        return boost::shared_ptr<KnobWidgetDnD>(new KnobWidgetDnD(knob, dimension, widget));
-    }
-
+                                                   QWidget* widget);
 
     ~KnobWidgetDnD();
 

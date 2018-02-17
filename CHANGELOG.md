@@ -5,6 +5,18 @@
 # History
 
 
+## Version 2.3.5
+
+### Plugins
+
+- ReadOIIO: fix a bug where the Read nodes are not properly restored when timeOffset is used #1711
+- ReadOIIO: add options for reading RAW files: rawUserSat, rawHighlightMode, rawHighlightRebuildLevel
+- DenoiseSharpen: fix a bug where the plugin would not abort processing when required.
+- ColorCorrect: fix luminance computation when applying saturation #1706
+- Reformat: add a checkbox to use the input RoD instead of the input format (useful when preceded by a crop)
+- ContactSheet/LayerContactSheet: correctly set the format when the output size is changed
+
+
 ## Version 2.3.4
 
 - Binaries distributed through Natron's web site are now built with 8-bit x264. 10-bit x264 (introduced with 2.2.6) causes too many compatibility issues. There are other codecs that support 10-bit output (especially ProRes, vc2, libopenjpeg, libvpx-vp9, and x265 on some systems). In order to get 10-bit x264, it is recommended to encode a quasi-lossless using one of these codecs, and then transcode with a ffmpeg binary capable of encoding 10-bit x264.
@@ -15,6 +27,10 @@
 
 - Upgrade SeExpr to version 2.11.
 - Grade: add a "Normalize" button to automatically compute the clack and white points.
+- Matrix3x3, Matrix5x5: new plugins, apply a 3x3 or 5x5 custom filter.
+- ColorCorrect: Fix wrong render for input values outside the [0-1] range #1703
+- ReadOIIO: Adjust Maximum Thr. (used when reading RAW camera files) should defaut to 0.0 #1705
+
 
 ## Version 2.3.3
 

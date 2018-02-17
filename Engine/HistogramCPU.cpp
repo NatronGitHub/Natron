@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -401,7 +401,7 @@ HistogramCPU::run()
                 return;
             }
         }
-        boost::shared_ptr<FinishedHistogram> ret(new FinishedHistogram);
+        boost::shared_ptr<FinishedHistogram> ret = boost::make_shared<FinishedHistogram>();
         ret->binsCount = request.binsCount;
         ret->mode = request.mode;
         ret->vmin = request.vmin;

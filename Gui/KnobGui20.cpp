@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -514,6 +514,17 @@ KnobGui::getPixelScale(double & xScale,
         _imp->customInteract->getPixelScale(xScale, yScale);
     }
 }
+
+#ifdef OFX_EXTENSIONS_NATRON
+double
+KnobGui::getScreenPixelRatio() const
+{
+    if (_imp->customInteract) {
+        return _imp->customInteract->getScreenPixelRatio();
+    }
+    return 1.;
+}
+#endif
 
 void
 KnobGui::getBackgroundColour(double &r,

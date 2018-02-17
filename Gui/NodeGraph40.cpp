@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -301,7 +301,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     std::map<std::string, std::string> oldNewScriptNameMapping;
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         boost::shared_ptr<NodeSerialization>  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
-        boost::shared_ptr<NodeGuiSerialization> guiSerialization(new NodeGuiSerialization);
+        boost::shared_ptr<NodeGuiSerialization> guiSerialization = boost::make_shared<NodeGuiSerialization>();
         (*it)->serialize( guiSerialization.get() );
         NodeGuiPtr clone = _imp->pasteNode(internalSerialization, guiSerialization, offset,
                                            _imp->group.lock(), std::string(), true, &oldNewScriptNameMapping );

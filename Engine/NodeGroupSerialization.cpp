@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ NodeCollectionSerialization::initialize(const NodeCollection& group)
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( !(*it)->getParentMultiInstance() && (*it)->isPartOfProject() ) {
-            boost::shared_ptr<NodeSerialization> state( new NodeSerialization(*it) );
+            boost::shared_ptr<NodeSerialization> state = boost::make_shared<NodeSerialization>(*it);
             _serializedNodes.push_back(state);
         }
     }

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -759,7 +759,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         OfxPageInstance* isPage = dynamic_cast<OfxPageInstance*>(*it);
         if (isPage) {
             const std::map<int, OFX::Host::Param::Instance*>& children = isPage->getChildren();
-            boost::shared_ptr<PageOrdered> pageData( new PageOrdered() );
+            boost::shared_ptr<PageOrdered> pageData = boost::make_shared<PageOrdered>();
             pageData->page = boost::dynamic_pointer_cast<KnobPage>(associatedKnob);
             assert(pageData->page);
             std::map<OfxParamToKnob*, int> childrenList;
@@ -816,7 +816,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         mainPage = finalPages.begin();
     } else {
         boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( effect.get(), tr("Settings") );
-        boost::shared_ptr<PageOrdered> pageData( new PageOrdered() );
+        boost::shared_ptr<PageOrdered> pageData = boost::make_shared<PageOrdered>();
         pageData->page = page;
         finalPages.push_back(pageData);
         mainPage = finalPages.begin();

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -119,7 +119,7 @@ private:
         ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
 
         for (int i = 0; i < nodesCount; ++i) {
-            boost::shared_ptr<NodeSerialization> s(new NodeSerialization);
+            boost::shared_ptr<NodeSerialization> s = boost::make_shared<NodeSerialization>();
             ar & ::boost::serialization::make_nvp("item", *s);
             _serializedNodes.push_back(s);
         }

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -230,12 +230,14 @@ TransformUndoCommand::TransformUndoCommand(const boost::shared_ptr<RotoPaintInte
     , _roto(roto)
     , _rippleEditEnabled( roto->getContext()->isRippleEditEnabled() )
     , _selectedTool(roto->selectedToolAction)
-    , _matrix(new Transform::Matrix3x3)
+    , _matrix()
     , _time(time)
     , _selectedCurves()
     , _originalPoints()
     , _selectedPoints()
 {
+    _matrix = boost::make_shared<Transform::Matrix3x3>();
+
     std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > selected;
 
     roto->getSelection(&_selectedCurves, &selected);

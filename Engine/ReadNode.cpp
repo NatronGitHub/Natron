@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -457,67 +457,75 @@ ReadNodePrivate::destroyReadNode()
     std::string serializationString;
     try {
         std::ostringstream ss;
-        boost::archive::xml_oarchive oArchive(ss);
-        std::list<boost::shared_ptr<KnobSerialization> > serialized;
-
-
-        for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-
-            // The internal node still holds a shared ptr to the knob.
-            // Since we want to keep some knobs around, ensure they do not get deleted in the desctructor of the embedded node
-            embeddedPlugin->getEffectInstance()->removeKnobFromList(it->get());
-
-            if ( !(*it)->isDeclaredByPlugin() ) {
-                continue;
-            }
-
-            //If it is a knob of this ReadNode, do not destroy it
-            bool isReadNodeKnob = false;
-            for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = readNodeKnobs.begin(); it2 != readNodeKnobs.end(); ++it2) {
-                if (it2->lock() == *it) {
-                    isReadNodeKnob = true;
-                    break;
+        {   // see http://boost.2283326.n4.nabble.com/the-boost-xml-serialization-to-a-stringstream-does-not-have-an-end-tag-td2580772.html
+            // xml_oarchive must be destroyed before obtaining ss.str(), or the </boost_serialization> tag is missing,
+            // which throws an exception in boost 1.66.0, due to the following change:
+            // https://fossies.org/diffs/boost/1_65_1_vs_1_66_0/libs/serialization/src/basic_xml_grammar.ipp-diff.html
+            // see also https://svn.boost.org/trac10/ticket/13400
+            // see also https://svn.boost.org/trac10/ticket/13354
+            
+            boost::archive::xml_oarchive oArchive(ss);
+            std::list<boost::shared_ptr<KnobSerialization> > serialized;
+            
+            
+            for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+                
+                // The internal node still holds a shared ptr to the knob.
+                // Since we want to keep some knobs around, ensure they do not get deleted in the desctructor of the embedded node
+                embeddedPlugin->getEffectInstance()->removeKnobFromList(it->get());
+                
+                if ( !(*it)->isDeclaredByPlugin() ) {
+                    continue;
                 }
-            }
-            if (isReadNodeKnob) {
-                continue;
-            }
-
-            //Keep pages around they will be re-used
-            KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
-            if (isPage) {
-                continue;
-            }
-
-            //This is a knob of the Reader plug-in
-
-            //Serialize generic knobs and keep them around until we create a new Reader plug-in
-            bool mustSerializeKnob;
-            bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
-            if (!isGeneric || mustSerializeKnob) {
-
-               /* if (!isGeneric && !(*it)->getDefaultIsSecret()) {
-                    // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
-                    (*it)->setSecret(false);
-                }*/
-
-                boost::shared_ptr<KnobSerialization> s( new KnobSerialization(*it) );
-                serialized.push_back(s);
-            }
-            if (!isGeneric) {
-                try {
-                    _publicInterface->deleteKnob(it->get(), false);
-                } catch (...) {
+                
+                //If it is a knob of this ReadNode, do not destroy it
+                bool isReadNodeKnob = false;
+                for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = readNodeKnobs.begin(); it2 != readNodeKnobs.end(); ++it2) {
+                    if (it2->lock() == *it) {
+                        isReadNodeKnob = true;
+                        break;
+                    }
+                }
+                if (isReadNodeKnob) {
+                    continue;
+                }
+                
+                //Keep pages around they will be re-used
+                KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
+                if (isPage) {
+                    continue;
+                }
+                
+                //This is a knob of the Reader plug-in
+                
+                //Serialize generic knobs and keep them around until we create a new Reader plug-in
+                bool mustSerializeKnob;
+                bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
+                if (!isGeneric || mustSerializeKnob) {
                     
+                    /* if (!isGeneric && !(*it)->getDefaultIsSecret()) {
+                     // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
+                     (*it)->setSecret(false);
+                     }*/
+                    
+                    boost::shared_ptr<KnobSerialization> s = boost::make_shared<KnobSerialization>(*it);
+                    serialized.push_back(s);
+                }
+                if (!isGeneric) {
+                    try {
+                        _publicInterface->deleteKnob(it->get(), false);
+                    } catch (...) {
+                        
+                    }
                 }
             }
-        }
-
-        int n = (int)serialized.size();
-        oArchive << boost::serialization::make_nvp("numItems", n);
-        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = serialized.begin(); it!= serialized.end(); ++it) {
-            oArchive << boost::serialization::make_nvp("item", **it);
-
+            
+            int n = (int)serialized.size();
+            oArchive << boost::serialization::make_nvp("numItems", n);
+            for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = serialized.begin(); it!= serialized.end(); ++it) {
+                oArchive << boost::serialization::make_nvp("item", **it);
+                
+            }
         }
         serializationString = ss.str();
     } catch (...) {
@@ -530,11 +538,14 @@ ReadNodePrivate::destroyReadNode()
         int n ;
         iArchive >> boost::serialization::make_nvp("numItems", n);
         for (int i = 0; i < n; ++i) {
-            boost::shared_ptr<KnobSerialization> s(new KnobSerialization);
+            boost::shared_ptr<KnobSerialization> s = boost::make_shared<KnobSerialization>();
             iArchive >> boost::serialization::make_nvp("item", *s);
             genericKnobsSerialization.push_back(s);
 
         }
+    } catch (const std::exception& e) {
+        qDebug() << e.what();
+        assert(false);
     } catch (...) {
         assert(false);
     }
@@ -1278,7 +1289,9 @@ ReadNode::knobChanged(KnobI* k,
         } else {
             if ( ReadNode::isVideoReader( p->getPluginID() ) ) {
                 QString ffprobePath = ReadNodePrivate::getFFProbeBinaryPath();
-                assert( QFile::exists(ffprobePath) );
+                if( !QFile::exists(ffprobePath) ) {
+                    throw std::runtime_error( tr("Error: ffprobe binary not available").toStdString() );
+                }
                 QProcess proc;
                 QStringList ffprobeArgs;
                 ffprobeArgs << QString::fromUtf8("-show_streams");

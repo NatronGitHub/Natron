@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -91,6 +91,23 @@ public:
         return knob.lock();
     }
 };
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct KnobWidgetDnD::MakeSharedEnabler: public KnobWidgetDnD
+{
+    MakeSharedEnabler(const KnobGuiPtr& knob,
+                      int dimension,
+                      QWidget* widget) : KnobWidgetDnD(knob, dimension, widget) {
+    }
+};
+
+boost::shared_ptr<KnobWidgetDnD> KnobWidgetDnD::create(const KnobGuiPtr& knob,
+                                                       int dimension,
+                                                       QWidget* widget)
+{
+    return boost::make_shared<KnobWidgetDnD::MakeSharedEnabler>(knob, dimension, widget);
+}
 
 KnobWidgetDnD::KnobWidgetDnD(const KnobGuiPtr& knob,
                              int dimension,

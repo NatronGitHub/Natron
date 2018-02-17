@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -134,7 +134,9 @@ private:
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
         if (version < ROTO_STROKE_INTRODUCES_MULTIPLE_STROKES) {
             ar & ::boost::serialization::make_nvp("BrushType", _brushType);
-            boost::shared_ptr<Curve> x(new Curve), y(new Curve), p(new Curve);
+            boost::shared_ptr<Curve> x = boost::make_shared<Curve>();
+            boost::shared_ptr<Curve> y = boost::make_shared<Curve>();
+            boost::shared_ptr<Curve> p = boost::make_shared<Curve>();
             ar & ::boost::serialization::make_nvp("CurveX", *x);
             ar & ::boost::serialization::make_nvp("CurveY", *y);
             ar & ::boost::serialization::make_nvp("CurveP", *p);
@@ -146,7 +148,9 @@ private:
             ar & ::boost::serialization::make_nvp("BrushType", _brushType);
             ar & ::boost::serialization::make_nvp("NbItems", nb);
             for (int i = 0; i < nb; ++i) {
-                boost::shared_ptr<Curve> x(new Curve), y(new Curve), p(new Curve);
+                boost::shared_ptr<Curve> x = boost::make_shared<Curve>();
+                boost::shared_ptr<Curve> y = boost::make_shared<Curve>();
+                boost::shared_ptr<Curve> p = boost::make_shared<Curve>();
                 ar & ::boost::serialization::make_nvp("CurveX", *x);
                 ar & ::boost::serialization::make_nvp("CurveY", *y);
                 ar & ::boost::serialization::make_nvp("CurveP", *p);

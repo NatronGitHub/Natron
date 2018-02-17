@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -69,7 +69,7 @@ Image::applyMaskMixForMaskInvert(const RectI& roi,
                 if (maskPixels == 0) {
                     maskScale = maskInvert ? 1.f : 0.f;
                 } else {
-                    maskScale = *maskPixels / float(maxValue);
+                    maskScale = *maskPixels * (1.f / maxValue);
                     if (maskInvert) {
                         maskScale = 1.f - maskScale;
                     }

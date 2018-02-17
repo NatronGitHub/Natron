@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -131,6 +131,7 @@ generateUserFriendlyNatronVersionName()
     return ret;
 }
 
+
 Project::Project(const AppInstPtr& appInstance)
     : KnobHolder(appInstance)
     , NodeCollection(appInstance)
@@ -138,6 +139,23 @@ Project::Project(const AppInstPtr& appInstance)
 {
     QObject::connect( _imp->autoSaveTimer.get(), SIGNAL(timeout()), this, SLOT(onAutoSaveTimerTriggered()) );
 }
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct Project::MakeSharedEnabler: public Project
+{
+    MakeSharedEnabler(const AppInstPtr& appInstance) : Project(appInstance) {
+    }
+};
+
+
+boost::shared_ptr<Project>
+Project::create(const AppInstPtr& appInstance)
+{
+    return boost::make_shared<Project::MakeSharedEnabler>(appInstance);
+}
+
 
 Project::~Project()
 {
@@ -656,7 +674,7 @@ Project::onAutoSaveTimerTriggered()
     bool canAutoSave = !hasNodeRendering() && !getApp()->isShowingDialog();
 
     if (canAutoSave) {
-        boost::shared_ptr<QFutureWatcher<void> > watcher(new QFutureWatcher<void>);
+        boost::shared_ptr<QFutureWatcher<void> > watcher = boost::make_shared<QFutureWatcher<void> >();
         QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onAutoSaveFutureFinished()) );
         watcher->setFuture( QtConcurrent::run(this, &Project::autoSave) );
         _imp->autoSaveFutures.push_back(watcher);

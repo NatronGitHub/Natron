@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -286,6 +286,18 @@ NatronOverlayInteractSupport::n_getPixelScale(double & xScale,
         _viewport->getPixelScale(xScale, yScale);
     }
 }
+
+#ifdef OFX_EXTENSIONS_NATRON
+// hooks to live kOfxInteractPropScreenPixelRatio in the property set
+double
+NatronOverlayInteractSupport::n_getScreenPixelRatio() const
+{
+    if (_viewport) {
+        return _viewport->getScreenPixelRatio();
+    }
+    return 1.;
+}
+#endif
 
 void
 NatronOverlayInteractSupport::n_getBackgroundColour(double &r,

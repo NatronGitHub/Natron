@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -272,7 +272,7 @@ struct PythonPanelSerialization
         ar & ::boost::serialization::make_nvp("NumParams", nKnobs);
 
         for (int i = 0; i < nKnobs; ++i) {
-            boost::shared_ptr<KnobSerialization> k(new KnobSerialization);
+            boost::shared_ptr<KnobSerialization> k = boost::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("item", *k);
             knobs.push_back(k);
         }
@@ -716,7 +716,7 @@ class ProjectGuiSerialization
             int numPyPanels;
             ar & ::boost::serialization::make_nvp("NumPyPanels", numPyPanels);
             for (int i = 0; i < numPyPanels; ++i) {
-                boost::shared_ptr<PythonPanelSerialization> s(new PythonPanelSerialization);
+                boost::shared_ptr<PythonPanelSerialization> s = boost::make_shared<PythonPanelSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *s);
                 _pythonPanels.push_back(s);
             }

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1232,9 +1232,9 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     bool useInspector = isEntitledForInspector(plugin, ofxDesc);
 
     if (!useInspector) {
-        node.reset( new Node(shared_from_this(), argsGroup, plugin) );
+        node = boost::make_shared<Node>(shared_from_this(), argsGroup, plugin);
     } else {
-        node.reset( new InspectorNode(shared_from_this(), argsGroup, plugin) );
+        node = boost::make_shared<InspectorNode>(shared_from_this(), argsGroup, plugin);
     }
 
 
@@ -1777,7 +1777,7 @@ AppInstance::startWritersRendering(bool doBlockingRender,
         item.savePath = savePath;
 
         if (renderInSeparateProcess) {
-            item.process.reset( new ProcessHandler(savePath, item.work.writer) );
+            item.process = boost::make_shared<ProcessHandler>(savePath, item.work.writer);
             QObject::connect( item.process.get(), SIGNAL(processFinished(int)), this, SLOT(onBackgroundRenderProcessFinished()) );
         } else {
             QObject::connect(item.work.writer->getRenderEngine().get(), SIGNAL(renderFinished(int)), this, SLOT(onQueuedRenderFinished(int)), Qt::UniqueConnection);

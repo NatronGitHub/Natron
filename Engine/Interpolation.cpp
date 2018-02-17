@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1108,7 +1108,7 @@ Interpolation::autoComputeDerivatives(KeyframeTypeEnum interpPrev,
 
     *vcurDerivRight = P0pr / (tnext - tcur); // denormalize for t \in [tcur,tnext]
     *vcurDerivLeft = Q3pl / (tcur - tprev); // denormalize for t \in [tprev,tcur]
-    assert( !boost::math::isnan(*vcurDerivRight) && !boost::math::isnan(*vcurDerivLeft) );
+    assert( !(boost::math::isnan)(*vcurDerivRight) && !(boost::math::isnan)(*vcurDerivLeft) );
 } // autoComputeDerivatives
 
 NATRON_NAMESPACE_EXIT

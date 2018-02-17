@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -382,7 +382,7 @@ struct KnobHelperPrivate
         , expressionMutex()
         , expressions()
         , lastRandomHash(0)
-        , tlsData( new TLSHolder<KnobHelper::KnobTLSData>() )
+        , tlsData()
         , hasModificationsMutex()
         , hasModifications()
         , valueChangedBlockedMutex()
@@ -390,6 +390,7 @@ struct KnobHelperPrivate
         , listenersNotificationBlocked(0)
         , isClipPreferenceSlave(false)
     {
+        tlsData = boost::make_shared<TLSHolder<KnobHelper::KnobTLSData> >();
         if ( holder && !holder->canKnobsAnimate() ) {
             isAnimationEnabled = false;
         }
@@ -608,7 +609,7 @@ void
 KnobHelper::populate()
 {
     KnobPtr thisKnob = shared_from_this();
-    boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(thisKnob) );
+    boost::shared_ptr<KnobSignalSlotHandler> handler = boost::make_shared<KnobSignalSlotHandler>(thisKnob);
 
     setSignalSlotHandler(handler);
 
@@ -625,7 +626,7 @@ KnobHelper::populate()
     for (int i = 0; i < _imp->dimension; ++i) {
         _imp->enabled[i] = true;
         if ( canAnimate() ) {
-            _imp->curves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
+            _imp->curves[i] = boost::make_shared<Curve>(this, i);
         }
         _imp->animationLevel[i] = eAnimationLevelNone;
 
@@ -3264,6 +3265,20 @@ KnobHelper::getPixelScale(double & xScale,
         yScale = 0;
     }
 }
+
+#ifdef OFX_EXTENSIONS_NATRON
+double
+KnobHelper::getScreenPixelRatio() const
+{
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
+    if (hasGui) {
+        return hasGui->getScreenPixelRatio();
+    } else {
+        return 1.;
+    }
+}
+#endif
 
 void
 KnobHelper::getBackgroundColour(double &r,
@@ -6177,13 +6192,12 @@ AnimatingKnobStringHelper::AnimatingKnobStringHelper(KnobHolder* holder,
                                                      int dimension,
                                                      bool declaredByPlugin)
     : Knob<std::string>(holder, description, dimension, declaredByPlugin)
-    , _animation( new StringAnimationManager(this) )
+    , _animation( new StringAnimationManager(this) ) // scoped_ptr
 {
 }
 
 AnimatingKnobStringHelper::~AnimatingKnobStringHelper()
 {
-    delete _animation;
 }
 
 void

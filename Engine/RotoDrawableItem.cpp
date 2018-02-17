@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -908,7 +908,7 @@ RotoDrawableItem::save(RotoItemSerialization *obj) const
         throw std::logic_error("RotoDrawableItem::save()");
     }
     for (std::list<KnobPtr >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        boost::shared_ptr<KnobSerialization> k( new KnobSerialization() );
+        boost::shared_ptr<KnobSerialization> k = boost::make_shared<KnobSerialization>(*it);
         serializeRotoKnob( *it, k.get() );
         s->_knobs.push_back(k);
     }

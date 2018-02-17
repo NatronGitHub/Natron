@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/make_shared.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
@@ -440,7 +441,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
     NodePtr thisNode = getNode();
     boost::shared_ptr<ViewerArgs> args[2];
     for (int i = 0; i < 2; ++i) {
-        args[i].reset(new ViewerArgs);
+        args[i] = boost::make_shared<ViewerArgs>();
         if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == eViewerCompositingOperatorNone) ) {
             break;
         }
@@ -900,7 +901,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     // Did the user enabled the user roi from the viewer UI?
     outArgs->userRoIEnabled = _imp->uiContext->isUserRegionOfInterestEnabled();
 
-    outArgs->params.reset(new UpdateViewerParams);
+    outArgs->params = boost::make_shared<UpdateViewerParams>();
 
     // The PAR of the input image
     outArgs->params->pixelAspectRatio = outArgs->activeInputToRender->getAspectRatio(-1);
@@ -952,7 +953,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     }
 
     // Flag that we are going to render
-    outArgs->isRenderingFlag.reset( new RenderingFlagSetter( getNode() ) );
+    outArgs->isRenderingFlag = boost::make_shared<RenderingFlagSetter>( getNode() );
 } // ViewerInstance::setupMinimalUpdateViewerParams
 
 void
@@ -1247,7 +1248,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
 {
     // Just redraw if the viewer is paused
     if ( isViewerPaused(textureIndex) ) {
-        outArgs->params.reset(new UpdateViewerParams);
+        outArgs->params = boost::make_shared<UpdateViewerParams>();
         outArgs->params->isViewerPaused = true;
         outArgs->params->time = time;
         outArgs->params->setUniqueID(textureIndex);
@@ -1309,6 +1310,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     boost::shared_ptr<ViewerParallelRenderArgsSetter> frameArgs;
 
     if (useTLS) {
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
         frameArgs.reset( new ViewerParallelRenderArgsSetter(inArgs.params->time,
                                                             inArgs.params->view,
                                                             !isSequentialRender,
@@ -1322,6 +1324,21 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                                             inArgs.activeInputToRender->getNode(),
                                                             inArgs.draftModeEnabled,
                                                             stats) );
+#else
+        frameArgs = boost::make_shared<ViewerParallelRenderArgsSetter>(inArgs.params->time,
+                                                                       inArgs.params->view,
+                                                                       !isSequentialRender,
+                                                                       isSequentialRender,
+                                                                       inArgs.params->abortInfo,
+                                                                       getNode(),
+                                                                       inArgs.params->textureIndex,
+                                                                       getTimeline().get(),
+                                                                       false,
+                                                                       rotoPaintNode,
+                                                                       inArgs.activeInputToRender->getNode(),
+                                                                       inArgs.draftModeEnabled,
+                                                                       stats);
+#endif
     }
 
 
@@ -1614,7 +1631,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         if (!inArgs.isDoingPartialUpdates) {
             updateParams = inArgs.params;
         } else {
-            updateParams.reset( new UpdateViewerParams(*inArgs.params) );
+            updateParams = boost::make_shared<UpdateViewerParams>(*inArgs.params);
             updateParams->mustFreeRamBuffer = true;
             updateParams->isPartialRect = true;
             UpdateViewerParams::CachedTile tile;
@@ -1824,7 +1841,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
         boost::shared_ptr<TimeLapse> viewerRenderTimeRecorder;
         if (stats) {
-            viewerRenderTimeRecorder.reset( new TimeLapse() );
+            viewerRenderTimeRecorder = boost::make_shared<TimeLapse>();
         }
 
         std::size_t tileRowElements = inArgs.params->tileSize;
@@ -2172,7 +2189,7 @@ scaleToTexture8bits_generic(const RectI& roi,
     const int srcRowElements = (int)args.inputImage->getRowElements();
     boost::shared_ptr<Image::ReadAccess> matteAcc;
     if (applyMatte) {
-        matteAcc.reset( new Image::ReadAccess( args.matteImage.get() ) );
+        matteAcc = boost::make_shared<Image::ReadAccess>( args.matteImage.get() );
     }
 
     for (int y = y1; y < y2;
@@ -2569,7 +2586,7 @@ scaleToTexture32bitsGeneric(const RectI& roi,
     boost::shared_ptr<Image::ReadAccess> matteAcc;
 
     if (applyMatte) {
-        matteAcc.reset( new Image::ReadAccess( args.matteImage.get() ) );
+        matteAcc = boost::make_shared<Image::ReadAccess>( args.matteImage.get() );
     }
 
     assert( (args.renderOnlyRoI && roi.x1 >= tile.rect.x1 && roi.x2 <= tile.rect.x2 && roi.y1 >= tile.rect.y1 && roi.y2 <= tile.rect.y2) || (!args.renderOnlyRoI && tile.rect.x1 >= roi.x1 && tile.rect.x2 <= roi.x2 && tile.rect.y1 >= roi.y1 && tile.rect.y2 <= roi.y2) );

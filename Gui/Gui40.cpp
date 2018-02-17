@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -154,22 +154,80 @@ Gui::openRecentFile()
 void
 Gui::updateRecentFileActions()
 {
-    QSettings settings;
-    QStringList files = settings.value( QString::fromUtf8("recentFileList") ).toStringList();
-    int numRecentFiles = std::min(files.size(), (int)NATRON_MAX_RECENT_FILES);
-
     // if there are two files with the same filename, give the dirname too
+    QStringList files;
     QStringList fileNames;
     QStringList dirNames;
-    for (int i = 0; i < numRecentFiles; ++i) {
-        QFileInfo fi(files[i]);
-        fileNames.push_back(fi.fileName());
-        dirNames.push_back(fi.dir().dirName());
+    std::map<QString,QStringList> allDirNames;
+
+    {
+        QSettings settings;
+        QStringList allfiles = settings.value( QString::fromUtf8("recentFileList") ).toStringList();
+        int numFiles = allfiles.size();
+        int iTotal = 0;
+
+        for (int i = 0; i < numFiles && iTotal < NATRON_MAX_RECENT_FILES; ++i) {
+            QFileInfo fi(allfiles[i]);
+            if ( fi.exists() ) {
+                files.push_back(allfiles[i]);
+                fileNames.push_back(fi.fileName());
+                QString dirName = fi.dir().canonicalPath();
+                dirNames.push_back(dirName);
+                allDirNames[fi.fileName()] << dirName;
+                ++iTotal;
+            }
+        }
     }
-    // TODO: the dirname can be the same too. for each fileName with count > 1, collect the indices of the identical filenames. if dirname and directory up-level is the same for at least two files, raise the directory level up until the two dirnames are different
+
+    assert(files.size() <= (int)NATRON_MAX_RECENT_FILES);
+    assert(files.size() == fileNames.size());
+    assert(dirNames.size() == fileNames.size());
+    int numRecentFiles = std::min(fileNames.size(), (int)NATRON_MAX_RECENT_FILES);
+
+    // the dirname can be the same too. for each fileName with count > 1, collect the indices of the identical filenames. if dirname and directory up-level is the same for at least two files, raise the directory level up until the two dirnames are different
+    for (std::map<QString,QStringList>::const_iterator it = allDirNames.begin(); it != allDirNames.end(); ++it) {
+        // dirs contains the list of dirs for that dirname
+        const QStringList& dirs = it->second;
+        if (dirs.size() > 1) {
+            // split each dir, and find the common part of all dirs.
+            std::vector<QStringList> dirParts(dirs.size());
+            for (int i = 0; i < dirs.size(); ++i) {
+                dirParts[i] = QDir::toNativeSeparators(dirs.at(i)).split(QDir::separator(), QString::SkipEmptyParts);
+            }
+            int minComps = dirParts[0].size();
+            for (int i = 1; i < dirs.size(); ++i) {
+                minComps = std::min(minComps, dirParts[i].size());
+            }
+            // count the number of elements to remove
+            int commonComps = 0;
+            for (int i = 0; i < minComps; ++i) {
+                bool compIsCommon = true;
+                for (int j = 1; j < dirs.size(); ++j) {
+                    if (dirParts[j].at(i) != dirParts[0].at(i)) {
+                        compIsCommon = false;
+                        break;
+                    }
+                }
+                if (compIsCommon) {
+                    commonComps = i + 1;
+                } else {
+                    break;
+                }
+            }
+            if (commonComps > 0) {
+            // remove the n first element to each dirName corresponding to this filename, and recompose
+                for (int i = 0; i < numRecentFiles; ++i) {
+                    if (fileNames[i] == it->first) {
+                        dirNames[i] = QStringList(QDir::toNativeSeparators(dirNames.at(i)).split(QDir::separator(), QString::SkipEmptyParts).mid(commonComps)).join(QDir::separator());
+                    }
+                }
+            }
+        }
+    }
+
     for (int i = 0; i < numRecentFiles; ++i) {
         QString text;
-        if (fileNames.count(fileNames[i]) > 1) {
+        if (allDirNames[fileNames[i]].size() > 1) {
             text = QString::fromUtf8("%1 - %2").arg(fileNames[i]).arg(dirNames[i]);
         } else {
             text = fileNames[i];

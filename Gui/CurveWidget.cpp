@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -463,6 +463,21 @@ CurveWidget::getPixelScale(double & xScale,
     yScale = _imp->zoomCtx.screenPixelHeight();
 }
 
+#ifdef OFX_EXTENSIONS_NATRON
+double
+CurveWidget::getScreenPixelRatio() const
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    return windowHandle()->devicePixelRatio()
+#else
+    return 1.;
+#endif
+}
+#endif
+
 /**
  * @brief Returns the colour of the background (i.e: clear color) of the viewport.
  **/
@@ -555,6 +570,9 @@ CurveWidget::resizeGL(int width,
         return;
     }
 
+    if (width == 0) {
+        width = 1;
+    }
     if (height == 0) {
         height = 1;
     }

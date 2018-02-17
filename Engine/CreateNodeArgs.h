@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
 #include "Engine/EngineFwd.h"
@@ -266,7 +267,7 @@ class CreateNodeArgs
         
         boost::shared_ptr<Property<T> > propTemplate;
         if (!*propPtr) {
-            propTemplate.reset(new Property<T>);
+            propTemplate = boost::make_shared<Property<T> >();
             *propPtr = propTemplate;
         } else {
             propTemplate = boost::dynamic_pointer_cast<Property<T> >(*propPtr);

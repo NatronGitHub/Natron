@@ -63,7 +63,7 @@ shiboken {
 ###Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
+to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
 Place it at the root of Natron repository.
 
 ### Build
@@ -86,8 +86,8 @@ global.pri file. To enable an option just add CONFIG+=<option> in the qmake call
 
 Natron's nodes are contained in separate repositories. To use the default nodes, you must also build the following repositories:
 
-    https://github.com/devernay/openfx-misc
-    https://github.com/MrKepzie/openfx-io
+    https://github.com/NatronGitHub/openfx-misc
+    https://github.com/NatronGitHub/openfx-io
 
 You'll find installation instructions in the README of both these repositories. Both openfx-misc and openfx-io have submodules as well.
 

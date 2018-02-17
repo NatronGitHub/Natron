@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -75,6 +75,23 @@ TrackerContext::TrackerContext(const boost::shared_ptr<Node> &node)
     , _imp( new TrackerContextPrivate(this, node) )
 {
 }
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct TrackerContext::MakeSharedEnabler: public TrackerContext
+{
+    MakeSharedEnabler(const boost::shared_ptr<Node> &node) : TrackerContext(node) {
+    }
+};
+
+
+boost::shared_ptr<TrackerContext>
+TrackerContext::create(const boost::shared_ptr<Node> &node)
+{
+    return boost::make_shared<TrackerContext::MakeSharedEnabler>(node);
+}
+
 
 TrackerContext::~TrackerContext()
 {

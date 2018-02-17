@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -140,6 +140,9 @@ public:
     void swapOpenGLBuffers() OVERRIDE FINAL;
     void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
     void getPixelScale(double &xScale, double &yScale) const OVERRIDE FINAL;
+#ifdef OFX_EXTENSIONS_NATRON
+    double getScreenPixelRatio() const OVERRIDE FINAL;
+#endif
     void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     void saveOpenGLContext() OVERRIDE FINAL;
     void restoreOpenGLContext() OVERRIDE FINAL;

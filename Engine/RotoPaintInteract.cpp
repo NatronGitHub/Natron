@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,6 +88,23 @@ RotoPaintInteract::RotoPaintInteract(RotoPaintPrivate* p)
 {
     cloneOffset.first = cloneOffset.second = 0.;
 }
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct RotoPaintInteract::MakeSharedEnabler: public RotoPaintInteract
+{
+    MakeSharedEnabler(RotoPaintPrivate* p) : RotoPaintInteract(p) {
+    }
+};
+
+
+boost::shared_ptr<RotoPaintInteract>
+RotoPaintInteract::create(RotoPaintPrivate* p)
+{
+    return boost::make_shared<RotoPaintInteract::MakeSharedEnabler>(p);
+}
+
 
 void
 RotoPaintInteract::evaluate(bool redraw)

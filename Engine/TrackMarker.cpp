@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -132,6 +132,22 @@ TrackMarker::TrackMarker(const boost::shared_ptr<TrackerContext>& context)
     , boost::enable_shared_from_this<TrackMarker>()
     , _imp( new TrackMarkerPrivate(this, context) )
 {
+}
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct TrackMarker::MakeSharedEnabler: public TrackMarker
+{
+    MakeSharedEnabler(const boost::shared_ptr<TrackerContext>& context) : TrackMarker(context) {
+    }
+};
+
+
+boost::shared_ptr<TrackMarker>
+TrackMarker::create(const boost::shared_ptr<TrackerContext>& context)
+{
+    return boost::make_shared<TrackMarker::MakeSharedEnabler>(context);
 }
 
 TrackMarker::~TrackMarker()
@@ -348,7 +364,7 @@ TrackMarker::save(TrackSerialization* serialization) const
     serialization->_scriptName = _imp->trackScriptName;
     KnobsVec knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        boost::shared_ptr<KnobSerialization> s( new KnobSerialization(*it) );
+        boost::shared_ptr<KnobSerialization> s = boost::make_shared<KnobSerialization>(*it);
         serialization->_knobs.push_back(s);
     }
     for (std::set<int>::const_iterator it = _imp->userKeyframes.begin(); it != _imp->userKeyframes.end(); ++it) {
@@ -1185,6 +1201,22 @@ TrackMarkerPM::TrackMarkerPM(const boost::shared_ptr<TrackerContext>& context)
     : TrackMarker(context)
 {
 }
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct TrackMarkerPM::MakeSharedEnabler: public TrackMarkerPM
+{
+    MakeSharedEnabler(const boost::shared_ptr<TrackerContext>& context) : TrackMarkerPM(context) {
+    }
+};
+
+boost::shared_ptr<TrackMarker>
+TrackMarkerPM::create(const boost::shared_ptr<TrackerContext>& context)
+{
+    return boost::make_shared<TrackMarkerPM::MakeSharedEnabler>(context);
+}
+
 
 TrackMarkerPM::~TrackMarkerPM()
 {

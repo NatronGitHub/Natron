@@ -49,15 +49,19 @@ CMAKE_PREFIX_PATH=$(echo /usr/local/Cellar/*/* | sed 's/ /;/g')
 git submodule update --init --recursive
 
 # get a minimal OCIO config (--trust-server-cert is equivalent to --trust-server-cert-failures=unknown-ca)
-(cd Tests; svn export --non-interactive --trust-server-cert https://github.com/imageworks/OpenColorIO-Configs/trunk/nuke-default)
+#(cd Tests; svn export --non-interactive --trust-server-cert https://github.com/imageworks/OpenColorIO-Configs/trunk/nuke-default)
+ln -s $HOME/OpenColorIO-Configs .
+export OCIO=$HOME/OpenColorIO-Configs/blender/config.ocio
 
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
+    export PKG_CONFIG_PATH=$HOME/ocio/lib/pkgconfig:$HOME/oiio/lib/pkgconfig:$HOME/openexr/lib/pkgconfig:$HOME/seexpr/lib/pkgconfig
+    export LD_LIBRARY_PATH=$HOME/ocio/lib:$HOME/oiio/lib:$HOME/openexr/lib:$HOME/seexpr/lib
     if [ "${COVERITY_SCAN_BRANCH}" == 1 ]; then
         qmake -r CONFIG+="$BREAKPAD $SILENT precompile_header";
     elif [ "$CC" = "gcc" ]; then
-        qmake -r CONFIG+="nopch coverage debug $BREAKPAD $SILENT"; # pch config disables precompiled headers
+        qmake -r CONFIG+="nopch coverage c++11 debug $BREAKPAD $SILENT"; # pch config disables precompiled headers
     else
-        qmake -r -spec unsupported/linux-clang CONFIG+="nopch debug $BREAKPAD $SILENT";
+        qmake -r -spec unsupported/linux-clang CONFIG+="nopch c++11 debug $BREAKPAD $SILENT";
     fi
     export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
     make $J -C libs/gflags
@@ -84,7 +88,8 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         make $J -C Tests;
         make $J
         rm -rf "$HOME/.cache/INRIA/Natron"* &> /dev/null || true
-        if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins OCIO=./nuke-default/config.ocio ./Tests; cd ..; fi
+        #if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins OCIO=./nuke-default/config.ocio ./Tests; cd ..; fi
+        if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
     fi
     
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
@@ -92,9 +97,9 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # cairo requires xcb-shm, which has its pkg-config file in /opt/X11
     export PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig
     if [ "$CC" = "gcc" ]; then
-        qmake -r -spec unsupported/macx-clang-libc++ QMAKE_CC=gcc QMAKE_CXX=g++ CONFIG+="debug $BREAKPAD $SILENT";
+        qmake -r -spec unsupported/macx-clang-libc++ QMAKE_CC=gcc QMAKE_CXX=g++ CONFIG+="c++11 debug $BREAKPAD $SILENT";
     else
-        qmake -r -spec unsupported/macx-clang-libc++ CONFIG+="debug $BREAKPAD $SILENT";
+        qmake -r -spec unsupported/macx-clang-libc++ CONFIG+="c++11 debug $BREAKPAD $SILENT";
     fi
     export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
     make $J -C libs/gflags
@@ -113,7 +118,8 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     make $J -C Tests;
     make $J
     rm -rf  "$HOME/Library/Caches/INRIA/Natron"* &> /dev/null || true
-    if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins OCIO=./nuke-default/config.ocio ./Tests; cd ..; fi
+    #if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins OCIO=./nuke-default/config.ocio ./Tests; cd ..; fi
+    if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
 fi
 
 # Local variables:

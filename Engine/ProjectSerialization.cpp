@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ ProjectSerialization::initialize(const Project* project)
         if ( knobs[i]->getIsPersistent() &&
              !isGroup && !isPage && !isButton &&
              knobs[i]->hasModificationsForSerialization() ) {
-            boost::shared_ptr<KnobSerialization> newKnobSer( new KnobSerialization(knobs[i]) );
+            boost::shared_ptr<KnobSerialization> newKnobSer = boost::make_shared<KnobSerialization>(knobs[i]);
             _projectKnobs.push_back(newKnobSer);
         }
     }

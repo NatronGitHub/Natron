@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -214,22 +214,9 @@ Gui::onMaxPanelsSpinBoxValueChanged(double val)
 void
 Gui::clearAllVisiblePanels()
 {
-    while ( !_imp->openedPanels.empty() ) {
-        std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
+    for (std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin(); it != _imp->openedPanels.end(); ++it) {
         if ( !(*it)->isFloating() ) {
             (*it)->setClosed(true);
-        }
-
-        bool foundNonFloating = false;
-        for (std::list<DockablePanel*>::iterator it2 = _imp->openedPanels.begin(); it2 != _imp->openedPanels.end(); ++it2) {
-            if ( !(*it2)->isFloating() ) {
-                foundNonFloating = true;
-                break;
-            }
-        }
-        ///only floating windows left
-        if (!foundNonFloating) {
-            break;
         }
     }
     getApp()->redrawAllViewers();

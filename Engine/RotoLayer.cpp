@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -178,15 +178,15 @@ RotoLayer::save(RotoItemSerialization *obj) const
         boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(*it);
         boost::shared_ptr<RotoItemSerialization> childSerialization;
         if (isBezier && !isStroke) {
-            childSerialization.reset(new BezierSerialization);
+            childSerialization = boost::make_shared<BezierSerialization>();
             isBezier->save( childSerialization.get() );
         } else if (isStroke) {
-            childSerialization.reset( new RotoStrokeItemSerialization() );
+            childSerialization = boost::make_shared<RotoStrokeItemSerialization>();
             isStroke->save( childSerialization.get() );
         } else {
             assert(layer);
             if (layer) {
-                childSerialization.reset(new RotoLayerSerialization);
+                childSerialization = boost::make_shared<RotoLayerSerialization>();
                 layer->save( childSerialization.get() );
             }
         }

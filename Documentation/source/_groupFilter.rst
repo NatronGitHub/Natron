@@ -27,6 +27,8 @@ The following sections contain documentation about every node in the  Filter gro
     plugins/net.sf.openfx.GodRays.rst
     plugins/eu.cimg.Inpaint.rst
     plugins/net.sf.cimg.CImgLaplacian.rst
+    plugins/eu.cimg.CImgMatrix3x3.rst
+    plugins/eu.cimg.CImgMatrix5x5.rst
     plugins/net.sf.cimg.CImgMedian.rst
     plugins/net.sf.openfx.Shadertoy.rst
     plugins/net.sf.cimg.CImgSharpen.rst

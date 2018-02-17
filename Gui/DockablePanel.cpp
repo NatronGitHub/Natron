@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1312,9 +1312,9 @@ DockablePanel::onOverlayColorDialogColorChanged(const QColor& color)
                 QRgb* pix = reinterpret_cast<QRgb*>(img.scanLine(y));
                 for (int x = 0; x < width; ++x) {
                     int alpha = qAlpha(*pix);
-                    int r = int((float)color.red() * alpha / 255.f);
-                    int g = int((float)color.green() * alpha / 255.f);
-                    int b = int((float)color.blue() * alpha / 255.f);
+                    int r = int((float)color.red() * alpha * (1.f / 255));
+                    int g = int((float)color.green() * alpha * (1.f / 255));
+                    int b = int((float)color.blue() * alpha * (1.f / 255));
 
                     *pix = qRgba(r,g,b, alpha);
                     ++pix;

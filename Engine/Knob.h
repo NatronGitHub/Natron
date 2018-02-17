@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1067,6 +1067,9 @@ public:
     virtual void redraw() OVERRIDE = 0;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE = 0;
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE = 0;
+#ifdef OFX_EXTENSIONS_NATRON
+    virtual double getScreenPixelRatio() const OVERRIDE = 0;
+#endif
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE = 0;
     virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
 
@@ -1530,6 +1533,9 @@ public:
     virtual void redraw() OVERRIDE FINAL;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
+#ifdef OFX_EXTENSIONS_NATRON
+    virtual double getScreenPixelRatio() const OVERRIDE FINAL;
+#endif
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
@@ -2260,9 +2266,7 @@ protected:
     virtual void animationRemoved_virtual(int dimension) OVERRIDE;
 
 private:
-
-
-    StringAnimationManager* _animation;
+    boost::scoped_ptr<StringAnimationManager> _animation;
 };
 
 

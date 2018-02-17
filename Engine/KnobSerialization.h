@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1002,12 +1002,12 @@ createDefaultValueForParam(const std::string& paramName,
                            const T& value0,
                            const T& value1)
 {
-    boost::shared_ptr< Knob<T> > knob( new Knob<T>(NULL, paramName, 2, false) );
+    boost::shared_ptr< Knob<T> > knob = boost::make_shared<Knob<T> >(NULL, paramName, 2, false);
 
     knob->populate();
     knob->setName(paramName);
     knob->setValues(value0, value1, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-    boost::shared_ptr<KnobSerialization> ret( new KnobSerialization(knob) );
+    boost::shared_ptr<KnobSerialization> ret = boost::make_shared<KnobSerialization>(knob);
 
     return ret;
 }
@@ -1017,12 +1017,12 @@ boost::shared_ptr<KnobSerialization>
 createDefaultValueForParam(const std::string& paramName,
                            const T& value)
 {
-    boost::shared_ptr< Knob<T> > knob( new Knob<T>(NULL, paramName, 1, false) );
+    boost::shared_ptr< Knob<T> > knob = boost::make_shared<Knob<T> >(NULL, paramName, 1, false);
 
     knob->populate();
     knob->setName(paramName);
     knob->setValue(value);
-    boost::shared_ptr<KnobSerialization> ret( new KnobSerialization(knob) );
+    boost::shared_ptr<KnobSerialization> ret = boost::make_shared<KnobSerialization>(knob);
 
     return ret;
 }
@@ -1081,12 +1081,12 @@ public:
             }
             boost::shared_ptr<KnobGroup> isGrp = boost::dynamic_pointer_cast<KnobGroup>(children[i]);
             if (isGrp) {
-                boost::shared_ptr<GroupKnobSerialization> serialisation( new GroupKnobSerialization(isGrp) );
+                boost::shared_ptr<GroupKnobSerialization> serialisation = boost::make_shared<GroupKnobSerialization>(isGrp);
                 _children.push_back(serialisation);
             } else {
                 //KnobChoice* isChoice = dynamic_cast<KnobChoice*>(children[i].get());
                 //bool copyKnob = false;//isChoice != NULL;
-                boost::shared_ptr<KnobSerialization> serialisation( new KnobSerialization(children[i]) );
+                boost::shared_ptr<KnobSerialization> serialisation = boost::make_shared<KnobSerialization>(children[i]);
                 _children.push_back(serialisation);
             }
         }
@@ -1195,11 +1195,11 @@ private:
             ar & ::boost::serialization::make_nvp("Type", type);
 
             if (type == "Group") {
-                boost::shared_ptr<GroupKnobSerialization> knob(new GroupKnobSerialization);
+                boost::shared_ptr<GroupKnobSerialization> knob = boost::make_shared<GroupKnobSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *knob);
                 _children.push_back(knob);
             } else {
-                boost::shared_ptr<KnobSerialization> knob(new KnobSerialization);
+                boost::shared_ptr<KnobSerialization> knob = boost::make_shared<KnobSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *knob);
                 _children.push_back(knob);
             }

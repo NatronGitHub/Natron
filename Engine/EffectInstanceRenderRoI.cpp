@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -187,7 +187,8 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstPtr& app,
          **/
         Image::ReadAccess acc = inputImage->getReadRights();
         RectI bounds = inputImage->getBounds();
-        ImagePtr tmp( new Image(targetComponents,
+#if 0 //def BOOST_NO_CXX11_VARIADIC_TEMPLATES
+       ImagePtr tmp( new Image(targetComponents,
                                 inputImage->getRoD(),
                                 bounds,
                                 inputImage->getMipMapLevel(),
@@ -196,6 +197,18 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstPtr& app,
                                 inputImage->getPremultiplication(),
                                 inputImage->getFieldingOrder(),
                                 false) );
+#else
+        ImagePtr tmp = boost::make_shared<Image>(targetComponents,
+                                                 inputImage->getRoD(),
+                                                 bounds,
+                                                 inputImage->getMipMapLevel(),
+                                                 inputImage->getPixelAspectRatio(),
+                                                 targetDepth,
+                                                 inputImage->getPremultiplication(),
+                                                 inputImage->getFieldingOrder(),
+                                                 false);
+
+#endif
         tmp->setKey(inputImage->getKey());
         RectI clippedRoi;
         roi.intersect(bounds, &clippedRoi);
@@ -337,7 +350,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     if ( tls->frameArgs.empty() ) {
         qDebug() << QThread::currentThread() << "[BUG]:" << getScriptName_mt_safe().c_str() <<  "Thread-storage for the render of the frame was not set.";
 
-        frameArgs.reset(new ParallelRenderArgs);
+        frameArgs = boost::make_shared<ParallelRenderArgs>();
         {
             NodesWList outputs;
             getNode()->getOutputs_mt_safe(outputs);
@@ -444,7 +457,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
 
     ///Determine needed planes
-    boost::shared_ptr<ComponentsNeededMap> neededComps(new ComponentsNeededMap);
+    boost::shared_ptr<ComponentsNeededMap> neededComps = boost::make_shared<ComponentsNeededMap>();
     ComponentsNeededMap::iterator foundOutputNeededComps;
     std::bitset<4> processChannels;
     std::list<ImagePlaneDesc> passThroughPlanes;
@@ -729,7 +742,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         SettingsPtr settings = appPTR->getCurrentSettings();
         useTransforms = settings && settings->isTransformConcatenationEnabled();
         if (useTransforms) {
-            tls->currentRenderArgs.transformRedirections.reset(new InputMatrixMap);
+            tls->currentRenderArgs.transformRedirections = boost::make_shared<InputMatrixMap>();
             tryConcatenateTransforms( args.time, frameArgs->draftMode, args.view, args.scale, tls->currentRenderArgs.transformRedirections.get() );
         }
     }
@@ -913,9 +926,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ImageBitDepthEnum outputDepth = getBitDepth(-1);
     ImagePlaneDesc outputClipPrefComps, outputClipPrefCompsPaired;
     getMetadataComponents(-1, &outputClipPrefComps, &outputClipPrefCompsPaired);
-    boost::shared_ptr<ImagePlanesToRender> planesToRender(new ImagePlanesToRender);
+    boost::shared_ptr<ImagePlanesToRender> planesToRender = boost::make_shared<ImagePlanesToRender>();
     planesToRender->useOpenGL = storage == eStorageModeGLTex;
-    boost::shared_ptr<FramesNeededMap> framesNeeded(new FramesNeededMap);
+    boost::shared_ptr<FramesNeededMap> framesNeeded = boost::make_shared<FramesNeededMap>();
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Look-up the cache ///////////////////////////////////////////////////////////////
 
@@ -1470,15 +1483,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if ( renderFullScaleThenDownscale && (it->second.fullscaleImage->getMipMapLevel() == 0) ) {
                     RectI bounds;
                     rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
-                    it->second.downscaleImage.reset( new Image(*components,
-                                                               rod,
-                                                               downscaledImageBounds,
-                                                               args.mipMapLevel,
-                                                               it->second.fullscaleImage->getPixelAspectRatio(),
-                                                               outputDepth,
-                                                               planesToRender->outputPremult,
-                                                               fieldingOrder,
-                                                               true) );
+                    it->second.downscaleImage = boost::make_shared<Image>(*components,
+                                                                          rod,
+                                                                          downscaledImageBounds,
+                                                                          args.mipMapLevel,
+                                                                          it->second.fullscaleImage->getPixelAspectRatio(),
+                                                                          outputDepth,
+                                                                          planesToRender->outputPremult,
+                                                                          fieldingOrder,
+                                                                          true);
 
                     it->second.fullscaleImage->downscaleMipMap( rod, it->second.fullscaleImage->getBounds(), 0, args.mipMapLevel, true, it->second.downscaleImage.get() );
                 }
@@ -1743,15 +1756,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
              !hasSomethingToRender ) {
             assert(it->second.fullscaleImage->getMipMapLevel() == 0);
             if (it->second.downscaleImage == it->second.fullscaleImage) {
-                it->second.downscaleImage.reset( new Image(it->second.fullscaleImage->getComponents(),
-                                                           it->second.fullscaleImage->getRoD(),
-                                                           downscaledImageBounds,
-                                                           args.mipMapLevel,
-                                                           it->second.fullscaleImage->getPixelAspectRatio(),
-                                                           it->second.fullscaleImage->getBitDepth(),
-                                                           it->second.fullscaleImage->getPremultiplication(),
-                                                           it->second.fullscaleImage->getFieldingOrder(),
-                                                           false) );
+                it->second.downscaleImage = boost::make_shared<Image>(it->second.fullscaleImage->getComponents(),
+                                                                      it->second.fullscaleImage->getRoD(),
+                                                                      downscaledImageBounds,
+                                                                      args.mipMapLevel,
+                                                                      it->second.fullscaleImage->getPixelAspectRatio(),
+                                                                      it->second.fullscaleImage->getBitDepth(),
+                                                                      it->second.fullscaleImage->getPremultiplication(),
+                                                                      it->second.fullscaleImage->getFieldingOrder(),
+                                                                      false);
                 it->second.downscaleImage->setKey(it->second.fullscaleImage->getKey());
             }
 
@@ -1904,7 +1917,7 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
 
     boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > > tlsCopy;
     if (safety == eRenderSafetyFullySafeFrame) {
-        tlsCopy.reset(new std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >);
+        tlsCopy = boost::make_shared<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > >();
         /*
          * Since we're about to start new threads potentially, copy all the thread local storage on all nodes (any node may be involved in
          * expressions, and we need to retrieve the exact local time of render).

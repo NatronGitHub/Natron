@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -81,7 +81,7 @@ struct KnobGuiContainerHelperPrivate
         if (stack) {
             undoStack = stack;
         } else {
-            undoStack.reset(new QUndoStack);
+            undoStack = boost::make_shared<QUndoStack>();
         }
     }
 
@@ -260,7 +260,7 @@ KnobGuiContainerHelper::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)
     tabLayout->setSpacing( TO_DPIY(NATRON_FORM_LAYOUT_LINES_SPACING) );
 
     // Create the page gui
-    KnobPageGuiPtr pageGui( new KnobPageGui() );
+    KnobPageGuiPtr pageGui = boost::make_shared<KnobPageGui>();
     pageGui->currentRow = 0;
     pageGui->tab = newTab;
     pageGui->pageKnob = page;

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@
 
 #include <QtCore/QString>
 #include <QtCore/QObject>
+#include <QtCore/QMutex>
 
 #include "Engine/EngineFwd.h"
 
@@ -117,7 +118,7 @@ private:
     timeval _lastFpsFrameTime;      // state to keep track of the
     int _framesSinceLastFpsFrame;       // actual frame rate, averaged
     double _actualFrameRate;         // over several frames
-    QMutex* _mutex; //< protects _spf and _actualFrameRate
+    mutable QMutex _mutex; //< protects _spf and _actualFrameRate
 };
 
 

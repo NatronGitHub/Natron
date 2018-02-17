@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -154,35 +154,35 @@ KnobSerialization::createKnob(const std::string & typeName,
     KnobPtr ret;
 
     if ( typeName == KnobInt::typeNameStatic() ) {
-        ret.reset( new KnobInt(NULL, std::string(), dimension, false) );
+        ret = boost::make_shared<KnobInt>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobBool::typeNameStatic() ) {
-        ret.reset( new KnobBool(NULL, std::string(), dimension, false) );
+        ret = boost::make_shared<KnobBool>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobDouble::typeNameStatic() ) {
-        ret.reset( new KnobDouble(NULL, std::string(), dimension, false) );
+        ret = boost::make_shared<KnobDouble>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobChoice::typeNameStatic() ) {
-        ret.reset( new KnobChoice(NULL, std::string(), dimension, false) );
+        ret = boost::make_shared<KnobChoice>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobString::typeNameStatic() ) {
-        ret.reset( new KnobString(NULL, std::string(), dimension, false) );
+        ret = boost::make_shared<KnobString>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobParametric::typeNameStatic() ) {
-        ret.reset( new KnobParametric(NULL, std::string(), dimension, false) );
+        ret = boost::make_shared<KnobParametric>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobColor::typeNameStatic() ) {
-        ret.reset( new KnobColor(NULL, std::string(), dimension, false) );
+        ret = boost::make_shared<KnobColor>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobPath::typeNameStatic() ) {
-        ret.reset( new KnobPath(NULL, std::string(), dimension, false) );
+        ret = boost::make_shared<KnobPath>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobLayers::typeNameStatic() ) {
-        ret.reset( new KnobLayers(NULL, std::string(), dimension, false) );
+        ret = boost::make_shared<KnobLayers>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobFile::typeNameStatic() ) {
-        ret.reset( new KnobFile(NULL, std::string(), dimension, false) );
+        ret = boost::make_shared<KnobFile>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobOutputFile::typeNameStatic() ) {
-        ret.reset( new KnobOutputFile(NULL, std::string(), dimension, false) );
+        ret = boost::make_shared<KnobOutputFile>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobButton::typeNameStatic() ) {
-        ret.reset( new KnobButton(NULL, std::string(), dimension, false) );
+        ret = boost::make_shared<KnobButton>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobSeparator::typeNameStatic() ) {
-        ret.reset( new KnobSeparator(NULL, std::string(), dimension, false) );
+        ret = boost::make_shared<KnobSeparator>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobGroup::typeNameStatic() ) {
-        ret.reset( new KnobGroup(NULL, std::string(), dimension, false) );
+        ret = boost::make_shared<KnobGroup>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobPage::typeNameStatic() ) {
-        ret.reset( new KnobPage(NULL, std::string(), dimension, false) );
+        ret = boost::make_shared<KnobPage>((KnobHolder*)NULL, std::string(), dimension, false);
     }
 
     if (ret) {

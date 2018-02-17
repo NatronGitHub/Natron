@@ -1,6 +1,6 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2013-2017 INRIA and Alexandre Gauthier
+# Copyright (C) 2013-2018 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -62,6 +62,18 @@ run-without-python {
         QMAKE_CXXFLAGS -= -O3
         #Remove the -s flag passed in release mode by qmake so binaries don't get stripped
         QMAKE_LFLAGS_RELEASE =
+    }
+    CONFIG(fast) {
+        QMAKE_CFLAGS_RELEASE += -Ofast
+        QMAKE_CFLAGS_RELEASE -= -O -O2 -O3
+        QMAKE_CXXFLAGS_RELEASE += -Ofast
+        QMAKE_CXXFLAGS_RELEASE -= -O -O2 -O3
+        QMAKE_CFLAGS_DEBUG += -Ofast
+        QMAKE_CFLAGS_DEBUG -= -O -O2 -O3
+        QMAKE_CXXFLAGS_DEBUG += -Ofast
+        QMAKE_CXXFLAGS_DEBUG -= -O -O2 -O3
+        QMAKE_CXXFLAGS -= -O -O2 -O3
+        QMAKE_CFLAGS -= -O -O2 -O3
     }
 }
 
@@ -415,6 +427,9 @@ unix {
   symbols_hidden_by_default.name = GCC_SYMBOLS_PRIVATE_EXTERN
   symbols_hidden_by_default.value = YES
   QMAKE_MAC_XCODE_SETTINGS += symbols_hidden_by_default
+  c++11 {
+    QMAKE_CXXFLAGS += -std=c++11
+  }
 }
 
 *clang* {

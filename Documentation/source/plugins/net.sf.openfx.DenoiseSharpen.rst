@@ -10,7 +10,7 @@ Description
 
 Denoise and/or sharpen images using wavelet-based algorithms.
 
-.. description-1:
+.. _description-1:
 
 Description
 -----------

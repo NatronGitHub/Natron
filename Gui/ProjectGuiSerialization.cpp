@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -161,7 +161,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 
     std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string> pythonPanels = projectGui->getGui()->getPythonPanels();
     for (std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string>::iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
-        boost::shared_ptr<PythonPanelSerialization> s(new PythonPanelSerialization);
+        boost::shared_ptr<PythonPanelSerialization> s = boost::make_shared<PythonPanelSerialization>();
         s->initialize(it->first, it->second);
         _pythonPanels.push_back(s);
     }

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -4817,7 +4817,7 @@ OUTPUT:
                "    </div>\n"
                "\n"
                "    <div class=\"footer\" role=\"contentinfo\">\n"
-               "        &#169; Copyright 2013-2017 The Natron documentation authors, licensed under CC BY-SA 4.0.\n"
+               "        &#169; Copyright 2013-2018 The Natron documentation authors, licensed under CC BY-SA 4.0.\n"
                "    </div>\n"
                "  </body>\n"
                "</html>");
@@ -6726,7 +6726,7 @@ Node::destroyNode(bool blockingDestroy, bool autoReconnect)
         }
         _imp->renderWatcher.reset( new NodeRenderWatcher(nodesToWatch) );
         QObject::connect( _imp->renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int,WatcherCallerArgsPtr)) );
-        boost::shared_ptr<NodeDestroyNodeInternalArgs> args( new NodeDestroyNodeInternalArgs() );
+        boost::shared_ptr<NodeDestroyNodeInternalArgs> args = boost::make_shared<NodeDestroyNodeInternalArgs>();
         args->autoReconnect = autoReconnect;
         _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
 
@@ -6801,9 +6801,9 @@ renderPreview(const Image & srcImg,
                     dst_pixels[j] = toBGRA(0, 0, 0, 255);
 #endif
                 } else {
-                    float rFilt = src_pixels[xi * srcNComps] / (float)maxValue;
-                    float gFilt = srcNComps < 2 ? 0 : src_pixels[xi * srcNComps + 1] / (float)maxValue;
-                    float bFilt = srcNComps < 3 ? 0 : src_pixels[xi * srcNComps + 2] / (float)maxValue;
+                    float rFilt = src_pixels[xi * srcNComps] * (1.f / maxValue);
+                    float gFilt = srcNComps < 2 ? 0 : src_pixels[xi * srcNComps + 1] * (1.f / maxValue);
+                    float bFilt = srcNComps < 3 ? 0 : src_pixels[xi * srcNComps + 2] * (1.f / maxValue);
                     if (srcNComps == 1) {
                         gFilt = bFilt = rFilt;
                     }
@@ -8612,7 +8612,7 @@ Node::addPositionInteract(const boost::shared_ptr<KnobDouble>& position,
         return;
     }
 
-    boost::shared_ptr<HostOverlayKnobsPosition> knobs( new HostOverlayKnobsPosition() );
+    boost::shared_ptr<HostOverlayKnobsPosition> knobs = boost::make_shared<HostOverlayKnobsPosition>();
     knobs->addKnob(position, HostOverlayKnobsPosition::eKnobsEnumerationPosition);
     if (interactive) {
         knobs->addKnob(interactive, HostOverlayKnobsPosition::eKnobsEnumerationInteractive);
@@ -8642,7 +8642,7 @@ Node::addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
         return;
     }
 
-    boost::shared_ptr<HostOverlayKnobsTransform> knobs( new HostOverlayKnobsTransform() );
+    boost::shared_ptr<HostOverlayKnobsTransform> knobs = boost::make_shared<HostOverlayKnobsTransform>();
     knobs->addKnob(translate, HostOverlayKnobsTransform::eKnobsEnumerationTranslate);
     knobs->addKnob(scale, HostOverlayKnobsTransform::eKnobsEnumerationScale);
     knobs->addKnob(scaleUniform, HostOverlayKnobsTransform::eKnobsEnumerationUniform);
@@ -8686,7 +8686,7 @@ Node::addCornerPinInteract(const boost::shared_ptr<KnobDouble>& from1,
     if ( appPTR->isBackground() ) {
         return;
     }
-    boost::shared_ptr<HostOverlayKnobsCornerPin> knobs( new HostOverlayKnobsCornerPin() );
+    boost::shared_ptr<HostOverlayKnobsCornerPin> knobs = boost::make_shared<HostOverlayKnobsCornerPin>();
     knobs->addKnob(from1, HostOverlayKnobsCornerPin::eKnobsEnumerationFrom1);
     knobs->addKnob(from2, HostOverlayKnobsCornerPin::eKnobsEnumerationFrom2);
     knobs->addKnob(from3, HostOverlayKnobsCornerPin::eKnobsEnumerationFrom3);

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,12 @@
 #include <cassert>
 #include <cstring> // for std::memcpy, std::memset
 #include <stdexcept>
+
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/math/special_functions/fpclassify.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
 
 #include <QtCore/QDebug>
 
@@ -725,6 +731,7 @@ Image::Image(const ImagePlaneDesc& components,
     , _useBitmap(useBitmap)
 {
     setCacheEntry(makeKey(0, 0, false, 0, ViewIdx(0), false, false),
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
                   boost::shared_ptr<ImageParams>( new ImageParams(regionOfDefinition,
                                                                   par,
                                                                   mipMapLevel,
@@ -736,6 +743,19 @@ Image::Image(const ImagePlaneDesc& components,
                                                                   components,
                                                                   storage,
                                                                   textureTarget) ),
+#else
+                  boost::make_shared<ImageParams>(regionOfDefinition,
+                                                  par,
+                                                  mipMapLevel,
+                                                  bounds,
+                                                  bitdepth,
+                                                  fielding,
+                                                  premult,
+                                                  false /*isRoDProjectFormat*/,
+                                                  components,
+                                                  storage,
+                                                  textureTarget),
+#endif
                   NULL /*cacheAPI*/
                   );
 
@@ -811,6 +831,7 @@ Image::makeParams(const RectD & rod,
 
     rod.toPixelEnclosing(mipMapLevel, par, &bounds);
 
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
     return boost::shared_ptr<ImageParams>( new ImageParams(rod,
                                                            par,
                                                            mipMapLevel,
@@ -822,6 +843,19 @@ Image::makeParams(const RectD & rod,
                                                            components,
                                                            storage,
                                                            textureTarget) );
+#else
+    return boost::make_shared<ImageParams>(rod,
+                                           par,
+                                           mipMapLevel,
+                                           bounds,
+                                           bitdepth,
+                                           fielding,
+                                           premult,
+                                           isRoDProjectFormat,
+                                           components,
+                                           storage,
+                                           textureTarget);
+#endif
 }
 
 boost::shared_ptr<ImageParams>
@@ -844,6 +878,7 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
             bounds.bottom() >= pixelRod.bottom() && bounds.top() <= pixelRod.top() );
 #endif
 
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
     return boost::shared_ptr<ImageParams>( new ImageParams(rod,
                                                            par,
                                                            mipMapLevel,
@@ -855,6 +890,19 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
                                                            components,
                                                            storage,
                                                            textureTarget) );
+#else
+    return boost::make_shared<ImageParams>(rod,
+                                           par,
+                                           mipMapLevel,
+                                           bounds,
+                                           bitdepth,
+                                           fielding,
+                                           premult,
+                                           isRoDProjectFormat,
+                                           components,
+                                           storage,
+                                           textureTarget);
+#endif
 }
 
 // code proofread and fixed by @devernay on 8/8/2014
@@ -938,7 +986,7 @@ Image::resizeInternal(const Image* srcImg,
 {
     ///Allocate to resized image
     if (!createInCache) {
-        outputImage->reset( new Image( srcImg->getComponents(),
+        *outputImage = boost::make_shared<Image>( srcImg->getComponents(),
                                        srcImg->getRoD(),
                                        merge,
                                        srcImg->getMipMapLevel(),
@@ -946,11 +994,11 @@ Image::resizeInternal(const Image* srcImg,
                                        srcImg->getBitDepth(),
                                        srcImg->getPremultiplication(),
                                        srcImg->getFieldingOrder(),
-                                       srcImg->usesBitMap() ) );
+                                       srcImg->usesBitMap() );
     } else {
-        boost::shared_ptr<ImageParams> params( new ImageParams( *srcImg->getParams() ) );
+        boost::shared_ptr<ImageParams> params = boost::make_shared<ImageParams>( *srcImg->getParams() );
         params->setBounds(merge);
-        outputImage->reset( new Image( srcImg->getKey(), params, srcImg->getCacheAPI() ) );
+        *outputImage = boost::make_shared<Image>( srcImg->getKey(), params, srcImg->getCacheAPI() );
         (*outputImage)->allocateMemory();
     }
     ImageBitDepthEnum depth = srcImg->getBitDepth();
@@ -1242,7 +1290,11 @@ Image::pasteFrom(const Image & src,
         assert(gpuData);
         if (gpuData) {
             // update data directly on the mapped buffer
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
             ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
+#else
+            ImagePtr tmpImg = boost::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM);
+#endif
             tmpImg->pasteFrom(src, roi);
 
             Image::ReadAccess racc(tmpImg ? tmpImg.get() : this);
@@ -1305,7 +1357,11 @@ Image::pasteFrom(const Image & src,
         glFinish();
         glCheckError();
         // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
         ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM) );
+#else
+        ImagePtr tmpImg = boost::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM);
+#endif
 
         {
             Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : this);
@@ -2034,7 +2090,7 @@ Image::downscaleMipMap(const RectD& dstRod,
     assert( !copyBitMap || _bitmap.getBitmap() );
 
     RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
-    ImagePtr tmpImg( new Image( getComponents(), dstRod, dstRoI, toLevel, par, getBitDepth(), getPremultiplication(), getFieldingOrder(), true) );
+    ImagePtr tmpImg = boost::make_shared<Image>( getComponents(), dstRod, dstRoI, toLevel, par, getBitDepth(), getPremultiplication(), getFieldingOrder(), true);
 
     buildMipMapLevel( dstRod, roi, downscaleLvls, copyBitMap, tmpImg.get() );
 
@@ -2068,7 +2124,7 @@ Image::checkForNaNs(const RectI& roi)
         for (; pix < end; ++pix) {
             // we remove NaNs, but infinity values should pose no problem
             // (if they do, please explain here which ones)
-            if (*pix != *pix) { // check for NaN
+            if ( (boost::math::isnan)(*pix) ) { // check for NaN ((boost::math::isnan)(x) is not slower than x != x and works with -Ofast)
                 *pix = 1.;
                 hasnan = true;
             }
