@@ -95,7 +95,7 @@ set python_versions {27 34 35}
 foreach pver ${python_versions} {
     subport py${pver}-pyilmbase {
         PortGroup   active_variants 1.1
-        revision    1
+        revision    2
         distname    pyilmbase-${version}
         checksums                \
             rmd160  9a6b711a2842b1e0124a43fc1c2148a2e7802710 \
