@@ -31,6 +31,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <sstream> // stringstream
+#include <limits>
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QTextStream>
@@ -1661,8 +1662,12 @@ escapeString(const std::string& str)
 #define NUM_INT(n) QString::number(n, 10)
 #define NUM_COLOR(n) QString::number(n, 'g', 4)
 #define NUM_PIXEL(n) QString::number(n, 'f', 0)
-#define NUM_VALUE(n) QString::number(n, 'g', 16)
-#define NUM_TIME(n) QString::number(n, 'g', 16)
+// The precision should be set to digits10+1 (i.e. 16 for double)
+// see also:
+// - https://github.com/jbeder/yaml-cpp/issues/197
+// - https://stackoverflow.com/questions/4738768/printing-double-without-losing-precision
+#define NUM_VALUE(n) QString::number(n, 'g', std::numeric_limits<double>::digits10 + 1)
+#define NUM_TIME(n) QString::number(n, 'g', std::numeric_limits<double>::digits10 + 1)
 
 /* *INDENT-ON* */
 
@@ -2679,7 +2684,7 @@ exportGroupInternal(int indentLevel,
         double r, g, b;
         bool hasColor = (*it)->getColor(&r, &g, &b);
         Q_UNUSED(hasColor);
-        // a precision of 3 digits is enough for the node coloe
+        // a precision of 3 digits is enough for the node color
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setColor(") + NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) +  QString::fromUtf8(")") );
 
         std::list<ImagePlaneDesc> userComps;
