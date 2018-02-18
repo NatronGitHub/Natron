@@ -420,11 +420,6 @@ private:
     void recomputeFrameRangeForAllReadersInternal(int* firstFrame,
                                                   int* lastFrame,
                                                   bool setFrameRange);
-    void exportGroupInternal(int indentLevel,
-                             const NodePtr& upperLevelGroupNode,
-                             const QString& upperLevelGroupName,
-                             QTextStream& ts);
-
 
 private:
     boost::scoped_ptr<NodeCollectionPrivate> _imp;
