@@ -30,6 +30,15 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
+#include <boost/bind.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/make_shared.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDir>
 #include <QtCore/QTextStream>
@@ -39,14 +48,6 @@
 #include <QtCore/QEventLoop>
 #include <QtCore/QSettings>
 #include <QtNetwork/QNetworkReply>
-
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
 
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
 CLANG_DIAG_OFF(unknown-pragmas)
@@ -748,7 +749,7 @@ AddCreateNode_RAII::AddCreateNode_RAII(const AppInstancePtr& app,
 : _imp(app->_imp.get())
 , _item()
 {
-    _item = boost::shared_ptr<CreateNodeStackItem>();
+    _item = boost::make_shared<CreateNodeStackItem>();
     _item->args = args;
     _item->node = node;
 
