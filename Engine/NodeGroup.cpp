@@ -31,6 +31,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <sstream> // stringstream
+#include <limits>
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QTextStream>
