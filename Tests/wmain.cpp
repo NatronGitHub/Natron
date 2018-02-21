@@ -19,7 +19,10 @@ GTEST_API_ int main(int argc, char **argv)
 
     {
         int argc = 0;
-        CLArgs cl;
+        QStringList args;
+        args << QString::fromUtf8("--clear-cache");
+        args << QString::fromUtf8("--no-settings");
+        CLArgs cl(args, true);
         if (!manager.load(argc, 0, cl)) {
             printf("Failed to load AppManager\n");
 
