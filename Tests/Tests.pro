@@ -41,7 +41,6 @@ include(../global.pri)
 
 SOURCES += \
     google-test/src/gtest-all.cc \
-    google-test/src/gtest_main.cc \
     google-mock/src/gmock-all.cc \
     BaseTest.cpp \
     Hash64_Test.cpp \
