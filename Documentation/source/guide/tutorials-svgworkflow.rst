@@ -17,11 +17,11 @@ Inkscape
 
 .. figure:: _images/svgworkflow_02.png
 
-Inkscape has multiple ways to create vector graphics to be save and imported into Natron. The default is to first create you document layout. This entales formatting the resolution for the project upon which your vector graphics will be displayed. Inkscape starts with one layer and you can draw and type your graphics on that layer or additional layers. You can then save the project to SVG file. 
+Inkscape has multiple ways to create vector graphics to be saved and imported into Natron. The default is to first create your document layout. This entails formatting the resolution for the project upon which your vector graphics will be displayed. Inkscape starts with one layer and you can draw and type your graphics on that layer or additional layers. You can then save the project to SVG file. 
 
-This image is SVG letters being converted to a group and layers for each word so that they may have there own layer/alpha channel in Natron.
+This image is SVG letters being converted to a group and layers for each word so that they may have their own layer/alpha channel in Natron.
 
-The image below is the same vector letters being converted to paths and eventually ungrouping each of the vector letters so that they may have there own layer and alpha channel in Natron.
+The image below is the same vector letters being converted to paths and eventually ungrouping each of the vector letters so that they may have their own layer and alpha channel in Natron.
 
 .. figure:: _images/svgworkflow_03.png
 
