@@ -29,6 +29,7 @@
 #include "BaseTest.h"
 
 #include <QtCore/QFile>
+#include <QtCore/QThreadPool>
 
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
 CLANG_DIAG_OFF(unknown-pragmas)
@@ -58,7 +59,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 NATRON_NAMESPACE_USING
 
-static AppManager* g_manager = 0;
 BaseTest::BaseTest()
     : testing::Test()
     , _app()
@@ -104,16 +104,8 @@ BaseTest::SetUp()
         std::cout << "Warning: Ignoring standard plugin path, OFX_PLUGIN_PATH=" << path << std::endl;
         OFX::Host::PluginCache::useStdOFXPluginsLocation(false);
     }
-    if (!g_manager) {
-        g_manager = new AppManager;
-        int argc = 0;
-        QStringList args;
-        args << QString::fromUtf8("--clear-cache");
-        CLArgs cl(args, true);
-        g_manager->load(argc, 0, cl);
-    }
 
-    _app = g_manager->getTopLevelInstance();
+    _app = appPTR->getTopLevelInstance();
     registerTestPlugins();
 }
 
@@ -121,6 +113,8 @@ void
 BaseTest::TearDown()
 {
     appPTR->getCurrentSettings()->setNumberOfThreads(0);
+    ///Caches may have launched some threads to delete images, wait for them to be done
+    QThreadPool::globalInstance()->waitForDone();
 }
 
 NodePtr
