@@ -1185,10 +1185,7 @@ AppManager::initGui(const CLArgs& cl)
 bool
 AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 {
-
-
     setLoadingStatus( tr("Loading Plug-in Cache...") );
-
 
     ///Set host properties after restoring settings since it depends on the host name.
     try {
