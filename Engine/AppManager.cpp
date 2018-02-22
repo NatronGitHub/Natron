@@ -1075,11 +1075,11 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         settings.setValue(QString::fromUtf8(kNatronCacheVersionSettingsKey), NATRON_CACHE_VERSION);
     }
 
-    setLoadingStatus( tr("Restoring the image cache...") );
-
     if (oldCacheVersion != NATRON_CACHE_VERSION || cl.isCacheClearRequestedOnLaunch()) {
+        setLoadingStatus( tr("Clearing the image cache...") );
         wipeAndCreateDiskCacheStructure();
     } else {
+        setLoadingStatus( tr("Restoring the image cache...") );
         _imp->restoreCaches();
     }
 
