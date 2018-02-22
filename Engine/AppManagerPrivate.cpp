@@ -387,10 +387,8 @@ restoreCache(AppManagerPrivate* p,
 void
 AppManagerPrivate::restoreCaches()
 {
-    if ( !appPTR->isBackground() ) {
-        restoreCache<FrameEntry>( this, _viewerCache.get() );
-        restoreCache<Image>( this, _diskCache.get() );
-    }
+    restoreCache<FrameEntry>( this, _viewerCache.get() );
+    restoreCache<Image>( this, _diskCache.get() );
 } // restoreCaches
 
 bool
