@@ -1036,21 +1036,27 @@ RotoDrawableItem::isActivated(double time) const
         return false;
     }
     try {
-        int lifetime_i = _imp->lifeTime->getValue();
-        if (lifetime_i == 0) {
+        RotoPaintItemLifeTimeTypeEnum lifetime = (RotoPaintItemLifeTimeTypeEnum)_imp->lifeTime->getValue();
+        switch (lifetime) {
+        case eRotoPaintItemLifeTimeTypeAll: {
             return true;
-        } else if (lifetime_i == 1) {
+        }
+        case eRotoPaintItemLifeTimeTypeSingle: {
             return time == _imp->lifeTimeFrame->getValue();
-        } else if (lifetime_i == 2) {
+        }
+        case eRotoPaintItemLifeTimeTypeFromStart: {
             return time <= _imp->lifeTimeFrame->getValue();
-        } else if (lifetime_i == 3) {
+        }
+        case eRotoPaintItemLifeTimeTypeToEnd: {
             return time >= _imp->lifeTimeFrame->getValue();
-        } else {
+        }
+        case eRotoPaintItemLifeTimeTypeCustom: {
             return _imp->activated->getValueAtTime(time);
         }
+        }
     } catch (std::runtime_error) {
-        return false;
     }
+    return false;
 }
 
 void

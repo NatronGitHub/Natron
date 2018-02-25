@@ -304,6 +304,15 @@ CLANG_DIAG_ON(uninitialized)
 #define kRotoDrawableItemLifeTimeCustom "Custom"
 #define kRotoDrawableItemLifeTimeCustomHelp "Use the Activated parameter animation to control the life-time of the shape/stroke using keyframes"
 
+enum RotoPaintItemLifeTimeTypeEnum
+{
+    eRotoPaintItemLifeTimeTypeAll = 0,
+    eRotoPaintItemLifeTimeTypeSingle,
+    eRotoPaintItemLifeTimeTypeFromStart,
+    eRotoPaintItemLifeTimeTypeToEnd,
+    eRotoPaintItemLifeTimeTypeCustom
+};
+
 #define kRotoDrawableItemLifeTimeFrameParam "lifeTimeFrame"
 #define kRotoDrawableItemLifeTimeFrameParamLabel "Frame"
 #define kRotoDrawableItemLifeTimeFrameParamHint "Use this to specify the frame when in mode Single/From start/To end"
@@ -864,14 +873,20 @@ public:
         lifeTime->setName(kRotoDrawableItemLifeTimeParam);
         {
             std::vector<ChoiceOption> choices;
+            assert(choices.size() == eRotoPaintItemLifeTimeTypeAll);
+            choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeAll));
+            assert(choices.size() == eRotoPaintItemLifeTimeTypeSingle);
             choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeSingle));
+            assert(choices.size() == eRotoPaintItemLifeTimeTypeFromStart);
             choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeFromStart));
+            assert(choices.size() == eRotoPaintItemLifeTimeTypeToEnd);
             choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeToEnd));
+            assert(choices.size() == eRotoPaintItemLifeTimeTypeCustom);
             choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeCustom));
-
             lifeTime->populateChoices(choices);
         }
-        lifeTime->setDefaultValue(isPaintingNode ? 0 : 3);
+        RotoPaintItemLifeTimeTypeEnum defaultLifeTime = isPaintingNode ? eRotoPaintItemLifeTimeTypeSingle : eRotoPaintItemLifeTimeTypeAll;
+        lifeTime->setDefaultValue((int)defaultLifeTime);
         knobs.push_back(lifeTime);
 
         lifeTimeFrame = boost::make_shared<KnobInt>((KnobHolder*)NULL, tr(kRotoDrawableItemLifeTimeFrameParamLabel), 1, true);
@@ -1457,15 +1472,20 @@ public:
         lifeTimeKnob->setAnimationEnabled(false);
         {
             std::vector<ChoiceOption> choices;
+            assert(choices.size() == eRotoPaintItemLifeTimeTypeAll);
             choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeAll, "",tr(kRotoDrawableItemLifeTimeAllHelp).toStdString() ));
+            assert(choices.size() == eRotoPaintItemLifeTimeTypeSingle);
             choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeSingle, "", tr(kRotoDrawableItemLifeTimeSingleHelp).toStdString()));
+            assert(choices.size() == eRotoPaintItemLifeTimeTypeFromStart);
             choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeFromStart, "", tr(kRotoDrawableItemLifeTimeFromStartHelp).toStdString()));
+            assert(choices.size() == eRotoPaintItemLifeTimeTypeToEnd);
             choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeToEnd, "" ,tr(kRotoDrawableItemLifeTimeToEndHelp).toStdString()));
+            assert(choices.size() == eRotoPaintItemLifeTimeTypeCustom);
             choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeCustom, "", tr(kRotoDrawableItemLifeTimeCustomHelp).toStdString()));
             lifeTimeKnob->populateChoices(choices);
-
         }
-        lifeTimeKnob->setDefaultValue(isPaintNode ? 0 : 3);
+        RotoPaintItemLifeTimeTypeEnum defaultLifeTime = isPaintNode ? eRotoPaintItemLifeTimeTypeSingle : eRotoPaintItemLifeTimeTypeAll;
+        lifeTimeKnob->setDefaultValue((int)defaultLifeTime);
         generalPage->addKnob(lifeTimeKnob);
         knobs.push_back(lifeTimeKnob);
         lifeTime = lifeTimeKnob;
