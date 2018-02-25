@@ -252,15 +252,30 @@ Gui::onMaxPanelsSpinBoxValueChanged(double val)
 void
 Gui::clearAllVisiblePanels()
 {
-    std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
-    for (std::list<DockablePanelI*>::iterator it2 = panels.begin(); it2 != panels.end(); ++it2) {
-        DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it2);
-        if (!isPanel) {
-            continue;
+  std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
+    // close panels one by one, since closing a panel updates the openedPanels list.
+    while ( !panels.empty() ) {
+        bool foundNonFloating = false;
+
+        // close one panel at a time - this changes the openedPanel list, so we must break the loop
+        for (std::list<DockablePanelI*>::iterator it = panels.begin(); it != panels.end(); ++it) {
+            DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it);
+            if (!isPanel) {
+                continue;
+            }
+            if ( !isPanel->isFloating() ) {
+                isPanel->setClosed(true);
+                foundNonFloating = true;
+                break;
+            }
         }
-        if ( !isPanel->isFloating() ) {
-            isPanel->setClosed(true);
+
+        // no panel was closed
+        if (!foundNonFloating) {
+            break;
         }
+        // prepare for next iteration, update the panels list
+        panels = getApp()->getOpenedSettingsPanels();
     }
     getApp()->redrawAllViewers();
 }
