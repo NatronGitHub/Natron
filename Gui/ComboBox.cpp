@@ -252,15 +252,15 @@ struct ComboBox::Implementation
     , currentPixmap()
     , drawShape(false)
     , separators()
-    , rootNode(new ComboBoxMenuNode())
+    , rootNode()
     , sh()
     , msh()
     , sizePolicy()
     , validHints(false)
     , align(Qt::AlignLeft | Qt::AlignVCenter | Qt::TextExpandTabs)
     , currentDelta(0)
-
     {
+        rootNode = boost::make_shared<ComboBoxMenuNode>();
         rootNode->isMenu = createMenu();
     }
 
@@ -297,8 +297,6 @@ ComboBox::ComboBox(QWidget* parent)
     , ignoreWheelEvent(false)
     , _imp(new Implementation(this))
 {
-    _rootNode = boost::make_shared<ComboBoxMenuNode>();
-
     setFrameShape(QFrame::Box);
 
     setCurrentIndex(0);
