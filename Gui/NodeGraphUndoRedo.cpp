@@ -1354,6 +1354,10 @@ GroupFromSelectionCommand::redo()
             if (!*it2 || (*it2)->isPartOfGivenNodes) {
                 continue;
             }
+            // only create input if input is enabled/visible
+            if ( !(*it)->node->isInputVisible(i) ) {
+                continue;
+            }
             NodePtr originalInput = (*it2)->node;
             if (!originalInput) {
                 continue;
