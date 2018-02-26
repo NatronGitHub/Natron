@@ -1658,6 +1658,10 @@ GroupFromSelectionCommand::redo()
                 NodePtr originalNodeInternal = foundOriginalNode->getNode();
                 const std::vector<NodeWPtr >& originalNodeInputs = originalNodeInternal->getInputs();
                 for (std::size_t i = 0; i < originalNodeInputs.size(); ++i) {
+                    if ( !originalNodeInternal->isInputVisible(i) ) {
+                        // do not create an Input node for an invisible input (example: Shadertoy node, which hides its inputs)
+                        continue;
+                    }
                     NodePtr originalInput = originalNodeInputs[i].lock();
 
                     //Create an input node corresponding to this input
