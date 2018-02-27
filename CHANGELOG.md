@@ -32,6 +32,19 @@ Natron multiple times on the same computer, the different processes will share t
 - For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
 
 
+## Version 2.3.6
+
+- fix bug when using PyPlugs containing Shadertoy (and possibly other plugins too) #1726 #1637
+- fix bug when creating a group from a plugin with invisible inputs (e.g. Shadertoy)
+- fix bug where Natron would crash when the "clear all panels" button is pressed #1729
+- fix bug where Roto and RotoPaint lifetime would change randomly #1707
+
+### Plugins
+
+- ReadOIIO/ReadPNG: "Image Info..." gives a more explicit message, containing the filename and more info.
+- fix bug in all OCIO plugins where GPU render is wrong if (un)premult is checked (disable GPU render in this case)
+
+
 ## Version 2.3.5
 
 ### Plugins
