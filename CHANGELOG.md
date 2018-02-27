@@ -5,6 +5,19 @@
 # History
 
 
+## Version 2.3.6
+
+- fix bug when using PyPlugs containing Shadertoy (and possibly other plugins too) #1726 #1637
+- fix bug when creating a group from a plugin with invisible inputs (e.g. Shadertoy)
+- fix bug where Natron would crash when the "clear all panels" button is pressed #1729
+- fix bug where Roto and RotoPaint lifetime would change randomly #1707
+
+### Plugins
+
+- ReadOIIO/ReadPNG: "Image Info..." gives a more explicit message, containing the filename and more info.
+- fix bug in all OCIO plugins where GPU render is wrong if (un)premult is checked (disable GPU render in this case)
+
+
 ## Version 2.3.5
 
 ### Plugins
