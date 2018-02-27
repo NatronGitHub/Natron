@@ -235,7 +235,10 @@ public:
     bool isDoingInstanceSafeRender; // true if this intance is rendering
     mutable QMutex renderClonesMutex;
     std::list<EffectInstPtr> renderClonesPool;
+    bool mustSyncPrivateData; //!< true if the effect's knobs were changed but instanceChanged could not be called (e.g. when loading a PyPlug), so that syncPrivateData should be called in getPreferredMetadata_public before calling getPreferredMetadata
+    mutable QMutex mustSyncPrivateDataMutex; //!< protects mustSyncPrivateData
 
+public:
     void runChangedParamCallback(KnobI* k, bool userEdited, const std::string & callback);
 
     void setDuringInteractAction(bool b);

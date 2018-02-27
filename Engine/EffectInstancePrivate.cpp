@@ -404,6 +404,7 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , isDoingInstanceSafeRender(false)
     , renderClonesMutex()
     , renderClonesPool()
+    , mustSyncPrivateData(false)
 {
     tlsData = boost::make_shared<TLSHolder<EffectTLSData> >();
     actionsCache = boost::make_shared<ActionsCache>(appPTR->getHardwareIdealThreadCount() * 2);
