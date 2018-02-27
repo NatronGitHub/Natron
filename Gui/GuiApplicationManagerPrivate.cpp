@@ -124,7 +124,7 @@ GuiApplicationManagerPrivate::findPluginToolButtonOrCreateInternal(const std::li
                                                                    const QStringList& groupingIcon)
 {
     assert(plugin);
-    assert(groupingIcon.size() == grouping.size() || groupingIcon.isEmpty() );
+    assert(groupingIcon.size() <= grouping.size());
 
     // On first call of this function, children are top-level toolbuttons
     // Otherwise this tree node has children
