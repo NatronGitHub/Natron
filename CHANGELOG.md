@@ -5,6 +5,9 @@
 # History
 
 
+## Version 2.3.7
+
+
 ## Version 2.3.6
 
 - fix bug when using PyPlugs containing Shadertoy (and possibly other plugins too) #1726 #1637
