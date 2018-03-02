@@ -24,6 +24,7 @@ CONFIG += staticlib
    CONFIG += enable-cairo
 }
 CONFIG += moc
+
 CONFIG += boost qt python shiboken pyside osmesa fontconfig
 enable-cairo: CONFIG += cairo
 QT += core network
