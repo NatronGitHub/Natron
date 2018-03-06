@@ -4937,6 +4937,9 @@ Cache<persistent>::evictLRUEntries(std::size_t nBytesToFree)
         } // for each bucket
 
         if (!oldestEntryTimeStampSet) {
+#ifdef DEBUG
+            printf("Cache: could not evict!\n");
+#endif
             break;
         }
 
@@ -4973,7 +4976,13 @@ Cache<persistent>::evictLRUEntries(std::size_t nBytesToFree)
             // We evicted one, decrease the size
             std::size_t entrySize = cacheEntryIt->second->size;
             assert(curSize >= entrySize);
+#ifdef DEBUG
+            printf("Cache: evicting %llu bytes, curSize=%llu\n", (unsigned long long)entrySize, (unsigned long long)curSize);
+#endif
             curSize -= entrySize;
+#ifdef DEBUG
+            printf("Cache: evicted %llu bytes, curSize=%llu\n", (unsigned long long)entrySize, (unsigned long long)curSize);
+#endif
 
             bucket.deallocateCacheEntryImpl(cacheEntryIt, bucketLock, tocReadLock, tocWriteLock, tilesReadLock, storage);
         } catch (...) {
