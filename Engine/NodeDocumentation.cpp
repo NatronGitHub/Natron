@@ -170,6 +170,7 @@ Node::makeDocumentation(bool genHTML) const
         KnobBoolPtr isBool = toKnobBool(*it);
         KnobDoublePtr isDbl = toKnobDouble(*it);
         KnobStringPtr isString = toKnobString(*it);
+        bool isLabel = isString && isString->isLabel();
         KnobSeparatorPtr isSep = toKnobSeparator(*it);
         KnobButtonPtr isBtn = toKnobButton(*it);
         KnobParametricPtr isParametric = toKnobParametric(*it);
@@ -186,9 +187,13 @@ Node::makeDocumentation(bool genHTML) const
         } else if (isDbl) {
             knobType = tr("Double");
         } else if (isString) {
-            knobType = tr("String");
+            if (isLabel) {
+                knobType = tr("Label");
+            } else {
+                knobType = tr("String");
+            }
         } else if (isSep) {
-            knobType = tr("Seperator");
+            knobType = tr("Separator");
         } else if (isBtn) {
             knobType = tr("Button");
         } else if (isParametric) {
@@ -317,7 +322,7 @@ Node::makeDocumentation(bool genHTML) const
             }
         }
 
-        if (!isPage && !isSep && !isGroup) {
+        if (!isPage && !isSep && !isGroup && !isLabel) {
             QStringList row;
             row << knobLabel << knobScriptName << knobType << defValuesStr << knobHint;
             items.append(row);
