@@ -4488,6 +4488,7 @@ Node::makeDocumentation(bool genHTML) const
         KnobBool* isBool = dynamic_cast<KnobBool*>( it->get() );
         KnobDouble* isDbl = dynamic_cast<KnobDouble*>( it->get() );
         KnobString* isString = dynamic_cast<KnobString*>( it->get() );
+        bool isLabel = isString && isString->isLabel();
         KnobSeparator* isSep = dynamic_cast<KnobSeparator*>( it->get() );
         KnobButton* isBtn = dynamic_cast<KnobButton*>( it->get() );
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>( it->get() );
@@ -4504,9 +4505,13 @@ Node::makeDocumentation(bool genHTML) const
         } else if (isDbl) {
             knobType = tr("Double");
         } else if (isString) {
-            knobType = tr("String");
+            if (isLabel) {
+                knobType = tr("Label");
+            } else {
+                knobType = tr("String");
+            }
         } else if (isSep) {
-            knobType = tr("Seperator");
+            knobType = tr("Separator");
         } else if (isBtn) {
             knobType = tr("Button");
         } else if (isParametric) {
@@ -4638,7 +4643,7 @@ Node::makeDocumentation(bool genHTML) const
             }
         }
 
-        if (!isPage && !isSep && !isGroup) {
+        if (!isPage && !isSep && !isGroup && !isLabel) {
             QStringList row;
             row << knobLabel << knobScriptName << knobType << defValuesStr << knobHint;
             items.append(row);
