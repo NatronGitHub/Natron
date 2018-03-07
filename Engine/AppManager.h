@@ -358,6 +358,7 @@ public:
 
 
     int getHardwareIdealThreadCount();
+    int getMaxThreadCount(); //!<  actual number of threads in the thread pool (depends on application settings)
 
 
     /**

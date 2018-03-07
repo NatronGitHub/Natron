@@ -1903,7 +1903,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     vmin = vMinMax.min;
                     vmax = vMinMax.max;
                 } else {
-                    std::vector<RectI> splitRects = viewerRenderRoI.splitIntoSmallerRects( appPTR->getHardwareIdealThreadCount() );
+                    std::vector<RectI> splitRects = viewerRenderRoI.splitIntoSmallerRects( appPTR->getMaxThreadCount() );
                     QFuture<MinMaxVal> future = QtConcurrent::mapped( splitRects,
                                                                                        boost::bind(findAutoContrastVminVmax,
                                                                                                    colorImage,

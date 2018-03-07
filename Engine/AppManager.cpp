@@ -385,6 +385,12 @@ AppManager::getHardwareIdealThreadCount()
     return _imp->idealThreadCount;
 }
 
+int
+AppManager::getMaxThreadCount()
+{
+    return QThreadPool::globalInstance()->maxThreadCount();
+}
+
 AppManager::AppManager()
     : QObject()
     , _imp( new AppManagerPrivate() )
