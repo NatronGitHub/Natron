@@ -235,7 +235,7 @@ GPUContextPool::getOrCreateCPUOpenGLContext(bool retrieveLastContext)
     }
 
     // For CPU Contexts, use the threads count, we are not limited by the graphic card
-    const int maxContexts = appPTR->getHardwareIdealThreadCount();
+    const int maxContexts = appPTR->getMaxThreadCount();
 
     if ( (int)_imp->cpuGLContextPool.size() < maxContexts ) {
         //  Create a new one

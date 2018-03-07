@@ -394,7 +394,7 @@ MultiThread::launchThreadsInternal_v2(ThreadFunctor func, unsigned int bestNThre
     QThread* spawnerThread = QThread::currentThread();
 
 
-    const unsigned int maxThreads = (unsigned int)appPTR->getHardwareIdealThreadCount();
+    const unsigned int maxThreads = (unsigned int)appPTR->getMaxThreadCount();
     bestNThreads = std::max(1u, std::min(maxThreads, bestNThreads));
 
     // Get the global multi-thread handler data
@@ -699,7 +699,7 @@ MultiThreadProcessorBase::launchThreadsBlocking(unsigned int nCPUs)
 
 #ifdef NATRON_USE_MULTITHREAD_V2
     if (nCPUs == 0) {
-        nCPUs = appPTR->getHardwareIdealThreadCount();
+        nCPUs = appPTR->getMaxThreadCount();
     }
     ActionRetCodeEnum stat = MultiThread::launchThreadsBlocking(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _effect);
     return stat;
@@ -726,7 +726,7 @@ MultiThreadProcessorBase::launchThreadsNonBlocking(unsigned int nCPUs)
 {
 #ifdef NATRON_USE_MULTITHREAD_V2
     if (nCPUs == 0) {
-        nCPUs = appPTR->getHardwareIdealThreadCount();
+        nCPUs = appPTR->getMaxThreadCount();
     }
     MultiThreadFuturePtr ret = MultiThread::launchThreadsNonBlocking(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _effect);
     return ret;

@@ -274,6 +274,7 @@ public:
 
     int getHardwareIdealThreadCount();
     int getPhysicalThreadCount();
+    int getMaxThreadCount(); //!<  actual number of threads in the thread pool (depends on application settings)
 
     void setOFXLastActionCaller_TLS(const OfxEffectInstancePtr& effect);
     
