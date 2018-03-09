@@ -56,10 +56,10 @@ configure.args-append \
 # doesn't recognize libstdc++ compilers as being c++11 capable, even
 # though some are. set this and hope for the best ...
 
-if {${configure.cxx_stdlib} eq "macports-libstdc++" ||
-    ${configure.cxx_stdlib} eq "libstdc++"} {
+#if {${configure.cxx_stdlib} eq "macports-libstdc++" ||
+#    ${configure.cxx_stdlib} eq "libstdc++"} {
     configure.cxxflags-append -std=gnu++11
-}
+#}
 
 if {[variant_isset universal]} {
     set merger_configure_args(x86_64) "-DOCIO_USE_SSE=ON"
