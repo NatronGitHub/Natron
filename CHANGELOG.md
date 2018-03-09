@@ -7,7 +7,7 @@
 
 ## Version 2.3.7
 
-- the viexer timeline can now display information as timecode instead of frames (see TC/TF choice next to fps below the timeline)
+- the viewer timeline can now display information as timecode instead of frames (see TC/TF choice next to fps below the timeline)
 
 
 ## Version 2.3.6
