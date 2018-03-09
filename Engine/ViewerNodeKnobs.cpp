@@ -597,6 +597,21 @@ ViewerNode::initializeKnobs()
         _imp->fpsKnob = param;
     }
     {
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerNodeParamTimeFormat);
+        param->setLabel(tr(kViewerNodeParamTimeFormatLabel));
+        param->setHintToolTip(tr(kViewerNodeParamTimeFormatHint));
+        {
+            std::vector<ChoiceOption> entries;
+            entries.push_back(ChoiceOption("TC", tr("TC").toStdString(), tr("Timecode").toStdString()));
+            entries.push_back(ChoiceOption("TF", tr("TF").toStdString(), tr("Timeline Frames").toStdString()));
+            param->populateChoices(entries);
+        }
+        param->setDefaultValueFromID("TF");
+        _imp->timeFormatKnob = param;
+    }
+
+
+    {
         KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamEnableTurboMode);
         param->setLabel(tr(kViewerNodeParamEnableTurboModeLabel));
         param->setHintToolTip(tr(kViewerNodeParamEnableTurboModeHint));
@@ -845,6 +860,8 @@ ViewerNode::initializeKnobs()
     _imp->enableFpsKnob.lock()->setInViewerContextItemSpacing(0);
     playerToolbarPage->addKnob(_imp->fpsKnob.lock());
     _imp->fpsKnob.lock()->setInViewerContextLayoutType(eViewerContextLayoutTypeSeparator);
+    playerToolbarPage->addKnob(_imp->timeFormatKnob.lock());
+    _imp->timeFormatKnob.lock()->setInViewerContextLayoutType(eViewerContextLayoutTypeSeparator);
     playerToolbarPage->addKnob(_imp->enableTurboModeButtonKnob.lock());
     _imp->enableTurboModeButtonKnob.lock()->setInViewerContextItemSpacing(0);
     playerToolbarPage->addKnob(_imp->playbackModeKnob.lock());
@@ -1715,6 +1732,8 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         refreshFps();
     } else if (k == _imp->fpsKnob.lock() && reason != eValueChangedReasonPluginEdited) {
         refreshFps();
+    } else if (k == _imp->timeFormatKnob.lock()) {
+        _imp->uiContext->setTimelineFormatFrames(_imp->timeFormatKnob.lock()->getValue() == 1);
     } else if (k == _imp->playForwardButtonKnob.lock()) {
         if (reason != eValueChangedReasonPluginEdited) {
             if (_imp->playForwardButtonKnob.lock()->getValue()) {

@@ -302,6 +302,11 @@ public:
     virtual void setTimelineBounds(double first, double last) = 0;
 
     /**
+     * @brief Set the timeline to display frames or timecode
+     **/
+    virtual void setTimelineFormatFrames(bool value) = 0;
+
+    /**
      * @brief Set triple sync enabled
      **/
     virtual void setTripleSyncEnabled(bool toggled) = 0;

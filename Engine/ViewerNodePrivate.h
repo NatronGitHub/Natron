@@ -336,6 +336,10 @@ NATRON_NAMESPACE_ENTER
 #define kViewerNodeParamFpsLabel "Fps"
 #define kViewerNodeParamFpsHint "Viewer playback framerate, in frames per second"
 
+#define kViewerNodeParamTimeFormat "timeFormat"
+#define kViewerNodeParamTimeFormatLabel "Time Format"
+#define kViewerNodeParamTimeFormatHint "Set the time display format."
+
 #define kViewerNodeParamEnableTurboMode "enableTurboMode"
 #define kViewerNodeParamEnableTurboModeLabel "Turbo Mode"
 #define kViewerNodeParamEnableTurboModeHint "When checked, only the viewer is redrawn during playback, " \
@@ -435,6 +439,7 @@ struct ViewerNodePrivate
     boost::weak_ptr<KnobInt> curFrameKnob;
     boost::weak_ptr<KnobBool> enableFpsKnob;
     boost::weak_ptr<KnobDouble> fpsKnob;
+    boost::weak_ptr<KnobChoice> timeFormatKnob;
     boost::weak_ptr<KnobButton> enableTurboModeButtonKnob;
     boost::weak_ptr<KnobChoice> playbackModeKnob;
     boost::weak_ptr<KnobButton> syncTimelinesButtonKnob;

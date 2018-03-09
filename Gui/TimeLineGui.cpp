@@ -84,6 +84,31 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 
 
+static
+QString
+timecodeString(double value, double fps)
+{
+    QString sign;
+    if (value < 0) {
+        value = -value;
+        sign = QLatin1Char('-');
+    }
+    long rvalue = (long)value;
+    int rfps = (int)std::ceil(fps);
+
+    int f = rvalue % rfps;
+    rvalue /= rfps;
+    int s = rvalue % 60;
+    rvalue /= 60;
+    int m = rvalue % 60;
+    int h = rvalue / 60;
+    return sign + QString::fromUtf8("%1:%2:%3:%4")
+        .arg(h, 2, 10, QLatin1Char('0'))
+        .arg(m, 2, 10, QLatin1Char('0'))
+        .arg(s, 2, 10, QLatin1Char('0'))
+        .arg(f, 2, 10, QLatin1Char('0'));
+}
+
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
@@ -110,6 +135,7 @@ struct TimelineGuiPrivate
     mutable QMutex frameRangeEditedMutex;
     bool isFrameRangeEdited;
     bool seekingTimeline;
+    bool isTimeFormatFrames;
 
     TimelineGuiPrivate(TimeLineGui *qq,
                        const ViewerNodePtr& viewer,
@@ -135,6 +161,7 @@ struct TimelineGuiPrivate
         , frameRangeEditedMutex()
         , isFrameRangeEdited(false)
         , seekingTimeline(false)
+        , isTimeFormatFrames(true)
     {
     }
 
@@ -393,6 +420,7 @@ TimeLineGui::paintGL()
         const double range_min = btmLeft.x();
         const double range_max =  topRight.x();
         const double range = range_max - range_min;
+        const double fps = _imp->gui->getApp()->getProjectFrameRate();
         double smallTickSize;
         bool half_tick;
         ticks_size(range_min, range_max, rangePixel, smallestTickSizePixel, &smallTickSize, &half_tick);
@@ -408,7 +436,7 @@ TimeLineGui::paintGL()
         ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
         const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
         const double largestTickSize = range * largestTickSizePixel / rangePixel;
-        const double minTickSizeTextPixel = fontM.width( QLatin1String("00000") ); // AXIS-SPECIFIC
+        const double minTickSizeTextPixel = _imp->isTimeFormatFrames ? fontM.width( QLatin1String("00000") ) : fontM.width( QLatin1String("00:00:00:00") ); // AXIS-SPECIFIC
         const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
         for (int i = m1; i <= m2; ++i) {
             double value = i * smallTickSize + offset;
@@ -431,7 +459,7 @@ TimeLineGui::paintGL()
 
             if (tickSize > minTickSizeText) {
                 const int tickSizePixel = rangePixel * tickSize / range;
-                const QString s = QString::number(value);
+                const QString s = _imp->isTimeFormatFrames ? QString::number(value) : timecodeString(value, fps);
                 const int sSizePixel =  fontM.width(s);
                 if (tickSizePixel > sSizePixel) {
                     const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
@@ -491,7 +519,7 @@ TimeLineGui::paintGL()
             QPointF currentPosTopRight = toTimeLineCoordinates(currentPosBtmWidgetCoordX + cursorWidth / 2.,
                                                                currentPosBtmWidgetCoordY - cursorHeight);
             int hoveredTime = std::floor(currentPosBtm.x() + 0.5);
-            QString mouseNumber( QString::number(hoveredTime) );
+            QString mouseNumber( _imp->isTimeFormatFrames ? QString::number(hoveredTime) : timecodeString(hoveredTime, fps) );
             QPoint mouseNumberWidgetCoord(currentPosBtmWidgetCoordX,
                                           currentPosBtmWidgetCoordY - cursorHeight);
             QPointF mouseNumberPos = toTimeLineCoordinates( mouseNumberWidgetCoord.x(), mouseNumberWidgetCoord.y() );
@@ -550,7 +578,7 @@ TimeLineGui::paintGL()
                                        Image::clamp<qreal>(cursorB, 0., 1.) );
         }
 
-        QString currentFrameStr = QString::number(currentTime);
+        QString currentFrameStr = _imp->isTimeFormatFrames ? QString::number(currentTime) : timecodeString(currentTime, fps);
         double cursorTextXposWidget = cursorBtmWidgetCoord.x();
         double cursorTextPos = toTimeLine(cursorTextXposWidget);
         renderText(cursorTextPos, cursorTopLeft.y(), currentFrameStr, actualCursorColor, _imp->font, Qt::AlignHCenter);
@@ -570,7 +598,7 @@ TimeLineGui::paintGL()
         {
             if ( ( leftBoundBtm.x() >= btmLeft.x() ) && ( leftBoundBtmRight.x() <= topRight.x() ) ) {
                 if (leftBound != currentTime) {
-                    QString leftBoundStr( QString::number(leftBound) );
+                    QString leftBoundStr( _imp->isTimeFormatFrames ? QString::number(leftBound) : timecodeString(leftBound, fps) );
                     double leftBoundTextXposWidget = toWidgetCoordinates( ( leftBoundBtm.x() + leftBoundBtmRight.x() ) / 2., 0 ).x();
                     double leftBoundTextPos = toTimeLine(leftBoundTextXposWidget);
                     renderText(leftBoundTextPos, leftBoundTop.y(),
@@ -587,7 +615,7 @@ TimeLineGui::paintGL()
 
             if ( ( rightBoundBtmLeft.x() >= btmLeft.x() ) && ( rightBoundBtm.x() <= topRight.x() ) ) {
                 if ( (rightBound != currentTime) && (rightBound != leftBound) ) {
-                    QString rightBoundStr( QString::number( rightBound ) );
+                    QString rightBoundStr( _imp->isTimeFormatFrames ? QString::number(rightBound) : timecodeString(rightBound, fps) );
                     double rightBoundTextXposWidget = toWidgetCoordinates( ( rightBoundBtm.x() + rightBoundBtmLeft.x() ) / 2., 0 ).x();
                     double rightBoundTextPos = toTimeLine(rightBoundTextXposWidget);
                     renderText(rightBoundTextPos, rightBoundTop.y(),
@@ -1326,6 +1354,14 @@ void TimeLineGui::getPixelScale(double & xScale, double & yScale) const  {
     yScale = _imp->zoomCtx.screenPixelHeight();
 }
 
+
+void
+TimeLineGui::setTimeFormatFrames(bool value)
+{
+    _imp->isTimeFormatFrames = value;
+}
+
+
 #ifdef OFX_EXTENSIONS_NATRON
 double
 TimeLineGui::getScreenPixelRatio() const
@@ -1603,6 +1639,14 @@ TimelineGuiPrivate::focusGain(SequenceTime currentFrame)
         }
     }
     return caught;
+}
+
+
+void
+TimeLineGui::onTimeFormatChanged(int value)
+{
+    setTimeFormatFrames(value == 1);
+    update();
 }
 
 

@@ -98,6 +98,12 @@ ViewerTab::setTimelineBounds(double first, double last)
 }
 
 void
+ViewerTab::setTimelineFormatFrames(bool value)
+{
+    _imp->timeLineGui->setTimeFormatFrames(value);
+}
+
+void
 ViewerTab::onTimelineBoundariesChanged(SequenceTime first,
                                        SequenceTime second)
 {

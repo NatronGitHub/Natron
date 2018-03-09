@@ -268,6 +268,8 @@ public:
 
     virtual void setTimelineBounds(double first, double last) OVERRIDE FINAL;
 
+    virtual void setTimelineFormatFrames(bool value) OVERRIDE FINAL;
+
     virtual void setTripleSyncEnabled(bool toggled) OVERRIDE FINAL;
 
     /**

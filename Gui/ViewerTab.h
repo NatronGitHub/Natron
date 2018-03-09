@@ -241,6 +241,8 @@ public:
 
     void setTimelineBounds(double first, double last);
 
+    void setTimelineFormatFrames(bool value);
+
 
     /**
      * @brief Returns in nodes all the nodes that can draw an overlay in their order of appearance in the properties bin.

@@ -34,6 +34,8 @@ Natron multiple times on the same computer, the different processes will share t
 
 ## Version 2.3.7
 
+- the viexer timeline can now display information as timecode instead of frames (see TC/TF choice next to fps below the timeline)
+
 
 ## Version 2.3.6
 

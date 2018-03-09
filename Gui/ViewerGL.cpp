@@ -3614,6 +3614,13 @@ ViewerGL::setTimelineBounds(double first, double last)
 }
 
 void
+ViewerGL::setTimelineFormatFrames(bool value)
+{
+    getViewerTab()->setTimelineFormatFrames(value);
+
+}
+
+void
 ViewerGL::setTripleSyncEnabled(bool toggled)
 {
     getViewerTab()->setTripleSyncEnabled(toggled);
