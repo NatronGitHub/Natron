@@ -10,6 +10,7 @@
 - The viewer timeline can now display information as timecode instead of frames (see TC/TF choice next to fps below the timeline)
 - Disabled Merge nodes (and other nodes with input A and B) now always pass-thru the B input. Preferences should never affect the render results.
 - Shuffle now passes through B by default, and has a new toggle parameter "setGBAFromR" to disable automatically setting G B and A from R.
+- Grade: Add "Reverse" option to apply the inverse function.
 
 
 ## Version 2.3.6
