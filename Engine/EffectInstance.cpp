@@ -4906,7 +4906,9 @@ EffectInstance::getNearestNonDisabled() const
         ///Test all inputs recursively, going from last to first, preferring non optional inputs.
         std::list<EffectInstPtr> nonOptionalInputs;
         std::list<EffectInstPtr> optionalInputs;
-        bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+        // the following is wrong, because the behavior of scripts or PyPlugs when rendering will then depend on the preferences!
+        //bool useInputA = appPTR->getCurrentSettings()->useInputAForMergeAutoConnect() || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3);
+        const bool useInputA = false || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3);
 
         ///Find an input named A
         std::string inputNameToFind, otherName;
@@ -4992,7 +4994,9 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     std::list<EffectInstPtr> nonOptionalInputs;
     std::list<EffectInstPtr> optionalInputs;
     int localPreferredInput = -1;
-    bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+    // the following is wrong, because the behavior of scripts or PyPlugs when rendering will then depend on the preferences!
+    //bool useInputA = appPTR->getCurrentSettings()->useInputAForMergeAutoConnect() || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3);
+    const bool useInputA = false || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3);
     ///Find an input named A
     std::string inputNameToFind, otherName;
     if (useInputA) {
