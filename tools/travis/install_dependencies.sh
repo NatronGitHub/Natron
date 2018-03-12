@@ -343,7 +343,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # Python2 is now keg-only
     brew install python@2
     #PATH="/usr/local/opt/python@2/bin:$PATH"
-    (cd /usr/local/bin; ln -s ../opt/python@2/bin/*2* .)
+    #(cd /usr/local/bin; ln -s ../opt/python@2/bin/*2* .)
     # Python 2 pyside comes precompiled!
     brew install pyside@1.2 shiboken@1.2
     if [ "$CC" = "$TEST_CC" ]; then
