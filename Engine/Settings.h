@@ -268,7 +268,7 @@ public:
 
     bool isTransformConcatenationEnabled() const;
 
-    bool isMergeAutoConnectingToAInput() const;
+    bool useInputAForMergeAutoConnect() const;
 
     /**
      * @brief If the OCIO startup check parameter is set to true, warn the user if the OCIO config is different

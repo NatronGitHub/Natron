@@ -2135,10 +2135,10 @@ SettingsPrivate::initializeKnobsNodeGraph()
 
     _useInputAForMergeAutoConnect = _publicInterface->createKnob<KnobBool>("mergeConnectToA");
     _useInputAForMergeAutoConnect->setLabel(tr("Merge node connect to A input"));
-    _useInputAForMergeAutoConnect->setHintToolTip( tr("If checked, upon creation of a new Merge node, the input A will be preferred "
-                                                      "for auto-connection and when disabling the node instead of the input B. "
-                                                      "This also applies to any other node with inputs named A and B.") );
-    _useInputAForMergeAutoConnect->setDefaultValue(false);
+    _useInputAForMergeAutoConnect->setHintToolTip( tr("If checked, upon creation of a new Merge node, or any other node with inputs named "
+                                                      "A and B, input A is preferred "
+                                                      "for auto-connection. When the node is disabled, B is output.") );
+    _useInputAForMergeAutoConnect->setDefaultValue(true);
     _nodegraphTab->addKnob(_useInputAForMergeAutoConnect);
 
 
@@ -3516,7 +3516,7 @@ Settings::isTransformConcatenationEnabled() const
 }
 
 bool
-Settings::isMergeAutoConnectingToAInput() const
+Settings::useInputAForMergeAutoConnect() const
 {
     return _imp->_useInputAForMergeAutoConnect->getValue();
 }
