@@ -1181,9 +1181,9 @@ Settings::initializeKnobsNodeGraph()
 
     _useInputAForMergeAutoConnect = AppManager::createKnob<KnobBool>( this, tr("Merge node connect to A input") );
     _useInputAForMergeAutoConnect->setName("mergeConnectToA");
-    _useInputAForMergeAutoConnect->setHintToolTip( tr("If checked, upon creation of a new Merge node, any other node with inputs named "
+    _useInputAForMergeAutoConnect->setHintToolTip( tr("If checked, upon creation of a new Merge node, or any other node with inputs named "
                                                       "A and B, input A is be preferred "
-                                                      "for auto-connection. When the node is disabled, B is output.") );
+                                                      "for auto-connection. When the node is disabled, B is always output, whether this is checked or not.") );
     _nodegraphTab->addKnob(_useInputAForMergeAutoConnect);
 } // Settings::initializeKnobsNodeGraph
 

@@ -296,7 +296,7 @@ When checked, any diconnected mask input of a node in the nodegraph will be visi
 
 **Merge node connect to A input**
 
-If checked, upon creation of a new Merge node, the input A will be preferred for auto-connection and when disabling the node instead of the input B. This also applies to any other node with inputs named A and B.
+If checked, upon creation of a new Merge node, or any other node with inputs named A and B, input A is be preferred for auto-connection. When the node is disabled, B is always output, whether this is checked or not.
 
 Plug-ins
 --------
