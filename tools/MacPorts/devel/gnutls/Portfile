@@ -97,6 +97,8 @@ variant doc description {Build documentation} {
 }
 
 variant guile description {Build guile bindings} {
+# there currently is a build issue with the guile variant
+# the workaround is to first install guile w/o guile and then with +guile
     depends_lib-append      port:guile
     configure.args-replace  --disable-guile --enable-guile
 }
