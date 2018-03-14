@@ -10,7 +10,9 @@
 - The viewer timeline can now display information as timecode instead of frames (see TC/TF choice next to fps below the timeline)
 - Disabled Merge nodes (and other nodes with input A and B) now always pass-thru the B input. Preferences should never affect the render results.
 - Shuffle now passes through B by default, and has a new toggle parameter "setGBAFromR" to disable automatically setting G B and A from R.
-- Grade: Add "Reverse" option to apply the inverse function.
+- Grade: Add "Reverse" option to apply the inverse function. Usage: clone or copy-paste a Grade node, insert it downstream of the original node, and check "Reverse" in the downstream Grade.
+- Fix RunScript (the bugs were in ReadOIIO and Natron), and better document it.
+- GIF format is now read and written by ReadFFmpeg (most GIFs these days are animated).
 
 
 ## Version 2.3.6
