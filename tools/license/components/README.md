@@ -38,6 +38,7 @@ Natron binaries include components from the following libraries:
 * OpenColorIO (Modified BSD) http://opencolorio.org/License.html
 * FFmpeg (LGPL 2.1) https://www.ffmpeg.org/legal.html
 * SeExpr (modified Apache 2.0) http://www.disneyanimation.com/technology/seexpr.html
+* pstream (Boost Software License) http://pstreams.sourceforge.net
 
 ### Video codecs and formats
 
