@@ -29,7 +29,7 @@ For most footage, the effect works best by keeping the default Y’CbCr color mo
 -  The Y’CbCr color model uses the Rec.709 opto-electronic transfer function to convert from RGB to R’G’B’ and the the Rec.709 primaries to convert from R’G’B’ to Y’CbCr.
 -  The L \* a \* b color model uses the Rec.709 RGB primaries to convert from RGB to L \* a \* b.
 -  The R’G’B’ color model uses the Rec.709 opto-electronic transfer function to convert from RGB to R’G’B’.
--  The RGB color model (linear) makes no assumption about the RGB color space, and works directly on the RGB components, assuming additive noise. If, say, the noise is known to be multiplicative, one can convert the images to Log before denoising, use this option, and convert back to linear after denoising.
+-  The RGB color model (linear) makes no assumption about the RGB color space, and works directly on the RGB components, assuming additive noise. This is the only option if the noisy source contains negative values. If, say, the noise is known to be multiplicative, one can convert the images to Log before denoising, use this option, and convert back to linear after denoising.
 -  The Alpha channel, if processed, is always considered to be linear.
 
 The simplest way to use this plugin is to leave the noise analysis area to the whole image, and click “Analyze Noise Levels”. Once the analysis is done, “Lock Noise Analysis” is checked in order to avoid modifying the essential parameters by mistake.
