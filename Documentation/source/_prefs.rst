@@ -198,7 +198,7 @@ If not checked, Natron will only cache the nodes which have multiple outputs, or
 
 **Maximum amount of RAM memory used for caching (% of total RAM)**
 
-This setting indicates the percentage of the total RAM which can be used by the memory caches. This system has 16.00 GiB of RAM.
+This setting indicates the percentage of the total RAM which can be used by the memory caches.
 
 **System RAM to keep free (% of total RAM)**
 
