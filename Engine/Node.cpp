@@ -3318,9 +3318,9 @@ Node::makeInfoForInput(int inputNumber) const
         ss << "<b><font color=\"orange\">" << tr("%1:").arg(inputName).toStdString() << "</font></b><br />";
     }
     { // image format
-        ss << "<b>" << tr("Image planes:").toStdString() << "</b> <font color=#c8c8c8>";
+        ss << "<b>" << tr("Layers:").toStdString() << "</b> <font color=#c8c8c8>";
         std::list<ImagePlaneDesc> availableLayers;
-        input->getAvailableLayers(time, ViewIdx(0), inputNumber, &availableLayers);
+        input->getAvailableLayers(time, ViewIdx(0), -1, &availableLayers); // get the layers in the input's output (thus the -1)!
         std::list<ImagePlaneDesc>::iterator next = availableLayers.begin();
         if ( next != availableLayers.end() ) {
             ++next;
