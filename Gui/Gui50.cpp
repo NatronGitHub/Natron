@@ -214,9 +214,22 @@ Gui::onMaxPanelsSpinBoxValueChanged(double val)
 void
 Gui::clearAllVisiblePanels()
 {
-    for (std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin(); it != _imp->openedPanels.end(); ++it) {
-        if ( !(*it)->isFloating() ) {
-            (*it)->setClosed(true);
+    // close panels one by one, since closing a panel updates the openedPanels list.
+    while ( !_imp->openedPanels.empty() ) {
+        bool foundNonFloating = false;
+
+        // close one panel at a time - this changes the openedPanel list, so we must break the loop
+        for (std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin(); it != _imp->openedPanels.end(); ++it) {
+            if ( !(*it)->isFloating() ) {
+                (*it)->setClosed(true);
+                foundNonFloating = true;
+                break;
+            }
+        }
+
+        // no panel was closed
+        if (!foundNonFloating) {
+            break;
         }
     }
     getApp()->redrawAllViewers();

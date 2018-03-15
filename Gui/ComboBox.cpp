@@ -93,7 +93,7 @@ ComboBox::ComboBox(QWidget* parent)
     , _currentIndex(-1)
     , _currentText()
     , _separators()
-    , _rootNode( new ComboBoxMenuNode() )
+    , _rootNode()
     , _sh()
     , _msh()
     , _sizePolicy()
@@ -102,6 +102,8 @@ ComboBox::ComboBox(QWidget* parent)
     , _currentDelta(0)
     , ignoreWheelEvent(false)
 {
+    _rootNode = boost::make_shared<ComboBoxMenuNode>();
+
     setFrameShape(QFrame::Box);
 
     setCurrentIndex(0);
@@ -521,7 +523,7 @@ ComboBox::insertItem(int index,
     }
 
     growMaximumWidthFromText(item);
-    boost::shared_ptr<ComboBoxMenuNode> node( new ComboBoxMenuNode() );
+    boost::shared_ptr<ComboBoxMenuNode> node = boost::make_shared<ComboBoxMenuNode>();
     node->text = item;
     node->isLeaf = action;
     node->parent = _rootNode.get();
@@ -547,7 +549,7 @@ ComboBox::addActionPrivate(QAction* action)
 
     growMaximumWidthFromText(text);
     action->setParent(this);
-    boost::shared_ptr<ComboBoxMenuNode> node( new ComboBoxMenuNode() );
+    boost::shared_ptr<ComboBoxMenuNode> node = boost::make_shared<ComboBoxMenuNode>();
     node->text = text;
     node->isLeaf = action;
     node->parent = _rootNode.get();
@@ -638,7 +640,7 @@ ComboBox::addItem(const QString & item,
             if (found) {
                 menuToFind = found;
             } else {
-                boost::shared_ptr<ComboBoxMenuNode> node( new ComboBoxMenuNode() );
+                boost::shared_ptr<ComboBoxMenuNode> node = boost::make_shared<ComboBoxMenuNode>();
                 node->text = realSplits[i];
                 node->parent = menuToFind;
                 menuToFind->children.push_back(node);

@@ -387,10 +387,8 @@ restoreCache(AppManagerPrivate* p,
 void
 AppManagerPrivate::restoreCaches()
 {
-    if ( !appPTR->isBackground() ) {
-        restoreCache<FrameEntry>( this, _viewerCache.get() );
-        restoreCache<Image>( this, _diskCache.get() );
-    }
+    restoreCache<FrameEntry>( this, _viewerCache.get() );
+    restoreCache<Image>( this, _diskCache.get() );
 } // restoreCaches
 
 bool
@@ -401,8 +399,7 @@ AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath, bool is
     if ( !settingsFilePath.endsWith( QChar::fromLatin1('/') ) ) {
         settingsFilePath += QChar::fromLatin1('/');
     }
-    settingsFilePath += QString::fromUtf8("restoreFile.");
-    settingsFilePath += QString::fromUtf8(NATRON_CACHE_FILE_EXT);
+    settingsFilePath += QString::fromUtf8("restoreFile." NATRON_CACHE_FILE_EXT);
 
     if ( !QFile::exists(settingsFilePath) ) {
         cleanUpCacheDiskStructure(cachePath, isTiled);
@@ -462,7 +459,12 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath, bool isT
         cacheFolder.removeRecursively();
     }
 #endif
-    cacheFolder.mkpath( QChar::fromLatin1('.') );
+    if ( !cacheFolder.exists() ) {
+        bool success = cacheFolder.mkpath( QChar::fromLatin1('.') );
+        if (!success) {
+            qDebug() << "Warning: cache directory" << cachePath << "could not be created";
+        }
+    }
 
     QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
     // if not 256 subdirs, we re-create the cache
@@ -475,10 +477,13 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath, bool isT
         for (U32 i = 0x00; i <= 0xF; ++i) {
             for (U32 j = 0x00; j <= 0xF; ++j) {
                 std::ostringstream oss;
-                oss << std::hex <<  i;
+                oss << std::hex << i;
                 oss << std::hex << j;
                 std::string str = oss.str();
-                cacheFolder.mkdir( QString::fromUtf8( str.c_str() ) );
+                bool success = cacheFolder.mkdir( QString::fromUtf8( str.c_str() ) );
+                if (!success) {
+                    qDebug() << "Warning: cache directory" << (cachePath.toStdString() + '/' + str).c_str() << "could not be created";
+                }
             }
         }
     }

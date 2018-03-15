@@ -1439,7 +1439,7 @@ OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
         if (nThreadsPerEffect == 0) {
             ///Simple heuristic: limit 1 effect to start at most 8 threads because otherwise it might spend too much
             ///time scheduling than just processing
-            int hwConcurrency = appPTR->getHardwareIdealThreadCount();
+            int hwConcurrency = appPTR->getMaxThreadCount();
 
             if (hwConcurrency <= 0) {
                 nThreadsPerEffect = 1;

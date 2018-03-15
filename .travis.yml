@@ -3,7 +3,7 @@ env:
   global:
    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
    #   via the "travis encrypt" command using the project repo's public key
-   - secure: "lyS1r5djAjsX9GW2etArPgtP4OM5Jd9clWajd/JHVmajrL3XVSkkbSVl9jypukZ/dfiBSODxGiwVTp+kGa82ptS9jl1z3ouoezZR+zro5grb9d7bjteJU8HWfUB4Ey9jCCjzAOc+Gh1hwJB2ZnCfU6NylRWLXA7Q9TtGiFsQJoAGU7TCXGTgmzzE6oUE74FsnSR9KEJs7K1eDVIYvRD2mkYGu/2DBTjb6CmxXaB+dSoCEYCubnszgigJx2H/ihcgu01KT9DEaDQjZLTSJ1vrG611eS0LgXxQdMAEV29fhmLYBIeUsH6zsf9OIKd3l84KUT3YbxThgD3v2PpQ1U/YQIzZjywOuWPfgMNd2W3Ebret7u+u0LNo/vz7YcZ64+v9SFEH6zyZDp50sP4vWa7C8Rolx0dqEw0E1gxsICZn4OUVgwdFRRTG9I9AoRhNYu290DVaWrU0n/f40uVzzZAWNQZQzGMcunRn3o5UDVM5vQ+8eMIfvB4YHc6X+NZXBLdr56H1ijJVPqb3oT+qDjjuTYae5j1p+ro8yioT0CjgnOPF2Y/q3ktKWTB8sa3qM4izbkHqBJ4Qa8BcnCZi0ZJDkvyqa054Fvyb1qLtQUeEIovi07zrsZgTeLM4SNECMHm22PF/lWiIFrGHknZKspkphwVs7GxvHLWVgOQ881EXVpc="
+   - secure: "Kagza287CBDBxPlNU2HC86OWMj22SfUfNb98BzwkI/LabG4HSAe1JnzTM62GZwPJxZBRX691Adtoe43Nw/sSCdP08jHgROHXQ/FQkGw4AbgSzE08B6gSpwXJhjLuOwiuBfLXYPKnXSjD3MA6VNiVNT/KhM06Vro0J6aLyhT5d5czOUnVWKzXzW4bjI2evq27xNxukgFj75Ykwp8bnKV57cZneZVyEGxUWe9hAcIJjynS9gVI0SPkun6VqW4y9Z5TDmU4ZZd/mvq2x0o9dS1qDN1Bf0kG7nNlvcWX9FMeFBo880whiyLPG1EPx8iNopZbL5HUujLP4/v24AYKPw+YoW6aaY2wDOzCZrFyEbsq2jbtnXL8Ik8Gle3WTJZ6f0NvRwwY9vVKbsBihb7vsUqgpfBqe2p8S19nt13b/9AO2eVw/By2i1Gh5yt5rGbOMM7MMFe3jzUhl48KHoGLQb7yFlB6AT2Y7rlX0l0BeZ4qN76LglV72RTW13h4+52rVcFvcVXT9MnVafYDNCO5N5AnHzOvCKNIq872eULJ7buCs3yrlv4I7fsJyVyzqGYQoZYZ6QY1eP0srS0UaIhLXBW7AQP7yaLKg6+bRYnGHzcvekJXKRzHru91n25e0Q/LstdA1vJs7ZQvY1w3VzIhr3SMJ4zRcF2RYA/7dHAgCthwy9Q="
    # Coverity run condition (avoid matrix multiple runs), need customized
    # build script. Need an update if new matrix cases.
    - coverity_scan_run_condition='"$CC" = gcc -a "$TRAVIS_OS_NAME" != osx'
@@ -139,7 +139,9 @@ cache:
 before_install:
   - date -u
   - uname -a
-  - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+  - if [ ${TRAVIS_OS_NAME} = "linux" ]; then
+      echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca- ;
+    fi
   - export J='-j2'
 
 install:

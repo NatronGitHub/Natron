@@ -20,7 +20,7 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG += moc rcc
-CONFIG += boost opengl qt cairo python shiboken pyside 
+CONFIG += boost boost-serialization-lib opengl qt cairo python shiboken pyside 
 CONFIG += static-gui static-engine static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-libtess
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
@@ -41,7 +41,6 @@ include(../global.pri)
 
 SOURCES += \
     google-test/src/gtest-all.cc \
-    google-test/src/gtest_main.cc \
     google-mock/src/gmock-all.cc \
     BaseTest.cpp \
     Hash64_Test.cpp \

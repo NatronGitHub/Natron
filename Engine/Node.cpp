@@ -2805,12 +2805,12 @@ Node::getPreferredInputInternal(bool connected) const
     bool useInputA = false;
     if (!connected) {
         // For the merge node, use the preference (only when not connected)
-        useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+        useInputA = appPTR->getCurrentSettings()->useInputAForMergeAutoConnect();
     }
 
     ///Find an input named A
     int inputToFind = -1, foundOther = -1;
-    if ( useInputA || (getPluginID() == PLUGINID_OFX_SHUFFLE) ) {
+    if ( useInputA || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3) ) {
         inputToFind = inputA;
         foundOther = inputB;
     } else {
@@ -3318,9 +3318,9 @@ Node::makeInfoForInput(int inputNumber) const
         ss << "<b><font color=\"orange\">" << tr("%1:").arg(inputName).toStdString() << "</font></b><br />";
     }
     { // image format
-        ss << "<b>" << tr("Image planes:").toStdString() << "</b> <font color=#c8c8c8>";
+        ss << "<b>" << tr("Layers:").toStdString() << "</b> <font color=#c8c8c8>";
         std::list<ImagePlaneDesc> availableLayers;
-        input->getAvailableLayers(time, ViewIdx(0), inputNumber, &availableLayers);
+        input->getAvailableLayers(time, ViewIdx(0), -1, &availableLayers); // get the layers in the input's output (thus the -1)!
         std::list<ImagePlaneDesc>::iterator next = availableLayers.begin();
         if ( next != availableLayers.end() ) {
             ++next;
@@ -4488,6 +4488,7 @@ Node::makeDocumentation(bool genHTML) const
         KnobBool* isBool = dynamic_cast<KnobBool*>( it->get() );
         KnobDouble* isDbl = dynamic_cast<KnobDouble*>( it->get() );
         KnobString* isString = dynamic_cast<KnobString*>( it->get() );
+        bool isLabel = isString && isString->isLabel();
         KnobSeparator* isSep = dynamic_cast<KnobSeparator*>( it->get() );
         KnobButton* isBtn = dynamic_cast<KnobButton*>( it->get() );
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>( it->get() );
@@ -4504,9 +4505,13 @@ Node::makeDocumentation(bool genHTML) const
         } else if (isDbl) {
             knobType = tr("Double");
         } else if (isString) {
-            knobType = tr("String");
+            if (isLabel) {
+                knobType = tr("Label");
+            } else {
+                knobType = tr("String");
+            }
         } else if (isSep) {
-            knobType = tr("Seperator");
+            knobType = tr("Separator");
         } else if (isBtn) {
             knobType = tr("Button");
         } else if (isParametric) {
@@ -4638,7 +4643,7 @@ Node::makeDocumentation(bool genHTML) const
             }
         }
 
-        if (!isPage && !isSep && !isGroup) {
+        if (!isPage && !isSep && !isGroup && !isLabel) {
             QStringList row;
             row << knobLabel << knobScriptName << knobType << defValuesStr << knobHint;
             items.append(row);
@@ -11728,12 +11733,16 @@ InspectorNode::refreshActiveInputs(int inputNbChanged,
 int
 InspectorNode::getPreferredInputInternal(bool connected) const
 {
-    bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+    bool useInputA = false;
+    if (!connected) {
+        // For the merge node, use the preference (only when not connected)
+        useInputA = appPTR->getCurrentSettings()->useInputAForMergeAutoConnect();
+    }
 
     ///Find an input named A
     std::string inputNameToFind, otherName;
 
-    if ( useInputA || (getPluginID() == PLUGINID_OFX_SHUFFLE) ) {
+    if ( useInputA || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3) ) {
         inputNameToFind = "A";
         otherName = "B";
     } else {

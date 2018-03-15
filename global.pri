@@ -340,10 +340,9 @@ win32-g++ {
     expat:     PKGCONFIG += expat
     cairo:     PKGCONFIG += cairo
     shiboken:  PKGCONFIG += shiboken-py2
-    #PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
     pyside:    PKGCONFIG += pyside-py2
-    pyside:    INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside-py2)/QtCore
-    pyside:    INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside-py2)/QtGui
+    pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtCore
+    pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtGui
     python:    PKGCONFIG += python-2.7
     boost:     LIBS += -lboost_serialization-mt
     boost:     LIBS += -lboost_serialization-mt
@@ -380,7 +379,7 @@ unix {
      }
      python {
           #PKGCONFIG += python
-          LIBS += $$system($$PYTHON_CONFIG --ldflags)
+          LIBS += -L$$system($$PYTHON_CONFIG --exec-prefix)/lib $$system($$PYTHON_CONFIG --ldflags)
           PYTHON_CFLAGS = $$system($$PYTHON_CONFIG --includes)
           PYTHON_INCLUDEPATH = $$find(PYTHON_CFLAGS, ^-I.*)
           PYTHON_INCLUDEPATH ~= s/^-I(.*)/\\1/g
@@ -398,14 +397,14 @@ unix {
        QMAKE_LFLAGS += '-Wl,-rpath,\'@loader_path/../Frameworks\''
        shiboken {
          PKGCONFIG -= shiboken
-         PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
+         PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --exec-prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
          INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir shiboken)
          # the sed stuff is to work around an Xcode generator bug
          LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs shiboken | sed -e s/-undefined\\ dynamic_lookup//)
        }
        pyside {
          PKGCONFIG -= pyside
-         PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
+         PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --exec-prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
          INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)
          INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
          # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in

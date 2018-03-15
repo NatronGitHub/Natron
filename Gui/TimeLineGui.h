@@ -127,6 +127,8 @@ public:
 
     void setFrameRangeEdited(bool edited);
 
+    void setTimeFormatFrames(bool value);
+
     void centerOn_tripleSync(SequenceTime left, SequenceTime right);
 
     void getVisibleRange(SequenceTime* left, SequenceTime* right) const;
@@ -150,6 +152,8 @@ public Q_SLOTS:
     void onKeyframesIndicatorsChanged();
 
     void onProjectFrameRangeChanged(int, int);
+
+    void onTimeFormatChanged(int);
 
     void onKeyframeChangesUpdateTimerTimeout();
 

@@ -10,37 +10,46 @@ RunScript node
 Description
 -----------
 
-Run a script with the given arguments.
+Run a script with the given arguments. This is mostly useful to execute an external program on a set of input images files, which outputs image files. Writers should be connected to each input, so that the image files are written before running the script, and the output of this node should be fed into one or more Readers, which read the images written by the script.
 
-This is mostly useful to execute an external program on a set of input images files, which outputs image files.
+Sample section of a node graph which uses RunScript:
 
-Writers should be connected to each input, so that the image files are written before running the script, and the output of this node should be fed into one or more Readers, which read the images written by the script.
+::
 
-Sample node graph:
+                  ...
+                   ^
+                   |
+    Write([Project]/scriptinput#####.png)
+                   ^
+                   |
+    RunScript1(processes [Project]/scriptinput#####.png, output is [Project]/scriptoutput#####.png)
+                   ^
+                   |
+    Read([Project]/scriptoutput#####.png, set the frame range manually)
+                   ^
+                   |
+    RunScript2(deletes temporary files [Project]/scriptinput#####.png and [Project]/scriptoutput#####.png, optional)
+                   ^
+                   |
+                  ...
 
-... +- WriteOIIO(scriptinput#####.png) +- RunScript(processes scriptinput#####.png, output is scriptoutput#####.png) +- ReadOIIO(scriptoutput#####.png) +- ...
-
-Keep in mind that the input and output files are never removed in the above graph.
-
-The output of RunScript is a copy of its first input, so that it can be used to execute a script at some point, e.g. to cleanup temporary files, as in:
-
-... +- WriteOIIO(scriptinput#####.png) +- RunScript(processes scriptinput#####.png, output is scriptoutput#####.png) +- ReadOIIO(scriptoutput#####.png) +- RunScript(deletes temporary files scriptinput#####.png and scriptoutput#####.png, optional) +- ...
+Keep in mind that the input and output files are never removed in the above graph. The output of RunScript is a copy of its first input.
 
 Each argument may be:
 
-- A filename (connect an input to an upstream Writer, and link the parameter to the output filename of this writer, or link to the input filename of a downstream Reader)
+-  A filename (RunScript1 and RunScript2 in the example above should have ``[Project]/scriptinput#####.png`` and ``[Project]/scriptoutput#####.png`` as filename parameters 1 and 2)
+-  A floating-point value (which can be linked to any plugin)
+-  An integer
+-  A string
 
-- A floating-point value (which can be linked to any plugin)
+Under Unix, the script should begin with a traditional shebang line, e.g. ‘#!/bin/sh’ or ‘#!/usr/bin/env python’ The arguments can be accessed as usual from the script (in a Unix shell-script, argument 1 would be accessed as “$1” - use double quotes to avoid problems with spaces). For example, the script in RunScript2 in the above example would be:
 
-- An integer
+::
 
-- A string
+    #!/bin/sh
+    rm "$1" "$2"
 
-Under Unix, the script should begin with a traditional shebang line, e.g. ‘#!/bin/sh’ or ‘#!/usr/bin/env python’
-
-The arguments can be accessed as usual from the script (in a Unix shell-script, argument 1 would be accessed as “$1” - use double quotes to avoid problems with spaces).
-
-This plugin uses pstream (http://pstreams.sourceforge.net), which is distributed under the GNU LGPLv3.
+This plugin uses pstream (http://pstreams.sourceforge.net), which is distributed under the Boost Software License, Version 1.0.
 
 Inputs
 ------

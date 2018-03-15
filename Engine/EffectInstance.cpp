@@ -64,7 +64,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
-#include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/GPUContextPool.h"
@@ -4763,8 +4762,13 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
     assert(kh);
     
-    // While creating a PyPlug, never handle changes, fixes https://github.com/MrKepzie/Natron/issues/1637
-    if (kh && kh->isDeclaredByPlugin() && !wasFormatKnobCaught && !getApp()->isCreatingPythonGroup()) {
+    // While creating a PyPlug, never handle changes, but call syncPrivateData before any other action,
+    // fixes https://github.com/MrKepzie/Natron/issues/1637
+    if (getApp()->isCreatingPythonGroup() && kh && kh->isDeclaredByPlugin() && !wasFormatKnobCaught) {
+        // must sync private data in EffectInstance::getPreferredMetadata_public()
+        QMutexLocker l(&_imp->mustSyncPrivateDataMutex);
+        _imp->mustSyncPrivateData = true;
+    } else if (kh && kh->isDeclaredByPlugin() && !wasFormatKnobCaught) {
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.
         boost::shared_ptr<ParallelRenderArgsSetter> setter;
@@ -4902,7 +4906,9 @@ EffectInstance::getNearestNonDisabled() const
         ///Test all inputs recursively, going from last to first, preferring non optional inputs.
         std::list<EffectInstPtr> nonOptionalInputs;
         std::list<EffectInstPtr> optionalInputs;
-        bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+        // the following is wrong, because the behavior of scripts or PyPlugs when rendering will then depend on the preferences!
+        //bool useInputA = appPTR->getCurrentSettings()->useInputAForMergeAutoConnect() || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3);
+        const bool useInputA = false || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3);
 
         ///Find an input named A
         std::string inputNameToFind, otherName;
@@ -4988,7 +4994,9 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     std::list<EffectInstPtr> nonOptionalInputs;
     std::list<EffectInstPtr> optionalInputs;
     int localPreferredInput = -1;
-    bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+    // the following is wrong, because the behavior of scripts or PyPlugs when rendering will then depend on the preferences!
+    //bool useInputA = appPTR->getCurrentSettings()->useInputAForMergeAutoConnect() || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3);
+    const bool useInputA = false || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3);
     ///Find an input named A
     std::string inputNameToFind, otherName;
     if (useInputA) {
@@ -5291,6 +5299,22 @@ EffectInstance::getPreferredMetadata_public(NodeMetadata& metadata)
         return stat;
     }
     if (!getNode()->isNodeDisabled()) {
+        // call syncPrivateData if necessary
+        bool mustSyncPrivateData;
+        {
+            QMutexLocker l(&_imp->mustSyncPrivateDataMutex);
+            mustSyncPrivateData = _imp->mustSyncPrivateData;
+            _imp->mustSyncPrivateData = false;
+        }
+        if (mustSyncPrivateData) {
+            // for now, only OfxEffectInstance has syncPrivateData capabilities, but
+            // syncPrivateData() could also be a virtual member of EffectInstance
+            OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>(this);
+            if (effect) {
+                assert( QThread::currentThread() == qApp->thread() );
+                effect->onSyncPrivateDataRequested(); //syncPrivateData_other_thread();
+            }
+        }
         return getPreferredMetadata(metadata);
     }
     return stat;

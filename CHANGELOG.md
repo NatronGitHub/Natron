@@ -5,6 +5,29 @@
 # History
 
 
+## Version 2.3.7
+
+- The viewer timeline can now display information as timecode instead of frames (see TC/TF choice next to fps below the timeline)
+- Disabled Merge nodes (and other nodes with input A and B) now always pass-thru the B input. Preferences should never affect the render results.
+- Shuffle now passes through B by default, and has a new toggle parameter "setGBAFromR" to disable automatically setting G B and A from R.
+- Grade: Add "Reverse" option to apply the inverse function. Usage: clone or copy-paste a Grade node, insert it downstream of the original node, and check "Reverse" in the downstream Grade.
+- Fix RunScript (the bugs were in ReadOIIO and Natron), and better document it.
+- GIF format is now read and written by ReadFFmpeg (most GIFs these days are animated).
+
+
+## Version 2.3.6
+
+- Fix bug when using PyPlugs containing Shadertoy (and possibly other plugins too) #1726 #1637
+- Fix bug when creating a group from a plugin with invisible inputs (e.g. Shadertoy)
+- Fix bug where Natron would crash when the "clear all panels" button is pressed #1729
+- Fix bug where Roto and RotoPaint lifetime would change randomly #1707
+
+### Plugins
+
+- ReadOIIO/ReadPNG: "Image Info..." gives a more explicit message, containing the filename and more info.
+- Fix bug in all OCIO plugins where GPU render is wrong if (un)premult is checked (disable GPU render in this case)
+
+
 ## Version 2.3.5
 
 ### Plugins

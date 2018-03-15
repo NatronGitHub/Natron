@@ -151,6 +151,7 @@ struct ViewerTabPrivate
     bool fpsLocked;
     SpinBox* fpsBox;
     double userFps;
+    ComboBox* timeFormat;
     Button* turboButton;
     QTimer mustSetUpPlaybackButtonsTimer;
 
