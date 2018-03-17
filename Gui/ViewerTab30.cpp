@@ -566,7 +566,7 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
 
     ///remove any existing roto gui
     if (activeNodeForPlugin) {
-        removeNodeViewerInterface(activeNodeForPlugin, false /*permanantly*/, /*setAnother*/ false);
+        removeNodeViewerInterface(activeNodeForPlugin, false /*permanently*/, /*setAnother*/ false);
     }
 
     // Add the widgets
@@ -587,19 +587,45 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
     if ( _imp->currentNodeContext.empty() ) {
         // insert before the viewer
         index = _imp->mainLayout->indexOf(_imp->viewerContainer);
+#       ifdef DEBUG_VIEWERCONTAINER
+        qDebug() << "viewer container" << _imp->viewerContainer << "index" << index;
+#       endif
     } else {
         // Remove the oldest opened interface if we reached the maximum
         int maxNodeContextOpened = appPTR->getCurrentSettings()->getMaxOpenedNodesViewerContext();
-        if ( (int)_imp->currentNodeContext.size() == maxNodeContextOpened ) {
-            const ViewerTabPrivate::PluginViewerContext& oldestNodeViewerInterface = _imp->currentNodeContext.front();
-            removeNodeViewerInterface(oldestNodeViewerInterface.currentNode.lock(), false /*permanantly*/, false /*setAnother*/);
+#       ifdef DEBUG_VIEWERCONTAINER
+        qDebug() << "currentNodeContext(" << (int)_imp->currentNodeContext.size() << "):";
+        for (std::list<ViewerTabPrivate::PluginViewerContext>::const_iterator it = _imp->currentNodeContext.begin();
+             it != _imp->currentNodeContext.end();
+             ++it) {
+            qDebug() << QString::fromUtf8(it->pluginID.c_str()) << (QObject*)it->currentNode.lock().get() << it->currentContext.get() << it->currentContext->getContainerWidget();
         }
-
-        QWidget* container = _imp->currentNodeContext.back().currentContext->getContainerWidget();
-        index = _imp->mainLayout->indexOf(container);
-        assert(index != -1);
-        if (index >= 0) {
-            ++index;
+#       endif
+        if ( (int)_imp->currentNodeContext.size() >= maxNodeContextOpened ) {
+            const ViewerTabPrivate::PluginViewerContext& oldestNodeViewerInterface = _imp->currentNodeContext.front();
+            removeNodeViewerInterface(oldestNodeViewerInterface.currentNode.lock(), false /*permanently*/, false /*setAnother*/);
+#           ifdef DEBUG_VIEWERCONTAINER
+            qDebug() << "after removal, currentNodeContext(" << (int)_imp->currentNodeContext.size() << "):";
+            for (std::list<ViewerTabPrivate::PluginViewerContext>::const_iterator it = _imp->currentNodeContext.begin();
+                 it != _imp->currentNodeContext.end();
+                 ++it) {
+                qDebug() << QString::fromUtf8(it->pluginID.c_str()) << (QObject*)it->currentNode.lock().get() << it->currentContext.get() << it->currentContext->getContainerWidget();
+            }
+#           endif
+        }
+        if ( _imp->currentNodeContext.empty() ) {
+            // insert before the viewer
+            index = _imp->mainLayout->indexOf(_imp->viewerContainer);
+        } else {
+            QWidget* container = _imp->currentNodeContext.back().currentContext->getContainerWidget();
+            index = _imp->mainLayout->indexOf(container);
+#           ifdef DEBUG_VIEWERCONTAINER
+            qDebug() << "container" << container << "index" << index;
+#           endif
+            assert(index != -1);
+            if (index >= 0) {
+                ++index;
+            }
         }
     }
     assert(index >= 0);
