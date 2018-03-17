@@ -5,6 +5,11 @@
 # History
 
 
+## Version 2.3.8
+
+- fix crash when Viewer/maxNodeUiOpened=1 in the preferences
+
+
 ## Version 2.3.7
 
 - The viewer timeline can now display information as timecode instead of frames (see TC/TF choice next to fps below the timeline)
