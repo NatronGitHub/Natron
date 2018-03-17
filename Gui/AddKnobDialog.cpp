@@ -1619,7 +1619,7 @@ AddKnobDialog::onOkClicked()
             if ( name[i] == QLatin1Char('_') ) {
                 continue;
             }
-            if ( ( name[i] == QLatin1Char(' ') ) || !name[i].isLetterOrNumber() ) {
+            if ( name[i].isSpace() || !name[i].isLetterOrNumber() ) {
                 badFormat = true;
                 break;
             }

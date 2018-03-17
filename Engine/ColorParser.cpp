@@ -303,7 +303,7 @@ getNamedRGB(const QChar *name, int len, int* r, int *g, int* b)
     char name_no_space[256];
     int pos = 0;
     for(int i = 0; i < len; i++) {
-        if(name[i] != QLatin1Char('\t') && name[i] != QLatin1Char(' '))
+        if( !name[i].isSpace() && name[i].isPrint() )
             name_no_space[pos++] = name[i].toLatin1();
     }
     name_no_space[pos] = 0;
