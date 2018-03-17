@@ -32,6 +32,11 @@ Natron multiple times on the same computer, the different processes will share t
 - For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
 
 
+## Version 2.3.8
+
+- fix crash when Viewer/maxNodeUiOpened=1 in the preferences
+
+
 ## Version 2.3.7
 
 - The viewer timeline can now display information as timecode instead of frames (see TC/TF choice next to fps below the timeline)
