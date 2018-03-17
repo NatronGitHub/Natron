@@ -308,7 +308,7 @@ public:
 
 protected:
     /**
-     * @brief Deletes this knob permanantly
+     * @brief Deletes this knob permanently
      **/
     virtual void deleteKnob() = 0;
 

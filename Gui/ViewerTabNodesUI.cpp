@@ -147,7 +147,7 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
 
     ///remove any existing roto gui
     if (activeNodeForPlugin) {
-        removeNodeViewerInterface(activeNodeForPlugin, false /*permanantly*/, /*setAnother*/ false);
+        removeNodeViewerInterface(activeNodeForPlugin, false /*permanently*/, /*setAnother*/ false);
     }
 
 
@@ -183,16 +183,20 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
                 oldestNodeViewerInterface = &(*it);
             }
             if (oldestNodeViewerInterface) {
-                removeNodeViewerInterface(oldestNodeViewerInterface->currentNode.lock(), false /*permanantly*/, false /*setAnother*/);
+                removeNodeViewerInterface(oldestNodeViewerInterface->currentNode.lock(), false /*permanently*/, false /*setAnother*/);
             }
         }
-
-        QWidget* container = _imp->currentNodeContext.back().currentContext->getContainerWidget();
-        index = _imp->mainLayout->indexOf(container);
-
-        assert(index != -1);
-        if (index >= 0) {
-            ++index;
+        if ( _imp->currentNodeContext.empty() ) {
+            // insert before the viewer
+            index = _imp->mainLayout->indexOf(_imp->viewerContainer);
+        } else {
+            QWidget* container = _imp->currentNodeContext.back().currentContext->getContainerWidget();
+            index = _imp->mainLayout->indexOf(container);
+            
+            assert(index != -1);
+            if (index >= 0) {
+                ++index;
+            }
         }
     }
     assert(index >= 0);
