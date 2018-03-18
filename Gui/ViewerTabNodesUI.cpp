@@ -182,9 +182,10 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
                 }
                 oldestNodeViewerInterface = &(*it);
             }
-            if (oldestNodeViewerInterface) {
-                removeNodeViewerInterface(oldestNodeViewerInterface->currentNode.lock(), false /*permanently*/, false /*setAnother*/);
+            if (!oldestNodeViewerInterface) {
+                break;
             }
+            removeNodeViewerInterface(oldestNodeViewerInterface->currentNode.lock(), false /*permanently*/, false /*setAnother*/);
         }
         if ( _imp->currentNodeContext.empty() ) {
             // insert before the viewer
