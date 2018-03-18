@@ -169,7 +169,7 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
     } else {
         // Remove the oldest opened interface if we reached the maximum
         int maxNodeContextOpened = appPTR->getCurrentSettings()->getMaxOpenedNodesViewerContext();
-        if ( (int)_imp->currentNodeContext.size() == (maxNodeContextOpened + 1) ) { // + 1 so we allow the Viewer interface to stay
+        while ( (int)_imp->currentNodeContext.size() >= (maxNodeContextOpened + 1) ) { // + 1 so we allow the Viewer interface to stay
             const ViewerTabPrivate::PluginViewerContext* oldestNodeViewerInterface = 0;
             for (std::list<ViewerTabPrivate::PluginViewerContext>::iterator it = _imp->currentNodeContext.begin(); it != _imp->currentNodeContext.end(); ++it) {
                 NodeGuiPtr node = it->currentNode.lock();
