@@ -601,7 +601,7 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
             qDebug() << QString::fromUtf8(it->pluginID.c_str()) << (QObject*)it->currentNode.lock().get() << it->currentContext.get() << it->currentContext->getContainerWidget();
         }
 #       endif
-        if ( (int)_imp->currentNodeContext.size() >= maxNodeContextOpened ) {
+        while ( (int)_imp->currentNodeContext.size() >= maxNodeContextOpened ) {
             const ViewerTabPrivate::PluginViewerContext& oldestNodeViewerInterface = _imp->currentNodeContext.front();
             removeNodeViewerInterface(oldestNodeViewerInterface.currentNode.lock(), false /*permanently*/, false /*setAnother*/);
 #           ifdef DEBUG_VIEWERCONTAINER
