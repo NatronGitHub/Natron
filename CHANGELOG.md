@@ -34,7 +34,8 @@ Natron multiple times on the same computer, the different processes will share t
 
 ## Version 2.3.8
 
-- fix crash when Viewer/maxNodeUiOpened=1 in the preferences
+- Fix crash when Viewer/maxNodeUiOpened=1 in the preferences
+- Fix bug where an exported PyPlug would not have a correct Python syntax is a string had a backslash followed by newline.
 
 
 ## Version 2.3.7
