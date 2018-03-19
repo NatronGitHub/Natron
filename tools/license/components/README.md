@@ -11,9 +11,10 @@ Natron binaries include components from the following libraries:
 * GLAD (MIT) http://glad.dav1d.de/
 * GLFW (libpng/zlib license) http://www.glfw.org/
 * openfx (Modified BSD) https://github.com/ofxa/openfx
-* openfx-io (GPLv2) https://github.com/MrKepzie/openfx-io
-* openfx-misc (GPLv2) https://github.com/devernay/openfx-misc
-* openfx-arena (GPLv2) https://github.com/olear/openfx-arena
+* openfx-io (GPLv2) https://github.com/NatronGitHub/openfx-io
+* openfx-misc (GPLv2) https://github.com/NatronGitHub/openfx-misc
+* openfx-arena (GPLv2) https://github.com/NatronGitHub/openfx-arena
+* openfx-gmic (CeCILL-C, LGPL-like) https://github.com/NatronGitHub/openfx-gmic
 * Eigen 3 (MPL 2.0) http://eigen.tuxfamily.org/
 * Ceres Solver (New BSD) http://ceres-solver.org/
 * gflags (New BSD) http://gflags.github.io/gflags/
