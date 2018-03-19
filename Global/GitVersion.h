@@ -5,4 +5,5 @@
 #define IO_GIT_COMMIT ""
 #define MISC_GIT_COMMIT ""
 #define ARENA_GIT_COMMIT ""
+#define GMIC_GIT_COMMIT ""
 #endif

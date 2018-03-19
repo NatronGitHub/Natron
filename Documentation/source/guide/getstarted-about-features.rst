@@ -11,13 +11,14 @@ Features
 * Colorspace management handled by the famous open-source OpenColorIO library.
 * Dozens of file formats supported: EXR, DPX,TIFF, PSD, SVG, Raw, JPG, PNG …
 * **Support for many free and open-source OpenFX plugins:**
- * `OpenFX-IO <https://github.com/MrKepzie/openfx-io>`_
- * `OpenFX-Misc <https://github.com/devernay/openfx-misc>`_
- * `OpenFX-Arena <https://github.com/olear/openfx-arena>`_
+ * `OpenFX-IO <https://github.com/NatronGitHub/openfx-io>`_
+ * `OpenFX-Misc <https://github.com/NatronGitHub/openfx-misc>`_
+ * `OpenFX-Arena <https://github.com/NatronGitHub/openfx-arena>`_
+ * `OpenFX-G'MIC <https://github.com/NatronGitHub/openfx-gmic>`_
  * `OpenFX-OpenCV <https://github.com/devernay/openfx-opencv>`_
  * `OpenFX-Yadif <https://github.com/devernay/openfx-yadif>`_ deinterlacer
  * `OpenFX-Vegas <https://github.com/devernay/openfx-vegas>`_  SDK samples
- * `OpenFX <https://github.com/devernay/openfx>`_ samples
+ * `OpenFX <https://github.com/NatronGitHub/openfx>`_ samples
  * `TuttleOFX <https://github.com/tuttleofx/TuttleOFX>`_
 * **Support for commercial OpenFX plugins:**
  * `RevisionFX <http://www.revisionfx.com/>`_ products
