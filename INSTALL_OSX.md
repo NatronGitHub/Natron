@@ -84,9 +84,13 @@ If you intend to build the [openfx-io](https://github.com/NatronGitHub/openfx-io
 
     sudo port -v -N install x264 libvpx +highbitdepth libraw +gpl2 openexr ffmpeg +gpl2 +highbitdepth opencolorio openimageio +natron seexpr
 
-and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
+and for [openfx-arena](https://github.com/NatronGitHub/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
     sudo port -v -N install librsvg ImageMagick +natron poppler librevenge libcdr-0.1 libzip
+
+and for [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic):
+
+    yes | sudo port -v install fftw-3
 
 ### Homebrew
 
@@ -134,16 +138,19 @@ The last command above will take a while, since it builds from sources, and shou
     echo 'import site; site.addsitedir("/usr/local/lib/python2.7/site-packages")' >> ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth
     sudo ln -s ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth /Library/Python/2.7/lib/python/site-packages/homebrew.pth
 
- To install the openfx-io and openfx-misc sets of plugin, you also need the following:
+ To install the [openfx-io](https://github.com/NatronGitHub/openfx-io) and [openfx-misc](https://github.com/NatronGitHub/openfx-misc) sets of plugin, you also need the following:
 
     brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio seexpr
 
-To install the openfx-arena set of plugin, you also need the following:
+To install the [openfx-arena](https://github.com/NatronGitHub/openfx-arena) set of plugin, you also need the following:
 
     brew install librsvg poppler librevenge libcdr libzip
     brew uninstall imagemagick
     brew install imagemagick --with-hdri --with-librsvg --with-quantum-depth-32 --with-pango
 
+To install the [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic) set of plugin, you also need the following:
+
+    brew install fftw
 
 also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):

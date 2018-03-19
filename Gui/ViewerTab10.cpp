@@ -102,6 +102,10 @@ void
 ViewerTab::seek(SequenceTime time)
 {
     _imp->timeLineGui->seek(time);
+    Gui* gui = getGui();
+    if (gui) {
+        gui->refreshAllPreviews();
+    }
 }
 
 void

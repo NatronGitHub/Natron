@@ -31,6 +31,7 @@ Natron binaries include components from the following libraries:
 
 * Mesa (MIT) http://www.mesa3d.org
 * TinyThread++ (libpng/zlib License) http://tinythreadpp.bitsnbites.eu/
+* CImg (CeCILL-C, LGPL-like) http://cimg.eu/
 
 ## openfx-io
 
@@ -82,6 +83,12 @@ Natron binaries include components from the following libraries:
 * libcdr (MPL 2.0) https://github.com/LibreOffice/libcdr
 * libxml (MIT) http://www.xmlsoft.org/
 * poppler (GPL 2.0) https://poppler.freedesktop.org/ (used by openfx-arena via ReadPDF) 
+
+## openfx-gmic
+
+* G'MIC (CeCILL-C, LGPL-like) http://gmic.eu/
+* CImg (CeCILL-C, LGPL-like) http://cimg.eu/
+* FFTW (GPLv2) http://www.fftw.org/
 
 ## Indirect dependencies
 
