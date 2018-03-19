@@ -42,6 +42,7 @@ addons:
     #- kalakris-cmake
     - pythonxy-devel
     packages:
+    - ca-certificates
     #- gcc-4.9
     #- g++-4.9
     #- gcc-5
