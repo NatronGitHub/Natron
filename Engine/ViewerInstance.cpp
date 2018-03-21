@@ -945,7 +945,12 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     }
 
     // Fill the gamma LUT if it has never been filled yet
+    bool gammaLookupEmpty;
     {
+        QReadLocker k(&_imp->gammaLookupMutex);
+        gammaLookupEmpty = _imp->gammaLookup.empty();
+    }
+    if (gammaLookupEmpty) {
         QWriteLocker k(&_imp->gammaLookupMutex);
         if ( _imp->gammaLookup.empty() ) {
             _imp->fillGammaLut(outArgs->params->gamma);
