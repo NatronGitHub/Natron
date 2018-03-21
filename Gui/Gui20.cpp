@@ -817,7 +817,10 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
     if (!treeNode->getChildren().empty()) {
         // For grouping items, create the menu
         Menu* menu = new Menu(this);
-        menu->setTitle( pluginsToolButton->getLabel() );
+        QString pluginsToolButtonTitle = pluginsToolButton->getLabel();
+        // see doc of QMenubar: convert & to &&
+        pluginsToolButtonTitle.replace(QString::fromUtf8("&"), QString::fromUtf8("&&"));
+        menu->setTitle(pluginsToolButtonTitle);
         menu->setIcon(menuIcon);
         pluginsToolButton->setMenu(menu);
         pluginsToolButton->setAction( menu->menuAction() );
@@ -829,7 +832,13 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
         // If this is the highest major version for this plug-in use normal label, otherwise also append the major version
         bool isHighestMajorVersionForPlugin = internalPlugin->getIsHighestMajorVersion();
 
-        std::string pluginLabel = !isHighestMajorVersionForPlugin ? internalPlugin->getLabelVersionMajorEncoded() : internalPlugin->getLabelWithoutSuffix();
+        QString pluginLabelText;
+        {
+            std::string pluginLabel = !isHighestMajorVersionForPlugin ? internalPlugin->getLabelVersionMajorEncoded() : internalPlugin->getLabelWithoutSuffix();
+            pluginLabelText = QString::fromUtf8(pluginLabel.c_str());
+            // see doc of QMenubar: convert & to &&
+           pluginLabelText.replace(QString::fromUtf8("&"), QString::fromUtf8("&&"));
+        }
 
         QKeySequence defaultNodeShortcut;
         QString shortcutGroup = QString::fromUtf8(kShortcutGroupNodes);
@@ -846,7 +855,7 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
         QAction* defaultPresetAction = new QAction(this);
         defaultPresetAction->setShortcut(defaultNodeShortcut);
         defaultPresetAction->setShortcutContext(Qt::WidgetShortcut);
-        defaultPresetAction->setText(QString::fromUtf8(pluginLabel.c_str()));
+        defaultPresetAction->setText(pluginLabelText);
         defaultPresetAction->setIcon( pluginsToolButton->getMenuIcon() );
         QObject::connect( defaultPresetAction, SIGNAL(triggered()), pluginsToolButton, SLOT(onTriggered()) );
 
@@ -856,15 +865,16 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
             // If the node has no presets, just make an action, otherwise make a menu
             pluginsToolButton->setAction(defaultPresetAction);
         } else {
-
-
             Menu* menu = new Menu(this);
-            menu->setTitle( pluginsToolButton->getLabel() );
+            QString pluginsToolButtonTitle = pluginsToolButton->getLabel();
+            // see doc of QMenubar: convert & to &&
+            pluginsToolButtonTitle.replace(QString::fromUtf8("&"), QString::fromUtf8("&&"));
+            menu->setTitle(pluginsToolButtonTitle);
             menu->setIcon(menuIcon);
             pluginsToolButton->setMenu(menu);
             pluginsToolButton->setAction( menu->menuAction() );
 
-            defaultPresetAction->setText(QString::fromUtf8(pluginLabel.c_str()) + tr(" (Default)"));
+            defaultPresetAction->setText(pluginLabelText + tr(" (Default)"));
             menu->addAction(defaultPresetAction);
 
             for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
@@ -881,7 +891,7 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
 
                 }
 
-                QString presetLabel = QString::fromUtf8(pluginLabel.c_str());
+                QString presetLabel = pluginLabelText;
                 presetLabel += QLatin1String(" (");
                 presetLabel += it->presetLabel;
                 presetLabel += QLatin1String(")");
