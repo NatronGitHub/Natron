@@ -8,9 +8,10 @@
 ## Version 2.3.8
 
 - Fix crash when Viewer/maxNodeUiOpened=1 in the preferences
-- Fix bug where an exported PyPlug would not have a correct Python syntax is a string had a backslash followed by newline.
+- Fix bug where an exported PyPlug would not have a correct Python syntax if a string had a backslash followed by newline (as may be seen in Shadertoy sources).
 - Fix behaviour of loop/bounce in the Read node when there is a time offset #1734.
 - G'MIC plugins by Tobias Fleischer are now bundled with the binary distributions.
+- Fix bug where the "&" character was not displayed in the plugin creation menus.
 
 
 ## Version 2.3.7
