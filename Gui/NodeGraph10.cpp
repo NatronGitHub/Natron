@@ -251,13 +251,8 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         }
     }
 
-<<<<<<< HEAD
     NodeGuiPtr nearbyNode;
-    Edge* nearbyEdge;
-=======
-    NodeGui* nearbyNode = NULL;
     Edge* nearbyEdge = NULL;
->>>>>>> RB-2.3
     NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
     if (nearbyItemCode == eNearbyItemBackdropResizeHandle) {
         assert(nearbyNode);
