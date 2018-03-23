@@ -5,6 +5,11 @@
 # History
 
 
+## Version 2.3.9
+
+- Numerical text fields (aka SpinBoxes) are now auto-reselected when validated #1737
+
+
 ## Version 2.3.8
 
 - Fix crash when Viewer/maxNodeUiOpened=1 in the preferences

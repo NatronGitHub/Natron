@@ -722,6 +722,7 @@ SpinBox::keyPressEvent(QKeyEvent* e)
             _imp->hasChangedSinceLastValidation = true;
             QLineEdit::keyPressEvent(e);
             if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
+                selectAll(); // select the whole text so that it can be easily typed again, https://github.com/MrKepzie/Natron/issues/1737
                 ///Return and enter emit editingFinished() in parent implementation but do not accept the shortcut either
                 e->accept();
             }
