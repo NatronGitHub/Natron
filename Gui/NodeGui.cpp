@@ -32,6 +32,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QDebug>
 #include <QLayout>
 #include <QAction>
 #include <QtCore/QThread>
@@ -127,7 +128,7 @@ using std::make_pair;
 static void
 replaceLineBreaksWithHtmlParagraph(QString &txt)
 {
-    txt.replace( QString::fromUtf8("\n"), QString::fromUtf8("<br >") );
+    txt.replace( QString::fromUtf8("\n"), QString::fromUtf8("<br />") );
 }
 
 static void
@@ -380,6 +381,9 @@ void
 NodeGui::restoreStateAfterCreation()
 {
     NodePtr internalNode = getNode();
+    if (!internalNode) {
+        return;
+    }
 
     ///Refresh the disabled knob
 
@@ -892,19 +896,21 @@ NodeGui::resize(int width,
     if ( !canResize() ) {
         return;
     }
+    const bool hasPluginIcon = _pluginIcon && _pluginIcon->isVisible();
 
-    const QPointF topLeft = mapFromParent( pos() );
-    const bool hasPluginIcon = _pluginIcon != NULL;
-    const int iconWidth = getPluginIconWidth();
     adjustSizeToContent(&width, &height, adjustToTextSize);
-
+    const int iconWidth = getPluginIconWidth();
 
     {
         QMutexLocker k(&_mtSafeSizeMutex);
         _mtSafeWidth = width;
         _mtSafeHeight = height;
     }
+    const QPointF topLeft = mapFromParent( pos() );
     const QPointF bottomRight(topLeft.x() + width, topLeft.y() + height);
+    //const QPointF bottomLeft = topLeft + QPointF(0, height);
+    const QPointF topRight = topLeft + QPointF(width, 0);
+
     QRectF bbox(topLeft.x(), topLeft.y(), width, height);
 
     _boundingBox->setRect(bbox);
@@ -913,15 +919,15 @@ NodeGui::resize(int width,
     int iconOffsetX = TO_DPIX(PLUGIN_ICON_OFFSET);
     if (hasPluginIcon) {
         _pluginIcon->setX(topLeft.x() + iconOffsetX);
-        int iconsOffset = _presetIcon  && _presetIcon->isVisible() ? (height - 2 * iconSize) / 3. : (height - iconSize) / 2.;
-        _pluginIcon->setY(topLeft.y() + iconsOffset);
+        int iconsYOffset = _presetIcon  && _presetIcon->isVisible() ? (height - 2 * iconSize) / 3. : (height - iconSize) / 2.;
+        _pluginIcon->setY(topLeft.y() + iconsYOffset);
         _pluginIconFrame->setRect(topLeft.x(), topLeft.y(), iconWidth, height);
     }
 
-    if ( _presetIcon && _presetIcon->isVisible() ) {
-        int iconsOffset =  (height - 2 * iconSize) / 3.;
+    if ( _presetIcon  && _presetIcon->isVisible() ) {
+        int iconsYOffset =  (height - 2 * iconSize) / 3.;
         _presetIcon->setX(topLeft.x() + iconOffsetX);
-        _presetIcon->setY(topLeft.y() + iconsOffset * 2 + iconSize);
+        _presetIcon->setY(topLeft.y() + iconsYOffset * 2 + iconSize);
     }
 
     QFont f(appFont, appFontSize);
@@ -947,7 +953,7 @@ NodeGui::resize(int width,
     _streamIssuesWarning->refreshPosition(bitDepthPos);
 
     if (_expressionIndicator) {
-        _expressionIndicator->refreshPosition( topLeft + QPointF(width, 0) );
+        _expressionIndicator->refreshPosition(topRight);
     }
     if (_availableViewsIndicator) {
         _availableViewsIndicator->refreshPosition(topLeft);
@@ -1530,6 +1536,7 @@ NodeGui::boundingRect() const
 {
     QTransform t;
     QRectF bbox = _boundingBox->boundingRect();
+
     QPointF center = bbox.center();
 
     t.translate( center.x(), center.y() );
@@ -2192,11 +2199,12 @@ NodeGui::refreshStateIndicator()
 
     bool showIndicator = true;
     int value = getNode()->getIsNodeRenderingCounter();
+    bool isSelected = getIsSelected();
     if (value >= 1) {
         _stateIndicator->setBrush(Qt::yellow);
     } else if (_mergeHintActive) {
         _stateIndicator->setBrush(Qt::green);
-    } else if ( getIsSelected() ) {
+    } else if (isSelected) {
         _stateIndicator->setBrush(Qt::white);
     } else if ( !message.isEmpty() && ( (type == 1) || (type == 2) ) ) {
         if (type == 1) {
@@ -2208,6 +2216,14 @@ NodeGui::refreshStateIndicator()
         showIndicator = false;
     }
 
+    if (_outputEdge) {
+        _outputEdge->setUseSelected(isSelected);
+    }
+    for (std::vector<Edge*>::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
+        if (*it) {
+            (*it)->setUseSelected(isSelected);
+        }
+    }
     if ( showIndicator && !_stateIndicator->isVisible() ) {
         _stateIndicator->show();
     } else if ( !showIndicator && _stateIndicator->isVisible() ) {
@@ -2886,12 +2902,10 @@ void
 NodeGui::setNameItemHtml(const QString & name,
                          const QString & label)
 {
-    if (!_nameItem) {
+    if ( !_graph->getGui() || !_nameItem) {
         return;
     }
     QString textLabel;
-    textLabel.append( QString::fromUtf8("<div align=\"center\">") );
-
 
     if ( !label.isEmpty() ) {
         QString labelCopy = label;
@@ -2906,7 +2920,7 @@ NodeGui::setNameItemHtml(const QString & name,
             int endCustomData = labelCopy.indexOf(endCustomTag, startCustomData);
             assert(endCustomData != -1);
             labelCopy.remove( endCustomData, endCustomTag.size() );
-            labelCopy.insert( endCustomData, QString::fromUtf8("<br>") );
+            //labelCopy.insert( endCustomData, QLatin1Char('\n') );
         }
 
         ///add the node name into the html encoded label
@@ -2918,10 +2932,10 @@ NodeGui::setNameItemHtml(const QString & name,
                 endFontTag += toFind.size();
             }
 
-            QString toInsert = name + _channelsExtraLabel + QString::fromUtf8("<br>");
+            QString toInsert = name + _channelsExtraLabel + QLatin1Char('\n');
             labelCopy.insert(endFontTag == -1 ? 0 : endFontTag, toInsert);
         } else {
-            labelCopy.prepend( name + _channelsExtraLabel + QString::fromUtf8("<br>") );
+            labelCopy.prepend( name + _channelsExtraLabel + QLatin1Char('\n') );
             ///Default to something not too bad
             /*QString fontTag = (QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
                                .arg(6)
@@ -2942,25 +2956,32 @@ NodeGui::setNameItemHtml(const QString & name,
         textLabel.append(_channelsExtraLabel);
         //textLabel.append("</font>");
     }
-    textLabel.append( QString::fromUtf8("</div>") );
+    QString finalText;
+    finalText += textLabel.trimmed();
 
-    int startFontTag = textLabel.indexOf( QString::fromUtf8("<font size=") );
+    replaceLineBreaksWithHtmlParagraph(finalText);
+
+    finalText.prepend( QString::fromUtf8("<div align=\"center\">") );
+    finalText.append( QString::fromUtf8("</div>") );
+
+    int startFontTag = finalText.indexOf( QString::fromUtf8("<font size=") );
     int endFontTag = -1;
     if (startFontTag != -1) {
-        startFontTag = textLabel.indexOf(QString::fromUtf8("\">"), startFontTag);
+        startFontTag = finalText.indexOf(QString::fromUtf8("\">"), startFontTag);
     }
 
     QString oldText = _nameItem->toHtml();
-    if (textLabel == oldText) {
+    if (finalText == oldText) {
+        // Nothing changed
         return;
     }
 
     QFont f;
     QColor color = Qt::black;
     if (startFontTag != -1) {
-        KnobGuiString::parseFont(textLabel, &f, &color);
+        KnobGuiString::parseFont(finalText, &f, &color);
         //Remove font from the HTML
-        textLabel.remove(startFontTag, endFontTag - startFontTag);
+        finalText.remove(startFontTag, endFontTag - startFontTag);
     } else {
         f = QApplication::font();
     }
@@ -2969,18 +2990,13 @@ NodeGui::setNameItemHtml(const QString & name,
         f.setStyleStrategy(QFont::NoAntialias);
     }
     _nameItem->setDefaultTextColor(color);
-
     _nameItem->setFont(f);
-
-    _nameItem->setHtml(textLabel);
+    _nameItem->setHtml(finalText);
     _nameItem->adjustSize();
 
 
     QRectF bbox = boundingRect();
     resize( bbox.width(), bbox.height(), false, !label.isEmpty() );
-//    QRectF currentBbox = boundingRect();
-//    QRectF labelBbox = _nameItem->boundingRect();
-//    resize( currentBbox.width(), std::max( currentBbox.height(),labelBbox.height() ) );
 } // setNameItemHtml
 
 void
@@ -2997,7 +3013,7 @@ NodeGui::onOutputLayerChanged()
     if (processAllKnob && processAllKnob->hasModifications()) {
         processAll = processAllKnob->getValue();
         if (processAll) {
-            //extraLayerStr.append( QString::fromUtf8("<br>") );
+            //extraLayerStr.append( QString::fromUtf8("<br />") );
             extraLayerStr += tr("(All)");
         }
     }
@@ -3014,7 +3030,7 @@ NodeGui::onOutputLayerChanged()
     if (!processAll && outputLayer.getNumComponents() > 0) {
         if (!outputLayer.isColorPlane()) {
             if (!extraLayerStr.isEmpty()) {
-                extraLayerStr.append( QString::fromUtf8("<br>") );
+                extraLayerStr.append( QString::fromUtf8("<br />") );
             }
             extraLayerStr.push_back( QLatin1Char('(') );
             extraLayerStr.append( QString::fromUtf8( outputLayer.getPlaneLabel().c_str() ) );

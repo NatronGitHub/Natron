@@ -76,6 +76,7 @@ struct EdgePrivate
     QColor renderingColor;
     bool useRenderingColor;
     bool useHighlight;
+    bool useSelected;
     bool paintWithDash;
     bool optional;
     bool paintBendPoint;
@@ -101,6 +102,7 @@ struct EdgePrivate
         , renderingColor(243, 149, 0)
         , useRenderingColor(false)
         , useHighlight(false)
+        , useSelected(false)
         , paintWithDash(false)
         , optional(false)
         , paintBendPoint(false)
@@ -384,6 +386,13 @@ void
 Edge::setUseHighlight(bool highlight)
 {
     _imp->useHighlight = highlight;
+    update();
+}
+
+void
+Edge::setUseSelected(bool val)
+{
+    _imp->useSelected = val;
     update();
 }
 
@@ -758,7 +767,9 @@ Edge::paint(QPainter *painter,
     }
 
     QColor color, arrowColor;
-    if (_imp->useHighlight) {
+    if (_imp->useSelected) {
+        color = arrowColor = Qt::white;
+    } else if (_imp->useHighlight) {
         color = arrowColor = Qt::green;
     } else if (_imp->useRenderingColor) {
         color = arrowColor = _imp->renderingColor;
