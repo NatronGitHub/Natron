@@ -1608,7 +1608,7 @@ AppManager::registerBuiltInPlugin(const QString& iconPath,
                                   bool isDeprecated,
                                   bool internalUseOnly)
 {
-    EffectInstPtr node( PLUGIN::BuildEffect( NodePtr() ) );
+    EffectInstancePtr node( PLUGIN::BuildEffect( NodePtr() ) );
     std::map<std::string, void (*)()> functions;
 
     functions.insert( std::make_pair("BuildEffect", ( void (*)() ) & PLUGIN::BuildEffect) );
@@ -2376,7 +2376,7 @@ AppManager::getPluginBinary(const QString & pluginId,
     return 0;
 }
 
-EffectInstPtr
+EffectInstancePtr
 AppManager::createOFXEffect(NodePtr node,
                             const CreateNodeArgs& args
 #ifndef NATRON_ENABLE_IO_META_NODES

@@ -99,7 +99,7 @@ class OfxParamToKnob
 public:
 
 
-    OfxParamToKnob(const EffectInstPtr& effect)
+    OfxParamToKnob(const EffectInstancePtr& effect)
         : dynamicPropModifiedMutex()
         , _dynamicPropModified(0)
         , _effect(effect)
@@ -120,7 +120,7 @@ public:
         return interactDesc;
     }
 
-    EffectInstPtr getKnobHolder() const;
+    EffectInstancePtr getKnobHolder() const;
 
     void connectDynamicProperties();
 
@@ -150,7 +150,7 @@ public:
                                                              OFX::Host::Param::Instance* param,
                                                              int dimension)
     {
-        EffectInstPtr holder = getKnobHolder();
+        EffectInstancePtr holder = getKnobHolder();
 
         assert(holder);
 #ifdef NATRON_ENABLE_IO_META_NODES

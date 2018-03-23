@@ -1343,7 +1343,7 @@ RotoPaint::getPreferredMetadata(NodeMetadata& metadata)
         metadata.setOutputPremult(eImagePremultiplicationPremultiplied);
        } else {
         ImagePremultiplicationEnum srcPremult = eImagePremultiplicationOpaque;
-        EffectInstPtr input = getInput(0);
+        EffectInstancePtr input = getInput(0);
         if (input) {
             srcPremult = input->getPremult();
         }
@@ -1434,7 +1434,7 @@ RotoPaint::isIdentity(double time,
 {
     *inputView = view;
     NodePtr node = getNode();
-    EffectInstPtr maskInput = getInput(ROTOPAINT_MASK_INPUT_INDEX);
+    EffectInstancePtr maskInput = getInput(ROTOPAINT_MASK_INPUT_INDEX);
     if (maskInput) {
         RectD maskRod;
         bool isProjectFormat;

@@ -75,7 +75,7 @@ copyAbortInfo(QThread* fromThread,
     if (fromAbortable && toAbortable) {
         bool isRenderResponseToUserInteraction;
         AbortableRenderInfoPtr abortInfo;
-        EffectInstPtr treeRoot;
+        EffectInstancePtr treeRoot;
         fromAbortable->getAbortInfo(&isRenderResponseToUserInteraction, &abortInfo, &treeRoot);
         toAbortable->setAbortInfo(isRenderResponseToUserInteraction, abortInfo, treeRoot);
     }

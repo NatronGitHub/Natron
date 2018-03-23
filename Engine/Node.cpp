@@ -405,7 +405,7 @@ public:
     InputsV inputs, guiInputs;
 
     //to the inputs in a thread-safe manner.
-    EffectInstPtr effect;  //< the effect hosted by this node
+    EffectInstancePtr effect;  //< the effect hosted by this node
 
     ///The accepted components in input and in output of the plug-in
     ///These two are also protected by inputsMutex
@@ -3291,7 +3291,7 @@ Node::makeInfoForInput(int inputNumber) const
     if ( (inputNumber < -1) || ( inputNumber >= getMaxInputCount() ) ) {
         return "";
     }
-    EffectInstPtr input;
+    EffectInstancePtr input;
     if (inputNumber != -1) {
         input = _imp->effect->getInput(inputNumber);
         /*if (input) {
@@ -4870,7 +4870,7 @@ Node::beginEditKnobs()
 }
 
 void
-Node::setEffect(const EffectInstPtr& effect)
+Node::setEffect(const EffectInstancePtr& effect)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -4896,7 +4896,7 @@ Node::setEffect(const EffectInstPtr& effect)
 #endif
 }
 
-EffectInstPtr
+EffectInstancePtr
 Node::getEffectInstance() const
 {
     ///Thread safe as it never changes
@@ -7215,7 +7215,7 @@ Node::getPluginDescription() const
     std::string pluginID = getPluginID();
     if (pluginID == PLUGINID_NATRON_READ ||
         pluginID == PLUGINID_NATRON_WRITE) {
-        EffectInstPtr effectInstance = getEffectInstance();
+        EffectInstancePtr effectInstance = getEffectInstance();
         if ( effectInstance && effectInstance->isReader() ) {
             ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 

@@ -134,7 +134,7 @@ DockablePanel::DockablePanel(Gui* gui,
             const std::string pluginID = isEffect->getPluginID();
             if (pluginID == PLUGINID_NATRON_READ ||
                 pluginID == PLUGINID_NATRON_WRITE) {
-                EffectInstPtr effectInstance = node->getEffectInstance();
+                EffectInstancePtr effectInstance = node->getEffectInstance();
                 if ( effectInstance && effectInstance->isReader() ) {
                     ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
@@ -1674,7 +1674,7 @@ DockablePanel::onEnterInGroupClicked()
     if (!node) {
         throw std::logic_error("");
     }
-    EffectInstPtr effect = node->getNode()->getEffectInstance();
+    EffectInstancePtr effect = node->getNode()->getEffectInstance();
     assert(effect);
     if (!effect) {
         throw std::logic_error("");

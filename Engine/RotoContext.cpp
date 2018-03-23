@@ -1825,7 +1825,7 @@ RotoContext::getCurvesByRenderOrder(bool onlyActivated) const
         return ret;
     }
     ///Note this might not be the timeline's current frame if this is a render thread.
-    EffectInstPtr effect = node->getEffectInstance();
+    EffectInstancePtr effect = node->getEffectInstance();
     if (!effect) {
         return ret;
     }

@@ -46,7 +46,7 @@ typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
 
 struct ViewerArgs
 {
-    EffectInstPtr activeInputToRender;
+    EffectInstancePtr activeInputToRender;
     bool forceRender;
     int activeInputIndex;
     U64 activeInputHash;

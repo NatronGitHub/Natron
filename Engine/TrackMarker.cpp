@@ -855,7 +855,7 @@ TrackMarker::resetTrack()
     curCenter.x = knob->getValue(0);
     curCenter.y = knob->getValue(1);
 
-    EffectInstPtr effect = getContext()->getNode()->getEffectInstance();
+    EffectInstancePtr effect = getContext()->getNode()->getEffectInstance();
     effect->beginChanges();
 
     const KnobsVec& knobs = getKnobs();
@@ -1190,7 +1190,7 @@ TrackMarker::onKnobSlaved(const KnobPtr& slave,
                           int dimension,
                           bool isSlave)
 {
-    EffectInstPtr effect = getContext()->getNode()->getEffectInstance();
+    EffectInstancePtr effect = getContext()->getNode()->getEffectInstance();
 
     if (effect) {
         effect->onKnobSlaved(slave, master, dimension, isSlave);

@@ -1070,7 +1070,7 @@ OutputSchedulerThread::startRender()
 
 
     ///If the output effect is sequential (only WriteFFMPEG for now)
-    EffectInstPtr effect = _imp->outputEffect.lock();
+    EffectInstancePtr effect = _imp->outputEffect.lock();
     WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effect.get() );
     if (isWriteNode) {
         NodePtr embeddedWriter = isWriteNode->getEmbeddedWriter();
@@ -1156,7 +1156,7 @@ OutputSchedulerThread::stopRender()
     _imp->waitForRenderThreadsToQuit();
 
     ///If the output effect is sequential (only WriteFFMPEG for now)
-    EffectInstPtr effect = _imp->outputEffect.lock();
+    EffectInstancePtr effect = _imp->outputEffect.lock();
     WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effect.get() );
     if (isWriteNode) {
         NodePtr embeddedWriter = isWriteNode->getEmbeddedWriter();
@@ -1468,7 +1468,7 @@ OutputSchedulerThread::onAbortRequested(bool /*keepOldestRender*/)
             if (isAbortableThread) {
                 bool userInteraction;
                 AbortableRenderInfoPtr abortInfo;
-                EffectInstPtr treeRoot;
+                EffectInstancePtr treeRoot;
                 isAbortableThread->getAbortInfo(&userInteraction, &abortInfo, &treeRoot);
                 if (abortInfo) {
                     abortInfo->setAborted();
@@ -2255,7 +2255,7 @@ private:
             // Do not catch exceptions: if an exception occurs here it is probably fatal, since
             // it comes from Natron itself. All exceptions from plugins are already caught
             // by the HostSupport library.
-            EffectInstPtr activeInputToRender;
+            EffectInstancePtr activeInputToRender;
             //if (renderDirectly) {
             activeInputToRender = output;
             WriteNode* isWriteNode = dynamic_cast<WriteNode*>( output.get() );

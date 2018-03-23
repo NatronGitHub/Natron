@@ -234,7 +234,7 @@ public:
     EffectInstance* mainInstance; // pointer to the main-instance if this instance is a clone
     bool isDoingInstanceSafeRender; // true if this intance is rendering
     mutable QMutex renderClonesMutex;
-    std::list<EffectInstPtr> renderClonesPool;
+    std::list<EffectInstancePtr> renderClonesPool;
     bool mustSyncPrivateData; //!< true if the effect's knobs were changed but instanceChanged could not be called (e.g. when loading a PyPlug), so that syncPrivateData should be called in getPreferredMetadata_public before calling getPreferredMetadata
     mutable QMutex mustSyncPrivateDataMutex; //!< protects mustSyncPrivateData
 
@@ -295,7 +295,7 @@ public:
                          ViewIdx view,
                          bool isIdentity,
                          double identityTime,
-                         const EffectInstPtr& identityInput,
+                         const EffectInstancePtr& identityInput,
                          const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
                          const EffectInstance::InputImagesMap& inputImages,
                          const RoIMap & roiMap,
@@ -398,7 +398,7 @@ public:
 
     static bool aborted(bool isRenderResponseToUserInteraction,
                         const AbortableRenderInfoPtr& abortInfo,
-                        const EffectInstPtr& treeRoot)  WARN_UNUSED_RETURN;
+                        const EffectInstancePtr& treeRoot)  WARN_UNUSED_RETURN;
 
     void checkMetadata(NodeMetadata &metadata);
 };

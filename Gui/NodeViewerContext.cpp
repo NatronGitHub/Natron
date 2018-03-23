@@ -666,7 +666,7 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
             KnobGroup* newIsGroup = dynamic_cast<KnobGroup*>( newGroupKnob.get() );
             assert(newIsGroup);
             if (newIsButton && newIsGroup) {
-                EffectInstPtr effect = n->getNode()->getEffectInstance();
+                EffectInstancePtr effect = n->getNode()->getEffectInstance();
 
                 if (oldIsGroup) {
                     if (oldIsGroup->getValue() != false) {

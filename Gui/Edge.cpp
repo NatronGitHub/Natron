@@ -302,7 +302,7 @@ bool
 Edge::computeVisibility(bool hovered) const
 {
     NodeGuiPtr dst = _imp->dest.lock();
-    EffectInstPtr effect;
+    EffectInstancePtr effect;
 
     if ( dst && dst->getNode() ) {
         effect = dst->getNode()->getEffectInstance();
@@ -351,7 +351,7 @@ void
 Edge::refreshState(bool hovered)
 {
     NodeGuiPtr dst = _imp->dest.lock();
-    EffectInstPtr effect = dst ? dst->getNode()->getEffectInstance() : EffectInstPtr();
+    EffectInstancePtr effect = dst ? dst->getNode()->getEffectInstance() : EffectInstancePtr();
 
     if (effect) {
         ///Refresh properties

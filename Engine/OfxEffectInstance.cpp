@@ -616,7 +616,7 @@ OfxEffectInstance::~OfxEffectInstance()
     }
 }
 
-EffectInstPtr
+EffectInstancePtr
 OfxEffectInstance::createRenderClone()
 {
     boost::shared_ptr<OfxEffectInstance> clone( new OfxEffectInstance(*this) );
@@ -634,7 +634,7 @@ OfxEffectInstance::createRenderClone()
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
         // Failed to create clone...
-        return EffectInstPtr();
+        return EffectInstancePtr();
     }
 
 
@@ -1628,7 +1628,7 @@ OfxEffectInstance::getRegionsOfInterest(double time,
         OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
         assert(clip);
         if (clip) {
-            EffectInstPtr inputNode = clip->getAssociatedNode();
+            EffectInstancePtr inputNode = clip->getAssociatedNode();
             RectD inputRoi; // input RoI in canonical coordinates
             inputRoi.x1 = it->second.x1;
             inputRoi.x2 = it->second.x2;
@@ -1776,7 +1776,7 @@ OfxEffectInstance::getFrameRange(double *first,
             ///not taking optional inputs into accounts messes it up.
             for (int i = 0; i < inputsCount; ++i) {
                 //if (!isInputOptional(i)) {
-                EffectInstPtr inputEffect = getInput(i);
+                EffectInstancePtr inputEffect = getInput(i);
                 if (inputEffect) {
                     double f, l;
                     inputEffect->getFrameRange_public(inputEffect->getRenderHash(), &f, &l);
@@ -2990,7 +2990,7 @@ OfxEffectInstance::getTransform(double time,
                                 const RenderScale & renderScale, //< the plug-in accepted scale
                                 bool draftRender,
                                 ViewIdx view,
-                                EffectInstPtr* inputToTransform,
+                                EffectInstancePtr* inputToTransform,
                                 Transform::Matrix3x3* transform)
 {
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data

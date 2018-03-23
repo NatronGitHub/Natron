@@ -300,7 +300,7 @@ NodeGui::initialize(NodeGraph* dag,
 
 
     ///Make the output edge
-    EffectInstPtr iseffect = internalNode->getEffectInstance();
+    EffectInstancePtr iseffect = internalNode->getEffectInstance();
     Backdrop* isBd = dynamic_cast<Backdrop*>( iseffect.get() );
     if ( !isBd && !internalNode->isOutputNode() ) {
         _outputEdge = new Edge( thisAsShared, parentItem() );
@@ -328,7 +328,7 @@ void
 NodeGui::setColorFromGrouping()
 {
     NodePtr internalNode = getNode();
-    EffectInstPtr iseffect = internalNode->getEffectInstance();
+    EffectInstancePtr iseffect = internalNode->getEffectInstance();
     SettingsPtr settings = appPTR->getCurrentSettings();
     float r, g, b;
     Backdrop* isBd = dynamic_cast<Backdrop*>( iseffect.get() );
@@ -2223,7 +2223,7 @@ NodeGui::refreshRenderingIndicator()
     if (!node) {
         return;
     }
-    EffectInstPtr effect = node->getEffectInstance();
+    EffectInstancePtr effect = node->getEffectInstance();
     if (!effect) {
         return;
     }

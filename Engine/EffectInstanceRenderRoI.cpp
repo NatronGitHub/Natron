@@ -126,14 +126,14 @@ optimizeRectsToRender(EffectInstance* self,
 
                 // Walk along the identity branch until we find the non identity input, or NULL in we case we will
                 // just render black and transparent
-                EffectInstPtr identityInput = self->getInput(identityInputNb);
+                EffectInstancePtr identityInput = self->getInput(identityInputNb);
                 if (identityInput) {
                     for (;; ) {
                         identity = identityInput->isIdentity_public(false, 0, time, renderMappedScale, splits[i], view, &identityInputTime, &inputIdentityView,  &identityInputNb);
                         if ( !identity || (identityInputNb == -2) ) {
                             break;
                         }
-                        EffectInstPtr subIdentityInput = identityInput->getInput(identityInputNb);
+                        EffectInstancePtr subIdentityInput = identityInput->getInput(identityInputNb);
                         if (subIdentityInput == identityInput) {
                             break;
                         }
@@ -506,7 +506,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     {
         {
 
-            EffectInstPtr passThroughInput = getInput(ptInputNb);
+            EffectInstancePtr passThroughInput = getInput(ptInputNb);
             /*
              * For all requested planes, check which components can be produced in output by this node.
              * If the components are from the color plane, if another set of components of the color plane is present
@@ -631,7 +631,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             //args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
             args.roi.toCanonical_noClipping(args.mipMapLevel, par,  &canonicalRoI);
 
-            EffectInstPtr inputEffectIdentity = getInput(inputNbIdentity);
+            EffectInstancePtr inputEffectIdentity = getInput(inputNbIdentity);
             if (inputEffectIdentity) {
                 if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
                     frameArgs->stats->setNodeIdentity( getNode(), inputEffectIdentity->getNode() );
@@ -1218,7 +1218,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 getNode()->getPaintStrokeRoD(args.time, &inputRod);
                 hasMask = true;
             } else {
-                EffectInstPtr input = getInput(i);
+                EffectInstancePtr input = getInput(i);
                 if (!input) {
                     continue;
                 }
@@ -1351,7 +1351,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         if ( planesToRender->inputPremult.empty() ) {
             for (InputImagesMap::iterator it2 = it->imgs.begin(); it2 != it->imgs.end(); ++it2) {
-                EffectInstPtr input = getInput(it2->first);
+                EffectInstancePtr input = getInput(it2->first);
                 if (input) {
                     ImagePremultiplicationEnum inputPremult = input->getPremult();
                     if ( !it2->second.empty() ) {
@@ -1546,7 +1546,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         boost::scoped_ptr<QMutexLocker> locker;
 
 
-        EffectInstPtr renderInstance;
+        EffectInstancePtr renderInstance;
         /**
          * Figure out If this node should use a render clone rather than execute renderRoIInternal on the main (this) instance.
          * Reasons to use a render clone is be because a plug-in is eRenderSafetyInstanceSafe or does not support

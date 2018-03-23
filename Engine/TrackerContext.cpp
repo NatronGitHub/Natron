@@ -1790,14 +1790,14 @@ class IsTrackingFlagSetter_RAII
 
 private:
     ViewerInstance* _v;
-    EffectInstPtr _effect;
+    EffectInstancePtr _effect;
     TrackScheduler* _base;
     bool _reportProgress;
     bool _doPartialUpdates;
 
 public:
 
-    IsTrackingFlagSetter_RAII(const EffectInstPtr& effect,
+    IsTrackingFlagSetter_RAII(const EffectInstancePtr& effect,
                               TrackScheduler* base,
                               int step,
                               bool reportProgress,
@@ -1867,7 +1867,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
     const bool doPartialUpdates = numTracks < TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE;
     int lastValidFrame = frameStep > 0 ? start - 1 : start + 1;
     bool reportProgress = numTracks > 1 || framesCount > 1;
-    EffectInstPtr effect = _imp->getNode()->getEffectInstance();
+    EffectInstancePtr effect = _imp->getNode()->getEffectInstance();
     timeval lastProgressUpdateTime;
     gettimeofday(&lastProgressUpdateTime, 0);
 

@@ -200,9 +200,9 @@ public:
     /*Never call this yourself. This is needed by OfxEffectInstance so the pointer to the live instance
      * is set earlier.
      */
-    void setEffect(const EffectInstPtr& liveInstance);
+    void setEffect(const EffectInstancePtr& liveInstance);
 
-    EffectInstPtr getEffectInstance() const;
+    EffectInstancePtr getEffectInstance() const;
 
     /**
      * @brief Returns true if the node is a multi-instance node, that is, holding several other nodes.

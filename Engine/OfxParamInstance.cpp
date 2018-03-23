@@ -306,13 +306,13 @@ PropertyModified_RAII::~PropertyModified_RAII()
     _h->setDynamicPropertyModified(false);
 }
 
-EffectInstPtr
+EffectInstancePtr
 OfxParamToKnob::getKnobHolder() const
 {
-    EffectInstPtr effect = _effect.lock();
+    EffectInstancePtr effect = _effect.lock();
 
     if (!effect) {
-        return EffectInstPtr();
+        return EffectInstancePtr();
     }
 
 #ifdef NATRON_ENABLE_IO_META_NODES
@@ -3704,7 +3704,7 @@ OfxPageInstance::OfxPageInstance(const boost::shared_ptr<OfxEffectInstance>& nod
     , OFX::Host::Param::PageInstance( descriptor, node->effectInstance() )
     , _pageKnob()
 {
-    EffectInstPtr holder = getKnobHolder();
+    EffectInstancePtr holder = getKnobHolder();
 
     assert(holder);
 

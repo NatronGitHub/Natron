@@ -2126,7 +2126,7 @@ TransformInteract::penMotion(double time,
 
     if ( (_mouseState != TransformInteract::eReleased) && _interactiveDrag && valuesChanged ) {
         // no need to redraw overlay since it is slave to the paramaters
-        EffectInstPtr holder = _overlay->getNode()->getNode()->getEffectInstance();
+        EffectInstancePtr holder = _overlay->getNode()->getNode()->getEffectInstance();
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
         KeyFrame k;
         if (centerChanged) {
@@ -2354,7 +2354,7 @@ TransformInteract::penUp(double /*time*/,
            Give eValueChangedReasonPluginEdited reason so that the command uses the undo/redo stack
            see Knob::setValue
          */
-        EffectInstPtr holder = _overlay->getNode()->getNode()->getEffectInstance();
+        EffectInstancePtr holder = _overlay->getNode()->getNode()->getEffectInstance();
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
         {
             boost::shared_ptr<KnobDouble> knob = _center.lock();

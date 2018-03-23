@@ -299,7 +299,7 @@ ProgressTaskInfo::restartTask()
     if (!node) {
         return;
     }
-    EffectInstPtr effect = node->getEffectInstance();
+    EffectInstancePtr effect = node->getEffectInstance();
     if (!effect) {
         return;
     }
@@ -707,7 +707,7 @@ ProgressTaskInfoPrivate::refreshButtons()
     case ProgressTaskInfo::eProgressTaskStatusFinished: {
         pauseTasksButton->setEnabled(false);
         NodePtr node = getNode();
-        EffectInstPtr effect;
+        EffectInstancePtr effect;
         if (node) {
             effect = node->getEffectInstance();
         }

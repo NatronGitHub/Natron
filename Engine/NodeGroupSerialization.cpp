@@ -297,7 +297,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         if ( !children.empty() && !usingPythonModule) {
             NodeGroup* isGrp = n->isEffectGroup();
             if (isGrp) {
-                EffectInstPtr sharedEffect = isGrp->shared_from_this();
+                EffectInstancePtr sharedEffect = isGrp->shared_from_this();
                 boost::shared_ptr<NodeGroup> sharedGrp = boost::dynamic_pointer_cast<NodeGroup>(sharedEffect);
                 NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp, !usingPythonModule, moduleUpdatesProcessed);
             } else {

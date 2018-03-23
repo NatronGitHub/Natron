@@ -1146,11 +1146,11 @@ ViewerTab::refreshFPSBoxFromClipPreferences()
     int activeInputs[2];
 
     _imp->viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
-    EffectInstPtr input0 = activeInputs[0] != -1 ? _imp->viewerNode->getInput(activeInputs[0]) : EffectInstPtr();
+    EffectInstancePtr input0 = activeInputs[0] != -1 ? _imp->viewerNode->getInput(activeInputs[0]) : EffectInstancePtr();
     if (input0) {
         _imp->fpsBox->setValue( input0->getFrameRate() );
     } else {
-        EffectInstPtr input1 = activeInputs[1] != -1 ? _imp->viewerNode->getInput(activeInputs[1]) : EffectInstPtr();
+        EffectInstancePtr input1 = activeInputs[1] != -1 ? _imp->viewerNode->getInput(activeInputs[1]) : EffectInstancePtr();
         if (input1) {
             _imp->fpsBox->setValue( input1->getFrameRate() );
         } else {
@@ -1210,7 +1210,7 @@ ViewerTab::onClipPreferencesChanged()
     int activeInputs[2];
     _imp->viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
     for (int i = 0; i < 2; ++i) {
-        EffectInstPtr input;
+        EffectInstancePtr input;
         if (activeInputs[i] != -1) {
             input = _imp->viewerNode->getInput(activeInputs[i]);
         }

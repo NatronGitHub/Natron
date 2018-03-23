@@ -710,7 +710,7 @@ PyViewer::setAInput(int index)
     if ( !getInternalNode()->isActivated() ) {
         return;
     }
-    EffectInstPtr input = _viewer->getInternalNode()->getInput(index);
+    EffectInstancePtr input = _viewer->getInternalNode()->getInput(index);
     if (!input) {
         return;
     }
@@ -735,7 +735,7 @@ PyViewer::setBInput(int index)
     if ( !getInternalNode()->isActivated() ) {
         return;
     }
-    EffectInstPtr input = _viewer->getInternalNode()->getInput(index);
+    EffectInstancePtr input = _viewer->getInternalNode()->getInput(index);
     if (!input) {
         return;
     }

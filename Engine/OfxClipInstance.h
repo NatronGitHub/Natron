@@ -223,7 +223,7 @@ public:
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
 
-    EffectInstPtr getAssociatedNode() const WARN_UNUSED_RETURN;
+    EffectInstancePtr getAssociatedNode() const WARN_UNUSED_RETURN;
 
 
     /**
@@ -303,7 +303,7 @@ public:
     typedef boost::shared_ptr<ClipTLSData> ClipDataTLSPtr;
 
 private:
-    EffectInstPtr getEffectHolder() const;
+    EffectInstancePtr getEffectHolder() const;
 
     void getRegionOfDefinitionInternal(OfxTime time, ViewIdx view, unsigned int mipmapLevel, EffectInstance* associatedNode,
                                        OfxRectD* rod) const;

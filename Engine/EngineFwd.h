@@ -300,7 +300,7 @@ typedef std::list<NodeWPtr> NodesWList;
 typedef boost::shared_ptr<KnobI> KnobPtr;
 typedef boost::weak_ptr<KnobI> KnobWPtr;
 typedef std::vector<KnobPtr> KnobsVec;
-typedef boost::shared_ptr<EffectInstance> EffectInstPtr;
+typedef boost::shared_ptr<EffectInstance> EffectInstancePtr;
 typedef boost::weak_ptr<EffectInstance> EffectInstWPtr;
 typedef boost::weak_ptr<Image> ImageWPtr;
 typedef boost::shared_ptr<Image> ImagePtr;

@@ -1733,7 +1733,7 @@ TrackerNodeInteract::transformPattern(double time,
         searchPoints[3].rx() += delta.x;
     }
 
-    EffectInstPtr effect = context->getNode()->getEffectInstance();
+    EffectInstancePtr effect = context->getNode()->getEffectInstance();
     effect->beginChanges();
 
     if (transformPatternCorners) {

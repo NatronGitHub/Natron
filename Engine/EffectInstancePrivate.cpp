@@ -661,7 +661,7 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
                                                                    ViewIdx view,
                                                                    bool isIdentity,
                                                                    double identityTime,
-                                                                   const EffectInstPtr& identityInput,
+                                                                   const EffectInstancePtr& identityInput,
                                                                    const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
                                                                    const EffectInstance::InputImagesMap& inputImages,
                                                                    const RoIMap & roiMap,
