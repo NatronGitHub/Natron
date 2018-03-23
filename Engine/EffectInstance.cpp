@@ -1202,7 +1202,7 @@ EffectInstance::getRegionOfDefinition(U64 hash,
 
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
 
-    for (int i = 0; i < getMaxInputCount(); ++i) {
+    for (int i = 0; i < getNInputs(); ++i) {
         if ( isInputMask(i) ) {
             continue;
         }
@@ -1259,7 +1259,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
         // initialize with the effect's default RoD, because inputs may not be connected to other effects (e.g. Roto)
         calcDefaultRegionOfDefinition(hash, time, scale, view, &inputsUnion);
         bool firstInput = true;
-        for (int i = 0; i < getMaxInputCount(); ++i) {
+        for (int i = 0; i < getNInputs(); ++i) {
             EffectInstancePtr input = getInput(i);
             if (input) {
                 RectD inputRod;
@@ -1350,7 +1350,7 @@ EffectInstance::getRegionsOfInterest(double time,
 {
     bool tilesSupported = supportsTiles();
 
-    for (int i = 0; i < getMaxInputCount(); ++i) {
+    for (int i = 0; i < getNInputs(); ++i) {
         EffectInstancePtr input = getInput(i);
         if (input) {
             if (tilesSupported) {
@@ -1382,7 +1382,7 @@ EffectInstance::getFramesNeeded(double time,
     ranges.push_back(defaultRange);
     FrameRangesMap defViewRange;
     defViewRange.insert( std::make_pair(view, ranges) );
-    for (int i = 0; i < getMaxInputCount(); ++i) {
+    for (int i = 0; i < getNInputs(); ++i) {
         if ( isInputRotoBrush(i) ) {
             ret.insert( std::make_pair(i, defViewRange) );
         } else {
@@ -1403,7 +1403,7 @@ EffectInstance::getFrameRange(double *first,
     // default is infinite if there are no non optional input clips
     *first = INT_MIN;
     *last = INT_MAX;
-    for (int i = 0; i < getMaxInputCount(); ++i) {
+    for (int i = 0; i < getNInputs(); ++i) {
         EffectInstancePtr input = getInput(i);
         if (input) {
             double inpFirst, inpLast;
@@ -2272,7 +2272,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     EffectInstance::InputImagesMap::const_iterator foundMaskInput = rectToRender.imgs.end();
 
     if ( _publicInterface->isHostMaskingEnabled() ) {
-        foundMaskInput = rectToRender.imgs.find(_publicInterface->getMaxInputCount() - 1);
+        foundMaskInput = rectToRender.imgs.find(_publicInterface->getNInputs() - 1);
     }
     if ( ( foundPrefInput != rectToRender.imgs.end() ) && !foundPrefInput->second.empty() ) {
         originalInputImage = foundPrefInput->second.front();
@@ -2750,7 +2750,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
     bool unPremultIfNeeded = planes.outputPremult == eImagePremultiplicationPremultiplied;
     bool useMaskMix = _publicInterface->isHostMaskingEnabled() || _publicInterface->isHostMixingEnabled();
     double mix = useMaskMix ? _publicInterface->getNode()->getHostMixingValue(time, view) : 1.;
-    bool doMask = useMaskMix ? _publicInterface->getNode()->isMaskEnabled(_publicInterface->getMaxInputCount() - 1) : false;
+    bool doMask = useMaskMix ? _publicInterface->getNode()->isMaskEnabled(_publicInterface->getNInputs() - 1) : false;
 
     //Check for NaNs, copy to output image and mark for rendered
     for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
@@ -3140,7 +3140,7 @@ EffectInstance::clearPersistentMessage(bool recurse)
 int
 EffectInstance::getInputNumber(const EffectInstance* inputEffect) const
 {
-    for (int i = 0; i < getMaxInputCount(); ++i) {
+    for (int i = 0; i < getNInputs(); ++i) {
         if (getInput(i).get() == inputEffect) {
             return i;
         }
@@ -4352,7 +4352,7 @@ EffectInstance::getComponentsNeededDefault(double time, ViewIdx view,
     }
 
     // For each input get their needed components
-    int maxInput = getMaxInputCount();
+    int maxInput = getNInputs();
     for (int i = 0; i < maxInput; ++i) {
 
         std::list<ImagePlaneDesc> upstreamAvailableLayers;
@@ -4920,7 +4920,7 @@ EffectInstance::getNearestNonDisabled() const
             otherName = "A";
         }
         int foundOther = -1;
-        int maxinputs = getMaxInputCount();
+        int maxinputs = getNInputs();
         for (int i = 0; i < maxinputs; ++i) {
             std::string inputLabel = getInputLabel(i);
             if (inputLabel == inputNameToFind) {
@@ -5007,7 +5007,7 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
         otherName = "A";
     }
     int foundOther = -1;
-    int maxinputs = getMaxInputCount();
+    int maxinputs = getNInputs();
     for (int i = 0; i < maxinputs; ++i) {
         std::string inputLabel = getInputLabel(i);
         if (inputLabel == inputNameToFind) {
@@ -5261,7 +5261,7 @@ isFrameVaryingOrAnimated_impl(const EffectInstance* node,
     if ( node->isFrameVarying() || node->getHasAnimation() || node->getNode()->getRotoContext() ) {
         *ret = true;
     } else {
-        int maxInputs = node->getMaxInputCount();
+        int maxInputs = node->getNInputs();
         for (int i = 0; i < maxInputs; ++i) {
             EffectInstancePtr input = node->getInput(i);
             if (input) {
@@ -5362,7 +5362,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     }
 
     const bool multiBitDepth = supportsMultipleClipDepths();
-    int nInputs = getMaxInputCount();
+    int nInputs = getNInputs();
     metadata.clearAndResize(nInputs);
 
     // OK find the deepest chromatic component on our input clips and the one with the
@@ -5773,7 +5773,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
         return;
     }
     //Make sure it is valid
-    int nInputs = node->getMaxInputCount();
+    int nInputs = node->getNInputs();
 
     for (int i = -1; i < nInputs; ++i) {
         md.setBitDepth( i, node->getClosestSupportedBitDepth( md.getBitDepth(i) ) );

@@ -189,7 +189,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
         ///Test all inputs recursively, going from last to first, preferring non optional inputs.
         std::list<EffectInstance*> nonOptionalInputs;
         std::list<EffectInstance*> optionalInputs;
-        int maxInp = currentNode->getMaxInputCount();
+        int maxInp = currentNode->getNInputs();
 
         ///We cycle in reverse by default. It should be a setting of the application.
         ///In this case it will return input B instead of input A of a merge for example.
@@ -295,7 +295,7 @@ ViewerTabPrivate::getTimeTransform(double time,
     ///Test all inputs recursively, going from last to first, preferring non optional inputs.
     std::list<int> nonOptionalInputs;
     std::list<int> optionalInputs;
-    int maxInp = currentNode->getMaxInputCount();
+    int maxInp = currentNode->getNInputs();
 
     ///We cycle in reverse by default. It should be a setting of the application.
     ///In this case it will return input B instead of input A of a merge for example.

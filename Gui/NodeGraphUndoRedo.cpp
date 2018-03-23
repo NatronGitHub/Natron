@@ -494,7 +494,7 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
 
     if (isViewer) {
         ///if the node is an inspector  disconnect any current connection between the inspector and the _newSrc
-        for (int i = 0; i < internalDst->getMaxInputCount(); ++i) {
+        for (int i = 0; i < internalDst->getNInputs(); ++i) {
             if ( (i != inputNb) && (internalDst->getInput(i) == internalNewSrc) ) {
                 internalDst->disconnectInput(i);
             }
@@ -1882,7 +1882,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
 
         // This is the y coord. of the bottom-most input
         double inputY = INT_MIN;
-        int maxInputs = group->getNode()->getMaxInputCount();
+        int maxInputs = group->getNode()->getNInputs();
         assert( maxInputs == (int)groupInputs.size() );
         for (int i = 0; i < maxInputs; ++i) {
             NodePtr input = group->getNode()->getInput(i);

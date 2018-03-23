@@ -270,7 +270,7 @@ ViewerInstance::invalidateUiContext()
 }
 
 int
-ViewerInstance::getMaxInputCount() const
+ViewerInstance::getNInputs() const
 {
     return 10;
 }
@@ -322,7 +322,7 @@ isRotoPaintNodeInputRecursive(Node* node,
     if ( node == rotoPaintNode.get() ) {
         return true;
     }
-    int maxInputs = node->getMaxInputCount();
+    int maxInputs = node->getNInputs();
     for (int i = 0; i < maxInputs; ++i) {
         NodePtr input = node->getInput(i);
         if (input) {
@@ -356,7 +356,7 @@ updateLastStrokeDataRecursively(Node* node,
         if ( node == rotoPaintNode.get() ) {
             return;
         }
-        int maxInputs = node->getMaxInputCount();
+        int maxInputs = node->getNInputs();
         for (int i = 0; i < maxInputs; ++i) {
             NodePtr input = node->getInput(i);
             if (input) {
@@ -713,7 +713,7 @@ checkTreeCanRender_internal(Node* node,
     marked.push_back(node);
 
     // check that the nodes upstream have all their nonoptional inputs connected
-    int maxInput = node->getMaxInputCount();
+    int maxInput = node->getNInputs();
     for (int i = 0; i < maxInput; ++i) {
         NodePtr input = node->getInput(i);
         bool optional = node->getEffectInstance()->isInputOptional(i);
@@ -970,7 +970,7 @@ ViewerInstance::getRegionsOfInterest(double /*time*/,
                                      RoIMap* ret)
 {
 #pragma message WARN("2.2: fix this and only add RoI for thread local input")
-    for (int i = 0; i < getMaxInputCount(); ++i) {
+    for (int i = 0; i < getNInputs(); ++i) {
         EffectInstancePtr input = getInput(i);
         if (input) {
             ret->insert( std::make_pair(input, renderWindow) );

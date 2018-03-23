@@ -71,9 +71,9 @@ NodeGraph::checkForHints(bool shiftdown,
 
     if (!doMergeHints) {
         ///for nodes already connected don't show hint
-        if ( ( internalNode->getMaxInputCount() == 0) && internalNode->hasOutputConnected() ) {
+        if ( ( internalNode->getNInputs() == 0) && internalNode->hasOutputConnected() ) {
             doConnectionHints = false;
-        } else if ( ( internalNode->getMaxInputCount() > 0) && internalNode->hasAllInputsConnected() && internalNode->hasOutputConnected() ) {
+        } else if ( ( internalNode->getNInputs() > 0) && internalNode->hasAllInputsConnected() && internalNode->hasOutputConnected() ) {
             doConnectionHints = false;
         }
     }
@@ -88,7 +88,7 @@ NodeGraph::checkForHints(bool shiftdown,
 
     NodeGuiPtr nodeToShowMergeRect;
     NodePtr selectedNodeInternalNode = selectedNode->getNode();
-    bool selectedNodeIsReader = selectedNodeInternalNode->getEffectInstance()->isReader() || selectedNodeInternalNode->getMaxInputCount() == 0;
+    bool selectedNodeIsReader = selectedNodeInternalNode->getEffectInstance()->isReader() || selectedNodeInternalNode->getNInputs() == 0;
     Edge* edge = 0;
     std::set<NodeGui*> nodesWithinRect;
     getNodesWithinViewportRect(visibleWidgetRect(), &nodesWithinRect);
@@ -120,9 +120,9 @@ NodeGraph::checkForHints(bool shiftdown,
 
                     if ( !internalNode->isOutputNode() && nodeBbox.intersects(selectedNodeBbox) ) {
                         bool nHasInput = internalNode->hasInputConnected();
-                        int nMaxInput = internalNode->getMaxInputCount();
+                        int nMaxInput = internalNode->getNInputs();
                         bool selectedHasInput = selectedNodeInternalNode->hasInputConnected();
-                        int selectedMaxInput = selectedNodeInternalNode->getMaxInputCount();
+                        int selectedMaxInput = selectedNodeInternalNode->getNInputs();
                         double nPAR = internalNode->getEffectInstance()->getAspectRatio(-1);
                         double selectedPAR = selectedNodeInternalNode->getEffectInstance()->getAspectRatio(-1);
                         double nFPS = internalNode->getEffectInstance()->getFrameRate();
@@ -168,7 +168,7 @@ NodeGraph::checkForHints(bool shiftdown,
 
                     if ( edge && !edge->isOutputEdge() ) {
                         if ( (*it)->getNode()->getEffectInstance()->isReader() ||
-                             ( (*it)->getNode()->getMaxInputCount() == 0 ) ) {
+                             ( (*it)->getNode()->getNInputs() == 0 ) ) {
                             edge = 0;
                             continue;
                         }

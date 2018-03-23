@@ -1020,7 +1020,7 @@ ReadNode::getPluginGrouping(std::list<std::string>* grouping) const
 }
 
 int
-ReadNode::getMaxInputCount() const
+ReadNode::getNInputs() const
 {
     return 1;
 }

@@ -4704,7 +4704,7 @@ RotoContext::refreshRotoPaintTree()
     }
     //ensure that all global merge nodes are disconnected
     for (NodesList::iterator it = mergeNodes.begin(); it != mergeNodes.end(); ++it) {
-        int maxInputs = (*it)->getMaxInputCount();
+        int maxInputs = (*it)->getNInputs();
         for (int i = 0; i < maxInputs; ++i) {
             (*it)->disconnectInput(i);
         }

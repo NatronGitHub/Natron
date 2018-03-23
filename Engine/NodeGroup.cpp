@@ -562,7 +562,7 @@ NodeCollection::connectNodes(int inputNumber,
         if (!ok) {
             return false;
         }
-        if ( input && (input->getMaxInputCount() > 0) ) {
+        if ( input && (input->getNInputs() > 0) ) {
             ok = connectNodes(input->getPreferredInputForConnection(), existingInput, input);
             if (!ok) {
                 return false;
@@ -627,7 +627,7 @@ NodeCollection::disconnectNodes(const NodePtr& input,
         return false;
     }
 
-    int inputsCount = input->getMaxInputCount();
+    int inputsCount = input->getNInputs();
     if (inputsCount == 1) {
         inputToReconnectTo = input->getInput(0);
     }
@@ -667,7 +667,7 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,
     bool connectAsInput = false;
 
     ///cannot connect 2 input nodes together: case 2-b)
-    if ( (selected->getMaxInputCount() == 0) && (created->getMaxInputCount() == 0) ) {
+    if ( (selected->getNInputs() == 0) && (created->getNInputs() == 0) ) {
         return false;
     }
     ///cannot connect 2 output nodes together: case 1-a)
@@ -690,8 +690,8 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,
             connectAsInput = false;
         }
         ///case b)
-        else if (created->getMaxInputCount() == 0) {
-            assert(selected->getMaxInputCount() != 0);
+        else if (created->getNInputs() == 0) {
+            assert(selected->getNInputs() != 0);
             ///case 3-b): connect the created node as input of the selected node
             connectAsInput = true;
         }
@@ -1146,7 +1146,7 @@ NodeGroup::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 }
 
 int
-NodeGroup::getMaxInputCount() const
+NodeGroup::getNInputs() const
 {
     return (int)_imp->inputs.size();
 }
@@ -2766,7 +2766,7 @@ exportGroupInternal(int indentLevel,
         QString nodeQualifiedName( groupName + QString::fromUtf8( (*it)->getScriptName_mt_safe().c_str() ) );
 
         if ( !(*it)->getParentMultiInstance() ) {
-            for (int i = 0; i < (*it)->getMaxInputCount(); ++i) {
+            for (int i = 0; i < (*it)->getNInputs(); ++i) {
                 NodePtr inputNode = (*it)->getRealInput(i);
                 if (inputNode) {
                     hasConnected = true;

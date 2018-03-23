@@ -251,7 +251,7 @@ Effect::destroy(bool autoReconnect)
 int
 Effect::getMaxInputCount() const
 {
-    return getInternalNode()->getMaxInputCount();
+    return getInternalNode()->getNInputs();
 }
 
 bool
@@ -308,7 +308,7 @@ Effect::getInput(const QString& inputLabel) const
     if (!node) {
         return 0;
     }
-    int maxInputs = node->getMaxInputCount();
+    int maxInputs = node->getNInputs();
     for (int i = 0; i < maxInputs; ++i) {
         if (QString::fromUtf8(node->getInputLabel(i).c_str()) == inputLabel) {
             NodePtr ret = node->getRealInput(i);

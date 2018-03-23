@@ -91,6 +91,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/NodeGraphTextItem.h"
+#include "Gui/NodeGraphRectItem.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/PreviewThread.h"
 #include "Gui/PythonPanels.h"
@@ -414,6 +415,7 @@ NodeGui::ensurePanelCreated()
 
     initializeKnobs();
     beginEditKnobs();
+
     if (_settingsPanel) {
         QObject::connect( _settingsPanel, SIGNAL(nameChanged(QString)), this, SLOT(setName(QString)) );
         QObject::connect( _settingsPanel, SIGNAL(closeChanged(bool)), this, SLOT(onSettingsPanelClosed(bool)) );
@@ -459,12 +461,7 @@ NodeGui::ensurePanelCreated()
 void
 NodeGui::onSettingsPanelClosed(bool closed)
 {
-    QString message;
-    int type;
-
-    getNode()->getPersistentMessage(&message, &type);
-
-    if ( !message.isEmpty() ) {
+    if (getNode()->hasAnyPersistentMessage()) {
         const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
             (*it)->getViewer()->updatePersistentMessage();
@@ -543,7 +540,10 @@ NodeGui::createGui()
     int depth = getBaseDepth();
 
     setZValue(depth);
-    _boundingBox = new QGraphicsRectItem(this);
+    NodePtr node = getNode();
+
+    int cornerRadiusPx = 0;
+    _boundingBox = new NodeGraphRectItem(this, cornerRadiusPx);
     _boundingBox->setZValue(depth);
 
     if ( mustFrameName() ) {
@@ -556,30 +556,37 @@ NodeGui::createGui()
         _resizeHandle->setZValue(depth + 1);
     }
 
-    NodePtr node = getNode();
     const QString& iconFilePath = node->getPlugin()->getIconFilePath();
     BackdropGui* isBd = dynamic_cast<BackdropGui*>(this);
 
     if ( !isBd && !iconFilePath.isEmpty() && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph() ) {
-        QPixmap pix(iconFilePath);
-        if ( QFile::exists(iconFilePath) && !pix.isNull() ) {
-            _pluginIcon = new NodeGraphPixmapItem(getDagGui(), this);
-            _pluginIcon->setZValue(depth + 1);
-            _pluginIconFrame = new QGraphicsRectItem(this);
-            _pluginIconFrame->setZValue(depth);
-            _pluginIconFrame->setBrush( QColor(50, 50, 50) );
-            int size = TO_DPIX(NATRON_PLUGIN_ICON_SIZE);
+        _pluginIcon = new NodeGraphPixmapItem(getDagGui(), this);
+        _pluginIcon->setZValue(depth + 1);
+        _pluginIconFrame = new QGraphicsRectItem(this);
+        _pluginIconFrame->setZValue(depth);
+        int r, g, b;
+        appPTR->getCurrentSettings()->getPluginIconFrameColor(&r, &g, &b);
+        _pluginIconFrame->setBrush( QColor(r, g, b) );
+
+
+        int size = TO_DPIX(NATRON_PLUGIN_ICON_SIZE);
+        QPixmap pix;
+        pix.load(iconFilePath);
+        if (!pix.isNull()) {
             if (std::max( pix.width(), pix.height() ) != size) {
                 pix = pix.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
             }
             _pluginIcon->setPixmap(pix);
+        } else {
+            _pluginIcon->hide();
         }
+
     }
 
-    if ( node->getPlugin()->getPluginID() == QString::fromUtf8(PLUGINID_OFX_MERGE) ) {
-        _presetIcon = new NodeGraphPixmapItem(getDagGui(), this);
-        _presetIcon->setZValue(depth + 1);
-    }
+    _presetIcon = new NodeGraphPixmapItem(getDagGui(), this);
+    _presetIcon->setZValue(depth + 1);
+    _presetIcon->hide();
+
 
     _nameItem = new NodeGraphTextItem(getDagGui(), this, false);
     _nameItem->setPlainText( QString::fromUtf8( node->getLabel().c_str() ) );
@@ -598,7 +605,7 @@ NodeGui::createGui()
     _persistentMessage->setFont(f);
     _persistentMessage->hide();
 
-    _stateIndicator = new QGraphicsRectItem(this);
+    _stateIndicator = new NodeGraphRectItem(this, cornerRadiusPx);
     _stateIndicator->setZValue(depth - 1);
     _stateIndicator->hide();
 
@@ -753,7 +760,8 @@ NodeGui::refreshSize()
 {
     QRectF bbox = boundingRect();
 
-    resize( bbox.width(), bbox.height(), false, !_nodeLabel.isEmpty() );
+    QString& label = _nodeLabel;
+    resize( bbox.width(), bbox.height(), false, !label.isEmpty() );
 }
 
 int
@@ -809,12 +817,16 @@ NodeGui::adjustSizeToContent(int* /*w*/,
     } else {
         *h = std::max( (double)*h, labelBbox.height() * 1.2 );
     }
+    if (_pluginIcon && _pluginIcon->isVisible() && _presetIcon && _presetIcon->isVisible()) {
+        int iconsHeight = _pluginIcon->boundingRect().height() + _presetIcon->boundingRect().height();
+        *h = std::max(*h, iconsHeight);
+    }
 }
 
 int
 NodeGui::getPluginIconWidth() const
 {
-    return _pluginIcon ? TO_DPIX(NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2) : 0;
+    return _pluginIcon  && _pluginIcon->isVisible() ? TO_DPIX(NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2) : 0;
 }
 
 double
@@ -3035,24 +3047,26 @@ NodeGui::refreshNodeText(const QString & label)
 
     //For the merge node, set its operator icon
     if ( getNode()->getPlugin()->getPluginID() == QString::fromUtf8(PLUGINID_OFX_MERGE) ) {
-        assert(_presetIcon);
-        QString op = KnobGuiString::getNatronHtmlTagContent(label);
-        if  ( !op.isEmpty() ) {
+        QString subLabelContent = KnobGuiString::getNatronHtmlTagContent(label);
+        if  ( !subLabelContent.isEmpty() ) {
             //Remove surrounding parenthesis
-            if ( op[0] == QLatin1Char('(') ) {
-                op.remove(0, 1);
+            if ( subLabelContent[0] == QLatin1Char('(') ) {
+                subLabelContent.remove(0, 1);
             }
-            if ( op[op.size() - 1] == QLatin1Char(')') ) {
-                op.remove(op.size() - 1, 1);
+            if ( subLabelContent[subLabelContent.size() - 1] == QLatin1Char(')') ) {
+                subLabelContent.remove(subLabelContent.size() - 1, 1);
             }
         }
-        QPixmap pix;
-        getPixmapForMergeOperator(op, &pix);
-        if ( pix.isNull() ) {
-            _presetIcon->setVisible(false);
-        } else {
-            _presetIcon->setVisible(true);
-            _presetIcon->setPixmap(pix);
+        assert(_presetIcon);
+        if (_presetIcon) {
+            QPixmap pix;
+            getPixmapForMergeOperator(subLabelContent, &pix);
+            if ( pix.isNull() ) {
+                _presetIcon->setVisible(false);
+            } else {
+                _presetIcon->setVisible(true);
+                _presetIcon->setPixmap(pix);
+            }
         }
         refreshSize();
     }
@@ -3088,7 +3102,7 @@ NodeGui::onSwitchInputActionTriggered()
 {
     NodePtr node = getNode();
 
-    if (node->getMaxInputCount() >= 2) {
+    if (node->getNInputs() >= 2) {
         node->switchInput0And1();
         std::list<ViewerInstance* > viewers;
         node->hasViewersConnected(&viewers);

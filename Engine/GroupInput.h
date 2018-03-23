@@ -75,7 +75,7 @@ public:
         return "";
     }
 
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual int getNInputs() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return 0;
     }

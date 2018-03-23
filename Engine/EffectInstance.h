@@ -419,7 +419,7 @@ public:
      * @brief How many input can we have at most. (i.e: how many input arrows)
      * This function should be MT-safe and should never change the value returned.
      **/
-    virtual int getMaxInputCount() const WARN_UNUSED_RETURN = 0;
+    virtual int getNInputs() const WARN_UNUSED_RETURN = 0;
 
     /**
      * @brief Is inputNb optional ? In which case the render can be made without it.
@@ -1685,10 +1685,10 @@ public:
 
     /**
      * @brief Reimplement to activate host masking
-     * Note that in this case this is expected that getMaxInputCount returns the number of inputs *with* the mask.
+     * Note that in this case this is expected that getNInputs returns the number of inputs *with* the mask.
      * The function getInputLabel should also return the appropriate label for the mask.
      * The function isInputMask should also return true for this mask index.
-     * The mask will be the last input, i.e its index will be getMaxInputCount() - 1.
+     * The mask will be the last input, i.e its index will be getNInputs() - 1.
      **/
     virtual bool isHostMaskingEnabled() const
     {

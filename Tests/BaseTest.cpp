@@ -149,7 +149,7 @@ BaseTest::connectNodes(NodePtr input,
         EXPECT_FALSE( output->isInputConnected(inputNumber) );
     } else {
         ///the call can only fail for those 2 reasons
-        EXPECT_TRUE(inputNumber > output->getMaxInputCount() || //< inputNumber is greater than the maximum input number
+        EXPECT_TRUE(inputNumber > output->getNInputs() || //< inputNumber is greater than the maximum input number
                     output->getInput(inputNumber).get() != (Node*)NULL); //< input slot is already filled with another node
     }
 

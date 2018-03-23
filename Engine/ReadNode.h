@@ -101,7 +101,7 @@ public:
     virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int getNInputs() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputOptional(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;

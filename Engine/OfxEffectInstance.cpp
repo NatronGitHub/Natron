@@ -1151,7 +1151,7 @@ OfxEffectInstance::getClipCorrespondingToInput(int inputNo) const
 }
 
 int
-OfxEffectInstance::getMaxInputCount() const
+OfxEffectInstance::getNInputs() const
 {
     assert(_imp->context != eContextNone);
 
@@ -1503,7 +1503,7 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
     ///If the rod is 1 pixel, determine if it was because one clip was unconnected or this is really a
     ///1 pixel large image
     if ( (ofxRod.x2 == 1.) && (ofxRod.y2 == 1.) && (ofxRod.x1 == 0.) && (ofxRod.y1 == 0.) ) {
-        int maxInputs = getMaxInputCount();
+        int maxInputs = getNInputs();
         for (int i = 0; i < maxInputs; ++i) {
             OfxClipInstance* clip = getClipCorrespondingToInput(i);
             if ( clip && !clip->getConnected() && !clip->getIsOptional() && !clip->getIsMask() ) {
@@ -1769,7 +1769,7 @@ OfxEffectInstance::getFrameRange(double *first,
             *first = INT_MIN;
             *last = INT_MAX;
 
-            int inputsCount = getMaxInputCount();
+            int inputsCount = getNInputs();
 
             ///Uncommented the isOptional() introduces a bugs with Genarts Monster plug-ins when 2 generators
             ///are connected in the pipeline. They must rely on the time domain to maintain an internal state and apparantly

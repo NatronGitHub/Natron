@@ -1208,7 +1208,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         RectD inputsIntersection;
         bool inputsIntersectionSet = false;
         bool hasDifferentRods = false;
-        int maxInput = getMaxInputCount();
+        int maxInput = getNInputs();
         bool hasMask = false;
         boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
         for (int i = 0; i < maxInput; ++i) {

@@ -2775,7 +2775,7 @@ Node::getInputNames(std::map<std::string, std::string> & inputNames) const
 int
 Node::getPreferredInputInternal(bool connected) const
 {
-    int nInputs = getMaxInputCount();
+    int nInputs = getNInputs();
 
     if (nInputs == 0) {
         return -1;
@@ -3288,7 +3288,7 @@ Node::makeCacheInfo() const
 std::string
 Node::makeInfoForInput(int inputNumber) const
 {
-    if ( (inputNumber < -1) || ( inputNumber >= getMaxInputCount() ) ) {
+    if ( (inputNumber < -1) || ( inputNumber >= getNInputs() ) ) {
         return "";
     }
     EffectInstancePtr input;
@@ -4020,7 +4020,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
 
     // Scan all inputs to find masks and get inputs labels
     //Pair hasMaskChannelSelector, isMask
-    int inputsCount = getMaxInputCount();
+    int inputsCount = getNInputs();
     std::vector<std::pair<bool, bool> > hasMaskChannelSelector(inputsCount);
     std::vector<std::string> inputLabels(inputsCount);
     for (int i = 0; i < inputsCount; ++i) {
@@ -4405,7 +4405,7 @@ Node::makeDocumentation(bool genHTML) const
             pluginDescriptionIsMarkdown = _imp->effect->isPluginDescriptionInMarkdown();
         }
 
-        for (int i = 0; i < _imp->effect->getMaxInputCount(); ++i) {
+        for (int i = 0; i < _imp->effect->getNInputs(); ++i) {
             QStringList input;
             input << convertFromPlainTextToMarkdown( QString::fromStdString( _imp->effect->getInputLabel(i) ), genHTML, true );
             input << convertFromPlainTextToMarkdown( QString::fromStdString( _imp->effect->getInputHint(i) ), genHTML, true );
@@ -5149,7 +5149,7 @@ Node::initializeInputs()
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    const int inputCount = getMaxInputCount();
+    const int inputCount = getNInputs();
     InputsV oldInputs;
     {
         QMutexLocker k(&_imp->inputsLabelsMutex);
@@ -5600,7 +5600,7 @@ checkCanConnectNoMultiRes(const Node* output,
         return Node::eCanConnectInput_multiResNotSupported;
        }*/
 
-    for (int i = 0; i < output->getMaxInputCount(); ++i) {
+    for (int i = 0; i < output->getNInputs(); ++i) {
         NodePtr inputNode = output->getInput(i);
         if (inputNode) {
             RectD inputRod;
@@ -5898,7 +5898,7 @@ void
 Node::switchInput0And1()
 {
     assert(_imp->inputsInitialized);
-    int maxInputs = getMaxInputCount();
+    int maxInputs = getNInputs();
     if (maxInputs < 2) {
         return;
     }
@@ -6681,7 +6681,7 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
     deleteNodeVariableToPython( getFullyQualifiedName() );
 
     ///Disconnect all inputs
-    /*int maxInputs = getMaxInputCount();
+    /*int maxInputs = getNInputs();
        for (int i = 0; i < maxInputs; ++i) {
        disconnectInput(i);
        }*/
@@ -7291,12 +7291,12 @@ Node::getPyPlugMajorVersion() const
 }
 
 int
-Node::getMaxInputCount() const
+Node::getNInputs() const
 {
     ///MT-safe, never changes
     assert(_imp->effect);
 
-    return _imp->effect->getMaxInputCount();
+    return _imp->effect->getNInputs();
 }
 
 bool
@@ -7468,6 +7468,13 @@ Node::hasPersistentMessage() const
     return !_imp->persistentMessage.isEmpty();
 }
 
+bool
+Node::hasAnyPersistentMessage() const
+{
+    QMutexLocker k(&_imp->persistentMessageMutex);
+    return !_imp->persistentMessage.isEmpty();
+}
+
 void
 Node::getPersistentMessage(QString* message,
                            int* type,
@@ -7503,7 +7510,7 @@ Node::clearPersistentMessageRecursive(std::list<Node*>& markedNodes)
     markedNodes.push_back(this);
     clearPersistentMessageInternal();
 
-    int nInputs = getMaxInputCount();
+    int nInputs = getNInputs();
     ///No need to lock, guiInputs is only written to by the main-thread
     for (int i = 0; i < nInputs; ++i) {
         NodePtr input = getInput(i);
@@ -9124,7 +9131,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
     } else if ( what == _imp->refreshInfoButton.lock().get() ||
                (what == _imp->infoPage.lock().get() && reason == eValueChangedReasonUserEdited) ) {
         std::stringstream ssinfo;
-        int maxinputs = getMaxInputCount();
+        int maxinputs = getNInputs();
         for (int i = 0; i < maxinputs; ++i) {
             std::string inputInfo = makeInfoForInput(i);
             if ( !inputInfo.empty() ) {
@@ -9955,7 +9962,7 @@ Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
 
     ///Call recursively
 
-    int maxInpu = getMaxInputCount();
+    int maxInpu = getNInputs();
     for (int i = 0; i < maxInpu; ++i) {
         NodePtr input = getInput(i);
         if (input) {
@@ -10467,7 +10474,7 @@ Node::refreshInputRelatedDataInternal(bool domarking, std::set<Node*>& markedNod
 
     ///Check if inputs must be refreshed first
 
-    int maxInputs = getMaxInputCount();
+    int maxInputs = getNInputs();
     std::vector<NodeWPtr > inputsCopy(maxInputs);
     for (int i = 0; i < maxInputs; ++i) {
         NodePtr input = getInput(i);
@@ -11618,7 +11625,7 @@ InspectorNode::connectInput(const NodePtr& input,
     }
 
     ///cannot connect more than _maxInputs inputs.
-    assert( inputNumber <= getMaxInputCount() );
+    assert( inputNumber <= getNInputs() );
 
     assert(input);
 
@@ -11664,7 +11671,7 @@ InspectorNode::setActiveInputAndRefresh(int inputNb,
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    int maxInputs = getMaxInputCount();
+    int maxInputs = getNInputs();
     if ( ( inputNb > (maxInputs - 1) ) || (inputNb < 0) || ( !getInput(inputNb) ) ) {
         return;
     }
@@ -11750,7 +11757,7 @@ InspectorNode::getPreferredInputInternal(bool connected) const
         otherName = "A";
     }
     int foundOther = -1;
-    int maxinputs = getMaxInputCount();
+    int maxinputs = getNInputs();
     for (int i = 0; i < maxinputs; ++i) {
         std::string inputLabel = getInputLabel(i);
         if (inputLabel == inputNameToFind) {
@@ -11769,7 +11776,7 @@ InspectorNode::getPreferredInputInternal(bool connected) const
         }
     }
 
-    int maxInputs = getMaxInputCount();
+    int maxInputs = getNInputs();
     for (int i = 0; i < maxInputs; ++i) {
         NodePtr inp = getInput(i);
         if ( (!inp && !connected) || (inp && connected) ) {

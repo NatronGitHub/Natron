@@ -237,7 +237,7 @@ OfxClipInstance::getUnmappedComponents() const
         // of the first connected non optional input.
         if (_imp->optional) {
             effect = getEffectHolder();
-            int nInputs = effect->getMaxInputCount();
+            int nInputs = effect->getNInputs();
             for (int i = 0; i < nInputs; ++i) {
 
                 ImagePlaneDesc metadataPlane, metadataPairedPlane;

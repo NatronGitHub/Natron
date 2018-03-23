@@ -276,7 +276,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     assert(_imp->mergeNode);
 
     if ( (type != eRotoStrokeTypeSolid) && (type != eRotoStrokeTypeSmear) ) {
-        int maxInp = _imp->mergeNode->getMaxInputCount();
+        int maxInp = _imp->mergeNode->getNInputs();
         for (int i = 0; i < maxInp; ++i) {
             if ( _imp->mergeNode->getEffectInstance()->isInputMask(i) ) {
                 //Connect this rotopaint node as a mask

@@ -676,7 +676,7 @@ getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr& node,
         }
     }
 
-    int maxInputs = node->getMaxInputCount();
+    int maxInputs = node->getNInputs();
     for (int i = 0; i < maxInputs; ++i) {
         NodePtr inputNode = node->getInput(i);
         if (inputNode) {

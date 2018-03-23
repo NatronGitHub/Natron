@@ -151,7 +151,7 @@ public:
 
     virtual void onScriptNameChanged(const std::string& fullyQualifiedName) OVERRIDE FINAL;
     virtual bool isEffectCreated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int getNInputs() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
