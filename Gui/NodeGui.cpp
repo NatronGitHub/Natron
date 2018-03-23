@@ -156,7 +156,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
     , _panelOpenedBeforeDeactivate(false)
     , _pluginIcon(NULL)
     , _pluginIconFrame(NULL)
-    , _mergeIcon(NULL)
+    , _presetIcon(NULL)
     , _nameItem(NULL)
     , _nameFrame(NULL)
     , _resizeHandle(NULL)
@@ -238,7 +238,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(previewKnobToggled()), this, SLOT(onPreviewKnobToggled()) );
     QObject::connect( internalNode.get(), SIGNAL(disabledKnobToggled(bool)), this, SLOT(onDisabledKnobToggled(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(streamWarningsChanged()), this, SLOT(onStreamWarningsChanged()) );
-    QObject::connect( internalNode.get(), SIGNAL(nodeExtraLabelChanged(QString)), this, SLOT(onNodeExtraLabelChanged(QString)) );
+    QObject::connect( internalNode.get(), SIGNAL(nodeExtraLabelChanged(QString)), this, SLOT(refreshNodeText(QString)) );
     QObject::connect( internalNode.get(), SIGNAL(outputLayerChanged()), this, SLOT(onOutputLayerChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(hideInputsKnobChanged(bool)), this, SLOT(onHideInputsKnobValueChanged(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(availableViewsChanged()), this, SLOT(onAvailableViewsChanged()) );
@@ -281,7 +281,7 @@ NodeGui::initialize(NodeGraph* dag,
         assert(knob);
         KnobString* strKnob = dynamic_cast<KnobString*>( knob.get() );
         if (strKnob) {
-            onNodeExtraLabelChanged( QString::fromUtf8( strKnob->getValue().c_str() ) );
+            refreshNodeText( QString::fromUtf8( strKnob->getValue().c_str() ) );
         }
     }
 
@@ -577,8 +577,8 @@ NodeGui::createGui()
     }
 
     if ( node->getPlugin()->getPluginID() == QString::fromUtf8(PLUGINID_OFX_MERGE) ) {
-        _mergeIcon = new NodeGraphPixmapItem(getDagGui(), this);
-        _mergeIcon->setZValue(depth + 1);
+        _presetIcon = new NodeGraphPixmapItem(getDagGui(), this);
+        _presetIcon->setZValue(depth + 1);
     }
 
     _nameItem = new NodeGraphTextItem(getDagGui(), this, false);
@@ -901,15 +901,15 @@ NodeGui::resize(int width,
     int iconOffsetX = TO_DPIX(PLUGIN_ICON_OFFSET);
     if (hasPluginIcon) {
         _pluginIcon->setX(topLeft.x() + iconOffsetX);
-        int iconsOffset = _mergeIcon  && _mergeIcon->isVisible() ? (height - 2 * iconSize) / 3. : (height - iconSize) / 2.;
+        int iconsOffset = _presetIcon  && _presetIcon->isVisible() ? (height - 2 * iconSize) / 3. : (height - iconSize) / 2.;
         _pluginIcon->setY(topLeft.y() + iconsOffset);
         _pluginIconFrame->setRect(topLeft.x(), topLeft.y(), iconWidth, height);
     }
 
-    if ( _mergeIcon && _mergeIcon->isVisible() ) {
+    if ( _presetIcon && _presetIcon->isVisible() ) {
         int iconsOffset =  (height - 2 * iconSize) / 3.;
-        _mergeIcon->setX(topLeft.x() + iconOffsetX);
-        _mergeIcon->setY(topLeft.y() + iconsOffset * 2 + iconSize);
+        _presetIcon->setX(topLeft.x() + iconOffsetX);
+        _presetIcon->setY(topLeft.y() + iconsOffset * 2 + iconSize);
     }
 
     QFont f(appFont, appFontSize);
@@ -3017,7 +3017,7 @@ NodeGui::onOutputLayerChanged()
 }
 
 void
-NodeGui::onNodeExtraLabelChanged(const QString & label)
+NodeGui::refreshNodeText(const QString & label)
 {
     if ( !_graph->getGui() ) {
         return;
@@ -3035,7 +3035,7 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
 
     //For the merge node, set its operator icon
     if ( getNode()->getPlugin()->getPluginID() == QString::fromUtf8(PLUGINID_OFX_MERGE) ) {
-        assert(_mergeIcon);
+        assert(_presetIcon);
         QString op = KnobGuiString::getNatronHtmlTagContent(label);
         if  ( !op.isEmpty() ) {
             //Remove surrounding parenthesis
@@ -3049,10 +3049,10 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
         QPixmap pix;
         getPixmapForMergeOperator(op, &pix);
         if ( pix.isNull() ) {
-            _mergeIcon->setVisible(false);
+            _presetIcon->setVisible(false);
         } else {
-            _mergeIcon->setVisible(true);
-            _mergeIcon->setPixmap(pix);
+            _presetIcon->setVisible(true);
+            _presetIcon->setPixmap(pix);
         }
         refreshSize();
     }

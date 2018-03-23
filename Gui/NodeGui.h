@@ -517,7 +517,7 @@ public Q_SLOTS:
 
     void onStreamWarningsChanged();
 
-    void onNodeExtraLabelChanged(const QString & label);
+    void refreshNodeText(const QString & label);
 
     void onSwitchInputActionTriggered();
 
@@ -591,7 +591,7 @@ private:
     bool _panelOpenedBeforeDeactivate;
     NodeGraphPixmapItem* _pluginIcon;
     QGraphicsRectItem* _pluginIconFrame;
-    QGraphicsPixmapItem* _mergeIcon;
+    QGraphicsPixmapItem* _presetIcon;
     NodeGraphTextItem *_nameItem;
     QGraphicsRectItem *_nameFrame;
     QGraphicsPolygonItem* _resizeHandle;
