@@ -79,8 +79,8 @@ SOURCES += \
     AboutWindow.cpp \
     ActionShortcuts.cpp \
     AddKnobDialog.cpp \
-    AnimatedCheckBox.cpp \
     AnimItemBase.cpp \
+    AnimatedCheckBox.cpp \
     AnimationModule.cpp \
     AnimationModuleBase.cpp \
     AnimationModuleEditor.cpp \
@@ -112,8 +112,8 @@ SOURCES += \
     EditExpressionDialog.cpp \
     EditNodeViewerContextDialog.cpp \
     EditScriptDialog.cpp \
+    FileTypeMainWindow_win.cpp \
     FloatingWidget.cpp \
-    QtEnumConvert.cpp \
     GroupBoxLabel.cpp \
     Gui.cpp \
     Gui05.cpp \
@@ -123,44 +123,43 @@ SOURCES += \
     Gui30.cpp \
     Gui40.cpp \
     Gui50.cpp \
+    GuiAppInstance.cpp \
     GuiApplicationManager.cpp \
     GuiApplicationManager10.cpp \
     GuiApplicationManagerPrivate.cpp \
-    GuiAppInstance.cpp \
+    GuiGLContext.cpp \
     GuiPrivate.cpp \
     Histogram.cpp \
     InfoViewerWidget.cpp \
     KnobAnim.cpp \
-    KnobItemsTableGui.cpp \
-    KnobGuiContainerHelper.cpp \
     KnobGui.cpp \
     KnobGui10.cpp \
     KnobGui20.cpp \
-    KnobGuiFactory.cpp \
-    KnobGuiPrivate.cpp \
-    KnobGuiFile.cpp \
-    KnobGuiWidgets.cpp \
-    FileTypeMainWindow_win.cpp \
-    GuiGLContext.cpp \
-    KnobGuiButton.cpp \
     KnobGuiBool.cpp \
+    KnobGuiButton.cpp \
     KnobGuiChoice.cpp \
-    KnobGuiSeparator.cpp \
     KnobGuiColor.cpp \
-    KnobGuiKeyFrameMarkers.cpp \
-    KnobGuiString.cpp \
+    KnobGuiContainerHelper.cpp \
+    KnobGuiFactory.cpp \
+    KnobGuiFile.cpp \
     KnobGuiGroup.cpp \
-    KnobGuiTable.cpp \
+    KnobGuiKeyFrameMarkers.cpp \
     KnobGuiParametric.cpp \
+    KnobGuiPrivate.cpp \
+    KnobGuiSeparator.cpp \
+    KnobGuiString.cpp \
+    KnobGuiTable.cpp \
     KnobGuiValue.cpp \
+    KnobGuiWidgets.cpp \
+    KnobItemsTableGui.cpp \
     KnobWidgetDnD.cpp \
     Label.cpp \
     LineEdit.cpp \
     LinkToKnobDialog.cpp \
     LogWindow.cpp \
     ManageUserParamsDialog.cpp \
-    MessageBox.cpp \
     Menu.cpp \
+    MessageBox.cpp \
     NewLayerDialog.cpp \
     NodeAnim.cpp \
     NodeCreationDialog.cpp \
@@ -177,8 +176,8 @@ SOURCES += \
     NodeGraph45.cpp \
     NodeGraphPrivate.cpp \
     NodeGraphPrivate10.cpp \
-    NodeGraphTextItem.cpp \
     NodeGraphRectItem.cpp \
+    NodeGraphTextItem.cpp \
     NodeGraphUndoRedo.cpp \
     NodeGui.cpp \
     NodeSettingsPanel.cpp \
@@ -187,13 +186,14 @@ SOURCES += \
     PickKnobDialog.cpp \
     PreferencesPanel.cpp \
     PreviewThread.cpp \
-    ProjectGui.cpp \
     ProgressPanel.cpp \
     ProgressTaskInfo.cpp \
+    ProjectGui.cpp \
     PropertiesBinWrapper.cpp \
-    PyGuiApp.cpp \
     PyGlobalGui.cpp \
+    PyGuiApp.cpp \
     PythonPanels.cpp \
+    QtEnumConvert.cpp \
     RenderStatsDialog.cpp \
     ResizableMessageBox.cpp \
     RightClickableWidget.cpp \
@@ -208,22 +208,22 @@ SOURCES += \
     Splitter.cpp \
     StyledKnobWidgetBase.cpp \
     TabGroup.cpp \
+    TabWidget.cpp \
     TableItemAnim.cpp \
     TableModelView.cpp \
-    TabWidget.cpp \
     TextRenderer.cpp \
     ticks.cpp \
-    ToolButton.cpp \
     TimeLineGui.cpp \
+    ToolButton.cpp \
     UndoCommand_qt.cpp \
     VerticalColorBar.cpp \
     ViewerGL.cpp \
     ViewerGLPrivate.cpp \
     ViewerTab.cpp \
     ViewerTab10.cpp \
-    ViewerTabOverlays.cpp \
-    ViewerTabNodesUI.cpp \
     ViewerTab40.cpp \
+    ViewerTabNodesUI.cpp \
+    ViewerTabOverlays.cpp \
     ViewerTabPrivate.cpp \
     ViewerToolButton.cpp \
     NatronGui/natrongui_module_wrapper.cpp \
@@ -237,8 +237,8 @@ HEADERS += \
     AboutWindow.h \
     ActionShortcuts.h \
     AddKnobDialog.h \
-    AnimatedCheckBox.h \
     AnimItemBase.h \
+    AnimatedCheckBox.h \
     AnimationModule.h \
     AnimationModuleBase.h \
     AnimationModuleEditor.h \
@@ -270,54 +270,53 @@ HEADERS += \
     EditScriptDialog.h \
     FileTypeMainWindow_win.h \
     FloatingWidget.h \
-    QtEnumConvert.h \
     GroupBoxLabel.h \
     Gui.h \
+    GuiAppInstance.h \
     GuiApplicationManager.h \
     GuiApplicationManagerPrivate.h \
-    GuiAppInstance.h \
     GuiDefines.h \
     GuiFwd.h \
+    GuiGLContext.h \
     GuiMacros.h \
     GuiPrivate.h \
-    GuiGLContext.h \
     Histogram.h \
     InfoViewerWidget.h \
     KnobAnim.h \
-    KnobItemsTableGui.h \
     KnobGui.h \
-    KnobGuiPrivate.h \
-    KnobGuiContainerI.h \
+    KnobGuiBool.h \
+    KnobGuiButton.h \
+    KnobGuiChoice.h \
+    KnobGuiColor.h \
     KnobGuiContainerHelper.h \
+    KnobGuiContainerI.h \
     KnobGuiFactory.h \
     KnobGuiFile.h \
-    KnobGuiButton.h \
-    KnobGuiBool.h \
-    KnobGuiChoice.h \
-    KnobGuiKeyFrameMarkers.h \
-    KnobGuiSeparator.h \
-    KnobGuiColor.h \
-    KnobGuiString.h \
     KnobGuiGroup.h \
-    KnobGuiTable.h \
+    KnobGuiKeyFrameMarkers.h \
     KnobGuiParametric.h \
+    KnobGuiPrivate.h \
+    KnobGuiSeparator.h \
+    KnobGuiString.h \
+    KnobGuiTable.h \
     KnobGuiValue.h \
     KnobGuiWidgets.h \
+    KnobItemsTableGui.h \
     KnobWidgetDnD.h \
     Label.h \
     LineEdit.h \
     LinkToKnobDialog.h \
     LogWindow.h \
     ManageUserParamsDialog.h \
-    MessageBox.h \
     Menu.h \
+    MessageBox.h \
     NewLayerDialog.h \
     NodeAnim.h \
     NodeCreationDialog.h \
     NodeGraph.h \
     NodeGraphPrivate.h \
-    NodeGraphTextItem.h \
     NodeGraphRectItem.h \
+    NodeGraphTextItem.h \
     NodeGraphUndoRedo.h \
     NodeGui.h \
     NodeSettingsPanel.h \
@@ -326,14 +325,15 @@ HEADERS += \
     PickKnobDialog.h \
     PreferencesPanel.h \
     PreviewThread.h \
-    ProjectGui.h \
-    PropertiesBinWrapper.h \
     ProgressPanel.h \
     ProgressTaskInfo.h \
+    ProjectGui.h \
+    PropertiesBinWrapper.h \
     PyGlobalGui.h \
     PyGuiApp.h \
     Pyside_Gui_Python.h \
     PythonPanels.h \
+    QtEnumConvert.h \
     RegisteredTabs.h \
     RenderStatsDialog.h \
     ResizableMessageBox.h \
@@ -348,10 +348,10 @@ HEADERS += \
     SplashScreen.h \
     Splitter.h \
     StyledKnobWidgetBase.h \
-    TableItemAnim.h \
     TabGroup.h \
-    TableModelView.h \
     TabWidget.h \
+    TableItemAnim.h \
+    TableModelView.h \
     TextRenderer.h \
     ticks.h \
     TimeLineGui.h \
@@ -363,7 +363,7 @@ HEADERS += \
     ViewerTab.h \
     ViewerTabPrivate.h \
     ViewerToolButton.h \
-    ZoomContext.h \
+    ZoomContext.h \	
     ../libs/OpenFX/include/ofxCore.h \
     ../libs/OpenFX/include/ofxDialog.h \
     ../libs/OpenFX/include/ofxImageEffect.h \
