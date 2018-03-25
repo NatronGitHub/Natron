@@ -28,6 +28,12 @@
 #include "Global/Macros.h"
 #include <set>
 
+#include <set>
+#include <list>
+#include <map>
+#include <utility>
+#include <string>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/weak_ptr.hpp>
 #endif
@@ -301,6 +307,8 @@ public:
     bool rearrangeSelectedNodes();
 
     void toggleSelectedNodesEnabled();
+
+    void getNodeSet(const NodesGuiList& nodeList, std::set<NodeGuiPtr>& nodeSet);
 };
 
 NATRON_NAMESPACE_EXIT

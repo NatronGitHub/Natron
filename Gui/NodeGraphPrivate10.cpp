@@ -37,6 +37,7 @@
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
 
+#include "Gui/BackdropGui.h"
 #include "Gui/DotGui.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
@@ -159,31 +160,52 @@ NodeGraphPrivate::pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZ
 
 
 void
+NodeGraphPrivate::getNodeSet(const NodesGuiList& nodeList, std::set<NodeGuiPtr>& nodeSet)
+{
+    for (NodesGuiList::const_iterator it = nodeList.begin(); it != nodeList.end(); ++it) {
+        if (*it && nodeSet.find(*it) == nodeSet.end()) {
+            nodeSet.insert(*it);
+            BackdropGui* isBd = dynamic_cast<BackdropGui*>( it->get() );
+            if (isBd) {
+                NodesGuiList nodesWithin = _publicInterface->getNodesWithinBackdrop(*it);
+                getNodeSet(nodesWithin, nodeSet);
+            }
+        }
+    }
+}
+
+void
 NodeGraphPrivate::toggleSelectedNodesEnabled()
 {
-    NodesGuiList toProcess;
+    std::set<NodeGuiPtr> nodeSet;
 
-    for (NodesGuiWList::iterator it = _selection.begin(); it != _selection.end(); ++it) {
-        NodeGuiPtr n = it->lock();
-        if (!n) {
-            continue;
-        }
-        KnobBoolPtr k = n->getNode()->getEffectInstance()->getDisabledKnob();
+    // first, put all selected nodes, including those within backdrop, in nodeSet
+    NodesGuiList selection;
+    for (NodesGuiWList::const_iterator it = _selection.begin(); it != _selection.end(); ++it) {
+        selection.push_back(it->lock());
+    }
+    getNodeSet(selection, nodeSet);
+
+    NodesGuiList disabledNodes;
+    NodesGuiList allNodes;
+    for (std::set<NodeGuiPtr>::const_iterator it = nodeSet.begin(); it != nodeSet.end(); ++it) {
+        KnobBoolPtr k = (*it)->getNode()->getEffectInstance()->getDisabledKnob();
         if (!k) {
             continue;
         }
+        allNodes.push_back(*it);
         if ( k->getValue() ) {
-            toProcess.push_back(n);
+            disabledNodes.push_back(*it);
         }
     }
     ///if some nodes are disabled , enable them before
 
-    if ( toProcess.size() == _selection.size() ) {
-        _publicInterface->pushUndoCommand( new EnableNodesCommand(_publicInterface->getSelectedNodes()) );
-    } else if (toProcess.size() > 0) {
-        _publicInterface->pushUndoCommand( new EnableNodesCommand(toProcess) );
+    if ( disabledNodes.size() == allNodes.size() ) {
+        _publicInterface->pushUndoCommand( new EnableNodesCommand(allNodes) );
+    } else if (disabledNodes.size() > 0) {
+        _publicInterface->pushUndoCommand( new EnableNodesCommand(disabledNodes) );
     } else {
-        _publicInterface->pushUndoCommand( new DisableNodesCommand(_publicInterface->getSelectedNodes()) );
+        _publicInterface->pushUndoCommand( new DisableNodesCommand(allNodes) );
     }
 }
 

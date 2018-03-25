@@ -35,7 +35,8 @@ Natron multiple times on the same computer, the different processes will share t
 ## Version 2.3.9
 
 - Numerical text fields (aka SpinBoxes) are now auto-reselected when validated #1737
-
+- When a node is selected, make its inputs/outputs more visible
+- All nodes inside a backdrop can be enabled/disabled using the "D" key #1720
 
 ## Version 2.3.8
 
