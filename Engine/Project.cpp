@@ -923,8 +923,8 @@ Project::initializeKnobs()
 
     {
         KnobChoicePtr param = createKnob<KnobChoice>("defaultColorSpace8u");
-        param->setLabel(tr("8-Bit Colorspace"));
-        param->setHintToolTip( tr("Defines the color-space in which 8-bit images are assumed to be by default.") );
+        param->setLabel(tr("8-Bit LUT"));
+        param->setHintToolTip( tr("Defines the 1D LUT used to convert to 8-bit image data if an effect cannot process floating-point images.") );
         param->setAnimationEnabled(false);
         param->populateChoices(colorSpaces);
         param->setDefaultValue(1);
@@ -935,8 +935,8 @@ Project::initializeKnobs()
 
     {
         KnobChoicePtr param = createKnob<KnobChoice>("defaultColorSpace16u");
-        param->setLabel(tr("16-Bit Colorspace"));
-        param->setHintToolTip( tr("Defines the color-space in which 16-bit integer images are assumed to be by default.") );
+        param->setLabel(tr("16-Bit LUT"));
+        param->setHintToolTip( tr("Defines the 1D LUT used to convert to 16-bit image data if an effect cannot process floating-point images.") );
         param->setAnimationEnabled(false);
         param->populateChoices(colorSpaces);
         param->setDefaultValue(2);
@@ -947,8 +947,8 @@ Project::initializeKnobs()
 
     {
         KnobChoicePtr param = createKnob<KnobChoice>("defaultColorSpace32f");
-        param->setLabel(tr("32-Bit f.p Colorspace "));
-        param->setHintToolTip( tr("Defines the color-space in which 32-bit floating point images are assumed to be by default.") );
+        param->setLabel(tr("32-Bit Floating Point LUT"));
+        param->setHintToolTip( tr("Defines the 1D LUT used to convert from 32-bit floating-point image data if an effect cannot process floating-point images.") );
         param->setAnimationEnabled(false);
         param->populateChoices(colorSpaces);
         param->setDefaultValue(0);
