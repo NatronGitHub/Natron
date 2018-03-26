@@ -596,11 +596,8 @@ INCLUDEPATH += $$PWD/libs/libmv
 }
 
 glad-flags {
-    CONFIG(debug) {
-        INCLUDEPATH += $$PWD/Global/gladDeb/include
-    } else {
-        INCLUDEPATH += $$PWD/Global/gladRel/include
-    }
+    CONFIG(debug, debug|release):   INCLUDEPATH += $$PWD/Global/gladDeb/include
+    CONFIG(release, debug|release): INCLUDEPATH += $$PWD/Global/gladRel/include
 }
 
 openmvg-flags {
