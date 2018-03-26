@@ -325,8 +325,8 @@ NodeGui::initialize(NodeGraph* dag,
 
 } // initialize
 
-void
-NodeGui::setColorFromGrouping()
+QColor
+NodeGui::getColorFromGrouping()
 {
     NodePtr internalNode = getNode();
     if (!internalNode) {
@@ -338,7 +338,7 @@ NodeGui::setColorFromGrouping()
     color.setRgbF( Image::clamp<double>(r, 0., 1.),
                    Image::clamp<double>(g, 0., 1.),
                    Image::clamp<double>(b, 0., 1.) );
-    setCurrentColor(color);
+    return color;
 }
 
 void
@@ -350,13 +350,15 @@ NodeGui::restoreStateAfterCreation(const CreateNodeArgs& args)
     }
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     if (!serialization) {
-        setColorFromGrouping();
+        QColor color = getColorFromGrouping();
+        setCurrentColor(color);
     } else {
         double r, g, b;
         internalNode->getColor(&r, &g, &b);
         if (r == -1 && g == -1 && b == -1) {
             // Use default
-            setColorFromGrouping();
+            QColor color = getColorFromGrouping();
+            setCurrentColor(color);
         } else {
             QColor color;
             color.setRgbF( Image::clamp<double>(r, 0., 1.),
@@ -3820,7 +3822,8 @@ NodeGui::onNodePresetsChanged()
     if (!plugin) {
         return;
     }
-    setColorFromGrouping();
+    QColor color = getColorFromGrouping();
+    setCurrentColor(color);
     refreshPluginInfo();
 
     QPixmap pixmap;
