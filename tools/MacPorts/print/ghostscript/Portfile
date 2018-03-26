@@ -4,7 +4,7 @@ PortSystem          1.0
 PortGroup           muniversal 1.0
 
 name                ghostscript
-version             9.22
+version             9.23
 categories          print
 license             AGPL-3 BSD
 maintainers         nomaintainer
@@ -27,14 +27,11 @@ distfiles           ${distname}.tar.gz:source \
                     ghostscript-fonts-std-8.11.tar.gz:fonts \
                     ${mappingresources_commit}.zip:misc
 
-patchfiles          patch-base_unix-dll.mak.diff \
-                    ghostscript-9.10-cross.patch \
-                    ghostscript-9.05-cross-so.patch \
-                    no-werror.diff
+patchfiles          patch-base_unix-dll.mak.diff
 
 checksums           ${distname}.tar.gz \
-                    rmd160  ece611db0c38de2e8061560c50cd16265144d50f \
-                    sha256  7f5f4487c0df9dce37481e4c8f192c0322e4c69f5a2ba900a7833c992331bcf4 \
+                    rmd160  e5ecbd1cb6777fb0968f0967d3d4b30da2fefddd \
+                    sha256  f65964807a3c97a2c0810d4b9806585367e73129e57ae33378cea18e07a1ed9b \
                     ghostscript-fonts-other-6.0.tar.gz \
                     rmd160  ab60dbf71e7d91283a106c3df381cadfe173082f \
                     sha256  4fa051e341167008d37fe34c19d241060cd17b13909932cd7ca7fe759243c2de \
@@ -64,12 +61,14 @@ depends_run         port:perl5
 
 extract.only        ${distname}.tar.gz \
                     ghostscript-fonts-other-6.0.tar.gz \
-                    ghostscript-fonts-std-8.11.tar.gz
+                    ghostscript-fonts-std-8.11.tar.gz \
+                    ghostscript-9.10-cross.patch \
+                    ghostscript-9.05-cross-so.patch
 
 post-extract {
     system -W ${workpath} "unzip '${distpath}/${mappingresources_commit}.zip'"
 
-    foreach d {freetype jbig2dec jpeg lcms2 libpng tiff zlib} {
+    foreach d {freetype jbig2dec jpeg lcms2art libpng tiff zlib} {
         move ${worksrcpath}/${d} ${worksrcpath}/${d}_local
     }
 

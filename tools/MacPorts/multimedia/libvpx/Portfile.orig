@@ -140,4 +140,4 @@ post-destroot {
 
 livecheck.type  regex
 livecheck.url   https://chromium.googlesource.com/webm/${name}
-livecheck.regex "v(\\d+(?:\\.\\d+)*)"
+livecheck.regex ">v(\\d+(?:\\.\\d+)*)<"

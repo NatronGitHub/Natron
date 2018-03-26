@@ -179,7 +179,7 @@ platform darwin {
 
     # as of 1.6.0 libvpx only supports darwin 10 or later
     if {${os.major} < 10} {
-        depends_build-delete port:libvpx
+        depends_lib-delete port:libvpx
         configure.args-replace --enable-libvpx --disable-libvpx
     }
 
