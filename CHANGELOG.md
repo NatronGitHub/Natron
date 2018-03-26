@@ -38,6 +38,7 @@ Natron multiple times on the same computer, the different processes will share t
 - When a node is selected, make its inputs/outputs more visible
 - All nodes inside a backdrop can be enabled/disabled using the "D" key #1720
 
+
 ## Version 2.3.8
 
 - Fix crash when Viewer/maxNodeUiOpened=1 in the preferences
