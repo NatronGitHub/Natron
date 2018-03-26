@@ -438,7 +438,7 @@ public Q_SLOTS:
 
     void onRightClickMenuKnobPopulated();
 
-    void setColorFromGrouping();
+    QColor getColorFromGrouping();
 
     void onHideInputsKnobValueChanged(bool hidden);
 

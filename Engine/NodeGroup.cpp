@@ -2646,7 +2646,15 @@ exportGroupInternal(int indentLevel,
     if (isGroup) {
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create the parameters of the group node the same way we did for all internal nodes");
         WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode = ") + groupName);
-        exportAllNodeKnobs(indentLevel, isGroup->getNode(), ts);
+        double r, g, b;
+        bool hasColor = groupNode->getColor(&r, &g, &b);
+        if (hasColor) {
+            // TODO: we could check if the color was actually changed from the default (NodeGui::getColorFromGrouping())
+            
+            // a precision of 3 digits is enough for the node color
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setColor(") + NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) +  QString::fromUtf8(")") );
+        }
+        exportAllNodeKnobs(indentLevel, groupNode, ts);
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del lastNode");
         WRITE_STATIC_LINE("");
     }

@@ -896,6 +896,10 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         QString modulePath;
         plugin->getPythonModuleNameAndPath(&moduleName, &modulePath);
 
+        if ( !moduleName.isEmpty() ) {
+            setGroupLabelIDAndVersion(containerNode, modulePath, moduleName);
+        }
+
         int appID = getAppID() + 1;
         std::stringstream ss;
         ss << moduleName.toStdString();
@@ -923,10 +927,6 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         }
         if (istoolsetScript) {
             return NodePtr();
-        }
-
-        if ( !moduleName.isEmpty() ) {
-            setGroupLabelIDAndVersion(node, modulePath, moduleName);
         }
 
         // If there's a serialization, restore the serialization of the group node because the Python script probably overriden any state
