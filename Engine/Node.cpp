@@ -7044,7 +7044,7 @@ bool
 Node::isInputNode() const
 {
     ///MT-safe, never changes
-    return _imp->effect->isGenerator();
+    return _imp->effect->isGenerator() && ! _imp->effect->isFilter();
 }
 
 bool

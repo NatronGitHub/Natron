@@ -399,10 +399,9 @@ public:
     virtual bool isPaintingOverItselfEnabled() const WARN_UNUSED_RETURN;
 
     /**
-     * @brief Returns true if the node is capable of generating
-     * data and process data on the input as well
+     * @brief Returns true if the node is capable of processing data from its input
      **/
-    virtual bool isGeneratorAndFilter() const WARN_UNUSED_RETURN
+    virtual bool isFilter() const WARN_UNUSED_RETURN
     {
         return false;
     }
