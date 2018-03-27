@@ -326,11 +326,14 @@ NodeGui::initialize(NodeGraph* dag,
     getNode()->initializeHostOverlays();
 } // initialize
 
-QColor
-NodeGui::getColorFromGrouping()
+bool
+NodeGui::getColorFromGrouping(QColor* color)
 {
     NodePtr internalNode = getNode();
     EffectInstancePtr iseffect = internalNode->getEffectInstance();
+    if (!iseffect) {
+        return false;
+    }
     SettingsPtr settings = appPTR->getCurrentSettings();
     float r, g, b;
     Backdrop* isBd = dynamic_cast<Backdrop*>( iseffect.get() );
@@ -370,11 +373,10 @@ NodeGui::getColorFromGrouping()
     } else {
         settings->getDefaultNodeColor(&r, &g, &b);
     }
-    QColor color;
-    color.setRgbF( Image::clamp<qreal>(r, 0., 1.),
-                   Image::clamp<qreal>(g, 0., 1.),
-                   Image::clamp<qreal>(b, 0., 1.) );
-    return color;
+    color->setRgbF( Image::clamp<qreal>(r, 0., 1.),
+                    Image::clamp<qreal>(g, 0., 1.),
+                    Image::clamp<qreal>(b, 0., 1.) );
+    return true;
 }
 
 void
@@ -387,8 +389,10 @@ NodeGui::restoreStateAfterCreation()
 
     ///Refresh the disabled knob
 
-    QColor color = getColorFromGrouping();
-    setCurrentColor(color);
+    QColor color;
+    if ( getColorFromGrouping(&color) ) {
+        setCurrentColor(color);
+    }
     boost::shared_ptr<KnobBool> disabledknob = internalNode->getDisabledKnob();
     if ( disabledknob && disabledknob->getValue() ) {
         onDisabledKnobToggled(true);
@@ -3594,8 +3598,10 @@ NodeGui::setPluginIDAndVersion(const std::list<std::string>& /*grouping*/,
                                const std::string& pluginIconFilePath,
                                unsigned int version)
 {
-    QColor color = getColorFromGrouping();
-    setCurrentColor(color);
+    QColor color;
+    if ( getColorFromGrouping(&color) ) {
+        setCurrentColor(color);
+    }
     if ( getSettingPanel() ) {
         getSettingPanel()->setPluginIDAndVersion(pluginLabel, pluginID, pluginDesc, version);
     }
