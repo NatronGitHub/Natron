@@ -325,20 +325,19 @@ NodeGui::initialize(NodeGraph* dag,
 
 } // initialize
 
-QColor
-NodeGui::getColorFromGrouping()
+bool
+NodeGui::getColorFromGrouping(QColor* color)
 {
     NodePtr internalNode = getNode();
     if (!internalNode) {
-        return;
+        return false;
     }
     double r, g, b;
     internalNode->getDefaultColor(&r, &g, &b);
-    QColor color;
-    color.setRgbF( Image::clamp<double>(r, 0., 1.),
-                   Image::clamp<double>(g, 0., 1.),
-                   Image::clamp<double>(b, 0., 1.) );
-    return color;
+    color->setRgbF( Image::clamp<double>(r, 0., 1.),
+                    Image::clamp<double>(g, 0., 1.),
+                    Image::clamp<double>(b, 0., 1.) );
+    return true;
 }
 
 void
@@ -350,15 +349,19 @@ NodeGui::restoreStateAfterCreation(const CreateNodeArgs& args)
     }
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     if (!serialization) {
-        QColor color = getColorFromGrouping();
-        setCurrentColor(color);
+        QColor color;
+        if ( getColorFromGrouping(&color) ) {
+            setCurrentColor(color);
+        }
     } else {
         double r, g, b;
         internalNode->getColor(&r, &g, &b);
         if (r == -1 && g == -1 && b == -1) {
             // Use default
-            QColor color = getColorFromGrouping();
-            setCurrentColor(color);
+            QColor color;
+            if ( getColorFromGrouping(&color) ) {
+                setCurrentColor(color);
+            }
         } else {
             QColor color;
             color.setRgbF( Image::clamp<double>(r, 0., 1.),
@@ -3822,8 +3825,10 @@ NodeGui::onNodePresetsChanged()
     if (!plugin) {
         return;
     }
-    QColor color = getColorFromGrouping();
-    setCurrentColor(color);
+    QColor color;
+    if ( getColorFromGrouping(&color) ) {
+        setCurrentColor(color);
+    }
     refreshPluginInfo();
 
     QPixmap pixmap;
