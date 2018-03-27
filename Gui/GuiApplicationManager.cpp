@@ -1001,7 +1001,6 @@ GuiApplicationManager::onPluginLoaded(Plugin* plugin)
         shortcutGrouping.push_back(groups[i]);
     }
 
-    Qt::KeyboardModifiers modifiers = Qt::NoModifier;
     Qt::Key symbol = (Qt::Key)0;
     bool hasShortcut = true;
 
@@ -1022,7 +1021,6 @@ GuiApplicationManager::onPluginLoaded(Plugin* plugin)
         symbol = Qt::Key_B;
     } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_DOT) ) {
         symbol = Qt::Key_Period;
-        modifiers |= Qt::ShiftModifier;
     }
 #ifdef NATRON_ENABLE_IO_META_NODES
     else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_READ) ) {
@@ -1036,8 +1034,8 @@ GuiApplicationManager::onPluginLoaded(Plugin* plugin)
     }
     plugin->setHasShortcut(hasShortcut);
 
-    if ( plugin->getIsUserCreatable() ) {
-        _imp->addKeybind(shortcutGrouping.toStdString(), pluginID.toStdString(), pluginLabel.toStdString(), modifiers, symbol);
+    if ( hasShortcut && plugin->getIsUserCreatable() ) {
+        _imp->addKeybind(shortcutGrouping.toStdString(), pluginID.toStdString(), pluginLabel.toStdString(), Qt::NoModifier, symbol, /*modifiersMask=*/Qt::ShiftModifier);
     }
 
     const std::list<PluginActionShortcut>& shortcuts =  plugin->getShortcuts();
