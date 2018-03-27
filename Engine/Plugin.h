@@ -119,8 +119,9 @@ NATRON_NAMESPACE_ENTER
 #define kNatronPluginPropGrouping "NatronPluginPropGrouping"
 
 /**
- * @brief x2 int property (optional) indicating the shortcut to use to create an instance of this plug-in.
+ * @brief x2 int property (optional) indicating the (key,modifier) shortcut to use to create an instance of this plug-in.
  * The user can always change it from the shortcut editor.
+ * Because of different keyboard layouts, the shift modifier is ignored.
  * Default value - 0, 0
  **/
 #define kNatronPluginPropShortcut "NatronPluginPropShortcut"

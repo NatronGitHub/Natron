@@ -147,7 +147,7 @@ public:
     virtual bool isWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isVideoWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isGeneratorAndFilter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isFilter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onScriptNameChanged(const std::string& fullyQualifiedName) OVERRIDE FINAL;
     virtual ActionRetCodeEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 

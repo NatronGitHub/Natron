@@ -747,14 +747,14 @@ OfxEffectInstance::isWriter() const
 }
 
 bool
-OfxEffectInstance::isGeneratorAndFilter() const
+OfxEffectInstance::isFilter() const
 {
     assert(_imp->common->context != eContextNone);
     const std::set<std::string> & contexts = effectInstance()->getPlugin()->getContexts();
-    std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
-    std::set<std::string>::const_iterator foundGeneral = contexts.find(kOfxImageEffectContextGeneral);
+    bool foundGeneral = contexts.find(kOfxImageEffectContextGeneral) != contexts.end();
+    bool foundFilter = contexts.find(kOfxImageEffectContextFilter) != contexts.end();
 
-    return foundGenerator != contexts.end() && foundGeneral != contexts.end();
+    return foundFilter || (foundGeneral && getNInputs() > 0);
 }
 
 /*group is a string as such:
