@@ -58,7 +58,7 @@ public:
         return 0;
     }
 
-    virtual int getMaxInputCount() const OVERRIDE WARN_UNUSED_RETURN
+    virtual int getNInputs() const OVERRIDE WARN_UNUSED_RETURN
     {
         return 1;
     }
@@ -91,7 +91,7 @@ public:
                                     const RenderScale & renderScale,
                                     bool draftRender,
                                     ViewIdx view,
-                                    EffectInstPtr* inputToTransform,
+                                    EffectInstancePtr* inputToTransform,
                                     Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getInputsHoldingTransform(std::list<int>* inputs) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isOutput() const OVERRIDE WARN_UNUSED_RETURN

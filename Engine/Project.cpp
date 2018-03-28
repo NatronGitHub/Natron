@@ -922,25 +922,25 @@ Project::initializeKnobs()
     colorSpaces.push_back(ChoiceOption("sRGB","",""));
     colorSpaces.push_back(ChoiceOption("Rec.709","",""));
 
-    _imp->colorSpace8u = AppManager::createKnob<KnobChoice>( this, tr("8-Bit Colorspace") );
+    _imp->colorSpace8u = AppManager::createKnob<KnobChoice>( this, tr("8-Bit LUT") );
     _imp->colorSpace8u->setName("defaultColorSpace8u");
-    _imp->colorSpace8u->setHintToolTip( tr("Defines the color-space in which 8-bit images are assumed to be by default.") );
+    _imp->colorSpace8u->setHintToolTip( tr("Defines the 1D LUT used to convert to 8-bit image data if an effect cannot process floating-point images.") );
     _imp->colorSpace8u->setAnimationEnabled(false);
     _imp->colorSpace8u->populateChoices(colorSpaces);
     _imp->colorSpace8u->setDefaultValue(1);
     lutPages->addKnob(_imp->colorSpace8u);
 
-    _imp->colorSpace16u = AppManager::createKnob<KnobChoice>( this, tr("16-Bit Colorspace") );
+    _imp->colorSpace16u = AppManager::createKnob<KnobChoice>( this, tr("16-Bit LUT") );
     _imp->colorSpace16u->setName("defaultColorSpace16u");
-    _imp->colorSpace16u->setHintToolTip( tr("Defines the color-space in which 16-bit integer images are assumed to be by default.") );
+    _imp->colorSpace16u->setHintToolTip( tr("Defines the 1D LUT used to convert to 16-bit image data if an effect cannot process floating-point images.") );
     _imp->colorSpace16u->setAnimationEnabled(false);
     _imp->colorSpace16u->populateChoices(colorSpaces);
     _imp->colorSpace16u->setDefaultValue(2);
     lutPages->addKnob(_imp->colorSpace16u);
 
-    _imp->colorSpace32f = AppManager::createKnob<KnobChoice>( this, tr("32-Bit f.p Colorspace ") );
+    _imp->colorSpace32f = AppManager::createKnob<KnobChoice>( this, tr("32-Bit Floating Point LUT ") );
     _imp->colorSpace32f->setName("defaultColorSpace32f");
-    _imp->colorSpace32f->setHintToolTip( tr("Defines the color-space in which 32-bit floating point images are assumed to be by default.") );
+    _imp->colorSpace32f->setHintToolTip( tr("Defines the 1D LUT used to convert from 32-bit floating-point image data if an effect cannot process floating-point images.") );
     _imp->colorSpace32f->setAnimationEnabled(false);
     _imp->colorSpace32f->populateChoices(colorSpaces);
     _imp->colorSpace32f->setDefaultValue(0);

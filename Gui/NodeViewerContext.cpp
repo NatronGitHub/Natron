@@ -260,7 +260,7 @@ NodeViewerContext::onNodeSettingsPanelClosed(bool closed)
     }
     NodeGuiPtr node = _imp->node.lock();
     if (closed) {
-        _imp->viewerTab->removeNodeViewerInterface(node, false /*permanantly*/, true /*setAnother*/);
+        _imp->viewerTab->removeNodeViewerInterface(node, false /*permanently*/, true /*setAnother*/);
     } else {
         // Set the viewer interface for this plug-in to be the one of this node
         _imp->viewerTab->setPluginViewerInterface(node);
@@ -666,7 +666,7 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
             KnobGroup* newIsGroup = dynamic_cast<KnobGroup*>( newGroupKnob.get() );
             assert(newIsGroup);
             if (newIsButton && newIsGroup) {
-                EffectInstPtr effect = n->getNode()->getEffectInstance();
+                EffectInstancePtr effect = n->getNode()->getEffectInstance();
 
                 if (oldIsGroup) {
                     if (oldIsGroup->getValue() != false) {

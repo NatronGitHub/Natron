@@ -1418,7 +1418,7 @@ public:
         , mustDoNeatRender(false)
         , globalMergeNodes()
     {
-        EffectInstPtr effect = n->getEffectInstance();
+        EffectInstancePtr effect = n->getEffectInstance();
         RotoPaint* isRotoNode = dynamic_cast<RotoPaint*>( effect.get() );
 
         if (isRotoNode) {

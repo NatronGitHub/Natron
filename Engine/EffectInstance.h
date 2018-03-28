@@ -305,7 +305,7 @@ public:
      * @brief Returns input n. It might be NULL if the input is not connected.
      * MT-Safe
      **/
-    EffectInstPtr getInput(int n) const WARN_UNUSED_RETURN;
+    EffectInstancePtr getInput(int n) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Forwarded to the node holding the effect
@@ -399,10 +399,9 @@ public:
     virtual bool isPaintingOverItselfEnabled() const WARN_UNUSED_RETURN;
 
     /**
-     * @brief Returns true if the node is capable of generating
-     * data and process data on the input as well
+     * @brief Returns true if the node is capable of processing data from its input
      **/
-    virtual bool isGeneratorAndFilter() const WARN_UNUSED_RETURN
+    virtual bool isFilter() const WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -419,7 +418,7 @@ public:
      * @brief How many input can we have at most. (i.e: how many input arrows)
      * This function should be MT-safe and should never change the value returned.
      **/
-    virtual int getMaxInputCount() const WARN_UNUSED_RETURN = 0;
+    virtual int getNInputs() const WARN_UNUSED_RETURN = 0;
 
     /**
      * @brief Is inputNb optional ? In which case the render can be made without it.
@@ -736,19 +735,19 @@ public:
      * from last to first.
      * If this not is not disabled, it will return a pointer to this.
      **/
-    EffectInstPtr getNearestNonDisabled() const;
+    EffectInstancePtr getNearestNonDisabled() const;
 
     /**
      * @brief Same as getNearestNonDisabled() except that it returns the *last* disabled node before the nearest non disabled node.
      * @param inputNb[out] The inputNb of the node that is non disabled.
      **/
-    EffectInstPtr getNearestNonDisabledPrevious(int* inputNb);
+    EffectInstancePtr getNearestNonDisabledPrevious(int* inputNb);
 
     /**
      * @brief Same as getNearestNonDisabled except that it looks for the nearest non identity node.
      * This function calls the action isIdentity and getRegionOfDefinition and can be expensive!
      **/
-    EffectInstPtr getNearestNonIdentity(double time);
+    EffectInstancePtr getNearestNonIdentity(double time);
 
     /**
      * @brief This is purely for the OfxEffectInstance derived class, but passed here for the sake of abstraction
@@ -983,7 +982,7 @@ protected:
                                     const RenderScale & /*renderScale*/,
                                     bool /*draftRender*/,
                                     ViewIdx /*view*/,
-                                    EffectInstPtr* /*inputToTransform*/,
+                                    EffectInstancePtr* /*inputToTransform*/,
                                     Transform::Matrix3x3* /*transform*/) WARN_UNUSED_RETURN
     {
         return eStatusReplyDefault;
@@ -997,7 +996,7 @@ public:
                                    const RenderScale & renderScale,
                                    bool draftRender,
                                    ViewIdx view,
-                                   EffectInstPtr* inputToTransform,
+                                   EffectInstancePtr* inputToTransform,
                                    Transform::Matrix3x3* transform) WARN_UNUSED_RETURN;
 
 protected:
@@ -1410,7 +1409,7 @@ public:
 
     struct RectToRender
     {
-        EffectInstPtr identityInput;
+        EffectInstancePtr identityInput;
         RectI rect;
         RoIMap inputRois;
         EffectInstance::InputImagesMap imgs;
@@ -1685,10 +1684,10 @@ public:
 
     /**
      * @brief Reimplement to activate host masking
-     * Note that in this case this is expected that getMaxInputCount returns the number of inputs *with* the mask.
+     * Note that in this case this is expected that getNInputs returns the number of inputs *with* the mask.
      * The function getInputLabel should also return the appropriate label for the mask.
      * The function isInputMask should also return true for this mask index.
-     * The mask will be the last input, i.e its index will be getMaxInputCount() - 1.
+     * The mask will be the last input, i.e its index will be getNInputs() - 1.
      **/
     virtual bool isHostMaskingEnabled() const
     {
@@ -1749,7 +1748,7 @@ protected:
      * of the effect that will be used to render. The copy should be as fast as possible, meaning any clip or parameter should
      * share pointers (since internally these classes are thread-safe) and ensure that any private data member is copied.
      **/
-    virtual EffectInstPtr createRenderClone() { return EffectInstPtr(); }
+    virtual EffectInstancePtr createRenderClone() { return EffectInstancePtr(); }
 
 
     /**
@@ -1761,10 +1760,10 @@ protected:
 
 private:
 
-    EffectInstPtr getOrCreateRenderInstance();
+    EffectInstancePtr getOrCreateRenderInstance();
 
 
-    void releaseRenderInstance(const EffectInstPtr& instance);
+    void releaseRenderInstance(const EffectInstancePtr& instance);
 
     /**
      * @brief This function must initialize all OpenGL context related data such as shaders, LUTs, etc...
@@ -1840,7 +1839,7 @@ public:
                                    double par,
                                    const RenderScale & scale,
                                    RoIMap* inputRois,
-                                   std::map<int, EffectInstPtr>* reroutesMap);
+                                   std::map<int, EffectInstancePtr>* reroutesMap);
     struct RenderArgs
     {
         RectD rod; //!< the effect's RoD in CANONICAL coordinates
@@ -1851,7 +1850,7 @@ public:
         bool validArgs; //< are the args valid ?
         bool isIdentity;
         double identityTime;
-        EffectInstPtr identityInput;
+        EffectInstancePtr identityInput;
         EffectInstance::InputImagesMap inputImages;
         std::map<ImagePlaneDesc, PlaneToRender> outputPlanes;
 
@@ -2196,7 +2195,7 @@ private:
                                          const RectD* optionalBoundsParam,
                                          U64* nodeHash_p,
                                          bool* isIdentity_p,
-                                         EffectInstPtr* identityInput_p,
+                                         EffectInstancePtr* identityInput_p,
                                          bool* duringPaintStroke_p,
                                          RectD* rod_p,
                                          RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL

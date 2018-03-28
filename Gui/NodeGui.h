@@ -438,7 +438,7 @@ public Q_SLOTS:
 
     void onRightClickMenuKnobPopulated();
 
-    void setColorFromGrouping();
+    bool getColorFromGrouping(QColor* color);
 
     void onHideInputsKnobValueChanged(bool hidden);
 
@@ -517,7 +517,7 @@ public Q_SLOTS:
 
     void onStreamWarningsChanged();
 
-    void onNodeExtraLabelChanged(const QString & label);
+    void refreshNodeText(const QString & label);
 
     void onSwitchInputActionTriggered();
 
@@ -591,13 +591,13 @@ private:
     bool _panelOpenedBeforeDeactivate;
     NodeGraphPixmapItem* _pluginIcon;
     QGraphicsRectItem* _pluginIconFrame;
-    QGraphicsPixmapItem* _mergeIcon;
+    QGraphicsPixmapItem* _presetIcon;
     NodeGraphTextItem *_nameItem;
     QGraphicsRectItem *_nameFrame;
     QGraphicsPolygonItem* _resizeHandle;
 
     /*A pointer to the rectangle of the node.*/
-    QGraphicsRectItem* _boundingBox;
+    NodeGraphRectItem* _boundingBox;
 
     /*A pointer to the channels pixmap displayed*/
     QGraphicsPixmapItem* _channelsPixmap;
@@ -608,7 +608,7 @@ private:
     std::vector<unsigned int> _previewData;
     int _previewW, _previewH;
     QGraphicsSimpleTextItem* _persistentMessage;
-    QGraphicsRectItem* _stateIndicator;
+    NodeGraphRectItem* _stateIndicator;
     bool _mergeHintActive;
     boost::shared_ptr<NodeGuiIndicator> _streamIssuesWarning;
     QGraphicsLineItem* _disabledTopLeftBtmRight;

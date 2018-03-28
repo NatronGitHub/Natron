@@ -5,6 +5,24 @@
 # History
 
 
+## Version 2.3.9
+
+- Numerical text fields (aka SpinBoxes) are now auto-reselected when validated #1737
+- When a node is selected, make its inputs/outputs more visible
+- All nodes inside a backdrop can be enabled/disabled using the "D" key #1720
+- Fix the "." shortcut for creating a Dot in the nodegraph.
+- Only auto-connect a newly-created node to the input of the selected node if it cannot have an input itself.
+
+
+## Version 2.3.8
+
+- Fix crash when Viewer/maxNodeUiOpened=1 in the preferences
+- Fix bug where an exported PyPlug would not have a correct Python syntax if a string had a backslash followed by newline (as may be seen in Shadertoy sources).
+- Fix behaviour of loop/bounce in the Read node when there is a time offset #1734.
+- G'MIC plugins by Tobias Fleischer are now bundled with the binary distributions (beta).
+- Fix bug where the "&" character was not displayed in the plugin creation menus.
+
+
 ## Version 2.3.7
 
 - The viewer timeline can now display information as timecode instead of frames (see TC/TF choice next to fps below the timeline)

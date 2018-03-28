@@ -42,6 +42,7 @@ addons:
     #- kalakris-cmake
     - pythonxy-devel
     packages:
+    - ca-certificates
     #- gcc-4.9
     #- g++-4.9
     #- gcc-5
@@ -140,7 +141,7 @@ before_install:
   - date -u
   - uname -a
   - if [ ${TRAVIS_OS_NAME} = "linux" ]; then
-      echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca- ;
+      echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca- ;
     fi
   - export J='-j2'
 

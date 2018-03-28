@@ -852,7 +852,7 @@ Gui::renderSelectedNode()
         if (!internalNode) {
             continue;
         }
-        EffectInstPtr effect = internalNode->getEffectInstance();
+        EffectInstancePtr effect = internalNode->getEffectInstance();
         if (!effect) {
             continue;
         }

@@ -322,7 +322,7 @@ DopeSheet::addNode(NodeGuiPtr nodeGui)
         return;
     }
 
-    EffectInstPtr effectInstance = node->getEffectInstance();
+    EffectInstancePtr effectInstance = node->getEffectInstance();
     std::string pluginID = node->getPluginID();
 
 #ifndef NATRON_ENABLE_IO_META_NODES

@@ -562,7 +562,7 @@ NodeCollection::connectNodes(int inputNumber,
         if (!ok) {
             return false;
         }
-        if ( input && (input->getMaxInputCount() > 0) ) {
+        if ( input && (input->getNInputs() > 0) ) {
             ok = connectNodes(input->getPreferredInputForConnection(), existingInput, input);
             if (!ok) {
                 return false;
@@ -627,7 +627,7 @@ NodeCollection::disconnectNodes(const NodePtr& input,
         return false;
     }
 
-    int inputsCount = input->getMaxInputCount();
+    int inputsCount = input->getNInputs();
     if (inputsCount == 1) {
         inputToReconnectTo = input->getInput(0);
     }
@@ -667,7 +667,7 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,
     bool connectAsInput = false;
 
     ///cannot connect 2 input nodes together: case 2-b)
-    if ( (selected->getMaxInputCount() == 0) && (created->getMaxInputCount() == 0) ) {
+    if ( (selected->getNInputs() == 0) && (created->getNInputs() == 0) ) {
         return false;
     }
     ///cannot connect 2 output nodes together: case 1-a)
@@ -690,8 +690,8 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,
             connectAsInput = false;
         }
         ///case b)
-        else if (created->getMaxInputCount() == 0) {
-            assert(selected->getMaxInputCount() != 0);
+        else if (created->getNInputs() == 0) {
+            assert(selected->getNInputs() != 0);
             ///case 3-b): connect the created node as input of the selected node
             connectAsInput = true;
         }
@@ -1146,7 +1146,7 @@ NodeGroup::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 }
 
 int
-NodeGroup::getMaxInputCount() const
+NodeGroup::getNInputs() const
 {
     return (int)_imp->inputs.size();
 }
@@ -1609,31 +1609,55 @@ escapeString(const QString& str)
     QString ret;
 
     for (int i = 0; i < str.size(); ++i) {
-        if ( (i == 0) || ( str[i - 1] != QLatin1Char('\\') ) ) {
-            if ( str[i] == QLatin1Char('\\') ) {
-                ret.append( QLatin1Char('\\') );
-                ret.append( QLatin1Char('\\') );
-            } else if ( str[i] == QLatin1Char('"') ) {
-                ret.append( QLatin1Char('\\') );
-                ret.append( QLatin1Char('\"') );
-            } else if ( str[i] == QLatin1Char('\'') ) {
-                ret.append( QLatin1Char('\\') );
-                ret.append( QLatin1Char('\'') );
-            } else if ( str[i] == QLatin1Char('\n') ) {
-                ret.append( QLatin1Char('\\') );
-                ret.append( QLatin1Char('n') );
-            } else if ( str[i] == QLatin1Char('\t') ) {
-                ret.append( QLatin1Char('\\') );
-                ret.append( QLatin1Char('t') );
-            } else if ( str[i] == QLatin1Char('\r') ) {
-                ret.append( QLatin1Char('\\') );
-                ret.append( QLatin1Char('r') );
-            } else {
-                ret.append(str[i]);
-            }
-        } else {
+        //if ( (i == 0) || ( str[i - 1] != QLatin1Char('\\') ) ) { // does not work eg if a line ends with '\'
+        if ( str[i] == QLatin1Char('\a') ) {
+            ret.append( QLatin1Char('\\') );
+            ret.append( QLatin1Char('a') );
+        } else if ( str[i] == QLatin1Char('\b') ) {
+            ret.append( QLatin1Char('\\') );
+            ret.append( QLatin1Char('b') );
+        } else if ( str[i] == QLatin1Char('\f') ) {
+            ret.append( QLatin1Char('\\') );
+            ret.append( QLatin1Char('f') );
+        } else if ( str[i] == QLatin1Char('\n') ) {
+            ret.append( QLatin1Char('\\') );
+            ret.append( QLatin1Char('n') );
+        } else if ( str[i] == QLatin1Char('\r') ) {
+            ret.append( QLatin1Char('\\') );
+            ret.append( QLatin1Char('r') );
+        } else if ( str[i] == QLatin1Char('\t') ) {
+            ret.append( QLatin1Char('\\') );
+            ret.append( QLatin1Char('t') );
+        } else if ( str[i] == QLatin1Char('\v') ) {
+            ret.append( QLatin1Char('\\') );
+            ret.append( QLatin1Char('v') );
+        } else if ( str[i] == QLatin1Char('\\') ) {
+            ret.append( QLatin1Char('\\') );
+            ret.append( QLatin1Char('\\') );
+        } else if ( str[i] == QLatin1Char('\'') ) {
+            ret.append( QLatin1Char('\\') );
+            ret.append( QLatin1Char('\'') );
+        } else if ( str[i] == QLatin1Char('"') ) {
+            ret.append( QLatin1Char('\\') );
+            ret.append( QLatin1Char('\"') );
+            //} else if ( str[i] == QLatin1Char('?') ) { // no trigraphs in Python
+            //    ret.append( QLatin1Char('\\') );
+            //    ret.append( QLatin1Char('\?') );
+        } else if (str[i].isPrint()) {
             ret.append(str[i]);
+        } else {
+#if PY_MAJOR_VERSION >= 3
+            // Python 3 strings are unicode
+            ret.append(QString::fromUTF8("\\u%1").arg(str[i].unicode(), 4, 16, QLatin1Char('0')));
+#else
+            // Python 2: convert to Utf8
+            QByteArray utf8 = QString(str[i]).toUtf8();
+            for (int j = 0; j < utf8.size(); ++i) {
+                ret.append(QString::fromUtf8("\\x%1").arg(utf8[j], 2, 16, QLatin1Char('0')));
+            }
+#endif
         }
+        //}
     }
     ret.prepend( QLatin1Char('"') );
     ret.append( QLatin1Char('"') );
@@ -2622,7 +2646,15 @@ exportGroupInternal(int indentLevel,
     if (isGroup) {
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create the parameters of the group node the same way we did for all internal nodes");
         WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode = ") + groupName);
-        exportAllNodeKnobs(indentLevel, isGroup->getNode(), ts);
+        double r, g, b;
+        bool hasColor = groupNode->getColor(&r, &g, &b);
+        if (hasColor) {
+            // TODO: we could check if the color was actually changed from the default (NodeGui::getColorFromGrouping())
+            
+            // a precision of 3 digits is enough for the node color
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setColor(") + NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) +  QString::fromUtf8(")") );
+        }
+        exportAllNodeKnobs(indentLevel, groupNode, ts);
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del lastNode");
         WRITE_STATIC_LINE("");
     }
@@ -2742,7 +2774,7 @@ exportGroupInternal(int indentLevel,
         QString nodeQualifiedName( groupName + QString::fromUtf8( (*it)->getScriptName_mt_safe().c_str() ) );
 
         if ( !(*it)->getParentMultiInstance() ) {
-            for (int i = 0; i < (*it)->getMaxInputCount(); ++i) {
+            for (int i = 0; i < (*it)->getNInputs(); ++i) {
                 NodePtr inputNode = (*it)->getRealInput(i);
                 if (inputNode) {
                     hasConnected = true;

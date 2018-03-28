@@ -270,7 +270,7 @@ ViewerInstance::invalidateUiContext()
 }
 
 int
-ViewerInstance::getMaxInputCount() const
+ViewerInstance::getNInputs() const
 {
     return 10;
 }
@@ -283,7 +283,7 @@ ViewerInstance::getFrameRange(double *first,
     int activeInputs[2];
 
     getActiveInputs(activeInputs[0], activeInputs[1]);
-    EffectInstPtr n1 = getInput(activeInputs[0]);
+    EffectInstancePtr n1 = getInput(activeInputs[0]);
     if (n1) {
         n1->getFrameRange_public(n1->getRenderHash(), &inpFirst, &inpLast);
     }
@@ -293,7 +293,7 @@ ViewerInstance::getFrameRange(double *first,
     inpFirst = 1;
     inpLast = 1;
 
-    EffectInstPtr n2 = getInput(activeInputs[1]);
+    EffectInstancePtr n2 = getInput(activeInputs[1]);
     if (n2) {
         n2->getFrameRange_public(n2->getRenderHash(), &inpFirst, &inpLast);
         if (inpFirst < *first) {
@@ -322,7 +322,7 @@ isRotoPaintNodeInputRecursive(Node* node,
     if ( node == rotoPaintNode.get() ) {
         return true;
     }
-    int maxInputs = node->getMaxInputCount();
+    int maxInputs = node->getNInputs();
     for (int i = 0; i < maxInputs; ++i) {
         NodePtr input = node->getInput(i);
         if (input) {
@@ -356,7 +356,7 @@ updateLastStrokeDataRecursively(Node* node,
         if ( node == rotoPaintNode.get() ) {
             return;
         }
-        int maxInputs = node->getMaxInputCount();
+        int maxInputs = node->getNInputs();
         for (int i = 0; i < maxInputs; ++i) {
             NodePtr input = node->getInput(i);
             if (input) {
@@ -477,7 +477,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
         NodesList rotoPaintNodes;
         if (rotoPaintNode) {
             if (activeStroke) {
-                EffectInstPtr rotoLive = rotoPaintNode->getEffectInstance();
+                EffectInstancePtr rotoLive = rotoPaintNode->getEffectInstance();
                 assert(rotoLive);
                 bool ok = rotoLive->getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
                 assert(ok);
@@ -713,7 +713,7 @@ checkTreeCanRender_internal(Node* node,
     marked.push_back(node);
 
     // check that the nodes upstream have all their nonoptional inputs connected
-    int maxInput = node->getMaxInputCount();
+    int maxInput = node->getNInputs();
     for (int i = 0; i < maxInput; ++i) {
         NodePtr input = node->getInput(i);
         bool optional = node->getEffectInstance()->isInputOptional(i);
@@ -945,7 +945,12 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     }
 
     // Fill the gamma LUT if it has never been filled yet
+    bool gammaLookupEmpty;
     {
+        QReadLocker k(&_imp->gammaLookupMutex);
+        gammaLookupEmpty = _imp->gammaLookup.empty();
+    }
+    if (gammaLookupEmpty) {
         QWriteLocker k(&_imp->gammaLookupMutex);
         if ( _imp->gammaLookup.empty() ) {
             _imp->fillGammaLut(outArgs->params->gamma);
@@ -965,8 +970,8 @@ ViewerInstance::getRegionsOfInterest(double /*time*/,
                                      RoIMap* ret)
 {
 #pragma message WARN("2.2: fix this and only add RoI for thread local input")
-    for (int i = 0; i < getMaxInputCount(); ++i) {
-        EffectInstPtr input = getInput(i);
+    for (int i = 0; i < getNInputs(); ++i) {
+        EffectInstancePtr input = getInput(i);
         if (input) {
             ret->insert( std::make_pair(input, renderWindow) );
         }
@@ -1273,7 +1278,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
 
 
     // The active input providing the image is the first upstream non disabled node
-    EffectInstPtr upstreamInput = getInput(outArgs->activeInputIndex);
+    EffectInstancePtr upstreamInput = getInput(outArgs->activeInputIndex);
     outArgs->activeInputToRender.reset();
     if (upstreamInput) {
         outArgs->activeInputToRender = upstreamInput->getNearestNonDisabled();

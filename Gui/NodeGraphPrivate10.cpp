@@ -36,6 +36,7 @@
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
 
+#include "Gui/BackdropGui.h"
 #include "Gui/DotGui.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
@@ -338,27 +339,48 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
 }
 
 void
+NodeGraphPrivate::getNodeSet(const NodesGuiList& nodeList, std::set<NodeGuiPtr>& nodeSet)
+{
+    for (NodesGuiList::const_iterator it = nodeList.begin(); it != nodeList.end(); ++it) {
+        if (nodeSet.find(*it) == nodeSet.end()) {
+            nodeSet.insert(*it);
+            BackdropGui* isBd = dynamic_cast<BackdropGui*>( it->get() );
+            if (isBd) {
+                NodesGuiList nodesWithin = _publicInterface->getNodesWithinBackdrop(*it);
+                getNodeSet(nodesWithin, nodeSet);
+            }
+        }
+    }
+}
+
+void
 NodeGraphPrivate::toggleSelectedNodesEnabled()
 {
-    NodesGuiList toProcess;
+    std::set<NodeGuiPtr> nodeSet;
 
-    for (NodesGuiList::iterator it = _selection.begin(); it != _selection.end(); ++it) {
+    // first, put all selected nodes, including those within backdrop, in nodeSet
+    getNodeSet(_selection, nodeSet);
+
+    NodesGuiList disabledNodes;
+    NodesGuiList allNodes;
+    for (std::set<NodeGuiPtr>::const_iterator it = nodeSet.begin(); it != nodeSet.end(); ++it) {
         boost::shared_ptr<KnobBool> k = (*it)->getNode()->getDisabledKnob();
         if (!k) {
             continue;
         }
+        allNodes.push_back(*it);
         if ( k->getValue() ) {
-            toProcess.push_back(*it);
+            disabledNodes.push_back(*it);
         }
     }
     ///if some nodes are disabled , enable them before
 
-    if ( toProcess.size() == _selection.size() ) {
-        _publicInterface->pushUndoCommand( new EnableNodesCommand(_selection) );
-    } else if (toProcess.size() > 0) {
-        _publicInterface->pushUndoCommand( new EnableNodesCommand(toProcess) );
+    if ( disabledNodes.size() == allNodes.size() ) {
+        _publicInterface->pushUndoCommand( new EnableNodesCommand(allNodes) );
+    } else if (disabledNodes.size() > 0) {
+        _publicInterface->pushUndoCommand( new EnableNodesCommand(disabledNodes) );
     } else {
-        _publicInterface->pushUndoCommand( new DisableNodesCommand(_selection) );
+        _publicInterface->pushUndoCommand( new DisableNodesCommand(allNodes) );
     }
 }
 

@@ -2001,7 +2001,7 @@ TrackerPanelV1::onButtonTriggered(KnobButton* button)
 
     assert(button);
 
-    EffectInstPtr effect = getMainInstance()->getEffectInstance();
+    EffectInstancePtr effect = getMainInstance()->getEffectInstance();
     assert(effect);
     std::list<ViewerInstance*> viewers;
     effect->getNode()->hasViewersConnected(&viewers);

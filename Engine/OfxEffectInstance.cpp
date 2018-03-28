@@ -616,7 +616,7 @@ OfxEffectInstance::~OfxEffectInstance()
     }
 }
 
-EffectInstPtr
+EffectInstancePtr
 OfxEffectInstance::createRenderClone()
 {
     boost::shared_ptr<OfxEffectInstance> clone( new OfxEffectInstance(*this) );
@@ -634,7 +634,7 @@ OfxEffectInstance::createRenderClone()
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
         // Failed to create clone...
-        return EffectInstPtr();
+        return EffectInstancePtr();
     }
 
 
@@ -856,14 +856,14 @@ OfxEffectInstance::isTrackerNodePlugin() const
 }
 
 bool
-OfxEffectInstance::isGeneratorAndFilter() const
+OfxEffectInstance::isFilter() const
 {
     assert(_imp->context != eContextNone);
     const std::set<std::string> & contexts = effectInstance()->getPlugin()->getContexts();
-    std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
-    std::set<std::string>::const_iterator foundGeneral = contexts.find(kOfxImageEffectContextGeneral);
+    bool foundGeneral = contexts.find(kOfxImageEffectContextGeneral) != contexts.end();
+    bool foundFilter = contexts.find(kOfxImageEffectContextFilter) != contexts.end();
 
-    return foundGenerator != contexts.end() && foundGeneral != contexts.end();
+    return foundFilter || (foundGeneral && getNInputs() > 0);
 }
 
 /*group is a string as such:
@@ -1151,7 +1151,7 @@ OfxEffectInstance::getClipCorrespondingToInput(int inputNo) const
 }
 
 int
-OfxEffectInstance::getMaxInputCount() const
+OfxEffectInstance::getNInputs() const
 {
     assert(_imp->context != eContextNone);
 
@@ -1503,7 +1503,7 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
     ///If the rod is 1 pixel, determine if it was because one clip was unconnected or this is really a
     ///1 pixel large image
     if ( (ofxRod.x2 == 1.) && (ofxRod.y2 == 1.) && (ofxRod.x1 == 0.) && (ofxRod.y1 == 0.) ) {
-        int maxInputs = getMaxInputCount();
+        int maxInputs = getNInputs();
         for (int i = 0; i < maxInputs; ++i) {
             OfxClipInstance* clip = getClipCorrespondingToInput(i);
             if ( clip && !clip->getConnected() && !clip->getIsOptional() && !clip->getIsMask() ) {
@@ -1628,7 +1628,7 @@ OfxEffectInstance::getRegionsOfInterest(double time,
         OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
         assert(clip);
         if (clip) {
-            EffectInstPtr inputNode = clip->getAssociatedNode();
+            EffectInstancePtr inputNode = clip->getAssociatedNode();
             RectD inputRoi; // input RoI in canonical coordinates
             inputRoi.x1 = it->second.x1;
             inputRoi.x2 = it->second.x2;
@@ -1769,14 +1769,14 @@ OfxEffectInstance::getFrameRange(double *first,
             *first = INT_MIN;
             *last = INT_MAX;
 
-            int inputsCount = getMaxInputCount();
+            int inputsCount = getNInputs();
 
             ///Uncommented the isOptional() introduces a bugs with Genarts Monster plug-ins when 2 generators
             ///are connected in the pipeline. They must rely on the time domain to maintain an internal state and apparantly
             ///not taking optional inputs into accounts messes it up.
             for (int i = 0; i < inputsCount; ++i) {
                 //if (!isInputOptional(i)) {
-                EffectInstPtr inputEffect = getInput(i);
+                EffectInstancePtr inputEffect = getInput(i);
                 if (inputEffect) {
                     double f, l;
                     inputEffect->getFrameRange_public(inputEffect->getRenderHash(), &f, &l);
@@ -2990,7 +2990,7 @@ OfxEffectInstance::getTransform(double time,
                                 const RenderScale & renderScale, //< the plug-in accepted scale
                                 bool draftRender,
                                 ViewIdx view,
-                                EffectInstPtr* inputToTransform,
+                                EffectInstancePtr* inputToTransform,
                                 Transform::Matrix3x3* transform)
 {
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data

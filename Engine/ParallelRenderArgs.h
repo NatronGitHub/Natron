@@ -50,13 +50,13 @@
 
 NATRON_NAMESPACE_ENTER
 
-typedef std::map<EffectInstPtr, RectD> RoIMap; // RoIs are in canonical coordinates
+typedef std::map<EffectInstancePtr, RectD> RoIMap; // RoIs are in canonical coordinates
 typedef std::map<ViewIdx, std::vector<RangeD> > FrameRangesMap;
 typedef std::map<int, FrameRangesMap> FramesNeededMap;
 
 struct InputMatrix
 {
-    EffectInstPtr newInputEffect;
+    EffectInstancePtr newInputEffect;
     boost::shared_ptr<Transform::Matrix3x3> cat;
     int newInputNbToFetchFrom;
 };
@@ -164,7 +164,7 @@ struct FrameViewRequestGlobalData
 {
     ///The transforms associated to each input branch, set on first request
     boost::shared_ptr<InputMatrixMap> transforms;
-    boost::shared_ptr<std::map<int, EffectInstPtr> > reroutesMap;
+    boost::shared_ptr<std::map<int, EffectInstancePtr> > reroutesMap;
 
     ///The required frame/views in input, set on first request
     FramesNeededMap frameViewsNeeded;

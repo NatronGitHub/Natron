@@ -92,6 +92,8 @@ public:
 
     void setUseHighlight(bool highlight);
 
+    void setUseSelected(bool val);
+
     bool isOutputEdge() const;
 
     void setDefaultColor(const QColor & color);

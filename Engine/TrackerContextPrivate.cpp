@@ -61,7 +61,7 @@ template <typename KNOBTYPE>
 boost::shared_ptr<KNOBTYPE>
 createDuplicateKnob( const std::string& knobName,
                      const NodePtr& internalNode,
-                     const EffectInstPtr& effect,
+                     const EffectInstancePtr& effect,
                      const boost::shared_ptr<KnobPage>& page = boost::shared_ptr<KnobPage>(),
                      const boost::shared_ptr<KnobGroup>& group = boost::shared_ptr<KnobGroup>(),
                      const NodePtr& otherNode = NodePtr() )
@@ -110,7 +110,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     , selectionRecursion(0)
     , scheduler(_publicInterface, node)
 {
-    EffectInstPtr effect = node->getEffectInstance();
+    EffectInstancePtr effect = node->getEffectInstance();
     //needs to be blocking, otherwise the progressUpdate() call could be made before startProgress
     QObject::connect( &scheduler, SIGNAL(trackingStarted(int)), _publicInterface, SLOT(onSchedulerTrackingStarted(int)) );
     QObject::connect( &scheduler, SIGNAL(trackingFinished()), _publicInterface, SLOT(onSchedulerTrackingFinished()) );

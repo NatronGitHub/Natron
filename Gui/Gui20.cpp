@@ -876,17 +876,22 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
                                                    plugin->getLabel(), toolButtonIcon, menuIcon);
 
     if (isLeaf) {
-        QString label = plugin->getNotHighestMajorVersion() ? plugin->getLabelVersionMajorEncoded() : plugin->getLabel();
+        QString pluginLabelText = plugin->getNotHighestMajorVersion() ? plugin->getLabelVersionMajorEncoded() : plugin->getLabel();
+        // see doc of QMenubar: convert & to &&
+        pluginLabelText.replace(QString::fromUtf8("&"), QString::fromUtf8("&&"));
         assert(parentToolButton);
         QAction* action = new QAction(this);
-        action->setText(label);
+        action->setText(pluginLabelText);
         action->setIcon( pluginsToolButton->getMenuIcon() );
         QObject::connect( action, SIGNAL(triggered()), pluginsToolButton, SLOT(onTriggered()) );
         pluginsToolButton->setAction(action);
     } else {
         Menu* menu = new Menu(this);
         //menu->setFont( QFont(appFont,appFontSize) );
-        menu->setTitle( pluginsToolButton->getLabel() );
+        QString pluginsToolButtonTitle = pluginsToolButton->getLabel();
+        // see doc of QMenubar: convert & to &&
+        pluginsToolButtonTitle.replace(QString::fromUtf8("&"), QString::fromUtf8("&&"));
+        menu->setTitle(pluginsToolButtonTitle);
         menu->setIcon(menuIcon);
         pluginsToolButton->setMenu(menu);
         pluginsToolButton->setAction( menu->menuAction() );

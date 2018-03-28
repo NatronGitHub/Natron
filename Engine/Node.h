@@ -200,9 +200,9 @@ public:
     /*Never call this yourself. This is needed by OfxEffectInstance so the pointer to the live instance
      * is set earlier.
      */
-    void setEffect(const EffectInstPtr& liveInstance);
+    void setEffect(const EffectInstancePtr& liveInstance);
 
-    EffectInstPtr getEffectInstance() const;
+    EffectInstancePtr getEffectInstance() const;
 
     /**
      * @brief Returns true if the node is a multi-instance node, that is, holding several other nodes.
@@ -318,7 +318,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    int getMaxInputCount() const;
+    int getNInputs() const;
 
     /**
      * @brief Returns true if the given input supports the given components. If inputNb equals -1
@@ -1066,6 +1066,8 @@ public:
     bool isNodeRendering() const;
 
     bool hasPersistentMessage() const;
+
+    bool hasAnyPersistentMessage() const;
 
     void getPersistentMessage(QString* message, int* type, bool prefixLabelAndType = true) const;
 

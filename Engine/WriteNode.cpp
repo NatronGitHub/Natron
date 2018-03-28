@@ -1244,7 +1244,7 @@ WriteNode::knobChanged(KnobI* k,
         ret = false;
     }
     if (!ret && writer) {
-        EffectInstPtr effect = writer->getEffectInstance();
+        EffectInstancePtr effect = writer->getEffectInstance();
         if (effect) {
             ret |= effect->knobChanged(k, reason, view, time, originatedFromMainThread);
         }
@@ -1259,7 +1259,7 @@ WriteNode::isViewAware() const
     NodePtr writer = _imp->embeddedPlugin.lock();
 
     if (writer) {
-        EffectInstPtr effect = writer->getEffectInstance();
+        EffectInstancePtr effect = writer->getEffectInstance();
         if (effect) {
             return effect->isViewAware();
         }
@@ -1274,7 +1274,7 @@ WriteNode::getFrameRange(double *first,
     NodePtr writer = _imp->embeddedPlugin.lock();
 
     if (writer) {
-        EffectInstPtr effect = writer->getEffectInstance();
+        EffectInstancePtr effect = writer->getEffectInstance();
         if (effect) {
             effect->getFrameRange(first, last);
             return;

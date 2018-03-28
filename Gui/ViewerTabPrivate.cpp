@@ -168,7 +168,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
         return true;
     }
     RenderScale s(1.);
-    EffectInstPtr input;
+    EffectInstancePtr input;
     StatusEnum stat = eStatusReplyDefault;
     Transform::Matrix3x3 mat;
     // call getTransform even of effects that claim not to support it, because it may still return
@@ -189,12 +189,12 @@ ViewerTabPrivate::getOverlayTransform(double time,
         ///Test all inputs recursively, going from last to first, preferring non optional inputs.
         std::list<EffectInstance*> nonOptionalInputs;
         std::list<EffectInstance*> optionalInputs;
-        int maxInp = currentNode->getMaxInputCount();
+        int maxInp = currentNode->getNInputs();
 
         ///We cycle in reverse by default. It should be a setting of the application.
         ///In this case it will return input B instead of input A of a merge for example.
         for (int i = maxInp - 1; i >= 0; --i) {
-            EffectInstPtr inp = currentNode->getInput(i);
+            EffectInstancePtr inp = currentNode->getInput(i);
             bool optional = currentNode->isInputOptional(i);
             if (inp) {
                 if (optional) {
@@ -295,7 +295,7 @@ ViewerTabPrivate::getTimeTransform(double time,
     ///Test all inputs recursively, going from last to first, preferring non optional inputs.
     std::list<int> nonOptionalInputs;
     std::list<int> optionalInputs;
-    int maxInp = currentNode->getMaxInputCount();
+    int maxInp = currentNode->getNInputs();
 
     ///We cycle in reverse by default. It should be a setting of the application.
     ///In this case it will return input B instead of input A of a merge for example.
@@ -315,7 +315,7 @@ ViewerTabPrivate::getTimeTransform(double time,
     for (std::list<int> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
         double inputTime;
         bool isOk = false;
-        EffectInstPtr input = currentNode->getInput(*it);
+        EffectInstancePtr input = currentNode->getInput(*it);
         if (input) {
 
             if ( !isDisabled ) {
@@ -336,7 +336,7 @@ ViewerTabPrivate::getTimeTransform(double time,
     for (std::list<int> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
         double inputTime;
         bool isOk = false;
-        EffectInstPtr input = currentNode->getInput(*it);
+        EffectInstancePtr input = currentNode->getInput(*it);
         if (input) {
             if ( !isDisabled ) {
                 *newTime = transformTimeForNode(currentNode, *it, time);
@@ -363,7 +363,7 @@ ViewerTabPrivate::getComponentsAvailabel(std::set<ImagePlaneDesc>* comps) const
     int activeInputIdx[2];
 
     viewerNode->getActiveInputs(activeInputIdx[0], activeInputIdx[1]);
-    EffectInstPtr activeInput[2] = {EffectInstPtr(), EffectInstPtr()};
+    EffectInstancePtr activeInput[2] = {EffectInstancePtr(), EffectInstancePtr()};
     double time = publicInterface->getGui()->getApp()->getTimeLine()->currentFrame();
     for (int i = 0; i < 2; ++i) {
         activeInput[i] = viewerNode->getInput(activeInputIdx[i]);

@@ -299,7 +299,7 @@ loadNodeGuiSerialization(Gui* gui,
         nGui->togglePreview();
     }
 
-    EffectInstPtr iseffect = nGui->getNode()->getEffectInstance();
+    EffectInstancePtr iseffect = nGui->getNode()->getEffectInstance();
 
     if ( serialization.colorWasFound() ) {
         std::list<std::string> grouping;

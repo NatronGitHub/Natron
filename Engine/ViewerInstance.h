@@ -46,7 +46,7 @@ typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
 
 struct ViewerArgs
 {
-    EffectInstPtr activeInputToRender;
+    EffectInstancePtr activeInputToRender;
     bool forceRender;
     int activeInputIndex;
     U64 activeInputHash;
@@ -375,7 +375,7 @@ private:
         return true;
     }
 
-    virtual int getMaxInputCount() const OVERRIDE FINAL;
+    virtual int getNInputs() const OVERRIDE FINAL;
     virtual bool isInputOptional(int /*n*/) const OVERRIDE FINAL;
     virtual int getMajorVersion() const OVERRIDE FINAL
     {

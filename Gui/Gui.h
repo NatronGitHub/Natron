@@ -382,9 +382,9 @@ public:
 
     /**
      * @brief Removes the interface for this node of any viewer
-     * @bool permanantly If true, the interface will be destroyed instead of hidden
+     * @bool permanently If true, the interface will be destroyed instead of hidden
      **/
-    void removeNodeViewerInterface(const NodeGuiPtr& n, bool permanantly);
+    void removeNodeViewerInterface(const NodeGuiPtr& n, bool permanently);
 
     void progressStart(const NodePtr& node, const std::string &message, const std::string &messageid, bool canCancel = true);
 

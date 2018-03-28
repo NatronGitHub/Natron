@@ -94,17 +94,17 @@ SOURCES += \
     DockablePanelTabWidget.cpp \
     DocumentationManager.cpp \
     DopeSheet.cpp \
-    DopeSheetView.cpp \
+    DopeSheetEditor.cpp \
     DopeSheetEditorUndoRedo.cpp \
     DopeSheetHierarchyView.cpp \
-    DopeSheetEditor.cpp \
+    DopeSheetView.cpp \
     DotGui.cpp \
     Edge.cpp \
     EditExpressionDialog.cpp \
     EditScriptDialog.cpp \
     ExportGroupTemplateDialog.cpp \
+    FileTypeMainWindow_win.cpp \
     FloatingWidget.cpp \
-    QtEnumConvert.cpp \
     GroupBoxLabel.cpp \
     Gui.cpp \
     Gui05.cpp \
@@ -114,31 +114,30 @@ SOURCES += \
     Gui30.cpp \
     Gui40.cpp \
     Gui50.cpp \
+    GuiAppInstance.cpp \
     GuiApplicationManager.cpp \
     GuiApplicationManager10.cpp \
     GuiApplicationManagerPrivate.cpp \
-    GuiAppInstance.cpp \
     GuiPrivate.cpp \
     Histogram.cpp \
     HostOverlay.cpp \
     InfoViewerWidget.cpp \
-    KnobGuiContainerHelper.cpp \
     KnobGui.cpp \
     KnobGui10.cpp \
     KnobGui20.cpp \
-    KnobGuiFactory.cpp \
-    KnobGuiPrivate.cpp \
-    KnobGuiFile.cpp \
-    FileTypeMainWindow_win.cpp \
-    KnobGuiButton.cpp \
     KnobGuiBool.cpp \
+    KnobGuiButton.cpp \
     KnobGuiChoice.cpp \
-    KnobGuiSeparator.cpp \
     KnobGuiColor.cpp \
-    KnobGuiString.cpp \
+    KnobGuiContainerHelper.cpp \
+    KnobGuiFactory.cpp \
+    KnobGuiFile.cpp \
     KnobGuiGroup.cpp \
-    KnobGuiTable.cpp \
     KnobGuiParametric.cpp \
+    KnobGuiPrivate.cpp \
+    KnobGuiSeparator.cpp \
+    KnobGuiString.cpp \
+    KnobGuiTable.cpp \
     KnobGuiValue.cpp \
     KnobUndoCommand.cpp \
     KnobWidgetDnD.cpp \
@@ -147,8 +146,8 @@ SOURCES += \
     LinkToKnobDialog.cpp \
     LogWindow.cpp \
     ManageUserParamsDialog.cpp \
-    MessageBox.cpp \
     Menu.cpp \
+    MessageBox.cpp \
     MultiInstancePanel.cpp \
     NewLayerDialog.cpp \
     NodeBackdropSerialization.cpp \
@@ -166,6 +165,7 @@ SOURCES += \
     NodeGraph45.cpp \
     NodeGraphPrivate.cpp \
     NodeGraphPrivate10.cpp \
+    NodeGraphRectItem.cpp \
     NodeGraphTextItem.cpp \
     NodeGraphUndoRedo.cpp \
     NodeGui.cpp \
@@ -176,13 +176,14 @@ SOURCES += \
     PickKnobDialog.cpp \
     PreferencesPanel.cpp \
     PreviewThread.cpp \
-    ProjectGui.cpp \
-    ProjectGuiSerialization.cpp \
     ProgressPanel.cpp \
     ProgressTaskInfo.cpp \
+    ProjectGui.cpp \
+    ProjectGuiSerialization.cpp \
     PropertiesBinWrapper.cpp \
     PyGuiApp.cpp \
     PythonPanels.cpp \
+    QtEnumConvert.cpp \
     RenderStatsDialog.cpp \
     ResizableMessageBox.cpp \
     RightClickableWidget.cpp \
@@ -191,19 +192,19 @@ SOURCES += \
     ScriptEditor.cpp \
     ScriptTextEdit.cpp \
     SequenceFileDialog.cpp \
-    Shaders.cpp \
     SerializableWindow.cpp \
+    Shaders.cpp \
     SpinBox.cpp \
     SpinBoxValidator.cpp \
     SplashScreen.cpp \
     Splitter.cpp \
     TabGroup.cpp \
-    TableModelView.cpp \
     TabWidget.cpp \
+    TableModelView.cpp \
     TextRenderer.cpp \
     ticks.cpp \
-    ToolButton.cpp \
     TimeLineGui.cpp \
+    ToolButton.cpp \
     TrackerPanel.cpp \
     VerticalColorBar.cpp \
     ViewerGL.cpp \
@@ -249,10 +250,10 @@ HEADERS += \
     DockablePanelTabWidget.h \
     DocumentationManager.h \
     DopeSheet.h \
-    DopeSheetView.h \
+    DopeSheetEditor.h \
     DopeSheetEditorUndoRedo.h \
     DopeSheetHierarchyView.h \
-    DopeSheetEditor.h \
+    DopeSheetView.h \
     DotGui.h \
     Edge.h \
     EditExpressionDialog.h \
@@ -260,12 +261,11 @@ HEADERS += \
     ExportGroupTemplateDialog.h \
     FileTypeMainWindow_win.h \
     FloatingWidget.h \
-    QtEnumConvert.h \
     GroupBoxLabel.h \
     Gui.h \
+    GuiAppInstance.h \
     GuiApplicationManager.h \
     GuiApplicationManagerPrivate.h \
-    GuiAppInstance.h \
     GuiDefines.h \
     GuiFwd.h \
     GuiMacros.h \
@@ -274,19 +274,19 @@ HEADERS += \
     HostOverlay.h \
     InfoViewerWidget.h \
     KnobGui.h \
-    KnobGuiContainerI.h \
+    KnobGuiBool.h \
+    KnobGuiButton.h \
+    KnobGuiChoice.h \
+    KnobGuiColor.h \
     KnobGuiContainerHelper.h \
+    KnobGuiContainerI.h \
     KnobGuiFactory.h \
     KnobGuiFile.h \
-    KnobGuiButton.h \
-    KnobGuiBool.h \
-    KnobGuiChoice.h \
-    KnobGuiSeparator.h \
-    KnobGuiColor.h \
-    KnobGuiString.h \
     KnobGuiGroup.h \
-    KnobGuiTable.h \
     KnobGuiParametric.h \
+    KnobGuiSeparator.h \
+    KnobGuiString.h \
+    KnobGuiTable.h \
     KnobGuiValue.h \
     KnobUndoCommand.h \
     KnobWidgetDnD.h \
@@ -295,8 +295,8 @@ HEADERS += \
     LinkToKnobDialog.h \
     LogWindow.h \
     ManageUserParamsDialog.h \
-    MessageBox.h \
     Menu.h \
+    MessageBox.h \
     MultiInstancePanel.h \
     NewLayerDialog.h \
     NodeBackdropSerialization.h \
@@ -304,6 +304,7 @@ HEADERS += \
     NodeCreationDialog.h \
     NodeGraph.h \
     NodeGraphPrivate.h \
+    NodeGraphRectItem.h \
     NodeGraphTextItem.h \
     NodeGraphUndoRedo.h \
     NodeGui.h \
@@ -314,15 +315,16 @@ HEADERS += \
     PickKnobDialog.h \
     PreferencesPanel.h \
     PreviewThread.h \
+    ProgressPanel.h \
+    ProgressTaskInfo.h \
     ProjectGui.h \
     ProjectGuiSerialization.h \
     PropertiesBinWrapper.h \
-    ProgressPanel.h \
-    ProgressTaskInfo.h \
     PyGlobalGui.h \
     PyGuiApp.h \
     Pyside_Gui_Python.h \
     PythonPanels.h \
+    QtEnumConvert.h \
     RegisteredTabs.h \
     RenderStatsDialog.h \
     ResizableMessageBox.h \
@@ -332,15 +334,15 @@ HEADERS += \
     ScriptEditor.h \
     ScriptTextEdit.h \
     SequenceFileDialog.h \
-    Shaders.h \
     SerializableWindow.h \
+    Shaders.h \
     SpinBox.h \
     SpinBoxValidator.h \
     SplashScreen.h \
     Splitter.h \
     TabGroup.h \
-    TableModelView.h \
     TabWidget.h \
+    TableModelView.h \
     TextRenderer.h \
     ticks.h \
     TimeLineGui.h \

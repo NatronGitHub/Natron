@@ -106,22 +106,37 @@ NodeGraph::hasItemNearbyMouse(const QPoint& mousePosViewport,
     assert(node && edge);
     *node = 0;
     *edge = 0;
+    // if mouse is exactly on node, select it
+    QList<QGraphicsItem*> selectedItems = items(mousePosViewport);
+    std::set<NodeGui*> nodes;
+    for (QList<QGraphicsItem*>::Iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
+        // do not select text that may go beyond the Node box
+        // see https://github.com/MrKepzie/Natron/issues/1604
+        if ((*it)->type() == QGraphicsTextItem::Type || (*it)->type() == QGraphicsSimpleTextItem::Type) {
+            continue;
+        }
+        NodeGui* n = isNodeGuiChild(*it);
+        if (n) {
+            nodes.insert(n);
+        }
+    }
+    // use a tolerance for edges
     double tolerance = TO_DPIX(10.);
     QRect toleranceRect(mousePosViewport.x() - tolerance / 2.,
                         mousePosViewport.y() - tolerance / 2.,
                         tolerance,
                         tolerance);
-    QList<QGraphicsItem*> selectedItems = items(toleranceRect, Qt::IntersectsItemShape);
+    selectedItems = items(toleranceRect, Qt::IntersectsItemShape);
     std::set<Edge*> edges;
-    std::set<NodeGui*> nodes;
     for (QList<QGraphicsItem*>::Iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
+        // do not select text, which is decorative only
+        // see https://github.com/MrKepzie/Natron/issues/1604
+        if ((*it)->type() == QGraphicsTextItem::Type || (*it)->type() == QGraphicsSimpleTextItem::Type) {
+            continue;
+        }
         Edge* isEdge = isEdgeChild(*it);
         if (isEdge) {
             edges.insert(isEdge);
-        }
-        NodeGui* n = isNodeGuiChild(*it);
-        if (n) {
-            nodes.insert(n);
         }
     }
 
@@ -230,8 +245,8 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         }
     }
 
-    NodeGui* nearbyNode;
-    Edge* nearbyEdge;
+    NodeGui* nearbyNode = NULL;
+    Edge* nearbyEdge = NULL;
     NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
     if (nearbyItemCode == eNearbyItemBackdropResizeHandle) {
         assert(nearbyNode);

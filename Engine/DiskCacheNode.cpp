@@ -181,7 +181,7 @@ DiskCacheNode::getFrameRange(double *first,
 
     switch (idx) {
     case 0: {
-        EffectInstPtr input = getInput(0);
+        EffectInstancePtr input = getInput(0);
         if (input) {
             input->getFrameRange_public(input->getHash(), first, last);
         }
@@ -205,7 +205,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
 {
     assert(args.outputPlanes.size() == 1);
 
-    EffectInstPtr input = getInput(0);
+    EffectInstancePtr input = getInput(0);
     if (!input) {
         return eStatusFailed;
     }

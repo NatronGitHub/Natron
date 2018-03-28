@@ -1825,7 +1825,7 @@ RotoContext::getCurvesByRenderOrder(bool onlyActivated) const
         return ret;
     }
     ///Note this might not be the timeline's current frame if this is a render thread.
-    EffectInstPtr effect = node->getEffectInstance();
+    EffectInstancePtr effect = node->getEffectInstance();
     if (!effect) {
         return ret;
     }
@@ -4704,7 +4704,7 @@ RotoContext::refreshRotoPaintTree()
     }
     //ensure that all global merge nodes are disconnected
     for (NodesList::iterator it = mergeNodes.begin(); it != mergeNodes.end(); ++it) {
-        int maxInputs = (*it)->getMaxInputCount();
+        int maxInputs = (*it)->getNInputs();
         for (int i = 0; i < maxInputs; ++i) {
             (*it)->disconnectInput(i);
         }

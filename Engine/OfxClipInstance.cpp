@@ -166,7 +166,7 @@ OfxClipInstance::getUnmappedBitDepth() const
     static const std::string halfStr(kOfxBitDepthHalf);
     static const std::string floatStr(kOfxBitDepthFloat);
     static const std::string noneStr(kOfxBitDepthNone);
-    EffectInstPtr inputNode = getAssociatedNode();
+    EffectInstancePtr inputNode = getAssociatedNode();
 
     if (inputNode) {
         ///Get the input node's output preferred bit depth
@@ -195,7 +195,7 @@ OfxClipInstance::getUnmappedBitDepth() const
     }
 
     ///Return the hightest bit depth supported by the plugin
-    EffectInstPtr effect = getEffectHolder();
+    EffectInstancePtr effect = getEffectHolder();
     if (effect) {
         const std::string& ret = natronsDepthToOfxDepth( effect->getNode()->getClosestSupportedBitDepth(eImageBitDepthFloat) );
         if (ret == floatStr) {
@@ -214,7 +214,7 @@ const std::string &
 OfxClipInstance::getUnmappedComponents() const
 {
 
-    EffectInstPtr effect = getAssociatedNode();
+    EffectInstancePtr effect = getAssociatedNode();
 
     std::string ret;
     if (effect) {
@@ -237,7 +237,7 @@ OfxClipInstance::getUnmappedComponents() const
         // of the first connected non optional input.
         if (_imp->optional) {
             effect = getEffectHolder();
-            int nInputs = effect->getMaxInputCount();
+            int nInputs = effect->getNInputs();
             for (int i = 0; i < nInputs; ++i) {
 
                 ImagePlaneDesc metadataPlane, metadataPairedPlane;
@@ -269,7 +269,7 @@ OfxClipInstance::getUnmappedComponents() const
 const std::string &
 OfxClipInstance::getPremult() const
 {
-    EffectInstPtr effect = getEffectHolder();
+    EffectInstancePtr effect = getEffectHolder();
 
     if (!effect) {
         return natronsPremultToOfxPremult(eImagePremultiplicationPremultiplied);
@@ -277,7 +277,7 @@ OfxClipInstance::getPremult() const
     if ( isOutput() ) {
         return natronsPremultToOfxPremult( effect->getPremult() );
     } else {
-        EffectInstPtr associatedNode = getAssociatedNode();
+        EffectInstancePtr associatedNode = getAssociatedNode();
 
         return associatedNode ? natronsPremultToOfxPremult( associatedNode->getPremult() ) : natronsPremultToOfxPremult(eImagePremultiplicationPremultiplied);
     }
@@ -288,7 +288,7 @@ OfxClipInstancePrivate::getComponentsPresentInternal(const OfxClipInstance::Clip
 {
     tls->componentsPresent.clear();
 
-    EffectInstPtr effect = _publicInterface->getEffectHolder();
+    EffectInstancePtr effect = _publicInterface->getEffectHolder();
     if (!effect) {
         return tls->componentsPresent;
     }
@@ -381,13 +381,13 @@ OfxClipInstance::setAspectRatio(double par)
 OfxRectI
 OfxClipInstance::getFormat() const
 {
-    EffectInstPtr effect = getEffectHolder();
+    EffectInstancePtr effect = getEffectHolder();
 
     RectI nRect;
     if ( isOutput() || (getName() == CLIP_OFX_ROTO) ) {
         nRect = effect->getOutputFormat();
     } else {
-        EffectInstPtr inputNode = getAssociatedNode();
+        EffectInstancePtr inputNode = getAssociatedNode();
         if (inputNode) {
             inputNode = inputNode->getNearestNonIdentity( effect->getCurrentTime() );
         }
@@ -411,13 +411,13 @@ OfxClipInstance::getFrameRate() const
        The frame rate property cannot be held onto images, hence return the "actual" frame rate,
        taking into account the node from which the image came from wrt the identity state
      */
-    EffectInstPtr effect = getEffectHolder();
+    EffectInstancePtr effect = getEffectHolder();
 
     if ( isOutput() || (getName() == CLIP_OFX_ROTO) ) {
         return effect->getFrameRate();
     }
 
-    EffectInstPtr inputNode = getAssociatedNode();
+    EffectInstancePtr inputNode = getAssociatedNode();
     if (inputNode) {
         inputNode = inputNode->getNearestNonIdentity( effect->getCurrentTime() );
     }
@@ -436,7 +436,7 @@ void
 OfxClipInstance::getFrameRange(double &startFrame,
                                double &endFrame) const
 {
-    EffectInstPtr n = getAssociatedNode();
+    EffectInstancePtr n = getAssociatedNode();
 
     if (n) {
         U64 hash = n->getRenderHash();
@@ -459,7 +459,7 @@ OfxClipInstance::getFrameRange(double &startFrame,
 const std::string &
 OfxClipInstance::getFieldOrder() const
 {
-    EffectInstPtr effect = getEffectHolder();
+    EffectInstancePtr effect = getEffectHolder();
 
     if (!effect) {
         return natronsFieldingToOfxFielding(eImageFieldingOrderNone);
@@ -467,7 +467,7 @@ OfxClipInstance::getFieldOrder() const
     if ( isOutput() ) {
         return natronsFieldingToOfxFielding( effect->getFieldingOrder() );
     } else {
-        EffectInstPtr associatedNode = getAssociatedNode();
+        EffectInstancePtr associatedNode = getAssociatedNode();
 
         return associatedNode ? natronsFieldingToOfxFielding( associatedNode->getFieldingOrder() ) : natronsFieldingToOfxFielding(eImageFieldingOrderNone);
     }
@@ -481,7 +481,7 @@ bool
 OfxClipInstance::getConnected() const
 {
     ///a roto brush is always connected
-    EffectInstPtr effect = getEffectHolder();
+    EffectInstancePtr effect = getEffectHolder();
 
     assert(effect);
     if ( (getName() == CLIP_OFX_ROTO) && effect->getNode()->isRotoNode() ) {
@@ -491,7 +491,7 @@ OfxClipInstance::getConnected() const
             return effect->hasOutputConnected();
         } else {
             int inputNb = getInputNb();
-            EffectInstPtr input;
+            EffectInstancePtr input;
 
             if ( !effect->getNode()->isMaskEnabled(inputNb) ) {
                 return false;
@@ -512,7 +512,7 @@ OfxClipInstance::getConnected() const
 double
 OfxClipInstance::getUnmappedFrameRate() const
 {
-    EffectInstPtr inputNode = getAssociatedNode();
+    EffectInstancePtr inputNode = getAssociatedNode();
 
     if (inputNode) {
         ///Get the input node  preferred frame rate
@@ -532,7 +532,7 @@ void
 OfxClipInstance::getUnmappedFrameRange(double &unmappedStartFrame,
                                        double &unmappedEndFrame) const
 {
-    EffectInstPtr inputNode = getAssociatedNode();
+    EffectInstancePtr inputNode = getAssociatedNode();
 
     if (inputNode) {
         ///Get the input node  preferred frame range
@@ -550,7 +550,7 @@ OfxClipInstance::getUnmappedFrameRange(double &unmappedStartFrame,
 bool
 OfxClipInstance::getContinuousSamples() const
 {
-    EffectInstPtr effect = getEffectHolder();
+    EffectInstancePtr effect = getEffectHolder();
 
     if (!effect) {
         return false;
@@ -558,7 +558,7 @@ OfxClipInstance::getContinuousSamples() const
     if ( isOutput() ) {
         return effect->canRenderContinuously();
     } else {
-        EffectInstPtr associatedNode = getAssociatedNode();
+        EffectInstancePtr associatedNode = getAssociatedNode();
 
         return associatedNode ? associatedNode->canRenderContinuously() : false;
     }
@@ -572,7 +572,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
                                                OfxRectD* ret) const
 {
     boost::shared_ptr<RotoDrawableItem> attachedStroke;
-    EffectInstPtr effect = getEffectHolder();
+    EffectInstancePtr effect = getEffectHolder();
 
     if (effect) {
         assert( effect->getNode() );
@@ -634,7 +634,7 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time,
 {
     OfxRectD rod;
     unsigned int mipmapLevel;
-    EffectInstPtr associatedNode = getAssociatedNode();
+    EffectInstancePtr associatedNode = getAssociatedNode();
 
     /// The node might be disabled, hence we navigate upstream to find the first non disabled node.
     if (associatedNode) {
@@ -667,7 +667,7 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     OfxRectD ret;
     unsigned int mipmapLevel;
     ViewIdx view(0);
-    EffectInstPtr associatedNode = getAssociatedNode();
+    EffectInstancePtr associatedNode = getAssociatedNode();
 
     /// The node might be disabled, hence we navigate upstream to find the first non disabled node.
     if (associatedNode) {
@@ -835,7 +835,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     }
 
 
-    EffectInstPtr effect = getEffectHolder();
+    EffectInstancePtr effect = getEffectHolder();
     assert(effect);
     int inputnb = getInputNb();
     const std::string& thisClipComponents = getComponents();
@@ -1065,7 +1065,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
         }
     }
 
-    EffectInstPtr effect = getEffectHolder();
+    EffectInstancePtr effect = getEffectHolder();
     bool isMultiplanar = effect->isMultiPlanar();
     ImagePlaneDesc natronPlane;
     if (!ofxPlane) {
@@ -1550,7 +1550,7 @@ OfxClipInstance::getInputNb() const
     return _imp->nodeInstance.lock()->getClipInputNumber(this);
 }
 
-EffectInstPtr
+EffectInstancePtr
 OfxClipInstance::getEffectHolder() const
 {
     boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
@@ -1570,10 +1570,10 @@ OfxClipInstance::getEffectHolder() const
     return effect;
 }
 
-EffectInstPtr
+EffectInstancePtr
 OfxClipInstance::getAssociatedNode() const
 {
-    EffectInstPtr effect = getEffectHolder();
+    EffectInstancePtr effect = getEffectHolder();
 
     assert(effect);
     if ( (getName() == CLIP_OFX_ROTO) && effect->getNode()->isRotoNode() ) {

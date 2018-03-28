@@ -163,7 +163,7 @@ public:
     {
     }
 
-    EffectInstPtr createOFXEffect(NodePtr node,
+    EffectInstancePtr createOFXEffect(NodePtr node,
                                   const CreateNodeArgs& args
 #ifndef NATRON_ENABLE_IO_META_NODES
                                   , bool allowFileDialogs,

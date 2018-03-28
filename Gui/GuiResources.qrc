@@ -8,6 +8,7 @@
         <file alias="LICENSE-AGPL-3.0.txt">../tools/license/components/LICENSE-AGPL-3.0.txt</file>
         <file alias="LICENSE-Apache-2.0.txt">../tools/license/components/LICENSE-Apache-2.0.txt</file>
         <file alias="LICENSE-Boost.txt">../tools/license/components/LICENSE-Boost.txt</file>
+        <file alias="LICENSE-CeCILL-C.txt">../tools/license/components/LICENSE-CeCILL-C.txt</file>
         <file alias="LICENSE-CeresSolver.txt">../tools/license/components/LICENSE-CeresSolver.txt</file>
         <file alias="LICENSE-Field3D.txt">../tools/license/components/LICENSE-Field3D.txt</file>
         <file alias="LICENSE-FreeType.txt">../tools/license/components/LICENSE-FreeType.txt</file>
@@ -35,6 +36,7 @@
         <file alias="LICENSE-SeExpr.txt">../tools/license/components/LICENSE-SeExpr.txt</file>
         <file alias="LICENSE-TinyXML.txt">../tools/license/components/LICENSE-TinyXML.txt</file>
         <file alias="LICENSE-bzip2.txt">../tools/license/components/LICENSE-bzip2.txt</file>
+        <file alias="LICENSE-expat.txt">../tools/license/components/LICENSE-expat.txt</file>
         <file alias="LICENSE-expat.txt">../tools/license/components/LICENSE-expat.txt</file>
         <file alias="LICENSE-fontconfig.txt">../tools/license/components/LICENSE-fontconfig.txt</file>
         <file alias="LICENSE-gflags.txt">../tools/license/components/LICENSE-gflags.txt</file>
