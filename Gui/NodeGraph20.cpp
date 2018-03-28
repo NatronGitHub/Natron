@@ -504,7 +504,18 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     case eEventStateNone:
     default: {
         mustUpdate = false;
-        if (groupEdited) {
+        // Test if mouse is inside the navigator
+        QPointF mousePosSceneCoordinates;
+        bool insideNavigator = isNearbyNavigator(e->pos(), mousePosSceneCoordinates);
+        if (insideNavigator) {
+            _imp->cursorSet = true;
+            setCursor( QCursor(Qt::OpenHandCursor) );
+        } else if (!groupEdited) {
+            if (_imp->cursorSet) {
+                _imp->cursorSet = false;
+                unsetCursor();
+            }
+        } else {
             // Set cursor
             // The cursor should clearly indicate when will happen if mouse is pressed
             NodeGui* nearbyNode = NULL;
@@ -539,7 +550,6 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             }
             }
         }
-
         break;
     }
     } // switch
