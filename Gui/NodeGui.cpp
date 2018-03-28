@@ -2936,11 +2936,29 @@ NodeGui::setNameItemHtml(const QString & name,
             if (endFontTag != -1) {
                 endFontTag += toFind.size();
             }
-
-            QString toInsert = name + _channelsExtraLabel + QLatin1Char('\n');
+            QString toInsert = name.trimmed();
+            int labelEndPos = -1;
+            // is there really something before the closing font tag? if yes, insert a newline
+            if (endFontTag != -1) {
+                labelEndPos = labelCopy.indexOf(QString::fromUtf8("</font>"), endFontTag);
+                if (labelEndPos != endFontTag) {
+                    toInsert += QLatin1Char('\n');
+                }
+            }
+            if (!_channelsExtraLabel.isEmpty()) {
+                QString extra = QLatin1Char('\n') + _channelsExtraLabel;
+                if (labelEndPos != -1) {
+                    labelCopy.insert(labelEndPos, extra);
+                } else {
+                    toInsert += extra;
+                }
+            }
             labelCopy.insert(endFontTag == -1 ? 0 : endFontTag, toInsert);
         } else {
-            labelCopy.prepend( name + _channelsExtraLabel + QLatin1Char('\n') );
+            labelCopy.prepend( name.trimmed() + QLatin1Char('\n') );
+            if ( !_channelsExtraLabel.isEmpty() ) {
+                labelCopy.append( QLatin1Char('\n') + _channelsExtraLabel.trimmed() );
+            }
             ///Default to something not too bad
             /*QString fontTag = (QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
                                .arg(6)
@@ -2957,8 +2975,7 @@ NodeGui::setNameItemHtml(const QString & name,
                            .arg( QColor(Qt::black).name() )
                            .arg(QApplication::font().family()));
            textLabel.append(fontTag);*/
-        textLabel.append(name);
-        textLabel.append(_channelsExtraLabel);
+        textLabel.append(name + QLatin1Char('\n') + _channelsExtraLabel);
         //textLabel.append("</font>");
     }
     QString finalText;
