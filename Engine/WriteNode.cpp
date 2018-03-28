@@ -1093,7 +1093,7 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog,
     QObject::connect(engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onSequenceRenderFinished()));
 
     if ( !_imp->renderButtonKnob.lock() ) {
-        _imp->renderButtonKnob = boost::dynamic_pointer_cast<KnobButton>( getKnobByName("startRender") );
+        _imp->renderButtonKnob = boost::dynamic_pointer_cast<KnobButton>( getKnobByName(kNatronWriteParamStartRender) );
         assert( _imp->renderButtonKnob.lock() );
     }
 
@@ -1140,7 +1140,7 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog,
 void
 WriteNode::onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& serialization)
 {
-    _imp->renderButtonKnob = boost::dynamic_pointer_cast<KnobButton>( getKnobByName("startRender") );
+    _imp->renderButtonKnob = boost::dynamic_pointer_cast<KnobButton>( getKnobByName(kNatronWriteParamStartRender) );
     assert( _imp->renderButtonKnob.lock() );
 
     assert(serialization);

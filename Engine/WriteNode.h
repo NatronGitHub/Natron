@@ -48,6 +48,8 @@
 #define kNatronWriteParamReadBackLabel "Read back file"
 #define kNatronWriteParamReadBackHint "When checked, the output of this node comes from reading the written file instead of the input node"
 
+#define kNatronWriteParamStartRender "startRender"
+
 NATRON_NAMESPACE_ENTER
 
 /**

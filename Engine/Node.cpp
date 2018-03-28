@@ -4154,7 +4154,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
         boost::shared_ptr<KnobButton> renderButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), tr("Render"), 1, false);
         renderButton->setHintToolTip( tr("Starts rendering the specified frame range.") );
         renderButton->setAsRenderButton();
-        renderButton->setName("startRender");
+        renderButton->setName(kNatronWriteParamStartRender);
         renderButton->setEvaluateOnChange(false);
         _imp->renderButton = renderButton;
         mainPage->addKnob(renderButton);
