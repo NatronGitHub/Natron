@@ -74,6 +74,9 @@ makeKeySequence(const Qt::KeyboardModifiers & modifiers,
     if ( modifiers.testFlag(Qt::MetaModifier) ) {
         keys |= Qt::META;
     }
+    if ( modifiers.testFlag(Qt::KeypadModifier) ) {
+        keys |= Qt::KeypadModifier;
+    }
     if (key != (Qt::Key)0) {
         keys |= key;
     }
@@ -93,6 +96,7 @@ extractKeySequence(const QKeySequence & seq,
     const QString nativeCTRLStr = QKeySequence(Qt::CTRL).toString(QKeySequence::NativeText);
     const QString nativeSHIFTStr = QKeySequence(Qt::SHIFT).toString(QKeySequence::NativeText);
     const QString nativeALTStr = QKeySequence(Qt::ALT).toString(QKeySequence::NativeText);
+    const QString nativeKeypadStr = QKeySequence(Qt::KeypadModifier).toString(QKeySequence::NativeText);
     QString nativeSeqStr = seq.toString(QKeySequence::NativeText);
 
     if (nativeSeqStr.indexOf(nativeMETAStr) != -1) {
@@ -110,6 +114,10 @@ extractKeySequence(const QKeySequence & seq,
     if (nativeSeqStr.indexOf(nativeALTStr) != -1) {
         modifiers |= Qt::AltModifier;
         nativeSeqStr = nativeSeqStr.remove(nativeALTStr);
+    }
+    if (!nativeKeypadStr.isEmpty() && nativeSeqStr.indexOf(nativeKeypadStr) != -1) {
+        modifiers |= Qt::KeypadModifier;
+        nativeSeqStr = nativeSeqStr.remove(nativeKeypadStr);
     }
 
     ///The nativeSeqStr now contains only the symbol
