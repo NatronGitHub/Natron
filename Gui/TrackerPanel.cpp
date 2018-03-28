@@ -532,7 +532,7 @@ static QString
 tooltipFromKnob(const KnobPtr& knob)
 {
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
-    QString tt = QString::fromUtf8("<font size = 4><b>%1</b></font>").arg( QString::fromUtf8( knob->getName().c_str() ) );
+    QString tt = QString::fromUtf8("<font size=\"4\"><b>%1</b></font>").arg( QString::fromUtf8( knob->getName().c_str() ) );
     QString realTt;
 
     if (!isChoice) {

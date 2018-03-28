@@ -1992,7 +1992,7 @@ TabWidget::setObjectName_mt_safe(const QString & str)
         setObjectName(str);
     }
     QString tt = NATRON_NAMESPACE::convertFromPlainText(tr(LEFT_HAND_CORNER_BUTTON_TT), NATRON_NAMESPACE::WhiteSpaceNormal);
-    QString toPre = QString::fromUtf8("Script name: <font size = 4><b>%1</font></b><br/>").arg(str);
+    QString toPre = QString::fromUtf8("Script name: <font size=\"4\"><b>%1</font></b><br/>").arg(str);
 
     tt.prepend(toPre);
     _imp->leftCornerButton->setToolTip(tt);
