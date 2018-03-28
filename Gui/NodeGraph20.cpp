@@ -360,10 +360,6 @@ NodeGraph::moveSelectedNodesBy(bool shiftdown,
     //Start auto-scolling if nearby the edges
     checkAndStartAutoScrollTimer(newPos);
 
-    //Set the hand cursor
-    _imp->cursorSet = true;
-    setCursor(Qt::ClosedHandCursor);
-
     //The lines below are trying to
     if (_imp->_selection.size() != 1) {
         return;
@@ -430,7 +426,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             _imp->cursorSet = false;
             unsetCursor();
         }
-       break;
+        break;
     }
     case eEventStateDraggingNode: {
         mustUpdate = true;
@@ -440,13 +436,11 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         moveSelectedNodesBy(shiftdown, controlDown, lastMousePosScene, newPos, sceneR, true);
         _imp->cursorSet = true;
         setCursor( QCursor(Qt::ClosedHandCursor) );
-       break;
+        break;
     }
     case eEventStateMovingArea: {
         mustUpdateNavigator = true;
         moveRootInternal(dx, dy);
-        _imp->cursorSet = true;
-        setCursor( QCursor(Qt::SizeAllCursor) );
         mustUpdate = true;
         _imp->cursorSet = true;
         setCursor( QCursor(Qt::SizeAllCursor) );
@@ -509,6 +503,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     default: {
         mustUpdate = false;
         if (groupEdited) {
+            // Set cursor
             // The cursor should clearly indicate when will happen if mouse is pressed
             NodeGuiPtr nearbyNode;
             Edge* nearbyEdge = NULL;
