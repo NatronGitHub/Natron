@@ -7,11 +7,14 @@
 
 ## Version 2.3.9
 
-- Numerical text fields (aka SpinBoxes) are now auto-reselected when validated #1737
-- When a node is selected, make its inputs/outputs more visible
-- All nodes inside a backdrop can be enabled/disabled using the "D" key #1720
-- Fix the "." shortcut for creating a Dot in the nodegraph.
+- Numerical text fields (aka SpinBoxes) are now auto-reselected when validated #1737.
+- When a node is selected, make its inputs/outputs more visible.
+- Node shape is now thinner in the node graph.
+- In the node graph, the cursor now really reflects what a mouse click would do.
+- All nodes inside a backdrop can be enabled/disabled using the "D" key #1720.
+- Fix the "." shortcut for creating a Dot in the nodegraph on non-French keyboards.
 - Only auto-connect a newly-created node to the input of the selected node if it cannot have an input itself.
+- Made more clear what the "LUT" tab in the project settings is for #1744.
 
 
 ## Version 2.3.8
