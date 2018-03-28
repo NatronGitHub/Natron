@@ -512,31 +512,31 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
 
             switch (nearbyItemCode) {
-                case eNearbyItemNode:
-                case eNearbyItemBackdropFrame:
-                case eNearbyItemEdgeBendPoint: {
-                    _imp->cursorSet = true;
-                    setCursor( QCursor(Qt::OpenHandCursor) );
-                    break;
+            case eNearbyItemNode:
+            case eNearbyItemBackdropFrame:
+            case eNearbyItemEdgeBendPoint: {
+                _imp->cursorSet = true;
+                setCursor( QCursor(Qt::OpenHandCursor) );
+                break;
+            }
+            case eNearbyItemBackdropResizeHandle: {
+                _imp->cursorSet = true;
+                setCursor( QCursor(Qt::SizeFDiagCursor) );
+                break;
+            }
+            case eNearbyItemNone: {
+                _imp->cursorSet = true;
+                setCursor( QCursor(Qt::CrossCursor) );
+                break;
+            }
+            case eNearbyItemNodeEdge:
+            default: {
+                if (_imp->cursorSet) {
+                    _imp->cursorSet = false;
+                    unsetCursor();
                 }
-                case eNearbyItemBackdropResizeHandle: {
-                    _imp->cursorSet = true;
-                    setCursor( QCursor(Qt::SizeFDiagCursor) );
-                    break;
-                }
-                case eNearbyItemNone: {
-                    _imp->cursorSet = true;
-                    setCursor( QCursor(Qt::CrossCursor) );
-                    break;
-                }
-                case eNearbyItemNodeEdge:
-                default: {
-                    if (_imp->cursorSet) {
-                        _imp->cursorSet = false;
-                        unsetCursor();
-                    }
-                    break;
-                }
+                break;
+            }
             }
         }
 
