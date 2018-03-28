@@ -1627,16 +1627,46 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
     if (checked) {
         _imp->_knobsVisibilityBeforeHideModif.clear();
         const KnobsGuiMapping& knobsMap = getKnobsMapping();
+        KnobsGuiMapping groups;
+        std::set<KnobGuiPtr> toHideGui;
+        std::set<KnobIPtr> toHide;
+        printf("hiding...\n");
         for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
             KnobIPtr knob = it->first.lock();
             KnobGroupPtr isGroup = toKnobGroup(knob);
             KnobParametricPtr isParametric = toKnobParametric(knob);
-            if (!isGroup && !isParametric) {
-                _imp->_knobsVisibilityBeforeHideModif.insert( std::make_pair( it->second, it->second->isSecretRecursive() ) );
-                if ( !knob->hasModifications() ) {
-                    it->second->hide();
+            if (isGroup) {
+                printf("groups += %s\n",knob->getName().c_str());
+                groups.push_back(std::make_pair(it->first, it->second));
+            } else if (!isParametric && !knob->hasModifications() && knob->getName() != kNatronWriteParamStartRender) {
+                printf("toHide += %s\n",knob->getName().c_str());
+                toHide.insert(knob);
+                toHideGui.insert(it->second);
+            }
+        }
+        // now check if each groups is empty, i.e. all its children are either not visible or going to be hidden
+        for (KnobsGuiMapping::const_iterator it = groups.begin(); it != groups.end(); ++it) {
+            KnobIPtr knob = it->first.lock();
+            KnobGroupPtr isGroup = toKnobGroup(knob);
+            assert(isGroup);
+            std::vector<KnobIPtr> children = isGroup->getChildren();
+            bool hideMe = true;
+            printf("should we hide group %s?\n",knob->getName().c_str());
+            for (std::vector<KnobIPtr>::const_iterator it2 = children.begin(); it2 != children.end(); ++it2) {
+                KnobGroup* isGroup2 = dynamic_cast<KnobGroup*>( (*it2).get() );
+                if (!isGroup2 && toHide.find(*it2) == toHide.end() && !(*it2)->getIsSecret()) {
+                    printf("- child %s still visible: NO\n",(*it2)->getName().c_str());
+                    hideMe = false;
+                    break;
                 }
             }
+            if (hideMe) {
+                toHideGui.insert(it->second);
+            }
+        }
+        for (std::set<KnobGuiPtr>::const_iterator it = toHideGui.begin(); it != toHideGui.end(); ++it) {
+            _imp->_knobsVisibilityBeforeHideModif.insert( std::make_pair( *it, (*it)->isSecretRecursive() ) );
+            (*it)->hide();
         }
     } else {
         for (std::map<KnobGuiWPtr, bool>::iterator it = _imp->_knobsVisibilityBeforeHideModif.begin();
