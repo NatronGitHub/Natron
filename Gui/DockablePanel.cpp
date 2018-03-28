@@ -1630,16 +1630,16 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
         KnobsGuiMapping groups;
         std::set<KnobGuiPtr> toHideGui;
         std::set<KnobIPtr> toHide;
-        printf("hiding...\n");
+        //printf("hiding...\n");
         for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
             KnobIPtr knob = it->first.lock();
             KnobGroupPtr isGroup = toKnobGroup(knob);
             KnobParametricPtr isParametric = toKnobParametric(knob);
             if (isGroup) {
-                printf("groups += %s\n",knob->getName().c_str());
+                //printf("groups += %s\n",knob->getName().c_str());
                 groups.push_back(std::make_pair(it->first, it->second));
             } else if (!isParametric && !knob->hasModifications() && knob->getName() != kNatronWriteParamStartRender) {
-                printf("toHide += %s\n",knob->getName().c_str());
+                //printf("toHide += %s\n",knob->getName().c_str());
                 toHide.insert(knob);
                 toHideGui.insert(it->second);
             }
@@ -1651,11 +1651,11 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
             assert(isGroup);
             std::vector<KnobIPtr> children = isGroup->getChildren();
             bool hideMe = true;
-            printf("should we hide group %s?\n",knob->getName().c_str());
+            //printf("should we hide group %s?\n",knob->getName().c_str());
             for (std::vector<KnobIPtr>::const_iterator it2 = children.begin(); it2 != children.end(); ++it2) {
                 KnobGroup* isGroup2 = dynamic_cast<KnobGroup*>( (*it2).get() );
                 if (!isGroup2 && toHide.find(*it2) == toHide.end() && !(*it2)->getIsSecret()) {
-                    printf("- child %s still visible: NO\n",(*it2)->getName().c_str());
+                    //printf("- child %s still visible: NO\n",(*it2)->getName().c_str());
                     hideMe = false;
                     break;
                 }
