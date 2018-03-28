@@ -5,6 +5,7 @@ PortGroup           muniversal 1.0
 
 name                ghostscript
 version             9.23
+revision            2
 categories          print
 license             AGPL-3 BSD
 maintainers         nomaintainer
@@ -28,6 +29,7 @@ distfiles           ${distname}.tar.gz:source \
                     ${mappingresources_commit}.zip:misc
 
 patchfiles          patch-base_unix-dll.mak.diff
+patchfiles-append   patch-base_unixinst.mak.diff
 
 checksums           ${distname}.tar.gz \
                     rmd160  e5ecbd1cb6777fb0968f0967d3d4b30da2fefddd \
@@ -87,6 +89,10 @@ post-patch {
     }
 }
 
+# https://trac.macports.org/ticket/56137
+configure.ldflags-prepend \
+                    -Lsobin
+
 use_autoreconf      yes
 autoreconf.args     -fv
 
@@ -124,9 +130,6 @@ post-destroot {
     xinstall -m 644 {*}[glob -directory ${workpath}/fonts *.afm *.gsf *.pfa *.pfm] \
             ${destroot}${prefix}/share/${name}/fonts
 
-    xinstall -m 755 -d ${destroot}${prefix}/share/doc
-    ln -s ../${name}/${version}/doc ${destroot}${prefix}/share/doc/${name}
-
     # std fonts - "documentation"
     xinstall -m 0755 -d ${destroot}${prefix}/share/doc/${name}/fonts
     xinstall -m 0644 -W ${workpath}/fonts \
@@ -157,5 +160,5 @@ variant cups description {Enable CUPS driver} {
 default_variants    +x11
 
 livecheck.type      regex
-livecheck.url       http://www.ghostscript.com/Releases.html
+livecheck.url       ${homepage}Releases.html
 livecheck.regex     ">Ghostscript (\\d+(?:\\.\\d+)*)<"
