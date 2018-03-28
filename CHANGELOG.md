@@ -15,6 +15,7 @@
 - Fix the "." shortcut for creating a Dot in the nodegraph on non-French keyboards.
 - Only auto-connect a newly-created node to the input of the selected node if it cannot have an input itself.
 - Made more clear what the "LUT" tab in the project settings is for #1744.
+- Better "hide all parameters without modifications" behaviour #1625
 
 
 ## Version 2.3.8
