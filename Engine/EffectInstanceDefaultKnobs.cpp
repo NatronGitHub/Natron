@@ -1406,12 +1406,12 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool /*hasGUI*
             mainPage = getOrCreateMainPage();
         }
 
-        KnobButtonPtr renderButton = createKnob<KnobButton>("startRender");
+        KnobButtonPtr renderButton = createKnob<KnobButton>(kNatronWriteParamStartRender);
         renderButton->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         renderButton->setLabel(tr("Render"));
         renderButton->setHintToolTip( tr("Starts rendering the specified frame range.") );
         renderButton->setAsRenderButton();
-        renderButton->setName("startRender");
+        renderButton->setName(kNatronWriteParamStartRender);
         renderButton->setEvaluateOnChange(false);
         _imp->defKnobs->renderButton = renderButton;
         mainPage->addKnob(renderButton);

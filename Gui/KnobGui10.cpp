@@ -584,7 +584,7 @@ KnobGui::onRemoveKeyActionTriggered()
 QString
 KnobGui::getScriptNameHtml() const
 {
-    return QString::fromUtf8("<font size = 4><b>%1</b></font>").arg( QString::fromUtf8( getKnob()->getName().c_str() ) );
+    return QString::fromUtf8("<font size=\"4\"><b>%1</b></font>").arg( QString::fromUtf8( getKnob()->getName().c_str() ) );
 }
 
 enum DimensionLinkTypeEnum

@@ -43,7 +43,6 @@ Dot::createPlugin()
     effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
     effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
     ret->setProperty<int>(kNatronPluginPropShortcut, (int)Key_period);
-    ret->setProperty<int>(kNatronPluginPropShortcut, (int)eKeyboardModifierShift, 1);
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/dot_icon.png");
 
     ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);

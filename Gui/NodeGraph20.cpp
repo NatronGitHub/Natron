@@ -360,10 +360,6 @@ NodeGraph::moveSelectedNodesBy(bool shiftdown,
     //Start auto-scolling if nearby the edges
     checkAndStartAutoScrollTimer(newPos);
 
-    //Set the hand cursor
-    _imp->cursorSet = true;
-    setCursor(Qt::ClosedHandCursor);
-
     //The lines below are trying to
     if (_imp->_selection.size() != 1) {
         return;
@@ -413,51 +409,6 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     }
 
     QRectF sceneR = visibleSceneRect();
-    if ( groupEdited && (_imp->_evtState != eEventStateSelectionRect) && (_imp->_evtState != eEventStateDraggingArrow) ) {
-        // Set cursor
-
-        std::set<NodeGuiPtr> visibleNodes;
-        getNodesWithinViewportRect(visibleWidgetRect(), &visibleNodes);
-
-        NodeGuiPtr selected;
-        Edge* selectedEdge = 0;
-        bool optionalInputsAutoHidden = areOptionalInputsAutoHidden();
-
-        for (std::set<NodeGuiPtr>::iterator it = visibleNodes.begin(); it != visibleNodes.end(); ++it) {
-            QPointF evpt = (*it)->mapFromScene(newPos);
-            QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
-            if ( (*it)->isActive() && bbox.intersects(sceneR) ) {
-                if ( (*it)->contains(evpt) ) {
-                    selected = (*it)->shared_from_this();
-                    if (optionalInputsAutoHidden) {
-                        (*it)->refreshEdgesVisility(true);
-                    } else {
-                        break;
-                    }
-                } else {
-                    Edge* edge = (*it)->hasEdgeNearbyPoint(newPos);
-                    if (edge) {
-                        selectedEdge = edge;
-                        if (!optionalInputsAutoHidden) {
-                            break;
-                        }
-                    } else if ( optionalInputsAutoHidden && !(*it)->getIsSelected() ) {
-                        (*it)->refreshEdgesVisility(false);
-                    }
-                }
-            }
-        }
-        if (selected) {
-            _imp->cursorSet = true;
-            setCursor( QCursor(Qt::OpenHandCursor) );
-        } else if (selectedEdge) {
-        } else if (!selectedEdge && !selected) {
-            if (_imp->cursorSet) {
-                _imp->cursorSet = false;
-                unsetCursor();
-            }
-        }
-    }
 
     bool mustUpdateNavigator = false;
     ///Apply actions
@@ -471,6 +422,10 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         }
         checkAndStartAutoScrollTimer(newPos);
         mustUpdate = true;
+        if (_imp->cursorSet) {
+            _imp->cursorSet = false;
+            unsetCursor();
+        }
         break;
     }
     case eEventStateDraggingNode: {
@@ -479,14 +434,16 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         bool controlDown = modifierHasControl(e);
         bool shiftdown = modifierHasShift(e);
         moveSelectedNodesBy(shiftdown, controlDown, lastMousePosScene, newPos, sceneR, true);
+        _imp->cursorSet = true;
+        setCursor( QCursor(Qt::ClosedHandCursor) );
         break;
     }
     case eEventStateMovingArea: {
         mustUpdateNavigator = true;
         moveRootInternal(dx, dy);
+        mustUpdate = true;
         _imp->cursorSet = true;
         setCursor( QCursor(Qt::SizeAllCursor) );
-        mustUpdate = true;
         break;
     }
     case eEventStateResizingBackdrop: {
@@ -498,6 +455,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         checkAndStartAutoScrollTimer(newPos);
         mustUpdate = true;
         pushUndoCommand( new ResizeBackdropCommand(_imp->_backdropResized.lock(), w, h) );
+        _imp->cursorSet = true;
+        setCursor( QCursor(Qt::SizeFDiagCursor) );
         break;
     }
     case eEventStateSelectionRect: {
@@ -511,9 +470,13 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         QRectF selRect(xmin, ymin, xmax - xmin, ymax - ymin);
         _imp->_selectionRect = selRect;
         mustUpdate = true;
+        _imp->cursorSet = true;
+        setCursor( QCursor(Qt::CrossCursor) );
         break;
     }
     case eEventStateDraggingNavigator: {
+        _imp->cursorSet = true;
+        setCursor( QCursor(Qt::ClosedHandCursor) );
         QPointF mousePosSceneCoordinates;
         bool insideNavigator = isNearbyNavigator(e->pos(), mousePosSceneCoordinates);
         if (insideNavigator) {
@@ -532,11 +495,61 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         wheelEventInternal(modCASIsControl(e), delta);
         setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
         mustUpdate = true;
+        _imp->cursorSet = true;
+        setCursor( QCursor(Qt::SizeAllCursor) );
         break;
     }
-    default:
+    case eEventStateNone:
+    default: {
         mustUpdate = false;
+        // Test if mouse is inside the navigator
+        QPointF mousePosSceneCoordinates;
+        bool insideNavigator = isNearbyNavigator(e->pos(), mousePosSceneCoordinates);
+        if (insideNavigator) {
+            _imp->cursorSet = true;
+            setCursor( QCursor(Qt::OpenHandCursor) );
+        } else if (!groupEdited) {
+            if (_imp->cursorSet) {
+                _imp->cursorSet = false;
+                unsetCursor();
+            }
+        } else {
+            // Set cursor
+            // The cursor should clearly indicate when will happen if mouse is pressed
+            NodeGuiPtr nearbyNode;
+            Edge* nearbyEdge = NULL;
+            NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
+
+            switch (nearbyItemCode) {
+            case eNearbyItemNode:
+            case eNearbyItemBackdropFrame:
+            case eNearbyItemEdgeBendPoint: {
+                _imp->cursorSet = true;
+                setCursor( QCursor(Qt::OpenHandCursor) );
+                break;
+            }
+            case eNearbyItemBackdropResizeHandle: {
+                _imp->cursorSet = true;
+                setCursor( QCursor(Qt::SizeFDiagCursor) );
+                break;
+            }
+            case eNearbyItemNone: {
+                _imp->cursorSet = true;
+                setCursor( QCursor(Qt::CrossCursor) );
+                break;
+            }
+            case eNearbyItemNodeEdge:
+            default: {
+                if (_imp->cursorSet) {
+                    _imp->cursorSet = false;
+                    unsetCursor();
+                }
+                break;
+            }
+            }
+        }
         break;
+    }
     } // switch
 
 

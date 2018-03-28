@@ -611,7 +611,7 @@ Node::isInputNode() const
     if (isBeingDestroyed()) {
         return false;
     }
-    return _imp->effect->isGenerator();
+    return _imp->effect->isGenerator() && !_imp->effect->isFilter();
 }
 
 bool

@@ -1002,7 +1002,7 @@ WriteNode::onEffectCreated(const CreateNodeArgs& args)
     QObject::connect(engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onSequenceRenderFinished()));
 
     if ( !_imp->renderButtonKnob.lock() ) {
-        _imp->renderButtonKnob = toKnobButton( getKnobByName("startRender") );
+        _imp->renderButtonKnob = toKnobButton( getKnobByName(kNatronWriteParamStartRender) );
         assert( _imp->renderButtonKnob.lock() );
     }
 
@@ -1043,7 +1043,7 @@ WriteNode::onEffectCreated(const CreateNodeArgs& args)
 void
 WriteNode::onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
 {
-    _imp->renderButtonKnob = toKnobButton( getKnobByName("startRender") );
+    _imp->renderButtonKnob = toKnobButton( getKnobByName(kNatronWriteParamStartRender) );
     assert( _imp->renderButtonKnob.lock() );
 
     NodePtr node = getNode();

@@ -1652,7 +1652,9 @@ AppManager::onPluginLoaded(const PluginPtr& plugin)
 
     if ( plugin->getIsUserCreatable() ) {
         std::string hint = tr("Create an instance of %1").arg(QString::fromUtf8(pluginID.c_str())).toStdString();
-        getCurrentSettings()->addKeybind(shortcutGrouping, pluginID, pluginLabel, hint, modifiers, symbol);
+        // Keybinds to create nodes are not sensible to the shift modifier, due to
+        // different keyboard layouts (eg "." is shifted on French keyboard, not on QWERTY).
+        getCurrentSettings()->addKeybind(shortcutGrouping, pluginID, pluginLabel, hint, modifiers, symbol, eKeyboardModifierShift);
     }
 
     // If this plug-in has presets, add shortcuts as well
