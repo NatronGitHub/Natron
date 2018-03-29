@@ -40,6 +40,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtOpenGL/QGLWidget>
 #include <QtCore/QList>
 #include <QtCore/QPointF>
+#include <QtCore/QSize>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

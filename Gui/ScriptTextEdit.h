@@ -34,6 +34,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QSize>
 #include <QTextEdit>
 #include <QPlainTextEdit>
 #include <QSyntaxHighlighter>

@@ -27,6 +27,7 @@
 #include <stdexcept>
 
 #include <QtCore/QDebug> //REMOVEME
+#include <QtCore/QSize>
 #include <QHeaderView>
 #include <QPainter>
 #include <QResizeEvent>

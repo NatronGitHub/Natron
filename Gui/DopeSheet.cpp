@@ -34,6 +34,7 @@
 
 // Qt includes
 #include <QtCore/QDebug>
+#include <QtCore/QSize>
 #include <QtEvents>
 #include <QTreeWidget>
 #include <QUndoStack>

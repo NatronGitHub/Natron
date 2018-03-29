@@ -52,6 +52,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QUrl>
 #include <QtCore/QRegExp>
 #include <QtCore/QLatin1Char>
+#include <QtCore/QSize>
 #include <QComboBox>
 #include <QListView>
 CLANG_DIAG_ON(deprecated)
