@@ -34,6 +34,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QPainter>
 #include <QApplication>
 #include <QtCore/QRegExp>
+#include <QtCore/QMimeData>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

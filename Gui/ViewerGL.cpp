@@ -32,7 +32,7 @@
 
 #include <QThread>
 
-#if QT_VERSION >= 0x050000
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QToolButton>
 #include <QtWidgets/QApplication> // qApp
@@ -3547,7 +3547,7 @@ ViewerGL::getViewerFrameRange(int* first,
 double
 ViewerGL::currentTimeForEvent(QInputEvent* e)
 {
-#if QT_VERSION >= 0x050000
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     // timestamp() is usually in milliseconds
     if ( e->timestamp() ) {
         return (double)e->timestamp() / 1000000;

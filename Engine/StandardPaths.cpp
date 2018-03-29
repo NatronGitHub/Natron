@@ -30,7 +30,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDir>
 #include <QtCore/QString>
-#if QT_VERSION >= 0x050000
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QStandardPaths>
 #endif
 
@@ -87,7 +87,7 @@ StandardPaths::appendOrganizationAndApp(QString &path)
 #endif
 }
 
-#endif // QT_VERSION < 0x050000
+#endif // QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -297,9 +297,11 @@ macLocation(NATRON_NAMESPACE::StandardPaths::StandardLocationEnum type, short do
 
     QString path = getFullPath(ref);
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     if ( (type == NATRON_NAMESPACE::StandardPaths::eStandardLocationData) || (type == NATRON_NAMESPACE::StandardPaths::eStandardLocationCache) ) {
         NATRON_NAMESPACE::StandardPaths::appendOrganizationAndApp(path);
     }
+#endif
 
     return path;
 }
@@ -617,7 +619,7 @@ StandardPaths::writableLocation(StandardLocationEnum type)
 #error "Unsupported operating system"
 #endif 
 
-#else // QT_VERSION >= 0x050000
+#else // QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     QStandardPaths::StandardLocation path;
     switch (type) {
     case StandardPaths::eStandardLocationDesktop:
@@ -658,7 +660,7 @@ StandardPaths::writableLocation(StandardLocationEnum type)
     }
 
     return QStandardPaths::writableLocation(path);
-#endif // QT_VERSION >= 0x050000
+#endif // QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 } // writableLocation
 
 NATRON_NAMESPACE_EXIT
