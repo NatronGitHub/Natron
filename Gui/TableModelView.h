@@ -265,8 +265,13 @@ public:
     {
     }
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     virtual QWidget * createEditor(QVariant::Type type, QWidget *parent) const OVERRIDE FINAL;
     virtual QByteArray valuePropertyName(QVariant::Type type) const OVERRIDE FINAL;
+#else
+    virtual QWidget * createEditor(int userType, QWidget *parent) const OVERRIDE FINAL;
+    virtual QByteArray valuePropertyName(int userType) const OVERRIDE FINAL;
+#endif
 };
 
 

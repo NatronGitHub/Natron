@@ -21,6 +21,7 @@
 #ifdef Q_OS_MAC
 
 #include <AppKit/NSView.h>
+#include <AppKit/NSWindow.h>
 
 //See:
 //- https://trac.macports.org/ticket/43283

@@ -517,7 +517,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
     treeHeader->setText( COL_GL_ENABLED, tr("OpenGL") );
     _imp->pluginsView->setHeaderItem(treeHeader);
     _imp->pluginsView->setSelectionMode(QAbstractItemView::NoSelection);
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     _imp->pluginsView->header()->setResizeMode(QHeaderView::ResizeToContents);
 #else
     _imp->pluginsView->header()->setSectionResizeMode(QHeaderView::ResizeToContents);

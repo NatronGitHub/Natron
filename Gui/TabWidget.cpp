@@ -1520,7 +1520,7 @@ TabBar::makePixmapForDrag(int index)
     addTab(tabs[index].second, tabs[index].first);
 
     QPixmap currentTabPixmap =  Gui::screenShot( _tabWidget->tabAt(index)->getWidget() );
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     QPixmap tabBarPixmap = QPixmap::grabWidget(this);
 #else
     QPixmap tabBarPixmap = grab();
@@ -1537,7 +1537,7 @@ TabBar::makePixmapForDrag(int index)
     QImage tabBarImg = tabBarPixmap.toImage();
     QImage currentTabImg = currentTabPixmap.toImage();
 
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     ///Prevent a bug with grabWidget and retina display on Qt4
     bool isHighDPI = _tabWidget->getGui()->isHighDPI();
     if (isHighDPI) {

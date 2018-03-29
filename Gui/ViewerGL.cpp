@@ -32,7 +32,7 @@
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
-#if QT_VERSION >= 0x050000
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QToolButton>
 #include <QtWidgets/QApplication> // qApp
@@ -1730,7 +1730,7 @@ ViewerGL::setLut(int lut)
     _imp->displayingImageLut = (ViewerColorSpaceEnum)lut;
 }
 
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 #define QMouseEventLocalPos(e) ( e->posF() )
 #else
 #define QMouseEventLocalPos(e) ( e->localPos() )
@@ -4610,7 +4610,7 @@ ViewerGL::getViewerFrameRange(int* first,
 double
 ViewerGL::currentTimeForEvent(QInputEvent* e)
 {
-#if QT_VERSION >= 0x050000
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     // timestamp() is usually in milliseconds
     if ( e->timestamp() ) {
         return (double)e->timestamp() / 1000000;

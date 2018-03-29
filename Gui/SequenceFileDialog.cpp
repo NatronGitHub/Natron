@@ -59,7 +59,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 #include <QtGui/QKeyEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtGui/QColor>
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 #include <QtGui/QAction>
 #include <QtGui/QApplication>
 #include <QtGui/QStylePainter>

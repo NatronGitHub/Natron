@@ -36,7 +36,7 @@
 #include <QtCore/QFileInfo>
 #include <QtCore/QSettings>
 
-#if QT_VERSION >= 0x050000
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QtGui/QScreen>
 #endif
 
@@ -244,7 +244,7 @@ Gui::updateRecentFileActions()
 QPixmap
 Gui::screenShot(QWidget* w)
 {
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     if ( w->objectName() == QString::fromUtf8("CurveEditor") ) {
         return QPixmap::grabWidget(w);
     }

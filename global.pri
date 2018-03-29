@@ -342,7 +342,9 @@ win32-g++ {
     shiboken:  PKGCONFIG += shiboken-py2
     pyside:    PKGCONFIG += pyside-py2
     pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtCore
-    pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtGui
+    equals(QT_MAJOR_VERSION, 4) {
+        pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtGui
+    }
     python:    PKGCONFIG += python-2.7
     boost:     LIBS += -lboost_serialization-mt
     boost:     LIBS += -lboost_serialization-mt
@@ -407,10 +409,12 @@ unix {
          PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --exec-prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
          INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)
          INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
-         # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
-         # qtextdocument.h in the QtGui module.
-         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$${QMAKE_LIBDIR_QT}/pkgconfig pkg-config --variable=includedir QtGui)
+         equals(QT_MAJOR_VERSION, 4) {
+           # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
+           # qtextdocument.h in the QtGui module.
+           INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
+           INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$${QMAKE_LIBDIR_QT}/pkgconfig pkg-config --variable=includedir QtGui)
+         }
          LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs pyside)
        }
      }

@@ -298,7 +298,7 @@ GuiApplicationManager::initializeQApp(int &argc,
 
 #ifdef DEBUG
     QLocale loc;
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     loc = QApplication::keyboardInputLocale();
 #else
     loc = QGuiApplication::inputMethod()->locale();

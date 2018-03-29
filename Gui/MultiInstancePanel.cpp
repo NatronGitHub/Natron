@@ -35,7 +35,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QWaitCondition>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 
-#if QT_VERSION >= 0x050000
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QCheckBox>
@@ -550,7 +550,7 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->view->setAttribute(Qt::WA_MacShowFocusRect, 0);
     _imp->view->setUniformRowHeights(true);
 
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     _imp->view->header()->setResizeMode(QHeaderView::ResizeToContents);
 #else
     _imp->view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
