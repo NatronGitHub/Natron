@@ -5,6 +5,9 @@
 # History
 
 
+## Version 2.3.10
+
+
 ## Version 2.3.9
 
 - Numerical text fields (aka SpinBoxes) are now auto-reselected when validated #1737.
