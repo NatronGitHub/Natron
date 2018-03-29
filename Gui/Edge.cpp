@@ -522,7 +522,7 @@ Edge::initLine()
 
             if (_imp->label) {
                 QPointF pos( _imp->middlePoint + QPointF(-5, -10) );
-                qDebug() << pos;
+                //qDebug() << pos;
                 _imp->label->setPos(pos);
                 QFontMetrics fm( _imp->label->font() );
                 int fontHeight = fm.height();
@@ -695,7 +695,7 @@ Edge::dragSource(const QPointF & src)
 
     if (_imp->label) {
         QPointF pos( ( ( line().p1().x() + src.x() ) / 2. ) - 5, ( ( line().p1().y() + src.y() ) / 2. ) - 5 );
-        qDebug() << pos;
+        //qDebug() << pos;
         _imp->label->setPos(pos);
     }
 }
