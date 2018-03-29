@@ -451,7 +451,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     _imp->view->setSelectionBehavior(QAbstractItemView::SelectRows);
 
 
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     _imp->view->header()->setResizeMode(QHeaderView::ResizeToContents);
 #else
     _imp->view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);

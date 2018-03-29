@@ -1315,7 +1315,7 @@ ViewerGL::disconnectInputTexture(int textureIndex, bool clearRoD)
     }
 }
 
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 #define QMouseEventLocalPos(e) ( e->posF() )
 #else
 #define QMouseEventLocalPos(e) ( e->localPos() )

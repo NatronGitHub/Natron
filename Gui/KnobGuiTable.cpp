@@ -208,7 +208,7 @@ KnobGuiTable::createWidget(QHBoxLayout* layout)
 
     _imp->table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     _imp->table->header()->setResizeMode(QHeaderView::ResizeToContents);
 #else
     _imp->table->header()->setSectionResizeMode(QHeaderView::ResizeToContents);

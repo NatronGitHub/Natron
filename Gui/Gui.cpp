@@ -774,7 +774,7 @@ void scaleImageToAdjustDPIInternal(double scale, IMG* pix)
 void
 Gui::scaleImageToAdjustDPI(QImage* pix)
 {
-#if QT_VERSION > 0x050000
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     Q_UNUSED(pix);
     return;
 #endif
@@ -785,7 +785,7 @@ Gui::scaleImageToAdjustDPI(QImage* pix)
 void
 Gui::scalePixmapToAdjustDPI(QPixmap* pix)
 {
-#if QT_VERSION > 0x050000
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     Q_UNUSED(pix);
     return;
 #endif

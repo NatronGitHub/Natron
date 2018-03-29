@@ -559,7 +559,7 @@ AnimationModuleTreeView::AnimationModuleTreeView(const AnimationModulePtr& model
     setColumnCount(3);
 
     header()->setStretchLastSection(false);
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     header()->setResizeMode(ANIMATION_MODULE_TREE_VIEW_COL_LABEL, QHeaderView::Stretch);
     header()->setResizeMode(ANIMATION_MODULE_TREE_VIEW_COL_PLUGIN_ICON, QHeaderView::Fixed);
     header()->setResizeMode(ANIMATION_MODULE_TREE_VIEW_COL_VISIBLE, QHeaderView::Fixed);

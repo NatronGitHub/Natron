@@ -1340,11 +1340,17 @@ ExpandingLineEdit::resizeToContents()
     }
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 QWidget*
-TableItemEditorFactory::createEditor(QVariant::Type type,
+TableItemEditorFactory::createEditor(QVariant::Type userType,
                                      QWidget *parent) const
+#else
+QWidget*
+TableItemEditorFactory::createEditor(int userType,
+                                     QWidget *parent) const
+#endif
 {
-    switch (type) {
+    switch (userType) {
     case QVariant::UInt: {
         SpinBox *sb = new SpinBox(parent, SpinBox::eSpinBoxTypeInt);
         sb->setFrame(false);
@@ -1387,10 +1393,15 @@ TableItemEditorFactory::createEditor(QVariant::Type type,
     return 0;
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 QByteArray
-TableItemEditorFactory::valuePropertyName(QVariant::Type type) const
+TableItemEditorFactory::valuePropertyName(QVariant::Type userType) const
+#else
+QByteArray
+TableItemEditorFactory::valuePropertyName(int userType) const
+#endif
 {
-    switch (type) {
+    switch (userType) {
     case QVariant::UInt:
     case QVariant::Int:
     case QVariant::Double:

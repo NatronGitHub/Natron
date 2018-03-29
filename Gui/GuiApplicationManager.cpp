@@ -865,7 +865,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
 
 #ifdef __NATRON_UNIX__
 #ifndef __NATRON_OSX__
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     // workaround for issues with KDE4
     QApplication::setStyle( QString::fromUtf8("plastique") );
 #endif

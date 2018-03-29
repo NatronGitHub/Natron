@@ -236,7 +236,7 @@ GuiAppInstance::createMainWindow()
 }
 
 #ifdef Q_OS_MAC
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 class Qt4RetinaFixStyle : public QMacStyle
 {
 public:
@@ -303,7 +303,7 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     createMainWindow();
 
 #ifdef Q_OS_MAC
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     // On Qt4 for Mac, Retina is not well supported, see:
     // https://bugreports.qt.io/browse/QTBUG-23870
     // Note that setting the application style will override any

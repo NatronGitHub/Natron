@@ -554,7 +554,7 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
 
     connect(_imp->tableView, SIGNAL(itemRightClicked(QPoint,TableItemPtr)), this, SLOT(onViewItemRightClicked(QPoint,TableItemPtr)));
 
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     _imp->tableView->header()->setResizeMode(QHeaderView::ResizeToContents);
 #else
     _imp->tableView->header()->setSectionResizeMode(QHeaderView::ResizeToContents);

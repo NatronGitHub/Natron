@@ -1526,7 +1526,7 @@ TabBar::makePixmapForDrag(int index)
     addTab(tabs[index].second, tabs[index].first);
 
     QPixmap currentTabPixmap =  Gui::screenShot( _tabWidget->tabAt(index)->getWidget() );
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     QPixmap tabBarPixmap = QPixmap::grabWidget(this);
 #else
     QPixmap tabBarPixmap = grab();

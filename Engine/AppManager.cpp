@@ -157,7 +157,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "AppManagerPrivate.h" // include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
 
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
 #endif
 
@@ -548,7 +548,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
 
 
     // Ensure Qt knows C-strings are UTF-8 before creating the QApplication for argv
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     // be forward compatible: source code is UTF-8, and Qt5 assumes UTF-8 by default
     QTextCodec::setCodecForCStrings( QTextCodec::codecForName("UTF-8") );
     QTextCodec::setCodecForTr( QTextCodec::codecForName("UTF-8") );
@@ -2768,7 +2768,7 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<ValueChangedReasonEnum>("ValueChangedReasonEnum");
     qRegisterMetaType<DimensionViewPair>("DimensionViewPair");
     qRegisterMetaType<PerDimViewKeyFramesMap>("PerDimViewKeyFramesMap");
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
 #endif
 }

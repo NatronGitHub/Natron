@@ -69,7 +69,7 @@ StandardPaths::StandardPaths()
 {
 }
 
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 void
 StandardPaths::appendOrganizationAndApp(QString &path)
 {
@@ -313,7 +313,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 QString
 StandardPaths::writableLocation(StandardLocationEnum type)
 {
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 #if defined(Q_OS_MAC)
     switch (type) {
         case eStandardLocationHome:
