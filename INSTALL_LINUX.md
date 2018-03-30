@@ -282,3 +282,36 @@ shiboken {
 }
 ```
 
+## Generating Python bindings
+
+This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
+typesystem.xml file. See the documentation of shiboken for an explanation of the command line arguments.
+
+```Shell
+SDK_PREFIX=/opt/Natron-sdk
+PYSIDE_PREFIX=/opt/Natron-sdk/qt4
+rm Engine/NatronEngine/* Gui/NatronGui/*
+
+shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
+
+shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+
+tools/utils/runPostShiboken.sh
+```
+
+If using PySide2 for Qt5, the command-line would be:
+
+```Shell
+SDK_PREFIX=/opt/Natron-sdk
+PYSIDE_PREFIX=/opt/Natron-sdk
+rm Engine/NatronEngine/* Gui/NatronGui/*
+
+shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide2 --typesystem-paths=$PYSIDE_PREFIX/lib/python2.7/site-packages/PySide2/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
+
+shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide2 --typesystem-paths=$PYSIDE_PREFIX/lib/python2.7/site-packages/PySide2/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+
+tools/utils/runPostShiboken.sh
+```
+
+**Note**
+Shiboken has a few glitches which needs fixing with some sed commands, run tools/utils/runPostShiboken.sh once shiboken is called

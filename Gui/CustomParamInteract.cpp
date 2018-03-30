@@ -26,6 +26,7 @@
 
 #include <stdexcept>
 
+#include <QtCore/QSize>
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>
 #include <QMouseEvent>

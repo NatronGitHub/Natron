@@ -33,6 +33,7 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+#include <QtCore/QSize>
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include "Global/GLIncludes.h" //!<must be included before QGLWidget

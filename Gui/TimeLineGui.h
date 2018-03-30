@@ -41,6 +41,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include "Global/GLObfuscate.h" //!<must be included after QGLWidget
 #include <QtCore/QList>
 #include <QtCore/QPointF>
+#include <QtCore/QSize>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 #include "Engine/OverlaySupport.h"

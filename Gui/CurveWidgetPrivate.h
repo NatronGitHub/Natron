@@ -44,6 +44,7 @@
 #include "Gui/Menu.h"
 #include "Gui/ZoomContext.h"
 
+#include <QtCore/QSize>
 
 #define CURVEWIDGET_DERIVATIVE_ROUND_PRECISION 3.
 

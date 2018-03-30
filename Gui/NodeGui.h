@@ -44,6 +44,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QRectF>
 #include <QtCore/QMutex>
+#include <QtCore/QSize>
 #include <QGraphicsItem>
 #include <QDialog>
 #include <QtCore/QMutex>

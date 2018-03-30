@@ -418,15 +418,15 @@ On MacPorts, this would look like:
 ## Generating Python bindings
 
 This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
-typesystem.xml file. See the documentation of shiboken-3.4 for an explanation of the command line arguments.
+typesystem.xml file. See the documentation of shiboken-2.7 for an explanation of the command line arguments.
 
 On MacPorts:
 ```Shell
 rm Engine/NatronEngine/* Gui/NatronGui/*
 
-shiboken-3.4 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
+shiboken-2.7 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:/opt/local/include:/opt/local/include/PySide-2.7  --typesystem-paths=/opt/local/share/PySide-2.7/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
 
-shiboken-3.4 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+shiboken-2.7 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:/opt/local/include:/opt/local/include/PySide-2.7  --typesystem-paths=/opt/local/share/PySide-2.7/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
 
 tools/utils/runPostShiboken.sh
 ```

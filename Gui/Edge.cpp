@@ -28,6 +28,7 @@
 #include <cmath>
 #include <stdexcept>
 
+#include <QtCore/QSize>
 #include <QPainter>
 #include <QApplication>
 #include <QGraphicsScene>

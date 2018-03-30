@@ -42,6 +42,8 @@
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
 
+#include <QtCore/QSize>
+
 NATRON_NAMESPACE_ENTER
 
 typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;

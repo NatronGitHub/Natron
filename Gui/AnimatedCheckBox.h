@@ -29,6 +29,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QSize>
 #include <QFrame>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -36,6 +37,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/Macros.h"
 
 #include "Gui/StyledKnobWidgetBase.h"
+
 
 NATRON_NAMESPACE_ENTER
 

@@ -34,6 +34,9 @@ Natron multiple times on the same computer, the different processes will share t
 
 ## Version 2.3.10
 
+- Add "Overwrite" checkbox to writers to avoid re-rendering the whole sequence #1683.
+- Writers do not render the whole RoD on their input anymore (this may result in a huge improvement on some projects).
+
 
 ## Version 2.3.9
 

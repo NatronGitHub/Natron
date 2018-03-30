@@ -28,6 +28,7 @@
 #include <algorithm> // min, max
 #include <stdexcept>
 
+#include <QtCore/QSize>
 #include <QHBoxLayout>
 #include <QApplication> // qApp
 #include <QDesktopWidget>

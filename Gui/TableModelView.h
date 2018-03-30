@@ -45,6 +45,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QPixmap>
 #include <QStyleOption>
 #include <QtCore/QMetaType>
+#include <QtCore/QSize>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
