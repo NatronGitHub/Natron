@@ -415,7 +415,7 @@ On MacPorts, this would look like:
 ## Generating Python bindings
 
 This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
-typesystem.xml file. See the documentation of shiboken-3.4 for an explanation of the command line arguments.
+typesystem.xml file. See the documentation of shiboken-2.7 for an explanation of the command line arguments.
 
 On MacPorts:
 ```Shell
