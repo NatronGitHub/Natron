@@ -339,10 +339,15 @@ win32-g++ {
 
     expat:     PKGCONFIG += expat
     cairo:     PKGCONFIG += cairo
-    shiboken:  PKGCONFIG += shiboken-py2
-    pyside:    PKGCONFIG += pyside-py2
-    pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtCore
+    equals(QT_MAJOR_VERSION, 5) {
+        shiboken:  INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/shiboken
+    	pyside:    INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/PySide2
+   	pyside:    INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/PySide2/QtCore
+    }
     equals(QT_MAJOR_VERSION, 4) {
+        shiboken:  PKGCONFIG += shiboken-py2
+    	pyside:    PKGCONFIG += pyside-py2
+   	pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtCore
         pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtGui
     }
     python:    PKGCONFIG += python-2.7
@@ -388,35 +393,43 @@ unix {
           INCLUDEPATH *= $$PYTHON_INCLUDEPATH
      }
 
-     # There may be different pyside.pc/shiboken.pc for different versions of python.
-     # pkg-config will probably give a bad answer, unless python2 is the system default.
-     # See for example tools/travis/install_dependencies.sh for a solution that works on Linux,
-     # using a custom config.pri
-     shiboken: PKGCONFIG += shiboken
-     pyside:   PKGCONFIG += pyside
-     # The following hack also works with Homebrew if pyside is installed with option --with-python3
-     macx {
-       QMAKE_LFLAGS += '-Wl,-rpath,\'@loader_path/../Frameworks\''
-       shiboken {
-         PKGCONFIG -= shiboken
-         PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --exec-prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
-         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir shiboken)
-         # the sed stuff is to work around an Xcode generator bug
-         LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs shiboken | sed -e s/-undefined\\ dynamic_lookup//)
-       }
-       pyside {
-         PKGCONFIG -= pyside
-         PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --exec-prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
-         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)
-         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
-         equals(QT_MAJOR_VERSION, 4) {
-           # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
-           # qtextdocument.h in the QtGui module.
-           INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-           INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$${QMAKE_LIBDIR_QT}/pkgconfig pkg-config --variable=includedir QtGui)
+     equals(QT_MAJOR_VERSION, 5) {
+         shiboken:  INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/shiboken
+    	 pyside:    INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/PySide2
+   	 pyside:    INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/PySide2/QtCore
+     }
+
+     equals(QT_MAJOR_VERSION, 4) {
+         # There may be different pyside.pc/shiboken.pc for different versions of python.
+         # pkg-config will probably give a bad answer, unless python2 is the system default.
+         # See for example tools/travis/install_dependencies.sh for a solution that works on Linux,
+         # using a custom config.pri
+         shiboken: PKGCONFIG += shiboken
+         pyside:   PKGCONFIG += pyside
+         # The following hack also works with Homebrew if pyside is installed with option --with-python3
+         macx {
+           QMAKE_LFLAGS += '-Wl,-rpath,\'@loader_path/../Frameworks\''
+           shiboken {
+             PKGCONFIG -= shiboken
+             PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --exec-prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
+             INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir shiboken)
+             # the sed stuff is to work around an Xcode generator bug
+             LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs shiboken | sed -e s/-undefined\\ dynamic_lookup//)
+           }
+           pyside {
+             PKGCONFIG -= pyside
+             PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --exec-prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
+             INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)
+             INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
+             equals(QT_MAJOR_VERSION, 4) {
+               # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
+               # qtextdocument.h in the QtGui module.
+               INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
+               INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$${QMAKE_LIBDIR_QT}/pkgconfig pkg-config --variable=includedir QtGui)
+             }
+             LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs pyside)
+           }
          }
-         LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs pyside)
-       }
      }
 } #unix
 
