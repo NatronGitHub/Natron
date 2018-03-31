@@ -1049,7 +1049,7 @@ AddKnobDialog::onPageCurrentIndexChanged(int index)
     KnobPagePtr parentPage;
 
 
-    for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
+    for (std::list<KnobPagePtr>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
         if ( (*it)->getName() == selectedPage ) {
             parentPage = *it;
             break;
