@@ -1371,7 +1371,7 @@ private:
 public Q_SLOTS:
 
 
-    void onProcessingQuitInDestroyNodeInternal(int taskID, const WatcherCallerArgsPtr& args);
+    void onProcessingQuitInDestroyNodeInternal(int taskID, const GenericWatcherCallerArgsPtr& args);
 
     void onRefreshIdentityStateRequestReceived();
 

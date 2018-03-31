@@ -620,8 +620,10 @@ public:
     virtual ~QuitInstanceArgs() {}
 };
 
+typedef boost::shared_ptr<QuitInstanceArgs> QuitInstanceArgsPtr;
+
 void
-AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
+AppManager::afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
 {
     QuitInstanceArgs* inArgs = dynamic_cast<QuitInstanceArgs*>( args.get() );
 

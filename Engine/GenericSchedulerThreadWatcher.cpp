@@ -44,7 +44,7 @@ class GenericWatcherCallerArgsMetaTypesRegistration
 public:
     inline GenericWatcherCallerArgsMetaTypesRegistration()
     {
-        qRegisterMetaType<WatcherCallerArgsPtr>("WatcherCallerArgsPtr");
+        qRegisterMetaType<GenericWatcherCallerArgsPtr>("GenericWatcherCallerArgsPtr");
     }
 };
 

@@ -1974,7 +1974,7 @@ Project::doResetEnd(bool aboutToQuit)
 
 bool
 Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
-                                      const WatcherCallerArgsPtr& args)
+                                      const GenericWatcherCallerArgsPtr& args)
 {
     NodesList nodesToWatch;
 
@@ -1995,7 +1995,7 @@ Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
 
 void
 Project::onQuitAnyProcessingWatcherTaskFinished(int taskID,
-                                                const WatcherCallerArgsPtr& args)
+                                                const GenericWatcherCallerArgsPtr& args)
 {
     NodeRenderWatcher* watcher = dynamic_cast<NodeRenderWatcher*>( sender() );
 
@@ -2024,7 +2024,7 @@ Project::onQuitAnyProcessingWatcherTaskFinished(int taskID,
 }
 
 void
-Project::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
+Project::afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
 {
     ResetWatcherArgs* inArgs = dynamic_cast<ResetWatcherArgs*>( args.get() );
 

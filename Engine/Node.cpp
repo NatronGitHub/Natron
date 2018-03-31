@@ -6627,7 +6627,7 @@ typedef boost::shared_ptr<NodeDestroyNodeInternalArgs> NodeDestroyNodeInternalAr
 
 void
 Node::onProcessingQuitInDestroyNodeInternal(int taskID,
-                                            const WatcherCallerArgsPtr& args)
+                                            const GenericWatcherCallerArgsPtr& args)
 {
     assert(_imp->renderWatcher);
     assert(taskID == (int)NodeRenderWatcher::eBlockingTaskQuitAnyProcessing);
