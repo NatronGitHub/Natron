@@ -9009,8 +9009,13 @@ Node::onRefreshIdentityStateRequestReceived()
     U64 hash = getHashValue();
     bool viewAware =  _imp->effect->isViewAware();
     int nViews = !viewAware ? 1 : project->getProjectViewsCount();
-    Format frmt;
-    project->getProjectDefaultFormat(&frmt);
+    // Do not test identity on the project format! intermediate images may be much bigger!
+    // see https://github.com/MrKepzie/Natron/issues/1578#issuecomment-377640892
+    //Format frmt;
+    //project->getProjectDefaultFormat(&frmt);
+    RectI frmt;
+    frmt.x1 = frmt.y1 = kOfxFlagInfiniteMin;
+    frmt.x2 = frmt.y2 = kOfxFlagInfiniteMax;
 
     //The one view node might report it is identity, but we do not want it to display it
 
