@@ -58,7 +58,7 @@ class MoveControlPointsUndoCommand
 public:
 
     MoveControlPointsUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
-                                 const std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & toDrag
+                                 const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & toDrag
                                  ,
                                  double dx,
                                  double dy,
@@ -81,7 +81,7 @@ private:
     double _time; //< the time at which the change was made
     std::list<boost::shared_ptr<RotoDrawableItem> > _selectedCurves;
     std::list<int> _indexesToMove; //< indexes of the control points
-    std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > _originalPoints, _selectedPoints, _pointsToDrag;
+    std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > _originalPoints, _selectedPoints, _pointsToDrag;
 };
 
 
@@ -130,7 +130,7 @@ private:
     boost::shared_ptr<Transform::Matrix3x3> _matrix;
     double _time; //< the time at which the change was made
     std::list<boost::shared_ptr<RotoDrawableItem> > _selectedCurves;
-    std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > _originalPoints, _selectedPoints;
+    std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > _originalPoints, _selectedPoints;
 };
 
 class AddPointUndoCommand
@@ -182,7 +182,7 @@ public:
                            const boost::shared_ptr<BezierCP> & cp);
 
     RemovePointUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
-                           const std::list< std::pair < boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points);
+                           const std::list<std::pair < boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points);
 
     virtual ~RemovePointUndoCommand();
 
@@ -201,7 +201,7 @@ private:
     };
 
     bool _firstRedoCalled;
-    std::list< CurveDesc > _curves;
+    std::list<CurveDesc > _curves;
 };
 
 
@@ -314,7 +314,7 @@ private:
     bool _rippleEditEnabled;
     double _time; //< the time at which the change was made
     std::list<boost::shared_ptr<RotoDrawableItem> > _selectedCurves;
-    std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > _selectedPoints;
+    std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > _selectedPoints;
     boost::shared_ptr<BezierCP> _tangentBeingDragged, _oldCp, _oldFp;
     bool _left;
     bool _breakTangents;

@@ -54,7 +54,7 @@ void
 NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
                                      const QPointF& scenePos,
                                      bool useUndoCommand,
-                                     std::list<std::pair<std::string, NodeGuiPtr > > *newNodes)
+                                     std::list<std::pair<std::string, NodeGuiPtr> > *newNodes)
 {
     if ( !clipboard.isEmpty() ) {
         double xmax = INT_MIN;
@@ -88,7 +88,7 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
         assert( clipboard.nodes.size() == clipboard.nodesUI.size() );
 
         NodesGuiList newNodesList;
-        std::list<std::pair<boost::shared_ptr<NodeSerialization>, NodePtr > > newNodesMap;
+        std::list<std::pair<boost::shared_ptr<NodeSerialization>, NodePtr> > newNodesMap;
 
         ///The script-name of the copy node is different than the one of the original one
         ///We store the mapping so we can restore node links correctly
@@ -122,7 +122,7 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
 
 
             //Restore links once all children are created for alias knobs/expressions
-            for (std::list<std::pair<boost::shared_ptr<NodeSerialization>, NodePtr > > ::iterator it = newNodesMap.begin(); it != newNodesMap.end(); ++it) {
+            for (std::list<std::pair<boost::shared_ptr<NodeSerialization>, NodePtr> > ::iterator it = newNodesMap.begin(); it != newNodesMap.end(); ++it) {
                 it->second->restoreKnobsLinks(*(it->first), allNodes, oldNewScriptNamesMap);
             }
         }
@@ -150,7 +150,7 @@ NodeGuiPtr
 NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & internalSerialization,
                             const boost::shared_ptr<NodeGuiSerialization> & guiSerialization,
                             const QPointF & offset,
-                            const boost::shared_ptr<NodeCollection>& grp,
+                            const NodeCollectionPtr& grp,
                             const std::string& parentName,
                             bool clone,
                             std::map<std::string, std::string>* oldNewScriptNameMapping)
@@ -172,7 +172,7 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
     if (!n) {
         return NodeGuiPtr();
     }
-    boost::shared_ptr<NodeGuiI> gui_i = n->getNodeGui();
+    NodeGuiIPtr gui_i = n->getNodeGui();
     NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
 
@@ -254,7 +254,7 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
     // For PyPlugs, don't recurse otherwise we would recreate all nodes on top of the ones created by the python script
     if ( !nodes.empty() && n->getPluginPythonModule().empty()) {
         std::string parentName;
-        boost::shared_ptr<NodeCollection> collection;
+        NodeCollectionPtr collection;
         if (isGrp) {
             collection = isGrp;
         } else {
@@ -262,8 +262,8 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
             collection = n->getGroup();
             parentName = n->getScriptName_mt_safe();
         }
-        std::list<std::pair<boost::shared_ptr<NodeSerialization>, NodePtr > > newNodesMap;
-        std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
+        std::list<std::pair<boost::shared_ptr<NodeSerialization>, NodePtr> > newNodesMap;
+        std::list<std::pair<std::string, NodeGuiPtr> > newNodes;
         std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator itUi = nodesUi.begin();
         for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             boost::shared_ptr<NodeGuiSerialization> guiS = nodesUi.empty() ?  boost::shared_ptr<NodeGuiSerialization>() : *itUi;
@@ -283,7 +283,7 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
         restoreConnections(nodes, newNodes, *oldNewScriptNameMapping);
 
         //Restore links once all children are created for alias knobs/expressions
-        for (std::list<std::pair<boost::shared_ptr<NodeSerialization>, NodePtr > > ::iterator it = newNodesMap.begin(); it != newNodesMap.end(); ++it) {
+        for (std::list<std::pair<boost::shared_ptr<NodeSerialization>, NodePtr> > ::iterator it = newNodesMap.begin(); it != newNodesMap.end(); ++it) {
             it->second->restoreKnobsLinks(*(it->first), allNodes, *oldNewScriptNameMapping);
         }
 
@@ -296,14 +296,14 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
 
 void
 NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSerialization> > & serializations,
-                                     const std::list<std::pair<std::string, NodeGuiPtr > > & newNodes,
+                                     const std::list<std::pair<std::string, NodeGuiPtr> > & newNodes,
                                      const std::map<std::string, std::string> &oldNewScriptNamesMap)
 {
     ///For all nodes restore its connections
     std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itSer = serializations.begin();
 
     assert( serializations.size() == newNodes.size() );
-    for (std::list<std::pair<std::string, NodeGuiPtr > >::const_iterator it = newNodes.begin();
+    for (std::list<std::pair<std::string, NodeGuiPtr> >::const_iterator it = newNodes.begin();
          it != newNodes.end(); ++it, ++itSer) {
         const std::map<std::string, std::string> & inputNames = (*itSer)->getInputs();
         ///Restore each input
@@ -327,7 +327,7 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
 
             ///find a node  containing the same name. It should not match exactly because there's already
             /// the "-copy" that was added to its name
-            for (std::list<std::pair<std::string, NodeGuiPtr > >::const_iterator it3 = newNodes.begin();
+            for (std::list<std::pair<std::string, NodeGuiPtr> >::const_iterator it3 = newNodes.begin();
                  it3 != newNodes.end(); ++it3) {
                 if (it3->second->getNode()->getScriptName() == inputScriptName) {
                     NodeCollection::connectNodes( index, it3->second->getNode(), it->second->getNode() );

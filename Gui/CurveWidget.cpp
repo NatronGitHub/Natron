@@ -738,7 +738,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     bool selectedKeyHasPrev, selectedKeyHasNext;
     bool hasSelectedKey = _imp->isNearbyKeyFrame(e->pos(), &selectedKeyCurve, &selectedKey, &selectedKeyHasPrev, &selectedKeyPrev,
                                                  &selectedKeyHasNext, &selectedKeyNext);
-    std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
+    std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> selectedTan = _imp->isNearbyTangent( e->pos() );
     if (hasSelectedKey || selectedTan.second) {
         return;
     }
@@ -749,7 +749,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         KnobGuiPtr knobUI = isKnobCurve->getKnobGui();
         if (knobUI) {
             int curveDim = isKnobCurve->getDimension();
-            KnobPtr internalKnob = knobUI->getKnob();
+            KnobIPtr internalKnob = knobUI->getKnob();
             if ( internalKnob && ( !internalKnob->isEnabled(curveDim) || internalKnob->isSlave(curveDim) ) ) {
                 return;
             }
@@ -982,7 +982,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
 
     ////
     // is the click near a derivative manipulator?
-    std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
+    std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> selectedTan = _imp->isNearbyTangent( e->pos() );
 
     //select the derivative only if it is not a constant keyframe
     if ( selectedTan.second && (selectedTan.second->key.getInterpolation() != eKeyframeTypeConstant) ) {
@@ -1086,7 +1086,7 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
                         assert(roto);
                         rotoToEvaluate.push_back(roto);
                     } else {
-                        KnobPtr knob = isKnobCurve->getInternalKnob();
+                        KnobIPtr knob = isKnobCurve->getInternalKnob();
                         assert(knob);
                         KnobHolder* holder = knob->getHolder();
                         assert(holder);
@@ -1121,7 +1121,7 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
                     assert(roto);
                     roto->evaluateChange();
                 } else {
-                    KnobPtr toEvaluate = isKnobCurve->getInternalKnob();
+                    KnobIPtr toEvaluate = isKnobCurve->getInternalKnob();
                     assert(toEvaluate);
                     toEvaluate->getHolder()->incrHashAndEvaluate(true, false);
                 }
@@ -1164,7 +1164,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     //set cursor depending on the situation
 
     //find out if there is a nearby  derivative handle
-    std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
+    std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> selectedTan = _imp->isNearbyTangent( e->pos() );
 
     //if the selected keyframes rectangle is drawn and we're nearby the cross
     if ( _imp->_drawSelectedKeyFramesBbox && _imp->isNearbySelectedKeyFramesCrossWidget( e->pos() ) ) {
@@ -2151,7 +2151,7 @@ CurveWidget::exportCurveToAscii()
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->get() );
         if ( (*it)->isVisible() && isKnobCurve ) {
-            KnobPtr knob = isKnobCurve->getInternalKnob();
+            KnobIPtr knob = isKnobCurve->getInternalKnob();
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
             if (isString) {
                 Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("String curves cannot be imported/exported.").toStdString() );
@@ -2227,7 +2227,7 @@ CurveWidget::importCurveFromAscii()
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->get() );
         if ( (*it)->isVisible() && isKnobCurve ) {
-            KnobPtr knob = isKnobCurve->getInternalKnob();
+            KnobIPtr knob = isKnobCurve->getInternalKnob();
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
             if (isString) {
                 Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("String curves cannot be imported/exported.").toStdString() );

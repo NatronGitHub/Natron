@@ -123,7 +123,7 @@ ItemBase::getParam(const QString& name) const
     if (!drawable) {
         return 0;
     }
-    KnobPtr knob = drawable->getKnobByName( name.toStdString() );
+    KnobIPtr knob = drawable->getKnobByName( name.toStdString() );
     if (!knob) {
         return 0;
     }

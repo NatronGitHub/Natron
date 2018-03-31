@@ -142,7 +142,7 @@ getNumKeys(KnobI* knob,
 
 static
 OfxStatus
-getKeyTime(const KnobPtr& knob,
+getKeyTime(const KnobIPtr& knob,
            int nth,
            OfxTime & time,
            int startDim = -1,
@@ -165,7 +165,7 @@ getKeyTime(const KnobPtr& knob,
 
 static
 OfxStatus
-getKeyIndex(const KnobPtr& knob,
+getKeyIndex(const KnobIPtr& knob,
             OfxTime time,
             int direction,
             int & index,
@@ -228,7 +228,7 @@ getKeyIndex(const KnobPtr& knob,
 
 static
 OfxStatus
-deleteKey(const KnobPtr& knob,
+deleteKey(const KnobIPtr& knob,
           OfxTime time,
           int startDim = -1,
           int endDim = -1)
@@ -249,7 +249,7 @@ deleteKey(const KnobPtr& knob,
 
 static
 OfxStatus
-deleteAllKeys(const KnobPtr& knob,
+deleteAllKeys(const KnobIPtr& knob,
               int startDim = -1,
               int endDim = -1)
 {
@@ -270,8 +270,8 @@ deleteAllKeys(const KnobPtr& knob,
 // copy one parameter to another, with a range (NULL means to copy all animation)
 static
 OfxStatus
-copyFrom(const KnobPtr & from,
-         const KnobPtr &to,
+copyFrom(const KnobIPtr & from,
+         const KnobIPtr &to,
          OfxTime offset,
          const OfxRangeD* range,
          int startDim = -1,
@@ -338,7 +338,7 @@ OfxParamToKnob::getKnobHolder() const
 void
 OfxParamToKnob::connectDynamicProperties()
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     if (!knob) {
         return;
@@ -405,7 +405,7 @@ OfxParamToKnob::onChoiceMenuPopulated()
 
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     if (!knob) {
         return;
     }
@@ -439,7 +439,7 @@ OfxParamToKnob::onChoiceMenuEntryAppended()
     int nLabelProps = param->getProperties().getDimension(kOfxParamPropChoiceLabelOption);
     assert(nProps == nLabelProps);
 
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     if (!knob) {
         return;
     }
@@ -472,7 +472,7 @@ OfxParamToKnob::onSecretChanged()
 
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     if (!knob) {
         return;
     }
@@ -486,7 +486,7 @@ OfxParamToKnob::onHintTooltipChanged()
 
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     if (!knob) {
         return;
     }
@@ -500,7 +500,7 @@ OfxParamToKnob::onEnabledChanged()
 
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     if (!knob) {
         return;
     }
@@ -514,7 +514,7 @@ OfxParamToKnob::onLabelChanged()
 
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     if (!knob) {
         return;
     }
@@ -528,7 +528,7 @@ OfxParamToKnob::onInViewportSecretChanged()
 
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     if (!knob) {
         return;
     }
@@ -542,7 +542,7 @@ OfxParamToKnob::onInViewportLabelChanged()
 
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     if (!knob) {
         return;
     }
@@ -676,7 +676,7 @@ OfxPushButtonInstance::setEvaluateOnChange()
     knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
-KnobPtr
+KnobIPtr
 OfxPushButtonInstance::getKnob() const
 {
     return _knob.lock();
@@ -840,7 +840,7 @@ OfxIntegerInstance::setEvaluateOnChange()
     knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
-KnobPtr
+KnobIPtr
 OfxIntegerInstance::getKnob() const
 {
     return _knob.lock();
@@ -1169,7 +1169,7 @@ OfxDoubleInstance::setRange()
     knob->setMaximum(maxi);
 }
 
-KnobPtr
+KnobIPtr
 OfxDoubleInstance::getKnob() const
 {
     return _knob.lock();
@@ -1377,7 +1377,7 @@ OfxBooleanInstance::setEvaluateOnChange()
     knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
-KnobPtr
+KnobIPtr
 OfxBooleanInstance::getKnob() const
 {
     return _knob.lock();
@@ -1680,7 +1680,7 @@ OfxChoiceInstance::setOption(int num)
     }
 }
 
-KnobPtr
+KnobIPtr
 OfxChoiceInstance::getKnob() const
 {
     return _knob.lock();
@@ -1981,7 +1981,7 @@ OfxRGBAInstance::setRange()
     knob->setMinimumsAndMaximums(mins, maxs);
 }
 
-KnobPtr
+KnobIPtr
 OfxRGBAInstance::getKnob() const
 {
     return _knob.lock();
@@ -2287,7 +2287,7 @@ OfxRGBInstance::setRange()
     knob->setMinimumsAndMaximums(mins, maxs);
 }
 
-KnobPtr
+KnobIPtr
 OfxRGBInstance::getKnob() const
 {
     return _knob.lock();
@@ -2658,7 +2658,7 @@ OfxDouble2DInstance::setRange()
     knob->setMinimumsAndMaximums(mins, maxs);
 }
 
-KnobPtr
+KnobIPtr
 OfxDouble2DInstance::getKnob() const
 {
     return _knob.lock();
@@ -2956,7 +2956,7 @@ OfxInteger2DInstance::setEvaluateOnChange()
     knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
-KnobPtr
+KnobIPtr
 OfxInteger2DInstance::getKnob() const
 {
     return _knob.lock();
@@ -3282,7 +3282,7 @@ OfxDouble3DInstance::setEvaluateOnChange()
     knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
-KnobPtr
+KnobIPtr
 OfxDouble3DInstance::getKnob() const
 {
     return _knob.lock();
@@ -3558,7 +3558,7 @@ OfxInteger3DInstance::setEvaluateOnChange()
     knob->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
-KnobPtr
+KnobIPtr
 OfxInteger3DInstance::getKnob() const
 {
     return _knob.lock();
@@ -3631,12 +3631,12 @@ OfxGroupInstance::OfxGroupInstance(const boost::shared_ptr<OfxEffectInstance>& n
 }
 
 void
-OfxGroupInstance::addKnob(KnobPtr k)
+OfxGroupInstance::addKnob(KnobIPtr k)
 {
     _groupKnob.lock()->addKnob(k);
 }
 
-KnobPtr
+KnobIPtr
 OfxGroupInstance::getKnob() const
 {
     return _groupKnob.lock();
@@ -3757,7 +3757,7 @@ OfxPageInstance::setLabel()
     _pageKnob.lock()->setLabel( getParamLabel(this) );
 }
 
-KnobPtr
+KnobIPtr
 OfxPageInstance::getKnob() const
 {
     return _pageKnob.lock();
@@ -3872,7 +3872,7 @@ OfxStringInstance::~OfxStringInstance()
 void
 OfxStringInstance::projectEnvVar_getProxy(std::string& str) const
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     if (!knob) {
         return;
     }
@@ -4039,7 +4039,7 @@ OfxStringInstance::getV(OfxTime time,
     return stat;
 }
 
-KnobPtr
+KnobIPtr
 OfxStringInstance::getKnob() const
 {
     if ( _imp->fileKnob.lock() ) {
@@ -4055,7 +4055,7 @@ OfxStringInstance::getKnob() const
         return _imp->pathKnob.lock();
     }
 
-    return KnobPtr();
+    return KnobIPtr();
 }
 
 // callback which should set enabled state as appropriate
@@ -4210,7 +4210,7 @@ OfxStringInstance::setEvaluateOnChange()
 OfxStatus
 OfxStringInstance::getNumKeys(unsigned int &nKeys) const
 {
-    KnobPtr knob;
+    KnobIPtr knob;
 
     if ( _imp->stringKnob.lock() ) {
         knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
@@ -4227,7 +4227,7 @@ OfxStatus
 OfxStringInstance::getKeyTime(int nth,
                               OfxTime & time) const
 {
-    KnobPtr knob;
+    KnobIPtr knob;
 
     if ( _imp->stringKnob.lock() ) {
         knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
@@ -4245,7 +4245,7 @@ OfxStringInstance::getKeyIndex(OfxTime time,
                                int direction,
                                int & index) const
 {
-    KnobPtr knob;
+    KnobIPtr knob;
 
     if ( _imp->stringKnob.lock() ) {
         knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
@@ -4261,7 +4261,7 @@ OfxStringInstance::getKeyIndex(OfxTime time,
 OfxStatus
 OfxStringInstance::deleteKey(OfxTime time)
 {
-    KnobPtr knob;
+    KnobIPtr knob;
 
     if ( _imp->stringKnob.lock() ) {
         knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
@@ -4277,7 +4277,7 @@ OfxStringInstance::deleteKey(OfxTime time)
 OfxStatus
 OfxStringInstance::deleteAllKeys()
 {
-    KnobPtr knob;
+    KnobIPtr knob;
 
     if ( _imp->stringKnob.lock() ) {
         knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
@@ -4428,7 +4428,7 @@ OfxCustomInstance::getV(OfxTime time,
     return stat;
 }
 
-KnobPtr
+KnobIPtr
 OfxCustomInstance::getKnob() const
 {
     return _imp->knob.lock();
@@ -4602,7 +4602,7 @@ OfxParametricInstance::~OfxParametricInstance()
 {
 }
 
-KnobPtr
+KnobIPtr
 OfxParametricInstance::getKnob() const
 {
     return _knob.lock();

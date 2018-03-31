@@ -69,8 +69,8 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
             }
         }
 
-        std::vector< KnobPtr >  knobs = n->getEffectInstance()->getKnobs_mt_safe();
-        std::list<KnobPtr > userPages;
+        std::vector<KnobIPtr>  knobs = n->getEffectInstance()->getKnobs_mt_safe();
+        std::list<KnobIPtr> userPages;
         for (U32 i  = 0; i < knobs.size(); ++i) {
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[i].get() );
             KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[i].get() );
@@ -93,7 +93,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
                     hasExpr = true;
                     break;
                 }
-                std::pair<int, KnobPtr > master = knobs[i]->getMaster(d);
+                std::pair<int, KnobIPtr> master = knobs[i]->getMaster(d);
                 if (master.second) {
                     hasExpr = true;
                     break;
@@ -114,7 +114,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
 
         _nbKnobs = (int)_knobsValues.size();
 
-        for (std::list<KnobPtr >::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
+        for (std::list<KnobIPtr>::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
             boost::shared_ptr<GroupKnobSerialization> s = boost::make_shared<GroupKnobSerialization>(*it);
             _userPages.push_back(s);
         }

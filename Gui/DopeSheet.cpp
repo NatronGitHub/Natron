@@ -82,7 +82,7 @@ nodeHasAnimation(const NodeGuiPtr &nodeGui)
     for (KnobsVec::const_iterator it = knobs.begin();
          it != knobs.end();
          ++it) {
-        KnobPtr knob = *it;
+        KnobIPtr knob = *it;
 
         if ( knob->hasAnimation() ) {
             return true;
@@ -102,7 +102,7 @@ nodeCanAnimate(const NodePtr &node)
     for (KnobsVec::const_iterator it = knobs.begin();
          it != knobs.end();
          ++it) {
-        KnobPtr knob = *it;
+        KnobIPtr knob = *it;
 
         if ( knob->isAnimationEnabled() ) {
             return true;
@@ -228,13 +228,13 @@ Node *
 DopeSheetPrivate::getNearestReaderFromInputs_recursive(Node *node,
                                                        std::list<Node*>& markedNodes) const
 {
-    const std::vector<NodeWPtr > &inputs = node->getGuiInputs();
+    const std::vector<NodeWPtr> &inputs = node->getGuiInputs();
 
     if ( std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end() ) {
         return 0;
     }
     markedNodes.push_back(node);
-    for (std::vector<NodeWPtr >::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+    for (std::vector<NodeWPtr>::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
         NodePtr input = it->lock();
 
         if (!input) {
@@ -264,9 +264,9 @@ void
 DopeSheetPrivate::getInputsConnected_recursive(Node *node,
                                                std::vector<boost::shared_ptr<DSNode> > *result) const
 {
-    const std::vector<NodeWPtr > &inputs = node->getGuiInputs();
+    const std::vector<NodeWPtr> &inputs = node->getGuiInputs();
 
-    for (std::vector<NodeWPtr >::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+    for (std::vector<NodeWPtr>::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
         NodePtr input = it->lock();
 
         if (!input) {
@@ -464,7 +464,7 @@ boost::shared_ptr<DSNode> DopeSheet::findDSNode(Node *node) const
     return boost::shared_ptr<DSNode>();
 }
 
-boost::shared_ptr<DSNode> DopeSheet::findDSNode(const KnobPtr &knob) const
+boost::shared_ptr<DSNode> DopeSheet::findDSNode(const KnobIPtr &knob) const
 {
     for (DSTreeItemNodeMap::const_iterator it = _imp->treeItemNodeMap.begin(); it != _imp->treeItemNodeMap.end(); ++it) {
         boost::shared_ptr<DSNode>dsNode = (*it).second;
@@ -1099,7 +1099,7 @@ DSKnob::getKnobGui() const
     return _imp->knobGui.lock();
 }
 
-KnobPtr
+KnobIPtr
 DSKnob::getInternalKnob() const
 {
     return _imp->knob.lock();
@@ -1482,7 +1482,7 @@ DSNode::DSNode(DopeSheet *model,
 
     for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it = knobs.begin();
          it != knobs.end(); ++it) {
-        KnobPtr knob = it->first.lock();
+        KnobIPtr knob = it->first.lock();
         if (!knob) {
             continue;
         }

@@ -172,9 +172,9 @@ public:
 
     void setKeyframeOnAllTransformParameters(double time);
 
-    const std::list<KnobPtr >& getKnobs() const;
+    const std::list<KnobIPtr>& getKnobs() const;
 
-    KnobPtr getKnobByName(const std::string& name) const;
+    KnobIPtr getKnobByName(const std::string& name) const;
 
     virtual RectD getBoundingBox(double time) const = 0;
 
@@ -239,11 +239,11 @@ public Q_SLOTS:
 
 protected:
 
-    void rotoKnobChanged(const KnobPtr& knob, ValueChangedReasonEnum reason);
+    void rotoKnobChanged(const KnobIPtr& knob, ValueChangedReasonEnum reason);
 
     virtual void onTransformSet(double /*time*/) {}
 
-    void addKnob(const KnobPtr& knob);
+    void addKnob(const KnobIPtr& knob);
 
 private:
 

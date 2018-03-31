@@ -1115,7 +1115,7 @@ Gui::onFocusChanged(QWidget* /*old*/,
 
 void
 Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
-                           std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences)
+                           std::vector<boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences)
 {
 
     QStringList filesList;
@@ -1209,7 +1209,7 @@ void
 Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
                              const QPoint& globalPos)
 {
-    std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
+    std::vector<boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
 
 
     fileSequencesFromUrls(urls, &sequences);

@@ -2526,7 +2526,7 @@ bool
 AppManager::getTexture(const FrameKey & key,
                        std::list<FrameEntryPtr>* returnValue) const
 {
-    std::list<FrameEntryPtr > retList;
+    std::list<FrameEntryPtr> retList;
     bool ret =  _imp->_viewerCache->get(key, &retList);
 
     *returnValue = retList;

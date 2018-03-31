@@ -451,7 +451,7 @@ inline double euclDist(double x1, double y1, double x2, double y2)
 }
 
 
-inline void addPointConditionnally(const Point& p, double t, std::list< ParametricPoint >* points)
+inline void addPointConditionnally(const Point& p, double t, std::list<ParametricPoint >* points)
 {
     if (points->empty()) {
         ParametricPoint x;
@@ -479,7 +479,7 @@ inline void addPointConditionnally(const Point& p, double t, std::list< Parametr
 static void
 recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const Point& p3,
                         double t_p0, double t_p1, double t_p2, double t_p3,
-                        double errorScale, int recursionLevel, int maxRecursion, std::list< ParametricPoint >* points)
+                        double errorScale, int recursionLevel, int maxRecursion, std::list<ParametricPoint >* points)
 {
 
     if (recursionLevel > maxRecursion) {
@@ -699,7 +699,7 @@ recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const
 }
 
 static void
-recursiveBezier(const Point& p0, const Point& p1, const Point& p2, const Point& p3, double errorScale, int maxRecursion, std::list< ParametricPoint >* points)
+recursiveBezier(const Point& p0, const Point& p1, const Point& p2, const Point& p3, double errorScale, int maxRecursion, std::list<ParametricPoint >* points)
 {
     ParametricPoint p0x,p3x;
     p0x.x = p0.x;
@@ -730,7 +730,7 @@ bezierSegmentEval(bool useGuiCurves,
                   double errorScale,
 #endif
                   const Transform::Matrix3x3& transform,
-                  std::list< ParametricPoint >* points, ///< output
+                  std::list<ParametricPoint >* points, ///< output
                   RectD* bbox = NULL) ///< input/output (optional)
 {
     Transform::Point3D p0M, p1M, p2M, p3M;
@@ -2597,7 +2597,7 @@ Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
 #else
                                    double errorScale,
 #endif
-                                   std::list<std::list< ParametricPoint> >* points,
+                                   std::list<std::list<ParametricPoint> >* points,
                                    RectD* bbox) const
 {
     evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel,
@@ -2910,7 +2910,7 @@ Bezier::getBoundingBox(double time) const
     return bbox;
 } // Bezier::getBoundingBox
 
-const std::list< boost::shared_ptr<BezierCP> > &
+const std::list<boost::shared_ptr<BezierCP> > &
 Bezier::getControlPoints() const
 {
     ///only called on the main-thread
@@ -2920,13 +2920,13 @@ Bezier::getControlPoints() const
 }
 
 //protected only
-std::list< boost::shared_ptr<BezierCP> > &
+std::list<boost::shared_ptr<BezierCP> > &
 Bezier::getControlPoints_internal()
 {
     return _imp->points;
 }
 
-std::list< boost::shared_ptr<BezierCP> >
+std::list<boost::shared_ptr<BezierCP> >
 Bezier::getControlPoints_mt_safe() const
 {
     QMutexLocker l(&itemMutex);
@@ -2934,7 +2934,7 @@ Bezier::getControlPoints_mt_safe() const
     return _imp->points;
 }
 
-const std::list< boost::shared_ptr<BezierCP> > &
+const std::list<boost::shared_ptr<BezierCP> > &
 Bezier::getFeatherPoints() const
 {
     ///only called on the main-thread
@@ -2943,7 +2943,7 @@ Bezier::getFeatherPoints() const
     return _imp->featherPoints;
 }
 
-std::list< boost::shared_ptr<BezierCP> >
+std::list<boost::shared_ptr<BezierCP> >
 Bezier::getFeatherPoints_mt_safe() const
 {
     QMutexLocker l(&itemMutex);
@@ -3089,7 +3089,7 @@ Bezier::getFeatherPointAtIndex(int index) const
     return *it;
 }
 
-std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >
+std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >
 Bezier::controlPointsWithinRect(double l,
                                 double r,
                                 double b,
@@ -3097,7 +3097,7 @@ Bezier::controlPointsWithinRect(double l,
                                 double acceptance,
                                 int mode) const
 {
-    std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > ret;
+    std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > ret;
 
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3132,7 +3132,7 @@ Bezier::controlPointsWithinRect(double l,
 
                 ///avoid duplicates
                 bool found = false;
-                for (std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >::iterator it2 = ret.begin();
+                for (std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >::iterator it2 = ret.begin();
                      it2 != ret.end(); ++it2) {
                     if (it2->first == *itF) {
                         found = true;

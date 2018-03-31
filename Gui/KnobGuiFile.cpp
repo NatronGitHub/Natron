@@ -63,7 +63,7 @@ NATRON_NAMESPACE_ENTER
 
 
 //===========================FILE_KNOB_GUI=====================================
-KnobGuiFile::KnobGuiFile(KnobPtr knob,
+KnobGuiFile::KnobGuiFile(KnobIPtr knob,
                          KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _lineEdit(0)
@@ -372,7 +372,7 @@ KnobGuiFile::setDirty(bool dirty)
     _lineEdit->setDirty(dirty);
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiFile::getKnob() const
 {
     return _knob.lock();
@@ -473,7 +473,7 @@ KnobGuiFile::updateToolTip()
 }
 
 //============================OUTPUT_FILE_KNOB_GUI====================================
-KnobGuiOutputFile::KnobGuiOutputFile(KnobPtr knob,
+KnobGuiOutputFile::KnobGuiOutputFile(KnobIPtr knob,
                                      KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _lineEdit(0)
@@ -663,7 +663,7 @@ KnobGuiOutputFile::setDirty(bool dirty)
     _lineEdit->setDirty(dirty);
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiOutputFile::getKnob() const
 {
     return _knob.lock();
@@ -766,7 +766,7 @@ KnobGuiOutputFile::updateToolTip()
 }
 
 //============================PATH_KNOB_GUI====================================
-KnobGuiPath::KnobGuiPath(KnobPtr knob,
+KnobGuiPath::KnobGuiPath(KnobIPtr knob,
                          KnobGuiContainerI *container)
     : KnobGuiTable(knob, container)
     , _mainContainer(0)
@@ -1032,7 +1032,7 @@ KnobGuiPath::setDirty(bool /*dirty*/)
 {
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiPath::getKnob() const
 {
     return _knob.lock();

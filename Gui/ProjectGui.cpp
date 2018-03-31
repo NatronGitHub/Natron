@@ -288,7 +288,7 @@ loadNodeGuiSerialization(Gui* gui,
         return;
     }
 
-    boost::shared_ptr<NodeGuiI> nGui_i = internalNode->getNodeGui();
+    NodeGuiIPtr nGui_i = internalNode->getNodeGui();
     assert(nGui_i);
     NodeGuiPtr nGui = boost::dynamic_pointer_cast<NodeGui>(nGui_i);
 
@@ -465,14 +465,14 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
         int w, h;
         it->getSize(w, h);
 
-        KnobPtr labelSerialization = it->getLabelSerialization();
+        KnobIPtr labelSerialization = it->getLabelSerialization();
         CreateNodeArgs args( PLUGINID_NATRON_BACKDROP, _project.lock() );
         args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
         args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
         args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         
         NodePtr node = getGui()->getApp()->createNode(args);
-        boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
+        NodeGuiIPtr gui_i = node->getNodeGui();
         assert(gui_i);
         BackdropGui* bd = dynamic_cast<BackdropGui*>( gui_i.get() );
         assert(bd);
@@ -505,7 +505,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
         } else {
             NodePtr node = getInternalProject()->getNodeByFullySpecifiedName(*it);
             if (node) {
-                boost::shared_ptr<NodeGuiI> nodeGui_i = node->getNodeGui();
+                NodeGuiIPtr nodeGui_i = node->getNodeGui();
                 assert(nodeGui_i);
                 NodeGui* nodeGui = dynamic_cast<NodeGui*>( nodeGui_i.get() );
                 assert(nodeGui);

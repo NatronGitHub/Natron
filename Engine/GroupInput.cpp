@@ -74,7 +74,7 @@ GroupInput::knobChanged(KnobI* k,
     bool ret = true;
 
     if ( k == optional.lock().get() ) {
-        boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
+        NodeCollectionPtr group = getNode()->getGroup();
         group->notifyInputOptionalStateChanged( getNode() );
     } else if ( k == mask.lock().get() ) {
         bool isMask = mask.lock()->getValue();
@@ -83,7 +83,7 @@ GroupInput::knobChanged(KnobI* k,
         } else {
             optional.lock()->setValue(false);
         }
-        boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
+        NodeCollectionPtr group = getNode()->getGroup();
         group->notifyInputMaskStateChanged( getNode() );
     } else {
         ret = false;

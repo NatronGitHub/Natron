@@ -68,7 +68,7 @@ static void
 makeFullyQualifiedLabel(Node* node,
                         std::string* ret)
 {
-    boost::shared_ptr<NodeCollection> parent = node->getGroup();
+    NodeCollectionPtr parent = node->getGroup();
     NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>( parent.get() );
     std::string toPreprend = node->getLabel();
 

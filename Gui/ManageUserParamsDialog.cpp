@@ -61,7 +61,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 struct TreeItem
 {
     QTreeWidgetItem* item;
-    KnobPtr knob;
+    KnobIPtr knob;
     QString scriptName;
 };
 
@@ -123,7 +123,7 @@ struct ManageUserParamsDialogPrivate
 
     void rebuildUserPages();
 
-    QTreeWidgetItem* createItemForKnob(const KnobPtr& knob, int insertIndex = -1);
+    QTreeWidgetItem* createItemForKnob(const KnobIPtr& knob, int insertIndex = -1);
 
     void saveAndRebuildPages();
 
@@ -238,14 +238,14 @@ ManageUserParamsDialog::~ManageUserParamsDialog()
 }
 
 static QString
-createTextForKnob(const KnobPtr& knob)
+createTextForKnob(const KnobIPtr& knob)
 {
     QString text = QString::fromUtf8( knob->getName().c_str() );
     KnobI::ListenerDimsMap listeners;
 
     knob->getListeners(listeners);
     if ( !listeners.empty() ) {
-        KnobPtr listener = listeners.begin()->first.lock();
+        KnobIPtr listener = listeners.begin()->first.lock();
         if ( listener && (listener->getAliasMaster() == knob) ) {
             text += QString::fromUtf8(" (alias of ");
             EffectInstance* effect = dynamic_cast<EffectInstance*>( listener->getHolder() );
@@ -340,7 +340,7 @@ ManageUserParamsDialog::onPickClicked()
         if (!node) {
             throw std::logic_error("ManageUserParamsDialog::onPickClicked");
         }
-        KnobPtr duplicate = selectedKnob->createDuplicateOnNode(node->getEffectInstance().get(), useAlias, page, group, -1);
+        KnobIPtr duplicate = selectedKnob->createDuplicateOnNode(node->getEffectInstance().get(), useAlias, page, group, -1);
         if (duplicate) {
 
             _imp->createItemForKnob(duplicate);
@@ -355,14 +355,14 @@ void
 ManageUserParamsDialog::onAddClicked()
 {
     if (!ensureHasUserPage()) {
-        AddKnobDialog dialog(_imp->panel, KnobPtr(), std::string(), std::string(), this);
+        AddKnobDialog dialog(_imp->panel, KnobIPtr(), std::string(), std::string(), this);
         dialog.setVisibleType(false);
         dialog.setType(AddKnobDialog::eParamDataTypePage);
         dialog.setWindowTitle(tr("Add Page"));
         if (!dialog.exec() ) {
             return;
         }
-        KnobPtr knob = dialog.getKnob();
+        KnobIPtr knob = dialog.getKnob();
         _imp->createItemForKnob(knob);
 
     }
@@ -388,20 +388,20 @@ ManageUserParamsDialog::onAddClicked()
         }
     }
 
-    AddKnobDialog dialog(_imp->panel, KnobPtr(), selectedPageName, selectedGroupName, this);
+    AddKnobDialog dialog(_imp->panel, KnobIPtr(), selectedPageName, selectedGroupName, this);
     if ( dialog.exec() ) {
-        KnobPtr knob = dialog.getKnob();
+        KnobIPtr knob = dialog.getKnob();
         _imp->createItemForKnob(knob);
         _imp->saveAndRebuildPages();
     }
 }
 
 QTreeWidgetItem*
-ManageUserParamsDialogPrivate::createItemForKnob(const KnobPtr& knob,
+ManageUserParamsDialogPrivate::createItemForKnob(const KnobIPtr& knob,
                                                  int insertIndex)
 {
     QTreeWidgetItem* parent = 0;
-    KnobPtr parentKnob;
+    KnobIPtr parentKnob;
 
     if (knob) {
         parentKnob = knob->getParentKnob();
@@ -502,13 +502,13 @@ ManageUserParamsDialog::onEditClickedInternal(const QList<QTreeWidgetItem*> &sel
         for (int i = 0; i < selection.size(); ++i) {
             for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
                 if (it->item == selection[i]) {
-                    KnobPtr oldParentKnob = it->knob->getParentKnob();
+                    KnobIPtr oldParentKnob = it->knob->getParentKnob();
                     AddKnobDialog dialog(_imp->panel, it->knob, std::string(), std::string(), this);
                     if ( dialog.exec() ) {
                         int indexIndParent = -1;
                         QTreeWidgetItem* parent = it->item->parent();
-                        KnobPtr knob = dialog.getKnob();
-                        KnobPtr newParentKnob = knob->getParentKnob();
+                        KnobIPtr knob = dialog.getKnob();
+                        KnobIPtr newParentKnob = knob->getParentKnob();
                         KnobPage* isPage = dynamic_cast<KnobPage*>( it->knob.get() );
 
                         if (parent) {
@@ -578,7 +578,7 @@ ManageUserParamsDialog::onUpClicked()
     for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
         if (it->item == selectedItem) {
             QTreeWidgetItem* parent = 0;
-            KnobPtr parentKnob;
+            KnobIPtr parentKnob;
             if (it->knob) {
                 parentKnob = it->knob->getParentKnob();
             }
@@ -607,7 +607,7 @@ ManageUserParamsDialog::onUpClicked()
             QList<QTreeWidgetItem*> children = it->item->takeChildren();
             delete it->item;
 
-            KnobPtr knob = it->knob;
+            KnobIPtr knob = it->knob;
             //invalidates iterator
             _imp->items.erase(it);
 
@@ -640,7 +640,7 @@ ManageUserParamsDialog::onDownClicked()
         if (it->item == selectedItem) {
             //Find the parent item
             QTreeWidgetItem* parent = 0;
-            KnobPtr parentKnob;
+            KnobIPtr parentKnob;
             if (it->knob) {
                 parentKnob = it->knob->getParentKnob();
             }
@@ -677,7 +677,7 @@ ManageUserParamsDialog::onDownClicked()
 
             QList<QTreeWidgetItem*> children = it->item->takeChildren();
             delete it->item;
-            KnobPtr knob = it->knob;
+            KnobIPtr knob = it->knob;
             //invalidates iterator
             _imp->items.erase(it);
 

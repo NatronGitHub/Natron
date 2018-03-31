@@ -599,7 +599,7 @@ smoothTangent(bool useGuiCurves,
               const std::pair<double, double>& pixelScale)
 {
     if ( (x == *tx) && (y == *ty) ) {
-        const std::list < boost::shared_ptr<BezierCP> > & cps = ( p->isFeatherPoint() ?
+        const std::list<boost::shared_ptr<BezierCP> > & cps = ( p->isFeatherPoint() ?
                                                                   p->getBezier()->getFeatherPoints() :
                                                                   p->getBezier()->getControlPoints() );
 
@@ -607,18 +607,18 @@ smoothTangent(bool useGuiCurves,
             return;
         }
 
-        std::list < boost::shared_ptr<BezierCP> >::const_iterator prev = cps.end();
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator prev = cps.end();
         if ( prev != cps.begin() ) {
             --prev;
         }
-        std::list < boost::shared_ptr<BezierCP> >::const_iterator next = cps.begin();
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator next = cps.begin();
         if ( next != cps.end() ) {
             ++next;
         }
 
         int index = 0;
         int cpCount = (int)cps.size();
-        for (std::list < boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin();
+        for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin();
              it != cps.end();
              ++it) {
             if ( prev == cps.end() ) {

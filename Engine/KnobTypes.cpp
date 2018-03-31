@@ -809,7 +809,7 @@ KnobChoice::setActiveEntry(const ChoiceOption& opt)
 ChoiceOption
 KnobChoice::getActiveEntry()
 {
-    std::pair<int, KnobPtr> master = getMaster(0);
+    std::pair<int, KnobIPtr> master = getMaster(0);
 
     if (master.second) {
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>( master.second.get() );
@@ -1166,7 +1166,7 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
 }
 
 void
-KnobChoice::onKnobAboutToAlias(const KnobPtr &slave)
+KnobChoice::onKnobAboutToAlias(const KnobIPtr &slave)
 {
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>( slave.get() );
 
@@ -1205,7 +1205,7 @@ KnobChoice::onOriginalKnobEntryAppend()
 }
 
 void
-KnobChoice::handleSignalSlotsForAliasLink(const KnobPtr& alias,
+KnobChoice::handleSignalSlotsForAliasLink(const KnobIPtr& alias,
                                           bool connect)
 {
     assert(alias);
@@ -1525,7 +1525,7 @@ KnobGroup::typeName() const
 }
 
 void
-KnobGroup::addKnob(const KnobPtr& k)
+KnobGroup::addKnob(const KnobIPtr& k)
 {
     if ( !isUserKnob() && k->isUserKnob() ) {
         return;
@@ -1593,7 +1593,7 @@ KnobGroup::moveOneStepDown(KnobI* k)
 
 void
 KnobGroup::insertKnob(int index,
-                      const KnobPtr& k)
+                      const KnobIPtr& k)
 {
     if ( !isUserKnob() && k->isUserKnob() ) {
         return;
@@ -1617,13 +1617,13 @@ KnobGroup::insertKnob(int index,
     k->setParentKnob( shared_from_this() );
 }
 
-std::vector< KnobPtr >
+std::vector<KnobIPtr>
 KnobGroup::getChildren() const
 {
-    std::vector< KnobPtr > ret;
+    std::vector<KnobIPtr> ret;
 
     for (std::size_t i = 0; i < _children.size(); ++i) {
-        KnobPtr k = _children[i].lock();
+        KnobIPtr k = _children[i].lock();
         if (k) {
             ret.push_back(k);
         }
@@ -1673,13 +1673,13 @@ KnobPage::typeName() const
     return typeNameStatic();
 }
 
-std::vector< KnobPtr >
+std::vector<KnobIPtr>
 KnobPage::getChildren() const
 {
-    std::vector< KnobPtr > ret;
+    std::vector<KnobIPtr> ret;
 
     for (std::size_t i = 0; i < _children.size(); ++i) {
-        KnobPtr k = _children[i].lock();
+        KnobIPtr k = _children[i].lock();
         if (k) {
             ret.push_back(k);
         }
@@ -1689,7 +1689,7 @@ KnobPage::getChildren() const
 }
 
 void
-KnobPage::addKnob(const KnobPtr &k)
+KnobPage::addKnob(const KnobIPtr &k)
 {
     if ( !isUserKnob() && k->isUserKnob() ) {
         return;
@@ -1709,7 +1709,7 @@ KnobPage::addKnob(const KnobPtr &k)
 
 void
 KnobPage::insertKnob(int index,
-                     const KnobPtr& k)
+                     const KnobIPtr& k)
 {
     if ( !isUserKnob() && k->isUserKnob() ) {
         return;
@@ -1878,7 +1878,7 @@ KnobParametric::getCurveColor(int dimension,
     ///Mt-safe as it never changes
 
     assert( dimension < (int)_curvesColor.size() );
-    std::pair<int, KnobPtr >  master = getMaster(dimension);
+    std::pair<int, KnobIPtr>  master = getMaster(dimension);
     if (master.second) {
         KnobParametric* m = dynamic_cast<KnobParametric*>( master.second.get() );
         assert(m);
@@ -1916,7 +1916,7 @@ boost::shared_ptr<Curve>
 KnobParametric::getDefaultParametricCurve(int dimension) const
 {
     assert( dimension >= 0 && dimension < (int)_curves.size() );
-    std::pair<int, KnobPtr >  master = getMaster(dimension);
+    std::pair<int, KnobIPtr>  master = getMaster(dimension);
     if (master.second) {
         KnobParametric* m = dynamic_cast<KnobParametric*>( master.second.get() );
         assert(m);
@@ -1932,7 +1932,7 @@ boost::shared_ptr<Curve> KnobParametric::getParametricCurve(int dimension) const
     ///Mt-safe as Curve is MT-safe and the pointer is never deleted
 
     assert( dimension < (int)_curves.size() );
-    std::pair<int, KnobPtr >  master = getMaster(dimension);
+    std::pair<int, KnobIPtr>  master = getMaster(dimension);
     if (master.second) {
         KnobParametric* m = dynamic_cast<KnobParametric*>( master.second.get() );
         assert(m);
@@ -2258,7 +2258,7 @@ KnobParametric::cloneExtraData(KnobI* other,
 }
 
 void
-KnobParametric::saveParametricCurves(std::list< Curve >* curves) const
+KnobParametric::saveParametricCurves(std::list<Curve >* curves) const
 {
     for (U32 i = 0; i < _curves.size(); ++i) {
         curves->push_back(*_curves[i]);
@@ -2266,11 +2266,11 @@ KnobParametric::saveParametricCurves(std::list< Curve >* curves) const
 }
 
 void
-KnobParametric::loadParametricCurves(const std::list< Curve > & curves)
+KnobParametric::loadParametricCurves(const std::list<Curve > & curves)
 {
     assert( !_curves.empty() );
     int i = 0;
-    for (std::list< Curve >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
+    for (std::list<Curve >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
         _curves[i]->clone(*it);
         ++i;
     }
@@ -2315,7 +2315,7 @@ KnobParametric::hasModificationsVirtual(int dimension) const
 }
 
 void
-KnobParametric::onKnobAboutToAlias(const KnobPtr& slave)
+KnobParametric::onKnobAboutToAlias(const KnobIPtr& slave)
 {
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>( slave.get() );
 

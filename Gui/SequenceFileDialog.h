@@ -353,7 +353,7 @@ public:
      **/
     static void appendFilesFromDirRecursively(QDir* currentDir, QStringList* files);
 
-    static std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >fileSequencesFromFilesList(const QStringList & files, const QStringList & supportedFileTypes);
+    static std::vector<boost::shared_ptr<SequenceParsing::SequenceFromFiles> >fileSequencesFromFilesList(const QStringList & files, const QStringList & supportedFileTypes);
 
 public Q_SLOTS:
 

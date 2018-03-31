@@ -211,12 +211,12 @@ public:
 
     QMutex imagesBeingRenderedMutex;
     typedef boost::shared_ptr<ImageBeingRendered> IBRPtr;
-    typedef std::map<ImagePtr, IBRPtr > IBRMap;
+    typedef std::map<ImagePtr, IBRPtr> IBRMap;
     IBRMap imagesBeingRendered;
 #endif
 
     ///A cache for components available
-    std::list< boost::weak_ptr<KnobI> > overlaySlaves;
+    std::list<boost::weak_ptr<KnobI> > overlaySlaves;
     mutable QMutex metadataMutex;
     NodeMetadata metadata;
     bool runningClipPreferences; //only used on main thread

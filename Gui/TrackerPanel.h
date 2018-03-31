@@ -89,7 +89,7 @@ public:
 
     void pushUndoCommand(QUndoCommand* command);
 
-    void clearAndSelectTracks(const std::list<TrackMarkerPtr >& markers, int reason);
+    void clearAndSelectTracks(const std::list<TrackMarkerPtr>& markers, int reason);
 
 public Q_SLOTS:
 
@@ -151,8 +151,8 @@ public Q_SLOTS:
 
 private:
 
-    void onSelectionAboutToChangeInternal(const std::list<TrackMarkerPtr >& markers);
-    void selectInternal(const std::list<TrackMarkerPtr >& markers, int reason);
+    void onSelectionAboutToChangeInternal(const std::list<TrackMarkerPtr>& markers);
+    void selectInternal(const std::list<TrackMarkerPtr>& markers, int reason);
     TrackMarkerPtr makeTrackInternal();
 
     boost::scoped_ptr<TrackerPanelPrivate> _imp;

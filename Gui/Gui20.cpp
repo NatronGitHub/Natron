@@ -349,7 +349,7 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
     NodesGuiList activeNodeViewerUi, nodeViewerUi;
 
     //Don't create tracker & roto interface for file dialog preview viewer
-    boost::shared_ptr<NodeCollection> group = viewer->getNode()->getGroup();
+    NodeCollectionPtr group = viewer->getNode()->getGroup();
     if (group) {
         if ( !_imp->_viewerTabs.empty() ) {
             ( *_imp->_viewerTabs.begin() )->getNodesViewerInterface(&nodeViewerUi, &activeNodeViewerUi);
@@ -493,9 +493,9 @@ Gui::removeViewerTab(ViewerTab* tab,
     tab->abortRendering();
     NodeGraph* graph = 0;
     NodeGroup* isGrp = 0;
-    boost::shared_ptr<NodeCollection> collection;
+    NodeCollectionPtr collection;
     if ( tab->getInternalNode() && tab->getInternalNode()->getNode() ) {
-        boost::shared_ptr<NodeCollection> collection = tab->getInternalNode()->getNode()->getGroup();
+        NodeCollectionPtr collection = tab->getInternalNode()->getNode()->getGroup();
         isGrp = dynamic_cast<NodeGroup*>( collection.get() );
     }
 
@@ -551,7 +551,7 @@ Gui::removeViewerTab(ViewerTab* tab,
         assert(_imp->_nodeGraphArea);
         ///call the deleteNode which will call this function again when the node will be deactivated.
         NodePtr internalNode = tab->getInternalNode()->getNode();
-        boost::shared_ptr<NodeGuiI> guiI = internalNode->getNodeGui();
+        NodeGuiIPtr guiI = internalNode->getNodeGui();
         NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(guiI);
         assert(gui);
         NodeGraphI* graph_i = internalNode->getGroup()->getNodeGraph();
@@ -1276,7 +1276,7 @@ Gui::createReader()
         } else {
             graph = _imp->_nodeGraphArea;
         }
-        boost::shared_ptr<NodeCollection> group = graph->getGroup();
+        NodeCollectionPtr group = graph->getGroup();
         assert(group);
 
 #ifdef NATRON_ENABLE_IO_META_NODES
@@ -1350,7 +1350,7 @@ Gui::createWriter()
     } else {
         graph = _imp->_nodeGraphArea;
     }
-    boost::shared_ptr<NodeCollection> group = graph->getGroup();
+    NodeCollectionPtr group = graph->getGroup();
     assert(group);
 
     CreateNodeArgs args(PLUGINID_NATRON_WRITE, group);

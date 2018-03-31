@@ -94,7 +94,7 @@ class ProjectSerialization
 {
     NodeCollectionSerialization _nodes;
     std::list<Format> _additionalFormats;
-    std::list< boost::shared_ptr<KnobSerialization> > _projectKnobs;
+    std::list<boost::shared_ptr<KnobSerialization> > _projectKnobs;
     SequenceTime _timelineCurrent;
     qint64 _creationDate;
     AppInstWPtr _app;
@@ -133,7 +133,7 @@ public:
         return _timelineCurrent;
     }
 
-    const std::list< boost::shared_ptr<KnobSerialization>  > & getProjectKnobsValues() const
+    const std::list<boost::shared_ptr<KnobSerialization>  > & getProjectKnobsValues() const
     {
         return _projectKnobs;
     }
@@ -201,7 +201,7 @@ public:
         ar & ::boost::serialization::make_nvp("NodesCollection", _nodes);
         int knobsCount = _projectKnobs.size();
         ar & ::boost::serialization::make_nvp("ProjectKnobsCount", knobsCount);
-        for (std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = _projectKnobs.begin();
+        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = _projectKnobs.begin();
              it != _projectKnobs.end();
              ++it) {
             ar & ::boost::serialization::make_nvp( "item", *(*it) );

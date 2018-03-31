@@ -445,7 +445,7 @@ ProgressTaskInfoPrivate::createItems()
         return;
     }
     NodePtr node = getNode();
-    boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
+    NodeGuiIPtr gui_i = node->getNodeGui();
     NodeGui* nodeUI = dynamic_cast<NodeGui*>( gui_i.get() );
     QColor color;
     if (nodeUI) {

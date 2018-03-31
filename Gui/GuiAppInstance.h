@@ -54,7 +54,7 @@ public:
     NodePtr viewerNodeInternal;
     NodeGuiPtr viewerNode;
 #ifndef NATRON_ENABLE_IO_META_NODES
-    std::map<std::string, NodePtr > readerNodes;
+    std::map<std::string, NodePtr> readerNodes;
 #else
     NodePtr readerNode;
 #endif
@@ -187,8 +187,8 @@ public:
 
     void clearOverlayRedrawRequests();
 
-    void setKnobDnDData(QDrag* drag, const KnobPtr& knob, int dimension);
-    void getKnobDnDData(QDrag** drag,  KnobPtr* knob, int* dimension) const;
+    void setKnobDnDData(QDrag* drag, const KnobIPtr& knob, int dimension);
+    void getKnobDnDData(QDrag** drag,  KnobIPtr* knob, int* dimension) const;
 
     bool checkAllReadersModificationDate(bool errorAndWarn);
 

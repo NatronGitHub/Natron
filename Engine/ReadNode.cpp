@@ -343,15 +343,15 @@ ReadNode::setEmbeddedReader(const NodePtr& node)
 void
 ReadNodePrivate::placeReadNodeKnobsInPage()
 {
-    KnobPtr pageKnob = _publicInterface->getKnobByName("Controls");
+    KnobIPtr pageKnob = _publicInterface->getKnobByName("Controls");
     KnobPage* isPage = dynamic_cast<KnobPage*>( pageKnob.get() );
 
     if (!isPage) {
         return;
     }
     for (std::list<boost::weak_ptr<KnobI> >::iterator it = readNodeKnobs.begin(); it != readNodeKnobs.end(); ++it) {
-        KnobPtr knob = it->lock();
-        knob->setParentKnob( KnobPtr() );
+        KnobIPtr knob = it->lock();
+        knob->setParentKnob( KnobIPtr() );
         isPage->removeKnob( knob.get() );
     }
 
@@ -366,7 +366,7 @@ ReadNodePrivate::placeReadNodeKnobsInPage()
     if (index != -1) {
         ++index;
         for (std::list<boost::weak_ptr<KnobI> >::iterator it = readNodeKnobs.begin(); it != readNodeKnobs.end(); ++it) {
-            KnobPtr knob = it->lock();
+            KnobIPtr knob = it->lock();
             isPage->insertKnob(index, knob);
             ++index;
         }
@@ -407,7 +407,7 @@ ReadNodePrivate::cloneGenericKnobs()
     const KnobsVec& knobs = _publicInterface->getKnobs();
 
     for (std::list<boost::shared_ptr<KnobSerialization> >::iterator it = genericKnobsSerialization.begin(); it != genericKnobsSerialization.end(); ++it) {
-        KnobPtr serializedKnob = (*it)->getKnob();
+        KnobIPtr serializedKnob = (*it)->getKnob();
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ( (*it2)->getName() == serializedKnob->getName() ) {
                 KnobChoice* isChoice = dynamic_cast<KnobChoice*>( (*it2).get() );
@@ -566,7 +566,7 @@ ReadNodePrivate::destroyReadNode()
 void
 ReadNodePrivate::createDefaultReadNode()
 {
-    CreateNodeArgs args(READ_NODE_DEFAULT_READER, boost::shared_ptr<NodeCollection>() );
+    CreateNodeArgs args(READ_NODE_DEFAULT_READER, NodeCollectionPtr() );
 
     args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
     args.setProperty(kCreateNodeArgsPropSilent, true);
@@ -730,7 +730,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             readerPluginID = READ_NODE_DEFAULT_READER;
         }
 
-        CreateNodeArgs args(readerPluginID, boost::shared_ptr<NodeCollection>() );
+        CreateNodeArgs args(readerPluginID, NodeCollectionPtr() );
         args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
         args.setProperty(kCreateNodeArgsPropOutOfProject, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalDecoderNode");
@@ -796,7 +796,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     _publicInterface->recreateKnobs(true);
 #pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
 
-    KnobPtr knob = node ? node->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
+    KnobIPtr knob = node ? node->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
         inputFileKnob = boost::dynamic_pointer_cast<KnobFile>(knob);
     }
@@ -806,7 +806,7 @@ void
 ReadNodePrivate::refreshFileInfoVisibility(const std::string& pluginID)
 {
     boost::shared_ptr<KnobButton> fileInfos = fileInfosKnob.lock();
-    KnobPtr hasMetadataKnob = _publicInterface->getKnobByName("showMetadata");
+    KnobIPtr hasMetadataKnob = _publicInterface->getKnobByName("showMetadata");
     bool hasFfprobe = false;
     if (!hasMetadataKnob) {
         QString ffprobePath = getFFProbeBinaryPath();
@@ -1280,7 +1280,7 @@ ReadNode::knobChanged(KnobI* k,
         }
 
 
-        KnobPtr hasMetadataKnob = p->getKnobByName("showMetadata");
+        KnobIPtr hasMetadataKnob = p->getKnobByName("showMetadata");
         if (hasMetadataKnob) {
             KnobButton* showMetasKnob = dynamic_cast<KnobButton*>( hasMetadataKnob.get() );
             if (showMetasKnob) {

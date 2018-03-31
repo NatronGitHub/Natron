@@ -46,11 +46,11 @@ public:
 
     Group();
 
-    void init(const boost::shared_ptr<NodeCollection>& collection);
+    void init(const NodeCollectionPtr& collection);
 
     virtual ~Group();
 
-    boost::shared_ptr<NodeCollection> getInternalCollection() const
+    NodeCollectionPtr getInternalCollection() const
     {
         return _collection.lock();
     }

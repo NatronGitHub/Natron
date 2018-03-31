@@ -181,7 +181,7 @@ public:
      * after the last one, a la STL).
      **/
     void trackSelectedMarkers(int start, int end, int frameStep, OverlaySupport* viewer);
-    void trackMarkers(const std::list<TrackMarkerPtr >& marks,
+    void trackMarkers(const std::list<TrackMarkerPtr>& marks,
                       int start,
                       int end,
                       int frameStep,
@@ -204,21 +204,21 @@ public:
 
     void endEditSelection(TrackSelectionReason reason);
 
-    void addTracksToSelection(const std::list<TrackMarkerPtr >& marks, TrackSelectionReason reason);
+    void addTracksToSelection(const std::list<TrackMarkerPtr>& marks, TrackSelectionReason reason);
     void addTrackToSelection(const TrackMarkerPtr& mark, TrackSelectionReason reason);
 
-    void removeTracksFromSelection(const std::list<TrackMarkerPtr >& marks, TrackSelectionReason reason);
+    void removeTracksFromSelection(const std::list<TrackMarkerPtr>& marks, TrackSelectionReason reason);
     void removeTrackFromSelection(const TrackMarkerPtr& mark, TrackSelectionReason reason);
 
     void clearSelection(TrackSelectionReason reason);
 
     void selectAll(TrackSelectionReason reason);
 
-    void getAllMarkers(std::vector<TrackMarkerPtr >* markers) const;
+    void getAllMarkers(std::vector<TrackMarkerPtr>* markers) const;
 
-    void getSelectedMarkers(std::list<TrackMarkerPtr >* markers) const;
+    void getSelectedMarkers(std::list<TrackMarkerPtr>* markers) const;
 
-    void getAllEnabledMarkers(std::vector<TrackMarkerPtr >* markers) const;
+    void getAllEnabledMarkers(std::vector<TrackMarkerPtr>* markers) const;
 
     bool isMarkerSelected(const TrackMarkerPtr& marker) const;
 

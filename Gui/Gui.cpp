@@ -299,7 +299,7 @@ Gui::createNodeGUI(NodePtr node,
 {
     assert(_imp->_nodeGraphArea);
 
-    boost::shared_ptr<NodeCollection> group = node->getGroup();
+    NodeCollectionPtr group = node->getGroup();
     NodeGraph* graph;
     if (group) {
         NodeGraphI* graph_i = group->getNodeGraph();
@@ -360,7 +360,7 @@ Gui::createViewerGui(NodePtr viewer)
 
     ViewerTab* tab = addNewViewerTab(v, where);
     NodeGraph* graph = 0;
-    boost::shared_ptr<NodeCollection> collection = viewer->getGroup();
+    NodeCollectionPtr collection = viewer->getGroup();
     if (!collection) {
         return;
     }

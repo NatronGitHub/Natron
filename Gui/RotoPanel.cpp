@@ -177,7 +177,7 @@ public:
 
 
     DragItemsUndoCommand(RotoPanel* roto,
-                         const std::list< boost::shared_ptr<DroppedTreeItem> > & items);
+                         const std::list<boost::shared_ptr<DroppedTreeItem> > & items);
 
     virtual ~DragItemsUndoCommand();
 
@@ -187,7 +187,7 @@ public:
 private:
 
     RotoPanel* _roto;
-    std::list < Item > _items;
+    std::list<Item > _items;
 };
 
 
@@ -238,7 +238,7 @@ private:
     QTreeWidgetItem* _targetTreeItem;
     boost::shared_ptr<RotoItem> _targetItem;
     boost::shared_ptr<RotoItem> _oldTargetItem;
-    std::list < PastedItem > _pastedItems;
+    std::list<PastedItem > _pastedItems;
 };
 
 
@@ -332,8 +332,8 @@ struct TreeItem
     }
 };
 
-typedef std::list< TreeItem > TreeItems;
-typedef std::list< boost::shared_ptr<RotoItem> > SelectedItems;
+typedef std::list<TreeItem > TreeItems;
+typedef std::list<boost::shared_ptr<RotoItem> > SelectedItems;
 
 struct TimeLineKeys
 {
@@ -1361,7 +1361,7 @@ void
 RotoPanelPrivate::buildTreeFromContext()
 {
     double time = context->getTimelineCurrentTime();
-    const std::list< boost::shared_ptr<RotoLayer> > & layers = context->getLayers();
+    const std::list<boost::shared_ptr<RotoLayer> > & layers = context->getLayers();
 
     tree->blockSignals(true);
     if ( !layers.empty() ) {
@@ -2669,12 +2669,12 @@ AddLayerUndoCommand::redo()
 /////////////////////////////////
 
 DragItemsUndoCommand::DragItemsUndoCommand(RotoPanel* roto,
-                                           const std::list< boost::shared_ptr<DroppedTreeItem> > & items)
+                                           const std::list<boost::shared_ptr<DroppedTreeItem> > & items)
     : QUndoCommand()
     , _roto(roto)
     , _items()
 {
-    for (std::list< boost::shared_ptr<DroppedTreeItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
+    for (std::list<boost::shared_ptr<DroppedTreeItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
         assert( (*it)->newParentLayer && (*it)->newParentItem && (*it)->insertIndex != -1 );
         Item i;
         i.dropped = *it;

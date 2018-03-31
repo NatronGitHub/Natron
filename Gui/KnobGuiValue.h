@@ -63,13 +63,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    KnobGuiValue(KnobPtr knob,
+    KnobGuiValue(KnobIPtr knob,
                  KnobGuiContainerI *container);
 
     virtual ~KnobGuiValue() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual bool getAllDimensionsVisible() const OVERRIDE FINAL;
 
     int getDimensionForSpinBox(const SpinBox* spinbox) const;
@@ -182,13 +182,13 @@ class KnobGuiDouble
 
 public:
 
-    static KnobGui * BuildKnobGui(KnobPtr knob,
+    static KnobGui * BuildKnobGui(KnobIPtr knob,
                                   KnobGuiContainerI *container)
     {
         return new KnobGuiDouble(knob, container);
     }
 
-    KnobGuiDouble(KnobPtr knob,
+    KnobGuiDouble(KnobIPtr knob,
                   KnobGuiContainerI *container);
 
     virtual ~KnobGuiDouble() {}
@@ -216,13 +216,13 @@ class KnobGuiInt
 
 public:
 
-    static KnobGui * BuildKnobGui(KnobPtr knob,
+    static KnobGui * BuildKnobGui(KnobIPtr knob,
                                   KnobGuiContainerI *container)
     {
         return new KnobGuiInt(knob, container);
     }
 
-    KnobGuiInt(KnobPtr knob,
+    KnobGuiInt(KnobIPtr knob,
                KnobGuiContainerI *container);
 
     virtual ~KnobGuiInt() {}

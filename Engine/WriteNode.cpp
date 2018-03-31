@@ -302,15 +302,15 @@ WriteNode::setEmbeddedWriter(const NodePtr& node)
 void
 WriteNodePrivate::placeWriteNodeKnobsInPage()
 {
-    KnobPtr pageKnob = _publicInterface->getKnobByName("Controls");
+    KnobIPtr pageKnob = _publicInterface->getKnobByName("Controls");
     KnobPage* isPage = dynamic_cast<KnobPage*>( pageKnob.get() );
 
     if (!isPage) {
         return;
     }
     for (std::list<boost::weak_ptr<KnobI> >::iterator it = writeNodeKnobs.begin(); it != writeNodeKnobs.end(); ++it) {
-        KnobPtr knob = it->lock();
-        knob->setParentKnob( KnobPtr() );
+        KnobIPtr knob = it->lock();
+        knob->setParentKnob( KnobIPtr() );
         isPage->removeKnob( knob.get() );
     }
     KnobsVec children = isPage->getChildren();
@@ -324,7 +324,7 @@ WriteNodePrivate::placeWriteNodeKnobsInPage()
     if (index != -1) {
         ++index;
         for (std::list<boost::weak_ptr<KnobI> >::iterator it = writeNodeKnobs.begin(); it != writeNodeKnobs.end(); ++it) {
-            KnobPtr knob = it->lock();
+            KnobIPtr knob = it->lock();
             isPage->insertKnob(index, knob);
             ++index;
         }
@@ -360,7 +360,7 @@ WriteNodePrivate::placeWriteNodeKnobsInPage()
     //Set the render button as the last knob
     boost::shared_ptr<KnobButton> renderB = renderButtonKnob.lock();
     if (renderB) {
-        renderB->setParentKnob( KnobPtr() );
+        renderB->setParentKnob( KnobIPtr() );
         isPage->removeKnob( renderB.get() );
         isPage->addKnob(renderB);
     }
@@ -372,7 +372,7 @@ WriteNodePrivate::cloneGenericKnobs()
     const KnobsVec& knobs = _publicInterface->getKnobs();
 
     for (std::list<boost::shared_ptr<KnobSerialization> >::iterator it = genericKnobsSerialization.begin(); it != genericKnobsSerialization.end(); ++it) {
-        KnobPtr serializedKnob = (*it)->getKnob();
+        KnobIPtr serializedKnob = (*it)->getKnob();
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ( (*it2)->getName() == serializedKnob->getName() ) {
                 KnobChoice* isChoice = dynamic_cast<KnobChoice*>( (*it2).get() );
@@ -618,7 +618,7 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
     writeNode->getEffectInstance()->getFrameRange_public(writeNode->getEffectInstance()->getHash(), &first, &last);
 
     {
-        KnobPtr originalFrameRangeKnob = readNode->getKnobByName(kReaderParamNameOriginalFrameRange);
+        KnobIPtr originalFrameRangeKnob = readNode->getKnobByName(kReaderParamNameOriginalFrameRange);
         assert(originalFrameRangeKnob);
         KnobInt* originalFrameRange = dynamic_cast<KnobInt*>( originalFrameRangeKnob.get() );
         if (originalFrameRange) {
@@ -626,7 +626,7 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
         }
     }
     {
-        KnobPtr firstFrameKnob = readNode->getKnobByName(kParamFirstFrame);
+        KnobIPtr firstFrameKnob = readNode->getKnobByName(kParamFirstFrame);
         assert(firstFrameKnob);
         KnobInt* firstFrame = dynamic_cast<KnobInt*>( firstFrameKnob.get() );
         if (firstFrame) {
@@ -634,7 +634,7 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
         }
     }
     {
-        KnobPtr lastFrameKnob = readNode->getKnobByName(kParamLastFrame);
+        KnobIPtr lastFrameKnob = readNode->getKnobByName(kParamLastFrame);
         assert(lastFrameKnob);
         KnobInt* lastFrame = dynamic_cast<KnobInt*>( lastFrameKnob.get() );
         if (lastFrame) {
@@ -696,8 +696,8 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
             readNode->replaceInput(input, 0);
             // sync the output colorspace of the reader from input colorspace of the writer
 
-            KnobPtr outputWriteColorSpace = writeNode->getKnobByName(kOCIOParamOutputSpace);
-            KnobPtr inputReadColorSpace = readNode->getKnobByName(kNatronReadNodeOCIOParamInputSpace);
+            KnobIPtr outputWriteColorSpace = writeNode->getKnobByName(kOCIOParamOutputSpace);
+            KnobIPtr inputReadColorSpace = readNode->getKnobByName(kNatronReadNodeOCIOParamInputSpace);
             if (inputReadColorSpace && outputWriteColorSpace) {
                 inputReadColorSpace->slaveTo(0, outputWriteColorSpace, 0);
             }
@@ -883,7 +883,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     _publicInterface->recreateKnobs(true);
 #pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
 
-    KnobPtr knob = writeNode ? writeNode->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
+    KnobIPtr knob = writeNode ? writeNode->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
         outputFileKnob = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
     }
@@ -1029,7 +1029,7 @@ WriteNode::initializeKnobs()
     frameIncrKnob->setDefaultValue(1);
     controlpage->addKnob(frameIncrKnob);
     /*if (mainPage) {
-        std::vector< KnobPtr > children = mainPage->getChildren();
+        std::vector<KnobIPtr> children = mainPage->getChildren();
         bool foundLastFrame = false;
         for (std::size_t i = 0; i < children.size(); ++i) {
             if (children[i]->getName() == "lastFrame") {

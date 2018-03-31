@@ -58,7 +58,7 @@ typedef boost::shared_ptr<Bezier> BezierPtr;
 typedef std::list<BezierPtr> BezierList;
 
 MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
-                                                           const std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & toDrag
+                                                           const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & toDrag
                                                            ,
                                                            double dx,
                                                            double dy,
@@ -197,8 +197,8 @@ MoveControlPointsUndoCommand::mergeWith(const UndoCommandPtr& other)
         return false;
     }
 
-    std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >::const_iterator it = _pointsToDrag.begin();
-    std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >::const_iterator oIt = mvCmd->_pointsToDrag.begin();
+    std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >::const_iterator it = _pointsToDrag.begin();
+    std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >::const_iterator oIt = mvCmd->_pointsToDrag.begin();
     for (; it != _pointsToDrag.end(); ++it, ++oIt) {
         if ( (it->first != oIt->first) || (it->second != oIt->second) ) {
             return false;
@@ -237,7 +237,7 @@ TransformUndoCommand::TransformUndoCommand(const boost::shared_ptr<RotoPaintInte
 {
     _matrix = boost::make_shared<Transform::Matrix3x3>();
 
-    std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > selected;
+    std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > selected;
 
     roto->getSelection(&_selectedCurves, &selected);
 
@@ -447,8 +447,8 @@ RemovePointUndoCommand::RemovePointUndoCommand(const boost::shared_ptr<RotoPaint
         BezierPtr curve = boost::dynamic_pointer_cast<Bezier>( roto->getContext()->getItemByName( cp->getBezier()->getScriptName() ) );
         assert(curve);
         RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( curve.get() );
-        std::list< CurveDesc >::iterator foundCurve = _curves.end();
-        for (std::list< CurveDesc >::iterator it2 = _curves.begin(); it2 != _curves.end(); ++it2) {
+        std::list<CurveDesc >::iterator foundCurve = _curves.end();
+        for (std::list<CurveDesc >::iterator it2 = _curves.begin(); it2 != _curves.end(); ++it2) {
             if (it2->curve == curve) {
                 foundCurve = it2;
                 break;
@@ -502,7 +502,7 @@ RemovePointUndoCommand::undo()
     std::list<boost::shared_ptr<RotoDrawableItem> > selection;
     SelectedCpList cpSelection;
 
-    for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
+    for (std::list<CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         ///clone the curve
         it->curve->clone( it->oldCurve.get() );
         if (it->curveRemoved) {
@@ -525,12 +525,12 @@ RemovePointUndoCommand::redo()
     }
 
     ///clone the curve
-    for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
+    for (std::list<CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         it->oldCurve->clone( it->curve.get() );
     }
 
     std::list<boost::shared_ptr<Bezier> > toRemove;
-    for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
+    for (std::list<CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(it->curve);
         if (!isBezier) {
             continue;

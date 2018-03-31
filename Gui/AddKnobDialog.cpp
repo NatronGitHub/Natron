@@ -58,9 +58,9 @@ NATRON_NAMESPACE_ENTER
 
 struct AddKnobDialogPrivate
 {
-    KnobPtr knob;
+    KnobIPtr knob;
     boost::shared_ptr<KnobSerialization> originalKnobSerialization;
-    KnobPtr isKnobAlias;
+    KnobIPtr isKnobAlias;
     DockablePanel* panel;
     QVBoxLayout* vLayout;
     QWidget* mainContainer;
@@ -407,7 +407,7 @@ AddKnobDialog::getChoiceIndexFromKnobType(KnobI* knob)
 } // getChoiceIndexFromKnobType
 
 AddKnobDialog::AddKnobDialog(DockablePanel* panel,
-                             const KnobPtr& knob,
+                             const KnobIPtr& knob,
                              const std::string& selectedPageName,
                              const std::string& selectedGroupName,
                              QWidget* parent)
@@ -453,8 +453,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     _imp->vLayout->addWidget(_imp->mainContainer);
 
     {
-        KnobPtr isAlias;
-        KnobPtr listener;
+        KnobIPtr isAlias;
+        KnobIPtr listener;
         if (knob) {
             KnobI::ListenerDimsMap listeners;
             knob->getListeners(listeners);
@@ -517,7 +517,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         if (knob) {
             // get the flag on the previous knob
             bool startNewLine = true;
-            KnobPtr parentKnob = _imp->knob->getParentKnob();
+            KnobIPtr parentKnob = _imp->knob->getParentKnob();
             if (parentKnob) {
                 KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>( parentKnob.get() );
                 KnobPage* parentIsPage = dynamic_cast<KnobPage*>( parentKnob.get() );
@@ -884,7 +884,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
 
     const KnobsGuiMapping& knobs = _imp->panel->getKnobsMapping();
     for (KnobsGuiMapping::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        KnobPtr knob = it->first.lock();
+        KnobIPtr knob = it->first.lock();
         if (!knob) {
             continue;
         }
@@ -973,7 +973,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     if (_imp->parentGroup && knob) {
         boost::shared_ptr<KnobPage> topLvlPage = knob->getTopLevelPage();
         if (topLvlPage) {
-            KnobPtr parent = knob->getParentKnob();
+            KnobIPtr parent = knob->getParentKnob();
             KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>( parent.get() );
             if (isParentGrp) {
                 for (std::list<KnobGroup*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it) {
@@ -1293,7 +1293,7 @@ AddKnobDialog::~AddKnobDialog()
 {
 }
 
-KnobPtr
+KnobIPtr
 AddKnobDialog::getKnob() const
 {
     return _imp->knob;
@@ -1666,7 +1666,7 @@ AddKnobDialog::onOkClicked()
     int oldIndexInParent = -1;
     std::string oldKnobScriptName;
     std::vector<std::pair<std::string, bool> > expressions;
-    std::map<KnobPtr, std::vector<std::pair<std::string, bool> > > listenersExpressions;
+    std::map<KnobIPtr, std::vector<std::pair<std::string, bool> > > listenersExpressions;
     boost::shared_ptr<KnobPage> oldKnobIsPage;
     bool wasNewLineActivated = true;
     if (!_imp->knob) {
@@ -1679,7 +1679,7 @@ AddKnobDialog::onOkClicked()
         oldParentPage = _imp->knob->getTopLevelPage();
         wasNewLineActivated = _imp->knob->isNewLineActivated();
         t = getChoiceIndexFromKnobType( _imp->knob.get() );
-        KnobPtr parent = _imp->knob->getParentKnob();
+        KnobIPtr parent = _imp->knob->getParentKnob();
         KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>( parent.get() );
         if ( isParentGrp && ( isParentGrp == _imp->getSelectedGroup() ) ) {
             KnobsVec children = isParentGrp->getChildren();
@@ -1713,7 +1713,7 @@ AddKnobDialog::onOkClicked()
         KnobI::ListenerDimsMap listeners;
         _imp->knob->getListeners(listeners);
         for (KnobI::ListenerDimsMap::iterator it = listeners.begin(); it != listeners.end(); ++it) {
-            KnobPtr listener = it->first.lock();
+            KnobIPtr listener = it->first.lock();
             if (!listener) {
                 continue;
             }
@@ -1849,7 +1849,7 @@ AddKnobDialog::onOkClicked()
 
     //If startsNewLine is false, set the flag on the previous knob
     bool startNewLine = _imp->startNewLineBox->isChecked();
-    KnobPtr parentKnob = _imp->knob->getParentKnob();
+    KnobIPtr parentKnob = _imp->knob->getParentKnob();
     if (parentKnob) {
         KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>( parentKnob.get() );
         KnobPage* parentIsPage = dynamic_cast<KnobPage*>( parentKnob.get() );
@@ -1875,7 +1875,7 @@ AddKnobDialog::onOkClicked()
     }
 
     //Recover listeners expressions
-    for (std::map<KnobPtr, std::vector<std::pair<std::string, bool> > >::iterator it = listenersExpressions.begin(); it != listenersExpressions.end(); ++it) {
+    for (std::map<KnobIPtr, std::vector<std::pair<std::string, bool> > >::iterator it = listenersExpressions.begin(); it != listenersExpressions.end(); ++it) {
         assert( it->first->getDimension() == (int)it->second.size() );
         for (int i = 0; i < it->first->getDimension(); ++i) {
             try {

@@ -166,7 +166,7 @@ public:
     bool _mustSetDragOrientation;
     QPoint _mouseDragOrientation; ///used to drag a key frame in only 1 direction (horizontal or vertical)
     ///the value is either (1,0) or (0,1)
-    std::vector< KeyFrame > _keyFramesClipBoard;
+    std::vector<KeyFrame > _keyFramesClipBoard;
     QRectF _selectionRectangle;
     QPointF _dragStartPoint;
     bool _drawSelectedKeyFramesBbox;

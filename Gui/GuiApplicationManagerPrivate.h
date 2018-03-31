@@ -60,7 +60,7 @@ struct KnobsClipBoard
 {
     KnobClipBoardType type;
     int dimension;
-    KnobPtr serialization;
+    KnobIPtr serialization;
 };
 
 struct GuiApplicationManagerPrivate

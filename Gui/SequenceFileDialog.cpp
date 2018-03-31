@@ -2789,11 +2789,11 @@ FileDialogComboBox::paintEvent(QPaintEvent* /*e*/)
     painter.drawControl(QStyle::CE_ComboBoxLabel, opt);
 }
 
-std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >
+std::vector<boost::shared_ptr<SequenceParsing::SequenceFromFiles> >
 SequenceFileDialog::fileSequencesFromFilesList(const QStringList & files,
                                                const QStringList & supportedFileTypes)
 {
-    std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
+    std::vector<boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
 
     for (int i = 0; i < files.size(); ++i) {
         SequenceParsing::FileNameContent fileContent( files.at(i).toStdString() );
@@ -2890,13 +2890,13 @@ SequenceFileDialog::onTogglePreviewButtonClicked(bool toggled)
 void
 SequenceFileDialog::createViewerPreviewNode()
 {
-    CreateNodeArgs args( PLUGINID_NATRON_VIEWER, boost::shared_ptr<NodeCollection>() );
+    CreateNodeArgs args( PLUGINID_NATRON_VIEWER, NodeCollectionPtr() );
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME);
     args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
 
     _preview->viewerNodeInternal = _gui->getApp()->createNode(args);
     assert(_preview->viewerNodeInternal);
-    boost::shared_ptr<NodeGuiI> viewerNodeGui = _preview->viewerNodeInternal->getNodeGui();
+    NodeGuiIPtr viewerNodeGui = _preview->viewerNodeInternal->getNodeGui();
     _preview->viewerNode = boost::dynamic_pointer_cast<NodeGui>(viewerNodeGui);
     assert(_preview->viewerNode);
     _preview->viewerNode->hideGui();
@@ -2949,7 +2949,7 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
         }
         std::map<std::string, NodePtr>::iterator foundReader = _preview->readerNodes.find(found->second);
         if ( foundReader == _preview->readerNodes.end() ) {
-            CreateNodeArgs args( QString::fromUtf8( found->second.c_str() ), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
+            CreateNodeArgs args( QString::fromUtf8( found->second.c_str() ), eCreateNodeReasonInternal, NodeCollectionPtr() );
             args.fixedName = QString::fromUtf8(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) +  QString::fromUtf8( found->first.c_str() );
             args.createGui = false;
             args.addToProject = false;
@@ -2970,7 +2970,7 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
         return _preview->readerNode;
     }
     Q_UNUSED(filetype);
-    CreateNodeArgs args( PLUGINID_NATRON_READ, boost::shared_ptr<NodeCollection>() );
+    CreateNodeArgs args( PLUGINID_NATRON_READ, NodeCollectionPtr() );
     args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
     args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
     args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
@@ -3005,7 +3005,7 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
 
     NodePtr reader = findOrCreatePreviewReader(ext);
     if (reader) {
-        KnobPtr foundFileKnob = reader->getKnobByName(kOfxImageEffectFileParamName);
+        KnobIPtr foundFileKnob = reader->getKnobByName(kOfxImageEffectFileParamName);
         KnobFile* fileKnob = dynamic_cast<KnobFile*>( foundFileKnob.get() );
         if (fileKnob) {
             fileKnob->setValue(pattern);

@@ -86,7 +86,7 @@ public:
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    KnobGui(const KnobPtr& knob,
+    KnobGui(const KnobIPtr& knob,
             KnobGuiContainerI* container);
 
 public:
@@ -113,7 +113,7 @@ public:
      * This is virtual as it is easier to hold the knob in the derived class
      * avoiding many dynamic_cast in the deriving class.
      **/
-    virtual KnobPtr getKnob() const = 0;
+    virtual KnobIPtr getKnob() const = 0;
 
     bool isViewerUIKnob() const;
 
@@ -135,7 +135,7 @@ public:
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    int lastKnobSpacing,
-                   const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);
+                   const std::vector<boost::shared_ptr< KnobI > > & knobsOnSameLine);
 
     virtual bool shouldAddStretch() const { return true; }
 
@@ -290,7 +290,7 @@ public:
      **/
     bool isSecretRecursive() const;
 
-    KnobPtr createDuplicateOnNode(EffectInstance* effect,
+    KnobIPtr createDuplicateOnNode(EffectInstance* effect,
                                   bool makeAlias,
                                   const boost::shared_ptr<KnobPage>& page,
                                   const boost::shared_ptr<KnobGroup>& group,

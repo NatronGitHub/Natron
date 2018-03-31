@@ -638,7 +638,7 @@ public:
 class ProjectGuiSerialization
 {
     ///All nodes gui data
-    std::list< NodeGuiSerialization > _serializedNodes;
+    std::list<NodeGuiSerialization > _serializedNodes;
 
     ///The layout of the application
     GuiLayoutSerialization _layoutSerialization;
@@ -744,7 +744,7 @@ public:
 
     void initialize(const ProjectGui* projectGui);
 
-    const std::list< NodeGuiSerialization > & getSerializedNodesGui() const
+    const std::list<NodeGuiSerialization > & getSerializedNodesGui() const
     {
         return _serializedNodes;
     }

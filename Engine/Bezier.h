@@ -485,22 +485,22 @@ public:
     /**
      * @brief Returns a const ref to the control points of the bezier curve. This can only ever be called on the main thread.
      **/
-    const std::list< boost::shared_ptr<BezierCP> > & getControlPoints() const;
+    const std::list<boost::shared_ptr<BezierCP> > & getControlPoints() const;
 
 protected:
 
-    std::list< boost::shared_ptr<BezierCP> > & getControlPoints_internal();
+    std::list<boost::shared_ptr<BezierCP> > & getControlPoints_internal();
 
 public:
 
 
-    std::list< boost::shared_ptr<BezierCP> > getControlPoints_mt_safe() const;
+    std::list<boost::shared_ptr<BezierCP> > getControlPoints_mt_safe() const;
 
     /**
      * @brief Returns a const ref to the feather points of the bezier curve. This can only ever be called on the main thread.
      **/
-    const std::list< boost::shared_ptr<BezierCP> > & getFeatherPoints() const;
-    std::list< boost::shared_ptr<BezierCP> > getFeatherPoints_mt_safe() const;
+    const std::list<boost::shared_ptr<BezierCP> > & getFeatherPoints() const;
+    std::list<boost::shared_ptr<BezierCP> > getFeatherPoints_mt_safe() const;
     enum ControlPointSelectionPrefEnum
     {
         eControlPointSelectionPrefFeatherFirst = 0,
@@ -549,7 +549,7 @@ public:
      * mode == 1: Add only the cp within the rect and their respective feather points counter parts
      * mode == 2: Add only the fp within the rect and their repsective control points counter parts
      **/
-    std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >controlPointsWithinRect(double l, double r, double b, double t, double acceptance, int mode) const;
+    std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >controlPointsWithinRect(double l, double r, double b, double t, double acceptance, int mode) const;
     static void leftDerivativeAtPoint(bool useGuiCurves, double time, const BezierCP & p, const BezierCP & prev, const Transform::Matrix3x3& transform, double *dx, double *dy);
     static void rightDerivativeAtPoint(bool useGuiCurves, double time, const BezierCP & p, const BezierCP & next, const Transform::Matrix3x3& transform, double *dx, double *dy);
 

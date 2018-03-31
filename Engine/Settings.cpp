@@ -3641,7 +3641,7 @@ Settings::isDefaultAppearanceOutdated() const
 void
 Settings::restoreDefaultAppearance()
 {
-    std::vector< KnobPtr > children = _appearanceTab->getChildren();
+    std::vector<KnobIPtr> children = _appearanceTab->getChildren();
 
     for (std::size_t i = 0; i < children.size(); ++i) {
         KnobColor* isColorKnob = dynamic_cast<KnobColor*>( children[i].get() );

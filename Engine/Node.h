@@ -97,13 +97,13 @@ public:
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     Node(const AppInstPtr& app,
-         const boost::shared_ptr<NodeCollection>& group,
+         const NodeCollectionPtr& group,
          Plugin* plugin);
 
 public:
     virtual ~Node();
 
-    boost::shared_ptr<NodeCollection> getGroup() const;
+    NodeCollectionPtr getGroup() const;
 
     /**
      * @brief Returns true if this node is a "user" node. For internal invisible node, this would return false.
@@ -136,7 +136,7 @@ public:
     void loadKnobs(const NodeSerialization & serialization, bool updateKnobGui = false);
 
 
-    void loadKnob(const KnobPtr & knob,
+    void loadKnob(const KnobIPtr & knob,
                   const NodeSerialization & serialization,
                   bool updateKnobGui = false);
 
@@ -232,7 +232,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    const std::vector< KnobPtr > & getKnobs() const;
+    const std::vector<KnobIPtr> & getKnobs() const;
 
     /**
      * @brief When frozen is true all the knobs of this effect read-only so the user can't interact with it.
@@ -401,9 +401,9 @@ public:
      * The vector might be different from what getInputs_other_thread() could return.
      * This can only be called by the main thread.
      **/
-    const std::vector<NodeWPtr > & getInputs() const WARN_UNUSED_RETURN;
-    const std::vector<NodeWPtr > & getGuiInputs() const WARN_UNUSED_RETURN;
-    std::vector<NodeWPtr > getInputs_copy() const WARN_UNUSED_RETURN;
+    const std::vector<NodeWPtr> & getInputs() const WARN_UNUSED_RETURN;
+    const std::vector<NodeWPtr> & getGuiInputs() const WARN_UNUSED_RETURN;
+    std::vector<NodeWPtr> getInputs_copy() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the input index of the node n if it exists,
@@ -588,9 +588,9 @@ public:
      **/
     bool replaceInput(const NodePtr& input, int inputNumber);
 
-    void setNodeGuiPointer(const boost::shared_ptr<NodeGuiI>& gui);
+    void setNodeGuiPointer(const NodeGuiIPtr& gui);
 
-    boost::shared_ptr<NodeGuiI> getNodeGui() const;
+    NodeGuiIPtr getNodeGui() const;
 
     bool isSettingsPanelVisible() const;
 
@@ -718,7 +718,7 @@ public:
        @param reconnect If set to true Natron will attempt to re-connect disconnected output to an input of this node
        @param hideGui When true, the node gui will be notified so it gets hidden
      */
-    void deactivate(const std::list< NodePtr > & outputsToDisconnect = std::list< NodePtr >(),
+    void deactivate(const std::list<NodePtr> & outputsToDisconnect = std::list<NodePtr>(),
                     bool disconnectAll = true,
                     bool reconnect = true,
                     bool hideGui = true,
@@ -735,7 +735,7 @@ public:
      * deactivate() will be reconnected as output to this node.
      * @param restoreAll If true, the parameter outputsToRestore will be ignored.
      */
-    void activate(const std::list< NodePtr > & outputsToRestore = std::list< NodePtr >(),
+    void activate(const std::list<NodePtr> & outputsToRestore = std::list<NodePtr>(),
                   bool restoreAll = true,
                   bool triggerRender = true);
 
@@ -756,7 +756,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    KnobPtr getKnobByName(const std::string & name) const;
+    KnobIPtr getKnobByName(const std::string & name) const;
 
     /*@brief The derived class should query this to abort any long process
        in the engine function.*/
@@ -879,7 +879,7 @@ public:
 
     void onAllKnobsSlaved(bool isSlave, KnobHolder* master);
 
-    void onKnobSlaved(const KnobPtr& slave, const KnobPtr& master, int dimension, bool isSlave);
+    void onKnobSlaved(const KnobIPtr& slave, const KnobIPtr& master, int dimension, bool isSlave);
 
     NodePtr getMasterNode() const;
 
@@ -1028,7 +1028,7 @@ private:
                              const std::vector<std::string>& inputLabels,
                              const boost::shared_ptr<KnobPage>& mainPage,
                              bool addNewLineOnLastMask,
-                             KnobPtr* lastKnobCreated);
+                             KnobIPtr* lastKnobCreated);
 
     boost::shared_ptr<KnobPage> getOrCreateMainPage();
 
@@ -1039,7 +1039,7 @@ private:
     void createChannelSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChannelSelector,
                                 const std::vector<std::string>& inputLabels,
                                 const boost::shared_ptr<KnobPage>& mainPage,
-                                KnobPtr* lastKnobBeforeAdvancedOption);
+                                KnobIPtr* lastKnobBeforeAdvancedOption);
 
 public:
 
@@ -1356,11 +1356,11 @@ private:
 
     void markInputRelatedDataDirtyRecursiveInternal(std::list<Node*>& markedNodes, bool recurse);
 
-    bool refreshAllInputRelatedData(bool hasSerializationData, const std::vector<NodeWPtr >& inputs);
+    bool refreshAllInputRelatedData(bool hasSerializationData, const std::vector<NodeWPtr>& inputs);
 
     bool refreshInputRelatedDataInternal(bool domarking, std::set<Node*>& markedNodes);
 
-    bool refreshDraftFlagInternal(const std::vector<NodeWPtr >& inputs);
+    bool refreshDraftFlagInternal(const std::vector<NodeWPtr>& inputs);
 
     void setNameInternal(const std::string& name, bool throwErrors);
 
@@ -1545,7 +1545,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     InspectorNode(const AppInstPtr& app,
-                  const boost::shared_ptr<NodeCollection>& group,
+                  const NodeCollectionPtr& group,
                   Plugin* plugin);
 
     virtual ~InspectorNode();

@@ -483,7 +483,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 {
     // note: the order for parameter types is the same as in ofxParam.h
     OFX::Host::Param::Instance* instance = NULL;
-    KnobPtr knob;
+    KnobIPtr knob;
     bool paramShouldBePersistent = true;
     bool secretByDefault = descriptor.getSecret();
     bool enabledByDefault = descriptor.getEnabled();
@@ -752,7 +752,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         if (!isKnownKnob) {
             continue;
         }
-        KnobPtr associatedKnob = isKnownKnob->getKnob();
+        KnobIPtr associatedKnob = isKnownKnob->getKnob();
         if (!associatedKnob) {
             continue;
         }
@@ -838,7 +838,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
             continue;
         }
 
-        KnobPtr knob = isKnownKnob->getKnob();
+        KnobIPtr knob = isKnownKnob->getKnob();
         assert(knob);
         if (!knob) {
             continue;
@@ -896,7 +896,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                 continue;
             }
 
-            KnobPtr child = isKnownKnob->getKnob();
+            KnobIPtr child = isKnownKnob->getKnob();
             assert(child);
             if ( !child->getParentKnob() ) {
                 pageKnob->addKnob(child);
@@ -940,7 +940,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(param);
         assert(isKnownKnob);
         if (isKnownKnob) {
-            KnobPtr knob = isKnownKnob->getKnob();
+            KnobIPtr knob = isKnownKnob->getKnob();
             assert(knob);
             effect->addKnobToViewerUI(knob);
         }

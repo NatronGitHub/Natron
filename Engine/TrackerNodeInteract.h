@@ -361,7 +361,7 @@ public:
     TrackerDrawStateEnum hoverState;
     TrackMarkerPtr interactMarker, hoverMarker;
 
-    typedef std::map<int, GLTexturePtr > KeyFrameTexIDs;
+    typedef std::map<int, GLTexturePtr> KeyFrameTexIDs;
     typedef std::map<boost::weak_ptr<TrackMarker>, KeyFrameTexIDs> TrackKeysMap;
     TrackKeysMap trackTextures;
     TrackKeyframeRequests trackRequestsMap;

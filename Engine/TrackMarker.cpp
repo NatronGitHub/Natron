@@ -611,7 +611,7 @@ TrackMarker::setMotionModelFromGui(int index)
 
 
     KeyFrame k;
-    std::pair<int, KnobPtr> master = knob->getMaster(0);
+    std::pair<int, KnobIPtr> master = knob->getMaster(0);
     if (master.second) {
         knob->unSlave(0, true);
     }
@@ -634,7 +634,7 @@ TrackMarker::setEnabledFromGui(double /*time*/,
 
 
     KeyFrame k;
-    std::pair<int, KnobPtr> master = knob->getMaster(0);
+    std::pair<int, KnobIPtr> master = knob->getMaster(0);
     if (master.second) {
         knob->unSlave(0, true);
     }
@@ -728,7 +728,7 @@ enum DeleteKnobAnimationEnum
 
 static void
 deleteKnobAnimation(const std::set<int>& userKeyframes,
-                    const KnobPtr& knob,
+                    const KnobIPtr& knob,
                     DeleteKnobAnimationEnum type,
                     int currentTime)
 {
@@ -783,15 +783,15 @@ TrackMarker::clearAnimation()
 
     getUserKeyframes(&userKeyframes);
 
-    KnobPtr offsetKnob = getOffsetKnob();
+    KnobIPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
     deleteKnobAnimation(userKeyframes, offsetKnob, eDeleteKnobAnimationAll, 0);
 
-    KnobPtr centerKnob = getCenterKnob();
+    KnobIPtr centerKnob = getCenterKnob();
     assert(centerKnob);
     deleteKnobAnimation(userKeyframes, centerKnob, eDeleteKnobAnimationAll, 0);
 
-    KnobPtr errorKnob = getErrorKnob();
+    KnobIPtr errorKnob = getErrorKnob();
     assert(errorKnob);
     deleteKnobAnimation(userKeyframes, errorKnob, eDeleteKnobAnimationAll, 0);
 }
@@ -803,15 +803,15 @@ TrackMarker::clearAnimationBeforeTime(int time)
 
     getUserKeyframes(&userKeyframes);
 
-    KnobPtr offsetKnob = getOffsetKnob();
+    KnobIPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
     deleteKnobAnimation(userKeyframes, offsetKnob, eDeleteKnobAnimationBeforeTime, time);
 
-    KnobPtr centerKnob = getCenterKnob();
+    KnobIPtr centerKnob = getCenterKnob();
     assert(centerKnob);
     deleteKnobAnimation(userKeyframes, centerKnob, eDeleteKnobAnimationBeforeTime, time);
 
-    KnobPtr errorKnob = getErrorKnob();
+    KnobIPtr errorKnob = getErrorKnob();
     assert(errorKnob);
     deleteKnobAnimation(userKeyframes, errorKnob, eDeleteKnobAnimationBeforeTime, time);
 }
@@ -823,15 +823,15 @@ TrackMarker::clearAnimationAfterTime(int time)
 
     getUserKeyframes(&userKeyframes);
 
-    KnobPtr offsetKnob = getOffsetKnob();
+    KnobIPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
     deleteKnobAnimation(userKeyframes, offsetKnob, eDeleteKnobAnimationAfterTime, time);
 
-    KnobPtr centerKnob = getCenterKnob();
+    KnobIPtr centerKnob = getCenterKnob();
     assert(centerKnob);
     deleteKnobAnimation(userKeyframes, centerKnob, eDeleteKnobAnimationAfterTime, time);
 
-    KnobPtr errorKnob = getErrorKnob();
+    KnobIPtr errorKnob = getErrorKnob();
     assert(errorKnob);
     deleteKnobAnimation(userKeyframes, errorKnob, eDeleteKnobAnimationAfterTime, time);
 }
@@ -1185,8 +1185,8 @@ TrackMarker::getMarkerImage(int time,
 } // TrackMarker::getMarkerImage
 
 void
-TrackMarker::onKnobSlaved(const KnobPtr& slave,
-                          const KnobPtr& master,
+TrackMarker::onKnobSlaved(const KnobIPtr& slave,
+                          const KnobIPtr& master,
                           int dimension,
                           bool isSlave)
 {
@@ -1333,7 +1333,7 @@ boost::shared_ptr<T>
 getNodeKnob(const NodePtr& node,
             const std::string& scriptName)
 {
-    KnobPtr knob = node->getKnobByName(scriptName);
+    KnobIPtr knob = node->getKnobByName(scriptName);
 
     assert(knob);
     if (!knob) {
@@ -1353,7 +1353,7 @@ TrackMarkerPM::initializeKnobs()
     QObject::connect( getContext().get(), SIGNAL(onNodeInputChanged(int)), this, SLOT(onTrackerNodeInputChanged(int)) );
     NodePtr node;
     {
-        CreateNodeArgs args( PLUGINID_OFX_TRACKERPM, boost::shared_ptr<NodeCollection>() );
+        CreateNodeArgs args( PLUGINID_OFX_TRACKERPM, NodeCollectionPtr() );
         args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
         args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "TrackerPMNode");

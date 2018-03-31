@@ -137,12 +137,12 @@ TrackerContext::getTransformReferenceFrame() const
 void
 TrackerContext::goToPreviousKeyFrame(int time)
 {
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     getSelectedMarkers(&markers);
 
     int minimum = INT_MIN;
-    for (std::list<TrackMarkerPtr > ::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr> ::iterator it = markers.begin(); it != markers.end(); ++it) {
         int t = (*it)->getPreviousKeyframe(time);
         if ( (t != INT_MIN) && (t > minimum) ) {
             minimum = t;
@@ -157,12 +157,12 @@ TrackerContext::goToPreviousKeyFrame(int time)
 void
 TrackerContext::goToNextKeyFrame(int time)
 {
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     getSelectedMarkers(&markers);
 
     int maximum = INT_MAX;
-    for (std::list<TrackMarkerPtr > ::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr> ::iterator it = markers.begin(); it != markers.end(); ++it) {
         int t = (*it)->getNextKeyframe(time);
         if ( (t != INT_MAX) && (t < maximum) ) {
             maximum = t;
@@ -179,7 +179,7 @@ TrackerContext::getMarkerByName(const std::string & name) const
 {
     QMutexLocker k(&_imp->trackerContextMutex);
 
-    for (std::vector<TrackMarkerPtr >::const_iterator it = _imp->markers.begin(); it != _imp->markers.end(); ++it) {
+    for (std::vector<TrackMarkerPtr>::const_iterator it = _imp->markers.begin(); it != _imp->markers.end(); ++it) {
         if ( (*it)->getScriptName_mt_safe() == name ) {
             return *it;
         }
@@ -348,7 +348,7 @@ TrackerContext::insertMarker(const TrackMarkerPtr& marker,
         if ( index >= (int)_imp->markers.size() ) {
             _imp->markers.push_back(marker);
         } else {
-            std::vector<TrackMarkerPtr >::iterator it = _imp->markers.begin();
+            std::vector<TrackMarkerPtr>::iterator it = _imp->markers.begin();
             std::advance(it, index);
             _imp->markers.insert(it, marker);
         }
@@ -362,7 +362,7 @@ TrackerContext::removeMarker(const TrackMarkerPtr& marker)
 {
     {
         QMutexLocker k(&_imp->trackerContextMutex);
-        for (std::vector<TrackMarkerPtr >::iterator it = _imp->markers.begin(); it != _imp->markers.end(); ++it) {
+        for (std::vector<TrackMarkerPtr>::iterator it = _imp->markers.begin(); it != _imp->markers.end(); ++it) {
             if (*it == marker) {
                 _imp->markers.erase(it);
                 break;
@@ -471,10 +471,10 @@ TrackerContext::trackSelectedMarkers(int start,
                                      int frameStep,
                                      OverlaySupport* viewer)
 {
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
     {
         QMutexLocker k(&_imp->trackerContextMutex);
-        for (std::list<TrackMarkerPtr >::iterator it = _imp->selectedMarkers.begin();
+        for (std::list<TrackMarkerPtr>::iterator it = _imp->selectedMarkers.begin();
              it != _imp->selectedMarkers.end(); ++it) {
             double time = (*it)->getCurrentTime();
             if ( (*it)->isEnabled(time) ) {
@@ -557,14 +557,14 @@ void
 TrackerContext::addTrackToSelection(const TrackMarkerPtr& mark,
                                     TrackSelectionReason reason)
 {
-    std::list<TrackMarkerPtr > marks;
+    std::list<TrackMarkerPtr> marks;
 
     marks.push_back(mark);
     addTracksToSelection(marks, reason);
 }
 
 void
-TrackerContext::addTracksToSelection(const std::list<TrackMarkerPtr >& marks,
+TrackerContext::addTracksToSelection(const std::list<TrackMarkerPtr>& marks,
                                      TrackSelectionReason reason)
 {
     bool hasCalledBegin = false;
@@ -579,7 +579,7 @@ TrackerContext::addTracksToSelection(const std::list<TrackMarkerPtr >& marks,
             hasCalledBegin = true;
         }
 
-        for (std::list<TrackMarkerPtr >::const_iterator it = marks.begin(); it != marks.end(); ++it) {
+        for (std::list<TrackMarkerPtr>::const_iterator it = marks.begin(); it != marks.end(); ++it) {
             _imp->addToSelectionList(*it);
         }
 
@@ -597,14 +597,14 @@ void
 TrackerContext::removeTrackFromSelection(const TrackMarkerPtr& mark,
                                          TrackSelectionReason reason)
 {
-    std::list<TrackMarkerPtr > marks;
+    std::list<TrackMarkerPtr> marks;
 
     marks.push_back(mark);
     removeTracksFromSelection(marks, reason);
 }
 
 void
-TrackerContext::removeTracksFromSelection(const std::list<TrackMarkerPtr >& marks,
+TrackerContext::removeTracksFromSelection(const std::list<TrackMarkerPtr>& marks,
                                           TrackSelectionReason reason)
 {
     bool hasCalledBegin = false;
@@ -620,7 +620,7 @@ TrackerContext::removeTracksFromSelection(const std::list<TrackMarkerPtr >& mark
             hasCalledBegin = true;
         }
 
-        for (std::list<TrackMarkerPtr >::const_iterator it = marks.begin(); it != marks.end(); ++it) {
+        for (std::list<TrackMarkerPtr>::const_iterator it = marks.begin(); it != marks.end(); ++it) {
             _imp->removeFromSelectionList(*it);
         }
 
@@ -637,7 +637,7 @@ TrackerContext::removeTracksFromSelection(const std::list<TrackMarkerPtr >& mark
 void
 TrackerContext::clearSelection(TrackSelectionReason reason)
 {
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     getSelectedMarkers(&markers);
     if ( markers.empty() ) {
@@ -650,13 +650,13 @@ void
 TrackerContext::selectAll(TrackSelectionReason reason)
 {
     beginEditSelection(reason);
-    std::vector<TrackMarkerPtr > markers;
+    std::vector<TrackMarkerPtr> markers;
     {
         QMutexLocker k(&_imp->trackerContextMutex);
         markers = _imp->markers;
     }
     int time = getNode()->getApp()->getTimeLine()->currentFrame();
-    for (std::vector<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::vector<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         if ( (*it)->isEnabled(time) ) {
             addTrackToSelection(*it, reason);
         }
@@ -665,7 +665,7 @@ TrackerContext::selectAll(TrackSelectionReason reason)
 }
 
 void
-TrackerContext::getAllMarkers(std::vector<TrackMarkerPtr >* markers) const
+TrackerContext::getAllMarkers(std::vector<TrackMarkerPtr>* markers) const
 {
     QMutexLocker k(&_imp->trackerContextMutex);
 
@@ -673,7 +673,7 @@ TrackerContext::getAllMarkers(std::vector<TrackMarkerPtr >* markers) const
 }
 
 void
-TrackerContext::getAllEnabledMarkers(std::vector<TrackMarkerPtr >* markers) const
+TrackerContext::getAllEnabledMarkers(std::vector<TrackMarkerPtr>* markers) const
 {
     QMutexLocker k(&_imp->trackerContextMutex);
 
@@ -685,7 +685,7 @@ TrackerContext::getAllEnabledMarkers(std::vector<TrackMarkerPtr >* markers) cons
 }
 
 void
-TrackerContext::getSelectedMarkers(std::list<TrackMarkerPtr >* markers) const
+TrackerContext::getSelectedMarkers(std::list<TrackMarkerPtr>* markers) const
 {
     QMutexLocker k(&_imp->trackerContextMutex);
 
@@ -697,7 +697,7 @@ TrackerContext::isMarkerSelected(const TrackMarkerPtr& marker) const
 {
     QMutexLocker k(&_imp->trackerContextMutex);
 
-    for (std::list<TrackMarkerPtr >::const_iterator it = _imp->selectedMarkers.begin(); it != _imp->selectedMarkers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::const_iterator it = _imp->selectedMarkers.begin(); it != _imp->selectedMarkers.end(); ++it) {
         if (*it == marker) {
             return true;
         }
@@ -872,7 +872,7 @@ TrackerContext::exportTrackDataFromExportOptions()
             }
         }
         {
-            KnobPtr knob = createdNode->getKnobByName(kCornerPinParamMatrix);
+            KnobIPtr knob = createdNode->getKnobByName(kCornerPinParamMatrix);
             if (knob) {
                 KnobDouble* isType = dynamic_cast<KnobDouble*>( knob.get() );
                 if (isType) {
@@ -883,7 +883,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         break;
     }
     case eTrackerTransformNodeTransform: {
-        KnobPtr translateKnob = createdNode->getKnobByName(kTransformParamTranslate);
+        KnobIPtr translateKnob = createdNode->getKnobByName(kTransformParamTranslate);
         if (translateKnob) {
             KnobDouble* isDbl = dynamic_cast<KnobDouble*>( translateKnob.get() );
             if (isDbl) {
@@ -896,7 +896,7 @@ TrackerContext::exportTrackDataFromExportOptions()
             }
         }
 
-        KnobPtr scaleKnob = createdNode->getKnobByName(kTransformParamScale);
+        KnobIPtr scaleKnob = createdNode->getKnobByName(kTransformParamScale);
         if (scaleKnob) {
             KnobDouble* isDbl = dynamic_cast<KnobDouble*>( scaleKnob.get() );
             if (isDbl) {
@@ -909,7 +909,7 @@ TrackerContext::exportTrackDataFromExportOptions()
             }
         }
 
-        KnobPtr rotateKnob = createdNode->getKnobByName(kTransformParamRotate);
+        KnobIPtr rotateKnob = createdNode->getKnobByName(kTransformParamRotate);
         if (rotateKnob) {
             KnobDouble* isDbl = dynamic_cast<KnobDouble*>( rotateKnob.get() );
             if (isDbl) {
@@ -920,7 +920,7 @@ TrackerContext::exportTrackDataFromExportOptions()
                 }
             }
         }
-        KnobPtr centerKnob = createdNode->getKnobByName(kTransformParamCenter);
+        KnobIPtr centerKnob = createdNode->getKnobByName(kTransformParamCenter);
         if (centerKnob) {
             KnobDouble* isDbl = dynamic_cast<KnobDouble*>( centerKnob.get() );
             if (isDbl) {
@@ -931,7 +931,7 @@ TrackerContext::exportTrackDataFromExportOptions()
     }
     } // switch
 
-    KnobPtr cpInvertKnob = createdNode->getKnobByName(kTransformParamInvert);
+    KnobIPtr cpInvertKnob = createdNode->getKnobByName(kTransformParamInvert);
     if (cpInvertKnob) {
         KnobBool* isBool = dynamic_cast<KnobBool*>( cpInvertKnob.get() );
         if (isBool) {
@@ -944,7 +944,7 @@ TrackerContext::exportTrackDataFromExportOptions()
     }
 
     {
-        KnobPtr knob = createdNode->getKnobByName(kTransformParamMotionBlur);
+        KnobIPtr knob = createdNode->getKnobByName(kTransformParamMotionBlur);
         if (knob) {
             KnobDouble* isType = dynamic_cast<KnobDouble*>( knob.get() );
             if (isType) {
@@ -953,7 +953,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         }
     }
     {
-        KnobPtr knob = createdNode->getKnobByName(kTransformParamShutter);
+        KnobIPtr knob = createdNode->getKnobByName(kTransformParamShutter);
         if (knob) {
             KnobDouble* isType = dynamic_cast<KnobDouble*>( knob.get() );
             if (isType) {
@@ -962,7 +962,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         }
     }
     {
-        KnobPtr knob = createdNode->getKnobByName(kTransformParamShutterOffset);
+        KnobIPtr knob = createdNode->getKnobByName(kTransformParamShutterOffset);
         if (knob) {
             KnobChoice* isType = dynamic_cast<KnobChoice*>( knob.get() );
             if (isType) {
@@ -971,7 +971,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         }
     }
     {
-        KnobPtr knob = createdNode->getKnobByName(kTransformParamCustomShutterOffset);
+        KnobIPtr knob = createdNode->getKnobByName(kTransformParamCustomShutterOffset);
         if (knob) {
             KnobDouble* isType = dynamic_cast<KnobDouble*>( knob.get() );
             if (isType) {
@@ -1102,10 +1102,10 @@ TrackerContext::declareItemAsPythonField(const TrackMarkerPtr& item)
 void
 TrackerContext::declarePythonFields()
 {
-    std::vector<TrackMarkerPtr > markers;
+    std::vector<TrackMarkerPtr> markers;
 
     getAllMarkers(&markers);
-    for (std::vector< TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::vector<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         declareItemAsPythonField(*it);
     }
 }

@@ -177,7 +177,7 @@ private:
     boost::scoped_ptr<BezierCPPrivate> _imp;
 };
 
-typedef std::list< boost::shared_ptr<BezierCP> > BezierCPs;
+typedef std::list<boost::shared_ptr<BezierCP> > BezierCPs;
 
 NATRON_NAMESPACE_EXIT
 

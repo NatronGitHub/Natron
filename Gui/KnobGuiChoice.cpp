@@ -203,7 +203,7 @@ KnobComboBox::focusOutEvent(QFocusEvent* e)
     ComboBox::focusOutEvent(e);
 }
 
-KnobGuiChoice::KnobGuiChoice(KnobPtr knob,
+KnobGuiChoice::KnobGuiChoice(KnobIPtr knob,
                              KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _comboBox(0)
@@ -471,7 +471,7 @@ KnobGuiChoice::setDirty(bool dirty)
     _comboBox->setDirty(dirty);
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiChoice::getKnob() const
 {
     return _knob.lock();

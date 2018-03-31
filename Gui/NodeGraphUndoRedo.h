@@ -331,13 +331,13 @@ public:
 
 private:
 
-    void getListAsShared(const std::list< NodeWPtr >& original,
-                         std::list< NodePtr >& shared) const;
+    void getListAsShared(const std::list<NodeWPtr>& original,
+                         std::list<NodePtr>& shared) const;
 
     bool _firstRedoCalled;
     bool _isUndone;
     boost::weak_ptr<NodeGui> _node;
-    std::list< NodeWPtr > _oldChildren, _newChildren; //< children if multi-instance
+    std::list<NodeWPtr> _oldChildren, _newChildren; //< children if multi-instance
     std::list<boost::shared_ptr<NodeSerialization> > _newSerializations, _oldSerialization;
 };
 
@@ -365,13 +365,13 @@ private:
 struct ExtractedOutput
 {
     boost::weak_ptr<NodeGui> node;
-    std::list<std::pair<int, NodeWPtr > > outputs;
+    std::list<std::pair<int, NodeWPtr> > outputs;
 };
 
 struct ExtractedInput
 {
     boost::weak_ptr<NodeGui> node;
-    std::vector<NodeWPtr > inputs;
+    std::vector<NodeWPtr> inputs;
 };
 
 struct ExtractedTree

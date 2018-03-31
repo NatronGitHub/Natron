@@ -433,8 +433,8 @@ public:
     boost::weak_ptr<KnobDouble> cornerPinMatrix;
     boost::weak_ptr<KnobChoice> cornerPinOverlayPoints;
     mutable QMutex trackerContextMutex;
-    std::vector<TrackMarkerPtr > markers;
-    std::list<TrackMarkerPtr > selectedMarkers, markersToSlave, markersToUnslave;
+    std::vector<TrackMarkerPtr> markers;
+    std::list<TrackMarkerPtr> selectedMarkers, markersToSlave, markersToUnslave;
     int beginSelectionCounter;
     int selectionRecursion;
     TrackScheduler scheduler;
@@ -522,7 +522,7 @@ public:
 
     void removeFromSelectionList(const TrackMarkerPtr& marker)
     {
-        std::list<TrackMarkerPtr >::iterator found = std::find(selectedMarkers.begin(), selectedMarkers.end(), marker);
+        std::list<TrackMarkerPtr>::iterator found = std::find(selectedMarkers.begin(), selectedMarkers.end(), marker);
 
         if ( found == selectedMarkers.end() ) {
             return;
@@ -543,7 +543,7 @@ public:
         }
     }
 
-    void linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr >& markers,
+    void linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr>& markers,
                                    bool multipleTrackSelected,
                                    bool slave);
 

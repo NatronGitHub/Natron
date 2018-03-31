@@ -106,10 +106,10 @@ public:
     int getChildIndex(const boost::shared_ptr<RotoItem>& item) const;
 
     ///only callable on the main-thread
-    const std::list< boost::shared_ptr<RotoItem> >& getItems() const;
+    const std::list<boost::shared_ptr<RotoItem> >& getItems() const;
 
     ///MT-safe
-    std::list< boost::shared_ptr<RotoItem> > getItems_mt_safe() const;
+    std::list<boost::shared_ptr<RotoItem> > getItems_mt_safe() const;
 
 private:
 

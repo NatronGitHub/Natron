@@ -205,7 +205,7 @@ Gui::createGroupGui(const NodePtr & group,
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getEffectInstance()->shared_from_this() );
 
     assert(isGrp);
-    boost::shared_ptr<NodeCollection> collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
+    NodeCollectionPtr collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
     assert(collection);
 
     TabWidget* where = 0;
@@ -306,7 +306,7 @@ Gui::getActiveViewer() const
     return _imp->_activeViewer;
 }
 
-boost::shared_ptr<NodeCollection>
+NodeCollectionPtr
 Gui::getLastSelectedNodeCollection() const
 {
     NodeGraph* graph = 0;
@@ -316,7 +316,7 @@ Gui::getLastSelectedNodeCollection() const
     } else {
         graph = _imp->_nodeGraphArea;
     }
-    boost::shared_ptr<NodeCollection> group = graph->getGroup();
+    NodeCollectionPtr group = graph->getGroup();
     assert(group);
 
     return group;

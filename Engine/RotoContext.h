@@ -186,7 +186,7 @@ public:
      * @brief Returns a const ref to the layers list. This can only be called from
      * the main thread.
      **/
-    const std::list< boost::shared_ptr<RotoLayer> > & getLayers() const;
+    const std::list<boost::shared_ptr<RotoLayer> > & getLayers() const;
 
     /**
      * @brief Returns a bezier curves nearby the point (x,y) and the parametric value
@@ -285,20 +285,20 @@ public:
     /**
      * @brief Returns a list of the currently selected curves. Can only be called on the main-thread.
      **/
-    std::list< boost::shared_ptr<RotoDrawableItem> > getSelectedCurves() const;
+    std::list<boost::shared_ptr<RotoDrawableItem> > getSelectedCurves() const;
 
 
     /**
      * @brief Returns a const ref to the selected items. This can only be called on the main thread.
      **/
-    const std::list< boost::shared_ptr<RotoItem> > & getSelectedItems() const;
+    const std::list<boost::shared_ptr<RotoItem> > & getSelectedItems() const;
 
     /**
      * @brief Returns a list of all the curves in the order in which they should be rendered.
      * Non-active curves will not be inserted into the list.
      * MT-safe
      **/
-    std::list< boost::shared_ptr<RotoDrawableItem> > getCurvesByRenderOrder(bool onlyActivated = true) const;
+    std::list<boost::shared_ptr<RotoDrawableItem> > getCurvesByRenderOrder(bool onlyActivated = true) const;
 
     int getNCurves() const;
 

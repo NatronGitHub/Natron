@@ -473,7 +473,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
             }
 
             if ( !it->filename.isEmpty() ) {
-                KnobPtr fileKnob = writerNode->getKnobByName(kOfxImageEffectFileParamName);
+                KnobIPtr fileKnob = writerNode->getKnobByName(kOfxImageEffectFileParamName);
                 if (fileKnob) {
                     KnobOutputFile* outFile = dynamic_cast<KnobOutputFile*>( fileKnob.get() );
                     if (outFile) {
@@ -649,7 +649,7 @@ AppInstance::loadInternal(const CLArgs& cl,
                 std::string exc( tr("%1: Filename specified is empty but [-i] or [--reader] was passed to the command-line.").arg( QString::fromUtf8( readerName.c_str() ) ).toStdString() );
                 throw std::invalid_argument(exc);
             }
-            KnobPtr fileKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
+            KnobIPtr fileKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
             if (fileKnob) {
                 KnobFile* outFile = dynamic_cast<KnobFile*>( fileKnob.get() );
                 if (outFile) {
@@ -854,7 +854,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
     NodePtr node;
 
     boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
-    boost::shared_ptr<NodeCollection> group = args.getProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer);
+    NodeCollectionPtr group = args.getProperty<NodeCollectionPtr>(kCreateNodeArgsPropGroupContainer);
     {
         FlagIncrementer fs(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
         if (_imp->_creatingGroup == 1) {
@@ -1224,7 +1224,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         }
     }
 
-    boost::shared_ptr<NodeCollection> argsGroup = args.getProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer);
+    NodeCollectionPtr argsGroup = args.getProperty<NodeCollectionPtr>(kCreateNodeArgsPropGroupContainer);
     if (!argsGroup) {
         argsGroup = getProject();
     }
@@ -1437,7 +1437,7 @@ AppInstance::exportDocs(const QString path)
                     QStringList plugList;
                     plugList << plugin->getGrouping().at(0) << pluginID << Plugin::makeLabelWithoutSuffix( plugin->getPluginLabel() );
                     plugins << plugList;
-                    CreateNodeArgs args( pluginID.toStdString(), boost::shared_ptr<NodeCollection>() );
+                    CreateNodeArgs args( pluginID.toStdString(), NodeCollectionPtr() );
                     args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
                     args.setProperty(kCreateNodeArgsPropOutOfProject, true);
                     args.setProperty(kCreateNodeArgsPropSilent, true);
@@ -1836,7 +1836,7 @@ AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstance* writer
         *sequenceName = tr("Caching");
     } else {
         *sequenceName = QString();
-        KnobPtr fileKnob = writer->getKnobByName(kOfxImageEffectFileParamName);
+        KnobIPtr fileKnob = writer->getKnobByName(kOfxImageEffectFileParamName);
         if (fileKnob) {
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( fileKnob.get() );
             assert(isString);
@@ -2287,7 +2287,7 @@ AppInstance::newProject()
 }
 
 void
-AppInstance::addInvalidExpressionKnob(const KnobPtr& knob)
+AppInstance::addInvalidExpressionKnob(const KnobIPtr& knob)
 {
     QMutexLocker k(&_imp->invalidExprKnobsMutex);
 
@@ -2318,11 +2318,11 @@ AppInstance::recheckInvalidExpressions()
     if (getProject()->isProjectClosing()) {
         return;
     }
-    std::list<KnobPtr> knobs;
+    std::list<KnobIPtr> knobs;
     {
         QMutexLocker k(&_imp->invalidExprKnobsMutex);
         for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
-            KnobPtr k = it->lock();
+            KnobIPtr k = it->lock();
             if (k) {
                 knobs.push_back(k);
             }
@@ -2330,7 +2330,7 @@ AppInstance::recheckInvalidExpressions()
     }
     std::list<KnobWPtr> newInvalidKnobs;
 
-    for (std::list<KnobPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    for (std::list<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
         if ( !(*it)->checkInvalidExpressions() ) {
             newInvalidKnobs.push_back(*it);
         }

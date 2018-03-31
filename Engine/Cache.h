@@ -395,7 +395,7 @@ public:
 
     struct SerializedEntry;
 
-    typedef std::list< SerializedEntry > CacheTOC;
+    typedef std::list<SerializedEntry> CacheTOC;
 
 public:
 
@@ -406,7 +406,7 @@ public:
 #ifdef NATRON_CACHE_USE_HASH
     typedef BoostLRUHashTable<hash_type, EntryTypePtr>, boost::bimaps::unordered_set_of > CacheContainer;
 #else
-    typedef BoostLRUHashTable<hash_type, EntryTypePtr >, boost::bimaps::set_of > CacheContainer;
+    typedef BoostLRUHashTable<hash_type, EntryTypePtr>, boost::bimaps::set_of > CacheContainer;
 #endif
     typedef typename CacheContainer::container_type::left_iterator CacheIterator;
     typedef typename CacheContainer::container_type::left_const_iterator ConstCacheIterator;
@@ -418,9 +418,9 @@ public:
 #else // cache use STL
 
 #ifdef NATRON_CACHE_USE_HASH
-    typedef StlLRUHashTable<hash_type, EntryTypePtr >, std::unordered_map > CacheContainer;
+    typedef StlLRUHashTable<hash_type, EntryTypePtr>, std::unordered_map > CacheContainer;
 #else
-    typedef StlLRUHashTable<hash_type, EntryTypePtr >, std::map > CacheContainer;
+    typedef StlLRUHashTable<hash_type, EntryTypePtr>, std::map > CacheContainer;
 #endif
     typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
     typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
@@ -437,7 +437,7 @@ public:
 #ifdef NATRON_CACHE_USE_HASH
     typedef BoostLRUHashTable<hash_type, EntryTypePtr> CacheContainer;
 #else
-    typedef BoostLRUHashTable<hash_type, EntryTypePtr > CacheContainer;
+    typedef BoostLRUHashTable<hash_type, EntryTypePtr> CacheContainer;
 #endif
     typedef typename CacheContainer::container_type::left_iterator CacheIterator;
     typedef typename CacheContainer::container_type::left_const_iterator ConstCacheIterator;
@@ -448,7 +448,7 @@ public:
 
 #else // cache use STL and tree (std map)
 
-    typedef StlLRUHashTable<hash_type, EntryTypePtr > CacheContainer;
+    typedef StlLRUHashTable<hash_type, EntryTypePtr> CacheContainer;
     typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
     typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
     static std::list<EntryTypePtr> &   getValueFromIterator(CacheIterator it)

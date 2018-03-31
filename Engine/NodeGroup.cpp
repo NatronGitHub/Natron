@@ -1055,7 +1055,7 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<Parall
 struct NodeGroupPrivate
 {
     mutable QMutex nodesLock; // protects inputs & outputs
-    std::vector<NodeWPtr > inputs, guiInputs;
+    std::vector<NodeWPtr> inputs, guiInputs;
     NodesWList outputs, guiOutputs;
     bool isDeactivatingGroup;
     bool isActivatingGroup;
@@ -1237,7 +1237,7 @@ NodeGroup::isInputOptional(int inputNb) const
     if (!input) {
         return false;
     }
-    KnobPtr knob = input->getKnobByName(kNatronGroupInputIsOptionalParamName);
+    KnobIPtr knob = input->getKnobByName(kNatronGroupInputIsOptionalParamName);
     assert(knob);
     if (!knob) {
         return false;
@@ -1280,7 +1280,7 @@ NodeGroup::isInputMask(int inputNb) const
     if (!input) {
         return false;
     }
-    KnobPtr knob = input->getKnobByName(kNatronGroupInputIsMaskParamName);
+    KnobIPtr knob = input->getKnobByName(kNatronGroupInputIsMaskParamName);
     assert(knob);
     if (!knob) {
         return false;
@@ -1294,7 +1294,7 @@ NodeGroup::isInputMask(int inputNb) const
 void
 NodeGroup::initializeKnobs()
 {
-    KnobPtr nodePage = getKnobByName(NATRON_PARAMETER_PAGE_NAME_EXTRA);
+    KnobIPtr nodePage = getKnobByName(NATRON_PARAMETER_PAGE_NAME_EXTRA);
 
     assert(nodePage);
     KnobPage* isPage = dynamic_cast<KnobPage*>( nodePage.get() );
@@ -1530,7 +1530,7 @@ NodeGroup::getInputsOutputs(NodesList* nodes,
 }
 
 void
-NodeGroup::getInputs(std::vector<NodePtr >* inputs,
+NodeGroup::getInputs(std::vector<NodePtr>* inputs,
                      bool useGuiConnexions) const
 {
     QMutexLocker k(&_imp->nodesLock);
@@ -1574,7 +1574,7 @@ NodeGroup::knobChanged(KnobI* k,
     bool ret = true;
 
     if ( k == _imp->exportAsTemplate.get() ) {
-        boost::shared_ptr<NodeGuiI> gui_i = getNode()->getNodeGui();
+        NodeGuiIPtr gui_i = getNode()->getNodeGui();
         if (gui_i) {
             gui_i->exportGroupAsPythonScript();
         }
@@ -1697,7 +1697,7 @@ escapeString(const std::string& str)
 
 static bool
 exportKnobValues(int indentLevel,
-                 const KnobPtr knob,
+                 const KnobIPtr knob,
                  const QString& paramFullName,
                  bool mustDefineParam,
                  QTextStream& ts)
@@ -1948,7 +1948,7 @@ exportKnobValues(int indentLevel,
 
 static void
 exportUserKnob(int indentLevel,
-               const KnobPtr& knob,
+               const KnobIPtr& knob,
                const QString& fullyQualifiedNodeName,
                KnobGroup* group,
                KnobPage* page,
@@ -1972,7 +1972,7 @@ exportUserKnob(int indentLevel,
         KnobI::ListenerDimsMap listeners;
         knob->getListeners(listeners);
         if ( !listeners.empty() ) {
-            KnobPtr listener = listeners.begin()->first.lock();
+            KnobIPtr listener = listeners.begin()->first.lock();
             if ( listener && (listener->getAliasMaster() == knob) ) {
                 aliasedParam = listener;
             }
@@ -2550,7 +2550,7 @@ exportKnobLinks(int indentLevel,
         bool hasDefined = false;
 
         //Check for alias link
-        KnobPtr alias = (*it2)->getAliasMaster();
+        KnobIPtr alias = (*it2)->getAliasMaster();
         if (alias) {
             if (!hasDefined) {
                 WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramName);
@@ -2588,7 +2588,7 @@ exportKnobLinks(int indentLevel,
                                                              hasRetVar + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")") );
                 }
 
-                std::pair<int, KnobPtr > master = (*it2)->getMaster(i);
+                std::pair<int, KnobIPtr> master = (*it2)->getMaster(i);
                 if (master.second) {
                     if (!hasDefined) {
                         WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramName);
@@ -2742,11 +2742,11 @@ exportGroupInternal(int indentLevel,
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("# End of node ") + ESC( (*it)->getScriptName_mt_safe() ) );
         WRITE_STATIC_LINE("");
 
-        std::list< NodePtr > children;
+        std::list<NodePtr> children;
         (*it)->getChildrenMultiInstance(&children);
         if ( !children.empty() ) {
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create children if the node is a multi-instance such as a tracker");
-            for (std::list< NodePtr > ::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
+            for (std::list<NodePtr> ::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
                 if ( (*it2)->isActivated() ) {
                     WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode = ") + nodeNameInScript + QString::fromUtf8(".createChild()") );
                     WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setScriptName(\"") + QString::fromUtf8( (*it2)->getScriptName_mt_safe().c_str() ) + QString::fromUtf8("\")") );

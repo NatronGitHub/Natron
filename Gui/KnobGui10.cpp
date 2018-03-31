@@ -51,7 +51,7 @@ KnobGui::onCreateAliasOnGroupActionTriggered()
     if (!isEffect) {
         throw std::logic_error("");
     }
-    boost::shared_ptr<NodeCollection> collec = isEffect->getNode()->getGroup();
+    NodeCollectionPtr collec = isEffect->getNode()->getGroup();
     NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>( collec.get() );
     assert(isCollecGroup);
     if (isCollecGroup) {
@@ -62,12 +62,12 @@ KnobGui::onCreateAliasOnGroupActionTriggered()
 void
 KnobGui::onRemoveAliasLinkActionTriggered()
 {
-    KnobPtr thisKnob = getKnob();
+    KnobIPtr thisKnob = getKnob();
     KnobI::ListenerDimsMap listeners;
 
     thisKnob->getListeners(listeners);
-    KnobPtr aliasMaster;
-    KnobPtr listener;
+    KnobIPtr aliasMaster;
+    KnobIPtr listener;
     if ( !listeners.empty() ) {
         listener = listeners.begin()->first.lock();
         if (listener) {
@@ -91,16 +91,16 @@ KnobGui::onUnlinkActionTriggered()
         return;
     }
     int dim = action->data().toInt();
-    KnobPtr thisKnob = getKnob();
+    KnobIPtr thisKnob = getKnob();
     int dims = thisKnob->getDimension();
-    KnobPtr aliasMaster = thisKnob->getAliasMaster();
+    KnobIPtr aliasMaster = thisKnob->getAliasMaster();
     if (aliasMaster) {
         thisKnob->setKnobAsAliasOfThis(aliasMaster, false);
     } else {
         thisKnob->beginChanges();
         for (int i = 0; i < dims; ++i) {
             if ( (dim == -1) || (i == dim) ) {
-                std::pair<int, KnobPtr > other = thisKnob->getMaster(i);
+                std::pair<int, KnobIPtr> other = thisKnob->getMaster(i);
                 thisKnob->onKnobUnSlaved(i);
                 onKnobSlavedChanged(i, false);
             }
@@ -201,10 +201,10 @@ KnobGui::isSecretRecursive() const
     // try TuttlePinning: fold all groups, then switch from perspective to affine to perspective.
     //  VISIBILITY is different from SECRETNESS. The code considers that both things are equivalent, which is wrong.
     // Of course, this check has to be *recursive* (in case the group is within a folded group)
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     bool isViewerKnob = _imp->container->isInViewerUIKnob();
     bool showit = isViewerKnob ? !knob->getInViewerContextSecret() : !knob->getIsSecret();
-    KnobPtr parentKnob = knob->getParentKnob();
+    KnobIPtr parentKnob = knob->getParentKnob();
     KnobGroup* parentIsGroup = dynamic_cast<KnobGroup*>( parentKnob.get() );
 
     while (showit && parentKnob && parentIsGroup) {
@@ -225,7 +225,7 @@ KnobGui::isSecretRecursive() const
 void
 KnobGui::onShowInCurveEditorActionTriggered()
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     assert( knob->getHolder()->getApp() );
     getGui()->setCurveEditorOnTop();
@@ -248,7 +248,7 @@ KnobGui::onRemoveAnimationActionTriggered()
 
     assert(action);
     int dim = action->data().toInt();
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     std::map<boost::shared_ptr<CurveGui>, std::vector<KeyFrame > > toRemove;
     KnobGuiPtr thisShared = shared_from_this();
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -278,7 +278,7 @@ KnobGui::setInterpolationForDimensions(QAction* action,
         return;
     }
     int dimension = action->data().toInt();
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
 
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -343,7 +343,7 @@ KnobGui::setKeyframe(double time,
                      int dimension,
                      ViewSpec view)
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     assert( knob->getHolder()->getApp() );
 
@@ -361,7 +361,7 @@ KnobGui::setKeyframe(double time,
                      int dimension,
                      ViewSpec view)
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     assert( knob->getHolder()->getApp() );
 
@@ -379,7 +379,7 @@ KnobGui::onSetKeyActionTriggered()
 
     assert(action);
     int dim = action->data().toInt();
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     assert( knob->getHolder()->getApp() );
     //get the current time on the global timeline
@@ -427,7 +427,7 @@ KnobGui::removeKeyFrame(double time,
                         int dimension,
                         ViewSpec view)
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     boost::shared_ptr<Curve> curve = knob->getCurve(view, dimension);
     bool copyCurveValueAtTimeToInternalValue = false;
@@ -450,7 +450,7 @@ KnobGui::setKeyframes(const std::vector<KeyFrame>& keys,
                       int dimension,
                       ViewSpec view)
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     assert( knob->getHolder()->getApp() );
     knob->beginChanges();
@@ -473,7 +473,7 @@ KnobGui::removeKeyframes(const std::vector<KeyFrame>& keys,
                          int dimension,
                          ViewSpec view)
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     knob->beginChanges();
     for (std::size_t i = 0; i < keys.size(); ++i) {
@@ -502,7 +502,7 @@ KnobGui::getScriptNameHtml() const
 QString
 KnobGui::toolTip() const
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
     bool isMarkdown = knob.get()->isHintInMarkdown();
     QString tt;
@@ -587,7 +587,7 @@ KnobGui::onRemoveKeyActionTriggered()
 
     assert(action);
     int dim = action->data().toInt();
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     assert( knob->getHolder()->getApp() );
     //get the current time on the global timeline
@@ -630,9 +630,9 @@ KnobGui::hide()
     }
 
     //also  hide the curve from the curve editor if there's any and the knob is not inside a group
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     if ( knob && knob->getHolder() && knob->getHolder()->getApp() ) {
-        KnobPtr parent = getKnob()->getParentKnob();
+        KnobIPtr parent = getKnob()->getParentKnob();
         bool isSecret = true;
         while (parent) {
             if ( !parent->getIsSecret() ) {
@@ -688,7 +688,7 @@ KnobGui::show(int /*index*/)
     }
 
     //also show the curve from the curve editor if there's any
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     if ( knob && knob->getHolder() && knob->getHolder()->getApp() ) {
         getGui()->getCurveEditor()->showCurves( shared_from_this() );
     }
@@ -757,7 +757,7 @@ KnobGui::setEnabledSlot()
     if (!_imp->customInteract) {
         setEnabled();
     }
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     if (_imp->descriptionLabel) {
         _imp->descriptionLabel->setReadOnly( !knob->isEnabled(0) );
     }

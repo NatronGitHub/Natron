@@ -90,7 +90,7 @@ struct KnobGuiTablePrivate
     }
 };
 
-KnobGuiTable::KnobGuiTable(KnobPtr knob,
+KnobGuiTable::KnobGuiTable(KnobIPtr knob,
                            KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _imp( new KnobGuiTablePrivate() )
@@ -636,7 +636,7 @@ KnobGuiTable::updateToolTip()
     }
 }
 
-KnobGuiLayers::KnobGuiLayers(KnobPtr knob,
+KnobGuiLayers::KnobGuiLayers(KnobIPtr knob,
                              KnobGuiContainerI *container)
     : KnobGuiTable(knob, container)
 {
@@ -769,7 +769,7 @@ KnobGuiLayers::tableChanged(int row,
     }
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiLayers::getKnob() const
 {
     return _knob.lock();

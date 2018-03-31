@@ -86,7 +86,7 @@ using std::make_pair;
 
 //=============================GROUP_KNOB_GUI===================================
 
-KnobGuiGroup::KnobGuiGroup(KnobPtr knob,
+KnobGuiGroup::KnobGuiGroup(KnobIPtr knob,
                            KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _checked(false)
@@ -314,7 +314,7 @@ KnobGuiGroup::setEnabled()
     }
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiGroup::getKnob() const
 {
     return _knob.lock();

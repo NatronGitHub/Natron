@@ -75,7 +75,7 @@ public:
 
     NodeCurveEditorElement(QTreeWidget* tree,
                            CurveEditor* curveWidget,
-                           const KnobPtr& internalKnob,
+                           const KnobIPtr& internalKnob,
                            int dimension,
                            QTreeWidgetItem* item,
                            const boost::shared_ptr<CurveGui>& curve);
@@ -114,7 +114,7 @@ public:
         return _knob.lock();
     }
 
-    KnobPtr getInternalKnob() const WARN_UNUSED_RETURN;
+    KnobIPtr getInternalKnob() const WARN_UNUSED_RETURN;
 
     void checkVisibleState(bool autoSelectOnShow);
 
@@ -151,7 +151,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    typedef std::list< NodeCurveEditorElement* > Elements;
+    typedef std::list<NodeCurveEditorElement* > Elements;
 
     NodeCurveEditorContext(QTreeWidget *tree,
                            CurveEditor* curveWidget,

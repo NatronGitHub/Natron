@@ -305,7 +305,7 @@ public:
 
 public:
 
-    void addInvalidExpressionKnob(const KnobPtr& knob);
+    void addInvalidExpressionKnob(const KnobIPtr& knob);
     void removeInvalidExpressionKnob(const KnobI* knob);
     void recheckInvalidExpressions();
 

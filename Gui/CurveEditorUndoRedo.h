@@ -121,7 +121,7 @@ public:
         std::vector<KeyFrame> keyframes;
     };
 
-    typedef std::list< KeyToAdd > KeysToAddList;
+    typedef std::list<KeyToAdd > KeysToAddList;
 
     AddKeysCommand(CurveWidget *editor,
                    const KeysToAddList & keys,
@@ -276,7 +276,7 @@ class SetKeysInterpolationCommand
 public:
 
     SetKeysInterpolationCommand(CurveWidget* widget,
-                                const std::list< KeyInterpolationChange > & keys,
+                                const std::list<KeyInterpolationChange > & keys,
                                 QUndoCommand *parent = 0);
     virtual ~SetKeysInterpolationCommand() OVERRIDE
     {
@@ -290,7 +290,7 @@ private:
     void setNewInterpolation(bool undo);
 
 private:
-    std::list< KeyInterpolationChange > _keys;
+    std::list<KeyInterpolationChange > _keys;
     CurveWidget* _widget;
 };
 

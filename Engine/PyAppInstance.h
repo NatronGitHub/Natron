@@ -329,7 +329,7 @@ protected:
     void renderInternal(bool forceBlocking, const std::list<Effect*>& effects, const std::list<int>& firstFrames, const std::list<int>& lastFrames,
                         const std::list<int>& frameSteps);
 
-    boost::shared_ptr<NodeCollection> getCollectionFromGroup(Group* group) const;
+    NodeCollectionPtr getCollectionFromGroup(Group* group) const;
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

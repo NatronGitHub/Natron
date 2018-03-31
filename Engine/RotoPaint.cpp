@@ -1181,7 +1181,7 @@ RotoPaint::knobChanged(KnobI* k,
         return false;
     }
     bool ret = true;
-    KnobPtr kShared = k->shared_from_this();
+    KnobIPtr kShared = k->shared_from_this();
     boost::shared_ptr<KnobButton> isBtn = boost::dynamic_pointer_cast<KnobButton>(kShared);
     boost::shared_ptr<KnobGroup> isGrp = boost::dynamic_pointer_cast<KnobGroup>(kShared);
     if ( isBtn && _imp->ui->onToolChangedInternal(isBtn) ) {
@@ -1669,7 +1669,7 @@ RotoPaint::drawOverlay(double time,
                        const RenderScale & /*renderScale*/,
                        ViewIdx /*view*/)
 {
-    std::list< boost::shared_ptr<RotoDrawableItem> > drawables = getNode()->getRotoContext()->getCurvesByRenderOrder();
+    std::list<boost::shared_ptr<RotoDrawableItem> > drawables = getNode()->getRotoContext()->getCurvesByRenderOrder();
     std::pair<double, double> pixelScale;
     std::pair<double, double> viewportSize;
 
@@ -1690,7 +1690,7 @@ RotoPaint::drawOverlay(double time,
 
         double cpWidth = kControlPointMidSize * 2;
         glPointSize(cpWidth);
-        for (std::list< boost::shared_ptr<RotoDrawableItem> >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
+        for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
             if ( !(*it)->isGloballyActivated() ) {
                 continue;
             }
@@ -1745,7 +1745,7 @@ RotoPaint::drawOverlay(double time,
                 //                  continue;
                 //            }
 
-                std::list< ParametricPoint > points;
+                std::list<ParametricPoint > points;
                 isBezier->evaluateAtTime_DeCasteljau(true, time, 0,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                      100,
@@ -1770,7 +1770,7 @@ RotoPaint::drawOverlay(double time,
                 glEnd();
 
                 ///draw the feather points
-                std::list< ParametricPoint > featherPoints;
+                std::list<ParametricPoint > featherPoints;
                 RectD featherBBox( std::numeric_limits<double>::infinity(),
                                    std::numeric_limits<double>::infinity(),
                                    -std::numeric_limits<double>::infinity(),
@@ -1814,8 +1814,8 @@ RotoPaint::drawOverlay(double time,
                     Transform::Matrix3x3 transform;
                     isBezier->getTransformAtTime(time, &transform);
 
-                    const std::list< boost::shared_ptr<BezierCP> > & cps = isBezier->getControlPoints();
-                    const std::list< boost::shared_ptr<BezierCP> > & featherPts = isBezier->getFeatherPoints();
+                    const std::list<boost::shared_ptr<BezierCP> > & cps = isBezier->getControlPoints();
+                    const std::list<boost::shared_ptr<BezierCP> > & featherPts = isBezier->getFeatherPoints();
                     assert( cps.size() == featherPts.size() );
 
                     if ( cps.empty() ) {
@@ -1825,17 +1825,17 @@ RotoPaint::drawOverlay(double time,
 
                     glColor3d(0.85, 0.67, 0.);
 
-                    std::list< boost::shared_ptr<BezierCP> >::const_iterator itF = featherPts.begin();
+                    std::list<boost::shared_ptr<BezierCP> >::const_iterator itF = featherPts.begin();
                     int index = 0;
-                    std::list< boost::shared_ptr<BezierCP> >::const_iterator prevCp = cps.end();
+                    std::list<boost::shared_ptr<BezierCP> >::const_iterator prevCp = cps.end();
                     if ( prevCp != cps.begin() ) {
                         --prevCp;
                     }
-                    std::list< boost::shared_ptr<BezierCP> >::const_iterator nextCp = cps.begin();
+                    std::list<boost::shared_ptr<BezierCP> >::const_iterator nextCp = cps.begin();
                     if ( nextCp != cps.end() ) {
                         ++nextCp;
                     }
-                    for (std::list< boost::shared_ptr<BezierCP> >::const_iterator it2 = cps.begin(); it2 != cps.end();
+                    for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it2 = cps.begin(); it2 != cps.end();
                          ++it2) {
                         if ( nextCp == cps.end() ) {
                             nextCp = cps.begin();
@@ -2021,7 +2021,7 @@ RotoPaint::drawOverlay(double time,
                 } // if ( ( selected != _imp->ui->selectedBeziers.end() ) && !locked ) {
             } // if (isBezier)
             glCheckError();
-        } // for (std::list< boost::shared_ptr<RotoDrawableItem> >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
+        } // for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
 
         if ( _imp->isPaintByDefault &&
              ( ( _imp->ui->selectedRole == eRotoRoleMergeBrush) ||

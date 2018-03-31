@@ -406,8 +406,8 @@ struct RotoPaintPrivate
 ///A list of points and their counter-part, that is: either a control point and its feather point, or
 ///the feather point and its associated control point
 typedef std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > SelectedCP;
-typedef std::list< SelectedCP > SelectedCPs;
-typedef std::list< boost::shared_ptr<RotoDrawableItem> > SelectedItems;
+typedef std::list<SelectedCP > SelectedCPs;
+typedef std::list<boost::shared_ptr<RotoDrawableItem> > SelectedItems;
 
 enum EventStateEnum
 {

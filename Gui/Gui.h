@@ -114,7 +114,7 @@ public:
 
     void setActiveViewer(ViewerTab* viewer);
     ViewerTab* getActiveViewer() const;
-    boost::shared_ptr<NodeCollection> getLastSelectedNodeCollection() const;
+    NodeCollectionPtr getLastSelectedNodeCollection() const;
 
     /**
      * @brief Calling this will force the next viewer to be created in the given pane.
@@ -528,7 +528,7 @@ public:
 
     bool saveProjectAs(const std::string& filename);
 
-    static void fileSequencesFromUrls(const QList<QUrl>& urls, std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences);
+    static void fileSequencesFromUrls(const QList<QUrl>& urls, std::vector<boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences);
 
     void handleOpenFilesFromUrls(const QList<QUrl>& urls, const QPoint& globalPos);
 

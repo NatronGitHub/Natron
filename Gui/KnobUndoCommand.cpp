@@ -57,7 +57,7 @@ struct PasteUndoCommandPrivate
     int fromDimension;
     int targetDimension;
     boost::shared_ptr<KnobSerialization> originalSerialization;
-    KnobPtr fromKnob;
+    KnobIPtr fromKnob;
 
     PasteUndoCommandPrivate()
         : knob()
@@ -74,7 +74,7 @@ PasteUndoCommand::PasteUndoCommand(const KnobGuiPtr& knob,
                                    KnobClipBoardType type,
                                    int fromDimension,
                                    int targetDimension,
-                                   const KnobPtr& fromKnob)
+                                   const KnobIPtr& fromKnob)
     : QUndoCommand(0)
     , _imp( new PasteUndoCommandPrivate() )
 {
@@ -144,10 +144,10 @@ PasteUndoCommand::redo()
 } // undo
 
 void
-PasteUndoCommand::copyFrom(const KnobPtr& serializedKnob,
+PasteUndoCommand::copyFrom(const KnobIPtr& serializedKnob,
                            bool isRedo)
 {
-    KnobPtr internalKnob = _imp->knob.lock()->getKnob();
+    KnobIPtr internalKnob = _imp->knob.lock()->getKnob();
 
     switch (_imp->type) {
     case eKnobClipBoardTypeCopyAnim: {
@@ -262,11 +262,11 @@ MultipleKnobEditsUndoCommand::~MultipleKnobEditsUndoCommand()
 {
 }
 
-KnobPtr
-MultipleKnobEditsUndoCommand::createCopyForKnob(const KnobPtr & originalKnob)
+KnobIPtr
+MultipleKnobEditsUndoCommand::createCopyForKnob(const KnobIPtr & originalKnob)
 {
     const std::string & typeName = originalKnob->typeName();
-    KnobPtr copy;
+    KnobIPtr copy;
     int dimension = originalKnob->getDimension();
 
     if ( typeName == KnobInt::typeNameStatic() ) {
@@ -294,7 +294,7 @@ MultipleKnobEditsUndoCommand::createCopyForKnob(const KnobPtr & originalKnob)
     ///If this is another type of knob this is wrong since they do not hold any value
     assert(copy);
     if (!copy) {
-        return KnobPtr();
+        return KnobIPtr();
     }
     copy->populate();
 
@@ -318,7 +318,7 @@ MultipleKnobEditsUndoCommand::undo()
         if (!knobUI) {
             continue;
         }
-        KnobPtr knob = knobUI->getKnob();
+        KnobIPtr knob = knobUI->getKnob();
         if (!knob) {
             continue;
         }
@@ -394,7 +394,7 @@ MultipleKnobEditsUndoCommand::redo()
         if (!knobUI) {
             continue;
         }
-        KnobPtr knob = knobUI->getKnob();
+        KnobIPtr knob = knobUI->getKnob();
         if (!knob) {
             continue;
         }
@@ -518,7 +518,7 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
 }
 
 RestoreDefaultsCommand::RestoreDefaultsCommand(bool isNodeReset,
-                                               const std::list<KnobPtr > & knobs,
+                                               const std::list<KnobIPtr> & knobs,
                                                int targetDim,
                                                QUndoCommand *parent)
     : QUndoCommand(parent)
@@ -526,7 +526,7 @@ RestoreDefaultsCommand::RestoreDefaultsCommand(bool isNodeReset,
     , _targetDim(targetDim)
     , _knobs()
 {
-    for (std::list<KnobPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    for (std::list<KnobIPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         _knobs.push_front(*it);
         _clones.push_back( MultipleKnobEditsUndoCommand::createCopyForKnob(*it) );
     }
@@ -538,16 +538,16 @@ RestoreDefaultsCommand::undo()
     assert( _clones.size() == _knobs.size() );
 
     std::list<SequenceTime> times;
-    KnobPtr first = _knobs.front().lock();
+    KnobIPtr first = _knobs.front().lock();
     AppInstPtr app = first->getHolder()->getApp();
     assert(app);
-    std::list<KnobWPtr >::const_iterator itClone = _clones.begin();
-    for (std::list<KnobWPtr >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
-        KnobPtr itKnob = it->lock();
+    std::list<KnobWPtr>::const_iterator itClone = _clones.begin();
+    for (std::list<KnobWPtr>::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
+        KnobIPtr itKnob = it->lock();
         if (!itKnob) {
             continue;
         }
-        KnobPtr itCloneKnob = itClone->lock();
+        KnobIPtr itCloneKnob = itClone->lock();
         if (!itCloneKnob) {
             continue;
         }
@@ -582,7 +582,7 @@ void
 RestoreDefaultsCommand::redo()
 {
     std::list<SequenceTime> times;
-    KnobPtr first = _knobs.front().lock();
+    KnobIPtr first = _knobs.front().lock();
     AppInstPtr app;
     KnobHolder* holder = first->getHolder();
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
@@ -596,8 +596,8 @@ RestoreDefaultsCommand::redo()
     /*
        First reset all knobs values, this will not call instanceChanged action
      */
-    for (std::list<KnobWPtr >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
-        KnobPtr itKnob = it->lock();
+    for (std::list<KnobWPtr>::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+        KnobIPtr itKnob = it->lock();
         if (!itKnob) {
             continue;
         }
@@ -642,8 +642,8 @@ RestoreDefaultsCommand::redo()
     if (app) {
         time = app->getTimeLine()->currentFrame();
     }
-    for (std::list<KnobWPtr >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
-        KnobPtr itKnob = it->lock();
+    for (std::list<KnobWPtr>::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+        KnobIPtr itKnob = it->lock();
         if (!itKnob) {
             continue;
         }
@@ -675,7 +675,7 @@ RestoreDefaultsCommand::redo()
     setText( tr("Restore default value(s)") );
 } // RestoreDefaultsCommand::redo
 
-SetExpressionCommand::SetExpressionCommand(const KnobPtr & knob,
+SetExpressionCommand::SetExpressionCommand(const KnobIPtr & knob,
                                            bool hasRetVar,
                                            int dimension,
                                            const std::string& expr,
@@ -697,7 +697,7 @@ SetExpressionCommand::SetExpressionCommand(const KnobPtr & knob,
 void
 SetExpressionCommand::undo()
 {
-    KnobPtr knob = _knob.lock();
+    KnobIPtr knob = _knob.lock();
 
     if (!knob) {
         return;
@@ -718,7 +718,7 @@ SetExpressionCommand::undo()
 void
 SetExpressionCommand::redo()
 {
-    KnobPtr knob = _knob.lock();
+    KnobIPtr knob = _knob.lock();
 
     if (!knob) {
         return;

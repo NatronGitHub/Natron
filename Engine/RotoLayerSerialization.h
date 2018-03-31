@@ -90,7 +90,7 @@ private:
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoItemSerialization);
         int numChildren = (int)children.size();
         ar & ::boost::serialization::make_nvp("NumChildren", numChildren);
-        for (std::list < boost::shared_ptr<RotoItemSerialization> >::const_iterator it = children.begin(); it != children.end(); ++it) {
+        for (std::list<boost::shared_ptr<RotoItemSerialization> >::const_iterator it = children.begin(); it != children.end(); ++it) {
             BezierSerialization* isBezier = dynamic_cast<BezierSerialization*>( it->get() );
             RotoStrokeItemSerialization* isStroke = dynamic_cast<RotoStrokeItemSerialization*>( it->get() );
             RotoLayerSerialization* isLayer = dynamic_cast<RotoLayerSerialization*>( it->get() );
@@ -153,7 +153,7 @@ private:
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
-    std::list < boost::shared_ptr<RotoItemSerialization> > children;
+    std::list<boost::shared_ptr<RotoItemSerialization> > children;
 };
 
 NATRON_NAMESPACE_EXIT

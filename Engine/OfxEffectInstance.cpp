@@ -467,7 +467,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             getNode()->initializeKnobs(serialization != 0);
 
             {
-                KnobPtr foundCursorKnob = getKnobByName(kNatronOfxParamCursorName);
+                KnobIPtr foundCursorKnob = getKnobByName(kNatronOfxParamCursorName);
                 if (foundCursorKnob) {
                     boost::shared_ptr<KnobString> isStringKnob = boost::dynamic_pointer_cast<KnobString>(foundCursorKnob);
                     _imp->cursorKnob = isStringKnob;
@@ -476,21 +476,21 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             
             {
 
-                KnobPtr foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
+                KnobIPtr foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
                 if (foundSelKnob) {
                     boost::shared_ptr<KnobInt> isIntKnob = boost::dynamic_pointer_cast<KnobInt>(foundSelKnob);
                     _imp->selectionRectangleStateKnob = isIntKnob;
                 }
             }
             {
-                KnobPtr foundTextKnob = getKnobByName(kNatronOfxParamUndoRedoText);
+                KnobIPtr foundTextKnob = getKnobByName(kNatronOfxParamUndoRedoText);
                 if (foundTextKnob) {
                     boost::shared_ptr<KnobString> isStringKnob = boost::dynamic_pointer_cast<KnobString>(foundTextKnob);
                     _imp->undoRedoTextKnob = isStringKnob;
                 }
             }
             {
-                KnobPtr foundUndoRedoKnob = getKnobByName(kNatronOfxParamUndoRedoState);
+                KnobIPtr foundUndoRedoKnob = getKnobByName(kNatronOfxParamUndoRedoState);
                 if (foundUndoRedoKnob) {
                     boost::shared_ptr<KnobBool> isBool = boost::dynamic_pointer_cast<KnobBool>(foundUndoRedoKnob);
                     _imp->undoRedoStateKnob = isBool;
@@ -713,9 +713,9 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         std::vector<std::string> slaveParams;
         _imp->overlayInteract->getSlaveToParam(slaveParams);
         for (U32 i = 0; i < slaveParams.size(); ++i) {
-            KnobPtr param;
-            const std::vector< KnobPtr > & knobs = getKnobs();
-            for (std::vector< KnobPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+            KnobIPtr param;
+            const std::vector<KnobIPtr> & knobs = getKnobs();
+            for (std::vector<KnobIPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
                 if ( (*it)->getOriginalName() == slaveParams[i] ) {
                     param = *it;
                     break;
@@ -748,7 +748,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         if (!interactEntryPoint) {
             continue;
         }
-        KnobPtr knob = paramToKnob->getKnob();
+        KnobIPtr knob = paramToKnob->getKnob();
         const OFX::Host::Property::PropSpec* interactDescProps = OfxImageEffectInstance::getOfxParamOverlayInteractDescProps();
         OFX::Host::Interact::Descriptor &interactDesc = paramToKnob->getInteractDesc();
         interactDesc.getProperties().addProperties(interactDescProps);

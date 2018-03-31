@@ -215,7 +215,7 @@ struct TrackDatas
     boost::weak_ptr<TrackMarker> marker;
 };
 
-typedef std::vector< TrackDatas> TrackItems;
+typedef std::vector<TrackDatas> TrackItems;
 
 struct TrackKeys
 {
@@ -299,13 +299,13 @@ public:
 
     void makeTrackRowItems(const TrackMarker& marker, int row, TrackDatas& data);
 
-    void markersToSelection(const std::list<TrackMarkerPtr >& markers, QItemSelection* selection);
+    void markersToSelection(const std::list<TrackMarkerPtr>& markers, QItemSelection* selection);
 
-    void selectionFromIndexList(const QModelIndexList& indexes, std::list<TrackMarkerPtr >* markers);
+    void selectionFromIndexList(const QModelIndexList& indexes, std::list<TrackMarkerPtr>* markers);
 
-    void selectionToMarkers(const QItemSelection& selection, std::list<TrackMarkerPtr >* markers);
+    void selectionToMarkers(const QItemSelection& selection, std::list<TrackMarkerPtr>* markers);
 
-    void createCornerPinFromSelection(const std::list<TrackMarkerPtr > & selection, bool linked, bool useTransformRefFrame, bool invert);
+    void createCornerPinFromSelection(const std::list<TrackMarkerPtr> & selection, bool linked, bool useTransformRefFrame, bool invert);
 
     void setVisibleItemKeyframes(const std::list<int>& keys, bool visible, bool emitSignal);
 
@@ -519,7 +519,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->mainLayout->addWidget(_imp->buttonsContainer);
 
     ///Restore the table if needed
-    std::vector<TrackMarkerPtr > existingMarkers;
+    std::vector<TrackMarkerPtr> existingMarkers;
     context->getAllMarkers(&existingMarkers);
     blockSelection();
     for (std::size_t i = 0; i < existingMarkers.size(); ++i) {
@@ -529,7 +529,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
 }
 
 static QString
-tooltipFromKnob(const KnobPtr& knob)
+tooltipFromKnob(const KnobIPtr& knob)
 {
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
     QString tt = QString::fromUtf8("<font size=\"4\"><b>%1</b></font>").arg( QString::fromUtf8( knob->getName().c_str() ) );
@@ -751,7 +751,7 @@ TrackerPanel::addTableRow(const TrackMarkerPtr & node)
 
     if (!_imp->selectionBlocked) {
         ///select the new item
-        std::list<TrackMarkerPtr > markers;
+        std::list<TrackMarkerPtr> markers;
         markers.push_back(node);
         selectInternal(markers, TrackerContext::eTrackSelectionInternal);
     }
@@ -931,7 +931,7 @@ TrackerPanel::pushUndoCommand(QUndoCommand* command)
 void
 TrackerPanel::onRemoveButtonClicked()
 {
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     getContext()->getSelectedMarkers(&markers);
     if ( !markers.empty() ) {
@@ -954,12 +954,12 @@ TrackerPanel::onResetButtonClicked()
     boost::shared_ptr<TrackerContext> context = getContext();
 
     assert(context);
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
     context->getSelectedMarkers(&markers);
     context->clearSelection(TrackerContext::eTrackSelectionInternal);
     context->endEditSelection(TrackerContext::eTrackSelectionInternal);
 
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->resetTrack();
     }
     context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
@@ -986,7 +986,7 @@ TrackerPanel::onAverageButtonClicked()
     boost::shared_ptr<TrackerContext> context = getContext();
 
     assert(context);
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
     context->getSelectedMarkers(&markers);
     if ( markers.empty() ) {
         Dialogs::warningDialog( tr("Average").toStdString(), tr("No tracks selected").toStdString() );
@@ -1007,7 +1007,7 @@ TrackerPanel::onAverageButtonClicked()
     RangeD keyframesRange;
     keyframesRange.min = INT_MAX;
     keyframesRange.max = INT_MIN;
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         boost::shared_ptr<KnobDouble> markCenter = (*it)->getCenterKnob();
         double mini, maxi;
         bool hasKey = markCenter->getFirstKeyFrameTime(ViewSpec(0), 0, &mini);
@@ -1037,7 +1037,7 @@ TrackerPanel::onAverageButtonClicked()
 #endif
 
 
-        for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+        for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
             boost::shared_ptr<KnobDouble> markCenter = (*it)->getCenterKnob();
 
 #ifdef AVERAGE_ALSO_PATTERN_QUAD
@@ -1117,10 +1117,10 @@ TrackerPanel::onAverageButtonClicked()
 } // TrackerPanel::onAverageButtonClicked
 
 void
-TrackerPanelPrivate::markersToSelection(const std::list<TrackMarkerPtr >& markers,
+TrackerPanelPrivate::markersToSelection(const std::list<TrackMarkerPtr>& markers,
                                         QItemSelection* selection)
 {
-    for (std::list<TrackMarkerPtr >::const_iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::const_iterator it = markers.begin(); it != markers.end(); ++it) {
         int row = _publicInterface->getMarkerRow(*it);
         if (row == -1) {
             continue;
@@ -1135,7 +1135,7 @@ TrackerPanelPrivate::markersToSelection(const std::list<TrackMarkerPtr >& marker
 
 void
 TrackerPanelPrivate::selectionFromIndexList(const QModelIndexList& indexes,
-                                            std::list<TrackMarkerPtr >* markers)
+                                            std::list<TrackMarkerPtr>* markers)
 {
     for (int i = 0; i < indexes.size(); ++i) {
         //Check that the item is valid
@@ -1155,7 +1155,7 @@ TrackerPanelPrivate::selectionFromIndexList(const QModelIndexList& indexes,
 
 void
 TrackerPanelPrivate::selectionToMarkers(const QItemSelection& selection,
-                                        std::list<TrackMarkerPtr >* markers)
+                                        std::list<TrackMarkerPtr>* markers)
 {
     QModelIndexList indexes = selection.indexes();
 
@@ -1213,12 +1213,12 @@ TrackerPanel::onTrackCloned(const TrackMarkerPtr& marker)
 }
 
 void
-TrackerPanel::onSelectionAboutToChangeInternal(const std::list<TrackMarkerPtr >& selection)
+TrackerPanel::onSelectionAboutToChangeInternal(const std::list<TrackMarkerPtr>& selection)
 {
     ///Remove visible keyframes on timeline
     std::list<int> toRemove, toRemoveUser;
 
-    for (std::list<TrackMarkerPtr >::const_iterator it = selection.begin(); it != selection.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::const_iterator it = selection.begin(); it != selection.end(); ++it) {
         TrackKeysMap::iterator found = _imp->keys.find(*it);
         if ( found != _imp->keys.end() ) {
             found->second.visible = false;
@@ -1254,7 +1254,7 @@ TrackerPanel::onContextSelectionAboutToChange(int reason)
         //avoid recursions
         return;
     }
-    std::list<TrackMarkerPtr > selection;
+    std::list<TrackMarkerPtr> selection;
     getContext()->getSelectedMarkers(&selection);
     onSelectionAboutToChangeInternal(selection);
 }
@@ -1262,7 +1262,7 @@ TrackerPanel::onContextSelectionAboutToChange(int reason)
 void
 TrackerPanel::onContextSelectionChanged(int reason)
 {
-    std::list<TrackMarkerPtr > selection;
+    std::list<TrackMarkerPtr> selection;
 
     getContext()->getSelectedMarkers(&selection);
     selectInternal(selection, reason);
@@ -1275,7 +1275,7 @@ TrackerPanel::onModelSelectionChanged(const QItemSelection & /*addedToSelection*
     if (_imp->selectionRecursion > 0) {
         return;
     }
-    std::list<TrackMarkerPtr > oldMarkers, markers;
+    std::list<TrackMarkerPtr> oldMarkers, markers;
     _imp->context.lock()->getSelectedMarkers(&oldMarkers);
     QModelIndexList newSelection = _imp->view->selectionModel()->selectedRows();
     _imp->selectionFromIndexList(newSelection, &markers);
@@ -1284,14 +1284,14 @@ TrackerPanel::onModelSelectionChanged(const QItemSelection & /*addedToSelection*
 }
 
 void
-TrackerPanel::clearAndSelectTracks(const std::list<TrackMarkerPtr >& markers,
+TrackerPanel::clearAndSelectTracks(const std::list<TrackMarkerPtr>& markers,
                                    int reason)
 {
     selectInternal(markers, reason);
 }
 
 void
-TrackerPanel::selectInternal(const std::list<TrackMarkerPtr >& markers,
+TrackerPanel::selectInternal(const std::list<TrackMarkerPtr>& markers,
                              int reason)
 {
     TrackerContext::TrackSelectionReason selectionReason = (TrackerContext::TrackSelectionReason)reason;
@@ -1310,7 +1310,7 @@ TrackerPanel::selectInternal(const std::list<TrackMarkerPtr >& markers,
 
 
         std::list<int> keysToAdd, userKeysToAdd;
-        for (std::list<TrackMarkerPtr >::const_iterator it = markers.begin(); it != markers.end(); ++it) {
+        for (std::list<TrackMarkerPtr>::const_iterator it = markers.begin(); it != markers.end(); ++it) {
             TrackKeys k;
             k.visible = true;
             (*it)->getCenterKeyframes(&k.centerKeys);
@@ -1764,7 +1764,7 @@ TrackerPanel::onSettingsPanelClosed(bool closed)
     } else {
         ///rebuild all the keyframe structure
 
-        std::list< TrackMarkerPtr > selectedMarkers;
+        std::list<TrackMarkerPtr> selectedMarkers;
         getContext()->getSelectedMarkers(&selectedMarkers);
 
         std::list<int> toAdd, toAddUser;
@@ -1782,7 +1782,7 @@ TrackerPanel::onSettingsPanelClosed(bool closed)
             std::pair<TrackKeysMap::iterator, bool> ret = _imp->keys.insert( std::make_pair(marker, keys) );
             assert(ret.second);
 
-            std::list< TrackMarkerPtr >::iterator foundSelected =
+            std::list<TrackMarkerPtr>::iterator foundSelected =
                 std::find(selectedMarkers.begin(), selectedMarkers.end(), marker);
 
             ///If the item is selected, make its keyframes visible
@@ -1941,10 +1941,10 @@ void
 TrackerPanel::onAddKeyframeButtonClicked()
 {
     int time = getNode()->getNode()->getApp()->getTimeLine()->currentFrame();
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     getContext()->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->setUserKeyframe(time);
     }
 }
@@ -1953,10 +1953,10 @@ void
 TrackerPanel::onRemoveKeyframeButtonClicked()
 {
     int time = getNode()->getNode()->getApp()->getTimeLine()->currentFrame();
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     getContext()->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->removeUserKeyframe(time);
     }
 }
@@ -1964,10 +1964,10 @@ TrackerPanel::onRemoveKeyframeButtonClicked()
 void
 TrackerPanel::onRemoveAnimationButtonClicked()
 {
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     getContext()->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->removeAllUserKeyframes();
     }
 }
@@ -1976,11 +1976,11 @@ void
 TrackerPanelPrivate::updateTrackKeysInfoBar(int time)
 {
     std::set<int> keyframes;
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     context.lock()->getSelectedMarkers(&markers);
 
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         std::set<int> keys;
         (*it)->getUserKeyframes(&keys);
         keyframes.insert( keys.begin(), keys.end() );
@@ -2035,10 +2035,10 @@ TrackerPanel::onTimeChanged(SequenceTime time,
 {
     _imp->updateTrackKeysInfoBar(time);
 
-    std::vector<TrackMarkerPtr > markers;
+    std::vector<TrackMarkerPtr> markers;
     _imp->context.lock()->getAllMarkers(&markers);
 
-    for (std::vector<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::vector<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->refreshAfterTimeChange(reason == eTimelineChangeReasonPlaybackSeek, time);
     }
 }

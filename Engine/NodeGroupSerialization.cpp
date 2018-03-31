@@ -80,8 +80,8 @@ static QString lookForFileRecursively(const QString& dirPath, const QString& fil
 }
 
 bool
-NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::shared_ptr<NodeSerialization> > & serializedNodes,
-                                                      const boost::shared_ptr<NodeCollection>& group,
+NodeCollectionSerialization::restoreFromSerialization(const std::list<boost::shared_ptr<NodeSerialization> > & serializedNodes,
+                                                      const NodeCollectionPtr& group,
                                                       bool createNodes,
                                                       std::map<std::string, bool>* moduleUpdatesProcessed)
 {
@@ -104,9 +104,9 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     ///Problem: we have lost the nodes connections. To do so we restore them using the serialization of a child.
     ///This map contains all the parents that must be reconnected and an iterator to the child serialization
     std::map<NodePtr, std::list<boost::shared_ptr<NodeSerialization> >::const_iterator > parentsToReconnect;
-    std::list< boost::shared_ptr<NodeSerialization> > multiInstancesToRecurse;
+    std::list<boost::shared_ptr<NodeSerialization> > multiInstancesToRecurse;
     std::map<NodePtr, boost::shared_ptr<NodeSerialization> > createdNodes;
-    for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+    for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
         std::string pluginID = (*it)->getPluginID();
 
         if ( appPTR->isBackground() && ( (pluginID == PLUGINID_NATRON_VIEWER) || (pluginID == "Viewer") ) ) {
@@ -119,7 +119,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
 
         if ( !(*it)->getMultiInstanceParentName().empty() ) {
             bool foundParent = false;
-            for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it2 = serializedNodes.begin();
+            for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it2 = serializedNodes.begin();
                  it2 != serializedNodes.end(); ++it2) {
                 if ( (*it2)->getNodeScriptName() == (*it)->getMultiInstanceParentName() ) {
                     foundParent = true;
@@ -306,9 +306,9 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 multiInstancesToRecurse.push_back(*it);
             }
         }
-    } // for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+    } // for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
-    for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = multiInstancesToRecurse.begin(); it != multiInstancesToRecurse.end(); ++it) {
+    for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it = multiInstancesToRecurse.begin(); it != multiInstancesToRecurse.end(); ++it) {
         NodeCollectionSerialization::restoreFromSerialization( (*it)->getNodesCollection(), group, true, moduleUpdatesProcessed );
     }
 
@@ -391,7 +391,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
             }
         }
-    } // for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+    } // for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
     ///Now that the graph is setup, restore expressions
     NodesList nodes = group->getNodes();

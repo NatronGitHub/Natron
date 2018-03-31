@@ -76,7 +76,7 @@ class RemoveTracksCommand
 
 public:
 
-    RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers,
+    RemoveTracksCommand(const std::list<TrackMarkerPtr> &markers,
                         const boost::shared_ptr<TrackerContext>& context);
 
     virtual void undo() OVERRIDE FINAL;

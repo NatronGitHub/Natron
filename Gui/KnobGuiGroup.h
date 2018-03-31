@@ -61,13 +61,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    static KnobGui * BuildKnobGui(KnobPtr knob,
+    static KnobGui * BuildKnobGui(KnobIPtr knob,
                                   KnobGuiContainerI *container)
     {
         return new KnobGuiGroup(knob, container);
     }
 
-    KnobGuiGroup(KnobPtr knob,
+    KnobGuiGroup(KnobIPtr knob,
                  KnobGuiContainerI *container);
 
     virtual ~KnobGuiGroup() OVERRIDE;
@@ -79,7 +79,7 @@ public:
     const std::list<KnobGuiWPtr>& getChildren() const { return _children; }
 
     bool isChecked() const;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     TabGroup* getOrCreateTabWidget();
 
     void removeTabWidget();
@@ -110,7 +110,7 @@ private:
     bool _checked;
     GroupBoxLabel *_button;
     std::list<KnobGuiWPtr> _children;
-    std::vector< std::pair<KnobGuiWPtr, std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
+    std::vector<std::pair<KnobGuiWPtr, std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
     TabGroup* _tabGroup;
     //enabled too
     boost::weak_ptr<KnobGroup> _knob;

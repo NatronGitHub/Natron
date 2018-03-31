@@ -201,7 +201,7 @@ ColorPickerLabel::setColor(const QColor & color)
     }
 } // ColorPickerLabel::setColor
 
-KnobGuiColor::KnobGuiColor(KnobPtr knob,
+KnobGuiColor::KnobGuiColor(KnobIPtr knob,
                            KnobGuiContainerI *container)
     : KnobGuiValue(knob, container)
     , _knob( boost::dynamic_pointer_cast<KnobColor>(knob) )

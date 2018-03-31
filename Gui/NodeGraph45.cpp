@@ -143,7 +143,7 @@ NodeGraph::refreshAllKnobsGui()
             const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > & knobs = (*it)->getKnobs();
 
             for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-                KnobPtr knob = it2->first.lock();
+                KnobIPtr knob = it2->first.lock();
                 if ( !knob->getIsSecret() ) {
                     for (int i = 0; i < knob->getDimension(); ++i) {
                         if ( knob->isAnimated(i) ) {
@@ -606,7 +606,7 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
 {
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    boost::shared_ptr<NodeCollection> group = getGroup();
+    NodeCollectionPtr group = getGroup();
     if (!group) {
         return;
     }
@@ -637,8 +637,8 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
 
 void
 NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
-                                     const boost::shared_ptr<NodeCollection>& group,
-                                     std::list<std::pair<std::string, NodeGuiPtr > >& createdNodes)
+                                     const NodeCollectionPtr& group,
+                                     std::list<std::pair<std::string, NodeGuiPtr> >& createdNodes)
 {
     {
         CreatingNodeTreeFlag_RAII createNodeTree( getGui()->getApp() );
@@ -674,7 +674,7 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
         }
 
         std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itSerialization = clipboard.nodes.begin();
-        for (std::list<std::pair<std::string, NodeGuiPtr > > ::iterator it = createdNodes.begin(); it != createdNodes.end(); ++it, ++itSerialization) {
+        for (std::list<std::pair<std::string, NodeGuiPtr> > ::iterator it = createdNodes.begin(); it != createdNodes.end(); ++it, ++itSerialization) {
             it->second->getNode()->restoreKnobsLinks(**itSerialization, allNodes, oldNewScriptNamesMapping);
         }
 

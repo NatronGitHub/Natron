@@ -73,7 +73,7 @@ KnobGui::onMultipleKeySet(const std::list<double>& keys,
                           int reason)
 {
     if ( (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited ) {
-        KnobPtr knob = getKnob();
+        KnobIPtr knob = getKnob();
         if ( !knob->getIsSecret() && ( knob->isDeclaredByPlugin()  || knob->isUserKnob() ) ) {
             std::list<SequenceTime> intKeys;
             for (std::list<double>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
@@ -93,7 +93,7 @@ KnobGui::onMultipleKeyRemoved(const std::list<double>& keys,
                               int reason)
 {
     if ( (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited ) {
-        KnobPtr knob = getKnob();
+        KnobIPtr knob = getKnob();
         if ( !knob->getIsSecret() && ( knob->isDeclaredByPlugin()  || knob->isUserKnob() ) ) {
             std::list<SequenceTime> intKeys;
             for (std::list<double>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
@@ -115,7 +115,7 @@ KnobGui::onInternalKeySet(double time,
 {
     if ( (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited ) {
         if (added) {
-            KnobPtr knob = getKnob();
+            KnobIPtr knob = getKnob();
             if ( !knob->getIsSecret() && ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) ) {
                 knob->getHolder()->getApp()->addKeyframeIndicator(time);
             }
@@ -131,7 +131,7 @@ KnobGui::onInternalKeyRemoved(double time,
                               int /*dimension*/,
                               int /*reason*/)
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     if ( !knob->getIsSecret() && ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) ) {
         knob->getHolder()->getApp()->removeKeyFrameIndicator(time);
@@ -197,7 +197,7 @@ void
 KnobGui::copyToClipBoard(KnobClipBoardType type,
                          int dimension) const
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     if (!knob) {
         return;
@@ -209,7 +209,7 @@ KnobGui::copyToClipBoard(KnobClipBoardType type,
 void
 KnobGui::pasteClipBoard(int targetDimension)
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     if (!knob) {
         return;
@@ -218,7 +218,7 @@ KnobGui::pasteClipBoard(int targetDimension)
     //the dimension from which it was copied from
     int cbDim;
     KnobClipBoardType type;
-    KnobPtr fromKnob;
+    KnobIPtr fromKnob;
     appPTR->getKnobClipBoard(&type, &fromKnob, &cbDim);
     if (!fromKnob) {
         return;
@@ -281,7 +281,7 @@ KnobGui::onKnobSlavedChanged(int /*dimension*/,
 void
 KnobGui::linkTo(int dimension)
 {
-    KnobPtr thisKnob = getKnob();
+    KnobIPtr thisKnob = getKnob();
 
     assert(thisKnob);
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>( thisKnob->getHolder() );
@@ -304,7 +304,7 @@ KnobGui::linkTo(int dimension)
     LinkToKnobDialog dialog( shared_from_this(), _imp->copyRightClickMenu->parentWidget() );
 
     if ( dialog.exec() ) {
-        KnobPtr otherKnob = dialog.getSelectedKnobs();
+        KnobIPtr otherKnob = dialog.getSelectedKnobs();
         if (otherKnob) {
             if ( !thisKnob->isTypeCompatible(otherKnob) ) {
                 Dialogs::errorDialog( tr("Param Link").toStdString(), tr("Types are incompatible!").toStdString() );
@@ -314,7 +314,7 @@ KnobGui::linkTo(int dimension)
 
 
             for (int i = 0; i < thisKnob->getDimension(); ++i) {
-                std::pair<int, KnobPtr > existingLink = thisKnob->getMaster(i);
+                std::pair<int, KnobIPtr> existingLink = thisKnob->getMaster(i);
                 if (existingLink.second) {
                     Dialogs::errorDialog( tr("Param Link").toStdString(),
                                           tr("Cannot link %1 because the knob is already linked to %2.")
@@ -332,7 +332,7 @@ KnobGui::linkTo(int dimension)
             }
 
             std::stringstream expr;
-            boost::shared_ptr<NodeCollection> thisCollection = isEffect->getNode()->getGroup();
+            NodeCollectionPtr thisCollection = isEffect->getNode()->getGroup();
             NodeGroup* otherIsGroup = dynamic_cast<NodeGroup*>(otherEffect);
             if ( otherIsGroup == thisCollection.get() ) {
                 expr << "thisGroup"; // make expression generic if possible
@@ -381,14 +381,14 @@ KnobGui::onResetDefaultValuesActionTriggered()
 void
 KnobGui::resetDefault(int dimension)
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     KnobButton* isBtn = dynamic_cast<KnobButton*>( knob.get() );
     KnobPage* isPage = dynamic_cast<KnobPage*>( knob.get() );
     KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knob.get() );
     KnobSeparator* isSeparator = dynamic_cast<KnobSeparator*>( knob.get() );
 
     if (!isBtn && !isPage && !isGroup && !isSeparator) {
-        std::list<KnobPtr > knobs;
+        std::list<KnobIPtr> knobs;
         knobs.push_back(knob);
         pushUndoCommand( new RestoreDefaultsCommand(false, knobs, dimension) );
     }
@@ -455,7 +455,7 @@ KnobGui::onSetValueUsingUndoStack(const Variant & v,
                                   ViewSpec /*view*/,
                                   int dim)
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
     Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
@@ -638,7 +638,7 @@ KnobGui::onInternalAnimationRemoved()
 void
 KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     if ( knob->getHolder() && knob->getHolder()->getApp() && !knob->getIsSecret() && ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) ) {
         AppInstPtr app = knob->getHolder()->getApp();
@@ -677,7 +677,7 @@ KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
 void
 KnobGui::setAllKeyframeMarkersOnTimeline(int dimension)
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     AppInstPtr app = knob->getHolder()->getApp();
 
     assert(app);
@@ -703,7 +703,7 @@ KnobGui::setAllKeyframeMarkersOnTimeline(int dimension)
 void
 KnobGui::setKeyframeMarkerOnTimeline(double time)
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     if ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) {
         knob->getHolder()->getApp()->addKeyframeIndicator(time);
@@ -716,7 +716,7 @@ KnobGui::onKeyFrameMoved(ViewSpec /*view*/,
                          double oldTime,
                          double newTime)
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     if ( !knob->isAnimationEnabled() || !knob->canAnimate() ) {
         return;
@@ -734,7 +734,7 @@ KnobGui::onAnimationLevelChanged(ViewSpec /*idx*/,
                                  int dimension)
 {
     if (!_imp->customInteract) {
-        KnobPtr knob = getKnob();
+        KnobIPtr knob = getKnob();
         int dim = knob->getDimension();
         for (int i = 0; i < dim; ++i) {
             if ( (i == dimension) || (dimension == -1) ) {
@@ -759,7 +759,7 @@ KnobGui::onAppendParamEditChanged(int reason,
 void
 KnobGui::onFrozenChanged(bool frozen)
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     KnobButton* isBtn = dynamic_cast<KnobButton*>( knob.get() );
 
     if ( isBtn && !isBtn->isRenderButton() ) {
@@ -852,7 +852,7 @@ KnobGui::onExprChanged(int dimension)
     if (_imp->guiRemoved || _imp->customInteract) {
         return;
     }
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     std::string exp = knob->getExpression(dimension);
     reflectExpressionState( dimension, !exp.empty() );
     if ( exp.empty() ) {
@@ -928,7 +928,7 @@ void
 KnobGui::onLabelChanged()
 {
     if (_imp->descriptionLabel) {
-        KnobPtr knob = getKnob();
+        KnobIPtr knob = getKnob();
         if (!knob) {
             return;
         }

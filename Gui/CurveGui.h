@@ -183,7 +183,7 @@ public:
 
     KnobCurveGui(CurveWidget *curveWidget,
                  boost::shared_ptr<Curve>  curve,
-                 const KnobPtr& knob,
+                 const KnobIPtr& knob,
                  const boost::shared_ptr<RotoContext>& roto,
                  int dimension,
                  const QString & name,
@@ -202,7 +202,7 @@ public:
     virtual double evaluate(bool useExpr, double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::shared_ptr<RotoContext> getRotoContext() const { return _roto; }
 
-    KnobPtr getInternalKnob() const;
+    KnobIPtr getInternalKnob() const;
 
     int getDimension() const
     {
@@ -220,7 +220,7 @@ public Q_SLOTS:
 private:
 
     boost::shared_ptr<RotoContext> _roto;
-    KnobPtr _internalKnob;
+    KnobIPtr _internalKnob;
     KnobGuiWPtr _knob; //< ptr to the knob holding this curve
     int _dimension; //< which dimension is this curve representing
 };

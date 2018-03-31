@@ -371,7 +371,7 @@ public:
 
     NodePtr getRealInputForInput(bool useGuiConnexions, const NodePtr& input) const;
 
-    void getInputs(std::vector<NodePtr >* inputs, bool useGuiConnexions) const;
+    void getInputs(std::vector<NodePtr>* inputs, bool useGuiConnexions) const;
 
     void getInputsOutputs(NodesList* nodes, bool useGuiConnexions) const;
 

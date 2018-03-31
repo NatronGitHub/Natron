@@ -69,7 +69,7 @@ class DSNode;
 class DopeSheet;
 
 typedef boost::shared_ptr<DSNode> DSNodePtr;
-typedef boost::shared_ptr<DSKnob> DSKnobPtr;
+typedef boost::shared_ptr<DSKnob> DSKnobIPtr;
 typedef std::map<QTreeWidgetItem *, boost::shared_ptr<DSNode> > DSTreeItemNodeMap;
 typedef std::map<QTreeWidgetItem *, boost::shared_ptr<DSKnob> > DSTreeItemKnobMap;
 // typedefs
@@ -230,7 +230,7 @@ public:
     QTreeWidgetItem * findDimTreeItem(int dimension) const;
 
     KnobGuiPtr getKnobGui() const;
-    KnobPtr getInternalKnob() const;
+    KnobIPtr getInternalKnob() const;
 
     bool isMultiDimRoot() const;
     int getDimension() const;
@@ -352,7 +352,7 @@ public:
     boost::shared_ptr<DSKnob> mapNameItemToDSKnob(QTreeWidgetItem *knobTreeItem) const;
     boost::shared_ptr<DSNode> findParentDSNode(QTreeWidgetItem *treeItem) const;
     boost::shared_ptr<DSNode> findDSNode(Node *node) const;
-    boost::shared_ptr<DSNode> findDSNode(const KnobPtr &knob) const;
+    boost::shared_ptr<DSNode> findDSNode(const KnobIPtr &knob) const;
     boost::shared_ptr<DSKnob> findDSKnob(const KnobGui* knobGui) const;
 
     bool isPartOfGroup(DSNode *dsNode) const;

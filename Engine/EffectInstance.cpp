@@ -1430,7 +1430,7 @@ EffectInstance::NotifyRenderingStarted_RAII::NotifyRenderingStarted_RAII(Node* n
     _didEmit = node->notifyRenderingStarted();
 
     // If the node is in a group, notify also the group
-    boost::shared_ptr<NodeCollection> group = node->getGroup();
+    NodeCollectionPtr group = node->getGroup();
     if (group) {
         NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(group.get());
         if (isGroupNode) {
@@ -1445,7 +1445,7 @@ EffectInstance::NotifyRenderingStarted_RAII::~NotifyRenderingStarted_RAII()
         _node->notifyRenderingEnded();
     }
     if (_didGroupEmit) {
-        boost::shared_ptr<NodeCollection> group = _node->getGroup();
+        NodeCollectionPtr group = _node->getGroup();
         if (group) {
             NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(group.get());
             if (isGroupNode) {
@@ -2633,7 +2633,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
     actionArgs.isRenderResponseToUserInteraction = isRenderResponseToUserInteraction;
     actionArgs.inputImages = tls->currentRenderArgs.inputImages;
 
-    std::list< std::list<std::pair<ImagePlaneDesc, ImagePtr> > > planesLists;
+    std::list<std::list<std::pair<ImagePlaneDesc, ImagePtr> > > planesLists;
     if (!multiPlanar) {
         for (std::list<std::pair<ImagePlaneDesc, ImagePtr> >::iterator it = tmpPlanes.begin(); it != tmpPlanes.end(); ++it) {
             std::list<std::pair<ImagePlaneDesc, ImagePtr> > tmp;
@@ -3008,7 +3008,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
 void
 EffectInstance::openImageFileKnob()
 {
-    const std::vector< KnobPtr > & knobs = getKnobs();
+    const std::vector<KnobIPtr> & knobs = getKnobs();
 
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->typeName() == KnobFile::typeNameStatic() ) {
@@ -3276,8 +3276,8 @@ EffectInstance::onAllKnobsSlaved(bool isSlave,
 }
 
 void
-EffectInstance::onKnobSlaved(const KnobPtr& slave,
-                             const KnobPtr& master,
+EffectInstance::onKnobSlaved(const KnobIPtr& slave,
+                             const KnobIPtr& master,
                              int dimension,
                              bool isSlave)
 {
@@ -3700,7 +3700,7 @@ EffectInstance::setInteractColourPicker_public(const OfxRGBAColourD& color, bool
 {
     const KnobsVec& knobs = getKnobs();
     for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-        const KnobPtr& k = *it2;
+        const KnobIPtr& k = *it2;
         if (!k) {
             continue;
         }

@@ -484,7 +484,7 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
     std::string thisNodeVar = appID + ".";
     thisNodeVar.append( _publicInterface->getNode()->getFullyQualifiedName() );
 
-    boost::shared_ptr<NodeCollection> collection = _publicInterface->getNode()->getGroup();
+    NodeCollectionPtr collection = _publicInterface->getNode()->getGroup();
     assert(collection);
     if (!collection) {
         return;

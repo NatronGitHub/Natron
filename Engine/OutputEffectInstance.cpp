@@ -173,7 +173,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
         viewsToRender.push_back(mainView);
     }
 
-    KnobPtr outputFileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
+    KnobIPtr outputFileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
     KnobOutputFile* outputFileName = outputFileNameKnob ? dynamic_cast<KnobOutputFile*>( outputFileNameKnob.get() ) : 0;
     std::string pattern = outputFileName ? outputFileName->getValue() : std::string();
 
@@ -188,7 +188,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
             ///all views will be overwritten to the same file
             ///If this is WriteOIIO, check the parameter "viewsSelector" to determine if the user wants to encode all
             ///views to a single file or not
-            KnobPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
+            KnobIPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
             bool hasViewChoice = false;
             if ( viewsKnob && !viewsKnob->getIsSecret() ) {
                 KnobChoice* viewsChoice = dynamic_cast<KnobChoice*>( viewsKnob.get() );
@@ -331,7 +331,7 @@ void
 OutputEffectInstance::createWriterPath()
 {
     ///Make sure that the file path exists
-    KnobPtr fileParam = getKnobByName(kOfxImageEffectFileParamName);
+    KnobIPtr fileParam = getKnobByName(kOfxImageEffectFileParamName);
 
     if (fileParam) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( fileParam.get() );
@@ -406,7 +406,7 @@ OutputEffectInstance::reportStats(int time,
                                   const std::map<NodePtr, NodeRenderStats > & stats)
 {
     std::string filename;
-    KnobPtr fileKnob = getKnobByName(kOfxImageEffectFileParamName);
+    KnobIPtr fileKnob = getKnobByName(kOfxImageEffectFileParamName);
 
     if (fileKnob) {
         KnobOutputFile* strKnob = dynamic_cast<KnobOutputFile*>( fileKnob.get() );
@@ -513,11 +513,11 @@ OutputEffectInstance::reportStats(int time,
         }
         ofile << std::endl;
 
-        std::list<std::pair<RectI, NodePtr > > identityRectangles = it->second.getIdentityRectangles();
+        std::list<std::pair<RectI, NodePtr> > identityRectangles = it->second.getIdentityRectangles();
         const std::list<RectI> & renderedRectangles = it->second.getRenderedRectangles();
 
         ofile << "Identity rectangles: " << identityRectangles.size() << std::endl;
-        for (std::list<std::pair<RectI, NodePtr > > ::iterator it2 = identityRectangles.begin(); it2 != identityRectangles.end(); ++it2) {
+        for (std::list<std::pair<RectI, NodePtr> > ::iterator it2 = identityRectangles.begin(); it2 != identityRectangles.end(); ++it2) {
             ofile << "Origin: " << it2->second->getScriptName_mt_safe() << ", rect: x1 = " << it2->first.x1
                   << " y1 = " << it2->first.y1 << " x2 = " << it2->first.x2 << " y2 = " << it2->first.y2 << std::endl;
         }

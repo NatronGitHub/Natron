@@ -148,7 +148,7 @@ LinkToKnobDialog::LinkToKnobDialog(const KnobGuiPtr& from,
     if (!isEffect) {
         throw std::logic_error("");
     }
-    boost::shared_ptr<NodeCollection> group = isEffect->getNode()->getGroup();
+    NodeCollectionPtr group = isEffect->getNode()->getGroup();
     group->getActiveNodes(&_imp->allNodes);
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( group.get() );
     if (isGroup) {
@@ -199,8 +199,8 @@ LinkToKnobDialog::onNodeComboEditingFinished()
         return;
     }
 
-    const std::vector< KnobPtr > & knobs = selectedNode->getKnobs();
-    KnobPtr from = _imp->fromKnob->getKnob();
+    const std::vector<KnobIPtr> & knobs = selectedNode->getKnobs();
+    KnobIPtr from = _imp->fromKnob->getKnob();
     for (U32 j = 0; j < knobs.size(); ++j) {
         if ( !knobs[j]->getIsSecret() && (knobs[j] != from) ) {
             KnobButton* isButton = dynamic_cast<KnobButton*>( knobs[j].get() );
@@ -223,16 +223,16 @@ LinkToKnobDialog::onNodeComboEditingFinished()
     }
 }
 
-KnobPtr
+KnobIPtr
 LinkToKnobDialog::getSelectedKnobs() const
 {
     QString str = _imp->knobSelectionCombo->itemText( _imp->knobSelectionCombo->activeIndex() );
-    std::map<QString, KnobPtr >::const_iterator it = _imp->allKnobs.find(str);
+    std::map<QString, KnobIPtr>::const_iterator it = _imp->allKnobs.find(str);
 
     if ( it != _imp->allKnobs.end() ) {
         return it->second;
     } else {
-        return KnobPtr();
+        return KnobIPtr();
     }
 }
 

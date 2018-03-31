@@ -94,7 +94,7 @@ struct KnobGuiValuePrivate
     Button *dimensionSwitchButton;
     bool rectangleFormatIsWidthHeight;
 
-    KnobGuiValuePrivate(KnobPtr knob)
+    KnobGuiValuePrivate(KnobIPtr knob)
         : knob(knob)
         , intKnob( boost::dynamic_pointer_cast<Knob<int> >(knob) )
         , doubleKnob( boost::dynamic_pointer_cast<Knob<double> >(knob) )
@@ -117,7 +117,7 @@ struct KnobGuiValuePrivate
         return doubleKnob.lock();
     }
 
-    KnobPtr getKnob() const
+    KnobIPtr getKnob() const
     {
         return knob.lock();
     }
@@ -168,7 +168,7 @@ KnobGuiValue::valueAccordingToType(const bool doNormalize,
     ValueIsNormalizedEnum state = getNormalizationPolicy(dimension);
 
     if (state != eValueIsNormalizedNone) {
-        KnobPtr knob = _imp->getKnob();
+        KnobIPtr knob = _imp->getKnob();
         if (knob) {
             SequenceTime time = knob->getCurrentTime();
             if (doNormalize) {
@@ -188,7 +188,7 @@ KnobGuiValue::shouldAddStretch() const
     return isSliderDisabled();
 }
 
-KnobGuiValue::KnobGuiValue(KnobPtr knob,
+KnobGuiValue::KnobGuiValue(KnobIPtr knob,
                            KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _imp( new KnobGuiValuePrivate(knob) )
@@ -234,7 +234,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     }
 
-    KnobPtr knob = _imp->getKnob();
+    KnobIPtr knob = _imp->getKnob();
     const int nDims = knob->getDimension();
     std::vector<double> increments, displayMins, displayMaxs, mins, maxs;
     std::vector<int> decimals;
@@ -507,8 +507,8 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
 void
 KnobGuiValue::onResetToDefaultRequested()
 {
-    KnobPtr knob = _imp->knob.lock();
-    std::list<KnobPtr> knobsList;
+    KnobIPtr knob = _imp->knob.lock();
+    std::list<KnobIPtr> knobsList;
 
     knobsList.push_back(knob);
     pushUndoCommand( new RestoreDefaultsCommand(false, knobsList, -1) );
@@ -590,7 +590,7 @@ KnobGuiValue::onDimensionSwitchClicked(bool clicked)
     } else {
         foldAllDimensions();
 
-        KnobPtr knob = _imp->getKnob();
+        KnobIPtr knob = _imp->getKnob();
         boost::shared_ptr<Knob<double> > doubleKnob = _imp->getKnobAsDouble();
         boost::shared_ptr<Knob<int> > intKnob = _imp->getKnobAsInt();
         const int nDims = knob->getDimension();
@@ -752,7 +752,7 @@ KnobGuiValue::onDecimalsChanged(const int deci,
 void
 KnobGuiValue::updateGUI(const int dimension)
 {
-    KnobPtr knob = _imp->getKnob();
+    KnobIPtr knob = _imp->getKnob();
     const int knobDim = (int)_imp->spinBoxes.size();
 
     if ( (knobDim < 1) || (dimension >= knobDim) ) {
@@ -1068,7 +1068,7 @@ KnobGuiValue::_show()
 void
 KnobGuiValue::setEnabled()
 {
-    KnobPtr knob = _imp->getKnob();
+    KnobIPtr knob = _imp->getKnob();
     bool enabled0 = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
 
     for (std::size_t i = 0; i < _imp->spinBoxes.size(); ++i) {
@@ -1104,7 +1104,7 @@ KnobGuiValue::setDirty(bool dirty)
     }
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiValue::getKnob() const
 {
     return _imp->getKnob();
@@ -1114,7 +1114,7 @@ void
 KnobGuiValue::reflectExpressionState(int dimension,
                                      bool hasExpr)
 {
-    KnobPtr knob = _imp->getKnob();
+    KnobIPtr knob = _imp->getKnob();
 
     if (hasExpr) {
         _imp->spinBoxes[dimension].first->setAnimation(3);
@@ -1170,13 +1170,13 @@ KnobGuiValue::refreshDimensionName(int dim)
     if ( (dim < 0) || ( dim >= (int)_imp->spinBoxes.size() ) ) {
         return;
     }
-    KnobPtr knob = _imp->getKnob();
+    KnobIPtr knob = _imp->getKnob();
     if (_imp->spinBoxes[dim].second) {
         _imp->spinBoxes[dim].second->setText( QString::fromUtf8( knob->getDimensionName(dim).c_str() ) );;
     }
 }
 
-KnobGuiDouble::KnobGuiDouble(KnobPtr knob,
+KnobGuiDouble::KnobGuiDouble(KnobIPtr knob,
                              KnobGuiContainerI *container)
     : KnobGuiValue(knob, container)
     , _knob( boost::dynamic_pointer_cast<KnobDouble>(knob) )
@@ -1295,7 +1295,7 @@ KnobGuiDouble::getDecimals(std::vector<int>* decimals) const
     *decimals = knob->getDecimals();
 }
 
-KnobGuiInt::KnobGuiInt(KnobPtr knob,
+KnobGuiInt::KnobGuiInt(KnobIPtr knob,
                        KnobGuiContainerI *container)
     : KnobGuiValue(knob, container)
     , _knob( boost::dynamic_pointer_cast<KnobInt>(knob) )

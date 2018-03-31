@@ -179,7 +179,7 @@ TabGroup::onGroupKnobSecretChanged()
         return;
     }
 
-    KnobPtr knob = handler->getKnob();
+    KnobIPtr knob = handler->getKnob();
     if (!knob) {
         return;
     }

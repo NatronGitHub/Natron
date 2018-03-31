@@ -189,7 +189,7 @@ ToolButton::onTriggered()
     if (!app) {
         return;
     }
-    boost::shared_ptr<NodeCollection> group = app->getGui()->getLastSelectedNodeCollection();
+    NodeCollectionPtr group = app->getGui()->getLastSelectedNodeCollection();
 
     assert(group);
     CreateNodeArgs args(_imp->_id.toStdString(), group);

@@ -574,13 +574,13 @@ Q_SIGNALS:
 
 private:
 
-    virtual void onKnobAboutToAlias(const KnobPtr& slave) OVERRIDE FINAL;
+    virtual void onKnobAboutToAlias(const KnobIPtr& slave) OVERRIDE FINAL;
 
     void findAndSetOldChoice();
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-    virtual void handleSignalSlotsForAliasLink(const KnobPtr& alias, bool connect) OVERRIDE FINAL;
+    virtual void handleSignalSlotsForAliasLink(const KnobIPtr& alias, bool connect) OVERRIDE FINAL;
     virtual void onInternalValueChanged(int dimension, double time, ViewSpec view) OVERRIDE FINAL;
     virtual void cloneExtraData(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
     virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
@@ -841,7 +841,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-    std::vector< boost::weak_ptr<KnobI> > _children;
+    std::vector<boost::weak_ptr<KnobI> > _children;
     bool _isTab;
     bool _isToolButton;
     bool _isDialog;
@@ -866,15 +866,15 @@ public:
               int dimension,
               bool declaredByPlugin);
 
-    void addKnob(const KnobPtr& k);
+    void addKnob(const KnobIPtr& k);
     void removeKnob(KnobI* k);
 
     bool moveOneStepUp(KnobI* k);
     bool moveOneStepDown(KnobI* k);
 
-    void insertKnob(int index, const KnobPtr& k);
+    void insertKnob(int index, const KnobIPtr& k);
 
-    std::vector< KnobPtr > getChildren() const;
+    std::vector<KnobIPtr> getChildren() const;
 
     void setAsTab();
 
@@ -928,7 +928,7 @@ public:
              int dimension,
              bool declaredByPlugin);
 
-    void addKnob(const KnobPtr& k);
+    void addKnob(const KnobIPtr& k);
 
     void setAsToolBar(bool b)
     {
@@ -945,9 +945,9 @@ public:
 
     void removeKnob(KnobI* k);
 
-    void insertKnob(int index, const KnobPtr& k);
+    void insertKnob(int index, const KnobIPtr& k);
 
-    std::vector< KnobPtr >  getChildren() const;
+    std::vector<KnobIPtr>  getChildren() const;
     static const std::string & typeNameStatic();
 
 private:
@@ -957,7 +957,7 @@ private:
 private:
 
     bool _isToolBar;
-    std::vector< boost::weak_ptr<KnobI> > _children;
+    std::vector<boost::weak_ptr<KnobI> > _children;
     static const std::string _typeNameStr;
 };
 
@@ -972,7 +972,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     mutable QMutex _curvesMutex;
-    std::vector< boost::shared_ptr<Curve> > _curves, _defaultCurves;
+    std::vector<boost::shared_ptr<Curve> > _curves, _defaultCurves;
     std::vector<RGBAColourD> _curvesColor;
 public:
 
@@ -1045,9 +1045,9 @@ public:
     StatusEnum deleteAllControlPoints(ValueChangedReasonEnum reason, int dimension) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
 
-    void saveParametricCurves(std::list< Curve >* curves) const;
+    void saveParametricCurves(std::list<Curve >* curves) const;
 
-    void loadParametricCurves(const std::list< Curve > & curves);
+    void loadParametricCurves(const std::list<Curve > & curves);
 
 Q_SIGNALS:
 
@@ -1059,7 +1059,7 @@ Q_SIGNALS:
 
 private:
 
-    virtual void onKnobAboutToAlias(const KnobPtr& slave) OVERRIDE FINAL;
+    virtual void onKnobAboutToAlias(const KnobIPtr& slave) OVERRIDE FINAL;
     virtual void resetExtraToDefaultValue(int dimension) OVERRIDE FINAL;
     virtual bool hasModificationsVirtual(int dimension) const OVERRIDE FINAL;
     virtual bool canAnimate() const OVERRIDE FINAL;

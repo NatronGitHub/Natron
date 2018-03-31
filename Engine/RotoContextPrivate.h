@@ -570,7 +570,7 @@ struct RotoItemPrivate
     }
 };
 
-typedef std::list< boost::shared_ptr<RotoItem> > RotoItems;
+typedef std::list<boost::shared_ptr<RotoItem> > RotoItems;
 
 struct RotoLayerPrivate
 {
@@ -780,7 +780,7 @@ public:
     boost::shared_ptr<KnobChoice> shutterType;
     boost::shared_ptr<KnobDouble> customOffset;
 #endif
-    std::list<KnobPtr > knobs; //< list for easy access to all knobs
+    std::list<KnobIPtr> knobs; //< list for easy access to all knobs
 
     //Used to prevent 2 threads from writing the same image in the rotocontext
     mutable QReadWriteLock cacheAccessMutex;
@@ -1318,7 +1318,7 @@ public:
      * are rendered and optimized by Cairo internally.
      */
     bool isPaintNode;
-    std::list< boost::shared_ptr<RotoLayer> > layers;
+    std::list<boost::shared_ptr<RotoLayer> > layers;
     bool autoKeying;
     bool rippleEdit;
     bool featherLink;
@@ -2191,7 +2191,7 @@ public:
 
         int minLevel = -1;
         boost::shared_ptr<RotoLayer> minLayer;
-        for (std::list< boost::shared_ptr<RotoItem> >::const_iterator it = selectedItems.begin();
+        for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = selectedItems.begin();
              it != selectedItems.end(); ++it) {
             int lvl = (*it)->getHierarchyLevel();
             if (lvl > minLevel) {

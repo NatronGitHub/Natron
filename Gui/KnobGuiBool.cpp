@@ -200,7 +200,7 @@ Bool_CheckBox::focusOutEvent(QFocusEvent* e)
     AnimatedCheckBox::focusOutEvent(e);
 }
 
-KnobGuiBool::KnobGuiBool(KnobPtr knob,
+KnobGuiBool::KnobGuiBool(KnobIPtr knob,
                          KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _checkBox(0)
@@ -357,7 +357,7 @@ KnobGuiBool::setDirty(bool dirty)
     _checkBox->setDirty(dirty);
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiBool::getKnob() const
 {
     return _knob.lock();

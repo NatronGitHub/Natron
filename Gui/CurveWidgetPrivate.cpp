@@ -781,7 +781,7 @@ CurveWidgetPrivate::isNearbyKeyFrameText(const QPoint& pt) const
     return KeyPtr();
 }
 
-std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr >
+std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr>
 CurveWidgetPrivate::isNearbyTangent(const QPoint & pt) const
 {
     // always running in the main thread
@@ -1212,7 +1212,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
             KnobGuiPtr knobUI = isKnobCurve->getKnobGui();
             if (knobUI) {
                 int curveDim = isKnobCurve->getDimension();
-                KnobPtr internalKnob = knobUI->getKnob();
+                KnobIPtr internalKnob = knobUI->getKnob();
                 if ( internalKnob && ( !internalKnob->isEnabled(curveDim) || internalKnob->isSlave(curveDim) ) ) {
                     continue;
                 }
@@ -1355,7 +1355,7 @@ CurveWidgetPrivate::transformSelectedKeyFrames(const QPointF & oldClick_opengl,
             KnobGuiPtr knobUI = isKnobCurve->getKnobGui();
             if (knobUI) {
                 int curveDim = isKnobCurve->getDimension();
-                KnobPtr internalKnob = knobUI->getKnob();
+                KnobIPtr internalKnob = knobUI->getKnob();
                 if ( internalKnob && ( !internalKnob->isEnabled(curveDim) || internalKnob->isSlave(curveDim) ) ) {
                     continue;
                 }

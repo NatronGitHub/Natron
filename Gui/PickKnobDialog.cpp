@@ -142,7 +142,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
     NodeGuiPtr nodeGui = nodePanel->getNode();
     NodePtr node = nodeGui->getNode();
     NodeGroup* isGroup = node->isEffectGroup();
-    boost::shared_ptr<NodeCollection> collec = node->getGroup();
+    NodeCollectionPtr collec = node->getGroup();
     NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>( collec.get() );
     NodesList collectNodes = collec->getNodes();
     for (NodesList::iterator it = collectNodes.begin(); it != collectNodes.end(); ++it) {
@@ -252,9 +252,9 @@ PickKnobDialog::~PickKnobDialog()
 
 static KnobGuiPtr
 getKnobGuiForKnob(const NodePtr& selectedNode,
-                  const KnobPtr& knob)
+                  const KnobIPtr& knob)
 {
-    boost::shared_ptr<NodeGuiI> selectedNodeGuiI = selectedNode->getNodeGui();
+    NodeGuiIPtr selectedNodeGuiI = selectedNode->getNodeGui();
 
     assert(selectedNodeGuiI);
     if (!selectedNodeGuiI) {
@@ -306,8 +306,8 @@ PickKnobDialog::onKnobComboIndexChanged(int /*idx*/)
     _imp->selectedKnob.reset();
     if (selectedNode) {
         QString str = _imp->knobSelectionCombo->itemText( _imp->knobSelectionCombo->activeIndex() );
-        std::map<QString, KnobPtr >::const_iterator it = _imp->allKnobs.find(str);
-        KnobPtr selectedKnob;
+        std::map<QString, KnobIPtr>::const_iterator it = _imp->allKnobs.find(str);
+        KnobIPtr selectedKnob;
         if ( it != _imp->allKnobs.end() ) {
             selectedKnob = it->second;
             _imp->selectedKnob = getKnobGuiForKnob(selectedNode, selectedKnob);
@@ -337,7 +337,7 @@ PickKnobDialog::onNodeComboEditingFinished()
     if (!selectedNode) {
         return;
     }
-    const std::vector< KnobPtr > & knobs = selectedNode->getKnobs();
+    const std::vector<KnobIPtr> & knobs = selectedNode->getKnobs();
     for (U32 j = 0; j < knobs.size(); ++j) {
         if ( !knobs[j]->getIsSecret() ) {
             KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[j].get() );

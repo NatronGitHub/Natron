@@ -317,7 +317,7 @@ PyModalDialog::setParamChangedCallback(const QString& callback)
 Param*
 PyModalDialog::getParam(const QString& scriptName) const
 {
-    KnobPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
+    KnobIPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
 
     if (!knob) {
         return 0;
@@ -439,7 +439,7 @@ PyPanel::getParam(const QString& scriptName) const
     if (!_imp->holder) {
         return 0;
     }
-    KnobPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
+    KnobIPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
     if (!knob) {
         return 0;
     }

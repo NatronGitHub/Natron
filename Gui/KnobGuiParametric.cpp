@@ -86,7 +86,7 @@ using std::make_pair;
 
 //=============================KnobGuiParametric===================================
 
-KnobGuiParametric::KnobGuiParametric(KnobPtr knob,
+KnobGuiParametric::KnobGuiParametric(KnobIPtr knob,
                                      KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , treeColumn(NULL)
@@ -300,7 +300,7 @@ KnobGuiParametric::resetSelectedCurves()
     k->evaluateValueChange(0, k->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiParametric::getKnob() const
 {
     return _knob.lock();

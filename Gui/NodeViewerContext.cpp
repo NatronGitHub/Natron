@@ -191,7 +191,7 @@ NodeViewerContext::createGui()
         }
     }
     if (toolbarPage) {
-        std::vector<KnobPtr> pageChildren = toolbarPage->getChildren();
+        std::vector<KnobIPtr> pageChildren = toolbarPage->getChildren();
         if ( !pageChildren.empty() ) {
             _imp->toolbar = new QToolBar(_imp->viewer);
             _imp->toolbar->setOrientation(Qt::Vertical);
@@ -200,7 +200,7 @@ NodeViewerContext::createGui()
                 KnobGroup* isGroup = dynamic_cast<KnobGroup*>( pageChildren[i].get() );
                 if (isGroup) {
                     QObject::connect( isGroup->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onToolGroupValueChanged(ViewSpec,int,int)) );
-                    std::vector<KnobPtr> toolButtonChildren = isGroup->getChildren();
+                    std::vector<KnobIPtr> toolButtonChildren = isGroup->getChildren();
                     ViewerToolButton* createdToolButton = 0;
                     QString currentActionForGroup;
                     for (std::size_t j = 0; j < toolButtonChildren.size(); ++j) {
@@ -459,7 +459,7 @@ NodeViewerContext::pushUndoCommand(QUndoCommand* cmd)
 }
 
 KnobGuiPtr
-NodeViewerContext::getKnobGui(const KnobPtr& knob) const
+NodeViewerContext::getKnobGui(const KnobIPtr& knob) const
 {
     std::map<KnobWPtr, KnobGuiPtr>::const_iterator found =  _imp->knobsMapping.find(knob);
 
@@ -529,7 +529,7 @@ NodeViewerContext::onToolGroupValueChanged(ViewSpec /*view*/,
     if (!caller) {
         return;
     }
-    KnobPtr knob = caller->getKnob();
+    KnobIPtr knob = caller->getKnob();
     if (!knob) {
         return;
     }
@@ -564,7 +564,7 @@ NodeViewerContext::onToolActionValueChanged(ViewSpec /*view*/,
     if (!caller) {
         return;
     }
-    KnobPtr knob = caller->getKnob();
+    KnobIPtr knob = caller->getKnob();
     if (!knob) {
         return;
     }
@@ -651,10 +651,10 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
             }
         }
 
-        KnobPtr oldGroupKnob = n->getNode()->getKnobByName( oldRole.toStdString() );
-        KnobPtr newGroupKnob = n->getNode()->getKnobByName( newRoleID.toStdString() );
-        KnobPtr oldToolKnob = n->getNode()->getKnobByName( oldTool.toStdString() );
-        KnobPtr newToolKnob = n->getNode()->getKnobByName( newToolID.toStdString() );
+        KnobIPtr oldGroupKnob = n->getNode()->getKnobByName( oldRole.toStdString() );
+        KnobIPtr newGroupKnob = n->getNode()->getKnobByName( newRoleID.toStdString() );
+        KnobIPtr oldToolKnob = n->getNode()->getKnobByName( oldTool.toStdString() );
+        KnobIPtr newToolKnob = n->getNode()->getKnobByName( newToolID.toStdString() );
         assert(newToolKnob && newGroupKnob);
         if (newToolKnob && newGroupKnob) {
 

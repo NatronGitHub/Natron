@@ -51,11 +51,11 @@ protected:
 
 public:
 
-    Param(const KnobPtr& knob);
+    Param(const KnobIPtr& knob);
 
     virtual ~Param();
 
-    KnobPtr getInternalKnob() const { return _knob.lock(); }
+    KnobIPtr getInternalKnob() const { return _knob.lock(); }
 
     /**
      * @brief Returns the parent of this parameter if any. If the parameter has no parent it is assumed to be a top-level
@@ -208,7 +208,7 @@ class AnimatedParam
 {
 public:
 
-    AnimatedParam(const KnobPtr& knob);
+    AnimatedParam(const KnobIPtr& knob);
 
     virtual ~AnimatedParam();
 

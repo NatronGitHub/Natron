@@ -2640,7 +2640,7 @@ static bool
 hasNodeInputsInList(const NodesList& nodes,
                     const NodePtr& node)
 {
-    const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
+    const std::vector<NodeWPtr>& inputs = node->getGuiInputs();
     bool foundInput = false;
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -2678,7 +2678,7 @@ addTreeInputs(const NodesList& nodes,
     if ( !hasNodeInputsInList(nodes, node) ) {
         Project::TreeInput input;
         input.node = node;
-        const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
+        const std::vector<NodeWPtr>& inputs = node->getGuiInputs();
         input.inputs.resize( inputs.size() );
         for (std::size_t i = 0; i < inputs.size(); ++i) {
             input.inputs[i] = inputs[i].lock();
@@ -2688,8 +2688,8 @@ addTreeInputs(const NodesList& nodes,
     } else {
         tree.inbetweenNodes.push_back(node);
         markedNodes.push_back(node);
-        const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
-        for (std::vector<NodeWPtr >::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
+        const std::vector<NodeWPtr>& inputs = node->getGuiInputs();
+        for (std::vector<NodeWPtr>::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
             NodePtr input = it2->lock();
             if (input) {
                 addTreeInputs(nodes, input, tree, markedNodes);
@@ -2719,7 +2719,7 @@ Project::extractTreesFromNodes(const NodesList& nodes,
                 tree.output.outputs.push_back( std::make_pair(idx, *it2) );
             }
 
-            const std::vector<NodeWPtr >& inputs = (*it)->getGuiInputs();
+            const std::vector<NodeWPtr>& inputs = (*it)->getGuiInputs();
             for (U32 i = 0; i < inputs.size(); ++i) {
                 NodePtr input = inputs[i].lock();
                 if (input) {
@@ -2731,7 +2731,7 @@ Project::extractTreesFromNodes(const NodesList& nodes,
                 TreeInput input;
                 input.node = *it;
 
-                const std::vector<NodeWPtr >& inputs = (*it)->getGuiInputs();
+                const std::vector<NodeWPtr>& inputs = (*it)->getGuiInputs();
                 input.inputs.resize( inputs.size() );
                 for (std::size_t i = 0; i < inputs.size(); ++i) {
                     input.inputs[i] = inputs[i].lock();

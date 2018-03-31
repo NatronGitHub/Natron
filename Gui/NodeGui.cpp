@@ -264,7 +264,7 @@ NodeGui::initialize(NodeGraph* dag,
 
     NodePtr parent = internalNode->getParentMultiInstance();
     if (parent) {
-        boost::shared_ptr<NodeGuiI> parentNodeGui_i = parent->getNodeGui();
+        NodeGuiIPtr parentNodeGui_i = parent->getNodeGui();
         NodeGui* parentGui = dynamic_cast<NodeGui*>( parentNodeGui_i.get() );
         assert(parentGui);
         if ( parentGui && parentGui->isSettingsPanelVisible() ) {
@@ -279,7 +279,7 @@ NodeGui::initialize(NodeGraph* dag,
 
     //Refresh the merge operator icon
     if (internalNode->getPluginID() == PLUGINID_OFX_MERGE) {
-        KnobPtr knob = internalNode->getKnobByName(kNatronOfxParamStringSublabelName);
+        KnobIPtr knob = internalNode->getKnobByName(kNatronOfxParamStringSublabelName);
         assert(knob);
         KnobString* strKnob = dynamic_cast<KnobString*>( knob.get() );
         if (strKnob) {
@@ -314,7 +314,7 @@ NodeGui::initialize(NodeGraph* dag,
     const std::string parentMultiInstanceName = internalNode->getParentMultiInstanceName();
     if ( !parentMultiInstanceName.empty() ) {
         NodePtr parentNode = internalNode->getGroup()->getNodeByName(parentMultiInstanceName);
-        boost::shared_ptr<NodeGuiI> parentNodeGui_I = parentNode->getNodeGui();
+        NodeGuiIPtr parentNodeGui_I = parentNode->getNodeGui();
         assert(parentNode && parentNodeGui_I);
         NodeGui* parentNodeGui = dynamic_cast<NodeGui*>( parentNodeGui_I.get() );
         assert(parentNodeGui);
@@ -450,7 +450,7 @@ NodeGui::ensurePanelCreated()
         NodesList children;
         getNode()->getChildrenMultiInstance(&children);
         for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-            boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
+            NodeGuiIPtr gui_i = (*it)->getNodeGui();
             assert(gui_i);
             NodeGui* gui = dynamic_cast<NodeGui*>( gui_i.get() );
             assert(gui);
@@ -1112,7 +1112,7 @@ NodeGui::refreshPosition(double x,
                     if (!output) {
                         continue;
                     }
-                    boost::shared_ptr<NodeGuiI> node_gui_i = output->getNodeGui();
+                    NodeGuiIPtr node_gui_i = output->getNodeGui();
                     if (!node_gui_i) {
                         continue;
                     }
@@ -1207,7 +1207,7 @@ NodeGui::refreshDashedStateOfEdges()
 void
 NodeGui::refreshEdges()
 {
-    const std::vector<NodeWPtr > & nodeInputs = getNode()->getGuiInputs();
+    const std::vector<NodeWPtr> & nodeInputs = getNode()->getGuiInputs();
 
     if ( _inputEdges.size() != nodeInputs.size() ) {
         return;
@@ -1219,7 +1219,7 @@ NodeGui::refreshEdges()
 
         NodePtr input = nodeInputs[i].lock();
         if (input) {
-            boost::shared_ptr<NodeGuiI> nodeInputGui_i = input->getNodeGui();
+            NodeGuiIPtr nodeInputGui_i = input->getNodeGui();
             if (!nodeInputGui_i) {
                 continue;
             }
@@ -1433,7 +1433,7 @@ NodeGui::initializeInputs()
     NodePtr node = getNode();
 
     ///The actual numbers of inputs of the internal node
-    const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
+    const std::vector<NodeWPtr>& inputs = node->getGuiInputs();
 
     ///Delete all  inputs that may exist
     for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
@@ -1455,7 +1455,7 @@ NodeGui::initializeInputs()
 
         NodePtr input = inputs[i].lock();
         if (input) {
-            boost::shared_ptr<NodeGuiI> gui_i = input->getNodeGui();
+            NodeGuiIPtr gui_i = input->getNodeGui();
             assert(gui_i);
             NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
             assert(gui);
@@ -1688,8 +1688,8 @@ NodeGui::isSelectedInParentMultiInstance(const Node* node) const
         return false;
     }
 
-    const std::list< std::pair<NodeWPtr, bool > >& instances = multiInstance->getInstances();
-    for (std::list< std::pair<NodeWPtr, bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    const std::list<std::pair<NodeWPtr, bool > >& instances = multiInstance->getInstances();
+    for (std::list<std::pair<NodeWPtr, bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         NodePtr instance = it->first.lock();
         if (instance.get() == node) {
             return it->second;
@@ -1744,7 +1744,7 @@ NodeGui::findConnectedEdge(NodeGui* parent)
 bool
 NodeGui::connectEdge(int edgeNumber)
 {
-    const std::vector<NodeWPtr > & inputs = getNode()->getGuiInputs();
+    const std::vector<NodeWPtr> & inputs = getNode()->getGuiInputs();
 
     if ( (edgeNumber < 0) || ( edgeNumber >= (int)inputs.size() ) || ( _inputEdges.size() != inputs.size() ) ) {
         return false;
@@ -1753,7 +1753,7 @@ NodeGui::connectEdge(int edgeNumber)
     NodeGuiPtr src;
     NodePtr input = inputs[edgeNumber].lock();
     if (input) {
-        boost::shared_ptr<NodeGuiI> ngi = input->getNodeGui();
+        NodeGuiIPtr ngi = input->getNodeGui();
         src = boost::dynamic_pointer_cast<NodeGui>(ngi);
     }
 
@@ -2291,7 +2291,7 @@ NodeGui::moveBelowPositionRecursively(const QRectF & r)
             if (!output) {
                 continue;
             }
-            boost::shared_ptr<NodeGuiI> outputGuiI = output->getNodeGui();
+            NodeGuiIPtr outputGuiI = output->getNodeGui();
             if (!outputGuiI) {
                 continue;
             }
@@ -2349,7 +2349,7 @@ NodeGui::onAllKnobsSlaved(bool b)
     if (b) {
         NodePtr masterNode = node->getMasterNode();
         assert(masterNode);
-        boost::shared_ptr<NodeGuiI> masterNodeGui_i = masterNode->getNodeGui();
+        NodeGuiIPtr masterNodeGui_i = masterNode->getNodeGui();
         assert(masterNodeGui_i);
         NodeGuiPtr masterNodeGui = boost::dynamic_pointer_cast<NodeGui>(masterNodeGui_i);
         _masterNodeGui = masterNodeGui;
@@ -2411,7 +2411,7 @@ makeLinkString(Node* masterNode,
 void
 NodeGui::onKnobExpressionChanged(const KnobGui* knob)
 {
-    KnobPtr internalKnob = knob->getKnob();
+    KnobIPtr internalKnob = knob->getKnob();
 
     for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
         int totalLinks = 0;
@@ -2419,7 +2419,7 @@ NodeGui::onKnobExpressionChanged(const KnobGui* knob)
         bool isCurrentLink = false;
 
         for (std::list<LinkedKnob>::iterator it2 = it->second.knobs.begin(); it2 != it->second.knobs.end(); ++it2) {
-            KnobPtr slave = it2->slave.lock();
+            KnobIPtr slave = it2->slave.lock();
             if (slave == internalKnob) {
                 isCurrentLink = true;
             }
@@ -2510,7 +2510,7 @@ NodeGui::onKnobsLinksChanged()
         } else {
             ///There's no link to the master node yet
             if ( masterNode && (masterNode->getNodeGui().get() != this) && ( masterNode->getGroup() == getNode()->getGroup() ) ) {
-                boost::shared_ptr<NodeGuiI> master_i = masterNode->getNodeGui();
+                NodeGuiIPtr master_i = masterNode->getNodeGui();
                 NodeGuiPtr master = boost::dynamic_pointer_cast<NodeGui>(master_i);
                 assert(master);
 
@@ -2618,7 +2618,7 @@ NodeGui::destroyGui()
     if (internalNode) {
         ///remove the node from the clipboard if it is
         NodeClipBoard &cb = appPTR->getNodeClipBoard();
-        for (std::list< boost::shared_ptr<NodeSerialization> >::iterator it = cb.nodes.begin();
+        for (std::list<boost::shared_ptr<NodeSerialization> >::iterator it = cb.nodes.begin();
              it != cb.nodes.end(); ++it) {
             if ( (*it)->getNode() == internalNode ) {
                 cb.nodes.erase(it);
@@ -3930,9 +3930,9 @@ GroupKnobDialog::GroupKnobDialog(Gui* gui,
     : NATRON_PYTHON_NAMESPACE::PyModalDialog(gui, eStandardButtonNoButton)
 {
     setWindowTitle( QString::fromUtf8( group->getLabel().c_str() ) );
-    std::vector<KnobPtr> children = group->getChildren();
+    std::vector<KnobIPtr> children = group->getChildren();
     for (std::size_t i = 0; i < children.size(); ++i) {
-        KnobPtr duplicate = children[i]->createDuplicateOnHolder(getKnobsHolder(), boost::shared_ptr<KnobPage>(), boost::shared_ptr<KnobGroup>(), i, true, children[i]->getName(), children[i]->getLabel(), children[i]->getHintToolTip(), false, true);
+        KnobIPtr duplicate = children[i]->createDuplicateOnHolder(getKnobsHolder(), boost::shared_ptr<KnobPage>(), boost::shared_ptr<KnobGroup>(), i, true, children[i]->getName(), children[i]->getLabel(), children[i]->getHintToolTip(), false, true);
         duplicate->setAddNewLine( children[i]->isNewLineActivated() );
     }
 
@@ -3978,7 +3978,7 @@ NodeGui::onRightClickMenuKnobPopulated()
         return;
     }
 
-    KnobPtr rightClickKnob = node->getKnobByName(kNatronOfxParamRightClickMenu);
+    KnobIPtr rightClickKnob = node->getKnobByName(kNatronOfxParamRightClickMenu);
     if (!rightClickKnob) {
         return;
     }
@@ -3993,7 +3993,7 @@ NodeGui::onRightClickMenuKnobPopulated()
 
     Menu m(isViewer);
     for (std::vector<ChoiceOption>::iterator it = entries.begin(); it != entries.end(); ++it) {
-        KnobPtr knob = node->getKnobByName(it->id);
+        KnobIPtr knob = node->getKnobByName(it->id);
         if (!knob) {
             // Plug-in specified invalid knob name in the menu
             continue;
@@ -4030,7 +4030,7 @@ NodeGui::onRightClickActionTriggered()
     const std::vector<std::pair<QString, QKeySequence> >& shortcuts = action->getShortcuts();
     assert( !shortcuts.empty() );
     std::string knobName = shortcuts.front().first.toStdString();
-    KnobPtr knob = getNode()->getKnobByName(knobName);
+    KnobIPtr knob = getNode()->getKnobByName(knobName);
     if (!knob) {
         // Plug-in specified invalid knob name in the menu
         return;

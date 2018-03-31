@@ -357,7 +357,7 @@ KnobLineEdit::focusOutEvent(QFocusEvent* e)
     LineEdit::focusOutEvent(e);
 }
 
-KnobGuiString::KnobGuiString(KnobPtr knob,
+KnobGuiString::KnobGuiString(KnobIPtr knob,
                              KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _lineEdit(0)
@@ -1304,7 +1304,7 @@ KnobGuiString::setDirty(bool dirty)
     }
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiString::getKnob() const
 {
     return _knob.lock();

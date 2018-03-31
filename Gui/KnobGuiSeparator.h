@@ -57,13 +57,13 @@ class KnobGuiSeparator
     : public KnobGui
 {
 public:
-    static KnobGui * BuildKnobGui(KnobPtr knob,
+    static KnobGui * BuildKnobGui(KnobIPtr knob,
                                   KnobGuiContainerI *container)
     {
         return new KnobGuiSeparator(knob, container);
     }
 
-    KnobGuiSeparator(KnobPtr knob,
+    KnobGuiSeparator(KnobIPtr knob,
                      KnobGuiContainerI *container);
 
     virtual ~KnobGuiSeparator() OVERRIDE;
@@ -71,7 +71,7 @@ public:
     virtual void removeSpecificGui() OVERRIDE FINAL;
     virtual bool isLabelOnSameColumn() const OVERRIDE FINAL;
     virtual bool isLabelBold() const OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
 
 private:
     virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }

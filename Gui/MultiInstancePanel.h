@@ -74,7 +74,7 @@ public:
 
     int getNodeIndex(const NodePtr & node) const;
 
-    const std::list< std::pair<NodeWPtr, bool > > & getInstances() const;
+    const std::list<std::pair<NodeWPtr, bool > > & getInstances() const;
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL;
     NodePtr getMainInstance() const;
 
@@ -84,7 +84,7 @@ public:
 
     void resetAllInstances();
 
-    KnobPtr getKnobForItem(TableItem* item, int* dimension) const;
+    KnobIPtr getKnobForItem(TableItem* item, int* dimension) const;
     Gui* getGui() const;
     virtual void setIconForButton(KnobButton* /*knob*/)
     {

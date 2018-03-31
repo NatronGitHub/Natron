@@ -785,7 +785,7 @@ RotoPaintInteract::setCurrentTool(const boost::shared_ptr<KnobButton>& tool)
     if (!tool) {
         return;
     }
-    KnobPtr parentKnob = tool->getParentKnob();
+    KnobIPtr parentKnob = tool->getParentKnob();
     boost::shared_ptr<KnobGroup> parentGroup = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
     assert(parentGroup);
     if (!parentGroup) {
@@ -1814,7 +1814,7 @@ bool
 RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
                                                 int y)
 {
-    std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > points;
+    std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > points;
 
     if ( !selectedCps.empty() ) {
         points = selectedCps;
@@ -1822,11 +1822,11 @@ RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
         for (SelectedItems::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
             boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(*it);
             if (bezier) {
-                const std::list< boost::shared_ptr<BezierCP> > & cps = bezier->getControlPoints();
-                const std::list< boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
-                std::list< boost::shared_ptr<BezierCP> >::const_iterator fpIt = fps.begin();
+                const std::list<boost::shared_ptr<BezierCP> > & cps = bezier->getControlPoints();
+                const std::list<boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
+                std::list<boost::shared_ptr<BezierCP> >::const_iterator fpIt = fps.begin();
                 assert( fps.empty() || fps.size() == cps.size() );
-                for (std::list< boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it) {
+                for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it) {
                     points.push_back( std::make_pair(*it, *fpIt) );
                     if ( !fps.empty() ) {
                         ++fpIt;

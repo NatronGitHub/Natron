@@ -9,7 +9,7 @@ NATRON_NAMESPACE_ENTER NATRON_PYTHON_NAMESPACE_ENTER
 class IntNodeCreationPropertyWrapper : public IntNodeCreationProperty
 {
 public:
-    IntNodeCreationPropertyWrapper(const std::vector<int > & values = std::vector< int >());
+    IntNodeCreationPropertyWrapper(const std::vector<int > & values = std::vector<int >());
     IntNodeCreationPropertyWrapper(int value);
     virtual ~IntNodeCreationPropertyWrapper();
     static void pysideInitQtMetaTypes();

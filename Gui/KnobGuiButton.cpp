@@ -82,7 +82,7 @@ using std::make_pair;
 
 //=============================BUTTON_KNOB_GUI===================================
 
-KnobGuiButton::KnobGuiButton(KnobPtr knob,
+KnobGuiButton::KnobGuiButton(KnobIPtr knob,
                              KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _button(0)
@@ -233,7 +233,7 @@ KnobGuiButton::setReadOnly(bool readOnly,
     _button->setEnabled(!readOnly);
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiButton::getKnob() const
 {
     return _knob.lock();

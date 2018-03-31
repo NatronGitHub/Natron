@@ -130,7 +130,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
     ///if behaviour is 1 , just check that we can effectively connect the node to avoid moving them for nothing
     ///otherwise fallback on behaviour 0
     if (behavior == 1) {
-        const std::vector<NodeWPtr > & inputs = selected->getNode()->getGuiInputs();
+        const std::vector<NodeWPtr> & inputs = selected->getNode()->getGuiInputs();
         bool oneInputEmpty = false;
         for (std::size_t i = 0; i < inputs.size(); ++i) {
             if ( !inputs[i].lock() ) {
@@ -243,7 +243,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                 if (!output) {
                     continue;
                 }
-                boost::shared_ptr<NodeGuiI> output_i = output->getNodeGui();
+                NodeGuiIPtr output_i = output->getNodeGui();
                 if (!output_i) {
                     continue;
                 }

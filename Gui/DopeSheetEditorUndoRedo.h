@@ -392,7 +392,7 @@ public:
     void redo() OVERRIDE FINAL;
 
 
-    static void setKeyValueFromKnob(const KnobPtr& knob, double keyTime, KeyFrame* key);
+    static void setKeyValueFromKnob(const KnobIPtr& knob, double keyTime, KeyFrame* key);
 private:
     /**
      * @brief If 'add' is true, paste the keyframes contained in the dope

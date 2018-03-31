@@ -37,7 +37,7 @@
 NATRON_NAMESPACE_ENTER
 NATRON_PYTHON_NAMESPACE_ENTER
 
-Param::Param(const KnobPtr& knob)
+Param::Param(const KnobIPtr& knob)
     : _knob(knob)
 {
 }
@@ -49,12 +49,12 @@ Param::~Param()
 Param*
 Param::getParent() const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return 0;
     }
-    KnobPtr parent = knob->getParentKnob();
+    KnobIPtr parent = knob->getParentKnob();
 
     if (parent) {
         return new Param(parent);
@@ -66,7 +66,7 @@ Param::getParent() const
 int
 Param::getNumDimensions() const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return 0;
@@ -77,7 +77,7 @@ Param::getNumDimensions() const
 QString
 Param::getScriptName() const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return QString();
@@ -88,7 +88,7 @@ Param::getScriptName() const
 QString
 Param::getLabel() const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return QString();
@@ -99,7 +99,7 @@ Param::getLabel() const
 QString
 Param::getTypeName() const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return QString();
@@ -110,7 +110,7 @@ Param::getTypeName() const
 QString
 Param::getHelp() const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return QString();
@@ -121,7 +121,7 @@ Param::getHelp() const
 void
 Param::setHelp(const QString& help)
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
@@ -132,7 +132,7 @@ Param::setHelp(const QString& help)
 bool
 Param::getIsVisible() const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return false;
@@ -143,7 +143,7 @@ Param::getIsVisible() const
 void
 Param::setVisible(bool visible)
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return;
@@ -154,7 +154,7 @@ Param::setVisible(bool visible)
 void
 Param::setVisibleByDefault(bool visible)
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return;
@@ -165,7 +165,7 @@ Param::setVisibleByDefault(bool visible)
 bool
 Param::getIsEnabled(int dimension) const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return false;
@@ -177,7 +177,7 @@ void
 Param::setEnabled(bool enabled,
                   int dimension)
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return;
@@ -188,7 +188,7 @@ Param::setEnabled(bool enabled,
 void
 Param::setEnabledByDefault(bool enabled)
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return;
@@ -199,7 +199,7 @@ Param::setEnabledByDefault(bool enabled)
 bool
 Param::getIsPersistent() const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return false;
@@ -210,7 +210,7 @@ Param::getIsPersistent() const
 void
 Param::setPersistent(bool persistent)
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
@@ -221,7 +221,7 @@ Param::setPersistent(bool persistent)
 bool
 Param::getEvaluateOnChange() const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return false;
@@ -232,7 +232,7 @@ Param::getEvaluateOnChange() const
 void
 Param::setEvaluateOnChange(bool eval)
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
@@ -243,7 +243,7 @@ Param::setEvaluateOnChange(bool eval)
 bool
 Param::getCanAnimate() const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return false;
@@ -254,7 +254,7 @@ Param::getCanAnimate() const
 bool
 Param::getIsAnimationEnabled() const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return false;
@@ -265,7 +265,7 @@ Param::getIsAnimationEnabled() const
 void
 Param::setAnimationEnabled(bool e)
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
@@ -276,7 +276,7 @@ Param::setAnimationEnabled(bool e)
 bool
 Param::getAddNewLine()
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return false;
@@ -287,13 +287,13 @@ Param::getAddNewLine()
 void
 Param::setAddNewLine(bool a)
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
     }
 
-    KnobPtr parentKnob = knob->getParentKnob();
+    KnobIPtr parentKnob = knob->getParentKnob();
     if (parentKnob) {
         KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>( parentKnob.get() );
         KnobPage* parentIsPage = dynamic_cast<KnobPage*>( parentKnob.get() );
@@ -319,8 +319,8 @@ bool
 Param::copy(Param* other,
             int dimension)
 {
-    KnobPtr thisKnob = _knob.lock();
-    KnobPtr otherKnob = other->_knob.lock();
+    KnobIPtr thisKnob = _knob.lock();
+    KnobIPtr otherKnob = other->_knob.lock();
 
     if ( !thisKnob->isTypeCompatible(otherKnob) ) {
         return false;
@@ -335,8 +335,8 @@ Param::slaveTo(Param* other,
                int thisDimension,
                int otherDimension)
 {
-    KnobPtr thisKnob = _knob.lock();
-    KnobPtr otherKnob = other->_knob.lock();
+    KnobIPtr thisKnob = _knob.lock();
+    KnobIPtr otherKnob = other->_knob.lock();
 
     if ( !KnobI::areTypesCompatibleForSlave( thisKnob.get(), otherKnob.get() ) ) {
         return false;
@@ -351,7 +351,7 @@ Param::slaveTo(Param* other,
 void
 Param::unslave(int dimension)
 {
-    KnobPtr thisKnob = _knob.lock();
+    KnobIPtr thisKnob = _knob.lock();
 
     if (!thisKnob) {
         return;
@@ -363,7 +363,7 @@ double
 Param::random(double min,
               double max) const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return 0;
@@ -374,7 +374,7 @@ Param::random(double min,
 double
 Param::random(unsigned int seed) const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return 0;
@@ -386,7 +386,7 @@ int
 Param::randomInt(int min,
                  int max)
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return 0;
@@ -397,7 +397,7 @@ Param::randomInt(int min,
 int
 Param::randomInt(unsigned int seed) const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return 0;
@@ -409,7 +409,7 @@ double
 Param::curve(double time,
              int dimension) const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return 0.;
@@ -423,8 +423,8 @@ Param::setAsAlias(Param* other)
     if (!other) {
         return false;
     }
-    KnobPtr otherKnob = other->_knob.lock();
-    KnobPtr thisKnob = getInternalKnob();
+    KnobIPtr otherKnob = other->_knob.lock();
+    KnobIPtr thisKnob = getInternalKnob();
     if ( !otherKnob || !thisKnob || ( otherKnob->typeName() != thisKnob->typeName() ) ||
          ( otherKnob->getDimension() != thisKnob->getDimension() ) ) {
         return false;
@@ -436,14 +436,14 @@ Param::setAsAlias(Param* other)
 void
 Param::setIconFilePath(const QString& icon)
 {
-    KnobPtr thisKnob = _knob.lock();
+    KnobIPtr thisKnob = _knob.lock();
     if (!thisKnob) {
         return;
     }
     thisKnob->setIconLabel( icon.toStdString() );
 }
 
-AnimatedParam::AnimatedParam(const KnobPtr& knob)
+AnimatedParam::AnimatedParam(const KnobIPtr& knob)
     : Param(knob)
 {
 }
@@ -455,7 +455,7 @@ AnimatedParam::~AnimatedParam()
 bool
 AnimatedParam::getIsAnimated(int dimension) const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return false;
@@ -466,7 +466,7 @@ AnimatedParam::getIsAnimated(int dimension) const
 int
 AnimatedParam::getNumKeys(int dimension) const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return 0;
@@ -478,7 +478,7 @@ int
 AnimatedParam::getKeyIndex(double time,
                            int dimension) const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return 0;
@@ -491,7 +491,7 @@ AnimatedParam::getKeyTime(int index,
                           int dimension,
                           double* time) const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         *time = 0.;
@@ -504,7 +504,7 @@ void
 AnimatedParam::deleteValueAtTime(double time,
                                  int dimension)
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return;
@@ -515,7 +515,7 @@ AnimatedParam::deleteValueAtTime(double time,
 void
 AnimatedParam::removeAnimation(int dimension)
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return;
@@ -527,7 +527,7 @@ double
 AnimatedParam::getDerivativeAtTime(double time,
                                    int dimension) const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return 0.;
@@ -540,7 +540,7 @@ AnimatedParam::getIntegrateFromTimeToTime(double time1,
                                           double time2,
                                           int dimension) const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return 0.;
@@ -551,7 +551,7 @@ AnimatedParam::getIntegrateFromTimeToTime(double time1,
 int
 AnimatedParam::getCurrentTime() const
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return 0;
@@ -564,7 +564,7 @@ AnimatedParam::setInterpolationAtTime(double time,
                                       KeyframeTypeEnum interpolation,
                                       int dimension)
 {
-    KnobPtr knob = getInternalKnob();
+    KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return false;
@@ -582,8 +582,8 @@ Param::_addAsDependencyOf(int fromExprDimension,
     //from expr is in the dimension of expressionKnob
     //thisDimension is in the dimesnion of getValueCallerKnob
 
-    KnobPtr expressionKnob = param->_knob.lock();
-    KnobPtr getValueCallerKnob = _knob.lock();
+    KnobIPtr expressionKnob = param->_knob.lock();
+    KnobIPtr getValueCallerKnob = _knob.lock();
 
     if ( (fromExprDimension < 0) || ( fromExprDimension >= expressionKnob->getDimension() ) ) {
         return;
@@ -603,7 +603,7 @@ AnimatedParam::setExpression(const QString& expr,
                              bool hasRetVariable,
                              int dimension)
 {
-    KnobPtr thisKnob = _knob.lock();
+    KnobIPtr thisKnob = _knob.lock();
     if (!thisKnob) {
         return false;
     }
@@ -620,7 +620,7 @@ QString
 AnimatedParam::getExpression(int dimension,
                              bool* hasRetVariable) const
 {
-    KnobPtr thisKnob = _knob.lock();
+    KnobIPtr thisKnob = _knob.lock();
     if (!thisKnob) {
         return QString();
     }
@@ -2366,7 +2366,7 @@ GroupParam::addParam(const Param* param)
     if (!param) {
         return;
     }
-    KnobPtr knob = param->getInternalKnob();
+    KnobIPtr knob = param->getInternalKnob();
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
@@ -2426,7 +2426,7 @@ PageParam::addParam(const Param* param)
     if (!param) {
         return;
     }
-    KnobPtr knob = param->getInternalKnob();
+    KnobIPtr knob = param->getInternalKnob();
 
     if ( !knob || !knob->isUserKnob() ) {
         return;

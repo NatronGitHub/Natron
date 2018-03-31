@@ -600,7 +600,7 @@ TrackerNode::knobChanged(KnobI* k,
     } else if ( k == _imp->ui->selectAllTracksMenuAction.lock().get() ) {
         getNode()->getTrackerContext()->selectAll(TrackerContext::eTrackSelectionInternal);
     } else if ( k == _imp->ui->removeTracksMenuAction.lock().get() ) {
-        std::list<TrackMarkerPtr > markers;
+        std::list<TrackMarkerPtr> markers;
         boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
         context->getSelectedMarkers(&markers);
         if ( !markers.empty() ) {
@@ -738,8 +738,8 @@ TrackerNode::drawOverlay(double time,
             markerColor[0] = markerColor[1] = markerColor[2] = 0.8;
         }
 
-        std::vector<TrackMarkerPtr > allMarkers;
-        std::list<TrackMarkerPtr > selectedMarkers;
+        std::vector<TrackMarkerPtr> allMarkers;
+        std::list<TrackMarkerPtr> selectedMarkers;
         boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
         context->getSelectedMarkers(&selectedMarkers);
         context->getAllMarkers(&allMarkers);
@@ -757,7 +757,7 @@ TrackerNode::drawOverlay(double time,
         Point selectedSearchBtmLeft;
         Point selectedSearchTopRight;
 
-        for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
+        for (std::vector<TrackMarkerPtr>::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
             bool isEnabled = (*it)->isEnabled(time);
 
             double thisMarkerColor[3];
@@ -774,7 +774,7 @@ TrackerNode::drawOverlay(double time,
             bool isHoverMarker = *it == _imp->ui->hoverMarker;
             bool isDraggedMarker = *it == _imp->ui->interactMarker;
             bool isHoverOrDraggedMarker = isHoverMarker || isDraggedMarker;
-            std::list<TrackMarkerPtr >::iterator foundSelected = std::find(selectedMarkers.begin(), selectedMarkers.end(), *it);
+            std::list<TrackMarkerPtr>::iterator foundSelected = std::find(selectedMarkers.begin(), selectedMarkers.end(), *it);
             bool isSelected = foundSelected != selectedMarkers.end();
             boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
             boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
@@ -1231,7 +1231,7 @@ TrackerNode::drawOverlay(double time,
                     overlay->renderText( center.x(), center.y(), name, markerColor[0], markerColor[1], markerColor[2]);
                 } // for (int l = 0; l < 2; ++l) {
             } // if (!isSelected) {
-        } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
+        } // for (std::vector<TrackMarkerPtr>::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
         if (_imp->ui->showMarkerTexture && selectedFound) {
             _imp->ui->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), _imp->ui->selectedMarkerTextureTime, selectedCenter, selectedOffset, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
@@ -1303,11 +1303,11 @@ TrackerNode::onOverlayPenDown(double time,
     /*if ( context->onOverlayPenDownInternalNodes( time, renderScale, view, viewportPos, pos, pressure, timestamp, pen, overlay ) ) {
         return true;
        }*/
-    std::vector<TrackMarkerPtr > allMarkers;
+    std::vector<TrackMarkerPtr> allMarkers;
     context->getAllMarkers(&allMarkers);
 
     bool trackingPageSecret = context->getTrackingPageKnob()->getIsSecret();
-    for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
+    for (std::vector<TrackMarkerPtr>::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
         if (!(*it)->isEnabled(time) || trackingPageSecret) {
             continue;
         }
@@ -1472,7 +1472,7 @@ TrackerNode::onOverlayPenDown(double time,
         if (didSomething) {
             break;
         }
-    } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
+    } // for (std::vector<TrackMarkerPtr>::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
     if (_imp->ui->clickToAddTrackEnabled && !didSomething && !trackingPageSecret) {
         TrackMarkerPtr marker = context->createMarker();
@@ -1512,7 +1512,7 @@ TrackerNode::onOverlayPenDown(double time,
         }
     }
     if (!didSomething && !trackingPageSecret) {
-        std::list<TrackMarkerPtr > selectedMarkers;
+        std::list<TrackMarkerPtr> selectedMarkers;
         context->getSelectedMarkers(&selectedMarkers);
         if ( !selectedMarkers.empty() ) {
             context->clearSelection(TrackerContext::eTrackSelectionViewer);
@@ -1553,11 +1553,11 @@ TrackerNode::onOverlayPenMotion(double time,
         didSomething = true;
     }
 
-    std::vector<TrackMarkerPtr > allMarkers;
+    std::vector<TrackMarkerPtr> allMarkers;
     context->getAllMarkers(&allMarkers);
     bool trackingPageSecret = context->getTrackingPageKnob()->getIsSecret();
     bool hoverProcess = false;
-    for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
+    for (std::vector<TrackMarkerPtr>::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
         if (!(*it)->isEnabled(time) || trackingPageSecret) {
             continue;
         }
@@ -1707,7 +1707,7 @@ TrackerNode::onOverlayPenMotion(double time,
         if (hoverProcess) {
             break;
         }
-    } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
+    } // for (std::vector<TrackMarkerPtr>::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
     if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isNearbySelectedMarkerTextureResizeAnchor(pos) ) {
         setCurrentCursor(eCursorFDiag);
@@ -2430,8 +2430,8 @@ TrackerNode::onInteractViewportSelectionUpdated(const RectD& rectangle,
         return;
     }
 
-    std::vector<TrackMarkerPtr > allMarkers;
-    std::list<TrackMarkerPtr > selectedMarkers;
+    std::vector<TrackMarkerPtr> allMarkers;
+    std::list<TrackMarkerPtr> selectedMarkers;
     boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
     context->getAllMarkers(&allMarkers);
     for (std::size_t i = 0; i < allMarkers.size(); ++i) {

@@ -47,7 +47,7 @@ NATRON_NAMESPACE_ENTER
 
 
 NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
-                                   const boost::shared_ptr<NodeCollection>& group)
+                                   const NodeCollectionPtr& group)
     : _publicInterface(p)
     , group(group)
     , _lastMousePos()

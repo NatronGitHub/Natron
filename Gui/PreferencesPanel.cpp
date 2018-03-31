@@ -1049,7 +1049,7 @@ PreferencesPanelPrivate::createPreferenceTab(const KnobPageGuiPtr& page,
     boost::shared_ptr<KnobPage> pageKnob = page->pageKnob.lock();
     if (pageKnob) {
         // In the preferences, there may be sub-pages
-        KnobPtr hasParent = pageKnob->getParentKnob();
+        KnobIPtr hasParent = pageKnob->getParentKnob();
         boost::shared_ptr<KnobPage> parentPage;
         if (hasParent) {
             parentPage = boost::dynamic_pointer_cast<KnobPage>(hasParent);

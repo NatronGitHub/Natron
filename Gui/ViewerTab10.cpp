@@ -530,7 +530,7 @@ ViewerTab::~ViewerTab()
     if (gui) {
         NodeGraph* graph = 0;
         if (_imp->viewerNode) {
-            boost::shared_ptr<NodeCollection> collection = _imp->viewerNode->getNode()->getGroup();
+            NodeCollectionPtr collection = _imp->viewerNode->getNode()->getGroup();
             if (collection) {
                 NodeGroup* isGrp = dynamic_cast<NodeGroup*>( collection.get() );
                 if (isGrp) {
@@ -952,7 +952,7 @@ ViewerTab::eventFilter(QObject *target,
         if (gui) {
             GuiAppInstPtr app = gui->getApp();
             if (app) {
-                boost::shared_ptr<NodeGuiI> nodegui_i = _imp->viewerNode->getNode()->getNodeGui();
+                NodeGuiIPtr nodegui_i = _imp->viewerNode->getNode()->getNodeGui();
                 assert(nodegui_i);
                 NodeGuiPtr nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
                 if (nodegui) {

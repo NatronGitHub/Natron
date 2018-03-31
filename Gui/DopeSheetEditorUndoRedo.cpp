@@ -126,7 +126,7 @@ moveGroupNode(DopeSheetEditor* model,
         const KnobsVec &knobs = (*it)->getKnobs();
 
         for (KnobsVec::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
-            const KnobPtr& knob = *knobIt;
+            const KnobIPtr& knob = *knobIt;
             if ( !knob->hasAnimation() ) {
                 continue;
             }
@@ -165,7 +165,7 @@ DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
     _model(model)
 {
     setText( tr("Move selected keys") );
-    std::set<NodePtr > nodesSet;
+    std::set<NodePtr> nodesSet;
     for (std::vector<boost::shared_ptr<DSNode> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         DopeSheetItemType type = (*it)->getItemType();
         if ( (type != eDopeSheetItemTypeReader) &&
@@ -196,7 +196,7 @@ DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
         }
     }
 
-    for (std::set<NodePtr >::iterator it = nodesSet.begin(); it != nodesSet.end(); ++it) {
+    for (std::set<NodePtr>::iterator it = nodesSet.begin(); it != nodesSet.end(); ++it) {
         _allDifferentNodes.push_back(*it);
     }
 }
@@ -241,7 +241,7 @@ DSMoveKeysAndNodesCommand::moveSelection(double dt)
             continue;
         }
 
-        KnobPtr knob = knobContext->getKnobGui()->getKnob();
+        KnobIPtr knob = knobContext->getKnobGui()->getKnob();
 
         knob->moveValueAtTime(eCurveChangeReasonDopeSheet, selectedKey->key.getTime(), ViewIdx(0),
                               knobContext->getDimension(),
@@ -442,7 +442,7 @@ DSTransformKeysCommand::transformKey(const DSKeyPtr& key)
         return;
     }
 
-    KnobPtr knob = knobContext->getKnobGui()->getKnob();
+    KnobIPtr knob = knobContext->getKnobGui()->getKnob();
     knob->transformValueAtTime(eCurveChangeReasonDopeSheet, key->key.getTime(), ViewSpec::all(), knobContext->getDimension(), _transform, &key->key);
 }
 
@@ -927,7 +927,7 @@ DSPasteKeysCommand::redo()
 }
 
 void
-DSPasteKeysCommand::setKeyValueFromKnob(const KnobPtr& knob, double keyTime, KeyFrame* key)
+DSPasteKeysCommand::setKeyValueFromKnob(const KnobIPtr& knob, double keyTime, KeyFrame* key)
 {
     Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
     Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
@@ -964,7 +964,7 @@ DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
         for (std::size_t i = 0; i < _keys.size(); ++i) {
 
             int dim = knobContext->getDimension();
-            KnobPtr knob = knobContext->getInternalKnob();
+            KnobIPtr knob = knobContext->getInternalKnob();
             knob->beginChanges();
 
             double keyTime = _keys[i].key.getTime();

@@ -54,7 +54,7 @@ struct NumericKnobValidatorPrivate
         , isColorGui( dynamic_cast<KnobGuiColor*>( knob.get() ) )
         , isIntGui( dynamic_cast<KnobGuiInt*>( knob.get() ) )
     {
-        KnobPtr internalKnob = knob->getKnob();
+        KnobIPtr internalKnob = knob->getKnob();
 
         isDouble = boost::dynamic_pointer_cast<Knob<double> >(internalKnob);
         isInt = boost::dynamic_pointer_cast<Knob<int> >(internalKnob);

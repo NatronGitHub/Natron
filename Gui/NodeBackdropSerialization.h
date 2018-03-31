@@ -83,7 +83,7 @@ public:
         w = width; h = height;
     }
 
-    KnobPtr getLabelSerialization() const
+    KnobIPtr getLabelSerialization() const
     {
         return label->getKnob();
     }

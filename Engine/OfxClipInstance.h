@@ -266,7 +266,7 @@ public:
         //////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////
         /// Valid only throughought a render action
-        std::list< boost::shared_ptr<RenderActionData> > renderData;
+        std::list<boost::shared_ptr<RenderActionData> > renderData;
         //////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////
 
@@ -292,7 +292,7 @@ public:
             , componentsPresent(other.componentsPresent)
             , unmappedComponents(other.unmappedComponents)
         {
-            for (std::list< boost::shared_ptr<RenderActionData> >::const_iterator it = other.renderData.begin();
+            for (std::list<boost::shared_ptr<RenderActionData> >::const_iterator it = other.renderData.begin();
                  it != other.renderData.end(); ++it) {
                 boost::shared_ptr<RenderActionData> d = boost::make_shared<RenderActionData>(**it);
                 renderData.push_back(d);

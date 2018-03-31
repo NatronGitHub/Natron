@@ -319,13 +319,13 @@ public:
     struct TreeOutput
     {
         NodePtr node;
-        std::list<std::pair<int, NodeWPtr > > outputs;
+        std::list<std::pair<int, NodeWPtr> > outputs;
     };
 
     struct TreeInput
     {
         NodePtr node;
-        std::vector<NodePtr > inputs;
+        std::vector<NodePtr> inputs;
     };
 
     struct NodesTree

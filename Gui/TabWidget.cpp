@@ -1080,7 +1080,7 @@ TabWidget::removeTab(int index,
         /*
            If the tab is a group pane, try to find the parent group pane in this pane and set it active
          */
-        boost::shared_ptr<NodeCollection> collect = isGraph->getGroup();
+        NodeCollectionPtr collect = isGraph->getGroup();
         assert(collect);
         NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collect.get() );
         if (isGroup) {
@@ -1505,7 +1505,7 @@ TabBar::mouseMoveEvent(QMouseEvent* e)
 QPixmap
 TabBar::makePixmapForDrag(int index)
 {
-    std::vector< std::pair<QString, QIcon > > tabs;
+    std::vector<std::pair<QString, QIcon > > tabs;
 
     for (int i = 0; i < count(); ++i) {
         tabs.push_back( std::make_pair( tabText(i), tabIcon(i) ) );

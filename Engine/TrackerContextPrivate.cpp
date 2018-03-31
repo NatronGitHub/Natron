@@ -66,16 +66,16 @@ createDuplicateKnob( const std::string& knobName,
                      const boost::shared_ptr<KnobGroup>& group = boost::shared_ptr<KnobGroup>(),
                      const NodePtr& otherNode = NodePtr() )
 {
-    KnobPtr internalNodeKnob = internalNode->getKnobByName(knobName);
+    KnobIPtr internalNodeKnob = internalNode->getKnobByName(knobName);
 
     if (!internalNodeKnob) {
         return boost::shared_ptr<KNOBTYPE>();
     }
     assert(internalNodeKnob);
-    KnobPtr duplicateKnob = internalNodeKnob->createDuplicateOnHolder(effect.get(), page, group, -1, true, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false, false);
+    KnobIPtr duplicateKnob = internalNodeKnob->createDuplicateOnHolder(effect.get(), page, group, -1, true, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false, false);
 
     if (otherNode) {
-        KnobPtr otherNodeKnob = otherNode->getKnobByName(knobName);
+        KnobIPtr otherNodeKnob = otherNode->getKnobByName(knobName);
         assert(otherNodeKnob);
         for (int i = 0; i < otherNodeKnob->getDimension(); ++i) {
             otherNodeKnob->slaveTo(i, duplicateKnob, i);
@@ -1135,7 +1135,7 @@ struct PreviouslyComputedTrackFrameCompareLess
 typedef std::set<PreviouslyComputedTrackFrame, PreviouslyComputedTrackFrameCompareLess> PreviouslyTrackedFrameSet;
 
 void
-TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
+TrackerContext::trackMarkers(const std::list<TrackMarkerPtr>& markers,
                              int start,
                              int end,
                              int frameStep,
@@ -1188,7 +1188,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
        - t->mvMarker will contain the marker that evolves throughout the tracking
      */
     int trackIndex = 0;
-    for (std::list<TrackMarkerPtr >::const_iterator it = markers.begin(); it != markers.end(); ++it, ++trackIndex) {
+    for (std::list<TrackMarkerPtr>::const_iterator it = markers.begin(); it != markers.end(); ++it, ++trackIndex) {
         
         if (autoKeyingOnEnabledParamEnabled) {
             (*it)->setEnabledAtTime(start, true);
@@ -1322,16 +1322,16 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 } // TrackerContext::trackMarkers
 
 void
-TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr >& markers,
+TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr>& markers,
                                                  bool multipleTrackSelected,
                                                  bool slave)
 {
-    std::list<TrackMarkerPtr >::const_iterator next = markers.begin();
+    std::list<TrackMarkerPtr>::const_iterator next = markers.begin();
 
     if ( !markers.empty() ) {
         ++next;
     }
-    for (std::list<TrackMarkerPtr >::const_iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::const_iterator it = markers.begin(); it != markers.end(); ++it) {
         const KnobsVec& trackKnobs = (*it)->getKnobs();
         for (KnobsVec::const_iterator it2 = trackKnobs.begin(); it2 != trackKnobs.end(); ++it2) {
             // Find the knob in the TrackerContext knobs
@@ -1394,7 +1394,7 @@ TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr 
         if ( next != markers.end() ) {
             ++next;
         }
-    } // for (std::list<TrackMarkerPtr >::const_iterator it = markers() ; it!=markers(); ++it)
+    } // for (std::list<TrackMarkerPtr>::const_iterator it = markers() ; it!=markers(); ++it)
 } // TrackerContextPrivate::linkMarkerKnobsToGuiKnobs
 
 void
@@ -2246,7 +2246,7 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
         enabledPointsKnob[i] = enableToPoint[i].lock();
     }
 
-    std::list<KnobPtr> animatedKnobsChanged;
+    std::list<KnobIPtr> animatedKnobsChanged;
 
     fittingErrorKnob->blockValueChanges();
     animatedKnobsChanged.push_back(fittingErrorKnob);
@@ -2353,7 +2353,7 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
         toPointsKnob[c]->cloneCurve(ViewSpec::all(), 0, tmpToPointsCurveX[c]);
         toPointsKnob[c]->cloneCurve(ViewSpec::all(), 1, tmpToPointsCurveY[c]);
     }
-    for (std::list<KnobPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
+    for (std::list<KnobIPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
         (*it)->unblockValueChanges();
         int nDims = (*it)->getDimension();
         for (int i = 0; i < nDims; ++i) {
@@ -2466,7 +2466,7 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
     rotationKnob->blockValueChanges();
     fittingErrorKnob->blockValueChanges();
 
-    std::list<KnobPtr> animatedKnobsChanged;
+    std::list<KnobIPtr> animatedKnobsChanged;
     animatedKnobsChanged.push_back(translationKnob);
     animatedKnobsChanged.push_back(scaleKnob);
     animatedKnobsChanged.push_back(rotationKnob);
@@ -2531,7 +2531,7 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
     scaleKnob->cloneCurve(ViewSpec::all(), 0, tmpScaleCurve);
     scaleKnob->cloneCurve(ViewSpec::all(), 1, tmpScaleCurve);
 
-    for (std::list<KnobPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
+    for (std::list<KnobIPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
         (*it)->unblockValueChanges();
         int nDims = (*it)->getDimension();
         for (int i = 0; i < nDims; ++i) {

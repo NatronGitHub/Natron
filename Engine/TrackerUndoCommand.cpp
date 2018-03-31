@@ -52,7 +52,7 @@ AddTrackCommand::undo()
     }
 
     context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
-    for (std::map<int, TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
+    for (std::map<int, TrackMarkerPtr>::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
         context->removeMarker(it->second);
     }
     context->endEditSelection(TrackerContext::eTrackSelectionInternal);
@@ -71,11 +71,11 @@ AddTrackCommand::redo()
     context->clearSelection(TrackerContext::eTrackSelectionInternal);
 
     if (!_isFirstRedo) {
-        for (std::map<int, TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
+        for (std::map<int, TrackMarkerPtr>::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
             context->insertMarker(it->second, it->first);
         }
     }
-    for (std::map<int, TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
+    for (std::map<int, TrackMarkerPtr>::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
         context->addTrackToSelection(it->second, TrackerContext::eTrackSelectionInternal);
     }
 
@@ -84,14 +84,14 @@ AddTrackCommand::redo()
     _isFirstRedo = false;
 }
 
-RemoveTracksCommand::RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers,
+RemoveTracksCommand::RemoveTracksCommand(const std::list<TrackMarkerPtr> &markers,
                                          const boost::shared_ptr<TrackerContext>& context)
     : UndoCommand()
     , _markers()
     , _context(context)
 {
     assert( !markers.empty() );
-    for (std::list<TrackMarkerPtr >::const_iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::const_iterator it = markers.begin(); it != markers.end(); ++it) {
         TrackToRemove t;
         t.track = *it;
         t.prevTrack = context->getPrevMarker(t.track, false);

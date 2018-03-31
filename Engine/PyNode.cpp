@@ -371,7 +371,7 @@ Effect::getPluginID() const
 }
 
 Param*
-Effect::createParamWrapperForKnob(const KnobPtr& knob)
+Effect::createParamWrapperForKnob(const KnobIPtr& knob)
 {
     int dims = knob->getDimension();
     boost::shared_ptr<KnobInt> isInt = boost::dynamic_pointer_cast<KnobInt>(knob);
@@ -477,7 +477,7 @@ Effect::getParam(const QString& name) const
             fallbackSearchName = name.mid(0, name.size() - str.size());
         }
     }
-    KnobPtr knob = node->getKnobByName( name.toStdString() );
+    KnobIPtr knob = node->getKnobByName( name.toStdString() );
 
     if (knob) {
         return createParamWrapperForKnob(knob);

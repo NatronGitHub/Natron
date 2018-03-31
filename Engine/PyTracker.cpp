@@ -68,7 +68,7 @@ Track::getParam(const QString& scriptName) const
     if (!marker) {
         return 0;
     }
-    KnobPtr knob = marker->getKnobByName( scriptName.toStdString() );
+    KnobIPtr knob = marker->getKnobByName( scriptName.toStdString() );
 
     if (!knob) {
         return 0;

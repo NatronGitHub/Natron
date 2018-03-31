@@ -296,7 +296,7 @@ DockablePanel::DockablePanel(Gui* gui,
 
 
         if (node) {
-            boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
+            NodeGuiIPtr gui_i = node->getNodeGui();
             assert(gui_i);
             double r, g, b;
             gui_i->getColor(&r, &g, &b);
@@ -812,7 +812,7 @@ DockablePanel::onKnobsInitialized()
         }
         assert(node);
         if (node) {
-            boost::shared_ptr<NodeCollection> collec = node->getGroup();
+            NodeCollectionPtr collec = node->getGroup();
             NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collec.get() );
             if (isGroup) {
                 if ( !isGroup->getNode()->hasPyPlugBeenEdited() ) {
@@ -1046,7 +1046,7 @@ DockablePanel::setClosedInternal(bool c)
                 NodesList children;
                 internalNode->getChildrenMultiInstance(&children);
                 for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-                    boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
+                    NodeGuiIPtr gui_i = (*it)->getNodeGui();
                     assert(gui_i);
                     NodeGuiPtr childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
                     assert(childGui);
@@ -1060,7 +1060,7 @@ DockablePanel::setClosedInternal(bool c)
                 NodesList children;
                 internalNode->getChildrenMultiInstance(&children);
                 for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-                    boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
+                    NodeGuiIPtr gui_i = (*it)->getNodeGui();
                     assert(gui_i);
                     NodeGuiPtr childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
                     assert(childGui);
@@ -1576,7 +1576,7 @@ DockablePanel::setKeyOnAllParameters()
     const KnobsGuiMapping& knobsMap = getKnobsMapping();
 
     for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
-        KnobPtr knob = it->first.lock();
+        KnobIPtr knob = it->first.lock();
         if ( knob->isAnimationEnabled() ) {
             for (int i = 0; i < knob->getDimension(); ++i) {
                 std::list<boost::shared_ptr<CurveGui> > curves = gui->getCurveEditor()->findCurve(it->second, i);
@@ -1630,7 +1630,7 @@ DockablePanel::removeAnimationOnAllParameters()
     const KnobsGuiMapping& knobsMap = getKnobsMapping();
 
     for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
-        KnobPtr knob = it->first.lock();
+        KnobIPtr knob = it->first.lock();
         if ( knob->isAnimationEnabled() ) {
             for (int i = 0; i < knob->getDimension(); ++i) {
                 std::list<boost::shared_ptr<CurveGui> > curves = gui->getCurveEditor()->findCurve(it->second, i);
@@ -1725,10 +1725,10 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
         const KnobsGuiMapping& knobsMap = getKnobsMapping();
         KnobsGuiMapping groups;
         std::set<KnobGuiPtr> toHideGui;
-        std::set<KnobPtr> toHide;
+        std::set<KnobIPtr> toHide;
         //printf("hiding...\n");
         for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
-            KnobPtr knob = it->first.lock();
+            KnobIPtr knob = it->first.lock();
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knob.get() );
             KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
             if (isGroup) {
@@ -1742,13 +1742,13 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
         }
         // now check if each groups is empty, i.e. all its children are either not visible or going to be hidden
         for (KnobsGuiMapping::const_iterator it = groups.begin(); it != groups.end(); ++it) {
-            KnobPtr knob = it->first.lock();
+            KnobIPtr knob = it->first.lock();
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knob.get() );
             assert(isGroup);
-            std::vector<KnobPtr> children = isGroup->getChildren();
+            std::vector<KnobIPtr> children = isGroup->getChildren();
             bool hideMe = true;
             //printf("should we hide group %s?\n",knob->getName().c_str());
-            for (std::vector<KnobPtr>::const_iterator it2 = children.begin(); it2 != children.end(); ++it2) {
+            for (std::vector<KnobIPtr>::const_iterator it2 = children.begin(); it2 != children.end(); ++it2) {
                 KnobGroup* isGroup2 = dynamic_cast<KnobGroup*>( (*it2).get() );
                 if (!isGroup2 && toHide.find(*it2) == toHide.end() && !(*it2)->getIsSecret()) {
                     //printf("- child %s still visible: NO\n",(*it2)->getName().c_str());
@@ -1780,7 +1780,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 struct TreeItem
 {
     QTreeWidgetItem* item;
-    KnobPtr knob;
+    KnobIPtr knob;
 };
 
 struct ManageUserParamsDialogPrivate

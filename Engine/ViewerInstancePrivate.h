@@ -173,7 +173,7 @@ public:
     virtual void lock(const FrameEntryPtr& entry) OVERRIDE FINAL
     {
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<FrameEntryPtr >::iterator it =
+        std::list<FrameEntryPtr>::iterator it =
             std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
 
         while ( it != textureBeingRendered.end() ) {
@@ -188,7 +188,7 @@ public:
     virtual bool tryLock(const FrameEntryPtr& entry) OVERRIDE FINAL
     {
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<FrameEntryPtr >::iterator it =
+        std::list<FrameEntryPtr>::iterator it =
             std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
 
         if ( it != textureBeingRendered.end() ) {
@@ -204,7 +204,7 @@ public:
     virtual void unlock(const FrameEntryPtr& entry) OVERRIDE FINAL
     {
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<FrameEntryPtr >::iterator it =
+        std::list<FrameEntryPtr>::iterator it =
             std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
 
         ///The image must exist, otherwise this is a bug
@@ -393,7 +393,7 @@ public:
     bool activateInputChangedFromViewer;
     mutable QMutex textureBeingRenderedMutex;
     QWaitCondition textureBeingRenderedCond;
-    std::list<FrameEntryPtr > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
+    std::list<FrameEntryPtr> textureBeingRendered; ///< a list of all the texture being rendered simultaneously
     mutable QReadWriteLock gammaLookupMutex;
     std::vector<float> gammaLookup; // protected by gammaLookupMutex
 

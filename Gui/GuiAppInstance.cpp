@@ -468,7 +468,7 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
                               const NodePtr& parentMultiInstance,
                               const CreateNodeArgs& args)
 {
-    boost::shared_ptr<NodeCollection> group = node->getGroup();
+    NodeCollectionPtr group = node->getGroup();
     NodeGraph* graph;
 
     if (group) {
@@ -491,7 +491,7 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
         nodegui->hideGui();
 
 
-        boost::shared_ptr<NodeGuiI> parentNodeGui_i = parentMultiInstance->getNodeGui();
+        NodeGuiIPtr parentNodeGui_i = parentMultiInstance->getNodeGui();
         assert(parentNodeGui_i);
         nodegui->setParentMultiInstance( boost::dynamic_pointer_cast<NodeGui>(parentNodeGui_i) );
     }
@@ -1094,10 +1094,10 @@ void
 GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
                                         const boost::shared_ptr<NodeSerialization>& serialization, bool autoConnect)
 {
-    boost::shared_ptr<NodeGuiI> node_gui_i = node->getNodeGui();
+    NodeGuiIPtr node_gui_i = node->getNodeGui();
     if (autoConnect && !serialization && node_gui_i) {
         NodeGraph* graph = 0;
-        boost::shared_ptr<NodeCollection> collection = node->getGroup();
+        NodeCollectionPtr collection = node->getGroup();
         assert(collection);
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>( collection.get() );
         if (isGrp) {
@@ -1604,7 +1604,7 @@ GuiAppInstance::goToNextKeyframe()
 
 void
 GuiAppInstance::setKnobDnDData(QDrag* drag,
-                               const KnobPtr& knob,
+                               const KnobIPtr& knob,
                                int dimension)
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -1615,7 +1615,7 @@ GuiAppInstance::setKnobDnDData(QDrag* drag,
 
 void
 GuiAppInstance::getKnobDnDData(QDrag** drag,
-                               KnobPtr* knob,
+                               KnobIPtr* knob,
                                int* dimension) const
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -1634,7 +1634,7 @@ GuiAppInstance::checkAllReadersModificationDate(bool errorAndWarn)
     bool changed =  false;
     for (NodesList::iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
         if ( (*it)->getEffectInstance()->isReader() ) {
-            KnobPtr fileKnobI = (*it)->getKnobByName(kOfxImageEffectFileParamName);
+            KnobIPtr fileKnobI = (*it)->getKnobByName(kOfxImageEffectFileParamName);
             if (!fileKnobI) {
                 continue;
             }

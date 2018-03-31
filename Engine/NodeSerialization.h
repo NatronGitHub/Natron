@@ -75,7 +75,7 @@ class NodeSerialization
 {
 public:
 
-    typedef std::list< boost::shared_ptr<KnobSerialization> > KnobValues;
+    typedef std::list<boost::shared_ptr<KnobSerialization> > KnobValues;
 
     ///Used to serialize
     explicit NodeSerialization(const NodePtr & n,
@@ -225,7 +225,7 @@ public:
         return _userPages;
     }
 
-    const std::list< boost::shared_ptr<NodeSerialization> >& getNodesCollection() const
+    const std::list<boost::shared_ptr<NodeSerialization> >& getNodesCollection() const
     {
         return _children;
     }
@@ -258,7 +258,7 @@ private:
     std::list<std::string> _pagesIndexes;
 
     ///If this node is a group or a multi-instance, this is the children
-    std::list< boost::shared_ptr<NodeSerialization> > _children;
+    std::list<boost::shared_ptr<NodeSerialization> > _children;
     std::string _pythonModule;
     unsigned int _pythonModuleVersion;
     std::list<ImagePlaneDesc> _userComponents;
@@ -309,7 +309,7 @@ private:
         int nodesCount = (int)_children.size();
         ar & ::boost::serialization::make_nvp("Children", nodesCount);
 
-        for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = _children.begin();
+        for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it = _children.begin();
              it != _children.end();
              ++it) {
             ar & ::boost::serialization::make_nvp("item", **it);

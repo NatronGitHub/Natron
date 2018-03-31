@@ -63,7 +63,7 @@ void
 NodeGraph::makeFullyQualifiedLabel(Node* node,
                                    std::string* ret)
 {
-    boost::shared_ptr<NodeCollection> parent = node->getGroup();
+    NodeCollectionPtr parent = node->getGroup();
     NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>( parent.get() );
     std::string toPreprend = node->getLabel();
 
@@ -77,7 +77,7 @@ NodeGraph::makeFullyQualifiedLabel(Node* node,
 }
 
 NodeGraph::NodeGraph(Gui* gui,
-                     const boost::shared_ptr<NodeCollection>& group,
+                     const NodeCollectionPtr& group,
                      QGraphicsScene* scene,
                      QWidget *parent)
     : QGraphicsView(scene, parent)
@@ -224,13 +224,13 @@ NodeGraph::isDoingNavigatorRender() const
     return _imp->isDoingPreviewRender;
 }
 
-const std::list< NodeGuiPtr > &
+const std::list<NodeGuiPtr> &
 NodeGraph::getSelectedNodes() const
 {
     return _imp->_selection;
 }
 
-boost::shared_ptr<NodeCollection>
+NodeCollectionPtr
 NodeGraph::getGroup() const
 {
     return _imp->group.lock();
@@ -245,7 +245,7 @@ NodeGraph::getRootItem() const
 void
 NodeGraph::notifyGuiClosing()
 {
-    boost::shared_ptr<NodeCollection> group = getGroup();
+    NodeCollectionPtr group = getGroup();
 
     if (group) {
         group->discardNodeGraphPointer();
@@ -285,7 +285,7 @@ NodeGraph::paintEvent(QPaintEvent* e)
         return;
     }
 
-    boost::shared_ptr<NodeCollection> collection = getGroup();
+    NodeCollectionPtr collection = getGroup();
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
     bool isGroupEditable = true;
     bool groupEdited = true;

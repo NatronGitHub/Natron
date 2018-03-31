@@ -1765,7 +1765,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     Qt::MouseButton button = e->button();
 
     if ( buttonDownIsLeft(e) ) {
-        boost::shared_ptr<NodeGuiI> gui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
+        NodeGuiIPtr gui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
         assert(gui_i);
         NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
         _imp->viewerTab->getGui()->selectNode(gui);
@@ -2787,7 +2787,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
         return QGLWidget::wheelEvent(e);
     }
 
-    boost::shared_ptr<NodeGuiI> nodeGui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
+    NodeGuiIPtr nodeGui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
     NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(nodeGui_i);
     gui->selectNode(nodeGui);
 

@@ -284,30 +284,32 @@ class UserParamHolder;
 
 NATRON_PYTHON_NAMESPACE_EXIT
 
+typedef boost::shared_ptr<AbortableRenderInfo> AbortableRenderInfoPtr;
+typedef boost::shared_ptr<AppInstance> AppInstPtr;
+typedef boost::shared_ptr<EffectInstance> EffectInstancePtr;
+typedef boost::shared_ptr<FrameEntry> FrameEntryPtr;
+typedef boost::shared_ptr<GenericWatcherCallerArgs> WatcherCallerArgsPtr;
+typedef boost::shared_ptr<Image> ImagePtr;
+typedef boost::shared_ptr<KnobI> KnobIPtr;
+typedef boost::shared_ptr<Node> NodePtr;
+typedef boost::shared_ptr<NodeCollection> NodeCollectionPtr;
+typedef boost::shared_ptr<NodeGuiI> NodeGuiIPtr;
 typedef boost::shared_ptr<OSGLContext> OSGLContextPtr;
 typedef boost::shared_ptr<PluginMemory> PluginMemoryPtr;
-typedef boost::weak_ptr<AppInstance> AppInstWPtr;
-typedef boost::shared_ptr<AppInstance> AppInstPtr;
-typedef boost::shared_ptr<GenericWatcherCallerArgs> WatcherCallerArgsPtr;
-typedef boost::shared_ptr<UndoCommand> UndoCommandPtr;
-typedef boost::shared_ptr<AbortableRenderInfo> AbortableRenderInfoPtr;
-typedef boost::weak_ptr<AbortableRenderInfo> AbortableRenderInfoWPtr;
+typedef boost::shared_ptr<Settings> SettingsPtr;
+typedef boost::shared_ptr<Texture> GLTexturePtr;
 typedef boost::shared_ptr<TrackMarker> TrackMarkerPtr;
-typedef boost::shared_ptr<Node> NodePtr;
-typedef std::list<NodePtr> NodesList;
-typedef boost::weak_ptr<Node> NodeWPtr;
-typedef std::list<NodeWPtr> NodesWList;
-typedef boost::shared_ptr<KnobI> KnobPtr;
-typedef boost::weak_ptr<KnobI> KnobWPtr;
-typedef std::vector<KnobPtr> KnobsVec;
-typedef boost::shared_ptr<EffectInstance> EffectInstancePtr;
+typedef boost::shared_ptr<UndoCommand> UndoCommandPtr;
+typedef boost::weak_ptr<AbortableRenderInfo> AbortableRenderInfoWPtr;
+typedef boost::weak_ptr<AppInstance> AppInstWPtr;
 typedef boost::weak_ptr<EffectInstance> EffectInstWPtr;
 typedef boost::weak_ptr<Image> ImageWPtr;
-typedef boost::shared_ptr<Image> ImagePtr;
+typedef boost::weak_ptr<KnobI> KnobWPtr;
+typedef boost::weak_ptr<Node> NodeWPtr;
 typedef std::list<ImagePtr> ImageList;
-typedef boost::shared_ptr<Texture> GLTexturePtr;
-typedef boost::shared_ptr<FrameEntry> FrameEntryPtr;
-typedef boost::shared_ptr<Settings> SettingsPtr;
+typedef std::list<NodePtr> NodesList;
+typedef std::list<NodeWPtr> NodesWList;
+typedef std::vector<KnobIPtr> KnobsVec;
 NATRON_NAMESPACE_EXIT
 
 #endif // Engine_EngineFwd_h

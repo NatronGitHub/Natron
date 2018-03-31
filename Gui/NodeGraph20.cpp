@@ -234,7 +234,7 @@ NodeGraph::checkForHints(bool shiftdown,
 
         ///find out if the node is already connected to what the edge is connected
         bool alreadyConnected = false;
-        const std::vector<NodeWPtr > & inpNodes = selectedNode->getNode()->getGuiInputs();
+        const std::vector<NodeWPtr> & inpNodes = selectedNode->getNode()->getGuiInputs();
         for (std::size_t i = 0; i < inpNodes.size(); ++i) {
             if ( inpNodes[i].lock() == edge->getSource()->getNode() ) {
                 alreadyConnected = true;
@@ -388,7 +388,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     _imp->_hasMovedOnce = true;
 
     bool mustUpdate = true;
-    boost::shared_ptr<NodeCollection> collection = getGroup();
+    NodeCollectionPtr collection = getGroup();
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
     bool isGroupEditable = true;
     bool groupEdited = true;

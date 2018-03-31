@@ -127,7 +127,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    typedef std::map<int, std::list< boost::shared_ptr<Image> > > InputImagesMap;
+    typedef std::map<int, std::list<boost::shared_ptr<Image> > > InputImagesMap;
     typedef std::map<int, std::list<ImagePlaneDesc> > ComponentsNeededMap;
 
     struct RenderRoIArgs
@@ -1712,7 +1712,7 @@ public:
     virtual void onEffectCreated(bool /*mayCreateFileDialog*/,
                                  const CreateNodeArgs& /*args*/) {}
 
-    virtual void onKnobSlaved(const KnobPtr& slave, const KnobPtr& master,
+    virtual void onKnobSlaved(const KnobIPtr& slave, const KnobIPtr& master,
                               int dimension,
                               bool isSlave) OVERRIDE FINAL;
 

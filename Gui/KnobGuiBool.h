@@ -108,19 +108,19 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(KnobPtr knob,
+    static KnobGui * BuildKnobGui(KnobIPtr knob,
                                   KnobGuiContainerI *container)
     {
         return new KnobGuiBool(knob, container);
     }
 
-    KnobGuiBool(KnobPtr knob,
+    KnobGuiBool(KnobIPtr knob,
                 KnobGuiContainerI *container);
 
     virtual ~KnobGuiBool() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
 
 public Q_SLOTS:
 

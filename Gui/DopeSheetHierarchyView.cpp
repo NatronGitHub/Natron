@@ -49,7 +49,7 @@
 
 NATRON_NAMESPACE_ENTER
 
-typedef std::list<boost::shared_ptr<DSKnob> > DSKnobPtrList;
+typedef std::list<boost::shared_ptr<DSKnob> > DSKnobIPtrList;
 
 
 ////////////////////////// HierarchyViewSelectionModel //////////////////////////

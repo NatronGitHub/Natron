@@ -374,7 +374,7 @@ PrecompNodePrivate::setReadNodeErrorChoice()
     }
 
     if (read) {
-        KnobPtr knob = read->getKnobByName("onMissingFrame");
+        KnobIPtr knob = read->getKnobByName("onMissingFrame");
         if (knob) {
             KnobChoice* choice = dynamic_cast<KnobChoice*>( knob.get() );
             if (choice) {
@@ -544,7 +544,7 @@ PrecompNodePrivate::createReadNode()
         return;
     }
 
-    KnobPtr fileNameKnob = writeNode->getKnobByName(kOfxImageEffectFileParamName);
+    KnobIPtr fileNameKnob = writeNode->getKnobByName(kOfxImageEffectFileParamName);
     if (!fileNameKnob) {
         return;
     }
@@ -636,8 +636,8 @@ PrecompNodePrivate::setFirstAndLastFrame()
     if (!writeNode) {
         return;
     }
-    KnobPtr writefirstFrameKnob = writeNode->getKnobByName("firstFrame");
-    KnobPtr writelastFrameKnob = writeNode->getKnobByName("lastFrame");
+    KnobIPtr writefirstFrameKnob = writeNode->getKnobByName("firstFrame");
+    KnobIPtr writelastFrameKnob = writeNode->getKnobByName("lastFrame");
     KnobInt* firstFrame = dynamic_cast<KnobInt*>( writefirstFrameKnob.get() );
     KnobInt* lastFrame = dynamic_cast<KnobInt*>( writelastFrameKnob.get() );
     if (firstFrame) {
@@ -652,7 +652,7 @@ void
 PrecompNodePrivate::refreshReadNodeInput()
 {
     assert(readNode);
-    KnobPtr fileNameKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
+    KnobIPtr fileNameKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
     if (!fileNameKnob) {
         return;
     }

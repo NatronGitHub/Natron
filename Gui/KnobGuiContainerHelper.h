@@ -204,7 +204,7 @@ public:
     /**
      * @brief Removes a knob from the GUI, this should not be called directly, instead one should call KnobHolder::deleteKnob
      **/
-    virtual void deleteKnobGui(const KnobPtr& knob) OVERRIDE FINAL;
+    virtual void deleteKnobGui(const KnobIPtr& knob) OVERRIDE FINAL;
 
     /**
      * @brief Scan for changes among user created knobs and re-create them
@@ -237,7 +237,7 @@ public:
     /**
      * @brief Returns a pointe to the KnobGui representing the given internal knob.
      **/
-    virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual KnobGuiPtr getKnobGui(const KnobIPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the horizontal spacing that should be used by default between knobs on a same layout line.
@@ -332,7 +332,7 @@ private:
 
     void clearUndoRedoStack();
 
-    KnobGuiPtr findKnobGuiOrCreate(const KnobPtr & knob,
+    KnobGuiPtr findKnobGuiOrCreate(const KnobIPtr & knob,
                                    bool makeNewLine,
                                    int lastKnobLineSpacing,
                                    QWidget* lastRowWidget,

@@ -680,7 +680,7 @@ std::vector<DopeSheetKey> DopeSheetViewPrivate::isNearByKeyframe(const boost::sh
     assert(dsKnob);
 
     std::vector<DopeSheetKey> ret;
-    KnobPtr knob = dsKnob->getKnobGui()->getKnob();
+    KnobIPtr knob = dsKnob->getKnobGui()->getKnob();
     int dim = dsKnob->getDimension();
     int startDim = 0;
     int endDim = knob->getDimension();
@@ -2123,7 +2123,7 @@ DopeSheetViewPrivate::computeGroupRange(DSNode *group)
              it != knobs.end();
              ++it) {
             const KnobGuiPtr& knobGui = (*it).second;
-            KnobPtr knob = knobGui->getKnob();
+            KnobIPtr knob = knobGui->getKnob();
 
             if ( !knob->isAnimationEnabled() || !knob->hasAnimation() ) {
                 continue;
@@ -2974,7 +2974,7 @@ DopeSheetView::onNodeAdded(DSNode *dsNode)
             const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > &knobs = dsNode->getNodeGui()->getKnobs();
 
             for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
-                KnobPtr knob = knobIt->first.lock();
+                KnobIPtr knob = knobIt->first.lock();
                 const KnobGuiPtr& knobGui = knobIt->second;
                 connect( knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)),
                          this, SLOT(onKeyframeChanged()) );
@@ -2991,7 +2991,7 @@ DopeSheetView::onNodeAdded(DSNode *dsNode)
     } else if (nodeType == eDopeSheetItemTypeReader) {
         // The dopesheet view must refresh if the user set some values in the settings panel
         // so we connect some signals/slots
-        KnobPtr lastFrameKnob = node->getKnobByName(kReaderParamNameLastFrame);
+        KnobIPtr lastFrameKnob = node->getKnobByName(kReaderParamNameLastFrame);
         if (!lastFrameKnob) {
             return;
         }
@@ -3607,7 +3607,7 @@ DopeSheetView::mouseDoubleClickEvent(QMouseEvent *e)
             std::vector<DopeSheetKey> toPaste;
             double keyframeTime = std::floor(_imp->zoomContext.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
             int dim = dsKnob->getDimension();
-            KnobPtr knob = dsKnob->getInternalKnob();
+            KnobIPtr knob = dsKnob->getInternalKnob();
             bool hasKeyframe = false;
             for (int i = 0; i < knob->getDimension(); ++i) {
                 if ( (i == dim) || (dim == -1) ) {

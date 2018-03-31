@@ -64,10 +64,10 @@ App::getInternalApp() const
     return _instance.lock();
 }
 
-boost::shared_ptr<NodeCollection>
+NodeCollectionPtr
 App::getCollectionFromGroup(Group* group) const
 {
-    boost::shared_ptr<NodeCollection> collection;
+    NodeCollectionPtr collection;
 
     if (group) {
         App* isApp = dynamic_cast<App*>(group);
@@ -97,13 +97,13 @@ App::getCollectionFromGroup(Group* group) const
 static void makeCreateNodeArgs(const AppInstPtr& app,
                                const QString& pluginID,
                                int majorVersion,
-                               const boost::shared_ptr<NodeCollection>& collection,
+                               const NodeCollectionPtr& collection,
                                const NodeCreationPropertyMap& props,
                                CreateNodeArgs* args)
 {
 
     args->setProperty<std::string>(kCreateNodeArgsPropPluginID, pluginID.toStdString());
-    args->setProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer, collection);
+    args->setProperty<NodeCollectionPtr>(kCreateNodeArgsPropGroupContainer, collection);
     args->setProperty<int>(kCreateNodeArgsPropPluginVersion, majorVersion, 0);
 
     args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
@@ -159,7 +159,7 @@ App::createNode(const QString& pluginID,
                 Group* group,
                 const NodeCreationPropertyMap& props) const
 {
-    boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
+    NodeCollectionPtr collection = getCollectionFromGroup(group);
 
     assert(collection);
     CreateNodeArgs args;
@@ -178,7 +178,7 @@ App::createReader(const QString& filename,
                   Group* group,
                   const NodeCreationPropertyMap& props) const
 {
-    boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
+    NodeCollectionPtr collection = getCollectionFromGroup(group);
 
     assert(collection);
 
@@ -198,7 +198,7 @@ App::createWriter(const QString& filename,
                   Group* group,
                   const NodeCreationPropertyMap& props) const
 {
-    boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
+    NodeCollectionPtr collection = getCollectionFromGroup(group);
 
     assert(collection);
     CreateNodeArgs args;
@@ -245,7 +245,7 @@ AppSettings::AppSettings(const SettingsPtr& settings)
 Param*
 AppSettings::getParam(const QString& scriptName) const
 {
-    KnobPtr knob = _settings->getKnobByName( scriptName.toStdString() );
+    KnobIPtr knob = _settings->getKnobByName( scriptName.toStdString() );
 
     if (!knob) {
         return 0;
@@ -383,7 +383,7 @@ App::renderInternal(bool forceBlocking,
 Param*
 App::getProjectParam(const QString& name) const
 {
-    KnobPtr knob =  getInternalApp()->getProject()->getKnobByName( name.toStdString() );
+    KnobIPtr knob =  getInternalApp()->getProject()->getKnobByName( name.toStdString() );
 
     if (!knob) {
         return 0;

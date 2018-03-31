@@ -883,7 +883,7 @@ HostOverlay::addInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    KnobPtr firstKnob = knobs->getFirstKnob();
+    KnobIPtr firstKnob = knobs->getFirstKnob();
     if (!firstKnob) {
         return false;
     }

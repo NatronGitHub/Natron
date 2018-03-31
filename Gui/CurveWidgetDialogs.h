@@ -123,7 +123,7 @@ private:
         SpinBox* _curveSpinBox;
     };
 
-    std::vector< CurveColumn > _curveColumns;
+    std::vector<CurveColumn > _curveColumns;
 
     ////buttons
     DialogButtonBox* _buttonBox;
