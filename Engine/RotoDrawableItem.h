@@ -71,9 +71,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
 
-    RotoDrawableItem(const boost::shared_ptr<RotoContext>& context,
+    RotoDrawableItem(const RotoContextPtr& context,
                      const std::string & name,
-                     const boost::shared_ptr<RotoLayer>& parent,
+                     const RotoLayerPtr& parent,
                      bool isStroke);
 
     virtual ~RotoDrawableItem();
@@ -143,32 +143,32 @@ public:
     void setCompositingOperator(int op);
 
     std::string getCompositingOperatorToolTip() const;
-    boost::shared_ptr<KnobBool> getActivatedKnob() const;
-    boost::shared_ptr<KnobDouble> getFeatherKnob() const;
-    boost::shared_ptr<KnobDouble> getFeatherFallOffKnob() const;
-    boost::shared_ptr<KnobDouble> getOpacityKnob() const;
-    boost::shared_ptr<KnobBool> getInvertedKnob() const;
-    boost::shared_ptr<KnobChoice> getOperatorKnob() const;
-    boost::shared_ptr<KnobColor> getColorKnob() const;
-    boost::shared_ptr<KnobDouble> getCenterKnob() const;
-    boost::shared_ptr<KnobInt> getLifeTimeFrameKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushSizeKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushHardnessKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushSpacingKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushEffectKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushVisiblePortionKnob() const;
-    boost::shared_ptr<KnobBool> getPressureOpacityKnob() const;
-    boost::shared_ptr<KnobBool> getPressureSizeKnob() const;
-    boost::shared_ptr<KnobBool> getPressureHardnessKnob() const;
-    boost::shared_ptr<KnobBool> getBuildupKnob() const;
-    boost::shared_ptr<KnobInt> getTimeOffsetKnob() const;
-    boost::shared_ptr<KnobChoice> getTimeOffsetModeKnob() const;
-    boost::shared_ptr<KnobChoice> getBrushSourceTypeKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushCloneTranslateKnob() const;
-    boost::shared_ptr<KnobDouble> getMotionBlurAmountKnob() const;
-    boost::shared_ptr<KnobDouble> getShutterOffsetKnob() const;
-    boost::shared_ptr<KnobDouble> getShutterKnob() const;
-    boost::shared_ptr<KnobChoice> getShutterTypeKnob() const;
+    KnobBoolPtr getActivatedKnob() const;
+    KnobDoublePtr getFeatherKnob() const;
+    KnobDoublePtr getFeatherFallOffKnob() const;
+    KnobDoublePtr getOpacityKnob() const;
+    KnobBoolPtr getInvertedKnob() const;
+    KnobChoicePtr getOperatorKnob() const;
+    KnobColorPtr getColorKnob() const;
+    KnobDoublePtr getCenterKnob() const;
+    KnobIntPtr getLifeTimeFrameKnob() const;
+    KnobDoublePtr getBrushSizeKnob() const;
+    KnobDoublePtr getBrushHardnessKnob() const;
+    KnobDoublePtr getBrushSpacingKnob() const;
+    KnobDoublePtr getBrushEffectKnob() const;
+    KnobDoublePtr getBrushVisiblePortionKnob() const;
+    KnobBoolPtr getPressureOpacityKnob() const;
+    KnobBoolPtr getPressureSizeKnob() const;
+    KnobBoolPtr getPressureHardnessKnob() const;
+    KnobBoolPtr getBuildupKnob() const;
+    KnobIntPtr getTimeOffsetKnob() const;
+    KnobChoicePtr getTimeOffsetModeKnob() const;
+    KnobChoicePtr getBrushSourceTypeKnob() const;
+    KnobDoublePtr getBrushCloneTranslateKnob() const;
+    KnobDoublePtr getMotionBlurAmountKnob() const;
+    KnobDoublePtr getShutterOffsetKnob() const;
+    KnobDoublePtr getShutterKnob() const;
+    KnobChoicePtr getShutterTypeKnob() const;
 
     void setKeyframeOnAllTransformParameters(double time);
 
@@ -201,7 +201,7 @@ public:
 
     void resetTransformCenter();
 
-    boost::shared_ptr<Image> renderMaskFromStroke(const ImagePlaneDesc& components,
+    ImagePtr renderMaskFromStroke(const ImagePlaneDesc& components,
                                                   const double time,
                                                   const ViewIdx view,
                                                   const ImageBitDepthEnum depth,
@@ -210,7 +210,7 @@ public:
 
 private:
 
-    boost::shared_ptr<Image> renderMaskInternal(const RectI & roi,
+    ImagePtr renderMaskInternal(const RectI & roi,
                                                 const ImagePlaneDesc& components,
                                                 const double startTime,
                                                 const double endTime,
@@ -220,7 +220,7 @@ private:
                                                 const ImageBitDepthEnum depth,
                                                 const unsigned int mipmapLevel,
                                                 const std::list<std::list<std::pair<Point, double> > >& strokes,
-                                                const boost::shared_ptr<Image> &image);
+                                                const ImagePtr &image);
 
 Q_SIGNALS:
 

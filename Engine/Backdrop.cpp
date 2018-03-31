@@ -62,8 +62,8 @@ Backdrop::getPluginDescription() const
 void
 Backdrop::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Controls") );
-    boost::shared_ptr<KnobString> knobLabel = AppManager::createKnob<KnobString>( this, tr("Label") );
+    KnobPagePtr page = AppManager::createKnob<KnobPage>( this, tr("Controls") );
+    KnobStringPtr knobLabel = AppManager::createKnob<KnobString>( this, tr("Label") );
 
     knobLabel->setAnimationEnabled(false);
     knobLabel->setAsMultiLine();

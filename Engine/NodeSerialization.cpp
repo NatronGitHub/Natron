@@ -107,7 +107,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
                 continue;
             }
 
-            boost::shared_ptr<KnobSerialization> newKnobSer = boost::make_shared<KnobSerialization>(knobs[i]);
+            KnobSerializationPtr newKnobSer = boost::make_shared<KnobSerialization>(knobs[i]);
             _knobsValues.push_back(newKnobSer);
 
         }
@@ -115,7 +115,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
         _nbKnobs = (int)_knobsValues.size();
 
         for (std::list<KnobIPtr>::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
-            boost::shared_ptr<GroupKnobSerialization> s = boost::make_shared<GroupKnobSerialization>(*it);
+            GroupKnobSerializationPtr s = boost::make_shared<GroupKnobSerialization>(*it);
             _userPages.push_back(s);
         }
 
@@ -147,7 +147,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
             _masterNodeName = masterNode->getFullyQualifiedName();
         }
 
-        boost::shared_ptr<RotoContext> roto = n->getRotoContext();
+        RotoContextPtr roto = n->getRotoContext();
         if ( roto && !roto->isEmpty() ) {
             _hasRotoContext = true;
             roto->save(&_rotoContext);
@@ -155,7 +155,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
             _hasRotoContext = false;
         }
 
-        boost::shared_ptr<TrackerContext> tracker = n->getTrackerContext();
+        TrackerContextPtr tracker = n->getTrackerContext();
         if (tracker) {
             _hasTrackerContext = true;
             tracker->save(&_trackerContext);
@@ -173,7 +173,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
 
             for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
                 if ( (*it)->isPartOfProject() ) {
-                    boost::shared_ptr<NodeSerialization> state = boost::make_shared<NodeSerialization>(*it);
+                    NodeSerializationPtr state = boost::make_shared<NodeSerialization>(*it);
                     _children.push_back(state);
                 }
             }
@@ -188,7 +188,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
             for (NodesList::iterator it = childrenMultiInstance.begin(); it != childrenMultiInstance.end(); ++it) {
                 assert( (*it)->getParentMultiInstance() );
                 if ( (*it)->isActivated() ) {
-                    boost::shared_ptr<NodeSerialization> state = boost::make_shared<NodeSerialization>(*it);
+                    NodeSerializationPtr state = boost::make_shared<NodeSerialization>(*it);
                     _children.push_back(state);
                 }
             }

@@ -138,7 +138,7 @@ struct RenderQueueItem
     AppInstance::RenderWork work;
     QString sequenceName;
     QString savePath;
-    boost::shared_ptr<ProcessHandler> process;
+    ProcessHandlerPtr process;
 };
 
 struct AppInstancePrivate
@@ -147,7 +147,7 @@ struct AppInstancePrivate
 
 public:
     AppInstance* _publicInterface;
-    boost::shared_ptr<Project> _currentProject; //< ptr to the project
+    ProjectPtr _currentProject; //< ptr to the project
     int _appID; //< the unique ID of this instance (or window)
     bool _projectCreatedWithLowerCaseIDs;
     mutable QMutex creatingGroupMutex;
@@ -853,7 +853,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
     bool istoolsetScript = plugin->getToolsetScript();
     NodePtr node;
 
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
     NodeCollectionPtr group = args.getProperty<NodeCollectionPtr>(kCreateNodeArgsPropGroupContainer);
     {
         FlagIncrementer fs(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
@@ -1109,7 +1109,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     Plugin* plugin = 0;
     QString findId;
 
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
     bool trustPluginID = args.getProperty<bool>(kCreateNodeArgsPropTrustPluginID);
     QString argsPluginID = QString::fromUtf8(args.getProperty<std::string>(kCreateNodeArgsPropPluginID).c_str());
     int versionMajor = args.getProperty<int>(kCreateNodeArgsPropPluginVersion, 0);
@@ -1325,11 +1325,11 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 qDebug() << message.c_str();
                 errorDialog(title, message, false);
             }
-            return boost::shared_ptr<Node>();
+            return NodePtr();
         }
     }
 
-    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
+    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
 
     if (isGrp) {
         bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
@@ -1582,13 +1582,13 @@ AppInstance::getNodeByFullySpecifiedName(const std::string & name) const
     return _imp->_currentProject->getNodeByFullySpecifiedName(name);
 }
 
-boost::shared_ptr<Project>
+ProjectPtr
 AppInstance::getProject() const
 {
     return _imp->_currentProject;
 }
 
-boost::shared_ptr<TimeLine>
+TimeLinePtr
 AppInstance::getTimeLine() const
 {
     return _imp->_currentProject->getTimeLine();
@@ -1916,7 +1916,7 @@ AppInstance::onQueuedRenderFinished(int /*retCode*/)
     if (!engine) {
         return;
     }
-    boost::shared_ptr<OutputEffectInstance> effect = engine->getOutput();
+    OutputEffectInstancePtr effect = engine->getOutput();
     if (!effect) {
         return;
     }
@@ -1942,7 +1942,7 @@ AppInstance::startNextQueuedRender(OutputEffectInstance* finishedWriter)
     RenderQueueItem nextWork;
 
     // Do not make the process die under the mutex otherwise we may deadlock
-    boost::shared_ptr<ProcessHandler> processDying;
+    ProcessHandlerPtr processDying;
     {
         QMutexLocker k(&_imp->renderQueueMutex);
         for (std::list<RenderQueueItem>::iterator it = _imp->activeRenders.begin(); it != _imp->activeRenders.end(); ++it) {
@@ -2180,7 +2180,7 @@ AppInstance::getAppIDString() const
 
 void
 AppInstance::onGroupCreationFinished(const NodePtr& node,
-                                     const boost::shared_ptr<NodeSerialization>& serialization, bool /*autoConnect*/)
+                                     const NodeSerializationPtr& serialization, bool /*autoConnect*/)
 {
     assert(node);
 
@@ -2203,7 +2203,7 @@ AppInstance::saveTemp(const std::string& filename)
 {
     std::string outFile = filename;
     std::string path = SequenceParsing::removePath(outFile);
-    boost::shared_ptr<Project> project = getProject();
+    ProjectPtr project = getProject();
 
     return project->saveProject_imp(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), false, false, 0);
 }
@@ -2211,7 +2211,7 @@ AppInstance::saveTemp(const std::string& filename)
 bool
 AppInstance::save(const std::string& filename)
 {
-    boost::shared_ptr<Project> project = getProject();
+    ProjectPtr project = getProject();
 
     if ( project->hasProjectBeenSavedByUser() ) {
         QString projectFilename = project->getProjectFilename();
@@ -2244,7 +2244,7 @@ AppInstance::loadProject(const std::string& filename)
     QString path = file.path() + QChar::fromLatin1('/');
 
     //We are in background mode, there can only be 1 instance active, wipe the current project
-    boost::shared_ptr<Project> project = getProject();
+    ProjectPtr project = getProject();
     project->resetProject();
 
     bool ok  = project->loadProject( path, fileUnPathed);

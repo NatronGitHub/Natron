@@ -119,8 +119,8 @@ public:
      **/
     void switchInternalPlugin(Plugin* plugin);
 
-    void setPrecompNode(const boost::shared_ptr<PrecompNode>& precomp);
-    boost::shared_ptr<PrecompNode> isPartOfPrecomp() const;
+    void setPrecompNode(const PrecompNodePtr& precomp);
+    PrecompNodePtr isPartOfPrecomp() const;
 
     /**
      * @brief Creates the EffectInstance that will be embedded into this node and set it up.
@@ -310,8 +310,8 @@ public:
     /**
      * @brief Returns a pointer to the rotoscoping context if the node is in the paint context, otherwise NULL.
      **/
-    boost::shared_ptr<RotoContext> getRotoContext() const;
-    boost::shared_ptr<TrackerContext> getTrackerContext() const;
+    RotoContextPtr getRotoContext() const;
+    TrackerContextPtr getTrackerContext() const;
 
     U64 getRotoAge() const;
 
@@ -493,7 +493,7 @@ public:
                                   unsigned int mipmapLevel,
                                   std::list<std::list<std::pair<Point, double> > >* strokes,
                                   int* strokeIndex) const;
-    boost::shared_ptr<Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
+    ImagePtr getOrRenderLastStrokeImage(unsigned int mipMapLevel,
                                                         double par,
                                                         const ImagePlaneDesc& components,
                                                         ImageBitDepthEnum depth) const;
@@ -636,8 +636,8 @@ public:
      * @brief This is used exclusively by nodes in the underlying graph of the implementation of the RotoPaint.
      * Do not use that anywhere else.
      **/
-    void attachRotoItem(const boost::shared_ptr<RotoDrawableItem>& stroke);
-    boost::shared_ptr<RotoDrawableItem> getAttachedRotoItem() const;
+    void attachRotoItem(const RotoDrawableItemPtr& stroke);
+    RotoDrawableItemPtr getAttachedRotoItem() const;
 
 
     //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
@@ -894,16 +894,16 @@ public:
      * rendering that image, this function will wait until the image is available for render again.
      * This is used internally by EffectInstance::renderRoI
      **/
-    void lock(const boost::shared_ptr<Image>& entry);
-    bool tryLock(const boost::shared_ptr<Image>& entry);
-    void unlock(const boost::shared_ptr<Image>& entry);
+    void lock(const ImagePtr& entry);
+    bool tryLock(const ImagePtr& entry);
+    void unlock(const ImagePtr& entry);
 
 
     /**
      * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that
      * do not respect the OpenFX specification.
      **/
-    boost::shared_ptr<Image> getImageBeingRendered(double time, unsigned int mipMapLevel, ViewIdx view);
+    ImagePtr getImageBeingRendered(double time, unsigned int mipMapLevel, ViewIdx view);
 
     void beginInputEdition();
 
@@ -917,7 +917,7 @@ public:
 
     void setNodeDisabled(bool disabled);
 
-    boost::shared_ptr<KnobBool> getDisabledKnob() const;
+    KnobBoolPtr getDisabledKnob() const;
 
     bool isLifetimeActivated(int *firstFrame, int *lastFrame) const;
 
@@ -1014,31 +1014,31 @@ private:
 
     void findRightClickMenuKnob(const KnobsVec& knobs);
 
-    void createNodePage(const boost::shared_ptr<KnobPage>& settingsPage);
+    void createNodePage(const KnobPagePtr& settingsPage);
 
     void createInfoPage();
 
-    void createHostMixKnob(const boost::shared_ptr<KnobPage>& mainPage);
+    void createHostMixKnob(const KnobPagePtr& mainPage);
 
 #ifndef NATRON_ENABLE_IO_META_NODES
-    void createWriterFrameStepKnob(const boost::shared_ptr<KnobPage>& mainPage);
+    void createWriterFrameStepKnob(const KnobPagePtr& mainPage);
 #endif
 
     void createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChannelSelector,
                              const std::vector<std::string>& inputLabels,
-                             const boost::shared_ptr<KnobPage>& mainPage,
+                             const KnobPagePtr& mainPage,
                              bool addNewLineOnLastMask,
                              KnobIPtr* lastKnobCreated);
 
-    boost::shared_ptr<KnobPage> getOrCreateMainPage();
+    KnobPagePtr getOrCreateMainPage();
 
-    void createLabelKnob(const boost::shared_ptr<KnobPage>& settingsPage, const std::string& label);
+    void createLabelKnob(const KnobPagePtr& settingsPage, const std::string& label);
 
-    void findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage);
+    void findOrCreateChannelEnabled(const KnobPagePtr& mainPage);
 
     void createChannelSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChannelSelector,
                                 const std::vector<std::string>& inputLabels,
-                                const boost::shared_ptr<KnobPage>& mainPage,
+                                const KnobPagePtr& mainPage,
                                 KnobIPtr* lastKnobBeforeAdvancedOption);
 
 public:
@@ -1198,35 +1198,35 @@ public:
                                    const RenderScale& renderScale,
                                    ViewIdx view) WARN_UNUSED_RETURN;
 
-    void addPositionInteract(const boost::shared_ptr<KnobDouble>& position,
-                             const boost::shared_ptr<KnobBool>& interactive);
+    void addPositionInteract(const KnobDoublePtr& position,
+                             const KnobBoolPtr& interactive);
 
-    void addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
-                              const boost::shared_ptr<KnobDouble>& scale,
-                              const boost::shared_ptr<KnobBool>& scaleUniform,
-                              const boost::shared_ptr<KnobDouble>& rotate,
-                              const boost::shared_ptr<KnobDouble>& skewX,
-                              const boost::shared_ptr<KnobDouble>& skewY,
-                              const boost::shared_ptr<KnobChoice>& skewOrder,
-                              const boost::shared_ptr<KnobDouble>& center,
-                              const boost::shared_ptr<KnobBool>& invert,
-                              const boost::shared_ptr<KnobBool>& interactive);
+    void addTransformInteract(const KnobDoublePtr& translate,
+                              const KnobDoublePtr& scale,
+                              const KnobBoolPtr& scaleUniform,
+                              const KnobDoublePtr& rotate,
+                              const KnobDoublePtr& skewX,
+                              const KnobDoublePtr& skewY,
+                              const KnobChoicePtr& skewOrder,
+                              const KnobDoublePtr& center,
+                              const KnobBoolPtr& invert,
+                              const KnobBoolPtr& interactive);
 
-    void addCornerPinInteract(const boost::shared_ptr<KnobDouble>& from1,
-                              const boost::shared_ptr<KnobDouble>& from2,
-                              const boost::shared_ptr<KnobDouble>& from3,
-                              const boost::shared_ptr<KnobDouble>& from4,
-                              const boost::shared_ptr<KnobDouble>& to1,
-                              const boost::shared_ptr<KnobDouble>& to2,
-                              const boost::shared_ptr<KnobDouble>& to3,
-                              const boost::shared_ptr<KnobDouble>& to4,
-                              const boost::shared_ptr<KnobBool>& enable1,
-                              const boost::shared_ptr<KnobBool>& enable2,
-                              const boost::shared_ptr<KnobBool>& enable3,
-                              const boost::shared_ptr<KnobBool>& enable4,
-                              const boost::shared_ptr<KnobChoice>& overlayPoints,
-                              const boost::shared_ptr<KnobBool>& invert,
-                              const boost::shared_ptr<KnobBool>& interactive);
+    void addCornerPinInteract(const KnobDoublePtr& from1,
+                              const KnobDoublePtr& from2,
+                              const KnobDoublePtr& from3,
+                              const KnobDoublePtr& from4,
+                              const KnobDoublePtr& to1,
+                              const KnobDoublePtr& to2,
+                              const KnobDoublePtr& to3,
+                              const KnobDoublePtr& to4,
+                              const KnobBoolPtr& enable1,
+                              const KnobBoolPtr& enable2,
+                              const KnobBoolPtr& enable3,
+                              const KnobBoolPtr& enable4,
+                              const KnobChoicePtr& overlayPoints,
+                              const KnobBoolPtr& invert,
+                              const KnobBoolPtr& interactive);
 
     void removePositionHostOverlay(KnobI* knob);
 
@@ -1261,9 +1261,9 @@ public:
 
     bool getProcessChannel(int channelIndex) const;
 
-    boost::shared_ptr<KnobChoice> getChannelSelectorKnob(int inputNb) const;
+    KnobChoicePtr getChannelSelectorKnob(int inputNb) const;
 
-    boost::shared_ptr<KnobBool> getProcessAllLayersKnob() const;
+    KnobBoolPtr getProcessAllLayersKnob() const;
 
     bool getSelectedLayer(int inputNb, const std::list<ImagePlaneDesc>& availableLayers, std::bitset<4> *processChannels, bool* isAll, ImagePlaneDesc *layer) const;
 

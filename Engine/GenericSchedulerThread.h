@@ -67,9 +67,6 @@ public:
     }
 };
 
-typedef boost::shared_ptr<GenericThreadStartArgs> ThreadStartArgsPtr;
-typedef boost::shared_ptr<GenericThreadExecOnMainThreadArgs> ExecOnMTArgsPtr;
-
 /**
  * @brief Implements a generic thread class.
  * This class can start an action, abort it, quit the thread.
@@ -197,7 +194,7 @@ public:
      * The task is what will be passed to threadLoopOnce().
      * @returns true if the task could be enqueued, false otherwise.
      **/
-    bool startTask(const ThreadStartArgsPtr& inArgs);
+    bool startTask(const GenericThreadStartArgsPtr& inArgs);
 
     /**
      * @brief Blocks the calling thread until
@@ -235,7 +232,7 @@ Q_SIGNALS:
     void stateChanged(int state);
 
     // Emitted by requestExecutionOnMainThread
-    void executionOnMainThreadRequested(ExecOnMTArgsPtr args);
+    void executionOnMainThreadRequested(GenericThreadExecOnMainThreadArgsPtr args);
 
     void taskAborted();
 
@@ -256,7 +253,7 @@ public Q_SLOTS:
 
 private Q_SLOTS:
 
-    void onExecutionOnMainThreadReceived(const ExecOnMTArgsPtr& args);
+    void onExecutionOnMainThreadReceived(const GenericThreadExecOnMainThreadArgsPtr& args);
 
 protected:
 
@@ -290,12 +287,12 @@ protected:
      * @return The state of the thread. By default should be eThreadStateActive. If threadLoopOnce might be long, you can periodically check
      * resolveState() to figure out if the user aborted the computation or not, in which case you need to return the value it returned.
      **/
-    virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) = 0;
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) = 0;
 
     /**
      * @brief To be implemented if your implementation of threadLoopOnce() wants to use requestExecutionOnMainThread.
      **/
-    virtual void executeOnMainThread(const ExecOnMTArgsPtr& /*inArgs*/) {}
+    virtual void executeOnMainThread(const GenericThreadExecOnMainThreadArgsPtr& /*inArgs*/) {}
 
 
     /**
@@ -309,7 +306,7 @@ protected:
      * You may only call this function from this thread, i.e: the thread that is running the run() function.
      * You may only call this function whilst the thread state is eThreadStateActive
      **/
-    void requestExecutionOnMainThread(const ExecOnMTArgsPtr& inArgs);
+    void requestExecutionOnMainThread(const GenericThreadExecOnMainThreadArgsPtr& inArgs);
 
 private:
 

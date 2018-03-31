@@ -114,7 +114,7 @@ public:
     /**
      * @brief Registers the holder as using TLS.
      **/
-    void registerTLSHolder(const boost::shared_ptr<const TLSHolderBase>& holder);
+    void registerTLSHolder(const TLSHolderBaseConstPtr& holder);
 
 
     /**

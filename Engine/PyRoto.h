@@ -47,11 +47,11 @@ class ItemBase
 {
 public:
 
-    ItemBase(const boost::shared_ptr<RotoItem>& item);
+    ItemBase(const RotoItemPtr& item);
 
     virtual ~ItemBase();
 
-    boost::shared_ptr<RotoItem> getInternalItem() const
+    RotoItemPtr getInternalItem() const
     {
         return _item;
     }
@@ -74,7 +74,7 @@ public:
 
 private:
 
-    boost::shared_ptr<RotoItem> _item;
+    RotoItemPtr _item;
 };
 
 class Layer
@@ -82,7 +82,7 @@ class Layer
 {
 public:
 
-    Layer(const boost::shared_ptr<RotoItem>& item);
+    Layer(const RotoItemPtr& item);
 
     virtual ~Layer();
 
@@ -96,7 +96,7 @@ public:
 
 private:
 
-    boost::shared_ptr<RotoLayer> _layer;
+    RotoLayerPtr _layer;
 };
 
 class BezierCurve
@@ -105,7 +105,7 @@ class BezierCurve
 public:
 
 
-    BezierCurve(const boost::shared_ptr<RotoItem>& item);
+    BezierCurve(const RotoItemPtr& item);
 
     virtual ~BezierCurve();
 
@@ -168,14 +168,14 @@ public:
 
 private:
 
-    boost::shared_ptr<Bezier> _bezier;
+    BezierPtr _bezier;
 };
 
 class Roto
 {
 public:
 
-    Roto(const boost::shared_ptr<RotoContext>& ctx);
+    Roto(const RotoContextPtr& ctx);
 
     ~Roto();
 
@@ -188,7 +188,7 @@ public:
 
 private:
 
-    boost::shared_ptr<RotoContext> _ctx;
+    RotoContextPtr _ctx;
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

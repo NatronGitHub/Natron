@@ -131,10 +131,10 @@ private:
 
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    TrackerContext(const boost::shared_ptr<Node> &node);
+    TrackerContext(const NodePtr &node);
 
 public:
-    static boost::shared_ptr<TrackerContext> create(const boost::shared_ptr<Node> &node);
+    static TrackerContextPtr create(const NodePtr &node);
 
     virtual ~TrackerContext();
 
@@ -143,16 +143,16 @@ public:
     void save(TrackerContextSerialization* serialization) const;
 
 
-    boost::shared_ptr<Node> getNode() const;
-    boost::shared_ptr<KnobChoice> getCorrelationScoreTypeKnob() const;
-    boost::shared_ptr<KnobBool> getEnabledKnob() const;
-    boost::shared_ptr<KnobPage> getTrackingPageKnob() const;
+    NodePtr getNode() const;
+    KnobChoicePtr getCorrelationScoreTypeKnob() const;
+    KnobBoolPtr getEnabledKnob() const;
+    KnobPagePtr getTrackingPageKnob() const;
 
-    boost::shared_ptr<KnobInt> getDefaultMarkerPatternWinSizeKnob() const;
+    KnobIntPtr getDefaultMarkerPatternWinSizeKnob() const;
 
-    boost::shared_ptr<KnobInt> getDefaultMarkerSearchWinSizeKnob() const;
+    KnobIntPtr getDefaultMarkerSearchWinSizeKnob() const;
 
-    boost::shared_ptr<KnobChoice> getDefaultMotionModelKnob() const;
+    KnobChoicePtr getDefaultMotionModelKnob() const;
 
     bool isTrackerPMEnabled() const;
 
@@ -298,17 +298,17 @@ public:
 
     void declareItemAsPythonField(const TrackMarkerPtr& item);
 
-    /*boost::shared_ptr<KnobDouble> getSearchWindowBottomLeftKnob() const;
-       boost::shared_ptr<KnobDouble> getSearchWindowTopRightKnob() const;
-       boost::shared_ptr<KnobDouble> getPatternTopLeftKnob() const;
-       boost::shared_ptr<KnobDouble> getPatternTopRightKnob() const;
-       boost::shared_ptr<KnobDouble> getPatternBtmRightKnob() const;
-       boost::shared_ptr<KnobDouble> getPatternBtmLeftKnob() const;
-       boost::shared_ptr<KnobDouble> getWeightKnob() const;
-       boost::shared_ptr<KnobDouble> getCenterKnob() const;
-       boost::shared_ptr<KnobDouble> getOffsetKnob() const;
-       boost::shared_ptr<KnobDouble> getCorrelationKnob() const;
-       boost::shared_ptr<KnobChoice> getMotionModelKnob() const;*/
+    /*KnobDoublePtr getSearchWindowBottomLeftKnob() const;
+       KnobDoublePtr getSearchWindowTopRightKnob() const;
+       KnobDoublePtr getPatternTopLeftKnob() const;
+       KnobDoublePtr getPatternTopRightKnob() const;
+       KnobDoublePtr getPatternBtmRightKnob() const;
+       KnobDoublePtr getPatternBtmLeftKnob() const;
+       KnobDoublePtr getWeightKnob() const;
+       KnobDoublePtr getCenterKnob() const;
+       KnobDoublePtr getOffsetKnob() const;
+       KnobDoublePtr getCorrelationKnob() const;
+       KnobChoicePtr getMotionModelKnob() const;*/
 
     void s_keyframeSetOnTrack(const TrackMarkerPtr& marker,
                               int key) { Q_EMIT keyframeSetOnTrack(marker, key); }
@@ -443,11 +443,11 @@ public:
     TrackArgs(int start,
               int end,
               int step,
-              const boost::shared_ptr<TimeLine>& timeline,
+              const TimeLinePtr& timeline,
               ViewerInstance* viewer,
-              const boost::shared_ptr<mv::AutoTrack>& autoTrack,
-              const boost::shared_ptr<TrackerFrameAccessor>& fa,
-              const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks,
+              const mv::AutoTrackPtr& autoTrack,
+              const TrackerFrameAccessorPtr& fa,
+              const std::vector<TrackMarkerAndOptionsPtr>& tracks,
               double formatWidth,
               double formatHeight,
               bool autoKeyEnabled);
@@ -469,12 +469,12 @@ public:
 
     int getStep() const;
 
-    boost::shared_ptr<TimeLine> getTimeLine() const;
+    TimeLinePtr getTimeLine() const;
     ViewerInstance* getViewer() const;
 
     int getNumTracks() const;
-    const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& getTracks() const;
-    boost::shared_ptr<mv::AutoTrack> getLibMVAutoTrack() const;
+    const std::vector<TrackMarkerAndOptionsPtr>& getTracks() const;
+    mv::AutoTrackPtr getLibMVAutoTrack() const;
 
     void getEnabledChannels(bool* r, bool* g, bool* b) const;
 
@@ -507,7 +507,7 @@ public:
      * @param start the first frame to track, if forward is true then start < end otherwise start > end
      * @param end the next frame after the last frame to track (a la STL iterators), if forward is true then end > start
      **/
-    void track(const boost::shared_ptr<TrackArgs>& args)
+    void track(const TrackArgsPtr& args)
     {
         startTask(args);
     }
@@ -544,7 +544,7 @@ private:
         return eTaskQueueBehaviorSkipToMostRecent;
     }
 
-    virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<TrackSchedulerPrivate> _imp;
 };
 

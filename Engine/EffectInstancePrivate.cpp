@@ -542,16 +542,16 @@ EffectInstance::Implementation::setDuringInteractAction(bool b)
 
 #if NATRON_ENABLE_TRIMAP
 void
-EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr<Image> & img, const RectI& roi, std::list<RectI>* restToRender, bool *renderedElsewhere)
+EffectInstance::Implementation::markImageAsBeingRendered(const ImagePtr & img, const RectI& roi, std::list<RectI>* restToRender, bool *renderedElsewhere)
 {
     if ( !img->usesBitMap() ) {
         return;
     }
 
     QMutexLocker k(&imagesBeingRenderedMutex);
-    IBRMap::iterator found = imagesBeingRendered.find(img);
+    ImageBeingRenderedMap::iterator found = imagesBeingRendered.find(img);
     if ( found != imagesBeingRendered.end() ) {
-        IBRPtr ibr = found->second;
+        ImageBeingRenderedPtr ibr = found->second;
         k.unlock(); // imagesBeingRenderedMutex
         QMutexLocker k2(&ibr->lock);
         ++(ibr->refCount);
@@ -560,9 +560,9 @@ EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr
             img->markForRendering(*it);
         }
     } else {
-        IBRPtr ibr = boost::make_shared<Implementation::ImageBeingRendered>();
+        ImageBeingRenderedPtr ibr = boost::make_shared<Implementation::ImageBeingRendered>();
         ++ibr->refCount;
-        std::pair<IBRMap::iterator, bool> ok = imagesBeingRendered.insert( std::make_pair(img, ibr) );
+        std::pair<ImageBeingRenderedMap::iterator, bool> ok = imagesBeingRendered.insert( std::make_pair(img, ibr) );
         assert(ok.second);
         k.unlock(); // imagesBeingRenderedMutex
         QMutexLocker k2(&ibr->lock);
@@ -575,14 +575,14 @@ EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr
 
 bool
 EffectInstance::Implementation::waitForImageBeingRenderedElsewhere(const RectI & roi,
-                                                                            const boost::shared_ptr<Image> & img)
+                                                                            const ImagePtr & img)
 {
     if ( !img->usesBitMap() ) {
         return true;
     }
-    IBRPtr ibr;
+    ImageBeingRenderedPtr ibr;
     QMutexLocker k(&imagesBeingRenderedMutex);
-    IBRMap::iterator found = imagesBeingRendered.find(img);
+    ImageBeingRenderedMap::iterator found = imagesBeingRendered.find(img);
     if( found != imagesBeingRendered.end() ) {
         ibr = found->second;
     }
@@ -609,16 +609,16 @@ EffectInstance::Implementation::waitForImageBeingRenderedElsewhere(const RectI &
 }
 
 void
-EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_ptr<Image> & img,
+EffectInstance::Implementation::unmarkImageAsBeingRendered(const ImagePtr & img,
                                                            const std::list<RectI>& rects,
                                                            bool renderFailed)
 {
     if ( !img->usesBitMap() ) {
         return;
     }
-    IBRPtr ibr;
+    ImageBeingRenderedPtr ibr;
     QMutexLocker k(&imagesBeingRenderedMutex);
-    IBRMap::iterator found = imagesBeingRendered.find(img);
+    ImageBeingRenderedMap::iterator found = imagesBeingRendered.find(img);
     if( found != imagesBeingRendered.end() ) {
         ibr = found->second;
     }
@@ -643,7 +643,7 @@ EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_p
     if (!ibr->refCount) {
         kk.unlock(); // < unlock before erase which is going to delete the lock
         k.relock(); // imagesBeingRenderedMutex
-        IBRMap::iterator found = imagesBeingRendered.find(img);
+        ImageBeingRenderedMap::iterator found = imagesBeingRendered.find(img);
         if( found != imagesBeingRendered.end() ) {
             imagesBeingRendered.erase(found);
         }
@@ -654,7 +654,7 @@ EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_p
     // if NATRON_ENABLE_TRIMAP
 
 
-EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
+EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectTLSDataPtr& tlsData,
                                                                    const RectD & rod,
                                                                    const RectI & renderWindow,
                                                                    double time,
@@ -662,7 +662,7 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
                                                                    bool isIdentity,
                                                                    double identityTime,
                                                                    const EffectInstancePtr& identityInput,
-                                                                   const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
+                                                                   const ComponentsNeededMapPtr& compsNeeded,
                                                                    const EffectInstance::InputImagesMap& inputImages,
                                                                    const RoIMap & roiMap,
                                                                    int firstFrame,
@@ -687,8 +687,8 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
     tlsData->currentRenderArgs.validArgs = true;
 }
 
-EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
-                                                                   const EffectDataTLSPtr& otherThreadData)
+EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectTLSDataPtr& tlsData,
+                                                                   const EffectTLSDataPtr& otherThreadData)
     : tlsData(tlsData)
 {
     tlsData->currentRenderArgs = otherThreadData->currentRenderArgs;
@@ -704,9 +704,9 @@ EffectInstance::Implementation::ScopedRenderArgs::~ScopedRenderArgs()
 
 void
 EffectInstance::Implementation::addInputImageTempPointer(int inputNb,
-                                                         const boost::shared_ptr<Image> & img)
+                                                         const ImagePtr & img)
 {
-    EffectDataTLSPtr tls = tlsData->getTLSData();
+    EffectTLSDataPtr tls = tlsData->getTLSData();
 
     if (!tls) {
         return;
@@ -717,7 +717,7 @@ EffectInstance::Implementation::addInputImageTempPointer(int inputNb,
 void
 EffectInstance::Implementation::clearInputImagePointers()
 {
-    EffectDataTLSPtr tls = tlsData->getTLSData();
+    EffectTLSDataPtr tls = tlsData->getTLSData();
 
     if (!tls) {
         return;

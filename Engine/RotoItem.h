@@ -85,14 +85,14 @@ public:
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    RotoItem( const boost::shared_ptr<RotoContext>& context,
+    RotoItem( const RotoContextPtr& context,
               const std::string & name,
-              boost::shared_ptr<RotoLayer> parent = boost::shared_ptr<RotoLayer>() );
+              RotoLayerPtr parent = RotoLayerPtr() );
 
 public:
-    static boost::shared_ptr<RotoItem> create( const boost::shared_ptr<RotoContext>& context,
+    static RotoItemPtr create( const RotoContextPtr& context,
                                                const std::string & name,
-                                               boost::shared_ptr<RotoLayer> parent = boost::shared_ptr<RotoLayer>() )
+                                               RotoLayerPtr parent = RotoLayerPtr() )
     {
         return boost::make_shared<RotoItem>(context, name, parent);
     }
@@ -111,10 +111,10 @@ public:
     void setLabel(const std::string& label);
 
     ///only callable on the main-thread
-    void setParentLayer(boost::shared_ptr<RotoLayer> layer);
+    void setParentLayer(RotoLayerPtr layer);
 
     ///MT-safe
-    boost::shared_ptr<RotoLayer> getParentLayer() const;
+    RotoLayerPtr getParentLayer() const;
 
     ///only callable from the main-thread
     void setGloballyActivated(bool a, bool setChildren);
@@ -155,8 +155,8 @@ public:
      * @brief Returns the name of the node holding this item
      **/
     std::string getRotoNodeName() const;
-    boost::shared_ptr<RotoContext> getContext() const;
-    boost::shared_ptr<RotoItem> getPreviousItemInLayer() const;
+    RotoContextPtr getContext() const;
+    RotoItemPtr getPreviousItemInLayer() const;
 
 protected:
 

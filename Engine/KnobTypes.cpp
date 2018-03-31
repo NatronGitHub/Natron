@@ -248,11 +248,11 @@ KnobDouble::setHasHostOverlayHandle(bool handle)
         if ( !effect->getNode() ) {
             return;
         }
-        boost::shared_ptr<KnobDouble> thisSharedDouble = boost::dynamic_pointer_cast<KnobDouble>(shared_from_this());
+        KnobDoublePtr thisSharedDouble = boost::dynamic_pointer_cast<KnobDouble>(shared_from_this());
         assert(thisSharedDouble);
         if (handle) {
             effect->getNode()->addPositionInteract(thisSharedDouble,
-                                                   boost::shared_ptr<KnobBool>() /*interactive*/);
+                                                   KnobBoolPtr() /*interactive*/);
         } else {
             effect->getNode()->removePositionHostOverlay(this);
         }
@@ -1912,7 +1912,7 @@ std::pair<double, double> KnobParametric::getParametricRange() const
     return _curves.front()->getXRange();
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 KnobParametric::getDefaultParametricCurve(int dimension) const
 {
     assert( dimension >= 0 && dimension < (int)_curves.size() );
@@ -1927,7 +1927,7 @@ KnobParametric::getDefaultParametricCurve(int dimension) const
     }
 }
 
-boost::shared_ptr<Curve> KnobParametric::getParametricCurve(int dimension) const
+CurvePtr KnobParametric::getParametricCurve(int dimension) const
 {
     ///Mt-safe as Curve is MT-safe and the pointer is never deleted
 

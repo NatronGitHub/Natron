@@ -70,8 +70,8 @@ typedef std::set<AbortableRenderInfoPtr, AbortableRenderInfo_CompareAge> OnGoing
 
 struct RenderViewerArgs
 {
-    RenderViewerArgs(const boost::shared_ptr<const Image> &inputImage_,
-                     const boost::shared_ptr<const Image> &matteImage_,
+    RenderViewerArgs(const const ImagePtr &inputImage_,
+                     const const ImagePtr &matteImage_,
                      DisplayChannelsEnum channels_,
                      ImagePremultiplicationEnum srcPremult_,
                      int bitDepth_,
@@ -99,8 +99,8 @@ struct RenderViewerArgs
     {
     }
 
-    boost::shared_ptr<const Image> inputImage;
-    boost::shared_ptr<const Image> matteImage;
+    const ImagePtr inputImage;
+    const ImagePtr matteImage;
     DisplayChannelsEnum channels;
     ImagePremultiplicationEnum srcPremult;
     int bitDepth;
@@ -355,7 +355,7 @@ public Q_SLOTS:
      * @brief Slot called internally by the renderViewer() function when it wants to refresh the OpenGL viewer.
      * Do not call this yourself.
      **/
-    void updateViewer(boost::shared_ptr<UpdateViewerParams> params);
+    void updateViewer(UpdateViewerParamsPtr params);
 
 Q_SIGNALS:
 
@@ -399,7 +399,7 @@ public:
 
     //When painting, this is the last texture we've drawn onto so that we can update only the specific portion needed
     mutable QMutex lastRenderParamsMutex;
-    boost::shared_ptr<UpdateViewerParams> lastRenderParams[2];
+    UpdateViewerParamsPtr lastRenderParams[2];
 
     /*
      * @brief If this list is not empty, this is the list of canonical rectangles we should update on the viewer, completly

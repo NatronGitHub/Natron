@@ -94,7 +94,7 @@ class ProjectSerialization
 {
     NodeCollectionSerialization _nodes;
     std::list<Format> _additionalFormats;
-    std::list<boost::shared_ptr<KnobSerialization> > _projectKnobs;
+    std::list<KnobSerializationPtr> _projectKnobs;
     SequenceTime _timelineCurrent;
     qint64 _creationDate;
     AppInstanceWPtr _app;
@@ -133,7 +133,7 @@ public:
         return _timelineCurrent;
     }
 
-    const std::list<boost::shared_ptr<KnobSerialization>  > & getProjectKnobsValues() const
+    const std::list<KnobSerializationPtr  > & getProjectKnobsValues() const
     {
         return _projectKnobs;
     }
@@ -201,7 +201,7 @@ public:
         ar & ::boost::serialization::make_nvp("NodesCollection", _nodes);
         int knobsCount = _projectKnobs.size();
         ar & ::boost::serialization::make_nvp("ProjectKnobsCount", knobsCount);
-        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = _projectKnobs.begin();
+        for (std::list<KnobSerializationPtr>::const_iterator it = _projectKnobs.begin();
              it != _projectKnobs.end();
              ++it) {
             ar & ::boost::serialization::make_nvp( "item", *(*it) );
@@ -264,7 +264,7 @@ public:
             int nodesCount;
             ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
             for (int i = 0; i < nodesCount; ++i) {
-                boost::shared_ptr<NodeSerialization> ns = boost::make_shared<NodeSerialization>();
+                NodeSerializationPtr ns = boost::make_shared<NodeSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *ns);
                 _nodes.addNodeSerialization(ns);
             }
@@ -276,7 +276,7 @@ public:
         ar & ::boost::serialization::make_nvp("ProjectKnobsCount", knobsCount);
 
         for (int i = 0; i < knobsCount; ++i) {
-            boost::shared_ptr<KnobSerialization> ks = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr ks = boost::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("item", *ks);
             _projectKnobs.push_back(ks);
         }

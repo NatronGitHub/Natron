@@ -195,30 +195,30 @@ public:
     /**
      * @brief Attempts to load an image from cache, returns true if it could find a matching image, false otherwise.
      **/
-    bool getImage(const ImageKey & key, std::list<boost::shared_ptr<Image> >* returnValue) const;
+    bool getImage(const ImageKey & key, std::list<ImagePtr>* returnValue) const;
 
     /**
      * @brief Same as getImage, but if it couldn't find a matching image in the cache, it will create one with the given parameters.
      **/
-    bool getImageOrCreate(const ImageKey & key, const boost::shared_ptr<ImageParams>& params,
-                          boost::shared_ptr<Image>* returnValue) const;
+    bool getImageOrCreate(const ImageKey & key, const ImageParamsPtr& params,
+                          ImagePtr* returnValue) const;
 
-    bool getImage_diskCache(const ImageKey & key, std::list<boost::shared_ptr<Image> >* returnValue) const;
+    bool getImage_diskCache(const ImageKey & key, std::list<ImagePtr>* returnValue) const;
 
-    bool getImageOrCreate_diskCache(const ImageKey & key, const boost::shared_ptr<ImageParams>& params,
-                                    boost::shared_ptr<Image>* returnValue) const;
+    bool getImageOrCreate_diskCache(const ImageKey & key, const ImageParamsPtr& params,
+                                    ImagePtr* returnValue) const;
 
     bool getTexture(const FrameKey & key,
                     std::list<FrameEntryPtr>* returnValue) const;
 
-    bool getTextureOrCreate(const FrameKey & key, const boost::shared_ptr<FrameParams>& params,
+    bool getTextureOrCreate(const FrameKey & key, const FrameParamsPtr& params,
                             FrameEntryLocker* locker,
                             FrameEntryPtr* returnValue) const;
 
 
     U64 getCachesTotalMemorySize() const;
     U64 getCachesTotalDiskSize() const;
-    boost::shared_ptr<CacheSignalEmitter> getOrActivateViewerCacheSignalEmitter() const;
+    CacheSignalEmitterPtr getOrActivateViewerCacheSignalEmitter() const;
 
     void setApplicationsCachesMaximumMemoryPercent(double p);
 
@@ -226,7 +226,7 @@ public:
 
     void setApplicationsCachesMaximumDiskSpace(unsigned long long size);
 
-    void removeFromNodeCache(const boost::shared_ptr<Image> & image);
+    void removeFromNodeCache(const ImagePtr & image);
     void removeFromViewerCache(const FrameEntryPtr & texture);
 
     void removeFromNodeCache(U64 hash);

@@ -498,7 +498,7 @@ public:
 
 
     TrackerContextPrivate(TrackerContext* publicInterface,
-                          const boost::shared_ptr<Node> &node);
+                          const NodePtr &node);
 
     virtual ~TrackerContextPrivate()
     {

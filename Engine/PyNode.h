@@ -51,7 +51,7 @@ class ImageLayer
     QString _layerName;
     QString _componentsPrettyName;
     QStringList _componentsName;
-    boost::shared_ptr<ImagePlaneDesc> _comps;
+    ImagePlaneDescPtr _comps;
 
 public:
 

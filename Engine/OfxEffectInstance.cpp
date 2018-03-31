@@ -381,7 +381,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         _imp->effect.reset( new OfxImageEffectInstance(plugin, *desc, mapContextToString(context), false) );
         assert(_imp->effect);
 
-        boost::shared_ptr<OfxEffectInstance> thisShared = boost::dynamic_pointer_cast<OfxEffectInstance>( shared_from_this() );
+        OfxEffectInstancePtr thisShared = boost::dynamic_pointer_cast<OfxEffectInstance>( shared_from_this() );
         _imp->effect->setOfxEffectInstance(thisShared);
 
         _imp->natronPluginID = plugin->getIdentifier();
@@ -469,7 +469,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             {
                 KnobIPtr foundCursorKnob = getKnobByName(kNatronOfxParamCursorName);
                 if (foundCursorKnob) {
-                    boost::shared_ptr<KnobString> isStringKnob = boost::dynamic_pointer_cast<KnobString>(foundCursorKnob);
+                    KnobStringPtr isStringKnob = boost::dynamic_pointer_cast<KnobString>(foundCursorKnob);
                     _imp->cursorKnob = isStringKnob;
                 }
             }
@@ -478,21 +478,21 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
                 KnobIPtr foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
                 if (foundSelKnob) {
-                    boost::shared_ptr<KnobInt> isIntKnob = boost::dynamic_pointer_cast<KnobInt>(foundSelKnob);
+                    KnobIntPtr isIntKnob = boost::dynamic_pointer_cast<KnobInt>(foundSelKnob);
                     _imp->selectionRectangleStateKnob = isIntKnob;
                 }
             }
             {
                 KnobIPtr foundTextKnob = getKnobByName(kNatronOfxParamUndoRedoText);
                 if (foundTextKnob) {
-                    boost::shared_ptr<KnobString> isStringKnob = boost::dynamic_pointer_cast<KnobString>(foundTextKnob);
+                    KnobStringPtr isStringKnob = boost::dynamic_pointer_cast<KnobString>(foundTextKnob);
                     _imp->undoRedoTextKnob = isStringKnob;
                 }
             }
             {
                 KnobIPtr foundUndoRedoKnob = getKnobByName(kNatronOfxParamUndoRedoState);
                 if (foundUndoRedoKnob) {
-                    boost::shared_ptr<KnobBool> isBool = boost::dynamic_pointer_cast<KnobBool>(foundUndoRedoKnob);
+                    KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(foundUndoRedoKnob);
                     _imp->undoRedoStateKnob = isBool;
                 }
             }
@@ -514,7 +514,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             }
             if ( !images.empty() ) {
                 *hasUsedFileDialog = true;
-                boost::shared_ptr<KnobSerialization> defaultFile = createDefaultValueForParam(kOfxImageEffectFileParamName, images);
+                KnobSerializationPtr defaultFile = createDefaultValueForParam(kOfxImageEffectFileParamName, images);
                 CreateNodeArgs::DefaultValuesList list;
                 list.push_back(defaultFile);
 
@@ -619,7 +619,7 @@ OfxEffectInstance::~OfxEffectInstance()
 EffectInstancePtr
 OfxEffectInstance::createRenderClone()
 {
-    boost::shared_ptr<OfxEffectInstance> clone( new OfxEffectInstance(*this) );
+    OfxEffectInstancePtr clone( new OfxEffectInstance(*this) );
 
     clone->_imp->effect.reset( new OfxImageEffectInstance(*_imp->effect) );
     assert(clone->_imp->effect);
@@ -755,7 +755,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         interactDesc.setEntryPoint(interactEntryPoint);
 #pragma message WARN("FIXME: bitdepth and hasalpha are probably wrong")
         interactDesc.describe(/*bitdepthPerComponent=*/ 8, /*hasAlpha=*/ false);
-        boost::shared_ptr<OfxParamOverlayInteract> overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance()->getHandle()) );
+        OfxParamOverlayInteractPtr overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance()->getHandle()) );
         knob->setCustomInteract(overlayInteract);
         overlayInteract->createInstanceAction();
     }
@@ -1926,6 +1926,8 @@ public:
     virtual ~OfxGLContextEffectData() {}
 };
 
+typedef boost::shared_ptr<OfxGLContextEffectData> OfxGLContextEffectDataPtr;
+
 StatusEnum
 OfxEffectInstance::beginSequenceRender(double first,
                                        double last,
@@ -2037,7 +2039,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     bool multiPlanar = isMultiPlanar();
     std::list<std::string> ofxPlanes;
-    for (std::list<std::pair<ImagePlaneDesc, boost::shared_ptr<Image> > >::const_iterator it = args.outputPlanes.begin();
+    for (std::list<std::pair<ImagePlaneDesc, ImagePtr> >::const_iterator it = args.outputPlanes.begin();
          it != args.outputPlanes.end(); ++it) {
         if (!multiPlanar) {
             // When not multi-planar, the components of the image will be the colorplane
@@ -2506,7 +2508,7 @@ class OfxUndoCommand : public UndoCommand
     KnobBoolWPtr _stateKnob;
 public:
 
-    OfxUndoCommand(const boost::shared_ptr<KnobString>& textKnob, const boost::shared_ptr<KnobBool> &stateKnob)
+    OfxUndoCommand(const KnobStringPtr& textKnob, const KnobBoolPtr &stateKnob)
     : _textKnob(textKnob)
     , _stateKnob(stateKnob)
     {
@@ -2526,7 +2528,7 @@ public:
      **/
     virtual void redo() OVERRIDE FINAL
     {
-        boost::shared_ptr<KnobBool> state = _stateKnob.lock();
+        KnobBoolPtr state = _stateKnob.lock();
         bool currentValue = state->getValue();
         assert(!currentValue);
         state->setValue(true);
@@ -2540,7 +2542,7 @@ public:
      **/
     virtual void undo() OVERRIDE FINAL
     {
-        boost::shared_ptr<KnobBool> state = _stateKnob.lock();
+        KnobBoolPtr state = _stateKnob.lock();
         bool currentValue = state->getValue();
         assert(currentValue);
         state->setValue(false);
@@ -2565,7 +2567,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
 
     {
         // Handle cursor knob
-        boost::shared_ptr<KnobString> cursorKnob = _imp->cursorKnob.lock();
+        KnobStringPtr cursorKnob = _imp->cursorKnob.lock();
         if (k == cursorKnob.get()) {
             CursorEnum c;
             std::string cursorStr = cursorKnob->getValue();
@@ -2576,9 +2578,9 @@ OfxEffectInstance::knobChanged(KnobI* k,
             }
             return true;
         }
-        boost::shared_ptr<KnobString> undoRedoText = _imp->undoRedoTextKnob.lock();
+        KnobStringPtr undoRedoText = _imp->undoRedoTextKnob.lock();
         if (k == undoRedoText.get()) {
-            boost::shared_ptr<KnobBool> undoRedoState = _imp->undoRedoStateKnob.lock();
+            KnobBoolPtr undoRedoState = _imp->undoRedoStateKnob.lock();
             assert(undoRedoState);
 
             if (undoRedoState && reason == eValueChangedReasonPluginEdited) {
@@ -3138,7 +3140,7 @@ OfxEffectInstance::supportsConcurrentOpenGLRenders() const
 StatusEnum
 OfxEffectInstance::attachOpenGLContext(EffectInstance::OpenGLContextEffectDataPtr* data)
 {
-    boost::shared_ptr<OfxGLContextEffectData> ofxData( new OfxGLContextEffectData() );
+    OfxGLContextEffectDataPtr ofxData( new OfxGLContextEffectData() );
 
     *data = ofxData;
     void* ofxGLData = 0;
@@ -3189,7 +3191,7 @@ OfxEffectInstance::dettachOpenGLContext(const EffectInstance::OpenGLContextEffec
 void
 OfxEffectInstance::onInteractViewportSelectionCleared()
 {
-    boost::shared_ptr<KnobInt> k = _imp->selectionRectangleStateKnob.lock();
+    KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
     if (!k) {
         return;
     }
@@ -3203,7 +3205,7 @@ OfxEffectInstance::onInteractViewportSelectionCleared()
 void
 OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease)
 {
-    boost::shared_ptr<KnobInt> k = _imp->selectionRectangleStateKnob.lock();
+    KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
     if (!k) {
         return;
     }

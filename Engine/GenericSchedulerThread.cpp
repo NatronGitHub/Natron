@@ -48,7 +48,7 @@ class GenericSchedulerThreadMetaTypesRegistration
 public:
     inline GenericSchedulerThreadMetaTypesRegistration()
     {
-        qRegisterMetaType<ExecOnMTArgsPtr>("ExecOnMTArgsPtr");
+        qRegisterMetaType<GenericThreadExecOnMainThreadArgsPtr>("GenericThreadExecOnMainThreadArgsPtr");
     }
 };
 
@@ -83,7 +83,7 @@ struct GenericSchedulerThreadPrivate
     mutable QMutex threadStateMutex;
 
     // The tasks queue, protected by enqueuedTasksMutex
-    std::list<ThreadStartArgsPtr> enqueuedTasks, queuedTaskWhileProcessingAbort;
+    std::list<GenericThreadStartArgsPtr> enqueuedTasks, queuedTaskWhileProcessingAbort;
     mutable QMutex enqueuedTasksMutex;
 
     // true when the main-thread is calling executeOnMainThread
@@ -139,7 +139,7 @@ GenericSchedulerThread::GenericSchedulerThread()
     , AbortableThread(this)
     , _imp( new GenericSchedulerThreadPrivate(this) )
 {
-    QObject::connect( this, SIGNAL(executionOnMainThreadRequested(ExecOnMTArgsPtr)), this, SLOT(onExecutionOnMainThreadReceived(ExecOnMTArgsPtr)) );
+    QObject::connect( this, SIGNAL(executionOnMainThreadRequested(GenericThreadExecOnMainThreadArgsPtr)), this, SLOT(onExecutionOnMainThreadReceived(GenericThreadExecOnMainThreadArgsPtr)) );
 }
 
 GenericSchedulerThread::~GenericSchedulerThread()
@@ -180,7 +180,7 @@ GenericSchedulerThread::quitThread(bool allowRestarts)
     {
         QMutexLocker k(&_imp->enqueuedTasksMutex);
         _imp->enqueuedTasks.clear();
-        boost::shared_ptr<GenericThreadStartArgs> stubArgs = boost::make_shared<GenericThreadStartArgs>(true);
+        GenericThreadStartArgsPtr stubArgs = boost::make_shared<GenericThreadStartArgs>(true);
         _imp->enqueuedTasks.push_back(stubArgs);
     }
 
@@ -421,7 +421,7 @@ GenericSchedulerThread::waitForAbortToCompleteQueued_main_thread()
 }
 
 bool
-GenericSchedulerThread::startTask(const ThreadStartArgsPtr& inArgs)
+GenericSchedulerThread::startTask(const GenericThreadStartArgsPtr& inArgs)
 {
     {
         QMutexLocker quitLocker(&_imp->mustQuitMutex);
@@ -470,7 +470,7 @@ GenericSchedulerThread::run()
         TaskQueueBehaviorEnum behavior = tasksQueueBehaviour();
         ThreadStateEnum state = eThreadStateActive;
         {
-            ThreadStartArgsPtr args;
+            GenericThreadStartArgsPtr args;
             {
                 QMutexLocker k(&_imp->enqueuedTasksMutex);
                 switch (behavior) {
@@ -500,7 +500,7 @@ GenericSchedulerThread::run()
                 // Do the work!
                 state = threadLoopOnce(args);
             }
-        }  // ThreadStartArgsPtr args;
+        }  // GenericThreadStartArgsPtr args;
         
         // The implementation might call resolveState from threadLoopOnce. If not, it will return eThreadStateActive by default so make
         // sure resolveState was called at least once
@@ -579,7 +579,7 @@ GenericSchedulerThread::run()
 } // run()
 
 void
-GenericSchedulerThread::requestExecutionOnMainThread(const ExecOnMTArgsPtr& inArgs)
+GenericSchedulerThread::requestExecutionOnMainThread(const GenericThreadExecOnMainThreadArgsPtr& inArgs)
 {
     // We must be within the run() function
     assert(QThread::currentThread() == this);
@@ -597,7 +597,7 @@ GenericSchedulerThread::requestExecutionOnMainThread(const ExecOnMTArgsPtr& inAr
 }
 
 void
-GenericSchedulerThread::onExecutionOnMainThreadReceived(const ExecOnMTArgsPtr& args)
+GenericSchedulerThread::onExecutionOnMainThreadReceived(const GenericThreadExecOnMainThreadArgsPtr& args)
 {
     assert( QThread::currentThread() == qApp->thread() );
     executeOnMainThread(args);

@@ -40,7 +40,7 @@
 NATRON_NAMESPACE_ENTER
 NATRON_PYTHON_NAMESPACE_ENTER
 
-ItemBase::ItemBase(const boost::shared_ptr<RotoItem>& item)
+ItemBase::ItemBase(const RotoItemPtr& item)
     : _item(item)
 {
 }
@@ -106,7 +106,7 @@ ItemBase::getVisible() const
 Layer*
 ItemBase::getParentLayer() const
 {
-    boost::shared_ptr<RotoLayer> layer =  _item->getParentLayer();
+    RotoLayerPtr layer =  _item->getParentLayer();
 
     if (layer) {
         return new Layer(layer);
@@ -132,7 +132,7 @@ ItemBase::getParam(const QString& name) const
     return ret;
 }
 
-Layer::Layer(const boost::shared_ptr<RotoItem>& item)
+Layer::Layer(const RotoItemPtr& item)
     : ItemBase(item)
     , _layer( boost::dynamic_pointer_cast<RotoLayer>(item) )
 {
@@ -165,16 +165,16 @@ std::list<ItemBase*>
 Layer::getChildren() const
 {
     std::list<ItemBase*> ret;
-    std::list<boost::shared_ptr<RotoItem> > items = _layer->getItems_mt_safe();
+    std::list<RotoItemPtr> items = _layer->getItems_mt_safe();
 
-    for (std::list<boost::shared_ptr<RotoItem> >::iterator it = items.begin(); it != items.end(); ++it) {
+    for (std::list<RotoItemPtr>::iterator it = items.begin(); it != items.end(); ++it) {
         ret.push_back( new ItemBase(*it) );
     }
 
     return ret;
 }
 
-BezierCurve::BezierCurve(const boost::shared_ptr<RotoItem>& item)
+BezierCurve::BezierCurve(const RotoItemPtr& item)
     : ItemBase(item)
     , _bezier( boost::dynamic_pointer_cast<Bezier>(item) )
 {
@@ -202,7 +202,7 @@ void
 BezierCurve::addControlPoint(double x,
                              double y)
 {
-    const std::list<boost::shared_ptr<BezierCP> >& cps = _bezier->getControlPoints();
+    const std::list<BezierCPPtr>& cps = _bezier->getControlPoints();
     double keyframeTime;
 
     if ( !cps.empty() ) {
@@ -315,7 +315,7 @@ BezierCurve::getControlPointPosition(int index,
                                      double *rx,
                                      double *ry) const
 {
-    boost::shared_ptr<BezierCP> cp = _bezier->getControlPointAtIndex(index);
+    BezierCPPtr cp = _bezier->getControlPointAtIndex(index);
 
     cp->getPositionAtTime(true, time, ViewIdx(0), x, y);
     cp->getLeftBezierPointAtTime(true, time, ViewIdx(0), lx, ly);
@@ -332,7 +332,7 @@ BezierCurve::getFeatherPointPosition(int index,
                                      double *rx,
                                      double *ry) const
 {
-    boost::shared_ptr<BezierCP> cp = _bezier->getFeatherPointAtIndex(index);
+    BezierCPPtr cp = _bezier->getFeatherPointAtIndex(index);
 
     cp->getPositionAtTime(true, time, ViewIdx(0), x, y);
     cp->getLeftBezierPointAtTime(true, time, ViewIdx(0), lx, ly);
@@ -459,7 +459,7 @@ BezierCurve::getCompositingOperator() const
 BooleanParam*
 BezierCurve::getActivatedParam() const
 {
-    boost::shared_ptr<KnobBool> ret = _bezier->getActivatedKnob();
+    KnobBoolPtr ret = _bezier->getActivatedKnob();
 
     if (ret) {
         return new BooleanParam(ret);
@@ -471,7 +471,7 @@ BezierCurve::getActivatedParam() const
 DoubleParam*
 BezierCurve::getOpacityParam() const
 {
-    boost::shared_ptr<KnobDouble> ret = _bezier->getOpacityKnob();
+    KnobDoublePtr ret = _bezier->getOpacityKnob();
 
     if (ret) {
         return new DoubleParam(ret);
@@ -483,7 +483,7 @@ BezierCurve::getOpacityParam() const
 DoubleParam*
 BezierCurve::getFeatherDistanceParam() const
 {
-    boost::shared_ptr<KnobDouble> ret = _bezier->getFeatherKnob();
+    KnobDoublePtr ret = _bezier->getFeatherKnob();
 
     if (ret) {
         return new DoubleParam(ret);
@@ -495,7 +495,7 @@ BezierCurve::getFeatherDistanceParam() const
 DoubleParam*
 BezierCurve::getFeatherFallOffParam() const
 {
-    boost::shared_ptr<KnobDouble> ret = _bezier->getFeatherFallOffKnob();
+    KnobDoublePtr ret = _bezier->getFeatherFallOffKnob();
 
     if (ret) {
         return new DoubleParam(ret);
@@ -507,7 +507,7 @@ BezierCurve::getFeatherFallOffParam() const
 ColorParam*
 BezierCurve::getColorParam() const
 {
-    boost::shared_ptr<KnobColor> ret = _bezier->getColorKnob();
+    KnobColorPtr ret = _bezier->getColorKnob();
 
     if (ret) {
         return new ColorParam(ret);
@@ -519,7 +519,7 @@ BezierCurve::getColorParam() const
 ChoiceParam*
 BezierCurve::getCompositingOperatorParam() const
 {
-    boost::shared_ptr<KnobChoice> ret = _bezier->getOperatorKnob();
+    KnobChoicePtr ret = _bezier->getOperatorKnob();
 
     if (ret) {
         return new ChoiceParam(ret);
@@ -528,7 +528,7 @@ BezierCurve::getCompositingOperatorParam() const
     return 0;
 }
 
-Roto::Roto(const boost::shared_ptr<RotoContext>& ctx)
+Roto::Roto(const RotoContextPtr& ctx)
     : _ctx(ctx)
 {
 }
@@ -540,7 +540,7 @@ Roto::~Roto()
 Layer*
 Roto::getBaseLayer() const
 {
-    const std::list<boost::shared_ptr<RotoLayer> >& layers = _ctx->getLayers();
+    const std::list<RotoLayerPtr>& layers = _ctx->getLayers();
 
     if ( !layers.empty() ) {
         return new Layer( layers.front() );
@@ -552,7 +552,7 @@ Roto::getBaseLayer() const
 ItemBase*
 Roto::getItemByName(const QString& name) const
 {
-    boost::shared_ptr<RotoItem> item =  _ctx->getItemByName( name.toStdString() );
+    RotoItemPtr item =  _ctx->getItemByName( name.toStdString() );
 
     if (!item) {
         return 0;
@@ -576,7 +576,7 @@ Roto::getItemByName(const QString& name) const
 Layer*
 Roto::createLayer()
 {
-    boost::shared_ptr<RotoLayer>  layer = _ctx->addLayer();
+    RotoLayerPtr  layer = _ctx->addLayer();
 
     if (layer) {
         return new Layer(layer);
@@ -590,7 +590,7 @@ Roto::createBezier(double x,
                    double y,
                    double time)
 {
-    boost::shared_ptr<Bezier>  ret = _ctx->makeBezier(x, y, kRotoBezierBaseName, time, false);
+    BezierPtr  ret = _ctx->makeBezier(x, y, kRotoBezierBaseName, time, false);
 
     if (ret) {
         return new BezierCurve(ret);
@@ -606,7 +606,7 @@ Roto::createEllipse(double x,
                     bool fromCenter,
                     double time)
 {
-    boost::shared_ptr<Bezier>  ret = _ctx->makeEllipse(x, y, diameter, fromCenter, time);
+    BezierPtr  ret = _ctx->makeEllipse(x, y, diameter, fromCenter, time);
 
     if (ret) {
         return new BezierCurve(ret);
@@ -621,7 +621,7 @@ Roto::createRectangle(double x,
                       double size,
                       double time)
 {
-    boost::shared_ptr<Bezier>  ret = _ctx->makeSquare(x, y, size, time);
+    BezierPtr  ret = _ctx->makeSquare(x, y, size, time);
 
     if (ret) {
         return new BezierCurve(ret);

@@ -761,7 +761,7 @@ Knob<T>::getValueFromCurve(double time,
                            bool clamp,
                            T* ret)
 {
-    boost::shared_ptr<Curve> curve;
+    CurvePtr curve;
 
     if (useGuiCurve) {
         curve = getGuiCurve(view, dimension, byPassMaster);
@@ -799,7 +799,7 @@ KnobStringBase::getValueFromCurve(double time,
         }
     }
     assert( ret->empty() );
-    boost::shared_ptr<Curve> curve;
+    CurvePtr curve;
     if (useGuiCurve) {
         curve = getGuiCurve(view, dimension, byPassMaster);
     }
@@ -872,7 +872,7 @@ KnobStringBase::getRawCurveValueAt(double time,
                                       ViewSpec view,
                                       int dimension)
 {
-    boost::shared_ptr<Curve> curve  = getCurve(view, dimension, true);
+    CurvePtr curve  = getCurve(view, dimension, true);
 
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
         //getValueAt already clamps to the range for us
@@ -888,7 +888,7 @@ Knob<T>::getRawCurveValueAt(double time,
                             ViewSpec view,
                             int dimension)
 {
-    boost::shared_ptr<Curve> curve  = getCurve(view, dimension, true);
+    CurvePtr curve  = getCurve(view, dimension, true);
 
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
         //getValueAt already clamps to the range for us
@@ -1141,7 +1141,7 @@ Knob<T>::setValue(const T & v,
         KnobHelper::ValueChangedReturnCodeEnum returnValue;
         double time = getCurrentTime();
         KeyFrame k;
-        boost::shared_ptr<Curve> curve;
+        CurvePtr curve;
         if (newKey) {
             curve = getCurve(view, dimension);
             if (curve) {
@@ -1170,7 +1170,7 @@ Knob<T>::setValue(const T & v,
             returnValue =  eValueChangedReturnCodeNoKeyframeAdded;
         }
 
-        boost::shared_ptr<QueuedSetValue> qv = boost::make_shared<QueuedSetValue>( view, dimension, v, k, returnValue != eValueChangedReturnCodeNoKeyframeAdded, reason, isValueChangesBlocked() );
+        QueuedSetValuePtr qv = boost::make_shared<QueuedSetValue>( view, dimension, v, k, returnValue != eValueChangedReturnCodeNoKeyframeAdded, reason, isValueChangesBlocked() );
 #ifdef DEBUG
         debugHook();
 #endif
@@ -1528,7 +1528,7 @@ Knob<T>::setValueAtTime(double time,
     }
 
 
-    boost::shared_ptr<Curve> curve = getCurve(view, dimension, true);
+    CurvePtr curve = getCurve(view, dimension, true);
     assert(curve);
     makeKeyFrame(curve.get(), time, view, v, newKey);
 
@@ -1541,7 +1541,7 @@ Knob<T>::setValueAtTime(double time,
             holder->abortAnyEvaluation();
         }
 
-        boost::shared_ptr<QueuedSetValueAtTime> qv = boost::make_shared<QueuedSetValueAtTime>( time, view, dimension, v, *newKey, reason, isValueChangesBlocked() );
+        QueuedSetValueAtTimePtr qv = boost::make_shared<QueuedSetValueAtTime>( time, view, dimension, v, *newKey, reason, isValueChangesBlocked() );
 #ifdef DEBUG
         debugHook();
 #endif
@@ -1767,7 +1767,7 @@ Knob<T>::unSlaveInternal(int dimension,
         return;
     }
     std::pair<int, KnobIPtr> master = getMaster(dimension);
-    boost::shared_ptr<KnobHelper> masterHelper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
+    KnobHelperPtr masterHelper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
 
     if (masterHelper->getSignalSlotHandler() && _signalSlotHandler) {
         QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(double, ViewSpec, int, int, bool) ),
@@ -1901,7 +1901,7 @@ Knob<T>::getKeyFrameValueByIndex(ViewSpec view,
         return T();
     }
 
-    boost::shared_ptr<Curve> curve = getCurve(view, dimension);
+    CurvePtr curve = getCurve(view, dimension);
     assert(curve);
     KeyFrame kf;
     *ok =  curve->getKeyFrameWithIndex(index, &kf);
@@ -1938,7 +1938,7 @@ KnobStringBase::getKeyFrameValueByIndex(ViewSpec view,
     const AnimatingKnobStringHelper* animatedString = dynamic_cast<const AnimatingKnobStringHelper*>(this);
     assert(animatedString);
     if (animatedString) {
-        boost::shared_ptr<Curve> curve = getCurve(view, dimension);
+        CurvePtr curve = getCurve(view, dimension);
         assert(curve);
         KeyFrame kf;
         *ok =  curve->getKeyFrameWithIndex(index, &kf);
@@ -2200,7 +2200,7 @@ Knob<T>::onKeyFrameSet(double time,
                        int dimension)
 {
     KeyFrame key;
-    boost::shared_ptr<Curve> curve;
+    CurvePtr curve;
     KnobHolder* holder = getHolder();
     bool useGuiCurve = ( !holder || !holder->isSetValueCurrentlyPossible() ) && getKnobGuiPointer();
 
@@ -2224,7 +2224,7 @@ Knob<T>::setKeyFrame(const KeyFrame& key,
                      int dimension,
                      ValueChangedReasonEnum reason)
 {
-    boost::shared_ptr<Curve> curve;
+    CurvePtr curve;
     KnobHolder* holder = getHolder();
     bool useGuiCurve = ( !holder || !holder->isSetValueCurrentlyPossible() ) && getKnobGuiPointer();
 
@@ -2317,7 +2317,7 @@ Knob<T>::getDerivativeAtTime(double time,
         return master.second->getDerivativeAtTime(time, view, master.first);
     }
 
-    boost::shared_ptr<Curve> curve  = getCurve(view, dimension);
+    CurvePtr curve  = getCurve(view, dimension);
     if (curve->getKeyFramesCount() > 0) {
         return curve->getDerivativeAt(time);
     } else {
@@ -2401,7 +2401,7 @@ Knob<T>::getIntegrateFromTimeToTime(double time1,
         }
     }
 
-    boost::shared_ptr<Curve> curve  = getCurve(view, dimension);
+    CurvePtr curve  = getCurve(view, dimension);
     if (curve->getKeyFramesCount() > 0) {
         return curve->getIntegrateFromTo(time1, time2);
     } else {
@@ -2887,13 +2887,13 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
     {
         QMutexLocker kql(&_setValuesQueueMutex);
         QMutexLocker k(&_valueMutex);
-        for (typename std::list<boost::shared_ptr<QueuedSetValue> >::const_iterator it = _setValuesQueue.begin(); it != _setValuesQueue.end(); ++it) {
+        for (typename std::list<QueuedSetValuePtr>::const_iterator it = _setValuesQueue.begin(); it != _setValuesQueue.end(); ++it) {
             QueuedSetValueAtTime* isAtTime = dynamic_cast<QueuedSetValueAtTime*>( it->get() );
             bool blockValueChanges = (*it)->valueChangesBlocked();
 
             if (!isAtTime) {
                 if ( (*it)->useKey() ) {
-                    boost::shared_ptr<Curve> curve = getCurve( (*it)->view(), (*it)->dimension() );
+                    CurvePtr curve = getCurve( (*it)->view(), (*it)->dimension() );
                     if (curve) {
                         curve->addKeyFrame( (*it)->key() );
                     }
@@ -2911,7 +2911,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                     }
                 }
             } else {
-                boost::shared_ptr<Curve> curve = getCurve( (*it)->view(), (*it)->dimension() );
+                CurvePtr curve = getCurve( (*it)->view(), (*it)->dimension() );
                 if (curve) {
                     KeyFrame existingKey;
                     const KeyFrame& key = (*it)->key();
@@ -2974,7 +2974,7 @@ Knob<T>::computeHasModifications()
         }
 
         if (!hasModif) {
-            boost::shared_ptr<Curve> c = getCurve(ViewIdx(0), i);
+            CurvePtr c = getCurve(ViewIdx(0), i);
             if ( c && c->isAnimated() ) {
                 hasModif = true;
             }

@@ -76,7 +76,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     Project(const AppInstancePtr& appInstance);
 
 public:
-    static boost::shared_ptr<Project> create(const AppInstancePtr& appInstance);
+    static ProjectPtr create(const AppInstancePtr& appInstance);
 
     virtual ~Project();
 
@@ -182,7 +182,7 @@ public:
 
     void toggleAutoPreview();
 
-    boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN;
+    TimeLinePtr getTimeLine() const WARN_UNUSED_RETURN;
 
     int currentFrame() const WARN_UNUSED_RETURN;
 
@@ -277,7 +277,7 @@ public:
 
     double getProjectFrameRate() const;
 
-    boost::shared_ptr<KnobPath> getEnvVarKnob() const;
+    KnobPathPtr getEnvVarKnob() const;
     std::string getOnProjectLoadCB() const;
     std::string getOnProjectSaveCB() const;
     std::string getOnProjectCloseCB() const;
@@ -341,7 +341,7 @@ public:
 
     bool addFormat(const std::string& formatSpec);
 
-    void setTimeLine(const boost::shared_ptr<TimeLine>& timeline);
+    void setTimeLine(const TimeLinePtr& timeline);
 
 
     /**

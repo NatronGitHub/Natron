@@ -113,10 +113,10 @@ protected:
 
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    TrackMarker(const boost::shared_ptr<TrackerContext>& context);
+    TrackMarker(const TrackerContextPtr& context);
 
 public:
-    static boost::shared_ptr<TrackMarker> create(const boost::shared_ptr<TrackerContext>& context);
+    static TrackMarkerPtr create(const TrackerContextPtr& context);
     
     virtual ~TrackMarker();
 
@@ -126,27 +126,27 @@ public:
 
     void save(TrackSerialization* serialization) const;
 
-    boost::shared_ptr<TrackerContext> getContext() const;
+    TrackerContextPtr getContext() const;
 
     bool setScriptName(const std::string& name);
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     void setLabel(const std::string& label);
     std::string getLabel() const;
-    boost::shared_ptr<KnobDouble> getSearchWindowBottomLeftKnob() const;
-    boost::shared_ptr<KnobDouble> getSearchWindowTopRightKnob() const;
-    boost::shared_ptr<KnobDouble> getPatternTopLeftKnob() const;
-    boost::shared_ptr<KnobDouble> getPatternTopRightKnob() const;
-    boost::shared_ptr<KnobDouble> getPatternBtmRightKnob() const;
-    boost::shared_ptr<KnobDouble> getPatternBtmLeftKnob() const;
+    KnobDoublePtr getSearchWindowBottomLeftKnob() const;
+    KnobDoublePtr getSearchWindowTopRightKnob() const;
+    KnobDoublePtr getPatternTopLeftKnob() const;
+    KnobDoublePtr getPatternTopRightKnob() const;
+    KnobDoublePtr getPatternBtmRightKnob() const;
+    KnobDoublePtr getPatternBtmLeftKnob() const;
 #ifdef NATRON_TRACK_MARKER_USE_WEIGHT
-    boost::shared_ptr<KnobDouble> getWeightKnob() const;
+    KnobDoublePtr getWeightKnob() const;
 #endif
-    boost::shared_ptr<KnobDouble> getCenterKnob() const;
-    boost::shared_ptr<KnobDouble> getOffsetKnob() const;
-    boost::shared_ptr<KnobDouble> getErrorKnob() const;
-    boost::shared_ptr<KnobChoice> getMotionModelKnob() const;
-    boost::shared_ptr<KnobBool> getEnabledKnob() const;
+    KnobDoublePtr getCenterKnob() const;
+    KnobDoublePtr getOffsetKnob() const;
+    KnobDoublePtr getErrorKnob() const;
+    KnobChoicePtr getMotionModelKnob() const;
+    KnobBoolPtr getEnabledKnob() const;
 
     int getReferenceFrame(int time, int frameStep) const;
 
@@ -191,7 +191,7 @@ public:
 
     void removeAllUserKeyframes();
 
-    std::pair<boost::shared_ptr<Image>, RectI> getMarkerImage(int time, const RectI& roi) const;
+    std::pair<ImagePtr, RectI> getMarkerImage(int time, const RectI& roi) const;
 
     RectI getMarkerImageRoI(int time) const;
 
@@ -266,10 +266,10 @@ private:
     
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    TrackMarkerPM(const boost::shared_ptr<TrackerContext>& context);
+    TrackMarkerPM(const TrackerContextPtr& context);
 
 public:
-    static boost::shared_ptr<TrackMarker> create(const boost::shared_ptr<TrackerContext>& context);
+    static TrackMarkerPtr create(const TrackerContextPtr& context);
 
     virtual ~TrackMarkerPM();
 

@@ -150,7 +150,7 @@ struct Project::MakeSharedEnabler: public Project
 };
 
 
-boost::shared_ptr<Project>
+ProjectPtr
 Project::create(const AppInstancePtr& appInstance)
 {
     return boost::make_shared<Project::MakeSharedEnabler>(appInstance);
@@ -733,7 +733,7 @@ Project::findAutoSaveForProject(const QString& projectPath,
 void
 Project::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Settings") );
+    KnobPagePtr page = AppManager::createKnob<KnobPage>( this, tr("Settings") );
 
     _imp->envVars = AppManager::createKnob<KnobPath>( this, tr("Project Paths") );
     _imp->envVars->setName("projectPaths");
@@ -856,7 +856,7 @@ Project::initializeKnobs()
     }
     page->addKnob(_imp->gpuSupport);
 
-    boost::shared_ptr<KnobPage> viewsPage = AppManager::createKnob<KnobPage>( this, tr("Views") );
+    KnobPagePtr viewsPage = AppManager::createKnob<KnobPage>( this, tr("Views") );
 
     _imp->viewsList = AppManager::createKnob<KnobPath>( this, tr("Views List") );
     _imp->viewsList->setName("viewsList");
@@ -877,7 +877,7 @@ Project::initializeKnobs()
     viewsPage->addKnob(_imp->setupForStereoButton);
 
 
-    boost::shared_ptr<KnobPage> LayersPage = AppManager::createKnob<KnobPage>( this, tr("Layers") );
+    KnobPagePtr LayersPage = AppManager::createKnob<KnobPage>( this, tr("Layers") );
 
     _imp->defaultLayersList = AppManager::createKnob<KnobLayers>( this, tr("Default Layers") );
     _imp->defaultLayersList->setName("defaultLayers");
@@ -915,7 +915,7 @@ Project::initializeKnobs()
     _imp->defaultLayersList->setDefaultValue(encodedDefaultLayers);
     LayersPage->addKnob(_imp->defaultLayersList);
 
-    boost::shared_ptr<KnobPage> lutPages = AppManager::createKnob<KnobPage>( this, tr("LUT") );
+    KnobPagePtr lutPages = AppManager::createKnob<KnobPage>( this, tr("LUT") );
     std::vector<ChoiceOption> colorSpaces;
     // Keep it in sync with ViewerColorSpaceEnum
     colorSpaces.push_back(ChoiceOption("Linear","",""));
@@ -946,7 +946,7 @@ Project::initializeKnobs()
     _imp->colorSpace32f->setDefaultValue(0);
     lutPages->addKnob(_imp->colorSpace32f);
 
-    boost::shared_ptr<KnobPage> infoPage = AppManager::createKnob<KnobPage>( this, tr("Info").toStdString() );
+    KnobPagePtr infoPage = AppManager::createKnob<KnobPage>( this, tr("Info").toStdString() );
 
     _imp->projectName = AppManager::createKnob<KnobString>( this, tr("Project Name") );
     _imp->projectName->setName("projectName");
@@ -1017,7 +1017,7 @@ Project::initializeKnobs()
     _imp->saveDate->setAnimationEnabled(false);
     infoPage->addKnob(_imp->saveDate);
 
-    boost::shared_ptr<KnobString> comments = AppManager::createKnob<KnobString>( this, tr("Comments") );
+    KnobStringPtr comments = AppManager::createKnob<KnobString>( this, tr("Comments") );
     comments->setName("comments");
     comments->setHintToolTip( tr("This area is a good place to write some informations about the project such as its authors, license "
                                  "and anything worth mentionning about it.") );
@@ -1025,7 +1025,7 @@ Project::initializeKnobs()
     comments->setAnimationEnabled(false);
     infoPage->addKnob(comments);
 
-    boost::shared_ptr<KnobPage> pythonPage = AppManager::createKnob<KnobPage>( this, tr("Python") );
+    KnobPagePtr pythonPage = AppManager::createKnob<KnobPage>( this, tr("Python") );
     _imp->onProjectLoadCB = AppManager::createKnob<KnobString>( this, tr("After Project Loaded") );
     _imp->onProjectLoadCB->setName("afterProjectLoad");
     _imp->onProjectLoadCB->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time this project "
@@ -1504,7 +1504,7 @@ Project::toggleAutoPreview()
     _imp->previewMode->setValue( !_imp->previewMode->getValue() );
 }
 
-boost::shared_ptr<TimeLine> Project::getTimeLine() const
+TimeLinePtr Project::getTimeLine() const
 {
     return _imp->timeline;
 }
@@ -1862,6 +1862,8 @@ public:
     }
 };
 
+typedef boost::shared_ptr<ResetWatcherArgs> ResetWatcherArgsPtr;
+
 void
 Project::reset(bool aboutToQuit, bool blocking)
 {
@@ -1872,7 +1874,7 @@ Project::reset(bool aboutToQuit, bool blocking)
     }
 
     if (!blocking) {
-        boost::shared_ptr<ResetWatcherArgs> args( new ResetWatcherArgs() );
+        ResetWatcherArgsPtr args = boost::make_shared<ResetWatcherArgs>();
         args->aboutToQuit = aboutToQuit;
         if ( !quitAnyProcessingForAllNodes(this, args) ) {
             doResetEnd(aboutToQuit);
@@ -1980,7 +1982,7 @@ Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
     if ( nodesToWatch.empty() ) {
         return false;
     }
-    boost::shared_ptr<NodeRenderWatcher> renderWatcher( new NodeRenderWatcher(nodesToWatch) );
+    NodeRenderWatcherPtr renderWatcher( new NodeRenderWatcher(nodesToWatch) );
     QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,WatcherCallerArgsPtr)), Qt::UniqueConnection);
     ProjectPrivate::RenderWatcher p;
     p.receiver = receiver;
@@ -2511,7 +2513,7 @@ Project::getProjectFrameRate() const
     return _imp->frameRate->getValue();
 }
 
-boost::shared_ptr<KnobPath>
+KnobPathPtr
 Project::getEnvVarKnob() const
 {
     return _imp->envVars;
@@ -2774,7 +2776,7 @@ Project::onProjectFormatPopulated()
 }
 
 void
-Project::setTimeLine(const boost::shared_ptr<TimeLine>& timeline)
+Project::setTimeLine(const TimeLinePtr& timeline)
 {
     _imp->timeline = timeline;
 }

@@ -227,7 +227,7 @@ findMaster(const KnobIPtr & knob,
     }
 
     if ( !masterTrackName.empty() ) {
-        boost::shared_ptr<TrackerContext> context = masterNode->getTrackerContext();
+        TrackerContextPtr context = masterNode->getTrackerContext();
         if (context) {
             TrackMarkerPtr marker = context->getMarkerByName(masterTrackName);
             if (marker) {

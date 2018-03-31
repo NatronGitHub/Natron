@@ -64,9 +64,9 @@ class RotoStrokeItem
 public:
 
     RotoStrokeItem(RotoStrokeType type,
-                   const boost::shared_ptr<RotoContext>& context,
+                   const RotoContextPtr& context,
                    const std::string & name,
-                   const boost::shared_ptr<RotoLayer>& parent);
+                   const RotoLayerPtr& parent);
 
     virtual ~RotoStrokeItem();
 
@@ -81,16 +81,16 @@ public:
      **/
     bool appendPoint(bool newStroke, const RotoPoint& p);
 
-    void addStroke(const boost::shared_ptr<Curve>& xCurve,
-                   const boost::shared_ptr<Curve>& yCurve,
-                   const boost::shared_ptr<Curve>& pCurve);
+    void addStroke(const CurvePtr& xCurve,
+                   const CurvePtr& yCurve,
+                   const CurvePtr& pCurve);
 
     /**
      * @brief Returns true if the stroke should be removed
      **/
-    bool removeLastStroke(boost::shared_ptr<Curve>* xCurve,
-                          boost::shared_ptr<Curve>* yCurve,
-                          boost::shared_ptr<Curve>* pCurve);
+    bool removeLastStroke(CurvePtr* xCurve,
+                          CurvePtr* yCurve,
+                          CurvePtr* pCurve);
 
     std::vector<cairo_pattern_t*> getPatternCache() const;
     void updatePatternCache(const std::vector<cairo_pattern_t*>& cache);
@@ -102,7 +102,7 @@ public:
                               const ImagePlaneDesc& components,
                               ImageBitDepthEnum depth,
                               double distToNext,
-                              boost::shared_ptr<Image> *wholeStrokeImage);
+                              ImagePtr *wholeStrokeImage);
 
 
     bool getMostRecentStrokeChangesSinceAge(double time,
@@ -142,8 +142,8 @@ public:
                         std::list<std::list<std::pair<Point, double> > >* strokes,
                         RectD* bbox = 0) const;
 
-    std::list<boost::shared_ptr<Curve> > getXControlPoints() const;
-    std::list<boost::shared_ptr<Curve> > getYControlPoints() const;
+    std::list<CurvePtr> getXControlPoints() const;
+    std::list<CurvePtr> getYControlPoints() const;
 
 private:
 

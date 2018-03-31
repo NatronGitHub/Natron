@@ -246,11 +246,11 @@ struct OSGLContextPrivate
 
     // The main FBO onto which we do all renders
     GLuint fboID;
-    boost::shared_ptr<GLShader> fillImageShader;
+    GLShaderPtr fillImageShader;
 
     // One for enabled, one for disabled
-    boost::shared_ptr<GLShader> applyMaskMixShader[2];
-    boost::shared_ptr<GLShader> copyUnprocessedChannelsShader[16];
+    GLShaderPtr applyMaskMixShader[2];
+    GLShaderPtr copyUnprocessedChannelsShader[16];
 
     OSGLContextPrivate()
         : _platformContext()
@@ -456,7 +456,7 @@ OSGLContext::stringInExtensionString(const char* string,
     return true;
 }
 
-boost::shared_ptr<GLShader>
+GLShaderPtr
 OSGLContext::getOrCreateFillShader()
 {
     if (_imp->fillImageShader) {
@@ -488,7 +488,7 @@ OSGLContext::getOrCreateFillShader()
     return _imp->fillImageShader;
 }
 
-boost::shared_ptr<GLShader>
+GLShaderPtr
 OSGLContext::getOrCreateMaskMixShader(bool maskEnabled)
 {
     int shader_i = maskEnabled ? 1 : 0;
@@ -529,7 +529,7 @@ OSGLContext::getOrCreateMaskMixShader(bool maskEnabled)
     return _imp->applyMaskMixShader[shader_i];
 }
 
-boost::shared_ptr<GLShader>
+GLShaderPtr
 OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
                                                       bool doG,
                                                       bool doB,

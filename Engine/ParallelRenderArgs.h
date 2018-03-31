@@ -53,26 +53,29 @@ NATRON_NAMESPACE_ENTER
 typedef std::map<EffectInstancePtr, RectD> RoIMap; // RoIs are in canonical coordinates
 typedef std::map<ViewIdx, std::vector<RangeD> > FrameRangesMap;
 typedef std::map<int, FrameRangesMap> FramesNeededMap;
+typedef boost::shared_ptr<FramesNeededMap> FramesNeededMapPtr;
 
 struct InputMatrix
 {
     EffectInstancePtr newInputEffect;
-    boost::shared_ptr<Transform::Matrix3x3> cat;
+    Transform::Matrix3x3Ptr cat;
     int newInputNbToFetchFrom;
 };
 
 typedef std::map<int, InputMatrix> InputMatrixMap;
+typedef boost::shared_ptr<InputMatrixMap> InputMatrixMapPtr;
 
 
-struct NodeFrameRequest;
+class NodeFrameRequest;
 
 /**
  * @brief Thread-local arguments given to render a frame by the tree.
  * This is different than the RenderArgs because it is not local to a
  * renderRoI call but to the rendering of a whole frame.
  **/
-struct ParallelRenderArgs
+class ParallelRenderArgs
 {
+public:
     // Developper note: the fields were reordered to optimize packing.
     // see http://www.catb.org/esr/structure-packing/
 
@@ -90,7 +93,7 @@ struct ParallelRenderArgs
 
     ///If set, contains data for all frame/view pair that are going to be computed
     ///for this frame/view pair with the overall RoI to avoid rendering several times with this node.
-    boost::shared_ptr<NodeFrameRequest> request;
+    NodeFrameRequestPtr request;
 
     ///The initial view requested to render.
     ///This may be different than the view held in RenderArgs
@@ -112,7 +115,7 @@ struct ParallelRenderArgs
     NodesList rotoPaintNodes;
 
     ///Various stats local to the render of a frame
-    boost::shared_ptr<RenderStats> stats;
+    RenderStatsPtr stats;
 
     ///The OpenGL context to use for the render of this frame
     OSGLContextWPtr openGLContext;
@@ -163,7 +166,7 @@ struct FrameViewPair
 struct FrameViewRequestGlobalData
 {
     ///The transforms associated to each input branch, set on first request
-    boost::shared_ptr<InputMatrixMap> transforms;
+    InputMatrixMapPtr transforms;
     boost::shared_ptr<std::map<int, EffectInstancePtr> > reroutesMap;
 
     ///The required frame/views in input, set on first request
@@ -225,8 +228,9 @@ struct FrameView_compare_less
 
 typedef std::map<FrameViewPair, FrameViewRequest, FrameView_compare_less> NodeFrameViewRequestData;
 
-struct NodeFrameRequest
+class NodeFrameRequest
 {
+public:
     NodeFrameViewRequestData frames;
 
     ///Set on first request
@@ -238,12 +242,12 @@ struct NodeFrameRequest
     const FrameViewRequest* getFrameViewRequest(double time, ViewIdx view) const;
 };
 
-typedef std::map<NodePtr, boost::shared_ptr<NodeFrameRequest> > FrameRequestMap;
+typedef std::map<NodePtr, NodeFrameRequestPtr> FrameRequestMap;
 
 
 class ParallelRenderArgsSetter
 {
-    boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > > argsMap;
+    boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> > argsMap;
     NodesList nodes;
 
 protected:
@@ -270,9 +274,9 @@ public:
                              const NodePtr& activeRotoPaintNode,
                              bool isAnalysis,
                              bool draftMode,
-                             const boost::shared_ptr<RenderStats>& stats);
+                             const RenderStatsPtr& stats);
 
-    ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > >& args);
+    ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> >& args);
 
     void updateNodesRequest(const FrameRequestMap& request);
 

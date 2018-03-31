@@ -77,7 +77,7 @@ App::getCollectionFromGroup(Group* group) const
         } else if (isEffect) {
             NodePtr node = isEffect->getInternalNode();
             assert(node);
-            boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
+            NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
             if (!isGrp) {
                 qDebug() << "The group passed to createNode() is not a group, defaulting to the project root.";
             } else {

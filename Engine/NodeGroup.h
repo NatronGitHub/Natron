@@ -246,7 +246,7 @@ public:
     void recomputeFrameRangeForAllReaders(int* firstFrame, int* lastFrame);
 
 
-    void getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >& argsMap) const;
+    void getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr>& argsMap) const;
 
 
     void forceComputeInputDependentDataOnAllTrees();
@@ -391,8 +391,8 @@ public:
         return true;
     }
 
-    boost::shared_ptr<KnobButton> getExportAsPyPlugButton() const;
-    boost::shared_ptr<KnobButton> getConvertToGroupButton() const;
+    KnobButtonPtr getExportAsPyPlugButton() const;
+    KnobButtonPtr getConvertToGroupButton() const;
 
 Q_SIGNALS:
 

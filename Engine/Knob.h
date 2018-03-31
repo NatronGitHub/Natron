@@ -2171,6 +2171,8 @@ private:
         boost::scoped_ptr<QueuedSetValuePrivate> _imp;
     };
 
+    typedef boost::shared_ptr<QueuedSetValue> QueuedSetValuePtr;
+
     class QueuedSetValueAtTime
         : public QueuedSetValue
     {
@@ -2197,6 +2199,7 @@ private:
         double _time;
     };
 
+    typedef boost::shared_ptr<QueuedSetValueAtTime> QueuedSetValueAtTimePtr;
 
     ///Here is all the stuff we couldn't get rid of the template parameter
     mutable QMutex _valueMutex; //< protects _values & _guiValues & _defaultValues & ExprResults

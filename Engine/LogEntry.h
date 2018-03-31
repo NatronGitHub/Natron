@@ -37,9 +37,9 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER
 
-struct LogEntry
+class LogEntry
 {
-
+public:
     struct LogEntryColor {
         double r,g,b;
         bool colorSet;

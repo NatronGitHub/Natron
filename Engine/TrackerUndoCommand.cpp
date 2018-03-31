@@ -32,7 +32,7 @@
 NATRON_NAMESPACE_ENTER
 
 AddTrackCommand::AddTrackCommand(const TrackMarkerPtr &marker,
-                                 const boost::shared_ptr<TrackerContext>& context)
+                                 const TrackerContextPtr& context)
     : UndoCommand()
     , _isFirstRedo(true)
     , _context(context)
@@ -45,7 +45,7 @@ AddTrackCommand::AddTrackCommand(const TrackMarkerPtr &marker,
 void
 AddTrackCommand::undo()
 {
-    boost::shared_ptr<TrackerContext> context = _context.lock();
+    TrackerContextPtr context = _context.lock();
 
     if (!context) {
         return;
@@ -62,7 +62,7 @@ AddTrackCommand::undo()
 void
 AddTrackCommand::redo()
 {
-    boost::shared_ptr<TrackerContext> context = _context.lock();
+    TrackerContextPtr context = _context.lock();
 
     if (!context) {
         return;
@@ -85,7 +85,7 @@ AddTrackCommand::redo()
 }
 
 RemoveTracksCommand::RemoveTracksCommand(const std::list<TrackMarkerPtr> &markers,
-                                         const boost::shared_ptr<TrackerContext>& context)
+                                         const TrackerContextPtr& context)
     : UndoCommand()
     , _markers()
     , _context(context)
@@ -103,7 +103,7 @@ RemoveTracksCommand::RemoveTracksCommand(const std::list<TrackMarkerPtr> &marker
 void
 RemoveTracksCommand::undo()
 {
-    boost::shared_ptr<TrackerContext> context = _context.lock();
+    TrackerContextPtr context = _context.lock();
 
     if (!context) {
         return;
@@ -130,7 +130,7 @@ RemoveTracksCommand::undo()
 void
 RemoveTracksCommand::redo()
 {
-    boost::shared_ptr<TrackerContext> context = _context.lock();
+    TrackerContextPtr context = _context.lock();
 
     if (!context) {
         return;

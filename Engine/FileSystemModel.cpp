@@ -107,7 +107,7 @@ struct FileSystemModelPrivate
     boost::scoped_ptr<QFileSystemWatcher> watcher;
 
     ///The root of the file-system: "MyComputer" for Windows or '/' for Unix
-    boost::shared_ptr<FileSystemItem> rootItem;
+    FileSystemItemPtr rootItem;
     QString currentRootPath;
     QStringList headers;
     QDir::Filters filters;
@@ -145,13 +145,13 @@ struct FileSystemModelPrivate
     {
     }
 
-    void registerItem(const boost::shared_ptr<FileSystemItem>& item);
+    void registerItem(const FileSystemItemPtr& item);
     void unregisterItem(FileSystemItem* item);
 
 
-    boost::shared_ptr<FileSystemItem> getItemFromPath(const QString &path) const;
+    FileSystemItemPtr getItemFromPath(const QString &path) const;
 
-    void populateItem(const boost::shared_ptr<FileSystemItem>& item);
+    void populateItem(const FileSystemItemPtr& item);
 };
 
 /////////FileSystemItem
@@ -173,27 +173,27 @@ struct FileSystemItemPrivate
 {
     FileSystemModelWPtr model;
     FileSystemItemWPtr parent;
-    std::vector<boost::shared_ptr<FileSystemItem> > children; ///vector for random access
+    std::vector<FileSystemItemPtr> children; ///vector for random access
     QMutex childrenMutex;
     bool isDir;
     QString filename;
     QString userFriendlySequenceName;
 
     ///This will be set when the file system model is in sequence mode and this is a file
-    boost::shared_ptr<SequenceParsing::SequenceFromFiles> sequence;
+    SequenceParsing::SequenceFromFilesPtr sequence;
     QDateTime dateModified;
     quint64 size;
     QString fileExtension;
     QString absoluteFilePath;
 
-    FileSystemItemPrivate(const boost::shared_ptr<FileSystemModel>& model,
+    FileSystemItemPrivate(const FileSystemModelPtr& model,
                           bool isDir,
                           const QString& filename,
                           const QString& userFriendlySequenceName,
-                          const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+                          const SequenceParsing::SequenceFromFilesPtr& sequence,
                           const QDateTime& dateModified,
                           quint64 size,
-                          const boost::shared_ptr<FileSystemItem> &parent)
+                          const FileSystemItemPtr &parent)
         : model(model)
         , parent(parent)
         , children()
@@ -226,20 +226,20 @@ struct FileSystemItemPrivate
         }
     }
 
-    boost::shared_ptr<FileSystemModel> getModel() const
+    FileSystemModelPtr getModel() const
     {
         return model.lock();
     }
 };
 
-FileSystemItem::FileSystemItem(const boost::shared_ptr<FileSystemModel>& model,
+FileSystemItem::FileSystemItem(const FileSystemModelPtr& model,
                                bool isDir,
                                const QString& filename,
                                const QString& userFriendlySequenceName,
-                               const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+                               const SequenceParsing::SequenceFromFilesPtr& sequence,
                                const QDateTime& dateModified,
                                quint64 size,
-                               const boost::shared_ptr<FileSystemItem>& parent)
+                               const FileSystemItemPtr& parent)
     : _imp( new FileSystemItemPrivate(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent) )
 {
 }
@@ -249,33 +249,33 @@ FileSystemItem::FileSystemItem(const boost::shared_ptr<FileSystemModel>& model,
 // see https://stackoverflow.com/a/20961251/2607517
 struct FileSystemItem::MakeSharedEnabler: public FileSystemItem
 {
-    MakeSharedEnabler(const boost::shared_ptr<FileSystemModel>& model,
+    MakeSharedEnabler(const FileSystemModelPtr& model,
                       bool isDir,
                       const QString& filename,
                       const QString& userFriendlySequenceName,
-                      const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+                      const SequenceParsing::SequenceFromFilesPtr& sequence,
                       const QDateTime& dateModified,
                       quint64 size,
-                      const boost::shared_ptr<FileSystemItem>& parent) : FileSystemItem(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent) {
+                      const FileSystemItemPtr& parent) : FileSystemItem(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent) {
     }
 };
 
 
-boost::shared_ptr<FileSystemItem>
-FileSystemItem::create( const boost::shared_ptr<FileSystemModel>& model,
+FileSystemItemPtr
+FileSystemItem::create( const FileSystemModelPtr& model,
                                          bool isDir,
                                          const QString& filename,
                                          const QString& userFriendlySequenceName,
-                                         const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+                                         const SequenceParsing::SequenceFromFilesPtr& sequence,
                                          const QDateTime& dateModified,
                                          quint64 size,
-                                         const boost::shared_ptr<FileSystemItem>& parent)
+                                         const FileSystemItemPtr& parent)
 {
     return boost::make_shared<FileSystemItem::MakeSharedEnabler>(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent);
 }
 FileSystemItem::~FileSystemItem()
 {
-    boost::shared_ptr<FileSystemModel> model = _imp->model.lock();
+    FileSystemModelPtr model = _imp->model.lock();
 
     if (model) {
         model->_imp->unregisterItem(this);
@@ -288,7 +288,7 @@ FileSystemItem::resetModelPointer()
     _imp->model.reset();
 }
 
-boost::shared_ptr<FileSystemItem>
+FileSystemItemPtr
 FileSystemItem::childAt(int position) const
 {
     QMutexLocker l(&_imp->childrenMutex);
@@ -296,7 +296,7 @@ FileSystemItem::childAt(int position) const
     if ( (position >= 0) && ( position < (int)_imp->children.size() ) ) {
         return _imp->children[position];
     } else {
-        return boost::shared_ptr<FileSystemItem>();
+        return FileSystemItemPtr();
     }
 }
 
@@ -311,7 +311,7 @@ FileSystemItem::childCount() const
 int
 FileSystemItem::indexInParent() const
 {
-    boost::shared_ptr<FileSystemItem> parent = _imp->parent.lock();
+    FileSystemItemPtr parent = _imp->parent.lock();
 
     if (parent) {
         for (U32 i = 0; i < parent->_imp->children.size(); ++i) {
@@ -330,7 +330,7 @@ FileSystemItem::isDir() const
     return _imp->isDir;
 }
 
-boost::shared_ptr<FileSystemItem>
+FileSystemItemPtr
 FileSystemItem::getParentItem() const
 {
     return _imp->parent.lock();
@@ -354,7 +354,7 @@ FileSystemItem::getUserFriendlyFilename() const
     return _imp->userFriendlySequenceName;
 }
 
-boost::shared_ptr<SequenceParsing::SequenceFromFiles>
+SequenceParsing::SequenceFromFilesPtr
 FileSystemItem::getSequence() const
 {
     return _imp->sequence;
@@ -379,7 +379,7 @@ FileSystemItem::getSize() const
 }
 
 void
-FileSystemItem::addChild(const boost::shared_ptr<FileSystemItem>& child)
+FileSystemItem::addChild(const FileSystemItemPtr& child)
 {
     QMutexLocker l(&_imp->childrenMutex);
 
@@ -387,10 +387,10 @@ FileSystemItem::addChild(const boost::shared_ptr<FileSystemItem>& child)
 }
 
 void
-FileSystemItem::addChild(const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+FileSystemItem::addChild(const SequenceParsing::SequenceFromFilesPtr& sequence,
                          const QFileInfo& info)
 {
-    boost::shared_ptr<FileSystemModel> model = _imp->getModel();
+    FileSystemModelPtr model = _imp->getModel();
 
     if (!model) {
         return;
@@ -413,7 +413,7 @@ FileSystemItem::addChild(const boost::shared_ptr<SequenceParsing::SequenceFromFi
     }
 
 
-    for (std::vector<boost::shared_ptr<FileSystemItem> >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
+    for (std::vector<FileSystemItemPtr>::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
         if ( (*it)->fileName() == filename ) {
             _imp->children.erase(it);
             break;
@@ -431,7 +431,7 @@ FileSystemItem::addChild(const boost::shared_ptr<SequenceParsing::SequenceFromFi
 
 
     ///Create the child
-    boost::shared_ptr<FileSystemItem> child = boost::make_shared<FileSystemItem::MakeSharedEnabler>( model,
+    FileSystemItemPtr child = boost::make_shared<FileSystemItem::MakeSharedEnabler>( model,
                                                                                                     isDir,
                                                                                                     filename,
                                                                                                     userFriendlyFilename,
@@ -454,14 +454,14 @@ FileSystemItem::clearChildren()
 // This is a recursive method which tries to match a path to a specifiq
 // FileSystemItem item which has the path;
 // Here startIndex is the position of the separator
-boost::shared_ptr<FileSystemItem>
+FileSystemItemPtr
 FileSystemItem::matchPath(const QStringList& path,
                           int startIndex) const
 {
     const QString& pathBit = path.at(startIndex);
 
     for (U32 i = 0; i < _imp->children.size(); ++i) {
-        const boost::shared_ptr<FileSystemItem>& child = _imp->children[i];
+        const FileSystemItemPtr& child = _imp->children[i];
 
         if ( child && (child->fileName() == pathBit) ) {
             if (startIndex == path.size() - 1) {
@@ -472,7 +472,7 @@ FileSystemItem::matchPath(const QStringList& path,
         }
     }
 
-    return boost::shared_ptr<FileSystemItem>();
+    return FileSystemItemPtr();
 }
 
 //////////////FileSystemModel
@@ -574,7 +574,7 @@ FileSystemModel::~FileSystemModel()
 }
 
 void
-FileSystemModelPrivate::registerItem(const boost::shared_ptr<FileSystemItem>& item)
+FileSystemModelPrivate::registerItem(const FileSystemItemPtr& item)
 {
     QMutexLocker k(&mappingMutex);
 
@@ -592,7 +592,7 @@ FileSystemModelPrivate::unregisterItem(FileSystemItem* item)
     }
 }
 
-boost::shared_ptr<FileSystemItem>
+FileSystemItemPtr
 FileSystemModel::getSharedItemPtr(FileSystemItem* item) const
 {
     QMutexLocker k(&_imp->mappingMutex);
@@ -602,7 +602,7 @@ FileSystemModel::getSharedItemPtr(FileSystemItem* item) const
         return found->second.lock();
     }
 
-    return boost::shared_ptr<FileSystemItem>();
+    return FileSystemItemPtr();
 }
 
 bool
@@ -673,7 +673,7 @@ FileSystemModel::columnCount(const QModelIndex & /*parent*/) const
 int
 FileSystemModel::rowCount(const QModelIndex & parent) const
 {
-    boost::shared_ptr<FileSystemItem> item = getItem(parent);
+    FileSystemItemPtr item = getItem(parent);
 
     if (item) {
         return item->childCount();
@@ -700,7 +700,7 @@ FileSystemModel::data(const QModelIndex &index,
     }
 
 
-    boost::shared_ptr<FileSystemItem> item = getItem(index);
+    FileSystemItemPtr item = getItem(index);
 
     if (!item) {
         return QVariant();
@@ -749,11 +749,11 @@ FileSystemModel::index(int row,
         return QModelIndex();
     }
 
-    boost::shared_ptr<FileSystemItem> parentItem = getItem(parent);
+    FileSystemItemPtr parentItem = getItem(parent);
 
 
     if (parentItem) {
-        boost::shared_ptr<FileSystemItem> childItem = parentItem->childAt(row);
+        FileSystemItemPtr childItem = parentItem->childAt(row);
 
         if (childItem) {
             return createIndex( row, column, childItem.get() );
@@ -770,13 +770,13 @@ FileSystemModel::parent(const QModelIndex &index) const
         return QModelIndex();
     }
 
-    boost::shared_ptr<FileSystemItem> childItem = getItem(index);
+    FileSystemItemPtr childItem = getItem(index);
 
     if (!childItem) {
         return QModelIndex();
     }
 
-    boost::shared_ptr<FileSystemItem> parentItem = childItem->getParentItem();
+    FileSystemItemPtr parentItem = childItem->getParentItem();
 
     // if there is no parent or parent is invisible, there is no index
     if ( !parentItem || (parentItem == _imp->rootItem) ) {
@@ -814,7 +814,7 @@ QModelIndex
 FileSystemModel::index(const QString& path,
                        int column) const
 {
-    boost::shared_ptr<FileSystemItem> item = getFileSystemItem(path);
+    FileSystemItemPtr item = getFileSystemItem(path);
 
     if (item) {
         return index(item.get(), column);
@@ -823,7 +823,7 @@ FileSystemModel::index(const QString& path,
     return QModelIndex();
 }
 
-boost::shared_ptr<FileSystemItem>
+FileSystemItemPtr
 FileSystemModel::getFileSystemItem(const QString& path) const
 {
     if ( !path.isEmpty() ) {
@@ -917,7 +917,7 @@ FileSystemModel::setFilter(const QDir::Filters& filters)
 
     ///Get the item corresponding to the current directory
     QFileInfo info(_imp->currentRootPath);
-    boost::shared_ptr<FileSystemItem> parent = _imp->getItemFromPath( info.absolutePath() );
+    FileSystemItemPtr parent = _imp->getItemFromPath( info.absolutePath() );
 
     assert(parent);
     cleanAndRefreshItem(parent);
@@ -1024,7 +1024,7 @@ FileSystemModel::resetCompletly(bool rebuild)
 
         ///Wipe all the file-system loaded by clearing all children of drives
         for (int i = 0; i < _imp->rootItem->childCount(); ++i) {
-            boost::shared_ptr<FileSystemItem> child = _imp->rootItem->childAt(i);
+            FileSystemItemPtr child = _imp->rootItem->childAt(i);
             if (child) {
                 child->clearChildren();
             }
@@ -1035,10 +1035,10 @@ FileSystemModel::resetCompletly(bool rebuild)
     }
 
 
-    boost::shared_ptr<FileSystemModel> model = shared_from_this();
+    FileSystemModelPtr model = shared_from_this();
 
     if (rebuild) {
-        _imp->rootItem = FileSystemItem::create(model, true, QString(), QString(), boost::shared_ptr<SequenceParsing::SequenceFromFiles>(), QDateTime(), 0);
+        _imp->rootItem = FileSystemItem::create(model, true, QString(), QString(), SequenceParsing::SequenceFromFilesPtr(), QDateTime(), 0);
         _imp->registerItem(_imp->rootItem);
 
         QFileInfoList drives = QDir::drives();
@@ -1054,10 +1054,10 @@ FileSystemModel::resetCompletly(bool rebuild)
             driveName = generateChildAbsoluteName( _imp->rootItem.get(), drive.fileName() );
 #endif
 
-            boost::shared_ptr<FileSystemItem> child = FileSystemItem::create(model, true, //isDir
+            FileSystemItemPtr child = FileSystemItem::create(model, true, //isDir
                                                                         driveName, //drives have canonical path
                                                                         driveName,
-                                                                        boost::shared_ptr<SequenceParsing::SequenceFromFiles>(),
+                                                                        SequenceParsing::SequenceFromFilesPtr(),
                                                                         drive.lastModified(),
                                                                         drive.size(),
                                                                         _imp->rootItem);
@@ -1075,16 +1075,16 @@ FileSystemModel::isSequenceModeEnabled() const
     return _imp->sequenceModeEnabled;
 }
 
-boost::shared_ptr<FileSystemItem>
-FileSystemModel::mkPathInternal(const boost::shared_ptr<FileSystemItem>& item,
+FileSystemItemPtr
+FileSystemModel::mkPathInternal(const FileSystemItemPtr& item,
                                 const QStringList& path,
                                 int index)
 {
     assert(index < path.size() && index >= 0);
 
-    boost::shared_ptr<FileSystemItem> child;
+    FileSystemItemPtr child;
     for (int i = 0; i < item->childCount(); ++i) {
-        boost::shared_ptr<FileSystemItem> c = item->childAt(i);
+        FileSystemItemPtr c = item->childAt(i);
         if ( c && (c->fileName() == path[index]) ) {
             child = c;
             break;
@@ -1097,7 +1097,7 @@ FileSystemModel::mkPathInternal(const boost::shared_ptr<FileSystemItem>& item,
         child = FileSystemItem::create(shared_from_this(), true, //isDir
                                         path[index], //name
                                         path[index], //name
-                                        boost::shared_ptr<SequenceParsing::SequenceFromFiles>(),
+                                        SequenceParsing::SequenceFromFilesPtr(),
                                         info.lastModified(),
                                         0, //0 for directories
                                         item);
@@ -1111,7 +1111,7 @@ FileSystemModel::mkPathInternal(const boost::shared_ptr<FileSystemItem>& item,
     }
 }
 
-boost::shared_ptr<FileSystemItem>
+FileSystemItemPtr
 FileSystemModel::mkPath(const QString& path)
 {
     if ( path.isEmpty() || !_imp->rootItem) {
@@ -1136,7 +1136,7 @@ FileSystemModel::mkdir(const QModelIndex& parent,
     if (item) {
         QDir dir( item->absoluteFilePath() );
         dir.mkpath(name);
-        boost::shared_ptr<FileSystemItem> newDir = mkPath( generateChildAbsoluteName(item, name) );
+        FileSystemItemPtr newDir = mkPath( generateChildAbsoluteName(item, name) );
         if (!newDir) {
             return QModelIndex();
         }
@@ -1171,14 +1171,14 @@ FileSystemModel::onSortIndicatorChanged(int logicalIndex,
         _imp->sortSection = logicalIndex;
         _imp->ordering = order;
     }
-    boost::shared_ptr<FileSystemItem> item = _imp->getItemFromPath(_imp->currentRootPath);
+    FileSystemItemPtr item = _imp->getItemFromPath(_imp->currentRootPath);
 
     if (item) {
         cleanAndRefreshItem(item);
     }
 }
 
-boost::shared_ptr<FileSystemItem>
+FileSystemItemPtr
 FileSystemModelPrivate::getItemFromPath(const QString &path) const
 {
     if ( path.isEmpty() || !rootItem ) {
@@ -1207,7 +1207,7 @@ FileSystemModel::setRootPath(const QString& path)
 
 
     ///Make sure the path exist
-    boost::shared_ptr<FileSystemItem> item = mkPath(path);
+    FileSystemItemPtr item = mkPath(path);
     assert(item);
     if (!item) {
         return false;
@@ -1246,7 +1246,7 @@ FileSystemModel::initGatherer()
 }
 
 void
-FileSystemModelPrivate::populateItem(const boost::shared_ptr<FileSystemItem> &item)
+FileSystemModelPrivate::populateItem(const FileSystemItemPtr &item)
 {
     ///We do it in a separate thread because it might be expensive,
     ///the directoryLoaded signal will be emitted when it is finished
@@ -1258,7 +1258,7 @@ void
 FileSystemModel::onDirectoryLoadedByGatherer(const QString& directory)
 {
     ///Get the item corresponding to the directory
-    boost::shared_ptr<FileSystemItem> item = _imp->getItemFromPath(directory);
+    FileSystemItemPtr item = _imp->getItemFromPath(directory);
 
     if (!item) {
         qDebug() << "FileSystemModel failed to load the following requested directory: " << directory;
@@ -1278,7 +1278,7 @@ FileSystemModel::onDirectoryLoadedByGatherer(const QString& directory)
 void
 FileSystemModel::onWatchedDirectoryChanged(const QString& directory)
 {
-    boost::shared_ptr<FileSystemItem> item = _imp->getItemFromPath(directory);
+    FileSystemItemPtr item = _imp->getItemFromPath(directory);
 
     if (item) {
         if (directory == _imp->currentRootPath) {
@@ -1286,7 +1286,7 @@ FileSystemModel::onWatchedDirectoryChanged(const QString& directory)
         } else {
             ///This is a sub-directory
             ///Clear the parent of the corresponding item
-            boost::shared_ptr<FileSystemItem> parent = item->getParentItem();
+            FileSystemItemPtr parent = item->getParentItem();
             if (parent) {
                 QModelIndex idx = index( item.get() );
                 assert( idx.isValid() );
@@ -1314,7 +1314,7 @@ FileSystemModel::onWatchedFileChanged(const QString& file)
 {
     ///Get the item corresponding to the current directory
     QFileInfo info(file);
-    boost::shared_ptr<FileSystemItem> parent = _imp->getItemFromPath( info.absolutePath() );
+    FileSystemItemPtr parent = _imp->getItemFromPath( info.absolutePath() );
 
     if (parent) {
         cleanAndRefreshItem(parent);
@@ -1322,7 +1322,7 @@ FileSystemModel::onWatchedFileChanged(const QString& file)
 }
 
 void
-FileSystemModel::cleanAndRefreshItem(const boost::shared_ptr<FileSystemItem>& item)
+FileSystemModel::cleanAndRefreshItem(const FileSystemItemPtr& item)
 {
     if (!item) {
         return;
@@ -1340,7 +1340,7 @@ FileSystemModel::cleanAndRefreshItem(const boost::shared_ptr<FileSystemItem>& it
     }
 }
 
-boost::shared_ptr<FileSystemItem>
+FileSystemItemPtr
 FileSystemModel::getItem(const QModelIndex &index) const
 {
     // just return the internal pointer we set at creating index if the index is valid
@@ -1371,10 +1371,10 @@ struct FileGathererThreadPrivate
     int startCount;
     mutable QMutex startCountMutex;
     QWaitCondition startCountCond;
-    boost::shared_ptr<FileSystemItem> requestedItem, itemBeingFetched;
+    FileSystemItemPtr requestedItem, itemBeingFetched;
     QMutex requestedDirMutex;
 
-    FileGathererThreadPrivate(const boost::shared_ptr<FileSystemModel>& model)
+    FileGathererThreadPrivate(const FileSystemModelPtr& model)
         : model(model)
         , mustQuit(false)
         , mustQuitMutex()
@@ -1421,13 +1421,13 @@ struct FileGathererThreadPrivate
         return false;
     }
 
-    boost::shared_ptr<FileSystemModel> getModel() const
+    FileSystemModelPtr getModel() const
     {
         return model.lock();
     }
 };
 
-FileGathererThread::FileGathererThread(const boost::shared_ptr<FileSystemModel>& model)
+FileGathererThread::FileGathererThread(const FileSystemModelPtr& model)
     : QThread()
     , _imp( new FileGathererThreadPrivate(model) )
 {
@@ -1562,7 +1562,7 @@ isVideoFileExtension(const std::string& ext)
     return false;
 }
 
-typedef std::list<std::pair<boost::shared_ptr<SequenceParsing::SequenceFromFiles>, QFileInfo > > FileSequences;
+typedef std::list<std::pair<SequenceParsing::SequenceFromFilesPtr, QFileInfo > > FileSequences;
 
 #define KERNEL_INCR() \
     switch (viewOrder) \
@@ -1576,13 +1576,13 @@ typedef std::list<std::pair<boost::shared_ptr<SequenceParsing::SequenceFromFiles
     }
 
 void
-FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& item)
+FileGathererThread::gatheringKernel(const FileSystemItemPtr& item)
 {
     if (!item) {
         return;
     }
     QDir dir( item->absoluteFilePath() );
-    boost::shared_ptr<FileSystemModel> model = _imp->getModel();
+    FileSystemModelPtr model = _imp->getModel();
     if (!model) {
         return;
     }
@@ -1636,7 +1636,7 @@ FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& ite
 
         if ( all[i].isDir() ) {
             ///This is a directory
-            sequences.push_back( std::make_pair(boost::shared_ptr<SequenceParsing::SequenceFromFiles>(), all[i]) );
+            sequences.push_back( std::make_pair(SequenceParsing::SequenceFromFilesPtr(), all[i]) );
         } else {
             QString filename = all[i].fileName();
             /// If the item does not match the filter regexp set by the user, discard it
@@ -1647,7 +1647,7 @@ FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& ite
 
             /// If file sequence fetching is disabled, accept it
             if ( !model->isSequenceModeEnabled() ) {
-                sequences.push_back( std::make_pair(boost::shared_ptr<SequenceParsing::SequenceFromFiles>(), all[i]) );
+                sequences.push_back( std::make_pair(SequenceParsing::SequenceFromFilesPtr(), all[i]) );
                 KERNEL_INCR();
                 continue;
             }
@@ -1670,7 +1670,7 @@ FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& ite
             }
 
             if (!foundMatchingSequence) {
-                boost::shared_ptr<SequenceParsing::SequenceFromFiles> newSequence = boost::make_shared<SequenceParsing::SequenceFromFiles>(fileContent, true);
+                SequenceParsing::SequenceFromFilesPtr newSequence = boost::make_shared<SequenceParsing::SequenceFromFiles>(fileContent, true);
                 sequences.push_back( std::make_pair(newSequence, all[i]) );
             }
         }
@@ -1686,7 +1686,7 @@ FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& ite
 } // FileGathererThread::gatheringKernel
 
 void
-FileGathererThread::fetchDirectory(const boost::shared_ptr<FileSystemItem>& item)
+FileGathererThread::fetchDirectory(const FileSystemItemPtr& item)
 {
     abortGathering();
     {

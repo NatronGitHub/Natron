@@ -972,7 +972,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     mutable QMutex _curvesMutex;
-    std::vector<boost::shared_ptr<Curve> > _curves, _defaultCurves;
+    std::vector<CurvePtr> _curves, _defaultCurves;
     std::vector<RGBAColourD> _curvesColor;
 public:
 
@@ -1004,8 +1004,8 @@ public:
     void setDefaultCurvesFromCurves();
 
     std::pair<double, double> getParametricRange() const WARN_UNUSED_RETURN;
-    boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
-    boost::shared_ptr<Curve> getDefaultParametricCurve(int dimension) const;
+    CurvePtr getParametricCurve(int dimension) const;
+    CurvePtr getDefaultParametricCurve(int dimension) const;
     StatusEnum addControlPoint(ValueChangedReasonEnum reason, int dimension, double key, double value, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
     StatusEnum addControlPoint(ValueChangedReasonEnum reason, int dimension, double key, double value, double leftDerivative, double rightDerivative, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
     StatusEnum getValue(int dimension, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;

@@ -225,7 +225,7 @@ public:
     ReadNode* _publicInterface;
     QMutex embeddedPluginMutex;
     NodePtr embeddedPlugin;
-    std::list<boost::shared_ptr<KnobSerialization> > genericKnobsSerialization;
+    std::list<KnobSerializationPtr> genericKnobsSerialization;
     KnobFileWPtr inputFileKnob;
 
     //Thiese are knobs owned by the ReadNode and not the Reader
@@ -267,7 +267,7 @@ public:
 
     void createReadNode(bool throwErrors,
                         const std::string& filename,
-                        const boost::shared_ptr<NodeSerialization>& serialization );
+                        const NodeSerializationPtr& serialization );
 
     void destroyReadNode();
 
@@ -406,7 +406,7 @@ ReadNodePrivate::cloneGenericKnobs()
 {
     const KnobsVec& knobs = _publicInterface->getKnobs();
 
-    for (std::list<boost::shared_ptr<KnobSerialization> >::iterator it = genericKnobsSerialization.begin(); it != genericKnobsSerialization.end(); ++it) {
+    for (std::list<KnobSerializationPtr>::iterator it = genericKnobsSerialization.begin(); it != genericKnobsSerialization.end(); ++it) {
         KnobIPtr serializedKnob = (*it)->getKnob();
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ( (*it2)->getName() == serializedKnob->getName() ) {
@@ -465,7 +465,7 @@ ReadNodePrivate::destroyReadNode()
             // see also https://svn.boost.org/trac10/ticket/13354
             
             boost::archive::xml_oarchive oArchive(ss);
-            std::list<boost::shared_ptr<KnobSerialization> > serialized;
+            std::list<KnobSerializationPtr> serialized;
             
             
             for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -508,7 +508,7 @@ ReadNodePrivate::destroyReadNode()
                      (*it)->setSecret(false);
                      }*/
                     
-                    boost::shared_ptr<KnobSerialization> s = boost::make_shared<KnobSerialization>(*it);
+                    KnobSerializationPtr s = boost::make_shared<KnobSerialization>(*it);
                     serialized.push_back(s);
                 }
                 if (!isGeneric) {
@@ -522,7 +522,7 @@ ReadNodePrivate::destroyReadNode()
             
             int n = (int)serialized.size();
             oArchive << boost::serialization::make_nvp("numItems", n);
-            for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = serialized.begin(); it!= serialized.end(); ++it) {
+            for (std::list<KnobSerializationPtr>::const_iterator it = serialized.begin(); it!= serialized.end(); ++it) {
                 oArchive << boost::serialization::make_nvp("item", **it);
                 
             }
@@ -538,7 +538,7 @@ ReadNodePrivate::destroyReadNode()
         int n ;
         iArchive >> boost::serialization::make_nvp("numItems", n);
         for (int i = 0; i < n; ++i) {
-            boost::shared_ptr<KnobSerialization> s = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr s = boost::make_shared<KnobSerialization>();
             iArchive >> boost::serialization::make_nvp("item", *s);
             genericKnobsSerialization.push_back(s);
 
@@ -604,7 +604,7 @@ bool
 ReadNodePrivate::checkDecoderCreated(double time,
                                      ViewIdx view)
 {
-    boost::shared_ptr<KnobFile> fileKnob = inputFileKnob.lock();
+    KnobFilePtr fileKnob = inputFileKnob.lock();
 
     assert(fileKnob);
     std::string pattern = fileKnob->getFileName(std::floor(time + 0.5), view);
@@ -625,11 +625,11 @@ ReadNodePrivate::checkDecoderCreated(double time,
 }
 
 static std::string
-getFileNameFromSerialization(const std::list<boost::shared_ptr<KnobSerialization> >& serializations)
+getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializations)
 {
     std::string filePattern;
 
-    for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = serializations.begin(); it != serializations.end(); ++it) {
+    for (std::list<KnobSerializationPtr>::const_iterator it = serializations.begin(); it != serializations.end(); ++it) {
         if ( (*it)->getKnob()->getName() == kOfxImageEffectFileParamName ) {
             KnobStringBase* isString = dynamic_cast<KnobStringBase*>( (*it)->getKnob().get() );
             assert(isString);
@@ -646,7 +646,7 @@ getFileNameFromSerialization(const std::list<boost::shared_ptr<KnobSerialization
 void
 ReadNodePrivate::createReadNode(bool throwErrors,
                                 const std::string& filename,
-                                const boost::shared_ptr<NodeSerialization>& serialization)
+                                const NodeSerializationPtr& serialization)
 {
     if (creatingReadNode) {
         return;
@@ -656,12 +656,12 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     QString qpattern = QString::fromUtf8( filename.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     std::string readerPluginID;
-    boost::shared_ptr<KnobString> pluginIDKnob = pluginIDStringKnob.lock();
+    KnobStringPtr pluginIDKnob = pluginIDStringKnob.lock();
     readerPluginID = pluginIDKnob->getValue();
 
 
     if ( readerPluginID.empty() ) {
-        boost::shared_ptr<KnobChoice> pluginChoiceKnob = pluginSelectorKnob.lock();
+        KnobChoicePtr pluginChoiceKnob = pluginSelectorKnob.lock();
         int pluginChoice_i = pluginChoiceKnob->getValue();
         if (pluginChoice_i == 0) {
             //Use default
@@ -676,7 +676,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
     // If the plug-in is the same, do not create a new decoder.
     if (embeddedPlugin && embeddedPlugin->getPluginID() == readerPluginID) {
-        boost::shared_ptr<KnobFile> fileKnob = inputFileKnob.lock();
+        KnobFilePtr fileKnob = inputFileKnob.lock();
         assert(fileKnob);
         if (fileKnob) {
             // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
@@ -735,7 +735,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         args.setProperty(kCreateNodeArgsPropOutOfProject, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalDecoderNode");
         args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
-        args.setProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, serialization);
+        args.setProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization, serialization);
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
         if (serialization || wasCreatedAsHiddenNode) {
@@ -748,7 +748,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
         // Set the filename value
         if (node) {
-            boost::shared_ptr<KnobFile> fileKnob = boost::dynamic_pointer_cast<KnobFile>(node->getKnobByName(kOfxImageEffectFileParamName));
+            KnobFilePtr fileKnob = boost::dynamic_pointer_cast<KnobFile>(node->getKnobByName(kOfxImageEffectFileParamName));
             if (fileKnob) {
                 fileKnob->setValue(filename);
             }
@@ -805,7 +805,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 void
 ReadNodePrivate::refreshFileInfoVisibility(const std::string& pluginID)
 {
-    boost::shared_ptr<KnobButton> fileInfos = fileInfosKnob.lock();
+    KnobButtonPtr fileInfos = fileInfosKnob.lock();
     KnobIPtr hasMetadataKnob = _publicInterface->getKnobByName("showMetadata");
     bool hasFfprobe = false;
     if (!hasMetadataKnob) {
@@ -826,7 +826,7 @@ ReadNodePrivate::refreshFileInfoVisibility(const std::string& pluginID)
 void
 ReadNodePrivate::refreshPluginSelectorKnob()
 {
-    boost::shared_ptr<KnobFile> fileKnob = inputFileKnob.lock();
+    KnobFilePtr fileKnob = inputFileKnob.lock();
 
     assert(fileKnob);
     std::string filePattern = fileKnob->getValue();
@@ -852,7 +852,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
         }
     }
 
-    boost::shared_ptr<KnobChoice> pluginChoice = pluginSelectorKnob.lock();
+    KnobChoicePtr pluginChoice = pluginSelectorKnob.lock();
 
     pluginChoice->populateChoices(entries);
     pluginChoice->blockValueChanges();
@@ -864,7 +864,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
         pluginChoice->setSecret(false);
     }
 
-    boost::shared_ptr<KnobString> pluginIDKnob = pluginIDStringKnob.lock();
+    KnobStringPtr pluginIDKnob = pluginIDStringKnob.lock();
     pluginIDKnob->blockValueChanges();
     pluginIDKnob->setValue(pluginID);
     pluginIDKnob->unblockValueChanges();
@@ -1104,8 +1104,8 @@ ReadNode::onMetadataRefreshed(const NodeMetadata& metadata)
 void
 ReadNode::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> controlpage = AppManager::createKnob<KnobPage>( this, tr("Controls") );
-    boost::shared_ptr<KnobButton> fileInfos = AppManager::createKnob<KnobButton>( this, tr("File Info...") );
+    KnobPagePtr controlpage = AppManager::createKnob<KnobPage>( this, tr("Controls") );
+    KnobButtonPtr fileInfos = AppManager::createKnob<KnobButton>( this, tr("File Info...") );
 
     fileInfos->setName("fileInfo");
     fileInfos->setHintToolTip( tr("Press to display informations about the file") );
@@ -1113,7 +1113,7 @@ ReadNode::initializeKnobs()
     _imp->fileInfosKnob = fileInfos;
     _imp->readNodeKnobs.push_back(fileInfos);
 
-    boost::shared_ptr<KnobChoice> pluginSelector = AppManager::createKnob<KnobChoice>( this, tr("Decoder") );
+    KnobChoicePtr pluginSelector = AppManager::createKnob<KnobChoice>( this, tr("Decoder") );
     pluginSelector->setAnimationEnabled(false);
     pluginSelector->setName(kNatronReadNodeParamDecodingPluginChoice);
     pluginSelector->setHintToolTip( tr("Select the internal decoder plug-in used for this file format. By default this uses "
@@ -1124,14 +1124,14 @@ ReadNode::initializeKnobs()
 
     _imp->readNodeKnobs.push_back(pluginSelector);
 
-    boost::shared_ptr<KnobSeparator> separator = AppManager::createKnob<KnobSeparator>( this, tr("Decoder Options") );
+    KnobSeparatorPtr separator = AppManager::createKnob<KnobSeparator>( this, tr("Decoder Options") );
     separator->setName("decoderOptionsSeparator");
     separator->setHintToolTip( tr("Below can be found parameters that are specific to the Reader plug-in.") );
     controlpage->addKnob(separator);
     _imp->separatorKnob = separator;
     _imp->readNodeKnobs.push_back(separator);
 
-    boost::shared_ptr<KnobString> pluginID = AppManager::createKnob<KnobString>( this, tr("PluginID") );
+    KnobStringPtr pluginID = AppManager::createKnob<KnobString>( this, tr("PluginID") );
     pluginID->setAnimationEnabled(false);
     pluginID->setName(kNatronReadNodeParamDecodingPluginID);
     pluginID->setSecretByDefault(true);
@@ -1150,7 +1150,7 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
         // Ensure the plug-in ID knob has the same value as the created reader:
         // The reader might have been created in onKnobsAboutToBeLoaded() however the knobs
         // get loaded afterwards and the plug-in ID could not reflect the underlying plugin
-        boost::shared_ptr<KnobString> pluginIDKnob = _imp->pluginIDStringKnob.lock();
+        KnobStringPtr pluginIDKnob = _imp->pluginIDStringKnob.lock();
         if (pluginIDKnob) {
             pluginIDKnob->setValue(p->getPluginID());
         }
@@ -1184,12 +1184,12 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
             pattern = args.getProperty<std::string>(propName);
         }
     }
-    _imp->createReadNode( throwErrors, pattern, boost::shared_ptr<NodeSerialization>() );
+    _imp->createReadNode( throwErrors, pattern, NodeSerializationPtr() );
     _imp->refreshPluginSelectorKnob();
 }
 
 void
-ReadNode::onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& serialization)
+ReadNode::onKnobsAboutToBeLoaded(const NodeSerializationPtr& serialization)
 {
     assert(serialization);
     NodePtr node = getNode();
@@ -1233,11 +1233,11 @@ ReadNode::knobChanged(KnobI* k,
             setPersistentMessage( eMessageTypeError, e.what() );
         }
 
-        boost::shared_ptr<KnobFile> fileKnob = _imp->inputFileKnob.lock();
+        KnobFilePtr fileKnob = _imp->inputFileKnob.lock();
         assert(fileKnob);
         std::string filename = fileKnob->getValue();
         try {
-            _imp->createReadNode( false, filename, boost::shared_ptr<NodeSerialization>() );
+            _imp->createReadNode( false, filename, NodeSerializationPtr() );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
@@ -1245,7 +1245,7 @@ ReadNode::knobChanged(KnobI* k,
             slaveAllKnobs(hasMaster->getEffectInstance().get(), false);
         }
     } else if ( k == _imp->pluginSelectorKnob.lock().get() ) {
-        boost::shared_ptr<KnobString> pluginIDKnob = _imp->pluginIDStringKnob.lock();
+        KnobStringPtr pluginIDKnob = _imp->pluginIDStringKnob.lock();
         std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntry().id;
         if ( entry == pluginIDKnob->getValue() ) {
             return false;
@@ -1257,12 +1257,12 @@ ReadNode::knobChanged(KnobI* k,
 
         pluginIDKnob->setValue(entry);
 
-        boost::shared_ptr<KnobFile> fileKnob = _imp->inputFileKnob.lock();
+        KnobFilePtr fileKnob = _imp->inputFileKnob.lock();
         assert(fileKnob);
         std::string filename = fileKnob->getValue();
 
         try {
-            _imp->createReadNode( false, filename, boost::shared_ptr<NodeSerialization>() );
+            _imp->createReadNode( false, filename, NodeSerializationPtr() );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
@@ -1295,7 +1295,7 @@ ReadNode::knobChanged(KnobI* k,
                 QProcess proc;
                 QStringList ffprobeArgs;
                 ffprobeArgs << QString::fromUtf8("-show_streams");
-                boost::shared_ptr<KnobFile> fileKnob = _imp->inputFileKnob.lock();
+                KnobFilePtr fileKnob = _imp->inputFileKnob.lock();
                 assert(fileKnob);
                 std::string filename = fileKnob->getValue();
                 getApp()->getProject()->canonicalizePath(filename); // substitute project variables

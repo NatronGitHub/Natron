@@ -412,7 +412,7 @@ Bezier::bezierSegmentListBboxUpdate(bool useGuiCurves,
     if (points.size() == 1) {
         // only one point
         Transform::Point3D p0;
-        const boost::shared_ptr<BezierCP>& p = points.front();
+        const BezierCPPtr& p = points.front();
         p->getPositionAtTime(useGuiCurves, time, view, &p0.x, &p0.y);
         p0.z = 1;
         p0 = Transform::matApply(transform, p0);
@@ -955,9 +955,9 @@ enum SplineChangedReason
 }
 
 
-Bezier::Bezier(const boost::shared_ptr<RotoContext>& ctx,
+Bezier::Bezier(const RotoContextPtr& ctx,
                const std::string & name,
-               const boost::shared_ptr<RotoLayer>& parent,
+               const RotoLayerPtr& parent,
                bool isOpenBezier)
     : RotoDrawableItem(ctx, name, parent, false)
     , _imp( new BezierPrivate(isOpenBezier) )
@@ -965,7 +965,7 @@ Bezier::Bezier(const boost::shared_ptr<RotoContext>& ctx,
 }
 
 Bezier::Bezier(const Bezier & other,
-               const boost::shared_ptr<RotoLayer>& parent)
+               const RotoLayerPtr& parent)
     : RotoDrawableItem( other.getContext(), other.getScriptName(), other.getParentLayer(), false )
     , _imp( new BezierPrivate(false) )
 {
@@ -993,7 +993,7 @@ Bezier::dequeueGuiActions()
     QMutexLocker k(&itemMutex);
 
     if (mustCopy) {
-        boost::shared_ptr<Bezier> this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+        BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
         assert(this_shared);
         BezierCPs::iterator fit = _imp->featherPoints.begin();
         for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fit) {
@@ -1013,7 +1013,7 @@ void
 Bezier::copyInternalPointsToGuiPoints()
 {
     assert( !itemMutex.tryLock() );
-    boost::shared_ptr<Bezier> this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
     assert(this_shared);
     BezierCPs::iterator fit = _imp->featherPoints.begin();
     for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fit) {
@@ -1044,7 +1044,7 @@ Bezier::clearAllPoints()
 void
 Bezier::clone(const RotoItem* other)
 {
-    boost::shared_ptr<Bezier> this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
 
     assert(this_shared);
 
@@ -1068,11 +1068,11 @@ Bezier::clone(const RotoItem* other)
         _imp->points.clear();
         BezierCPs::const_iterator itF = otherBezier->_imp->featherPoints.begin();
         for (BezierCPs::const_iterator it = otherBezier->_imp->points.begin(); it != otherBezier->_imp->points.end(); ++it) {
-            boost::shared_ptr<BezierCP> cp = boost::make_shared<BezierCP>(this_shared);
+            BezierCPPtr cp = boost::make_shared<BezierCP>(this_shared);
             cp->clone(**it);
             _imp->points.push_back(cp);
             if (useFeather) {
-                boost::shared_ptr<BezierCP> fp = boost::make_shared<BezierCP>(this_shared);
+                BezierCPPtr fp = boost::make_shared<BezierCP>(this_shared);
                 fp->clone(**itF);
                 _imp->featherPoints.push_back(fp);
                 ++itF;
@@ -1095,7 +1095,7 @@ Bezier::~Bezier()
 {
 }
 
-boost::shared_ptr<BezierCP>
+BezierCPPtr
 Bezier::addControlPoint(double x,
                         double y,
                         double time)
@@ -1104,7 +1104,7 @@ Bezier::addControlPoint(double x,
     assert( QThread::currentThread() == qApp->thread() );
 
     if ( isCurveFinished() ) {
-        return boost::shared_ptr<BezierCP>();
+        return BezierCPPtr();
     }
 
 
@@ -1116,8 +1116,8 @@ Bezier::addControlPoint(double x,
     double keyframeTime;
     ///if the curve is empty make a new keyframe at the current timeline's time
     ///otherwise re-use the time at which the keyframe was set on the first control point
-    boost::shared_ptr<BezierCP> p;
-    boost::shared_ptr<Bezier> this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierCPPtr p;
+    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
     assert(this_shared);
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     {
@@ -1145,7 +1145,7 @@ Bezier::addControlPoint(double x,
         _imp->points.insert(_imp->points.end(), p);
 
         if ( useFeatherPoints() ) {
-            boost::shared_ptr<BezierCP> fp = boost::make_shared<FeatherPoint>(this_shared);
+            BezierCPPtr fp = boost::make_shared<FeatherPoint>(this_shared);
             if (autoKeying) {
                 fp->setPositionAtTime(useGuiCurve, keyframeTime, x, y);
                 fp->setLeftBezierPointAtTime(useGuiCurve, keyframeTime, x, y);
@@ -1168,18 +1168,18 @@ Bezier::addControlPoint(double x,
     return p;
 } // Bezier::addControlPoint
 
-boost::shared_ptr<BezierCP>
+BezierCPPtr
 Bezier::addControlPointAfterIndex(int index,
                                   double t)
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    boost::shared_ptr<Bezier> this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
     assert(this_shared);
 
-    boost::shared_ptr<BezierCP> p = boost::make_shared<BezierCP>(this_shared);
-    boost::shared_ptr<BezierCP> fp;
+    BezierCPPtr p = boost::make_shared<BezierCP>(this_shared);
+    BezierCPPtr fp;
     bool useGuiCurve = !canSetInternalPoints();
     if (useGuiCurve) {
         _imp->setMustCopyGuiBezier(true);
@@ -1401,7 +1401,7 @@ Bezier::isPointOnCurve(double x,
     ///special case: if the curve has only 1 control point, just check if the point
     ///is nearby that sole control point
     if (_imp->points.size() == 1) {
-        const boost::shared_ptr<BezierCP> & cp = _imp->points.front();
+        const BezierCPPtr & cp = _imp->points.front();
         if ( isPointCloseTo(true, time, ViewIdx(0), *cp, x, y, transform, distance) ) {
             *feather = false;
 
@@ -1409,7 +1409,7 @@ Bezier::isPointOnCurve(double x,
         } else {
             if ( useFeatherPoints() ) {
                 ///do the same with the feather points
-                const boost::shared_ptr<BezierCP> & fp = _imp->featherPoints.front();
+                const BezierCPPtr & fp = _imp->featherPoints.front();
                 if ( isPointCloseTo(true, time, ViewIdx(0), *fp, x, y, transform, distance) ) {
                     *feather = true;
 
@@ -1549,7 +1549,7 @@ Bezier::movePointByIndexInternal(bool useGuiCurve,
         Transform::Point3D p, left, right;
         p.z = left.z = right.z = 1;
 
-        boost::shared_ptr<BezierCP> cp;
+        BezierCPPtr cp;
         bool isOnKeyframe = false;
         if (!onlyFeather) {
             BezierCPs::iterator it = _imp->points.begin();
@@ -1578,7 +1578,7 @@ Bezier::movePointByIndexInternal(bool useGuiCurve,
         bool useFeather = useFeatherPoints();
         Transform::Point3D pF, leftF, rightF;
         pF.z = leftF.z = rightF.z = 1;
-        boost::shared_ptr<BezierCP> fp;
+        BezierCPPtr fp;
         if (useFeather) {
             BezierCPs::iterator itF = _imp->featherPoints.begin();
             std::advance(itF, index);
@@ -1730,7 +1730,7 @@ Bezier::setPointByIndexInternal(bool useGuiCurve,
         Transform::Point3D p(0., 0., 1.);
         Transform::Point3D left(0., 0., 1.);
         Transform::Point3D right(0., 0., 1.);
-        boost::shared_ptr<BezierCP> cp;
+        BezierCPPtr cp;
         BezierCPs::const_iterator it = _imp->atIndex(index);
         assert( it != _imp->points.end() );
         cp = *it;
@@ -2192,7 +2192,7 @@ Bezier::onTransformSet(double time)
 }
 
 void
-Bezier::transformPoint(const boost::shared_ptr<BezierCP> & point,
+Bezier::transformPoint(const BezierCPPtr & point,
                        double time,
                        Transform::Matrix3x3* matrix)
 {
@@ -2533,7 +2533,7 @@ Bezier::getKeyframesCount() const
 void
 Bezier::deCastelJau(bool isOpenBezier,
                     bool useGuiCurves,
-                    const std::list<boost::shared_ptr<BezierCP> >& cps,
+                    const std::list<BezierCPPtr>& cps,
                     double time,
                     unsigned int mipMapLevel,
                     bool finished,
@@ -2910,7 +2910,7 @@ Bezier::getBoundingBox(double time) const
     return bbox;
 } // Bezier::getBoundingBox
 
-const std::list<boost::shared_ptr<BezierCP> > &
+const std::list<BezierCPPtr> &
 Bezier::getControlPoints() const
 {
     ///only called on the main-thread
@@ -2920,13 +2920,13 @@ Bezier::getControlPoints() const
 }
 
 //protected only
-std::list<boost::shared_ptr<BezierCP> > &
+std::list<BezierCPPtr> &
 Bezier::getControlPoints_internal()
 {
     return _imp->points;
 }
 
-std::list<boost::shared_ptr<BezierCP> >
+std::list<BezierCPPtr>
 Bezier::getControlPoints_mt_safe() const
 {
     QMutexLocker l(&itemMutex);
@@ -2934,7 +2934,7 @@ Bezier::getControlPoints_mt_safe() const
     return _imp->points;
 }
 
-const std::list<boost::shared_ptr<BezierCP> > &
+const std::list<BezierCPPtr> &
 Bezier::getFeatherPoints() const
 {
     ///only called on the main-thread
@@ -2943,7 +2943,7 @@ Bezier::getFeatherPoints() const
     return _imp->featherPoints;
 }
 
-std::list<boost::shared_ptr<BezierCP> >
+std::list<BezierCPPtr>
 Bezier::getFeatherPoints_mt_safe() const
 {
     QMutexLocker l(&itemMutex);
@@ -2951,7 +2951,7 @@ Bezier::getFeatherPoints_mt_safe() const
     return _imp->featherPoints;
 }
 
-std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> >
+std::pair<BezierCPPtr, BezierCPPtr>
 Bezier::isNearbyControlPoint(double x,
                              double y,
                              double acceptance,
@@ -2964,7 +2964,7 @@ Bezier::isNearbyControlPoint(double x,
     Transform::Matrix3x3 transform;
     getTransformAtTime(time, &transform);
     QMutexLocker l(&itemMutex);
-    boost::shared_ptr<BezierCP> cp, fp;
+    BezierCPPtr cp, fp;
 
     switch (pref) {
     case eControlPointSelectionPrefFeatherFirst: {
@@ -3022,7 +3022,7 @@ Bezier::isNearbyControlPoint(double x,
 } // isNearbyControlPoint
 
 int
-Bezier::getControlPointIndex(const boost::shared_ptr<BezierCP> & cp) const
+Bezier::getControlPointIndex(const BezierCPPtr & cp) const
 {
     return getControlPointIndex( cp.get() );
 }
@@ -3044,7 +3044,7 @@ Bezier::getControlPointIndex(const BezierCP* cp) const
 }
 
 int
-Bezier::getFeatherPointIndex(const boost::shared_ptr<BezierCP> & fp) const
+Bezier::getFeatherPointIndex(const BezierCPPtr & fp) const
 {
     ///only called on the main-thread
     QMutexLocker l(&itemMutex);
@@ -3059,13 +3059,13 @@ Bezier::getFeatherPointIndex(const boost::shared_ptr<BezierCP> & fp) const
     return -1;
 }
 
-boost::shared_ptr<BezierCP>
+BezierCPPtr
 Bezier::getControlPointAtIndex(int index) const
 {
     QMutexLocker l(&itemMutex);
 
     if ( (index < 0) || ( index >= (int)_imp->points.size() ) ) {
-        return boost::shared_ptr<BezierCP>();
+        return BezierCPPtr();
     }
 
     BezierCPs::const_iterator it = _imp->points.begin();
@@ -3074,13 +3074,13 @@ Bezier::getControlPointAtIndex(int index) const
     return *it;
 }
 
-boost::shared_ptr<BezierCP>
+BezierCPPtr
 Bezier::getFeatherPointAtIndex(int index) const
 {
     QMutexLocker l(&itemMutex);
 
     if ( (index < 0) || ( index >= (int)_imp->featherPoints.size() ) ) {
-        return boost::shared_ptr<BezierCP>();
+        return BezierCPPtr();
     }
 
     BezierCPs::const_iterator it = _imp->featherPoints.begin();
@@ -3089,7 +3089,7 @@ Bezier::getFeatherPointAtIndex(int index) const
     return *it;
 }
 
-std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >
+std::list<std::pair<BezierCPPtr, BezierCPPtr> >
 Bezier::controlPointsWithinRect(double l,
                                 double r,
                                 double b,
@@ -3097,7 +3097,7 @@ Bezier::controlPointsWithinRect(double l,
                                 double acceptance,
                                 int mode) const
 {
-    std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > ret;
+    std::list<std::pair<BezierCPPtr, BezierCPPtr> > ret;
 
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3109,7 +3109,7 @@ Bezier::controlPointsWithinRect(double l,
             double x, y;
             (*it)->getPositionAtTime(true, time, ViewIdx(0), &x, &y);
             if ( ( x >= (l - acceptance) ) && ( x <= (r + acceptance) ) && ( y >= (b - acceptance) ) && ( y <= (t - acceptance) ) ) {
-                std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > p;
+                std::pair<BezierCPPtr, BezierCPPtr> p;
                 p.first = *it;
                 BezierCPs::const_iterator itF = _imp->featherPoints.begin();
                 std::advance(itF, i);
@@ -3124,7 +3124,7 @@ Bezier::controlPointsWithinRect(double l,
             double x, y;
             (*it)->getPositionAtTime(true, time, ViewIdx(0), &x, &y);
             if ( ( x >= (l - acceptance) ) && ( x <= (r + acceptance) ) && ( y >= (b - acceptance) ) && ( y <= (t - acceptance) ) ) {
-                std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > p;
+                std::pair<BezierCPPtr, BezierCPPtr> p;
                 p.first = *it;
                 BezierCPs::const_iterator itF = _imp->points.begin();
                 std::advance(itF, i);
@@ -3132,7 +3132,7 @@ Bezier::controlPointsWithinRect(double l,
 
                 ///avoid duplicates
                 bool found = false;
-                for (std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >::iterator it2 = ret.begin();
+                for (std::list<std::pair<BezierCPPtr, BezierCPPtr> >::iterator it2 = ret.begin();
                      it2 != ret.end(); ++it2) {
                     if (it2->first == *itF) {
                         found = true;
@@ -3149,8 +3149,8 @@ Bezier::controlPointsWithinRect(double l,
     return ret;
 } // controlPointsWithinRect
 
-boost::shared_ptr<BezierCP>
-Bezier::getFeatherPointForControlPoint(const boost::shared_ptr<BezierCP> & cp) const
+BezierCPPtr
+Bezier::getFeatherPointForControlPoint(const BezierCPPtr & cp) const
 {
     assert( !cp->isFeatherPoint() );
     int index = getControlPointIndex(cp);
@@ -3159,14 +3159,14 @@ Bezier::getFeatherPointForControlPoint(const boost::shared_ptr<BezierCP> & cp) c
     return getFeatherPointAtIndex(index);
 }
 
-boost::shared_ptr<BezierCP>
-Bezier::getControlPointForFeatherPoint(const boost::shared_ptr<BezierCP> & fp) const
+BezierCPPtr
+Bezier::getControlPointForFeatherPoint(const BezierCPPtr & fp) const
 {
     assert( fp->isFeatherPoint() );
     int index = getFeatherPointIndex(fp);
     assert(index != -1);
     if (index == -1) {
-        return boost::shared_ptr<BezierCP>();
+        return BezierCPPtr();
     }
 
     return getControlPointAtIndex(index);
@@ -3316,7 +3316,7 @@ Bezier::save(RotoItemSerialization* obj) const
 void
 Bezier::load(const RotoItemSerialization & obj)
 {
-    boost::shared_ptr<Bezier> this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
 
     assert(this_shared);
 
@@ -3329,12 +3329,12 @@ Bezier::load(const RotoItemSerialization & obj)
         bool useFeather = useFeatherPoints();
         std::list<BezierCP>::const_iterator itF = s._featherPoints.begin();
         for (std::list<BezierCP>::const_iterator it = s._controlPoints.begin(); it != s._controlPoints.end(); ++it) {
-            boost::shared_ptr<BezierCP> cp = boost::make_shared<BezierCP>(this_shared);
+            BezierCPPtr cp = boost::make_shared<BezierCP>(this_shared);
             cp->clone(*it);
             _imp->points.push_back(cp);
 
             if (useFeather) {
-                boost::shared_ptr<BezierCP> fp = boost::make_shared<FeatherPoint>(this_shared);
+                BezierCPPtr fp = boost::make_shared<FeatherPoint>(this_shared);
                 fp->clone(*itF);
                 _imp->featherPoints.push_back(fp);
                 ++itF;

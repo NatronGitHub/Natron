@@ -170,8 +170,8 @@ public:
 
     NodePtr getNodeByFullySpecifiedName(const std::string & name) const;
 
-    boost::shared_ptr<Project> getProject() const;
-    boost::shared_ptr<TimeLine> getTimeLine() const;
+    ProjectPtr getProject() const;
+    TimeLinePtr getTimeLine() const;
 
     /*true if the user is NOT scrubbing the timeline*/
     virtual bool shouldRefreshPreview() const
@@ -232,12 +232,12 @@ public:
                                      int /*frameStep*/,
                                      bool /*canPause*/,
                                      OutputEffectInstance* /*writer*/,
-                                     const boost::shared_ptr<ProcessHandler> & /*process*/)
+                                     const ProcessHandlerPtr & /*process*/)
     {
     }
 
     virtual void notifyRenderRestarted( OutputEffectInstance* /*writer*/,
-                                        const boost::shared_ptr<ProcessHandler> & /*process*/)
+                                        const ProcessHandlerPtr & /*process*/)
     {
     }
 
@@ -362,11 +362,11 @@ public:
     virtual void setDraftRenderEnabled(bool /*b*/) {}
 
     virtual void setUserIsPainting(const NodePtr& /*rotopaintNode*/,
-                                   const boost::shared_ptr<RotoStrokeItem>& /*stroke*/,
+                                   const RotoStrokeItemPtr& /*stroke*/,
                                    bool /*isPainting*/) {}
 
     virtual void getActiveRotoDrawingStroke(NodePtr* /*node*/,
-                                            boost::shared_ptr<RotoStrokeItem>* /*stroke*/,
+                                            RotoStrokeItemPtr* /*stroke*/,
                                             bool* /*isPainting*/) const { }
 
     virtual bool isRenderStatsActionChecked() const { return false; }
@@ -396,15 +396,15 @@ public:
 
     virtual int getStrokeLastIndex() const { return -1; }
 
-    virtual void getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* /*stroke*/,
+    virtual void getStrokeAndMultiStrokeIndex(RotoStrokeItemPtr* /*stroke*/,
                                               int* /*strokeIndex*/) const {}
 
     virtual void getRenderStrokeData(RectD* /*lastStrokeMovementBbox*/,
                                      std::list<std::pair<Point, double> >* /*lastStrokeMovementPoints*/,
                                      double */*distNextIn*/,
-                                     boost::shared_ptr<Image>* /*strokeImage*/) const {}
+                                     ImagePtr* /*strokeImage*/) const {}
 
-    virtual void updateStrokeImage(const boost::shared_ptr<Image>& /*image*/,
+    virtual void updateStrokeImage(const ImagePtr& /*image*/,
                                    double /*distNextOut*/,
                                    bool /*setDistNextOut*/) {}
 
@@ -446,7 +446,7 @@ Q_SIGNALS:
 
 protected:
 
-    virtual void onGroupCreationFinished(const NodePtr& node, const boost::shared_ptr<NodeSerialization>& serialization, bool autoConnect);
+    virtual void onGroupCreationFinished(const NodePtr& node, const NodeSerializationPtr& serialization, bool autoConnect);
     virtual void createNodeGui(const NodePtr& /*node*/,
                                const NodePtr& /*parentmultiinstance*/,
                                const CreateNodeArgs& /*args*/)

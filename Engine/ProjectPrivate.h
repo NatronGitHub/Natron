@@ -71,32 +71,32 @@ public:
 
 
     ///Project parameters (settings)
-    boost::shared_ptr<KnobPath> envVars;
-    boost::shared_ptr<KnobString> projectName; //< name of the project, e.g: "Untitled.ntp"
-    boost::shared_ptr<KnobString> projectPath;  //< path of the project, e.g: /Users/Lala/Projects/
-    boost::shared_ptr<KnobChoice> formatKnob; //< built from builtinFormats & additionalFormats
-    boost::shared_ptr<KnobButton> addFormatKnob;
-    boost::shared_ptr<KnobPath> viewsList;
-    boost::shared_ptr<KnobLayers> defaultLayersList;
-    boost::shared_ptr<KnobButton> setupForStereoButton;
-    boost::shared_ptr<KnobBool> previewMode; //< auto or manual
-    boost::shared_ptr<KnobChoice> colorSpace8u;
-    boost::shared_ptr<KnobChoice> colorSpace16u;
-    boost::shared_ptr<KnobChoice> colorSpace32f;
-    boost::shared_ptr<KnobDouble> frameRate;
-    boost::shared_ptr<KnobChoice> gpuSupport;
-    boost::shared_ptr<KnobInt> frameRange;
-    boost::shared_ptr<KnobBool> lockFrameRange;
-    boost::shared_ptr<KnobString> natronVersion;
-    boost::shared_ptr<KnobString> originalAuthorName, lastAuthorName;
-    boost::shared_ptr<KnobString> projectCreationDate;
-    boost::shared_ptr<KnobString> saveDate;
-    boost::shared_ptr<KnobString> onProjectLoadCB;
-    boost::shared_ptr<KnobString> onProjectSaveCB;
-    boost::shared_ptr<KnobString> onProjectCloseCB;
-    boost::shared_ptr<KnobString> onNodeCreated;
-    boost::shared_ptr<KnobString> onNodeDeleted;
-    boost::shared_ptr<TimeLine> timeline; // global timeline
+    KnobPathPtr envVars;
+    KnobStringPtr projectName; //< name of the project, e.g: "Untitled.ntp"
+    KnobStringPtr projectPath;  //< path of the project, e.g: /Users/Lala/Projects/
+    KnobChoicePtr formatKnob; //< built from builtinFormats & additionalFormats
+    KnobButtonPtr addFormatKnob;
+    KnobPathPtr viewsList;
+    KnobLayersPtr defaultLayersList;
+    KnobButtonPtr setupForStereoButton;
+    KnobBoolPtr previewMode; //< auto or manual
+    KnobChoicePtr colorSpace8u;
+    KnobChoicePtr colorSpace16u;
+    KnobChoicePtr colorSpace32f;
+    KnobDoublePtr frameRate;
+    KnobChoicePtr gpuSupport;
+    KnobIntPtr frameRange;
+    KnobBoolPtr lockFrameRange;
+    KnobStringPtr natronVersion;
+    KnobStringPtr originalAuthorName, lastAuthorName;
+    KnobStringPtr projectCreationDate;
+    KnobStringPtr saveDate;
+    KnobStringPtr onProjectLoadCB;
+    KnobStringPtr onProjectSaveCB;
+    KnobStringPtr onProjectCloseCB;
+    KnobStringPtr onNodeCreated;
+    KnobStringPtr onNodeDeleted;
+    TimeLinePtr timeline; // global timeline
     bool autoSetProjectFormat;
     mutable QMutex isLoadingProjectMutex;
     bool isLoadingProject; //< true when the project is loading
@@ -112,7 +112,7 @@ public:
     // only used on the main-thread
     struct RenderWatcher
     {
-        boost::shared_ptr<NodeRenderWatcher> watcher;
+        NodeRenderWatcherPtr watcher;
         AfterQuitProcessingI* receiver;
     };
 

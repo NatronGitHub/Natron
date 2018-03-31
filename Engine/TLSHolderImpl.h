@@ -45,7 +45,7 @@ NATRON_NAMESPACE_ENTER
 //set on the TLS, so just copy this instead of the whole TLS.
 
 template <>
-boost::shared_ptr<EffectInstance::EffectTLSData>
+EffectInstance::EffectTLSDataPtr
 TLSHolder<EffectInstance::EffectTLSData>::copyAndReturnNewTLS(const QThread* fromThread,
                                                               const QThread* toThread) const
 {
@@ -54,7 +54,7 @@ TLSHolder<EffectInstance::EffectTLSData>::copyAndReturnNewTLS(const QThread* fro
 
     if ( found == perThreadData.end() ) {
         ///No TLS for fromThread
-        return boost::shared_ptr<EffectInstance::EffectTLSData>();
+        return EffectInstance::EffectTLSDataPtr();
     }
 
     ThreadData data;
@@ -70,7 +70,7 @@ void
 TLSHolder<EffectInstance::EffectTLSData>::copyTLS(const QThread* fromThread,
                                                   const QThread* toThread) const
 {
-    boost::shared_ptr<EffectInstance::EffectTLSData> tlsDataPtr = copyAndReturnNewTLS(fromThread, toThread);
+    EffectInstance::EffectTLSDataPtr tlsDataPtr = copyAndReturnNewTLS(fromThread, toThread);
 
     Q_UNUSED(tlsDataPtr);
 }
@@ -181,7 +181,7 @@ TLSHolder<T>::getOrCreateTLSData() const
 
     //getOrCreateTLSData() has never been called on the thread, lookup the TLS
     ThreadData data;
-    boost::shared_ptr<const TLSHolderBase> thisShared = shared_from_this();
+    TLSHolderBaseConstPtr thisShared = shared_from_this();
     appPTR->getAppTLS()->registerTLSHolder(thisShared);
     data.value = boost::make_shared<T>();
     {
@@ -261,7 +261,7 @@ AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
     //This is a spawned thread and the first time we need the TLS for this thread, copy the whole TLS on all objects
     for (TLSObjects::iterator it = _object->objects.begin();
          it != _object->objects.end(); ++it) {
-        boost::shared_ptr<const TLSHolderBase> p = (*it).lock();
+        TLSHolderBaseConstPtr p = (*it).lock();
         if (p) {
             const TLSHolder<T>* foundHolder = 0;
             if (p.get() == holder) {

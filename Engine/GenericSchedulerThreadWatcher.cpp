@@ -55,7 +55,7 @@ struct GenericWatcherPrivate
     struct Task
     {
         int id;
-        boost::shared_ptr<GenericWatcherCallerArgs> args;
+        GenericWatcherCallerArgsPtr args;
     };
 
     mutable QMutex tasksMutex;
@@ -133,7 +133,7 @@ GenericWatcher::run()
             }
         }
         int taskID = -1;
-        boost::shared_ptr<GenericWatcherCallerArgs> inArgs;
+        GenericWatcherCallerArgsPtr inArgs;
         {
             QMutexLocker k(&_imp->tasksMutex);
             if ( !_imp->tasks.empty() ) {
@@ -161,7 +161,7 @@ GenericWatcher::run()
 
 void
 GenericWatcher::scheduleBlockingTask(int taskID,
-                                     const boost::shared_ptr<GenericWatcherCallerArgs>& args)
+                                     const GenericWatcherCallerArgsPtr& args)
 {
     {
         QMutexLocker quitLocker(&_imp->mustQuitMutex);

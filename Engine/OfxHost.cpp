@@ -145,7 +145,7 @@ string_format(const std::string fmt,
 
 struct OfxHostPrivate
 {
-    boost::shared_ptr<OFX::Host::ImageEffect::PluginCache> imageEffectPluginCache;
+    OFX::Host::ImageEffect::PluginCachePtr imageEffectPluginCache;
     boost::shared_ptr<TLSHolder<OfxHost::OfxHostTLSData> > tlsData;
 
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
@@ -698,7 +698,7 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     return desc;
 } // OfxHost::getPluginContextAndDescribe
 
-boost::shared_ptr<AbstractOfxEffectInstance>
+AbstractOfxEffectInstancePtr
 OfxHost::createOfxEffect(NodePtr node,
                          const CreateNodeArgs& args
 #ifndef NATRON_ENABLE_IO_META_NODES
@@ -717,8 +717,8 @@ OfxHost::createOfxEffect(NodePtr node,
     assert(plugin && desc && ctx != eContextNone);
 
 
-    boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect( new OfxEffectInstance(node) );
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    AbstractOfxEffectInstancePtr hostSideEffect( new OfxEffectInstance(node) );
+    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
     std::string fixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
 
     if ( node && !node->getEffectInstance() ) {
@@ -1165,7 +1165,7 @@ OfxHost::fetchSuite(const char *suiteName,
 OFX::Host::Memory::Instance*
 OfxHost::newMemoryInstance(size_t nBytes)
 {
-    OfxMemory* ret = new OfxMemory( boost::shared_ptr<OfxEffectInstance>() );
+    OfxMemory* ret = new OfxMemory( OfxEffectInstancePtr() );
     bool allocated = ret->alloc(nBytes);
 
     if ( ( (nBytes != 0) && !ret->getPtr() ) || !allocated ) {

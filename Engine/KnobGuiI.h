@@ -64,7 +64,7 @@ public:
     virtual void restoreOpenGLContext() OVERRIDE = 0;
     virtual unsigned int getCurrentRenderScale() const OVERRIDE { return 0; }
 
-    virtual boost::shared_ptr<Curve> getCurve(ViewSpec view, int dimension) const = 0;
+    virtual CurvePtr getCurve(ViewSpec view, int dimension) const = 0;
     virtual bool getAllDimensionsVisible() const = 0;
     virtual RectD getViewportRect() const OVERRIDE = 0;
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE = 0;

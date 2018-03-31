@@ -485,7 +485,7 @@ private:
 
     /*mutable because it doesn't hold any data, it just emits signals but signals cannot
          be const somehow .*/
-    mutable boost::shared_ptr<CacheSignalEmitter> _signalEmitter;
+    mutable CacheSignalEmitterPtr _signalEmitter;
 
     ///Store the system physical total RAM in a member
     std::size_t _maxPhysicalRAM;
@@ -1451,7 +1451,7 @@ public:
         return _diskCacheSize;
     }
 
-    boost::shared_ptr<CacheSignalEmitter> activateSignalEmitter() const
+    CacheSignalEmitterPtr activateSignalEmitter() const
     {
         return _signalEmitter;
     }

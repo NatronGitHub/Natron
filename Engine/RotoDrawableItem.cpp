@@ -100,9 +100,9 @@ NATRON_NAMESPACE_ENTER
 
 ////////////////////////////////////RotoDrawableItem////////////////////////////////////
 
-RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context,
+RotoDrawableItem::RotoDrawableItem(const RotoContextPtr& context,
                                    const std::string & name,
-                                   const boost::shared_ptr<RotoLayer>& parent,
+                                   const RotoLayerPtr& parent,
                                    bool isStroke)
     : RotoItem(context, name, parent)
     , _imp( new RotoDrawableItemPrivate(isStroke) )
@@ -165,7 +165,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onRotoKnobChanged(ViewSpec,int,int)) );
     }
 
-    boost::shared_ptr<RotoContext> context = getContext();
+    RotoContextPtr context = getContext();
     NodePtr node = context->getNode();
     AppInstancePtr app = node->getApp();
     QString fixedNamePrefix = QString::fromUtf8( node->getScriptName_mt_safe().c_str() );
@@ -177,9 +177,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
     QString pluginId;
     RotoStrokeType type;
-    boost::shared_ptr<RotoDrawableItem> thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() );
+    RotoDrawableItemPtr thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() );
     assert(thisShared);
-    boost::shared_ptr<RotoStrokeItem> isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(thisShared);
+    RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(thisShared);
 
     if (isStroke) {
         type = isStroke->getBrushType();
@@ -293,7 +293,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     KnobChoice* mergeOp = dynamic_cast<KnobChoice*>( mergeOperatorKnob.get() );
     assert(mergeOp);
 
-    boost::shared_ptr<KnobChoice> compOp = getOperatorKnob();
+    KnobChoicePtr compOp = getOperatorKnob();
     MergingFunctionEnum op;
     if ( (type == eRotoStrokeTypeDodge) || (type == eRotoStrokeTypeBurn) ) {
         op = (type == eRotoStrokeTypeDodge ? eMergeColorDodge : eMergeColorBurn);
@@ -318,7 +318,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         } else if (type == eRotoStrokeTypeSharpen) {
             //todo
         } else if (type == eRotoStrokeTypeSmear) {
-            boost::shared_ptr<KnobDouble> spacingKnob = isStroke->getBrushSpacingKnob();
+            KnobDoublePtr spacingKnob = isStroke->getBrushSpacingKnob();
             assert(spacingKnob);
             spacingKnob->setValue(0.05);
         }
@@ -450,7 +450,7 @@ findPreviousOfItemInLayer(RotoLayer* layer,
     }
 
     //Item was still not found, find in great parent layer
-    boost::shared_ptr<RotoLayer> parentLayer = layer->getParentLayer();
+    RotoLayerPtr parentLayer = layer->getParentLayer();
     if (!parentLayer) {
         return 0;
     }
@@ -473,7 +473,7 @@ findPreviousOfItemInLayer(RotoLayer* layer,
 RotoDrawableItem*
 RotoDrawableItem::findPreviousInHierarchy()
 {
-    boost::shared_ptr<RotoLayer> layer = getParentLayer();
+    RotoLayerPtr layer = getParentLayer();
 
     if (!layer) {
         return 0;
@@ -502,10 +502,10 @@ void
 RotoDrawableItem::rotoKnobChanged(const KnobIPtr& knob,
                                   ValueChangedReasonEnum reason)
 {
-    boost::shared_ptr<KnobChoice> compKnob = getOperatorKnob();
+    KnobChoicePtr compKnob = getOperatorKnob();
 
 #ifdef NATRON_ROTO_INVERTIBLE
-    boost::shared_ptr<KnobBool> invertKnob = getInvertedKnob();
+    KnobBoolPtr invertKnob = getInvertedKnob();
 #endif
 
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
@@ -908,7 +908,7 @@ RotoDrawableItem::save(RotoItemSerialization *obj) const
         throw std::logic_error("RotoDrawableItem::save()");
     }
     for (std::list<KnobIPtr>::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        boost::shared_ptr<KnobSerialization> k = boost::make_shared<KnobSerialization>(*it);
+        KnobSerializationPtr k = boost::make_shared<KnobSerialization>(*it);
         serializeRotoKnob( *it, k.get() );
         s->_knobs.push_back(k);
     }
@@ -925,10 +925,10 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
     RotoItem::load(obj);
     const RotoDrawableItemSerialization & s = dynamic_cast<const RotoDrawableItemSerialization &>(obj);
 
-    for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = s._knobs.begin(); it != s._knobs.end(); ++it) {
+    for (std::list<KnobSerializationPtr>::const_iterator it = s._knobs.begin(); it != s._knobs.end(); ++it) {
         for (std::list<KnobIPtr>::const_iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
             if ( (*it2)->getName() == (*it)->getName() ) {
-                boost::shared_ptr<KnobSignalSlotHandler> s = (*it2)->getSignalSlotHandler();
+                KnobSignalSlotHandlerPtr s = (*it2)->getSignalSlotHandler();
                 s->blockSignals(true);
                 (*it2)->clone( (*it)->getKnob().get() );
                 s->blockSignals(false);
@@ -949,7 +949,7 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
         type = eRotoStrokeTypeSolid;
     }
 
-    boost::shared_ptr<KnobChoice> compKnob = getOperatorKnob();
+    KnobChoicePtr compKnob = getOperatorKnob();
     KnobIPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
     KnobChoice* mergeOp = dynamic_cast<KnobChoice*>( mergeOperatorKnob.get() );
     if (mergeOp) {
@@ -1190,138 +1190,138 @@ RotoDrawableItem::setOverlayColor(const double *color)
     Q_EMIT overlayColorChanged();
 }
 
-boost::shared_ptr<KnobBool> RotoDrawableItem::getActivatedKnob() const
+KnobBoolPtr RotoDrawableItem::getActivatedKnob() const
 {
     return _imp->activated;
 }
 
-boost::shared_ptr<KnobDouble> RotoDrawableItem::getFeatherKnob() const
+KnobDoublePtr RotoDrawableItem::getFeatherKnob() const
 {
     return _imp->feather;
 }
 
-boost::shared_ptr<KnobDouble> RotoDrawableItem::getFeatherFallOffKnob() const
+KnobDoublePtr RotoDrawableItem::getFeatherFallOffKnob() const
 {
     return _imp->featherFallOff;
 }
 
-boost::shared_ptr<KnobDouble> RotoDrawableItem::getOpacityKnob() const
+KnobDoublePtr RotoDrawableItem::getOpacityKnob() const
 {
     return _imp->opacity;
 }
 
-boost::shared_ptr<KnobBool> RotoDrawableItem::getInvertedKnob() const
+KnobBoolPtr RotoDrawableItem::getInvertedKnob() const
 {
 #ifdef NATRON_ROTO_INVERTIBLE
 
     return _imp->inverted;
 #else
 
-    return boost::shared_ptr<KnobBool>();
+    return KnobBoolPtr();
 #endif
 }
 
-boost::shared_ptr<KnobChoice> RotoDrawableItem::getOperatorKnob() const
+KnobChoicePtr RotoDrawableItem::getOperatorKnob() const
 {
     return _imp->compOperator;
 }
 
-boost::shared_ptr<KnobColor> RotoDrawableItem::getColorKnob() const
+KnobColorPtr RotoDrawableItem::getColorKnob() const
 {
     return _imp->color;
 }
 
-boost::shared_ptr<KnobDouble>
+KnobDoublePtr
 RotoDrawableItem::getBrushSizeKnob() const
 {
     return _imp->brushSize;
 }
 
-boost::shared_ptr<KnobDouble>
+KnobDoublePtr
 RotoDrawableItem::getBrushHardnessKnob() const
 {
     return _imp->brushHardness;
 }
 
-boost::shared_ptr<KnobDouble>
+KnobDoublePtr
 RotoDrawableItem::getBrushSpacingKnob() const
 {
     return _imp->brushSpacing;
 }
 
-boost::shared_ptr<KnobDouble>
+KnobDoublePtr
 RotoDrawableItem::getBrushEffectKnob() const
 {
     return _imp->effectStrength;
 }
 
-boost::shared_ptr<KnobDouble>
+KnobDoublePtr
 RotoDrawableItem::getBrushVisiblePortionKnob() const
 {
     return _imp->visiblePortion;
 }
 
-boost::shared_ptr<KnobBool>
+KnobBoolPtr
 RotoDrawableItem::getPressureOpacityKnob() const
 {
     return _imp->pressureOpacity;
 }
 
-boost::shared_ptr<KnobBool>
+KnobBoolPtr
 RotoDrawableItem::getPressureSizeKnob() const
 {
     return _imp->pressureSize;
 }
 
-boost::shared_ptr<KnobBool>
+KnobBoolPtr
 RotoDrawableItem::getPressureHardnessKnob() const
 {
     return _imp->pressureHardness;
 }
 
-boost::shared_ptr<KnobBool>
+KnobBoolPtr
 RotoDrawableItem::getBuildupKnob() const
 {
     return _imp->buildUp;
 }
 
-boost::shared_ptr<KnobInt>
+KnobIntPtr
 RotoDrawableItem::getTimeOffsetKnob() const
 {
     return _imp->timeOffset;
 }
 
-boost::shared_ptr<KnobChoice>
+KnobChoicePtr
 RotoDrawableItem::getTimeOffsetModeKnob() const
 {
     return _imp->timeOffsetMode;
 }
 
-boost::shared_ptr<KnobChoice>
+KnobChoicePtr
 RotoDrawableItem::getBrushSourceTypeKnob() const
 {
     return _imp->sourceColor;
 }
 
-boost::shared_ptr<KnobDouble>
+KnobDoublePtr
 RotoDrawableItem::getBrushCloneTranslateKnob() const
 {
     return _imp->cloneTranslate;
 }
 
-boost::shared_ptr<KnobDouble>
+KnobDoublePtr
 RotoDrawableItem::getCenterKnob() const
 {
     return _imp->center;
 }
 
-boost::shared_ptr<KnobInt>
+KnobIntPtr
 RotoDrawableItem::getLifeTimeFrameKnob() const
 {
     return _imp->lifeTimeFrame;
 }
 
-boost::shared_ptr<KnobDouble>
+KnobDoublePtr
 RotoDrawableItem::getMotionBlurAmountKnob() const
 {
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
@@ -1329,11 +1329,11 @@ RotoDrawableItem::getMotionBlurAmountKnob() const
     return _imp->motionBlur;
 #else
 
-    return boost::shared_ptr<KnobDouble>();
+    return KnobDoublePtr();
 #endif
 }
 
-boost::shared_ptr<KnobDouble>
+KnobDoublePtr
 RotoDrawableItem::getShutterOffsetKnob() const
 {
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
@@ -1341,11 +1341,11 @@ RotoDrawableItem::getShutterOffsetKnob() const
     return _imp->customOffset;
 #else
 
-    return boost::shared_ptr<KnobDouble>();
+    return KnobDoublePtr();
 #endif
 }
 
-boost::shared_ptr<KnobDouble>
+KnobDoublePtr
 RotoDrawableItem::getShutterKnob() const
 {
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
@@ -1353,11 +1353,11 @@ RotoDrawableItem::getShutterKnob() const
     return _imp->shutter;
 #else
 
-    return boost::shared_ptr<KnobDouble>();
+    return KnobDoublePtr();
 #endif
 }
 
-boost::shared_ptr<KnobChoice>
+KnobChoicePtr
 RotoDrawableItem::getShutterTypeKnob() const
 {
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
@@ -1365,7 +1365,7 @@ RotoDrawableItem::getShutterTypeKnob() const
     return _imp->shutterType;
 #else
 
-    return boost::shared_ptr<KnobChoice>();
+    return KnobChoicePtr();
 #endif
 }
 
@@ -1500,7 +1500,7 @@ RotoDrawableItem::resetTransformCenter()
 {
     double time = getContext()->getNode()->getApp()->getTimeLine()->currentFrame();
     RectD bbox =  getBoundingBox(time);
-    boost::shared_ptr<KnobDouble> centerKnob = _imp->center;
+    KnobDoublePtr centerKnob = _imp->center;
 
     centerKnob->beginChanges();
 

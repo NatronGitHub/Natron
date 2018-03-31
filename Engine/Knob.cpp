@@ -186,7 +186,7 @@ KnobI::onAnimationRemoved(ViewSpec view,
     }
 }
 
-boost::shared_ptr<KnobPage>
+KnobPagePtr
 KnobI::getTopLevelPage() const
 {
     KnobIPtr parentKnob = getParentKnob();
@@ -202,7 +202,7 @@ KnobI::getTopLevelPage() const
     }
 
     ////find in which page the knob should be
-    boost::shared_ptr<KnobPage> isTopLevelParentAPage = boost::dynamic_pointer_cast<KnobPage>(parentKnobTmp);
+    KnobPagePtr isTopLevelParentAPage = boost::dynamic_pointer_cast<KnobPage>(parentKnobTmp);
 
     return isTopLevelParentAPage;
 }
@@ -213,7 +213,7 @@ KnobI::getTopLevelPage() const
 typedef std::vector<std::pair<int, KnobIWPtr> > MastersMap;
 
 ///a curve for each dimension
-typedef std::vector<boost::shared_ptr<Curve> > CurvesMap;
+typedef std::vector<CurvePtr> CurvesMap;
 
 struct Expr
 {
@@ -290,7 +290,7 @@ struct KnobHelperPrivate
     bool userKnob; //< true if it was created by the user and should be put into the "User" page
 
     ///Pointer to the ofx param overlay interact
-    boost::shared_ptr<OfxParamOverlayInteract> customInteract;
+    OfxParamOverlayInteractPtr customInteract;
 
     ///Pointer to the knobGui interface if it has any
     KnobGuiIWPtr gui;
@@ -531,13 +531,13 @@ KnobHelper::deleteKnob()
 } // KnobHelper::deleteKnob
 
 void
-KnobHelper::setKnobGuiPointer(const boost::shared_ptr<KnobGuiI>& ptr)
+KnobHelper::setKnobGuiPointer(const KnobGuiIPtr& ptr)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->gui = ptr;
 }
 
-boost::shared_ptr<KnobGuiI>
+KnobGuiIPtr
 KnobHelper::getKnobGuiPointer() const
 {
     return _imp->gui.lock();
@@ -609,7 +609,7 @@ void
 KnobHelper::populate()
 {
     KnobIPtr thisKnob = shared_from_this();
-    boost::shared_ptr<KnobSignalSlotHandler> handler = boost::make_shared<KnobSignalSlotHandler>(thisKnob);
+    KnobSignalSlotHandlerPtr handler = boost::make_shared<KnobSignalSlotHandler>(thisKnob);
 
     setSignalSlotHandler(handler);
 
@@ -705,7 +705,7 @@ Knob<T>::canAnimate() const
 }
 
 void
-KnobHelper::setSignalSlotHandler(const boost::shared_ptr<KnobSignalSlotHandler> & handler)
+KnobHelper::setSignalSlotHandler(const KnobSignalSlotHandlerPtr & handler)
 {
     _signalSlotHandler = handler;
 }
@@ -727,9 +727,9 @@ KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason,
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return;
     }
-    boost::shared_ptr<Curve> curve;
+    CurvePtr curve;
     bool useGuiCurve = _imp->shouldUseGuiCurve();
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -754,7 +754,7 @@ KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason,
     }
 
     if (!useGuiCurve && hasGui) {
-        boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
+        CurvePtr guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
             guiCurve->removeKeyFrameWithTime(*it);
@@ -803,9 +803,9 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
         return;
     }
 
-    boost::shared_ptr<Curve> curve;
+    CurvePtr curve;
     bool useGuiCurve = _imp->shouldUseGuiCurve();
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -829,7 +829,7 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
     }
 
     if (!useGuiCurve && hasGui) {
-        boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
+        CurvePtr guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->removeKeyFrameWithTime(time);
     }
@@ -922,8 +922,8 @@ KnobHelper::moveValueAtTimeInternal(bool useGuiCurve,
                                     double dv,
                                     KeyFrame* newKey)
 {
-    boost::shared_ptr<Curve> curve;
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    CurvePtr curve;
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -937,7 +937,7 @@ KnobHelper::moveValueAtTimeInternal(bool useGuiCurve,
         return false;
     }
     if (!useGuiCurve && hasGui) {
-        boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
+        CurvePtr guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->moveKeyFrameValueAndTime(time, dt, dv, 0);
     }
@@ -1046,8 +1046,8 @@ KnobHelper::transformValueAtTimeInternal(bool useGuiCurve,
                                          const Transform::Matrix3x3& matrix,
                                          KeyFrame* newKey)
 {
-    boost::shared_ptr<Curve> curve;
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    CurvePtr curve;
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -1102,7 +1102,7 @@ KnobHelper::transformValueAtTimeInternal(bool useGuiCurve,
     }
 
     if (!useGuiCurve && hasGui) {
-        boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
+        CurvePtr guiCurve = hasGui->getCurve(view, dimension);
         try {
             guiCurve->setKeyFrameValueAndTime(p.x, p.y, keyindex, NULL);
         } catch (...) {
@@ -1159,8 +1159,8 @@ KnobHelper::cloneCurve(ViewSpec view,
                        const Curve& curve)
 {
     assert( dimension >= 0 && dimension < (int)_imp->curves.size() );
-    boost::shared_ptr<Curve> thisCurve;
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    CurvePtr thisCurve;
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
     bool useGuiCurve = _imp->shouldUseGuiCurve();
     if (!useGuiCurve) {
         thisCurve = _imp->curves[dimension];
@@ -1209,9 +1209,9 @@ KnobHelper::setInterpolationAtTime(CurveChangeReason reason,
         return false;
     }
 
-    boost::shared_ptr<Curve> curve;
+    CurvePtr curve;
     bool useGuiCurve = _imp->shouldUseGuiCurve();
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
@@ -1229,7 +1229,7 @@ KnobHelper::setInterpolationAtTime(CurveChangeReason reason,
     *newKey = curve->setKeyFrameInterpolation(interpolation, keyIndex);
 
     if (!useGuiCurve && hasGui) {
-        boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
+        CurvePtr guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->setKeyFrameInterpolation(interpolation, keyIndex);
     }
@@ -1265,8 +1265,8 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
         return false;
     }
 
-    boost::shared_ptr<Curve> curve;
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    CurvePtr curve;
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
     bool useGuiCurve = _imp->shouldUseGuiCurve();
 
     if (!useGuiCurve) {
@@ -1288,7 +1288,7 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
     curve->setKeyFrameDerivatives(left, right, keyIndex);
 
     if (!useGuiCurve && hasGui) {
-        boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
+        CurvePtr guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
         guiCurve->setKeyFrameDerivatives(left, right, keyIndex);
@@ -1325,9 +1325,9 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
         return false;
     }
 
-    boost::shared_ptr<Curve> curve;
+    CurvePtr curve;
     bool useGuiCurve = _imp->shouldUseGuiCurve();
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
@@ -1350,7 +1350,7 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
     }
 
     if (!useGuiCurve && hasGui) {
-        boost::shared_ptr<Curve> guiCurve = hasGui->getCurve(view, dimension);
+        CurvePtr guiCurve = hasGui->getCurve(view, dimension);
         assert(guiCurve);
         guiCurve->setKeyFrameInterpolation(eKeyframeTypeBroken, keyIndex);
         if (isLeft) {
@@ -1390,8 +1390,8 @@ KnobHelper::removeAnimationWithReason(ViewSpec view,
         return;
     }
 
-    boost::shared_ptr<Curve> curve;
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    CurvePtr curve;
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
     bool useGuiCurve = _imp->shouldUseGuiCurve();
 
     if (!useGuiCurve) {
@@ -1485,10 +1485,10 @@ KnobHelper::cloneGuiCurvesIfNeeded(std::map<int, ValueChangedReasonEnum>& modifi
     for (int i = 0; i < getDimension(); ++i) {
         if (_imp->mustCloneGuiCurves[i]) {
             hasChanged = true;
-            boost::shared_ptr<Curve> curve = _imp->curves[i];
+            CurvePtr curve = _imp->curves[i];
             assert(curve);
-            boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
-            boost::shared_ptr<Curve> guicurve;
+            KnobGuiIPtr hasGui = getKnobGuiPointer();
+            CurvePtr guicurve;
             if (hasGui) {
                 guicurve = hasGui->getCurve(ViewIdx(0), i);
                 assert(guicurve);
@@ -1514,9 +1514,9 @@ KnobHelper::guiCurveCloneInternalCurve(CurveChangeReason curveChangeReason,
     if ( !canAnimate() ) {
         return;
     }
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
     if (hasGui) {
-        boost::shared_ptr<Curve> guicurve = hasGui->getCurve(view, dimension);
+        CurvePtr guicurve = hasGui->getCurve(view, dimension);
         assert(guicurve);
         guicurve->clone( *(_imp->curves[dimension]) );
         if ( _signalSlotHandler && (reason != eValueChangedReasonUserEdited) ) {
@@ -1525,13 +1525,13 @@ KnobHelper::guiCurveCloneInternalCurve(CurveChangeReason curveChangeReason,
     }
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 KnobHelper::getGuiCurve(ViewSpec view,
                         int dimension,
                         bool byPassMaster) const
 {
     if ( !canAnimate() ) {
-        return boost::shared_ptr<Curve>();
+        return CurvePtr();
     }
 
     std::pair<int, KnobIPtr> master = getMaster(dimension);
@@ -1539,11 +1539,11 @@ KnobHelper::getGuiCurve(ViewSpec view,
         return master.second->getGuiCurve(view, master.first);
     }
 
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
     if (hasGui) {
         return hasGui->getCurve(view, dimension);
     } else {
-        return boost::shared_ptr<Curve>();
+        return CurvePtr();
     }
 }
 
@@ -1567,12 +1567,12 @@ KnobHelper::hasGuiCurveChanged(ViewSpec /*view*/,
     return _imp->mustCloneGuiCurves[dimension];
 }
 
-boost::shared_ptr<Curve> KnobHelper::getCurve(ViewSpec view,
+CurvePtr KnobHelper::getCurve(ViewSpec view,
                                               int dimension,
                                               bool byPassMaster) const
 {
     if ( (dimension < 0) || ( dimension >= (int)_imp->curves.size() ) ) {
-        return boost::shared_ptr<Curve>();
+        return CurvePtr();
     }
 
     std::pair<int, KnobIPtr> master = getMaster(dimension);
@@ -1590,13 +1590,13 @@ KnobHelper::isAnimated(int dimension,
     if ( !canAnimate() ) {
         return false;
     }
-    boost::shared_ptr<Curve> curve = getCurve(view, dimension);
+    CurvePtr curve = getCurve(view, dimension);
     assert(curve);
 
     return curve->isAnimated();
 }
 
-const std::vector<boost::shared_ptr<Curve> > &
+const std::vector<CurvePtr> &
 KnobHelper::getCurves() const
 {
     return _imp->curves;
@@ -1684,7 +1684,7 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
     if (_imp->holder) {
         app = _imp->holder->getApp();
     }
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
     bool refreshWidget = !app || hasAnimation() || time == app->getTimeLine()->currentFrame();
 
     /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle
@@ -3205,13 +3205,13 @@ KnobHelper::setHintIsMarkdown(bool b)
 }
 
 void
-KnobHelper::setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc)
+KnobHelper::setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->customInteract = interactDesc;
 }
 
-boost::shared_ptr<OfxParamOverlayInteract> KnobHelper::getCustomInteract() const
+OfxParamOverlayInteractPtr KnobHelper::getCustomInteract() const
 {
     assert( QThread::currentThread() == qApp->thread() );
 
@@ -3221,7 +3221,7 @@ boost::shared_ptr<OfxParamOverlayInteract> KnobHelper::getCustomInteract() const
 void
 KnobHelper::swapOpenGLBuffers()
 {
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (hasGui) {
         hasGui->swapOpenGLBuffers();
@@ -3231,7 +3231,7 @@ KnobHelper::swapOpenGLBuffers()
 void
 KnobHelper::redraw()
 {
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (hasGui) {
         hasGui->redraw();
@@ -3242,7 +3242,7 @@ void
 KnobHelper::getViewportSize(double &width,
                             double &height) const
 {
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (hasGui) {
         hasGui->getViewportSize(width, height);
@@ -3256,7 +3256,7 @@ void
 KnobHelper::getPixelScale(double & xScale,
                           double & yScale) const
 {
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (hasGui) {
         hasGui->getPixelScale(xScale, yScale);
@@ -3270,7 +3270,7 @@ KnobHelper::getPixelScale(double & xScale,
 double
 KnobHelper::getScreenPixelRatio() const
 {
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (hasGui) {
         return hasGui->getScreenPixelRatio();
@@ -3285,7 +3285,7 @@ KnobHelper::getBackgroundColour(double &r,
                                 double &g,
                                 double &b) const
 {
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (hasGui) {
         hasGui->getBackgroundColour(r, g, b);
@@ -3299,7 +3299,7 @@ KnobHelper::getBackgroundColour(double &r,
 int
 KnobHelper::getWidgetFontHeight() const
 {
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (hasGui) {
         return hasGui->getWidgetFontHeight();
@@ -3311,7 +3311,7 @@ KnobHelper::getWidgetFontHeight() const
 int
 KnobHelper::getStringWidthForCurrentFont(const std::string& string) const
 {
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (hasGui) {
         return hasGui->getStringWidthForCurrentFont(string);
@@ -3324,7 +3324,7 @@ void
 KnobHelper::toWidgetCoordinates(double *x,
                                 double *y) const
 {
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (hasGui) {
         hasGui->toWidgetCoordinates(x, y);
@@ -3335,7 +3335,7 @@ void
 KnobHelper::toCanonicalCoordinates(double *x,
                                    double *y) const
 {
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (hasGui) {
         hasGui->toCanonicalCoordinates(x, y);
@@ -3345,7 +3345,7 @@ KnobHelper::toCanonicalCoordinates(double *x,
 RectD
 KnobHelper::getViewportRect() const
 {
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (hasGui) {
         return hasGui->getViewportRect();
@@ -3358,7 +3358,7 @@ void
 KnobHelper::getCursorPosition(double& x,
                               double& y) const
 {
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (hasGui) {
         return hasGui->getCursorPosition(x, y);
@@ -3371,7 +3371,7 @@ KnobHelper::getCursorPosition(double& x,
 void
 KnobHelper::saveOpenGLContext()
 {
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (hasGui) {
         hasGui->saveOpenGLContext();
@@ -3381,7 +3381,7 @@ KnobHelper::saveOpenGLContext()
 void
 KnobHelper::restoreOpenGLContext()
 {
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (hasGui) {
         hasGui->restoreOpenGLContext();
@@ -3404,7 +3404,7 @@ KnobI::shouldDrawOverlayInteract() const
         return false;
     }
     
-    boost::shared_ptr<KnobPage> page = getTopLevelPage();
+    KnobPagePtr page = getTopLevelPage();
     if (!page) {
         return false;
     }
@@ -3438,7 +3438,7 @@ KnobHelper::isMastersPersistenceIgnored() const
 void
 KnobHelper::copyAnimationToClipboard() const
 {
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
 
     if (hasGui) {
         hasGui->copyAnimationToClipboard(-1);
@@ -3561,7 +3561,7 @@ KnobHelper::checkAnimationLevel(ViewSpec view,
                  isAnimated(i, view) &&
                  getExpression(i).empty() &&
                  getHolder() && getHolder()->getApp() ) {
-                boost::shared_ptr<Curve> c = getCurve(view, i);
+                CurvePtr c = getCurve(view, i);
                 double time = getHolder()->getApp()->getTimeLine()->currentFrame();
                 if (c->getKeyFramesCount() > 0) {
                     KeyFrame kf;
@@ -3588,7 +3588,7 @@ KnobHelper::checkAnimationLevel(ViewSpec view,
         }
     }
 
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
     if ( changed && _signalSlotHandler && hasGui && !hasGui->isGuiFrozenForPlayback() ) {
         _signalSlotHandler->s_animationLevelChanged(view, dimension );
     }
@@ -3627,8 +3627,8 @@ KnobHelper::deleteAnimationConditional(double time,
     }
     assert( 0 <= dimension && dimension < getDimension() );
 
-    boost::shared_ptr<Curve> curve;
-    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+    CurvePtr curve;
+    KnobGuiIPtr hasGui = getKnobGuiPointer();
     bool useGuiCurve = _imp->shouldUseGuiCurve();
 
     if (!useGuiCurve) {
@@ -3686,7 +3686,7 @@ KnobHelper::getKeyFrameTime(ViewSpec view,
     if ( !isAnimated(dimension, view) ) {
         return false;
     }
-    boost::shared_ptr<Curve> curve = getCurve(view, dimension); //< getCurve will return the master's curve if any
+    CurvePtr curve = getCurve(view, dimension); //< getCurve will return the master's curve if any
     assert(curve);
     KeyFrame kf;
     bool ret = curve->getKeyFrameWithIndex(index, &kf);
@@ -3707,7 +3707,7 @@ KnobHelper::getLastKeyFrameTime(ViewSpec view,
         return false;
     }
 
-    boost::shared_ptr<Curve> curve = getCurve(view, dimension);  //< getCurve will return the master's curve if any
+    CurvePtr curve = getCurve(view, dimension);  //< getCurve will return the master's curve if any
     assert(curve);
     *time = curve->getMaximumTimeCovered();
 
@@ -3730,7 +3730,7 @@ KnobHelper::getKeyFramesCount(ViewSpec view,
         return 0;
     }
 
-    boost::shared_ptr<Curve> curve = getCurve(view, dimension);  //< getCurve will return the master's curve if any
+    CurvePtr curve = getCurve(view, dimension);  //< getCurve will return the master's curve if any
     assert(curve);
 
     return curve->getKeyFramesCount();   //< getCurve will return the master's curve if any
@@ -3747,7 +3747,7 @@ KnobHelper::getNearestKeyFrameTime(ViewSpec view,
         return false;
     }
 
-    boost::shared_ptr<Curve> curve = getCurve(view, dimension);  //< getCurve will return the master's curve if any
+    CurvePtr curve = getCurve(view, dimension);  //< getCurve will return the master's curve if any
     assert(curve);
     KeyFrame kf;
     bool ret = curve->getNearestKeyFrameWithTime(time, &kf);
@@ -3768,7 +3768,7 @@ KnobHelper::getKeyFrameIndex(ViewSpec view,
         return -1;
     }
 
-    boost::shared_ptr<Curve> curve = getCurve(view, dimension);  //< getCurve will return the master's curve if any
+    CurvePtr curve = getCurve(view, dimension);  //< getCurve will return the master's curve if any
     assert(curve);
 
     return curve->keyFrameIndex(time);
@@ -3906,8 +3906,8 @@ KnobHelper::cloneOneCurve(KnobI* other,
 {
     assert( dimension >= 0 && dimension < getDimension() &&
             otherDimension >= 0 && otherDimension < other->getDimension() );
-    boost::shared_ptr<Curve> thisCurve = getCurve(ViewIdx(0), dimension, true);
-    boost::shared_ptr<Curve> otherCurve = other->getCurve(ViewIdx(0), otherDimension, true);
+    CurvePtr thisCurve = getCurve(ViewIdx(0), dimension, true);
+    CurvePtr otherCurve = other->getCurve(ViewIdx(0), otherDimension, true);
     if (thisCurve && otherCurve) {
         if (!range) {
             thisCurve->clone(*otherCurve);
@@ -3915,8 +3915,8 @@ KnobHelper::cloneOneCurve(KnobI* other,
             thisCurve->clone(*otherCurve, offset, range);
         }
     }
-    boost::shared_ptr<Curve> guiCurve = getGuiCurve(ViewIdx(0), dimension);
-    boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(ViewIdx(0), otherDimension);
+    CurvePtr guiCurve = getGuiCurve(ViewIdx(0), dimension);
+    CurvePtr otherGuiCurve = other->getGuiCurve(ViewIdx(0), otherDimension);
     if (guiCurve) {
         if (otherGuiCurve) {
             if (!range) {
@@ -3968,8 +3968,8 @@ KnobHelper::cloneOneCurveAndCheckIfChanged(KnobI* other,
     assert( dimension >= 0 && dimension < getDimension() &&
             otherDimension >= 0 && otherDimension < other->getDimension() );
     bool cloningCurveChanged = false;
-    boost::shared_ptr<Curve> thisCurve = getCurve(ViewIdx(0), dimension, true);
-    boost::shared_ptr<Curve> otherCurve = other->getCurve(ViewIdx(0), otherDimension, true);
+    CurvePtr thisCurve = getCurve(ViewIdx(0), dimension, true);
+    CurvePtr otherCurve = other->getCurve(ViewIdx(0), otherDimension, true);
     KeyFrameSet oldKeys;
     if (thisCurve && otherCurve) {
         if (updateGui) {
@@ -3978,8 +3978,8 @@ KnobHelper::cloneOneCurveAndCheckIfChanged(KnobI* other,
         cloningCurveChanged |= thisCurve->cloneAndCheckIfChanged(*otherCurve);
     }
 
-    boost::shared_ptr<Curve> guiCurve = getGuiCurve(ViewIdx(0), dimension);
-    boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(ViewIdx(0), otherDimension);
+    CurvePtr guiCurve = getGuiCurve(ViewIdx(0), dimension);
+    CurvePtr otherGuiCurve = other->getGuiCurve(ViewIdx(0), otherDimension);
     if (guiCurve) {
         if (otherGuiCurve) {
             cloningCurveChanged |= guiCurve->cloneAndCheckIfChanged(*otherGuiCurve);
@@ -4299,8 +4299,8 @@ KnobHolder::getUserPages(std::list<KnobPage*>& userPages) const {
 
 KnobIPtr
 KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
-                                    const boost::shared_ptr<KnobPage>& page,
-                                    const boost::shared_ptr<KnobGroup>& group,
+                                    const KnobPagePtr& page,
+                                    const KnobGroupPtr& group,
                                     int indexInParent,
                                     bool makeAlias,
                                     const std::string& newScriptName,
@@ -4333,7 +4333,7 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
 
 
     //Ensure there is a user page
-    boost::shared_ptr<KnobPage> destPage;
+    KnobPagePtr destPage;
     if (page) {
         destPage = page;
     } else {
@@ -4351,10 +4351,10 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
 
     KnobIPtr output;
     if (isBool) {
-        boost::shared_ptr<KnobBool> newKnob = otherHolder->createBoolKnob(newScriptName, newLabel, isUserKnob);
+        KnobBoolPtr newKnob = otherHolder->createBoolKnob(newScriptName, newLabel, isUserKnob);
         output = newKnob;
     } else if (isInt) {
-        boost::shared_ptr<KnobInt> newKnob = otherHolder->createIntKnob(newScriptName, newLabel, getDimension(), isUserKnob);
+        KnobIntPtr newKnob = otherHolder->createIntKnob(newScriptName, newLabel, getDimension(), isUserKnob);
         newKnob->setMinimumsAndMaximums( isInt->getMinimums(), isInt->getMaximums() );
         newKnob->setDisplayMinimumsAndMaximums( isInt->getDisplayMinimums(), isInt->getDisplayMaximums() );
         if ( isInt->isSliderDisabled() ) {
@@ -4362,7 +4362,7 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
         }
         output = newKnob;
     } else if (isDbl) {
-        boost::shared_ptr<KnobDouble> newKnob = otherHolder->createDoubleKnob(newScriptName, newLabel, getDimension(), isUserKnob);
+        KnobDoublePtr newKnob = otherHolder->createDoubleKnob(newScriptName, newLabel, getDimension(), isUserKnob);
         newKnob->setSpatial( isDbl->getIsSpatial() );
         if ( isDbl->isRectangle() ) {
             newKnob->setAsRectangle();
@@ -4377,18 +4377,18 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
         newKnob->setDisplayMinimumsAndMaximums( isDbl->getDisplayMinimums(), isDbl->getDisplayMaximums() );
         output = newKnob;
     } else if (isChoice) {
-        boost::shared_ptr<KnobChoice> newKnob = otherHolder->createChoiceKnob(newScriptName, newLabel, isUserKnob);
+        KnobChoicePtr newKnob = otherHolder->createChoiceKnob(newScriptName, newLabel, isUserKnob);
         if (!makeAlias) {
             newKnob->populateChoices( isChoice->getEntries_mt_safe() );
         }
         output = newKnob;
     } else if (isColor) {
-        boost::shared_ptr<KnobColor> newKnob = otherHolder->createColorKnob(newScriptName, newLabel, getDimension(), isUserKnob);
+        KnobColorPtr newKnob = otherHolder->createColorKnob(newScriptName, newLabel, getDimension(), isUserKnob);
         newKnob->setMinimumsAndMaximums( isColor->getMinimums(), isColor->getMaximums() );
         newKnob->setDisplayMinimumsAndMaximums( isColor->getDisplayMinimums(), isColor->getDisplayMaximums() );
         output = newKnob;
     } else if (isString) {
-        boost::shared_ptr<KnobString> newKnob = otherHolder->createStringKnob(newScriptName, newLabel, isUserKnob);
+        KnobStringPtr newKnob = otherHolder->createStringKnob(newScriptName, newLabel, isUserKnob);
         if ( isString->isLabel() ) {
             newKnob->setAsLabel();
         }
@@ -4403,37 +4403,37 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
         }
         output = newKnob;
     } else if (isFile) {
-        boost::shared_ptr<KnobFile> newKnob = otherHolder->createFileKnob(newScriptName, newLabel, isUserKnob);
+        KnobFilePtr newKnob = otherHolder->createFileKnob(newScriptName, newLabel, isUserKnob);
         if ( isFile->isInputImageFile() ) {
             newKnob->setAsInputImage();
         }
         output = newKnob;
     } else if (isOutputFile) {
-        boost::shared_ptr<KnobOutputFile> newKnob = otherHolder->createOuptutFileKnob(newScriptName, newLabel, isUserKnob);
+        KnobOutputFilePtr newKnob = otherHolder->createOuptutFileKnob(newScriptName, newLabel, isUserKnob);
         if ( isOutputFile->isOutputImageFile() ) {
             newKnob->setAsOutputImageFile();
         }
         output = newKnob;
     } else if (isPath) {
-        boost::shared_ptr<KnobPath> newKnob = otherHolder->createPathKnob(newScriptName, newLabel, isUserKnob);
+        KnobPathPtr newKnob = otherHolder->createPathKnob(newScriptName, newLabel, isUserKnob);
         if ( isPath->isMultiPath() ) {
             newKnob->setMultiPath(true);
         }
         output = newKnob;
     } else if (isGrp) {
-        boost::shared_ptr<KnobGroup> newKnob = otherHolder->createGroupKnob(newScriptName, newLabel, isUserKnob);
+        KnobGroupPtr newKnob = otherHolder->createGroupKnob(newScriptName, newLabel, isUserKnob);
         if ( isGrp->isTab() ) {
             newKnob->setAsTab();
         }
         output = newKnob;
     } else if (isPage) {
-        boost::shared_ptr<KnobPage> newKnob = otherHolder->createPageKnob(newScriptName, newLabel, isUserKnob);
+        KnobPagePtr newKnob = otherHolder->createPageKnob(newScriptName, newLabel, isUserKnob);
         output = newKnob;
     } else if (isBtn) {
-        boost::shared_ptr<KnobButton> newKnob = otherHolder->createButtonKnob(newScriptName, newLabel, isUserKnob);
+        KnobButtonPtr newKnob = otherHolder->createButtonKnob(newScriptName, newLabel, isUserKnob);
         output = newKnob;
     } else if (isParametric) {
-        boost::shared_ptr<KnobParametric> newKnob = otherHolder->createParametricKnob(newScriptName, newLabel, isParametric->getDimension(), isUserKnob);
+        KnobParametricPtr newKnob = otherHolder->createParametricKnob(newScriptName, newLabel, isParametric->getDimension(), isUserKnob);
         output = newKnob;
         newKnob->setMinimumsAndMaximums( isParametric->getMinimums(), isParametric->getMaximums() );
         newKnob->setDisplayMinimumsAndMaximums( isParametric->getDisplayMinimums(), isParametric->getDisplayMaximums() );
@@ -5075,7 +5075,7 @@ KnobHolder::moveKnobOneStepDown(KnobI* knob)
     return moveOk;
 } // KnobHolder::moveKnobOneStepDown
 
-boost::shared_ptr<KnobPage>
+KnobPagePtr
 KnobHolder::getUserPageKnob() const
 {
     {
@@ -5084,20 +5084,20 @@ KnobHolder::getUserPageKnob() const
             if (!(*it)->isUserKnob()) {
                 continue;
             }
-            boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
+            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
             if (isPage) {
                 return isPage;
             }
         }
     }
 
-    return boost::shared_ptr<KnobPage>();
+    return KnobPagePtr();
 }
 
-boost::shared_ptr<KnobPage>
+KnobPagePtr
 KnobHolder::getOrCreateUserPageKnob()
 {
-    boost::shared_ptr<KnobPage> ret = getUserPageKnob();
+    KnobPagePtr ret = getUserPageKnob();
 
     if (ret) {
         return ret;
@@ -5115,7 +5115,7 @@ KnobHolder::getOrCreateUserPageKnob()
     return ret;
 }
 
-boost::shared_ptr<KnobInt>
+KnobIntPtr
 KnobHolder::createIntKnob(const std::string& name,
                           const std::string& label,
                           int dimension,
@@ -5126,10 +5126,10 @@ KnobHolder::createIntKnob(const std::string& name,
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobInt>(existingKnob);
     }
-    boost::shared_ptr<KnobInt> ret = AppManager::createKnob<KnobInt>(this, label, dimension, false);
+    KnobIntPtr ret = AppManager::createKnob<KnobInt>(this, label, dimension, false);
     ret->setName(name);
     ret->setAsUserKnob(userKnob);
-    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
        Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect && userKnob) {
@@ -5139,7 +5139,7 @@ KnobHolder::createIntKnob(const std::string& name,
     return ret;
 }
 
-boost::shared_ptr<KnobDouble>
+KnobDoublePtr
 KnobHolder::createDoubleKnob(const std::string& name,
                              const std::string& label,
                              int dimension,
@@ -5150,10 +5150,10 @@ KnobHolder::createDoubleKnob(const std::string& name,
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobDouble>(existingKnob);
     }
-    boost::shared_ptr<KnobDouble> ret = AppManager::createKnob<KnobDouble>(this, label, dimension, false);
+    KnobDoublePtr ret = AppManager::createKnob<KnobDouble>(this, label, dimension, false);
     ret->setName(name);
     ret->setAsUserKnob(userKnob);
-    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
        Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect && userKnob) {
@@ -5163,7 +5163,7 @@ KnobHolder::createDoubleKnob(const std::string& name,
     return ret;
 }
 
-boost::shared_ptr<KnobColor>
+KnobColorPtr
 KnobHolder::createColorKnob(const std::string& name,
                             const std::string& label,
                             int dimension,
@@ -5174,10 +5174,10 @@ KnobHolder::createColorKnob(const std::string& name,
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobColor>(existingKnob);
     }
-    boost::shared_ptr<KnobColor> ret = AppManager::createKnob<KnobColor>(this, label, dimension, false);
+    KnobColorPtr ret = AppManager::createKnob<KnobColor>(this, label, dimension, false);
     ret->setName(name);
     ret->setAsUserKnob(userKnob);
-    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
        Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect && userKnob) {
@@ -5187,7 +5187,7 @@ KnobHolder::createColorKnob(const std::string& name,
     return ret;
 }
 
-boost::shared_ptr<KnobBool>
+KnobBoolPtr
 KnobHolder::createBoolKnob(const std::string& name,
                            const std::string& label,
                            bool userKnob)
@@ -5197,10 +5197,10 @@ KnobHolder::createBoolKnob(const std::string& name,
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobBool>(existingKnob);
     }
-    boost::shared_ptr<KnobBool> ret = AppManager::createKnob<KnobBool>(this, label, 1, false);
+    KnobBoolPtr ret = AppManager::createKnob<KnobBool>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob(userKnob);
-    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
        Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect && userKnob) {
@@ -5210,7 +5210,7 @@ KnobHolder::createBoolKnob(const std::string& name,
     return ret;
 }
 
-boost::shared_ptr<KnobChoice>
+KnobChoicePtr
 KnobHolder::createChoiceKnob(const std::string& name,
                              const std::string& label,
                              bool userKnob)
@@ -5220,10 +5220,10 @@ KnobHolder::createChoiceKnob(const std::string& name,
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobChoice>(existingKnob);
     }
-    boost::shared_ptr<KnobChoice> ret = AppManager::createKnob<KnobChoice>(this, label, 1, false);
+    KnobChoicePtr ret = AppManager::createKnob<KnobChoice>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob(userKnob);
-    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
        Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect && userKnob) {
@@ -5233,7 +5233,7 @@ KnobHolder::createChoiceKnob(const std::string& name,
     return ret;
 }
 
-boost::shared_ptr<KnobButton>
+KnobButtonPtr
 KnobHolder::createButtonKnob(const std::string& name,
                              const std::string& label,
                              bool userKnob)
@@ -5243,10 +5243,10 @@ KnobHolder::createButtonKnob(const std::string& name,
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobButton>(existingKnob);
     }
-    boost::shared_ptr<KnobButton> ret = AppManager::createKnob<KnobButton>(this, label, 1, false);
+    KnobButtonPtr ret = AppManager::createKnob<KnobButton>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob(userKnob);
-    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
        Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect && userKnob) {
@@ -5256,7 +5256,7 @@ KnobHolder::createButtonKnob(const std::string& name,
     return ret;
 }
 
-boost::shared_ptr<KnobSeparator>
+KnobSeparatorPtr
 KnobHolder::createSeparatorKnob(const std::string& name,
                                 const std::string& label,
                                 bool userKnob)
@@ -5266,10 +5266,10 @@ KnobHolder::createSeparatorKnob(const std::string& name,
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobSeparator>(existingKnob);
     }
-    boost::shared_ptr<KnobSeparator> ret = AppManager::createKnob<KnobSeparator>(this, label, 1, false);
+    KnobSeparatorPtr ret = AppManager::createKnob<KnobSeparator>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob(userKnob);
-    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
        Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect && userKnob) {
@@ -5280,7 +5280,7 @@ KnobHolder::createSeparatorKnob(const std::string& name,
 }
 
 //Type corresponds to the Type enum defined in StringParamBase in Parameter.h
-boost::shared_ptr<KnobString>
+KnobStringPtr
 KnobHolder::createStringKnob(const std::string& name,
                              const std::string& label,
                              bool userKnob)
@@ -5290,10 +5290,10 @@ KnobHolder::createStringKnob(const std::string& name,
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobString>(existingKnob);
     }
-    boost::shared_ptr<KnobString> ret = AppManager::createKnob<KnobString>(this, label, 1, false);
+    KnobStringPtr ret = AppManager::createKnob<KnobString>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob(userKnob);
-    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
        Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect && userKnob) {
@@ -5303,7 +5303,7 @@ KnobHolder::createStringKnob(const std::string& name,
     return ret;
 }
 
-boost::shared_ptr<KnobFile>
+KnobFilePtr
 KnobHolder::createFileKnob(const std::string& name,
                            const std::string& label,
                            bool userKnob)
@@ -5313,10 +5313,10 @@ KnobHolder::createFileKnob(const std::string& name,
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobFile>(existingKnob);
     }
-    boost::shared_ptr<KnobFile> ret = AppManager::createKnob<KnobFile>(this, label, 1, false);
+    KnobFilePtr ret = AppManager::createKnob<KnobFile>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob(userKnob);
-    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
        Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect && userKnob) {
@@ -5326,7 +5326,7 @@ KnobHolder::createFileKnob(const std::string& name,
     return ret;
 }
 
-boost::shared_ptr<KnobOutputFile>
+KnobOutputFilePtr
 KnobHolder::createOuptutFileKnob(const std::string& name,
                                  const std::string& label,
                                  bool userKnob)
@@ -5336,10 +5336,10 @@ KnobHolder::createOuptutFileKnob(const std::string& name,
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobOutputFile>(existingKnob);
     }
-    boost::shared_ptr<KnobOutputFile> ret = AppManager::createKnob<KnobOutputFile>(this, label, 1, false);
+    KnobOutputFilePtr ret = AppManager::createKnob<KnobOutputFile>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob(userKnob);
-    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
        Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect && userKnob) {
@@ -5349,7 +5349,7 @@ KnobHolder::createOuptutFileKnob(const std::string& name,
     return ret;
 }
 
-boost::shared_ptr<KnobPath>
+KnobPathPtr
 KnobHolder::createPathKnob(const std::string& name,
                            const std::string& label,
                            bool userKnob)
@@ -5359,10 +5359,10 @@ KnobHolder::createPathKnob(const std::string& name,
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobPath>(existingKnob);
     }
-    boost::shared_ptr<KnobPath> ret = AppManager::createKnob<KnobPath>(this, label, 1, false);
+    KnobPathPtr ret = AppManager::createKnob<KnobPath>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob(userKnob);
-    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
        Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect && userKnob) {
@@ -5372,7 +5372,7 @@ KnobHolder::createPathKnob(const std::string& name,
     return ret;
 }
 
-boost::shared_ptr<KnobGroup>
+KnobGroupPtr
 KnobHolder::createGroupKnob(const std::string& name,
                             const std::string& label,
                             bool userKnob)
@@ -5382,10 +5382,10 @@ KnobHolder::createGroupKnob(const std::string& name,
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobGroup>(existingKnob);
     }
-    boost::shared_ptr<KnobGroup> ret = AppManager::createKnob<KnobGroup>(this, label, 1, false);
+    KnobGroupPtr ret = AppManager::createKnob<KnobGroup>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob(userKnob);
-    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
        Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect && userKnob) {
@@ -5395,7 +5395,7 @@ KnobHolder::createGroupKnob(const std::string& name,
     return ret;
 }
 
-boost::shared_ptr<KnobPage>
+KnobPagePtr
 KnobHolder::createPageKnob(const std::string& name,
                            const std::string& label,
                            bool userKnob)
@@ -5405,10 +5405,10 @@ KnobHolder::createPageKnob(const std::string& name,
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobPage>(existingKnob);
     }
-    boost::shared_ptr<KnobPage> ret = AppManager::createKnob<KnobPage>(this, label, 1, false);
+    KnobPagePtr ret = AppManager::createKnob<KnobPage>(this, label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob(userKnob);
-    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
        Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect && userKnob) {
@@ -5418,7 +5418,7 @@ KnobHolder::createPageKnob(const std::string& name,
     return ret;
 }
 
-boost::shared_ptr<KnobParametric>
+KnobParametricPtr
 KnobHolder::createParametricKnob(const std::string& name,
                                  const std::string& label,
                                  int nbCurves,
@@ -5429,10 +5429,10 @@ KnobHolder::createParametricKnob(const std::string& name,
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobParametric>(existingKnob);
     }
-    boost::shared_ptr<KnobParametric> ret = AppManager::createKnob<KnobParametric>(this, label, nbCurves, false);
+    KnobParametricPtr ret = AppManager::createKnob<KnobParametric>(this, label, nbCurves, false);
     ret->setName(name);
     ret->setAsUserKnob(userKnob);
-    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
        Q_UNUSED(pageknob);*/
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
     if (isEffect && userKnob) {
@@ -5553,7 +5553,7 @@ KnobHolder::endChanges(bool discardRendering)
             dimension = *it->dimensionChanged.begin();
         }
         if (!guiFrozen) {
-            boost::shared_ptr<KnobSignalSlotHandler> handler = it->knob->getSignalSlotHandler();
+            KnobSignalSlotHandlerPtr handler = it->knob->getSignalSlotHandler();
             if (handler) {
                 handler->s_valueChanged(it->view, dimension, it->reason);
             }

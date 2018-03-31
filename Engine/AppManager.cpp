@@ -658,7 +658,7 @@ AppManager::quitNow(const AppInstancePtr& instance)
             (*it)->quitAnyProcessing_blocking(false);
         }
     }
-    boost::shared_ptr<QuitInstanceArgs> args = boost::make_shared<QuitInstanceArgs>();
+    QuitInstanceArgsPtr args = boost::make_shared<QuitInstanceArgs>();
     args->instance = instance;
     afterQuitProcessingCallback(args);
 }
@@ -666,7 +666,7 @@ AppManager::quitNow(const AppInstancePtr& instance)
 void
 AppManager::quit(const AppInstancePtr& instance)
 {
-    boost::shared_ptr<QuitInstanceArgs> args = boost::make_shared<QuitInstanceArgs>();
+    QuitInstanceArgsPtr args = boost::make_shared<QuitInstanceArgs>();
 
     args->instance = instance;
     if ( !instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {
@@ -2395,7 +2395,7 @@ AppManager::createOFXEffect(NodePtr node,
 }
 
 void
-AppManager::removeFromNodeCache(const boost::shared_ptr<Image> & image)
+AppManager::removeFromNodeCache(const ImagePtr & image)
 {
     _imp->_nodeCache->removeEntry(image);
 }
@@ -2494,30 +2494,30 @@ AppManager::setNumberOfThreads(int threadsNb)
 
 bool
 AppManager::getImage(const ImageKey & key,
-                     std::list<boost::shared_ptr<Image> >* returnValue) const
+                     std::list<ImagePtr>* returnValue) const
 {
     return _imp->_nodeCache->get(key, returnValue);
 }
 
 bool
 AppManager::getImageOrCreate(const ImageKey & key,
-                             const boost::shared_ptr<ImageParams>& params,
-                             boost::shared_ptr<Image>* returnValue) const
+                             const ImageParamsPtr& params,
+                             ImagePtr* returnValue) const
 {
     return _imp->_nodeCache->getOrCreate(key, params, 0, returnValue);
 }
 
 bool
 AppManager::getImage_diskCache(const ImageKey & key,
-                               std::list<boost::shared_ptr<Image> >* returnValue) const
+                               std::list<ImagePtr>* returnValue) const
 {
     return _imp->_diskCache->get(key, returnValue);
 }
 
 bool
 AppManager::getImageOrCreate_diskCache(const ImageKey & key,
-                                       const boost::shared_ptr<ImageParams>& params,
-                                       boost::shared_ptr<Image>* returnValue) const
+                                       const ImageParamsPtr& params,
+                                       ImagePtr* returnValue) const
 {
     return _imp->_diskCache->getOrCreate(key, params, 0, returnValue);
 }
@@ -2536,7 +2536,7 @@ AppManager::getTexture(const FrameKey & key,
 
 bool
 AppManager::getTextureOrCreate(const FrameKey & key,
-                               const boost::shared_ptr<FrameParams>& params,
+                               const FrameParamsPtr& params,
                                FrameEntryLocker* locker,
                                FrameEntryPtr* returnValue) const
 {
@@ -2561,7 +2561,7 @@ AppManager::getCachesTotalDiskSize() const
     return  _imp->_diskCache->getDiskCacheSize() + _imp->_viewerCache->getDiskCacheSize();
 }
 
-boost::shared_ptr<CacheSignalEmitter>
+CacheSignalEmitterPtr
 AppManager::getOrActivateViewerCacheSignalEmitter() const
 {
     return _imp->_viewerCache->activateSignalEmitter();
@@ -2600,7 +2600,7 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<RenderStatsMap>("RenderStatsMap");
     qRegisterMetaType<ViewIdx>("ViewIdx");
     qRegisterMetaType<ViewSpec>("ViewSpec");
-    qRegisterMetaType<boost::shared_ptr<Node> >("boost::shared_ptr<Node>");
+    qRegisterMetaType<NodePtr>("NodePtr");
     qRegisterMetaType<std::list<double> >("std::list<double>");
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
@@ -3462,7 +3462,7 @@ AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
     QMutexLocker k(&_imp->_appInstancesMutex);
 
     for (AppInstanceVec::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
-        boost::shared_ptr<Project> proj = (*it)->getProject();
+        ProjectPtr proj = (*it)->getProject();
         if (proj) {
             QString path = proj->getProjectPath();
             QString name = proj->getProjectFilename();

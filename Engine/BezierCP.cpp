@@ -47,7 +47,7 @@ NATRON_NAMESPACE_ENTER
 ////////////////////////////////////ControlPoint////////////////////////////////////
 
 BezierCP::BezierCP()
-    : _imp( new BezierCPPrivate( boost::shared_ptr<Bezier>() ) )
+    : _imp( new BezierCPPrivate( BezierPtr() ) )
 {
 }
 
@@ -57,7 +57,7 @@ BezierCP::BezierCP(const BezierCP & other)
     clone(other);
 }
 
-BezierCP::BezierCP(const boost::shared_ptr<Bezier>& curve)
+BezierCP::BezierCP(const BezierPtr& curve)
     : _imp( new BezierCPPrivate(curve) )
 {
 }
@@ -503,17 +503,17 @@ BezierCP::getKeyframesCount(bool useGuiCurves) const
 int
 BezierCP::getControlPointsCount() const
 {
-    boost::shared_ptr<Bezier> b = _imp->holder.lock();
+    BezierPtr b = _imp->holder.lock();
 
     assert(b);
 
     return b->getControlPointsCount();
 }
 
-boost::shared_ptr<Bezier>
+BezierPtr
 BezierCP::getBezier() const
 {
-    boost::shared_ptr<Bezier> b = _imp->holder.lock();
+    BezierPtr b = _imp->holder.lock();
 
     assert(b);
 
@@ -599,7 +599,7 @@ smoothTangent(bool useGuiCurves,
               const std::pair<double, double>& pixelScale)
 {
     if ( (x == *tx) && (y == *ty) ) {
-        const std::list<boost::shared_ptr<BezierCP> > & cps = ( p->isFeatherPoint() ?
+        const std::list<BezierCPPtr> & cps = ( p->isFeatherPoint() ?
                                                                   p->getBezier()->getFeatherPoints() :
                                                                   p->getBezier()->getControlPoints() );
 
@@ -607,18 +607,18 @@ smoothTangent(bool useGuiCurves,
             return;
         }
 
-        std::list<boost::shared_ptr<BezierCP> >::const_iterator prev = cps.end();
+        std::list<BezierCPPtr>::const_iterator prev = cps.end();
         if ( prev != cps.begin() ) {
             --prev;
         }
-        std::list<boost::shared_ptr<BezierCP> >::const_iterator next = cps.begin();
+        std::list<BezierCPPtr>::const_iterator next = cps.begin();
         if ( next != cps.end() ) {
             ++next;
         }
 
         int index = 0;
         int cpCount = (int)cps.size();
-        for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin();
+        for (std::list<BezierCPPtr>::const_iterator it = cps.begin();
              it != cps.end();
              ++it) {
             if ( prev == cps.end() ) {
@@ -793,37 +793,37 @@ BezierCP::smoothPoint(bool useGuiCurves,
     return keyframeSet;
 } // BezierCP::smoothPoint
 
-boost::shared_ptr<Curve>
+CurvePtr
 BezierCP::getXCurve() const
 {
     return _imp->curveX;
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 BezierCP::getYCurve() const
 {
     return _imp->curveY;
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 BezierCP::getLeftXCurve() const
 {
     return _imp->curveLeftBezierX;
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 BezierCP::getLeftYCurve() const
 {
     return _imp->curveLeftBezierY;
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 BezierCP::getRightXCurve() const
 {
     return _imp->curveRightBezierX;
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 BezierCP::getRightYCurve() const
 {
     return _imp->curveRightBezierY;

@@ -356,9 +356,9 @@ public:
         computingPreview = v;
     }
 
-    void restoreUserKnobsRecursive(const std::list<boost::shared_ptr<KnobSerializationBase> >& knobs,
-                                   const boost::shared_ptr<KnobGroup>& group,
-                                   const boost::shared_ptr<KnobPage>& page);
+    void restoreUserKnobsRecursive(const std::list<KnobSerializationBasePtr>& knobs,
+                                   const KnobGroupPtr& group,
+                                   const KnobPagePtr& page);
 
     void restoreKnobLinksRecursive(const GroupKnobSerialization* group,
                                    const NodesList & allNodes,
@@ -379,7 +379,7 @@ public:
 
     void runInputChangedCallback(int index, const std::string& script);
 
-    void createChannelSelector(int inputNb, const std::string & inputName, bool isOutput, const boost::shared_ptr<KnobPage>& page, KnobIPtr* lastKnobBeforeAdvancedOption);
+    void createChannelSelector(int inputNb, const std::string & inputName, bool isOutput, const KnobPagePtr& page, KnobIPtr* lastKnobBeforeAdvancedOption);
 
     void onLayerChanged(int inputNb, const ChannelSelector& selector);
 
@@ -482,11 +482,11 @@ public:
     KnobBoolWPtr processAllLayersKnob;
     std::map<int, ChannelSelector> channelsSelectors;
     std::map<int, MaskSelector> maskSelectors;
-    boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
-    boost::shared_ptr<TrackerContext> trackContext;
+    RotoContextPtr rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
+    TrackerContextPtr trackContext;
     mutable QMutex imagesBeingRenderedMutex;
     QWaitCondition imagesBeingRenderedCond;
-    std::list<boost::shared_ptr<Image> > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
+    std::list<ImagePtr> imagesBeingRendered; ///< a list of all the images being rendered simultaneously
     std::list<ImageBitDepthEnum> supportedDepths;
 
     ///True when several effect instances are represented under the same node.
@@ -518,7 +518,7 @@ public:
     int persistentMessageType;
     mutable QMutex persistentMessageMutex;
     NodeGuiIWPtr guiPointer;
-    std::list<boost::shared_ptr<HostOverlayKnobs> > nativeOverlays;
+    std::list<HostOverlayKnobsPtr> nativeOverlays;
     bool nodeCreated;
     bool wasCreatedSilently;
     mutable QMutex createdComponentsMutex;
@@ -544,7 +544,7 @@ public:
     bool useAlpha0ToConvertFromRGBToRGBA;
     mutable QMutex isBeingDestroyedMutex;
     bool isBeingDestroyed;
-    boost::shared_ptr<NodeRenderWatcher> renderWatcher;
+    NodeRenderWatcherPtr renderWatcher;
     /*
        Used to block render emitions while modifying nodes links
        MT-safe: only accessed/used on main thread
@@ -666,13 +666,13 @@ Node::switchInternalPlugin(Plugin* plugin)
 }
 
 void
-Node::setPrecompNode(const boost::shared_ptr<PrecompNode>& precomp)
+Node::setPrecompNode(const PrecompNodePtr& precomp)
 {
     //QMutexLocker k(&_imp->pluginsPropMutex);
     _imp->precomp = precomp;
 }
 
-boost::shared_ptr<PrecompNode>
+PrecompNodePtr
 Node::isPartOfPrecomp() const
 {
     //QMutexLocker k(&_imp->pluginsPropMutex);
@@ -795,7 +795,7 @@ Node::load(const CreateNodeArgs& args)
     }
 
 
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
     
     bool isSilentCreation = args.getProperty<bool>(kCreateNodeArgsPropSilent);
 #ifndef NATRON_ENABLE_IO_META_NODES
@@ -872,7 +872,7 @@ Node::load(const CreateNodeArgs& args)
         }
         if ( !images.empty() ) {
             hasUsedFileDialog = true;
-            boost::shared_ptr<KnobSerialization> defaultFile = createDefaultValueForParam(kOfxImageEffectFileParamName, images);
+            KnobSerializationPtr defaultFile = createDefaultValueForParam(kOfxImageEffectFileParamName, images);
             CreateNodeArgs::DefaultValuesList list;
             list.push_back(defaultFile);
 
@@ -1036,7 +1036,7 @@ Node::getCurrentOpenGLRenderSupport() const
     }
 
     // Ok still turned on, check the value of the opengl support knob in the Node page
-    boost::shared_ptr<KnobChoice> openglSupportKnob = _imp->openglRenderingEnabledKnob.lock();
+    KnobChoicePtr openglSupportKnob = _imp->openglRenderingEnabledKnob.lock();
     if (openglSupportKnob) {
         int index = openglSupportKnob->getValue();
         if (index == 1) {
@@ -1182,7 +1182,7 @@ Node::getPaintStrokeRoD(double time,
     if (duringPaintStroke) {
         *bbox = getPaintStrokeRoD_duringPainting();
     } else {
-        boost::shared_ptr<RotoDrawableItem> stroke = _imp->paintStroke.lock();
+        RotoDrawableItemPtr stroke = _imp->paintStroke.lock();
         if (!stroke) {
             throw std::logic_error("");
         }
@@ -1233,7 +1233,7 @@ Node::getLastPaintStrokePoints(double time,
             }
         }
     } else {
-        boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
+        RotoDrawableItemPtr item = _imp->paintStroke.lock();
         RotoStrokeItem* stroke = dynamic_cast<RotoStrokeItem*>( item.get() );
         assert(stroke);
         if (!stroke) {
@@ -1244,7 +1244,7 @@ Node::getLastPaintStrokePoints(double time,
     }
 }
 
-boost::shared_ptr<Image>
+ImagePtr
 Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
                                  double par,
                                  const ImagePlaneDesc& components,
@@ -1252,8 +1252,8 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
 {
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
     std::list<RectI> restToRender;
-    boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
-    boost::shared_ptr<RotoStrokeItem> stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+    RotoDrawableItemPtr item = _imp->paintStroke.lock();
+    RotoStrokeItemPtr stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
 
     assert(stroke);
     if (!stroke) {
@@ -1265,7 +1265,7 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
     RectD lastStrokeBbox;
     std::list<std::pair<Point, double> > lastStrokePoints;
     double distNextIn = 0.;
-    boost::shared_ptr<Image> strokeImage;
+    ImagePtr strokeImage;
     getApp()->getRenderStrokeData(&lastStrokeBbox, &lastStrokePoints, &distNextIn, &strokeImage);
     double distToNextOut = stroke->renderSingleStroke(lastStrokeBbox, lastStrokePoints, mipMapLevel, par, components, depth, distNextIn, &strokeImage);
 
@@ -1293,20 +1293,20 @@ Node::setProcessChannelsValues(bool doR,
                                bool doB,
                                bool doA)
 {
-    boost::shared_ptr<KnobBool> eR = _imp->enabledChan[0].lock();
+    KnobBoolPtr eR = _imp->enabledChan[0].lock();
 
     if (eR) {
         eR->setValue(doR);
     }
-    boost::shared_ptr<KnobBool> eG = _imp->enabledChan[1].lock();
+    KnobBoolPtr eG = _imp->enabledChan[1].lock();
     if (eG) {
         eG->setValue(doG);
     }
-    boost::shared_ptr<KnobBool> eB = _imp->enabledChan[2].lock();
+    KnobBoolPtr eB = _imp->enabledChan[2].lock();
     if (eB) {
         eB->setValue(doB);
     }
-    boost::shared_ptr<KnobBool> eA = _imp->enabledChan[3].lock();
+    KnobBoolPtr eA = _imp->enabledChan[3].lock();
     if (eA) {
         eA->setValue(doA);
     }
@@ -1528,7 +1528,7 @@ Node::computeHashInternal()
         _imp->hash.append(_imp->knobsAge);
 
         ///append all inputs hash
-        boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
+        RotoDrawableItemPtr attachedStroke = _imp->paintStroke.lock();
         NodePtr attachedStrokeContextNode;
         if (attachedStroke) {
             attachedStrokeContextNode = attachedStroke->getContext()->getNode();
@@ -1567,7 +1567,7 @@ Node::computeHashInternal()
         // have their own age. Instead each action in the Rotocontext is followed by a incrementNodesAge() call so that each
         // node respecitively have their hash correctly set.
 
-        //        boost::shared_ptr<RotoContext> roto = attachedStroke ? attachedStroke->getContext() : getRotoContext();
+        //        RotoContextPtr roto = attachedStroke ? attachedStroke->getContext() : getRotoContext();
         //        if (roto) {
         //            U64 rotoAge = roto->getAge();
         //            _imp->hash.append(rotoAge);
@@ -1625,7 +1625,7 @@ Node::computeHashRecursive(std::list<Node*>& marked)
         assert(*it);
 
         //Since the rotopaint node is connected to the internal nodes of the tree, don't change their hash
-        boost::shared_ptr<RotoDrawableItem> attachedStroke = (*it)->getAttachedRotoItem();
+        RotoDrawableItemPtr attachedStroke = (*it)->getAttachedRotoItem();
         if ( isRotoPaint && attachedStroke && (attachedStroke->getContext()->getNode().get() == this) ) {
             continue;
         }
@@ -1651,7 +1651,7 @@ Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
     if (!app) {
         return;
     }
-    boost::shared_ptr<Project> proj = app->getProject();
+    ProjectPtr proj = app->getProject();
 
     if ( proj->isProjectClosing() || proj->isLoadingProject() ) {
         return;
@@ -1673,7 +1673,7 @@ Node::removeAllImagesFromCache(bool blocking)
     if (!app) {
         return;
     }
-    boost::shared_ptr<Project> proj = app->getProject();
+    ProjectPtr proj = app->getProject();
 
     if ( proj->isProjectClosing() || proj->isLoadingProject() ) {
         return;
@@ -1800,7 +1800,7 @@ Node::restoreSublabel()
 {
     //Check if natron custom tags are present and insert them if needed
     /// If the node has a sublabel, restore it in the label
-    boost::shared_ptr<KnobString> labelKnob = _imp->nodeLabelKnob.lock();
+    KnobStringPtr labelKnob = _imp->nodeLabelKnob.lock();
 
     if (labelKnob) {
         QString labeltext = QString::fromUtf8( labelKnob->getValue().c_str() );
@@ -1874,7 +1874,7 @@ Node::loadKnob(const KnobIPtr & knob,
             std::string stringParamName = isChoice->getName() + "Choice";
             for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
                 if ( (*it)->getName() == stringParamName ) {
-                    boost::shared_ptr<KnobString> stringKnob = boost::dynamic_pointer_cast<KnobString>((*it)->getKnob());
+                    KnobStringPtr stringKnob = boost::dynamic_pointer_cast<KnobString>((*it)->getKnob());
                     if (stringKnob) {
                         std::string serializedString = stringKnob->getValue();
                         if ((*it)->_version < KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION) {
@@ -1983,9 +1983,9 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
                                                 const NodesList & allNodes,
                                                 const std::map<std::string, std::string>& oldNewScriptNamesMapping)
 {
-    const std::list<boost::shared_ptr<KnobSerializationBase> >&  children = group->getChildren();
+    const std::list<KnobSerializationBasePtr>&  children = group->getChildren();
 
-    for (std::list<boost::shared_ptr<KnobSerializationBase> >::const_iterator it = children.begin(); it != children.end(); ++it) {
+    for (std::list<KnobSerializationBasePtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
         GroupKnobSerialization* isGrp = dynamic_cast<GroupKnobSerialization*>( it->get() );
         KnobSerialization* isRegular = dynamic_cast<KnobSerialization*>( it->get() );
         assert(isGrp || isRegular);
@@ -2035,8 +2035,8 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
         (*it)->restoreExpressions(knob, oldNewScriptNamesMapping);
     }
 
-    const std::list<boost::shared_ptr<GroupKnobSerialization> >& userKnobs = serialization.getUserPages();
-    for (std::list<boost::shared_ptr<GroupKnobSerialization > >::const_iterator it = userKnobs.begin(); it != userKnobs.end(); ++it) {
+    const std::list<GroupKnobSerializationPtr>& userKnobs = serialization.getUserPages();
+    for (std::list<GroupKnobSerializationPtr>::const_iterator it = userKnobs.begin(); it != userKnobs.end(); ++it) {
         _imp->restoreKnobLinksRecursive( (*it).get(), allNodes, oldNewScriptNamesMapping );
     }
 }
@@ -2082,11 +2082,11 @@ Node::getPagesOrder() const
 void
 Node::restoreUserKnobs(const NodeSerialization& serialization)
 {
-    const std::list<boost::shared_ptr<GroupKnobSerialization> >& userPages = serialization.getUserPages();
+    const std::list<GroupKnobSerializationPtr>& userPages = serialization.getUserPages();
 
-    for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
+    for (std::list<GroupKnobSerializationPtr>::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
         KnobIPtr found = getKnobByName( (*it)->getName() );
-        boost::shared_ptr<KnobPage> page;
+        KnobPagePtr page;
         if (!found) {
             page = AppManager::createKnob<KnobPage>(_imp->effect.get(), (*it)->getLabel(), 1, false);
             page->setAsUserKnob(true);
@@ -2095,18 +2095,18 @@ Node::restoreUserKnobs(const NodeSerialization& serialization)
             page = boost::dynamic_pointer_cast<KnobPage>(found);
         }
         if (page) {
-            _imp->restoreUserKnobsRecursive( (*it)->getChildren(), boost::shared_ptr<KnobGroup>(), page );
+            _imp->restoreUserKnobsRecursive( (*it)->getChildren(), KnobGroupPtr(), page );
         }
     }
     setPagesOrder( serialization.getPagesOrdered() );
 }
 
 void
-Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_ptr<KnobSerializationBase> >& knobs,
-                                                const boost::shared_ptr<KnobGroup>& group,
-                                                const boost::shared_ptr<KnobPage>& page)
+Node::Implementation::restoreUserKnobsRecursive(const std::list<KnobSerializationBasePtr>& knobs,
+                                                const KnobGroupPtr& group,
+                                                const KnobPagePtr& page)
 {
-    for (std::list<boost::shared_ptr<KnobSerializationBase> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    for (std::list<KnobSerializationBasePtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         GroupKnobSerialization* isGrp = dynamic_cast<GroupKnobSerialization*>( it->get() );
         KnobSerialization* isRegular = dynamic_cast<KnobSerialization*>( it->get() );
         assert(isGrp || isRegular);
@@ -2114,7 +2114,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
         KnobIPtr found = _publicInterface->getKnobByName( (*it)->getName() );
 
         if (isGrp) {
-            boost::shared_ptr<KnobGroup> grp;
+            KnobGroupPtr grp;
             if (!found) {
                 grp = AppManager::createKnob<KnobGroup>(effect.get(), isGrp->getLabel(), 1, false);
             } else {
@@ -2154,7 +2154,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             assert(isInt || isDbl || isBool || isChoice || isColor || isStr || isFile || isOutFile || isPath || isBtn || isSep || isParametric);
 
             if (isInt) {
-                boost::shared_ptr<KnobInt> k;
+                KnobIntPtr k;
 
                 if (!found) {
                     k = AppManager::createKnob<KnobInt>(effect.get(), isRegular->getLabel(),
@@ -2180,7 +2180,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 knob = k;
             } else if (isDbl) {
-                boost::shared_ptr<KnobDouble> k;
+                KnobDoublePtr k;
                 if (!found) {
                     k = AppManager::createKnob<KnobDouble>(effect.get(), isRegular->getLabel(),
                                                            sKnob->getDimension(), false);
@@ -2212,7 +2212,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     }
                 }
             } else if (isBool) {
-                boost::shared_ptr<KnobBool> k;
+                KnobBoolPtr k;
                 if (!found) {
                     k = AppManager::createKnob<KnobBool>(effect.get(), isRegular->getLabel(),
                                                          sKnob->getDimension(), false);
@@ -2224,7 +2224,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 knob = k;
             } else if (isChoice) {
-                boost::shared_ptr<KnobChoice> k;
+                KnobChoicePtr k;
                 if (!found) {
                     k = AppManager::createKnob<KnobChoice>(effect.get(), isRegular->getLabel(),
                                                            sKnob->getDimension(), false);
@@ -2248,7 +2248,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 knob = k;
             } else if (isColor) {
-                boost::shared_ptr<KnobColor> k;
+                KnobColorPtr k;
                 if (!found) {
                     k = AppManager::createKnob<KnobColor>(effect.get(), isRegular->getLabel(),
                                                           sKnob->getDimension(), false);
@@ -2273,7 +2273,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 knob = k;
             } else if (isStr) {
-                boost::shared_ptr<KnobString> k;
+                KnobStringPtr k;
                 if (!found) {
                     k = AppManager::createKnob<KnobString>(effect.get(), isRegular->getLabel(),
                                                            sKnob->getDimension(), false);
@@ -2297,7 +2297,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 knob = k;
             } else if (isFile) {
-                boost::shared_ptr<KnobFile> k;
+                KnobFilePtr k;
                 if (!found) {
                     k = AppManager::createKnob<KnobFile>(effect.get(), isRegular->getLabel(),
                                                          sKnob->getDimension(), false);
@@ -2314,7 +2314,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 knob = k;
             } else if (isOutFile) {
-                boost::shared_ptr<KnobOutputFile> k;
+                KnobOutputFilePtr k;
                 if (!found) {
                     k = AppManager::createKnob<KnobOutputFile>(effect.get(), isRegular->getLabel(),
                                                                sKnob->getDimension(), false);
@@ -2331,7 +2331,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 knob = k;
             } else if (isPath) {
-                boost::shared_ptr<KnobPath> k;
+                KnobPathPtr k;
                 if (!found) {
                     k = AppManager::createKnob<KnobPath>(effect.get(), isRegular->getLabel(),
                                                          sKnob->getDimension(), false);
@@ -2348,7 +2348,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 knob = k;
             } else if (isBtn) {
-                boost::shared_ptr<KnobButton> k;
+                KnobButtonPtr k;
                 if (!found) {
                     k = AppManager::createKnob<KnobButton>(effect.get(), isRegular->getLabel(),
                                                            sKnob->getDimension(), false);
@@ -2360,7 +2360,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 knob = k;
             } else if (isSep) {
-                boost::shared_ptr<KnobSeparator> k;
+                KnobSeparatorPtr k;
                 if (!found) {
                     k = AppManager::createKnob<KnobSeparator>(effect.get(), isRegular->getLabel(),
                                                               sKnob->getDimension(), false);
@@ -2372,7 +2372,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 knob = k;
             } else if (isParametric) {
-                boost::shared_ptr<KnobParametric> k;
+                KnobParametricPtr k;
                 if (!found) {
                     k = AppManager::createKnob<KnobParametric>(effect.get(), isRegular->getLabel(), sKnob->getDimension(), false);
                 } else {
@@ -2591,7 +2591,7 @@ Node::areAllProcessingThreadsQuit() const
         }
     }
 
-    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    TrackerContextPtr trackerContext = getTrackerContext();
     if (trackerContext) {
         if ( !trackerContext->hasTrackerThreadQuit() ) {
             return false;
@@ -2614,7 +2614,7 @@ Node::quitAnyProcessing_non_blocking()
     //Returns when the preview is done computign
     _imp->abortPreview_non_blocking();
 
-    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    TrackerContextPtr trackerContext = getTrackerContext();
     if (trackerContext) {
         trackerContext->quitTrackerThread_non_blocking();
     }
@@ -2646,7 +2646,7 @@ Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
 
     if (isOutput) {
-        boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
+        RenderEnginePtr engine = isOutput->getRenderEngine();
         assert(engine);
         engine->quitEngine(allowThreadsToRestart);
         engine->waitForEngineToQuit_enforce_blocking();
@@ -2655,7 +2655,7 @@ Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
     //Returns when the preview is done computign
     _imp->abortPreview_blocking(allowThreadsToRestart);
 
-    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    TrackerContextPtr trackerContext = getTrackerContext();
     if (trackerContext) {
         trackerContext->quitTrackerThread_blocking(allowThreadsToRestart);
     }
@@ -2678,7 +2678,7 @@ Node::abortAnyProcessing_non_blocking()
         isOutput->getRenderEngine()->abortRenderingNoRestart();
     }
 
-    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    TrackerContextPtr trackerContext = getTrackerContext();
     if (trackerContext) {
         trackerContext->abortTracking();
     }
@@ -2692,13 +2692,13 @@ Node::abortAnyProcessing_blocking()
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getEffectInstance().get() );
 
     if (isOutput) {
-        boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
+        RenderEnginePtr engine = isOutput->getRenderEngine();
         assert(engine);
         engine->abortRenderingNoRestart();
         engine->waitForAbortToComplete_enforce_blocking();
     }
 
-    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    TrackerContextPtr trackerContext = getTrackerContext();
     if (trackerContext) {
         trackerContext->abortTracking_blocking();
     }
@@ -2983,7 +2983,7 @@ prependGroupNameRecursive(const NodePtr& group,
     name.insert(0, ".");
     name.insert( 0, group->getScriptName_mt_safe() );
     NodeCollectionPtr hasParentGroup = group->getGroup();
-    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
+    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
     if (isGrp) {
         prependGroupNameRecursive(isGrp->getNode(), name);
     }
@@ -3476,9 +3476,9 @@ Node::findPluginFormatKnobs(const KnobsVec & knobs,
 }
 
 void
-Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
+Node::createNodePage(const KnobPagePtr& settingsPage)
 {
-    boost::shared_ptr<KnobBool> hideInputs = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Hide inputs"), 1, false);
+    KnobBoolPtr hideInputs = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Hide inputs"), 1, false);
 
     hideInputs->setName("hideInputs");
     hideInputs->setDefaultValue(false);
@@ -3491,7 +3491,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
     settingsPage->addKnob(hideInputs);
 
 
-    boost::shared_ptr<KnobBool> fCaching = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Force caching"), 1, false);
+    KnobBoolPtr fCaching = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Force caching"), 1, false);
     fCaching->setName("forceCaching");
     fCaching->setDefaultValue(false);
     fCaching->setAnimationEnabled(false);
@@ -3503,7 +3503,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
     _imp->forceCaching = fCaching;
     settingsPage->addKnob(fCaching);
 
-    boost::shared_ptr<KnobBool> previewEnabled = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Preview"), 1, false);
+    KnobBoolPtr previewEnabled = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Preview"), 1, false);
     assert(previewEnabled);
     previewEnabled->setDefaultValue( makePreviewByDefault() );
     previewEnabled->setName(kEnablePreviewKnobName);
@@ -3515,7 +3515,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
     settingsPage->addKnob(previewEnabled);
     _imp->previewEnabledKnob = previewEnabled;
 
-    boost::shared_ptr<KnobBool> disableNodeKnob = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Disable"), 1, false);
+    KnobBoolPtr disableNodeKnob = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Disable"), 1, false);
     assert(disableNodeKnob);
     disableNodeKnob->setAnimationEnabled(false);
     disableNodeKnob->setIsMetadataSlave(true);
@@ -3527,7 +3527,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
 
 
 
-    boost::shared_ptr<KnobBool> useFullScaleImagesWhenRenderScaleUnsupported = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Render high def. upstream"), 1, false);
+    KnobBoolPtr useFullScaleImagesWhenRenderScaleUnsupported = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Render high def. upstream"), 1, false);
     useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
     useFullScaleImagesWhenRenderScaleUnsupported->setDefaultValue(false);
     useFullScaleImagesWhenRenderScaleUnsupported->setName("highDefUpstream");
@@ -3545,7 +3545,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
     _imp->useFullScaleImagesWhenRenderScaleUnsupported = useFullScaleImagesWhenRenderScaleUnsupported;
 
 
-    boost::shared_ptr<KnobInt> lifeTimeKnob = AppManager::createKnob<KnobInt>(_imp->effect.get(), tr("Lifetime Range"), 2, false);
+    KnobIntPtr lifeTimeKnob = AppManager::createKnob<KnobInt>(_imp->effect.get(), tr("Lifetime Range"), 2, false);
     assert(lifeTimeKnob);
     lifeTimeKnob->setAnimationEnabled(false);
     lifeTimeKnob->setIsMetadataSlave(true);
@@ -3556,7 +3556,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
     _imp->lifeTimeKnob = lifeTimeKnob;
 
 
-    boost::shared_ptr<KnobBool> enableLifetimeNodeKnob = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Enable Lifetime"), 1, false);
+    KnobBoolPtr enableLifetimeNodeKnob = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Enable Lifetime"), 1, false);
     assert(enableLifetimeNodeKnob);
     enableLifetimeNodeKnob->setAnimationEnabled(false);
     enableLifetimeNodeKnob->setDefaultValue(false);
@@ -3572,7 +3572,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
         glSupport = _imp->plugin->getPluginOpenGLRenderSupport();
     }
     if (glSupport != ePluginOpenGLRenderSupportNone) {
-        boost::shared_ptr<KnobChoice> openglRenderingKnob = AppManager::createKnob<KnobChoice>(_imp->effect.get(), tr("GPU Rendering"), 1, false);
+        KnobChoicePtr openglRenderingKnob = AppManager::createKnob<KnobChoice>(_imp->effect.get(), tr("GPU Rendering"), 1, false);
         assert(openglRenderingKnob);
         openglRenderingKnob->setAnimationEnabled(false);
         {
@@ -3591,7 +3591,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
     }
 
 
-    boost::shared_ptr<KnobString> knobChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After param changed callback"), 1, false);
+    KnobStringPtr knobChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After param changed callback"), 1, false);
     knobChangedCallback->setHintToolTip( tr("Set here the name of a function defined in Python which will be called for each  "
                                             "parameter change. Either define this function in the Script Editor "
                                             "or in the init.py script or even in the script of a Python group plug-in.\n"
@@ -3607,7 +3607,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
     settingsPage->addKnob(knobChangedCallback);
     _imp->knobChangedCallback = knobChangedCallback;
 
-    boost::shared_ptr<KnobString> inputChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After input changed callback"), 1, false);
+    KnobStringPtr inputChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After input changed callback"), 1, false);
     inputChangedCallback->setHintToolTip( tr("Set here the name of a function defined in Python which will be called after "
                                              "each connection is changed for the inputs of the node. "
                                              "Either define this function in the Script Editor "
@@ -3626,7 +3626,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
 
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( _imp->effect.get() );
     if (isGroup) {
-        boost::shared_ptr<KnobString> onNodeCreated = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After Node Created"), 1, false);
+        KnobStringPtr onNodeCreated = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After Node Created"), 1, false);
         onNodeCreated->setName("afterNodeCreated");
         onNodeCreated->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time a node "
                                           "is created in the group. This will be called in addition to the After Node Created "
@@ -3642,7 +3642,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
         _imp->nodeCreatedCallback = onNodeCreated;
         settingsPage->addKnob(onNodeCreated);
 
-        boost::shared_ptr<KnobString> onNodeDeleted = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before Node Removal"), 1, false);
+        KnobStringPtr onNodeDeleted = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before Node Removal"), 1, false);
         onNodeDeleted->setName("beforeNodeRemoval");
         onNodeDeleted->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time a node "
                                           "is about to be deleted. This will be called in addition to the Before Node Removal "
@@ -3660,7 +3660,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
         && !getIOContainer()
 #endif
         ) {
-        boost::shared_ptr<KnobString> beforeFrameRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before frame render"), 1, false);
+        KnobStringPtr beforeFrameRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before frame render"), 1, false);
 
         beforeFrameRender->setName("beforeFrameRender");
         beforeFrameRender->setAnimationEnabled(false);
@@ -3673,7 +3673,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
         settingsPage->addKnob(beforeFrameRender);
         _imp->beforeFrameRender = beforeFrameRender;
 
-        boost::shared_ptr<KnobString> beforeRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before render"), 1, false);
+        KnobStringPtr beforeRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before render"), 1, false);
         beforeRender->setName("beforeRender");
         beforeRender->setAnimationEnabled(false);
         beforeRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called once when "
@@ -3684,7 +3684,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
         settingsPage->addKnob(beforeRender);
         _imp->beforeRender = beforeRender;
 
-        boost::shared_ptr<KnobString> afterFrameRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After frame render"), 1, false);
+        KnobStringPtr afterFrameRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After frame render"), 1, false);
         afterFrameRender->setName("afterFrameRender");
         afterFrameRender->setAnimationEnabled(false);
         afterFrameRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called after rendering "
@@ -3696,7 +3696,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
         settingsPage->addKnob(afterFrameRender);
         _imp->afterFrameRender = afterFrameRender;
 
-        boost::shared_ptr<KnobString> afterRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After render"), 1, false);
+        KnobStringPtr afterRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After render"), 1, false);
         afterRender->setName("afterRender");
         afterRender->setAnimationEnabled(false);
         afterRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called once when the rendering "
@@ -3713,12 +3713,12 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
 void
 Node::createInfoPage()
 {
-    boost::shared_ptr<KnobPage> infoPage = AppManager::createKnob<KnobPage>(_imp->effect.get(), tr("Info").toStdString(), 1, false);
+    KnobPagePtr infoPage = AppManager::createKnob<KnobPage>(_imp->effect.get(), tr("Info").toStdString(), 1, false);
 
     infoPage->setName(NATRON_PARAMETER_PAGE_NAME_INFO);
     _imp->infoPage = infoPage;
 
-    boost::shared_ptr<KnobString> nodeInfos = AppManager::createKnob<KnobString>(_imp->effect.get(), std::string(), 1, false);
+    KnobStringPtr nodeInfos = AppManager::createKnob<KnobString>(_imp->effect.get(), std::string(), 1, false);
     nodeInfos->setName("nodeInfos");
     nodeInfos->setAnimationEnabled(false);
     nodeInfos->setIsPersistent(false);
@@ -3730,7 +3730,7 @@ Node::createInfoPage()
     _imp->nodeInfos = nodeInfos;
 
 
-    boost::shared_ptr<KnobButton> refreshInfoButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), tr("Refresh Info"), 1, false);
+    KnobButtonPtr refreshInfoButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), tr("Refresh Info"), 1, false);
     refreshInfoButton->setName("refreshButton");
     refreshInfoButton->setEvaluateOnChange(false);
     infoPage->addKnob(refreshInfoButton);
@@ -3738,9 +3738,9 @@ Node::createInfoPage()
 }
 
 void
-Node::createHostMixKnob(const boost::shared_ptr<KnobPage>& mainPage)
+Node::createHostMixKnob(const KnobPagePtr& mainPage)
 {
-    boost::shared_ptr<KnobDouble> mixKnob = AppManager::createKnob<KnobDouble>(_imp->effect.get(), tr("Mix"), 1, false);
+    KnobDoublePtr mixKnob = AppManager::createKnob<KnobDouble>(_imp->effect.get(), tr("Mix"), 1, false);
 
     mixKnob->setName("hostMix");
     mixKnob->setHintToolTip( tr("Mix between the source image at 0 and the full effect at 1.") );
@@ -3756,7 +3756,7 @@ Node::createHostMixKnob(const boost::shared_ptr<KnobPage>& mainPage)
 void
 Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChannelSelector,
                           const std::vector<std::string>& inputLabels,
-                          const boost::shared_ptr<KnobPage>& mainPage,
+                          const KnobPagePtr& mainPage,
                           bool addNewLineOnLastMask,
                           KnobIPtr* lastKnobCreated)
 {
@@ -3769,7 +3769,7 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
 
 
         MaskSelector sel;
-        boost::shared_ptr<KnobBool> enabled = AppManager::createKnob<KnobBool>(_imp->effect.get(), inputLabels[i], 1, false);
+        KnobBoolPtr enabled = AppManager::createKnob<KnobBool>(_imp->effect.get(), inputLabels[i], 1, false);
 
         enabled->setDefaultValue(false, 0);
         enabled->setAddNewLine(false);
@@ -3792,7 +3792,7 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
 
         sel.enabled = enabled;
 
-        boost::shared_ptr<KnobChoice> channel = AppManager::createKnob<KnobChoice>(_imp->effect.get(), std::string(), 1, false);
+        KnobChoicePtr channel = AppManager::createKnob<KnobChoice>(_imp->effect.get(), std::string(), 1, false);
         // By default if connected it should be filled with None, Color.R, Color.G, Color.B, Color.A (@see refreshChannelSelectors)
         channel->setDefaultValue(4);
         channel->setAnimationEnabled(false);
@@ -3826,10 +3826,10 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
 
 #ifndef NATRON_ENABLE_IO_META_NODES
 void
-Node::createWriterFrameStepKnob(const boost::shared_ptr<KnobPage>& mainPage)
+Node::createWriterFrameStepKnob(const KnobPagePtr& mainPage)
 {
     ///Find a  "lastFrame" parameter and add it after it
-    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>(_imp->effect.get(), tr(kNatronWriteParamFrameStepLabel), 1, false);
+    KnobIntPtr frameIncrKnob = AppManager::createKnob<KnobInt>(_imp->effect.get(), tr(kNatronWriteParamFrameStepLabel), 1, false);
 
     frameIncrKnob->setName(kNatronWriteParamFrameStep);
     frameIncrKnob->setHintToolTip( tr(kNatronWriteParamFrameStepHint) );
@@ -3855,14 +3855,14 @@ Node::createWriterFrameStepKnob(const boost::shared_ptr<KnobPage>& mainPage)
 
 #endif
 
-boost::shared_ptr<KnobPage>
+KnobPagePtr
 Node::getOrCreateMainPage()
 {
     const KnobsVec & knobs = _imp->effect->getKnobs();
-    boost::shared_ptr<KnobPage> mainPage;
+    KnobPagePtr mainPage;
 
     for (std::size_t i = 0; i < knobs.size(); ++i) {
-        boost::shared_ptr<KnobPage> p = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
+        KnobPagePtr p = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
         if ( p && (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_INFO) &&
              (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
             mainPage = p;
@@ -3877,10 +3877,10 @@ Node::getOrCreateMainPage()
 }
 
 void
-Node::createLabelKnob(const boost::shared_ptr<KnobPage>& settingsPage,
+Node::createLabelKnob(const KnobPagePtr& settingsPage,
                       const std::string& label)
 {
-    boost::shared_ptr<KnobString> nodeLabel = AppManager::createKnob<KnobString>(_imp->effect.get(), label, 1, false);
+    KnobStringPtr nodeLabel = AppManager::createKnob<KnobString>(_imp->effect.get(), label, 1, false);
 
     assert(nodeLabel);
     nodeLabel->setName(kUserLabelKnobName);
@@ -3894,17 +3894,17 @@ Node::createLabelKnob(const boost::shared_ptr<KnobPage>& settingsPage,
 }
 
 void
-Node::findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage)
+Node::findOrCreateChannelEnabled(const KnobPagePtr& mainPage)
 {
     //Try to find R,G,B,A parameters on the plug-in, if found, use them, otherwise create them
     static const std::string channelLabels[4] = {kNatronOfxParamProcessRLabel, kNatronOfxParamProcessGLabel, kNatronOfxParamProcessBLabel, kNatronOfxParamProcessALabel};
     static const std::string channelNames[4] = {kNatronOfxParamProcessR, kNatronOfxParamProcessG, kNatronOfxParamProcessB, kNatronOfxParamProcessA};
     static const std::string channelHints[4] = {kNatronOfxParamProcessRHint, kNatronOfxParamProcessGHint, kNatronOfxParamProcessBHint, kNatronOfxParamProcessAHint};
-    boost::shared_ptr<KnobBool> foundEnabled[4];
+    KnobBoolPtr foundEnabled[4];
     const KnobsVec & knobs = _imp->effect->getKnobs();
 
     for (int i = 0; i < 4; ++i) {
-        boost::shared_ptr<KnobBool> enabled;
+        KnobBoolPtr enabled;
         for (std::size_t j = 0; j < knobs.size(); ++j) {
             if (knobs[j]->getOriginalName() == channelNames[i]) {
                 foundEnabled[i] = boost::dynamic_pointer_cast<KnobBool>(knobs[j]);
@@ -3954,7 +3954,7 @@ Node::findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage)
     }
     if ( !isWriter && foundAll && !getApp()->isBackground() ) {
         _imp->enabledChan[3].lock()->setAddNewLine(false);
-        boost::shared_ptr<KnobString> premultWarning = AppManager::createKnob<KnobString>(_imp->effect.get(), std::string(), 1, false);
+        KnobStringPtr premultWarning = AppManager::createKnob<KnobString>(_imp->effect.get(), std::string(), 1, false);
         premultWarning->setIconLabel("dialog-warning");
         premultWarning->setSecretByDefault(true);
         premultWarning->setAsLabel();
@@ -3973,7 +3973,7 @@ Node::findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage)
 void
 Node::createChannelSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChannelSelector,
                              const std::vector<std::string>& inputLabels,
-                             const boost::shared_ptr<KnobPage>& mainPage,
+                             const KnobPagePtr& mainPage,
                              KnobIPtr* lastKnobBeforeAdvancedOption)
 {
     ///Create input layer selectors
@@ -3995,7 +3995,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
 #endif
 
     //Add the "Node" page
-    boost::shared_ptr<KnobPage> settingsPage = AppManager::createKnob<KnobPage>(_imp->effect.get(), tr(NATRON_PARAMETER_PAGE_NAME_EXTRA), 1, false);
+    KnobPagePtr settingsPage = AppManager::createKnob<KnobPage>(_imp->effect.get(), tr(NATRON_PARAMETER_PAGE_NAME_EXTRA), 1, false);
     _imp->nodeSettingsPage = settingsPage;
 
     //Create the "Label" knob
@@ -4015,7 +4015,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
     findPluginFormatKnobs(knobs, loadingSerialization);
     findRightClickMenuKnob(knobs);
 
-    boost::shared_ptr<KnobPage> mainPage;
+    KnobPagePtr mainPage;
 
 
     // Scan all inputs to find masks and get inputs labels
@@ -4119,7 +4119,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
                     }
 
                     if ( j >= 0 && !dynamic_cast<KnobSeparator*>( prev->get() ) ) {
-                        boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(_imp->effect.get(), std::string(), 1, false);
+                        KnobSeparatorPtr sep = AppManager::createKnob<KnobSeparator>(_imp->effect.get(), std::string(), 1, false);
                         sep->setName("advancedSep");
                         mainPage->insertKnob(i, sep);
                     }
@@ -4151,7 +4151,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
             mainPage = getOrCreateMainPage();
         }
 
-        boost::shared_ptr<KnobButton> renderButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), tr("Render"), 1, false);
+        KnobButtonPtr renderButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), tr("Render"), 1, false);
         renderButton->setHintToolTip( tr("Starts rendering the specified frame range.") );
         renderButton->setAsRenderButton();
         renderButton->setName(kNatronWriteParamStartRender);
@@ -4202,12 +4202,12 @@ void
 Node::Implementation::createChannelSelector(int inputNb,
                                             const std::string & inputName,
                                             bool isOutput,
-                                            const boost::shared_ptr<KnobPage>& page,
+                                            const KnobPagePtr& page,
                                             KnobIPtr* lastKnobBeforeAdvancedOption)
 {
     ChannelSelector sel;
 
-    boost::shared_ptr<KnobChoice> layer = AppManager::createKnob<KnobChoice>(effect.get(), isOutput ? tr("Output Layer") : tr("%1 Layer").arg( QString::fromUtf8( inputName.c_str() ) ), 1, false);
+    KnobChoicePtr layer = AppManager::createKnob<KnobChoice>(effect.get(), isOutput ? tr("Output Layer") : tr("%1 Layer").arg( QString::fromUtf8( inputName.c_str() ) ), 1, false);
     layer->setHostCanAddOptions(isOutput);
     if (!isOutput) {
         layer->setName( inputName + std::string("_") + std::string(kOutputChannelsKnobName) );
@@ -4226,7 +4226,7 @@ Node::Implementation::createChannelSelector(int inputNb,
 
     if (isOutput) {
         layer->setAddNewLine(false);
-        boost::shared_ptr<KnobBool> processAllKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kNodeParamProcessAllLayersLabel), 1, false);
+        KnobBoolPtr processAllKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kNodeParamProcessAllLayersLabel), 1, false);
         processAllKnob->setName(kNodeParamProcessAllLayers);
         processAllKnob->setHintToolTip(tr(kNodeParamProcessAllLayersHint));
         processAllKnob->setAnimationEnabled(false);
@@ -4275,7 +4275,7 @@ Node::getFrameStepKnobValue() const
 bool
 Node::handleFormatKnob(KnobI* knob)
 {
-    boost::shared_ptr<KnobChoice> choice = _imp->pluginFormatKnobs.formatChoice.lock();
+    KnobChoicePtr choice = _imp->pluginFormatKnobs.formatChoice.lock();
 
     if (!choice) {
         return false;
@@ -4295,8 +4295,8 @@ Node::handleFormatKnob(KnobI* knob)
         return true;
     }
 
-    boost::shared_ptr<KnobInt> size = _imp->pluginFormatKnobs.size.lock();
-    boost::shared_ptr<KnobDouble> par = _imp->pluginFormatKnobs.par.lock();
+    KnobIntPtr size = _imp->pluginFormatKnobs.size.lock();
+    KnobDoublePtr par = _imp->pluginFormatKnobs.par.lock();
     assert(size && par);
 
     _imp->effect->beginChanges();
@@ -4317,7 +4317,7 @@ Node::refreshFormatParamChoice(const std::vector<ChoiceOption>& entries,
                                int defValue,
                                bool loadingProject)
 {
-    boost::shared_ptr<KnobChoice> choice = _imp->pluginFormatKnobs.formatChoice.lock();
+    KnobChoicePtr choice = _imp->pluginFormatKnobs.formatChoice.lock();
 
     if (!choice) {
         return;
@@ -4838,7 +4838,7 @@ OUTPUT:
 bool
 Node::isForceCachingEnabled() const
 {
-    boost::shared_ptr<KnobBool> b = _imp->forceCaching.lock();
+    KnobBoolPtr b = _imp->forceCaching.lock();
 
     return b ? b->getValue() : false;
 }
@@ -4847,7 +4847,7 @@ void
 Node::onSetSupportRenderScaleMaybeSet(int support)
 {
     if ( (EffectInstance::SupportsEnum)support == EffectInstance::eSupportsYes ) {
-        boost::shared_ptr<KnobBool> b = _imp->useFullScaleImagesWhenRenderScaleUnsupported.lock();
+        KnobBoolPtr b = _imp->useFullScaleImagesWhenRenderScaleUnsupported.lock();
         if (b) {
             b->setSecretByDefault(true);
             b->setSecret(true);
@@ -4858,7 +4858,7 @@ Node::onSetSupportRenderScaleMaybeSet(int support)
 bool
 Node::useScaleOneImagesWhenRenderScaleSupportIsDisabled() const
 {
-    boost::shared_ptr<KnobBool> b =  _imp->useFullScaleImagesWhenRenderScaleUnsupported.lock();
+    KnobBoolPtr b =  _imp->useFullScaleImagesWhenRenderScaleUnsupported.lock();
 
     return b ? b->getValue() : false;
 }
@@ -5063,7 +5063,7 @@ applyNodeRedirectionsDownstream(int recurseCounter,
         return;
     }
 
-    boost::shared_ptr<PrecompNode> isInPrecomp = node->isPartOfPrecomp();
+    PrecompNodePtr isInPrecomp = node->isPartOfPrecomp();
     if ( isInPrecomp && (isInPrecomp->getOutputNode() == node) ) {
         //This node is the output of the precomp, its outputs are the outputs of the precomp node
         NodesWList groupOutputs;
@@ -6623,6 +6623,8 @@ public:
     virtual ~NodeDestroyNodeInternalArgs() {}
 };
 
+typedef boost::shared_ptr<NodeDestroyNodeInternalArgs> NodeDestroyNodeInternalArgsPtr;
+
 void
 Node::onProcessingQuitInDestroyNodeInternal(int taskID,
                                             const WatcherCallerArgsPtr& args)
@@ -6731,7 +6733,7 @@ Node::destroyNode(bool blockingDestroy, bool autoReconnect)
         }
         _imp->renderWatcher.reset( new NodeRenderWatcher(nodesToWatch) );
         QObject::connect( _imp->renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int,WatcherCallerArgsPtr)) );
-        boost::shared_ptr<NodeDestroyNodeInternalArgs> args = boost::make_shared<NodeDestroyNodeInternalArgs>();
+        NodeDestroyNodeInternalArgsPtr args = boost::make_shared<NodeDestroyNodeInternalArgs>();
         args->autoReconnect = autoReconnect;
         _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
 
@@ -6958,7 +6960,7 @@ Node::makePreviewImage(SequenceTime time,
                                                   NodePtr(), //rotoPaint node
                                                   false, // isAnalysis
                                                   true, // isDraft
-                                                  boost::shared_ptr<RenderStats>() );
+                                                  RenderStatsPtr() );
         FrameRequestMap request;
         stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipMapLevel, rod, thisNode, request);
         if (stat == eStatusFailed) {
@@ -7090,13 +7092,13 @@ Node::isEffectGroup() const
     return dynamic_cast<NodeGroup*>( _imp->effect.get() );
 }
 
-boost::shared_ptr<RotoContext>
+RotoContextPtr
 Node::getRotoContext() const
 {
     return _imp->rotoContext;
 }
 
-boost::shared_ptr<TrackerContext>
+TrackerContextPtr
 Node::getTrackerContext() const
 {
     return _imp->trackContext;
@@ -7109,7 +7111,7 @@ Node::getRotoAge() const
         return _imp->rotoContext->getAge();
     }
 
-    boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
+    RotoDrawableItemPtr item = _imp->paintStroke.lock();
     if (item) {
         return item->getContext()->getAge();
     }
@@ -7313,7 +7315,7 @@ Node::togglePreview()
 {
     ///MT-safe from Knob
     assert(_imp->knobsInitialized);
-    boost::shared_ptr<KnobBool> b = _imp->previewEnabledKnob.lock();
+    KnobBoolPtr b = _imp->previewEnabledKnob.lock();
     if (!b) {
         return;
     }
@@ -7327,7 +7329,7 @@ Node::isPreviewEnabled() const
     if (!_imp->knobsInitialized) {
         qDebug() << "Node::isPreviewEnabled(): knobs not initialized (including previewEnabledKnob)";
     }
-    boost::shared_ptr<KnobBool> b = _imp->previewEnabledKnob.lock();
+    KnobBoolPtr b = _imp->previewEnabledKnob.lock();
     if (!b) {
         return false;
     }
@@ -8020,10 +8022,10 @@ Node::isMaskEnabled(int inputNb) const
 }
 
 void
-Node::lock(const boost::shared_ptr<Image> & image)
+Node::lock(const ImagePtr & image)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
-    std::list<boost::shared_ptr<Image> >::iterator it =
+    std::list<ImagePtr>::iterator it =
         std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
 
     while ( it != _imp->imagesBeingRendered.end() ) {
@@ -8036,10 +8038,10 @@ Node::lock(const boost::shared_ptr<Image> & image)
 }
 
 bool
-Node::tryLock(const boost::shared_ptr<Image> & image)
+Node::tryLock(const ImagePtr & image)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
-    std::list<boost::shared_ptr<Image> >::iterator it =
+    std::list<ImagePtr>::iterator it =
         std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
 
     if ( it != _imp->imagesBeingRendered.end() ) {
@@ -8053,10 +8055,10 @@ Node::tryLock(const boost::shared_ptr<Image> & image)
 }
 
 void
-Node::unlock(const boost::shared_ptr<Image> & image)
+Node::unlock(const ImagePtr & image)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
-    std::list<boost::shared_ptr<Image> >::iterator it =
+    std::list<ImagePtr>::iterator it =
         std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
 
     ///The image must exist, otherwise this is a bug
@@ -8066,14 +8068,14 @@ Node::unlock(const boost::shared_ptr<Image> & image)
     _imp->imagesBeingRenderedCond.wakeAll();
 }
 
-boost::shared_ptr<Image>
+ImagePtr
 Node::getImageBeingRendered(double time,
                             unsigned int mipMapLevel,
                             ViewIdx view)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
 
-    for (std::list<boost::shared_ptr<Image> >::iterator it = _imp->imagesBeingRendered.begin();
+    for (std::list<ImagePtr>::iterator it = _imp->imagesBeingRendered.begin();
          it != _imp->imagesBeingRendered.end(); ++it) {
         const ImageKey &key = (*it)->getKey();
         if ( (key._view == view) && ( (*it)->getMipMapLevel() == mipMapLevel ) && (key._time == time) ) {
@@ -8081,7 +8083,7 @@ Node::getImageBeingRendered(double time,
         }
     }
 
-    return boost::shared_ptr<Image>();
+    return ImagePtr();
 }
 
 void
@@ -8174,7 +8176,7 @@ Node::onInputChanged(int inputNb,
                                                   NodePtr(),
                                                   false,
                                                   false,
-                                                  boost::shared_ptr<RenderStats>() );
+                                                  RenderStatsPtr() );
 
 
         ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
@@ -8226,7 +8228,7 @@ Node::onInputChanged(int inputNb,
     /*
      * If this node is the output of a pre-comp, notify the precomp output nodes that their input have changed
      */
-    boost::shared_ptr<PrecompNode> isInPrecomp = isPartOfPrecomp();
+    PrecompNodePtr isInPrecomp = isPartOfPrecomp();
     if ( isInPrecomp && (isInPrecomp->getOutputNode().get() == this) ) {
         std::map<NodePtr, int> inputOutputs;
         isInPrecomp->getNode()->getOutputsConnectedToThisNode(&inputOutputs);
@@ -8616,15 +8618,15 @@ Node::removePositionHostOverlay(KnobI* knob)
 }
 
 void
-Node::addPositionInteract(const boost::shared_ptr<KnobDouble>& position,
-                          const boost::shared_ptr<KnobBool>& interactive)
+Node::addPositionInteract(const KnobDoublePtr& position,
+                          const KnobBoolPtr& interactive)
 {
     assert( QThread::currentThread() == qApp->thread() );
     if ( appPTR->isBackground() ) {
         return;
     }
 
-    boost::shared_ptr<HostOverlayKnobsPosition> knobs = boost::make_shared<HostOverlayKnobsPosition>();
+    HostOverlayKnobsPositionPtr knobs = boost::make_shared<HostOverlayKnobsPosition>();
     knobs->addKnob(position, HostOverlayKnobsPosition::eKnobsEnumerationPosition);
     if (interactive) {
         knobs->addKnob(interactive, HostOverlayKnobsPosition::eKnobsEnumerationInteractive);
@@ -8638,23 +8640,23 @@ Node::addPositionInteract(const boost::shared_ptr<KnobDouble>& position,
 }
 
 void
-Node::addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
-                           const boost::shared_ptr<KnobDouble>& scale,
-                           const boost::shared_ptr<KnobBool>& scaleUniform,
-                           const boost::shared_ptr<KnobDouble>& rotate,
-                           const boost::shared_ptr<KnobDouble>& skewX,
-                           const boost::shared_ptr<KnobDouble>& skewY,
-                           const boost::shared_ptr<KnobChoice>& skewOrder,
-                           const boost::shared_ptr<KnobDouble>& center,
-                           const boost::shared_ptr<KnobBool>& invert,
-                           const boost::shared_ptr<KnobBool>& interactive)
+Node::addTransformInteract(const KnobDoublePtr& translate,
+                           const KnobDoublePtr& scale,
+                           const KnobBoolPtr& scaleUniform,
+                           const KnobDoublePtr& rotate,
+                           const KnobDoublePtr& skewX,
+                           const KnobDoublePtr& skewY,
+                           const KnobChoicePtr& skewOrder,
+                           const KnobDoublePtr& center,
+                           const KnobBoolPtr& invert,
+                           const KnobBoolPtr& interactive)
 {
     assert( QThread::currentThread() == qApp->thread() );
     if ( appPTR->isBackground() ) {
         return;
     }
 
-    boost::shared_ptr<HostOverlayKnobsTransform> knobs = boost::make_shared<HostOverlayKnobsTransform>();
+    HostOverlayKnobsTransformPtr knobs = boost::make_shared<HostOverlayKnobsTransform>();
     knobs->addKnob(translate, HostOverlayKnobsTransform::eKnobsEnumerationTranslate);
     knobs->addKnob(scale, HostOverlayKnobsTransform::eKnobsEnumerationScale);
     knobs->addKnob(scaleUniform, HostOverlayKnobsTransform::eKnobsEnumerationUniform);
@@ -8678,27 +8680,27 @@ Node::addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
 }
 
 void
-Node::addCornerPinInteract(const boost::shared_ptr<KnobDouble>& from1,
-                           const boost::shared_ptr<KnobDouble>& from2,
-                           const boost::shared_ptr<KnobDouble>& from3,
-                           const boost::shared_ptr<KnobDouble>& from4,
-                           const boost::shared_ptr<KnobDouble>& to1,
-                           const boost::shared_ptr<KnobDouble>& to2,
-                           const boost::shared_ptr<KnobDouble>& to3,
-                           const boost::shared_ptr<KnobDouble>& to4,
-                           const boost::shared_ptr<KnobBool>& enable1,
-                           const boost::shared_ptr<KnobBool>& enable2,
-                           const boost::shared_ptr<KnobBool>& enable3,
-                           const boost::shared_ptr<KnobBool>& enable4,
-                           const boost::shared_ptr<KnobChoice>& overlayPoints,
-                           const boost::shared_ptr<KnobBool>& invert,
-                           const boost::shared_ptr<KnobBool>& interactive)
+Node::addCornerPinInteract(const KnobDoublePtr& from1,
+                           const KnobDoublePtr& from2,
+                           const KnobDoublePtr& from3,
+                           const KnobDoublePtr& from4,
+                           const KnobDoublePtr& to1,
+                           const KnobDoublePtr& to2,
+                           const KnobDoublePtr& to3,
+                           const KnobDoublePtr& to4,
+                           const KnobBoolPtr& enable1,
+                           const KnobBoolPtr& enable2,
+                           const KnobBoolPtr& enable3,
+                           const KnobBoolPtr& enable4,
+                           const KnobChoicePtr& overlayPoints,
+                           const KnobBoolPtr& invert,
+                           const KnobBoolPtr& interactive)
 {
     assert( QThread::currentThread() == qApp->thread() );
     if ( appPTR->isBackground() ) {
         return;
     }
-    boost::shared_ptr<HostOverlayKnobsCornerPin> knobs = boost::make_shared<HostOverlayKnobsCornerPin>();
+    HostOverlayKnobsCornerPinPtr knobs = boost::make_shared<HostOverlayKnobsCornerPin>();
     knobs->addKnob(from1, HostOverlayKnobsCornerPin::eKnobsEnumerationFrom1);
     knobs->addKnob(from2, HostOverlayKnobsCornerPin::eKnobsEnumerationFrom2);
     knobs->addKnob(from3, HostOverlayKnobsCornerPin::eKnobsEnumerationFrom3);
@@ -8738,7 +8740,7 @@ Node::initializeHostOverlays()
     if (!nodeGui) {
         return;
     }
-    for (std::list<boost::shared_ptr<HostOverlayKnobs> > ::iterator it = _imp->nativeOverlays.begin(); it != _imp->nativeOverlays.end(); ++it) {
+    for (std::list<HostOverlayKnobsPtr> ::iterator it = _imp->nativeOverlays.begin(); it != _imp->nativeOverlays.end(); ++it) {
         nodeGui->addDefaultInteract(*it);
     }
     _imp->nativeOverlays.clear();
@@ -8791,8 +8793,8 @@ Node::setPyPlugEdited(bool edited)
     }
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->effect.get());
     if (isGroup) {
-        boost::shared_ptr<KnobButton> convertToGroupButton = isGroup->getConvertToGroupButton();
-        boost::shared_ptr<KnobButton> exportPyPlugButton = isGroup->getExportAsPyPlugButton();
+        KnobButtonPtr convertToGroupButton = isGroup->getConvertToGroupButton();
+        KnobButtonPtr exportPyPlugButton = isGroup->getExportAsPyPlugButton();
         if (convertToGroupButton) {
             convertToGroupButton->setSecret(edited);
         }
@@ -8972,7 +8974,7 @@ Node::refreshCreatedViews(KnobI* knob, bool silent)
 bool
 Node::getHideInputsKnobValue() const
 {
-    boost::shared_ptr<KnobBool> k = _imp->hideInputs.lock();
+    KnobBoolPtr k = _imp->hideInputs.lock();
 
     if (!k) {
         return false;
@@ -8984,7 +8986,7 @@ Node::getHideInputsKnobValue() const
 void
 Node::setHideInputsKnobValue(bool hidden)
 {
-    boost::shared_ptr<KnobBool> k = _imp->hideInputs.lock();
+    KnobBoolPtr k = _imp->hideInputs.lock();
 
     if (!k) {
         return;
@@ -9002,7 +9004,7 @@ Node::onRefreshIdentityStateRequestReceived()
     }
     _imp->refreshIdentityStateRequestsCount = 0;
 
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    ProjectPtr project = getApp()->getProject();
     double time = project->currentFrame();
     RenderScale scale(1.);
     double inputTime = 0;
@@ -9254,7 +9256,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
 
     if (!ret) {
         for (int i = 0; i < 4; ++i) {
-            boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+            KnobBoolPtr enabled = _imp->enabledChan[i].lock();
             if (!enabled) {
                 break;
             }
@@ -9291,7 +9293,7 @@ void
 Node::onOpenGLEnabledKnobChangedOnProject(bool activated)
 {
     bool enabled = activated;
-    boost::shared_ptr<KnobChoice> k = _imp->openglRenderingEnabledKnob.lock();
+    KnobChoicePtr k = _imp->openglRenderingEnabledKnob.lock();
     if (enabled) {
         if (k) {
             k->setAllDimensionsEnabled(true);
@@ -9318,7 +9320,7 @@ Node::getSelectedLayerChoiceRaw(int inputNb,
     if ( found == _imp->channelsSelectors.end() ) {
         return false;
     }
-    boost::shared_ptr<KnobChoice> layerKnob = found->second.layer.lock();
+    KnobChoicePtr layerKnob = found->second.layer.lock();
     layer = layerKnob->getActiveEntry().label;
 
     return true;
@@ -9341,7 +9343,7 @@ Node::Implementation::getSelectedLayerInternal(int inputNb,
         node = _publicInterface->getInput(inputNb);
     }
 
-    boost::shared_ptr<KnobChoice> layerKnob = selector.layer.lock();
+    KnobChoicePtr layerKnob = selector.layer.lock();
     if (!layerKnob) {
         return ImagePlaneDesc();
     }
@@ -9361,7 +9363,7 @@ void
 Node::Implementation::onLayerChanged(int inputNb,
                                      const ChannelSelector& selector)
 {
-    boost::shared_ptr<KnobChoice> layerKnob = selector.layer.lock();
+    KnobChoicePtr layerKnob = selector.layer.lock();
     bool outputIsAll = processAllLayersKnob.lock()->getValue();
 
     if (inputNb == -1) {
@@ -9414,21 +9416,21 @@ Node::refreshEnabledKnobsLabel(const ImagePlaneDesc& comp)
     switch ( channels.size() ) {
     case 1: {
         for (int i = 0; i < 3; ++i) {
-            boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+            KnobBoolPtr enabled = _imp->enabledChan[i].lock();
             enabled->setSecret(true);
         }
-        boost::shared_ptr<KnobBool> alpha = _imp->enabledChan[3].lock();
+        KnobBoolPtr alpha = _imp->enabledChan[3].lock();
         alpha->setSecret(false);
         alpha->setLabel(channels[0]);
         break;
     }
     case 2: {
         for (int i = 2; i < 4; ++i) {
-            boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+            KnobBoolPtr enabled = _imp->enabledChan[i].lock();
             enabled->setSecret(true);
         }
         for (int i = 0; i < 2; ++i) {
-            boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+            KnobBoolPtr enabled = _imp->enabledChan[i].lock();
             enabled->setSecret(false);
             enabled->setLabel(channels[i]);
         }
@@ -9436,11 +9438,11 @@ Node::refreshEnabledKnobsLabel(const ImagePlaneDesc& comp)
     }
     case 3: {
         for (int i = 3; i < 4; ++i) {
-            boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+            KnobBoolPtr enabled = _imp->enabledChan[i].lock();
             enabled->setSecret(true);
         }
         for (int i = 0; i < 3; ++i) {
-            boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+            KnobBoolPtr enabled = _imp->enabledChan[i].lock();
             enabled->setSecret(false);
             enabled->setLabel(channels[i]);
         }
@@ -9448,7 +9450,7 @@ Node::refreshEnabledKnobsLabel(const ImagePlaneDesc& comp)
     }
     case 4: {
         for (int i = 0; i < 4; ++i) {
-            boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+            KnobBoolPtr enabled = _imp->enabledChan[i].lock();
             enabled->setSecret(false);
             enabled->setLabel(channels[i]);
         }
@@ -9458,7 +9460,7 @@ Node::refreshEnabledKnobsLabel(const ImagePlaneDesc& comp)
     case 0:
     default: {
         for (int i = 0; i < 4; ++i) {
-            boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+            KnobBoolPtr enabled = _imp->enabledChan[i].lock();
             enabled->setSecret(true);
         }
         break;
@@ -9470,9 +9472,9 @@ void
 Node::Implementation::onMaskSelectorChanged(int inputNb,
                                             const MaskSelector& selector)
 {
-    boost::shared_ptr<KnobChoice> channel = selector.channel.lock();
+    KnobChoicePtr channel = selector.channel.lock();
     int index = channel->getValue();
-    boost::shared_ptr<KnobBool> enabled = selector.enabled.lock();
+    KnobBoolPtr enabled = selector.enabled.lock();
 
     if ( (index == 0) && enabled->isEnabled(0) ) {
         enabled->setValue(false);
@@ -9504,7 +9506,7 @@ Node::getProcessChannel(int channelIndex) const
         return true;
     }
     assert(channelIndex >= 0 && channelIndex < 4);
-    boost::shared_ptr<KnobBool> k = _imp->enabledChan[channelIndex].lock();
+    KnobBoolPtr k = _imp->enabledChan[channelIndex].lock();
     if (k) {
         return k->getValue();
     }
@@ -9544,7 +9546,7 @@ Node::getSelectedLayer(int inputNb,
 
 
     // Check if the checkbox "All layers" is checked or not
-    boost::shared_ptr<KnobBool> processAllKnob = _imp->processAllLayersKnob.lock();
+    KnobBoolPtr processAllKnob = _imp->processAllLayersKnob.lock();
     *isAll = false;
     if (processAllKnob) {
         *isAll = processAllKnob->getValue();
@@ -9596,7 +9598,7 @@ void
 Node::replaceCustomDataInlabel(const QString & data)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    boost::shared_ptr<KnobString> labelKnob = _imp->nodeLabelKnob.lock();
+    KnobStringPtr labelKnob = _imp->nodeLabelKnob.lock();
     if (!labelKnob) {
         return;
     }
@@ -9626,7 +9628,7 @@ Node::replaceCustomDataInlabel(const QString & data)
     labelKnob->setValue( label.toStdString() );
 }
 
-boost::shared_ptr<KnobBool>
+KnobBoolPtr
 Node::getDisabledKnob() const
 {
     return _imp->disableNodeKnob.lock();
@@ -9636,7 +9638,7 @@ bool
 Node::isLifetimeActivated(int *firstFrame,
                           int *lastFrame) const
 {
-    boost::shared_ptr<KnobBool> enableLifetimeKnob = _imp->enableLifeTimeKnob.lock();
+    KnobBoolPtr enableLifetimeKnob = _imp->enableLifeTimeKnob.lock();
 
     if (!enableLifetimeKnob) {
         return false;
@@ -9644,7 +9646,7 @@ Node::isLifetimeActivated(int *firstFrame,
     if ( !enableLifetimeKnob->getValue() ) {
         return false;
     }
-    boost::shared_ptr<KnobInt> lifetimeKnob = _imp->lifeTimeKnob.lock();
+    KnobIntPtr lifetimeKnob = _imp->lifeTimeKnob.lock();
     *firstFrame = lifetimeKnob->getValue(0);
     *lastFrame = lifetimeKnob->getValue(1);
 
@@ -9654,7 +9656,7 @@ Node::isLifetimeActivated(int *firstFrame,
 bool
 Node::isNodeDisabled() const
 {
-    boost::shared_ptr<KnobBool> b = _imp->disableNodeKnob.lock();
+    KnobBoolPtr b = _imp->disableNodeKnob.lock();
     bool thisDisabled = b ? b->getValue() : false;
     NodeGroup* isContainerGrp = dynamic_cast<NodeGroup*>( getGroup().get() );
 
@@ -9679,7 +9681,7 @@ Node::isNodeDisabled() const
 void
 Node::setNodeDisabled(bool disabled)
 {
-    boost::shared_ptr<KnobBool> b = _imp->disableNodeKnob.lock();
+    KnobBoolPtr b = _imp->disableNodeKnob.lock();
 
     if (b) {
         b->setValue(disabled);
@@ -9854,7 +9856,7 @@ Node::isSupportedBitDepth(ImageBitDepthEnum depth) const
 std::string
 Node::getNodeExtraLabel() const
 {
-    boost::shared_ptr<KnobString> s = _imp->nodeLabelKnob.lock();
+    KnobStringPtr s = _imp->nodeLabelKnob.lock();
 
     if (s) {
         return s->getValue();
@@ -10116,7 +10118,7 @@ addIdentityNodesRecursively(const Node* caller,
 
 
     if (caller != node) {
-        boost::shared_ptr<ParallelRenderArgs> inputFrameArgs = node->getEffectInstance()->getParallelRenderArgsTLS();
+        ParallelRenderArgsPtr inputFrameArgs = node->getEffectInstance()->getParallelRenderArgsTLS();
         const FrameViewRequest* request = 0;
         bool isIdentity = false;
         if (inputFrameArgs && inputFrameArgs->request) {
@@ -10300,14 +10302,14 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
                 return true;
             }
 
-            boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
+            RotoDrawableItemPtr attachedStroke = _imp->paintStroke.lock();
             if ( attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelVisible() ) {
                 ///Internal RotoPaint tree and the Roto node has its settings panel opened, cache it.
                 return true;
             }
         } else {
             // outputs == 0, never cache, unless explicitly set or rotopaint internal node
-            boost::shared_ptr<RotoDrawableItem> attachedStroke = _imp->paintStroke.lock();
+            RotoDrawableItemPtr attachedStroke = _imp->paintStroke.lock();
 
             return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() ||
                    ( attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelVisible() );
@@ -10327,12 +10329,12 @@ Node::refreshLayersChoiceSecretness(int inputNb)
         std::map<int, ChannelSelector>::iterator foundOuptut = _imp->channelsSelectors.find(-1);
         bool outputIsAll = false;
         if ( foundOuptut != _imp->channelsSelectors.end() ) {
-            boost::shared_ptr<KnobChoice> outputChoice = foundOuptut->second.layer.lock();
+            KnobChoicePtr outputChoice = foundOuptut->second.layer.lock();
             if (outputChoice) {
                 outputIsAll = _imp->processAllLayersKnob.lock()->getValue();
             }
         }
-        boost::shared_ptr<KnobChoice> chanChoice = foundChan->second.layer.lock();
+        KnobChoicePtr chanChoice = foundChan->second.layer.lock();
         if (chanChoice) {
             bool isSecret = chanChoice->getIsSecret();
             bool mustBeSecret = !inp.get() || outputIsAll;
@@ -10356,7 +10358,7 @@ Node::refreshMaskEnabledNess(int inputNb)
     bool changed = false;
 
     if ( found != _imp->maskSelectors.end() ) {
-        boost::shared_ptr<KnobBool> enabled = found->second.enabled.lock();
+        KnobBoolPtr enabled = found->second.enabled.lock();
         assert(enabled);
         enabled->blockValueChanges();
         bool curValue = enabled->getValue();
@@ -10496,7 +10498,7 @@ Node::refreshInputRelatedDataInternal(bool domarking, std::set<Node*>& markedNod
     bool hasChanged = refreshAllInputRelatedData(false, inputsCopy);
 
     if ( isRotoPaintingNode() ) {
-        boost::shared_ptr<RotoContext> roto = getRotoContext();
+        RotoContextPtr roto = getRotoContext();
         assert(roto);
         NodePtr bottomMerge = roto->getRotoPaintBottomMergeNode();
         if (bottomMerge) {
@@ -10542,7 +10544,7 @@ Node::markAllInputRelatedDataDirty()
         _imp->mustComputeInputRelatedData = true;
     }
     if ( isRotoPaintingNode() ) {
-        boost::shared_ptr<RotoContext> roto = getRotoContext();
+        RotoContextPtr roto = getRotoContext();
         assert(roto);
         NodesList rotoNodes;
         roto->getRotoPaintTreeNodes(&rotoNodes);
@@ -10780,7 +10782,7 @@ Node::isSettingsPanelVisible() const
 }
 
 void
-Node::attachRotoItem(const boost::shared_ptr<RotoDrawableItem>& stroke)
+Node::attachRotoItem(const RotoDrawableItemPtr& stroke)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->paintStroke = stroke;
@@ -10795,7 +10797,7 @@ Node::setUseAlpha0ToConvertFromRGBToRGBA(bool use)
     _imp->useAlpha0ToConvertFromRGBToRGBA = use;
 }
 
-boost::shared_ptr<RotoDrawableItem>
+RotoDrawableItemPtr
 Node::getAttachedRotoItem() const
 {
     return _imp->paintStroke.lock();
@@ -11029,7 +11031,7 @@ Node::declareAllPythonAttributes()
 std::string
 Node::getKnobChangedCallback() const
 {
-    boost::shared_ptr<KnobString> s = _imp->knobChangedCallback.lock();
+    KnobStringPtr s = _imp->knobChangedCallback.lock();
 
     return s ? s->getValue() : std::string();
 }
@@ -11037,7 +11039,7 @@ Node::getKnobChangedCallback() const
 std::string
 Node::getInputChangedCallback() const
 {
-    boost::shared_ptr<KnobString> s = _imp->inputChangedCallback.lock();
+    KnobStringPtr s = _imp->inputChangedCallback.lock();
 
     return s ? s->getValue() : std::string();
 }
@@ -11169,7 +11171,7 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
     }
 
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( group.get() );
-    boost::shared_ptr<KnobString> nodeCreatedCbKnob = nodeCreatedCallback.lock();
+    KnobStringPtr nodeCreatedCbKnob = nodeCreatedCallback.lock();
     if (!nodeCreatedCbKnob && isGroup) {
         cb = isGroup->getNode()->getAfterNodeCreatedCallback();
     } else if (nodeCreatedCbKnob) {
@@ -11202,7 +11204,7 @@ Node::Implementation::runOnNodeDeleteCB()
 
 
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( group.get() );
-    boost::shared_ptr<KnobString> nodeDeletedKnob = nodeRemovalCallback.lock();
+    KnobStringPtr nodeDeletedKnob = nodeRemovalCallback.lock();
     if (!nodeDeletedKnob && isGroup) {
         NodePtr grpNode = isGroup->getNode();
         if (grpNode) {
@@ -11219,7 +11221,7 @@ Node::Implementation::runOnNodeDeleteCB()
 std::string
 Node::getBeforeRenderCallback() const
 {
-    boost::shared_ptr<KnobString> s = _imp->beforeRender.lock();
+    KnobStringPtr s = _imp->beforeRender.lock();
 
     return s ? s->getValue() : std::string();
 }
@@ -11227,7 +11229,7 @@ Node::getBeforeRenderCallback() const
 std::string
 Node::getBeforeFrameRenderCallback() const
 {
-    boost::shared_ptr<KnobString> s = _imp->beforeFrameRender.lock();
+    KnobStringPtr s = _imp->beforeFrameRender.lock();
 
     return s ? s->getValue() : std::string();
 }
@@ -11235,7 +11237,7 @@ Node::getBeforeFrameRenderCallback() const
 std::string
 Node::getAfterRenderCallback() const
 {
-    boost::shared_ptr<KnobString> s = _imp->afterRender.lock();
+    KnobStringPtr s = _imp->afterRender.lock();
 
     return s ? s->getValue() : std::string();
 }
@@ -11243,7 +11245,7 @@ Node::getAfterRenderCallback() const
 std::string
 Node::getAfterFrameRenderCallback() const
 {
-    boost::shared_ptr<KnobString> s = _imp->afterFrameRender.lock();
+    KnobStringPtr s = _imp->afterFrameRender.lock();
 
     return s ? s->getValue() : std::string();
 }
@@ -11251,7 +11253,7 @@ Node::getAfterFrameRenderCallback() const
 std::string
 Node::getAfterNodeCreatedCallback() const
 {
-    boost::shared_ptr<KnobString> s = _imp->nodeCreatedCallback.lock();
+    KnobStringPtr s = _imp->nodeCreatedCallback.lock();
 
     return s ? s->getValue() : std::string();
 }
@@ -11259,7 +11261,7 @@ Node::getAfterNodeCreatedCallback() const
 std::string
 Node::getBeforeNodeRemovalCallback() const
 {
-    boost::shared_ptr<KnobString> s = _imp->nodeRemovalCallback.lock();
+    KnobStringPtr s = _imp->nodeRemovalCallback.lock();
 
     return s ? s->getValue() : std::string();
 }
@@ -11342,7 +11344,7 @@ Node::Implementation::runInputChangedCallback(int index,
     }
 } // Node::Implementation::runInputChangedCallback
 
-boost::shared_ptr<KnobChoice>
+KnobChoicePtr
 Node::getChannelSelectorKnob(int inputNb) const
 {
     std::map<int, ChannelSelector>::const_iterator found = _imp->channelsSelectors.find(inputNb);
@@ -11352,19 +11354,19 @@ Node::getChannelSelectorKnob(int inputNb) const
             ///The effect might be multi-planar and supply its own
             KnobIPtr knob = getKnobByName(kNatronOfxParamOutputChannels);
             if (!knob) {
-                return boost::shared_ptr<KnobChoice>();
+                return KnobChoicePtr();
             }
 
             return boost::dynamic_pointer_cast<KnobChoice>(knob);
         }
 
-        return boost::shared_ptr<KnobChoice>();
+        return KnobChoicePtr();
     }
 
     return found->second.layer.lock();
 }
 
-boost::shared_ptr<KnobBool>
+KnobBoolPtr
 Node::getProcessAllLayersKnob() const
 {
     return _imp->processAllLayersKnob.lock();
@@ -11376,8 +11378,8 @@ Node::checkForPremultWarningAndCheckboxes()
     if ( isOutputNode() ) {
         return;
     }
-    boost::shared_ptr<KnobBool> chans[4];
-    boost::shared_ptr<KnobString> premultWarn = _imp->premultWarning.lock();
+    KnobBoolPtr chans[4];
+    KnobStringPtr premultWarn = _imp->premultWarning.lock();
     if (!premultWarn) {
         return;
     }
@@ -11494,7 +11496,7 @@ Node::refreshChannelSelectors()
         }
 
         {
-            boost::shared_ptr<KnobChoice> layerKnob = it->second.layer.lock();
+            KnobChoicePtr layerKnob = it->second.layer.lock();
 
             bool menuChanged = layerKnob->populateChoices(choices);
             if (menuChanged) {
@@ -11529,7 +11531,7 @@ Node::refreshChannelSelectors()
         }
 
 
-        boost::shared_ptr<KnobChoice> channelKnob = it->second.channel.lock();
+        KnobChoicePtr channelKnob = it->second.channel.lock();
         
         hasChanged |= channelKnob->populateChoices(choices);
         
@@ -11597,7 +11599,7 @@ double
 Node::getHostMixingValue(double time,
                          ViewIdx view) const
 {
-    boost::shared_ptr<KnobDouble> mix = _imp->mixWithSource.lock();
+    KnobDoublePtr mix = _imp->mixWithSource.lock();
 
     return mix ? mix->getValueAtTime(time, 0, view) : 1.;
 }

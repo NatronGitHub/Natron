@@ -246,7 +246,7 @@ enum TrackerDrawStateEnum
     eDrawStateShowScalingHint,
 };
 
-typedef QFutureWatcher<std::pair<boost::shared_ptr<Image>, RectI> > TrackWatcher;
+typedef QFutureWatcher<std::pair<ImagePtr, RectI> > TrackWatcher;
 typedef boost::shared_ptr<TrackWatcher> TrackWatcherPtr;
 
 struct TrackRequestKey
@@ -294,7 +294,7 @@ class TrackerNodeInteract;
 struct TrackerNodePrivate
 {
     TrackerNode* publicInterface;
-    boost::shared_ptr<TrackerNodeInteract> ui;
+    TrackerNodeInteractPtr ui;
 
     TrackerNodePrivate(TrackerNode* publicInterface);
 
@@ -382,7 +382,7 @@ public:
 
     ~TrackerNodeInteract();
 
-    boost::shared_ptr<TrackerContext> getContext() const;
+    TrackerContextPtr getContext() const;
 
     void onAddTrackClicked(bool clicked);
 
@@ -432,7 +432,7 @@ public:
 
     void refreshSelectedMarkerTexture();
 
-    void convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Image>& image, const boost::shared_ptr<Texture>& tex, const RectI& renderWindow);
+    void convertImageTosRGBOpenGLTexture(const ImagePtr& image, const TexturePtr& tex, const RectI& renderWindow);
 
     void makeMarkerKeyTexture(int time, const TrackMarkerPtr& track);
 
@@ -468,7 +468,7 @@ public:
                                          const QPointF& point,
                                          const QPointF& handleSize);
 
-    bool isNearbyPoint(const boost::shared_ptr<KnobDouble>& knob,
+    bool isNearbyPoint(const KnobDoublePtr& knob,
                        double xWidget,
                        double yWidget,
                        double toleranceWidget,
