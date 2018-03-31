@@ -3244,12 +3244,12 @@ RotoPaint::knobChanged(const KnobIPtr& k,
                 if (!isBezier || isBezier->isLockedRecursive()) {
                     continue;
                 }
-                std::list<BezierCPPtr > cps = isBezier->getControlPoints(view_i);
-                std::list<BezierCPPtr > fps = isBezier->getFeatherPoints(view_i);
+                std::list<BezierCPPtr> cps = isBezier->getControlPoints(view_i);
+                std::list<BezierCPPtr> fps = isBezier->getFeatherPoints(view_i);
                 assert( cps.size() == fps.size() );
 
-                std::list<BezierCPPtr >::const_iterator cpIT = cps.begin();
-                for (std::list<BezierCPPtr >::const_iterator fpIT = fps.begin(); fpIT != fps.end(); ++fpIT, ++cpIT) {
+                std::list<BezierCPPtr>::const_iterator cpIT = cps.begin();
+                for (std::list<BezierCPPtr>::const_iterator fpIT = fps.begin(); fpIT != fps.end(); ++fpIT, ++cpIT) {
                     _imp->ui->selectedCps.push_back( std::make_pair(*cpIT, *fpIT) );
                 }
             }
@@ -3452,7 +3452,7 @@ RotoPaint::onInputChanged(int inputNb)
 
 
 static void
-getRotoItemsByRenderOrderInternal(std::list< RotoDrawableItemPtr > * curves,
+getRotoItemsByRenderOrderInternal(std::list<RotoDrawableItemPtr> * curves,
                                   const KnobTableItemPtr& item,
                                   TimeValue time, ViewIdx view,
                                   bool onlyActives)
@@ -3471,10 +3471,10 @@ getRotoItemsByRenderOrderInternal(std::list< RotoDrawableItemPtr > * curves,
     }
 }
 
-std::list< RotoDrawableItemPtr >
+std::list<RotoDrawableItemPtr>
 RotoPaintKnobItemsTable::getActivatedRotoPaintItemsByRenderOrder(TimeValue time, ViewIdx view) const
 {
-    std::list< RotoDrawableItemPtr > ret;
+    std::list<RotoDrawableItemPtr> ret;
     std::vector<KnobTableItemPtr> topLevelItems = getTopLevelItems();
 
     // Roto should have only a single top level layer
@@ -3487,10 +3487,10 @@ RotoPaintKnobItemsTable::getActivatedRotoPaintItemsByRenderOrder(TimeValue time,
     return ret;
 }
 
-std::list< RotoDrawableItemPtr >
+std::list<RotoDrawableItemPtr>
 RotoPaintKnobItemsTable::getRotoPaintItemsByRenderOrder() const
 {
-    std::list< RotoDrawableItemPtr > ret;
+    std::list<RotoDrawableItemPtr> ret;
     std::vector<KnobTableItemPtr> topLevelItems;
 
 #ifdef ROTOPAINT_ENABLE_PLANARTRACKER
@@ -3803,13 +3803,13 @@ RotoPaintKnobItemsTable::createSerializationFromItem(const KnobTableItemPtr& ite
 }
 
 bool
-RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDrawableItemPtr >& items,  int* blendingMode) const
+RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDrawableItemPtr>& items,  int* blendingMode) const
 {
     // Iterate over items, if they all have the same compositing operator, concatenate. Concatenation only works for Solids or Comp items. If a comp item has a mask or mix is animated or different than 1, we cannot concatenate
     bool operatorSet = false;
     int comp_i = -1;
 
-    for (std::list<RotoDrawableItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
+    for (std::list<RotoDrawableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
 
         MergingFunctionEnum op = (MergingFunctionEnum)(*it)->getOperatorKnob()->getValue();
 
@@ -3873,7 +3873,7 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
 bool
 RotoPaint::isRotoPaintTreeConcatenatable() const
 {
-    std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoPaintItemsByRenderOrder();
+    std::list<RotoDrawableItemPtr> items = _imp->knobsTable->getRotoPaintItemsByRenderOrder();
     int bop;
     return _imp->isRotoPaintTreeConcatenatableInternal(items, &bop);
 }
@@ -3939,7 +3939,7 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
     {
         QMutexLocker k(&globalMergeNodesMutex);
         for (NodesList::iterator it = globalMergeNodes.begin(); it != globalMergeNodes.end(); ++it) {
-            const std::vector<NodeWPtr > &inputs = (*it)->getInputs();
+            const std::vector<NodeWPtr> &inputs = (*it)->getInputs();
 
             // Merge node goes like this: B, A, Mask, A2, A3, A4 ...
             assert( inputs.size() >= 3 && (*it)->isInputMask(2) );
@@ -4089,7 +4089,7 @@ RotoPaint::refreshRotoPaintTree()
 
 
     // Get the items by render order. In the GUI they appear from bottom to top.
-    std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoPaintItemsByRenderOrder();
+    std::list<RotoDrawableItemPtr> items = _imp->knobsTable->getRotoPaintItemsByRenderOrder();
 
     // Check if the tree can be concatenated into a single merge node
     int blendingOperator = -1;
@@ -4148,9 +4148,9 @@ RotoPaint::refreshRotoPaintTree()
     Point nodePosition = {0.,0.};
     Point mergeNodeBeginPos = {0, 300};
 
-    std::list<RotoDrawableItemPtr >::const_iterator prev = items.end();
+    std::list<RotoDrawableItemPtr>::const_iterator prev = items.end();
     --prev;
-    for (std::list<RotoDrawableItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
+    for (std::list<RotoDrawableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
 
         if (prev == items.end()) {
             prev = items.begin();
@@ -4564,8 +4564,8 @@ RotoPaintPrivate::refreshSourceKnobs()
 
 
     // Refresh all items menus aswell
-    std::list< RotoDrawableItemPtr > drawables = knobsTable->getRotoPaintItemsByRenderOrder();
-    for (std::list< RotoDrawableItemPtr > ::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
+    std::list<RotoDrawableItemPtr> drawables = knobsTable->getRotoPaintItemsByRenderOrder();
+    for (std::list<RotoDrawableItemPtr> ::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
         {
             KnobChoicePtr itemSourceKnob = (*it)->getMergeInputAChoiceKnob();
             if (itemSourceKnob) {
@@ -4617,14 +4617,14 @@ RotoPaint::removeSoloItem(const RotoDrawableItemPtr& item)
     _imp->soloItems.erase(found);
 }
 
-std::list< RotoDrawableItemPtr >
+std::list<RotoDrawableItemPtr>
 RotoPaint::getRotoPaintItemsByRenderOrder() const
 {
     return _imp->knobsTable->getRotoPaintItemsByRenderOrder();
 }
 
 
-std::list< RotoDrawableItemPtr >
+std::list<RotoDrawableItemPtr>
 RotoPaint::getActivatedRotoPaintItemsByRenderOrder(TimeValue time, ViewIdx view) const
 {
     return _imp->knobsTable->getActivatedRotoPaintItemsByRenderOrder(time, view);

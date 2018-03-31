@@ -191,7 +191,7 @@ Node::getInputIndicesConnectedToThisNode(const NodeConstPtr& outputNode) const
     return ret;
 }
 
-const std::vector<NodeWPtr > &
+const std::vector<NodeWPtr> &
 Node::getInputs() const
 {
     ////Only called by the main-thread
@@ -200,7 +200,7 @@ Node::getInputs() const
 }
 
 
-std::vector<NodeWPtr >
+std::vector<NodeWPtr>
 Node::getInputs_copy() const
 {
     QMutexLocker l(&_imp->inputsMutex);
@@ -617,13 +617,13 @@ Node::isNodeUpstreamInternal(const NodeConstPtr& input, std::set<NodeConstPtr>& 
     }
 
     NodeConstPtr thisShared = shared_from_this();
-    std::pair< std::set<NodeConstPtr>::iterator, bool> insertOk = markedNodes.insert(thisShared);
+    std::pair<std::set<NodeConstPtr>::iterator, bool> insertOk = markedNodes.insert(thisShared);
     if (!insertOk.second) {
         return false;
     }
 
 
-    std::vector<NodeWPtr > inputs = getInputs_copy();
+    std::vector<NodeWPtr> inputs = getInputs_copy();
     for (std::size_t i = 0; i  < inputs.size(); ++i) {
         if (inputs[i].lock() == input) {
             return true;
@@ -1547,7 +1547,7 @@ Node::autoConnect(const NodePtr& selected)
     // If behaviour is 1 , just check that we can effectively connect the node to avoid moving them for nothing
     // otherwise fail
     if (behavior == eAutoConnectBehaviorAbove) {
-        const std::vector<NodeWPtr > & inputs = selected->getInputs();
+        const std::vector<NodeWPtr> & inputs = selected->getInputs();
         bool oneInputEmpty = false;
         for (std::size_t i = 0; i < inputs.size(); ++i) {
             if ( !inputs[i].lock() ) {
@@ -1579,7 +1579,7 @@ Node::autoConnect(const NodePtr& selected)
 
         ///If this is the first connected input, insert it in a "linear" way so the tree remains vertical
         int nbConnectedInput = 0;
-        const std::vector<NodeWPtr > & inputs = selected->getInputs();
+        const std::vector<NodeWPtr> & inputs = selected->getInputs();
         for (std::size_t i = 0; i < inputs.size(); ++i) {
             if ( inputs[i].lock() ) {
                 ++nbConnectedInput;

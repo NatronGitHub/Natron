@@ -187,7 +187,7 @@ public:
      **/
     WarpKeysCommand(const AnimItemDimViewKeyFramesMap& keys,
                     const AnimationModuleBasePtr& model,
-                    const std::vector<NodeAnimPtr >& nodes,
+                    const std::vector<NodeAnimPtr>& nodes,
                     const std::vector<TableItemAnimPtr>& tableItems,
                     double dt,
                     double dv,

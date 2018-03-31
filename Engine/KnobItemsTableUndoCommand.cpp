@@ -115,12 +115,12 @@ AddItemsCommand::redo()
     _isFirstRedo = false;
 }
 
-RemoveItemsCommand::RemoveItemsCommand(const std::list<KnobTableItemPtr > &items)
+RemoveItemsCommand::RemoveItemsCommand(const std::list<KnobTableItemPtr> &items)
     : UndoCommand()
     , _items()
 {
     assert( !items.empty() );
-    for (std::list<KnobTableItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
+    for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
         ItemToRemove t;
         t.item = *it;
         KnobItemsTablePtr model = (*it)->getModel();

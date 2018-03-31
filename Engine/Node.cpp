@@ -1708,7 +1708,7 @@ Node::setPagesOrder(const std::list<std::string>& pages)
         }
     }
     int index = 0;
-    for (std::vector<KnobIPtr >::iterator it =  pagesOrdered.begin(); it != pagesOrdered.end(); ++it, ++index) {
+    for (std::vector<KnobIPtr>::iterator it =  pagesOrdered.begin(); it != pagesOrdered.end(); ++it, ++index) {
         if (*it) {
             getEffectInstance()->insertKnob(index, *it);
         }

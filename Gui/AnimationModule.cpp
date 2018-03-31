@@ -75,7 +75,7 @@
 NATRON_NAMESPACE_ENTER
 
 typedef std::map<KnobIWPtr, KnobGui *> KnobsAndGuis;
-typedef std::pair<QTreeWidgetItem *, NodeAnimPtr > TreeItemAndNodeAnim;
+typedef std::pair<QTreeWidgetItem *, NodeAnimPtr> TreeItemAndNodeAnim;
 typedef std::pair<QTreeWidgetItem *, KnobAnim *> TreeItemAndKnobAnim;
 typedef std::map<DimensionViewPair, QTreeWidgetItem* ,DimensionViewPairCompare> PerDimViewItemMap;
 typedef std::map<ViewIdx, QTreeWidgetItem*> PerViewItemMap;
@@ -247,13 +247,13 @@ NodePtr
 AnimationModulePrivate::getNearestReaderFromInputs_recursive(const NodePtr& node,
                                                        std::list<NodePtr>& markedNodes) const
 {
-    const std::vector<NodeWPtr > &inputs = node->getInputs();
+    const std::vector<NodeWPtr> &inputs = node->getInputs();
 
     if ( std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end() ) {
         return NodePtr();
     }
     markedNodes.push_back(node);
-    for (std::vector<NodeWPtr >::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+    for (std::vector<NodeWPtr>::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
         NodePtr input = it->lock();
 
         if (!input) {
@@ -276,7 +276,7 @@ AnimationModulePrivate::getNearestReaderFromInputs_recursive(const NodePtr& node
 void
 AnimationModulePrivate::getInputs_recursive(const NodePtr& node,
                                             std::list<NodePtr>& markedNodes,
-                                            std::vector<NodeAnimPtr > *result) const
+                                            std::vector<NodeAnimPtr> *result) const
 {
     if (std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end()) {
         return;
@@ -285,8 +285,8 @@ AnimationModulePrivate::getInputs_recursive(const NodePtr& node,
     markedNodes.push_back(node);
 
 
-    const std::vector<NodeWPtr > &inputs = node->getInputs();
-    for (std::vector<NodeWPtr >::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+    const std::vector<NodeWPtr> &inputs = node->getInputs();
+    for (std::vector<NodeWPtr>::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
         NodePtr input = it->lock();
 
         if (!input) {
@@ -446,7 +446,7 @@ AnimationModule::findItem(QTreeWidgetItem* treeItem, AnimatedItemTypeEnum *type,
 } // findItem
 
 void
-AnimationModule::getTopLevelNodes(bool onlyVisible, std::vector<NodeAnimPtr >* nodes) const
+AnimationModule::getTopLevelNodes(bool onlyVisible, std::vector<NodeAnimPtr>* nodes) const
 {
     AnimationModuleTreeView* treeView = _imp->editor->getTreeView();
     for (std::list<NodeAnimPtr>::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
@@ -552,9 +552,9 @@ NodeAnimPtr AnimationModule::getGroupNodeAnim(const NodeAnimPtr& node) const
     return parentGroupNodeAnim;
 }
 
-std::vector<NodeAnimPtr > AnimationModule::getChildrenNodes(const NodeAnimPtr& node) const
+std::vector<NodeAnimPtr> AnimationModule::getChildrenNodes(const NodeAnimPtr& node) const
 {
-    std::vector<NodeAnimPtr > children;
+    std::vector<NodeAnimPtr> children;
     AnimatedItemTypeEnum nodeType = node->getItemType();
     if (nodeType == eAnimatedItemTypeGroup) {
 
@@ -622,7 +622,7 @@ AnimationModule::getEditor() const
 void
 AnimationModule::renameSelectedNode()
 {
-    const std::list<NodeAnimPtr >& selectedNodes = _imp->selectionModel->getCurrentNodesSelection();
+    const std::list<NodeAnimPtr>& selectedNodes = _imp->selectionModel->getCurrentNodesSelection();
     if ( selectedNodes.empty() || (selectedNodes.size() > 1) ) {
         Dialogs::errorDialog( tr("Rename node").toStdString(), tr("You must select exactly 1 node to rename.").toStdString() );
         return;

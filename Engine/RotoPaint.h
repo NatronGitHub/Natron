@@ -563,8 +563,8 @@ public:
 
     bool shouldDrawHostOverlay() const;
 
-    std::list< RotoDrawableItemPtr > getRotoPaintItemsByRenderOrder() const;
-    std::list< RotoDrawableItemPtr > getActivatedRotoPaintItemsByRenderOrder(TimeValue time, ViewIdx view) const;
+    std::list<RotoDrawableItemPtr> getRotoPaintItemsByRenderOrder() const;
+    std::list<RotoDrawableItemPtr> getActivatedRotoPaintItemsByRenderOrder(TimeValue time, ViewIdx view) const;
 
 #ifdef ROTOPAINT_ENABLE_PLANARTRACKER
     void createPlanarTrackForShape(const RotoDrawableItemPtr& item);

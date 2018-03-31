@@ -124,7 +124,7 @@ struct AddKnobDialogPrivate
     Label* parentPageLabel;
     ComboBox* parentPage;
     std::list<KnobGroupPtr> userGroups;
-    std::list<KnobPagePtr > userPages; //< all user pages except the "User" one
+    std::list<KnobPagePtr> userPages; //< all user pages except the "User" one
 
     AddKnobDialogPrivate(DockablePanel* panel)
         : knob()
@@ -937,7 +937,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         }
     }
 
-    for (std::list<KnobPagePtr >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
+    for (std::list<KnobPagePtr>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
         _imp->parentPage->addItem( QString::fromUtf8( (*it)->getName().c_str() ) );
     }
     _imp->parentPage->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The tab under which this parameter will appear."), NATRON_NAMESPACE::WhiteSpaceNormal) );
@@ -951,7 +951,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         if (isTopLevelParentAPage) {
             int index = 0; // 1 because of the "User" item
             bool found = false;
-            for (std::list<KnobPagePtr >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
+            for (std::list<KnobPagePtr>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
                 if (*it == isTopLevelParentAPage) {
                     found = true;
                     break;
@@ -966,7 +966,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         ///If the selected page name in the manage user params dialog is valid, set the page accordingly
         if ( _imp->parentPage && !selectedPageName.empty() ) {
             int index = 0;
-            for (std::list<KnobPagePtr >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
+            for (std::list<KnobPagePtr>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
                 if ( (*it)->getName() == selectedPageName ) {
                     _imp->parentPage->setCurrentIndex(index, false);
                     pageIndexLoaded = index;

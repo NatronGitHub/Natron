@@ -70,7 +70,7 @@ public:
      * @brief Return all items in the model.
      * @param withKeyFrames if true, the keyframes will have each of the item/dim/view associated to the keyframes for this particular item.
      **/
-    void getAllItems(bool withKeyFrames, AnimItemDimViewKeyFramesMap* keyframes, std::vector<NodeAnimPtr >* nodes, std::vector<TableItemAnimPtr>* tableItems) const;
+    void getAllItems(bool withKeyFrames, AnimItemDimViewKeyFramesMap* keyframes, std::vector<NodeAnimPtr>* nodes, std::vector<TableItemAnimPtr>* tableItems) const;
 
     /**
      * @brief Clear all items from selection
@@ -97,7 +97,7 @@ public:
      **/
     void makeSelection(const AnimItemDimViewKeyFramesMap &keys,
                        const std::vector<TableItemAnimPtr>& selectedTableItems,
-                       const std::vector<NodeAnimPtr >& rangeNodes,
+                       const std::vector<NodeAnimPtr>& rangeNodes,
                        SelectionTypeFlags selectionFlags);
 
     /**
@@ -108,7 +108,7 @@ public:
     
     const AnimItemDimViewKeyFramesMap& getCurrentKeyFramesSelection() const;
     
-    const std::list<NodeAnimPtr >& getCurrentNodesSelection() const;
+    const std::list<NodeAnimPtr>& getCurrentNodesSelection() const;
     
     const std::list<TableItemAnimPtr>& getCurrentTableItemsSelection() const;
 

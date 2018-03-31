@@ -1511,7 +1511,7 @@ TabBar::mouseMoveEvent(QMouseEvent* e)
 QPixmap
 TabBar::makePixmapForDrag(int index)
 {
-    std::vector< std::pair<QString, QIcon > > tabs;
+    std::vector<std::pair<QString, QIcon > > tabs;
 
     for (int i = 0; i < count(); ++i) {
         tabs.push_back( std::make_pair( tabText(i), tabIcon(i) ) );

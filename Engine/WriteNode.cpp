@@ -210,7 +210,7 @@ public:
     KnobChoiceWPtr pluginSelectorKnob;
     KnobSeparatorWPtr separatorKnob;
     KnobButtonWPtr renderButtonKnob;
-    std::list<KnobIWPtr > writeNodeKnobs;
+    std::list<KnobIWPtr> writeNodeKnobs;
 
     //MT only
     int creatingWriteNode;
@@ -311,7 +311,7 @@ WriteNodePrivate::placeWriteNodeKnobsInPage()
     if (!isPage) {
         return;
     }
-    for (std::list<KnobIWPtr >::iterator it = writeNodeKnobs.begin(); it != writeNodeKnobs.end(); ++it) {
+    for (std::list<KnobIWPtr>::iterator it = writeNodeKnobs.begin(); it != writeNodeKnobs.end(); ++it) {
         KnobIPtr knob = it->lock();
         knob->setParentKnob( KnobIPtr() );
         isPage->removeKnob(knob);
@@ -326,7 +326,7 @@ WriteNodePrivate::placeWriteNodeKnobsInPage()
     }
     if (index != -1) {
         ++index;
-        for (std::list<KnobIWPtr >::iterator it = writeNodeKnobs.begin(); it != writeNodeKnobs.end(); ++it) {
+        for (std::list<KnobIWPtr>::iterator it = writeNodeKnobs.begin(); it != writeNodeKnobs.end(); ++it) {
             KnobIPtr knob = it->lock();
             isPage->insertKnob(index, knob);
             ++index;
@@ -415,7 +415,7 @@ WriteNodePrivate::destroyWriteNode()
 
                 //If it is a knob of this WriteNode, do not destroy it
                 bool isWriteNodeKnob = false;
-                for (std::list<KnobIWPtr >::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
+                for (std::list<KnobIWPtr>::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
                     if (it2->lock() == *it) {
                         isWriteNodeKnob = true;
                         break;
@@ -781,7 +781,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         SERIALIZATION_NAMESPACE::NodeSerializationPtr s(new SERIALIZATION_NAMESPACE::NodeSerialization);
         if (serialization) {
             *s = *serialization;
-            args->setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, s);
+            args->setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization, s);
         }
         args->setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
         args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
@@ -946,7 +946,7 @@ WriteNode::initializeKnobs()
     frameIncrKnob->setDefaultValue(1);
     controlpage->addKnob(frameIncrKnob);
     /*if (mainPage) {
-        std::vector< KnobIPtr > children = mainPage->getChildren();
+        std::vector<KnobIPtr> children = mainPage->getChildren();
         bool foundLastFrame = false;
         for (std::size_t i = 0; i < children.size(); ++i) {
             if (children[i]->getName() == "lastFrame") {

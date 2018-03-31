@@ -904,7 +904,7 @@ struct CacheBucketIPCData
 {
     typedef MemorySegmentEntryHeader<persistent> EntryType;
     typedef bip::offset_ptr<EntryType> EntryTypePtr;
-    typedef std::pair<const U64, EntryTypePtr > EntriesMapValueType;
+    typedef std::pair<const U64, EntryTypePtr> EntriesMapValueType;
     typedef bip::allocator<EntriesMapValueType, ExternalSegmentType::segment_manager> EntriesMapValueType_Allocator;
     typedef bip::map<U64, EntryTypePtr, std::less<U64>, EntriesMapValueType_Allocator> EntriesMap;
 
@@ -3916,7 +3916,7 @@ Cache<persistent>::retrieveAndLockTiles(const CacheEntryBasePtr& entry,
                     }
                 }
 #endif
-                assert((tileDataPtr >= data) && (tileDataPtr < (data + NATRON_NUM_TILES_PER_FILE * NATRON_TILE_SIZE_BYTES)));
+                assert((tileDataPtr>= data) && (tileDataPtr < (data + NATRON_NUM_TILES_PER_FILE * NATRON_TILE_SIZE_BYTES)));
                 (*existingTilesData)[i] = tileDataPtr;
             } // for each tile indices
         }
@@ -3951,7 +3951,7 @@ Cache<persistent>::checkTileIndex(TileInternalIndex encodedIndex) const
     }
     char* data = _imp->tilesStorage[encodedIndex.index.fileIndex]->getData();
     char* tileDataPtr = getTileIndexPointer(data, encodedIndex);
-    if (tileDataPtr < data || tileDataPtr >= (data + NATRON_NUM_TILES_PER_FILE * NATRON_TILE_SIZE_BYTES)) {
+    if (tileDataPtr < data || tileDataPtr>= (data + NATRON_NUM_TILES_PER_FILE * NATRON_TILE_SIZE_BYTES)) {
         assert(false);
         return false;
     }

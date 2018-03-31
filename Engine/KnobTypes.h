@@ -1229,7 +1229,7 @@ public:
 
     void insertKnob(int index, const KnobIPtr& k);
 
-    std::vector< KnobIPtr > getChildren() const;
+    std::vector<KnobIPtr> getChildren() const;
 
     void setAsTab();
 
@@ -1318,7 +1318,7 @@ public:
 
     void insertKnob(int index, const KnobIPtr& k);
 
-    std::vector< KnobIPtr >  getChildren() const;
+    std::vector<KnobIPtr> getChildren() const;
     static const std::string & typeNameStatic();
 
 private:
@@ -1477,9 +1477,9 @@ public:
     ActionRetCodeEnum deleteAllControlPoints(ValueChangedReasonEnum reason, DimIdx dimension, ViewSetSpec view) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
 
-    void saveParametricCurves(std::map<std::string,std::list< SERIALIZATION_NAMESPACE::CurveSerialization > >* curves) const;
+    void saveParametricCurves(std::map<std::string,std::list<SERIALIZATION_NAMESPACE::CurveSerialization > >* curves) const;
 
-    void loadParametricCurves(const std::map<std::string,std::list< SERIALIZATION_NAMESPACE::CurveSerialization > >& curves);
+    void loadParametricCurves(const std::map<std::string,std::list<SERIALIZATION_NAMESPACE::CurveSerialization > >& curves);
 
     virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE FINAL;
 

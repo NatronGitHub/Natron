@@ -964,8 +964,8 @@ AnimationModuleTreeView::onNodeAdded(const NodeAnimPtr& node)
     }
 
     // Move all nodes that should be parented to this node
-    std::vector<NodeAnimPtr > childrenNodes = model->getChildrenNodes(node);
-    for (std::vector<NodeAnimPtr >::const_iterator it = childrenNodes.begin();
+    std::vector<NodeAnimPtr> childrenNodes = model->getChildrenNodes(node);
+    for (std::vector<NodeAnimPtr>::const_iterator it = childrenNodes.begin();
          it != childrenNodes.end();
          ++it) {
 
@@ -1093,7 +1093,7 @@ AnimationModuleTreeView::onSelectionModelKeyframeSelectionChanged(bool recurse)
     AnimationModuleSelectionModelPtr selModel = getModel()->getSelectionModel();
 
     const AnimItemDimViewKeyFramesMap& selectedKeys = selModel->getCurrentKeyFramesSelection();
-    const std::list<NodeAnimPtr >& selectedNodes = selModel->getCurrentNodesSelection();
+    const std::list<NodeAnimPtr>& selectedNodes = selModel->getCurrentNodesSelection();
     const std::list<TableItemAnimPtr>& tableItems = selModel->getCurrentTableItemsSelection();
 
 
@@ -1116,7 +1116,7 @@ AnimationModuleTreeView::onSelectionModelKeyframeSelectionChanged(bool recurse)
         }
     }
 
-    for (std::list<NodeAnimPtr >::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
+    for (std::list<NodeAnimPtr>::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
         toSelect.insert((*it)->getTreeItem());
     }
 

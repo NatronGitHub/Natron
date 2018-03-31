@@ -214,14 +214,14 @@ AddMultipleNodesCommand::redo()
 }
 
 RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
-                                                       const std::list<NodeGuiPtr > & nodes,
+                                                       const std::list<NodeGuiPtr> & nodes,
                                                        QUndoCommand *parent)
     : QUndoCommand(parent)
     , _nodes()
     , _graph(graph)
     , _isRedone(false)
 {
-    for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<NodeGuiPtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodeToRemove n;
         n.node = (*it)->getNode();
         _nodes.push_back(n);
@@ -503,7 +503,7 @@ InsertNodeCommand::redo()
 
     ///find out if the node is already connected to what the edge is connected
     bool alreadyConnected = false;
-    const std::vector<NodeWPtr > & inpNodes = newSrcInternal->getInputs();
+    const std::vector<NodeWPtr> & inpNodes = newSrcInternal->getInputs();
     if (oldSrcInternal) {
         for (std::size_t i = 0; i < inpNodes.size(); ++i) {
             if (inpNodes[i].lock() == oldSrcInternal) {
@@ -696,7 +696,7 @@ private:
                            NodeGui* currentNode, const QPointF & currentNodeScenePos, std::list<NodeGui*> & usedNodes);
 };
 
-typedef std::list< boost::shared_ptr<Tree> > TreeList;
+typedef std::list<boost::shared_ptr<Tree> > TreeList;
 
 void
 Tree::buildTreeInternal(const NodesGuiList& selectedNodes,
@@ -838,12 +838,12 @@ Tree::buildTreeInternal(const NodesGuiList& selectedNodes,
 } // buildTreeInternal
 
 static bool
-hasNodeOutputsInList(const std::list<NodeGuiPtr >& nodes,
+hasNodeOutputsInList(const std::list<NodeGuiPtr>& nodes,
                      const NodeGuiPtr& node)
 {
     OutputNodesMap outputs;
     node->getNode()->getOutputs(outputs);
-    for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<NodeGuiPtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if (*it != node) {
             NodePtr n = (*it)->getNode();
             OutputNodesMap::const_iterator foundOutput = outputs.find(n);
@@ -860,7 +860,7 @@ hasNodeOutputsInList(const std::list<NodeGuiPtr >& nodes,
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
-RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr > & nodes,
+RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr> & nodes,
                                              QUndoCommand *parent)
     : QUndoCommand(parent)
     , _nodes()
@@ -883,7 +883,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr > & node
     /// Each node that doesn't have any output is a potential tree.
     TreeList trees;
 
-    for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<NodeGuiPtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( !hasNodeOutputsInList( nodes, (*it) ) ) {
             boost::shared_ptr<Tree> newTree = boost::make_shared<Tree>();
             newTree->buildTree(*it, nodes, usedNodes);
@@ -950,12 +950,12 @@ RearrangeNodesCommand::redo()
     setText( tr("Rearrange nodes") );
 }
 
-DisableNodesCommand::DisableNodesCommand(const std::list<NodeGuiPtr > & nodes,
+DisableNodesCommand::DisableNodesCommand(const std::list<NodeGuiPtr> & nodes,
                                          QUndoCommand *parent)
     : QUndoCommand(parent)
     , _nodes()
 {
-    for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<NodeGuiPtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         _nodes.push_back(*it);
     }
 }
@@ -978,12 +978,12 @@ DisableNodesCommand::redo()
     setText( tr("Disable nodes") );
 }
 
-EnableNodesCommand::EnableNodesCommand(const std::list<NodeGuiPtr > & nodes,
+EnableNodesCommand::EnableNodesCommand(const std::list<NodeGuiPtr> & nodes,
                                        QUndoCommand *parent)
     : QUndoCommand(parent)
     , _nodes()
 {
-    for (std::list<NodeGuiPtr > ::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<NodeGuiPtr> ::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         _nodes.push_back(*it);
     }
 }

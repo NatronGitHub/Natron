@@ -193,15 +193,15 @@ NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection,
                                    SERIALIZATION_NAMESPACE::NodeSerializationList* clipboard)
 {
     clipboard->clear();
-    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > tmp;
+    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> > tmp;
     copyNodesInternal(selection, &tmp);
-    for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = tmp.begin(); it!=tmp.end(); ++it) {
+    for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> >::const_iterator it = tmp.begin(); it!=tmp.end(); ++it) {
         clipboard->push_back(it->second);
     }
 }
 
 void
-NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection, std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >* clipboard)
+NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection, std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> >* clipboard)
 {
     // Clear the list
     clipboard->clear();

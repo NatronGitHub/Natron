@@ -1151,7 +1151,7 @@ AnimationModuleEditor::onKeyframeTimeSpinBoxValueChanged(double value)
     AnimItemDimViewKeyFramesMap selectedKeys;
     selectedKeys[id].insert(keyData);
     double dt = value - keyData.getTime();
-    _imp->model->pushUndoCommand(new WarpKeysCommand(selectedKeys, _imp->model, std::vector<NodeAnimPtr >(), std::vector<TableItemAnimPtr >(), dt, 0));
+    _imp->model->pushUndoCommand(new WarpKeysCommand(selectedKeys, _imp->model, std::vector<NodeAnimPtr>(), std::vector<TableItemAnimPtr>(), dt, 0));
 }
 
 
@@ -1185,7 +1185,7 @@ AnimationModuleEditor::onKeyframeValueSpinBoxValueChanged(double value)
     AnimItemDimViewKeyFramesMap selectedKeys;
     selectedKeys[id].insert(keyData);
     double dv = value - keyData.getValue();
-    _imp->model->pushUndoCommand(new WarpKeysCommand(selectedKeys, _imp->model, std::vector<NodeAnimPtr >(), std::vector<TableItemAnimPtr >(), 0, dv));
+    _imp->model->pushUndoCommand(new WarpKeysCommand(selectedKeys, _imp->model, std::vector<NodeAnimPtr>(), std::vector<TableItemAnimPtr>(), 0, dv));
 }
 
 void

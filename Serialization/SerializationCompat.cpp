@@ -49,7 +49,7 @@ Compat::RotoLayerSerialization::convertRotoLayerSerialization(SERIALIZATION_NAME
 {
     Compat::RotoItemSerialization::convertRotoItemSerialization(outSerialization);
     outSerialization->verbatimTag = kSerializationRotoGroupTag;
-    for (std::list <boost::shared_ptr<Compat::RotoItemSerialization> >::const_iterator it = children.begin(); it != children.end(); ++it) {
+    for (std::list<boost::shared_ptr<Compat::RotoItemSerialization> >::const_iterator it = children.begin(); it != children.end(); ++it) {
         Compat::BezierSerialization* isBezier = dynamic_cast<Compat::BezierSerialization*>(it->get());
         Compat::RotoLayerSerialization* isLayer = dynamic_cast<Compat::RotoLayerSerialization*>(it->get());
         Compat::RotoStrokeItemSerialization* isStroke = dynamic_cast<Compat::RotoStrokeItemSerialization*>(it->get());

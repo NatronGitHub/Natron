@@ -227,7 +227,7 @@ NodeGraph::checkForHints(bool shiftdown,
 
         ///find out if the node is already connected to what the edge is connected
         bool alreadyConnected = false;
-        const std::vector<NodeWPtr > & inpNodes = selectedNode->getNode()->getInputs();
+        const std::vector<NodeWPtr> & inpNodes = selectedNode->getNode()->getInputs();
         for (std::size_t i = 0; i < inpNodes.size(); ++i) {
             if ( inpNodes[i].lock() == edge->getSource()->getNode() ) {
                 alreadyConnected = true;

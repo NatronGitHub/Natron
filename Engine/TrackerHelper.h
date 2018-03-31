@@ -117,7 +117,7 @@ public:
      * but may be negative to track backward.
      * @param viewer A pointer to the viewer that should be updated throughout the tracking operation.
      **/
-    void trackMarkers(const std::list<TrackMarkerPtr >& marks,
+    void trackMarkers(const std::list<TrackMarkerPtr>& marks,
                       TimeValue start,
                       TimeValue end,
                       TimeValue frameStep,

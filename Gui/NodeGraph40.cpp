@@ -173,7 +173,7 @@ NodeGraph::tryReadClipboard(const QPointF& pos, std::istream& ss)
         SERIALIZATION_NAMESPACE::NodeClipBoard cb;
         SERIALIZATION_NAMESPACE::read(std::string(), ss, &cb);
 
-        std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > nodesToPaste;
+        std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> > nodesToPaste;
         for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = cb.nodes.begin(); it != cb.nodes.end(); ++it) {
             nodesToPaste.push_back(std::make_pair(NodePtr(), *it));
         }
@@ -186,7 +186,7 @@ NodeGraph::tryReadClipboard(const QPointF& pos, std::istream& ss)
             SERIALIZATION_NAMESPACE::ProjectSerialization isProject;
             SERIALIZATION_NAMESPACE::read(std::string(), ss, &isProject);
 
-            std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > nodesToPaste;
+            std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> > nodesToPaste;
             for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = isProject._nodes.begin(); it != isProject._nodes.end(); ++it) {
                 nodesToPaste.push_back(std::make_pair(NodePtr(), *it));
             }
@@ -244,7 +244,7 @@ NodeGraph::duplicateSelectedNodes(const QPointF& pos)
         return;
     }
 
-    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > nodesToPaste;
+    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> > nodesToPaste;
     _imp->copyNodesInternal(getSelectedNodes(), &nodesToPaste);
 
 
@@ -267,7 +267,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& pos)
 
         return;
     }
-    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > nodesToPaste;
+    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> > nodesToPaste;
     _imp->copyNodesInternal(getSelectedNodes(), &nodesToPaste);
 
     _imp->pasteNodesInternal(nodesToPaste, pos, NodeGraphPrivate::PasteNodesFlags(NodeGraphPrivate::ePasteNodesFlagCloneNodes | NodeGraphPrivate::ePasteNodesFlagRelativeToCentroid | NodeGraphPrivate::ePasteNodesFlagUseUndoCommand));

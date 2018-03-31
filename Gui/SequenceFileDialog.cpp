@@ -2797,11 +2797,11 @@ FileDialogComboBox::paintEvent(QPaintEvent* /*e*/)
     painter.drawControl(QStyle::CE_ComboBoxLabel, opt);
 }
 
-std::vector< SequenceParsing::SequenceFromFilesPtr >
+std::vector<SequenceParsing::SequenceFromFilesPtr>
 SequenceFileDialog::fileSequencesFromFilesList(const QStringList & files,
                                                const QStringList & supportedFileTypes)
 {
-    std::vector< SequenceParsing::SequenceFromFilesPtr > sequences;
+    std::vector<SequenceParsing::SequenceFromFilesPtr> sequences;
 
     for (int i = 0; i < files.size(); ++i) {
         SequenceParsing::FileNameContent fileContent( files.at(i).toStdString() );

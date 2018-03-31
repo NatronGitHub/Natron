@@ -1815,7 +1815,7 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
             std::vector<ParametricPoint> polygon;
             isBezier->evaluateAtTime(t, view, scale, Bezier::eDeCasteljauAlgorithmIterative, -1, 1., &polygon, 0);
             std::list<std::pair<Point, double> > points;
-            for (std::vector< ParametricPoint> ::iterator it = polygon.begin(); it != polygon.end(); ++it) {
+            for (std::vector<ParametricPoint> ::iterator it = polygon.begin(); it != polygon.end(); ++it) {
                 Point p = {it->x, it->y};
                 points.push_back( std::make_pair(p, 1.) );
             }

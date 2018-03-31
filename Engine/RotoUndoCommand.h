@@ -57,7 +57,7 @@ class MoveControlPointsUndoCommand
 public:
 
     MoveControlPointsUndoCommand(const RotoPaintInteractPtr& roto,
-                                 const std::list< std::pair<BezierCPPtr, BezierCPPtr > > & toDrag
+                                 const std::list<std::pair<BezierCPPtr, BezierCPPtr> > & toDrag
                                  ,
                                  double dx,
                                  double dy,
@@ -79,9 +79,9 @@ private:
     KnobButtonWPtr _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
     TimeValue _time; //< the time at which the change was made
     ViewIdx _view;
-    std::list<RotoDrawableItemPtr > _selectedCurves;
+    std::list<RotoDrawableItemPtr> _selectedCurves;
     std::list<int> _indexesToMove; //< indexes of the control points
-    std::list< std::pair<BezierCPPtr, BezierCPPtr > > _originalPoints, _selectedPoints, _pointsToDrag;
+    std::list<std::pair<BezierCPPtr, BezierCPPtr> > _originalPoints, _selectedPoints, _pointsToDrag;
 };
 
 
@@ -131,8 +131,8 @@ private:
     boost::shared_ptr<Transform::Matrix3x3> _matrix;
     TimeValue _time; //< the time at which the change was made
     ViewIdx _view;
-    std::list<RotoDrawableItemPtr > _selectedCurves;
-    std::list< std::pair<BezierCPPtr, BezierCPPtr > > _originalPoints, _selectedPoints;
+    std::list<RotoDrawableItemPtr> _selectedCurves;
+    std::list<std::pair<BezierCPPtr, BezierCPPtr> > _originalPoints, _selectedPoints;
 };
 
 class AddPointUndoCommand
@@ -187,7 +187,7 @@ public:
                            ViewIdx view);
 
     RemovePointUndoCommand(const RotoPaintInteractPtr& roto,
-                           const std::list< std::pair < BezierCPPtr, BezierCPPtr > > & points,
+                           const std::list<std::pair < BezierCPPtr, BezierCPPtr> > & points,
                            ViewIdx view);
 
     virtual ~RemovePointUndoCommand();
@@ -208,7 +208,7 @@ private:
 
     bool _firstRedoCalled;
     ViewIdx _view;
-    std::list< CurveDesc > _curves;
+    std::list<CurveDesc > _curves;
 };
 
 
@@ -292,8 +292,8 @@ private:
     bool _rippleEditEnabled;
     TimeValue _time; //< the time at which the change was made
     ViewIdx _view;
-    std::list<RotoDrawableItemPtr > _selectedCurves;
-    std::list< std::pair<BezierCPPtr, BezierCPPtr > > _selectedPoints;
+    std::list<RotoDrawableItemPtr> _selectedCurves;
+    std::list<std::pair<BezierCPPtr, BezierCPPtr> > _selectedPoints;
     BezierCPPtr _tangentBeingDragged, _oldCp, _oldFp;
     bool _left;
     bool _breakTangents;
@@ -310,7 +310,7 @@ public:
     MoveFeatherBarUndoCommand(const RotoPaintInteractPtr& roto,
                               double dx,
                               double dy,
-                              const std::pair<BezierCPPtr, BezierCPPtr > & point,
+                              const std::pair<BezierCPPtr, BezierCPPtr> & point,
                               TimeValue time,
                               ViewIdx view);
 
@@ -329,7 +329,7 @@ private:
     TimeValue _time; //< the time at which the change was made
     ViewIdx _view;
     BezierPtr _curve;
-    std::pair<BezierCPPtr, BezierCPPtr > _oldPoint, _newPoint;
+    std::pair<BezierCPPtr, BezierCPPtr> _oldPoint, _newPoint;
 };
 
 
@@ -343,7 +343,7 @@ public:
     struct RemoveFeatherData
     {
         BezierPtr curve;
-        std::list<BezierCPPtr > oldPoints, newPoints;
+        std::list<BezierCPPtr> oldPoints, newPoints;
     };
 
 
@@ -396,7 +396,7 @@ class SmoothCuspUndoCommand
 
 public:
 
-    typedef std::list<std::pair<BezierCPPtr, BezierCPPtr > > SelectedPointList;
+    typedef std::list<std::pair<BezierCPPtr, BezierCPPtr> > SelectedPointList;
     struct SmoothCuspCurveData
     {
         BezierPtr curve;

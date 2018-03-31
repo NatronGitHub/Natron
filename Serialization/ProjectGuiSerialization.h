@@ -519,7 +519,7 @@ class ProjectGuiSerialization
 {
 public:
     // Deprecated: Nodes UI data prior to Natron 2.2
-    std::list< NodeGuiSerialization > _serializedNodes;
+    std::list<NodeGuiSerialization> _serializedNodes;
 
     // The layout of the application windows
     GuiLayoutSerialization _layoutSerialization;

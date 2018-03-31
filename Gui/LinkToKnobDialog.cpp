@@ -199,7 +199,7 @@ LinkToKnobDialog::onNodeComboEditingFinished()
         return;
     }
 
-    const std::vector< KnobIPtr > & knobs = selectedNode->getKnobs();
+    const std::vector<KnobIPtr> & knobs = selectedNode->getKnobs();
     KnobIPtr from = _imp->fromKnob->getKnob();
     for (U32 j = 0; j < knobs.size(); ++j) {
         if ( !knobs[j]->getIsSecret() && (knobs[j] != from) ) {
@@ -237,7 +237,7 @@ KnobIPtr
 LinkToKnobDialog::getSelectedKnobs() const
 {
     QString str = _imp->knobSelectionCombo->itemText( _imp->knobSelectionCombo->activeIndex() );
-    std::map<QString, KnobIPtr >::const_iterator it = _imp->allKnobs.find(str);
+    std::map<QString, KnobIPtr>::const_iterator it = _imp->allKnobs.find(str);
 
     if ( it != _imp->allKnobs.end() ) {
         return it->second;

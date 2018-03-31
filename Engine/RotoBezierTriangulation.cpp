@@ -413,7 +413,7 @@ struct ContourCSGData
 
     std::vector<ContourBezierVertex> polygon;
 
-    std::vector< std::vector<VertexIndex> > contourList;
+    std::vector<std::vector<VertexIndex> > contourList;
 
     std::vector<ContourBezierVertex> generatedPoints;
 
@@ -598,7 +598,7 @@ static void ensurePolygonWindingNumberEqualsOne(const PolygonCSGData& mainData,
                                                 std::vector<PolygonVertex>& modifiedPolygon,
                                                 bool clockWise,
                                                 VertexPointsSetEnum polygonType,
-                                                std::vector< std::vector< VertexIndex > >* contours)
+                                                std::vector<std::vector<VertexIndex > >* contours)
 {
 
     (void)mainData;

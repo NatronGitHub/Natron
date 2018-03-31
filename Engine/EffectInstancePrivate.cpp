@@ -512,7 +512,7 @@ EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToR
         actionArgs.glContextData = args.glContextData;
     }
 
-    std::list< std::list<std::pair<ImagePlaneDesc, ImagePtr> > > planesLists;
+    std::list<std::list<std::pair<ImagePlaneDesc, ImagePtr> > > planesLists;
 
     // If the plug-in not multi-planar, we must provide images matching the color plane N components
     // specified by the getTimeInvariantMetadata action.

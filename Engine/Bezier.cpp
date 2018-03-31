@@ -623,7 +623,7 @@ struct BezierPoint
     Point p, left, right;
 };
 
-static void getBezierPoints(const std::list<BezierCPPtr > & points, TimeValue time, const Transform::Matrix3x3& transform, std::list<BezierPoint> &evaluatedPoints)
+static void getBezierPoints(const std::list<BezierCPPtr> & points, TimeValue time, const Transform::Matrix3x3& transform, std::list<BezierPoint> &evaluatedPoints)
 {
     assert(!points.empty());
     BezierCPs::const_iterator it = points.begin();
@@ -669,7 +669,7 @@ static void getBezierPoints(const std::list<BezierCPPtr > & points, TimeValue ti
 } // getBezierExpandedPoints
 
 RectD
-Bezier::getBezierSegmentListBbox(const std::list<BezierCPPtr > & points,
+Bezier::getBezierSegmentListBbox(const std::list<BezierCPPtr> & points,
                                  double featherDistance,
                                  TimeValue time,
                                  const Transform::Matrix3x3& transform) ///< input/output
@@ -745,7 +745,7 @@ inline double euclDist(double x1, double y1, double x2, double y2)
 }
 
 
-inline void addPointConditionnally(const Point& p, double t, int segmentIndex, std::vector< ParametricPoint >* points)
+inline void addPointConditionnally(const Point& p, double t, int segmentIndex, std::vector<ParametricPoint >* points)
 {
     if (points->empty()) {
         ParametricPoint x;
@@ -772,7 +772,7 @@ inline void addPointConditionnally(const Point& p, double t, int segmentIndex, s
 static void
 recursiveBezierInternal(int segmentIndex, const Point& p0, const Point& p1, const Point& p2, const Point& p3,
                         double t_p0, double t_p1, double t_p2, double t_p3,
-                        double errorScale, int recursionLevel, int maxRecursion, std::vector< ParametricPoint >* points)
+                        double errorScale, int recursionLevel, int maxRecursion, std::vector<ParametricPoint >* points)
 {
 
     if (recursionLevel > maxRecursion) {
@@ -992,7 +992,7 @@ recursiveBezierInternal(int segmentIndex, const Point& p0, const Point& p1, cons
 } // recursiveBezierInternal
 
 static void
-recursiveBezier(const Point& p0, const Point& p1, const Point& p2, const Point& p3, int segmentIndex, bool skipFirstPoint, double errorScale, int maxRecursion, std::vector< ParametricPoint >* points)
+recursiveBezier(const Point& p0, const Point& p1, const Point& p2, const Point& p3, int segmentIndex, bool skipFirstPoint, double errorScale, int maxRecursion, std::vector<ParametricPoint >* points)
 {
     ParametricPoint p0x,p3x;
     p0x.x = p0.x;
@@ -1021,7 +1021,7 @@ bezierSegmentEval(const Point& p0,
                   Bezier::DeCasteljauAlgorithmEnum algo,
                   int nbPointsPerSegment,
                   double errorScale,
-                  std::vector< ParametricPoint >* points, ///< output
+                  std::vector<ParametricPoint >* points, ///< output
                   RectD* bbox = NULL) ///< input/output (optional)
 {
 
@@ -2626,7 +2626,7 @@ static void
 smoothTangent(TimeValue time,
               bool left,
               const BezierCPPtr& p,
-              const std::list < BezierCPPtr > & cps,
+              const std::list<BezierCPPtr> & cps,
               const Transform::Matrix3x3& transform,
               double x,
               double y,
@@ -2641,18 +2641,18 @@ smoothTangent(TimeValue time,
             return;
         }
 
-        std::list < BezierCPPtr >::const_iterator prev = cps.end();
+        std::list<BezierCPPtr>::const_iterator prev = cps.end();
         if ( prev != cps.begin() ) {
             --prev;
         }
-        std::list < BezierCPPtr >::const_iterator next = cps.begin();
+        std::list<BezierCPPtr>::const_iterator next = cps.begin();
         if ( next != cps.end() ) {
             ++next;
         }
 
         int index = 0;
         int cpCount = (int)cps.size();
-        for (std::list < BezierCPPtr >::const_iterator it = cps.begin();
+        for (std::list<BezierCPPtr>::const_iterator it = cps.begin();
              it != cps.end();
              ++it) {
             if ( prev == cps.end() ) {
@@ -2786,7 +2786,7 @@ static bool cuspPoint(TimeValue time,
 static bool smoothPoint(TimeValue time,
                         const Transform::Matrix3x3& transform,
                         const BezierCPPtr& cp,
-                        const std::list < BezierCPPtr > & cps,
+                        const std::list<BezierCPPtr> & cps,
                         bool autoKeying,
                         bool rippleEdit,
                         const std::pair<double, double>& pixelScale)
@@ -3111,7 +3111,7 @@ Bezier::onKeyFrameMoved(const Curve* curve, const KeyFrame& from, const KeyFrame
 
 void
 Bezier::deCasteljau(bool isOpenBezier,
-                    const std::list<BezierCPPtr >& cps,
+                    const std::list<BezierCPPtr>& cps,
                     TimeValue time,
                     const RenderScale &scale,
                     double featherDistance,
@@ -3380,14 +3380,14 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
     return pointsBbox;
 } // Bezier::getBoundingBox
 
-std::list< BezierCPPtr >
+std::list<BezierCPPtr>
 Bezier::getControlPoints(ViewIdx view) const
 {
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker l(&_imp->itemMutex);
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
-        return std::list< BezierCPPtr >();
+        return std::list<BezierCPPtr>();
     }
 
 
@@ -3397,21 +3397,21 @@ Bezier::getControlPoints(ViewIdx view) const
 
 
 
-std::list< BezierCPPtr >
+std::list<BezierCPPtr>
 Bezier::getFeatherPoints(ViewIdx view) const
 {
     ViewIdx view_i = checkIfViewExistsOrFallbackMainView(view);
     QMutexLocker l(&_imp->itemMutex);
     const BezierShape* shape = _imp->getViewShape(view_i);
     if (!shape) {
-        return std::list< BezierCPPtr >();
+        return std::list<BezierCPPtr>();
     }
 
 
     return shape->featherPoints;
 }
 
-std::pair<BezierCPPtr, BezierCPPtr >
+std::pair<BezierCPPtr, BezierCPPtr>
 Bezier::isNearbyControlPoint(double x,
                              double y,
                              double acceptance,
@@ -3578,7 +3578,7 @@ Bezier::getFeatherPointAtIndex(int index, ViewIdx view) const
     return *it;
 }
 
-std::list< std::pair<BezierCPPtr, BezierCPPtr > >
+std::list<std::pair<BezierCPPtr, BezierCPPtr> >
 Bezier::controlPointsWithinRect(TimeValue time,
                                 ViewIdx view,
                                 double l,
@@ -3588,7 +3588,7 @@ Bezier::controlPointsWithinRect(TimeValue time,
                                 double acceptance,
                                 int mode) const
 {
-    std::list< std::pair<BezierCPPtr, BezierCPPtr > > ret;
+    std::list<std::pair<BezierCPPtr, BezierCPPtr> > ret;
 
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3605,7 +3605,7 @@ Bezier::controlPointsWithinRect(TimeValue time,
             double x, y;
             (*it)->getPositionAtTime(time,  &x, &y);
             if ( ( x >= (l - acceptance) ) && ( x <= (r + acceptance) ) && ( y >= (b - acceptance) ) && ( y <= (t - acceptance) ) ) {
-                std::pair<BezierCPPtr, BezierCPPtr > p;
+                std::pair<BezierCPPtr, BezierCPPtr> p;
                 p.first = *it;
                 BezierCPs::const_iterator itF = shape->featherPoints.begin();
                 std::advance(itF, i);
@@ -3620,7 +3620,7 @@ Bezier::controlPointsWithinRect(TimeValue time,
             double x, y;
             (*it)->getPositionAtTime(time,  &x, &y);
             if ( ( x >= (l - acceptance) ) && ( x <= (r + acceptance) ) && ( y >= (b - acceptance) ) && ( y <= (t - acceptance) ) ) {
-                std::pair<BezierCPPtr, BezierCPPtr > p;
+                std::pair<BezierCPPtr, BezierCPPtr> p;
                 p.first = *it;
                 BezierCPs::const_iterator itF = shape->points.begin();
                 std::advance(itF, i);
@@ -3628,7 +3628,7 @@ Bezier::controlPointsWithinRect(TimeValue time,
 
                 ///avoid duplicates
                 bool found = false;
-                for (std::list< std::pair<BezierCPPtr, BezierCPPtr > >::iterator it2 = ret.begin();
+                for (std::list<std::pair<BezierCPPtr, BezierCPPtr> >::iterator it2 = ret.begin();
                      it2 != ret.end(); ++it2) {
                     if (it2->first == *itF) {
                         found = true;

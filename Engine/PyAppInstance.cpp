@@ -117,7 +117,7 @@ static void makeCreateNodeArgs(const AppInstancePtr& app,
 {
 
     args->setProperty<std::string>(kCreateNodeArgsPropPluginID, pluginID.toStdString());
-    args->setProperty<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer, collection);
+    args->setProperty<NodeCollectionPtr>(kCreateNodeArgsPropGroupContainer, collection);
     args->setProperty<int>(kCreateNodeArgsPropPluginVersion, majorVersion, 0);
 
     args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);

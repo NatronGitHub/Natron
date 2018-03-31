@@ -2365,8 +2365,8 @@ public:
     }
 
 
-    const std::vector< KnobIPtr > & getKnobs() const WARN_UNUSED_RETURN;
-    std::vector< KnobIPtr >  getKnobs_mt_safe() const WARN_UNUSED_RETURN;
+    const std::vector<KnobIPtr> & getKnobs() const WARN_UNUSED_RETURN;
+    std::vector<KnobIPtr> getKnobs_mt_safe() const WARN_UNUSED_RETURN;
 
     void refreshAfterTimeChange(bool isPlayback, TimeValue time);
 

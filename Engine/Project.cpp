@@ -2741,7 +2741,7 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
     }
 
     // Serialize project settings
-    std::vector< KnobIPtr > knobs = getKnobs_mt_safe();
+    std::vector<KnobIPtr> knobs = getKnobs_mt_safe();
 
     bool isFullSaveMode = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
 

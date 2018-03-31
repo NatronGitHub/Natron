@@ -58,7 +58,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 NATRON_NAMESPACE_ENTER
 
 ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
-                                                 const std::vector<CurveGuiPtr > & curves,
+                                                 const std::vector<CurveGuiPtr> & curves,
                                                  Gui* gui,
                                                  QWidget* parent)
     : QDialog(parent)
@@ -369,7 +369,7 @@ ImportExportCurveDialog::getXEnd() const
 }
 
 void
-ImportExportCurveDialog::getCurveColumns(std::map<int, CurveGuiPtr >* columns) const
+ImportExportCurveDialog::getCurveColumns(std::map<int, CurveGuiPtr>* columns) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -537,7 +537,7 @@ EditKeyFrameDialog::moveKeyTo(double newX, double newY)
             }
         }
 
-        std::vector<NodeAnimPtr > nodesToMove;
+        std::vector<NodeAnimPtr> nodesToMove;
         std::vector<TableItemAnimPtr> tableItemsToMove;
         model->pushUndoCommand( new WarpKeysCommand(keysToMove, model, nodesToMove, tableItemsToMove, newX - curX, newY - curY) );
         refreshSelectedKey();

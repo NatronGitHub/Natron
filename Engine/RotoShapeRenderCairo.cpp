@@ -1828,7 +1828,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
             }
 
         } else if (isBezier && (isBezier->isOpenBezier() || !isBezier->isFillEnabled())) {
-            std::vector< ParametricPoint> polygon;
+            std::vector<ParametricPoint> polygon;
 
             isBezier->evaluateAtTime(t, view, scale, Bezier::eDeCasteljauAlgorithmIterative, -1, 1., &polygon, 0);
             std::list<std::pair<Point, double> > points;

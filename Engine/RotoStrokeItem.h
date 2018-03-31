@@ -209,8 +209,8 @@ public:
                         ViewIdx view,
                         std::list<std::list<std::pair<Point, double> > >* strokes) const;
 
-    std::list<CurvePtr > getXControlPoints() const;
-    std::list<CurvePtr > getYControlPoints() const;
+    std::list<CurvePtr> getXControlPoints() const;
+    std::list<CurvePtr> getYControlPoints() const;
 
     int getNumControlPoints(int strokeIndex) const;
 

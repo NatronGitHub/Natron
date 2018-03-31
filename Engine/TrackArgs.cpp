@@ -42,7 +42,7 @@ struct TrackArgsPrivate
     ViewerNodePtr viewer;
     boost::shared_ptr<mv::AutoTrack> libmvAutotrack;
     boost::shared_ptr<TrackerFrameAccessor> fa;
-    std::vector<TrackMarkerAndOptionsPtr > tracks;
+    std::vector<TrackMarkerAndOptionsPtr> tracks;
 
     //Store the format size because LibMV internally has a top-down Y axis
     double formatWidth, formatHeight;
@@ -78,7 +78,7 @@ TrackArgs::TrackArgs(int start,
                      const ViewerNodePtr& viewer,
                      const boost::shared_ptr<mv::AutoTrack>& autoTrack,
                      const boost::shared_ptr<TrackerFrameAccessor>& fa,
-                     const std::vector<TrackMarkerAndOptionsPtr >& tracks,
+                     const std::vector<TrackMarkerAndOptionsPtr>& tracks,
                      double formatWidth,
                      double formatHeight,
                      bool autoKeyEnabled)
@@ -185,7 +185,7 @@ TrackArgs::getNumTracks() const
     return (int)_imp->tracks.size();
 }
 
-const std::vector<TrackMarkerAndOptionsPtr >&
+const std::vector<TrackMarkerAndOptionsPtr>&
 TrackArgs::getTracks() const
 {
     return _imp->tracks;
@@ -209,7 +209,7 @@ void
 TrackArgs::getRedrawAreasNeeded(TimeValue time,
                                 std::list<RectD>* canonicalRects) const
 {
-    for (std::vector<TrackMarkerAndOptionsPtr >::const_iterator it = _imp->tracks.begin(); it != _imp->tracks.end(); ++it) {
+    for (std::vector<TrackMarkerAndOptionsPtr>::const_iterator it = _imp->tracks.begin(); it != _imp->tracks.end(); ++it) {
         if ( !(*it)->natronMarker->isEnabled(time) ) {
             continue;
         }

@@ -318,7 +318,7 @@ public:
         boost::shared_ptr<BezierCPSerialization> featherPoint;
     };
 
-    std::list< ControlPoint > _controlPoints;
+    std::list<ControlPoint> _controlPoints;
 
     bool _closed;
     bool _isOpenBezier;
@@ -456,7 +456,7 @@ class NodeCollectionSerialization
 public:
 
     // The list of all nodes in the collection
-    std::list< NodeSerializationPtr > _serializedNodes;
+    std::list<NodeSerializationPtr> _serializedNodes;
 
 
     NodeCollectionSerialization()
@@ -468,7 +468,7 @@ public:
         _serializedNodes.clear();
     }
 
-    const std::list< NodeSerializationPtr > & getNodesSerialization() const
+    const std::list<NodeSerializationPtr> & getNodesSerialization() const
     {
         return _serializedNodes;
     }

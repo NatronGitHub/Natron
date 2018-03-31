@@ -2757,7 +2757,7 @@ KnobString::setBoldActivated(bool b) {
 
 struct KnobGroupPrivate
 {
-    std::vector< KnobIWPtr > children;
+    std::vector<KnobIWPtr> children;
     bool isTab;
     bool isToolButton;
     bool isDialog;
@@ -2868,7 +2868,7 @@ KnobGroup::addKnob(const KnobIPtr& k)
 void
 KnobGroup::removeKnob(const KnobIPtr& k)
 {
-    for (std::vector<KnobIWPtr >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
+    for (std::vector<KnobIWPtr>::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
         if (it->lock() == k) {
             _imp->children.erase(it);
 
@@ -2932,17 +2932,17 @@ KnobGroup::insertKnob(int index,
     if ( index >= (int)_imp->children.size() ) {
         _imp->children.push_back(k);
     } else {
-        std::vector<KnobIWPtr >::iterator it = _imp->children.begin();
+        std::vector<KnobIWPtr>::iterator it = _imp->children.begin();
         std::advance(it, index);
         _imp->children.insert(it, k);
     }
     k->setParentKnob( shared_from_this() );
 }
 
-std::vector< KnobIPtr >
+std::vector<KnobIPtr>
 KnobGroup::getChildren() const
 {
-    std::vector< KnobIPtr > ret;
+    std::vector<KnobIPtr> ret;
 
     for (std::size_t i = 0; i < _imp->children.size(); ++i) {
         KnobIPtr k = _imp->children[i].lock();
@@ -2958,7 +2958,7 @@ KnobGroup::getChildren() const
 struct KnobPagePrivate
 {
     bool isToolBar;
-    std::vector< KnobIWPtr > children;
+    std::vector<KnobIWPtr> children;
 
     KnobPagePrivate()
     : isToolBar(false)
@@ -3021,10 +3021,10 @@ KnobPage::typeName() const
     return typeNameStatic();
 }
 
-std::vector< KnobIPtr >
+std::vector<KnobIPtr>
 KnobPage::getChildren() const
 {
-    std::vector< KnobIPtr > ret;
+    std::vector<KnobIPtr> ret;
 
     for (std::size_t i = 0; i < _imp->children.size(); ++i) {
         KnobIPtr k = _imp->children[i].lock();
@@ -3074,7 +3074,7 @@ KnobPage::insertKnob(int index,
     if ( index >= (int)_imp->children.size() ) {
         _imp->children.push_back(k);
     } else {
-        std::vector<KnobIWPtr >::iterator it = _imp->children.begin();
+        std::vector<KnobIWPtr>::iterator it = _imp->children.begin();
         std::advance(it, index);
         _imp->children.insert(it, k);
     }
@@ -3084,7 +3084,7 @@ KnobPage::insertKnob(int index,
 void
 KnobPage::removeKnob(const KnobIPtr& k)
 {
-    for (std::vector<KnobIWPtr >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
+    for (std::vector<KnobIWPtr>::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
         if (it->lock() == k) {
             _imp->children.erase(it);
 
@@ -3153,7 +3153,7 @@ ParametricKnobDimView::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
 struct KnobParametricSharedData
 {
     mutable QMutex curvesMutex;
-    std::vector< CurvePtr >  defaultCurves;
+    std::vector<CurvePtr> defaultCurves;
     std::vector<RGBAColourD> curvesColor;
 
 
@@ -3774,7 +3774,7 @@ KnobParametric::deleteAllControlPoints(ValueChangedReasonEnum reason,
 
 
 void
-KnobParametric::saveParametricCurves(std::map<std::string,std::list< SERIALIZATION_NAMESPACE::CurveSerialization > >* curves) const
+KnobParametric::saveParametricCurves(std::map<std::string,std::list<SERIALIZATION_NAMESPACE::CurveSerialization > >* curves) const
 {
     AppInstancePtr app = getHolder()->getApp();
     assert(app);
@@ -3785,7 +3785,7 @@ KnobParametric::saveParametricCurves(std::map<std::string,std::list< SERIALIZATI
         if (*it >= 0 && *it < (int)projectViews.size()) {
             viewName = projectViews[*it];
         }
-        std::list< SERIALIZATION_NAMESPACE::CurveSerialization >& curveList = (*curves)[viewName];
+        std::list<SERIALIZATION_NAMESPACE::CurveSerialization >& curveList = (*curves)[viewName];
         for (int i = 0; i < getNDimensions(); ++i) {
             CurvePtr curve = getParametricCurve(DimIdx(i), *it);
             assert(curve);
@@ -3799,19 +3799,19 @@ KnobParametric::saveParametricCurves(std::map<std::string,std::list< SERIALIZATI
 } // saveParametricCurves
 
 void
-KnobParametric::loadParametricCurves(const std::map<std::string,std::list< SERIALIZATION_NAMESPACE::CurveSerialization > > & curves)
+KnobParametric::loadParametricCurves(const std::map<std::string,std::list<SERIALIZATION_NAMESPACE::CurveSerialization > > & curves)
 {
     AppInstancePtr app = getHolder()->getApp();
     assert(app);
     std::vector<std::string> projectViews = app->getProject()->getProjectViewNames();
 
-    for (std::map<std::string,std::list< SERIALIZATION_NAMESPACE::CurveSerialization > >::const_iterator viewsIt = curves.begin(); viewsIt != curves.end(); ++viewsIt) {
+    for (std::map<std::string,std::list<SERIALIZATION_NAMESPACE::CurveSerialization > >::const_iterator viewsIt = curves.begin(); viewsIt != curves.end(); ++viewsIt) {
 
         ViewIdx view_i(0);
         Project::getViewIndex(projectViews, viewsIt->first, &view_i);
 
         int i = 0;
-        for (std::list< SERIALIZATION_NAMESPACE::CurveSerialization >::const_iterator it2 = viewsIt->second.begin(); it2 != viewsIt->second.end(); ++it2, ++i) {
+        for (std::list<SERIALIZATION_NAMESPACE::CurveSerialization >::const_iterator it2 = viewsIt->second.begin(); it2 != viewsIt->second.end(); ++it2, ++i) {
             CurvePtr curve = getParametricCurve(DimIdx(i), view_i);
             if (!curve) {
                 continue;

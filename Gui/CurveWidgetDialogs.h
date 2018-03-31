@@ -57,7 +57,7 @@ class ImportExportCurveDialog
 public:
 
     ImportExportCurveDialog(bool isExportDialog,
-                            const std::vector<CurveGuiPtr > & curves,
+                            const std::vector<CurveGuiPtr> & curves,
                             Gui* gui,
                             QWidget* parent = 0);
 
@@ -72,7 +72,7 @@ public:
 
     double getXEnd() const;
 
-    void getCurveColumns(std::map<int, CurveGuiPtr >* columns) const;
+    void getCurveColumns(std::map<int, CurveGuiPtr>* columns) const;
 
 public Q_SLOTS:
 
@@ -124,7 +124,7 @@ private:
         SpinBox* _curveSpinBox;
     };
 
-    std::vector< CurveColumn > _curveColumns;
+    std::vector<CurveColumn > _curveColumns;
 
     ////buttons
     DialogButtonBox* _buttonBox;

@@ -1551,7 +1551,7 @@ KnobItemsTable::endEditSelection(TableChangeReasonEnum reason)
 }
 
 void
-KnobItemsTable::addToSelection(const std::list<KnobTableItemPtr >& items, TableChangeReasonEnum reason)
+KnobItemsTable::addToSelection(const std::list<KnobTableItemPtr>& items, TableChangeReasonEnum reason)
 {
     bool hasCalledBegin = false;
     {
@@ -1562,7 +1562,7 @@ KnobItemsTable::addToSelection(const std::list<KnobTableItemPtr >& items, TableC
             hasCalledBegin = true;
         }
 
-        for (std::list<KnobTableItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
+        for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
             // Only add items to the selection that are in the model
             if ((*it)->getIndexInParent() != -1) {
                 _imp->addToSelectionList(*it);
@@ -1587,13 +1587,13 @@ KnobItemsTable::addToSelection(const KnobTableItemPtr& item, TableChangeReasonEn
     if (item->getIndexInParent() == -1) {
         return;
     }
-    std::list<KnobTableItemPtr > items;
+    std::list<KnobTableItemPtr> items;
     items.push_back(item);
     addToSelection(items, reason);
 }
 
 void
-KnobItemsTable::removeFromSelection(const std::list<KnobTableItemPtr >& items, TableChangeReasonEnum reason)
+KnobItemsTable::removeFromSelection(const std::list<KnobTableItemPtr>& items, TableChangeReasonEnum reason)
 {
     bool hasCalledBegin = false;
 
@@ -1605,7 +1605,7 @@ KnobItemsTable::removeFromSelection(const std::list<KnobTableItemPtr >& items, T
             hasCalledBegin = true;
         }
 
-        for (std::list<KnobTableItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
+        for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
             _imp->removeFromSelectionList(*it);
         }
 
@@ -1622,7 +1622,7 @@ KnobItemsTable::removeFromSelection(const std::list<KnobTableItemPtr >& items, T
 void
 KnobItemsTable::removeFromSelection(const KnobTableItemPtr& item, TableChangeReasonEnum reason)
 {
-    std::list<KnobTableItemPtr > items;
+    std::list<KnobTableItemPtr> items;
     items.push_back(item);
     removeFromSelection(items, reason);
 }
@@ -1630,7 +1630,7 @@ KnobItemsTable::removeFromSelection(const KnobTableItemPtr& item, TableChangeRea
 void
 KnobItemsTable::clearSelection(TableChangeReasonEnum reason)
 {
-    std::list<KnobTableItemPtr > items = getSelectedItems();
+    std::list<KnobTableItemPtr> items = getSelectedItems();
     if ( items.empty() ) {
         return;
     }
@@ -1990,7 +1990,7 @@ KnobItemsTable::declareItemsToPython()
 
 
     std::vector<KnobTableItemPtr> items = getTopLevelItems();
-    for (std::vector< KnobTableItemPtr >::iterator it = items.begin(); it != items.end(); ++it) {
+    for (std::vector<KnobTableItemPtr>::iterator it = items.begin(); it != items.end(); ++it) {
         declareItemAsPythonField(*it);
     }
 }

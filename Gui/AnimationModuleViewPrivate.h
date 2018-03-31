@@ -277,14 +277,14 @@ public:
 
     void makeSelectionFromDopeSheetSelectionRectangle(bool toggleSelection);
 
-    void makeSelectionFromDopeSheetSelectionRectangleInternal(const RectD &rect, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems);
+    void makeSelectionFromDopeSheetSelectionRectangleInternal(const RectD &rect, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr>* selectedNodes, std::vector<TableItemAnimPtr>* selectedItems);
 
-    void createSelectionFromRectRecursive(const RectD &rect, QTreeWidgetItem* item, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems);
+    void createSelectionFromRectRecursive(const RectD &rect, QTreeWidgetItem* item, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr>* selectedNodes, std::vector<TableItemAnimPtr>* selectedItems);
 
-    void checkAnimItemInRectInternal(const RectD& rect, QTreeWidgetItem* item, const AnimItemBasePtr& knob, ViewIdx view, DimIdx dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems);
-    void checkAnimItemInRect(const RectD& rect, QTreeWidgetItem* item, const AnimItemBasePtr& knob, ViewSetSpec view, DimSpec dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems);
-    void checkTableItemAnimInRect(const RectD& rect, QTreeWidgetItem* item, const TableItemAnimPtr& knob, AnimatedItemTypeEnum type, ViewSetSpec view, DimSpec dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems);
-    void checkNodeAnimInRect(const RectD& rect, QTreeWidgetItem* item, const NodeAnimPtr& knob, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems);
+    void checkAnimItemInRectInternal(const RectD& rect, QTreeWidgetItem* item, const AnimItemBasePtr& knob, ViewIdx view, DimIdx dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr>* selectedNodes, std::vector<TableItemAnimPtr>* selectedItems);
+    void checkAnimItemInRect(const RectD& rect, QTreeWidgetItem* item, const AnimItemBasePtr& knob, ViewSetSpec view, DimSpec dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr>* selectedNodes, std::vector<TableItemAnimPtr>* selectedItems);
+    void checkTableItemAnimInRect(const RectD& rect, QTreeWidgetItem* item, const TableItemAnimPtr& knob, AnimatedItemTypeEnum type, ViewSetSpec view, DimSpec dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr>* selectedNodes, std::vector<TableItemAnimPtr>* selectedItems);
+    void checkNodeAnimInRect(const RectD& rect, QTreeWidgetItem* item, const NodeAnimPtr& knob, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr>* selectedNodes, std::vector<TableItemAnimPtr>* selectedItems);
 
     void zoomView(const QPointF& evPos, int deltaX, int deltaY, ZoomContext& zoomCtx, bool canMoveX, bool canZoomY);
 

@@ -303,9 +303,9 @@ TrackerNodeInteract::onAddTrackClicked(bool clicked)
 void
 TrackerNodeInteract::onClearAllAnimationClicked()
 {
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
     _imp->knobsTable->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->clearAnimation();
     }
 }
@@ -314,10 +314,10 @@ void
 TrackerNodeInteract::onClearBwAnimationClicked()
 {
     TimeValue time = _imp->publicInterface->getTimelineCurrentTime();
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     _imp->knobsTable->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->clearAnimationBeforeTime(time);
     }
 }
@@ -326,10 +326,10 @@ void
 TrackerNodeInteract::onClearFwAnimationClicked()
 {
     TimeValue time = _imp->publicInterface->getTimelineCurrentTime();
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     _imp->knobsTable->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->clearAnimationAfterTime(time);
     }
 }
@@ -338,10 +338,10 @@ void
 TrackerNodeInteract::onSetKeyframeButtonClicked()
 {
     TimeValue time = _imp->publicInterface->getTimelineCurrentTime();
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     _imp->knobsTable->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->setKeyFrame(time);
     }
 }
@@ -350,10 +350,10 @@ void
 TrackerNodeInteract::onRemoveKeyframeButtonClicked()
 {
     TimeValue time = _imp->publicInterface->getTimelineCurrentTime();
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     _imp->knobsTable->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->removeKeyFrame(time);
     }
 }
@@ -361,10 +361,10 @@ TrackerNodeInteract::onRemoveKeyframeButtonClicked()
 void
 TrackerNodeInteract::onResetOffsetButtonClicked()
 {
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     _imp->knobsTable->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         KnobDoublePtr offsetKnob = (*it)->getOffsetKnob();
         assert(offsetKnob);
         offsetKnob->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
@@ -375,12 +375,12 @@ void
 TrackerNodeInteract::onResetTrackButtonClicked()
 {
 
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
     _imp->knobsTable->getSelectedMarkers(&markers);
     _imp->knobsTable->clearSelection(eTableChangeReasonInternal);
 
     std::list<KnobTableItemPtr> itemsList;
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->resetTrack();
         itemsList.push_back(*it);
     }
@@ -1359,7 +1359,7 @@ TrackerNodeInteract::onTrackingEnded()
 void
 TrackerNodeInteract::onModelSelectionChanged(const std::list<KnobTableItemPtr>& /*addedToSelection*/, const std::list<KnobTableItemPtr>& /*removedFromSelection*/, TableChangeReasonEnum reason)
 {
-    std::list<TrackMarkerPtr > selection;
+    std::list<TrackMarkerPtr> selection;
 
     _imp->knobsTable->getSelectedMarkers(&selection);
     if ( selection.empty() || (selection.size() > 1) ) {
@@ -1482,10 +1482,10 @@ void
 TrackerNodeInteract::rebuildMarkerTextures()
 {
     ///Refreh textures for all markers
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     _imp->knobsTable->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         KeyFrameSet keys = (*it)->getKeyFrames();
         for (KeyFrameSet::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
             makeMarkerKeyTexture(it2->getTime(), *it);
@@ -1505,7 +1505,7 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
     if (!isInsideSelectedMarkerTexture(lastMousePos)) {
         return false;
     }
-    std::list< TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     _imp->knobsTable->getSelectedMarkers(&markers);
 
@@ -1517,7 +1517,7 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
         bool createkey = createKeyOnMoveButton.lock()->getValue();
 
         int hasMovedMarker = false;
-        for (std::list< TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+        for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
 
             if (!(*it)->isEnabled(time)) {
                 continue;
@@ -1947,8 +1947,8 @@ TrackerNodeInteract::drawOverlay(TimeValue time,
         }
         markerColor[3] = 1.;
 
-        std::vector<TrackMarkerPtr > allMarkers;
-        std::list<TrackMarkerPtr > selectedMarkers;
+        std::vector<TrackMarkerPtr> allMarkers;
+        std::list<TrackMarkerPtr> selectedMarkers;
         _imp->knobsTable->getSelectedMarkers(&selectedMarkers);
         _imp->knobsTable->getAllMarkers(&allMarkers);
 
@@ -1965,7 +1965,7 @@ TrackerNodeInteract::drawOverlay(TimeValue time,
         Point selectedSearchBtmLeft;
         Point selectedSearchTopRight;
 
-        for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
+        for (std::vector<TrackMarkerPtr>::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
             bool isEnabled = (*it)->isEnabled(time);
 
             double thisMarkerColor[3];
@@ -1982,7 +1982,7 @@ TrackerNodeInteract::drawOverlay(TimeValue time,
             bool isHoverMarker = *it == hoverMarker;
             bool isDraggedMarker = *it == interactMarker;
             bool isHoverOrDraggedMarker = isHoverMarker || isDraggedMarker;
-            std::list<TrackMarkerPtr >::iterator foundSelected = std::find(selectedMarkers.begin(), selectedMarkers.end(), *it);
+            std::list<TrackMarkerPtr>::iterator foundSelected = std::find(selectedMarkers.begin(), selectedMarkers.end(), *it);
             bool isSelected = foundSelected != selectedMarkers.end();
             KnobDoublePtr centerKnob = (*it)->getCenterKnob();
             KnobDoublePtr offsetKnob = (*it)->getOffsetKnob();
@@ -2440,7 +2440,7 @@ TrackerNodeInteract::drawOverlay(TimeValue time,
                     overlay->renderText( center.x(), center.y(), name, markerColor[0], markerColor[1], markerColor[2], markerColor[3]);
                 } // for (int l = 0; l < 2; ++l) {
             } // if (!isSelected) {
-        } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
+        } // for (std::vector<TrackMarkerPtr>::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
         if (showMarkerTexture && selectedFound && !_imp->publicInterface->getApp()->isDraftRenderEnabled()) {
             drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), time, selectedCenter, selectedOffset, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
@@ -2510,11 +2510,11 @@ TrackerNodeInteract::onOverlayPenDown(TimeValue time,
     /*if ( context->onOverlayPenDownInternalNodes( time, renderScale, view, viewportPos, pos, pressure, timestamp, pen, overlay ) ) {
      return true;
      }*/
-    std::vector<TrackMarkerPtr > allMarkers;
+    std::vector<TrackMarkerPtr> allMarkers;
     _imp->knobsTable->getAllMarkers(&allMarkers);
 
     bool trackingPageSecret = _imp->trackingPageKnob.lock()->getIsSecret();
-    for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
+    for (std::vector<TrackMarkerPtr>::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
         if (!(*it)->isEnabled(time) || trackingPageSecret) {
             continue;
         }
@@ -2679,7 +2679,7 @@ TrackerNodeInteract::onOverlayPenDown(TimeValue time,
         if (didSomething) {
             break;
         }
-    } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
+    } // for (std::vector<TrackMarkerPtr>::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
     if (clickToAddTrackEnabled && !didSomething && !trackingPageSecret) {
         TrackMarkerPtr marker = _imp->createMarker();
@@ -2724,7 +2724,7 @@ TrackerNodeInteract::onOverlayPenDown(TimeValue time,
         }
     }
     if (!didSomething && !trackingPageSecret) {
-        std::list<TrackMarkerPtr > selectedMarkers;
+        std::list<TrackMarkerPtr> selectedMarkers;
         _imp->knobsTable->getSelectedMarkers(&selectedMarkers);
         if ( !selectedMarkers.empty() ) {
             _imp->knobsTable->clearSelection(eTableChangeReasonViewer);
@@ -2764,11 +2764,11 @@ TrackerNodeInteract::onOverlayPenMotion(TimeValue time,
         didSomething = true;
     }
 
-    std::vector<TrackMarkerPtr > allMarkers;
+    std::vector<TrackMarkerPtr> allMarkers;
     _imp->knobsTable->getAllMarkers(&allMarkers);
     bool trackingPageSecret = _imp->trackingPageKnob.lock()->getIsSecret();
     bool hoverProcess = false;
-    for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
+    for (std::vector<TrackMarkerPtr>::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
         if (!(*it)->isEnabled(time) || trackingPageSecret) {
             continue;
         }
@@ -2918,7 +2918,7 @@ TrackerNodeInteract::onOverlayPenMotion(TimeValue time,
         if (hoverProcess) {
             break;
         }
-    } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
+    } // for (std::vector<TrackMarkerPtr>::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
     if ( showMarkerTexture && selectedMarkerTexture && isNearbySelectedMarkerTextureResizeAnchor(pos) ) {
         _imp->publicInterface->setCurrentCursor(eCursorFDiag);
@@ -3627,7 +3627,7 @@ TrackerNodeInteract::onViewportSelectionUpdated(const RectD& rectangle,
         return;
     }
     
-    std::vector<TrackMarkerPtr > allMarkers;
+    std::vector<TrackMarkerPtr> allMarkers;
     _imp->knobsTable->getAllMarkers(&allMarkers);
 
     std::list<KnobTableItemPtr> items;

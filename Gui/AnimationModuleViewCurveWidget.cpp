@@ -596,7 +596,7 @@ AnimationModuleView::onExportCurveToAsciiActionTriggered()
         return;
     }
 
-    std::vector<CurveGuiPtr > curves = isAnimModule->getEditor()->getTreeView()->getSelectedCurves();
+    std::vector<CurveGuiPtr> curves = isAnimModule->getEditor()->getTreeView()->getSelectedCurves();
     if ( curves.empty() ) {
         Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select an item first").toStdString() );
         return;
@@ -614,7 +614,7 @@ AnimationModuleView::onExportCurveToAsciiActionTriggered()
         double xstart = dialog.getXStart();
         int count = dialog.getXCount();
         double incr = dialog.getXIncrement();
-        std::map<int, CurveGuiPtr > columns;
+        std::map<int, CurveGuiPtr> columns;
         dialog.getCurveColumns(&columns);
 
         for (U32 i = 0; i < curves.size(); ++i) {
@@ -639,7 +639,7 @@ AnimationModuleView::onExportCurveToAsciiActionTriggered()
 
         for (int i = 0; i < count; ++i) {
             for (int c = 0; c < columnsCount; ++c) {
-                std::map<int, CurveGuiPtr >::const_iterator foundCurve = columns.find(c);
+                std::map<int, CurveGuiPtr>::const_iterator foundCurve = columns.find(c);
                 if ( foundCurve != columns.end() ) {
                     QString str = QString::number(foundCurve->second->evaluate(true, xstart + i * incr), 'f', 10);
                     ts << str;
@@ -668,7 +668,7 @@ AnimationModuleView::onImportCurveFromAsciiActionTriggered()
     }
 
 
-    std::vector<CurveGuiPtr > curves = isAnimModule->getEditor()->getTreeView()->getSelectedCurves();
+    std::vector<CurveGuiPtr> curves = isAnimModule->getEditor()->getTreeView()->getSelectedCurves();
     if ( curves.empty() ) {
         Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first").toStdString() );
         return;
@@ -692,7 +692,7 @@ AnimationModuleView::onImportCurveFromAsciiActionTriggered()
 
         double xstart = dialog.getXStart();
         double incr = dialog.getXIncrement();
-        std::map<int, CurveGuiPtr > columns;
+        std::map<int, CurveGuiPtr> columns;
         dialog.getCurveColumns(&columns);
         assert( !columns.empty() );
 
@@ -750,7 +750,7 @@ AnimationModuleView::onImportCurveFromAsciiActionTriggered()
                 return;
             }
 
-            for (std::map<int, CurveGuiPtr >::const_iterator col = columns.begin(); col != columns.end(); ++col) {
+            for (std::map<int, CurveGuiPtr>::const_iterator col = columns.begin(); col != columns.end(); ++col) {
                 if ( col->first >= (int)values.size() ) {
                     Dialogs::errorDialog( tr("Curve Import").toStdString(), tr("One of the curve column index is not a valid index for the given file.").toStdString() );
 

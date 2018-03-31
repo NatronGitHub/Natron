@@ -391,7 +391,7 @@ NodeGraph::createNodeGui(const NodePtr & node, const CreateNodeArgs& args)
     // This will create the node GUI across all Natron
     node_ui->initialize(this, node, args);
 
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
     bool addUndoRedo = args.getPropertyUnsafe<bool>(kCreateNodeArgsPropAddUndoRedoCommand);
     if (addUndoRedo) {
         pushUndoCommand( new AddMultipleNodesCommand(this, node) );

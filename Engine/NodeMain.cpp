@@ -128,7 +128,7 @@ Node::load(const CreateNodeArgsPtr& args)
 
 
     // Any serialization from project load or copy/paste ?
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
 
     // Should we load a preset ?
     std::string presetLabel = args->getPropertyUnsafe<std::string>(kCreateNodeArgsPropPreset);
@@ -350,7 +350,7 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
     std::vector<std::string> params = args.getPropertyNUnsafe<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
 
     assert( QThread::currentThread() == qApp->thread() );
-    const std::vector< KnobIPtr > & nodeKnobs = getKnobs();
+    const std::vector<KnobIPtr> & nodeKnobs = getKnobs();
 
     for (std::size_t i = 0; i < params.size(); ++i) {
         for (U32 j = 0; j < nodeKnobs.size(); ++j) {
@@ -616,7 +616,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
     KnobPagePtr pyPlugPage = getEffectInstance()->getPyPlugPage();
 
     KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
-    std::list<KnobIPtr > userPages;
+    std::list<KnobIPtr> userPages;
     for (std::size_t i  = 0; i < knobs.size(); ++i) {
 
         const KnobIPtr& knob = knobs[i];
@@ -1339,7 +1339,7 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
     std::string nodePreset = getCurrentNodePresets();
     SERIALIZATION_NAMESPACE::NodeSerializationPtr presetSerialization, pyPlugSerialization, projectSerialization;
     if (args) {
-        projectSerialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+        projectSerialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
     }
     if (!nodePreset.empty()) {
         try {

@@ -2562,7 +2562,7 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
         CreateNodeArgsPtr args(CreateNodeArgs::create(serialization->_pluginID, group));
         args->setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMajorVersion, 0);
         args->setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMinorVersion, 1);
-        args->setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, serialization);
+        args->setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization, serialization);
         args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
         args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true); // also load deprecated plugins
@@ -2758,8 +2758,8 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<RenderStatsMap>("RenderStatsMap");
     qRegisterMetaType<ViewIdx>("ViewIdx");
     qRegisterMetaType<ViewSetSpec>("ViewSetSpec");
-    qRegisterMetaType<NodePtr >("NodePtr");
-    qRegisterMetaType<ViewerInstancePtr >("ViewerInstancePtr");
+    qRegisterMetaType<NodePtr>("NodePtr");
+    qRegisterMetaType<ViewerInstancePtr>("ViewerInstancePtr");
     qRegisterMetaType<std::list<double> >("std::list<double>");
     qRegisterMetaType<DimIdx>("DimIdx");
     qRegisterMetaType<DimSpec>("DimSpec");

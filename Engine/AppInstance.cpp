@@ -803,8 +803,8 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
     bool istoolsetScript = plugin->getPropertyUnsafe<bool>(kNatronPluginPropPyPlugIsToolset);
     NodePtr node;
 
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-    NodeCollectionPtr group = args->getPropertyUnsafe<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
+    NodeCollectionPtr group = args->getPropertyUnsafe<NodeCollectionPtr>(kCreateNodeArgsPropGroupContainer);
 
     std::string pyPlugFile = plugin->getPropertyUnsafe<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
     std::string pyPlugDirPath;
@@ -1002,7 +1002,7 @@ AppInstance::openFileDialogIfNeeded(const CreateNodeArgsPtr& args, bool openFile
         }
     }
 
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
 
     bool isSilent = args->getPropertyUnsafe<bool>(kCreateNodeArgsPropSilent);
     bool isPersistent = !args->getPropertyUnsafe<bool>(kCreateNodeArgsPropVolatile);
@@ -1047,7 +1047,7 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
     NodePtr node;
     PluginPtr plugin;
 
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
 
     QString argsPluginID = QString::fromUtf8(args->getPropertyUnsafe<std::string>(kCreateNodeArgsPropPluginID).c_str());
     int versionMajor = args->getPropertyUnsafe<int>(kCreateNodeArgsPropPluginVersion, 0);
@@ -1152,7 +1152,7 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
 
 
     // Get the group container
-    NodeCollectionPtr argsGroup = args->getPropertyUnsafe<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer);
+    NodeCollectionPtr argsGroup = args->getPropertyUnsafe<NodeCollectionPtr>(kCreateNodeArgsPropGroupContainer);
     if (!argsGroup) {
         argsGroup = getProject();
     }

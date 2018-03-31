@@ -215,7 +215,7 @@ AnimationModuleSelectionModel::addTableItemKeyframes(const TableItemAnimPtr& ite
 }
 
 void
-AnimationModuleSelectionModel::getAllItems(bool withKeyFrames, AnimItemDimViewKeyFramesMap* selectedKeyframes, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr>* selectedTableItems) const
+AnimationModuleSelectionModel::getAllItems(bool withKeyFrames, AnimItemDimViewKeyFramesMap* selectedKeyframes, std::vector<NodeAnimPtr>* selectedNodes, std::vector<TableItemAnimPtr>* selectedTableItems) const
 {
 
     AnimationModuleSelectionProviderPtr model = getModel();
@@ -223,7 +223,7 @@ AnimationModuleSelectionModel::getAllItems(bool withKeyFrames, AnimItemDimViewKe
     std::vector<KnobAnimPtr> topLevelKnobs;
     model->getTopLevelKnobs(true, &topLevelKnobs);
 
-    std::vector<NodeAnimPtr > topLevelNodes;
+    std::vector<NodeAnimPtr> topLevelNodes;
     model->getTopLevelNodes(true, &topLevelNodes);
 
     std::vector<TableItemAnimPtr> topLevelTableItems;
@@ -277,7 +277,7 @@ AnimationModuleSelectionModel::selectAll()
 
 
     AnimItemDimViewKeyFramesMap selectedKeyframes;
-    std::vector<NodeAnimPtr > selectedNodes;
+    std::vector<NodeAnimPtr> selectedNodes;
     std::vector<TableItemAnimPtr> selectedTableItems;
     getAllItems(true, &selectedKeyframes, &selectedNodes, &selectedTableItems);
 
@@ -290,7 +290,7 @@ void
 AnimationModuleSelectionModel::selectAllVisibleCurvesKeyFrames()
 {
     AnimItemDimViewKeyFramesMap selectedKeys;
-    std::vector<NodeAnimPtr > selectedNodes;
+    std::vector<NodeAnimPtr> selectedNodes;
     std::vector<TableItemAnimPtr> selectedTableItems;
 
     AnimationModuleSelectionProviderPtr model = getModel();
@@ -315,7 +315,7 @@ void
 AnimationModuleSelectionModel::selectItems(const QList<QTreeWidgetItem *> &items)
 {
     AnimItemDimViewKeyFramesMap keys;
-    std::vector<NodeAnimPtr > nodes;
+    std::vector<NodeAnimPtr> nodes;
     std::vector<TableItemAnimPtr> tableItems;
 
     Q_FOREACH (QTreeWidgetItem * item, items) {
@@ -354,7 +354,7 @@ AnimationModuleSelectionModel::selectKeyframes(const AnimItemBasePtr& item, DimS
 {
     AnimItemDimViewKeyFramesMap keys;
     item->getKeyframes(dimension, view, &keys);
-    makeSelection(keys, std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr >(), AnimationModuleSelectionModel::SelectionTypeClear);
+    makeSelection(keys, std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr>(), AnimationModuleSelectionModel::SelectionTypeClear);
 }
 
 void
@@ -364,7 +364,7 @@ AnimationModuleSelectionModel::clearSelection()
         return;
     }
 
-    makeSelection(AnimItemDimViewKeyFramesMap(), std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr >(), AnimationModuleSelectionModel::SelectionTypeClear);
+    makeSelection(AnimItemDimViewKeyFramesMap(), std::vector<TableItemAnimPtr>(), std::vector<NodeAnimPtr>(), AnimationModuleSelectionModel::SelectionTypeClear);
 }
 
 void
@@ -388,7 +388,7 @@ AnimationModuleSelectionModel::clearKeyframesFromSelection()
 void
 AnimationModuleSelectionModel::makeSelection(const AnimItemDimViewKeyFramesMap &keys,
                                              const std::vector<TableItemAnimPtr>& selectedTableItems,
-                                             const std::vector<NodeAnimPtr >& nodes,
+                                             const std::vector<NodeAnimPtr>& nodes,
                                              SelectionTypeFlags selectionFlags)
 {
     // Don't allow unsupported combinations
@@ -428,7 +428,7 @@ AnimationModuleSelectionModel::makeSelection(const AnimItemDimViewKeyFramesMap &
         }
     }
 
-    for (std::vector<NodeAnimPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::vector<NodeAnimPtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         std::list<NodeAnimPtr>::iterator found = _imp->isNodeSelected(*it);
         if ( found == _imp->selectedNodes.end() ) {
             _imp->selectedNodes.push_back(*it);
@@ -439,7 +439,7 @@ AnimationModuleSelectionModel::makeSelection(const AnimItemDimViewKeyFramesMap &
         }
     }
 
-    for (std::vector<TableItemAnimPtr >::const_iterator it = selectedTableItems.begin(); it != selectedTableItems.end(); ++it) {
+    for (std::vector<TableItemAnimPtr>::const_iterator it = selectedTableItems.begin(); it != selectedTableItems.end(); ++it) {
         std::list<TableItemAnimPtr>::iterator found = _imp->isTableItemSelected(*it);
         if ( found == _imp->selectedTableItems.end() ) {
             _imp->selectedTableItems.push_back(*it);
@@ -461,7 +461,7 @@ AnimationModuleSelectionModel::isEmpty() const
     return _imp->selectedKeyframes.empty() && _imp->selectedNodes.empty();
 }
 
-const std::list<NodeAnimPtr >&
+const std::list<NodeAnimPtr>&
 AnimationModuleSelectionModel::getCurrentNodesSelection() const
 {
     return _imp->selectedNodes;

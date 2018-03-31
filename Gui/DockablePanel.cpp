@@ -728,9 +728,9 @@ DockablePanel::onRestoreDefaultsButtonClicked()
         pushUndoCommand( new RestoreNodeToDefaultCommand(nodes) );
         
     } else {
-        std::list<KnobIPtr > knobsList;
-        const std::vector<KnobIPtr > & knobs = _imp->_holder.lock()->getKnobs();
-        for (std::vector<KnobIPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        std::list<KnobIPtr> knobsList;
+        const std::vector<KnobIPtr> & knobs = _imp->_holder.lock()->getKnobs();
+        for (std::vector<KnobIPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
             KnobButtonPtr isBtn = toKnobButton(*it);
             KnobPagePtr isPage = toKnobPage(*it);
             KnobGroupPtr isGroup = toKnobGroup(*it);

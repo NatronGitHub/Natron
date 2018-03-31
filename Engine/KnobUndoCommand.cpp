@@ -796,7 +796,7 @@ MultipleKnobEditsUndoCommand::mergeWith(const UndoCommandPtr &command)
     return true;
 }
 
-RestoreDefaultsCommand::RestoreDefaultsCommand(const std::list<KnobIPtr > & knobs,
+RestoreDefaultsCommand::RestoreDefaultsCommand(const std::list<KnobIPtr> & knobs,
                                                DimSpec targetDim,
                                                ViewSetSpec targetView)
 : UndoCommand()
@@ -807,7 +807,7 @@ RestoreDefaultsCommand::RestoreDefaultsCommand(const std::list<KnobIPtr > & knob
     setText( tr("Restore Default Value(s)").toStdString() );
 
 
-    for (std::list<KnobIPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    for (std::list<KnobIPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         KnobButtonPtr isButton = toKnobButton(*it);
         KnobPagePtr isPage = toKnobPage(*it);
         KnobSeparatorPtr isSep = toKnobSeparator(*it);
@@ -832,7 +832,7 @@ RestoreDefaultsCommand::undo()
     AppInstancePtr app = first->getHolder()->getApp();
     assert(app);
     SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator itClone = _serializations.begin();
-    for (std::list<KnobIWPtr >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
+    for (std::list<KnobIWPtr>::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
         KnobIPtr itKnob = it->lock();
         if (!itKnob) {
             continue;
@@ -861,7 +861,7 @@ RestoreDefaultsCommand::redo()
     }
 
      //  First reset all knobs values, this will not call instanceChanged action
-    for (std::list<KnobIWPtr >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+    for (std::list<KnobIWPtr>::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         KnobIPtr itKnob = it->lock();
         if (!itKnob) {
             continue;
@@ -882,7 +882,7 @@ RestoreDefaultsCommand::redo()
     if (app) {
         time = TimeValue(app->getTimeLine()->currentFrame());
     }
-    for (std::list<KnobIWPtr >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+    for (std::list<KnobIWPtr>::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         KnobIPtr itKnob = it->lock();
         if (!itKnob) {
             continue;

@@ -1287,10 +1287,10 @@ RotoStrokeItem::getBoundingBox(TimeValue time, ViewIdx view) const
     return bbox;
 }
 
-std::list<CurvePtr >
+std::list<CurvePtr>
 RotoStrokeItem::getXControlPoints() const
 {
-    std::list<CurvePtr > ret;
+    std::list<CurvePtr> ret;
     QMutexLocker k(&_imp->lock);
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
         ret.push_back(it->xCurve);
@@ -1299,10 +1299,10 @@ RotoStrokeItem::getXControlPoints() const
     return ret;
 }
 
-std::list<CurvePtr >
+std::list<CurvePtr>
 RotoStrokeItem::getYControlPoints() const
 {
-    std::list<CurvePtr > ret;
+    std::list<CurvePtr> ret;
     QMutexLocker k(&_imp->lock);
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
         ret.push_back(it->xCurve);

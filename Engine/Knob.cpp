@@ -3852,7 +3852,7 @@ KnobHelper::findMasterKnob(const std::string& masterKnobName,
         }
     } else {
         // Find the corresponding knob
-        const std::vector< KnobIPtr > & otherKnobs = masterNode->getKnobs();
+        const std::vector<KnobIPtr> & otherKnobs = masterNode->getKnobs();
         for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
             if ( (otherKnobs[j]->getName() == masterKnobName) ) {
                 return otherKnobs[j];
@@ -3878,7 +3878,7 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
     SERIALIZATION_NAMESPACE::GroupKnobSerialization* isGroupKnobSerialization = dynamic_cast<SERIALIZATION_NAMESPACE::GroupKnobSerialization*>(serialization.get());
 
     if (isGroupKnobSerialization) {
-        for (std::list <boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = isGroupKnobSerialization->_children.begin(); it != isGroupKnobSerialization->_children.end(); ++it) {
+        for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = isGroupKnobSerialization->_children.begin(); it != isGroupKnobSerialization->_children.end(); ++it) {
             try {
                 restoreKnobLinks(*it, allCreatedNodesInGroup);
             } catch (const std::exception& e) {
@@ -4133,7 +4133,7 @@ struct KnobHolder::KnobHolderPrivate
 
     QMutex knobsMutex;
 
-    std::vector< KnobIPtr > knobs;
+    std::vector<KnobIPtr> knobs;
     std::map<std::string, KnobIWPtr> knobsOrdered;
     bool knobsInitialized;
     bool isInitializingKnobs;

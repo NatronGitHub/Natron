@@ -68,7 +68,7 @@ NodeGraph::setNodeToDefaultPosition(const NodeGuiPtr& node, const NodesGuiList& 
     NodePtr internalNode = node->getNode();
 
     // Serializatino, don't do anything
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
     if (serialization) {
         return;
     }

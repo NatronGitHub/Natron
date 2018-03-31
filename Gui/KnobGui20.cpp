@@ -360,7 +360,7 @@ KnobGui::resetDefault(DimSpec dimension, ViewSetSpec view)
     KnobSeparatorPtr isSeparator = toKnobSeparator(knob);
 
     if (!isBtn && !isPage && !isGroup && !isSeparator) {
-        std::list<KnobIPtr > knobs;
+        std::list<KnobIPtr> knobs;
         knobs.push_back(knob);
         pushUndoCommand( new RestoreDefaultsCommand(knobs, dimension, view) );
     }

@@ -857,7 +857,7 @@ AnimationModuleViewPrivate::refreshDopeSheetSelectedKeysBRect()
         
     }
 
-    for (std::list<NodeAnimPtr >::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
+    for (std::list<NodeAnimPtr>::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
 
         if (!(*it)->isRangeDrawingEnabled()) {
             continue;
@@ -888,7 +888,7 @@ AnimationModuleViewPrivate::refreshDopeSheetSelectedKeysBRect()
 
     }
 
-    for (std::list<TableItemAnimPtr >::const_iterator it = selectedTableItems.begin(); it != selectedTableItems.end(); ++it) {
+    for (std::list<TableItemAnimPtr>::const_iterator it = selectedTableItems.begin(); it != selectedTableItems.end(); ++it) {
 
         if (!(*it)->isRangeDrawingEnabled()) {
             continue;
@@ -973,7 +973,7 @@ AnimationModuleViewPrivate::computeRangesBelow(const NodeAnimPtr& node)
 }
 
 void
-AnimationModuleViewPrivate::checkAnimItemInRectInternal(const RectD& canonicalRect, QTreeWidgetItem* item, const AnimItemBasePtr& knob, ViewIdx view, DimIdx dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* /*selectedNodes*/, std::vector<TableItemAnimPtr >* /*selectedItems*/)
+AnimationModuleViewPrivate::checkAnimItemInRectInternal(const RectD& canonicalRect, QTreeWidgetItem* item, const AnimItemBasePtr& knob, ViewIdx view, DimIdx dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr>* /*selectedNodes*/, std::vector<TableItemAnimPtr>* /*selectedItems*/)
 {
     CurvePtr curve = knob->getCurve(dimension, view);
     if (!curve) {
@@ -1005,7 +1005,7 @@ AnimationModuleViewPrivate::checkAnimItemInRectInternal(const RectD& canonicalRe
 } // checkAnimItemInRectInternal
 
 void
-AnimationModuleViewPrivate::checkAnimItemInRect(const RectD& rect, QTreeWidgetItem* item, const AnimItemBasePtr& knob, ViewSetSpec view, DimSpec dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems)
+AnimationModuleViewPrivate::checkAnimItemInRect(const RectD& rect, QTreeWidgetItem* item, const AnimItemBasePtr& knob, ViewSetSpec view, DimSpec dimension, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr>* selectedNodes, std::vector<TableItemAnimPtr>* selectedItems)
 {
     int nDims = knob->getNDimensions();
     if (view.isAll()) {
@@ -1030,7 +1030,7 @@ AnimationModuleViewPrivate::checkAnimItemInRect(const RectD& rect, QTreeWidgetIt
 
 
 void
-AnimationModuleViewPrivate::checkTableItemAnimInRect(const RectD& /*rect*/,QTreeWidgetItem* /*item*/,  const TableItemAnimPtr& /*tableItem*/, AnimatedItemTypeEnum type, ViewSetSpec /*view*/, DimSpec /*dimension*/, AnimItemDimViewKeyFramesMap */*result*/, std::vector<NodeAnimPtr >* /*selectedNodes*/, std::vector<TableItemAnimPtr >* /*selectedItems*/)
+AnimationModuleViewPrivate::checkTableItemAnimInRect(const RectD& /*rect*/,QTreeWidgetItem* /*item*/,  const TableItemAnimPtr& /*tableItem*/, AnimatedItemTypeEnum type, ViewSetSpec /*view*/, DimSpec /*dimension*/, AnimItemDimViewKeyFramesMap */*result*/, std::vector<NodeAnimPtr>* /*selectedNodes*/, std::vector<TableItemAnimPtr>* /*selectedItems*/)
 {
     if (type == eAnimatedItemTypeTableItemRoot) {
 #pragma message WARN("Todo when enabling lifetime for table items")
@@ -1040,7 +1040,7 @@ AnimationModuleViewPrivate::checkTableItemAnimInRect(const RectD& /*rect*/,QTree
 
 
 void
-AnimationModuleViewPrivate::checkNodeAnimInRect(const RectD& rect, QTreeWidgetItem* item, const NodeAnimPtr& node, AnimItemDimViewKeyFramesMap * /*result*/, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* /*selectedItems*/)
+AnimationModuleViewPrivate::checkNodeAnimInRect(const RectD& rect, QTreeWidgetItem* item, const NodeAnimPtr& node, AnimItemDimViewKeyFramesMap * /*result*/, std::vector<NodeAnimPtr>* selectedNodes, std::vector<TableItemAnimPtr>* /*selectedItems*/)
 {
 
 
@@ -1060,7 +1060,7 @@ AnimationModuleViewPrivate::checkNodeAnimInRect(const RectD& rect, QTreeWidgetIt
 }
 
 void
-AnimationModuleViewPrivate::createSelectionFromRectRecursive(const RectD &rect, QTreeWidgetItem* item, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr >* selectedNodes, std::vector<TableItemAnimPtr >* selectedItems)
+AnimationModuleViewPrivate::createSelectionFromRectRecursive(const RectD &rect, QTreeWidgetItem* item, AnimItemDimViewKeyFramesMap *result, std::vector<NodeAnimPtr>* selectedNodes, std::vector<TableItemAnimPtr>* selectedItems)
 {
     assert(item);
     if ( item->isHidden() ) {
@@ -1122,7 +1122,7 @@ void
 AnimationModuleViewPrivate::makeSelectionFromDopeSheetSelectionRectangle(bool toggleSelection)
 {
     AnimItemDimViewKeyFramesMap selectedKeys;
-    std::vector<NodeAnimPtr > nodesSelection;
+    std::vector<NodeAnimPtr> nodesSelection;
     std::vector<TableItemAnimPtr> tableItemSelection;
     makeSelectionFromDopeSheetSelectionRectangleInternal(selectionRect, &selectedKeys, &nodesSelection, &tableItemSelection);
 
@@ -1139,8 +1139,8 @@ AnimationModuleViewPrivate::makeSelectionFromDopeSheetSelectionRectangle(bool to
 void
 AnimationModuleViewPrivate::makeSelectionFromDopeSheetSelectionRectangleInternal(const RectD &canonicalRect,
                                                                                  AnimItemDimViewKeyFramesMap *keys,
-                                                                                 std::vector<NodeAnimPtr >* nodes,
-                                                                                 std::vector<TableItemAnimPtr >* tableItems)
+                                                                                 std::vector<NodeAnimPtr>* nodes,
+                                                                                 std::vector<TableItemAnimPtr>* tableItems)
 {
     if (canonicalRect.isNull()) {
         return;
@@ -1293,9 +1293,9 @@ AnimationModuleViewPrivate::dopeSheetMousePressEvent(QMouseEvent *e)
             // If we click inside a range, start dragging
             if ( nodeClipRect.contains( clickZoomCoords.x(), clickZoomCoords.y() ) ) {
                 AnimItemDimViewKeyFramesMap selectedKeys;
-                std::vector<NodeAnimPtr > selectedNodes;
+                std::vector<NodeAnimPtr> selectedNodes;
                 selectedNodes.push_back(*it);
-                std::vector<TableItemAnimPtr > selectedTableItems;
+                std::vector<TableItemAnimPtr> selectedTableItems;
                 animModule->getSelectionModel()->makeSelection(selectedKeys, selectedTableItems, selectedNodes, sFlags);
 
                 if ( (nodeType == eAnimatedItemTypeGroup) ||
@@ -1313,9 +1313,9 @@ AnimationModuleViewPrivate::dopeSheetMousePressEvent(QMouseEvent *e)
                 currentEditedReader = *it;
                 if ( isNearByClipRectLeft(clickZoomCoords, nodeClipRect) ) {
                     AnimItemDimViewKeyFramesMap selectedKeys;
-                    std::vector<NodeAnimPtr > selectedNodes;
+                    std::vector<NodeAnimPtr> selectedNodes;
                     selectedNodes.push_back(*it);
-                    std::vector<TableItemAnimPtr > selectedTableItems;
+                    std::vector<TableItemAnimPtr> selectedTableItems;
                     animModule->getSelectionModel()->makeSelection(selectedKeys, selectedTableItems, selectedNodes, sFlags);
 
                     state = eEventStateReaderLeftTrim;
@@ -1323,18 +1323,18 @@ AnimationModuleViewPrivate::dopeSheetMousePressEvent(QMouseEvent *e)
                     break;
                 } else if ( isNearByClipRectRight(clickZoomCoords, nodeClipRect) ) {
                     AnimItemDimViewKeyFramesMap selectedKeys;
-                    std::vector<NodeAnimPtr > selectedNodes;
+                    std::vector<NodeAnimPtr> selectedNodes;
                     selectedNodes.push_back(*it);
-                    std::vector<TableItemAnimPtr > selectedTableItems;
+                    std::vector<TableItemAnimPtr> selectedTableItems;
                     animModule->getSelectionModel()->makeSelection(selectedKeys, selectedTableItems, selectedNodes, sFlags);
                     state = eEventStateReaderRightTrim;
                     return true;
                     break;
                 } else if ( animModule->canSlipReader(*it) && isNearByClipRectBottom(clickZoomCoords, nodeClipRect) ) {
                     AnimItemDimViewKeyFramesMap selectedKeys;
-                    std::vector<NodeAnimPtr > selectedNodes;
+                    std::vector<NodeAnimPtr> selectedNodes;
                     selectedNodes.push_back(*it);
-                    std::vector<TableItemAnimPtr > selectedTableItems;
+                    std::vector<TableItemAnimPtr> selectedTableItems;
                     animModule->getSelectionModel()->makeSelection(selectedKeys, selectedTableItems, selectedNodes, sFlags);
                     state = eEventStateReaderSlip;
                     return true;
@@ -1395,8 +1395,8 @@ AnimationModuleViewPrivate::dopeSheetMousePressEvent(QMouseEvent *e)
                             }
                         }
 
-                        std::vector<NodeAnimPtr > selectedNodes;
-                        std::vector<TableItemAnimPtr > selectedTableItems;
+                        std::vector<NodeAnimPtr> selectedNodes;
+                        std::vector<TableItemAnimPtr> selectedTableItems;
                         animModule->getSelectionModel()->makeSelection(selectedKeys, selectedTableItems, selectedNodes, sFlags);
                         
                         state = eEventStateDraggingKeys;

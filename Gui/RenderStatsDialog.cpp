@@ -104,7 +104,7 @@ class StatsTableModel
 {
     Q_DECLARE_TR_FUNCTIONS(StatsTableModel)
 
-    std::vector<NodeWPtr > rows;
+    std::vector<NodeWPtr> rows;
 
     struct MakeSharedEnabler;
 
@@ -125,7 +125,7 @@ public:
         rows.clear();
     }
 
-    const std::vector<NodeWPtr >& getRows() const
+    const std::vector<NodeWPtr>& getRows() const
     {
         return rows;
     }
@@ -481,7 +481,7 @@ RenderStatsDialog::onKnobsTreeSelectionChanged(const QItemSelection &selected,
         return;
     }
     int idx = indexes[0].row();
-    const std::vector<NodeWPtr >& rows = _imp->model->getRows();
+    const std::vector<NodeWPtr>& rows = _imp->model->getRows();
     if ( (idx < 0) || ( idx >= (int)rows.size() ) ) {
         return;
     }
@@ -539,7 +539,7 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter,
                                                     const QString& pluginIDFilter)
 {
     QModelIndex rootIdx = view->rootIndex();
-    const std::vector<NodeWPtr >& rows = model->getRows();
+    const std::vector<NodeWPtr>& rows = model->getRows();
 
 
     if ( useUnixWildcardsCheckbox->isChecked() ) {
@@ -555,7 +555,7 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter,
 
 
         int i = 0;
-        for (std::vector<NodeWPtr >::const_iterator it = rows.begin(); it != rows.end(); ++it, ++i) {
+        for (std::vector<NodeWPtr>::const_iterator it = rows.begin(); it != rows.end(); ++it, ++i) {
             NodePtr node = it->lock();
             if (!node) {
                 continue;
@@ -575,7 +575,7 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter,
     } else {
         int i = 0;
 
-        for (std::vector<NodeWPtr >::const_iterator it = rows.begin(); it != rows.end(); ++it, ++i) {
+        for (std::vector<NodeWPtr>::const_iterator it = rows.begin(); it != rows.end(); ++it, ++i) {
             NodePtr node = it->lock();
             if (!node) {
                 continue;

@@ -100,7 +100,7 @@ public:
 
     /// Overriden from AnimationModuleSelectionProvider
     virtual bool findItem(QTreeWidgetItem* treeItem, AnimatedItemTypeEnum *type, KnobAnimPtr* isKnob, TableItemAnimPtr* isTableItem, NodeAnimPtr* isNodeItem, ViewSetSpec* view, DimSpec* dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void getTopLevelNodes(bool onlyVisible, std::vector<NodeAnimPtr >* nodes) const OVERRIDE FINAL;
+    virtual void getTopLevelNodes(bool onlyVisible, std::vector<NodeAnimPtr>* nodes) const OVERRIDE FINAL;
     virtual AnimationModuleSelectionModelPtr getSelectionModel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// Overriden from AnimationModuleBase
@@ -123,7 +123,7 @@ public:
     /**
      * @brief Given the node, finds what nodes should be inserted as children of this node
      **/
-    std::vector<NodeAnimPtr > getChildrenNodes(const NodeAnimPtr& node) const;
+    std::vector<NodeAnimPtr> getChildrenNodes(const NodeAnimPtr& node) const;
 
     NodeAnimPtr getNearestTimeNodeFromOutputsInternal(const NodePtr& node) const;
     NodeAnimPtr getNearestTimeNodeFromOutputs(const NodeAnimPtr& node) const;

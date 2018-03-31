@@ -418,7 +418,7 @@ public:
      * @param bbox[out] The bounding box of the descretized points at the given scale, may be NULL
      **/
     static void deCasteljau(bool isOpenBezier,
-                            const std::list<BezierCPPtr >& cps,
+                            const std::list<BezierCPPtr>& cps,
                             TimeValue time,
                             const RenderScale &scale,
                             double featherDistance,
@@ -473,7 +473,7 @@ public:
      **/
     virtual RectD getBoundingBox(TimeValue time,ViewIdx view) const OVERRIDE;
 
-    static RectD getBezierSegmentListBbox(const std::list<BezierCPPtr > & points,
+    static RectD getBezierSegmentListBbox(const std::list<BezierCPPtr> & points,
                                           double featherDistance,
                                           TimeValue time,
                                           const Transform::Matrix3x3& transform);
@@ -481,18 +481,18 @@ public:
     /**
      * @brief Returns the control points of the Bezier curve. This can only ever be called on the main thread.
      **/
-    std::list< BezierCPPtr >  getControlPoints(ViewIdx view) const;
+    std::list<BezierCPPtr> getControlPoints(ViewIdx view) const;
 
 protected:
 
-    std::list< BezierCPPtr >  getControlPoints_internal(ViewIdx view);
+    std::list<BezierCPPtr> getControlPoints_internal(ViewIdx view);
 
 public:
 
     /**
      * @brief Returns the feather points of the Bezier curve. This can only ever be called on the main thread.
      **/
-    std::list< BezierCPPtr > getFeatherPoints(ViewIdx view) const;
+    std::list<BezierCPPtr> getFeatherPoints(ViewIdx view) const;
 
     enum ControlPointSelectionPrefEnum
     {
@@ -506,7 +506,7 @@ public:
      * The first member is the actual point nearby, and the second the counter part (i.e: either the feather point
      * if the first is a control point, or the other way around).
      **/
-    std::pair<BezierCPPtr, BezierCPPtr >isNearbyControlPoint(double x, double y, double acceptance, TimeValue time, ViewIdx view, ControlPointSelectionPrefEnum pref, int* index) const;
+    std::pair<BezierCPPtr, BezierCPPtr>isNearbyControlPoint(double x, double y, double acceptance, TimeValue time, ViewIdx view, ControlPointSelectionPrefEnum pref, int* index) const;
 
     /**
      * @brief Given the control point in parameter, return its index in the curve's control points list.
@@ -542,7 +542,7 @@ public:
      * mode == 1: Add only the cp within the rect and their respective feather points counter parts
      * mode == 2: Add only the fp within the rect and their repsective control points counter parts
      **/
-    std::list< std::pair<BezierCPPtr, BezierCPPtr > > controlPointsWithinRect(TimeValue time, ViewIdx view, double l, double r, double b, double t, double acceptance, int mode) const;
+    std::list<std::pair<BezierCPPtr, BezierCPPtr> > controlPointsWithinRect(TimeValue time, ViewIdx view, double l, double r, double b, double t, double acceptance, int mode) const;
 
     static void leftDerivativeAtPoint(TimeValue time, const BezierCP & p, const BezierCP & prev, const Transform::Matrix3x3& transform, double *dx, double *dy);
     static void rightDerivativeAtPoint(TimeValue time, const BezierCP & p, const BezierCP & next, const Transform::Matrix3x3& transform, double *dx, double *dy);
@@ -565,9 +565,9 @@ public:
                                          TimeValue time,         //< time
                                          bool clockWise,         //< is the Bezier  clockwise oriented or not
                                          const Transform::Matrix3x3& transform,
-                                         std::list<BezierCPPtr >::const_iterator prevFp,         //< iterator pointing to the feather before curFp
-                                         std::list<BezierCPPtr >::const_iterator curFp,         //< iterator pointing to fp
-                                         std::list<BezierCPPtr >::const_iterator nextFp);         //< iterator pointing after curFp
+                                         std::list<BezierCPPtr>::const_iterator prevFp,         //< iterator pointing to the feather before curFp
+                                         std::list<BezierCPPtr>::const_iterator curFp,         //< iterator pointing to fp
+                                         std::list<BezierCPPtr>::const_iterator nextFp);         //< iterator pointing after curFp
     enum FillRuleEnum
     {
         eFillRuleOddEven,

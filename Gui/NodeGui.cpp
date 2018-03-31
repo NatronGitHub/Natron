@@ -275,7 +275,7 @@ NodeGui::initialize(NodeGraph* dag,
 
     {
         bool isTopLevelNodeBeingCreated = internalNode->getApp()->isTopLevelNodeBeingCreated(internalNode);
-        SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
         bool panelOpened = isViewerNode ? false : args.getPropertyUnsafe<bool>(kCreateNodeArgsPropSettingsOpened);
         if ((!serialization && panelOpened && isTopLevelNodeBeingCreated) ) {
             ensurePanelCreated();
@@ -347,7 +347,7 @@ NodeGui::restoreStateAfterCreation(const CreateNodeArgs& args)
     if (!internalNode) {
         return;
     }
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
     if (!serialization) {
         QColor color;
         if ( getColorFromGrouping(&color) ) {
@@ -1208,7 +1208,7 @@ NodeGui::refreshDashedStateOfEdges()
 void
 NodeGui::refreshEdges()
 {
-    const std::vector<NodeWPtr > & nodeInputs = getNode()->getInputs();
+    const std::vector<NodeWPtr> & nodeInputs = getNode()->getInputs();
 
     if ( _inputEdges.size() != nodeInputs.size() ) {
         return;
@@ -1430,7 +1430,7 @@ NodeGui::initializeInputs()
     NodePtr node = getNode();
 
     ///The actual numbers of inputs of the internal node
-    const std::vector<NodeWPtr >& inputs = node->getInputs();
+    const std::vector<NodeWPtr>& inputs = node->getInputs();
 
     ///Delete all  inputs that may exist
     for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
@@ -1771,7 +1771,7 @@ NodeGui::findConnectedEdge(NodeGui* parent)
 bool
 NodeGui::connectEdge(int edgeNumber)
 {
-    const std::vector<NodeWPtr > & inputs = getNode()->getInputs();
+    const std::vector<NodeWPtr> & inputs = getNode()->getInputs();
 
     if ( (edgeNumber < 0) || ( edgeNumber >= (int)inputs.size() ) || ( _inputEdges.size() != inputs.size() ) ) {
         return false;

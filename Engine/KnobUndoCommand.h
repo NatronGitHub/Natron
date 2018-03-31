@@ -403,7 +403,7 @@ class RestoreDefaultsCommand
 
 public:
 
-    RestoreDefaultsCommand(const std::list<KnobIPtr > & knobs,
+    RestoreDefaultsCommand(const std::list<KnobIPtr> & knobs,
                            DimSpec targetDim,
                            ViewSetSpec targetView);
     virtual void undo();

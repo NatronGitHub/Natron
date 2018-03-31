@@ -499,9 +499,9 @@ NATRON_NAMESPACE_ENTER
 
 ///A list of points and their counter-part, that is: either a control point and its feather point, or
 ///the feather point and its associated control point
-typedef std::pair<BezierCPPtr, BezierCPPtr > SelectedCP;
-typedef std::list< SelectedCP > SelectedCPs;
-typedef std::list< RotoDrawableItemPtr > SelectedItems;
+typedef std::pair<BezierCPPtr, BezierCPPtr> SelectedCP;
+typedef std::list<SelectedCP > SelectedCPs;
+typedef std::list<RotoDrawableItemPtr> SelectedItems;
 
 enum EventStateEnum
 {
@@ -632,8 +632,8 @@ public:
      * Non-active curves will not be inserted into the list.
      * MT-safe
      **/
-    std::list< RotoDrawableItemPtr > getRotoPaintItemsByRenderOrder() const;
-    std::list< RotoDrawableItemPtr > getActivatedRotoPaintItemsByRenderOrder(TimeValue time, ViewIdx view) const;
+    std::list<RotoDrawableItemPtr> getRotoPaintItemsByRenderOrder() const;
+    std::list<RotoDrawableItemPtr> getActivatedRotoPaintItemsByRenderOrder(TimeValue time, ViewIdx view) const;
 
     SelectedItems getSelectedDrawableItems() const;
 
@@ -817,7 +817,7 @@ public:
 
     NodePtr getOrCreateGlobalTimeBlurNode();
 
-    bool isRotoPaintTreeConcatenatableInternal(const std::list<RotoDrawableItemPtr >& items,
+    bool isRotoPaintTreeConcatenatableInternal(const std::list<RotoDrawableItemPtr>& items,
                                                int* blendingMode) const;
 
     void exportTrackDataFromExportOptions();
@@ -1123,14 +1123,14 @@ public:
 
     void handleBezierSelection(const BezierPtr & curve);
 
-    void handleControlPointSelection(const std::pair<BezierCPPtr, BezierCPPtr > & p);
+    void handleControlPointSelection(const std::pair<BezierCPPtr, BezierCPPtr> & p);
 
     void drawSelectedCp(TimeValue time,
                         const BezierCPPtr & cp,
                         double x, double y,
                         const Transform::Matrix3x3& transform);
 
-    std::pair<BezierCPPtr, BezierCPPtr >isNearbyFeatherBar(TimeValue time, ViewIdx view, const std::pair<double, double> & pixelScale, const QPointF & pos) const;
+    std::pair<BezierCPPtr, BezierCPPtr>isNearbyFeatherBar(TimeValue time, ViewIdx view, const std::pair<double, double> & pixelScale, const QPointF & pos) const;
 
     bool isNearbySelectedCpsCrossHair(const QPointF & pos) const;
 
@@ -1174,13 +1174,13 @@ public:
      * @brief Set the selection to be the given Beziers and the given control points.
      * This can only be called on the main-thread.
      **/
-    void setSelection(const std::list<RotoDrawableItemPtr > & selectedBeziers,
-                      const std::list<std::pair<BezierCPPtr, BezierCPPtr > > & selectedCps);
+    void setSelection(const std::list<RotoDrawableItemPtr> & selectedBeziers,
+                      const std::list<std::pair<BezierCPPtr, BezierCPPtr> > & selectedCps);
     void setSelection(const BezierPtr & curve,
-                      const std::pair<BezierCPPtr, BezierCPPtr > & point);
+                      const std::pair<BezierCPPtr, BezierCPPtr> & point);
 
-    void getSelection(std::list<RotoDrawableItemPtr >* selectedBeziers,
-                      std::list<std::pair<BezierCPPtr, BezierCPPtr > >* selectedCps);
+    void getSelection(std::list<RotoDrawableItemPtr>* selectedBeziers,
+                      std::list<std::pair<BezierCPPtr, BezierCPPtr> >* selectedCps);
 
     void setBuiltBezier(const BezierPtr & curve);
 

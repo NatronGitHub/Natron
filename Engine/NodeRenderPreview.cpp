@@ -382,7 +382,7 @@ refreshPreviewsRecursivelyUpstreamInternal(const NodePtr& node,
 
     marked.push_back(node);
 
-    std::vector<NodeWPtr > inputs = node->getInputs_copy();
+    std::vector<NodeWPtr> inputs = node->getInputs_copy();
 
     for (std::size_t i = 0; i < inputs.size(); ++i) {
         NodePtr input = inputs[i].lock();

@@ -115,7 +115,7 @@ public:
 private:
 
     void centerOnItemsInternal(const std::vector<CurveGuiPtr>& curves,
-                               const std::vector<NodeAnimPtr >& nodes,
+                               const std::vector<NodeAnimPtr>& nodes,
                                const std::vector<TableItemAnimPtr>& tableItems);
 public:
 

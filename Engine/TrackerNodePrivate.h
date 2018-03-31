@@ -818,11 +818,11 @@ public:
     
     virtual SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr createSerializationFromItem(const KnobTableItemPtr& item) OVERRIDE FINAL;
 
-    void getAllMarkers(std::vector<TrackMarkerPtr >* markers) const;
+    void getAllMarkers(std::vector<TrackMarkerPtr>* markers) const;
 
-    void getSelectedMarkers(std::list<TrackMarkerPtr >* markers) const;
+    void getSelectedMarkers(std::list<TrackMarkerPtr>* markers) const;
 
-    void getAllEnabledMarkers(std::list<TrackMarkerPtr >* markers) const;
+    void getAllEnabledMarkers(std::list<TrackMarkerPtr>* markers) const;
 
     bool isMarkerSelected(const TrackMarkerPtr& marker) const;
 
@@ -890,7 +890,7 @@ public:
     TrackerDrawStateEnum hoverState;
     TrackMarkerPtr interactMarker, hoverMarker;
 
-    typedef std::map<TimeValue, GLTexturePtr > KeyFrameTexIDs;
+    typedef std::map<TimeValue, GLTexturePtr> KeyFrameTexIDs;
     typedef std::map<boost::weak_ptr<TrackMarker>, KeyFrameTexIDs> TrackKeysMap;
     TrackKeysMap trackTextures;
     TrackKeyframeRequests trackRequestsMap;

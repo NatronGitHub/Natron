@@ -57,7 +57,7 @@ typedef BezierPtr BezierPtr;
 typedef std::list<BezierPtr> BezierList;
 
 MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(const RotoPaintInteractPtr& roto,
-                                                           const std::list< std::pair<BezierCPPtr, BezierCPPtr > > & toDrag
+                                                           const std::list<std::pair<BezierCPPtr, BezierCPPtr> > & toDrag
                                                            ,
                                                            double dx,
                                                            double dy,
@@ -206,8 +206,8 @@ MoveControlPointsUndoCommand::mergeWith(const UndoCommandPtr& other)
         return false;
     }
 
-    std::list< std::pair<BezierCPPtr, BezierCPPtr > >::const_iterator it = _pointsToDrag.begin();
-    std::list< std::pair<BezierCPPtr, BezierCPPtr > >::const_iterator oIt = mvCmd->_pointsToDrag.begin();
+    std::list<std::pair<BezierCPPtr, BezierCPPtr> >::const_iterator it = _pointsToDrag.begin();
+    std::list<std::pair<BezierCPPtr, BezierCPPtr> >::const_iterator oIt = mvCmd->_pointsToDrag.begin();
     for (; it != _pointsToDrag.end(); ++it, ++oIt) {
         if ( (it->first != oIt->first) || (it->second != oIt->second) ) {
             return false;
@@ -246,7 +246,7 @@ TransformUndoCommand::TransformUndoCommand(const RotoPaintInteractPtr& roto,
     , _originalPoints()
     , _selectedPoints()
 {
-    std::list< std::pair<BezierCPPtr, BezierCPPtr > > selected;
+    std::list<std::pair<BezierCPPtr, BezierCPPtr> > selected;
 
     roto->getSelection(&_selectedCurves, &selected);
 
@@ -476,8 +476,8 @@ RemovePointUndoCommand::RemovePointUndoCommand(const RotoPaintInteractPtr& roto,
             continue;
         }
         // Have we already had a control point for this curve in the points list ?
-        std::list< CurveDesc >::iterator foundCurve = _curves.end();
-        for (std::list< CurveDesc >::iterator it2 = _curves.begin(); it2 != _curves.end(); ++it2) {
+        std::list<CurveDesc >::iterator foundCurve = _curves.end();
+        for (std::list<CurveDesc >::iterator it2 = _curves.begin(); it2 != _curves.end(); ++it2) {
             if (it2->curve == curve) {
                 foundCurve = it2;
                 break;
@@ -530,10 +530,10 @@ RemovePointUndoCommand::undo()
         return;
     }
 
-    std::list<RotoDrawableItemPtr > selection;
+    std::list<RotoDrawableItemPtr> selection;
     SelectedCpList cpSelection;
 
-    for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
+    for (std::list<CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         // Clone the original curve
         it->curve->copyItem( *it->oldCurve );
 
@@ -558,12 +558,12 @@ RemovePointUndoCommand::redo()
     }
 
     // Clone the original curve first
-    for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
+    for (std::list<CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         it->oldCurve->copyItem(*it->curve);
     }
 
-    std::list<BezierPtr > toRemove;
-    for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
+    std::list<BezierPtr> toRemove;
+    for (std::list<CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
 
         // Remove in decreasing order so indexes don't get messed up
         for (std::list<int>::reverse_iterator it2 = it->points.rbegin(); it2 != it->points.rend(); ++it2) {
@@ -577,7 +577,7 @@ RemovePointUndoCommand::redo()
             } else if (cpCount == 0) {
                 // Remove the Bezier if we removed all control points
                 it->curveRemoved = true;
-                std::list<BezierPtr >::iterator found = std::find( toRemove.begin(), toRemove.end(), it->curve );
+                std::list<BezierPtr>::iterator found = std::find( toRemove.begin(), toRemove.end(), it->curve );
                 if ( found == toRemove.end() ) {
                     toRemove.push_back(it->curve);
                 }
@@ -585,7 +585,7 @@ RemovePointUndoCommand::redo()
         }
     }
 
-    for (std::list<BezierPtr >::iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
+    for (std::list<BezierPtr>::iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
         roto->removeCurve(*it);
     }
 
@@ -933,7 +933,7 @@ MoveTangentUndoCommand::mergeWith(const UndoCommandPtr &other)
 MoveFeatherBarUndoCommand::MoveFeatherBarUndoCommand(const RotoPaintInteractPtr& roto,
                                                      double dx,
                                                      double dy,
-                                                     const std::pair<BezierCPPtr, BezierCPPtr > & point,
+                                                     const std::pair<BezierCPPtr, BezierCPPtr> & point,
                                                      TimeValue time,
                                                      ViewIdx view)
     : UndoCommand()
@@ -1013,20 +1013,20 @@ MoveFeatherBarUndoCommand::redo()
         delta.y = delta.y * dotProduct;
     } else {
         ///the feather point equals the control point, use derivatives
-        std::list<BezierCPPtr >  cps = p->getBezier()->getFeatherPoints(_view);
+        std::list<BezierCPPtr> cps = p->getBezier()->getFeatherPoints(_view);
         assert(cps.size() > 1);
 
-        std::list<BezierCPPtr >::const_iterator cur = std::find(cps.begin(), cps.end(), fp);
+        std::list<BezierCPPtr>::const_iterator cur = std::find(cps.begin(), cps.end(), fp);
         if ( cur == cps.end() ) {
             return;
         }
         // compute previous and next element in the cyclic list
-        std::list<BezierCPPtr >::const_iterator prev = cur;
+        std::list<BezierCPPtr>::const_iterator prev = cur;
         if ( prev == cps.begin() ) {
             prev = cps.end();
         }
         --prev; // the list has at least one element
-        std::list<BezierCPPtr >::const_iterator next = cur;
+        std::list<BezierCPPtr>::const_iterator next = cur;
         ++next; // the list has at least one element
         if ( next == cps.end() ) {
             next = cps.begin();
@@ -1101,7 +1101,7 @@ RemoveFeatherUndoCommand::RemoveFeatherUndoCommand(const RotoPaintInteractPtr& r
     , _view(view)
 {
     for (std::list<RemoveFeatherData>::iterator it = _datas.begin(); it != _datas.end(); ++it) {
-        for (std::list<BezierCPPtr >::const_iterator it2 = it->newPoints.begin(); it2 != it->newPoints.end(); ++it2) {
+        for (std::list<BezierCPPtr>::const_iterator it2 = it->newPoints.begin(); it2 != it->newPoints.end(); ++it2) {
             it->oldPoints.push_back( boost::make_shared<BezierCP>(**it2) );
         }
     }
@@ -1116,8 +1116,8 @@ void
 RemoveFeatherUndoCommand::undo()
 {
     for (std::list<RemoveFeatherData>::iterator it = _datas.begin(); it != _datas.end(); ++it) {
-        std::list<BezierCPPtr >::const_iterator itOld = it->oldPoints.begin();
-        for (std::list<BezierCPPtr >::const_iterator itNew = it->newPoints.begin();
+        std::list<BezierCPPtr>::const_iterator itOld = it->oldPoints.begin();
+        for (std::list<BezierCPPtr>::const_iterator itNew = it->newPoints.begin();
              itNew != it->newPoints.end(); ++itNew, ++itOld) {
             (*itNew)->copyControlPoint(**itOld);
         }
@@ -1133,8 +1133,8 @@ void
 RemoveFeatherUndoCommand::redo()
 {
     for (std::list<RemoveFeatherData>::iterator it = _datas.begin(); it != _datas.end(); ++it) {
-        std::list<BezierCPPtr >::const_iterator itOld = it->oldPoints.begin();
-        for (std::list<BezierCPPtr >::const_iterator itNew = it->newPoints.begin();
+        std::list<BezierCPPtr>::const_iterator itOld = it->oldPoints.begin();
+        for (std::list<BezierCPPtr>::const_iterator itNew = it->newPoints.begin();
              itNew != it->newPoints.end(); ++itNew, ++itOld) {
             (*itOld)->copyControlPoint(**itNew);
             try {

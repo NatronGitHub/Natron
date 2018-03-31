@@ -103,7 +103,7 @@ public:
         Q_UNUSED(knobs);
     }
 
-    virtual void getTopLevelNodes(bool /*onlyVisible*/, std::vector<NodeAnimPtr >* nodes) const
+    virtual void getTopLevelNodes(bool /*onlyVisible*/, std::vector<NodeAnimPtr>* nodes) const
     {
         Q_UNUSED(nodes);
     }
@@ -176,7 +176,7 @@ public:
      **/
     void setCurrentSelection(const AnimItemDimViewKeyFramesMap &keys,
                              const std::vector<TableItemAnimPtr>& selectedTableItems,
-                             const std::vector<NodeAnimPtr >& rangeNodes);
+                             const std::vector<NodeAnimPtr>& rangeNodes);
 
     /**
      * @brief Remove selected keyframes

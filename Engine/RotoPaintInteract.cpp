@@ -824,7 +824,7 @@ RotoPaintInteract::handleBezierSelection(const BezierPtr & curve)
 
 void
 RotoPaintInteract::handleControlPointSelection(const std::pair<BezierCPPtr,
-                                               BezierCPPtr > & p)
+                                               BezierCPPtr> & p)
 {
     ///find out if the cp is already selected.
     SelectedCPs::iterator foundCP = selectedCps.end();
@@ -1373,7 +1373,7 @@ RotoPaintInteract::isNearbySelectedCpsBoundingBox(const QPointF & pos,
     return false;
 }
 
-std::pair<BezierCPPtr, BezierCPPtr >
+std::pair<BezierCPPtr, BezierCPPtr>
 RotoPaintInteract::isNearbyFeatherBar(TimeValue time,
                                       ViewIdx view,
                                       const std::pair<double, double> & pixelScale,
@@ -1403,8 +1403,8 @@ RotoPaintInteract::isNearbyFeatherBar(TimeValue time,
         Transform::Matrix3x3 transform;
         isBezier->getTransformAtTime(time, view, &transform);
 
-        const std::list<BezierCPPtr > & fps = isBezier->getFeatherPoints(view);
-        const std::list<BezierCPPtr > & cps = isBezier->getControlPoints(view);
+        const std::list<BezierCPPtr> & fps = isBezier->getFeatherPoints(view);
+        const std::list<BezierCPPtr> & cps = isBezier->getControlPoints(view);
         assert( cps.size() == fps.size() );
 
         int cpCount = (int)cps.size();
@@ -1413,18 +1413,18 @@ RotoPaintInteract::isNearbyFeatherBar(TimeValue time,
         }
 
 
-        std::list<BezierCPPtr >::const_iterator itF = fps.begin();
-        std::list<BezierCPPtr >::const_iterator nextF = itF;
+        std::list<BezierCPPtr>::const_iterator itF = fps.begin();
+        std::list<BezierCPPtr>::const_iterator nextF = itF;
         if ( nextF != fps.end() ) {
             ++nextF;
         }
-        std::list<BezierCPPtr >::const_iterator prevF = fps.end();
+        std::list<BezierCPPtr>::const_iterator prevF = fps.end();
         if ( prevF != fps.begin() ) {
             --prevF;
         }
         bool isClockWiseOriented = isBezier->isClockwiseOriented(time, view);
 
-        for (std::list<BezierCPPtr >::const_iterator itCp = cps.begin();
+        for (std::list<BezierCPPtr>::const_iterator itCp = cps.begin();
              itCp != cps.end();
              ++itCp) {
             if ( prevF == fps.end() ) {
@@ -1559,12 +1559,12 @@ RotoPaintInteract::isNearbyBezier(double x,
 
 
 void
-RotoPaintInteract::setSelection(const std::list<RotoDrawableItemPtr > & drawables,
-                                const std::list<std::pair<BezierCPPtr, BezierCPPtr > > & points)
+RotoPaintInteract::setSelection(const std::list<RotoDrawableItemPtr> & drawables,
+                                const std::list<std::pair<BezierCPPtr, BezierCPPtr> > & points)
 {
     _imp->knobsTable->beginEditSelection();
     _imp->knobsTable->clearSelection(eTableChangeReasonViewer);
-    for (std::list<RotoDrawableItemPtr >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
+    for (std::list<RotoDrawableItemPtr>::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
         _imp->knobsTable->addToSelection(*it, eTableChangeReasonViewer);
     }
     selectedCps.clear();
@@ -1579,7 +1579,7 @@ RotoPaintInteract::setSelection(const std::list<RotoDrawableItemPtr > & drawable
 
 void
 RotoPaintInteract::setSelection(const BezierPtr & curve,
-                                const std::pair<BezierCPPtr, BezierCPPtr > & point)
+                                const std::pair<BezierCPPtr, BezierCPPtr> & point)
 {
     _imp->knobsTable->beginEditSelection();
     _imp->knobsTable->clearSelection(eTableChangeReasonViewer);
@@ -1596,8 +1596,8 @@ RotoPaintInteract::setSelection(const BezierPtr & curve,
 }
 
 void
-RotoPaintInteract::getSelection(std::list<RotoDrawableItemPtr >* beziers,
-                                std::list<std::pair<BezierCPPtr, BezierCPPtr > >* points)
+RotoPaintInteract::getSelection(std::list<RotoDrawableItemPtr>* beziers,
+                                std::list<std::pair<BezierCPPtr, BezierCPPtr> >* points)
 {
     std::list<KnobTableItemPtr> selectedItems = _imp->knobsTable->getSelectedItems();
     for (std::list<KnobTableItemPtr>::const_iterator it = selectedItems.begin(); it!=selectedItems.end(); ++it) {
@@ -1643,10 +1643,10 @@ RotoPaintInteract::smoothSelectedCurve(TimeValue time, ViewIdx view)
             if (bezier) {
                 SmoothCuspUndoCommand::SmoothCuspCurveData data;
                 data.curve = bezier;
-                const std::list<BezierCPPtr > & cps = bezier->getControlPoints(view);
-                const std::list<BezierCPPtr > & fps = bezier->getFeatherPoints(view);
-                std::list<BezierCPPtr >::const_iterator itFp = fps.begin();
-                for (std::list<BezierCPPtr >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
+                const std::list<BezierCPPtr> & cps = bezier->getControlPoints(view);
+                const std::list<BezierCPPtr> & fps = bezier->getFeatherPoints(view);
+                std::list<BezierCPPtr>::const_iterator itFp = fps.begin();
+                for (std::list<BezierCPPtr>::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
                     data.newPoints.push_back( std::make_pair(*it, *itFp) );
                 }
                 datas.push_back(data);
@@ -1685,10 +1685,10 @@ RotoPaintInteract::cuspSelectedCurve(TimeValue time, ViewIdx view)
             if (bezier) {
                 SmoothCuspUndoCommand::SmoothCuspCurveData data;
                 data.curve = bezier;
-                const std::list<BezierCPPtr > & cps = bezier->getControlPoints(view);
-                const std::list<BezierCPPtr > & fps = bezier->getFeatherPoints(view);
-                std::list<BezierCPPtr >::const_iterator itFp = fps.begin();
-                for (std::list<BezierCPPtr >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
+                const std::list<BezierCPPtr> & cps = bezier->getControlPoints(view);
+                const std::list<BezierCPPtr> & fps = bezier->getFeatherPoints(view);
+                std::list<BezierCPPtr>::const_iterator itFp = fps.begin();
+                for (std::list<BezierCPPtr>::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
                     data.newPoints.push_back( std::make_pair(*it, *itFp) );
                 }
                 datas.push_back(data);
@@ -1764,7 +1764,7 @@ RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
                                                 TimeValue time,
                                                 ViewIdx view)
 {
-    std::list< std::pair<BezierCPPtr, BezierCPPtr > > points;
+    std::list<std::pair<BezierCPPtr, BezierCPPtr> > points;
 
     if ( !selectedCps.empty() ) {
         points = selectedCps;
@@ -1773,11 +1773,11 @@ RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
         for (std::list<KnobTableItemPtr>::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
             BezierPtr bezier = toBezier(*it);
             if (bezier) {
-                const std::list< BezierCPPtr > & cps = bezier->getControlPoints(view);
-                const std::list< BezierCPPtr > & fps = bezier->getFeatherPoints(view);
-                std::list< BezierCPPtr >::const_iterator fpIt = fps.begin();
+                const std::list<BezierCPPtr> & cps = bezier->getControlPoints(view);
+                const std::list<BezierCPPtr> & fps = bezier->getFeatherPoints(view);
+                std::list<BezierCPPtr>::const_iterator fpIt = fps.begin();
                 assert( fps.empty() || fps.size() == cps.size() );
-                for (std::list< BezierCPPtr >::const_iterator it = cps.begin(); it != cps.end(); ++it) {
+                for (std::list<BezierCPPtr>::const_iterator it = cps.begin(); it != cps.end(); ++it) {
                     points.push_back( std::make_pair(*it, *fpIt) );
                     if ( !fps.empty() ) {
                         ++fpIt;
@@ -1817,7 +1817,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
                                ViewIdx view)
 {
 
-    std::list< RotoDrawableItemPtr > drawables = _imp->knobsTable->getActivatedRotoPaintItemsByRenderOrder(time, view);
+    std::list<RotoDrawableItemPtr> drawables = _imp->knobsTable->getActivatedRotoPaintItemsByRenderOrder(time, view);
     std::pair<double, double> pixelScale;
     std::pair<double, double> viewportSize;
 
@@ -1838,7 +1838,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
 
         double cpWidth = kControlPointMidSize * 2;
         GL_GPU::PointSize(cpWidth);
-        for (std::list< RotoDrawableItemPtr >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
+        for (std::list<RotoDrawableItemPtr>::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
 
             if ( !(*it)->isGloballyActivated() ) {
                 continue;
@@ -1891,7 +1891,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
 #endif
                 bool finished = isBezier->isCurveFinished(view);
 
-                std::vector< ParametricPoint > points;
+                std::vector<ParametricPoint > points;
                 isBezier->evaluateAtTime(time, view, RenderScale(1.), Bezier::eDeCasteljauAlgorithmIterative, 100, 1., &points, NULL);
                 if (!points.empty() && finished) {
                     // Repeat the last point so that we can use line strips
@@ -1916,7 +1916,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
                 GL_GPU::End();
 
                 ///draw the feather points
-                std::vector< ParametricPoint > featherPoints;
+                std::vector<ParametricPoint > featherPoints;
                 bool clockWise = isBezier->isClockwiseOriented(time, view);
 
 
@@ -1946,8 +1946,8 @@ RotoPaintInteract::drawOverlay(TimeValue time,
                     Transform::Matrix3x3 transform;
                     isBezier->getTransformAtTime(time, view, &transform);
 
-                    const std::list< BezierCPPtr > & cps = isBezier->getControlPoints(view);
-                    const std::list< BezierCPPtr > & featherPts = isBezier->getFeatherPoints(view);
+                    const std::list<BezierCPPtr> & cps = isBezier->getControlPoints(view);
+                    const std::list<BezierCPPtr> & featherPts = isBezier->getFeatherPoints(view);
                     assert( cps.size() == featherPts.size() );
 
                     if ( cps.empty() ) {
@@ -1957,17 +1957,17 @@ RotoPaintInteract::drawOverlay(TimeValue time,
 
                     GL_GPU::Color3d(0.85, 0.67, 0.);
 
-                    std::list< BezierCPPtr >::const_iterator itF = featherPts.begin();
+                    std::list<BezierCPPtr>::const_iterator itF = featherPts.begin();
                     int index = 0;
-                    std::list< BezierCPPtr >::const_iterator prevCp = cps.end();
+                    std::list<BezierCPPtr>::const_iterator prevCp = cps.end();
                     if ( prevCp != cps.begin() ) {
                         --prevCp;
                     }
-                    std::list< BezierCPPtr >::const_iterator nextCp = cps.begin();
+                    std::list<BezierCPPtr>::const_iterator nextCp = cps.begin();
                     if ( nextCp != cps.end() ) {
                         ++nextCp;
                     }
-                    for (std::list< BezierCPPtr >::const_iterator it2 = cps.begin(); it2 != cps.end();
+                    for (std::list<BezierCPPtr>::const_iterator it2 = cps.begin(); it2 != cps.end();
                          ++it2) {
                         if ( nextCp == cps.end() ) {
                             nextCp = cps.begin();
@@ -2153,7 +2153,7 @@ RotoPaintInteract::drawOverlay(TimeValue time,
                 } // if ( ( selected != selectedBeziers.end() ) && !locked ) {
             } // if (isBezier)
             glCheckError(GL_GPU);
-        } // for (std::list< RotoDrawableItemPtr >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
+        } // for (std::list<RotoDrawableItemPtr>::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
 
 
 
@@ -2276,8 +2276,8 @@ RotoPaintInteract::onViewportSelectionUpdated(const RectD& rectangle,
     ViewIdx view = _imp->publicInterface->getCurrentRenderView();
 
     bool featherVisible = isFeatherVisible();
-    std::list<RotoDrawableItemPtr > curves = _imp->knobsTable->getActivatedRotoPaintItemsByRenderOrder(time, view);
-    for (std::list<RotoDrawableItemPtr >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
+    std::list<RotoDrawableItemPtr> curves = _imp->knobsTable->getActivatedRotoPaintItemsByRenderOrder(time, view);
+    for (std::list<RotoDrawableItemPtr>::const_iterator it = curves.begin(); it != curves.end(); ++it) {
         BezierPtr isBezier = toBezier(*it);
         if ( (*it)->isLockedRecursive() ) {
             continue;
@@ -2340,11 +2340,11 @@ RotoPaintInteract::onOverlayPenDoubleClicked(TimeValue time,
             ///If the Bezier is already selected and we re-click on it, change the transform mode
             handleBezierSelection(nearbyBezier);
             clearCPSSelection();
-            const std::list<BezierCPPtr > & cps = nearbyBezier->getControlPoints(view);
-            const std::list<BezierCPPtr > & fps = nearbyBezier->getFeatherPoints(view);
+            const std::list<BezierCPPtr> & cps = nearbyBezier->getControlPoints(view);
+            const std::list<BezierCPPtr> & fps = nearbyBezier->getFeatherPoints(view);
             assert( cps.size() == fps.size() );
-            std::list<BezierCPPtr >::const_iterator itCp = cps.begin();
-            std::list<BezierCPPtr >::const_iterator itFp = fps.begin();
+            std::list<BezierCPPtr>::const_iterator itCp = cps.begin();
+            std::list<BezierCPPtr>::const_iterator itFp = fps.begin();
             for (; itCp != cps.end(); ++itCp, ++itFp) {
                 selectedCps.push_back( std::make_pair(*itCp, *itFp) );
             }
@@ -2405,7 +2405,7 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
     bool isFeather;
     BezierPtr nearbyBezier =
     isNearbyBezier(pos.x(), pos.y(), time, view, bezierSelectionTolerance, &nearbyBezierCPIndex, &nearbyBezierT, &isFeather);
-    std::pair<BezierCPPtr, BezierCPPtr > nearbyCP;
+    std::pair<BezierCPPtr, BezierCPPtr> nearbyCP;
     int nearbyCpIndex = -1;
     if (!didSomething && nearbyBezier) {
         /////////////////CONTROL POINT SELECTION
@@ -2486,7 +2486,7 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
                 ///nothing to do
                 break;
             }
-            std::pair<BezierCPPtr, BezierCPPtr > featherBarSel;
+            std::pair<BezierCPPtr, BezierCPPtr> featherBarSel;
             if ( ( ( selectedTool == eRotoToolSelectAll) || ( selectedTool == eRotoToolSelectFeatherPoints) ) ) {
                 featherBarSel = isNearbyFeatherBar(time, view,  pixelScale, pos);
                 if (featherBarSel.first && !featherVisible) {
@@ -2660,9 +2660,9 @@ RotoPaintInteract::onOverlayPenDown(TimeValue time,
             if (builtBezier) {
                 ///if the user clicked on a control point of the Bezier, select the point instead.
                 ///if that point is the starting point of the curve, close the curve
-                const std::list<BezierCPPtr > & cps = builtBezier->getControlPoints(view);
+                const std::list<BezierCPPtr> & cps = builtBezier->getControlPoints(view);
                 int i = 0;
-                for (std::list<BezierCPPtr >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++i) {
+                for (std::list<BezierCPPtr>::const_iterator it = cps.begin(); it != cps.end(); ++it, ++i) {
                     double x, y;
                     (*it)->getPositionAtTime(time, &x, &y);
                     if ( ( x >= (pos.x() - cpSelectionTolerance) ) && ( x <= (pos.x() + cpSelectionTolerance) ) &&
@@ -2852,7 +2852,7 @@ RotoPaintInteract::onOverlayPenMotion(TimeValue time,
                 int index = -1;
                 BezierPtr isBezier = toBezier(*it);
                 if (isBezier) {
-                    std::pair<BezierCPPtr, BezierCPPtr > nb =
+                    std::pair<BezierCPPtr, BezierCPPtr> nb =
                     isBezier->isNearbyControlPoint(pos.x(), pos.y(), cpTol, time, view, Bezier::eControlPointSelectionPrefWhateverFirst, &index);
                     if ( (index != -1) && ( ( !nb.first->isFeatherPoint() && !featherVisible ) || featherVisible ) ) {
                         _imp->publicInterface->setCurrentCursor(eCursorCross);
@@ -2928,12 +2928,12 @@ RotoPaintInteract::onOverlayPenMotion(TimeValue time,
         case eEventStateDraggingSelectedControlPoints: {
             if (bezierBeingDragged) {
                 SelectedCPs cps;
-                const std::list<BezierCPPtr >& c = bezierBeingDragged->getControlPoints(view);
-                const std::list<BezierCPPtr >& f = bezierBeingDragged->getFeatherPoints(view);
+                const std::list<BezierCPPtr>& c = bezierBeingDragged->getControlPoints(view);
+                const std::list<BezierCPPtr>& f = bezierBeingDragged->getFeatherPoints(view);
                 assert( c.size() == f.size() || !bezierBeingDragged->useFeatherPoints() );
                 bool useFeather = bezierBeingDragged->useFeatherPoints();
-                std::list<BezierCPPtr >::const_iterator itFp = f.begin();
-                for (std::list<BezierCPPtr >::const_iterator itCp = c.begin(); itCp != c.end(); ++itCp) {
+                std::list<BezierCPPtr>::const_iterator itFp = f.begin();
+                for (std::list<BezierCPPtr>::const_iterator itCp = c.begin(); itCp != c.end(); ++itCp) {
                     if (useFeather) {
                         cps.push_back( std::make_pair(*itCp, *itFp) );
                         ++itFp;

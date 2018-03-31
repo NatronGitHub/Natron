@@ -173,7 +173,7 @@ struct FileSystemItemPrivate
 {
     boost::weak_ptr<FileSystemModel> model;
     boost::weak_ptr<FileSystemItem> parent;
-    std::vector< FileSystemItemPtr > children; ///vector for random access
+    std::vector<FileSystemItemPtr> children; ///vector for random access
     QMutex childrenMutex;
     bool isDir;
     QString filename;
@@ -415,7 +415,7 @@ FileSystemItem::addChild(const SequenceParsing::SequenceFromFilesPtr& sequence,
     }
 
 
-    for (std::vector<FileSystemItemPtr >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
+    for (std::vector<FileSystemItemPtr>::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
         if ( (*it)->fileName() == filename ) {
             _imp->children.erase(it);
             break;
@@ -1578,7 +1578,7 @@ isVideoFileExtension(const std::string& ext)
     return false;
 }
 
-typedef std::list< std::pair< SequenceParsing::SequenceFromFilesPtr, QFileInfo > > FileSequences;
+typedef std::list<std::pair<SequenceParsing::SequenceFromFilesPtr, QFileInfo > > FileSequences;
 
 #define KERNEL_INCR() \
     switch (viewOrder) \

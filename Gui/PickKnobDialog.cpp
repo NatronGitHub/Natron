@@ -66,8 +66,8 @@ struct PickKnobDialogPrivate
     ComboBox* destPageCombo;
     Label* groupLabel;
     ComboBox* groupCombo;
-    std::vector<KnobPagePtr > pages;
-    std::vector<KnobGroupPtr > groups;
+    std::vector<KnobPagePtr> pages;
+    std::vector<KnobGroupPtr> groups;
     DialogButtonBox* buttons;
     NodesList allNodes;
     std::map<QString, boost::shared_ptr<KnobI > > allKnobs;
@@ -118,7 +118,7 @@ PickKnobDialogPrivate::getSelectedGroup() const
     }
     std::string selectedItem = groupCombo->getCurrentIndexText().toStdString();
     if (selectedItem != "-") {
-        for (std::vector<KnobGroupPtr >::const_iterator it = groups.begin(); it != groups.end(); ++it) {
+        for (std::vector<KnobGroupPtr>::const_iterator it = groups.begin(); it != groups.end(); ++it) {
             if ( (*it)->getName() == selectedItem ) {
                 return *it;
             }
@@ -304,7 +304,7 @@ PickKnobDialog::onKnobComboIndexChanged(int /*idx*/)
     _imp->selectedKnob.reset();
     if (selectedNode) {
         QString str = _imp->knobSelectionCombo->itemText( _imp->knobSelectionCombo->activeIndex() );
-        std::map<QString, KnobIPtr >::const_iterator it = _imp->allKnobs.find(str);
+        std::map<QString, KnobIPtr>::const_iterator it = _imp->allKnobs.find(str);
         KnobIPtr selectedKnob;
         if ( it != _imp->allKnobs.end() ) {
             selectedKnob = it->second;
@@ -335,7 +335,7 @@ PickKnobDialog::onNodeComboEditingFinished()
     if (!selectedNode) {
         return;
     }
-    const std::vector< KnobIPtr > & knobs = selectedNode->getKnobs();
+    const std::vector<KnobIPtr> & knobs = selectedNode->getKnobs();
     for (U32 j = 0; j < knobs.size(); ++j) {
         if ( !knobs[j]->getIsSecret() ) {
             KnobPagePtr isPage = toKnobPage(knobs[j]);
@@ -377,14 +377,14 @@ PickKnobDialog::onPageComboIndexChanged(int index)
     KnobPagePtr parentPage;
 
 
-    for (std::vector<KnobPagePtr >::iterator it = _imp->pages.begin(); it != _imp->pages.end(); ++it) {
+    for (std::vector<KnobPagePtr>::iterator it = _imp->pages.begin(); it != _imp->pages.end(); ++it) {
         if ( (*it)->getName() == selectedPage ) {
             parentPage = *it;
             break;
         }
     }
 
-    for (std::vector<KnobGroupPtr >::iterator it = _imp->groups.begin(); it != _imp->groups.end(); ++it) {
+    for (std::vector<KnobGroupPtr>::iterator it = _imp->groups.begin(); it != _imp->groups.end(); ++it) {
         KnobPagePtr page = (*it)->getTopLevelPage();
         assert(page);
 

@@ -1754,7 +1754,7 @@ TrackerKnobItemsTable::createItemFromSerialization(const SERIALIZATION_NAMESPACE
 }
 
 void
-TrackerKnobItemsTable::getAllMarkers(std::vector<TrackMarkerPtr >* markers) const
+TrackerKnobItemsTable::getAllMarkers(std::vector<TrackMarkerPtr>* markers) const
 {
     if (!markers) {
         return;
@@ -1768,7 +1768,7 @@ TrackerKnobItemsTable::getAllMarkers(std::vector<TrackMarkerPtr >* markers) cons
 }
 
 void
-TrackerKnobItemsTable::getAllEnabledMarkers(std::list<TrackMarkerPtr >* markers) const
+TrackerKnobItemsTable::getAllEnabledMarkers(std::list<TrackMarkerPtr>* markers) const
 {
     if (!markers) {
         return;
@@ -1784,7 +1784,7 @@ TrackerKnobItemsTable::getAllEnabledMarkers(std::list<TrackMarkerPtr >* markers)
 }
 
 void
-TrackerKnobItemsTable::getSelectedMarkers(std::list<TrackMarkerPtr >* markers) const
+TrackerKnobItemsTable::getSelectedMarkers(std::list<TrackMarkerPtr>* markers) const
 {
     if (!markers) {
         return;
@@ -1965,7 +1965,7 @@ TrackerNodePrivate::trackStepFunctor(int trackIndex, const TrackArgsBasePtr& arg
     assert(trackerArgs);
 
     assert( trackIndex >= 0 && trackIndex < trackerArgs->getNumTracks() );
-    const std::vector<TrackMarkerAndOptionsPtr >& tracks = trackerArgs->getTracks();
+    const std::vector<TrackMarkerAndOptionsPtr>& tracks = trackerArgs->getTracks();
     const TrackMarkerAndOptionsPtr& track = tracks[trackIndex];
 
     if ( !track->natronMarker->isEnabled(TimeValue(frame)) ) {
@@ -1994,7 +1994,7 @@ TrackerNodePrivate::beginTrackSequence(const TrackArgsBasePtr& args)
 {
     TrackArgs* trackerArgs = dynamic_cast<TrackArgs*>(args.get());
 
-    const std::vector<TrackMarkerAndOptionsPtr >& tracks = trackerArgs->getTracks();
+    const std::vector<TrackMarkerAndOptionsPtr>& tracks = trackerArgs->getTracks();
     // For all tracks, notify tracking is starting and unslave the 'enabled' knob if it is
     // slaved to the UI "enabled" knob.
     for (std::size_t i = 0; i < tracks.size(); ++i) {
@@ -2006,7 +2006,7 @@ void
 TrackerNodePrivate::endTrackSequence(const TrackArgsBasePtr& args)
 {
     TrackArgs* trackerArgs = dynamic_cast<TrackArgs*>(args.get());
-    const std::vector<TrackMarkerAndOptionsPtr >& tracks = trackerArgs->getTracks();
+    const std::vector<TrackMarkerAndOptionsPtr>& tracks = trackerArgs->getTracks();
 
     for (std::size_t i = 0; i < tracks.size(); ++i) {
         tracks[i]->natronMarker->notifyTrackingEnded();
@@ -2158,7 +2158,7 @@ TrackerNodePrivate::createMarker()
 void
 TrackerNodePrivate::trackSelectedMarkers(TimeValue start, TimeValue end, TimeValue frameStep, OverlaySupport* viewer)
 {
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
     knobsTable->getAllEnabledMarkers(&markers);
 
     ViewerNodePtr viewerNode;
@@ -2172,7 +2172,7 @@ void
 TrackerNodePrivate::averageSelectedTracks()
 {
 
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
     knobsTable->getSelectedMarkers(&markers);
     if ( markers.empty() ) {
         Dialogs::warningDialog( tr("Average").toStdString(), tr("No tracks selected").toStdString() );
@@ -2195,7 +2195,7 @@ TrackerNodePrivate::averageSelectedTracks()
     RangeD keyframesRange;
     keyframesRange.min = INT_MAX;
     keyframesRange.max = INT_MIN;
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         KnobDoublePtr markCenter = (*it)->getCenterKnob();
         TimeValue mini, maxi;
         bool hasKey = markCenter->getFirstKeyFrameTime(ViewIdx(0), DimIdx(0), &mini);
@@ -2225,7 +2225,7 @@ TrackerNodePrivate::averageSelectedTracks()
 #endif
 
 
-        for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+        for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
             KnobDoublePtr markCenter = (*it)->getCenterKnob();
 
 #ifdef AVERAGE_ALSO_PATTERN_QUAD

@@ -1033,7 +1033,7 @@ struct NodeGroupPrivate
 {
     NodeGroup* _publicInterface;
     mutable QMutex nodesLock; // protects inputs & outputs
-    std::vector<NodeWPtr > inputs;
+    std::vector<NodeWPtr> inputs;
     NodesWList outputs;
     bool isDeactivatingGroup;
     bool isActivatingGroup;
@@ -1061,7 +1061,7 @@ NodeGroup::refreshInputs()
 void
 NodeGroup::onNodeRemoved(const Node* node)
 {
-    for (std::vector<NodeWPtr >::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
+    for (std::vector<NodeWPtr>::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
         if (it->lock().get() == node) {
             _imp->inputs.erase(it);
             break;
@@ -1263,7 +1263,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
         GroupInputPtr isInput = node->isEffectGroupInput();
         if (isInput) {
             int i = 0;
-            for (std::vector<NodeWPtr >::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it, ++i) {
+            for (std::vector<NodeWPtr>::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it, ++i) {
                 NodePtr input = it->lock();
                 if (node == input) {
                     ///Also disconnect the real input
@@ -1425,7 +1425,7 @@ NodeGroup::getInputsOutputs(NodesList* nodes) const
 }
 
 void
-NodeGroup::getInputs(std::vector<NodePtr >* inputs) const
+NodeGroup::getInputs(std::vector<NodePtr>* inputs) const
 {
     QMutexLocker k(&_imp->nodesLock);
 

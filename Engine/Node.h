@@ -297,7 +297,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    const std::vector< KnobIPtr > & getKnobs() const;
+    const std::vector<KnobIPtr> & getKnobs() const;
 
 
     /**
@@ -433,8 +433,8 @@ public:
      * The vector might be different from what getInputs_other_thread() could return.
      * This can only be called by the main thread.
      **/
-    const std::vector<NodeWPtr > & getInputs() const WARN_UNUSED_RETURN;
-    std::vector<NodeWPtr > getInputs_copy() const WARN_UNUSED_RETURN;
+    const std::vector<NodeWPtr> & getInputs() const WARN_UNUSED_RETURN;
+    std::vector<NodeWPtr> getInputs_copy() const WARN_UNUSED_RETURN;
 
     std::string getInputLabel(int inputNb) const;
 

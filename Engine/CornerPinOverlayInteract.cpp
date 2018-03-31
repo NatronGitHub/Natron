@@ -35,8 +35,8 @@ NATRON_NAMESPACE_ENTER
 
 struct CornerPinOverlayInteractPrivate
 {
-    std::vector<KnobDoubleWPtr > from, to;
-    std::vector<KnobBoolWPtr > enable;
+    std::vector<KnobDoubleWPtr> from, to;
+    std::vector<KnobBoolWPtr> enable;
     KnobBoolWPtr invert;
     KnobChoiceWPtr overlayPoints;
     KnobBoolWPtr interactive;

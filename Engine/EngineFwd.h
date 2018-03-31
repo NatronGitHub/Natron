@@ -549,8 +549,8 @@ typedef std::list<ImagePtr> ImageList;
 typedef std::list<NodePtr> NodesList;
 typedef std::list<NodeWPtr> NodesWList;
 typedef std::vector<KnobIPtr> KnobsVec;
-typedef std::list< BezierCPPtr > BezierCPs;
-typedef std::map<int, std::list< ImagePtr > > InputImagesMap;
+typedef std::list<BezierCPPtr> BezierCPs;
+typedef std::map<int, std::list<ImagePtr> > InputImagesMap;
 
 
 /**

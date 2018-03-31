@@ -83,7 +83,7 @@ AnimationModuleBase::pushUndoCommand(UndoCommand* command)
 void
 AnimationModuleBase::setCurrentSelection(const AnimItemDimViewKeyFramesMap &keys,
                                          const std::vector<TableItemAnimPtr>& selectedTableItems,
-                                         const std::vector<NodeAnimPtr >& rangeNodes)
+                                         const std::vector<NodeAnimPtr>& rangeNodes)
 {
     getSelectionModel()->makeSelection(keys,
                                        selectedTableItems,

@@ -492,7 +492,7 @@ WarpKeysCommand::internalMapToKeysMap(const KeyFramesWithStringIndicesMap& inter
 
 WarpKeysCommand::WarpKeysCommand(const AnimItemDimViewKeyFramesMap &keys,
                                  const AnimationModuleBasePtr& model,
-                                 const std::vector<NodeAnimPtr >& nodes,
+                                 const std::vector<NodeAnimPtr>& nodes,
                                  const std::vector<TableItemAnimPtr>& tableItems,
                                  double dt,
                                  double dv,
@@ -566,7 +566,7 @@ WarpKeysCommand::warpKeys()
     Curve::TranslationKeyFrameWarp* isTranslation = dynamic_cast<Curve::TranslationKeyFrameWarp*>(_warp.get());
     if (isTranslation) {
         double dt = isTranslation->getDT();
-        for (std::vector<NodeAnimPtr >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+        for (std::vector<NodeAnimPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
             AnimatedItemTypeEnum type = (*it)->getItemType();
             if (type == eAnimatedItemTypeReader) {
                 moveReader( (*it)->getInternalNode(), dt);
@@ -693,8 +693,8 @@ WarpKeysCommand::mergeWith(const QUndoCommand * command)
     }
     
     {
-        std::vector<NodeAnimPtr >::const_iterator itOther = cmd->_nodes.begin();
-        for (std::vector<NodeAnimPtr >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it, ++itOther) {
+        std::vector<NodeAnimPtr>::const_iterator itOther = cmd->_nodes.begin();
+        for (std::vector<NodeAnimPtr>::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it, ++itOther) {
             if (*itOther != *it) {
                 return false;
             }
@@ -707,8 +707,8 @@ WarpKeysCommand::mergeWith(const QUndoCommand * command)
     }
     
     {
-        std::vector<TableItemAnimPtr >::const_iterator itOther = cmd->_tableItems.begin();
-        for (std::vector<TableItemAnimPtr >::const_iterator it = _tableItems.begin(); it != _tableItems.end(); ++it, ++itOther) {
+        std::vector<TableItemAnimPtr>::const_iterator itOther = cmd->_tableItems.begin();
+        for (std::vector<TableItemAnimPtr>::const_iterator it = _tableItems.begin(); it != _tableItems.end(); ++it, ++itOther) {
             if (*itOther != *it) {
                 return false;
             }

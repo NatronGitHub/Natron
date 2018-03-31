@@ -53,7 +53,7 @@ NATRON_NAMESPACE_ENTER
 
 
 void
-NodeGraphPrivate::pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& originalNodes,
+NodeGraphPrivate::pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> >& originalNodes,
                                      const QPointF& newCentroidScenePos,
                                      PasteNodesFlags flags)
 {
@@ -73,7 +73,7 @@ NodeGraphPrivate::pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZ
         double ymax = INT_MIN;
 
 
-        for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = originalNodes.begin();
+        for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> >::const_iterator it = originalNodes.begin();
              it != originalNodes.end(); ++it) {
 
             if (it->second->_nodePositionCoords[0] == INT_MIN || it->second->_nodePositionCoords[1] == INT_MIN) {
@@ -98,7 +98,7 @@ NodeGraphPrivate::pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZ
         QPointF originalCentroidScenePos((xmin + xmax) / 2., (ymin + ymax) / 2.);
 
 
-        for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = originalNodes.begin();
+        for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> >::const_iterator it = originalNodes.begin();
              it != originalNodes.end(); ++it) {
 
             // If the position was not serialized, do not attempt to position the node.
@@ -120,7 +120,7 @@ NodeGraphPrivate::pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZ
     }
 
     SERIALIZATION_NAMESPACE::NodeSerializationList serializationList;
-    for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = originalNodes.begin();
+    for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> >::const_iterator it = originalNodes.begin();
          it != originalNodes.end(); ++it) {
         serializationList.push_back(it->second);
     }
@@ -133,7 +133,7 @@ NodeGraphPrivate::pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZ
     // Link the created node to the original node if needed
     if (flags & ePasteNodesFlagCloneNodes) {
         assert(createdNodes.size() == serializationList.size());
-        std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator itOrig = originalNodes.begin();
+        std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> >::const_iterator itOrig = originalNodes.begin();
         for (NodesList::const_iterator it = createdNodes.begin(); it!=createdNodes.end(); ++it, ++itOrig) {
             const NodePtr& createdNode = *it;
             if (!createdNode) {

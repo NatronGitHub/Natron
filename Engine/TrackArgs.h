@@ -107,7 +107,7 @@ public:
               const ViewerNodePtr& viewer,
               const boost::shared_ptr<mv::AutoTrack>& autoTrack,
               const boost::shared_ptr<TrackerFrameAccessor>& fa,
-              const std::vector<TrackMarkerAndOptionsPtr >& tracks,
+              const std::vector<TrackMarkerAndOptionsPtr>& tracks,
               double formatWidth,
               double formatHeight,
               bool autoKeyEnabled);
@@ -124,7 +124,7 @@ public:
 
     QMutex* getAutoTrackMutex() const;
 
-    const std::vector<TrackMarkerAndOptionsPtr >& getTracks() const;
+    const std::vector<TrackMarkerAndOptionsPtr>& getTracks() const;
     boost::shared_ptr<mv::AutoTrack> getLibMVAutoTrack() const;
 
     void getEnabledChannels(bool* r, bool* g, bool* b) const;

@@ -1082,7 +1082,7 @@ Gui::onFocusChanged(QWidget* /*old*/,
 
 void
 Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
-                           std::vector< SequenceParsing::SequenceFromFilesPtr >* sequences)
+                           std::vector<SequenceParsing::SequenceFromFilesPtr>* sequences)
 {
 
     QStringList filesList;
@@ -1176,7 +1176,7 @@ void
 Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
                              const QPoint& globalPos)
 {
-    std::vector< SequenceParsing::SequenceFromFilesPtr > sequences;
+    std::vector<SequenceParsing::SequenceFromFilesPtr> sequences;
 
     fileSequencesFromUrls(urls, &sequences);
     QWidget* widgetUnderMouse = QApplication::widgetAt(globalPos);

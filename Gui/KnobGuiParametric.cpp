@@ -378,7 +378,7 @@ KnobGuiParametric::onCurveChanged(DimSpec /*dimension*/)
 void
 KnobGuiParametric::onItemsSelectionChanged()
 {
-    std::vector<CurveGuiPtr > curves;
+    std::vector<CurveGuiPtr> curves;
 
     QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
 

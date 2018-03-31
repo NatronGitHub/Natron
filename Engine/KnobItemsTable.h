@@ -587,9 +587,9 @@ public:
      **/
     void beginEditSelection();
     void endEditSelection(TableChangeReasonEnum reason);
-    void addToSelection(const std::list<KnobTableItemPtr >& items, TableChangeReasonEnum reason);
+    void addToSelection(const std::list<KnobTableItemPtr>& items, TableChangeReasonEnum reason);
     void addToSelection(const KnobTableItemPtr& item, TableChangeReasonEnum reason);
-    void removeFromSelection(const std::list<KnobTableItemPtr >& items, TableChangeReasonEnum reason);
+    void removeFromSelection(const std::list<KnobTableItemPtr>& items, TableChangeReasonEnum reason);
     void removeFromSelection(const KnobTableItemPtr& item, TableChangeReasonEnum reason);
     void clearSelection(TableChangeReasonEnum reason);
     void selectAll(TableChangeReasonEnum reason);

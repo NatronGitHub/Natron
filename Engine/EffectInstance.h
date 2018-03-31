@@ -266,7 +266,7 @@ public:
         RectI roi;
 
         // The list of output planes: these are the images to write to in output
-        std::list<std::pair<ImagePlaneDesc, ImagePtr > > outputPlanes;
+        std::list<std::pair<ImagePlaneDesc, ImagePtr> > outputPlanes;
 
         // Should render use OpenGL or CPU or any other supported device
         RenderBackendTypeEnum backendType;

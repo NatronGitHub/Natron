@@ -229,7 +229,7 @@ public:
     KnobChoiceWPtr pluginSelectorKnob;
     KnobSeparatorWPtr separatorKnob;
     KnobButtonWPtr fileInfosKnob;
-    std::list<KnobIWPtr > readNodeKnobs;
+    std::list<KnobIWPtr> readNodeKnobs;
 
     NodePtr inputNode, outputNode;
 
@@ -346,7 +346,7 @@ ReadNodePrivate::placeReadNodeKnobsInPage()
     if (!controlsPage) {
         return;
     }
-    for (std::list<KnobIWPtr >::iterator it = readNodeKnobs.begin(); it != readNodeKnobs.end(); ++it) {
+    for (std::list<KnobIWPtr>::iterator it = readNodeKnobs.begin(); it != readNodeKnobs.end(); ++it) {
         KnobIPtr knob = it->lock();
         knob->setParentKnob( KnobIPtr() );
         controlsPage->removeKnob(knob);
@@ -363,7 +363,7 @@ ReadNodePrivate::placeReadNodeKnobsInPage()
     }
     {
         ++index;
-        for (std::list<KnobIWPtr >::iterator it = readNodeKnobs.begin(); it != readNodeKnobs.end(); ++it) {
+        for (std::list<KnobIWPtr>::iterator it = readNodeKnobs.begin(); it != readNodeKnobs.end(); ++it) {
             KnobIPtr knob = it->lock();
             controlsPage->insertKnob(index, knob);
             ++index;
@@ -448,7 +448,7 @@ ReadNodePrivate::destroyReadNode()
 
                 //If it is a knob of this ReadNode, do not destroy it
                 bool isReadNodeKnob = false;
-                for (std::list<KnobIWPtr >::iterator it2 = readNodeKnobs.begin(); it2 != readNodeKnobs.end(); ++it2) {
+                for (std::list<KnobIWPtr>::iterator it2 = readNodeKnobs.begin(); it2 != readNodeKnobs.end(); ++it2) {
                     if (it2->lock() == *it) {
                         isReadNodeKnob = true;
                         break;
@@ -637,7 +637,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         SERIALIZATION_NAMESPACE::NodeSerializationPtr s(new SERIALIZATION_NAMESPACE::NodeSerialization);
         if (serialization) {
             *s = *serialization;
-            args->setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, s);
+            args->setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization, s);
         }
 
         args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);

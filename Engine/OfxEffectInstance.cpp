@@ -633,8 +633,8 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         _imp->common->overlayInteract->getSlaveToParam(slaveParams);
         for (U32 i = 0; i < slaveParams.size(); ++i) {
             KnobIPtr param;
-            const std::vector< KnobIPtr > & knobs = getKnobs();
-            for (std::vector< KnobIPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+            const std::vector<KnobIPtr> & knobs = getKnobs();
+            for (std::vector<KnobIPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
                 if ( (*it)->getOriginalName() == slaveParams[i] ) {
                     param = *it;
                     break;
@@ -1701,7 +1701,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
     std::list<std::string> ofxPlanes;
 
     std::map<ImagePlaneDesc, ImagePtr> outputPlanesMap;
-    for (std::list<std::pair<ImagePlaneDesc, ImagePtr > >::const_iterator it = args.outputPlanes.begin();
+    for (std::list<std::pair<ImagePlaneDesc, ImagePtr> >::const_iterator it = args.outputPlanes.begin();
          it != args.outputPlanes.end(); ++it) {
         ofxPlanes.push_back(ImagePlaneDesc::mapPlaneToOFXPlaneString(it->first));
         outputPlanesMap[it->first] = it->second;
