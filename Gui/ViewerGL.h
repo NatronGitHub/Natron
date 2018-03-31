@@ -176,9 +176,9 @@ public:
                                             int textureIndex,
                                             bool isPartialRect,
                                             bool isFirstTile,
-                                            boost::shared_ptr<Texture>* texture) OVERRIDE FINAL;
+                                            TexturePtr* texture) OVERRIDE FINAL;
     virtual void endTransferBufferFromRAMToGPU(int textureIndex,
-                                               const boost::shared_ptr<Texture>& texture,
+                                               const TexturePtr& texture,
                                                const ImagePtr& image,
                                                int time,
                                                const RectD& rod,
@@ -277,7 +277,7 @@ public:
     virtual void makeOpenGLcontextCurrent() OVERRIDE FINAL;
     virtual void removeGUI() OVERRIDE FINAL;
     virtual ViewIdx getCurrentView() const OVERRIDE FINAL;
-    virtual boost::shared_ptr<TimeLine> getTimeline() const OVERRIDE FINAL;
+    virtual TimeLinePtr getTimeline() const OVERRIDE FINAL;
 
 public:
 

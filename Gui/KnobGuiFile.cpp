@@ -72,7 +72,7 @@ KnobGuiFile::KnobGuiFile(KnobIPtr knob,
     , _lastOpened()
     , _lastModificationDates()
 {
-    boost::shared_ptr<KnobFile> k = boost::dynamic_pointer_cast<KnobFile>(knob);
+    KnobFilePtr k = boost::dynamic_pointer_cast<KnobFile>(knob);
 
     assert(k);
     QObject::connect( k.get(), SIGNAL(openFile()), this, SLOT(open_file()) );
@@ -93,11 +93,11 @@ KnobGuiFile::removeSpecificGui()
 void
 KnobGuiFile::createWidget(QHBoxLayout* layout)
 {
-    boost::shared_ptr<KnobFile> knob = _knob.lock();
+    KnobFilePtr knob = _knob.lock();
     EffectInstance* holderIsEffect = dynamic_cast<EffectInstance*>( knob->getHolder() );
 
     if ( holderIsEffect && holderIsEffect->isReader() && (knob->getName() == kOfxImageEffectFileParamName) ) {
-        boost::shared_ptr<TimeLine> timeline = getGui()->getApp()->getTimeLine();
+        TimeLinePtr timeline = getGui()->getApp()->getTimeLine();
         QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimelineFrameChanged(SequenceTime,int)) );
     }
 
@@ -148,7 +148,7 @@ void
 KnobGuiFile::onReloadClicked()
 {
     if (_reloadButton) {
-        boost::shared_ptr<KnobFile> knob = _knob.lock();
+        KnobFilePtr knob = _knob.lock();
         if (knob) {
             knob->reloadFile();
         }
@@ -159,7 +159,7 @@ void
 KnobGuiFile::open_file()
 {
     std::vector<std::string> filters;
-    boost::shared_ptr<KnobFile> knob = _knob.lock();
+    KnobFilePtr knob = _knob.lock();
 
     if ( !knob->isInputImageFile() ) {
         filters.push_back("*");
@@ -201,7 +201,7 @@ KnobGuiFile::updateLastOpened(const QString &str)
 void
 KnobGuiFile::updateGUI(int /*dimension*/)
 {
-    boost::shared_ptr<KnobFile> knob = _knob.lock();
+    KnobFilePtr knob = _knob.lock();
 
     _lineEdit->setText( QString::fromUtf8( knob->getValue().c_str() ) );
 
@@ -248,7 +248,7 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
     if (!useNotifications) {
         return false;
     }
-    boost::shared_ptr<KnobFile> knob = _knob.lock();
+    KnobFilePtr knob = _knob.lock();
     if (!knob) {
         return false;
     }
@@ -314,7 +314,7 @@ KnobGuiFile::onTextEdited()
     std::string str = _lineEdit->text().toStdString();
 
     ///don't do antyhing if the pattern is the same
-    boost::shared_ptr<KnobFile> knob = _knob.lock();
+    KnobFilePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -405,7 +405,7 @@ KnobGuiFile::addRightClickMenuEntries(QMenu* menu)
 void
 KnobGuiFile::onMakeAbsoluteTriggered()
 {
-    boost::shared_ptr<KnobFile> knob = _knob.lock();
+    KnobFilePtr knob = _knob.lock();
 
     if ( knob->getHolder() && knob->getHolder()->getApp() ) {
         std::string oldValue = knob->getValue();
@@ -418,7 +418,7 @@ KnobGuiFile::onMakeAbsoluteTriggered()
 void
 KnobGuiFile::onMakeRelativeTriggered()
 {
-    boost::shared_ptr<KnobFile> knob = _knob.lock();
+    KnobFilePtr knob = _knob.lock();
 
     if ( knob->getHolder() && knob->getHolder()->getApp() ) {
         std::string oldValue = knob->getValue();
@@ -431,7 +431,7 @@ KnobGuiFile::onMakeRelativeTriggered()
 void
 KnobGuiFile::onSimplifyTriggered()
 {
-    boost::shared_ptr<KnobFile> knob = _knob.lock();
+    KnobFilePtr knob = _knob.lock();
 
     if ( knob->getHolder() && knob->getHolder()->getApp() ) {
         std::string oldValue = knob->getValue();
@@ -452,7 +452,7 @@ void
 KnobGuiFile::reflectExpressionState(int /*dimension*/,
                                     bool hasExpr)
 {
-    boost::shared_ptr<KnobFile> knob = _knob.lock();
+    KnobFilePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -480,7 +480,7 @@ KnobGuiOutputFile::KnobGuiOutputFile(KnobIPtr knob,
     , _openFileButton(0)
     , _rewriteButton(0)
 {
-    boost::shared_ptr<KnobOutputFile> k = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
+    KnobOutputFilePtr k = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
 
     assert(k);
     QObject::connect( k.get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)) );
@@ -501,7 +501,7 @@ KnobGuiOutputFile::removeSpecificGui()
 void
 KnobGuiOutputFile::createWidget(QHBoxLayout* layout)
 {
-    boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+    KnobOutputFilePtr knob = _knob.lock();
 
     _lineEdit = new LineEdit( layout->parentWidget() );
     //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
@@ -542,7 +542,7 @@ KnobGuiOutputFile::createWidget(QHBoxLayout* layout)
 void
 KnobGuiOutputFile::onButtonClicked()
 {
-    boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+    KnobOutputFilePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -553,7 +553,7 @@ void
 KnobGuiOutputFile::onRewriteClicked()
 {
     if (_rewriteButton) {
-        boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+        KnobOutputFilePtr knob = _knob.lock();
         if (knob) {
             knob->rewriteFile();
         }
@@ -563,7 +563,7 @@ KnobGuiOutputFile::onRewriteClicked()
 void
 KnobGuiOutputFile::open_file(bool openSequence)
 {
-    boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+    KnobOutputFilePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -597,7 +597,7 @@ KnobGuiOutputFile::updateLastOpened(const QString &str)
 void
 KnobGuiOutputFile::updateGUI(int /*dimension*/)
 {
-    boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+    KnobOutputFilePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -619,7 +619,7 @@ KnobGuiOutputFile::onTextEdited()
 //    }
 //
 //
-    boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+    KnobOutputFilePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -696,7 +696,7 @@ KnobGuiOutputFile::addRightClickMenuEntries(QMenu* menu)
 void
 KnobGuiOutputFile::onMakeAbsoluteTriggered()
 {
-    boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+    KnobOutputFilePtr knob = _knob.lock();
 
     if ( knob->getHolder() && knob->getHolder()->getApp() ) {
         std::string oldValue = knob->getValue();
@@ -709,7 +709,7 @@ KnobGuiOutputFile::onMakeAbsoluteTriggered()
 void
 KnobGuiOutputFile::onMakeRelativeTriggered()
 {
-    boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+    KnobOutputFilePtr knob = _knob.lock();
 
     if ( knob->getHolder() && knob->getHolder()->getApp() ) {
         std::string oldValue = knob->getValue();
@@ -722,7 +722,7 @@ KnobGuiOutputFile::onMakeRelativeTriggered()
 void
 KnobGuiOutputFile::onSimplifyTriggered()
 {
-    boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+    KnobOutputFilePtr knob = _knob.lock();
 
     if ( knob->getHolder() && knob->getHolder()->getApp() ) {
         std::string oldValue = knob->getValue();
@@ -736,7 +736,7 @@ void
 KnobGuiOutputFile::reflectExpressionState(int /*dimension*/,
                                           bool hasExpr)
 {
-    boost::shared_ptr<KnobOutputFile> knob = _knob.lock();
+    KnobOutputFilePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -793,7 +793,7 @@ KnobGuiPath::removeSpecificGui()
 void
 KnobGuiPath::createWidget(QHBoxLayout* layout)
 {
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    KnobPathPtr knob = _knob.lock();
 
     if ( knob->isMultiPath() ) {
         KnobGuiTable::createWidget(layout);
@@ -830,7 +830,7 @@ KnobGuiPath::onOpenFileButtonClicked()
         std::string dirPath = dialog.selectedDirectory();
         updateLastOpened( QString::fromUtf8( dirPath.c_str() ) );
 
-        boost::shared_ptr<KnobPath> knob = _knob.lock();
+        KnobPathPtr knob = _knob.lock();
         if (!knob) {
             return;
         }
@@ -889,7 +889,7 @@ KnobGuiPath::editUserEntry(QStringList& row)
 void
 KnobGuiPath::entryRemoved(const QStringList& row)
 {
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    KnobPathPtr knob = _knob.lock();
 
     ///Fix all variables if needed
     if ( knob && knob->getHolder() && ( knob->getHolder() == getGui()->getApp()->getProject().get() ) &&
@@ -903,7 +903,7 @@ KnobGuiPath::tableChanged(int row,
                           int col,
                           std::string* newEncodedValue)
 {
-    boost::shared_ptr<KnobTable> knob = boost::dynamic_pointer_cast<KnobTable>( getKnob() );
+    KnobTablePtr knob = boost::dynamic_pointer_cast<KnobTable>( getKnob() );
 
     assert(knob);
 
@@ -947,7 +947,7 @@ KnobGuiPath::onTextEdited()
     }
     updateLastOpened( QString::fromUtf8( dirPath.c_str() ) );
 
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    KnobPathPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -967,7 +967,7 @@ KnobGuiPath::updateLastOpened(const QString &str)
 void
 KnobGuiPath::updateGUI(int dimension)
 {
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    KnobPathPtr knob = _knob.lock();
 
     if ( !knob->isMultiPath() ) {
         std::string value = knob->getValue();
@@ -998,7 +998,7 @@ KnobGuiPath::_show()
 void
 KnobGuiPath::setEnabled()
 {
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    KnobPathPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -1015,7 +1015,7 @@ void
 KnobGuiPath::setReadOnly(bool readOnly,
                          int dimension)
 {
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    KnobPathPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -1041,7 +1041,7 @@ KnobGuiPath::getKnob() const
 void
 KnobGuiPath::addRightClickMenuEntries(QMenu* menu)
 {
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    KnobPathPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -1070,7 +1070,7 @@ KnobGuiPath::addRightClickMenuEntries(QMenu* menu)
 void
 KnobGuiPath::onMakeAbsoluteTriggered()
 {
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    KnobPathPtr knob = _knob.lock();
 
     if ( knob->getHolder() && knob->getHolder()->getApp() ) {
         std::string oldValue = knob->getValue();
@@ -1083,7 +1083,7 @@ KnobGuiPath::onMakeAbsoluteTriggered()
 void
 KnobGuiPath::onMakeRelativeTriggered()
 {
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    KnobPathPtr knob = _knob.lock();
 
     if ( knob->getHolder() && knob->getHolder()->getApp() ) {
         std::string oldValue = knob->getValue();
@@ -1096,7 +1096,7 @@ KnobGuiPath::onMakeRelativeTriggered()
 void
 KnobGuiPath::onSimplifyTriggered()
 {
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    KnobPathPtr knob = _knob.lock();
 
     if ( knob->getHolder() && knob->getHolder()->getApp() ) {
         std::string oldValue = knob->getValue();
@@ -1110,7 +1110,7 @@ void
 KnobGuiPath::reflectAnimationLevel(int /*dimension*/,
                                    AnimationLevelEnum /*level*/)
 {
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    KnobPathPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -1123,7 +1123,7 @@ void
 KnobGuiPath::reflectExpressionState(int /*dimension*/,
                                     bool hasExpr)
 {
-    boost::shared_ptr<KnobPath> knob = _knob.lock();
+    KnobPathPtr knob = _knob.lock();
 
     if ( !knob->isMultiPath() ) {
         bool isEnabled = knob->isEnabled(0);
@@ -1138,7 +1138,7 @@ KnobGuiPath::updateToolTip()
 {
     if ( hasToolTip() ) {
         QString tt = toolTip();
-        boost::shared_ptr<KnobPath> knob = _knob.lock();
+        KnobPathPtr knob = _knob.lock();
         if (!knob) {
             return;
         }

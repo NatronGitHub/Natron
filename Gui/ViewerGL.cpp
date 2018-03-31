@@ -1479,7 +1479,7 @@ ViewerGL::isViewerUIVisible() const
 
 void
 ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
-                                        const boost::shared_ptr<Texture>& texture,
+                                        const TexturePtr& texture,
                                         const ImagePtr& image,
                                         int time,
                                         const RectD& rod,
@@ -1566,7 +1566,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      int textureIndex,
                                      bool isPartialRect,
                                      bool isFirstTile,
-                                     boost::shared_ptr<Texture>* texture)
+                                     TexturePtr* texture)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -3794,7 +3794,7 @@ ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
                                       const QPoint & widgetPos)
 {
     NodePtr rotoPaintNode;
-    boost::shared_ptr<RotoStrokeItem> curStroke;
+    RotoStrokeItemPtr curStroke;
     bool isDrawing;
 
     _imp->viewerTab->getGui()->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
@@ -4066,7 +4066,7 @@ ViewerGL::getSelectionRectangle(double &left,
     top = std::max( topLeft.y(), btmRight.y() );
 }
 
-boost::shared_ptr<TimeLine>
+TimeLinePtr
 ViewerGL::getTimeline() const
 {
     return _imp->viewerTab->getTimeLine();

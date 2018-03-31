@@ -53,7 +53,7 @@ struct ToolButtonPrivate
     PluginGroupNodeWPtr _pluginToolButton;
 
     ToolButtonPrivate(const GuiAppInstancePtr& app,
-                      const boost::shared_ptr<PluginGroupNode>& pluginToolButton,
+                      const PluginGroupNodePtr& pluginToolButton,
                       const QString & pluginID,
                       int major,
                       int minor,
@@ -76,7 +76,7 @@ struct ToolButtonPrivate
 };
 
 ToolButton::ToolButton(const GuiAppInstancePtr& app,
-                       const boost::shared_ptr<PluginGroupNode>& pluginToolButton,
+                       const PluginGroupNodePtr& pluginToolButton,
                        const QString & pluginID,
                        int major,
                        int minor,
@@ -175,7 +175,7 @@ ToolButton::setAction(QAction* action)
     _imp->_action = action;
 }
 
-boost::shared_ptr<PluginGroupNode>
+PluginGroupNodePtr
 ToolButton::getPluginToolButton() const
 {
     return _imp->_pluginToolButton.lock();

@@ -76,7 +76,7 @@ ViewerTab::drawOverlays(double time,
                         const RenderScale & renderScale) const
 {
     NodePtr rotoPaintNode;
-    boost::shared_ptr<RotoStrokeItem> curStroke;
+    RotoStrokeItemPtr curStroke;
     bool isDrawing;
 
     getGui()->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);

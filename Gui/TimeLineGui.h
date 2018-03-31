@@ -61,7 +61,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     explicit TimeLineGui(ViewerInstance* viewer,
-                         boost::shared_ptr<TimeLine> timeLine,
+                         TimeLinePtr timeLine,
                          Gui* gui,
                          ViewerTab* viewerTab);
 
@@ -69,8 +69,8 @@ public:
 
     void discardGuiPointer();
 
-    void setTimeline(const boost::shared_ptr<TimeLine>& timeline);
-    boost::shared_ptr<TimeLine> getTimeline() const;
+    void setTimeline(const TimeLinePtr& timeline);
+    TimeLinePtr getTimeline() const;
 
     /*initialises the boundaries on the timeline*/
     void setBoundaries(SequenceTime first, SequenceTime last);

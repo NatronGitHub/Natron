@@ -68,7 +68,7 @@ public:
     }
 };
 
-typedef boost::shared_ptr<KnobPageGui> KnobPageGuiPtr;
+typedef KnobPageGuiPtr KnobPageGuiPtr;
 typedef std::map<KnobPageWPtr, KnobPageGuiPtr> PagesMap;
 
 /**
@@ -133,7 +133,7 @@ public:
      * The option QUndoStack stack can be given in parameter so that we do not make our own undo/redo stack but
      * use this one instead.
      **/
-    KnobGuiContainerHelper(KnobHolder* holder, const boost::shared_ptr<QUndoStack>& stack);
+    KnobGuiContainerHelper(KnobHolder* holder, const QUndoStackPtr& stack);
 
     virtual ~KnobGuiContainerHelper();
 
@@ -156,7 +156,7 @@ public:
     /**
      * @brief Make the given page current
      **/
-    void setPageActiveIndex(const boost::shared_ptr<KnobPage>& page);
+    void setPageActiveIndex(const KnobPagePtr& page);
 
 
     /**
@@ -182,7 +182,7 @@ public:
     /**
      * @brief Returns the undo/redo stack used for commands applied on knobs
      **/
-    boost::shared_ptr<QUndoStack> getUndoStack() const;
+    QUndoStackPtr getUndoStack() const;
 
     /**
      * @brief Returns whether paging is enabled or not. If paging is disabled, there should only be a single page
@@ -318,7 +318,7 @@ protected:
     /**
      * @brief Returns the given page or creates it
      **/
-    KnobPageGuiPtr getOrCreatePage(const boost::shared_ptr<KnobPage>& page);
+    KnobPageGuiPtr getOrCreatePage(const KnobPagePtr& page);
 
     /**
      * @brief Returns the page that should be used by default for knobs without a page.

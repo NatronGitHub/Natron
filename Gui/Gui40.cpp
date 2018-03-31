@@ -278,7 +278,7 @@ Gui::setColorPickersColor(double r,
 }
 
 void
-Gui::registerNewColorPicker(boost::shared_ptr<KnobColor> knob)
+Gui::registerNewColorPicker(KnobColorPtr knob)
 {
     assert(_imp->_projectGui);
     const std::list<ViewerTab*> &viewers = getViewersList();
@@ -291,7 +291,7 @@ Gui::registerNewColorPicker(boost::shared_ptr<KnobColor> knob)
 }
 
 void
-Gui::removeColorPicker(boost::shared_ptr<KnobColor> knob)
+Gui::removeColorPicker(KnobColorPtr knob)
 {
     assert(_imp->_projectGui);
     _imp->_projectGui->removeColorPicker(knob);
@@ -735,7 +735,7 @@ Gui::onRenderStarted(const QString & sequenceName,
                      int frameStep,
                      bool canPause,
                      OutputEffectInstance* writer,
-                     const boost::shared_ptr<ProcessHandler> & process)
+                     const ProcessHandlerPtr & process)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->_progressPanel->startTask(writer->getNode(), firstFrame, lastFrame, frameStep, canPause, true, sequenceName, process);
@@ -743,7 +743,7 @@ Gui::onRenderStarted(const QString & sequenceName,
 
 void
 Gui::onRenderRestarted(OutputEffectInstance* writer,
-                       const boost::shared_ptr<ProcessHandler> & process)
+                       const ProcessHandlerPtr & process)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->_progressPanel->onTaskRestarted(writer->getNode(), process);
@@ -958,7 +958,7 @@ Gui::onTimelineTimeAboutToChange()
     assert( QThread::currentThread() == qApp->thread() );
     const std::list<ViewerTab*>& viewers = getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        boost::shared_ptr<RenderEngine> engine = (*it)->getInternalNode()->getRenderEngine();
+        RenderEnginePtr engine = (*it)->getInternalNode()->getRenderEngine();
         engine->abortRenderingAutoRestart();
     }
 }
@@ -982,7 +982,7 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
         }
     }
 
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    ProjectPtr project = getApp()->getProject();
     bool isPlayback = reason == eTimelineChangeReasonPlaybackSeek;
 
     ///Refresh all visible knobs at the current time

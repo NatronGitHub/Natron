@@ -141,9 +141,9 @@ public:
                                      int firstFrame, int lastFrame,
                                      int frameStep, bool canPause,
                                      OutputEffectInstance* writer,
-                                     const boost::shared_ptr<ProcessHandler> & process) OVERRIDE FINAL;
+                                     const ProcessHandlerPtr & process) OVERRIDE FINAL;
     virtual void notifyRenderRestarted( OutputEffectInstance* writer,
-                                        const boost::shared_ptr<ProcessHandler> & process) OVERRIDE FINAL;
+                                        const ProcessHandlerPtr & process) OVERRIDE FINAL;
     virtual void setupViewersForViews(const std::vector<std::string>& viewNames) OVERRIDE FINAL;
 
     void setViewersCurrentView(ViewIdx view);
@@ -161,7 +161,7 @@ public:
     virtual void onRenderQueuingChanged(bool queueingEnabled) OVERRIDE FINAL;
     virtual void connectViewersToViewerCache() OVERRIDE FINAL;
     virtual void disconnectViewersFromViewerCache() OVERRIDE FINAL;
-    boost::shared_ptr<FileDialogPreviewProvider> getPreviewProvider() const;
+    FileDialogPreviewProviderPtr getPreviewProvider() const;
     virtual std::string openImageFileDialog() OVERRIDE FINAL;
     virtual std::string saveImageFileDialog() OVERRIDE FINAL;
     virtual void clearViewersLastRenderedTexture() OVERRIDE FINAL;
@@ -238,17 +238,17 @@ public:
                                            int strokeIndex) OVERRIDE FINAL;
     virtual void getLastPaintStrokePoints(std::list<std::list<std::pair<Point, double> > >* strokes, int* strokeIndex) const OVERRIDE FINAL;
     virtual void getRenderStrokeData(RectD* lastStrokeMovementBbox, std::list<std::pair<Point, double> >* lastStrokeMovementPoints,
-                                     double *distNextIn, boost::shared_ptr<Image>* strokeImage) const OVERRIDE FINAL;
+                                     double *distNextIn, ImagePtr* strokeImage) const OVERRIDE FINAL;
     virtual int getStrokeLastIndex() const OVERRIDE FINAL;
-    virtual void getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* stroke, int* strokeIndex) const OVERRIDE FINAL;
-    virtual void updateStrokeImage(const boost::shared_ptr<Image>& image, double distNextOut, bool setDistNextOut) OVERRIDE FINAL;
+    virtual void getStrokeAndMultiStrokeIndex(RotoStrokeItemPtr* stroke, int* strokeIndex) const OVERRIDE FINAL;
+    virtual void updateStrokeImage(const ImagePtr& image, double distNextOut, bool setDistNextOut) OVERRIDE FINAL;
     virtual RectD getLastPaintStrokeBbox() const OVERRIDE FINAL;
     virtual RectD getPaintStrokeWholeBbox() const OVERRIDE FINAL;
     virtual void setUserIsPainting(const NodePtr& rotopaintNode,
-                                   const boost::shared_ptr<RotoStrokeItem>& stroke,
+                                   const RotoStrokeItemPtr& stroke,
                                    bool isPainting) OVERRIDE FINAL;
     virtual void getActiveRotoDrawingStroke(NodePtr* node,
-                                            boost::shared_ptr<RotoStrokeItem>* stroke,
+                                            RotoStrokeItemPtr* stroke,
                                             bool* isPainting) const OVERRIDE FINAL;
     virtual void reloadScriptEditorFonts() OVERRIDE FINAL;
     ///////////////// OVERRIDEN FROM TIMELINEKEYFRAMES
@@ -272,7 +272,7 @@ public:
 
 private:
 
-    virtual void onGroupCreationFinished(const NodePtr& node, const boost::shared_ptr<NodeSerialization>& serialization, bool autoConnect) OVERRIDE FINAL;
+    virtual void onGroupCreationFinished(const NodePtr& node, const NodeSerializationPtr& serialization, bool autoConnect) OVERRIDE FINAL;
     virtual void createNodeGui(const NodePtr &node,
                                const NodePtr&  parentMultiInstance,
                                const CreateNodeArgs& args) OVERRIDE FINAL;

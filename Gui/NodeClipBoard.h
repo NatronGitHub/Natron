@@ -43,8 +43,8 @@ NATRON_NAMESPACE_ENTER
 class NodeClipBoard
 {
 public:
-    std::list<boost::shared_ptr<NodeSerialization> > nodes;
-    std::list<boost::shared_ptr<NodeGuiSerialization> > nodesUI;
+    std::list<NodeSerializationPtr> nodes;
+    std::list<NodeGuiSerializationPtr> nodesUI;
 
     NodeClipBoard()
         : nodes()
@@ -66,8 +66,8 @@ public:
 
         assert( nodes.size() == nodesUI.size() );
         ar & ::boost::serialization::make_nvp("NbNodes", nNodes);
-        std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator itUI = nodesUI.begin();
-        for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it = nodes.begin();
+        std::list<NodeGuiSerializationPtr>::const_iterator itUI = nodesUI.begin();
+        for (std::list<NodeSerializationPtr>::const_iterator it = nodes.begin();
              it != nodes.end(); ++it, ++itUI) {
             ar & ::boost::serialization::make_nvp("Node", **it);
             ar & ::boost::serialization::make_nvp("NodeUI", **itUI);
@@ -83,10 +83,10 @@ public:
         int nNodes;
         ar & ::boost::serialization::make_nvp("NbNodes", nNodes);
         for (int i = 0; i < nNodes; ++i) {
-            boost::shared_ptr<NodeSerialization> nS = boost::make_shared<NodeSerialization>();
+            NodeSerializationPtr nS = boost::make_shared<NodeSerialization>();
             ar & ::boost::serialization::make_nvp("Node", *nS);
             nodes.push_back(nS);
-            boost::shared_ptr<NodeGuiSerialization> nGui = boost::make_shared<NodeGuiSerialization>();
+            NodeGuiSerializationPtr nGui = boost::make_shared<NodeGuiSerialization>();
             ar & ::boost::serialization::make_nvp("NodeUI", *nGui);
             nodesUI.push_back(nGui);
         }

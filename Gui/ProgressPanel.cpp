@@ -198,9 +198,9 @@ ProgressPanel::ProgressPanel(Gui* gui)
 
     QItemSelectionModel* selModel = _imp->view->selectionModel();
     QObject::connect( selModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this, SLOT(onSelectionChanged(QItemSelection,QItemSelection)) );
-    QObject::connect( this, SIGNAL(s_doProgressStartOnMainThread(boost::shared_ptr<Node>,QString,QString,bool)), this, SLOT(doProgressStartOnMainThread(boost::shared_ptr<Node>,QString,QString,bool)) );
+    QObject::connect( this, SIGNAL(s_doProgressStartOnMainThread(NodePtr,QString,QString,bool)), this, SLOT(doProgressStartOnMainThread(NodePtr,QString,QString,bool)) );
     QObject::connect( this, SIGNAL(s_doProgressUpdateOnMainThread(ProgressTaskInfoPtr,double)), this, SLOT(doProgressOnMainThread(ProgressTaskInfoPtr,double)) );
-    QObject::connect( this, SIGNAL(s_doProgressEndOnMainThread(boost::shared_ptr<Node>)), this, SLOT(doProgressEndOnMainThread(boost::shared_ptr<Node>)) );
+    QObject::connect( this, SIGNAL(s_doProgressEndOnMainThread(NodePtr)), this, SLOT(doProgressEndOnMainThread(NodePtr)) );
 }
 
 ProgressPanel::~ProgressPanel()
@@ -382,7 +382,7 @@ connectProcessSlots(ProgressTaskInfo* task,
 
 void
 ProgressPanel::onTaskRestarted(const NodePtr& node,
-                               const boost::shared_ptr<ProcessHandler>& process)
+                               const ProcessHandlerPtr& process)
 {
     QMutexLocker k(&_imp->tasksMutex);
     ProgressTaskInfoPtr task;
@@ -432,7 +432,7 @@ ProgressPanel::startTask(const NodePtr& node,
                          const bool canPause,
                          const bool canCancel,
                          const QString& message,
-                         const boost::shared_ptr<ProcessHandler>& process)
+                         const ProcessHandlerPtr& process)
 {
     assert( QThread::currentThread() == qApp->thread() );
     if (!node) {
@@ -480,7 +480,7 @@ ProgressPanel::startTask(const NodePtr& node,
                     getGui()->onFreezeUIButtonClicked(true);
                 }
 
-                boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
+                RenderEnginePtr engine = isOutput->getRenderEngine();
                 assert(engine);
                 QObject::connect( engine.get(), SIGNAL(frameRendered(int,double)), task.get(), SLOT(onRenderEngineFrameComputed(int,double)) );
                 QObject::connect( engine.get(), SIGNAL(renderFinished(int)), task.get(), SLOT(onRenderEngineStopped(int)) );
@@ -625,7 +625,7 @@ ProgressPanel::onItemRightClicked(TableItem* item)
     if (!task) {
         return;
     }
-    boost::shared_ptr<ProcessHandler> hasProcess = task->getProcess();
+    ProcessHandlerPtr hasProcess = task->getProcess();
     Menu m(this);
     QAction* showLogAction = 0;
     if (hasProcess) {

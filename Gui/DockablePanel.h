@@ -79,7 +79,7 @@ public:
                            QVBoxLayout* container,
                            HeaderModeEnum headerMode,
                            bool useScrollAreasForTabs,
-                           const boost::shared_ptr<QUndoStack>& stack,
+                           const QUndoStackPtr& stack,
                            const QString & initialName = QString(),
                            const QString & helpToolTip = QString(),
                            QWidget *parent = 0);
@@ -121,9 +121,9 @@ public:
 
     void resetHostOverlayColor();
 
-    virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const
+    virtual MultiInstancePanelPtr getMultiInstancePanel() const
     {
-        return boost::shared_ptr<MultiInstancePanel>();
+        return MultiInstancePanelPtr();
     }
 
     KnobHolder* getHolder() const;

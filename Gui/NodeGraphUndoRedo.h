@@ -322,7 +322,7 @@ class LoadNodePresetsCommand
 public:
 
     LoadNodePresetsCommand(const NodeGuiPtr & node,
-                           const std::list<boost::shared_ptr<NodeSerialization> >& serialization,
+                           const std::list<NodeSerializationPtr>& serialization,
                            QUndoCommand *parent = 0);
 
     virtual ~LoadNodePresetsCommand();
@@ -338,7 +338,7 @@ private:
     bool _isUndone;
     NodeGuiWPtr _node;
     std::list<NodeWPtr> _oldChildren, _newChildren; //< children if multi-instance
-    std::list<boost::shared_ptr<NodeSerialization> > _newSerializations, _oldSerialization;
+    std::list<NodeSerializationPtr> _newSerializations, _oldSerialization;
 };
 
 class RenameNodeUndoRedoCommand

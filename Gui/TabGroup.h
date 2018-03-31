@@ -58,7 +58,7 @@ public:
 
     virtual ~TabGroup();
 
-    QGridLayout* addTab(const boost::shared_ptr<KnobGroup>& group, const QString &label);
+    QGridLayout* addTab(const KnobGroupPtr& group, const QString &label);
 
     void removeTab(KnobGroup* group);
 

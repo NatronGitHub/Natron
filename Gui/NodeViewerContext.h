@@ -61,10 +61,10 @@ private:
                       ViewerTab* viewer);
 
 public:
-    static boost::shared_ptr<NodeViewerContext> create(const NodeGuiPtr& node,
+    static NodeViewerContextPtr create(const NodeGuiPtr& node,
                                                        ViewerTab* viewer)
     {
-        return boost::shared_ptr<NodeViewerContext>( new NodeViewerContext(node, viewer) );
+        return NodeViewerContextPtr( new NodeViewerContext(node, viewer) );
     }
 
     void createGui();

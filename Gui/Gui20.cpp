@@ -800,7 +800,7 @@ Gui::sortAllPluginsToolButtons()
 }
 
 ToolButton*
-Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
+Gui::findOrCreateToolButton(const PluginGroupNodePtr & plugin)
 {
     if ( !plugin->getIsUserCreatable() && plugin->getChildren().empty() ) {
         return 0;
@@ -854,7 +854,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
             ToolButton* othersGroup = findExistingToolButton( QString::fromUtf8(PLUGIN_GROUP_DEFAULT) );
             QStringList grouping( QString::fromUtf8(PLUGIN_GROUP_DEFAULT) );
             QStringList iconGrouping( QString::fromUtf8(PLUGIN_GROUP_DEFAULT_ICON_PATH) );
-            boost::shared_ptr<PluginGroupNode> othersToolButton =
+            PluginGroupNodePtr othersToolButton =
                 appPTR->findPluginToolButtonOrCreate(grouping,
                                                      QString::fromUtf8(PLUGIN_GROUP_DEFAULT),
                                                      iconGrouping,
@@ -1063,7 +1063,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
     }
 
     AppInstancePtr ret;
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    ProjectPtr project = getApp()->getProject();
     ///if the current graph has no value, just load the project in the same window
     if ( project->isGraphWorthLess() ) {
         bool ok = project->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
@@ -1112,7 +1112,7 @@ updateRecentFiles(const QString & filename)
 bool
 Gui::saveProject()
 {
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    ProjectPtr project = getApp()->getProject();
 
     if ( project->hasProjectBeenSavedByUser() ) {
         QString projectFilename = project->getProjectFilename();
@@ -1181,7 +1181,7 @@ Gui::saveProjectAs()
 void
 Gui::saveAndIncrVersion()
 {
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    ProjectPtr project = getApp()->getProject();
     QString path = project->getProjectPath();
     QString name = project->getProjectFilename();
     int currentVersion = 0;

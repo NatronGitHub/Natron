@@ -106,13 +106,13 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 typedef std::list<std::pair<NodeWPtr, bool> > Nodes;
 
-boost::shared_ptr<KnobDouble>
+KnobDoublePtr
 getCenterKnobForTracker(Node* node)
 {
     KnobIPtr knob = node->getKnobByName(kTrackCenterName);
 
     assert(knob);
-    boost::shared_ptr<KnobDouble> dblKnob = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    KnobDoublePtr dblKnob = boost::dynamic_pointer_cast<KnobDouble>(knob);
     assert(dblKnob);
 
     return dblKnob;
@@ -149,7 +149,7 @@ public:
     bool redrawOnSelectionChanged;
 
     MultiInstancePanelPrivate(MultiInstancePanel* publicI,
-                              const boost::shared_ptr<NodeGui> & node)
+                              const NodeGuiPtr & node)
         : publicInterface(publicI)
         , guiCreated(false)
         , mainInstance(node)
@@ -189,26 +189,26 @@ public:
         KnobString* isString = dynamic_cast<KnobString*>( ref.get() );
         KnobDouble* isDouble = dynamic_cast<KnobDouble*>( ref.get() );
         KnobInt* isInt = dynamic_cast<KnobInt*>( ref.get() );
-        boost::shared_ptr<KnobHelper> ret;
+        KnobHelperPtr ret;
         if (isInt) {
-            boost::shared_ptr<KnobInt> intKnb = AppManager::createKnob<KnobInt>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            KnobIntPtr intKnb = AppManager::createKnob<KnobInt>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
             intKnb->setMinimumsAndMaximums( isInt->getMinimums(), isInt->getMaximums() );
             intKnb->setDisplayMinimumsAndMaximums( isInt->getDisplayMinimums(), isInt->getDisplayMaximums() );
             ret = intKnb;
         } else if ( dynamic_cast<KnobBool*>( ref.get() ) ) {
             ret = AppManager::createKnob<KnobBool>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if (isDouble) {
-            boost::shared_ptr<KnobDouble> dblKnob = AppManager::createKnob<KnobDouble>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            KnobDoublePtr dblKnob = AppManager::createKnob<KnobDouble>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
             dblKnob->setMinimumsAndMaximums( isDouble->getMinimums(), isDouble->getMaximums() );
             dblKnob->setDisplayMinimumsAndMaximums( isDouble->getDisplayMinimums(), isDouble->getDisplayMaximums() );
             ret = dblKnob;
         } else if (isChoice) {
-            boost::shared_ptr<KnobChoice> choice = AppManager::createKnob<KnobChoice>(publicInterface,
+            KnobChoicePtr choice = AppManager::createKnob<KnobChoice>(publicInterface,
                                                                                       ref->getLabel(), ref->getDimension(), declaredByPlugin);
             choice->populateChoices( isChoice->getEntries_mt_safe() );
             ret = choice;
         } else if (isString) {
-            boost::shared_ptr<KnobString> strKnob = AppManager::createKnob<KnobString>(publicInterface,
+            KnobStringPtr strKnob = AppManager::createKnob<KnobString>(publicInterface,
                                                                                        ref->getLabel(), ref->getDimension(), declaredByPlugin);
             if ( isString->isCustomKnob() ) {
                 strKnob->setAsCustom();
@@ -234,7 +234,7 @@ public:
         } else if ( dynamic_cast<KnobOutputFile*>( ref.get() ) ) {
             ret = AppManager::createKnob<KnobOutputFile>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if (isButton) {
-            boost::shared_ptr<KnobButton> btn = AppManager::createKnob<KnobButton>(publicInterface,
+            KnobButtonPtr btn = AppManager::createKnob<KnobButton>(publicInterface,
                                                                                    ref->getLabel(), ref->getDimension(), declaredByPlugin);
             ///set the name prior to calling setIconForButton
             btn->setName( ref->getName() );
@@ -297,7 +297,7 @@ public:
     NodePtr getInstanceFromItem(TableItem* item) const;
 };
 
-MultiInstancePanel::MultiInstancePanel(const boost::shared_ptr<NodeGui> & node)
+MultiInstancePanel::MultiInstancePanel(const NodeGuiPtr & node)
     : NamedKnobHolder( node->getNode()->getApp() )
     , _imp( new MultiInstancePanelPrivate(this, node) )
 {
@@ -437,7 +437,7 @@ MultiInstancePanel::getMainInstance() const
     return _imp->getMainInstance();
 }
 
-boost::shared_ptr<NodeGui>
+NodeGuiPtr
 MultiInstancePanel::getMainInstanceGui() const
 {
     return _imp->mainInstance.lock();
@@ -717,7 +717,7 @@ MultiInstancePanelPrivate::addTableRow(const NodePtr & node)
     {
         const std::vector<KnobIPtr> & instanceKnobs = node->getKnobs();
         for (U32 i = 0; i < instanceKnobs.size(); ++i) {
-            boost::shared_ptr<KnobSignalSlotHandler> slotsHandler =
+            KnobSignalSlotHandlerPtr slotsHandler =
                 instanceKnobs[i]->getSignalSlotHandler();
             if (slotsHandler) {
                 QObject::connect( slotsHandler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), publicInterface, SLOT(onInstanceKnobValueChanged(ViewSpec,int,int)) );
@@ -1746,13 +1746,13 @@ public:
     QHBoxLayout* exportLayout;
     ComboBox* exportChoice;
     Button* exportButton;
-    boost::shared_ptr<KnobPage> transformPage;
-    boost::shared_ptr<KnobInt> referenceFrame;
+    KnobPagePtr transformPage;
+    KnobIntPtr referenceFrame;
     TrackScheduler scheduler;
 
 
     TrackerPanelPrivateV1(TrackerPanelV1* publicInterface,
-                          const boost::shared_ptr<NodeGui> & node)
+                          const NodeGuiPtr & node)
         : publicInterface(publicInterface)
         , averageTracksButton(0)
         , exportLabel(0)
@@ -1773,7 +1773,7 @@ public:
     bool getTrackInstancesForButton(std::vector<KnobButton*>* trackButtons, const std::string& buttonName);
 };
 
-TrackerPanelV1::TrackerPanelV1(const boost::shared_ptr<NodeGui> & node)
+TrackerPanelV1::TrackerPanelV1(const NodeGuiPtr & node)
     : MultiInstancePanel(node)
     , _imp( new TrackerPanelPrivateV1(this, node) )
 {
@@ -1939,14 +1939,14 @@ TrackerPanelV1::onAverageTracksButtonClicked()
 
     newInstance->updateEffectLabelKnob(newName);
 
-    boost::shared_ptr<KnobDouble> newInstanceCenter = getCenterKnobForTracker( newInstance.get() );
-    std::list<boost::shared_ptr<KnobDouble> > centers;
+    KnobDoublePtr newInstanceCenter = getCenterKnobForTracker( newInstance.get() );
+    std::list<KnobDoublePtr> centers;
     RangeD keyframesRange;
     keyframesRange.min = INT_MAX;
     keyframesRange.max = INT_MIN;
 
     for (std::list<Node*>::iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
-        boost::shared_ptr<KnobDouble> dblKnob = getCenterKnobForTracker(*it);
+        KnobDoublePtr dblKnob = getCenterKnobForTracker(*it);
         centers.push_back(dblKnob);
         double mini, maxi;
         bool hasKey = dblKnob->getFirstKeyFrameTime(ViewIdx(0), 0, &mini);
@@ -1979,7 +1979,7 @@ TrackerPanelV1::onAverageTracksButtonClicked()
         average.second = 0;
         const size_t centersNb = centers.size();
         if (centersNb) {
-            for (std::list<boost::shared_ptr<KnobDouble> >::iterator it = centers.begin(); it != centers.end(); ++it) {
+            for (std::list<KnobDoublePtr>::iterator it = centers.begin(); it != centers.end(); ++it) {
                 double x = (*it)->getValueAtTime(t, 0);
                 double y = (*it)->getValueAtTime(t, 1);
                 average.first += x;
@@ -2118,7 +2118,7 @@ TrackerPanelV1::trackForward(ViewerInstance* /*viewer*/)
 
     double leftBound, rightBound;
     getApp()->getFrameRange(&leftBound, &rightBound);
-    boost::shared_ptr<TimeLine> timeline = getApp()->getTimeLine();
+    TimeLinePtr timeline = getApp()->getTimeLine();
     int end = rightBound + 1;
     int start = timeline->currentFrame();
 
@@ -2160,7 +2160,7 @@ TrackerPanelV1::trackPrevious(ViewerInstance* /*viewer*/)
         return false;
     }
 
-    boost::shared_ptr<TimeLine> timeline = getApp()->getTimeLine();
+    TimeLinePtr timeline = getApp()->getTimeLine();
     int start = timeline->currentFrame();
     int end = start - 1;
 
@@ -2190,7 +2190,7 @@ TrackerPanelV1::trackNext(ViewerInstance* /*viewer*/)
         return false;
     }
 
-    boost::shared_ptr<TimeLine> timeline = getApp()->getTimeLine();
+    TimeLinePtr timeline = getApp()->getTimeLine();
     int start = timeline->currentFrame();
     int end = start + 1;
 
@@ -2315,7 +2315,7 @@ TrackerPanelPrivateV1::createTransformFromSelection(const std::list<Node*> & /*s
 }
 
 namespace  {
-boost::shared_ptr<KnobDouble>
+KnobDoublePtr
 getCornerPinPoint(Node* node,
                   bool isFrom,
                   int index)
@@ -2324,7 +2324,7 @@ getCornerPinPoint(Node* node,
     QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
     KnobIPtr knob = node->getKnobByName( name.toStdString() );
     assert(knob);
-    boost::shared_ptr<KnobDouble>  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    KnobDoublePtr  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
     assert(ret);
 
     return ret;
@@ -2344,7 +2344,7 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
         return;
     }
 
-    boost::shared_ptr<KnobDouble> centers[4];
+    KnobDoublePtr centers[4];
     int i = 0;
     for (std::list<Node*>::const_iterator it = selection.begin(); it != selection.end(); ++it, ++i) {
         centers[i] = getCenterKnobForTracker(*it);
@@ -2365,7 +2365,7 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
     NodeGui* cornerPinGui = dynamic_cast<NodeGui*>( cornerPinGui_i.get() );
     assert(cornerPinGui);
 
-    boost::shared_ptr<NodeGui> mainInstanceGui = publicInterface->getMainInstanceGui();
+    NodeGuiPtr mainInstanceGui = publicInterface->getMainInstanceGui();
     assert(mainInstanceGui);
 
     QPointF mainInstancePos = mainInstanceGui->scenePos();
@@ -2374,8 +2374,8 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
         mainInstancePos = cornerPinGui->mapToParent( cornerPinGui->mapFromScene(mainInstancePos) );
         cornerPinGui->refreshPosition( mainInstancePos.x() + mainInstanceGui->getSize().width() * 2, mainInstancePos.y() );
     }
-    boost::shared_ptr<KnobDouble> toPoints[4];
-    boost::shared_ptr<KnobDouble>  fromPoints[4];
+    KnobDoublePtr toPoints[4];
+    KnobDoublePtr  fromPoints[4];
     double timeForFromPoints = useTransformRefFrame ? referenceFrame->getValue() : app->getTimeLine()->currentFrame();
 
     for (unsigned int i = 0; i < selection.size(); ++i) {
@@ -2436,7 +2436,7 @@ TrackerPanelV1::showMenuForInstance(Node* instance)
 
     QAction* ret = menu.exec( QCursor::pos() );
     if (ret == copyTrackAnimation) {
-        boost::shared_ptr<KnobDouble> centerKnob = getCenterKnobForTracker(instance);
+        KnobDoublePtr centerKnob = getCenterKnobForTracker(instance);
         assert(centerKnob);
         centerKnob->copyAnimationToClipboard();
     }

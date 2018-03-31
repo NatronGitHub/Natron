@@ -120,7 +120,7 @@ Gui::setupUi()
     ///Must be absolutely called once _nodeGraphArea has been initialized.
     _imp->createPropertiesBinGui();
 
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    ProjectPtr project = getApp()->getProject();
 
     _imp->_projectGui = new ProjectGui(this);
     _imp->_projectGui->create(project,
@@ -145,7 +145,7 @@ Gui::setupUi()
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
 
     QObject::connect( project.get(), SIGNAL(projectNameChanged(QString,bool)), this, SLOT(onProjectNameChanged(QString,bool)) );
-    boost::shared_ptr<TimeLine> timeline = project->getTimeLine();
+    TimeLinePtr timeline = project->getTimeLine();
     QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime,int)) );
     QObject::connect( timeline.get(), SIGNAL(frameAboutToChange()), this, SLOT(onTimelineTimeAboutToChange()) );
 
@@ -202,7 +202,7 @@ void
 Gui::createGroupGui(const NodePtr & group,
                     const CreateNodeArgs& args)
 {
-    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getEffectInstance()->shared_from_this() );
+    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getEffectInstance()->shared_from_this() );
 
     assert(isGrp);
     NodeCollectionPtr collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
@@ -226,7 +226,7 @@ Gui::createGroupGui(const NodePtr & group,
     nodeGraph->setObjectName( QString::fromUtf8( group->getLabel().c_str() ) );
     _imp->_groups.push_back(nodeGraph);
     
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
 
     if ( where && !serialization && !getApp()->isCreatingPythonGroup() ) {
         where->appendTab(nodeGraph, nodeGraph);

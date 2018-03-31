@@ -167,7 +167,7 @@ Gui::closeProject()
 void
 Gui::reloadProject()
 {
-    boost::shared_ptr<Project> proj = getApp()->getProject();
+    ProjectPtr proj = getApp()->getProject();
 
     if ( !proj->hasProjectBeenSavedByUser() ) {
         Dialogs::errorDialog( tr("Reload project").toStdString(), tr("This project has not been saved yet").toStdString() );

@@ -296,12 +296,12 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
 
     QPointF offset( scenePos.x() - ( (xmax + xmin) / 2. ), scenePos.y() -  ( (ymax + ymin) / 2. ) );
     std::list<std::pair<std::string, NodeGuiPtr> > newNodes;
-    std::list<boost::shared_ptr<NodeSerialization> > serializations;
+    std::list<NodeSerializationPtr> serializations;
     std::list<NodeGuiPtr> newNodesList;
     std::map<std::string, std::string> oldNewScriptNameMapping;
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        boost::shared_ptr<NodeSerialization>  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
-        boost::shared_ptr<NodeGuiSerialization> guiSerialization = boost::make_shared<NodeGuiSerialization>();
+        NodeSerializationPtr  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
+        NodeGuiSerializationPtr guiSerialization = boost::make_shared<NodeGuiSerialization>();
         (*it)->serialize( guiSerialization.get() );
         NodeGuiPtr clone = _imp->pasteNode(internalSerialization, guiSerialization, offset,
                                            _imp->group.lock(), std::string(), true, &oldNewScriptNameMapping );
@@ -324,7 +324,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
 
 
     //Restore links once all children are created for alias knobs/expressions
-    std::list<boost::shared_ptr<NodeSerialization> >::iterator itS = serializations.begin();
+    std::list<NodeSerializationPtr>::iterator itS = serializations.begin();
     for (std::list<NodeGuiPtr> ::iterator it = newNodesList.begin(); it != newNodesList.end(); ++it, ++itS) {
         (*it)->getNode()->restoreKnobsLinks(**itS, allNodes, oldNewScriptNameMapping);
     }

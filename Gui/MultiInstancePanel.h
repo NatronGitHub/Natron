@@ -179,7 +179,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    TrackerPanelV1(const boost::shared_ptr<NodeGui> & node);
+    TrackerPanelV1(const NodeGuiPtr & node);
 
     virtual ~TrackerPanelV1();
 

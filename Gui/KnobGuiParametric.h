@@ -78,7 +78,7 @@ public:
 
     virtual ~KnobGuiParametric() OVERRIDE;
     virtual KnobIPtr getKnob() const OVERRIDE FINAL;
-    virtual void getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* selection) OVERRIDE FINAL;
+    virtual void getSelectedCurves(std::vector<CurveGuiPtr>* selection) OVERRIDE FINAL;
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
     virtual void redraw() OVERRIDE FINAL;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
@@ -127,7 +127,7 @@ private:
     Button* _resetButton;
     struct CurveDescriptor
     {
-        boost::shared_ptr<KnobCurveGui> curve;
+        KnobCurveGuiPtr curve;
         QTreeWidgetItem* treeItem;
     };
 

@@ -211,7 +211,7 @@ KnobGuiColor::KnobGuiColor(KnobIPtr knob,
     , _useSimplifiedUI(true)
 {
     if (knob) {
-        boost::shared_ptr<KnobColor> k = _knob.lock();
+        KnobColorPtr k = _knob.lock();
         _useSimplifiedUI = isViewerUIKnob() || ( k && k->isSimplified() );
     }
 }
@@ -219,7 +219,7 @@ KnobGuiColor::KnobGuiColor(KnobIPtr knob,
 void
 KnobGuiColor::connectKnobSignalSlots()
 {
-    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    KnobColorPtr knob = _knob.lock();
     QObject::connect( this, SIGNAL(dimensionSwitchToggled(bool)), knob.get(), SLOT(onDimensionSwitchToggled(bool)) );
     QObject::connect( knob.get(), SIGNAL(mustActivateAllDimensions()), this, SLOT(onMustShowAllDimension()) );
     QObject::connect( knob.get(), SIGNAL(pickingEnabled(bool)), this, SLOT(setPickingEnabled(bool)) );
@@ -228,7 +228,7 @@ KnobGuiColor::connectKnobSignalSlots()
 void
 KnobGuiColor::getIncrements(std::vector<double>* increments) const
 {
-    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    KnobColorPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -243,7 +243,7 @@ KnobGuiColor::getIncrements(std::vector<double>* increments) const
 void
 KnobGuiColor::getDecimals(std::vector<int>* decimals) const
 {
-    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    KnobColorPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -259,7 +259,7 @@ void
 KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
 {
     containerLayout->addSpacing( TO_DPIX(10) );
-    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    KnobColorPtr knob = _knob.lock();
     _colorLabel = new ColorPickerLabel( _useSimplifiedUI ? NULL : this, containerLayout->widget() );
     if (!_useSimplifiedUI) {
         _colorLabel->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
@@ -310,7 +310,7 @@ KnobGuiColor::updateLabel(double r,
                           double a)
 {
     QColor color;
-    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    KnobColorPtr knob = _knob.lock();
     bool simple = _useSimplifiedUI;
 
     color.setRgbF( Image::clamp<qreal>(simple ? r : Color::to_func_srgb(r), 0., 1.),
@@ -388,7 +388,7 @@ KnobGuiColor::updateExtraGui(const std::vector<double>& values)
 void
 KnobGuiColor::onDimensionsFolded()
 {
-    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    KnobColorPtr knob = _knob.lock();
     int nDims = knob->getDimension();
 
     for (int i = 0; i < nDims; ++i) {
@@ -410,7 +410,7 @@ KnobGuiColor::onDimensionsExpanded()
     colors[2].setRgbF(0.345293, 0.345293, 1);
     colors[3].setRgbF(0.398979, 0.398979, 0.398979);
 
-    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    KnobColorPtr knob = _knob.lock();
     int nDims = knob->getDimension();
     for (int i = 0; i < nDims; ++i) {
         SpinBox* sb = 0;
@@ -432,7 +432,7 @@ KnobGuiColor::setEnabledExtraGui(bool enabled)
 void
 KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
 {
-    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    KnobColorPtr knob = _knob.lock();
     bool isSimple = _useSimplifiedUI;
     int nDims = knob->getDimension();
 
@@ -463,7 +463,7 @@ KnobGuiColor::showColorDialog()
     QColorDialog dialog( _colorLabel->parentWidget() );
 
     dialog.setOption(QColorDialog::DontUseNativeDialog);
-    boost::shared_ptr<KnobColor> knob = _knob.lock();
+    KnobColorPtr knob = _knob.lock();
     const int nDims = knob->getDimension();
     double curR = knob->getValue(0);
 
@@ -543,7 +543,7 @@ KnobGuiColor::isAutoFoldDimensionsEnabled() const
     // The only case where this could matter are the "Draw" nodes (Rectangle, Constant, etc.),
     // but these are rarely used compared to "Color" nodes.
     return true;
-    //boost::shared_ptr<KnobColor> knob = _knob.lock();
+    //KnobColorPtr knob = _knob.lock();
     //if (!knob) {
     //    return false;
     //}

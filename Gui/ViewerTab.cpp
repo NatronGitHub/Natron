@@ -744,7 +744,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->playbackMode_Button->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Behaviour to adopt when the playback hit the end of the range: loop,bounce or stop."), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
 
-    boost::shared_ptr<TimeLine> timeline = getGui()->getApp()->getTimeLine();
+    TimeLinePtr timeline = getGui()->getApp()->getTimeLine();
     QPixmap tripleSyncUnlockPix, tripleSyncLockedPix;
     appPTR->getIcon(NATRON_PIXMAP_UNLOCKED, pixmapIconSize, &tripleSyncUnlockPix);
     appPTR->getIcon(NATRON_PIXMAP_LOCKED, pixmapIconSize, &tripleSyncLockedPix);
@@ -1023,7 +1023,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QObject::connect( _imp->nextKeyFrame_Button, SIGNAL(clicked(bool)), getGui()->getApp().get(), SLOT(goToNextKeyframe()) );
     QObject::connect( _imp->previousKeyFrame_Button, SIGNAL(clicked(bool)), getGui()->getApp().get(), SLOT(goToPreviousKeyframe()) );
     NodePtr wrapperNode = _imp->viewerNode->getNode();
-    boost::shared_ptr<RenderEngine> engine = _imp->viewerNode->getRenderEngine();
+    RenderEnginePtr engine = _imp->viewerNode->getRenderEngine();
     QObject::connect( _imp->viewerNode, SIGNAL(renderStatsAvailable(int,ViewIdx,double,RenderStatsMap)),
                       this, SLOT(onRenderStatsAvailable(int,ViewIdx,double,RenderStatsMap)) );
     QObject::connect( wrapperNode.get(), SIGNAL(inputChanged(int)), this, SLOT(onInputChanged(int)) );

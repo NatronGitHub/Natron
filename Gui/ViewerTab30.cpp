@@ -366,9 +366,9 @@ ViewerTab::createTrackerInterface(const NodeGuiPtr& n)
     } else {
         assert( n->getNode()->isMultiInstance() );
         n->ensurePanelCreated();
-        boost::shared_ptr<MultiInstancePanel> multiPanel = n->getMultiInstancePanel();
+        MultiInstancePanelPtr multiPanel = n->getMultiInstancePanel();
         if (multiPanel) {
-            boost::shared_ptr<TrackerPanelV1> trackPanel = boost::dynamic_pointer_cast<TrackerPanelV1>(multiPanel);
+            TrackerPanelV1Ptr trackPanel = boost::dynamic_pointer_cast<TrackerPanelV1>(multiPanel);
             assert(trackPanel);
             tracker = new TrackerGui(trackPanel, this);
         }
@@ -512,7 +512,7 @@ ViewerTab::createNodeViewerInterface(const NodeGuiPtr& n)
         return;
     }
 
-    boost::shared_ptr<NodeViewerContext> nodeContext = NodeViewerContext::create(n, this);
+    NodeViewerContextPtr nodeContext = NodeViewerContext::create(n, this);
     nodeContext->createGui();
     _imp->nodesContext.insert( std::make_pair(n, nodeContext) );
 

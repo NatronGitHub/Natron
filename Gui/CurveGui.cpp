@@ -46,7 +46,7 @@
 NATRON_NAMESPACE_ENTER
 
 CurveGui::CurveGui(CurveWidget *curveWidget,
-                   boost::shared_ptr<Curve> curve,
+                   CurvePtr curve,
                    const QString & name,
                    const QColor & color,
                    int thickness)
@@ -239,7 +239,7 @@ CurveGui::getCurveYRange() const
     return getInternalCurve()->getCurveYRange();
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 CurveGui::getInternalCurve() const
 {
     return _internalCurve;
@@ -593,7 +593,7 @@ CurveGui::getKeyFrames() const
 }
 
 KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,
-                           boost::shared_ptr<Curve>  curve,
+                           CurvePtr  curve,
                            const KnobGuiPtr& knob,
                            int dimension,
                            const QString & name,
@@ -619,9 +619,9 @@ KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,
 }
 
 KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,
-                           boost::shared_ptr<Curve>  curve,
+                           CurvePtr  curve,
                            const KnobIPtr& knob,
-                           const boost::shared_ptr<RotoContext>& roto,
+                           const RotoContextPtr& roto,
                            int dimension,
                            const QString & name,
                            const QColor & color,
@@ -674,7 +674,7 @@ KnobCurveGui::evaluate(bool useExpr,
     }
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 KnobCurveGui::getInternalCurve() const
 {
     KnobIPtr knob = getInternalKnob();
@@ -709,12 +709,12 @@ KnobCurveGui::setKeyFrameInterpolation(KeyframeTypeEnum interp,
 }
 
 BezierCPCurveGui::BezierCPCurveGui(CurveWidget *curveWidget,
-                                   const boost::shared_ptr<Bezier>& bezier,
-                                   const boost::shared_ptr<RotoContext>& roto,
+                                   const BezierPtr& bezier,
+                                   const RotoContextPtr& roto,
                                    const QString & name,
                                    const QColor & color,
                                    int thickness)
-    : CurveGui(curveWidget, boost::shared_ptr<Curve>(), name, color, thickness)
+    : CurveGui(curveWidget, CurvePtr(), name, color, thickness)
     , _bezier(bezier)
     , _rotoContext(roto)
 {
@@ -724,7 +724,7 @@ BezierCPCurveGui::BezierCPCurveGui(CurveWidget *curveWidget,
     }
 }
 
-boost::shared_ptr<Bezier>
+BezierPtr
 BezierCPCurveGui::getBezier() const
 {
     return _bezier;

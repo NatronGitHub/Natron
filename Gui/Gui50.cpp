@@ -1115,7 +1115,7 @@ Gui::onFocusChanged(QWidget* /*old*/,
 
 void
 Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
-                           std::vector<boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences)
+                           std::vector<SequenceParsing::SequenceFromFilesPtr>* sequences)
 {
 
     QStringList filesList;
@@ -1209,7 +1209,7 @@ void
 Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
                              const QPoint& globalPos)
 {
-    std::vector<boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
+    std::vector<SequenceParsing::SequenceFromFilesPtr> sequences;
 
 
     fileSequencesFromUrls(urls, &sequences);
@@ -1228,7 +1228,7 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
     QPointF graphScenePos = graph->mapToScene( graph->mapFromGlobal(globalPos) );
     std::locale local;
     for (U32 i = 0; i < sequences.size(); ++i) {
-        boost::shared_ptr<SequenceParsing::SequenceFromFiles> & sequence = sequences[i];
+        SequenceParsing::SequenceFromFilesPtr & sequence = sequences[i];
         if (sequence->count() < 1) {
             continue;
         }

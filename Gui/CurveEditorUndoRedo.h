@@ -51,7 +51,7 @@ NATRON_NAMESPACE_ENTER
 
 struct SelectedKey
 {
-    boost::shared_ptr<CurveGui> curve;
+    CurveGuiPtr curve;
     KeyFrame key, prevKey, nextKey;
     bool hasPrevious;
     bool hasNext;
@@ -63,7 +63,7 @@ struct SelectedKey
     {
     }
 
-    SelectedKey(const boost::shared_ptr<CurveGui>& c,
+    SelectedKey(const CurveGuiPtr& c,
                 const KeyFrame & k,
                 const bool hasPrevious,
                 const KeyFrame & previous,
@@ -100,8 +100,8 @@ struct SelectedKey_compare_time
     }
 };
 
-typedef boost::shared_ptr<SelectedKey> KeyPtr;
-typedef std::map<boost::shared_ptr<CurveGui>, std::list<KeyPtr> > SelectedKeys;
+typedef SelectedKeyPtr KeyPtr;
+typedef std::map<CurveGuiPtr, std::list<KeyPtr> > SelectedKeys;
 
 
 //////////////////////////////ADD MULTIPLE KEYS COMMAND//////////////////////////////////////////////
@@ -115,7 +115,7 @@ public:
 
     struct KeyToAdd
     {
-        boost::shared_ptr<CurveGui> curveUI;
+        CurveGuiPtr curveUI;
         KnobGuiWPtr knobUI;
         int dimension;
         std::vector<KeyFrame> keyframes;
@@ -128,7 +128,7 @@ public:
                    QUndoCommand *parent = 0);
 
     AddKeysCommand(CurveWidget *editor,
-                   const boost::shared_ptr<CurveGui>& curve,
+                   const CurveGuiPtr& curve,
                    const std::vector<KeyFrame> & keys,
                    QUndoCommand *parent = 0);
 
@@ -161,7 +161,7 @@ public:
                    QUndoCommand *parent = 0);
 
     SetKeysCommand(CurveWidget *editor,
-                   const boost::shared_ptr<CurveGui>& curve,
+                   const CurveGuiPtr& curve,
                    const std::vector<KeyFrame> & keys,
                    QUndoCommand *parent = 0);
 
@@ -174,8 +174,8 @@ private:
     virtual void redo() OVERRIDE FINAL;
 
 private:
-    boost::shared_ptr<CurveGui> _guiCurve;
-    boost::shared_ptr<Curve> _oldCurve;
+    CurveGuiPtr _guiCurve;
+    CurvePtr _oldCurve;
 };
 
 //////////////////////////////REMOVE  MULTIPLE KEYS COMMAND//////////////////////////////////////////////
@@ -187,7 +187,7 @@ class RemoveKeysCommand
 
 public:
     RemoveKeysCommand(CurveWidget* editor,
-                      const std::map<boost::shared_ptr<CurveGui>, std::vector<KeyFrame> > & curveEditorElement
+                      const std::map<CurveGuiPtr, std::vector<KeyFrame> > & curveEditorElement
                       ,
                       QUndoCommand *parent = 0);
     virtual ~RemoveKeysCommand() OVERRIDE
@@ -201,7 +201,7 @@ private:
     void addOrRemoveKeyframe(bool add);
 
 private:
-    std::map<boost::shared_ptr<CurveGui>, std::vector<KeyFrame> > _keys;
+    std::map<CurveGuiPtr, std::vector<KeyFrame> > _keys;
     CurveWidget* _curveWidget;
 };
 
@@ -221,7 +221,7 @@ public:
     };
 
     MoveKeysCommand(CurveWidget* widget,
-                    const std::map<boost::shared_ptr<CurveGui>, std::vector<MoveKeysCommand::KeyToMove> > & keys,
+                    const std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> > & keys,
                     double dt,
                     double dv,
                     bool updateOnFirstRedo,
@@ -243,7 +243,7 @@ private:
     bool _updateOnFirstRedo;
     double _dt;
     double _dv;
-    std::map<boost::shared_ptr<CurveGui>, std::vector<MoveKeysCommand::KeyToMove> > _keys;
+    std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> > _keys;
     CurveWidget* _widget;
 };
 

@@ -420,7 +420,7 @@ NodeGraph::createNodeGUI(const NodePtr & node,
         isTopLevelNodeBeingCreated = true;
     }
     
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
 
     bool panelOpened = args.getProperty<bool>(kCreateNodeArgsPropSettingsOpened);
     if ( !serialization && panelOpened && isTopLevelNodeBeingCreated ) {
@@ -428,7 +428,7 @@ NodeGraph::createNodeGUI(const NodePtr & node,
     }
 
 
-    boost::shared_ptr<QUndoStack> nodeStack = node_ui->getUndoStack();
+    QUndoStackPtr nodeStack = node_ui->getUndoStack();
     if (nodeStack) {
         getGui()->registerNewUndoStack( nodeStack.get() );
     }

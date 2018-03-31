@@ -55,7 +55,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 NATRON_NAMESPACE_ENTER
 
 ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
-                                                 const std::vector<boost::shared_ptr<CurveGui> > & curves,
+                                                 const std::vector<CurveGuiPtr> & curves,
                                                  Gui* gui,
                                                  QWidget* parent)
     : QDialog(parent)
@@ -348,7 +348,7 @@ ImportExportCurveDialog::getXEnd() const
 }
 
 void
-ImportExportCurveDialog::getCurveColumns(std::map<int, boost::shared_ptr<CurveGui> >* columns) const
+ImportExportCurveDialog::getCurveColumns(std::map<int, CurveGuiPtr>* columns) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -481,7 +481,7 @@ void
 EditKeyFrameDialog::moveKeyTo(double newX,
                               double newY)
 {
-    std::map<boost::shared_ptr<CurveGui>, std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
+    std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
     std::vector<MoveKeysCommand::KeyToMove> &keys = keysToMove[_imp->key->curve];
 
     keys.resize(1);

@@ -316,8 +316,8 @@ ManageUserParamsDialog::onPickClicked()
 
     if ( dialog.exec() ) {
         bool useAlias;
-        boost::shared_ptr<KnobPage> page;
-        boost::shared_ptr<KnobGroup> group;
+        KnobPagePtr page;
+        KnobGroupPtr group;
         KnobGuiPtr selectedKnob = dialog.getSelectedKnob(&useAlias, &page, &group);
         if (!selectedKnob) {
             return;
@@ -379,7 +379,7 @@ ManageUserParamsDialog::onAddClicked()
                 KnobGroup* isGrp = dynamic_cast<KnobGroup*>( item->knob.get() );
                 if (isGrp) {
                     selectedGroupName = isGrp->getName();
-                    boost::shared_ptr<KnobPage> topLevelPage = isGrp->getTopLevelPage();
+                    KnobPagePtr topLevelPage = isGrp->getTopLevelPage();
                     if (topLevelPage) {
                         selectedPageName = topLevelPage->getName();
                     }
@@ -617,7 +617,7 @@ ManageUserParamsDialog::onUpClicked()
             QItemSelectionModel* model = _imp->tree->selectionModel();
             model->select(_imp->tree->indexFromItemPublic(item), QItemSelectionModel::ClearAndSelect);
 
-            boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
+            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
             if (isPage) {
                 _imp->panel->setPageActiveIndex(isPage);
             }
@@ -687,7 +687,7 @@ ManageUserParamsDialog::onDownClicked()
             QItemSelectionModel* model = _imp->tree->selectionModel();
             model->select(_imp->tree->indexFromItemPublic(item), QItemSelectionModel::ClearAndSelect);
 
-            boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
+            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
             if (isPage) {
                 _imp->panel->setPageActiveIndex(isPage);
             }

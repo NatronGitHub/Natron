@@ -816,7 +816,7 @@ GuiApplicationManager::getIcon(PixmapEnum e,
     }
 }
 
-const std::list<boost::shared_ptr<PluginGroupNode> >&
+const std::list<PluginGroupNodePtr>&
 GuiApplicationManager::getTopLevelPluginsToolButtons() const
 {
     return _imp->_topLevelToolButtons;
@@ -989,7 +989,7 @@ GuiApplicationManager::onPluginLoaded(Plugin* plugin)
     QStringList groupingWithID = groups;
 
     groupingWithID.push_back(pluginID);
-    boost::shared_ptr<PluginGroupNode> child = findPluginToolButtonOrCreate( groupingWithID,
+    PluginGroupNodePtr child = findPluginToolButtonOrCreate( groupingWithID,
                                                                              pluginLabel,
                                                                              groupIconPath,
                                                                              pluginIconPath,
@@ -1052,7 +1052,7 @@ GuiApplicationManager::ignorePlugin(Plugin* plugin)
     _imp->removeKeybind( QString::fromUtf8(kShortcutGroupNodes), plugin->getPluginID() );
 }
 
-boost::shared_ptr<PluginGroupNode>
+PluginGroupNodePtr
 GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping,
                                                     const QString & name,
                                                     const QStringList& groupIconPath,
@@ -1063,7 +1063,7 @@ GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping
 {
     assert(grouping.size() > 0);
 
-    return _imp->findPluginToolButtonInternal(_imp->_topLevelToolButtons, boost::shared_ptr<PluginGroupNode>(), grouping, name, groupIconPath, iconPath, major, minor, isUserCreatable);
+    return _imp->findPluginToolButtonInternal(_imp->_topLevelToolButtons, PluginGroupNodePtr(), grouping, name, groupIconPath, iconPath, major, minor, isUserCreatable);
 }
 
 bool

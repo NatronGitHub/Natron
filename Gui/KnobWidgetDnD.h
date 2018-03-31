@@ -57,7 +57,7 @@ class KnobWidgetDnD : public boost::enable_shared_from_this<KnobWidgetDnD>
 public:
 
 
-    static boost::shared_ptr<KnobWidgetDnD> create(const KnobGuiPtr& knob,
+    static KnobWidgetDnDPtr create(const KnobGuiPtr& knob,
                                             int dimension,
                                                    QWidget* widget);
 

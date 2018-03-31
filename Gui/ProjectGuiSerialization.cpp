@@ -161,7 +161,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 
     std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string> pythonPanels = projectGui->getGui()->getPythonPanels();
     for (std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string>::iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
-        boost::shared_ptr<PythonPanelSerialization> s = boost::make_shared<PythonPanelSerialization>();
+        PythonPanelSerializationPtr s = boost::make_shared<PythonPanelSerialization>();
         s->initialize(it->first, it->second);
         _pythonPanels.push_back(s);
     }
@@ -304,7 +304,7 @@ PythonPanelSerialization::initialize(NATRON_PYTHON_NAMESPACE::PyPanel* tab,
         //KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
 
         if (!isGroup && !isPage && !isButton) {
-            boost::shared_ptr<KnobSerialization> k( new KnobSerialization(knob) );
+            KnobSerializationPtr k( new KnobSerialization(knob) );
             knobs.push_back(k);
         }
         delete *it;

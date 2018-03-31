@@ -146,7 +146,7 @@ KnobGuiGroup::createWidget(QHBoxLayout* layout)
     if ( hasToolTip() ) {
         _button->setToolTip( toolTip() );
     }
-    boost::shared_ptr<KnobGroup> knob = _knob.lock();
+    KnobGroupPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -167,7 +167,7 @@ KnobGuiGroup::setCheckedInternal(bool checked,
     _checked = checked;
 
     if (userRequested) {
-        boost::shared_ptr<KnobGroup> knob = _knob.lock();
+        KnobGroupPtr knob = _knob.lock();
         if (knob) {
             knob->setValue(checked, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
         }
@@ -219,7 +219,7 @@ KnobGuiGroup::eventFilter(QObject */*target*/,
 void
 KnobGuiGroup::updateGUI(int /*dimension*/)
 {
-    boost::shared_ptr<KnobGroup> knob = _knob.lock();
+    KnobGroupPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -276,7 +276,7 @@ KnobGuiGroup::_show()
 void
 KnobGuiGroup::setEnabled()
 {
-    boost::shared_ptr<KnobGroup> knob = _knob.lock();
+    KnobGroupPtr knob = _knob.lock();
     bool enabled = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
 
     if (_button) {

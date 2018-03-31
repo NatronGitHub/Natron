@@ -83,7 +83,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     }
 
 
-    boost::shared_ptr<InspectorNode> v;
+    InspectorNodePtr v;
     if (lastUsedViewer) {
         v = boost::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
                                                         getInternalNode()->getNode() );

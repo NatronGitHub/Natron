@@ -56,7 +56,7 @@ struct PasteUndoCommandPrivate
     KnobClipBoardType type;
     int fromDimension;
     int targetDimension;
-    boost::shared_ptr<KnobSerialization> originalSerialization;
+    KnobSerializationPtr originalSerialization;
     KnobIPtr fromKnob;
 
     PasteUndoCommandPrivate()
@@ -154,7 +154,7 @@ PasteUndoCommand::copyFrom(const KnobIPtr& serializedKnob,
         internalKnob->beginChanges();
         for (int i = 0; i < internalKnob->getDimension(); ++i) {
             if ( ( _imp->targetDimension == -1) || ( i == _imp->targetDimension) ) {
-                boost::shared_ptr<Curve> fromCurve;
+                CurvePtr fromCurve;
                 if ( ( i == _imp->targetDimension) && ( _imp->fromDimension != -1) ) {
                     fromCurve = serializedKnob->getCurve(ViewIdx(0), _imp->fromDimension);
                 } else {
@@ -557,7 +557,7 @@ RestoreDefaultsCommand::undo()
             int dim = itKnob->getDimension();
             for (int i = 0; i < dim; ++i) {
                 if ( (i == _targetDim) || (_targetDim == -1) ) {
-                    boost::shared_ptr<Curve> c = itKnob->getCurve(ViewIdx(0), i);
+                    CurvePtr c = itKnob->getCurve(ViewIdx(0), i);
                     if (c) {
                         KeyFrameSet kfs = c->getKeyFrames_mt_safe();
                         for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
@@ -605,7 +605,7 @@ RestoreDefaultsCommand::redo()
             int dim = itKnob->getDimension();
             for (int i = 0; i < dim; ++i) {
                 if ( (i == _targetDim) || (_targetDim == -1) ) {
-                    boost::shared_ptr<Curve> c = itKnob->getCurve(ViewIdx(0), i);
+                    CurvePtr c = itKnob->getCurve(ViewIdx(0), i);
                     if (c) {
                         KeyFrameSet kfs = c->getKeyFrames_mt_safe();
                         for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {

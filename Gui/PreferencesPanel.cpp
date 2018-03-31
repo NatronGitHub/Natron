@@ -399,7 +399,7 @@ public:
 
 PreferencesPanel::PreferencesPanel(Gui *parent)
     : QWidget(parent)
-    , KnobGuiContainerHelper( appPTR->getCurrentSettings().get(), boost::shared_ptr<QUndoStack>() )
+    , KnobGuiContainerHelper( appPTR->getCurrentSettings().get(), QUndoStackPtr() )
     , _imp( new PreferencesPanelPrivate(this, parent) )
 {
 }
@@ -755,7 +755,7 @@ PreferencesPanel::createGui()
     QGridLayout* pluginsFrameLayout = 0;
     QTreeWidgetItem* uiTabTreeItem = 0;
     for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
-        boost::shared_ptr<KnobPage> pageKnob = _imp->tabs[i].page.lock()->pageKnob.lock();
+        KnobPagePtr pageKnob = _imp->tabs[i].page.lock()->pageKnob.lock();
         if (pageKnob->getName() == "plugins") {
             pluginsFrameLayout = _imp->tabs[i].page.lock()->gridLayout;
         } else if (pageKnob->getName() == "userInterfacePage") {
@@ -1046,11 +1046,11 @@ PreferencesPanelPrivate::createPreferenceTab(const KnobPageGuiPtr& page,
     }
 
     QTreeWidgetItem* parentItem = 0;
-    boost::shared_ptr<KnobPage> pageKnob = page->pageKnob.lock();
+    KnobPagePtr pageKnob = page->pageKnob.lock();
     if (pageKnob) {
         // In the preferences, there may be sub-pages
         KnobIPtr hasParent = pageKnob->getParentKnob();
-        boost::shared_ptr<KnobPage> parentPage;
+        KnobPagePtr parentPage;
         if (hasParent) {
             parentPage = boost::dynamic_pointer_cast<KnobPage>(hasParent);
             if (parentPage) {

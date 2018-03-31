@@ -59,6 +59,8 @@ public:
     }
 };
 
+typedef boost::shared_ptr<ComputePreviewRequest> ComputePreviewRequestPtr;
+
 struct PreviewThreadPrivate
 {
     std::vector<unsigned int> data;
@@ -86,7 +88,7 @@ void
 PreviewThread::appendToQueue(const NodeGuiPtr& node,
                              double time)
 {
-    boost::shared_ptr<ComputePreviewRequest> r( new ComputePreviewRequest() );
+    ComputePreviewRequestPtr r = boost::make_shared<ComputePreviewRequest>();
 
     r->node = node;
     r->time = time;
@@ -94,9 +96,9 @@ PreviewThread::appendToQueue(const NodeGuiPtr& node,
 }
 
 GenericSchedulerThread::ThreadStateEnum
-PreviewThread::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
+PreviewThread::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
 {
-    boost::shared_ptr<ComputePreviewRequest> args = boost::dynamic_pointer_cast<ComputePreviewRequest>(inArgs);
+    ComputePreviewRequestPtr args = boost::dynamic_pointer_cast<ComputePreviewRequest>(inArgs);
 
     assert(args);
 

@@ -272,7 +272,7 @@ public:
 
     void removeSettingsPanel();
 
-    boost::shared_ptr<QUndoStack> getUndoStack() const;
+    QUndoStackPtr getUndoStack() const;
 
     void removeUndoStack();
 
@@ -308,7 +308,7 @@ public:
 
     void refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs, SequenceTime time);
 
-    boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const;
+    MultiInstancePanelPtr getMultiInstancePanel() const;
 
     void setParentMultiInstance(const NodeGuiPtr & parent);
 
@@ -326,9 +326,9 @@ public:
      * @brief Serialize this node. If this is a multi-instance node, every instance will
      * be serialized, hence the list.
      **/
-    void serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) const;
+    void serializeInternal(std::list<NodeSerializationPtr>& internalSerialization) const;
     void restoreInternal(const NodeGuiPtr& thisShared,
-                         const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization);
+                         const std::list<NodeSerializationPtr>& internalSerialization);
 
     void setMergeHintActive(bool active);
 
@@ -351,8 +351,8 @@ public:
     }
 
     virtual bool getOverlayColor(double* r, double* g, double* b) const OVERRIDE FINAL;
-    virtual void addDefaultInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs) OVERRIDE FINAL;
-    boost::shared_ptr<HostOverlay> getHostOverlay() const WARN_UNUSED_RETURN;
+    virtual void addDefaultInteract(const HostOverlayKnobsPtr& knobs) OVERRIDE FINAL;
+    HostOverlayPtr getHostOverlay() const WARN_UNUSED_RETURN;
     virtual void drawHostOverlay(double time,
                                  const RenderScale& renderScale,
                                  ViewIdx view)  OVERRIDE FINAL;
@@ -611,7 +611,7 @@ private:
     QGraphicsSimpleTextItem* _persistentMessage;
     NodeGraphRectItem* _stateIndicator;
     bool _mergeHintActive;
-    boost::shared_ptr<NodeGuiIndicator> _streamIssuesWarning;
+    NodeGuiIndicatorPtr _streamIssuesWarning;
     QGraphicsLineItem* _disabledTopLeftBtmRight;
     QGraphicsLineItem* _disabledBtmLeftTopRight;
     /*the graphical input arrows*/
@@ -665,7 +665,7 @@ private:
 
     typedef std::map<NodeWPtr, LinkedDim> KnobGuiLinks;
     KnobGuiLinks _knobsLinks;
-    boost::shared_ptr<NodeGuiIndicator> _expressionIndicator;
+    NodeGuiIndicatorPtr _expressionIndicator;
     QPoint _magnecEnabled; //<enabled in X or/and Y
     QPointF _magnecDistance; //for x and for  y
     QPoint _updateDistanceSinceLastMagnec; //for x and for y
@@ -678,14 +678,14 @@ private:
     ///For the serialization thread
     mutable QMutex _mtSafeSizeMutex;
     int _mtSafeWidth, _mtSafeHeight;
-    boost::shared_ptr<HostOverlay> _hostOverlay;
-    boost::shared_ptr<QUndoStack> _undoStack; /*!< undo/redo stack*/
+    HostOverlayPtr _hostOverlay;
+    QUndoStackPtr _undoStack; /*!< undo/redo stack*/
     bool _overlayLocked;
-    boost::shared_ptr<NodeGuiIndicator> _availableViewsIndicator;
-    boost::shared_ptr<NodeGuiIndicator> _passThroughIndicator;
+    NodeGuiIndicatorPtr _availableViewsIndicator;
+    NodeGuiIndicatorPtr _passThroughIndicator;
     NodeWPtr _identityInput;
     bool identityStateSet;
-    boost::shared_ptr<NATRON_PYTHON_NAMESPACE::PyModalDialog> _activeNodeCustomModalDialog;
+    NATRON_PYTHON_NAMESPACE::PyModalDialogPtr _activeNodeCustomModalDialog;
 };
 
 NATRON_NAMESPACE_EXIT

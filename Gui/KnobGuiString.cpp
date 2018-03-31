@@ -382,7 +382,7 @@ KnobGuiString::KnobGuiString(KnobIPtr knob,
 void
 KnobGuiString::createWidget(QHBoxLayout* layout)
 {
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
 
     if ( knob->isMultiLine() ) {
         _container = new QWidget( layout->parentWidget() );
@@ -524,7 +524,7 @@ KnobGuiString::removeSpecificGui()
 std::string
 KnobGuiString::getDescriptionLabel() const
 {
-    boost::shared_ptr<KnobString> k = _knob.lock();
+    KnobStringPtr k = _knob.lock();
     bool isLabel = k->isLabel();
 
     if (isLabel) {
@@ -540,7 +540,7 @@ KnobGuiString::onLineChanged()
     if ( !_lineEdit->isEnabled() || _lineEdit->isReadOnly() ) {
         return;
     }
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -589,7 +589,7 @@ KnobGuiString::onTextChanged()
     QString txt = _textEdit->toPlainText();
 
     //txt = stripWhitespaces(txt);
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -617,7 +617,7 @@ KnobGuiString::addHtmlTags(QString text) const
     }
 
     ///if the knob had custom data, set them
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
     if (!knob) {
         return text;
     }
@@ -651,7 +651,7 @@ KnobGuiString::addHtmlTags(QString text) const
 void
 KnobGuiString::restoreTextInfoFromString()
 {
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
     QString text = QString::fromUtf8( knob->getValue(0).c_str() );
 
     if ( text.isEmpty() ) {
@@ -822,7 +822,7 @@ KnobGuiString::updateFontColorIcon(const QColor & color)
 void
 KnobGuiString::onCurrentFontChanged(const QFont & font)
 {
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
 
     assert(_textEdit);
     QString text = QString::fromUtf8( knob->getValue(0).c_str() );
@@ -876,7 +876,7 @@ void
 KnobGuiString::onFontSizeChanged(double size)
 {
     assert(_textEdit);
-    boost::shared_ptr<KnobString> knob = _knob.lock();;
+    KnobStringPtr knob = _knob.lock();;
     QString text = QString::fromUtf8( knob->getValue(0).c_str() );
     //find the first font tag
     QString toFind = QString::fromUtf8(kFontSizeTag);
@@ -900,7 +900,7 @@ void
 KnobGuiString::boldChanged(bool toggled)
 {
     assert(_textEdit);
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
     QString text = QString::fromUtf8( knob->getValue(0).c_str() );
     QString toFind = QString::fromUtf8(kBoldStartTag);
     int i = text.indexOf(toFind);
@@ -945,7 +945,7 @@ void
 KnobGuiString::colorFontButtonClicked()
 {
     assert(_textEdit);
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
     QColorDialog dialog(_textEdit);
     dialog.setOption(QColorDialog::DontUseNativeDialog);
     QObject::connect( &dialog, SIGNAL(currentColorChanged(QColor)), this, SLOT(updateFontColorIcon(QColor)) );
@@ -991,7 +991,7 @@ KnobGuiString::findReplaceColorName(QString& text,
 void
 KnobGuiString::italicChanged(bool toggled)
 {
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
     QString text = QString::fromUtf8( knob->getValue(0).c_str() );
     //find the first font tag
     QString toFind = QString::fromUtf8(kFontSizeTag);
@@ -1130,7 +1130,7 @@ KnobGuiString::removeAutoAddedHtmlTags(QString text,
 void
 KnobGuiString::updateGUI(int /*dimension*/)
 {
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
     std::string value = knob->getValue(0);
 
     if ( knob->isMultiLine() ) {
@@ -1182,7 +1182,7 @@ KnobGuiString::updateGUI(int /*dimension*/)
 void
 KnobGuiString::_hide()
 {
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
 
     if ( knob->isMultiLine() ) {
         assert(_textEdit);
@@ -1200,7 +1200,7 @@ KnobGuiString::_hide()
 void
 KnobGuiString::_show()
 {
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
 
     if ( knob->isMultiLine() ) {
         assert(_textEdit);
@@ -1218,7 +1218,7 @@ KnobGuiString::_show()
 void
 KnobGuiString::setEnabled()
 {
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
     bool b = knob->isEnabled(0)  &&  knob->getExpression(0).empty();
 
     if ( knob->isMultiLine() ) {
@@ -1245,7 +1245,7 @@ void
 KnobGuiString::reflectAnimationLevel(int /*dimension*/,
                                      AnimationLevelEnum level)
 {
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
     int value;
 
     switch (level) {
@@ -1279,7 +1279,7 @@ void
 KnobGuiString::setReadOnly(bool readOnly,
                            int /*dimension*/)
 {
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -1314,7 +1314,7 @@ void
 KnobGuiString::reflectExpressionState(int /*dimension*/,
                                       bool hasExpr)
 {
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -1337,7 +1337,7 @@ KnobGuiString::updateToolTip()
     if ( hasToolTip() ) {
         QString tt = toolTip();
         if (_textEdit) {
-            boost::shared_ptr<KnobString> knob = _knob.lock();
+            KnobStringPtr knob = _knob.lock();
             if (!knob) {
                 return;
             }
@@ -1360,7 +1360,7 @@ KnobGuiString::updateToolTip()
 void
 KnobGuiString::reflectModificationsState()
 {
-    boost::shared_ptr<KnobString> knob = _knob.lock();
+    KnobStringPtr knob = _knob.lock();
     if (!knob) {
         return;
     }

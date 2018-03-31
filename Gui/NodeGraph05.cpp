@@ -144,7 +144,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
     }
 
 
-    boost::shared_ptr<Project> proj = getGui()->getApp()->getProject();
+    ProjectPtr proj = getGui()->getApp()->getProject();
 
 
     ///default
@@ -274,7 +274,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                            Internal rotopaint nodes are connecting to the Rotopaint itself... make sure not to connect
                            internal nodes of the tree
                          */
-                        boost::shared_ptr<RotoDrawableItem> stroke = it->first->getAttachedRotoItem();
+                        RotoDrawableItemPtr stroke = it->first->getAttachedRotoItem();
                         if ( stroke && (stroke->getContext()->getNode() == selectedNodeInternal) ) {
                             continue;
                         }

@@ -77,7 +77,7 @@ DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq)
  * Creates a DopeSheetEditor.
  */
 DopeSheetEditor::DopeSheetEditor(Gui *gui,
-                                 boost::shared_ptr<TimeLine> timeline,
+                                 TimeLinePtr timeline,
                                  QWidget *parent)
     : QWidget(parent),
     PanelWidget(this, gui),

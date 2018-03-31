@@ -154,7 +154,7 @@ public:
 
     static void loadStyleSheet();
     ToolButton* findExistingToolButton(const QString & name) const;
-    ToolButton* findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode>& plugin);
+    ToolButton* findOrCreateToolButton(const PluginGroupNodePtr& plugin);
 
     void sortAllPluginsToolButtons();
 
@@ -311,9 +311,9 @@ public:
 
     void setColorPickersColor(double r, double g, double b, double a);
 
-    void registerNewColorPicker(boost::shared_ptr<KnobColor> knob);
+    void registerNewColorPicker(KnobColorPtr knob);
 
-    void removeColorPicker(boost::shared_ptr<KnobColor> knob);
+    void removeColorPicker(KnobColorPtr knob);
 
     void clearColorPickers();
 
@@ -345,10 +345,10 @@ public:
                          int firstFrame, int lastFrame, int frameStep,
                          bool canPause,
                          OutputEffectInstance* writer,
-                         const boost::shared_ptr<ProcessHandler> & process);
+                         const ProcessHandlerPtr & process);
 
     void onRenderRestarted(OutputEffectInstance* writer,
-                           const boost::shared_ptr<ProcessHandler> & process);
+                           const ProcessHandlerPtr & process);
 
     NodeGraph* getNodeGraph() const;
     CurveEditor* getCurveEditor() const;
@@ -528,7 +528,7 @@ public:
 
     bool saveProjectAs(const std::string& filename);
 
-    static void fileSequencesFromUrls(const QList<QUrl>& urls, std::vector<boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences);
+    static void fileSequencesFromUrls(const QList<QUrl>& urls, std::vector<SequenceParsing::SequenceFromFilesPtr>* sequences);
 
     void handleOpenFilesFromUrls(const QList<QUrl>& urls, const QPoint& globalPos);
 

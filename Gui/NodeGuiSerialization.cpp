@@ -80,7 +80,7 @@ NodeGuiSerialization::initialize(const NodeGui*  n)
             if (!childGui) {
                 continue;
             }
-            boost::shared_ptr<NodeGuiSerialization> state( new NodeGuiSerialization() );
+            NodeGuiSerializationPtr state( new NodeGuiSerialization() );
             state->initialize(childGui);
             _children.push_back(state);
         }

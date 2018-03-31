@@ -591,7 +591,7 @@ bool
 GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,
                                     const QString& projectName)
 {
-    boost::shared_ptr<Project> project = _appInstance.lock()->getProject();
+    ProjectPtr project = _appInstance.lock()->getProject();
     QString author;
     QString lockCreationDate;
     QString lockHost;

@@ -269,7 +269,7 @@ NodeGui::initialize(NodeGraph* dag,
         assert(parentGui);
         if ( parentGui && parentGui->isSettingsPanelVisible() ) {
             ensurePanelCreated();
-            boost::shared_ptr<MultiInstancePanel> panel = parentGui->getMultiInstancePanel();
+            MultiInstancePanelPtr panel = parentGui->getMultiInstancePanel();
             assert(panel);
             panel->onChildCreated(internalNode);
         }
@@ -393,7 +393,7 @@ NodeGui::restoreStateAfterCreation()
     if ( getColorFromGrouping(&color) ) {
         setCurrentColor(color);
     }
-    boost::shared_ptr<KnobBool> disabledknob = internalNode->getDisabledKnob();
+    KnobBoolPtr disabledknob = internalNode->getDisabledKnob();
     if ( disabledknob && disabledknob->getValue() ) {
         onDisabledKnobToggled(true);
     }
@@ -438,7 +438,7 @@ NodeGui::ensurePanelCreated()
 
     //Ensure panel for all children if multi-instance
 
-    boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
+    MultiInstancePanelPtr panel = getMultiInstancePanel();
     if (_mainInstancePanel && panel) {
         panel->setRedrawOnSelectionChanged(false);
 
@@ -488,7 +488,7 @@ NodeGui::createPanel(QVBoxLayout* container,
 
     if ( node->getEffectInstance()->getMakeSettingsPanel() ) {
         assert(container);
-        boost::shared_ptr<MultiInstancePanel> multiPanel;
+        MultiInstancePanelPtr multiPanel;
         if ( node->isTrackerNodePlugin() && node->isMultiInstance() && node->getParentMultiInstanceName().empty() ) {
             multiPanel.reset( new TrackerPanelV1(thisAsShared) );
 
@@ -496,7 +496,7 @@ NodeGui::createPanel(QVBoxLayout* container,
             ///The "real" panel showed on the gui will be the _settingsPanel, but we still need to create
             ///another panel for the main-instance (hidden) knobs to function properly (and also be showed in the CurveEditor)
 
-            _mainInstancePanel = new NodeSettingsPanel( boost::shared_ptr<MultiInstancePanel>(), _graph->getGui(),
+            _mainInstancePanel = new NodeSettingsPanel( MultiInstancePanelPtr(), _graph->getGui(),
                                                         thisAsShared, container, container->parentWidget() );
             _mainInstancePanel->blockSignals(true);
             _mainInstancePanel->setClosed(true);
@@ -1682,7 +1682,7 @@ NodeGui::refreshCurrentBrush()
 bool
 NodeGui::isSelectedInParentMultiInstance(const Node* node) const
 {
-    boost::shared_ptr<MultiInstancePanel> multiInstance = getMultiInstancePanel();
+    MultiInstancePanelPtr multiInstance = getMultiInstancePanel();
 
     if (!multiInstance) {
         return false;
@@ -2140,23 +2140,23 @@ NodeGui::serialize(NodeGuiSerialization* serializationObject) const
 }
 
 void
-NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) const
+NodeGui::serializeInternal(std::list<NodeSerializationPtr>& internalSerialization) const
 {
     NodePtr node = getNode();
-    boost::shared_ptr<NodeSerialization> thisSerialization( new NodeSerialization(node, false) );
+    NodeSerializationPtr thisSerialization( new NodeSerialization(node, false) );
 
     internalSerialization.push_back(thisSerialization);
 
     ///For multi-instancs, serialize children too
     if ( node->isMultiInstance() ) {
         assert(_settingsPanel);
-        boost::shared_ptr<MultiInstancePanel> panel = _settingsPanel->getMultiInstancePanel();
+        MultiInstancePanelPtr panel = _settingsPanel->getMultiInstancePanel();
         assert(panel);
 
         const std::list<std::pair<NodeWPtr, bool> >& instances = panel->getInstances();
         for (std::list<std::pair<NodeWPtr, bool> >::const_iterator it = instances.begin();
              it != instances.end(); ++it) {
-            boost::shared_ptr<NodeSerialization> childSerialization( new NodeSerialization(it->first.lock(), false) );
+            NodeSerializationPtr childSerialization( new NodeSerialization(it->first.lock(), false) );
             internalSerialization.push_back(childSerialization);
         }
     }
@@ -2164,7 +2164,7 @@ NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& int
 
 void
 NodeGui::restoreInternal(const NodeGuiPtr& thisShared,
-                         const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization)
+                         const std::list<NodeSerializationPtr>& internalSerialization)
 {
     assert(internalSerialization.size() >= 1);
 
@@ -2183,7 +2183,7 @@ NodeGui::copyFrom(const NodeGuiSerialization & obj)
     resize(w, h);
 }
 
-boost::shared_ptr<QUndoStack>
+QUndoStackPtr
 NodeGui::getUndoStack() const
 {
     return _undoStack;
@@ -2618,7 +2618,7 @@ NodeGui::destroyGui()
     if (internalNode) {
         ///remove the node from the clipboard if it is
         NodeClipBoard &cb = appPTR->getNodeClipBoard();
-        for (std::list<boost::shared_ptr<NodeSerialization> >::iterator it = cb.nodes.begin();
+        for (std::list<NodeSerializationPtr>::iterator it = cb.nodes.begin();
              it != cb.nodes.end(); ++it) {
             if ( (*it)->getNode() == internalNode ) {
                 cb.nodes.erase(it);
@@ -2626,7 +2626,7 @@ NodeGui::destroyGui()
             }
         }
 
-        for (std::list<boost::shared_ptr<NodeGuiSerialization> >::iterator it = cb.nodesUI.begin();
+        for (std::list<NodeGuiSerializationPtr>::iterator it = cb.nodesUI.begin();
              it != cb.nodesUI.end(); ++it) {
             if ( (*it)->getFullySpecifiedName() == internalNode->getFullyQualifiedName() ) {
                 cb.nodesUI.erase(it);
@@ -3030,7 +3030,7 @@ NodeGui::onOutputLayerChanged()
     }
 
     QString extraLayerStr;
-    boost::shared_ptr<KnobBool> processAllKnob = internalNode->getProcessAllLayersKnob();
+    KnobBoolPtr processAllKnob = internalNode->getProcessAllLayersKnob();
     bool processAll = false;
     if (processAllKnob && processAllKnob->hasModifications()) {
         processAll = processAllKnob->getValue();
@@ -3039,7 +3039,7 @@ NodeGui::onOutputLayerChanged()
             extraLayerStr += tr("(All)");
         }
     }
-    boost::shared_ptr<KnobChoice> layerKnob = internalNode->getChannelSelectorKnob(-1);
+    KnobChoicePtr layerKnob = internalNode->getChannelSelectorKnob(-1);
     ImagePlaneDesc outputLayer;
     {
         bool isAll;
@@ -3261,12 +3261,12 @@ NodeGui::onSettingsPanelClosedChanged(bool closed)
     }
 }
 
-boost::shared_ptr<MultiInstancePanel> NodeGui::getMultiInstancePanel() const
+MultiInstancePanelPtr NodeGui::getMultiInstancePanel() const
 {
     if (_settingsPanel) {
         return _settingsPanel->getMultiInstancePanel();
     } else {
-        return boost::shared_ptr<MultiInstancePanel>();
+        return MultiInstancePanelPtr();
     }
 }
 
@@ -3403,7 +3403,7 @@ NodeGui::setColor(double r,
 }
 
 void
-NodeGui::addDefaultInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs)
+NodeGui::addDefaultInteract(const HostOverlayKnobsPtr& knobs)
 {
     assert( QThread::currentThread() == qApp->thread() );
     if (!_hostOverlay) {
@@ -3415,7 +3415,7 @@ NodeGui::addDefaultInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs)
     }
 }
 
-boost::shared_ptr<HostOverlay>
+HostOverlayPtr
 NodeGui::getHostOverlay() const
 {
     return _hostOverlay;
@@ -3785,7 +3785,7 @@ NodeGui::onHideInputsKnobValueChanged(bool /*hidden*/)
 class NodeUndoRedoCommand
     : public QUndoCommand
 {
-    boost::shared_ptr<UndoCommand> _command;
+    UndoCommandPtr _command;
 
 public:
 
@@ -3932,12 +3932,14 @@ GroupKnobDialog::GroupKnobDialog(Gui* gui,
     setWindowTitle( QString::fromUtf8( group->getLabel().c_str() ) );
     std::vector<KnobIPtr> children = group->getChildren();
     for (std::size_t i = 0; i < children.size(); ++i) {
-        KnobIPtr duplicate = children[i]->createDuplicateOnHolder(getKnobsHolder(), boost::shared_ptr<KnobPage>(), boost::shared_ptr<KnobGroup>(), i, true, children[i]->getName(), children[i]->getLabel(), children[i]->getHintToolTip(), false, true);
+        KnobIPtr duplicate = children[i]->createDuplicateOnHolder(getKnobsHolder(), KnobPagePtr(), KnobGroupPtr(), i, true, children[i]->getName(), children[i]->getLabel(), children[i]->getHintToolTip(), false, true);
         duplicate->setAddNewLine( children[i]->isNewLineActivated() );
     }
 
     refreshUserParamsGUI();
 }
+
+typedef boost::shared_ptr<GroupKnobDialog> GroupKnobDialogPtr;
 
 void
 NodeGui::showGroupKnobAsDialog(KnobGroup* group)
@@ -3947,7 +3949,7 @@ NodeGui::showGroupKnobAsDialog(KnobGroup* group)
     bool showDialog = group->getValue();
     if (showDialog) {
         assert(!_activeNodeCustomModalDialog);
-        boost::shared_ptr<GroupKnobDialog> dialog( new GroupKnobDialog(getDagGui()->getGui(), group) );
+        GroupKnobDialogPtr dialog( new GroupKnobDialog(getDagGui()->getGui(), group) );
         _activeNodeCustomModalDialog = dialog;
         dialog->move( QCursor::pos() );
         int accepted = dialog->exec();

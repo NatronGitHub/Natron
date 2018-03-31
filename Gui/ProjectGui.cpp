@@ -102,7 +102,7 @@ ProjectGui::initializeKnobsGui()
 }
 
 void
-ProjectGui::create(boost::shared_ptr<Project> projectInternal,
+ProjectGui::create(ProjectPtr projectInternal,
                    QVBoxLayout* container,
                    QWidget* parent)
 
@@ -117,7 +117,7 @@ ProjectGui::create(boost::shared_ptr<Project> projectInternal,
                                container,
                                DockablePanel::eHeaderModeReadOnlyName,
                                false,
-                               boost::shared_ptr<QUndoStack>(),
+                               QUndoStackPtr(),
                                tr("Project Settings"),
                                tr("The settings of the current project."),
                                parent);
@@ -141,7 +141,7 @@ ProjectGui::setVisible(bool visible)
 void
 ProjectGui::createNewFormat()
 {
-    boost::shared_ptr<Project> project = _project.lock();
+    ProjectPtr project = _project.lock();
     AddFormatDialog dialog( project.get(), _gui->getApp()->getGui() );
 
     if ( dialog.exec() ) {
@@ -424,8 +424,8 @@ loadNodeGuiSerialization(Gui* gui,
         gui->getNodeGraph()->selectNode(nGui, true);
     }
 
-    const std::list<boost::shared_ptr<NodeGuiSerialization> > & nodesGuiSerialization = serialization.getChildren();
-    for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = nodesGuiSerialization.begin(); it != nodesGuiSerialization.end(); ++it) {
+    const std::list<NodeGuiSerializationPtr> & nodesGuiSerialization = serialization.getChildren();
+    for (std::list<NodeGuiSerializationPtr>::const_iterator it = nodesGuiSerialization.begin(); it != nodesGuiSerialization.end(); ++it) {
         loadNodeGuiSerialization(gui, viewersProjections, settings, leftBound, rightBound, **it);
     }
 } // loadNodeGuiSerialization
@@ -518,7 +518,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
 
 
     ///restore user python panels
-    const std::list<boost::shared_ptr<PythonPanelSerialization> >& pythonPanels = obj.getPythonPanels();
+    const std::list<PythonPanelSerializationPtr>& pythonPanels = obj.getPythonPanels();
     if ( !pythonPanels.empty() ) {
         // we have to give the tr() context explicitely due to a bug in lupdate
         _gui->getApp()->updateProjectLoadStatus( QObject::tr("Restoring user panels", "ProjectGui") );
@@ -535,7 +535,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
             throw std::runtime_error( QObject::tr("ProjectGui::load(): interpretPythonScript(%1) failed!", "ProjectGui").arg( QString::fromUtf8(script.c_str()) ).toStdString() );
         }
     }
-    for (std::list<boost::shared_ptr<PythonPanelSerialization> >::const_iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
+    for (std::list<PythonPanelSerializationPtr>::const_iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
         std::string script = (*it)->pythonFunction + "()\n";
         std::string err, output;
         if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output) ) {
@@ -551,7 +551,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
             NATRON_PYTHON_NAMESPACE::PyPanel* panel = dynamic_cast<NATRON_PYTHON_NAMESPACE::PyPanel*>(found->second.first);
             if (panel) {
                 panel->restore( QString::fromUtf8( (*it)->userData.c_str() ) );
-                for (std::list<boost::shared_ptr<KnobSerialization> >::iterator it2 = (*it)->knobs.begin(); it2 != (*it)->knobs.end(); ++it2) {
+                for (std::list<KnobSerializationPtr>::iterator it2 = (*it)->knobs.begin(); it2 != (*it)->knobs.end(); ++it2) {
                     NATRON_PYTHON_NAMESPACE::Param* param = panel->getParam( QString::fromUtf8( (*it2)->getName().c_str() ) );
                     if (param) {
                         param->getInternalKnob()->clone( (*it2)->getKnob() );
@@ -606,16 +606,16 @@ ProjectGui::clearColorPickers()
 }
 
 void
-ProjectGui::registerNewColorPicker(boost::shared_ptr<KnobColor> knob)
+ProjectGui::registerNewColorPicker(KnobColorPtr knob)
 {
     clearColorPickers();
     _colorPickersEnabled.push_back(knob);
 }
 
 void
-ProjectGui::removeColorPicker(boost::shared_ptr<KnobColor> knob)
+ProjectGui::removeColorPicker(KnobColorPtr knob)
 {
-    std::vector<boost::shared_ptr<KnobColor> >::iterator found = std::find(_colorPickersEnabled.begin(), _colorPickersEnabled.end(), knob);
+    std::vector<KnobColorPtr>::iterator found = std::find(_colorPickersEnabled.begin(), _colorPickersEnabled.end(), knob);
 
     if ( found != _colorPickersEnabled.end() ) {
         _colorPickersEnabled.erase(found);
@@ -631,7 +631,7 @@ ProjectGui::setPickersColor(double r,
     if ( _colorPickersEnabled.empty() ) {
         return;
     }
-    boost::shared_ptr<KnobColor> first = _colorPickersEnabled.front();
+    KnobColorPtr first = _colorPickersEnabled.front();
 
     for (U32 i = 0; i < _colorPickersEnabled.size(); ++i) {
         if ( !_colorPickersEnabled[i]->areAllDimensionsEnabled() ) {

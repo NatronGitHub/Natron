@@ -648,7 +648,7 @@ KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
         if (dimension == -1) {
             int dim = knob->getDimension();
             for (int i = 0; i < dim; ++i) {
-                boost::shared_ptr<Curve> curve = knob->getCurve(ViewIdx(0), i);
+                CurvePtr curve = knob->getCurve(ViewIdx(0), i);
                 if (curve) {
                     KeyFrameSet kfs = curve->getKeyFrames_mt_safe();
                     for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
@@ -660,7 +660,7 @@ KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
                 times.push_back(*it);
             }
         } else {
-            boost::shared_ptr<Curve> curve = knob->getCurve(ViewIdx(0), dimension);
+            CurvePtr curve = knob->getCurve(ViewIdx(0), dimension);
             if (curve) {
                 KeyFrameSet kfs = curve->getKeyFrames_mt_safe();
                 for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
@@ -784,7 +784,7 @@ KnobGui::isGuiFrozenForPlayback() const
     return getGui() ? getGui()->isGUIFrozen() : false;
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 KnobGui::getCurve(ViewSpec /*view*/,
                   int dimension) const
 {

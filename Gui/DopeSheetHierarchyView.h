@@ -152,7 +152,7 @@ public:
      * @brief Returns a pointer to the DSKnob associated with the item at
      * the coordinates (0, y) in the tree widget's viewport.
      */
-    boost::shared_ptr<DSKnob> getDSKnobAt(int y) const;
+    DSKnobPtr getDSKnobAt(int y) const;
 
     /**
      * @brief Returns true if 'item' is fully visible.
@@ -176,7 +176,7 @@ public:
 
     void setCanResizeOtherWidget(bool canResize);
 
-    void getSelectedDSKnobs(std::list<boost::shared_ptr<DSKnob> >* knobs) const;
+    void getSelectedDSKnobs(std::list<DSKnobPtr>* knobs) const;
 
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;

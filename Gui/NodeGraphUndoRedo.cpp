@@ -790,7 +790,8 @@ private:
                            NodeGui* currentNode, const QPointF & currentNodeScenePos, std::list<NodeGui*> & usedNodes);
 };
 
-typedef std::list<boost::shared_ptr<Tree> > TreeList;
+typedef boost::shared_ptr<Tree> TreePtr;
+typedef std::list<TreePtr> TreePtrList;
 
 void
 Tree::buildTreeInternal(const NodesGuiList& selectedNodes,
@@ -1007,11 +1008,11 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr> & nodes
     ///Each tree is a lit of nodes with a boolean indicating if it was already positionned( "used" ) by another tree, if set to
     ///true we don't do anything
     /// Each node that doesn't have any output is a potential tree.
-    TreeList trees;
+    TreePtrList trees;
 
     for (std::list<NodeGuiPtr> ::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( !hasNodeOutputsInList( nodes, (*it) ) ) {
-            boost::shared_ptr<Tree> newTree = boost::make_shared<Tree>();
+            TreePtr newTree = boost::make_shared<Tree>();
             newTree->buildTree(*it, nodes, usedNodes);
             trees.push_back(newTree);
         }
@@ -1019,7 +1020,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr> & nodes
 
     ///For all trees find out which one has the top most level node
     QPointF topLevelPos(0, INT_MAX);
-    for (TreeList::iterator it = trees.begin(); it != trees.end(); ++it) {
+    for (TreePtrList::iterator it = trees.begin(); it != trees.end(); ++it) {
         const QPointF & treeTop = (*it)->getTopLevelNodeCenter();
         if ( treeTop.y() < topLevelPos.y() ) {
             topLevelPos = treeTop;
@@ -1027,7 +1028,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr> & nodes
     }
 
     ///now offset all trees to be top aligned at the same level
-    for (TreeList::iterator it = trees.begin(); it != trees.end(); ++it) {
+    for (TreePtrList::iterator it = trees.begin(); it != trees.end(); ++it) {
         QPointF treeTop = (*it)->getTopLevelNodeCenter();
         if (treeTop.y() == INT_MAX) {
             treeTop.setY( topLevelPos.y() );
@@ -1125,7 +1126,7 @@ EnableNodesCommand::redo()
 }
 
 LoadNodePresetsCommand::LoadNodePresetsCommand(const NodeGuiPtr & node,
-                                               const std::list<boost::shared_ptr<NodeSerialization> >& serialization,
+                                               const std::list<NodeSerializationPtr>& serialization,
                                                QUndoCommand *parent)
     : QUndoCommand(parent)
     , _firstRedoCalled(false)
@@ -1155,7 +1156,7 @@ LoadNodePresetsCommand::undo()
 
     NodeGuiPtr node = _node.lock();
     NodePtr internalNode = node->getNode();
-    boost::shared_ptr<MultiInstancePanel> panel = node->getMultiInstancePanel();
+    MultiInstancePanelPtr panel = node->getMultiInstancePanel();
     internalNode->loadKnobs(*_oldSerialization.front(), true);
     if (panel) {
         std::list<NodePtr> newChildren, oldChildren;
@@ -1174,7 +1175,7 @@ LoadNodePresetsCommand::redo()
 {
     NodeGuiPtr node = _node.lock();
     NodePtr internalNode = node->getNode();
-    boost::shared_ptr<MultiInstancePanel> panel = node->getMultiInstancePanel();
+    MultiInstancePanelPtr panel = node->getMultiInstancePanel();
 
     if (!_firstRedoCalled) {
         ///Serialize the current state of the node
@@ -1190,7 +1191,7 @@ LoadNodePresetsCommand::redo()
 
         int k = 0;
 
-        for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it = _newSerializations.begin();
+        for (std::list<NodeSerializationPtr>::const_iterator it = _newSerializations.begin();
              it != _newSerializations.end(); ++it, ++k) {
             if (k > 0) {  /// this is a multi-instance child, create it
                 NodePtr newNode = panel->createNewInstance(false);
@@ -1581,7 +1582,7 @@ GroupFromSelectionCommand::redo()
         groupPosition.ry() /= sz;
     }
 
-    boost::shared_ptr<NodeGroup> isGrp;
+    NodeGroupPtr isGrp;
     if (_firstRedoCalled) {
         isGrp = boost::dynamic_pointer_cast<NodeGroup>(_group.lock()->getNode()->getEffectInstance());
         assert(isGrp);

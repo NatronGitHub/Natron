@@ -79,7 +79,7 @@ class CurveWidgetPrivate
 public:
     CurveWidgetPrivate(Gui* gui,
                        CurveSelection* selection,
-                       boost::shared_ptr<TimeLine> timeline,
+                       TimeLinePtr timeline,
                        CurveWidget* widget);
 
     ~CurveWidgetPrivate();
@@ -101,7 +101,7 @@ public:
      * if they are not NULL.
      **/
     Curves::const_iterator isNearbyCurve(const QPoint &pt, double* x = NULL, double *y = NULL) const;
-    bool isNearbyKeyFrame(const QPoint & pt, boost::shared_ptr<CurveGui>* curve, KeyFrame* key, bool* hasPrev, KeyFrame* prev, bool* hasNext, KeyFrame* next) const;
+    bool isNearbyKeyFrame(const QPoint & pt, CurveGuiPtr* curve, KeyFrame* key, bool* hasPrev, KeyFrame* prev, bool* hasNext, KeyFrame* next) const;
     std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> isNearbyTangent(const QPoint & pt) const;
     std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> isNearbySelectedTangentText(const QPoint & pt) const;
 
@@ -125,7 +125,7 @@ public:
     /**
      * @brief Selects the curve given in parameter and deselects any other curve in the widget.
      **/
-    void selectCurve(const boost::shared_ptr<CurveGui>& curve);
+    void selectCurve(const CurveGuiPtr& curve);
 
     void moveSelectedKeyFrames(const QPointF & oldClick_opengl, const QPointF & newClick_opengl);
 
@@ -173,7 +173,7 @@ public:
     QRectF _selectedKeyFramesBbox;
     QLineF _selectedKeyFramesCrossVertLine;
     QLineF _selectedKeyFramesCrossHorizLine;
-    boost::shared_ptr<TimeLine> _timeline;
+    TimeLinePtr _timeline;
     bool _timelineEnabled;
     std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> _selectedDerivative;
     bool _evaluateOnPenUp; //< true if we must re-evaluate the nodes associated to the selected keyframes on penup

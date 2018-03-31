@@ -93,7 +93,7 @@ KnobGuiButton::KnobGuiButton(KnobIPtr knob,
 void
 KnobGuiButton::createWidget(QHBoxLayout* layout)
 {
-    boost::shared_ptr<KnobButton> knob = _knob.lock();
+    KnobButtonPtr knob = _knob.lock();
     QString label = QString::fromUtf8( knob->getLabel().c_str() );
     QString onIconFilePath = QString::fromUtf8( knob->getIconLabel(true).c_str() );
     QString offIconFilePath = QString::fromUtf8( knob->getIconLabel(false).c_str() );
@@ -175,7 +175,7 @@ KnobGuiButton::removeSpecificGui()
 void
 KnobGuiButton::emitValueChanged(bool clicked)
 {
-    boost::shared_ptr<KnobButton> k = _knob.lock();
+    KnobButtonPtr k = _knob.lock();
 
     assert(k);
 
@@ -208,7 +208,7 @@ KnobGuiButton::_show()
 void
 KnobGuiButton::updateGUI(int /*dimension*/)
 {
-    boost::shared_ptr<KnobButton> k = _knob.lock();
+    KnobButtonPtr k = _knob.lock();
 
     if ( k->getIsCheckable() ) {
         bool checked = k->getValue();
@@ -220,7 +220,7 @@ KnobGuiButton::updateGUI(int /*dimension*/)
 void
 KnobGuiButton::setEnabled()
 {
-    boost::shared_ptr<KnobButton> knob = _knob.lock();
+    KnobButtonPtr knob = _knob.lock();
     bool b = knob->isEnabled(0);
 
     _button->setEnabled(b);

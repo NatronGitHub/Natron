@@ -107,12 +107,12 @@ struct KnobGuiValuePrivate
     {
     }
 
-    boost::shared_ptr<KnobIntBase> getKnobAsInt() const
+    KnobIntBasePtr getKnobAsInt() const
     {
         return intKnob.lock();
     }
 
-    boost::shared_ptr<KnobDoubleBase> getKnobAsDouble() const
+    KnobDoubleBasePtr getKnobAsDouble() const
     {
         return doubleKnob.lock();
     }
@@ -125,8 +125,8 @@ struct KnobGuiValuePrivate
     double getKnobValue(int dimension) const
     {
         double value;
-        boost::shared_ptr<KnobDoubleBase> k = getKnobAsDouble();
-        boost::shared_ptr<KnobIntBase> i = getKnobAsInt();
+        KnobDoubleBasePtr k = getKnobAsDouble();
+        KnobIntBasePtr i = getKnobAsInt();
 
         if (k) {
             value = k->getValue(dimension);
@@ -193,7 +193,7 @@ KnobGuiValue::KnobGuiValue(KnobIPtr knob,
     : KnobGui(knob, container)
     , _imp( new KnobGuiValuePrivate(knob) )
 {
-    boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
+    KnobSignalSlotHandlerPtr handler = knob->getSignalSlotHandler();
 
     if (handler) {
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
@@ -238,8 +238,8 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
     const int nDims = knob->getDimension();
     std::vector<double> increments, displayMins, displayMaxs, mins, maxs;
     std::vector<int> decimals;
-    boost::shared_ptr<KnobDoubleBase> doubleKnob = _imp->getKnobAsDouble();
-    boost::shared_ptr<KnobIntBase> intKnob = _imp->getKnobAsInt();
+    KnobDoubleBasePtr doubleKnob = _imp->getKnobAsDouble();
+    KnobIntBasePtr intKnob = _imp->getKnobAsInt();
     if (doubleKnob) {
         displayMins = doubleKnob->getDisplayMinimums();
         displayMaxs = doubleKnob->getDisplayMaximums();
@@ -591,8 +591,8 @@ KnobGuiValue::onDimensionSwitchClicked(bool clicked)
         foldAllDimensions();
 
         KnobIPtr knob = _imp->getKnob();
-        boost::shared_ptr<KnobDoubleBase> doubleKnob = _imp->getKnobAsDouble();
-        boost::shared_ptr<KnobIntBase> intKnob = _imp->getKnobAsInt();
+        KnobDoubleBasePtr doubleKnob = _imp->getKnobAsDouble();
+        KnobIntBasePtr intKnob = _imp->getKnobAsInt();
         const int nDims = knob->getDimension();
         if (nDims > 1) {
             SequenceTime time = knob->getCurrentTime();
@@ -686,8 +686,8 @@ KnobGuiValue::onDisplayMinMaxChanged(const double mini,
         double sliderMax = valueAccordingToType(false, index, maxi);
         if ( (sliderMax - sliderMin) >= SLIDER_MAX_RANGE ) {
             // Use min max for slider if dispmin/dispmax was not set
-            boost::shared_ptr<KnobDoubleBase> doubleKnob = _imp->getKnobAsDouble();
-            boost::shared_ptr<KnobIntBase> intKnob = _imp->getKnobAsInt();
+            KnobDoubleBasePtr doubleKnob = _imp->getKnobAsDouble();
+            KnobIntBasePtr intKnob = _imp->getKnobAsInt();
             double min, max;
             if (doubleKnob) {
                 max = valueAccordingToType( false, index, doubleKnob->getMaximum(index) );
@@ -899,8 +899,8 @@ KnobGuiValue::onSliderEditingFinished(bool hasMovedOnce)
 void
 KnobGuiValue::sliderEditingEnd(double d)
 {
-    boost::shared_ptr<KnobDoubleBase> doubleKnob = _imp->getKnobAsDouble();
-    boost::shared_ptr<KnobIntBase> intKnob = _imp->getKnobAsInt();
+    KnobDoubleBasePtr doubleKnob = _imp->getKnobAsDouble();
+    KnobIntBasePtr intKnob = _imp->getKnobAsInt();
 
     if (doubleKnob) {
         int digits = std::max( 0, (int)-std::floor( std::log10( _imp->slider->increment() ) ) );
@@ -951,8 +951,8 @@ void
 KnobGuiValue::onSpinBoxValueChanged()
 {
     SpinBox* changedBox = qobject_cast<SpinBox*>( sender() );
-    boost::shared_ptr<KnobDoubleBase> doubleKnob = _imp->getKnobAsDouble();
-    boost::shared_ptr<KnobIntBase> intKnob = _imp->getKnobAsInt();
+    KnobDoubleBasePtr doubleKnob = _imp->getKnobAsDouble();
+    KnobIntBasePtr intKnob = _imp->getKnobAsInt();
     int spinBoxDim = -1;
     std::vector<double> oldValue( _imp->spinBoxes.size() );
     std::vector<double> newValue( _imp->spinBoxes.size() );
@@ -1186,7 +1186,7 @@ KnobGuiDouble::KnobGuiDouble(KnobIPtr knob,
 bool
 KnobGuiDouble::isSliderDisabled() const
 {
-    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    KnobDoublePtr knob = _knob.lock();
     if (!knob) {
         return false;
     }
@@ -1196,7 +1196,7 @@ KnobGuiDouble::isSliderDisabled() const
 bool
 KnobGuiDouble::isAutoFoldDimensionsEnabled() const
 {
-    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    KnobDoublePtr knob = _knob.lock();
     if (!knob) {
         return false;
     }
@@ -1206,7 +1206,7 @@ KnobGuiDouble::isAutoFoldDimensionsEnabled() const
 bool
 KnobGuiDouble::isRectangleType() const
 {
-    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    KnobDoublePtr knob = _knob.lock();
     if (!knob) {
         return false;
     }
@@ -1216,7 +1216,7 @@ KnobGuiDouble::isRectangleType() const
 bool
 KnobGuiDouble::isSpatialType() const
 {
-    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    KnobDoublePtr knob = _knob.lock();
     if (!knob) {
         return false;
     }
@@ -1226,7 +1226,7 @@ KnobGuiDouble::isSpatialType() const
 ValueIsNormalizedEnum
 KnobGuiDouble::getNormalizationPolicy(int dimension) const
 {
-    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    KnobDoublePtr knob = _knob.lock();
     if (!knob) {
         return eValueIsNormalizedNone;
     }
@@ -1238,7 +1238,7 @@ KnobGuiDouble::denormalize(int dimension,
                            double time,
                            double value) const
 {
-    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    KnobDoublePtr knob = _knob.lock();
     if (!knob) {
         return value;
     }
@@ -1250,7 +1250,7 @@ KnobGuiDouble::normalize(int dimension,
                          double time,
                          double value) const
 {
-    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    KnobDoublePtr knob = _knob.lock();
     if (!knob) {
         return value;
     }
@@ -1260,7 +1260,7 @@ KnobGuiDouble::normalize(int dimension,
 void
 KnobGuiDouble::connectKnobSignalSlots()
 {
-    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    KnobDoublePtr knob = _knob.lock();
     QObject::connect( knob.get(), SIGNAL(incrementChanged(double,int)), this, SLOT(onIncrementChanged(double,int)) );
     QObject::connect( knob.get(), SIGNAL(decimalsChanged(int,int)), this, SLOT(onDecimalsChanged(int,int)) );
 }
@@ -1268,7 +1268,7 @@ KnobGuiDouble::connectKnobSignalSlots()
 void
 KnobGuiDouble::disableSlider()
 {
-    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    KnobDoublePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -1278,7 +1278,7 @@ KnobGuiDouble::disableSlider()
 void
 KnobGuiDouble::getIncrements(std::vector<double>* increments) const
 {
-    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    KnobDoublePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -1288,7 +1288,7 @@ KnobGuiDouble::getIncrements(std::vector<double>* increments) const
 void
 KnobGuiDouble::getDecimals(std::vector<int>* decimals) const
 {
-    boost::shared_ptr<KnobDouble> knob = _knob.lock();
+    KnobDoublePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -1305,7 +1305,7 @@ KnobGuiInt::KnobGuiInt(KnobIPtr knob,
 bool
 KnobGuiInt::isSliderDisabled() const
 {
-    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    KnobIntPtr knob = _knob.lock();
     if (!knob) {
         return false;
     }
@@ -1315,7 +1315,7 @@ KnobGuiInt::isSliderDisabled() const
 bool
 KnobGuiInt::isAutoFoldDimensionsEnabled() const
 {
-    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    KnobIntPtr knob = _knob.lock();
     if (!knob) {
         return false;
     }
@@ -1325,7 +1325,7 @@ KnobGuiInt::isAutoFoldDimensionsEnabled() const
 bool
 KnobGuiInt::isRectangleType() const
 {
-    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    KnobIntPtr knob = _knob.lock();
     if (!knob) {
         return false;
     }
@@ -1335,14 +1335,14 @@ KnobGuiInt::isRectangleType() const
 void
 KnobGuiInt::connectKnobSignalSlots()
 {
-    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    KnobIntPtr knob = _knob.lock();
     QObject::connect( knob.get(), SIGNAL(incrementChanged(double,int)), this, SLOT(onIncrementChanged(double,int)) );
 }
 
 void
 KnobGuiInt::disableSlider()
 {
-    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    KnobIntPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -1352,7 +1352,7 @@ KnobGuiInt::disableSlider()
 void
 KnobGuiInt::getIncrements(std::vector<double>* increments) const
 {
-    boost::shared_ptr<KnobInt> knob = _knob.lock();
+    KnobIntPtr knob = _knob.lock();
     if (!knob) {
         return;
     }

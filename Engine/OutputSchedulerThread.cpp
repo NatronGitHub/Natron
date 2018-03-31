@@ -106,7 +106,7 @@ struct BufferedFrameCompare_less
     }
 };
 
-typedef std::multimap< BufferedFrameKey, BufferedFrame, BufferedFrameCompare_less > FrameBuffer;
+typedef std::multimap<BufferedFrameKey, BufferedFrame, BufferedFrameCompare_less> FrameBuffer;
 
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER

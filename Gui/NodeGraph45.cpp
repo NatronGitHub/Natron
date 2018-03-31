@@ -646,8 +646,8 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
         _imp->copyNodesInternal(nodes, clipboard);
 
         std::map<std::string, std::string> oldNewScriptNamesMapping;
-        std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
-        for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
+        std::list<NodeSerializationPtr>::const_iterator itOther = clipboard.nodes.begin();
+        for (std::list<NodeGuiSerializationPtr>::const_iterator it = clipboard.nodesUI.begin();
              it != clipboard.nodesUI.end(); ++it, ++itOther) {
             NodeGuiPtr node = _imp->pasteNode( *itOther, *it, QPointF(0, 0), group, std::string(), false, &oldNewScriptNamesMapping);
             assert(node);
@@ -673,7 +673,7 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
             allNodes.push_back(isGroupNode->getNode());
         }
 
-        std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itSerialization = clipboard.nodes.begin();
+        std::list<NodeSerializationPtr>::const_iterator itSerialization = clipboard.nodes.begin();
         for (std::list<std::pair<std::string, NodeGuiPtr> > ::iterator it = createdNodes.begin(); it != createdNodes.end(); ++it, ++itSerialization) {
             it->second->getNode()->restoreKnobsLinks(**itSerialization, allNodes, oldNewScriptNamesMapping);
         }

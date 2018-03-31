@@ -210,7 +210,7 @@ PyModalDialog::PyModalDialog(Gui* gui,
                                     _imp->mainLayout,
                                     DockablePanel::eHeaderModeNoHeader,
                                     false,
-                                    boost::shared_ptr<QUndoStack>(),
+                                    QUndoStackPtr(),
                                     QString(), QString(),
                                     _imp->centerContainer);
     _imp->panel->turnOffPages();
@@ -395,7 +395,7 @@ PyPanel::PyPanel(const QString& scriptName,
                                         _imp->mainLayout,
                                         DockablePanel::eHeaderModeNoHeader,
                                         false,
-                                        boost::shared_ptr<QUndoStack>(),
+                                        QUndoStackPtr(),
                                         QString(), QString(),
                                         _imp->centerContainer);
         _imp->panel->turnOffPages();

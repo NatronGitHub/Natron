@@ -223,7 +223,7 @@ private:
                 knob->blockValueChanges();
             }
 
-            boost::shared_ptr<Curve> c = knob->getCurve(ViewIdx(0), dimension);
+            CurvePtr c = knob->getCurve(ViewIdx(0), dimension);
             //find out if there's already an existing keyframe before calling setValue
             if (c) {
                 bool found = c->getKeyFrameWithTime(time, &_oldKeys[i]);

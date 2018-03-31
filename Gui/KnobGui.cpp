@@ -185,13 +185,13 @@ KnobGui::createGUI(QWidget* fieldContainer,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    int lastKnobSpacing,
-                   const std::vector<boost::shared_ptr< KnobI > > & knobsOnSameLine)
+                   const std::vector<KnobIPtr> & knobsOnSameLine)
 {
     _imp->guiRemoved = false;
     KnobIPtr knob = getKnob();
 
     _imp->fieldLayout = layout;
-    for (std::vector<boost::shared_ptr< KnobI > >::const_iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
+    for (std::vector<KnobIPtr>::const_iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
         _imp->knobsOnSameLine.push_back(*it);
     }
     _imp->field = fieldContainer;
@@ -231,7 +231,7 @@ KnobGui::createGUI(QWidget* fieldContainer,
 
     // Parmetric knobs use the customInteract to actually draw something on top of the background
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
-    boost::shared_ptr<OfxParamOverlayInteract> customInteract = knob->getCustomInteract();
+    OfxParamOverlayInteractPtr customInteract = knob->getCustomInteract();
     if (customInteract && !isParametric) {
         _imp->customInteract = new CustomParamInteract(shared_from_this(), knob->getOfxParamHandle(), customInteract);
         layout->addWidget(_imp->customInteract);
@@ -804,8 +804,8 @@ KnobGui::createAnimationMenu(QMenu* menu,
 KnobIPtr
 KnobGui::createDuplicateOnNode(EffectInstance* effect,
                                bool makeAlias,
-                               const boost::shared_ptr<KnobPage>& page,
-                               const boost::shared_ptr<KnobGroup>& group,
+                               const KnobPagePtr& page,
+                               const KnobGroupPtr& group,
                                int indexInParent)
 {
     ///find-out to which node that master knob belongs to

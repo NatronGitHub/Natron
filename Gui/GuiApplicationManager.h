@@ -89,8 +89,8 @@ public:
 
     virtual ~GuiApplicationManager();
 
-    const std::list<boost::shared_ptr<PluginGroupNode> > & getTopLevelPluginsToolButtons() const;
-    boost::shared_ptr<PluginGroupNode>  findPluginToolButtonOrCreate(const QStringList & grouping,
+    const std::list<PluginGroupNodePtr> & getTopLevelPluginsToolButtons() const;
+    PluginGroupNodePtr  findPluginToolButtonOrCreate(const QStringList & grouping,
                                                                      const QString & name,
                                                                      const QStringList& groupIconPath,
                                                                      const QString & iconPath,

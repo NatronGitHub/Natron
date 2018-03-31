@@ -57,7 +57,7 @@ public:
     ProjectGui(Gui* gui);
     virtual ~ProjectGui() OVERRIDE;
 
-    void create(boost::shared_ptr<Project> projectInternal, QVBoxLayout* container, QWidget* parent = NULL);
+    void create(ProjectPtr projectInternal, QVBoxLayout* container, QWidget* parent = NULL);
 
 
     bool isVisible() const;
@@ -67,7 +67,7 @@ public:
         return _panel;
     }
 
-    boost::shared_ptr<Project> getInternalProject() const
+    ProjectPtr getInternalProject() const
     {
         return _project.lock();
     }
@@ -78,9 +78,9 @@ public:
     template<class Archive>
     void load(bool isAutosave, Archive & ar);
 
-    void registerNewColorPicker(boost::shared_ptr<KnobColor> knob);
+    void registerNewColorPicker(KnobColorPtr knob);
 
-    void removeColorPicker(boost::shared_ptr<KnobColor> knob);
+    void removeColorPicker(KnobColorPtr knob);
 
     void clearColorPickers();
 
@@ -115,7 +115,7 @@ private:
     ProjectWPtr _project;
     DockablePanel* _panel;
     bool _created;
-    std::vector<boost::shared_ptr<KnobColor> > _colorPickersEnabled;
+    std::vector<KnobColorPtr> _colorPickersEnabled;
 };
 
 

@@ -102,7 +102,7 @@ struct KnobWidgetDnD::MakeSharedEnabler: public KnobWidgetDnD
     }
 };
 
-boost::shared_ptr<KnobWidgetDnD> KnobWidgetDnD::create(const KnobGuiPtr& knob,
+KnobWidgetDnDPtr KnobWidgetDnD::create(const KnobGuiPtr& knob,
                                                        int dimension,
                                                        QWidget* widget)
 {
