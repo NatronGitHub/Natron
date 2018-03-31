@@ -65,8 +65,8 @@ static const SERIALIZATION_NAMESPACE::NodeGuiSerialization* matchNodeGuiRecursiv
     if (nodeGui._nodeName == nodeScriptName) {
         return &nodeGui;
     }
-    const std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::NodeGuiSerialization> >& children = nodeGui.getChildren();
-    for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::NodeGuiSerialization> >::const_iterator it = children.begin(); it != children.end(); ++it) {
+    const std::list<SERIALIZATION_NAMESPACE::NodeGuiSerializationPtr>& children = nodeGui.getChildren();
+    for (std::list<SERIALIZATION_NAMESPACE::NodeGuiSerializationPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
         const SERIALIZATION_NAMESPACE::NodeGuiSerialization* childRet = matchNodeGuiRecursive(**it, nodeScriptName, serialization);
         if (childRet) {
             return childRet;

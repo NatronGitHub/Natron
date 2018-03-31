@@ -44,6 +44,9 @@
 
 SERIALIZATION_NAMESPACE_ENTER
 
+class NodeGuiSerialization;
+
+typedef boost::shared_ptr<NodeGuiSerialization> NodeGuiSerializationPtr;
 
 /**
  * @brief Deprecated, just used for backward compatibility
