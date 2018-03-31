@@ -135,7 +135,7 @@ private:
     virtual void entryRemoved(const QStringList& /*row*/)  OVERRIDE {}
 
     virtual void tableChanged(int row, int col, std::string* newEncodedValue) OVERRIDE FINAL;
-    boost::weak_ptr<KnobLayers> _knob;
+    KnobLayersWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

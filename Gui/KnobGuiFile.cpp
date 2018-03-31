@@ -525,7 +525,7 @@ void
 KnobGuiFile::reflectAnimationLevel(DimIdx /*dimension*/,
                                    AnimationLevelEnum level)
 {
-    boost::shared_ptr<KnobFile> knob = _knob.lock();
+    KnobFilePtr knob = _knob.lock();
     if (!knob) {
         return;
     }

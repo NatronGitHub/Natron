@@ -94,7 +94,8 @@ struct TextRendererPrivate
     GLint _yOffset;
 };
 
-typedef std::map<QFont, boost::shared_ptr<TextRendererPrivate> > FontRenderers;
+typedef boost::shared_ptr<TextRendererPrivate> TextRendererPrivatePtr;
+typedef std::map<QFont, TextRendererPrivatePtr> FontRenderers;
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 

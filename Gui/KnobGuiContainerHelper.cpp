@@ -282,7 +282,7 @@ KnobGuiContainerHelper::getOrCreatePage(const KnobPagePtr& page)
     pageGui->groupAsTab = 0;
     pageGui->gridLayout = tabLayout;
 
-    boost::shared_ptr<KnobSignalSlotHandler> handler = page->getSignalSlotHandler();
+    KnobSignalSlotHandlerPtr handler = page->getSignalSlotHandler();
     QObject::connect( handler.get(), SIGNAL(labelChanged()), _imp->signals.get(), SLOT(onPageLabelChangedInternally()) );
     QObject::connect( handler.get(), SIGNAL(secretChanged()), _imp->signals.get(), SLOT(onPageSecretnessChanged()) );
 
@@ -1282,7 +1282,7 @@ KnobGuiContainerHelper::pushUndoCommand(QUndoCommand* cmd)
     refreshUndoRedoButtonsEnabledNess( _imp->undoStack->canUndo(), _imp->undoStack->canRedo() );
 }
 
-boost::shared_ptr<QUndoStack>
+QUndoStackPtr
 KnobGuiContainerHelper::getUndoStack() const
 {
     return _imp->undoStack;

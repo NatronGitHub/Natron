@@ -270,7 +270,7 @@ public:
 
     void removeSettingsPanel();
 
-    boost::shared_ptr<QUndoStack> getUndoStack() const;
+    QUndoStackPtr getUndoStack() const;
 
     void discardGraphPointer();
 
@@ -561,7 +561,7 @@ private:
     QGraphicsSimpleTextItem* _persistentMessage;
     NodeGraphRectItem* _stateIndicator;
     bool _mergeHintActive;
-    boost::shared_ptr<NodeGuiIndicator> _streamIssuesWarning;
+    NodeGuiIndicatorPtr _streamIssuesWarning;
     QGraphicsLineItem* _disabledTopLeftBtmRight;
     QGraphicsLineItem* _disabledBtmLeftTopRight;
     /*the graphical input arrows*/
@@ -591,8 +591,8 @@ private:
     boost::shared_ptr<QUndoStack> _undoStack; /*!< undo/redo stack*/
     mutable QMutex _overlayLockedMutex;
     bool _overlayLocked;
-    boost::shared_ptr<NodeGuiIndicator> _availableViewsIndicator;
-    boost::shared_ptr<NodeGuiIndicator> _passThroughIndicator;
+    NodeGuiIndicatorPtr _availableViewsIndicator;
+    NodeGuiIndicatorPtr _passThroughIndicator;
     NodeWPtr _identityInput;
     bool identityStateSet;
     boost::shared_ptr<GroupKnobDialog> _activeNodeCustomModalDialog;

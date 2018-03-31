@@ -153,7 +153,7 @@ string_format(const std::string fmt,
 
 struct OfxHostPrivate
 {
-    boost::shared_ptr<OFX::Host::ImageEffect::PluginCache> imageEffectPluginCache;
+    OFX::Host::ImageEffect::PluginCachePtr imageEffectPluginCache;
     boost::shared_ptr<TLSHolder<OfxHost::OfxHostTLSData> > tlsData;
 
     std::string loadingPluginID; // ID of the plugin being loaded

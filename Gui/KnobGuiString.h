@@ -133,7 +133,7 @@ private:
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
 
 private:
-    boost::shared_ptr<KnobWidgetDnD> _dnd;
+    KnobWidgetDnDPtr _dnd;
 };
 
 /*****************************/

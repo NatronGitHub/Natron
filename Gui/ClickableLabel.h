@@ -114,7 +114,7 @@ private:
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-    boost::shared_ptr<KnobWidgetDnD> _dnd;
+    KnobWidgetDnDPtr _dnd;
 };
 
 NATRON_NAMESPACE_EXIT

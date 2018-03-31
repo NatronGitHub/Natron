@@ -592,7 +592,7 @@ KnobHelper::setDimensionName(DimIdx dimension,
 
 
 void
-KnobHelper::setSignalSlotHandler(const boost::shared_ptr<KnobSignalSlotHandler> & handler)
+KnobHelper::setSignalSlotHandler(const KnobSignalSlotHandlerPtr & handler)
 {
     _signalSlotHandler = handler;
 }

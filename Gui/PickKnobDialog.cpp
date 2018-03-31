@@ -70,7 +70,7 @@ struct PickKnobDialogPrivate
     std::vector<KnobGroupPtr> groups;
     DialogButtonBox* buttons;
     NodesList allNodes;
-    std::map<QString, boost::shared_ptr<KnobI > > allKnobs;
+    std::map<QString, KnobIPtr> allKnobs;
     KnobGuiPtr selectedKnob;
 
     PickKnobDialogPrivate(DockablePanel* panel)

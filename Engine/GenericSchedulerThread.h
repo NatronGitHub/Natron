@@ -253,7 +253,7 @@ Q_SIGNALS:
     void stateChanged(int state);
 
     // Emitted by requestExecutionOnMainThread
-    void executionOnMainThreadRequested(ExecOnMTArgsPtr args);
+    void executionOnMainThreadRequested(GenericThreadExecOnMainThreadArgsPtr args);
 
     void taskAborted();
 
@@ -274,7 +274,7 @@ public Q_SLOTS:
 
 private Q_SLOTS:
 
-    void onExecutionOnMainThreadReceived(const ExecOnMTArgsPtr& args);
+    void onExecutionOnMainThreadReceived(const GenericThreadExecOnMainThreadArgsPtr& args);
 
 protected:
 
@@ -313,7 +313,7 @@ protected:
     /**
      * @brief To be implemented if your implementation of threadLoopOnce() wants to use requestExecutionOnMainThread.
      **/
-    virtual void executeOnMainThread(const ExecOnMTArgsPtr& /*inArgs*/) {}
+    virtual void executeOnMainThread(const GenericThreadExecOnMainThreadArgsPtr& /*inArgs*/) {}
 
 
     /**
@@ -327,7 +327,7 @@ protected:
      * You may only call this function from this thread, i.e: the thread that is running the run() function.
      * You may only call this function whilst the thread state is eThreadStateActive
      **/
-    void requestExecutionOnMainThread(const ExecOnMTArgsPtr& inArgs);
+    void requestExecutionOnMainThread(const GenericThreadExecOnMainThreadArgsPtr& inArgs);
 
 private:
 

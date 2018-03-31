@@ -46,7 +46,7 @@ class GenericSchedulerThreadMetaTypesRegistration
 public:
     inline GenericSchedulerThreadMetaTypesRegistration()
     {
-        qRegisterMetaType<ExecOnMTArgsPtr>("ExecOnMTArgsPtr");
+        qRegisterMetaType<GenericThreadExecOnMainThreadArgsPtr>("GenericThreadExecOnMainThreadArgsPtr");
     }
 };
 
@@ -132,7 +132,7 @@ GenericSchedulerThread::GenericSchedulerThread()
     , AbortableThread(this)
     , _imp( new GenericSchedulerThreadPrivate(this) )
 {
-    QObject::connect( this, SIGNAL(executionOnMainThreadRequested(ExecOnMTArgsPtr)), this, SLOT(onExecutionOnMainThreadReceived(ExecOnMTArgsPtr)) );
+    QObject::connect( this, SIGNAL(executionOnMainThreadRequested(GenericThreadExecOnMainThreadArgsPtr)), this, SLOT(onExecutionOnMainThreadReceived(GenericThreadExecOnMainThreadArgsPtr)) );
 }
 
 GenericSchedulerThread::~GenericSchedulerThread()
@@ -546,7 +546,7 @@ GenericSchedulerThread::run()
 } // run()
 
 void
-GenericSchedulerThread::requestExecutionOnMainThread(const ExecOnMTArgsPtr& inArgs)
+GenericSchedulerThread::requestExecutionOnMainThread(const GenericThreadExecOnMainThreadArgsPtr& inArgs)
 {
     // We must be within the run() function
     assert(QThread::currentThread() == this);
@@ -564,7 +564,7 @@ GenericSchedulerThread::requestExecutionOnMainThread(const ExecOnMTArgsPtr& inAr
 }
 
 void
-GenericSchedulerThread::onExecutionOnMainThreadReceived(const ExecOnMTArgsPtr& args)
+GenericSchedulerThread::onExecutionOnMainThreadReceived(const GenericThreadExecOnMainThreadArgsPtr& args)
 {
     assert( QThread::currentThread() == qApp->thread() );
     executeOnMainThread(args);

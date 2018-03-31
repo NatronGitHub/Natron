@@ -58,9 +58,9 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 struct KnobGuiTablePrivate
 {
-    std::string encodeTable(const boost::shared_ptr<KnobTable>& knob) const;
+    std::string encodeTable(const KnobTablePtr& knob) const;
 
-    void createItem(const boost::shared_ptr<KnobTable>& knob, int row, const QStringList& values);
+    void createItem(const KnobTablePtr& knob, int row, const QStringList& values);
 
     QWidget* mainContainer;
     TableView *table;
@@ -111,7 +111,7 @@ class KnobTableItemDelegate
 
 public:
 
-    explicit KnobTableItemDelegate(const boost::shared_ptr<KnobTable>& knob,
+    explicit KnobTableItemDelegate(const KnobTablePtr& knob,
                                    TableView* view);
 
 private:
@@ -119,7 +119,7 @@ private:
     virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const OVERRIDE FINAL;
 };
 
-KnobTableItemDelegate::KnobTableItemDelegate(const boost::shared_ptr<KnobTable>& knob,
+KnobTableItemDelegate::KnobTableItemDelegate(const KnobTablePtr& knob,
                                              TableView* view)
     : QStyledItemDelegate(view)
     , _view(view)
@@ -138,7 +138,7 @@ KnobTableItemDelegate::paint(QPainter * painter,
         return;
     }
 
-    boost::shared_ptr<KnobTable> knob = _knob.lock();
+    KnobTablePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -272,7 +272,7 @@ KnobGuiTable::createWidget(QHBoxLayout* layout)
 } // KnobGuiTable::createWidget
 
 std::string
-KnobGuiTablePrivate::encodeTable(const boost::shared_ptr<KnobTable>& knob) const
+KnobGuiTablePrivate::encodeTable(const KnobTablePtr& knob) const
 {
     std::stringstream ss;
 
@@ -296,7 +296,7 @@ KnobGuiTablePrivate::encodeTable(const boost::shared_ptr<KnobTable>& knob) const
 }
 
 void
-KnobGuiTablePrivate::createItem(const boost::shared_ptr<KnobTable>& knob,
+KnobGuiTablePrivate::createItem(const KnobTablePtr& knob,
                                 int row,
                                 const QStringList& values)
 {
@@ -609,7 +609,7 @@ KnobGuiLayers::addNewUserEntry(QStringList& row)
         row.push_back( QString::fromUtf8( comps.getPlaneLabel().c_str() ) );
 
         std::list<std::vector<std::string> > table;
-        boost::shared_ptr<KnobLayers> knob = _knob.lock();
+        KnobLayersPtr knob = _knob.lock();
         if (!knob) {
             return false;
         }
@@ -663,7 +663,7 @@ KnobGuiLayers::editUserEntry(QStringList& row)
         row[0] = ( QString::fromUtf8( comps.getPlaneID().c_str() ) );
 
 
-        boost::shared_ptr<KnobLayers> knob = _knob.lock();
+        KnobLayersPtr knob = _knob.lock();
         if (!knob) {
             return false;
         }

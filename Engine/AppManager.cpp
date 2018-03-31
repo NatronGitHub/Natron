@@ -728,8 +728,10 @@ public:
     virtual ~QuitInstanceArgs() {}
 };
 
+typedef boost::shared_ptr<QuitInstanceArgs> QuitInstanceArgsPtr;
+
 void
-AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
+AppManager::afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
 {
     QuitInstanceArgs* inArgs = dynamic_cast<QuitInstanceArgs*>( args.get() );
 
@@ -766,7 +768,7 @@ AppManager::quitNow(const AppInstancePtr& instance)
             (*it)->quitAnyProcessing_blocking(false);
         }
     }
-    boost::shared_ptr<QuitInstanceArgs> args = boost::make_shared<QuitInstanceArgs>();
+    QuitInstanceArgsPtr args = boost::make_shared<QuitInstanceArgs>();
     args->instance = instance;
     afterQuitProcessingCallback(args);
 }
@@ -774,7 +776,7 @@ AppManager::quitNow(const AppInstancePtr& instance)
 void
 AppManager::quit(const AppInstancePtr& instance)
 {
-    boost::shared_ptr<QuitInstanceArgs> args = boost::make_shared<QuitInstanceArgs>();
+    QuitInstanceArgsPtr args = boost::make_shared<QuitInstanceArgs>();
 
     args->instance = instance;
     if ( !instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {

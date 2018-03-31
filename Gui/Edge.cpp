@@ -71,8 +71,8 @@ struct EdgePrivate
     double angle;
     NodeGraphSimpleTextItem* label;
     QPolygonF arrowHead;
-    boost::weak_ptr<NodeGui> dest;
-    boost::weak_ptr<NodeGui> source;
+    NodeGuiWPtr dest;
+    NodeGuiWPtr source;
     QColor defaultColor;
     QColor renderingColor;
     bool useRenderingColor;

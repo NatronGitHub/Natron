@@ -225,7 +225,7 @@ public:
             ar & ::boost::serialization::make_nvp("Children", nodesCount);
 
             for (int i = 0; i < nodesCount; ++i) {
-                boost::shared_ptr<NodeGuiSerialization> s = boost::make_shared<NodeGuiSerialization>();
+                NodeGuiSerializationPtr s = boost::make_shared<NodeGuiSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *s);
                 _children.push_back(s);
             }

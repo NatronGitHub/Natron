@@ -114,7 +114,7 @@ TabGroup::addTab(const KnobGroupPtr& group,
         }
         //tabGroup->tab->setVisible(visible);
 
-        boost::shared_ptr<KnobSignalSlotHandler> handler = group->getSignalSlotHandler();
+        KnobSignalSlotHandlerPtr handler = group->getSignalSlotHandler();
         QObject::connect( handler.get(), SIGNAL(secretChanged()), this, SLOT(onGroupKnobSecretChanged()) );
     }
     assert(tabGroup->layout);

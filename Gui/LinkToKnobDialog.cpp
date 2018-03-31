@@ -104,7 +104,7 @@ struct LinkToKnobDialogPrivate
     ComboBox* knobSelectionCombo;
     DialogButtonBox* buttons;
     NodesList allNodes;
-    std::map<QString, boost::shared_ptr<KnobI > > allKnobs;
+    std::map<QString, KnobIPtr> allKnobs;
 
     LinkToKnobDialogPrivate(const KnobGuiPtr& from)
         : fromKnob(from)

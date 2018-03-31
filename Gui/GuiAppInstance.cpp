@@ -102,7 +102,7 @@ struct GuiAppInstancePrivate
     ////as the main "action" thread.
     int _showingDialog;
     mutable QMutex _showingDialogMutex;
-    boost::shared_ptr<FileDialogPreviewProvider> _previewProvider;
+    FileDialogPreviewProviderPtr _previewProvider;
     mutable QMutex lastTimelineViewerMutex;
     NodePtr lastTimelineViewer;
     LoadProjectSplashScreen* loadProjectSplash;
@@ -802,7 +802,7 @@ GuiAppInstance::onRenderQueuingChanged(bool queueingEnabled)
 }
 
 
-boost::shared_ptr<FileDialogPreviewProvider>
+FileDialogPreviewProviderPtr
 GuiAppInstance::getPreviewProvider() const
 {
     return _imp->_previewProvider;

@@ -2122,7 +2122,7 @@ NodeGui::getKnobs() const
 
 
 
-boost::shared_ptr<QUndoStack>
+QUndoStackPtr
 NodeGui::getUndoStack() const
 {
     return _undoStack;
@@ -3413,6 +3413,8 @@ GroupKnobDialog::GroupKnobDialog(Gui* gui, const KnobGroupConstPtr& group)
 GroupKnobDialog::~GroupKnobDialog()
 {
 }
+
+typedef boost::shared_ptr<GroupKnobDialog> GroupKnobDialogPtr;
 
 void
 GroupKnobDialog::onDialogBoxButtonClicked(QAbstractButton* button)

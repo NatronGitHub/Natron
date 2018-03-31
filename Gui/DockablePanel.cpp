@@ -105,7 +105,7 @@ DockablePanel::DockablePanel(Gui* gui,
                              QVBoxLayout* container,
                              HeaderModeEnum headerMode,
                              bool useScrollAreasForTabs,
-                             const boost::shared_ptr<QUndoStack>& stack,
+                             const QUndoStackPtr& stack,
                              const QString & initialName,
                              const QString & helpToolTip,
                              QWidget *parent)
@@ -822,7 +822,7 @@ DockablePanel::refreshUndoRedoButtonsEnabledNess(bool canUndo,
 void
 DockablePanel::onUndoClicked()
 {
-    boost::shared_ptr<QUndoStack> stack = getUndoStack();
+    QUndoStackPtr stack = getUndoStack();
 
     stack->undo();
     if (_imp->_undoButton && _imp->_redoButton) {
@@ -835,7 +835,7 @@ DockablePanel::onUndoClicked()
 void
 DockablePanel::onRedoPressed()
 {
-    boost::shared_ptr<QUndoStack> stack = getUndoStack();
+    QUndoStackPtr stack = getUndoStack();
 
     stack->redo();
     if (_imp->_undoButton && _imp->_redoButton) {
@@ -989,7 +989,7 @@ DockablePanel::setClosedInternal(bool closed)
                 // when a panel is open, refresh its knob values
                 GuiAppInstancePtr app = gui->getApp();
                 if (app) {
-                    boost::shared_ptr<TimeLine> timeline = app->getTimeLine();
+                    TimeLinePtr timeline = app->getTimeLine();
                     if (timeline) {
                         internalNode->getEffectInstance()->refreshAfterTimeChange( false, TimeValue(timeline->currentFrame()) );
                     }

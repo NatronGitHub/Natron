@@ -642,7 +642,7 @@ ProgressTaskInfo::onPauseTriggered()
 void
 ProgressTaskInfo::onCancelTriggered()
 {
-    boost::shared_ptr<ProgressTaskInfo> thisShared = shared_from_this();
+    ProgressTaskInfoPtr thisShared = shared_from_this();
 
     cancelTask(false, 0);
     _imp->panel->removeTaskFromTable(thisShared);

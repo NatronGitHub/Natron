@@ -581,7 +581,7 @@ private:
                          const QString& script);
 
 
-    virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) OVERRIDE FINAL;
+    virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) OVERRIDE FINAL;
 
     bool loadInternal(const CLArgs& cl);
 

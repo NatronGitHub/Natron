@@ -119,7 +119,7 @@ ProjectGui::create(const ProjectPtr& projectInternal,
                                container,
                                DockablePanel::eHeaderModeReadOnlyName,
                                false,
-                               boost::shared_ptr<QUndoStack>(),
+                               QUndoStackPtr(),
                                tr("Project Settings"),
                                tr("The settings of the current project."),
                                parent);

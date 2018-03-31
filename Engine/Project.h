@@ -319,7 +319,7 @@ public:
      * This is called only when calling AppManager::abortAnyProcessing()
      * @returns True if a node is in the project and a watcher was installed, false otherwise
      **/
-    bool quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const WatcherCallerArgsPtr& args);
+    bool quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const GenericWatcherCallerArgsPtr& args);
 
     bool isOpenGLRenderActivated() const;
 
@@ -329,7 +329,7 @@ public:
 
 private:
 
-    virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) OVERRIDE FINAL;
+    virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) OVERRIDE FINAL;
 
 public:
 
@@ -357,7 +357,7 @@ public:
 
 public Q_SLOTS:
 
-    void onQuitAnyProcessingWatcherTaskFinished(int taskID, const WatcherCallerArgsPtr& args);
+    void onQuitAnyProcessingWatcherTaskFinished(int taskID, const GenericWatcherCallerArgsPtr& args);
 
     void onAutoSaveTimerTriggered();
 

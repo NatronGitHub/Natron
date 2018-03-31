@@ -602,7 +602,7 @@ private:
     QWidget* _centerArea;
     QHBoxLayout* _centerAreaLayout;
     Button* _togglePreviewButton;
-    boost::shared_ptr<FileDialogPreviewProvider> _preview;
+    FileDialogPreviewProviderPtr _preview;
 
     ///Remember  autoSetProjectFormat  state before opening the dialog
     bool _wasAutosetProjectFormatEnabled;

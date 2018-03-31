@@ -2173,9 +2173,6 @@ private:
         }
     };
 
-
-
-
     // Used only on render clones to cache the result of getValue/getValueAtTime so it stays
     // consistant throughout a render.
     boost::scoped_ptr<ValuesCacheMap> _valuesCache;

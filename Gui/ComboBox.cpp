@@ -120,6 +120,7 @@ struct ComboBoxMenuNode
     : isMenu(0), isLeaf(0), text(), children(), parent(0) {}
 };
 
+typedef boost::shared_ptr<ComboBoxMenuNode> ComboBoxMenuNodePtr;
 
 
 static ComboBoxMenuNode*
@@ -882,8 +883,8 @@ ComboBox::addItemNew()
 
 struct LexicalOrder
 {
-    bool operator() (const boost::shared_ptr<ComboBoxMenuNode>& lhs,
-                     const boost::shared_ptr<ComboBoxMenuNode>& rhs)
+    bool operator() (const ComboBoxMenuNodePtr& lhs,
+                     const ComboBoxMenuNodePtr& rhs)
     {
         return lhs->text < rhs->text;
     }
@@ -932,7 +933,7 @@ ComboBox::addItem(const QString & item,
 
         for (int i = 0; i < realSplits.size(); ++i) {
             ComboBoxMenuNode* found = 0;
-            for (std::vector<boost::shared_ptr<ComboBoxMenuNode> >::iterator it = menuToFind->children.begin();
+            for (std::vector<ComboBoxMenuNodePtr>::iterator it = menuToFind->children.begin();
                  it != menuToFind->children.end(); ++it) {
                 if ( (*it)->text == realSplits[i] ) {
                     found = it->get();
@@ -942,7 +943,7 @@ ComboBox::addItem(const QString & item,
             if (found) {
                 menuToFind = found;
             } else {
-                boost::shared_ptr<ComboBoxMenuNode> node = boost::make_shared<ComboBoxMenuNode>();
+                ComboBoxMenuNodePtr node = boost::make_shared<ComboBoxMenuNode>();
                 node->text = realSplits[i];
                 node->parent = menuToFind;
                 menuToFind->children.push_back(node);

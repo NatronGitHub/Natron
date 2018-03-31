@@ -71,6 +71,7 @@ class QThread;
 class QTimer;
 class QUrl;
 class QWaitCondition;
+typedef boost::shared_ptr<QTimer> QTimerPtr;
 
 // cairo
 typedef struct _cairo cairo_t;
@@ -95,6 +96,8 @@ class ImageEffectPlugin;
 class Descriptor;
 class ClipDescriptor;
 class OverlayInteract;
+class PluginCache;
+typedef boost::shared_ptr<PluginCache> PluginCachePtr;
 }
 namespace Interact {
 class Descriptor;
@@ -122,6 +125,7 @@ NATRON_NAMESPACE_ENTER
 class AbortableRenderInfo;
 class AbortableThread;
 class AbstractOfxEffectInstance;
+class ActionsCache;
 class AfterQuitProcessingI;
 class AllocateMemoryArgs;
 class AnimatingObjectI;
@@ -165,6 +169,8 @@ class GenericAccess;
 class GenericActionTLSArgs;
 class GenericSchedulerThread;
 class GenericSchedulerThreadWatcher;
+class GenericThreadExecOnMainThreadArgs;
+class GenericThreadStartArgs;
 class GenericWatcherCallerArgs;
 class GetComponentsKey;
 class GetComponentsResults;
@@ -218,7 +224,9 @@ class KnobPage;
 class KnobParametric;
 class KnobPath;
 class KnobSeparator;
+class KnobSignalSlotHandler;
 class KnobString;
+class KnobTLSData;
 class KnobTable;
 class KnobTableItem;
 class LayeredCompNode;
@@ -234,6 +242,7 @@ class NodeGraphI;
 class NodeGroup;
 class NodeGuiI;
 class NodeMetadata;
+class NodeRenderWatcher;
 class NodeSettingsPanel;
 class OSGLContext;
 class OSGLContextAttacher;
@@ -323,6 +332,7 @@ class Lut;
 }
 namespace Transform {
 struct Matrix3x3;
+typedef boost::shared_ptr<Matrix3x3> Matrix3x3Ptr;
 }
 
 #ifdef __NATRON_WIN32__
@@ -363,7 +373,8 @@ typedef boost::shared_ptr<FrameViewRequest> FrameViewRequestPtr;
 typedef boost::shared_ptr<GLImageStorage> GLImageStoragePtr;
 typedef boost::shared_ptr<GLShaderBase> GLShaderBasePtr;
 typedef boost::shared_ptr<GenericActionTLSArgs> GenericActionTLSArgsPtr;
-typedef boost::shared_ptr<GenericWatcherCallerArgs> WatcherCallerArgsPtr;
+typedef boost::shared_ptr<GenericThreadExecOnMainThreadArgs> GenericThreadExecOnMainThreadArgsPtr;
+typedef boost::shared_ptr<GenericWatcherCallerArgs> GenericWatcherCallerArgsPtr;
 typedef boost::shared_ptr<GetComponentsKey> GetComponentsKeyPtr;
 typedef boost::shared_ptr<GetComponentsResults> GetComponentsResultsPtr;
 typedef boost::shared_ptr<GetDistortionKey> GetDistortionKeyPtr;
@@ -384,6 +395,7 @@ typedef boost::shared_ptr<Image const> ImageConstPtr;
 typedef boost::shared_ptr<Image> ImagePtr;
 typedef boost::shared_ptr<ImageCacheEntry> ImageCacheEntryPtr;
 typedef boost::shared_ptr<ImageCacheKey> ImageCacheKeyPtr;
+typedef boost::shared_ptr<ImagePlaneDesc> ImagePlaneDescPtr;
 typedef boost::shared_ptr<ImageStorageBase> ImageStorageBasePtr;
 typedef boost::shared_ptr<ImageTilesState> ImageTilesStatePtr;
 typedef boost::shared_ptr<InputDescription> InputDescriptionPtr;
@@ -414,6 +426,7 @@ typedef boost::shared_ptr<KnobPage> KnobPagePtr;
 typedef boost::shared_ptr<KnobParametric> KnobParametricPtr;
 typedef boost::shared_ptr<KnobPath> KnobPathPtr;
 typedef boost::shared_ptr<KnobSeparator> KnobSeparatorPtr;
+typedef boost::shared_ptr<KnobSignalSlotHandler> KnobSignalSlotHandlerPtr;
 typedef boost::shared_ptr<KnobString> KnobStringPtr;
 typedef boost::shared_ptr<KnobTable> KnobTablePtr;
 typedef boost::shared_ptr<KnobTableItem const> KnobTableItemConstPtr;
@@ -429,6 +442,7 @@ typedef boost::shared_ptr<NodeCollection> NodeCollectionPtr;
 typedef boost::shared_ptr<NodeGroup> NodeGroupPtr;
 typedef boost::shared_ptr<NodeGuiI> NodeGuiIPtr;
 typedef boost::shared_ptr<NodeMetadata> NodeMetadataPtr;
+typedef boost::shared_ptr<NodeRenderWatcher> NodeRenderWatcherPtr;
 typedef boost::shared_ptr<OSGLContext> OSGLContextPtr;
 typedef boost::shared_ptr<OSGLContextAttacher> OSGLContextAttacherPtr;
 typedef boost::shared_ptr<OfxEffectInstance> OfxEffectInstancePtr;
@@ -464,6 +478,7 @@ typedef boost::shared_ptr<RotoShapeRenderNodeOpenGLData> RotoShapeRenderNodeOpen
 typedef boost::shared_ptr<RotoStrokeItem> RotoStrokeItemPtr;
 typedef boost::shared_ptr<Settings> SettingsPtr;
 typedef boost::shared_ptr<StubNode> StubNodePtr;
+typedef boost::shared_ptr<TLSHolderBase const> TLSHolderBaseConstPtr;
 typedef boost::shared_ptr<Texture> GLTexturePtr;
 typedef boost::shared_ptr<TimeLapse> TimeLapsePtr;
 typedef boost::shared_ptr<TimeLine> TimeLinePtr;
@@ -496,6 +511,8 @@ typedef boost::weak_ptr<CompNodeItem> CompNodeItemWPtr;
 typedef boost::weak_ptr<Curve> CurveWPtr;
 typedef boost::weak_ptr<CurveChangesListener> CurveChangesListenerWPtr;
 typedef boost::weak_ptr<EffectInstance> EffectInstanceWPtr;
+typedef boost::weak_ptr<FileSystemItem> FileSystemItemWPtr;
+typedef boost::weak_ptr<FileSystemModel> FileSystemModelWPtr;
 typedef boost::weak_ptr<FrameViewRequest> FrameViewRequestWPtr;
 typedef boost::weak_ptr<HashableObject> HashableObjectWPtr;
 typedef boost::weak_ptr<Image> ImageWPtr;
@@ -529,11 +546,13 @@ typedef boost::weak_ptr<OverlayInteractBase> OverlayInteractBaseWPtr;
 typedef boost::weak_ptr<Plugin> PluginWPtr;
 typedef boost::weak_ptr<PluginGroupNode> PluginGroupNodeWPtr;
 typedef boost::weak_ptr<PluginMemory> PluginMemoryWPtr;
+typedef boost::weak_ptr<Project> ProjectWPtr;
 typedef boost::weak_ptr<RenderEngine> RenderEngineWPtr;
 typedef boost::weak_ptr<RotoDrawableItem> RotoDrawableItemWPtr;
 typedef boost::weak_ptr<RotoPaint> RotoPaintWPtr;
 typedef boost::weak_ptr<RotoPaintInteract> RotoPaintInteractWPtr;
 typedef boost::weak_ptr<RotoStrokeItem> RotoStrokeItemWPtr;
+typedef boost::weak_ptr<TLSHolderBase const> TLSHolderBaseConstWPtr;
 typedef boost::weak_ptr<TimeLine> TimeLineWPtr;
 typedef boost::weak_ptr<TrackMarker> TrackMarkerWPtr;
 typedef boost::weak_ptr<TrackerHelper> TrackerHelperWPtr;
@@ -597,6 +616,7 @@ class StringParam;
 class Track;
 class Tracker;
 class UserParamHolder;
+typedef boost::shared_ptr<StringParam> StringParamPtr;
 
 
 NATRON_PYTHON_NAMESPACE_EXIT

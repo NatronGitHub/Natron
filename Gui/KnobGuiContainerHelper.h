@@ -57,8 +57,9 @@ NATRON_NAMESPACE_ENTER
 
 typedef std::list<std::pair<KnobIWPtr, KnobGuiPtr> > KnobsGuiMapping;
 
-struct KnobPageGui
+class KnobPageGui
 {
+public:
     QWidget* tab;
     TabGroup* groupAsTab; //< to gather group knobs that are set as a tab
     KnobPageWPtr pageKnob;
@@ -196,7 +197,7 @@ public:
     /**
      * @brief Returns the undo/redo stack used for commands applied on knobs
      **/
-    boost::shared_ptr<QUndoStack> getUndoStack() const;
+    QUndoStackPtr getUndoStack() const;
 
     /**
      * @brief When called, all knobs will go into the same page which will appear as a plain Widget and not as a tab. This must be called before

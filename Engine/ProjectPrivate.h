@@ -113,7 +113,7 @@ public:
     // only used on the main-thread
     struct RenderWatcher
     {
-        boost::shared_ptr<NodeRenderWatcher> watcher;
+        NodeRenderWatcherPtr watcher;
         AfterQuitProcessingI* receiver;
     };
 

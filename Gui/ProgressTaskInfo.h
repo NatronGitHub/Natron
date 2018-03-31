@@ -78,7 +78,7 @@ private:
                      const ProcessHandlerPtr& process);
 
 public:
-    static boost::shared_ptr<ProgressTaskInfo> create(ProgressPanel* panel,
+    static ProgressTaskInfoPtr create(ProgressPanel* panel,
                                                       const NodePtr& node,
                                                       const TimeValue firstFrame,
                                                       const TimeValue lastFrame,
@@ -88,7 +88,7 @@ public:
                                                       const QString& message,
                                                       const ProcessHandlerPtr& process) WARN_UNUSED_RETURN
     {
-        return boost::shared_ptr<ProgressTaskInfo>( new ProgressTaskInfo(panel,
+        return ProgressTaskInfoPtr( new ProgressTaskInfo(panel,
                                                                          node,
                                                                          firstFrame,
                                                                          lastFrame,

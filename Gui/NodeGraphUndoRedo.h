@@ -302,7 +302,7 @@ public:
 
 private:
 
-    std::list<boost::weak_ptr<NodeGui> >_nodes;
+    std::list<NodeGuiWPtr>_nodes;
 };
 
 class EnableNodesCommand
@@ -319,7 +319,7 @@ public:
 
 private:
 
-    std::list<boost::weak_ptr<NodeGui> >_nodes;
+    std::list<NodeGuiWPtr>_nodes;
 };
 
 
@@ -341,7 +341,7 @@ public:
 
 private:
 
-    boost::weak_ptr<NodeGui> _node;
+    NodeGuiWPtr _node;
     QString _oldName, _newName;
 };
 

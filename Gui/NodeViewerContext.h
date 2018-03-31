@@ -66,7 +66,7 @@ public:
     static boost::shared_ptr<NodeViewerContext> create(const NodeGuiPtr& node,
                                                        ViewerTab* viewer) WARN_UNUSED_RETURN
     {
-        return boost::shared_ptr<NodeViewerContext>( new NodeViewerContext(node, viewer) );
+        return NodeViewerContextPtr( new NodeViewerContext(node, viewer) );
     }
 
     void createGui();

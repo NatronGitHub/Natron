@@ -46,7 +46,7 @@ public:
 protected:
 
 
-    virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) = 0;
+    virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) = 0;
 
     friend class Project;
 };

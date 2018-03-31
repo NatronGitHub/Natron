@@ -70,7 +70,7 @@ public:
     Gui* _gui; //< ptr to the public interface
     mutable QMutex _isInDraftModeMutex;
     bool _isInDraftMode; //< true if the user is actively moving the cursor on the timeline or a slider. False on mouse release.
-    boost::weak_ptr<GuiAppInstance> _appInstance; //< ptr to the appInstance
+    GuiAppInstanceWPtr _appInstance; //< ptr to the appInstance
 
     ///Dialogs handling members
     QWaitCondition _uiUsingMainThreadCond; //< used with _uiUsingMainThread

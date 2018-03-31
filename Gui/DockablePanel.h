@@ -79,7 +79,7 @@ public:
                            QVBoxLayout* container,
                            HeaderModeEnum headerMode,
                            bool useScrollAreasForTabs,
-                           const boost::shared_ptr<QUndoStack>& stack,
+                           const QUndoStackPtr& stack,
                            const QString & initialName = QString(),
                            const QString & helpToolTip = QString(),
                            QWidget *parent = 0);

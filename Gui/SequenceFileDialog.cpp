@@ -1434,7 +1434,7 @@ SequenceFileDialog::createDir()
 
     NATRON_PYTHON_NAMESPACE::PyModalDialog dialog(_gui);
     dialog.setWindowTitle( tr("New Folder") );
-    boost::shared_ptr<NATRON_PYTHON_NAMESPACE::StringParam> folderName( dialog.createStringParam( QString::fromUtf8("folderName"), QString::fromUtf8("Folder Name") ) );
+    NATRON_PYTHON_NAMESPACE::StringParamPtr folderName( dialog.createStringParam( QString::fromUtf8("folderName"), QString::fromUtf8("Folder Name") ) );
     dialog.refreshUserParamsGUI();
     if ( dialog.exec() ) {
         QString newFolderString = folderName->getValue();

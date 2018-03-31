@@ -45,7 +45,7 @@ class GuiApp
     Q_DECLARE_TR_FUNCTIONS(GuiApp)
 
 private:
-    boost::weak_ptr<GuiAppInstance> _app;
+    GuiAppInstanceWPtr _app;
 
 public:
 

@@ -92,10 +92,11 @@ struct CacheKey_compare_less
     }
 };
 
+typedef boost::shared_ptr<MvFloatImage> MvFloatImagePtr;
 
 struct FrameAccessorCacheEntry
 {
-    boost::shared_ptr<MvFloatImage> image;
+    MvFloatImagePtr image;
 
     // If null, this is the full image
     RectI bounds;

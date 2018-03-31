@@ -45,7 +45,7 @@ NATRON_NAMESPACE_ENTER
 
 struct ToolButtonPrivate
 {
-    boost::weak_ptr<GuiAppInstance> _app;
+    GuiAppInstanceWPtr _app;
     QString _id;
     int _major, _minor;
     QString _label;
@@ -53,7 +53,7 @@ struct ToolButtonPrivate
     QMenu* _menu;
     std::vector<ToolButton*> _children;
     QAction* _action;
-    boost::weak_ptr<PluginGroupNode> _pluginToolButton;
+    PluginGroupNodeWPtr _pluginToolButton;
 
     ToolButtonPrivate(const GuiAppInstancePtr& app,
                       const PluginGroupNodePtr& pluginToolButton,

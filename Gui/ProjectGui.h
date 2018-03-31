@@ -110,7 +110,7 @@ private:
 
 
     Gui* _gui;
-    boost::weak_ptr<Project> _project;
+    ProjectWPtr _project;
     DockablePanel* _panel;
     bool _created;
 

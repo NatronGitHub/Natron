@@ -157,7 +157,7 @@ TLSHolder<T>::getOrCreateTLSData() const
 
     //getOrCreateTLSData() has never been called on the thread, lookup the TLS
     ThreadData data;
-    boost::shared_ptr<const TLSHolderBase> thisShared = shared_from_this();
+    TLSHolderBaseConstPtr thisShared = shared_from_this();
     appPTR->getAppTLS()->registerTLSHolder(thisShared);
     data.value = boost::make_shared<T>();
     {
@@ -237,7 +237,7 @@ AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
     //This is a spawned thread and the first time we need the TLS for this thread, copy the whole TLS on all objects
     for (TLSObjects::iterator it = _object->objects.begin();
          it != _object->objects.end(); ++it) {
-        boost::shared_ptr<const TLSHolderBase> p = (*it).lock();
+        TLSHolderBaseConstPtr p = (*it).lock();
         if (p) {
             const TLSHolder<T>* foundHolder = 0;
             if (p.get() == holder) {
