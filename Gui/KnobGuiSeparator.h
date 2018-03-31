@@ -98,7 +98,7 @@ private:
 
 private:
     QFrame *_line;
-    boost::weak_ptr<KnobSeparator> _knob;
+    KnobSeparatorWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

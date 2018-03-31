@@ -128,7 +128,7 @@ GCC_DIAG_ON(unused-parameter)
 
 
 NATRON_NAMESPACE_ENTER
-GuiPrivate::GuiPrivate(const GuiAppInstPtr& app,
+GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
                        Gui* gui)
     : _gui(gui)
     , _isInDraftModeMutex()

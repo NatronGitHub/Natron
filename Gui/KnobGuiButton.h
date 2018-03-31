@@ -101,7 +101,7 @@ private:
 
 private:
     Button *_button;
-    boost::weak_ptr<KnobButton> _knob;
+    KnobButtonWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

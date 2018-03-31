@@ -159,7 +159,7 @@ class NodeGraphPrivate
 {
 public:
     NodeGraph* _publicInterface;
-    boost::weak_ptr<NodeCollection> group;
+    NodeCollectionWPtr group;
     QPoint _lastMousePos;
     QPointF _lastSelectionStartPointScene;
     EventStateEnum _evtState;

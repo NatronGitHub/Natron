@@ -401,7 +401,7 @@ private:
 
     bool _isNodeReset;
     int _targetDim;
-    std::list<KnobWPtr> _knobs, _clones;
+    std::list<KnobIWPtr> _knobs, _clones;
 };
 
 class SetExpressionCommand
@@ -421,7 +421,7 @@ public:
 
 private:
 
-    KnobWPtr _knob;
+    KnobIWPtr _knob;
     std::vector<std::string> _oldExprs;
     std::vector<bool> _hadRetVar;
     std::string _newExpr;

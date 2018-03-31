@@ -49,7 +49,7 @@
 
 NATRON_NAMESPACE_ENTER
 
-typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
+typedef std::map<KnobIWPtr, KnobGui *> KnobsAndGuis;
 
 
 ////////////////////////// Helpers //////////////////////////
@@ -65,7 +65,7 @@ void
 moveReader(const NodePtr &reader,
            double dt)
 {
-    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>( reader->getKnobByName(kReaderParamNameStartingTime).get() );
+    KnobIntBase *startingTimeKnob = dynamic_cast<KnobIntBase *>( reader->getKnobByName(kReaderParamNameStartingTime).get() );
     assert(startingTimeKnob);
     KnobHelper::ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
@@ -75,7 +75,7 @@ void
 moveTimeOffset(const NodePtr& node,
                double dt)
 {
-    Knob<int>* timeOffsetKnob = dynamic_cast<Knob<int>*>( node->getKnobByName(kTimeOffsetParamNameTimeOffset).get() );
+    KnobIntBase* timeOffsetKnob = dynamic_cast<KnobIntBase*>( node->getKnobByName(kTimeOffsetParamNameTimeOffset).get() );
     assert(timeOffsetKnob);
     KnobHelper::ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
@@ -85,7 +85,7 @@ void
 moveFrameRange(const NodePtr& node,
                double dt)
 {
-    Knob<int>* frameRangeKnob = dynamic_cast<Knob<int>*>( node->getKnobByName(kFrameRangeParamNameFrameRange).get() );
+    KnobIntBase* frameRangeKnob = dynamic_cast<KnobIntBase*>( node->getKnobByName(kFrameRangeParamNameFrameRange).get() );
     assert(frameRangeKnob);
     frameRangeKnob->setValues(frameRangeKnob->getValue() + dt, frameRangeKnob->getValue(1)  + dt, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
 }
@@ -524,7 +524,7 @@ DSLeftTrimReaderCommand::trimLeft(double firstFrame)
 
     NodePtr node = nodeContext->getInternalNode();
 
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
     assert(firstFrameKnob);
     if (!firstFrameKnob) {
         return;
@@ -611,7 +611,7 @@ DSRightTrimReaderCommand::trimRight(double lastFrame)
 
     NodePtr node = nodeContext->getInternalNode();
 
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
     assert(lastFrameKnob);
     if (!lastFrameKnob) {
         return;
@@ -728,13 +728,13 @@ DSSlipReaderCommand::slipReader(double dt)
 
     NodePtr node = nodeContext->getInternalNode();
 
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
     assert(firstFrameKnob);
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
     assert(lastFrameKnob);
-    Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameTimeOffset).get() );
+    KnobIntBase *timeOffsetKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameTimeOffset).get() );
     assert(timeOffsetKnob);
-    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameStartingTime).get() );
+    KnobIntBase *startingTimeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameStartingTime).get() );
     assert(startingTimeKnob);
     if (!firstFrameKnob || !lastFrameKnob || !timeOffsetKnob || !startingTimeKnob) {
         return;
@@ -929,10 +929,10 @@ DSPasteKeysCommand::redo()
 void
 DSPasteKeysCommand::setKeyValueFromKnob(const KnobIPtr& knob, double keyTime, KeyFrame* key)
 {
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+    KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( knob.get() );
+    KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( knob.get() );
+    KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( knob.get() );
+    KnobStringBase* isString = dynamic_cast<KnobStringBase*>( knob.get() );
 
 
     if (isDouble) {
@@ -956,7 +956,7 @@ DSPasteKeysCommand::setKeyValueFromKnob(const KnobIPtr& knob, double keyTime, Ke
 void
 DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
 {
-    for (std::list<boost::weak_ptr<DSKnob> >::const_iterator it = _dstKnobs.begin(); it != _dstKnobs.end(); ++it) {
+    for (std::list<DSKnobWPtr>::const_iterator it = _dstKnobs.begin(); it != _dstKnobs.end(); ++it) {
         boost::shared_ptr<DSKnob> knobContext = it->lock();
         if (!knobContext) {
             continue;

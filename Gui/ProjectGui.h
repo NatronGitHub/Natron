@@ -112,7 +112,7 @@ private:
 
 
     Gui* _gui;
-    boost::weak_ptr<Project> _project;
+    ProjectWPtr _project;
     DockablePanel* _panel;
     bool _created;
     std::vector<boost::shared_ptr<KnobColor> > _colorPickersEnabled;

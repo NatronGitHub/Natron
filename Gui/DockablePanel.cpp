@@ -703,8 +703,8 @@ DockablePanel::onRestoreDefaultsButtonClicked()
     boost::shared_ptr<MultiInstancePanel> multiPanel = getMultiInstancePanel();
 
     if (multiPanel) {
-        const std::list<std::pair<boost::weak_ptr<Node>, bool> > & instances = multiPanel->getInstances();
-        for (std::list<std::pair<boost::weak_ptr<Node>, bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        const std::list<std::pair<NodeWPtr, bool> > & instances = multiPanel->getInstances();
+        for (std::list<std::pair<NodeWPtr, bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
             const std::vector<boost::shared_ptr<KnobI> > & knobs = it->first.lock()->getKnobs();
             for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
                 KnobButton* isBtn = dynamic_cast<KnobButton*>( it2->get() );
@@ -1026,7 +1026,7 @@ DockablePanel::setClosedInternal(bool c)
         if (gui) {
             if (internalNode && !c) {
                 // when a panel is open, refresh its knob values
-                GuiAppInstPtr app = gui->getApp();
+                GuiAppInstancePtr app = gui->getApp();
                 if (app) {
                     boost::shared_ptr<TimeLine> timeline = app->getTimeLine();
                     if (timeline) {
@@ -1584,10 +1584,10 @@ DockablePanel::setKeyOnAllParameters()
                     AddKeysCommand::KeyToAdd k;
                     KeyFrame kf;
                     kf.setTime(time);
-                    Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-                    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
+                    KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( knob.get() );
+                    KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( knob.get() );
                     AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>( knob.get() );
-                    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
+                    KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( knob.get() );
 
                     if (isInt) {
                         kf.setValue( isInt->getValueAtTime(time, i) );

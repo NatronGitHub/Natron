@@ -206,7 +206,7 @@ public Q_SLOTS:
     virtual bool isRenderStatsActionChecked() const OVERRIDE FINAL;
     virtual bool save(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool saveAs(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual AppInstPtr loadProject(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual AppInstancePtr loadProject(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     ///Close the current project but keep the window
     virtual bool resetProject()  OVERRIDE FINAL;
@@ -215,7 +215,7 @@ public Q_SLOTS:
     virtual bool closeProject()  OVERRIDE FINAL;
 
     ///Opens a new window
-    virtual AppInstPtr newProject()  OVERRIDE FINAL;
+    virtual AppInstancePtr newProject()  OVERRIDE FINAL;
 
     void handleFileOpenEvent(const std::string& filename);
 

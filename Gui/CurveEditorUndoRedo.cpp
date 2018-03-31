@@ -141,10 +141,10 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
-                            Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-                            Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-                            Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-                            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+                            KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( knob.get() );
+                            KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( knob.get() );
+                            KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( knob.get() );
+                            KnobStringBase* isString = dynamic_cast<KnobStringBase*>( knob.get() );
                             if (isDouble) {
                                 isDouble->setValueAtTime( time, isDouble->getValueAtTime( time, 0, ViewIdx(0) ), ViewIdx(0), isKnobCurve->getDimension() );
                             } else if (isBool) {
@@ -300,10 +300,10 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                             StatusEnum st = isParametric->addControlPoint( eValueChangedReasonUserEdited, isKnobCurve->getDimension(), it->second[i].getTime(), it->second[i].getValue() );
                             Q_UNUSED(st);
                         } else {
-                            Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-                            Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-                            Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-                            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+                            KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( knob.get() );
+                            KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( knob.get() );
+                            KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( knob.get() );
+                            KnobStringBase* isString = dynamic_cast<KnobStringBase*>( knob.get() );
                             if (isDouble) {
                                 isDouble->setValueAtTime( time, isDouble->getValueAtTime( time, 0, ViewIdx(0) ), ViewIdx(0), isKnobCurve->getDimension() );
                             } else if (isBool) {

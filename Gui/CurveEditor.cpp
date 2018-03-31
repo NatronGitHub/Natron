@@ -73,6 +73,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/TabWidget.h"
 
+#include "Gui/GuiFwd.h"
+
 using std::make_pair;
 using std::cout;
 using std::endl;
@@ -135,7 +137,7 @@ struct CurveEditorPrivate
     Label* knobLabel;
     LineEdit* knobLineEdit;
     Label* resultLabel;
-    boost::weak_ptr<KnobCurveGui> selectedKnobCurve;
+    KnobCurveGuiWPtr selectedKnobCurve;
 
     CurveEditorPrivate()
         : nodes()
@@ -508,10 +510,10 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
     nameItem->setText( 0, QString::fromUtf8( _node->getNode()->getLabel().c_str() ) );
 
     QObject::connect( node->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT(onNameChanged(QString)) );
-    const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > & knobs = node->getKnobs();
+    const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > & knobs = node->getKnobs();
     bool hasAtLeast1KnobWithACurveShown = false;
 
-    for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         createElementsForKnob(nameItem, it->second, KnobIPtr(),
                               curveWidget, tree, boost::shared_ptr<RotoContext>(), _nodeElements, &hasAtLeast1KnobWithACurveShown);
     }

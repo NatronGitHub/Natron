@@ -2482,10 +2482,10 @@ KnobHelper::validateExpression(const std::string& expression,
         }
 
 
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(this);
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>(this);
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(this);
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(this);
+        KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>(this);
+        KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(this);
+        KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>(this);
+        KnobStringBase* isString = dynamic_cast<KnobStringBase*>(this);
         if (isDouble) {
             double r = isDouble->pyObjectToType<double>(ret);
             *resultAsString = QString::number(r).toStdString();
@@ -6191,7 +6191,7 @@ AnimatingKnobStringHelper::AnimatingKnobStringHelper(KnobHolder* holder,
                                                      const std::string &description,
                                                      int dimension,
                                                      bool declaredByPlugin)
-    : Knob<std::string>(holder, description, dimension, declaredByPlugin)
+    : KnobStringBase(holder, description, dimension, declaredByPlugin)
     , _animation( new StringAnimationManager(this) ) // scoped_ptr
 {
 }

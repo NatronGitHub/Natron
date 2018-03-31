@@ -40,7 +40,7 @@ NATRON_NAMESPACE_ENTER
 
 struct TabGroupTab
 {
-    boost::weak_ptr<KnobGroup> groupKnob;
+    KnobGroupWPtr groupKnob;
     QWidget* tab;
     QGridLayout* layout;
     bool visible;

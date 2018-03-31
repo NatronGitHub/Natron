@@ -1161,8 +1161,8 @@ Curve::getCurveDisplayYRange() const
         return YRange(_imp->yMin, _imp->yMax);
     }
 
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>(_imp->owner);
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>(_imp->owner);
+    KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>(_imp->owner);
+    KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(_imp->owner);
     if (isDouble) {
         double min = isDouble->getDisplayMinimum(_imp->dimensionInOwner);
         if (min <= -DBL_MAX) {
@@ -1195,8 +1195,8 @@ Curve::YRange Curve::getCurveYRange() const
         return YRange(_imp->yMin, _imp->yMax);
     }
 
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>(_imp->owner);
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>(_imp->owner);
+    KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>(_imp->owner);
+    KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(_imp->owner);
     if (isDouble) {
         double min = isDouble->getMinimum(_imp->dimensionInOwner);
         if (min <= -DBL_MAX) {

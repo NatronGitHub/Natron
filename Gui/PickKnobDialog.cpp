@@ -280,8 +280,8 @@ getKnobGuiForKnob(const NodePtr& selectedNode,
     }
 
 
-    const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >& knobsMap = selectedPanel->getKnobsMapping();
-    for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
+    const std::list<std::pair<KnobIWPtr, KnobGuiPtr> >& knobsMap = selectedPanel->getKnobsMapping();
+    for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
         if (it->first.lock() == knob) {
             return it->second;
         }

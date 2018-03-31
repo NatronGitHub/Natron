@@ -107,7 +107,7 @@ public:
 
 private:
 
-    std::list<boost::weak_ptr<NodeGui> > _nodes;
+    std::list<NodeGuiWPtr> _nodes;
     NodeGraph* _graph;
     bool _firstRedoCalled;
     bool _isUndone;
@@ -137,7 +137,7 @@ private:
         ///This list contains only nodes that are not part of the selection: we restore only the
         ///inputs of the outputs nodes of the graph that were not removed
         NodesWList outputsToRestore;
-        boost::weak_ptr<NodeGui> node;
+        NodeGuiWPtr node;
     };
 
     std::list<NodeToRemove> _nodes;
@@ -166,8 +166,8 @@ protected:
                           const NodeGuiPtr & newSrc,
                           const NodeGuiPtr& dst,
                           int inputNb);
-    boost::weak_ptr<NodeGui> _oldSrc, _newSrc;
-    boost::weak_ptr<NodeGui> _dst;
+    NodeGuiWPtr _oldSrc, _newSrc;
+    NodeGuiWPtr _dst;
     NodeGraph* _graph;
     int _inputNb;
 };
@@ -247,7 +247,7 @@ private:
 
     struct NodeToDeclone
     {
-        boost::weak_ptr<NodeGui> node;
+        NodeGuiWPtr node;
         NodeWPtr master;
     };
 
@@ -293,7 +293,7 @@ public:
 
 private:
 
-    std::list<boost::weak_ptr<NodeGui> >_nodes;
+    std::list<NodeGuiWPtr>_nodes;
 };
 
 class EnableNodesCommand
@@ -310,7 +310,7 @@ public:
 
 private:
 
-    std::list<boost::weak_ptr<NodeGui> >_nodes;
+    std::list<NodeGuiWPtr>_nodes;
 };
 
 
@@ -336,7 +336,7 @@ private:
 
     bool _firstRedoCalled;
     bool _isUndone;
-    boost::weak_ptr<NodeGui> _node;
+    NodeGuiWPtr _node;
     std::list<NodeWPtr> _oldChildren, _newChildren; //< children if multi-instance
     std::list<boost::shared_ptr<NodeSerialization> > _newSerializations, _oldSerialization;
 };
@@ -358,19 +358,19 @@ public:
 
 private:
 
-    boost::weak_ptr<NodeGui> _node;
+    NodeGuiWPtr _node;
     QString _oldName, _newName;
 };
 
 struct ExtractedOutput
 {
-    boost::weak_ptr<NodeGui> node;
+    NodeGuiWPtr node;
     std::list<std::pair<int, NodeWPtr> > outputs;
 };
 
 struct ExtractedInput
 {
-    boost::weak_ptr<NodeGui> node;
+    NodeGuiWPtr node;
     std::vector<NodeWPtr> inputs;
 };
 
@@ -378,7 +378,7 @@ struct ExtractedTree
 {
     ExtractedOutput output;
     std::list<ExtractedInput> inputs;
-    std::list<boost::weak_ptr<NodeGui> > inbetweenNodes;
+    std::list<NodeGuiWPtr> inbetweenNodes;
 };
 
 
@@ -421,7 +421,7 @@ public:
 private:
 
     NodeGraph* _graph;
-    std::list<boost::weak_ptr<NodeGui> > _originalNodes;
+    std::list<NodeGuiWPtr> _originalNodes;
     struct OutputLink
     {
         int inputIdx;
@@ -429,7 +429,7 @@ private:
     };
     typedef std::map<NodeWPtr, OutputLink> OutputLinksMap;
     OutputLinksMap _outputLinks;
-    boost::weak_ptr<NodeGui> _group;
+    NodeGuiWPtr _group;
     bool _firstRedoCalled;
     bool _isRedone;
 };
@@ -453,14 +453,14 @@ private:
 
     struct NodeToConnect
     {
-        boost::weak_ptr<NodeGui> input;
-        std::map<boost::weak_ptr<NodeGui>, int> outputs;
+        NodeGuiWPtr input;
+        std::map<NodeGuiWPtr, int> outputs;
     };
 
     struct InlinedGroup
     {
-        boost::weak_ptr<NodeGui> group;
-        std::list<boost::weak_ptr<NodeGui> > inlinedNodes;
+        NodeGuiWPtr group;
+        std::list<NodeGuiWPtr> inlinedNodes;
         std::map<int, NodeToConnect> connections;
     };
 

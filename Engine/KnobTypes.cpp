@@ -72,7 +72,7 @@ KnobInt::KnobInt(KnobHolder* holder,
                  const std::string &label,
                  int dimension,
                  bool declaredByPlugin)
-    : Knob<int>(holder, label, dimension, declaredByPlugin)
+    : KnobIntBase(holder, label, dimension, declaredByPlugin)
     , _increments(dimension, 1)
     , _disableSlider(false)
     , _isRectangle(false)
@@ -83,7 +83,7 @@ KnobInt::KnobInt(KnobHolder* holder,
                  const QString &label,
                  int dimension,
                  bool declaredByPlugin)
-    : Knob<int>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobIntBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _increments(dimension, 1)
     , _disableSlider(false)
     , _isRectangle(false)
@@ -164,7 +164,7 @@ KnobBool::KnobBool(KnobHolder* holder,
                    const std::string &label,
                    int dimension,
                    bool declaredByPlugin)
-    : Knob<bool>(holder, label, dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label, dimension, declaredByPlugin)
 {
 }
 
@@ -172,7 +172,7 @@ KnobBool::KnobBool(KnobHolder* holder,
                    const QString &label,
                    int dimension,
                    bool declaredByPlugin)
-    : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label.toStdString(), dimension, declaredByPlugin)
 {
 }
 
@@ -202,7 +202,7 @@ KnobDouble::KnobDouble(KnobHolder* holder,
                        const std::string &label,
                        int dimension,
                        bool declaredByPlugin)
-    : Knob<double>(holder, label, dimension, declaredByPlugin)
+    : KnobDoubleBase(holder, label, dimension, declaredByPlugin)
     , _spatial(false)
     , _isRectangle(false)
     , _increments(dimension, 1)
@@ -219,7 +219,7 @@ KnobDouble::KnobDouble(KnobHolder* holder,
                        const QString &label,
                        int dimension,
                        bool declaredByPlugin)
-    : Knob<double>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobDoubleBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _spatial(false)
     , _isRectangle(false)
     , _increments(dimension, 1)
@@ -454,7 +454,7 @@ KnobButton::KnobButton(KnobHolder* holder,
                        const std::string &label,
                        int dimension,
                        bool declaredByPlugin)
-    : Knob<bool>(holder, label, dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label, dimension, declaredByPlugin)
     , _renderButton(false)
     , _checkable(false)
     , _isToolButtonAction(false)
@@ -466,7 +466,7 @@ KnobButton::KnobButton(KnobHolder* holder,
                        const QString &label,
                        int dimension,
                        bool declaredByPlugin)
-    : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _renderButton(false)
     , _checkable(false)
     , _isToolButtonAction(false)
@@ -508,7 +508,7 @@ KnobChoice::KnobChoice(KnobHolder* holder,
                        const std::string &label,
                        int dimension,
                        bool declaredByPlugin)
-    : Knob<int>(holder, label, dimension, declaredByPlugin)
+    : KnobIntBase(holder, label, dimension, declaredByPlugin)
     , _entriesMutex()
     , _currentEntry()
     , _addNewChoice(false)
@@ -520,7 +520,7 @@ KnobChoice::KnobChoice(KnobHolder* holder,
                        const QString &label,
                        int dimension,
                        bool declaredByPlugin)
-    : Knob<int>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobIntBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _entriesMutex()
     , _currentEntry()
     , _addNewChoice(false)
@@ -1232,7 +1232,7 @@ KnobSeparator::KnobSeparator(KnobHolder* holder,
                              const std::string &label,
                              int dimension,
                              bool declaredByPlugin)
-    : Knob<bool>(holder, label, dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label, dimension, declaredByPlugin)
 {
 }
 
@@ -1240,7 +1240,7 @@ KnobSeparator::KnobSeparator(KnobHolder* holder,
                              const QString &label,
                              int dimension,
                              bool declaredByPlugin)
-    : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label.toStdString(), dimension, declaredByPlugin)
 {
 }
 
@@ -1276,7 +1276,7 @@ KnobColor::KnobColor(KnobHolder* holder,
                      const std::string &label,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<double>(holder, label, dimension, declaredByPlugin)
+    : KnobDoubleBase(holder, label, dimension, declaredByPlugin)
     , _allDimensionsEnabled(true)
     , _simplifiedMode(false)
 {
@@ -1288,7 +1288,7 @@ KnobColor::KnobColor(KnobHolder* holder,
                      const QString &label,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<double>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobDoubleBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _allDimensionsEnabled(true)
     , _simplifiedMode(false)
 {
@@ -1451,7 +1451,7 @@ KnobGroup::KnobGroup(KnobHolder* holder,
                      const std::string &label,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<bool>(holder, label, dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label, dimension, declaredByPlugin)
     , _isTab(false)
     , _isToolButton(false)
     , _isDialog(false)
@@ -1462,7 +1462,7 @@ KnobGroup::KnobGroup(KnobHolder* holder,
                      const QString &label,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _isTab(false)
     , _isToolButton(false)
     , _isDialog(false)
@@ -1638,7 +1638,7 @@ KnobPage::KnobPage(KnobHolder* holder,
                    const std::string &label,
                    int dimension,
                    bool declaredByPlugin)
-    : Knob<bool>(holder, label, dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label, dimension, declaredByPlugin)
     , _isToolBar(false)
 {
     setIsPersistent(false);
@@ -1648,7 +1648,7 @@ KnobPage::KnobPage(KnobHolder* holder,
                    const QString &label,
                    int dimension,
                    bool declaredByPlugin)
-    : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _isToolBar(false)
 {
     setIsPersistent(false);
@@ -1788,7 +1788,7 @@ KnobParametric::KnobParametric(KnobHolder* holder,
                                const std::string &label,
                                int dimension,
                                bool declaredByPlugin)
-    : Knob<double>(holder, label, dimension, declaredByPlugin)
+    : KnobDoubleBase(holder, label, dimension, declaredByPlugin)
     , _curvesMutex()
     , _curves(dimension)
     , _defaultCurves(dimension)
@@ -1807,7 +1807,7 @@ KnobParametric::KnobParametric(KnobHolder* holder,
                                const QString &label,
                                int dimension,
                                bool declaredByPlugin)
-    : Knob<double>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobDoubleBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _curvesMutex()
     , _curves(dimension)
     , _defaultCurves(dimension)
@@ -2338,7 +2338,7 @@ KnobTable::KnobTable(KnobHolder* holder,
                      const std::string &label,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<std::string>(holder, label, dimension, declaredByPlugin)
+    : KnobStringBase(holder, label, dimension, declaredByPlugin)
 {
 }
 
@@ -2346,7 +2346,7 @@ KnobTable::KnobTable(KnobHolder* holder,
                      const QString &label,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<std::string>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobStringBase(holder, label.toStdString(), dimension, declaredByPlugin)
 {
 }
 

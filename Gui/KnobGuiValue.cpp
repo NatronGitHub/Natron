@@ -84,9 +84,9 @@ NATRON_NAMESPACE_ENTER
 
 struct KnobGuiValuePrivate
 {
-    KnobWPtr knob;
-    boost::weak_ptr<Knob<int> > intKnob;
-    boost::weak_ptr<Knob<double> > doubleKnob;
+    KnobIWPtr knob;
+    KnobIntBaseWPtr intKnob;
+    KnobDoubleBaseWPtr doubleKnob;
     std::vector<std::pair<SpinBox *, ClickableLabel *> > spinBoxes;
     QWidget *container;
     ScaleSliderQWidget *slider;
@@ -96,8 +96,8 @@ struct KnobGuiValuePrivate
 
     KnobGuiValuePrivate(KnobIPtr knob)
         : knob(knob)
-        , intKnob( boost::dynamic_pointer_cast<Knob<int> >(knob) )
-        , doubleKnob( boost::dynamic_pointer_cast<Knob<double> >(knob) )
+        , intKnob( boost::dynamic_pointer_cast<KnobIntBase>(knob) )
+        , doubleKnob( boost::dynamic_pointer_cast<KnobDoubleBase>(knob) )
         , spinBoxes()
         , container(0)
         , slider(0)
@@ -107,12 +107,12 @@ struct KnobGuiValuePrivate
     {
     }
 
-    boost::shared_ptr<Knob<int> > getKnobAsInt() const
+    boost::shared_ptr<KnobIntBase> getKnobAsInt() const
     {
         return intKnob.lock();
     }
 
-    boost::shared_ptr<Knob<double> > getKnobAsDouble() const
+    boost::shared_ptr<KnobDoubleBase> getKnobAsDouble() const
     {
         return doubleKnob.lock();
     }
@@ -125,8 +125,8 @@ struct KnobGuiValuePrivate
     double getKnobValue(int dimension) const
     {
         double value;
-        boost::shared_ptr<Knob<double> > k = getKnobAsDouble();
-        boost::shared_ptr<Knob<int> > i = getKnobAsInt();
+        boost::shared_ptr<KnobDoubleBase> k = getKnobAsDouble();
+        boost::shared_ptr<KnobIntBase> i = getKnobAsInt();
 
         if (k) {
             value = k->getValue(dimension);
@@ -238,8 +238,8 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
     const int nDims = knob->getDimension();
     std::vector<double> increments, displayMins, displayMaxs, mins, maxs;
     std::vector<int> decimals;
-    boost::shared_ptr<Knob<double> > doubleKnob = _imp->getKnobAsDouble();
-    boost::shared_ptr<Knob<int> > intKnob = _imp->getKnobAsInt();
+    boost::shared_ptr<KnobDoubleBase> doubleKnob = _imp->getKnobAsDouble();
+    boost::shared_ptr<KnobIntBase> intKnob = _imp->getKnobAsInt();
     if (doubleKnob) {
         displayMins = doubleKnob->getDisplayMinimums();
         displayMaxs = doubleKnob->getDisplayMaximums();
@@ -591,8 +591,8 @@ KnobGuiValue::onDimensionSwitchClicked(bool clicked)
         foldAllDimensions();
 
         KnobIPtr knob = _imp->getKnob();
-        boost::shared_ptr<Knob<double> > doubleKnob = _imp->getKnobAsDouble();
-        boost::shared_ptr<Knob<int> > intKnob = _imp->getKnobAsInt();
+        boost::shared_ptr<KnobDoubleBase> doubleKnob = _imp->getKnobAsDouble();
+        boost::shared_ptr<KnobIntBase> intKnob = _imp->getKnobAsInt();
         const int nDims = knob->getDimension();
         if (nDims > 1) {
             SequenceTime time = knob->getCurrentTime();
@@ -686,8 +686,8 @@ KnobGuiValue::onDisplayMinMaxChanged(const double mini,
         double sliderMax = valueAccordingToType(false, index, maxi);
         if ( (sliderMax - sliderMin) >= SLIDER_MAX_RANGE ) {
             // Use min max for slider if dispmin/dispmax was not set
-            boost::shared_ptr<Knob<double> > doubleKnob = _imp->getKnobAsDouble();
-            boost::shared_ptr<Knob<int> > intKnob = _imp->getKnobAsInt();
+            boost::shared_ptr<KnobDoubleBase> doubleKnob = _imp->getKnobAsDouble();
+            boost::shared_ptr<KnobIntBase> intKnob = _imp->getKnobAsInt();
             double min, max;
             if (doubleKnob) {
                 max = valueAccordingToType( false, index, doubleKnob->getMaximum(index) );
@@ -899,8 +899,8 @@ KnobGuiValue::onSliderEditingFinished(bool hasMovedOnce)
 void
 KnobGuiValue::sliderEditingEnd(double d)
 {
-    boost::shared_ptr<Knob<double> > doubleKnob = _imp->getKnobAsDouble();
-    boost::shared_ptr<Knob<int> > intKnob = _imp->getKnobAsInt();
+    boost::shared_ptr<KnobDoubleBase> doubleKnob = _imp->getKnobAsDouble();
+    boost::shared_ptr<KnobIntBase> intKnob = _imp->getKnobAsInt();
 
     if (doubleKnob) {
         int digits = std::max( 0, (int)-std::floor( std::log10( _imp->slider->increment() ) ) );
@@ -951,8 +951,8 @@ void
 KnobGuiValue::onSpinBoxValueChanged()
 {
     SpinBox* changedBox = qobject_cast<SpinBox*>( sender() );
-    boost::shared_ptr<Knob<double> > doubleKnob = _imp->getKnobAsDouble();
-    boost::shared_ptr<Knob<int> > intKnob = _imp->getKnobAsInt();
+    boost::shared_ptr<KnobDoubleBase> doubleKnob = _imp->getKnobAsDouble();
+    boost::shared_ptr<KnobIntBase> intKnob = _imp->getKnobAsInt();
     int spinBoxDim = -1;
     std::vector<double> oldValue( _imp->spinBoxes.size() );
     std::vector<double> newValue( _imp->spinBoxes.size() );

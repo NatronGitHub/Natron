@@ -67,7 +67,7 @@
 
 NATRON_NAMESPACE_ENTER
 
-typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
+typedef std::map<KnobIWPtr, KnobGui *> KnobsAndGuis;
 typedef std::pair<QTreeWidgetItem *, boost::shared_ptr<DSNode> > TreeItemAndDSNode;
 typedef std::pair<QTreeWidgetItem *, DSKnob *> TreeItemAndDSKnob;
 
@@ -698,11 +698,11 @@ DopeSheet::trimReaderLeft(const boost::shared_ptr<DSNode> &reader,
 {
     NodePtr node = reader->getInternalNode();
 
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
     assert(firstFrameKnob);
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
     assert(lastFrameKnob);
-    Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
+    KnobIntBase *originalFrameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
     assert(originalFrameRangeKnob);
 
 
@@ -725,11 +725,11 @@ DopeSheet::trimReaderRight(const boost::shared_ptr<DSNode> &reader,
 {
     NodePtr node = reader->getInternalNode();
 
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
     assert(firstFrameKnob);
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
     assert(lastFrameKnob);
-    Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
+    KnobIntBase *originalFrameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
     assert(originalFrameRangeKnob);
 
     int firstFrame = firstFrameKnob->getValue();
@@ -750,11 +750,11 @@ DopeSheet::canSlipReader(const boost::shared_ptr<DSNode> &reader) const
 {
     NodePtr node = reader->getInternalNode();
 
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
     assert(firstFrameKnob);
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
     assert(lastFrameKnob);
-    Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
+    KnobIntBase *originalFrameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
     assert(originalFrameRangeKnob);
 
     ///Slipping means moving the timeOffset parameter by dt and moving firstFrame and lastFrame by -dt
@@ -778,11 +778,11 @@ DopeSheet::slipReader(const boost::shared_ptr<DSNode> &reader,
 {
     NodePtr node = reader->getInternalNode();
 
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
     assert(firstFrameKnob);
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
     assert(lastFrameKnob);
-    Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
+    KnobIntBase *originalFrameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
     assert(originalFrameRangeKnob);
 
     ///Slipping means moving the timeOffset parameter by dt and moving firstFrame and lastFrame by -dt
@@ -1010,7 +1010,7 @@ public:
     int dimension;
     QTreeWidgetItem *nameItem;
     KnobGuiWPtr knobGui;
-    KnobWPtr knob;
+    KnobIWPtr knob;
 };
 
 DSKnobPrivate::DSKnobPrivate()
@@ -1137,7 +1137,7 @@ public:
     /* attributes */
     DopeSheet *dopeSheet;
     DSKeyPtrList selectedKeyframes;
-    std::list<boost::weak_ptr<DSNode> > selectedRangeNodes;
+    std::list<DSNodeWPtr> selectedRangeNodes;
 };
 
 DopeSheetSelectionModel::DopeSheetSelectionModel(DopeSheet *dopeSheet)
@@ -1253,7 +1253,7 @@ DopeSheetSelectionModel::makeSelection(const std::vector<DopeSheetKey> &keys,
     }
 
     for (std::vector<boost::shared_ptr<DSNode> >::const_iterator it = rangeNodes.begin(); it != rangeNodes.end(); ++it) {
-        std::list<boost::weak_ptr<DSNode> >::iterator found = isRangeNodeSelected(*it);
+        std::list<DSNodeWPtr>::iterator found = isRangeNodeSelected(*it);
         if ( found == _imp->selectedRangeNodes.end() ) {
             _imp->selectedRangeNodes.push_back(*it);
             hasChanged = true;
@@ -1279,7 +1279,7 @@ DopeSheetSelectionModel::getCurrentSelection(DSKeyPtrList* keys,
                                              std::vector<boost::shared_ptr<DSNode> >* nodes) const
 {
     *keys =  _imp->selectedKeyframes;
-    for (std::list<boost::weak_ptr<DSNode> >::const_iterator it = _imp->selectedRangeNodes.begin(); it != _imp->selectedRangeNodes.end(); ++it) {
+    for (std::list<DSNodeWPtr>::const_iterator it = _imp->selectedRangeNodes.begin(); it != _imp->selectedRangeNodes.end(); ++it) {
         boost::shared_ptr<DSNode> n = it->lock();
         if (n) {
             nodes->push_back(n);
@@ -1347,10 +1347,10 @@ DopeSheetSelectionModel::keyframeIsSelected(const boost::shared_ptr<DSKnob> &dsK
     return false;
 }
 
-std::list<boost::weak_ptr<DSNode> >::iterator
+std::list<DSNodeWPtr>::iterator
 DopeSheetSelectionModel::isRangeNodeSelected(const boost::shared_ptr<DSNode>& node)
 {
-    for (std::list<boost::weak_ptr<DSNode> >::iterator it = _imp->selectedRangeNodes.begin(); it != _imp->selectedRangeNodes.end(); ++it) {
+    for (std::list<DSNodeWPtr>::iterator it = _imp->selectedRangeNodes.begin(); it != _imp->selectedRangeNodes.end(); ++it) {
         boost::shared_ptr<DSNode> n = it->lock();
         if ( n && (n == node) ) {
             return it;
@@ -1375,7 +1375,7 @@ DopeSheetSelectionModel::keyframeIsSelected(const DopeSheetKey &key) const
 bool
 DopeSheetSelectionModel::rangeIsSelected(const boost::shared_ptr<DSNode>& node) const
 {
-    for (std::list<boost::weak_ptr<DSNode> >::iterator it = _imp->selectedRangeNodes.begin(); it != _imp->selectedRangeNodes.end(); ++it) {
+    for (std::list<DSNodeWPtr>::iterator it = _imp->selectedRangeNodes.begin(); it != _imp->selectedRangeNodes.end(); ++it) {
         boost::shared_ptr<DSNode> n = it->lock();
         if ( n && (n == node) ) {
             return true;
@@ -1422,7 +1422,7 @@ public:
     /* attributes */
     DopeSheet *dopeSheetModel;
     DopeSheetItemType nodeType;
-    boost::weak_ptr<NodeGui> nodeGui;
+    NodeGuiWPtr nodeGui;
     QTreeWidgetItem *nameItem;
     DSTreeItemKnobMap itemKnobMap;
     bool isSelected;
@@ -1478,9 +1478,9 @@ DSNode::DSNode(DopeSheet *model,
     _imp->nodeGui = nodeGui;
 
     // Create dope sheet knobs
-    const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > &knobs = nodeGui->getKnobs();
+    const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > &knobs = nodeGui->getKnobs();
 
-    for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it = knobs.begin();
+    for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator it = knobs.begin();
          it != knobs.end(); ++it) {
         KnobIPtr knob = it->first.lock();
         if (!knob) {

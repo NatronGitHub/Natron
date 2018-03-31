@@ -83,7 +83,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 // Typedefs
 typedef std::set<double> TimeSet;
 typedef std::pair<double, double> FrameRange;
-typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
+typedef std::map<KnobIWPtr, KnobGui *> KnobsAndGuis;
 
 
 // Constants
@@ -1154,12 +1154,12 @@ DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) const
         if ( isSelected && (dsNode->getItemType() == eDopeSheetItemTypeReader) ) {
             NodePtr node = dsNode->getInternalNode();
 
-            Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+            KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
             assert(firstFrameKnob);
 
             double speedValue = 1.0f;
 
-            Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
+            KnobIntBase *originalFrameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
             assert(originalFrameRangeKnob);
 
             int originalFirstFrame = originalFrameRangeKnob->getValue(0);
@@ -1490,7 +1490,7 @@ DopeSheetViewPrivate::drawProjectBounds() const
     if (!gui) {
         return;
     }
-    GuiAppInstPtr app = gui->getApp();
+    GuiAppInstancePtr app = gui->getApp();
     if (!app) {
         return;
     }
@@ -1882,15 +1882,15 @@ DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
 
     NodePtr node = reader->getInternalNode();
 
-    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameStartingTime).get() );
+    KnobIntBase *startingTimeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameStartingTime).get() );
     if (!startingTimeKnob) {
         return;
     }
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
     if (!firstFrameKnob) {
         return;
     }
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
     if (!lastFrameKnob) {
         return;
     }
@@ -2023,7 +2023,7 @@ DopeSheetViewPrivate::computeTimeOffsetRange(DSNode *timeOffset)
             FrameRange nearestReaderRange = nodeRanges.find( nearestReader.get() )->second; // map::at() is C++11
 
             // Retrieve the time offset values
-            Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>( timeOffset->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get() );
+            KnobIntBase *timeOffsetKnob = dynamic_cast<KnobIntBase *>( timeOffset->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get() );
             assert(timeOffsetKnob);
 
             int timeOffsetValue = timeOffsetKnob->getValue();
@@ -2053,7 +2053,7 @@ DopeSheetViewPrivate::computeFRRange(DSNode *frameRange)
 
     NodePtr node = frameRange->getInternalNode();
 
-    Knob<int> *frameRangeKnob = dynamic_cast<Knob<int> *>( node->getKnobByName("frameRange").get() );
+    KnobIntBase *frameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName("frameRange").get() );
     assert(frameRangeKnob);
 
     FrameRange range;
@@ -2117,9 +2117,9 @@ DopeSheetViewPrivate::computeGroupRange(DSNode *group)
             times.insert(found->second.second);
         }
 
-        const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > &knobs = nodeGui->getKnobs();
+        const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > &knobs = nodeGui->getKnobs();
 
-        for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it = knobs.begin();
+        for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator it = knobs.begin();
              it != knobs.end();
              ++it) {
             const KnobGuiPtr& knobGui = (*it).second;
@@ -2238,7 +2238,7 @@ DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
             if (gui) {
                 gui->setDraftRenderEnabled(true);
             }
-            Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>( currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get() );
+            KnobIntBase *timeOffsetKnob = dynamic_cast<KnobIntBase *>( currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get() );
             assert(timeOffsetKnob);
 
             double newFirstFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
@@ -2253,7 +2253,7 @@ DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
             if (gui) {
                 gui->setDraftRenderEnabled(true);
             }
-            Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>( currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get() );
+            KnobIntBase *timeOffsetKnob = dynamic_cast<KnobIntBase *>( currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get() );
             assert(timeOffsetKnob);
 
             double newLastFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
@@ -2971,9 +2971,9 @@ DopeSheetView::onNodeAdded(DSNode *dsNode)
 
     if (nodeType == eDopeSheetItemTypeCommon) {
         if ( _imp->model->isPartOfGroup(dsNode) ) {
-            const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > &knobs = dsNode->getNodeGui()->getKnobs();
+            const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > &knobs = dsNode->getNodeGui()->getKnobs();
 
-            for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
+            for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
                 KnobIPtr knob = knobIt->first.lock();
                 const KnobGuiPtr& knobGui = knobIt->second;
                 connect( knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)),

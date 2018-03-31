@@ -125,7 +125,7 @@ AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
 AddMultipleNodesCommand::~AddMultipleNodesCommand()
 {
     if (_isUndone) {
-        for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+        for (std::list<NodeGuiWPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
             NodeGuiPtr node = it->lock();
             if (node) {
                 node->getNode()->destroyNode(false, false);
@@ -141,7 +141,7 @@ AddMultipleNodesCommand::undo()
     std::list<ViewerInstance*> viewersToRefresh;
 
 
-    for (std::list<boost::weak_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+    for (std::list<NodeGuiWPtr>::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         NodeGuiPtr node = it->lock();
         std::list<ViewerInstance* > viewers;
         node->getNode()->hasViewersConnected(&viewers);
@@ -176,7 +176,7 @@ AddMultipleNodesCommand::redo()
     _isUndone = false;
     std::list<ViewerInstance*> viewersToRefresh;
     std::list<NodeGuiPtr> nodes;
-    for (std::list<boost::weak_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+    for (std::list<NodeGuiWPtr>::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         nodes.push_back( it->lock() );
     }
     if (_firstRedoCalled) {
@@ -1081,7 +1081,7 @@ DisableNodesCommand::DisableNodesCommand(const std::list<NodeGuiPtr> & nodes,
 void
 DisableNodesCommand::undo()
 {
-    for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+    for (std::list<NodeGuiWPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->lock()->getNode()->setNodeDisabled(false);
     }
     setText( tr("Disable nodes") );
@@ -1090,7 +1090,7 @@ DisableNodesCommand::undo()
 void
 DisableNodesCommand::redo()
 {
-    for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+    for (std::list<NodeGuiWPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->lock()->getNode()->setNodeDisabled(true);
     }
     setText( tr("Disable nodes") );
@@ -1109,7 +1109,7 @@ EnableNodesCommand::EnableNodesCommand(const std::list<NodeGuiPtr> & nodes,
 void
 EnableNodesCommand::undo()
 {
-    for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+    for (std::list<NodeGuiWPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->lock()->getNode()->setNodeDisabled(true);
     }
     setText( tr("Enable nodes") );
@@ -1118,7 +1118,7 @@ EnableNodesCommand::undo()
 void
 EnableNodesCommand::redo()
 {
-    for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+    for (std::list<NodeGuiWPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->lock()->getNode()->setNodeDisabled(false);
     }
     setText( tr("Enable nodes") );
@@ -1388,7 +1388,7 @@ ExtractNodeUndoRedoCommand::undo()
 
         ///Move all other nodes
 
-        for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inbetweenNodes.begin(); it2 != it->inbetweenNodes.end(); ++it2) {
+        for (std::list<NodeGuiWPtr>::iterator it2 = it->inbetweenNodes.begin(); it2 != it->inbetweenNodes.end(); ++it2) {
             NodeGuiPtr node = it2->lock();
             QPointF curPos = node->getPos_mt_safe();
             node->refreshPosition(curPos.x() - 200, curPos.y(), true);
@@ -1483,7 +1483,7 @@ ExtractNodeUndoRedoCommand::redo()
 
         ///Move all other nodes
 
-        for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inbetweenNodes.begin(); it2 != it->inbetweenNodes.end(); ++it2) {
+        for (std::list<NodeGuiWPtr>::iterator it2 = it->inbetweenNodes.begin(); it2 != it->inbetweenNodes.end(); ++it2) {
             NodeGuiPtr node = it2->lock();
             QPointF curPos = node->getPos_mt_safe();
             node->refreshPosition(curPos.x() + 200, curPos.y(), true);
@@ -1539,7 +1539,7 @@ GroupFromSelectionCommand::undo()
     }
 
 
-    for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
+    for (std::list<NodeGuiWPtr>::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
         NodeGuiPtr node = it->lock();
         if (node) {
             node->getNode()->activate(NodesList(), true, false);
@@ -1564,7 +1564,7 @@ GroupFromSelectionCommand::redo()
     QPointF groupPosition;
 
     NodesGuiList originalNodes;
-    for (std::list<boost::weak_ptr<NodeGui> >::const_iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
+    for (std::list<NodeGuiWPtr>::const_iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
         NodeGuiPtr n = it->lock();
         if (!n) {
             continue;
@@ -2014,7 +2014,7 @@ InlineGroupCommand::undo()
             for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2 != connectedViewers.end(); ++it2) {
                 viewers.insert(*it2);
             }
-            for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inlinedNodes.begin();
+            for (std::list<NodeGuiWPtr>::iterator it2 = it->inlinedNodes.begin();
                  it2 != it->inlinedNodes.end(); ++it2) {
                 NodeGuiPtr node = (*it2).lock();
                 if (node) {
@@ -2047,7 +2047,7 @@ InlineGroupCommand::redo()
                 viewers.insert(*it2);
             }
             groupNode->getNode()->deactivate(NodesList(), true, false, true, false, false);
-            for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inlinedNodes.begin();
+            for (std::list<NodeGuiWPtr>::iterator it2 = it->inlinedNodes.begin();
                  it2 != it->inlinedNodes.end(); ++it2) {
                 NodeGuiPtr node = (*it2).lock();
                 if (node) {
@@ -2063,7 +2063,7 @@ InlineGroupCommand::redo()
                 if (!input) {
                     continue;
                 }
-                for (std::map<boost::weak_ptr<NodeGui>, int>::iterator it3 = it2->second.outputs.begin();
+                for (std::map<NodeGuiWPtr, int>::iterator it3 = it2->second.outputs.begin();
                      it3 != it2->second.outputs.end(); ++it3) {
                     NodeGuiPtr node = it3->first.lock();
                     if (node) {

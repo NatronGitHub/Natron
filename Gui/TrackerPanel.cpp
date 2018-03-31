@@ -205,14 +205,14 @@ TrackerTableItemDelegate::paint(QPainter * painter,
 struct ItemData
 {
     TableItem* item;
-    boost::weak_ptr<KnobI> knob;
+    KnobIWPtr knob;
     int dimension;
 };
 
 struct TrackDatas
 {
     std::vector<ItemData> items;
-    boost::weak_ptr<TrackMarker> marker;
+    TrackMarkerWPtr marker;
 };
 
 typedef std::vector<TrackDatas> TrackItems;
@@ -227,7 +227,7 @@ struct TrackKeys
         : userKeys(), centerKeys(), visible(false) {}
 };
 
-typedef std::map<boost::weak_ptr<TrackMarker>, TrackKeys  > TrackKeysMap;
+typedef std::map<TrackMarkerWPtr, TrackKeys  > TrackKeysMap;
 
 struct TrackerPanelPrivate
 {
@@ -235,8 +235,8 @@ struct TrackerPanelPrivate
 
 public:
     TrackerPanel* _publicInterface;
-    boost::weak_ptr<NodeGui> node;
-    boost::weak_ptr<TrackerContext> context;
+    NodeGuiWPtr node;
+    TrackerContextWPtr context;
     TrackItems items;
     QVBoxLayout* mainLayout;
     TableView* view;
@@ -1491,7 +1491,7 @@ TrackerPanel::onTrackKeyframeRemoved(const TrackMarkerPtr& marker,
     if ( it2 != found->second.userKeys.end() ) {
         found->second.userKeys.erase(it2);
         if (found->second.visible) {
-            AppInstPtr app = _imp->node.lock()->getNode()->getApp();
+            AppInstancePtr app = _imp->node.lock()->getNode()->getApp();
             _imp->updateTrackKeysInfoBar( app->getTimeLine()->currentFrame() );
             app->removeUserKeyFrameIndicator(key);
         }
@@ -1515,7 +1515,7 @@ TrackerPanel::onTrackAllKeyframesRemoved(const TrackMarkerPtr& marker)
 
 
     if (it->second.visible) {
-        AppInstPtr app = _imp->node.lock()->getNode()->getApp();
+        AppInstancePtr app = _imp->node.lock()->getNode()->getApp();
         _imp->updateTrackKeysInfoBar( app->getTimeLine()->currentFrame() );
         app->removeUserMultipleKeyframeIndicator(toRemove, true);
     }
@@ -1545,7 +1545,7 @@ TrackerPanel::onKeyframeSetOnTrackCenter(const TrackMarkerPtr &marker,
             if (!internalNode) {
                 return;
             }
-            AppInstPtr app = internalNode->getApp();
+            AppInstancePtr app = internalNode->getApp();
             if (!app) {
                 return;
             }
@@ -1576,7 +1576,7 @@ TrackerPanel::onKeyframeRemovedOnTrackCenter(const TrackMarkerPtr& marker,
             if (!internalNode) {
                 return;
             }
-            AppInstPtr app = internalNode->getApp();
+            AppInstancePtr app = internalNode->getApp();
             if (!app) {
                 return;
             }
@@ -1610,7 +1610,7 @@ TrackerPanel::onAllKeyframesRemovedOnTrackCenter(const TrackMarkerPtr &marker)
         if (!internalNode) {
             return;
         }
-        AppInstPtr app = internalNode->getApp();
+        AppInstancePtr app = internalNode->getApp();
         if (!app) {
             return;
         }
@@ -1647,7 +1647,7 @@ TrackerPanel::onMultipleKeysRemovedOnTrackCenter(const TrackMarkerPtr &marker,
         if (!internalNode) {
             return;
         }
-        AppInstPtr app = internalNode->getApp();
+        AppInstancePtr app = internalNode->getApp();
         if (!app) {
             return;
         }
@@ -1684,7 +1684,7 @@ TrackerPanel::onMultipleKeyframesSetOnTrackCenter(const TrackMarkerPtr& marker,
             if (!internalNode) {
                 return;
             }
-            AppInstPtr app = internalNode->getApp();
+            AppInstancePtr app = internalNode->getApp();
             if (!app) {
                 return;
             }
@@ -1706,7 +1706,7 @@ TrackerPanelPrivate::setVisibleItemKeyframes(const std::list<int>& keyframes,
     if (!internalNode) {
         return;
     }
-    AppInstPtr app = internalNode->getApp();
+    AppInstancePtr app = internalNode->getApp();
     if (!app) {
         return;
     }
@@ -1730,7 +1730,7 @@ TrackerPanelPrivate::setVisibleItemUserKeyframes(const std::list<int>& keyframes
     if (!internalNode) {
         return;
     }
-    AppInstPtr app = internalNode->getApp();
+    AppInstancePtr app = internalNode->getApp();
     if (!app) {
         return;
     }

@@ -107,7 +107,7 @@ struct RotoPaintData
 
 struct KnobDnDData
 {
-    boost::weak_ptr<KnobI> source;
+    KnobIWPtr source;
     int sourceDimension;
     QDrag* drag;
 };
@@ -453,7 +453,7 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
             }
         } else {
             CLArgs cl;
-            AppInstPtr newApp = appPTR->newAppInstance(cl, false);
+            AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
             if ( !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
                 return false;
             }
@@ -1215,7 +1215,7 @@ GuiAppInstance::saveAs(const std::string& filename)
     return _imp->_gui->saveProjectAs(filename);
 }
 
-AppInstPtr
+AppInstancePtr
 GuiAppInstance::loadProject(const std::string& filename)
 {
     return _imp->_gui->openProject(filename);
@@ -1236,7 +1236,7 @@ GuiAppInstance::closeProject()
 }
 
 ///Opens a new window
-AppInstPtr
+AppInstancePtr
 GuiAppInstance::newProject()
 {
     return _imp->_gui->createNewProject();
@@ -1250,7 +1250,7 @@ GuiAppInstance::handleFileOpenEvent(const std::string &filename)
     fileCopy.replace( QLatin1Char('\\'), QLatin1Char('/') );
     QString ext = QtCompat::removeFileExtension(fileCopy);
     if ( ext == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) {
-        AppInstPtr app = getGui()->openProject(filename);
+        AppInstancePtr app = getGui()->openProject(filename);
         if (!app) {
             Dialogs::errorDialog(tr("Project").toStdString(), tr("Failed to open project").toStdString() + ' ' + filename);
         }

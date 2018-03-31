@@ -145,7 +145,7 @@ private:
 private:
 
     Bool_CheckBox *_checkBox;
-    boost::weak_ptr<KnobBool> _knob;
+    KnobBoolWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

@@ -2222,8 +2222,23 @@ private:
 };
 
 
+typedef Knob<bool> KnobBoolBase;
+typedef Knob<double> KnobDoubleBase;
+typedef Knob<int> KnobIntBase;
+typedef Knob<std::string> KnobStringBase;
+
+typedef boost::shared_ptr<KnobBoolBase> KnobBoolBasePtr;
+typedef boost::shared_ptr<KnobDoubleBase> KnobDoubleBasePtr;
+typedef boost::shared_ptr<KnobIntBase> KnobIntBasePtr;
+typedef boost::shared_ptr<KnobStringBase> KnobStringBasePtr;
+
+typedef boost::weak_ptr<KnobBoolBase> KnobBoolBaseWPtr;
+typedef boost::weak_ptr<KnobDoubleBase> KnobDoubleBaseWPtr;
+typedef boost::weak_ptr<KnobIntBase> KnobIntBaseWPtr;
+typedef boost::weak_ptr<KnobStringBase> KnobStringBaseWPtr;
+
 class AnimatingKnobStringHelper
-    : public Knob<std::string>
+    : public KnobStringBase
 {
 public:
 

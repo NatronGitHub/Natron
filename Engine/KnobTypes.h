@@ -59,7 +59,7 @@ NATRON_NAMESPACE_ENTER
 /******************************KnobInt**************************************/
 
 class KnobInt
-    : public QObject, public Knob<int>
+    : public QObject, public KnobIntBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -142,7 +142,7 @@ private:
 /******************************KnobBool**************************************/
 
 class KnobBool
-    :  public Knob<bool>
+    :  public KnobBoolBase
 {
 public:
 
@@ -190,7 +190,7 @@ private:
 /******************************KnobDouble**************************************/
 
 class KnobDouble
-    :  public QObject, public Knob<double>
+    :  public QObject, public KnobDoubleBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -382,7 +382,7 @@ private:
 /******************************KnobButton**************************************/
 
 class KnobButton
-    : public Knob<bool>
+    : public KnobBoolBase
 {
 public:
 
@@ -460,7 +460,7 @@ private:
 /******************************KnobChoice**************************************/
 
 class KnobChoice
-    : public QObject, public Knob<int>
+    : public QObject, public KnobIntBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -599,7 +599,7 @@ private:
 /******************************KnobSeparator**************************************/
 
 class KnobSeparator
-    : public Knob<bool>
+    : public KnobBoolBase
 {
 public:
 
@@ -645,7 +645,7 @@ private:
  * In dimension 4 the knob will have R,G,B and A channels.
  **/
 class KnobColor
-    :  public QObject, public Knob<double>
+    :  public QObject, public KnobDoubleBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -835,7 +835,7 @@ private:
 
 /******************************KnobGroup**************************************/
 class KnobGroup
-    :  public QObject, public Knob<bool>
+    :  public QObject, public KnobBoolBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -902,7 +902,7 @@ private:
 /******************************PAGE_KNOB**************************************/
 
 class KnobPage
-    :  public QObject, public Knob<bool>
+    :  public QObject, public KnobBoolBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -965,7 +965,7 @@ private:
 /******************************KnobParametric**************************************/
 
 class KnobParametric
-    :  public QObject, public Knob<double>
+    :  public QObject, public KnobDoubleBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -1074,7 +1074,7 @@ private:
  * @brief A Table containing strings. The number of columns is static.
  **/
 class KnobTable
-    : public QObject, public Knob<std::string>
+    : public QObject, public KnobStringBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT

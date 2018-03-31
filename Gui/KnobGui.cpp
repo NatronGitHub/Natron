@@ -120,7 +120,7 @@ void
 KnobGui::removeGui()
 {
     assert(!_imp->guiRemoved);
-    for (std::vector<boost::weak_ptr< KnobI > >::iterator it = _imp->knobsOnSameLine.begin(); it != _imp->knobsOnSameLine.end(); ++it) {
+    for (std::vector<KnobIWPtr>::iterator it = _imp->knobsOnSameLine.begin(); it != _imp->knobsOnSameLine.end(); ++it) {
         KnobGuiPtr kg = _imp->container->getKnobGui( it->lock() );
         if (kg) {
             kg->_imp->removeFromKnobsOnSameLineVector( getKnob() );

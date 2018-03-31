@@ -170,15 +170,15 @@ PasteUndoCommand::copyFrom(const KnobIPtr& serializedKnob,
         break;
     }
     case eKnobClipBoardTypeCopyValue: {
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( internalKnob.get() );
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( internalKnob.get() );
+        KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( internalKnob.get() );
+        KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( internalKnob.get() );
+        KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( internalKnob.get() );
+        KnobStringBase* isString = dynamic_cast<KnobStringBase*>( internalKnob.get() );
 
-        Knob<int>* isFromInt = dynamic_cast<Knob<int>*>( serializedKnob.get() );
-        Knob<bool>* isFromBool = dynamic_cast<Knob<bool>*>( serializedKnob.get() );
-        Knob<double>* isFromDouble = dynamic_cast<Knob<double>*>( serializedKnob.get() );
-        Knob<std::string>* isFromString = dynamic_cast<Knob<std::string>*>( serializedKnob.get() );
+        KnobIntBase* isFromInt = dynamic_cast<KnobIntBase*>( serializedKnob.get() );
+        KnobBoolBase* isFromBool = dynamic_cast<KnobBoolBase*>( serializedKnob.get() );
+        KnobDoubleBase* isFromDouble = dynamic_cast<KnobDoubleBase*>( serializedKnob.get() );
+        KnobStringBase* isFromString = dynamic_cast<KnobStringBase*>( serializedKnob.get() );
 
         internalKnob->beginChanges();
         for (int i = 0; i < internalKnob->getDimension(); ++i) {
@@ -323,10 +323,10 @@ MultipleKnobEditsUndoCommand::undo()
             continue;
         }
         knob->beginChanges();
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+        KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( knob.get() );
+        KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( knob.get() );
+        KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( knob.get() );
+        KnobStringBase* isString = dynamic_cast<KnobStringBase*>( knob.get() );
         KeyFrame k;
         // For setValue calls, only set back the old value once per-dimension
         std::set<int> dimensionsUndone;
@@ -399,10 +399,10 @@ MultipleKnobEditsUndoCommand::redo()
             continue;
         }
         knob->beginChanges();
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+        KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( knob.get() );
+        KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( knob.get() );
+        KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( knob.get() );
+        KnobStringBase* isString = dynamic_cast<KnobStringBase*>( knob.get() );
 
         for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             KeyFrame k;
@@ -539,10 +539,10 @@ RestoreDefaultsCommand::undo()
 
     std::list<SequenceTime> times;
     KnobIPtr first = _knobs.front().lock();
-    AppInstPtr app = first->getHolder()->getApp();
+    AppInstancePtr app = first->getHolder()->getApp();
     assert(app);
-    std::list<KnobWPtr>::const_iterator itClone = _clones.begin();
-    for (std::list<KnobWPtr>::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
+    std::list<KnobIWPtr>::const_iterator itClone = _clones.begin();
+    for (std::list<KnobIWPtr>::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
         KnobIPtr itKnob = it->lock();
         if (!itKnob) {
             continue;
@@ -583,7 +583,7 @@ RestoreDefaultsCommand::redo()
 {
     std::list<SequenceTime> times;
     KnobIPtr first = _knobs.front().lock();
-    AppInstPtr app;
+    AppInstancePtr app;
     KnobHolder* holder = first->getHolder();
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
 
@@ -596,7 +596,7 @@ RestoreDefaultsCommand::redo()
     /*
        First reset all knobs values, this will not call instanceChanged action
      */
-    for (std::list<KnobWPtr>::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+    for (std::list<KnobIWPtr>::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         KnobIPtr itKnob = it->lock();
         if (!itKnob) {
             continue;
@@ -642,7 +642,7 @@ RestoreDefaultsCommand::redo()
     if (app) {
         time = app->getTimeLine()->currentFrame();
     }
-    for (std::list<KnobWPtr>::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+    for (std::list<KnobIWPtr>::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         KnobIPtr itKnob = it->lock();
         if (!itKnob) {
             continue;

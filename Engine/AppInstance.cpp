@@ -1838,7 +1838,7 @@ AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstance* writer
         *sequenceName = QString();
         KnobIPtr fileKnob = writer->getKnobByName(kOfxImageEffectFileParamName);
         if (fileKnob) {
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( fileKnob.get() );
+            KnobStringBase* isString = dynamic_cast<KnobStringBase*>( fileKnob.get() );
             assert(isString);
             if (isString) {
                 *sequenceName = QString::fromUtf8( isString->getValue().c_str() );

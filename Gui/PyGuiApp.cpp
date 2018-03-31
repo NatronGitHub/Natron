@@ -54,7 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER
 NATRON_PYTHON_NAMESPACE_ENTER
 
-GuiApp::GuiApp(const GuiAppInstPtr& app)
+GuiApp::GuiApp(const GuiAppInstancePtr& app)
     : App(app)
     , _app(app)
 {

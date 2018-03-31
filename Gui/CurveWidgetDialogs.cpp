@@ -293,7 +293,7 @@ ImportExportCurveDialog::getXStart() const
     double ret = 0.;
     std::string expr = std::string("ret = float(") + _startLineEdit->text().toStdString() + ')';
     std::string error;
-    bool ok = Knob<double>::evaluateExpression(expr, &ret, &error);
+    bool ok = KnobDoubleBase::evaluateExpression(expr, &ret, &error);
     Q_UNUSED(ok);
     //qDebug() << "xstart=" << expr.c_str() << ret;
     return ret;
@@ -308,7 +308,7 @@ ImportExportCurveDialog::getXIncrement() const
     double ret = 0.01;
     std::string expr = std::string("ret = float(") + _incrLineEdit->text().toStdString() + ')';
     std::string error;
-    bool ok = Knob<double>::evaluateExpression(expr, &ret, &error);
+    bool ok = KnobDoubleBase::evaluateExpression(expr, &ret, &error);
     Q_UNUSED(ok);
     //qDebug() << "incr=" << expr.c_str() << ret;
     return ret;
@@ -323,7 +323,7 @@ ImportExportCurveDialog::getXCount() const
     double ret = 0.;
     std::string expr = std::string("ret = float(1+((")  + _endLineEdit->text().toStdString() + std::string(")-(") + _startLineEdit->text().toStdString() + std::string("))/(") + _incrLineEdit->text().toStdString() + std::string("))");
     std::string error;
-    bool ok = Knob<double>::evaluateExpression(expr, &ret, &error);
+    bool ok = KnobDoubleBase::evaluateExpression(expr, &ret, &error);
     Q_UNUSED(ok);
     //qDebug() << "count=" << expr.c_str() << ret;
     return (int) (std::floor(ret + 0.5));
@@ -341,7 +341,7 @@ ImportExportCurveDialog::getXEnd() const
     double ret = 1.;
     std::string expr = std::string("ret = float(") + _endLineEdit->text().toStdString() + ')';
     std::string error;
-    bool ok = Knob<double>::evaluateExpression(expr, &ret, &error);
+    bool ok = KnobDoubleBase::evaluateExpression(expr, &ret, &error);
     Q_UNUSED(ok);
     //qDebug() << "xend=" << expr.c_str() << ret;
     return ret;

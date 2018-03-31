@@ -1985,7 +1985,7 @@ BooleanParam::addAsDependencyOf(int fromExprDimension,
 ////////////// StringParamBase
 
 
-StringParamBase::StringParamBase(const boost::shared_ptr<Knob<std::string> >& knob)
+StringParamBase::StringParamBase(const boost::shared_ptr<KnobStringBase>& knob)
     : AnimatedParam( boost::dynamic_pointer_cast<KnobI>(knob) )
     , _stringKnob(knob)
 {
@@ -1998,7 +1998,7 @@ StringParamBase::~StringParamBase()
 QString
 StringParamBase::get() const
 {
-    boost::shared_ptr<Knob<std::string> > knob = _stringKnob.lock();
+    boost::shared_ptr<KnobStringBase> knob = _stringKnob.lock();
     if (!knob) {
         return QString();
     }
@@ -2009,7 +2009,7 @@ StringParamBase::get() const
 QString
 StringParamBase::get(double frame) const
 {
-    boost::shared_ptr<Knob<std::string> > knob = _stringKnob.lock();
+    boost::shared_ptr<KnobStringBase> knob = _stringKnob.lock();
     if (!knob) {
         return QString();
     }
@@ -2020,7 +2020,7 @@ StringParamBase::get(double frame) const
 void
 StringParamBase::set(const QString& x)
 {
-    boost::shared_ptr<Knob<std::string> > knob = _stringKnob.lock();
+    boost::shared_ptr<KnobStringBase> knob = _stringKnob.lock();
     if (!knob) {
         return;
     }
@@ -2032,7 +2032,7 @@ void
 StringParamBase::set(const QString& x,
                      double frame)
 {
-    boost::shared_ptr<Knob<std::string> > knob = _stringKnob.lock();
+    boost::shared_ptr<KnobStringBase> knob = _stringKnob.lock();
     if (!knob) {
         return;
     }
@@ -2043,7 +2043,7 @@ StringParamBase::set(const QString& x,
 QString
 StringParamBase::getValue() const
 {
-    boost::shared_ptr<Knob<std::string> > knob = _stringKnob.lock();
+    boost::shared_ptr<KnobStringBase> knob = _stringKnob.lock();
     if (!knob) {
         return QString();
     }
@@ -2054,7 +2054,7 @@ StringParamBase::getValue() const
 void
 StringParamBase::setValue(const QString& value)
 {
-    boost::shared_ptr<Knob<std::string> > knob = _stringKnob.lock();
+    boost::shared_ptr<KnobStringBase> knob = _stringKnob.lock();
     if (!knob) {
         return;
     }
@@ -2065,7 +2065,7 @@ StringParamBase::setValue(const QString& value)
 QString
 StringParamBase::getValueAtTime(double time) const
 {
-    boost::shared_ptr<Knob<std::string> > knob = _stringKnob.lock();
+    boost::shared_ptr<KnobStringBase> knob = _stringKnob.lock();
     if (!knob) {
         return QString();
     }
@@ -2077,7 +2077,7 @@ void
 StringParamBase::setValueAtTime(const QString& value,
                                 double time)
 {
-    boost::shared_ptr<Knob<std::string> > knob = _stringKnob.lock();
+    boost::shared_ptr<KnobStringBase> knob = _stringKnob.lock();
     if (!knob) {
         return;
     }
@@ -2088,7 +2088,7 @@ StringParamBase::setValueAtTime(const QString& value,
 void
 StringParamBase::setDefaultValue(const QString& value)
 {
-    boost::shared_ptr<Knob<std::string> > knob = _stringKnob.lock();
+    boost::shared_ptr<KnobStringBase> knob = _stringKnob.lock();
     if (!knob) {
         return;
     }
@@ -2099,7 +2099,7 @@ StringParamBase::setDefaultValue(const QString& value)
 QString
 StringParamBase::getDefaultValue() const
 {
-    boost::shared_ptr<Knob<std::string> > knob = _stringKnob.lock();
+    boost::shared_ptr<KnobStringBase> knob = _stringKnob.lock();
     if (!knob) {
         return QString();
     }
@@ -2110,7 +2110,7 @@ StringParamBase::getDefaultValue() const
 void
 StringParamBase::restoreDefaultValue()
 {
-    boost::shared_ptr<Knob<std::string> > knob = _stringKnob.lock();
+    boost::shared_ptr<KnobStringBase> knob = _stringKnob.lock();
     if (!knob) {
         return;
     }
@@ -2125,7 +2125,7 @@ StringParamBase::addAsDependencyOf(int fromExprDimension,
 {
     _addAsDependencyOf(fromExprDimension, param, thisDimension);
 
-    boost::shared_ptr<Knob<std::string> > knob = _stringKnob.lock();
+    boost::shared_ptr<KnobStringBase> knob = _stringKnob.lock();
     if (!knob) {
         return QString();
     }
@@ -2136,7 +2136,7 @@ StringParamBase::addAsDependencyOf(int fromExprDimension,
 ////////////////////StringParam
 
 StringParam::StringParam(const boost::shared_ptr<KnobString>& knob)
-    : StringParamBase( boost::dynamic_pointer_cast<Knob<std::string> >(knob) )
+    : StringParamBase( boost::dynamic_pointer_cast<KnobStringBase>(knob) )
     , _sKnob(knob)
 {
 }
@@ -2176,7 +2176,7 @@ StringParam::setType(StringParam::TypeEnum type)
 /////////////////////FileParam
 
 FileParam::FileParam(const boost::shared_ptr<KnobFile>& knob)
-    : StringParamBase( boost::dynamic_pointer_cast<Knob<std::string> >(knob) )
+    : StringParamBase( boost::dynamic_pointer_cast<KnobStringBase>(knob) )
     , _sKnob(knob)
 {
 }
@@ -2221,7 +2221,7 @@ FileParam::reloadFile()
 /////////////////////OutputFileParam
 
 OutputFileParam::OutputFileParam(const boost::shared_ptr<KnobOutputFile>& knob)
-    : StringParamBase( boost::dynamic_pointer_cast<Knob<std::string> >(knob) )
+    : StringParamBase( boost::dynamic_pointer_cast<KnobStringBase>(knob) )
     , _sKnob(knob)
 {
 }
@@ -2259,7 +2259,7 @@ OutputFileParam::openFile()
 ////////////////////PathParam
 
 PathParam::PathParam(const boost::shared_ptr<KnobPath>& knob)
-    : StringParamBase( boost::dynamic_pointer_cast<Knob<std::string> >(knob) )
+    : StringParamBase( boost::dynamic_pointer_cast<KnobStringBase>(knob) )
     , _sKnob(knob)
 {
 }

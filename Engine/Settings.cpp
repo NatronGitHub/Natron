@@ -1899,11 +1899,11 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,
 
     settings.setValue(QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName), NATRON_VERSION_MAJOR);
     for (U32 i = 0; i < knobs.size(); ++i) {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i]);
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>(knobs[i]);
+        KnobStringBase* isString = dynamic_cast<KnobStringBase*>(knobs[i]);
+        KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(knobs[i]);
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knobs[i]);
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knobs[i]);
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knobs[i]);
+        KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>(knobs[i]);
+        KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>(knobs[i]);
 
         const std::string& name = knobs[i]->getName();
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
@@ -1976,11 +1976,11 @@ Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
     for (U32 i = 0; i < knobs.size(); ++i) {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i]);
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>(knobs[i]);
+        KnobStringBase* isString = dynamic_cast<KnobStringBase*>(knobs[i]);
+        KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(knobs[i]);
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knobs[i]);
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knobs[i]);
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knobs[i]);
+        KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>(knobs[i]);
+        KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>(knobs[i]);
 
         const std::string& name = knobs[i]->getName();
 

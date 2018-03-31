@@ -120,7 +120,7 @@ private:
     //Keep track for each files in the sequence (or video) the modification date
     //of the files
     std::map<std::string, QDateTime> _lastModificationDates;
-    boost::weak_ptr<KnobFile> _knob;
+    KnobFileWPtr _knob;
 };
 
 
@@ -186,7 +186,7 @@ private:
     Button *_openFileButton;
     Button *_rewriteButton;
     QString _lastOpened;
-    boost::weak_ptr<KnobOutputFile> _knob;
+    KnobOutputFileWPtr _knob;
 };
 
 
@@ -250,7 +250,7 @@ private:
     LineEdit* _lineEdit;
     Button* _openFileButton;
     QString _lastOpened;
-    boost::weak_ptr<KnobPath> _knob;
+    KnobPathWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

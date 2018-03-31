@@ -128,7 +128,7 @@ Gui::openRecentFile()
         QString filename = path + f.fileName();
         int openedProject = appPTR->isProjectAlreadyOpened( filename.toStdString() );
         if (openedProject != -1) {
-            AppInstPtr instance = appPTR->getAppInstance(openedProject);
+            AppInstancePtr instance = appPTR->getAppInstance(openedProject);
             if (instance) {
                 GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( instance.get() );
                 assert(guiApp);
@@ -145,7 +145,7 @@ Gui::openRecentFile()
             getApp()->getProject()->loadProject( path, f.fileName() );
         } else {
             CLArgs cl;
-            AppInstPtr newApp = appPTR->newAppInstance(cl, false);
+            AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
             newApp->getProject()->loadProject( path, f.fileName() );
         }
     }
@@ -449,7 +449,7 @@ Gui::getToolButtons() const
     return _imp->_toolButtons;
 }
 
-GuiAppInstPtr
+GuiAppInstancePtr
 Gui::getApp() const
 {
     return _imp->_appInstance.lock();

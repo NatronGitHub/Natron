@@ -2122,7 +2122,7 @@ NodeGui::paint(QPainter* /*painter*/,
     //nothing special
 }
 
-const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > &
+const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > &
 NodeGui::getKnobs() const
 {
     assert(_settingsPanel);

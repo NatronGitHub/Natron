@@ -133,7 +133,7 @@ private:
 
     typedef std::vector<CurveDescriptor> CurveGuis;
     CurveGuis _curves;
-    boost::weak_ptr<KnobParametric> _knob;
+    KnobParametricWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

@@ -152,7 +152,7 @@ private:
 
 public:
 
-    boost::weak_ptr<OfxParamOverlayInteract> _customInteract;
+    OfxParamOverlayInteractWPtr _customInteract;
     QPoint _lastMousePos; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
     ZoomContext zoomCtx;
     EventStateEnum _state;

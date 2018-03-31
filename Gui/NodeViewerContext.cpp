@@ -67,7 +67,7 @@ public:
     NodeGuiWPtr node;
     ViewerGL* viewer;
     ViewerTab* viewerTab;
-    std::map<KnobWPtr, KnobGuiPtr> knobsMapping;
+    std::map<KnobIWPtr, KnobGuiPtr> knobsMapping;
     QString currentRole, currentTool;
     QToolBar* toolbar;
     std::map<QString, ViewerToolButton*> toolButtons;
@@ -461,7 +461,7 @@ NodeViewerContext::pushUndoCommand(QUndoCommand* cmd)
 KnobGuiPtr
 NodeViewerContext::getKnobGui(const KnobIPtr& knob) const
 {
-    std::map<KnobWPtr, KnobGuiPtr>::const_iterator found =  _imp->knobsMapping.find(knob);
+    std::map<KnobIWPtr, KnobGuiPtr>::const_iterator found =  _imp->knobsMapping.find(knob);
 
     if ( found == _imp->knobsMapping.end() ) {
         return KnobGuiPtr();

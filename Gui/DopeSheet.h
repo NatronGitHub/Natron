@@ -300,7 +300,7 @@ public:
         return ret;
     }
 
-    boost::weak_ptr<DSKnob> context;
+    DSKnobWPtr context;
     KeyFrame key;
 };
 
@@ -467,7 +467,7 @@ Q_SIGNALS:
 
 private:
 
-    std::list<boost::weak_ptr<DSNode> >::iterator isRangeNodeSelected(const boost::shared_ptr<DSNode>& node);
+    std::list<DSNodeWPtr>::iterator isRangeNodeSelected(const boost::shared_ptr<DSNode>& node);
     boost::scoped_ptr<DopeSheetSelectionModelPrivate> _imp;
 };
 

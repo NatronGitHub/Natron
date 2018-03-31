@@ -851,7 +851,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
 
             const KnobsVec& knobs = (*it)->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
-                Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >( knobs[j].get() );
+                KnobStringBase* isString = dynamic_cast< KnobStringBase* >( knobs[j].get() );
                 KnobString* isStringKnob = dynamic_cast<KnobString*>(isString);
                 if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
                     continue;
@@ -891,7 +891,7 @@ NodeCollection::fixPathName(const std::string& oldName,
         if ( (*it)->isActivated() ) {
             const KnobsVec& knobs = (*it)->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
-                Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >( knobs[j].get() );
+                KnobStringBase* isString = dynamic_cast< KnobStringBase* >( knobs[j].get() );
                 KnobString* isStringKnob = dynamic_cast<KnobString*>(isString);
                 if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
                     continue;
@@ -1704,11 +1704,11 @@ exportKnobValues(int indentLevel,
 {
     bool hasExportedValue = false;
 
-    Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>( knob.get() );
+    KnobStringBase* isStr = dynamic_cast<KnobStringBase*>( knob.get() );
     AnimatingKnobStringHelper* isAnimatedStr = dynamic_cast<AnimatingKnobStringHelper*>( knob.get() );
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
+    KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( knob.get() );
+    KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( knob.get() );
+    KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( knob.get() );
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
     KnobGroup* isGrp = dynamic_cast<KnobGroup*>( knob.get() );

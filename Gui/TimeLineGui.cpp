@@ -249,7 +249,7 @@ TimeLineGui::~TimeLineGui()
 void
 TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
 {
-    GuiAppInstPtr app = _imp->gui->getApp();
+    GuiAppInstancePtr app = _imp->gui->getApp();
 
     assert(app);
     if (_imp->timeline) {

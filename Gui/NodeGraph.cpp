@@ -276,7 +276,7 @@ NodeGraph::resizeEvent(QResizeEvent* e)
 void
 NodeGraph::paintEvent(QPaintEvent* e)
 {
-    AppInstPtr app;
+    AppInstancePtr app;
 
     if ( getGui() ) {
         app = getGui()->getApp();

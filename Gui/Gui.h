@@ -77,7 +77,7 @@ public:
 
     friend class PanelWidget;
 
-    explicit Gui(const GuiAppInstPtr& app,
+    explicit Gui(const GuiAppInstancePtr& app,
                  QWidget* parent = 0);
 
     virtual ~Gui() OVERRIDE;
@@ -208,7 +208,7 @@ public:
      **/
     void selectNode(const NodeGuiPtr& node);
 
-    GuiAppInstPtr getApp() const;
+    GuiAppInstancePtr getApp() const;
 
     void updateViewsActions(int viewsCount);
 
@@ -415,7 +415,7 @@ public:
 
     void checkNumberOfNonFloatingPanes();
 
-    AppInstPtr openProject(const std::string& filename) WARN_UNUSED_RETURN;
+    AppInstancePtr openProject(const std::string& filename) WARN_UNUSED_RETURN;
 
     bool isGUIFrozen() const;
 
@@ -498,7 +498,7 @@ public:
 
 #endif
 
-    AppInstPtr createNewProject();
+    AppInstancePtr createNewProject();
 
     /**
      * @brief Close project right away, without any user interaction.
@@ -698,7 +698,7 @@ private:
 
     void setCurrentPanelFocus(PanelWidget* widget);
 
-    AppInstPtr openProjectInternal(const std::string & absoluteFileName, bool attemptToLoadAutosave) WARN_UNUSED_RETURN;
+    AppInstancePtr openProjectInternal(const std::string & absoluteFileName, bool attemptToLoadAutosave) WARN_UNUSED_RETURN;
 
     void setupUi();
 

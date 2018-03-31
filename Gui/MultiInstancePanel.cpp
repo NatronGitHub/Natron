@@ -104,7 +104,7 @@ NATRON_NAMESPACE_ENTER
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
-typedef std::list<std::pair<boost::weak_ptr<Node>, bool> > Nodes;
+typedef std::list<std::pair<NodeWPtr, bool> > Nodes;
 
 boost::shared_ptr<KnobDouble>
 getCenterKnobForTracker(Node* node)
@@ -128,7 +128,7 @@ struct MultiInstancePanelPrivate
 public:
     MultiInstancePanel* publicInterface;
     bool guiCreated;
-    boost::weak_ptr<NodeGui> mainInstance;
+    NodeGuiWPtr mainInstance;
     //pair <pointer,selected?>
     Nodes instances;
     TableView* view;
@@ -686,7 +686,7 @@ MultiInstancePanel::onChildCreated(const NodePtr& node)
     _imp->addTableRow(node);
 }
 
-const std::list<std::pair<boost::weak_ptr<Node>, bool> > &
+const std::list<std::pair<NodeWPtr, bool> > &
 MultiInstancePanel::getInstances() const
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -823,7 +823,7 @@ MultiInstancePanel::selectNode(const NodePtr & node,
 
     int index = -1;
     int i = 0;
-    for (std::list<std::pair<boost::weak_ptr<Node>, bool > >::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it, ++i) {
+    for (std::list<std::pair<NodeWPtr, bool > >::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it, ++i) {
         if (it->first.lock() == node) {
             index = i;
             break;
@@ -841,7 +841,7 @@ MultiInstancePanel::removeNodeFromSelection(const NodePtr & node)
     int index = -1;
     int i = 0;
 
-    for (std::list<std::pair<boost::weak_ptr<Node>, bool > >::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it, ++i) {
+    for (std::list<std::pair<NodeWPtr, bool > >::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it, ++i) {
         if (it->first.lock() == node) {
             index = i;
             break;
@@ -879,7 +879,7 @@ MultiInstancePanel::selectNodes(const std::list<Node*> & nodes,
     QItemSelection newSelection;
     for (std::list<Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         int i = 0;
-        for (std::list<std::pair<boost::weak_ptr<Node>, bool > >::iterator it2 = _imp->instances.begin();
+        for (std::list<std::pair<NodeWPtr, bool > >::iterator it2 = _imp->instances.begin();
              it2 != _imp->instances.end(); ++it2, ++i) {
             if (it2->first.lock().get() == *it) {
                 QItemSelection sel( _imp->model->index(i, 0), _imp->model->index(i, _imp->view->columnCount() - 1) );
@@ -1042,7 +1042,7 @@ MultiInstancePanel::removeInstancesInternal()
 
     for (std::set<int>::iterator it = rows.begin(); it != rows.end(); ++it) {
         assert( *it >= 0 && *it < (int)_imp->instances.size() );
-        std::list<std::pair<boost::weak_ptr<Node>, bool > >::iterator it2 = _imp->instances.begin();
+        std::list<std::pair<NodeWPtr, bool > >::iterator it2 = _imp->instances.begin();
         std::advance(it2, *it);
         instances.push_back( it2->first.lock() );
     }
@@ -1275,7 +1275,7 @@ MultiInstancePanelPrivate::getNodesFromSelection(const QModelIndexList & indexes
 
     for (std::set<int>::iterator it = rows.begin(); it != rows.end(); ++it) {
         assert( *it >= 0 && *it < (int)instances.size() );
-        std::list<std::pair<boost::weak_ptr<Node>, bool > >::iterator it2 = instances.begin();
+        std::list<std::pair<NodeWPtr, bool > >::iterator it2 = instances.begin();
         std::advance(it2, *it);
         NodePtr node = it2->first.lock();
         if ( !node->isNodeDisabled() ) {
@@ -1289,7 +1289,7 @@ MultiInstancePanelPrivate::getInstanceFromItem(TableItem* item) const
 {
     assert( item->row() >= 0 && item->row() < (int)instances.size() );
     int i = 0;
-    for (std::list<std::pair<boost::weak_ptr<Node>, bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it, ++i) {
+    for (std::list<std::pair<NodeWPtr, bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it, ++i) {
         if ( i == item->row() ) {
             return it->first.lock();
         }
@@ -1525,30 +1525,30 @@ MultiInstancePanel::onInstanceKnobValueChanged(ViewSpec /*view*/,
                             if (master.second) {
                                 ++_imp->knobValueRecursion;
                                 knob->unSlave(k, false);
-                                Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-                                Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-                                Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-                                Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+                                KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( knob.get() );
+                                KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( knob.get() );
+                                KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( knob.get() );
+                                KnobStringBase* isString = dynamic_cast<KnobStringBase*>( knob.get() );
                                 if (isInt) {
-                                    Knob<int>* masterKnob = dynamic_cast<Knob<int>*>( master.second.get() );
+                                    KnobIntBase* masterKnob = dynamic_cast<KnobIntBase*>( master.second.get() );
                                     assert(masterKnob);
                                     if (masterKnob) {
                                         masterKnob->clone( knob.get() );
                                     }
                                 } else if (isBool) {
-                                    Knob<bool>* masterKnob = dynamic_cast<Knob<bool>*>( master.second.get() );
+                                    KnobBoolBase* masterKnob = dynamic_cast<KnobBoolBase*>( master.second.get() );
                                     assert(masterKnob);
                                     if (masterKnob) {
                                         masterKnob->clone( knob.get() );
                                     }
                                 } else if (isDouble) {
-                                    Knob<double>* masterKnob = dynamic_cast<Knob<double>*>( master.second.get() );
+                                    KnobDoubleBase* masterKnob = dynamic_cast<KnobDoubleBase*>( master.second.get() );
                                     assert(masterKnob);
                                     if (masterKnob) {
                                         masterKnob->clone( knob.get() );
                                     }
                                 } else if (isString) {
-                                    Knob<std::string>* masterKnob = dynamic_cast<Knob<std::string>*>( master.second.get() );
+                                    KnobStringBase* masterKnob = dynamic_cast<KnobStringBase*>( master.second.get() );
                                     assert(masterKnob);
                                     if (masterKnob) {
                                         masterKnob->clone( knob.get() );
@@ -1580,7 +1580,7 @@ MultiInstancePanel::getSelectedInstances(std::list<Node*>* instances) const
 
     for (std::set<int>::iterator it = rows.begin(); it != rows.end(); ++it) {
         assert( *it >= 0 && *it < (int)_imp->instances.size() );
-        std::list<std::pair<boost::weak_ptr<Node>, bool > >::iterator it2 = _imp->instances.begin();
+        std::list<std::pair<NodeWPtr, bool > >::iterator it2 = _imp->instances.begin();
         std::advance(it2, *it);
         instances->push_back( it2->first.lock().get() );
     }
@@ -1699,10 +1699,10 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
                     if (it->second) {
                         KnobIPtr sameKnob = it->first.lock()->getKnobByName( k->getName() );
                         assert(sameKnob);
-                        Knob<int>* isInt = dynamic_cast<Knob<int>*>( sameKnob.get() );
-                        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( sameKnob.get() );
-                        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( sameKnob.get() );
-                        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( sameKnob.get() );
+                        KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( sameKnob.get() );
+                        KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( sameKnob.get() );
+                        KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( sameKnob.get() );
+                        KnobStringBase* isString = dynamic_cast<KnobStringBase*>( sameKnob.get() );
                         if (isInt) {
                             isInt->clone(k);
                         } else if (isBool) {
@@ -1924,8 +1924,8 @@ TrackerPanelV1::onAverageTracksButtonClicked()
     NodePtr newInstance = addInstanceInternal(true);
     ///give an appropriate name to the new instance
     int avgIndex = 0;
-    const std::list<std::pair<boost::weak_ptr<Node>, bool > > & allInstances = getInstances();
-    for (std::list<std::pair<boost::weak_ptr<Node>, bool > >::const_iterator it = allInstances.begin();
+    const std::list<std::pair<NodeWPtr, bool > > & allInstances = getInstances();
+    for (std::list<std::pair<NodeWPtr, bool > >::const_iterator it = allInstances.begin();
          it != allInstances.end(); ++it) {
         if ( QString::fromUtf8( it->first.lock()->getScriptName().c_str() ).contains(QString::fromUtf8("average"), Qt::CaseInsensitive) ) {
             ++avgIndex;
@@ -2350,7 +2350,7 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
         centers[i] = getCenterKnobForTracker(*it);
         assert(centers[i]);
     }
-    GuiAppInstPtr app = publicInterface->getGui()->getApp();
+    GuiAppInstancePtr app = publicInterface->getGui()->getApp();
     CreateNodeArgs args(PLUGINID_OFX_CORNERPIN, publicInterface->getMainInstance()->getGroup() );
     args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
     args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);

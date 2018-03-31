@@ -74,7 +74,7 @@ Knob<T>::initMinMax()
 
 template <>
 void
-Knob<double>::initMinMax()
+KnobDoubleBase::initMinMax()
 {
     for (int i = 0; i < getDimension(); ++i) {
         _minimums[i] = -DBL_MAX;
@@ -86,7 +86,7 @@ Knob<double>::initMinMax()
 
 template <>
 void
-Knob<int>::initMinMax()
+KnobIntBase::initMinMax()
 {
     for (int i = 0; i < getDimension(); ++i) {
         _minimums[i] = INT_MIN;
@@ -149,7 +149,7 @@ Knob<T>::signalDisplayMinMaxChanged(const T& mini,
 
 template <>
 void
-Knob<std::string>::signalMinMaxChanged(const std::string& /*mini*/,
+KnobStringBase::signalMinMaxChanged(const std::string& /*mini*/,
                                        const std::string& /*maxi*/,
                                        int /*dimension*/)
 {
@@ -157,7 +157,7 @@ Knob<std::string>::signalMinMaxChanged(const std::string& /*mini*/,
 
 template <>
 void
-Knob<std::string>::signalDisplayMinMaxChanged(const std::string& /*mini*/,
+KnobStringBase::signalDisplayMinMaxChanged(const std::string& /*mini*/,
                                               const std::string& /*maxi*/,
                                               int /*dimension*/)
 {
@@ -329,7 +329,7 @@ Knob<T>::clampToMinMax(const T& value,
 
 template <>
 std::string
-Knob<std::string>::clampToMinMax(const std::string& value,
+KnobStringBase::clampToMinMax(const std::string& value,
                                  int /*dimension*/) const
 {
     return value;
@@ -337,7 +337,7 @@ Knob<std::string>::clampToMinMax(const std::string& value,
 
 template <>
 bool
-Knob<bool>::clampToMinMax(const bool& value,
+KnobBoolBase::clampToMinMax(const bool& value,
                           int /*dimension*/) const
 {
     return value;
@@ -529,7 +529,7 @@ Knob<T>::getValueFromExpression(double time,
 
 template <>
 bool
-Knob<std::string>::getValueFromExpression_pod(double time,
+KnobStringBase::getValueFromExpression_pod(double time,
                                               ViewIdx view,
                                               int dimension,
                                               bool /*clamp*/,
@@ -617,12 +617,12 @@ Knob<T>::getValueFromExpression_pod(double time,
 
 template <>
 std::string
-Knob<std::string>::getValueFromMasterAt(double time,
+KnobStringBase::getValueFromMasterAt(double time,
                                         ViewSpec view,
                                         int dimension,
                                         KnobI* master)
 {
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(master);
+    KnobStringBase* isString = dynamic_cast<KnobStringBase* >(master);
     assert(isString); //< other data types aren't supported
     if (isString) {
         return isString->getValueAtTime(time, dimension, view, false);
@@ -634,12 +634,12 @@ Knob<std::string>::getValueFromMasterAt(double time,
 
 template <>
 std::string
-Knob<std::string>::getValueFromMaster(ViewSpec view,
+KnobStringBase::getValueFromMaster(ViewSpec view,
                                       int dimension,
                                       KnobI* master,
                                       bool /*clamp*/)
 {
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(master);
+    KnobStringBase* isString = dynamic_cast<KnobStringBase* >(master);
     assert(isString); //< other data types aren't supported
     if (isString) {
         return isString->getValue(dimension, view, false);
@@ -656,9 +656,9 @@ Knob<T>::getValueFromMasterAt(double time,
                               int dimension,
                               KnobI* master)
 {
-    Knob<int>* isInt = dynamic_cast<Knob<int>* >(master);
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(master);
-    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(master);
+    KnobIntBase* isInt = dynamic_cast<KnobIntBase* >(master);
+    KnobBoolBase* isBool = dynamic_cast<KnobBoolBase* >(master);
+    KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase* >(master);
     assert( master->isTypePOD() && (isInt || isBool || isDouble) ); //< other data types aren't supported
     if (isInt) {
         return isInt->getValueAtTime(time, dimension, view);
@@ -678,9 +678,9 @@ Knob<T>::getValueFromMaster(ViewSpec view,
                             KnobI* master,
                             bool clamp)
 {
-    Knob<int>* isInt = dynamic_cast<Knob<int>* >(master);
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(master);
-    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(master);
+    KnobIntBase* isInt = dynamic_cast<KnobIntBase* >(master);
+    KnobBoolBase* isBool = dynamic_cast<KnobBoolBase* >(master);
+    KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase* >(master);
     assert( master->isTypePOD() && (isInt || isBool || isDouble) ); //< other data types aren't supported
     if (isInt) {
         return (T)isInt->getValue(dimension, view, clamp);
@@ -781,7 +781,7 @@ Knob<T>::getValueFromCurve(double time,
 
 template <>
 bool
-Knob<std::string>::getValueFromCurve(double time,
+KnobStringBase::getValueFromCurve(double time,
                                      ViewSpec view,
                                      int dimension,
                                      bool useGuiCurve,
@@ -868,7 +868,7 @@ Knob<T>::getValueAtTime(double time,
 
 template <>
 double
-Knob<std::string>::getRawCurveValueAt(double time,
+KnobStringBase::getRawCurveValueAt(double time,
                                       ViewSpec view,
                                       int dimension)
 {
@@ -924,9 +924,9 @@ void
 Knob<T>::valueToVariant(const T & v,
                         Variant* vari)
 {
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>(this);
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(this);
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>(this);
+    KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(this);
+    KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>(this);
+    KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>(this);
     if (isInt) {
         vari->setValue(v);
     } else if (isBool) {
@@ -938,10 +938,10 @@ Knob<T>::valueToVariant(const T & v,
 
 template <>
 void
-Knob<std::string>::valueToVariant(const std::string & v,
+KnobStringBase::valueToVariant(const std::string & v,
                                   Variant* vari)
 {
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(this);
+    KnobStringBase* isString = dynamic_cast<KnobStringBase*>(this);
     if (isString) {
         vari->setValue<QString>( QString::fromUtf8( v.c_str() ) );
     }
@@ -1426,7 +1426,7 @@ Knob<T>::makeKeyFrame(Curve* curve,
 
 template <>
 void
-Knob<std::string>::makeKeyFrame(Curve* /*curve*/,
+KnobStringBase::makeKeyFrame(Curve* /*curve*/,
                                 double time,
                                 ViewSpec view,
                                 const std::string& v,
@@ -1881,9 +1881,9 @@ Knob<T>::getKeyFrameValueByIndex(ViewSpec view,
     std::pair<int, KnobIPtr> master = getMaster(dimension);
 
     if (master.second) {
-        Knob<int>* isInt = dynamic_cast<Knob<int>* >( master.second.get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>* >( master.second.get() );
-        Knob<double>* isDouble = dynamic_cast<Knob<double>* >( master.second.get() );
+        KnobIntBase* isInt = dynamic_cast<KnobIntBase* >( master.second.get() );
+        KnobBoolBase* isBool = dynamic_cast<KnobBoolBase* >( master.second.get() );
+        KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase* >( master.second.get() );
         assert( master.second->isTypePOD() && (isInt || isBool || isDouble) ); //< other data types aren't supported
         if (isInt) {
             return isInt->getKeyFrameValueByIndex(view, master.first, index, ok);
@@ -1911,7 +1911,7 @@ Knob<T>::getKeyFrameValueByIndex(ViewSpec view,
 
 template<>
 std::string
-Knob<std::string>::getKeyFrameValueByIndex(ViewSpec view,
+KnobStringBase::getKeyFrameValueByIndex(ViewSpec view,
                                            int dimension,
                                            int index,
                                            bool* ok) const
@@ -1920,7 +1920,7 @@ Knob<std::string>::getKeyFrameValueByIndex(ViewSpec view,
     std::pair<int, KnobIPtr> master = getMaster(dimension);
 
     if (master.second) {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
+        KnobStringBase* isString = dynamic_cast<KnobStringBase* >( master.second.get() );
         assert(isString); //< other data types aren't supported
         if (isString) {
             return isString->getKeyFrameValueByIndex(view, master.first, index, ok);
@@ -2167,21 +2167,21 @@ Knob<T>::isTypePOD() const
 
 template<>
 bool
-Knob<int>::isTypePOD() const
+KnobIntBase::isTypePOD() const
 {
     return true;
 }
 
 template<>
 bool
-Knob<bool>::isTypePOD() const
+KnobBoolBase::isTypePOD() const
 {
     return true;
 }
 
 template<>
 bool
-Knob<double>::isTypePOD() const
+KnobDoubleBase::isTypePOD() const
 {
     return true;
 }
@@ -2328,7 +2328,7 @@ Knob<T>::getDerivativeAtTime(double time,
 
 template<>
 double
-Knob<std::string>::getDerivativeAtTime(double /*time*/,
+KnobStringBase::getDerivativeAtTime(double /*time*/,
                                        ViewSpec /*view*/,
                                        int /*dimension*/)
 {
@@ -2414,7 +2414,7 @@ Knob<T>::getIntegrateFromTimeToTime(double time1,
 
 template<>
 double
-Knob<std::string>::getIntegrateFromTimeToTimeSimpson(double /*time1*/,
+KnobStringBase::getIntegrateFromTimeToTimeSimpson(double /*time1*/,
                                                      double /*time2*/,
                                                      ViewSpec /*view*/,
                                                      int /*dimension*/)
@@ -2424,7 +2424,7 @@ Knob<std::string>::getIntegrateFromTimeToTimeSimpson(double /*time1*/,
 
 template<>
 double
-Knob<std::string>::getIntegrateFromTimeToTime(double /*time1*/,
+KnobStringBase::getIntegrateFromTimeToTime(double /*time1*/,
                                               double /*time2*/,
                                               ViewSpec /*view*/,
                                               int /*dimension*/)
@@ -2435,7 +2435,7 @@ Knob<std::string>::getIntegrateFromTimeToTime(double /*time1*/,
 
 template<>
 void
-Knob<double>::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension)
+KnobDoubleBase::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension)
 {
     KnobI::removeAnimation(ViewSpec::all(), dimension);
     double defaultV;
@@ -2444,7 +2444,7 @@ Knob<double>::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension)
         defaultV = _defaultValues[dimension].value;
     }
 
-    ///A Knob<double> is not always a KnobDouble (it can also be a KnobColor)
+    ///A KnobDoubleBase is not always a KnobDouble (it can also be a KnobColor)
     KnobDouble* isDouble = dynamic_cast<KnobDouble*>(this);
 
 
@@ -2520,11 +2520,11 @@ Knob<T>::resetToDefaultValue(int dimension)
 // and http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#APIChanges_1_2_SpatialParameters
 template<>
 void
-Knob<double>::resetToDefaultValue(int dimension)
+KnobDoubleBase::resetToDefaultValue(int dimension)
 {
     KnobI::removeAnimation(ViewSpec::all(), dimension);
 
-    ///A Knob<double> is not always a KnobDouble (it can also be a KnobColor)
+    ///A KnobDoubleBase is not always a KnobDouble (it can also be a KnobColor)
     KnobDouble* isDouble = dynamic_cast<KnobDouble*>(this);
     double def;
 
@@ -2626,11 +2626,11 @@ Knob<T>::copyValueForTypeAndCheckIfChanged(Knob<OTHERTYPE>* other,
 
 template<>
 void
-Knob<std::string>::cloneValues(KnobI* other,
+KnobStringBase::cloneValues(KnobI* other,
                                int dimension,
                                int otherDimension)
 {
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(other);
+    KnobStringBase* isString = dynamic_cast<KnobStringBase* >(other);
     ///Can only clone strings
     assert(isString);
     if (isString) {
@@ -2644,9 +2644,9 @@ Knob<T>::cloneValues(KnobI* other,
                      int dimension,
                      int otherDimension)
 {
-    Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
-    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
+    KnobIntBase* isInt = dynamic_cast<KnobIntBase* >(other);
+    KnobBoolBase* isBool = dynamic_cast<KnobBoolBase* >(other);
+    KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase* >(other);
     assert(isInt || isBool || isDouble);
 
     QMutexLocker k(&_valueMutex);
@@ -2661,11 +2661,11 @@ Knob<T>::cloneValues(KnobI* other,
 
 template<>
 bool
-Knob<std::string>::cloneValuesAndCheckIfChanged(KnobI* other,
+KnobStringBase::cloneValuesAndCheckIfChanged(KnobI* other,
                                                 int dimension,
                                                 int otherDimension)
 {
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(other);
+    KnobStringBase* isString = dynamic_cast<KnobStringBase* >(other);
     assert( (dimension == otherDimension) || (dimension != -1) );
     ///Can only clone strings
     assert(isString);
@@ -2682,9 +2682,9 @@ Knob<T>::cloneValuesAndCheckIfChanged(KnobI* other,
                                       int dimension,
                                       int otherDimension)
 {
-    Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
-    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
+    KnobIntBase* isInt = dynamic_cast<KnobIntBase* >(other);
+    KnobBoolBase* isBool = dynamic_cast<KnobBoolBase* >(other);
+    KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase* >(other);
     assert(isInt || isBool || isDouble);
 
     QMutexLocker k(&_valueMutex);

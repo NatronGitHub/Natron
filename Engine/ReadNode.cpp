@@ -631,7 +631,7 @@ getFileNameFromSerialization(const std::list<boost::shared_ptr<KnobSerialization
 
     for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = serializations.begin(); it != serializations.end(); ++it) {
         if ( (*it)->getKnob()->getName() == kOfxImageEffectFileParamName ) {
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( (*it)->getKnob().get() );
+            KnobStringBase* isString = dynamic_cast<KnobStringBase*>( (*it)->getKnob().get() );
             assert(isString);
             if (isString) {
                 filePattern = isString->getValue();

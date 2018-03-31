@@ -138,7 +138,7 @@ private:
     CurveEditor* _curveWidget;
     QTreeWidget* _treeWidget;
     KnobGuiWPtr _knob;
-    KnobWPtr _internalKnob;
+    KnobIWPtr _internalKnob;
     int _dimension;
 };
 

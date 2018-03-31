@@ -847,10 +847,10 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         _imp->mainLayout->addRow(_imp->defaultValueLabel, defValContainer);
 
 
-        Knob<double>* isDbl = dynamic_cast<Knob<double>*>( knob.get() );
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
+        KnobDoubleBase* isDbl = dynamic_cast<KnobDoubleBase*>( knob.get() );
+        KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( knob.get() );
         KnobBool* isBool = dynamic_cast<KnobBool*>( knob.get() );
-        Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>( knob.get() );
+        KnobStringBase* isStr = dynamic_cast<KnobStringBase*>( knob.get() );
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
 
         if (isChoice) {
@@ -1811,7 +1811,7 @@ AddKnobDialog::onOkClicked()
         KnobColor* isColor = dynamic_cast<KnobColor*>( _imp->knob.get() );
         KnobDouble* isDbl = dynamic_cast<KnobDouble*>( _imp->knob.get() );
         KnobInt* isInt = dynamic_cast<KnobInt*>( _imp->knob.get() );
-        Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>( _imp->knob.get() );
+        KnobStringBase* isStr = dynamic_cast<KnobStringBase*>( _imp->knob.get() );
         KnobGroup* isGrp = dynamic_cast<KnobGroup*>( _imp->knob.get() );
         KnobBool* isBool = dynamic_cast<KnobBool*>( _imp->knob.get() );
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>( _imp->knob.get() );

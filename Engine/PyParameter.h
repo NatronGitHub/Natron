@@ -900,11 +900,11 @@ class StringParamBase
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<Knob<std::string> > _stringKnob;
+    KnobStringBaseWPtr _stringKnob;
 
 public:
 
-    StringParamBase(const boost::shared_ptr<Knob<std::string> >& knob);
+    StringParamBase(const boost::shared_ptr<KnobStringBase>& knob);
 
     virtual ~StringParamBase();
 

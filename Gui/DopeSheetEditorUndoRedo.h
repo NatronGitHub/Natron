@@ -221,7 +221,7 @@ private:
     void trimLeft(double firstFrame);
 
 private:
-    boost::weak_ptr<DSNode> _readerContext;
+    DSNodeWPtr _readerContext;
     double _oldTime;
     double _newTime;
 };
@@ -256,7 +256,7 @@ private:
     void trimRight(double lastFrame);
 
 private:
-    boost::weak_ptr<DSNode> _readerContext;
+    DSNodeWPtr _readerContext;
     double _oldTime;
     double _newTime;
 };
@@ -289,7 +289,7 @@ private:
     void slipReader(double dt);
 
 private:
-    boost::weak_ptr<DSNode> _readerContext;
+    DSNodeWPtr _readerContext;
     double _dt;
     DopeSheetEditor *_model;
 };
@@ -408,7 +408,7 @@ private:
     int _refKeyindex;
     bool _pasteRelativeToRefTime;
     std::vector<DopeSheetKey> _keys;
-    std::list<boost::weak_ptr<DSKnob> > _dstKnobs;
+    std::list<DSKnobWPtr> _dstKnobs;
     DopeSheetEditor *_model;
 };
 

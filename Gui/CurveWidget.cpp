@@ -2152,7 +2152,7 @@ CurveWidget::exportCurveToAscii()
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->get() );
         if ( (*it)->isVisible() && isKnobCurve ) {
             KnobIPtr knob = isKnobCurve->getInternalKnob();
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+            KnobStringBase* isString = dynamic_cast<KnobStringBase*>( knob.get() );
             if (isString) {
                 Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("String curves cannot be imported/exported.").toStdString() );
 
@@ -2228,7 +2228,7 @@ CurveWidget::importCurveFromAscii()
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->get() );
         if ( (*it)->isVisible() && isKnobCurve ) {
             KnobIPtr knob = isKnobCurve->getInternalKnob();
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+            KnobStringBase* isString = dynamic_cast<KnobStringBase*>( knob.get() );
             if (isString) {
                 Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("String curves cannot be imported/exported.").toStdString() );
 

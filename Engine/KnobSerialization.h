@@ -272,11 +272,11 @@ struct ValueSerialization
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>( _knob.get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( _knob.get() );
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( _knob.get() );
+        KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( _knob.get() );
+        KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( _knob.get() );
+        KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( _knob.get() );
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>( _knob.get() );
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( _knob.get() );
+        KnobStringBase* isString = dynamic_cast<KnobStringBase*>( _knob.get() );
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>( _knob.get() );
         KnobPage* isPage = dynamic_cast<KnobPage*>( _knob.get() );
         KnobGroup* isGrp = dynamic_cast<KnobGroup*>( _knob.get() );
@@ -337,11 +337,11 @@ struct ValueSerialization
     void load(Archive & ar,
               const unsigned int version)
     {
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>( _knob.get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( _knob.get() );
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( _knob.get() );
+        KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( _knob.get() );
+        KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( _knob.get() );
+        KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( _knob.get() );
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>( _knob.get() );
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( _knob.get() );
+        KnobStringBase* isString = dynamic_cast<KnobStringBase*>( _knob.get() );
         KnobFile* isFile = dynamic_cast<KnobFile*>( _knob.get() );
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>( _knob.get() );
         KnobPage* isPage = dynamic_cast<KnobPage*>( _knob.get() );
@@ -758,10 +758,10 @@ private:
                 }
 
                 if (version >= KNOB_SERIALIZATION_INTRODUCES_DEFAULT_VALUES && version < KNOB_SERIALIZATION_REMOVE_DEFAULT_VALUES) {
-                    Knob<double>* isDoubleVal = dynamic_cast<Knob<double>*>( _knob.get() );
-                    Knob<int>* isIntVal = dynamic_cast<Knob<int>*>( _knob.get() );
+                    KnobDoubleBase* isDoubleVal = dynamic_cast<KnobDoubleBase*>( _knob.get() );
+                    KnobIntBase* isIntVal = dynamic_cast<KnobIntBase*>( _knob.get() );
                     KnobBool* isBool = dynamic_cast<KnobBool*>( _knob.get() );
-                    Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>( _knob.get() );
+                    KnobStringBase* isStr = dynamic_cast<KnobStringBase*>( _knob.get() );
 
                     for (int i = 0; i < _knob->getDimension(); ++i) {
                         if (isDoubleVal) {

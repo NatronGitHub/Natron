@@ -457,10 +457,10 @@ KnobGui::onSetValueUsingUndoStack(const Variant & v,
 {
     KnobIPtr knob = getKnob();
 
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+    KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( knob.get() );
+    KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( knob.get() );
+    KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( knob.get() );
+    KnobStringBase* isString = dynamic_cast<KnobStringBase*>( knob.get() );
 
     if (isInt) {
         pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), isInt->getValue(dim), v.toInt(), dim) );
@@ -641,7 +641,7 @@ KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
     KnobIPtr knob = getKnob();
 
     if ( knob->getHolder() && knob->getHolder()->getApp() && !knob->getIsSecret() && ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) ) {
-        AppInstPtr app = knob->getHolder()->getApp();
+        AppInstancePtr app = knob->getHolder()->getApp();
         assert(app);
         std::list<SequenceTime> times;
         std::set<SequenceTime> tmpTimes;
@@ -678,7 +678,7 @@ void
 KnobGui::setAllKeyframeMarkersOnTimeline(int dimension)
 {
     KnobIPtr knob = getKnob();
-    AppInstPtr app = knob->getHolder()->getApp();
+    AppInstancePtr app = knob->getHolder()->getApp();
 
     assert(app);
     std::list<SequenceTime> times;
@@ -722,7 +722,7 @@ KnobGui::onKeyFrameMoved(ViewSpec /*view*/,
         return;
     }
     if ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) {
-        AppInstPtr app = knob->getHolder()->getApp();
+        AppInstancePtr app = knob->getHolder()->getApp();
         assert(app);
         app->removeKeyFrameIndicator(oldTime);
         app->addKeyframeIndicator(newTime);

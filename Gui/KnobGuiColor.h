@@ -182,7 +182,7 @@ private:
 
 private:
 
-    boost::weak_ptr<KnobColor> _knob;
+    KnobColorWPtr _knob;
     ColorPickerLabel *_colorLabel;
     Button *_colorDialogButton;
     std::vector<double> _lastColor;

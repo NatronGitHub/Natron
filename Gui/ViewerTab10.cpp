@@ -249,7 +249,7 @@ ViewerTab::startPause(bool b)
         if (!gui) {
             return;
         }
-        GuiAppInstPtr app = gui->getApp();
+        GuiAppInstancePtr app = gui->getApp();
         if ( !app || app->checkAllReadersModificationDate(true) ) {
             return;
         }
@@ -383,7 +383,7 @@ ViewerTab::startBackward(bool b)
         if (!gui) {
             return;
         }
-        GuiAppInstPtr app = gui->getApp();
+        GuiAppInstancePtr app = gui->getApp();
         if ( !app || app->checkAllReadersModificationDate(true) ) {
             return;
         }
@@ -405,7 +405,7 @@ ViewerTab::refresh(bool enableRenderStats)
     if (!gui) {
         return;
     }
-    GuiAppInstPtr app = gui->getApp();
+    GuiAppInstancePtr app = gui->getApp();
     if (!app) {
         return;
     }
@@ -493,7 +493,7 @@ ViewerTab::onTimeLineTimeChanged(SequenceTime time,
     if (!gui) {
         return;
     }
-    GuiAppInstPtr app = gui->getApp();
+    GuiAppInstancePtr app = gui->getApp();
     if (!app) {
         return;
     }
@@ -548,7 +548,7 @@ ViewerTab::~ViewerTab()
             graph = gui->getNodeGraph();
         }
         assert(graph);
-        GuiAppInstPtr app = gui->getApp();
+        GuiAppInstancePtr app = gui->getApp();
         if ( app && !app->isClosing() && graph && (graph->getLastSelectedViewer() == this) ) {
             graph->setLastSelectedViewer(0);
         }
@@ -606,7 +606,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     if (!gui) {
         return;
     }
-    GuiAppInstPtr app = gui->getApp();
+    GuiAppInstancePtr app = gui->getApp();
     if (!app) {
         return;
     }
@@ -950,7 +950,7 @@ ViewerTab::eventFilter(QObject *target,
     if (e->type() == QEvent::MouseButtonPress) {
         Gui* gui = getGui();
         if (gui) {
-            GuiAppInstPtr app = gui->getApp();
+            GuiAppInstancePtr app = gui->getApp();
             if (app) {
                 NodeGuiIPtr nodegui_i = _imp->viewerNode->getNode()->getNodeGui();
                 assert(nodegui_i);

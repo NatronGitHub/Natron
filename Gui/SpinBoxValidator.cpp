@@ -43,8 +43,8 @@ struct NumericKnobValidatorPrivate
     KnobGuiDouble* isDoubleGui;
     KnobGuiColor* isColorGui;
     KnobGuiInt* isIntGui;
-    boost::weak_ptr<Knob<double> > isDouble;
-    boost::weak_ptr<Knob<int> > isInt;
+    KnobDoubleBaseWPtr isDouble;
+    KnobIntBaseWPtr isInt;
 
     NumericKnobValidatorPrivate(const SpinBox* spinbox,
                                 const KnobGuiPtr& knob)
@@ -56,8 +56,8 @@ struct NumericKnobValidatorPrivate
     {
         KnobIPtr internalKnob = knob->getKnob();
 
-        isDouble = boost::dynamic_pointer_cast<Knob<double> >(internalKnob);
-        isInt = boost::dynamic_pointer_cast<Knob<int> >(internalKnob);
+        isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(internalKnob);
+        isInt = boost::dynamic_pointer_cast<KnobIntBase>(internalKnob);
         assert( isDouble.lock() || isInt.lock() );
     }
 };

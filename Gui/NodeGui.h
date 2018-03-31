@@ -254,7 +254,7 @@ public:
 
     void markInputNull(Edge* e);
 
-    const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > & getKnobs() const;
+    const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > & getKnobs() const;
     static const int DEFAULT_OFFSET_BETWEEN_NODES = 30;
 
 
@@ -634,13 +634,13 @@ private:
 
     ///This is the garphical red line displayed when the node is a clone
     LinkArrow* _slaveMasterLink;
-    boost::weak_ptr<NodeGui> _masterNodeGui;
+    NodeGuiWPtr _masterNodeGui;
 
     ///For each knob that has a link to another parameter, display an arrow
     struct LinkedKnob
     {
-        KnobWPtr master;
-        KnobWPtr slave;
+        KnobIWPtr master;
+        KnobIWPtr slave;
 
         // Is this link valid (counter for all dimensions)
         int linkInValid;
@@ -673,7 +673,7 @@ private:
     QPointF _magnecStartingPos; //for x and for y
     QString _nodeLabel;
     QString _channelsExtraLabel;
-    boost::weak_ptr<NodeGui> _parentMultiInstance;
+    NodeGuiWPtr _parentMultiInstance;
 
     ///For the serialization thread
     mutable QMutex _mtSafeSizeMutex;

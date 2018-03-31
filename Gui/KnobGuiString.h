@@ -267,7 +267,7 @@ private:
     bool _italicActivated;
     QString _fontFamily;
     QColor _fontColor;
-    boost::weak_ptr<KnobString> _knob;
+    KnobStringWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

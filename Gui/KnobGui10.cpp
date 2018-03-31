@@ -393,10 +393,10 @@ KnobGui::onSetKeyActionTriggered()
                 AddKeysCommand::KeyToAdd keyToAdd;
                 KeyFrame kf;
                 kf.setTime(time);
-                Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-                Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
+                KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( knob.get() );
+                KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( knob.get() );
                 AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>( knob.get() );
-                Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
+                KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( knob.get() );
 
                 if (isInt) {
                     kf.setValue( isInt->getValue(i) );

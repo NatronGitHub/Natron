@@ -1714,10 +1714,10 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
         for (U32 j = 0; j < nodeKnobs.size(); ++j) {
             if (nodeKnobs[j]->getName() == params[i]) {
                 
-                Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(nodeKnobs[j].get());
-                Knob<int>* isInt = dynamic_cast<Knob<int>*>(nodeKnobs[j].get());
-                Knob<double>* isDbl = dynamic_cast<Knob<double>*>(nodeKnobs[j].get());
-                Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>(nodeKnobs[j].get());
+                KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>(nodeKnobs[j].get());
+                KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(nodeKnobs[j].get());
+                KnobDoubleBase* isDbl = dynamic_cast<KnobDoubleBase*>(nodeKnobs[j].get());
+                KnobStringBase* isStr = dynamic_cast<KnobStringBase*>(nodeKnobs[j].get());
                 int nDims = nodeKnobs[j]->getDimension();
 
                 std::string propName = kCreateNodeArgsPropParamValue;
@@ -8280,7 +8280,7 @@ Node::onFileNameParameterChanged(KnobI* fileKnob)
         KnobIPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
         KnobOutputFile* isFile = dynamic_cast<KnobOutputFile*>(fileKnob);
         if (isFile && sublabelKnob) {
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( sublabelKnob.get() );
+            KnobStringBase* isString = dynamic_cast<KnobStringBase*>( sublabelKnob.get() );
 
             std::string pattern = isFile->getValue();
             if (isString) {

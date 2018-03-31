@@ -113,7 +113,7 @@ private:
     std::vector<std::pair<KnobGuiWPtr, std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
     TabGroup* _tabGroup;
     //enabled too
-    boost::weak_ptr<KnobGroup> _knob;
+    KnobGroupWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

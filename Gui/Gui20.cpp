@@ -995,11 +995,11 @@ Gui::getToolButtonMenuOpened() const
     return _imp->_toolButtonMenuOpened;
 }
 
-AppInstPtr
+AppInstancePtr
 Gui::createNewProject()
 {
     CLArgs cl;
-    AppInstPtr app = appPTR->newAppInstance(cl, false);
+    AppInstancePtr app = appPTR->newAppInstance(cl, false);
 
     app->execOnProjectCreatedCallback();
 
@@ -1024,25 +1024,25 @@ Gui::openProject()
         std::string patternCpy = selectedFile;
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastLoadProjectOpenedDir = QString::fromUtf8( path.c_str() );
-        AppInstPtr appInstance = openProjectInternal(selectedFile, true);
+        AppInstancePtr appInstance = openProjectInternal(selectedFile, true);
         Q_UNUSED(appInstance);
     }
 }
 
-AppInstPtr
+AppInstancePtr
 Gui::openProject(const std::string & filename)
 {
     return openProjectInternal(filename, true);
 }
 
-AppInstPtr
+AppInstancePtr
 Gui::openProjectInternal(const std::string & absoluteFileName,
                          bool attemptToLoadAutosave)
 {
     QFileInfo file( QString::fromUtf8( absoluteFileName.c_str() ) );
 
     if ( !file.exists() ) {
-        return AppInstPtr();
+        return AppInstancePtr();
     }
     QString fileUnPathed = file.fileName();
     QString path = file.path() + QLatin1Char('/');
@@ -1051,7 +1051,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
     int openedProject = appPTR->isProjectAlreadyOpened(absoluteFileName);
 
     if (openedProject != -1) {
-        AppInstPtr instance = appPTR->getAppInstance(openedProject);
+        AppInstancePtr instance = appPTR->getAppInstance(openedProject);
         if (instance) {
             GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( instance.get() );
             if (guiApp) {
@@ -1062,7 +1062,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
         }
     }
 
-    AppInstPtr ret;
+    AppInstancePtr ret;
     boost::shared_ptr<Project> project = getApp()->getProject();
     ///if the current graph has no value, just load the project in the same window
     if ( project->isGraphWorthLess() ) {
@@ -1072,7 +1072,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
         }
     } else {
         CLArgs cl;
-        AppInstPtr newApp = appPTR->newAppInstance(cl, false);
+        AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
         bool ok  = newApp->getProject()->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
         if (ok) {
             ret = newApp;

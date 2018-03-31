@@ -334,7 +334,7 @@ OutputEffectInstance::createWriterPath()
     KnobIPtr fileParam = getKnobByName(kOfxImageEffectFileParamName);
 
     if (fileParam) {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( fileParam.get() );
+        KnobStringBase* isString = dynamic_cast<KnobStringBase*>( fileParam.get() );
         if (isString) {
             std::string pattern = isString->getValue();
             std::string path = SequenceParsing::removePath(pattern);

@@ -356,7 +356,7 @@ struct RotoPanelPrivate
 
 public:
     RotoPanel* publicInterface;
-    boost::weak_ptr<NodeGui> node;
+    NodeGuiWPtr node;
     boost::shared_ptr<RotoContext> context;
     QVBoxLayout* mainLayout;
     QWidget* splineContainer;

@@ -136,7 +136,7 @@ private:
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;
     KnobComboBox *_comboBox;
-    boost::weak_ptr<KnobChoice> _knob;
+    KnobChoiceWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

@@ -140,9 +140,9 @@ NodeGraph::refreshAllKnobsGui()
 {
     for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         if ( (*it)->isSettingsPanelVisible() ) {
-            const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > & knobs = (*it)->getKnobs();
+            const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > & knobs = (*it)->getKnobs();
 
-            for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+            for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
                 KnobIPtr knob = it2->first.lock();
                 if ( !knob->getIsSecret() ) {
                     for (int i = 0; i < knob->getDimension(); ++i) {
