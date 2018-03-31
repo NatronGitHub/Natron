@@ -77,7 +77,7 @@
 NATRON_NAMESPACE_ENTER
 
 Settings::Settings()
-    : KnobHolder( AppInstPtr() ) // < Settings are process wide and do not belong to a single AppInstance
+    : KnobHolder( AppInstancePtr() ) // < Settings are process wide and do not belong to a single AppInstance
     , _restoringSettings(false)
     , _ocioRestored(false)
     , _settingsExisted(false)
@@ -3079,7 +3079,7 @@ void
 Settings::doOCIOStartupCheckIfNeeded()
 {
     bool docheck = _ocioStartupCheck->getValue();
-    AppInstPtr mainInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr mainInstance = appPTR->getTopLevelInstance();
 
     if (!mainInstance) {
         qDebug() << "WARNING: doOCIOStartupCheckIfNeeded() called without a AppInstance";

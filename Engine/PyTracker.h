@@ -64,7 +64,7 @@ public:
 
 private:
 
-    boost::weak_ptr<TrackMarker> _marker;
+    TrackMarkerWPtr _marker;
 };
 
 class Tracker
@@ -97,7 +97,7 @@ public:
 
 private:
 
-    boost::weak_ptr<TrackerContext> _ctx;
+    TrackerContextWPtr _ctx;
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

@@ -501,7 +501,7 @@ private:
     virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
     virtual void aboutToStartRender() OVERRIDE FINAL;
     virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
-    boost::weak_ptr<OutputEffectInstance> _effect;
+    OutputEffectInstanceWPtr _effect;
     mutable QMutex _currentTimeMutex;
     int _currentTime;
 };
@@ -539,7 +539,7 @@ private:
 
     virtual int getLastRenderedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
-    boost::weak_ptr<ViewerInstance> _viewer;
+    ViewerInstanceWPtr _viewer;
 };
 
 /**

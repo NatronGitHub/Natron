@@ -165,7 +165,7 @@ public:
     mutable QMutex renderQueueMutex;
     std::list<RenderQueueItem> renderQueue, activeRenders;
     mutable QMutex invalidExprKnobsMutex;
-    std::list<KnobWPtr> invalidExprKnobs;
+    std::list<KnobIWPtr> invalidExprKnobs;
 
     ProjectBeingLoadedInfo projectBeingLoaded;
 
@@ -2232,13 +2232,13 @@ AppInstance::saveAs(const std::string& filename)
     return getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), 0);
 }
 
-AppInstPtr
+AppInstancePtr
 AppInstance::loadProject(const std::string& filename)
 {
     QFileInfo file( QString::fromUtf8( filename.c_str() ) );
 
     if ( !file.exists() ) {
-        return AppInstPtr();
+        return AppInstancePtr();
     }
     QString fileUnPathed = file.fileName();
     QString path = file.path() + QChar::fromLatin1('/');
@@ -2254,7 +2254,7 @@ AppInstance::loadProject(const std::string& filename)
 
     project->resetProject();
 
-    return AppInstPtr();
+    return AppInstancePtr();
 }
 
 ///Close the current project but keep the window
@@ -2277,11 +2277,11 @@ AppInstance::closeProject()
 }
 
 ///Opens a new project
-AppInstPtr
+AppInstancePtr
 AppInstance::newProject()
 {
     CLArgs cl;
-    AppInstPtr app = appPTR->newAppInstance(cl, false);
+    AppInstancePtr app = appPTR->newAppInstance(cl, false);
 
     return app;
 }
@@ -2291,7 +2291,7 @@ AppInstance::addInvalidExpressionKnob(const KnobIPtr& knob)
 {
     QMutexLocker k(&_imp->invalidExprKnobsMutex);
 
-    for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
+    for (std::list<KnobIWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
         if ( it->lock().get() ) {
             return;
         }
@@ -2304,7 +2304,7 @@ AppInstance::removeInvalidExpressionKnob(const KnobI* knob)
 {
     QMutexLocker k(&_imp->invalidExprKnobsMutex);
 
-    for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
+    for (std::list<KnobIWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
         if (it->lock().get() == knob) {
             _imp->invalidExprKnobs.erase(it);
             break;
@@ -2321,14 +2321,14 @@ AppInstance::recheckInvalidExpressions()
     std::list<KnobIPtr> knobs;
     {
         QMutexLocker k(&_imp->invalidExprKnobsMutex);
-        for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
+        for (std::list<KnobIWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
             KnobIPtr k = it->lock();
             if (k) {
                 knobs.push_back(k);
             }
         }
     }
-    std::list<KnobWPtr> newInvalidKnobs;
+    std::list<KnobIWPtr> newInvalidKnobs;
 
     for (std::list<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
         if ( !(*it)->checkInvalidExpressions() ) {

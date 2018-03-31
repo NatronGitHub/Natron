@@ -94,7 +94,8 @@ class AppTLS
 {
     //This is the object in the QThreadStorage, it is duplicated on every thread
 
-    typedef std::set<boost::weak_ptr<const TLSHolderBase> > TLSObjects;
+    typedef boost::weak_ptr<const TLSHolderBase> TLSHolderBaseCWPtr;
+    typedef std::set<TLSHolderBaseCWPtr> TLSObjects;
     struct GLobalTLSObject
     {
         TLSObjects objects;

@@ -94,7 +94,7 @@ class OfxParamToKnob
     OFX::Host::Interact::Descriptor interactDesc;
     mutable QMutex dynamicPropModifiedMutex;
     int _dynamicPropModified;
-    boost::weak_ptr<EffectInstance> _effect;
+    EffectInstanceWPtr _effect;
 
 public:
 
@@ -240,7 +240,7 @@ public:
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 private:
-    boost::weak_ptr<KnobButton> _knob;
+    KnobButtonWPtr _knob;
 };
 
 
@@ -288,7 +288,7 @@ private:
 
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
 
-    boost::weak_ptr<KnobInt> _knob;
+    KnobIntWPtr _knob;
 };
 
 class OfxDoubleInstance
@@ -337,7 +337,7 @@ public:
 
 private:
 
-    boost::weak_ptr<KnobDouble> _knob;
+    KnobDoubleWPtr _knob;
 };
 
 class OfxBooleanInstance
@@ -381,7 +381,7 @@ private:
 
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
 
-    boost::weak_ptr<KnobBool> _knob;
+    KnobBoolWPtr _knob;
 };
 
 class OfxChoiceInstance
@@ -428,7 +428,7 @@ private:
 
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
 
-    boost::weak_ptr<KnobChoice> _knob;
+    KnobChoiceWPtr _knob;
 };
 
 class OfxRGBAInstance
@@ -475,7 +475,7 @@ public:
     bool isAnimated() const;
 
 private:
-    boost::weak_ptr<KnobColor> _knob;
+    KnobColorWPtr _knob;
 };
 
 
@@ -523,7 +523,7 @@ public:
     bool isAnimated() const;
 
 private:
-    boost::weak_ptr<KnobColor> _knob;
+    KnobColorWPtr _knob;
 };
 
 class OfxDouble2DInstance
@@ -572,7 +572,7 @@ public:
 private:
 
     int _startIndex;
-    boost::weak_ptr<KnobDouble> _knob;
+    KnobDoubleWPtr _knob;
 };
 
 
@@ -619,7 +619,7 @@ private:
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
 
     int _startIndex;
-    boost::weak_ptr<KnobInt> _knob;
+    KnobIntWPtr _knob;
 };
 
 class OfxDouble3DInstance
@@ -668,7 +668,7 @@ public:
 private:
 
     int _startIndex;
-    boost::weak_ptr<KnobDouble> _knob;
+    KnobDoubleWPtr _knob;
 };
 
 class OfxInteger3DInstance
@@ -714,7 +714,7 @@ private:
 
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
 
-    boost::weak_ptr<KnobInt> _knob;
+    KnobIntWPtr _knob;
 };
 
 class OfxGroupInstance
@@ -748,7 +748,7 @@ public:
 
 
 private:
-    boost::weak_ptr<KnobGroup> _groupKnob;
+    KnobGroupWPtr _groupKnob;
 };
 
 class OfxPageInstance
@@ -775,7 +775,7 @@ public:
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 private:
-    boost::weak_ptr<KnobPage> _pageKnob;
+    KnobPageWPtr _pageKnob;
 };
 
 
@@ -977,7 +977,7 @@ public:
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 
-    boost::weak_ptr<KnobParametric> _knob;
+    KnobParametricWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

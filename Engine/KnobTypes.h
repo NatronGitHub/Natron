@@ -841,7 +841,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-    std::vector<boost::weak_ptr<KnobI> > _children;
+    std::vector<KnobIWPtr> _children;
     bool _isTab;
     bool _isToolButton;
     bool _isDialog;
@@ -957,7 +957,7 @@ private:
 private:
 
     bool _isToolBar;
-    std::vector<boost::weak_ptr<KnobI> > _children;
+    std::vector<KnobIWPtr> _children;
     static const std::string _typeNameStr;
 };
 

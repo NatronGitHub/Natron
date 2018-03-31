@@ -2174,7 +2174,7 @@ private:
                                              EffectInstance::InputImagesMap *inputImages,
                                              RoIMap* inputsRoI);
 
-    static boost::shared_ptr<Image> convertPlanesFormatsIfNeeded(const AppInstPtr& app,
+    static boost::shared_ptr<Image> convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
                                                                  const boost::shared_ptr<Image>& inputImage,
                                                                  const RectI& roi,
                                                                  const ImagePlaneDesc& targetComponents,

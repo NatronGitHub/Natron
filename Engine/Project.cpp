@@ -132,7 +132,7 @@ generateUserFriendlyNatronVersionName()
 }
 
 
-Project::Project(const AppInstPtr& appInstance)
+Project::Project(const AppInstancePtr& appInstance)
     : KnobHolder(appInstance)
     , NodeCollection(appInstance)
     , _imp( new ProjectPrivate(this) )
@@ -145,13 +145,13 @@ Project::Project(const AppInstPtr& appInstance)
 // see https://stackoverflow.com/a/20961251/2607517
 struct Project::MakeSharedEnabler: public Project
 {
-    MakeSharedEnabler(const AppInstPtr& appInstance) : Project(appInstance) {
+    MakeSharedEnabler(const AppInstancePtr& appInstance) : Project(appInstance) {
     }
 };
 
 
 boost::shared_ptr<Project>
-Project::create(const AppInstPtr& appInstance)
+Project::create(const AppInstancePtr& appInstance)
 {
     return boost::make_shared<Project::MakeSharedEnabler>(appInstance);
 }
@@ -173,11 +173,11 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 class LoadProjectSplashScreen_RAII
 {
-    AppInstWPtr app;
+    AppInstanceWPtr app;
 
 public:
 
-    LoadProjectSplashScreen_RAII(const AppInstPtr& app,
+    LoadProjectSplashScreen_RAII(const AppInstancePtr& app,
                                  const QString& filename)
         : app(app)
     {
@@ -188,7 +188,7 @@ public:
 
     ~LoadProjectSplashScreen_RAII()
     {
-        AppInstPtr a = app.lock();
+        AppInstancePtr a = app.lock();
 
         if (a) {
             a->closeLoadPRojectSplashScreen();
@@ -563,7 +563,7 @@ Project::saveProjectInternal(const QString & path,
             save(&projectSerializationObj);
             oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
             if (!bgProject) {
-                AppInstPtr app = getApp();
+                AppInstancePtr app = getApp();
                 if (app) {
                     app->saveProjectGui(oArchive);
                 }

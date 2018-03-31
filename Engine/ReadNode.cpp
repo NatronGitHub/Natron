@@ -226,14 +226,14 @@ public:
     QMutex embeddedPluginMutex;
     NodePtr embeddedPlugin;
     std::list<boost::shared_ptr<KnobSerialization> > genericKnobsSerialization;
-    boost::weak_ptr<KnobFile> inputFileKnob;
+    KnobFileWPtr inputFileKnob;
 
     //Thiese are knobs owned by the ReadNode and not the Reader
-    boost::weak_ptr<KnobChoice> pluginSelectorKnob;
-    boost::weak_ptr<KnobString> pluginIDStringKnob;
-    boost::weak_ptr<KnobSeparator> separatorKnob;
-    boost::weak_ptr<KnobButton> fileInfosKnob;
-    std::list<boost::weak_ptr<KnobI> > readNodeKnobs;
+    KnobChoiceWPtr pluginSelectorKnob;
+    KnobStringWPtr pluginIDStringKnob;
+    KnobSeparatorWPtr separatorKnob;
+    KnobButtonWPtr fileInfosKnob;
+    std::list<KnobIWPtr> readNodeKnobs;
 
     //MT only
     int creatingReadNode;
@@ -349,7 +349,7 @@ ReadNodePrivate::placeReadNodeKnobsInPage()
     if (!isPage) {
         return;
     }
-    for (std::list<boost::weak_ptr<KnobI> >::iterator it = readNodeKnobs.begin(); it != readNodeKnobs.end(); ++it) {
+    for (std::list<KnobIWPtr>::iterator it = readNodeKnobs.begin(); it != readNodeKnobs.end(); ++it) {
         KnobIPtr knob = it->lock();
         knob->setParentKnob( KnobIPtr() );
         isPage->removeKnob( knob.get() );
@@ -365,7 +365,7 @@ ReadNodePrivate::placeReadNodeKnobsInPage()
     }
     if (index != -1) {
         ++index;
-        for (std::list<boost::weak_ptr<KnobI> >::iterator it = readNodeKnobs.begin(); it != readNodeKnobs.end(); ++it) {
+        for (std::list<KnobIWPtr>::iterator it = readNodeKnobs.begin(); it != readNodeKnobs.end(); ++it) {
             KnobIPtr knob = it->lock();
             isPage->insertKnob(index, knob);
             ++index;
@@ -480,7 +480,7 @@ ReadNodePrivate::destroyReadNode()
                 
                 //If it is a knob of this ReadNode, do not destroy it
                 bool isReadNodeKnob = false;
-                for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = readNodeKnobs.begin(); it2 != readNodeKnobs.end(); ++it2) {
+                for (std::list<KnobIWPtr>::iterator it2 = readNodeKnobs.begin(); it2 != readNodeKnobs.end(); ++it2) {
                     if (it2->lock() == *it) {
                         isReadNodeKnob = true;
                         break;

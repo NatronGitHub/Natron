@@ -43,7 +43,7 @@ NATRON_NAMESPACE_ENTER
 
 struct BezierCPPrivate
 {
-    boost::weak_ptr<Bezier> holder;
+    BezierWPtr holder;
 
     ///the animation curves for the position in the 2D plane
     boost::shared_ptr<Curve> curveX, curveY;

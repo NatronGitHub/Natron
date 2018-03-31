@@ -34,7 +34,7 @@ NATRON_NAMESPACE_ENTER
 
 struct OneViewNodePrivate
 {
-    boost::weak_ptr<KnobChoice> viewKnob;
+    KnobChoiceWPtr viewKnob;
 
     OneViewNodePrivate()
         : viewKnob()

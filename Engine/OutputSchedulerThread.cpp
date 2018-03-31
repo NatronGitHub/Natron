@@ -194,7 +194,7 @@ struct OutputSchedulerThreadPrivate
     bool renderFinished; //< set to true when nFramesRendered = runArgs->lastFrame - runArgs->firstFrame + 1
 
     // Pointer to the args used in threadLoopOnce(), only usable from the scheduler thread
-    boost::weak_ptr<OutputSchedulerThreadStartArgs> runArgs;
+    OutputSchedulerThreadStartArgsWPtr runArgs;
     mutable QMutex lastRunArgsMutex;
     std::vector<ViewIdx> lastPlaybackViewsToRender;
     RenderDirectionEnum lastPlaybackRenderDirection;
@@ -224,7 +224,7 @@ struct OutputSchedulerThreadPrivate
     ///Protected by framesToRenderMutex
     int lastFramePushedIndex;
     int expectFrameToRender;
-    boost::weak_ptr<OutputEffectInstance> outputEffect; //< The effect used as output device
+    OutputEffectInstanceWPtr outputEffect; //< The effect used as output device
     RenderEngine* engine;
 
 #ifdef NATRON_SCHEDULER_SPAWN_THREADS_WITH_TIMER
@@ -1978,7 +1978,7 @@ OutputSchedulerThread::runCallbackWithVariables(const QString& callback)
 struct RenderThreadTaskPrivate
 {
     OutputSchedulerThread* scheduler;
-    boost::weak_ptr<OutputEffectInstance> output;
+    OutputEffectInstanceWPtr output;
 
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     QMutex mustQuitMutex;
@@ -2775,7 +2775,7 @@ ViewerDisplayScheduler::getFrameRangeToRender(int &first,
 class ViewerRenderFrameRunnable
     : public RenderThreadTask
 {
-    boost::weak_ptr<ViewerInstance> _viewer;
+    ViewerInstanceWPtr _viewer;
 
 public:
 
@@ -2955,7 +2955,7 @@ struct RenderEnginePrivate
     //If true then a current frame render can start playback, protected by abortedRequestedMutex
     bool canAutoRestartPlayback;
     QMutex canAutoRestartPlaybackMutex; // protects abortRequested
-    boost::weak_ptr<OutputEffectInstance> output;
+    OutputEffectInstanceWPtr output;
     mutable QMutex pbModeMutex;
     PlaybackModeEnum pbMode;
     ViewerCurrentFrameRequestScheduler* currentFrameScheduler;
@@ -3401,7 +3401,7 @@ public:
     ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
     bool canAbort;
     NodePtr isRotoPaintRequest;
-    boost::weak_ptr<RotoStrokeItem> strokeItem;
+    RotoStrokeItemWPtr strokeItem;
     boost::shared_ptr<ViewerArgs> args[2];
     bool isRotoNeatRender;
 

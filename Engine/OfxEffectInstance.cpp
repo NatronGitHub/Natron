@@ -187,10 +187,10 @@ struct OfxEffectInstancePrivate
     boost::scoped_ptr<OfxImageEffectInstance> effect;
     std::string natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
     boost::scoped_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
-    boost::weak_ptr<KnobString> cursorKnob; // secret knob for ofx effects so they can set the cursor
-    boost::weak_ptr<KnobInt> selectionRectangleStateKnob;
-    boost::weak_ptr<KnobString> undoRedoTextKnob;
-    boost::weak_ptr<KnobBool> undoRedoStateKnob;
+    KnobStringWPtr cursorKnob; // secret knob for ofx effects so they can set the cursor
+    KnobIntWPtr selectionRectangleStateKnob;
+    KnobStringWPtr undoRedoTextKnob;
+    KnobBoolWPtr undoRedoStateKnob;
     mutable QReadWriteLock preferencesLock;
     mutable QReadWriteLock renderSafetyLock;
     mutable RenderSafetyEnum renderSafety;
@@ -2502,8 +2502,8 @@ OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedR
 
 class OfxUndoCommand : public UndoCommand
 {
-    boost::weak_ptr<KnobString> _textKnob;
-    boost::weak_ptr<KnobBool> _stateKnob;
+    KnobStringWPtr _textKnob;
+    KnobBoolWPtr _stateKnob;
 public:
 
     OfxUndoCommand(const boost::shared_ptr<KnobString>& textKnob, const boost::shared_ptr<KnobBool> &stateKnob)

@@ -1546,7 +1546,7 @@ KnobGroup::addKnob(const KnobIPtr& k)
 void
 KnobGroup::removeKnob(KnobI* k)
 {
-    for (std::vector<boost::weak_ptr<KnobI> >::iterator it = _children.begin(); it != _children.end(); ++it) {
+    for (std::vector<KnobIWPtr>::iterator it = _children.begin(); it != _children.end(); ++it) {
         if (it->lock().get() == k) {
             _children.erase(it);
 
@@ -1563,7 +1563,7 @@ KnobGroup::moveOneStepUp(KnobI* k)
             if (i == 0) {
                 return false;
             }
-            boost::weak_ptr<KnobI> tmp = _children[i - 1];
+            KnobIWPtr tmp = _children[i - 1];
             _children[i - 1] = _children[i];
             _children[i] = tmp;
 
@@ -1581,7 +1581,7 @@ KnobGroup::moveOneStepDown(KnobI* k)
             if (i == _children.size() - 1) {
                 return false;
             }
-            boost::weak_ptr<KnobI> tmp = _children[i + 1];
+            KnobIWPtr tmp = _children[i + 1];
             _children[i + 1] = _children[i];
             _children[i] = tmp;
 
@@ -1610,7 +1610,7 @@ KnobGroup::insertKnob(int index,
     if ( index >= (int)_children.size() ) {
         _children.push_back(k);
     } else {
-        std::vector<boost::weak_ptr<KnobI> >::iterator it = _children.begin();
+        std::vector<KnobIWPtr>::iterator it = _children.begin();
         std::advance(it, index);
         _children.insert(it, k);
     }
@@ -1726,7 +1726,7 @@ KnobPage::insertKnob(int index,
     if ( index >= (int)_children.size() ) {
         _children.push_back(k);
     } else {
-        std::vector<boost::weak_ptr<KnobI> >::iterator it = _children.begin();
+        std::vector<KnobIWPtr>::iterator it = _children.begin();
         std::advance(it, index);
         _children.insert(it, k);
     }
@@ -1736,7 +1736,7 @@ KnobPage::insertKnob(int index,
 void
 KnobPage::removeKnob(KnobI* k)
 {
-    for (std::vector<boost::weak_ptr<KnobI> >::iterator it = _children.begin(); it != _children.end(); ++it) {
+    for (std::vector<KnobIWPtr>::iterator it = _children.begin(); it != _children.end(); ++it) {
         if (it->lock().get() == k) {
             _children.erase(it);
 
@@ -1753,7 +1753,7 @@ KnobPage::moveOneStepUp(KnobI* k)
             if (i == 0) {
                 return false;
             }
-            boost::weak_ptr<KnobI> tmp = _children[i - 1];
+            KnobIWPtr tmp = _children[i - 1];
             _children[i - 1] = _children[i];
             _children[i] = tmp;
 
@@ -1771,7 +1771,7 @@ KnobPage::moveOneStepDown(KnobI* k)
             if (i == _children.size() - 1) {
                 return false;
             }
-            boost::weak_ptr<KnobI> tmp = _children[i + 1];
+            KnobIWPtr tmp = _children[i + 1];
             _children[i + 1] = _children[i];
             _children[i] = tmp;
 

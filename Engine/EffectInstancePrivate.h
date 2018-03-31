@@ -185,7 +185,7 @@ public:
 
     ///Current chuncks of memory held by the plug-in
     mutable QMutex pluginMemoryChunksMutex;
-    std::list<boost::weak_ptr<PluginMemory> > pluginMemoryChunks;
+    std::list<PluginMemoryWPtr> pluginMemoryChunks;
 
     ///Does this plug-in supports render scale ?
     QMutex supportsRenderScaleMutex;
@@ -216,7 +216,7 @@ public:
 #endif
 
     ///A cache for components available
-    std::list<boost::weak_ptr<KnobI> > overlaySlaves;
+    std::list<KnobIWPtr> overlaySlaves;
     mutable QMutex metadataMutex;
     NodeMetadata metadata;
     bool runningClipPreferences; //only used on main thread
@@ -227,7 +227,7 @@ public:
     // A list of context that are currently attached (i.e attachOpenGLContext() has been called on them but not yet dettachOpenGLContext).
     // If a plug-in returns false to supportsConcurrentOpenGLRenders() then whenever trying to attach a context, we take a lock in attachOpenGLContext
     // that is released in dettachOpenGLContext so that there can only be a single attached OpenGL context at any time.
-    std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr> attachedContexts;
+    std::map<OSGLContextWPtr, EffectInstance::OpenGLContextEffectDataPtr> attachedContexts;
 
     // Render clones are very small copies holding just pointers to Knobs that are used to render plug-ins that are only
     // eRenderSafetyInstanceSafe or lower

@@ -210,7 +210,7 @@ KnobI::getTopLevelPage() const
 /***********************************KNOB HELPER******************************************/
 
 ///for each dimension, the dimension of the master this dimension is linked to, and a pointer to the master
-typedef std::vector<std::pair<int, KnobWPtr> > MastersMap;
+typedef std::vector<std::pair<int, KnobIWPtr> > MastersMap;
 
 ///a curve for each dimension
 typedef std::vector<boost::shared_ptr<Curve> > CurvesMap;
@@ -223,7 +223,7 @@ struct Expr
     bool hasRet;
 
     ///The list of pair<knob, dimension> dpendencies for an expression
-    std::list<std::pair<KnobWPtr, int> > dependencies;
+    std::list<std::pair<KnobIWPtr, int> > dependencies;
 
     //PyObject* code;
 
@@ -257,7 +257,7 @@ struct KnobHelperPrivate
     int inViewerContextAddNewLine;
     std::string inViewerContextLabel;
     bool inViewerContextHasShortcut;
-    boost::weak_ptr<KnobI> parentKnob;
+    KnobIWPtr parentKnob;
     mutable QMutex stateMutex; // protects IsSecret defaultIsSecret enabled
     bool IsSecret, defaultIsSecret, inViewerContextSecret;
     std::vector<bool> enabled, defaultEnabled;
@@ -293,7 +293,7 @@ struct KnobHelperPrivate
     boost::shared_ptr<OfxParamOverlayInteract> customInteract;
 
     ///Pointer to the knobGui interface if it has any
-    boost::weak_ptr<KnobGuiI> gui;
+    KnobGuiIWPtr gui;
     mutable QMutex mustCloneGuiCurvesMutex;
     /// Set to true if gui curves were modified by the user instead of the real internal curves.
     /// If true then when finished rendering, the knob should clone the guiCurves into the internal curves.
@@ -1679,7 +1679,7 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
                                         ValueChangedReasonEnum reason,
                                         ValueChangedReasonEnum originalReason)
 {
-    AppInstPtr app;
+    AppInstancePtr app;
 
     if (_imp->holder) {
         app = _imp->holder->getApp();
@@ -2669,7 +2669,7 @@ KnobHelper::setExpressionInternal(int dimension,
             EXPR_RECURSION_LEVEL();
             _imp->parseListenersFromExpression(dimension);
         } else {
-            AppInstPtr app = getHolder()->getApp();
+            AppInstancePtr app = getHolder()->getApp();
             if (app) {
                 app->addInvalidExpressionKnob( shared_from_this() );
             }
@@ -2724,7 +2724,7 @@ KnobHelper::isExpressionUsingRetVariable(int dimension) const
 
 bool
 KnobHelper::getExpressionDependencies(int dimension,
-                                      std::list<std::pair<KnobWPtr, int> >& dependencies) const
+                                      std::list<std::pair<KnobIWPtr, int> >& dependencies) const
 {
     QMutexLocker k(&_imp->expressionMutex);
 
@@ -2754,13 +2754,13 @@ KnobHelper::clearExpression(int dimension,
     }
     KnobIPtr thisShared = shared_from_this();
     {
-        std::list<std::pair<KnobWPtr, int> > dependencies;
+        std::list<std::pair<KnobIWPtr, int> > dependencies;
         {
             QWriteLocker kk(&_imp->mastersMutex);
             dependencies = _imp->expressions[dimension].dependencies;
             _imp->expressions[dimension].dependencies.clear();
         }
-        for (std::list<std::pair<KnobWPtr, int> >::iterator it = dependencies.begin();
+        for (std::list<std::pair<KnobIWPtr, int> >::iterator it = dependencies.begin();
              it != dependencies.end(); ++it) {
             KnobIPtr otherKnob = it->first.lock();
             KnobHelper* other = dynamic_cast<KnobHelper*>( otherKnob.get() );
@@ -4594,7 +4594,7 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr>& nodes) cons
     {
         QMutexLocker k(&_imp->expressionMutex);
         for (int i = 0; i < _imp->dimension; ++i) {
-            for (std::list<std::pair<KnobWPtr, int> >::const_iterator it = _imp->expressions[i].dependencies.begin();
+            for (std::list<std::pair<KnobIWPtr, int> >::const_iterator it = _imp->expressions[i].dependencies.begin();
                  it != _imp->expressions[i].dependencies.end(); ++it) {
                 KnobIPtr knob = it->first.lock();
                 if (knob) {
@@ -4636,13 +4636,13 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr>& nodes) cons
 
 struct KnobHolder::KnobHolderPrivate
 {
-    AppInstWPtr app;
+    AppInstanceWPtr app;
     QMutex knobsMutex;
     std::vector<KnobIPtr> knobs;
     bool knobsInitialized;
     bool isInitializingKnobs;
     bool isSlave;
-    std::vector<KnobWPtr> knobsWithViewerUI;
+    std::vector<KnobIWPtr> knobsWithViewerUI;
 
     ///Count how many times an overlay needs to be redrawn for the instanceChanged/penMotion/penDown etc... actions
     ///to just redraw it once when the recursion level is back to 0
@@ -4667,7 +4667,7 @@ struct KnobHolder::KnobHolderPrivate
     bool hasAnimation;
     DockablePanelI* settingsPanel;
 
-    KnobHolderPrivate(const AppInstPtr& appInstance_)
+    KnobHolderPrivate(const AppInstancePtr& appInstance_)
         : app(appInstance_)
         , knobsMutex()
         , knobs()
@@ -4724,7 +4724,7 @@ struct KnobHolder::KnobHolderPrivate
     }
 };
 
-KnobHolder::KnobHolder(const AppInstPtr& appInstance)
+KnobHolder::KnobHolder(const AppInstancePtr& appInstance)
     : QObject()
     , _imp( new KnobHolderPrivate(appInstance) )
 {
@@ -4767,7 +4767,7 @@ KnobHolder::addKnobToViewerUI(const KnobIPtr& knob)
 bool
 KnobHolder::isInViewerUIKnob(const KnobIPtr& knob) const
 {
-    for (std::vector<KnobWPtr>::const_iterator it = _imp->knobsWithViewerUI.begin(); it!=_imp->knobsWithViewerUI.end(); ++it) {
+    for (std::vector<KnobIWPtr>::const_iterator it = _imp->knobsWithViewerUI.begin(); it!=_imp->knobsWithViewerUI.end(); ++it) {
         KnobIPtr p = it->lock();
         if (p == knob) {
             return true;
@@ -4781,7 +4781,7 @@ KnobHolder::getViewerUIKnobs() const
 {
     assert( QThread::currentThread() == qApp->thread() );
     KnobsVec ret;
-    for (std::vector<KnobWPtr>::const_iterator it = _imp->knobsWithViewerUI.begin(); it != _imp->knobsWithViewerUI.end(); ++it) {
+    for (std::vector<KnobIWPtr>::const_iterator it = _imp->knobsWithViewerUI.begin(); it != _imp->knobsWithViewerUI.end(); ++it) {
         KnobIPtr k = it->lock();
         if (k) {
             ret.push_back(k);
@@ -5762,7 +5762,7 @@ KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level)
     }
 }
 
-AppInstPtr
+AppInstancePtr
 KnobHolder::getApp() const
 {
     return _imp->app.lock();
@@ -5783,7 +5783,7 @@ KnobHolder::refreshAfterTimeChange(bool isPlayback,
                                    double time)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    AppInstPtr app = getApp();
+    AppInstancePtr app = getApp();
     if ( !app || app->isGuiFrozen() ) {
         return;
     }

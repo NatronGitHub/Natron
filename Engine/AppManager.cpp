@@ -556,7 +556,7 @@ AppManager::~AppManager()
         appsEmpty = _imp->_appInstances.empty();
     }
     while (!appsEmpty) {
-        AppInstPtr front;
+        AppInstancePtr front;
         {
             QMutexLocker k(&_imp->_appInstancesMutex);
             front = _imp->_appInstances.front();
@@ -609,7 +609,7 @@ class QuitInstanceArgs
 {
 public:
 
-    AppInstWPtr instance;
+    AppInstanceWPtr instance;
 
     QuitInstanceArgs()
         : GenericWatcherCallerArgs()
@@ -629,7 +629,7 @@ AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
         return;
     }
 
-    AppInstPtr instance = inArgs->instance.lock();
+    AppInstancePtr instance = inArgs->instance.lock();
 
     instance->aboutToQuit();
 
@@ -648,7 +648,7 @@ AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
 }
 
 void
-AppManager::quitNow(const AppInstPtr& instance)
+AppManager::quitNow(const AppInstancePtr& instance)
 {
     NodesList nodesToWatch;
 
@@ -664,7 +664,7 @@ AppManager::quitNow(const AppInstPtr& instance)
 }
 
 void
-AppManager::quit(const AppInstPtr& instance)
+AppManager::quit(const AppInstancePtr& instance)
 {
     boost::shared_ptr<QuitInstanceArgs> args = boost::make_shared<QuitInstanceArgs>();
 
@@ -684,7 +684,7 @@ AppManager::quitApplication()
     }
 
     while (!appsEmpty) {
-        AppInstPtr app;
+        AppInstancePtr app;
         {
             QMutexLocker k(&_imp->_appInstancesMutex);
             app = _imp->_appInstances.front();
@@ -1137,7 +1137,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         args = cl;
     }
 
-    AppInstPtr mainInstance = newAppInstance(args, false);
+    AppInstancePtr mainInstance = newAppInstance(args, false);
 
     hideSplashScreen();
 
@@ -1211,12 +1211,12 @@ AppManagerPrivate::setViewerCacheTileSize()
     _viewerCache->setTiled(true, tileSize);
 }
 
-AppInstPtr
+AppInstancePtr
 AppManager::newAppInstanceInternal(const CLArgs& cl,
                                    bool alwaysBackground,
                                    bool makeEmptyInstance)
 {
-    AppInstPtr instance;
+    AppInstancePtr instance;
 
     if (!alwaysBackground) {
         instance = makeNewInstance(_imp->_availableID);
@@ -1257,21 +1257,21 @@ AppManager::newAppInstanceInternal(const CLArgs& cl,
     return instance;
 }
 
-AppInstPtr
+AppInstancePtr
 AppManager::newBackgroundInstance(const CLArgs& cl,
                                   bool makeEmptyInstance)
 {
     return newAppInstanceInternal(cl, true, makeEmptyInstance);
 }
 
-AppInstPtr
+AppInstancePtr
 AppManager::newAppInstance(const CLArgs& cl,
                            bool makeEmptyInstance)
 {
     return newAppInstanceInternal(cl, false, makeEmptyInstance);
 }
 
-AppInstPtr
+AppInstancePtr
 AppManager::getAppInstance(int appID) const
 {
     QMutexLocker k(&_imp->_appInstancesMutex);
@@ -1282,7 +1282,7 @@ AppManager::getAppInstance(int appID) const
         }
     }
 
-    return AppInstPtr();
+    return AppInstancePtr();
 }
 
 int
@@ -1428,7 +1428,7 @@ AppManager::wipeAndCreateDiskCacheStructure()
     _imp->cleanUpCacheDiskStructure( _imp->_viewerCache->getCachePath() , true);
 }
 
-AppInstPtr
+AppInstancePtr
 AppManager::getTopLevelInstance () const
 {
     QMutexLocker k(&_imp->_appInstancesMutex);
@@ -1439,7 +1439,7 @@ AppManager::getTopLevelInstance () const
         }
     }
 
-    return AppInstPtr();
+    return AppInstancePtr();
 }
 
 bool
@@ -1875,7 +1875,7 @@ addToPythonPathFunctor(const QDir& directory)
     if (!ok) {
         std::string message = QCoreApplication::translate("AppManager", "Could not add %1 to python path:").arg( directory.absolutePath() ).toStdString() + ' ' + err;
         std::cerr << message << std::endl;
-        AppInstPtr topLevel = appPTR->getTopLevelInstance();
+        AppInstancePtr topLevel = appPTR->getTopLevelInstance();
         if (topLevel) {
             topLevel->appendToScriptEditor( message.c_str() );
         }
@@ -2581,7 +2581,7 @@ AppManager::setLoadingStatus(const QString & str)
     std::cout << str.toStdString() << std::endl;
 }
 
-AppInstPtr
+AppInstancePtr
 AppManager::makeNewInstance(int appID) const
 {
     return boost::make_shared<AppInstance>(appID);
@@ -3739,7 +3739,7 @@ Dialogs::errorDialog(const std::string & title,
                      bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->errorDialog(title, message, useHtml);
     } else {
@@ -3754,7 +3754,7 @@ Dialogs::errorDialog(const std::string & title,
                      bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->errorDialog(title, message, stopAsking, useHtml);
     } else {
@@ -3768,7 +3768,7 @@ Dialogs::warningDialog(const std::string & title,
                        bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->warningDialog(title, message, useHtml);
     } else {
@@ -3783,7 +3783,7 @@ Dialogs::warningDialog(const std::string & title,
                        bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->warningDialog(title, message, stopAsking, useHtml);
     } else {
@@ -3797,7 +3797,7 @@ Dialogs::informationDialog(const std::string & title,
                            bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->informationDialog(title, message, useHtml);
     } else {
@@ -3812,7 +3812,7 @@ Dialogs::informationDialog(const std::string & title,
                            bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->informationDialog(title, message, stopAsking, useHtml);
     } else {
@@ -3828,7 +3828,7 @@ Dialogs::questionDialog(const std::string & title,
                         StandardButtonEnum defaultButton)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         return topLvlInstance->questionDialog(title, message, useHtml, buttons, defaultButton);
     } else {
@@ -3848,7 +3848,7 @@ Dialogs::questionDialog(const std::string & title,
                         bool* stopAsking)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         return topLvlInstance->questionDialog(title, message, useHtml, buttons, defaultButton, stopAsking);
     } else {

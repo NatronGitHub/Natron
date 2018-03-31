@@ -38,10 +38,10 @@ NATRON_NAMESPACE_ENTER
 
 struct DiskCacheNodePrivate
 {
-    boost::weak_ptr<KnobChoice> frameRange;
-    boost::weak_ptr<KnobInt> firstFrame;
-    boost::weak_ptr<KnobInt> lastFrame;
-    boost::weak_ptr<KnobButton> preRender;
+    KnobChoiceWPtr frameRange;
+    KnobIntWPtr firstFrame;
+    KnobIntWPtr lastFrame;
+    KnobButtonWPtr preRender;
 
     DiskCacheNodePrivate()
     {

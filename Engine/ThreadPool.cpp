@@ -45,7 +45,7 @@ struct AbortableThreadPrivate
     mutable QMutex abortInfoMutex;
     bool isRenderResponseToUserInteraction;
     AbortableRenderInfoWPtr abortInfo;
-    EffectInstWPtr treeRoot;
+    EffectInstanceWPtr treeRoot;
     bool abortInfoValid;
     std::string currentActionName;
     NodeWPtr currentActionNode;

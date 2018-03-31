@@ -199,16 +199,16 @@ public:
     WriteNode* _publicInterface;
     NodeWPtr embeddedPlugin, readBackNode, inputNode, outputNode;
     std::list<boost::shared_ptr<KnobSerialization> > genericKnobsSerialization;
-    boost::weak_ptr<KnobOutputFile> outputFileKnob;
+    KnobOutputFileWPtr outputFileKnob;
 
     //Thiese are knobs owned by the ReadNode and not the Reader
-    boost::weak_ptr<KnobInt> frameIncrKnob;
-    boost::weak_ptr<KnobBool> readBackKnob;
-    boost::weak_ptr<KnobChoice> pluginSelectorKnob;
-    boost::weak_ptr<KnobString> pluginIDStringKnob;
-    boost::weak_ptr<KnobSeparator> separatorKnob;
-    boost::weak_ptr<KnobButton> renderButtonKnob;
-    std::list<boost::weak_ptr<KnobI> > writeNodeKnobs;
+    KnobIntWPtr frameIncrKnob;
+    KnobBoolWPtr readBackKnob;
+    KnobChoiceWPtr pluginSelectorKnob;
+    KnobStringWPtr pluginIDStringKnob;
+    KnobSeparatorWPtr separatorKnob;
+    KnobButtonWPtr renderButtonKnob;
+    std::list<KnobIWPtr> writeNodeKnobs;
 
     //MT only
     int creatingWriteNode;
@@ -308,7 +308,7 @@ WriteNodePrivate::placeWriteNodeKnobsInPage()
     if (!isPage) {
         return;
     }
-    for (std::list<boost::weak_ptr<KnobI> >::iterator it = writeNodeKnobs.begin(); it != writeNodeKnobs.end(); ++it) {
+    for (std::list<KnobIWPtr>::iterator it = writeNodeKnobs.begin(); it != writeNodeKnobs.end(); ++it) {
         KnobIPtr knob = it->lock();
         knob->setParentKnob( KnobIPtr() );
         isPage->removeKnob( knob.get() );
@@ -323,7 +323,7 @@ WriteNodePrivate::placeWriteNodeKnobsInPage()
     }
     if (index != -1) {
         ++index;
-        for (std::list<boost::weak_ptr<KnobI> >::iterator it = writeNodeKnobs.begin(); it != writeNodeKnobs.end(); ++it) {
+        for (std::list<KnobIWPtr>::iterator it = writeNodeKnobs.begin(); it != writeNodeKnobs.end(); ++it) {
             KnobIPtr knob = it->lock();
             isPage->insertKnob(index, knob);
             ++index;
@@ -445,7 +445,7 @@ WriteNodePrivate::destroyWriteNode()
 
                 //If it is a knob of this WriteNode, do not destroy it
                 bool isWriteNodeKnob = false;
-                for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
+                for (std::list<KnobIWPtr>::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
                     if (it2->lock() == *it) {
                         isWriteNodeKnob = true;
                         break;

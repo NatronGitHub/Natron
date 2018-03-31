@@ -73,11 +73,11 @@ public:
 private:
 
     bool _firstRedoCalled; //< false by default
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     double _dx, _dy;
     bool _featherLinkEnabled;
     bool _rippleEditEnabled;
-    boost::weak_ptr<KnobButton> _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
+    KnobButtonWPtr _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
     double _time; //< the time at which the change was made
     std::list<boost::shared_ptr<RotoDrawableItem> > _selectedCurves;
     std::list<int> _indexesToMove; //< indexes of the control points
@@ -124,9 +124,9 @@ private:
     void transformPoint(const boost::shared_ptr<BezierCP> & point);
 
     bool _firstRedoCalled; //< false by default
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     bool _rippleEditEnabled;
-    boost::weak_ptr<KnobButton> _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
+    KnobButtonWPtr _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
     boost::shared_ptr<Transform::Matrix3x3> _matrix;
     double _time; //< the time at which the change was made
     std::list<boost::shared_ptr<RotoDrawableItem> > _selectedCurves;
@@ -153,7 +153,7 @@ public:
 private:
 
     bool _firstRedoCalled; //< false by default
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     boost::shared_ptr<Bezier> _curve;
     int _index;
     double _t;
@@ -190,7 +190,7 @@ public:
     virtual void redo() OVERRIDE FINAL;
 
 private:
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     struct CurveOrdering
     {
         bool operator() (const CurveDesc & lhs,
@@ -230,7 +230,7 @@ public:
     virtual void redo() OVERRIDE FINAL;
 
 private:
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     bool _firstRedoCalled;
     std::list<RemovedCurve> _curves;
 };
@@ -251,7 +251,7 @@ public:
 
 private:
 
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     bool _firstRedoCalled;
     boost::shared_ptr<RotoStrokeItem> _item;
     boost::shared_ptr<RotoLayer> _layer;
@@ -274,7 +274,7 @@ public:
 
 private:
 
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     bool _firstRedoCalled;
     boost::shared_ptr<RotoStrokeItem> _item;
     boost::shared_ptr<RotoLayer> _layer;
@@ -308,7 +308,7 @@ public:
 private:
 
     bool _firstRedoCalled; //< false by default
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     double _dx, _dy;
     bool _featherLinkEnabled;
     bool _rippleEditEnabled;
@@ -342,7 +342,7 @@ public:
 
 private:
 
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     bool _firstRedoCalled;
     double _dx, _dy;
     bool _rippleEditEnabled;
@@ -375,7 +375,7 @@ public:
     virtual void redo() OVERRIDE FINAL;
 
 private:
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     bool _firstRedocalled;
     std::list<RemoveFeatherData> _datas;
 };
@@ -397,9 +397,9 @@ public:
 
 private:
 
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     bool _firstRedoCalled;
-    boost::weak_ptr<KnobButton> _selectedTool;
+    KnobButtonWPtr _selectedTool;
     boost::shared_ptr<Bezier> _curve;
 };
 
@@ -431,7 +431,7 @@ public:
     virtual bool mergeWith(const UndoCommandPtr& other) OVERRIDE FINAL;
 
 private:
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     bool _firstRedoCalled;
     double _time;
     int _count;
@@ -468,7 +468,7 @@ public:
 
 private:
     bool _firstRedoCalled;
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     boost::shared_ptr<RotoLayer> _parentLayer;
     int _indexInLayer;
     boost::shared_ptr<Bezier> _oldCurve, _newCurve;
@@ -507,7 +507,7 @@ public:
 
 private:
     bool _firstRedoCalled;
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     boost::shared_ptr<RotoLayer> _parentLayer;
     int _indexInLayer;
     boost::shared_ptr<Bezier> _curve;
@@ -545,7 +545,7 @@ public:
 
 private:
     bool _firstRedoCalled;
-    boost::weak_ptr<RotoPaintInteract> _roto;
+    RotoPaintInteractWPtr _roto;
     boost::shared_ptr<RotoLayer> _parentLayer;
     int _indexInLayer;
     boost::shared_ptr<Bezier> _curve;

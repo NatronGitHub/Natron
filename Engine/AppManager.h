@@ -86,7 +86,7 @@ public:
     }
 };
 
-typedef std::vector<AppInstPtr> AppInstanceVec;
+typedef std::vector<AppInstancePtr> AppInstanceVec;
 
 struct AppManagerPrivate;
 class AppManager
@@ -149,12 +149,12 @@ public:
 
     bool isLoaded() const;
 
-    AppInstPtr newAppInstance(const CLArgs& cl, bool makeEmptyInstance);
-    AppInstPtr newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance);
+    AppInstancePtr newAppInstance(const CLArgs& cl, bool makeEmptyInstance);
+    AppInstancePtr newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance);
 
 private:
 
-    AppInstPtr newAppInstanceInternal(const CLArgs& cl, bool alwaysBackground, bool makeEmptyInstance);
+    AppInstancePtr newAppInstanceInternal(const CLArgs& cl, bool alwaysBackground, bool makeEmptyInstance);
 
 public:
 
@@ -171,7 +171,7 @@ public:
 #endif
                                   ) const;
 
-    AppInstPtr getAppInstance(int appID) const WARN_UNUSED_RETURN;
+    AppInstancePtr getAppInstance(int appID) const WARN_UNUSED_RETURN;
 
     int getNumInstances() const WARN_UNUSED_RETURN;
 
@@ -180,7 +180,7 @@ public:
     void setAsTopLevelInstance(int appID);
 
     const AppInstanceVec& getAppInstances() const WARN_UNUSED_RETURN;
-    AppInstPtr getTopLevelInstance () const WARN_UNUSED_RETURN;
+    AppInstancePtr getTopLevelInstance () const WARN_UNUSED_RETURN;
     const PluginsMap & getPluginsList() const WARN_UNUSED_RETURN;
     Plugin* getPluginBinary(const QString & pluginId,
                             int majorVersion,
@@ -289,12 +289,12 @@ public:
     /**
      * @brief Called when the instance is exited
      **/
-    void quit(const AppInstPtr& instance);
+    void quit(const AppInstancePtr& instance);
 
     /**
      * @brief Same as quit except that it blocks until all processing is done instead of doing it in a separate thread.
      **/
-    void quitNow(const AppInstPtr& instance);
+    void quitNow(const AppInstancePtr& instance);
 
     /*
        @brief Calls quit() on all AppInstance's
@@ -645,7 +645,7 @@ protected:
     template <typename PLUGIN>
     void registerBuiltInPlugin(const QString& iconPath, bool isDeprecated, bool internalUseOnly);
 
-    virtual AppInstPtr makeNewInstance(int appID) const;
+    virtual AppInstancePtr makeNewInstance(int appID) const;
     virtual void registerGuiMetaTypes() const
     {
     }

@@ -94,7 +94,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<boost::sha
     } else {
         groupName = tr("top-level");
     }
-    AppInstPtr appInst = group->getApplication();
+    AppInstancePtr appInst = group->getApplication();
     if (!appInst) {
         return !mustShowErrorsLog;
     }

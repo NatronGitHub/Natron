@@ -52,7 +52,7 @@ class PluginGroupNode
     QString _iconPath;
     int _major, _minor;
     std::list<boost::shared_ptr<PluginGroupNode> > _children;
-    boost::weak_ptr<PluginGroupNode> _parent;
+    PluginGroupNodeWPtr _parent;
     bool _notHighestMajorVersion;
     bool _isUserCreatable;
 

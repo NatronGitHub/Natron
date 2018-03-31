@@ -374,7 +374,7 @@ public:
     bool saveTemp(const std::string& filename);
     virtual bool save(const std::string& filename);
     virtual bool saveAs(const std::string& filename);
-    virtual AppInstPtr loadProject(const std::string& filename);
+    virtual AppInstancePtr loadProject(const std::string& filename);
 
     ///Close the current project but keep the window
     virtual bool resetProject();
@@ -383,7 +383,7 @@ public:
     virtual bool closeProject();
 
     ///Opens a new window
-    virtual AppInstPtr newProject();
+    virtual AppInstancePtr newProject();
     virtual void* getOfxHostOSHandle() const { return NULL; }
 
     virtual void updateLastPaintStrokeData(int /*newAge*/,
@@ -475,11 +475,11 @@ private:
 
 class CreatingNodeTreeFlag_RAII
 {
-    AppInstWPtr _app;
+    AppInstanceWPtr _app;
 
 public:
 
-    CreatingNodeTreeFlag_RAII(const AppInstPtr& app)
+    CreatingNodeTreeFlag_RAII(const AppInstancePtr& app)
         : _app(app)
     {
         app->setIsCreatingNodeTree(true);
@@ -487,7 +487,7 @@ public:
 
     ~CreatingNodeTreeFlag_RAII()
     {
-        AppInstPtr a = _app.lock();
+        AppInstancePtr a = _app.lock();
 
         if (a) {
             a->setIsCreatingNodeTree(false);

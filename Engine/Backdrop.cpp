@@ -34,7 +34,7 @@ NATRON_NAMESPACE_ENTER
 
 struct BackdropPrivate
 {
-    boost::weak_ptr<KnobString> knobLabel;
+    KnobStringWPtr knobLabel;
 
     BackdropPrivate()
         : knobLabel()

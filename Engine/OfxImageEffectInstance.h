@@ -255,7 +255,7 @@ public:
     static const OFX::Host::Property::PropSpec* getOfxParamOverlayInteractDescProps();
 
 private:
-    boost::weak_ptr<OfxEffectInstance> _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
+    OfxEffectInstanceWPtr _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                                                               Not easy since every Knob need a valid pointer to a node when
                                                               AppManager::createKnob() is called. That's why we need to pass a pointer
                                                               to an OfxParamInstance. Without this pointer we would be unable

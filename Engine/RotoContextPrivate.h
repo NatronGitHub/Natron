@@ -544,9 +544,9 @@ struct BezierPrivate
 class RotoLayer;
 struct RotoItemPrivate
 {
-    boost::weak_ptr<RotoContext> context;
+    RotoContextWPtr context;
     std::string scriptName, label;
-    boost::weak_ptr<RotoLayer> parentLayer;
+    RotoLayerWPtr parentLayer;
 
     ////This controls whether the item (and all its children if it is a layer)
     ////should be visible/rendered or not at any time.
@@ -1328,67 +1328,67 @@ public:
 
     ///These are knobs that take the value of the selected splines info.
     ///Their value changes when selection changes.
-    boost::weak_ptr<KnobDouble> opacity;
-    boost::weak_ptr<KnobDouble> feather;
-    boost::weak_ptr<KnobDouble> featherFallOff;
-    boost::weak_ptr<KnobChoice> lifeTime;
-    boost::weak_ptr<KnobBool> activated; //<allows to disable a shape on a specific frame range
-    boost::weak_ptr<KnobInt> lifeTimeFrame;
+    KnobDoubleWPtr opacity;
+    KnobDoubleWPtr feather;
+    KnobDoubleWPtr featherFallOff;
+    KnobChoiceWPtr lifeTime;
+    KnobBoolWPtr activated; //<allows to disable a shape on a specific frame range
+    KnobIntWPtr lifeTimeFrame;
 
 #ifdef NATRON_ROTO_INVERTIBLE
-    boost::weak_ptr<KnobBool> inverted;
+    KnobBoolWPtr inverted;
 #endif
-    boost::weak_ptr<KnobColor> colorKnob;
-    boost::weak_ptr<KnobDouble> brushSizeKnob;
-    boost::weak_ptr<KnobDouble> brushSpacingKnob;
-    boost::weak_ptr<KnobDouble> brushHardnessKnob;
-    boost::weak_ptr<KnobDouble> brushEffectKnob;
-    boost::weak_ptr<KnobSeparator> pressureLabelKnob;
-    boost::weak_ptr<KnobBool> pressureOpacityKnob;
-    boost::weak_ptr<KnobBool> pressureSizeKnob;
-    boost::weak_ptr<KnobBool> pressureHardnessKnob;
-    boost::weak_ptr<KnobBool> buildUpKnob;
-    boost::weak_ptr<KnobDouble> brushVisiblePortionKnob;
-    boost::weak_ptr<KnobDouble> cloneTranslateKnob;
-    boost::weak_ptr<KnobDouble> cloneRotateKnob;
-    boost::weak_ptr<KnobDouble> cloneScaleKnob;
-    boost::weak_ptr<KnobBool> cloneUniformKnob;
-    boost::weak_ptr<KnobDouble> cloneSkewXKnob;
-    boost::weak_ptr<KnobDouble> cloneSkewYKnob;
-    boost::weak_ptr<KnobChoice> cloneSkewOrderKnob;
-    boost::weak_ptr<KnobDouble> cloneCenterKnob;
-    boost::weak_ptr<KnobButton> resetCloneCenterKnob;
-    boost::weak_ptr<KnobChoice> cloneFilterKnob;
-    boost::weak_ptr<KnobBool> cloneBlackOutsideKnob;
-    boost::weak_ptr<KnobButton> resetCloneTransformKnob;
-    boost::weak_ptr<KnobDouble> translateKnob;
-    boost::weak_ptr<KnobDouble> rotateKnob;
-    boost::weak_ptr<KnobDouble> scaleKnob;
-    boost::weak_ptr<KnobBool> scaleUniformKnob;
-    boost::weak_ptr<KnobBool> transformInteractiveKnob;
-    boost::weak_ptr<KnobDouble> skewXKnob;
-    boost::weak_ptr<KnobDouble> skewYKnob;
-    boost::weak_ptr<KnobChoice> skewOrderKnob;
-    boost::weak_ptr<KnobDouble> centerKnob;
-    boost::weak_ptr<KnobButton> resetCenterKnob;
-    boost::weak_ptr<KnobDouble> extraMatrixKnob;
-    boost::weak_ptr<KnobButton> resetTransformKnob;
-    boost::weak_ptr<KnobChoice> sourceTypeKnob;
-    boost::weak_ptr<KnobInt> timeOffsetKnob;
-    boost::weak_ptr<KnobChoice> timeOffsetModeKnob;
+    KnobColorWPtr colorKnob;
+    KnobDoubleWPtr brushSizeKnob;
+    KnobDoubleWPtr brushSpacingKnob;
+    KnobDoubleWPtr brushHardnessKnob;
+    KnobDoubleWPtr brushEffectKnob;
+    KnobSeparatorWPtr pressureLabelKnob;
+    KnobBoolWPtr pressureOpacityKnob;
+    KnobBoolWPtr pressureSizeKnob;
+    KnobBoolWPtr pressureHardnessKnob;
+    KnobBoolWPtr buildUpKnob;
+    KnobDoubleWPtr brushVisiblePortionKnob;
+    KnobDoubleWPtr cloneTranslateKnob;
+    KnobDoubleWPtr cloneRotateKnob;
+    KnobDoubleWPtr cloneScaleKnob;
+    KnobBoolWPtr cloneUniformKnob;
+    KnobDoubleWPtr cloneSkewXKnob;
+    KnobDoubleWPtr cloneSkewYKnob;
+    KnobChoiceWPtr cloneSkewOrderKnob;
+    KnobDoubleWPtr cloneCenterKnob;
+    KnobButtonWPtr resetCloneCenterKnob;
+    KnobChoiceWPtr cloneFilterKnob;
+    KnobBoolWPtr cloneBlackOutsideKnob;
+    KnobButtonWPtr resetCloneTransformKnob;
+    KnobDoubleWPtr translateKnob;
+    KnobDoubleWPtr rotateKnob;
+    KnobDoubleWPtr scaleKnob;
+    KnobBoolWPtr scaleUniformKnob;
+    KnobBoolWPtr transformInteractiveKnob;
+    KnobDoubleWPtr skewXKnob;
+    KnobDoubleWPtr skewYKnob;
+    KnobChoiceWPtr skewOrderKnob;
+    KnobDoubleWPtr centerKnob;
+    KnobButtonWPtr resetCenterKnob;
+    KnobDoubleWPtr extraMatrixKnob;
+    KnobButtonWPtr resetTransformKnob;
+    KnobChoiceWPtr sourceTypeKnob;
+    KnobIntWPtr timeOffsetKnob;
+    KnobChoiceWPtr timeOffsetModeKnob;
 
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
-    boost::weak_ptr<KnobChoice> motionBlurTypeKnob;
-    boost::weak_ptr<KnobDouble> motionBlurKnob, globalMotionBlurKnob;
-    boost::weak_ptr<KnobDouble> shutterKnob, globalShutterKnob;
-    boost::weak_ptr<KnobChoice> shutterTypeKnob, globalShutterTypeKnob;
-    boost::weak_ptr<KnobDouble> customOffsetKnob, globalCustomOffsetKnob;
+    KnobChoiceWPtr motionBlurTypeKnob;
+    KnobDoubleWPtr motionBlurKnob, globalMotionBlurKnob;
+    KnobDoubleWPtr shutterKnob, globalShutterKnob;
+    KnobChoiceWPtr shutterTypeKnob, globalShutterTypeKnob;
+    KnobDoubleWPtr customOffsetKnob, globalCustomOffsetKnob;
 #endif
 
-    std::list<boost::weak_ptr<KnobI> > knobs; //< list for easy access to all knobs
-    std::list<boost::weak_ptr<KnobI> > cloneKnobs;
-    std::list<boost::weak_ptr<KnobI> > strokeKnobs;
-    std::list<boost::weak_ptr<KnobI> > shapeKnobs;
+    std::list<KnobIWPtr> knobs; //< list for easy access to all knobs
+    std::list<KnobIWPtr> cloneKnobs;
+    std::list<KnobIWPtr> strokeKnobs;
+    std::list<KnobIWPtr> shapeKnobs;
 
     ///This keeps track  of the items linked to the context knobs
     std::list<boost::shared_ptr<RotoItem> > selectedItems;

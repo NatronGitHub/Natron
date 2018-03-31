@@ -65,12 +65,12 @@ NATRON_NAMESPACE_ENTER
 
 struct NodeCollectionPrivate
 {
-    AppInstWPtr app;
+    AppInstanceWPtr app;
     NodeGraphI* graph;
     mutable QMutex nodesMutex;
     NodesList nodes;
 
-    NodeCollectionPrivate(const AppInstPtr& app)
+    NodeCollectionPrivate(const AppInstancePtr& app)
         : app(app)
         , graph(0)
         , nodesMutex()
@@ -81,7 +81,7 @@ struct NodeCollectionPrivate
     NodePtr findNodeInternal(const std::string& name, const std::string& recurseName) const;
 };
 
-NodeCollection::NodeCollection(const AppInstPtr& app)
+NodeCollection::NodeCollection(const AppInstancePtr& app)
     : _imp( new NodeCollectionPrivate(app) )
 {
 }
@@ -90,7 +90,7 @@ NodeCollection::~NodeCollection()
 {
 }
 
-AppInstPtr
+AppInstancePtr
 NodeCollection::getApplication() const
 {
     return _imp->app.lock();
@@ -335,7 +335,7 @@ NodeCollection::refreshViewersAndPreviews()
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    AppInstPtr appInst = getApplication();
+    AppInstancePtr appInst = getApplication();
     if (!appInst) {
         return;
     }
@@ -360,7 +360,7 @@ NodeCollection::refreshViewersAndPreviews()
 void
 NodeCollection::refreshPreviews()
 {
-    AppInstPtr appInst = getApplication();
+    AppInstancePtr appInst = getApplication();
     if (!appInst) {
         return;
     }
@@ -384,7 +384,7 @@ NodeCollection::refreshPreviews()
 void
 NodeCollection::forceRefreshPreviews()
 {
-    AppInstPtr appInst = getApplication();
+    AppInstancePtr appInst = getApplication();
     if (!appInst) {
         return;
     }
@@ -839,7 +839,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
                                      bool blockEval)
 {
     NodesList nodes = getNodes();
-    AppInstPtr appInst = getApplication();
+    AppInstancePtr appInst = getApplication();
     if (!appInst) {
         return;
     }
@@ -881,7 +881,7 @@ NodeCollection::fixPathName(const std::string& oldName,
                             const std::string& newName)
 {
     NodesList nodes = getNodes();
-    AppInstPtr appInst = getApplication();
+    AppInstancePtr appInst = getApplication();
     if (!appInst) {
         return;
     }
@@ -1079,7 +1079,7 @@ struct NodeGroupPrivate
 
 NodeGroup::NodeGroup(const NodePtr &node)
     : OutputEffectInstance(node)
-    , NodeCollection( node ? node->getApp() : AppInstPtr() )
+    , NodeCollection( node ? node->getApp() : AppInstancePtr() )
     , _imp( new NodeGroupPrivate() )
 {
     setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);

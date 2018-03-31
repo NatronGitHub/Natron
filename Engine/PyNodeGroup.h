@@ -40,7 +40,7 @@ NATRON_PYTHON_NAMESPACE_ENTER;
 
 class Group
 {
-    boost::weak_ptr<NodeCollection> _collection;
+    NodeCollectionWPtr _collection;
 
 public:
 

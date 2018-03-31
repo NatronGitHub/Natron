@@ -129,7 +129,7 @@ class ChannelSelector
 {
 public:
 
-    boost::weak_ptr<KnobChoice> layer;
+    KnobChoiceWPtr layer;
 
 
     ChannelSelector()
@@ -152,8 +152,8 @@ class MaskSelector
 {
 public:
 
-    boost::weak_ptr<KnobBool> enabled;
-    boost::weak_ptr<KnobChoice> channel;
+    KnobBoolWPtr enabled;
+    KnobChoiceWPtr channel;
     mutable QMutex compsMutex;
     //Stores the components available at build time of the choice menu
     std::vector<std::pair<ImagePlaneDesc, NodeWPtr> > compsAvailable;
@@ -183,9 +183,9 @@ public:
 
 struct FormatKnob
 {
-    boost::weak_ptr<KnobInt> size;
-    boost::weak_ptr<KnobDouble> par;
-    boost::weak_ptr<KnobChoice> formatChoice;
+    KnobIntWPtr size;
+    KnobDoubleWPtr par;
+    KnobChoiceWPtr formatChoice;
 };
 
 struct PyPlugInfo
@@ -218,7 +218,7 @@ struct Node::Implementation
 
 public:
     Implementation(Node* publicInterface,
-                   const AppInstPtr& app_,
+                   const AppInstancePtr& app_,
                    const NodeCollectionPtr& collection,
                    Plugin* plugin_)
         : _publicInterface(publicInterface)
@@ -389,9 +389,9 @@ public:
 
 
     Node* _publicInterface;
-    boost::weak_ptr<NodeCollection> group;
-    boost::weak_ptr<PrecompNode> precomp;
-    AppInstWPtr app; // pointer to the app: needed to access the application's default-project's format
+    NodeCollectionWPtr group;
+    PrecompNodeWPtr precomp;
+    AppInstanceWPtr app; // pointer to the app: needed to access the application's default-project's format
     bool isPartOfProject;
     bool knobsInitialized;
     bool inputsInitialized;
@@ -452,34 +452,34 @@ public:
     NodeWPtr ioContainer;
 #endif
 
-    boost::weak_ptr<KnobInt> frameIncrKnob;
-    boost::weak_ptr<KnobPage> nodeSettingsPage;
-    boost::weak_ptr<KnobString> nodeLabelKnob;
-    boost::weak_ptr<KnobBool> previewEnabledKnob;
-    boost::weak_ptr<KnobBool> disableNodeKnob;
-    boost::weak_ptr<KnobChoice> openglRenderingEnabledKnob;
-    boost::weak_ptr<KnobInt> lifeTimeKnob;
-    boost::weak_ptr<KnobBool> enableLifeTimeKnob;
-    boost::weak_ptr<KnobString> knobChangedCallback;
-    boost::weak_ptr<KnobString> inputChangedCallback;
-    boost::weak_ptr<KnobString> nodeCreatedCallback;
-    boost::weak_ptr<KnobString> nodeRemovalCallback;
-    boost::weak_ptr<KnobPage> infoPage;
-    boost::weak_ptr<KnobString> nodeInfos;
-    boost::weak_ptr<KnobButton> refreshInfoButton;
-    boost::weak_ptr<KnobBool> useFullScaleImagesWhenRenderScaleUnsupported;
-    boost::weak_ptr<KnobBool> forceCaching;
-    boost::weak_ptr<KnobBool> hideInputs;
-    boost::weak_ptr<KnobString> beforeFrameRender;
-    boost::weak_ptr<KnobString> beforeRender;
-    boost::weak_ptr<KnobString> afterFrameRender;
-    boost::weak_ptr<KnobString> afterRender;
-    boost::weak_ptr<KnobBool> enabledChan[4];
-    boost::weak_ptr<KnobString> premultWarning;
-    boost::weak_ptr<KnobDouble> mixWithSource;
-    boost::weak_ptr<KnobButton> renderButton; //< render button for writers
+    KnobIntWPtr frameIncrKnob;
+    KnobPageWPtr nodeSettingsPage;
+    KnobStringWPtr nodeLabelKnob;
+    KnobBoolWPtr previewEnabledKnob;
+    KnobBoolWPtr disableNodeKnob;
+    KnobChoiceWPtr openglRenderingEnabledKnob;
+    KnobIntWPtr lifeTimeKnob;
+    KnobBoolWPtr enableLifeTimeKnob;
+    KnobStringWPtr knobChangedCallback;
+    KnobStringWPtr inputChangedCallback;
+    KnobStringWPtr nodeCreatedCallback;
+    KnobStringWPtr nodeRemovalCallback;
+    KnobPageWPtr infoPage;
+    KnobStringWPtr nodeInfos;
+    KnobButtonWPtr refreshInfoButton;
+    KnobBoolWPtr useFullScaleImagesWhenRenderScaleUnsupported;
+    KnobBoolWPtr forceCaching;
+    KnobBoolWPtr hideInputs;
+    KnobStringWPtr beforeFrameRender;
+    KnobStringWPtr beforeRender;
+    KnobStringWPtr afterFrameRender;
+    KnobStringWPtr afterRender;
+    KnobBoolWPtr enabledChan[4];
+    KnobStringWPtr premultWarning;
+    KnobDoubleWPtr mixWithSource;
+    KnobButtonWPtr renderButton; //< render button for writers
     FormatKnob pluginFormatKnobs;
-    boost::weak_ptr<KnobBool> processAllLayersKnob;
+    KnobBoolWPtr processAllLayersKnob;
     std::map<int, ChannelSelector> channelsSelectors;
     std::map<int, MaskSelector> maskSelectors;
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
@@ -517,13 +517,13 @@ public:
     QString persistentMessage;
     int persistentMessageType;
     mutable QMutex persistentMessageMutex;
-    boost::weak_ptr<NodeGuiI> guiPointer;
+    NodeGuiIWPtr guiPointer;
     std::list<boost::shared_ptr<HostOverlayKnobs> > nativeOverlays;
     bool nodeCreated;
     bool wasCreatedSilently;
     mutable QMutex createdComponentsMutex;
     std::list<ImagePlaneDesc> createdComponents; // comps created by the user
-    boost::weak_ptr<RotoDrawableItem> paintStroke;
+    RotoDrawableItemWPtr paintStroke;
 
     // These are dynamic props
     mutable QMutex pluginsPropMutex;
@@ -600,7 +600,7 @@ toBGRA(unsigned char r,
     return (a << 24) | (r << 16) | (g << 8) | b;
 }
 
-Node::Node(const AppInstPtr& app,
+Node::Node(const AppInstancePtr& app,
            const NodeCollectionPtr& group,
            Plugin* plugin)
     : QObject()
@@ -1646,7 +1646,7 @@ Node::computeHashRecursive(std::list<Node*>& marked)
 void
 Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
 {
-    AppInstPtr app = getApp();
+    AppInstancePtr app = getApp();
 
     if (!app) {
         return;
@@ -1668,7 +1668,7 @@ Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
 void
 Node::removeAllImagesFromCache(bool blocking)
 {
-    AppInstPtr app = getApp();
+    AppInstancePtr app = getApp();
 
     if (!app) {
         return;
@@ -3257,7 +3257,7 @@ Node::setScriptName(const std::string& name)
     setNameInternal(newName, true);
 }
 
-AppInstPtr
+AppInstancePtr
 Node::getApp() const
 {
     return _imp->app.lock();
@@ -6493,7 +6493,7 @@ Node::deactivate(const std::list<NodePtr> & outputsToDisconnect,
     }
 
 
-    AppInstPtr app = getApp();
+    AppInstancePtr app = getApp();
     if ( app && !app->getProject()->isProjectClosing() ) {
         _imp->runOnNodeDeleteCB();
     }
@@ -6672,7 +6672,7 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
     ///This will not remove from the disk cache if the project is closing
     removeAllImagesFromCache(false);
 
-    AppInstPtr app = getApp();
+    AppInstancePtr app = getApp();
     if (app) {
         app->recheckInvalidExpressions();
     }
@@ -7548,7 +7548,7 @@ Node::clearPersistentMessageInternal()
 void
 Node::clearPersistentMessage(bool recurse)
 {
-    AppInstPtr app = getApp();
+    AppInstancePtr app = getApp();
 
     if (!app) {
         return;
@@ -10880,7 +10880,7 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
         return;
     }
 
-    AppInstPtr app = getApp();
+    AppInstancePtr app = getApp();
     if (!app) {
         return;
     }
@@ -11604,7 +11604,7 @@ Node::getHostMixingValue(double time,
 
 //////////////////////////////////
 
-InspectorNode::InspectorNode(const AppInstPtr& app,
+InspectorNode::InspectorNode(const AppInstancePtr& app,
                              const NodeCollectionPtr& group,
                              Plugin* plugin)
     : Node(app, group, plugin)

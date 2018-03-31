@@ -78,22 +78,22 @@ static MetaTypesRegistration registration;
 struct TrackMarkerPrivate
 {
     TrackMarker* _publicInterface;
-    boost::weak_ptr<TrackerContext> context;
+    TrackerContextWPtr context;
 
     // Defines the rectangle of the search window, this is in coordinates relative to the marker center point
-    boost::weak_ptr<KnobDouble> searchWindowBtmLeft, searchWindowTopRight;
+    KnobDoubleWPtr searchWindowBtmLeft, searchWindowTopRight;
 
     // The pattern Quad defined by 4 corners relative to the center
-    boost::weak_ptr<KnobDouble> patternTopLeft, patternTopRight, patternBtmRight, patternBtmLeft;
-    boost::weak_ptr<KnobDouble> center, offset, error;
+    KnobDoubleWPtr patternTopLeft, patternTopRight, patternBtmRight, patternBtmLeft;
+    KnobDoubleWPtr center, offset, error;
 #ifdef NATRON_TRACK_MARKER_USE_WEIGHT
-    boost::weak_ptr<KnobDouble> weight;
+    KnobDoubleWPtr weight;
 #endif
-    boost::weak_ptr<KnobChoice> motionModel;
+    KnobChoiceWPtr motionModel;
     mutable QMutex trackMutex;
     std::set<int> userKeyframes;
     std::string trackScriptName, trackLabel;
-    boost::weak_ptr<KnobBool> enabled;
+    KnobBoolWPtr enabled;
 
     // Only used by the TrackScheduler thread
     int trackingStartedCount;

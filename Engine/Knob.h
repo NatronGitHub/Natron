@@ -59,7 +59,7 @@ class KnobSignalSlotHandler
 {
     Q_OBJECT
 
-    boost::weak_ptr<KnobI> k;
+    KnobIWPtr k;
 
 public:
 
@@ -407,7 +407,7 @@ public:
             : isExpr(false), isListening(false), targetDim(-1) {}
     };
 
-    typedef std::map<boost::weak_ptr<KnobI>, std::vector<ListenerDim> > ListenerDimsMap;
+    typedef std::map<KnobIWPtr, std::vector<ListenerDim> > ListenerDimsMap;
 
     /**
      * @brief Do not call this. It is called right away after the constructor by the factory
@@ -706,7 +706,7 @@ public:
      * @brief Returns in dependencies a list of all the knobs used in the expression at the given dimension
      * @returns True on sucess, false if no expression is set.
      **/
-    virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobWPtr, int> >& dependencies) const = 0;
+    virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobIWPtr, int> >& dependencies) const = 0;
 
 
     /**
@@ -1460,7 +1460,7 @@ protected:
 public:
 
     virtual bool isExpressionUsingRetVariable(int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobWPtr, int> >& dependencies) const OVERRIDE FINAL;
+    virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobIWPtr, int> >& dependencies) const OVERRIDE FINAL;
     virtual std::string getExpression(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::vector<boost::shared_ptr<Curve>  > & getCurves() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
@@ -2303,7 +2303,7 @@ public:
      * When appInstance is NULL the holder will be considered "application global" in which case
      * the knob holder will interact directly with the AppManager singleton.
      **/
-    KnobHolder(const AppInstPtr& appInstance);
+    KnobHolder(const AppInstancePtr& appInstance);
 
     KnobHolder(const KnobHolder& other);
 
@@ -2341,7 +2341,7 @@ public:
 
     template<typename K>
     boost::shared_ptr<K> createKnob(const std::string &label, int dimension = 1) const WARN_UNUSED_RETURN;
-    AppInstPtr getApp() const WARN_UNUSED_RETURN;
+    AppInstancePtr getApp() const WARN_UNUSED_RETURN;
     KnobIPtr getKnobByName(const std::string & name) const WARN_UNUSED_RETURN;
     KnobIPtr getOtherKnobByName(const std::string & name, const KnobI* caller) const WARN_UNUSED_RETURN;
 
@@ -2805,7 +2805,7 @@ class NamedKnobHolder
 {
 public:
 
-    NamedKnobHolder(const AppInstPtr& instance)
+    NamedKnobHolder(const AppInstancePtr& instance)
         : KnobHolder(instance)
     {
     }

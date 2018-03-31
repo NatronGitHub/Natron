@@ -100,7 +100,7 @@ EffectInstance::addThreadLocalInputImageTempPointer(int inputNb,
 }
 
 EffectInstance::EffectInstance(NodePtr node)
-    : NamedKnobHolder( node ? node->getApp() : AppInstPtr() )
+    : NamedKnobHolder( node ? node->getApp() : AppInstancePtr() )
     , _node(node)
     , _imp( new Implementation(this) )
 {
@@ -213,7 +213,7 @@ EffectInstance::clearPluginMemoryChunks()
 {
     // This will remove the mem from the pluginMemoryChunks list
     QMutexLocker l(&_imp->pluginMemoryChunksMutex);
-    for (std::list<boost::weak_ptr<PluginMemory> >::iterator it = _imp->pluginMemoryChunks.begin(); it!=_imp->pluginMemoryChunks.end(); ++it) {
+    for (std::list<PluginMemoryWPtr>::iterator it = _imp->pluginMemoryChunks.begin(); it!=_imp->pluginMemoryChunks.end(); ++it) {
         PluginMemoryPtr mem = it->lock();
         if (!mem) {
             continue;
@@ -3241,7 +3241,7 @@ EffectInstance::removePluginMemoryPointer(const PluginMemory* mem)
         QMutexLocker l(&_imp->pluginMemoryChunksMutex);
         // make a copy of the list so that elements don't get deleted while the mutex is held
 
-        for (std::list<boost::weak_ptr<PluginMemory> >::iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
+        for (std::list<PluginMemoryWPtr>::iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
             PluginMemoryPtr p = it->lock();
             if (!p) {
                 continue;
@@ -4128,7 +4128,7 @@ EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
         _imp->attachedContextsMutex.lock();
     }
 
-    std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
+    std::map<OSGLContextWPtr, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
     if ( found != _imp->attachedContexts.end() ) {
         // The context is already attached
         *data = found->second;
@@ -4157,7 +4157,7 @@ EffectInstance::dettachAllOpenGLContexts()
 {
     QMutexLocker locker(&_imp->attachedContextsMutex);
 
-    for (std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator it = _imp->attachedContexts.begin(); it != _imp->attachedContexts.end(); ++it) {
+    for (std::map<OSGLContextWPtr, EffectInstance::OpenGLContextEffectDataPtr>::iterator it = _imp->attachedContexts.begin(); it != _imp->attachedContexts.end(); ++it) {
         OSGLContextPtr context = it->first.lock();
         if (!context) {
             continue;
@@ -4189,7 +4189,7 @@ EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext, con
 
 
     bool mustUnlock = data->getHasTakenLock();
-    std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
+    std::map<OSGLContextWPtr, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
     if ( found != _imp->attachedContexts.end() ) {
         _imp->attachedContexts.erase(found);
     }
@@ -4718,7 +4718,7 @@ EffectInstance::addOverlaySlaveParam(const boost::shared_ptr<KnobI>& knob)
 bool
 EffectInstance::isOverlaySlaveParam(const KnobI* knob) const
 {
-    for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->overlaySlaves.begin(); it != _imp->overlaySlaves.end(); ++it) {
+    for (std::list<KnobIWPtr>::const_iterator it = _imp->overlaySlaves.begin(); it != _imp->overlaySlaves.end(); ++it) {
         boost::shared_ptr<KnobI> k = it->lock();
         if (!k) {
             continue;
@@ -5181,7 +5181,7 @@ double
 EffectInstance::getCurrentTime() const
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    AppInstPtr app = getApp();
+    AppInstancePtr app = getApp();
     if (!app) {
         return 0.;
     }

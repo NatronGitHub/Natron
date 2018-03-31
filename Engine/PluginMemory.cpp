@@ -50,7 +50,7 @@ struct PluginMemory::Implementation
     RamBuffer<char> data;
     int locked;
     QMutex mutex;
-    EffectInstWPtr effect;
+    EffectInstanceWPtr effect;
     bool unregisterOnExit;
 };
 

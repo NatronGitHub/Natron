@@ -63,19 +63,19 @@ struct PrecompNodePrivate
 
 public:
     PrecompNode* _publicInterface;
-    AppInstWPtr app;
-    boost::weak_ptr<KnobFile> projectFileNameKnob;
-    //boost::weak_ptr<KnobButton> reloadProjectKnob;
-    boost::weak_ptr<KnobButton> editProjectKnob;
-    boost::weak_ptr<KnobBool> enablePreRenderKnob;
-    boost::weak_ptr<KnobGroup> preRenderGroupKnob;
-    boost::weak_ptr<KnobChoice> writeNodesKnob;
-    boost::weak_ptr<KnobButton> preRenderKnob;
-    boost::weak_ptr<KnobInt> firstFrameKnob, lastFrameKnob;
-    boost::weak_ptr<KnobString> outputNodeNameKnob;
-    boost::weak_ptr<KnobChoice> errorBehaviourKnbo;
+    AppInstanceWPtr app;
+    KnobFileWPtr projectFileNameKnob;
+    //KnobButtonWPtr reloadProjectKnob;
+    KnobButtonWPtr editProjectKnob;
+    KnobBoolWPtr enablePreRenderKnob;
+    KnobGroupWPtr preRenderGroupKnob;
+    KnobChoiceWPtr writeNodesKnob;
+    KnobButtonWPtr preRenderKnob;
+    KnobIntWPtr firstFrameKnob, lastFrameKnob;
+    KnobStringWPtr outputNodeNameKnob;
+    KnobChoiceWPtr errorBehaviourKnbo;
     //kNatronOfxParamStringSublabelName to display the project name
-    boost::weak_ptr<KnobString> subLabelKnob;
+    KnobStringWPtr subLabelKnob;
     QMutex dataMutex;
     NodesWList precompInputs;
 
@@ -135,7 +135,7 @@ PrecompNode::PrecompNode(NodePtr n)
 
 PrecompNode::~PrecompNode()
 {
-    AppInstPtr app = _imp->app.lock();
+    AppInstancePtr app = _imp->app.lock();
 
     if (app) {
         app->quit();
@@ -343,7 +343,7 @@ PrecompNode::knobChanged(KnobI* k,
         _imp->reloadProject(true);
     } else if ( k == _imp->editProjectKnob.lock().get() ) {
         std::string filename = _imp->projectFileNameKnob.lock()->getValue();
-        AppInstPtr appInstance = getApp()->loadProject(filename);
+        AppInstancePtr appInstance = getApp()->loadProject(filename);
         Q_UNUSED(appInstance);
     } else if ( k == _imp->preRenderKnob.lock().get() ) {
         _imp->launchPreRender();
@@ -732,7 +732,7 @@ PrecompNode::onReadNodePersistentMessageChanged()
     }
 }
 
-AppInstPtr
+AppInstancePtr
 PrecompNode::getPrecompApp() const
 {
     return _imp->app.lock();

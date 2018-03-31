@@ -120,7 +120,7 @@ struct FileSystemModelPrivate
     int sortSection;
     mutable QMutex sortMutex;
     mutable QMutex mappingMutex;
-    std::map<FileSystemItem*, boost::weak_ptr<FileSystemItem> > itemsMap;
+    std::map<FileSystemItem*, FileSystemItemWPtr> itemsMap;
 
 
     FileSystemModelPrivate(FileSystemModel* model)
@@ -171,8 +171,8 @@ generateChildAbsoluteName(FileSystemItem* parent,
 
 struct FileSystemItemPrivate
 {
-    boost::weak_ptr<FileSystemModel> model;
-    boost::weak_ptr<FileSystemItem> parent;
+    FileSystemModelWPtr model;
+    FileSystemItemWPtr parent;
     std::vector<boost::shared_ptr<FileSystemItem> > children; ///vector for random access
     QMutex childrenMutex;
     bool isDir;
@@ -585,7 +585,7 @@ void
 FileSystemModelPrivate::unregisterItem(FileSystemItem* item)
 {
     QMutexLocker k(&mappingMutex);
-    std::map<FileSystemItem*, boost::weak_ptr<FileSystemItem> >::iterator found = itemsMap.find(item);
+    std::map<FileSystemItem*, FileSystemItemWPtr>::iterator found = itemsMap.find(item);
 
     if ( found != itemsMap.end() ) {
         itemsMap.erase(found);
@@ -596,7 +596,7 @@ boost::shared_ptr<FileSystemItem>
 FileSystemModel::getSharedItemPtr(FileSystemItem* item) const
 {
     QMutexLocker k(&_imp->mappingMutex);
-    std::map<FileSystemItem*, boost::weak_ptr<FileSystemItem> >::const_iterator found = _imp->itemsMap.find(item);
+    std::map<FileSystemItem*, FileSystemItemWPtr>::const_iterator found = _imp->itemsMap.find(item);
 
     if ( found != _imp->itemsMap.end() ) {
         return found->second.lock();
@@ -1359,7 +1359,7 @@ FileSystemModel::getItem(const QModelIndex &index) const
 
 struct FileGathererThreadPrivate
 {
-    boost::weak_ptr<FileSystemModel> model;
+    FileSystemModelWPtr model;
     bool mustQuit;
     mutable QMutex mustQuitMutex;
     QWaitCondition mustQuitCond;

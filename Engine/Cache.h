@@ -507,7 +507,7 @@ private:
     std::set<TileCacheFilePtr> _cacheFiles;
 
     // When set these are used for fast search of a free tile
-    boost::weak_ptr<TileCacheFile> _nextAvailableCacheFile;
+    TileCacheFileWPtr _nextAvailableCacheFile;
     int _nextAvailableCacheFileIndex;
 public:
 

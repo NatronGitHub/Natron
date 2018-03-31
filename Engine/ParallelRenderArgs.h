@@ -115,7 +115,7 @@ struct ParallelRenderArgs
     boost::shared_ptr<RenderStats> stats;
 
     ///The OpenGL context to use for the render of this frame
-    boost::weak_ptr<OSGLContext> openGLContext;
+    OSGLContextWPtr openGLContext;
 
     ///The texture index of the viewer being rendered, only useful for abortable renders
     int textureIndex;
@@ -248,7 +248,7 @@ class ParallelRenderArgsSetter
 
 protected:
 
-    boost::weak_ptr<OSGLContext> _openGLContext;
+    OSGLContextWPtr _openGLContext;
 
 public:
 

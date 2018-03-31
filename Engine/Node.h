@@ -96,7 +96,7 @@ public:
 public:
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
-    Node(const AppInstPtr& app,
+    Node(const AppInstancePtr& app,
          const NodeCollectionPtr& group,
          Plugin* plugin);
 
@@ -707,7 +707,7 @@ public:
     int getPyPlugMajorVersion() const;
 
     /*============================*/
-    AppInstPtr getApp() const;
+    AppInstancePtr getApp() const;
 
     /* @brief Make this node inactive. It will appear
        as if it was removed from the graph editor
@@ -982,8 +982,8 @@ public:
     struct KnobLink
     {
         ///The knob being slaved
-        KnobWPtr slave;
-        KnobWPtr master;
+        KnobIWPtr slave;
+        KnobIWPtr master;
 
         ///The master node to which the knob is slaved to
         NodeWPtr masterNode;
@@ -1544,7 +1544,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    InspectorNode(const AppInstPtr& app,
+    InspectorNode(const AppInstancePtr& app,
                   const NodeCollectionPtr& group,
                   Plugin* plugin);
 

@@ -69,7 +69,7 @@ struct OfxClipInstancePrivate
 {
 public:
     OfxClipInstance* _publicInterface;
-    boost::weak_ptr<OfxEffectInstance> nodeInstance;
+    OfxEffectInstanceWPtr nodeInstance;
     OfxImageEffectInstance* const effect;
     double aspectRatio;
     bool optional;

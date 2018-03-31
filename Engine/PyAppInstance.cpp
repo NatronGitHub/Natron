@@ -43,7 +43,7 @@
 NATRON_NAMESPACE_ENTER
 NATRON_PYTHON_NAMESPACE_ENTER
 
-App::App(const AppInstPtr& instance)
+App::App(const AppInstancePtr& instance)
     : Group()
     , _instance(instance)
 {
@@ -58,7 +58,7 @@ App::getAppID() const
     return getInternalApp()->getAppID();
 }
 
-AppInstPtr
+AppInstancePtr
 App::getInternalApp() const
 {
     return _instance.lock();
@@ -94,7 +94,7 @@ App::getCollectionFromGroup(Group* group) const
     return collection;
 }
 
-static void makeCreateNodeArgs(const AppInstPtr& app,
+static void makeCreateNodeArgs(const AppInstancePtr& app,
                                const QString& pluginID,
                                int majorVersion,
                                const NodeCollectionPtr& collection,
@@ -427,7 +427,7 @@ App::saveProjectAs(const QString& filename)
 App*
 App::loadProject(const QString& filename)
 {
-    AppInstPtr app  = getInternalApp()->loadProject( filename.toStdString() );
+    AppInstancePtr app  = getInternalApp()->loadProject( filename.toStdString() );
 
     if (!app) {
         return 0;
@@ -454,7 +454,7 @@ App::closeProject()
 App*
 App::newProject()
 {
-    AppInstPtr app  = getInternalApp()->newProject();
+    AppInstancePtr app  = getInternalApp()->newProject();
 
     if (!app) {
         return 0;

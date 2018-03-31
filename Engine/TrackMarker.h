@@ -253,13 +253,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     NodePtr trackerNode;
 
     // These are knobs that live in the trackerPM node, we control them directly
-    boost::weak_ptr<KnobButton> trackPrevButton, trackNextButton;
-    boost::weak_ptr<KnobDouble> centerKnob, offsetKnob;
-    boost::weak_ptr<KnobInt> refFrameKnob;
-    boost::weak_ptr<KnobChoice> scoreTypeKnob;
-    boost::weak_ptr<KnobDouble> correlationScoreKnob;
-    boost::weak_ptr<KnobDouble> patternBtmLeftKnob, patternTopRightKnob;
-    boost::weak_ptr<KnobDouble> searchWindowBtmLeftKnob, searchWindowTopRightKnob;
+    KnobButtonWPtr trackPrevButton, trackNextButton;
+    KnobDoubleWPtr centerKnob, offsetKnob;
+    KnobIntWPtr refFrameKnob;
+    KnobChoiceWPtr scoreTypeKnob;
+    KnobDoubleWPtr correlationScoreKnob;
+    KnobDoubleWPtr patternBtmLeftKnob, patternTopRightKnob;
+    KnobDoubleWPtr searchWindowBtmLeftKnob, searchWindowTopRightKnob;
 
 private:
     struct MakeSharedEnabler;

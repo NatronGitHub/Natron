@@ -44,8 +44,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private:
-    boost::weak_ptr<KnobBool> optional;
-    boost::weak_ptr<KnobBool> mask;
+    KnobBoolWPtr optional;
+    KnobBoolWPtr mask;
 
 public:
 

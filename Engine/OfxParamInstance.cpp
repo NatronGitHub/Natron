@@ -3767,10 +3767,10 @@ OfxPageInstance::getKnob() const
 
 struct OfxStringInstancePrivate
 {
-    boost::weak_ptr<KnobFile> fileKnob;
-    boost::weak_ptr<KnobOutputFile> outputFileKnob;
-    boost::weak_ptr<KnobString> stringKnob;
-    boost::weak_ptr<KnobPath> pathKnob;
+    KnobFileWPtr fileKnob;
+    KnobOutputFileWPtr outputFileKnob;
+    KnobStringWPtr stringKnob;
+    KnobPathWPtr pathKnob;
     boost::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
 
     OfxStringInstancePrivate()
@@ -3880,7 +3880,7 @@ OfxStringInstance::projectEnvVar_getProxy(std::string& str) const
     if (!holder) {
         return;
     }
-    AppInstPtr app = holder->getApp();
+    AppInstancePtr app = holder->getApp();
     if (!app) {
         return;
     }
@@ -4320,7 +4320,7 @@ OfxStringInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 
 struct OfxCustomInstancePrivate
 {
-    boost::weak_ptr<KnobString> knob;
+    KnobStringWPtr knob;
     OfxCustomInstance::customParamInterpolationV1Entry_t customParamInterpolationV1Entry;
     boost::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
 
