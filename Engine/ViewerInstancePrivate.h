@@ -70,8 +70,8 @@ typedef std::set<AbortableRenderInfoPtr, AbortableRenderInfo_CompareAge> OnGoing
 
 struct RenderViewerArgs
 {
-    RenderViewerArgs(const const ImagePtr &inputImage_,
-                     const const ImagePtr &matteImage_,
+    RenderViewerArgs(const ImageConstPtr &inputImage_,
+                     const ImageConstPtr &matteImage_,
                      DisplayChannelsEnum channels_,
                      ImagePremultiplicationEnum srcPremult_,
                      int bitDepth_,

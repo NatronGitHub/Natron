@@ -348,6 +348,7 @@ typedef boost::shared_ptr<HostOverlayKnobsCornerPin> HostOverlayKnobsCornerPinPt
 typedef boost::shared_ptr<HostOverlayKnobsPosition> HostOverlayKnobsPositionPtr;
 typedef boost::shared_ptr<HostOverlayKnobsTransform> HostOverlayKnobsTransformPtr;
 typedef boost::shared_ptr<Image> ImagePtr;
+typedef boost::shared_ptr<Image const> ImageConstPtr;
 typedef boost::shared_ptr<ImageParams> ImageParamsPtr;
 typedef boost::shared_ptr<ImagePlaneDesc> ImagePlaneDescPtr;
 typedef boost::shared_ptr<KnobBool> KnobBoolPtr;
