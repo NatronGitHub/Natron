@@ -332,6 +332,7 @@ typedef boost::shared_ptr<BufferableObject> BufferableObjectPtr;
 typedef boost::shared_ptr<CacheSignalEmitter> CacheSignalEmitterPtr;
 typedef boost::shared_ptr<Curve> CurvePtr;
 typedef boost::shared_ptr<EffectInstance> EffectInstancePtr;
+typedef boost::shared_ptr<ExistenceCheckerThread> ExistenceCheckerThreadPtr;
 typedef boost::shared_ptr<FileSystemItem> FileSystemItemPtr;
 typedef boost::shared_ptr<FileSystemModel> FileSystemModelPtr;
 typedef boost::shared_ptr<FrameEntry> FrameEntryPtr;

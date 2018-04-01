@@ -125,6 +125,7 @@ SOURCES += \
     MemoryFile.cpp \
     MemoryInfo.cpp \
     Node.cpp \
+    NodeDocumentation.cpp \
     NodeGroup.cpp \
     NodeMetadata.cpp \
     NonKeyParams.cpp \
@@ -335,6 +336,7 @@ HEADERS += \
     MemoryInfo.h \
     MergingEnum.h \
     Node.h \
+    NodePrivate.h \
     Noise.h \
     NoiseTables.h \
     NodeGroup.h \
