@@ -99,8 +99,8 @@ struct RenderViewerArgs
     {
     }
 
-    const ImagePtr inputImage;
-    const ImagePtr matteImage;
+    ImageConstPtr inputImage;
+    ImageConstPtr matteImage;
     DisplayChannelsEnum channels;
     ImagePremultiplicationEnum srcPremult;
     int bitDepth;

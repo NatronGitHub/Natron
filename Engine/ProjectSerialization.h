@@ -70,8 +70,9 @@ GCC_DIAG_ON(unused-parameter)
 
 NATRON_NAMESPACE_ENTER
 
-struct ProjectBeingLoadedInfo
+class ProjectBeingLoadedInfo
 {
+public:
     int vMajor,vMinor,vRev;
     std::string gitBranch,gitCommit;
     std::string osStr;

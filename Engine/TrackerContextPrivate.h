@@ -349,8 +349,9 @@ enum libmv_MarkerChannelEnum
     LIBMV_MARKER_CHANNEL_B = (1 << 2),
 };
 
-struct TrackMarkerAndOptions
+class TrackMarkerAndOptions
 {
+public:
     TrackMarkerPtr natronMarker;
     mv::Marker mvMarker;
     mv::TrackRegionOptions mvOptions;

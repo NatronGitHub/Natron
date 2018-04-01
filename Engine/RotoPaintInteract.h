@@ -390,7 +390,7 @@ NATRON_NAMESPACE_ENTER
 #define kShortcutIDActionRotoLockCurve "lock"
 #define kShortcutDescActionRotoLockCurve "Lock Shape"
 
-struct RotoPaintInteract;
+class RotoPaintInteract;
 struct RotoPaintPrivate
 {
     RotoPaint* publicInterface;
@@ -499,9 +499,10 @@ enum RotoToolEnum
     eRotoToolBurn
 };
 
-struct RotoPaintInteract
+class RotoPaintInteract
     : public boost::enable_shared_from_this<RotoPaintInteract>
 {
+public:
     RotoPaintPrivate* p;
     SelectedItems selectedItems;
     SelectedCPs selectedCps;
