@@ -30,7 +30,6 @@
 #include "Node.h"
 
 #include <QtCore/QWaitCondition>
-#include <QtCore/QWaitcondition>
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QMutex>
 
