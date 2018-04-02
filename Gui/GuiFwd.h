@@ -196,7 +196,7 @@ class VerticalColorBar;
 class ViewerGL;
 class ViewerTab;
 class ViewerToolButton;
-struct KnobPageGui;
+class KnobPageGui;
 //Implementation in Gui/QtMac.mm
 namespace QtMac {
 double getHighDPIScaleFactorInternal(const QWidget* w);

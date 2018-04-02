@@ -474,7 +474,7 @@ unix {
      }
 } #unix
 
-*-xcode {
+*xcode* {
   # redefine cxx flags as qmake tends to automatically add -O2 to xcode projects
   QMAKE_CFLAGS -= -O2
   QMAKE_CXXFLAGS -= -O2
@@ -499,6 +499,12 @@ unix {
 
 # see http://clang.llvm.org/docs/AddressSanitizer.html and http://blog.qt.digia.com/blog/2013/04/17/using-gccs-4-8-0-address-sanitizer-with-qt/
 addresssanitizer {
+  *xcode* {
+    enable_cxx_container_overflow_check.name = CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW
+    enable_cxx_container_overflow_check.value = YES
+    QMAKE_MAC_XCODE_SETTINGS += enable_cxx_container_overflow_check  
+  }
+  *g++* | *clang* {
   message("Compiling with AddressSanitizer (for gcc >= 4.8 and clang). Set the ASAN_SYMBOLIZER_PATH environment variable to point to the llvm-symbolizer binary, or make sure llvm-symbolizer in in your PATH.")
   message("To compile with clang, use a clang-specific spec, such as unsupported/linux-clang, unsupported/macx-clang, linux-clang or macx-clang.")
   message("For example, with Qt4 on OS X:")
@@ -515,6 +521,7 @@ addresssanitizer {
 #  QMAKE_LFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
 #  QMAKE_CLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
 #  QMAKE_CFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
+  }
 }
 
 # see http://clang.llvm.org/docs/ThreadSanitizer.html
