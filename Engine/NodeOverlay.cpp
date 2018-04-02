@@ -423,5 +423,59 @@ Node::initializeHostOverlays()
 }
 
 
+bool
+Node::hasOverlay() const
+{
+    if (!_imp->effect) {
+        return false;
+    }
+
+    NodeGuiIPtr nodeGui = getNodeGui();
+    if (nodeGui) {
+        if ( nodeGui->hasHostOverlay() ) {
+            return true;
+        }
+    }
+
+    return _imp->effect->hasOverlay();
+}
+
+
+bool
+Node::hasHostOverlayForParam(const KnobI* knob) const
+{
+    NodeGuiIPtr nodeGui = getNodeGui();
+
+    if ( nodeGui && nodeGui->hasHostOverlayForParam(knob) ) {
+        return true;
+    }
+
+    return false;
+}
+
+
+bool
+Node::hasHostOverlay() const
+{
+    NodeGuiIPtr nodeGui = getNodeGui();
+
+    if ( nodeGui && nodeGui->hasHostOverlay() ) {
+        return true;
+    }
+
+    return false;
+}
+
+
+void
+Node::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)
+{
+    NodeGuiIPtr nodeGui = getNodeGui();
+
+    if ( nodeGui && nodeGui->hasHostOverlay() ) {
+        nodeGui->setCurrentViewportForHostOverlays(viewPort);
+    }
+}
+
 NATRON_NAMESPACE_EXIT
 

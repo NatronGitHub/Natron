@@ -1312,22 +1312,6 @@ Node::isRenderingPreview() const
     return _imp->computingPreview;
 }
 
-bool
-Node::hasOverlay() const
-{
-    if (!_imp->effect) {
-        return false;
-    }
-
-    NodeGuiIPtr nodeGui = getNodeGui();
-    if (nodeGui) {
-        if ( nodeGui->hasHostOverlay() ) {
-            return true;
-        }
-    }
-
-    return _imp->effect->hasOverlay();
-}
 
 void
 Node::Implementation::abortPreview_non_blocking()
@@ -4697,29 +4681,6 @@ Node::getPluginPythonModule() const
     return _imp->pyPlugInfo.pluginPythonModule;
 }
 
-bool
-Node::hasHostOverlayForParam(const KnobI* knob) const
-{
-    NodeGuiIPtr nodeGui = getNodeGui();
-
-    if ( nodeGui && nodeGui->hasHostOverlayForParam(knob) ) {
-        return true;
-    }
-
-    return false;
-}
-
-bool
-Node::hasHostOverlay() const
-{
-    NodeGuiIPtr nodeGui = getNodeGui();
-
-    if ( nodeGui && nodeGui->hasHostOverlay() ) {
-        return true;
-    }
-
-    return false;
-}
 
 void
 Node::pushUndoCommand(const UndoCommandPtr& command)
@@ -4734,15 +4695,6 @@ Node::pushUndoCommand(const UndoCommandPtr& command)
 }
 
 
-void
-Node::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)
-{
-    NodeGuiIPtr nodeGui = getNodeGui();
-
-    if ( nodeGui && nodeGui->hasHostOverlay() ) {
-        nodeGui->setCurrentViewportForHostOverlays(viewPort);
-    }
-}
 
 const std::vector<std::string>&
 Node::getCreatedViews() const
