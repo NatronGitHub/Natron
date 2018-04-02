@@ -127,6 +127,8 @@ SOURCES += \
     Node.cpp \
     NodeDocumentation.cpp \
     NodeGroup.cpp \
+    NodeInputs.cpp \
+    NodeMain.cpp \
     NodeMetadata.cpp \
     NonKeyParams.cpp \
     NonKeyParamsSerialization.cpp \
