@@ -184,7 +184,6 @@ SOURCES += \
     NodeGroup.cpp \
     NodeInputs.cpp \
     NodeMain.cpp \
-    NodeName.cpp \
     NodeMetadata.cpp \
     NodePythonInteraction.cpp \
     NoOpBase.cpp \
