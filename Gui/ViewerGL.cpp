@@ -2894,7 +2894,7 @@ ViewerGL::fitImageToFormat()
     w = tex0Format.width();
     h = tex0Format.height();
 
-    if (w <= 0 || h <= 0) {
+    if (w <= 0 || h <= 0) {
         return;
     }
 
