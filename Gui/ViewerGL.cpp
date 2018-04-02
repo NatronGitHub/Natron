@@ -2888,11 +2888,15 @@ ViewerGL::fitImageToFormat()
     // size in Canonical = Zoom coordinates !
     double w, h;
     const RectD& tex0Format = _imp->displayTextures[0].format;
-    assert(!tex0Format.isNull());
+    if (tex0Format.isNull()) {
+        return;
+    }
     w = tex0Format.width();
     h = tex0Format.height();
 
-    assert(h > 0. && w > 0.);
+    if (w <= 0 || h <= 0) {
+        return;
+    }
 
     double old_zoomFactor;
     double zoomFactor;
