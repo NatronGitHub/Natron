@@ -2211,6 +2211,18 @@ Double2DParam::set(double x,
     knob->setValueAtTimeAcrossDimensions(TimeValue(frame), values, DimIdx(0), thisViewSpec);
 }
 
+
+void
+Double2DParam::setCanAutoFoldDimensions(bool can)
+{
+    boost::shared_ptr<KnobDouble> knob = _doubleKnob.lock();
+    if (!knob) {
+        return;
+    }
+    return knob->setCanAutoFoldDimensions(can);
+}
+
+
 void
 Double3DParam::set(double x,
                    double y,

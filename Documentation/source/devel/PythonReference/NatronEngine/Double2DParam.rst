@@ -16,7 +16,7 @@ See :doc:`DoubleParam` for more informations on this class.
 Functions
 ^^^^^^^^^
 
-*	 def :meth:`setUsePointInteract<NatronEngine.Double2DParam.setUsePointInteract` (enabled)
+*	 def :meth:`setCanAutoFoldDimensions<NatronEngine.Double2DParam.setCanAutoFoldDimensions` (enabled)
 *    def :meth:`get<NatronEngine.Double2DParam.get>` ([view="Main"])
 *    def :meth:`get<NatronEngine.Double2DParam.get>` (frame[,view="Main"])
 *    def :meth:`set<NatronEngine.Double2DParam.set>` (x, y[,view="All"])
@@ -26,16 +26,12 @@ Functions
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronEngine.Double2DParam.setUsePointInteract(enabled)
+.. method:: NatronEngine.Double2DParam.setCanAutoFoldDimensions(enabled)
 
 	:param enabled: :class:`bool`
 
-When called, the parameter will have its own overlay interact on the viewer as a point
-that the user can select and drag.
+Sets whether all dimensions should be presented as a single vakue/slider whenever they are equal.
 
-.. figure:: ../../positionInteract.png
-	:width: 400px
-	:align: center
 
 .. method:: NatronEngine.Double2DParam.get([view="Main"])
 	
