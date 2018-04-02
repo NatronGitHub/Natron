@@ -271,7 +271,7 @@ ProcessHandler::onProcessEnd(int exitCode,
 ProcessInputChannel::ProcessInputChannel(const QString & mainProcessServerName)
     : QThread()
     , _mainProcessServerName(mainProcessServerName)
-    , _backgroundOutputPipeMutex(new QMutex)
+    , _backgroundOutputPipeMutex()
     , _backgroundOutputPipe(0)
     , _backgroundIPCServer(0)
     , _backgroundInputPipe(0)
@@ -295,7 +295,6 @@ ProcessInputChannel::~ProcessInputChannel()
     }
 
     delete _backgroundIPCServer;
-    delete _backgroundOutputPipeMutex;
     delete _backgroundOutputPipe;
 }
 
@@ -303,7 +302,7 @@ void
 ProcessInputChannel::writeToOutputChannel(const QString & message)
 {
     {
-        QMutexLocker l(_backgroundOutputPipeMutex);
+        QMutexLocker l(&_backgroundOutputPipeMutex);
         _backgroundOutputPipe->write( ( message + QLatin1Char('\n') ).toUtf8() );
         _backgroundOutputPipe->flush();
     }

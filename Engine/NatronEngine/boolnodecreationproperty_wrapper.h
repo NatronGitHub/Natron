@@ -10,7 +10,7 @@ class BoolNodeCreationPropertyWrapper : public BoolNodeCreationProperty
 {
 public:
     BoolNodeCreationPropertyWrapper(bool value);
-    BoolNodeCreationPropertyWrapper(const std::vector<bool > & values = std::vector< bool >());
+    BoolNodeCreationPropertyWrapper(const std::vector<bool > & values = std::vector<bool >());
     virtual ~BoolNodeCreationPropertyWrapper();
     static void pysideInitQtMetaTypes();
 };

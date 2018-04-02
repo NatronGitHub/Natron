@@ -51,47 +51,45 @@ struct FileSystemItemPrivate;
 class FileSystemItem
     : public boost::enable_shared_from_this<FileSystemItem>
 {
-private:
+    struct MakeSharedEnabler;
+
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
-    FileSystemItem( const boost::shared_ptr<FileSystemModel>& model,
+    FileSystemItem( const FileSystemModelPtr& model,
                     bool isDir,
                     const QString& filename,
                     const QString& userFriendlySequenceName,
-                    const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+                    const SequenceParsing::SequenceFromFilesPtr& sequence,
                     const QDateTime& dateModified,
                     quint64 size,
-                    const boost::shared_ptr<FileSystemItem>& parent = boost::shared_ptr<FileSystemItem>() );
+                    const FileSystemItemPtr& parent = FileSystemItemPtr() );
 public:
     // public constructors
 
     // Note: when switching to C++11, we can add variadic templates:
     //template<typename ... T>
-    //static boost::shared_ptr<FileSystemItem> create( T&& ... all ) {
-    //    return boost::shared_ptr<FileSystemItem>( new FileSystemItem( std::forward<T>(all)... ) );
+    //static FileSystemItemPtr create( T&& ... all ) {
+    //    return boost::make_shared<FileSystemItem>( std::forward<T>(all)... );
     //}
-    static boost::shared_ptr<FileSystemItem> create( const boost::shared_ptr<FileSystemModel>& model,
+    static FileSystemItemPtr create( const FileSystemModelPtr& model,
                                                      bool isDir,
                                                      const QString& filename,
                                                      const QString& userFriendlySequenceName,
-                                                     const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+                                                     const SequenceParsing::SequenceFromFilesPtr& sequence,
                                                      const QDateTime& dateModified,
                                                      quint64 size,
-                                                     const boost::shared_ptr<FileSystemItem>& parent = boost::shared_ptr<FileSystemItem>() )
-    {
-        return boost::shared_ptr<FileSystemItem>( new FileSystemItem(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent) );
-    }
+                                                    const FileSystemItemPtr& parent = FileSystemItemPtr() );
 
     ~FileSystemItem();
 
     void resetModelPointer();
 
-    boost::shared_ptr<FileSystemItem> childAt(int position) const;
+    FileSystemItemPtr childAt(int position) const;
 
     int childCount() const;
 
     int indexInParent() const;
 
-    boost::shared_ptr<FileSystemItem> getParentItem() const;
+    FileSystemItemPtr getParentItem() const;
 
     /**
      * @brief If the item is a file this function will return its absolute file-path.
@@ -102,7 +100,7 @@ public:
 
     bool isDir() const;
 
-    boost::shared_ptr<SequenceParsing::SequenceFromFiles> getSequence() const;
+    SequenceParsing::SequenceFromFilesPtr getSequence() const;
 
     /**
      * @brief Returns the fileName without path.
@@ -118,9 +116,9 @@ public:
     /**
      * @brief Add a new child, MT-safe
      **/
-    void addChild(const boost::shared_ptr<FileSystemItem>& child);
+    void addChild(const FileSystemItemPtr& child);
 
-    void addChild(const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+    void addChild(const SequenceParsing::SequenceFromFilesPtr& sequence,
                   const QFileInfo& info);
 
     /**
@@ -132,7 +130,7 @@ public:
      * @brief Tries to find in this item and its children an item with a matching path.
      * @param path The path of the directory/file that has been split by QDir::separator()
      **/
-    boost::shared_ptr<FileSystemItem> matchPath(const QStringList& path,
+    FileSystemItemPtr matchPath(const QStringList& path,
                                                 int startIndex = 0) const;
 
 
@@ -152,7 +150,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    FileGathererThread(const boost::shared_ptr<FileSystemModel>& model);
+    FileGathererThread(const FileSystemModelPtr& model);
 
     virtual ~FileGathererThread();
 
@@ -160,7 +158,7 @@ public:
 
     void quitGatherer();
 
-    void fetchDirectory(const boost::shared_ptr<FileSystemItem>& item);
+    void fetchDirectory(const FileSystemItemPtr& item);
 
     bool isWorking() const;
 Q_SIGNALS:
@@ -171,7 +169,7 @@ private:
 
     virtual void run() OVERRIDE FINAL;
 
-    void gatheringKernel(const boost::shared_ptr<FileSystemItem>& item);
+    void gatheringKernel(const FileSystemItemPtr& item);
 
     boost::scoped_ptr<FileGathererThreadPrivate> _imp;
 };
@@ -259,7 +257,7 @@ public:
 
     QModelIndex index(const QString& path, int column = 0) const WARN_UNUSED_RETURN;
 
-    boost::shared_ptr<FileSystemItem> getFileSystemItem(const QString& path) const WARN_UNUSED_RETURN;
+    FileSystemItemPtr getFileSystemItem(const QString& path) const WARN_UNUSED_RETURN;
     FileSystemItem* getFileSystemItem(const QModelIndex& index) const WARN_UNUSED_RETURN;
 
     QModelIndex index(FileSystemItem* item, int column = 0) const WARN_UNUSED_RETURN;
@@ -348,13 +346,13 @@ private:
     void initGatherer();
 
 
-    boost::shared_ptr<FileSystemItem> mkPath(const QString& path);
-    boost::shared_ptr<FileSystemItem> mkPathInternal(const boost::shared_ptr<FileSystemItem>& item, const QStringList& path, int index);
-    boost::shared_ptr<FileSystemItem> getSharedItemPtr(FileSystemItem* item) const;
-    boost::shared_ptr<FileSystemItem> getItem(const QModelIndex &index) const;
+    FileSystemItemPtr mkPath(const QString& path);
+    FileSystemItemPtr mkPathInternal(const FileSystemItemPtr& item, const QStringList& path, int index);
+    FileSystemItemPtr getSharedItemPtr(FileSystemItem* item) const;
+    FileSystemItemPtr getItem(const QModelIndex &index) const;
 
 
-    void cleanAndRefreshItem(const boost::shared_ptr<FileSystemItem>& item);
+    void cleanAndRefreshItem(const FileSystemItemPtr& item);
 
     friend class FileSystemItem;
 

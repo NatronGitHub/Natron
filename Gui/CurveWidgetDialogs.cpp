@@ -55,7 +55,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 NATRON_NAMESPACE_ENTER
 
 ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
-                                                 const std::vector<boost::shared_ptr<CurveGui> > & curves,
+                                                 const std::vector<CurveGuiPtr> & curves,
                                                  Gui* gui,
                                                  QWidget* parent)
     : QDialog(parent)
@@ -293,7 +293,7 @@ ImportExportCurveDialog::getXStart() const
     double ret = 0.;
     std::string expr = std::string("ret = float(") + _startLineEdit->text().toStdString() + ')';
     std::string error;
-    bool ok = Knob<double>::evaluateExpression(expr, &ret, &error);
+    bool ok = KnobDoubleBase::evaluateExpression(expr, &ret, &error);
     Q_UNUSED(ok);
     //qDebug() << "xstart=" << expr.c_str() << ret;
     return ret;
@@ -308,7 +308,7 @@ ImportExportCurveDialog::getXIncrement() const
     double ret = 0.01;
     std::string expr = std::string("ret = float(") + _incrLineEdit->text().toStdString() + ')';
     std::string error;
-    bool ok = Knob<double>::evaluateExpression(expr, &ret, &error);
+    bool ok = KnobDoubleBase::evaluateExpression(expr, &ret, &error);
     Q_UNUSED(ok);
     //qDebug() << "incr=" << expr.c_str() << ret;
     return ret;
@@ -323,7 +323,7 @@ ImportExportCurveDialog::getXCount() const
     double ret = 0.;
     std::string expr = std::string("ret = float(1+((")  + _endLineEdit->text().toStdString() + std::string(")-(") + _startLineEdit->text().toStdString() + std::string("))/(") + _incrLineEdit->text().toStdString() + std::string("))");
     std::string error;
-    bool ok = Knob<double>::evaluateExpression(expr, &ret, &error);
+    bool ok = KnobDoubleBase::evaluateExpression(expr, &ret, &error);
     Q_UNUSED(ok);
     //qDebug() << "count=" << expr.c_str() << ret;
     return (int) (std::floor(ret + 0.5));
@@ -341,14 +341,14 @@ ImportExportCurveDialog::getXEnd() const
     double ret = 1.;
     std::string expr = std::string("ret = float(") + _endLineEdit->text().toStdString() + ')';
     std::string error;
-    bool ok = Knob<double>::evaluateExpression(expr, &ret, &error);
+    bool ok = KnobDoubleBase::evaluateExpression(expr, &ret, &error);
     Q_UNUSED(ok);
     //qDebug() << "xend=" << expr.c_str() << ret;
     return ret;
 }
 
 void
-ImportExportCurveDialog::getCurveColumns(std::map<int, boost::shared_ptr<CurveGui> >* columns) const
+ImportExportCurveDialog::getCurveColumns(std::map<int, CurveGuiPtr>* columns) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -481,7 +481,7 @@ void
 EditKeyFrameDialog::moveKeyTo(double newX,
                               double newY)
 {
-    std::map<boost::shared_ptr<CurveGui>, std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
+    std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
     std::vector<MoveKeysCommand::KeyToMove> &keys = keysToMove[_imp->key->curve];
 
     keys.resize(1);

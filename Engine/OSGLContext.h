@@ -108,8 +108,9 @@ public:
     FramebufferConfig();
 };
 
-struct GLRendererID
+class GLRendererID
 {
+public:
     int renderID;
 
     // wgl NV extension use handles and not integers
@@ -124,8 +125,9 @@ struct GLRendererID
     explicit GLRendererID(void* handle) : renderID(0), rendererHandle(handle) {}
 };
 
-struct OpenGLRendererInfo
+class OpenGLRendererInfo
 {
+public:
     std::size_t maxMemBytes;
     std::string rendererName;
     std::string vendorName;
@@ -179,9 +181,9 @@ public:
      * @brief Returns one of the built-in shaders, used in the Image class.
      * Note: this context must be made current before calling this function
      **/
-    boost::shared_ptr<GLShader> getOrCreateFillShader();
-    boost::shared_ptr<GLShader> getOrCreateMaskMixShader(bool maskEnabled);
-    boost::shared_ptr<GLShader> getOrCreateCopyUnprocessedChannelsShader(bool doR, bool doG, bool doB, bool doA);
+    GLShaderPtr getOrCreateFillShader();
+    GLShaderPtr getOrCreateMaskMixShader(bool maskEnabled);
+    GLShaderPtr getOrCreateCopyUnprocessedChannelsShader(bool doR, bool doG, bool doB, bool doA);
 
     /**
      * @brief Same as setContextCurrent() except that it should be used to bind the context to perform NON-RENDER operations!

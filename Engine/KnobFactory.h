@@ -60,7 +60,7 @@ public:
     }
 
 private:
-    boost::shared_ptr<KnobHelper> createKnob(const std::string &id,
+    KnobHelperPtr createKnob(const std::string &id,
                                              KnobHolder* holder,
                                              const std::string &label,
                                              int dimension = 1,

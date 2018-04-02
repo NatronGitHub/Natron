@@ -184,30 +184,30 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
     try {
 #if defined(Q_OS_MAC)
         Q_UNUSED(breakpad_client_fd);
-        breakpadHandler.reset( new google_breakpad::ExceptionHandler( dumpPath.toStdString(),
-                                                                      0,
-                                                                      0 /*dmpcb*/,
-                                                                      0,
-                                                                      true,
-                                                                      breakpadPipePath.toStdString().c_str() ) );
+        breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler>( dumpPath.toStdString(),
+                                                                                 google_breakpad::ExceptionHandler::FilterCallback(NULL),
+                                                                                 google_breakpad::ExceptionHandler::MinidumpCallback(NULL) /*dmpcb*/,
+                                                                                 (void*)NULL,
+                                                                                 true,
+                                                                                 breakpadPipePath.toStdString().c_str() );
 #elif defined(Q_OS_LINUX)
         Q_UNUSED(breakpadPipePath);
-        breakpadHandler.reset( new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor( dumpPath.toStdString() ),
-                                                                      0,
-                                                                      0 /*dmpCb*/,
-                                                                      0,
-                                                                      true,
-                                                                      breakpad_client_fd) );
+        breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler>( google_breakpad::MinidumpDescriptor( dumpPath.toStdString() ),
+                                                                                 google_breakpad::ExceptionHandler::FilterCallback(NULL),
+                                                                                 google_breakpad::ExceptionHandler::MinidumpCallback(NULL) /*dmpCb*/,
+                                                                                 (void*)NULL,
+                                                                                 true,
+                                                                                 breakpad_client_fd);
 #elif defined(Q_OS_WIN32)
         Q_UNUSED(breakpad_client_fd);
-        breakpadHandler.reset( new google_breakpad::ExceptionHandler( dumpPath.toStdWString(),
-                                                                      0, //filter callback
-                                                                      0 /*dmpcb*/,
-                                                                      0, //context
-                                                                      google_breakpad::ExceptionHandler::HANDLER_ALL,
-                                                                      MiniDumpNormal,
-                                                                      breakpadPipePath.toStdWString().c_str(),
-                                                                      0) );
+        breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler>( dumpPath.toStdWString(),
+                                                                                 google_breakpad::ExceptionHandler::FilterCallback(NULL), //filter callback
+                                                                                 google_breakpad::ExceptionHandler::MinidumpCallback(NULL) /*dmpcb*/,
+                                                                                 (void*)NULL, //context
+                                                                                 google_breakpad::ExceptionHandler::HANDLER_ALL,
+                                                                                 MiniDumpNormal,
+                                                                                 breakpadPipePath.toStdWString().c_str(),
+                                                                                 (google_breakpad::CustomClientInfo*)NULL);
 #endif
     } catch (const std::exception& e) {
         qDebug() << e.what();
@@ -387,10 +387,8 @@ restoreCache(AppManagerPrivate* p,
 void
 AppManagerPrivate::restoreCaches()
 {
-    if ( !appPTR->isBackground() ) {
-        restoreCache<FrameEntry>( this, _viewerCache.get() );
-        restoreCache<Image>( this, _diskCache.get() );
-    }
+    restoreCache<FrameEntry>( this, _viewerCache.get() );
+    restoreCache<Image>( this, _diskCache.get() );
 } // restoreCaches
 
 bool
@@ -401,8 +399,7 @@ AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath, bool is
     if ( !settingsFilePath.endsWith( QChar::fromLatin1('/') ) ) {
         settingsFilePath += QChar::fromLatin1('/');
     }
-    settingsFilePath += QString::fromUtf8("restoreFile.");
-    settingsFilePath += QString::fromUtf8(NATRON_CACHE_FILE_EXT);
+    settingsFilePath += QString::fromUtf8("restoreFile." NATRON_CACHE_FILE_EXT);
 
     if ( !QFile::exists(settingsFilePath) ) {
         cleanUpCacheDiskStructure(cachePath, isTiled);
@@ -455,14 +452,19 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath, bool isT
 
     QDir cacheFolder(cachePath);
 
-#   if QT_VERSION < 0x050000
+#   if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     QtCompat::removeRecursively(cachePath);
 #   else
     if ( cacheFolder.exists() ) {
         cacheFolder.removeRecursively();
     }
 #endif
-    cacheFolder.mkpath( QChar::fromLatin1('.') );
+    if ( !cacheFolder.exists() ) {
+        bool success = cacheFolder.mkpath( QChar::fromLatin1('.') );
+        if (!success) {
+            qDebug() << "Warning: cache directory" << cachePath << "could not be created";
+        }
+    }
 
     QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
     // if not 256 subdirs, we re-create the cache
@@ -475,10 +477,13 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath, bool isT
         for (U32 i = 0x00; i <= 0xF; ++i) {
             for (U32 j = 0x00; j <= 0xF; ++j) {
                 std::ostringstream oss;
-                oss << std::hex <<  i;
+                oss << std::hex << i;
                 oss << std::hex << j;
                 std::string str = oss.str();
-                cacheFolder.mkdir( QString::fromUtf8( str.c_str() ) );
+                bool success = cacheFolder.mkdir( QString::fromUtf8( str.c_str() ) );
+                if (!success) {
+                    qDebug() << "Warning: cache directory" << (cachePath.toStdString() + '/' + str).c_str() << "could not be created";
+                }
             }
         }
     }
@@ -585,16 +590,17 @@ pre_gl_call(const char */*name*/,
 
 // logs every gl call to the console
 static void
-post_gl_call(const char */*name*/,
+post_gl_call(const char *name,
              void */*funcptr*/,
              int /*len_args*/,
              ...)
 {
 #ifdef GL_TRACE_CALLS
-    GLenum _glerror_ = glGetError();
-    if (_glerror_ != GL_NO_ERROR) {
-        std::cout << "GL_ERROR : " << __FILE__ << ":" << __LINE__ << " " << gluErrorString(_glerror_) << std::endl;
-        glError();
+    GLenum error_code;
+    error_code = glad_glGetError();
+
+    if (error_code != GL_NO_ERROR) {
+        fprintf(stderr, "ERROR %d(%s) in %s\n", error_code, gluErrorString(error_code), name);
     }
 #endif
 }
@@ -773,13 +779,127 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
 
     hasInitializedOpenGLFunctions = true;
 
-
-#ifdef DEBUG
-    glad_set_pre_callback(pre_gl_call);
-    glad_set_post_callback(post_gl_call);
-#endif
-
     bool glLoaded = gladLoadGL();
+
+#ifdef GLAD_DEBUG
+    if (glLoaded) {
+        glad_set_pre_callback(pre_gl_call);
+        glad_set_post_callback(post_gl_call);
+
+        // disablepost_gl_call for glBegin and commands that are authorized between glBegin and glEnd
+        // (because glGetError isn't authorized there)
+        // see https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/glBegin.xml
+
+        glad_debug_glBegin = glad_glBegin;
+
+        glad_debug_glVertex2s = glad_glVertex2s;
+        glad_debug_glVertex2i = glad_glVertex2i;
+        glad_debug_glVertex2f = glad_glVertex2f;
+        glad_debug_glVertex2d = glad_glVertex2d;
+        glad_debug_glVertex3s = glad_glVertex3s;
+        glad_debug_glVertex3i = glad_glVertex3i;
+        glad_debug_glVertex3f = glad_glVertex3f;
+        glad_debug_glVertex3d = glad_glVertex3d;
+        glad_debug_glVertex4s = glad_glVertex4s;
+        glad_debug_glVertex4i = glad_glVertex4i;
+        glad_debug_glVertex4f = glad_glVertex4f;
+        glad_debug_glVertex4d = glad_glVertex4d;
+        glad_debug_glColor3b = glad_glColor3b;
+        glad_debug_glColor3s = glad_glColor3s;
+        glad_debug_glColor3i = glad_glColor3i;
+        glad_debug_glColor3f = glad_glColor3f;
+        glad_debug_glColor3d = glad_glColor3d;
+        glad_debug_glColor3ub = glad_glColor3ub;
+        glad_debug_glColor3us = glad_glColor3us;
+        glad_debug_glColor3ui = glad_glColor3ui;
+        glad_debug_glColor4b = glad_glColor4b;
+        glad_debug_glColor4s = glad_glColor4s;
+        glad_debug_glColor4i = glad_glColor4i;
+        glad_debug_glColor4f = glad_glColor4f;
+        glad_debug_glColor4d = glad_glColor4d;
+        glad_debug_glColor4ub = glad_glColor4ub;
+        glad_debug_glColor4us = glad_glColor4us;
+        glad_debug_glColor4ui = glad_glColor4ui;
+        glad_debug_glSecondaryColor3b = glad_glSecondaryColor3b;
+        glad_debug_glSecondaryColor3s = glad_glSecondaryColor3s;
+        glad_debug_glSecondaryColor3i = glad_glSecondaryColor3i;
+        glad_debug_glSecondaryColor3f = glad_glSecondaryColor3f;
+        glad_debug_glSecondaryColor3d = glad_glSecondaryColor3d;
+        glad_debug_glSecondaryColor3ub = glad_glSecondaryColor3ub;
+        glad_debug_glSecondaryColor3us = glad_glSecondaryColor3us;
+        glad_debug_glSecondaryColor3ui = glad_glSecondaryColor3ui;
+        glad_debug_glIndexs = glad_glIndexs;
+        glad_debug_glIndexi = glad_glIndexi;
+        glad_debug_glIndexf = glad_glIndexf;
+        glad_debug_glIndexd = glad_glIndexd;
+        glad_debug_glIndexub = glad_glIndexub;
+        glad_debug_glNormal3b = glad_glNormal3b;
+        glad_debug_glNormal3d = glad_glNormal3d;
+        glad_debug_glNormal3f = glad_glNormal3f;
+        glad_debug_glNormal3i = glad_glNormal3i;
+        glad_debug_glNormal3s = glad_glNormal3s;
+        glad_debug_glFogCoorddv = glad_glFogCoorddv;
+        glad_debug_glFogCoordfv = glad_glFogCoordfv;
+        glad_debug_glTexCoord1s = glad_glTexCoord1s;
+        glad_debug_glTexCoord1i = glad_glTexCoord1i;
+        glad_debug_glTexCoord1f = glad_glTexCoord1f;
+        glad_debug_glTexCoord1d = glad_glTexCoord1d;
+        glad_debug_glTexCoord2s = glad_glTexCoord2s;
+        glad_debug_glTexCoord2i = glad_glTexCoord2i;
+        glad_debug_glTexCoord2f = glad_glTexCoord2f;
+        glad_debug_glTexCoord2d = glad_glTexCoord2d;
+        glad_debug_glTexCoord3s = glad_glTexCoord3s;
+        glad_debug_glTexCoord3i = glad_glTexCoord3i;
+        glad_debug_glTexCoord3f = glad_glTexCoord3f;
+        glad_debug_glTexCoord3d = glad_glTexCoord3d;
+        glad_debug_glTexCoord4s = glad_glTexCoord4s;
+        glad_debug_glTexCoord4i = glad_glTexCoord4i;
+        glad_debug_glTexCoord4f = glad_glTexCoord4f;
+        glad_debug_glTexCoord4d = glad_glTexCoord4d;
+        glad_debug_glMultiTexCoord1s = glad_glMultiTexCoord1s;
+        glad_debug_glMultiTexCoord1i = glad_glMultiTexCoord1i;
+        glad_debug_glMultiTexCoord1f = glad_glMultiTexCoord1f;
+        glad_debug_glMultiTexCoord1d = glad_glMultiTexCoord1d;
+        glad_debug_glMultiTexCoord2s = glad_glMultiTexCoord2s;
+        glad_debug_glMultiTexCoord2i = glad_glMultiTexCoord2i;
+        glad_debug_glMultiTexCoord2f = glad_glMultiTexCoord2f;
+        glad_debug_glMultiTexCoord2d = glad_glMultiTexCoord2d;
+        glad_debug_glMultiTexCoord3s = glad_glMultiTexCoord3s;
+        glad_debug_glMultiTexCoord3i = glad_glMultiTexCoord3i;
+        glad_debug_glMultiTexCoord3f = glad_glMultiTexCoord3f;
+        glad_debug_glMultiTexCoord3d = glad_glMultiTexCoord3d;
+        glad_debug_glMultiTexCoord4s = glad_glMultiTexCoord4s;
+        glad_debug_glMultiTexCoord4i = glad_glMultiTexCoord4i;
+        glad_debug_glMultiTexCoord4f = glad_glMultiTexCoord4f;
+        glad_debug_glMultiTexCoord4d = glad_glMultiTexCoord4d;
+        glad_debug_glVertexAttrib1f = glad_glVertexAttrib1f;
+        glad_debug_glVertexAttrib1s = glad_glVertexAttrib1s;
+        glad_debug_glVertexAttrib1d = glad_glVertexAttrib1d;
+        glad_debug_glVertexAttrib2f = glad_glVertexAttrib2f;
+        glad_debug_glVertexAttrib2s = glad_glVertexAttrib2s;
+        glad_debug_glVertexAttrib2d = glad_glVertexAttrib2d;
+        glad_debug_glVertexAttrib3f = glad_glVertexAttrib3f;
+        glad_debug_glVertexAttrib3s = glad_glVertexAttrib3s;
+        glad_debug_glVertexAttrib3d = glad_glVertexAttrib3d;
+        glad_debug_glVertexAttrib4f = glad_glVertexAttrib4f;
+        glad_debug_glVertexAttrib4s = glad_glVertexAttrib4s;
+        glad_debug_glVertexAttrib4d = glad_glVertexAttrib4d;
+        glad_debug_glVertexAttrib4Nub = glad_glVertexAttrib4Nub;
+        glad_debug_glEvalCoord1f = glad_glEvalCoord1f;
+        glad_debug_glEvalCoord1d = glad_glEvalCoord1d;
+        glad_debug_glEvalCoord2f = glad_glEvalCoord2f;
+        glad_debug_glEvalCoord2d = glad_glEvalCoord2d;
+        glad_debug_glEvalPoint1 = glad_glEvalPoint1;
+        glad_debug_glEvalPoint2 = glad_glEvalPoint2;
+        glad_debug_glArrayElement = glad_glArrayElement;
+        glad_debug_glMaterialf = glad_glMaterialf;
+        glad_debug_glMateriali = glad_glMateriali;
+        glad_debug_glEdgeFlag = glad_glEdgeFlag;
+
+        glad_debug_glCallList = glad_glCallList;
+        glad_debug_glCallLists = glad_glCallLists;
+    }
+#endif
 
     // If only EXT_framebuffer is present and not ARB link functions
     if (glLoaded && GLAD_GL_EXT_framebuffer_object && !GLAD_GL_ARB_framebuffer_object) {

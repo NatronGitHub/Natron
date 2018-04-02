@@ -53,7 +53,7 @@ class FrameEntry
 {
 public:
     FrameEntry(const FrameKey & key,
-               const boost::shared_ptr<FrameParams> &  params,
+               const FrameParamsPtr &  params,
                const CacheAPI* cache)
         : CacheEntryHelper<U8, FrameKey, FrameParams>(key, params, cache)
     {

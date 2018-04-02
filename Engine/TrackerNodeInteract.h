@@ -246,13 +246,13 @@ enum TrackerDrawStateEnum
     eDrawStateShowScalingHint,
 };
 
-typedef QFutureWatcher<std::pair<boost::shared_ptr<Image>, RectI> > TrackWatcher;
+typedef QFutureWatcher<std::pair<ImagePtr, RectI> > TrackWatcher;
 typedef boost::shared_ptr<TrackWatcher> TrackWatcherPtr;
 
 struct TrackRequestKey
 {
     int time;
-    boost::weak_ptr<TrackMarker> track;
+    TrackMarkerWPtr track;
     RectI roi;
 };
 
@@ -294,7 +294,7 @@ class TrackerNodeInteract;
 struct TrackerNodePrivate
 {
     TrackerNode* publicInterface;
-    boost::shared_ptr<TrackerNodeInteract> ui;
+    TrackerNodeInteractPtr ui;
 
     TrackerNodePrivate(TrackerNode* publicInterface);
 
@@ -311,46 +311,46 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     TrackerNodePrivate* _p;
-    boost::weak_ptr<KnobButton> addTrackButton;
-    boost::weak_ptr<KnobButton> trackRangeButton;
-    boost::weak_ptr<KnobButton> trackBwButton;
-    boost::weak_ptr<KnobButton> trackPrevButton;
-    boost::weak_ptr<KnobButton> stopTrackingButton; //< invisible
-    boost::weak_ptr<KnobButton> trackNextButton;
-    boost::weak_ptr<KnobButton> trackFwButton;
-    boost::weak_ptr<KnobButton> trackAllKeyframesButton;
-    boost::weak_ptr<KnobButton> trackCurrentKeyframeButton;
-    boost::weak_ptr<KnobButton> clearAllAnimationButton;
-    boost::weak_ptr<KnobButton> clearBwAnimationButton;
-    boost::weak_ptr<KnobButton> clearFwAnimationButton;
-    boost::weak_ptr<KnobButton> updateViewerButton;
-    boost::weak_ptr<KnobButton> centerViewerButton;
-    boost::weak_ptr<KnobButton> createKeyOnMoveButton;
-    boost::weak_ptr<KnobButton> setKeyFrameButton;
-    boost::weak_ptr<KnobButton> removeKeyFrameButton;
-    boost::weak_ptr<KnobButton> resetOffsetButton;
-    boost::weak_ptr<KnobButton> resetTrackButton;
-    boost::weak_ptr<KnobButton> showCorrelationButton;
-    boost::weak_ptr<KnobInt> magWindowPxSizeKnob;
+    KnobButtonWPtr addTrackButton;
+    KnobButtonWPtr trackRangeButton;
+    KnobButtonWPtr trackBwButton;
+    KnobButtonWPtr trackPrevButton;
+    KnobButtonWPtr stopTrackingButton; //< invisible
+    KnobButtonWPtr trackNextButton;
+    KnobButtonWPtr trackFwButton;
+    KnobButtonWPtr trackAllKeyframesButton;
+    KnobButtonWPtr trackCurrentKeyframeButton;
+    KnobButtonWPtr clearAllAnimationButton;
+    KnobButtonWPtr clearBwAnimationButton;
+    KnobButtonWPtr clearFwAnimationButton;
+    KnobButtonWPtr updateViewerButton;
+    KnobButtonWPtr centerViewerButton;
+    KnobButtonWPtr createKeyOnMoveButton;
+    KnobButtonWPtr setKeyFrameButton;
+    KnobButtonWPtr removeKeyFrameButton;
+    KnobButtonWPtr resetOffsetButton;
+    KnobButtonWPtr resetTrackButton;
+    KnobButtonWPtr showCorrelationButton;
+    KnobIntWPtr magWindowPxSizeKnob;
 
 
     // Track range dialog
-    boost::weak_ptr<KnobGroup> trackRangeDialogGroup;
-    boost::weak_ptr<KnobInt> trackRangeDialogFirstFrame;
-    boost::weak_ptr<KnobInt> trackRangeDialogLastFrame;
-    boost::weak_ptr<KnobInt> trackRangeDialogStep;
-    boost::weak_ptr<KnobButton> trackRangeDialogOkButton;
-    boost::weak_ptr<KnobButton> trackRangeDialogCancelButton;
+    KnobGroupWPtr trackRangeDialogGroup;
+    KnobIntWPtr trackRangeDialogFirstFrame;
+    KnobIntWPtr trackRangeDialogLastFrame;
+    KnobIntWPtr trackRangeDialogStep;
+    KnobButtonWPtr trackRangeDialogOkButton;
+    KnobButtonWPtr trackRangeDialogCancelButton;
 
 
     // Right click menu
-    boost::weak_ptr<KnobChoice> rightClickMenuKnob;
-    boost::weak_ptr<KnobButton> selectAllTracksMenuAction;
-    boost::weak_ptr<KnobButton> removeTracksMenuAction;
-    boost::weak_ptr<KnobButton> nudgeTracksOnRightMenuAction;
-    boost::weak_ptr<KnobButton> nudgeTracksOnLeftMenuAction;
-    boost::weak_ptr<KnobButton> nudgeTracksOnTopMenuAction;
-    boost::weak_ptr<KnobButton> nudgeTracksOnBottomMenuAction;
+    KnobChoiceWPtr rightClickMenuKnob;
+    KnobButtonWPtr selectAllTracksMenuAction;
+    KnobButtonWPtr removeTracksMenuAction;
+    KnobButtonWPtr nudgeTracksOnRightMenuAction;
+    KnobButtonWPtr nudgeTracksOnLeftMenuAction;
+    KnobButtonWPtr nudgeTracksOnTopMenuAction;
+    KnobButtonWPtr nudgeTracksOnBottomMenuAction;
     bool clickToAddTrackEnabled;
     QPointF lastMousePos;
     QRectF selectionRectangle;
@@ -361,20 +361,20 @@ public:
     TrackerDrawStateEnum hoverState;
     TrackMarkerPtr interactMarker, hoverMarker;
 
-    typedef std::map<int, GLTexturePtr > KeyFrameTexIDs;
-    typedef std::map<boost::weak_ptr<TrackMarker>, KeyFrameTexIDs> TrackKeysMap;
+    typedef std::map<int, GLTexturePtr> KeyFrameTexIDs;
+    typedef std::map<TrackMarkerWPtr, KeyFrameTexIDs> TrackKeysMap;
     TrackKeysMap trackTextures;
     TrackKeyframeRequests trackRequestsMap;
     GLTexturePtr selectedMarkerTexture;
     int selectedMarkerTextureTime;
     RectI selectedMarkerTextureRoI;
     //If theres a single selection, this points to it
-    boost::weak_ptr<TrackMarker> selectedMarker;
+    TrackMarkerWPtr selectedMarker;
     GLuint pboID;
     TrackWatcherPtr imageGetterWatcher;
     bool showMarkerTexture;
     RenderScale selectedMarkerScale;
-    boost::weak_ptr<Image> selectedMarkerImg;
+    ImageWPtr selectedMarkerImg;
     bool isTracking;
 
 
@@ -382,7 +382,7 @@ public:
 
     ~TrackerNodeInteract();
 
-    boost::shared_ptr<TrackerContext> getContext() const;
+    TrackerContextPtr getContext() const;
 
     void onAddTrackClicked(bool clicked);
 
@@ -432,7 +432,7 @@ public:
 
     void refreshSelectedMarkerTexture();
 
-    void convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Image>& image, const boost::shared_ptr<Texture>& tex, const RectI& renderWindow);
+    void convertImageTosRGBOpenGLTexture(const ImagePtr& image, const TexturePtr& tex, const RectI& renderWindow);
 
     void makeMarkerKeyTexture(int time, const TrackMarkerPtr& track);
 
@@ -468,7 +468,7 @@ public:
                                          const QPointF& point,
                                          const QPointF& handleSize);
 
-    bool isNearbyPoint(const boost::shared_ptr<KnobDouble>& knob,
+    bool isNearbyPoint(const KnobDoublePtr& knob,
                        double xWidget,
                        double yWidget,
                        double toleranceWidget,

@@ -89,8 +89,8 @@ public:
 
     virtual ~GuiApplicationManager();
 
-    const std::list<boost::shared_ptr<PluginGroupNode> > & getTopLevelPluginsToolButtons() const;
-    boost::shared_ptr<PluginGroupNode>  findPluginToolButtonOrCreate(const QStringList & grouping,
+    const std::list<PluginGroupNodePtr> & getTopLevelPluginsToolButtons() const;
+    PluginGroupNodePtr  findPluginToolButtonOrCreate(const QStringList & grouping,
                                                                      const QString & name,
                                                                      const QStringList& groupIconPath,
                                                                      const QString & iconPath,
@@ -106,12 +106,12 @@ public:
     void getIcon(PixmapEnum e, int size, QPixmap* pix) const;
 
     void setKnobClipBoard(KnobClipBoardType type,
-                          const KnobPtr& serialization,
+                          const KnobIPtr& serialization,
                           int dimension);
 
 
     void getKnobClipBoard(KnobClipBoardType *type,
-                          KnobPtr* serialization,
+                          KnobIPtr* serialization,
                           int *dimension) const;
 
 
@@ -124,7 +124,7 @@ public:
     const QCursor & getLinkToCursor() const;
     const QCursor & getLinkToMultCursor() const;
     virtual void setLoadingStatus(const QString & str) OVERRIDE FINAL;
-    KnobGui* createGuiForKnob(KnobPtr knob, KnobGuiContainerI *container) const;
+    KnobGui* createGuiForKnob(KnobIPtr knob, KnobGuiContainerI *container) const;
     virtual void setUndoRedoStackLimit(int limit) OVERRIDE FINAL;
     virtual void debugImage( const Image* image, const RectI& roi, const QString & filename = QString() ) const OVERRIDE FINAL;
 
@@ -220,7 +220,7 @@ private:
     virtual void loadBuiltinNodePlugins(IOPluginsMap* readersMap,
                                         IOPluginsMap* writersMap) OVERRIDE;
     virtual bool initGui(const CLArgs& args) OVERRIDE FINAL;
-    virtual AppInstPtr makeNewInstance(int appID) const OVERRIDE FINAL;
+    virtual AppInstancePtr makeNewInstance(int appID) const OVERRIDE FINAL;
     virtual void registerGuiMetaTypes() const OVERRIDE FINAL;
     virtual void initializeQApp(int &argc, char **argv)  OVERRIDE FINAL;
 

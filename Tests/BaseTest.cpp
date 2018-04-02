@@ -29,6 +29,7 @@
 #include "BaseTest.h"
 
 #include <QtCore/QFile>
+#include <QtCore/QThreadPool>
 
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
 CLANG_DIAG_OFF(unknown-pragmas)
@@ -56,7 +57,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 NATRON_NAMESPACE_USING
 
-static AppManager* g_manager = 0;
 BaseTest::BaseTest()
     : testing::Test()
     , _app()
@@ -105,14 +105,8 @@ BaseTest::SetUp()
         std::cout << "Warning: Ignoring standard plugin path, OFX_PLUGIN_PATH=" << path << std::endl;
         OFX::Host::PluginCache::useStdOFXPluginsLocation(false);
     }
-    if (!g_manager) {
-        g_manager = new AppManager;
-        int argc = 0;
-        CLArgs cl;
-        g_manager->load(argc, 0, cl);
-    }
 
-    _app = g_manager->getTopLevelInstance();
+    _app = appPTR->getTopLevelInstance();
     registerTestPlugins();
 }
 
@@ -120,6 +114,8 @@ void
 BaseTest::TearDown()
 {
     appPTR->setNumberOfThreads(0);
+    ///Caches may have launched some threads to delete images, wait for them to be done
+    QThreadPool::globalInstance()->waitForDone();
 }
 
 NodePtr
@@ -153,7 +149,7 @@ BaseTest::connectNodes(NodePtr input,
         EXPECT_FALSE( output->isInputConnected(inputNumber) );
     } else {
         ///the call can only fail for those 2 reasons
-        EXPECT_TRUE(inputNumber > output->getMaxInputCount() || //< inputNumber is greater than the maximum input number
+        EXPECT_TRUE(inputNumber > output->getNInputs() || //< inputNumber is greater than the maximum input number
                     output->getInput(inputNumber).get() != (Node*)NULL); //< input slot is already filled with another node
     }
 
@@ -251,7 +247,7 @@ TEST_F(BaseTest, GenerateDot)
 
     ASSERT_TRUE( bool(generator) && bool(writer) );
 
-    KnobPtr frameRange = generator->getApp()->getProject()->getKnobByName("frameRange");
+    KnobIPtr frameRange = generator->getApp()->getProject()->getKnobByName("frameRange");
     ASSERT_TRUE( bool(frameRange) );
     KnobInt* knob = dynamic_cast<KnobInt*>( frameRange.get() );
     ASSERT_TRUE(knob);
@@ -289,7 +285,7 @@ TEST_F(BaseTest, SetValues)
     NodePtr generator = createNode(_generatorPluginID);
 
     assert(generator);
-    KnobPtr knob = generator->getKnobByName("noiseZSlope");
+    KnobIPtr knob = generator->getKnobByName("noiseZSlope");
     KnobDouble* radius = dynamic_cast<KnobDouble*>( knob.get() );
     EXPECT_TRUE(radius != 0);
     if (!radius) {

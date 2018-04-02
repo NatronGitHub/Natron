@@ -31,6 +31,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
 #include "Engine/EngineFwd.h"
@@ -164,7 +165,7 @@
 #define kCreateNodeArgsPropTrustPluginID "CreateNodeArgsPropTrustPluginID"
 
 /**
- * @brief optional x1 boost::shared_ptr<NodeCollection> A pointer to the group in which the node will be created. If not set, Natron
+ * @brief optional x1 NodeCollectionPtr A pointer to the group in which the node will be created. If not set, Natron
  * will create the node in the top-level node-graph of the project.
  **/
 #define kCreateNodeArgsPropGroupContainer "CreateNodeArgsPropGroupContainer"
@@ -266,7 +267,7 @@ class CreateNodeArgs
         
         boost::shared_ptr<Property<T> > propTemplate;
         if (!*propPtr) {
-            propTemplate.reset(new Property<T>);
+            propTemplate = boost::make_shared<Property<T> >();
             *propPtr = propTemplate;
         } else {
             propTemplate = boost::dynamic_pointer_cast<Property<T> >(*propPtr);
@@ -318,7 +319,7 @@ class CreateNodeArgs
         createProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, false);
         createProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, true);
         createProperty<bool>(kCreateNodeArgsPropTrustPluginID, false);
-        createProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer, boost::shared_ptr<NodeCollection>());
+        createProperty<NodeCollectionPtr>(kCreateNodeArgsPropGroupContainer, NodeCollectionPtr());
         createProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, NodePtr());
         createProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, std::string());
 
@@ -333,7 +334,7 @@ public:
      * @brief The constructor, taking values for all non-optional properties and the group
      **/
     CreateNodeArgs(const std::string& pluginID,
-                   const boost::shared_ptr<NodeCollection>& group = boost::shared_ptr<NodeCollection>());
+                   const NodeCollectionPtr& group = NodeCollectionPtr());
 
     ~CreateNodeArgs();
 

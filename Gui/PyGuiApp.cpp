@@ -54,7 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER
 NATRON_PYTHON_NAMESPACE_ENTER
 
-GuiApp::GuiApp(const GuiAppInstPtr& app)
+GuiApp::GuiApp(const GuiAppInstancePtr& app)
     : App(app)
     , _app(app)
 {
@@ -327,7 +327,7 @@ GuiApp::selectNode(Effect* effect,
     if ( !effect || appPTR->isBackground() ) {
         return;
     }
-    boost::shared_ptr<NodeCollection> collection = effect->getInternalNode()->getGroup();
+    NodeCollectionPtr collection = effect->getInternalNode()->getGroup();
     if (!collection) {
         return;
     }
@@ -357,7 +357,7 @@ GuiApp::setSelection(const std::list<Effect*>& nodes)
         return;
     }
     NodesGuiList selection;
-    boost::shared_ptr<NodeCollection> collection;
+    NodeCollectionPtr collection;
     bool printWarn = false;
     for (std::list<Effect*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( (*it)->getInternalNode()->getNodeGui() );
@@ -400,7 +400,7 @@ GuiApp::selectAllNodes(Group* group)
         return;
     }
     NodeGraph* graph = 0;
-    boost::shared_ptr<NodeCollection> collection;
+    NodeCollectionPtr collection;
     NodeGroup* isGroup = 0;
     if (group) {
         collection = group->getInternalCollection();
@@ -430,7 +430,7 @@ GuiApp::deselectNode(Effect* effect)
         return;
     }
 
-    boost::shared_ptr<NodeCollection> collection = effect->getInternalNode()->getGroup();
+    NodeCollectionPtr collection = effect->getInternalNode()->getGroup();
     if (!collection) {
         return;
     }
@@ -461,7 +461,7 @@ GuiApp::clearSelection(Group* group)
     }
 
     NodeGraph* graph = 0;
-    boost::shared_ptr<NodeCollection> collection;
+    NodeCollectionPtr collection;
     NodeGroup* isGroup = 0;
     if (group) {
         collection = group->getInternalCollection();
@@ -710,7 +710,7 @@ PyViewer::setAInput(int index)
     if ( !getInternalNode()->isActivated() ) {
         return;
     }
-    EffectInstPtr input = _viewer->getInternalNode()->getInput(index);
+    EffectInstancePtr input = _viewer->getInternalNode()->getInput(index);
     if (!input) {
         return;
     }
@@ -735,7 +735,7 @@ PyViewer::setBInput(int index)
     if ( !getInternalNode()->isActivated() ) {
         return;
     }
-    EffectInstPtr input = _viewer->getInternalNode()->getInput(index);
+    EffectInstancePtr input = _viewer->getInternalNode()->getInput(index);
     if (!input) {
         return;
     }

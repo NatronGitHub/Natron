@@ -27,6 +27,8 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
+#include <boost/make_shared.hpp>
+
 #include <QtCore/QDebug>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
@@ -244,11 +246,11 @@ struct OSGLContextPrivate
 
     // The main FBO onto which we do all renders
     GLuint fboID;
-    boost::shared_ptr<GLShader> fillImageShader;
+    GLShaderPtr fillImageShader;
 
     // One for enabled, one for disabled
-    boost::shared_ptr<GLShader> applyMaskMixShader[2];
-    boost::shared_ptr<GLShader> copyUnprocessedChannelsShader[16];
+    GLShaderPtr applyMaskMixShader[2];
+    GLShaderPtr copyUnprocessedChannelsShader[16];
 
     OSGLContextPrivate()
         : _platformContext()
@@ -454,13 +456,13 @@ OSGLContext::stringInExtensionString(const char* string,
     return true;
 }
 
-boost::shared_ptr<GLShader>
+GLShaderPtr
 OSGLContext::getOrCreateFillShader()
 {
     if (_imp->fillImageShader) {
         return _imp->fillImageShader;
     }
-    _imp->fillImageShader.reset( new GLShader() );
+    _imp->fillImageShader = boost::make_shared<GLShader>();
 #ifdef DEBUG
     std::string error;
     bool ok = _imp->fillImageShader->addShader(GLShader::eShaderTypeFragment, fillConstant_FragmentShader, &error);
@@ -486,7 +488,7 @@ OSGLContext::getOrCreateFillShader()
     return _imp->fillImageShader;
 }
 
-boost::shared_ptr<GLShader>
+GLShaderPtr
 OSGLContext::getOrCreateMaskMixShader(bool maskEnabled)
 {
     int shader_i = maskEnabled ? 1 : 0;
@@ -494,7 +496,7 @@ OSGLContext::getOrCreateMaskMixShader(bool maskEnabled)
     if (_imp->applyMaskMixShader[shader_i]) {
         return _imp->applyMaskMixShader[shader_i];
     }
-    _imp->applyMaskMixShader[shader_i].reset( new GLShader() );
+    _imp->applyMaskMixShader[shader_i] = boost::make_shared<GLShader>();
 
     std::string fragmentSource;
     if (maskEnabled) {
@@ -527,7 +529,7 @@ OSGLContext::getOrCreateMaskMixShader(bool maskEnabled)
     return _imp->applyMaskMixShader[shader_i];
 }
 
-boost::shared_ptr<GLShader>
+GLShaderPtr
 OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
                                                       bool doG,
                                                       bool doB,
@@ -550,7 +552,7 @@ OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
     if (_imp->copyUnprocessedChannelsShader[index]) {
         return _imp->copyUnprocessedChannelsShader[index];
     }
-    _imp->copyUnprocessedChannelsShader[index].reset( new GLShader() );
+    _imp->copyUnprocessedChannelsShader[index] = boost::make_shared<GLShader>();
 
     std::string fragmentSource;
     if (!doR) {

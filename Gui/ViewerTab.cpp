@@ -68,7 +68,7 @@ static void
 makeFullyQualifiedLabel(Node* node,
                         std::string* ret)
 {
-    boost::shared_ptr<NodeCollection> parent = node->getGroup();
+    NodeCollectionPtr parent = node->getGroup();
     NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>( parent.get() );
     std::string toPreprend = node->getLabel();
 
@@ -744,7 +744,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->playbackMode_Button->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Behaviour to adopt when the playback hit the end of the range: loop,bounce or stop."), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
 
-    boost::shared_ptr<TimeLine> timeline = getGui()->getApp()->getTimeLine();
+    TimeLinePtr timeline = getGui()->getApp()->getTimeLine();
     QPixmap tripleSyncUnlockPix, tripleSyncLockedPix;
     appPTR->getIcon(NATRON_PIXMAP_UNLOCKED, pixmapIconSize, &tripleSyncUnlockPix);
     appPTR->getIcon(NATRON_PIXMAP_LOCKED, pixmapIconSize, &tripleSyncLockedPix);
@@ -790,6 +790,14 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->fpsBox->setToolTip( QString::fromUtf8("<p><b>") + tr("fps:") + QString::fromUtf8("</b></p>") + tr(
                                   "Viewer playback framerate, in frames per second.") );
 
+    _imp->timeFormat = new ComboBox(_imp->playerButtonsContainer);
+    _imp->timeFormat->addItem(tr("TC"), QIcon(), QKeySequence(), tr("Timecode") );
+    _imp->timeFormat->addItem(tr("TF"), QIcon(), QKeySequence(), tr("Timeline Frames") );
+    _imp->timeFormat->setCurrentIndex_no_emit(1);
+    _imp->timeFormat->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Set the time display format.")
+                                                                         , NATRON_NAMESPACE::WhiteSpaceNormal));
+    const QSize timeFormatSize( TO_DPIX(NATRON_LARGE_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
+    _imp->timeFormat->setFixedSize(timeFormatSize);
 
     QPixmap pixFreezeEnabled, pixFreezeDisabled;
     appPTR->getIcon(NATRON_PIXMAP_FREEZE_ENABLED, &pixFreezeEnabled);
@@ -948,6 +956,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->playerLayout->addSpacing( TO_DPIX(5) );
     _imp->playerLayout->addWidget(_imp->canEditFpsLabel);
     _imp->playerLayout->addWidget(_imp->fpsBox);
+    _imp->playerLayout->addWidget(_imp->timeFormat);
     _imp->playerLayout->addWidget(_imp->turboButton);
     _imp->playerLayout->addWidget(_imp->playbackMode_Button);
     _imp->playerLayout->addSpacing( TO_DPIX(10) );
@@ -992,6 +1001,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QObject::connect( _imp->timeLineGui, SIGNAL(boundariesChanged(SequenceTime,SequenceTime)),
                       this, SLOT(onTimelineBoundariesChanged(SequenceTime,SequenceTime)) );
     QObject::connect( gui->getApp()->getProject().get(), SIGNAL(frameRangeChanged(int,int)), _imp->timeLineGui, SLOT(onProjectFrameRangeChanged(int,int)) );
+    QObject::connect( _imp->timeFormat, SIGNAL(currentIndexChanged(int)), _imp->timeLineGui, SLOT(onTimeFormatChanged(int)) );
     _imp->timeLineGui->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
 
     //Add some spacing because the timeline might be black as the info
@@ -1013,7 +1023,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QObject::connect( _imp->nextKeyFrame_Button, SIGNAL(clicked(bool)), getGui()->getApp().get(), SLOT(goToNextKeyframe()) );
     QObject::connect( _imp->previousKeyFrame_Button, SIGNAL(clicked(bool)), getGui()->getApp().get(), SLOT(goToPreviousKeyframe()) );
     NodePtr wrapperNode = _imp->viewerNode->getNode();
-    boost::shared_ptr<RenderEngine> engine = _imp->viewerNode->getRenderEngine();
+    RenderEnginePtr engine = _imp->viewerNode->getRenderEngine();
     QObject::connect( _imp->viewerNode, SIGNAL(renderStatsAvailable(int,ViewIdx,double,RenderStatsMap)),
                       this, SLOT(onRenderStatsAvailable(int,ViewIdx,double,RenderStatsMap)) );
     QObject::connect( wrapperNode.get(), SIGNAL(inputChanged(int)), this, SLOT(onInputChanged(int)) );

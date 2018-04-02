@@ -75,7 +75,7 @@ class NodeSerialization
 {
 public:
 
-    typedef std::list< boost::shared_ptr<KnobSerialization> > KnobValues;
+    typedef std::list<KnobSerializationPtr> KnobValues;
 
     ///Used to serialize
     explicit NodeSerialization(const NodePtr & n,
@@ -220,12 +220,12 @@ public:
         return _pagesIndexes;
     }
 
-    const std::list<boost::shared_ptr<GroupKnobSerialization> >& getUserPages() const
+    const std::list<GroupKnobSerializationPtr>& getUserPages() const
     {
         return _userPages;
     }
 
-    const std::list< boost::shared_ptr<NodeSerialization> >& getNodesCollection() const
+    const std::list<NodeSerializationPtr>& getNodesCollection() const
     {
         return _children;
     }
@@ -254,11 +254,11 @@ private:
     TrackerContextSerialization _trackerContext;
     NodePtr _node;
     std::string _multiInstanceParentName;
-    std::list<boost::shared_ptr<GroupKnobSerialization> > _userPages;
+    std::list<GroupKnobSerializationPtr> _userPages;
     std::list<std::string> _pagesIndexes;
 
     ///If this node is a group or a multi-instance, this is the children
-    std::list< boost::shared_ptr<NodeSerialization> > _children;
+    std::list<NodeSerializationPtr> _children;
     std::string _pythonModule;
     unsigned int _pythonModuleVersion;
     std::list<ImagePlaneDesc> _userComponents;
@@ -296,7 +296,7 @@ private:
         ar & ::boost::serialization::make_nvp("MultiInstanceParent", _multiInstanceParentName);
         int userPagesCount = (int)_userPages.size();
         ar & ::boost::serialization::make_nvp("UserPagesCount", userPagesCount);
-        for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = _userPages.begin(); it != _userPages.end(); ++it) {
+        for (std::list<GroupKnobSerializationPtr>::const_iterator it = _userPages.begin(); it != _userPages.end(); ++it) {
             ar & ::boost::serialization::make_nvp("item", **it);
         }
 
@@ -309,7 +309,7 @@ private:
         int nodesCount = (int)_children.size();
         ar & ::boost::serialization::make_nvp("Children", nodesCount);
 
-        for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = _children.begin();
+        for (std::list<NodeSerializationPtr>::const_iterator it = _children.begin();
              it != _children.end();
              ++it) {
             ar & ::boost::serialization::make_nvp("item", **it);
@@ -351,7 +351,7 @@ private:
         ar & ::boost::serialization::make_nvp("Plugin_minor_version", _pluginMinorVersion);
         ar & ::boost::serialization::make_nvp("KnobsCount", _nbKnobs);
         for (int i = 0; i < _nbKnobs; ++i) {
-            boost::shared_ptr<KnobSerialization> ks(new KnobSerialization);
+            KnobSerializationPtr ks = boost::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("item", *ks);
             _knobsValues.push_back(ks);
         }
@@ -398,7 +398,7 @@ private:
             int userPagesCount;
             ar & ::boost::serialization::make_nvp("UserPagesCount", userPagesCount);
             for (int i = 0; i < userPagesCount; ++i) {
-                boost::shared_ptr<GroupKnobSerialization> s( new GroupKnobSerialization() );
+                GroupKnobSerializationPtr s = boost::make_shared<GroupKnobSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *s);
                 _userPages.push_back(s);
             }
@@ -418,7 +418,7 @@ private:
             ar & ::boost::serialization::make_nvp("Children", nodesCount);
 
             for (int i = 0; i < nodesCount; ++i) {
-                boost::shared_ptr<NodeSerialization> s(new NodeSerialization);
+                NodeSerializationPtr s = boost::make_shared<NodeSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *s);
                 _children.push_back(s);
             }

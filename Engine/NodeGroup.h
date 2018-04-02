@@ -59,7 +59,7 @@ class NodeCollection
     Q_DECLARE_TR_FUNCTIONS(NodeCollection)
 
 public:
-    NodeCollection(const AppInstPtr& app);
+    NodeCollection(const AppInstancePtr& app);
 
     virtual ~NodeCollection();
 
@@ -68,7 +68,7 @@ public:
     void discardNodeGraphPointer();
 
     NodeGraphI* getNodeGraph() const;
-    AppInstPtr getApplication() const;
+    AppInstancePtr getApplication() const;
 
     /**
      * @brief Returns a copy of the nodes within the collection. MT-safe.
@@ -246,7 +246,7 @@ public:
     void recomputeFrameRangeForAllReaders(int* firstFrame, int* lastFrame);
 
 
-    void getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >& argsMap) const;
+    void getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr>& argsMap) const;
 
 
     void forceComputeInputDependentDataOnAllTrees();
@@ -346,7 +346,7 @@ public:
         return false;
     }
 
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int getNInputs() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputOptional(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getPluginDescription() const OVERRIDE WARN_UNUSED_RETURN;
@@ -371,7 +371,7 @@ public:
 
     NodePtr getRealInputForInput(bool useGuiConnexions, const NodePtr& input) const;
 
-    void getInputs(std::vector<NodePtr >* inputs, bool useGuiConnexions) const;
+    void getInputs(std::vector<NodePtr>* inputs, bool useGuiConnexions) const;
 
     void getInputsOutputs(NodesList* nodes, bool useGuiConnexions) const;
 
@@ -391,8 +391,8 @@ public:
         return true;
     }
 
-    boost::shared_ptr<KnobButton> getExportAsPyPlugButton() const;
-    boost::shared_ptr<KnobButton> getConvertToGroupButton() const;
+    KnobButtonPtr getExportAsPyPlugButton() const;
+    KnobButtonPtr getConvertToGroupButton() const;
 
 Q_SIGNALS:
 

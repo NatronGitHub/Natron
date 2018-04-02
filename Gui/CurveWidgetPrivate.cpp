@@ -65,7 +65,7 @@ NATRON_NAMESPACE_ENTER
 
 CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
                                        CurveSelection* selectionModel,
-                                       boost::shared_ptr<TimeLine> timeline,
+                                       TimeLinePtr timeline,
                                        CurveWidget* widget)
     : _lastMousePos()
     , zoomCtx()
@@ -427,7 +427,7 @@ CurveWidgetPrivate::drawCurves()
     assert( QGLContext::currentContext() == _widget->context() );
 
     //now draw each curve
-    std::vector<boost::shared_ptr<CurveGui> > visibleCurves;
+    std::vector<CurveGuiPtr> visibleCurves;
     _widget->getVisibleCurves(&visibleCurves);
     int count = (int)visibleCurves.size();
 
@@ -648,7 +648,7 @@ CurveWidgetPrivate::isNearbyCurve(const QPoint &pt,
             double yCurve;
 
             try {
-                boost::shared_ptr<Curve> internalCurve = (*it)->getInternalCurve();
+                CurvePtr internalCurve = (*it)->getInternalCurve();
                 yCurve = (*it)->evaluate( internalCurve && !internalCurve->isAnimated(), openGL_pos.x() );
             } catch (...) {
                 yCurve = (*it)->evaluate( false, openGL_pos.x() );
@@ -673,7 +673,7 @@ CurveWidgetPrivate::isNearbyCurve(const QPoint &pt,
 
 bool
 CurveWidgetPrivate::isNearbyKeyFrame(const QPoint & pt,
-                                     boost::shared_ptr<CurveGui>* curve,
+                                     CurveGuiPtr* curve,
                                      KeyFrame* key,
                                      bool* hasPrevKey,
                                      KeyFrame* prevKey,
@@ -694,7 +694,7 @@ CurveWidgetPrivate::isNearbyKeyFrame(const QPoint & pt,
             }
             bool isPeriodic = false;
             std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
-            boost::shared_ptr<Curve> internalCurve = (*it)->getInternalCurve();
+            CurvePtr internalCurve = (*it)->getInternalCurve();
             if (internalCurve) {
                 isPeriodic = internalCurve->isCurvePeriodic();
                 parametricRange = internalCurve->getXRange();
@@ -781,7 +781,7 @@ CurveWidgetPrivate::isNearbyKeyFrameText(const QPoint& pt) const
     return KeyPtr();
 }
 
-std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr >
+std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr>
 CurveWidgetPrivate::isNearbyTangent(const QPoint & pt) const
 {
     // always running in the main thread
@@ -1029,7 +1029,7 @@ CurveWidgetPrivate::isNearbyTimelineBtmPoly(const QPoint & pt) const
  * @brief Selects the curve given in parameter and deselects any other curve in the widget.
  **/
 void
-CurveWidgetPrivate::selectCurve(const boost::shared_ptr<CurveGui>& curve)
+CurveWidgetPrivate::selectCurve(const CurveGuiPtr& curve)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1072,7 +1072,7 @@ CurveWidgetPrivate::keyFramesWithinRect(const QRectF & rect,
             if ( set.empty() ) {
                 continue;
             }
-            boost::shared_ptr<Curve> internalCurve = (*it)->getInternalCurve();
+            CurvePtr internalCurve = (*it)->getInternalCurve();
             bool isPeriodic = false;
             std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
             if (internalCurve) {
@@ -1200,7 +1200,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
     double maxRight = INT_MAX;
     double epsilon = clampToIntegers ? 1 : 1e-4;
     bool canMoveY = true;
-    std::map<boost::shared_ptr<CurveGui>, std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
+    std::map<CurveGuiPtr, std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
 
     for (SelectedKeys::iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
         if ( canMoveY && !it->first->isYComponentMovable() ) {
@@ -1212,14 +1212,14 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
             KnobGuiPtr knobUI = isKnobCurve->getKnobGui();
             if (knobUI) {
                 int curveDim = isKnobCurve->getDimension();
-                KnobPtr internalKnob = knobUI->getKnob();
+                KnobIPtr internalKnob = knobUI->getKnob();
                 if ( internalKnob && ( !internalKnob->isEnabled(curveDim) || internalKnob->isSlave(curveDim) ) ) {
                     continue;
                 }
             }
         }
 
-        boost::shared_ptr<Curve> curve = it->first->getInternalCurve();
+        CurvePtr curve = it->first->getInternalCurve();
         std::vector<MoveKeysCommand::KeyToMove>& vect = keysToMove[it->first];
         if (curve) {
             for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
@@ -1355,7 +1355,7 @@ CurveWidgetPrivate::transformSelectedKeyFrames(const QPointF & oldClick_opengl,
             KnobGuiPtr knobUI = isKnobCurve->getKnobGui();
             if (knobUI) {
                 int curveDim = isKnobCurve->getDimension();
-                KnobPtr internalKnob = knobUI->getKnob();
+                KnobIPtr internalKnob = knobUI->getKnob();
                 if ( internalKnob && ( !internalKnob->isEnabled(curveDim) || internalKnob->isSlave(curveDim) ) ) {
                     continue;
                 }

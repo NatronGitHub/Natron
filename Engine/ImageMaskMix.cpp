@@ -216,7 +216,7 @@ Image::applyMaskMix(const RectI& roi,
     if (getStorageMode() == eStorageModeGLTex) {
         assert(glContext);
         assert(!originalImg || originalImg->getStorageMode() == eStorageModeGLTex);
-        boost::shared_ptr<GLShader> shader = glContext->getOrCreateMaskMixShader(maskImg != 0);
+        GLShaderPtr shader = glContext->getOrCreateMaskMixShader(maskImg != 0);
         assert(shader);
         GLuint fboID = glContext->getFBOId();
 

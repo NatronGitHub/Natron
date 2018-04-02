@@ -260,3 +260,4 @@ bigtosmall.txt
 tools/normalize/normalize
 App/Natron
 PythonBin/natron-python
+.qmake.stash

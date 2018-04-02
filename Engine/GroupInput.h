@@ -44,8 +44,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private:
-    boost::weak_ptr<KnobBool> optional;
-    boost::weak_ptr<KnobBool> mask;
+    KnobBoolWPtr optional;
+    KnobBoolWPtr mask;
 
 public:
 
@@ -75,7 +75,7 @@ public:
         return "";
     }
 
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual int getNInputs() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return 0;
     }

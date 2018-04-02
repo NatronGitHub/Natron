@@ -85,7 +85,7 @@ NoOpBase::getTransform(double /*time*/,
                        const RenderScale & /*renderScale*/,
                        bool /*draftRender*/,
                        ViewIdx /*view*/,
-                       EffectInstPtr* inputToTransform,
+                       EffectInstancePtr* inputToTransform,
                        Transform::Matrix3x3* transform)
 {
     *inputToTransform = getInput(0);

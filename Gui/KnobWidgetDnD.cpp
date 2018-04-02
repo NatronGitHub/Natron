@@ -92,6 +92,23 @@ public:
     }
 };
 
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct KnobWidgetDnD::MakeSharedEnabler: public KnobWidgetDnD
+{
+    MakeSharedEnabler(const KnobGuiPtr& knob,
+                      int dimension,
+                      QWidget* widget) : KnobWidgetDnD(knob, dimension, widget) {
+    }
+};
+
+KnobWidgetDnDPtr KnobWidgetDnD::create(const KnobGuiPtr& knob,
+                                                       int dimension,
+                                                       QWidget* widget)
+{
+    return boost::make_shared<KnobWidgetDnD::MakeSharedEnabler>(knob, dimension, widget);
+}
+
 KnobWidgetDnD::KnobWidgetDnD(const KnobGuiPtr& knob,
                              int dimension,
                              QWidget* widget)
@@ -119,7 +136,7 @@ KnobWidgetDnD::mousePress(QMouseEvent* e)
     if (!guiKnob) {
         return false;
     }
-    KnobPtr internalKnob = guiKnob->getKnob();
+    KnobIPtr internalKnob = guiKnob->getKnob();
     if (!internalKnob) {
         return false;
     }
@@ -209,7 +226,7 @@ KnobWidgetDnD::startDrag()
     drag->setMimeData(mimeData);
 
     KnobGuiPtr guiKnob = _imp->getKnob();
-    KnobPtr internalKnob = guiKnob->getKnob();
+    KnobIPtr internalKnob = guiKnob->getKnob();
     if (!internalKnob) {
         return;
     }
@@ -320,9 +337,9 @@ bool
 KnobWidgetDnDPrivate::canDrop(bool warn,
                               bool setCursor) const
 {
-    KnobPtr source;
+    KnobIPtr source;
     KnobGuiPtr guiKnob = knob.lock();
-    KnobPtr thisKnob = guiKnob->getKnob();
+    KnobIPtr thisKnob = guiKnob->getKnob();
 
     bool isEnabled = dimension == -1 ? thisKnob->isEnabled(0) : thisKnob->isEnabled(dimension);
     if (!isEnabled) {
@@ -381,12 +398,12 @@ KnobWidgetDnD::drop(QDropEvent* e)
 
     if ( formats.contains( QString::fromUtf8(KNOB_DND_MIME_DATA_KEY) ) && _imp->canDrop(true, false) ) {
         KnobGuiPtr guiKnob = _imp->getKnob();
-        KnobPtr source;
-        KnobPtr thisKnob = guiKnob->getKnob();
+        KnobIPtr source;
+        KnobIPtr thisKnob = guiKnob->getKnob();
         int srcDim;
         QDrag* drag;
         guiKnob->getGui()->getApp()->getKnobDnDData(&drag, &source, &srcDim);
-        guiKnob->getGui()->getApp()->setKnobDnDData(0, KnobPtr(), -1);
+        guiKnob->getGui()->getApp()->setKnobDnDData(0, KnobIPtr(), -1);
         if ( source && (source != thisKnob) ) {
             int targetDim = _imp->dimension;
             if ( (targetDim == 0) && !guiKnob->getAllDimensionsVisible() ) {
@@ -399,7 +416,7 @@ KnobWidgetDnD::drop(QDropEvent* e)
                 if (!effect) {
                     return false;
                 }
-                boost::shared_ptr<NodeCollection> group = effect->getNode()->getGroup();
+                NodeCollectionPtr group = effect->getNode()->getGroup();
                 NodeGroup* isGroup = dynamic_cast<NodeGroup*>( group.get() );
                 std::string expr;
                 std::stringstream ss;

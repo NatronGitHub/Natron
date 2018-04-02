@@ -141,14 +141,14 @@ GuiApplicationManager::loadBuiltinNodePlugins(IOPluginsMap* readersMap,
     AppManager::loadBuiltinNodePlugins(readersMap, writersMap);
 }
 
-AppInstPtr
+AppInstancePtr
 GuiApplicationManager::makeNewInstance(int appID) const
 {
-    return AppInstPtr( new GuiAppInstance(appID) );
+    return AppInstancePtr( new GuiAppInstance(appID) );
 }
 
 KnobGui*
-GuiApplicationManager::createGuiForKnob(KnobPtr knob,
+GuiApplicationManager::createGuiForKnob(KnobIPtr knob,
                                         KnobGuiContainerI *container) const
 {
     return _imp->_knobGuiFactory->createGuiForKnob(knob, container);
@@ -298,7 +298,7 @@ GuiApplicationManager::initializeQApp(int &argc,
 
 #ifdef DEBUG
     QLocale loc;
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     loc = QApplication::keyboardInputLocale();
 #else
     loc = QGuiApplication::inputMethod()->locale();
@@ -366,7 +366,7 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
     QString fileCopy( QString::fromUtf8( filename.c_str() ) );
     QString ext = QtCompat::removeFileExtension(fileCopy);
     std::string readerFileType = appPTR->getReaderPluginIDForFileType( ext.toStdString() );
-    AppInstPtr mainInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr mainInstance = appPTR->getTopLevelInstance();
     bool instanceCreated = false;
 
     if ( !mainInstance || !mainInstance->getProject()->isGraphWorthLess() ) {
@@ -418,7 +418,7 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
 void
 GuiApplicationManager::handleOpenFileRequest()
 {
-    AppInstPtr mainApp = getAppInstance(0);
+    AppInstancePtr mainApp = getAppInstance(0);
     GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( mainApp.get() );
 
     assert(guiApp);
@@ -443,18 +443,18 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
 {
     ///make a copy of the map because it will be modified when closing projects
     AppInstanceVec instances = getAppInstances();
-    std::list<GuiAppInstPtr> guiApps;
+    std::list<GuiAppInstancePtr> guiApps;
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstPtr app = boost::dynamic_pointer_cast<GuiAppInstance>(*it);
+        GuiAppInstancePtr app = boost::dynamic_pointer_cast<GuiAppInstance>(*it);
         if (app) {
             guiApps.push_back(app);
         }
     }
 
-    std::set<GuiAppInstPtr> triedInstances;
+    std::set<GuiAppInstancePtr> triedInstances;
     while ( !guiApps.empty() ) {
-        GuiAppInstPtr app = guiApps.front();
+        GuiAppInstancePtr app = guiApps.front();
         if (app) {
             triedInstances.insert(app);
             app->getGui()->abortProject(true, warnUserForSave, true);
@@ -464,7 +464,7 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
         instances = getAppInstances();
         guiApps.clear();
         for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-            GuiAppInstPtr ga = boost::dynamic_pointer_cast<GuiAppInstance>(*it);
+            GuiAppInstancePtr ga = boost::dynamic_pointer_cast<GuiAppInstance>(*it);
             if ( ga && ( triedInstances.find(ga) == triedInstances.end() ) ) {
                 guiApps.push_back(ga);
             }

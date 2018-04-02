@@ -42,7 +42,7 @@
 #include <QTextEdit>
 
 
-#if QT_VERSION >= 0x050000
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QScreen>
 #endif
 #include <QUndoGroup>
@@ -128,7 +128,7 @@ GCC_DIAG_ON(unused-parameter)
 
 
 NATRON_NAMESPACE_ENTER
-GuiPrivate::GuiPrivate(const GuiAppInstPtr& app,
+GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
                        Gui* gui)
     : _gui(gui)
     , _isInDraftModeMutex()
@@ -591,7 +591,7 @@ bool
 GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,
                                     const QString& projectName)
 {
-    boost::shared_ptr<Project> project = _appInstance.lock()->getProject();
+    ProjectPtr project = _appInstance.lock()->getProject();
     QString author;
     QString lockCreationDate;
     QString lockHost;

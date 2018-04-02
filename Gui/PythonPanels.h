@@ -59,7 +59,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     DialogParamHolder(const QString& uniqueID,
-                      const AppInstPtr& app,
+                      const AppInstancePtr& app,
                       UserParamHolder* widget);
 
     virtual ~DialogParamHolder();

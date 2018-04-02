@@ -70,7 +70,7 @@ get_icon(const std::string &name)
     return QIcon::fromTheme( str, QIcon(QString::fromUtf8(":icons/") + str) );
 }
 
-Gui::Gui(const GuiAppInstPtr& app,
+Gui::Gui(const GuiAppInstancePtr& app,
          QWidget* parent)
 #ifndef __NATRON_WIN32__
     : QMainWindow(parent)
@@ -167,7 +167,7 @@ Gui::closeProject()
 void
 Gui::reloadProject()
 {
-    boost::shared_ptr<Project> proj = getApp()->getProject();
+    ProjectPtr proj = getApp()->getProject();
 
     if ( !proj->hasProjectBeenSavedByUser() ) {
         Dialogs::errorDialog( tr("Reload project").toStdString(), tr("This project has not been saved yet").toStdString() );
@@ -184,7 +184,7 @@ Gui::reloadProject()
         return;
     }
 
-    AppInstPtr appInstance = openProjectInternal(projectPath.toStdString(), false);
+    AppInstancePtr appInstance = openProjectInternal(projectPath.toStdString(), false);
     Q_UNUSED(appInstance);
 }
 
@@ -226,7 +226,7 @@ Gui::abortProject(bool quitApp,
 
     _imp->setUndoRedoActions(0, 0);
     if (quitApp) {
-        GuiAppInstPtr app = getApp();
+        GuiAppInstancePtr app = getApp();
         if (app) {
             app->quit();
         }
@@ -238,7 +238,7 @@ Gui::abortProject(bool quitApp,
         }
 
         setGuiAboutToClose(true);
-        GuiAppInstPtr app = getApp();
+        GuiAppInstancePtr app = getApp();
         if (app) {
             app->resetPreviewProvider();
             if (!blocking) {
@@ -280,7 +280,7 @@ void
 Gui::closeEvent(QCloseEvent* e)
 {
     assert(e);
-    GuiAppInstPtr app = getApp();
+    GuiAppInstancePtr app = getApp();
     if ( app && app->isClosing() ) {
         e->ignore();
     } else {
@@ -299,7 +299,7 @@ Gui::createNodeGUI(NodePtr node,
 {
     assert(_imp->_nodeGraphArea);
 
-    boost::shared_ptr<NodeCollection> group = node->getGroup();
+    NodeCollectionPtr group = node->getGroup();
     NodeGraph* graph;
     if (group) {
         NodeGraphI* graph_i = group->getNodeGraph();
@@ -360,7 +360,7 @@ Gui::createViewerGui(NodePtr viewer)
 
     ViewerTab* tab = addNewViewerTab(v, where);
     NodeGraph* graph = 0;
-    boost::shared_ptr<NodeCollection> collection = viewer->getGroup();
+    NodeCollectionPtr collection = viewer->getGroup();
     if (!collection) {
         return;
     }
@@ -407,7 +407,7 @@ Gui::eventFilter(QObject *target,
     if ( dynamic_cast<QInputEvent*>(e) ) {
         /*Make top level instance this instance since it receives all
            user inputs.*/
-        GuiAppInstPtr app = getApp();
+        GuiAppInstancePtr app = getApp();
         if (app) {
             appPTR->setAsTopLevelInstance( app->getAppID() );
         }

@@ -111,10 +111,11 @@ public:
     }
 };
 
+typedef boost::shared_ptr<MvFloatImage> MvFloatImagePtr;
 
 struct FrameAccessorCacheEntry
 {
-    boost::shared_ptr<MvFloatImage> image;
+    MvFloatImagePtr image;
 
     // If null, this is the full image
     RectI bounds;
@@ -208,7 +209,7 @@ natronImageToLibMvFloatImage(bool enabledChannels[3],
 struct TrackerFrameAccessorPrivate
 {
     const TrackerContext* context;
-    boost::shared_ptr<Node> trackerInput;
+    NodePtr trackerInput;
     mutable QMutex cacheMutex;
     FrameAccessorCache cache;
     bool enabledChannels[3];
@@ -324,7 +325,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
         }
     }
 
-    EffectInstPtr effect;
+    EffectInstancePtr effect;
     if (_imp->trackerInput) {
         effect = _imp->trackerInput->getEffectInstance();
     }
@@ -370,7 +371,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                               NodePtr(), // rotoPaintNode
                                               true, //isAnalysis
                                               false, //draftMode
-                                              boost::shared_ptr<RenderStats>() ); // Stats
+                                              RenderStatsPtr() ); // Stats
     EffectInstance::RenderRoIArgs args( frame,
                                         scale,
                                         downscale,
@@ -417,7 +418,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
        Copy the Natron image to the LivMV float image
      */
     FrameAccessorCacheEntry entry;
-    entry.image.reset( new MvFloatImage( intersectedRoI.height(), intersectedRoI.width() ) );
+    entry.image = boost::make_shared<MvFloatImage>( intersectedRoI.height(), intersectedRoI.width() );
     entry.bounds = intersectedRoI;
     entry.referenceCount = 1;
     natronImageToLibMvFloatImage(_imp->enabledChannels,

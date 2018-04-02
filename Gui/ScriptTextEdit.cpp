@@ -33,6 +33,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QTextBlock>
 #include <QPainter>
 #include <QtCore/QRegExp>
+#include <QtCore/QMimeData>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -466,7 +467,7 @@ InputScriptTextEdit::dropEvent(QDropEvent* e)
     QStringList formats = e->mimeData()->formats();
     if ( formats.contains( QLatin1String(KNOB_DND_MIME_DATA_KEY) ) ) {
         int cbDim;
-        KnobPtr fromKnob;
+        KnobIPtr fromKnob;
         QDrag* drag;
         _gui->getApp()->getKnobDnDData(&drag, &fromKnob, &cbDim);
 

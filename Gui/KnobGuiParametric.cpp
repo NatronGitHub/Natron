@@ -86,7 +86,7 @@ using std::make_pair;
 
 //=============================KnobGuiParametric===================================
 
-KnobGuiParametric::KnobGuiParametric(KnobPtr knob,
+KnobGuiParametric::KnobGuiParametric(KnobIPtr knob,
                                      KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , treeColumn(NULL)
@@ -113,9 +113,9 @@ KnobGuiParametric::removeSpecificGui()
 void
 KnobGuiParametric::createWidget(QHBoxLayout* layout)
 {
-    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    KnobParametricPtr knob = _knob.lock();
     QObject::connect( knob.get(), SIGNAL(curveChanged(int)), this, SLOT(onCurveChanged(int)) );
-    boost::shared_ptr<OfxParamOverlayInteract> interact = knob->getCustomInteract();
+    OfxParamOverlayInteractPtr interact = knob->getCustomInteract();
 
     //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     treeColumn = new QWidget( layout->parentWidget() );
@@ -138,7 +138,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
 
     layout->addWidget(treeColumn);
 
-    _curveWidget = new CurveWidget( getGui(), this, boost::shared_ptr<TimeLine>(), layout->parentWidget() );
+    _curveWidget = new CurveWidget( getGui(), this, TimeLinePtr(), layout->parentWidget() );
     _curveWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     if (interact) {
         _curveWidget->setCustomInteract(interact);
@@ -149,10 +149,10 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     layout->addWidget(_curveWidget);
 
     KnobGuiPtr thisShared = shared_from_this();
-    std::vector<boost::shared_ptr<CurveGui> > visibleCurves;
+    std::vector<CurveGuiPtr> visibleCurves;
     for (int i = 0; i < knob->getDimension(); ++i) {
         QString curveName = QString::fromUtf8( knob->getDimensionName(i).c_str() );
-        boost::shared_ptr<KnobCurveGui> curve( new KnobCurveGui(_curveWidget, knob->getParametricCurve(i), thisShared, i, curveName, QColor(255, 255, 255), 1.) );
+        KnobCurveGuiPtr curve( new KnobCurveGui(_curveWidget, knob->getParametricCurve(i), thisShared, i, curveName, QColor(255, 255, 255), 1.) );
         _curveWidget->addCurveAndSetColor(curve);
         QColor color;
         double r, g, b;
@@ -184,7 +184,7 @@ KnobGuiParametric::onColorChanged(int dimension)
         return;
     }
     double r, g, b;
-    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    KnobParametricPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -217,7 +217,7 @@ KnobGuiParametric::_show()
 void
 KnobGuiParametric::setEnabled()
 {
-    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    KnobParametricPtr knob = _knob.lock();
     bool b = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
 
     _tree->setEnabled(b);
@@ -249,7 +249,7 @@ KnobGuiParametric::onCurveChanged(int dimension)
 void
 KnobGuiParametric::onItemsSelectionChanged()
 {
-    std::vector<boost::shared_ptr<CurveGui> > curves;
+    std::vector<CurveGuiPtr> curves;
 
     QList<QTreeWidgetItem*> selectedItems = _tree->selectedItems();
     for (int i = 0; i < selectedItems.size(); ++i) {
@@ -270,7 +270,7 @@ KnobGuiParametric::onItemsSelectionChanged()
 }
 
 void
-KnobGuiParametric::getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* selection)
+KnobGuiParametric::getSelectedCurves(std::vector<CurveGuiPtr>* selection)
 {
     QList<QTreeWidgetItem*> selected = _tree->selectedItems();
     for (int i = 0; i < selected.size(); ++i) {
@@ -287,7 +287,7 @@ void
 KnobGuiParametric::resetSelectedCurves()
 {
     QList<QTreeWidgetItem*> selected = _tree->selectedItems();
-    boost::shared_ptr<KnobParametric> k = _knob.lock();
+    KnobParametricPtr k = _knob.lock();
     for (int i = 0; i < selected.size(); ++i) {
         //find the items in the curves
         for (CurveGuis::iterator it = _curves.begin(); it != _curves.end(); ++it) {
@@ -300,7 +300,7 @@ KnobGuiParametric::resetSelectedCurves()
     k->evaluateValueChange(0, k->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiParametric::getKnob() const
 {
     return _knob.lock();
@@ -312,7 +312,7 @@ KnobGuiParametric::refreshDimensionName(int dim)
     if ( (dim < 0) || ( dim >= (int)_curves.size() ) ) {
         return;
     }
-    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    KnobParametricPtr knob = _knob.lock();
     CurveDescriptor& found = _curves[dim];
     QString name = QString::fromUtf8( knob->getDimensionName(dim).c_str() );
     found.curve->setName(name);
@@ -345,6 +345,14 @@ KnobGuiParametric::getPixelScale(double & xScale,
 {
     _curveWidget->getPixelScale(xScale, yScale);
 }
+
+#ifdef OFX_EXTENSIONS_NATRON
+double
+KnobGuiParametric::getScreenPixelRatio() const
+{
+    return _curveWidget->getScreenPixelRatio();
+}
+#endif
 
 void
 KnobGuiParametric::getBackgroundColour(double &r,

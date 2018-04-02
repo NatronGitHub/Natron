@@ -816,7 +816,7 @@ GuiApplicationManager::getIcon(PixmapEnum e,
     }
 }
 
-const std::list<boost::shared_ptr<PluginGroupNode> >&
+const std::list<PluginGroupNodePtr>&
 GuiApplicationManager::getTopLevelPluginsToolButtons() const
 {
     return _imp->_topLevelToolButtons;
@@ -847,7 +847,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
 
 #ifdef __NATRON_UNIX__
 #ifndef __NATRON_OSX__
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     // workaround for issues with KDE4
     QApplication::setStyle( QString::fromUtf8("plastique") );
 #endif
@@ -989,7 +989,7 @@ GuiApplicationManager::onPluginLoaded(Plugin* plugin)
     QStringList groupingWithID = groups;
 
     groupingWithID.push_back(pluginID);
-    boost::shared_ptr<PluginGroupNode> child = findPluginToolButtonOrCreate( groupingWithID,
+    PluginGroupNodePtr child = findPluginToolButtonOrCreate( groupingWithID,
                                                                              pluginLabel,
                                                                              groupIconPath,
                                                                              pluginIconPath,
@@ -1001,7 +1001,6 @@ GuiApplicationManager::onPluginLoaded(Plugin* plugin)
         shortcutGrouping.push_back(groups[i]);
     }
 
-    Qt::KeyboardModifiers modifiers = Qt::NoModifier;
     Qt::Key symbol = (Qt::Key)0;
     bool hasShortcut = true;
 
@@ -1022,7 +1021,6 @@ GuiApplicationManager::onPluginLoaded(Plugin* plugin)
         symbol = Qt::Key_B;
     } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_DOT) ) {
         symbol = Qt::Key_Period;
-        modifiers |= Qt::ShiftModifier;
     }
 #ifdef NATRON_ENABLE_IO_META_NODES
     else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_READ) ) {
@@ -1036,8 +1034,8 @@ GuiApplicationManager::onPluginLoaded(Plugin* plugin)
     }
     plugin->setHasShortcut(hasShortcut);
 
-    if ( plugin->getIsUserCreatable() ) {
-        _imp->addKeybind(shortcutGrouping.toStdString(), pluginID.toStdString(), pluginLabel.toStdString(), modifiers, symbol);
+    if ( hasShortcut && plugin->getIsUserCreatable() ) {
+        _imp->addKeybind(shortcutGrouping.toStdString(), pluginID.toStdString(), pluginLabel.toStdString(), Qt::NoModifier, symbol, /*modifiersMask=*/Qt::ShiftModifier);
     }
 
     const std::list<PluginActionShortcut>& shortcuts =  plugin->getShortcuts();
@@ -1054,7 +1052,7 @@ GuiApplicationManager::ignorePlugin(Plugin* plugin)
     _imp->removeKeybind( QString::fromUtf8(kShortcutGroupNodes), plugin->getPluginID() );
 }
 
-boost::shared_ptr<PluginGroupNode>
+PluginGroupNodePtr
 GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping,
                                                     const QString & name,
                                                     const QStringList& groupIconPath,
@@ -1065,7 +1063,7 @@ GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping
 {
     assert(grouping.size() > 0);
 
-    return _imp->findPluginToolButtonInternal(_imp->_topLevelToolButtons, boost::shared_ptr<PluginGroupNode>(), grouping, name, groupIconPath, iconPath, major, minor, isUserCreatable);
+    return _imp->findPluginToolButtonInternal(_imp->_topLevelToolButtons, PluginGroupNodePtr(), grouping, name, groupIconPath, iconPath, major, minor, isUserCreatable);
 }
 
 bool
@@ -1086,7 +1084,7 @@ GuiApplicationManager::hideSplashScreen()
 
 void
 GuiApplicationManager::setKnobClipBoard(KnobClipBoardType type,
-                                        const KnobPtr& serialization,
+                                        const KnobIPtr& serialization,
                                         int dimension)
 {
     _imp->_knobsClipBoard->serialization = serialization;
@@ -1096,7 +1094,7 @@ GuiApplicationManager::setKnobClipBoard(KnobClipBoardType type,
 
 void
 GuiApplicationManager::getKnobClipBoard(KnobClipBoardType *type,
-                                        KnobPtr *serialization,
+                                        KnobIPtr *serialization,
                                         int* dimension) const
 {
     *serialization = _imp->_knobsClipBoard->serialization;

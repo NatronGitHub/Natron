@@ -31,6 +31,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
 #include <QtCore/QPoint>
+#include <QtCore/QSize>
 #include <QtGui/QVector4D>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)

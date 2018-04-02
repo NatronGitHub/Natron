@@ -114,7 +114,7 @@ private:
 /******************************KnobOutputFile**************************************/
 
 class KnobOutputFile
-    :  public QObject, public Knob<std::string>
+    :  public QObject, public KnobStringBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT

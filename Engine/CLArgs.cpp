@@ -280,6 +280,8 @@ CLArgs::printUsage(const std::string& programName)
         "    script: it must be started explicitely.\n"
         "    %1Renderer and %1 do the same thing in this mode, only the\n"
         "    init.py script is loaded.\n"
+        "  --clear-cache\n"
+        "    Clears the cache on startup.\n"
         "  --no-settings\n"
         "    When passed on the command-line, the %1 settings will not be restored\n"
         "    from the preferences file on disk so that %1 uses the default ones.\n"

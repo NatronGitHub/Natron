@@ -53,19 +53,19 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(KnobPtr knob,
+    static KnobGui * BuildKnobGui(KnobIPtr knob,
                                   KnobGuiContainerI *container)
     {
         return new KnobGuiFile(knob, container);
     }
 
-    KnobGuiFile(KnobPtr knob,
+    KnobGuiFile(KnobIPtr knob,
                 KnobGuiContainerI *container);
 
     virtual ~KnobGuiFile() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
 
 
     bool checkFileModificationAndWarn(SequenceTime time, bool errorAndAbortRender);
@@ -120,7 +120,7 @@ private:
     //Keep track for each files in the sequence (or video) the modification date
     //of the files
     std::map<std::string, QDateTime> _lastModificationDates;
-    boost::weak_ptr<KnobFile> _knob;
+    KnobFileWPtr _knob;
 };
 
 
@@ -134,19 +134,19 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(KnobPtr knob,
+    static KnobGui * BuildKnobGui(KnobIPtr knob,
                                   KnobGuiContainerI *container)
     {
         return new KnobGuiOutputFile(knob, container);
     }
 
-    KnobGuiOutputFile(KnobPtr knob,
+    KnobGuiOutputFile(KnobIPtr knob,
                       KnobGuiContainerI *container);
 
     virtual ~KnobGuiOutputFile() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
 
 public Q_SLOTS:
 
@@ -186,7 +186,7 @@ private:
     Button *_openFileButton;
     Button *_rewriteButton;
     QString _lastOpened;
-    boost::weak_ptr<KnobOutputFile> _knob;
+    KnobOutputFileWPtr _knob;
 };
 
 
@@ -201,19 +201,19 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(KnobPtr knob,
+    static KnobGui * BuildKnobGui(KnobIPtr knob,
                                   KnobGuiContainerI *container)
     {
         return new KnobGuiPath(knob, container);
     }
 
-    KnobGuiPath(KnobPtr knob,
+    KnobGuiPath(KnobIPtr knob,
                 KnobGuiContainerI *container);
 
     virtual ~KnobGuiPath() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
 
 public Q_SLOTS:
 
@@ -250,7 +250,7 @@ private:
     LineEdit* _lineEdit;
     Button* _openFileButton;
     QString _lastOpened;
-    boost::weak_ptr<KnobPath> _knob;
+    KnobPathWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

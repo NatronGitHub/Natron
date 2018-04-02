@@ -38,7 +38,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 
-#if QT_VERSION >= 0x050000
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QtWidgets/QTreeWidget>
 #else
 #include <QtGui/QTreeWidget>
@@ -112,7 +112,7 @@ public:
     explicit DopeSheetView(DopeSheet *model,
                            HierarchyView *hierarchyView,
                            Gui *gui,
-                           const boost::shared_ptr<TimeLine> &timeline,
+                           const TimeLinePtr &timeline,
                            QWidget *parent = 0);
 
     virtual ~DopeSheetView() OVERRIDE;
@@ -140,6 +140,9 @@ public:
     void swapOpenGLBuffers() OVERRIDE FINAL;
     void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
     void getPixelScale(double &xScale, double &yScale) const OVERRIDE FINAL;
+#ifdef OFX_EXTENSIONS_NATRON
+    double getScreenPixelRatio() const OVERRIDE FINAL;
+#endif
     void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     void saveOpenGLContext() OVERRIDE FINAL;
     void restoreOpenGLContext() OVERRIDE FINAL;

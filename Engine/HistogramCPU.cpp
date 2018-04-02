@@ -40,7 +40,7 @@ struct HistogramRequest
 {
     int binsCount;
     int mode;
-    boost::shared_ptr<Image> image;
+    ImagePtr image;
     RectI rect;
     double vmin;
     double vmax;
@@ -59,7 +59,7 @@ struct HistogramRequest
 
     HistogramRequest(int binsCount,
                      int mode,
-                     const boost::shared_ptr<Image> & image,
+                     const ImagePtr & image,
                      const RectI & rect,
                      double vmin,
                      double vmax,
@@ -100,13 +100,15 @@ struct FinishedHistogram
     }
 };
 
+typedef boost::shared_ptr<FinishedHistogram> FinishedHistogramPtr;
+
 struct HistogramCPUPrivate
 {
     QWaitCondition requestCond;
     QMutex requestMutex;
     std::list<HistogramRequest> requests;
     QMutex producedMutex;
-    std::list<boost::shared_ptr<FinishedHistogram> > produced;
+    std::list<FinishedHistogramPtr> produced;
     QWaitCondition mustQuitCond;
     QMutex mustQuitMutex;
     bool mustQuit;
@@ -137,7 +139,7 @@ HistogramCPU::~HistogramCPU()
 
 void
 HistogramCPU::computeHistogram(int mode,      //< corresponds to the enum Histogram::DisplayModeEnum
-                               const boost::shared_ptr<Image> & image,
+                               const ImagePtr & image,
                                const RectI & rect,
                                int binsCount,
                                double vmin,
@@ -168,7 +170,7 @@ HistogramCPU::quitAnyComputation()
 
         ///post a fake request to wakeup the thread
         l.unlock();
-        computeHistogram(0, boost::shared_ptr<Image>(), RectI(), 0, 0, 0, 0);
+        computeHistogram(0, ImagePtr(), RectI(), 0, 0, 0, 0);
         l.relock();
         while (_imp->mustQuit) {
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
@@ -202,7 +204,7 @@ HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
         return false;
     }
 
-    boost::shared_ptr<FinishedHistogram> h = _imp->produced.back();
+    FinishedHistogramPtr h = _imp->produced.back();
 
     *histogram1 = h->histogram1;
     *histogram2 = h->histogram2;
@@ -294,7 +296,7 @@ computeHisto(const HistogramRequest & request,
 
 static void
 computeHistogramStatic(const HistogramRequest & request,
-                       boost::shared_ptr<FinishedHistogram> ret,
+                       FinishedHistogramPtr ret,
                        int histogramIndex)
 {
     const int upscale = 5;
@@ -401,7 +403,7 @@ HistogramCPU::run()
                 return;
             }
         }
-        boost::shared_ptr<FinishedHistogram> ret(new FinishedHistogram);
+        FinishedHistogramPtr ret = boost::make_shared<FinishedHistogram>();
         ret->binsCount = request.binsCount;
         ret->mode = request.mode;
         ret->vmin = request.vmin;

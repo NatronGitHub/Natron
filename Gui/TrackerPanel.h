@@ -77,8 +77,8 @@ public:
 
     TrackMarkerPtr getRowMarker(int row) const;
 
-    boost::shared_ptr<KnobI> getKnobAt(int row, int column, int* dimension) const;
-    boost::shared_ptr<TrackerContext> getContext() const;
+    KnobIPtr getKnobAt(int row, int column, int* dimension) const;
+    TrackerContextPtr getContext() const;
 
     NodeGuiPtr getNode() const;
 
@@ -89,7 +89,7 @@ public:
 
     void pushUndoCommand(QUndoCommand* command);
 
-    void clearAndSelectTracks(const std::list<TrackMarkerPtr >& markers, int reason);
+    void clearAndSelectTracks(const std::list<TrackMarkerPtr>& markers, int reason);
 
 public Q_SLOTS:
 
@@ -151,8 +151,8 @@ public Q_SLOTS:
 
 private:
 
-    void onSelectionAboutToChangeInternal(const std::list<TrackMarkerPtr >& markers);
-    void selectInternal(const std::list<TrackMarkerPtr >& markers, int reason);
+    void onSelectionAboutToChangeInternal(const std::list<TrackMarkerPtr>& markers);
+    void selectInternal(const std::list<TrackMarkerPtr>& markers, int reason);
     TrackMarkerPtr makeTrackInternal();
 
     boost::scoped_ptr<TrackerPanelPrivate> _imp;

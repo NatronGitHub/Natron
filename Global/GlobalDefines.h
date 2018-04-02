@@ -49,7 +49,10 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/cstdint.hpp>
 #endif
+#include <QtCore/QtGlobal>
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 #include <QtCore/QForeachContainer>
+#endif
 #include <QtCore/QString>
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMetaType>

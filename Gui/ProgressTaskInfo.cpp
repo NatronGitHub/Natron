@@ -116,7 +116,7 @@ public:
     boost::scoped_ptr<TimeLapse> timer;
     boost::scoped_ptr<QTimer> refreshLabelTimer;
     QString message;
-    boost::shared_ptr<ProcessHandler> process;
+    ProcessHandlerPtr process;
 
     PanelWidget* lastWidgetCurrentWhenShowingProgressDialog;
 
@@ -129,7 +129,7 @@ public:
                             const bool canPause,
                             const bool canCancel,
                             const QString& message,
-                            const boost::shared_ptr<ProcessHandler>& process)
+                            const ProcessHandlerPtr& process)
         : panel(panel)
         , node(node)
         , _publicInterface(publicInterface)
@@ -184,7 +184,7 @@ ProgressTaskInfo::ProgressTaskInfo(ProgressPanel* panel,
                                    const bool canPause,
                                    const bool canCancel,
                                    const QString& message,
-                                   const boost::shared_ptr<ProcessHandler>& process)
+                                   const ProcessHandlerPtr& process)
     : QObject()
     , _imp( new ProgressTaskInfoPrivate(panel, node, this, firstFrame, lastFrame, frameStep, canPause, canCancel, message, process) )
 {
@@ -299,7 +299,7 @@ ProgressTaskInfo::restartTask()
     if (!node) {
         return;
     }
-    EffectInstPtr effect = node->getEffectInstance();
+    EffectInstancePtr effect = node->getEffectInstance();
     if (!effect) {
         return;
     }
@@ -390,7 +390,7 @@ ProgressTaskInfo::getNode() const
     return _imp->node.lock();
 }
 
-boost::shared_ptr<ProcessHandler>
+ProcessHandlerPtr
 ProgressTaskInfo::getProcess() const
 {
     return _imp->process;
@@ -445,7 +445,7 @@ ProgressTaskInfoPrivate::createItems()
         return;
     }
     NodePtr node = getNode();
-    boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
+    NodeGuiIPtr gui_i = node->getNodeGui();
     NodeGui* nodeUI = dynamic_cast<NodeGui*>( gui_i.get() );
     QColor color;
     if (nodeUI) {
@@ -661,7 +661,7 @@ ProgressTaskInfo::createCellWidgets()
 } // ProgressTaskInfo::createCellWidgets
 
 void
-ProgressTaskInfo::setProcesshandler(const boost::shared_ptr<ProcessHandler>& process)
+ProgressTaskInfo::setProcesshandler(const ProcessHandlerPtr& process)
 {
     _imp->process = process;
 }
@@ -678,7 +678,7 @@ ProgressTaskInfo::onPauseTriggered()
 void
 ProgressTaskInfo::onCancelTriggered()
 {
-    boost::shared_ptr<ProgressTaskInfo> thisShared = shared_from_this();
+    ProgressTaskInfoPtr thisShared = shared_from_this();
 
     cancelTask(false, 0);
     _imp->panel->removeTaskFromTable(thisShared);
@@ -707,7 +707,7 @@ ProgressTaskInfoPrivate::refreshButtons()
     case ProgressTaskInfo::eProgressTaskStatusFinished: {
         pauseTasksButton->setEnabled(false);
         NodePtr node = getNode();
-        EffectInstPtr effect;
+        EffectInstancePtr effect;
         if (node) {
             effect = node->getEffectInstance();
         }

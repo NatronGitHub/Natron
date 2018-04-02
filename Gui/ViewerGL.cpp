@@ -32,7 +32,7 @@
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
-#if QT_VERSION >= 0x050000
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QToolButton>
 #include <QtWidgets/QApplication> // qApp
@@ -1479,7 +1479,7 @@ ViewerGL::isViewerUIVisible() const
 
 void
 ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
-                                        const boost::shared_ptr<Texture>& texture,
+                                        const TexturePtr& texture,
                                         const ImagePtr& image,
                                         int time,
                                         const RectD& rod,
@@ -1566,7 +1566,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      int textureIndex,
                                      bool isPartialRect,
                                      bool isFirstTile,
-                                     boost::shared_ptr<Texture>* texture)
+                                     TexturePtr* texture)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1730,7 +1730,7 @@ ViewerGL::setLut(int lut)
     _imp->displayingImageLut = (ViewerColorSpaceEnum)lut;
 }
 
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 #define QMouseEventLocalPos(e) ( e->posF() )
 #else
 #define QMouseEventLocalPos(e) ( e->localPos() )
@@ -1765,7 +1765,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     Qt::MouseButton button = e->button();
 
     if ( buttonDownIsLeft(e) ) {
-        boost::shared_ptr<NodeGuiI> gui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
+        NodeGuiIPtr gui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
         assert(gui_i);
         NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
         _imp->viewerTab->getGui()->selectNode(gui);
@@ -2787,7 +2787,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
         return QGLWidget::wheelEvent(e);
     }
 
-    boost::shared_ptr<NodeGuiI> nodeGui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
+    NodeGuiIPtr nodeGui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
     NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(nodeGui_i);
     gui->selectNode(nodeGui);
 
@@ -3635,6 +3635,18 @@ ViewerGL::getPixelScale(double & xScale,
     yScale = _imp->zoomCtx.screenPixelHeight();
 }
 
+#ifdef OFX_EXTENSIONS_NATRON
+double
+ViewerGL::getScreenPixelRatio() const
+{
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    return windowHandle()->devicePixelRatio()
+#else
+    return 1.;
+#endif
+}
+#endif
+
 /**
  * @brief Returns the colour of the background (i.e: clear color) of the viewport.
  **/
@@ -3782,7 +3794,7 @@ ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
                                       const QPoint & widgetPos)
 {
     NodePtr rotoPaintNode;
-    boost::shared_ptr<RotoStrokeItem> curStroke;
+    RotoStrokeItemPtr curStroke;
     bool isDrawing;
 
     _imp->viewerTab->getGui()->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
@@ -4054,7 +4066,7 @@ ViewerGL::getSelectionRectangle(double &left,
     top = std::max( topLeft.y(), btmRight.y() );
 }
 
-boost::shared_ptr<TimeLine>
+TimeLinePtr
 ViewerGL::getTimeline() const
 {
     return _imp->viewerTab->getTimeLine();
@@ -4598,7 +4610,7 @@ ViewerGL::getViewerFrameRange(int* first,
 double
 ViewerGL::currentTimeForEvent(QInputEvent* e)
 {
-#if QT_VERSION >= 0x050000
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     // timestamp() is usually in milliseconds
     if ( e->timestamp() ) {
         return (double)e->timestamp() / 1000000;

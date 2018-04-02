@@ -681,7 +681,7 @@ Image::printUnrenderedPixels(const RectI& roi) const
     // ifdef DEBUG
 
 Image::Image(const ImageKey & key,
-             const boost::shared_ptr<ImageParams>& params,
+             const ImageParamsPtr& params,
              const CacheAPI* cache)
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>(key, params, cache)
     , _useBitmap(true)
@@ -697,7 +697,7 @@ Image::Image(const ImageKey & key,
 }
 
 Image::Image(const ImageKey & key,
-             const boost::shared_ptr<ImageParams>& params)
+             const ImageParamsPtr& params)
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>( key, params, NULL )
     , _useBitmap(false)
 {
@@ -731,7 +731,8 @@ Image::Image(const ImagePlaneDesc& components,
     , _useBitmap(useBitmap)
 {
     setCacheEntry(makeKey(0, 0, false, 0, ViewIdx(0), false, false),
-                  boost::shared_ptr<ImageParams>( new ImageParams(regionOfDefinition,
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
+                  ImageParamsPtr( new ImageParams(regionOfDefinition,
                                                                   par,
                                                                   mipMapLevel,
                                                                   bounds,
@@ -742,6 +743,19 @@ Image::Image(const ImagePlaneDesc& components,
                                                                   components,
                                                                   storage,
                                                                   textureTarget) ),
+#else
+                  boost::make_shared<ImageParams>(regionOfDefinition,
+                                                  par,
+                                                  mipMapLevel,
+                                                  bounds,
+                                                  bitdepth,
+                                                  fielding,
+                                                  premult,
+                                                  false /*isRoDProjectFormat*/,
+                                                  components,
+                                                  storage,
+                                                  textureTarget),
+#endif
                   NULL /*cacheAPI*/
                   );
 
@@ -801,7 +815,7 @@ Image::makeKey(const CacheEntryHolder* holder,
     return ImageKey(holder, nodeHashKey, frameVaryingOrAnimated, time, view, 1., draftMode, fullScaleWithDownscaleInputs);
 }
 
-boost::shared_ptr<ImageParams>
+ImageParamsPtr
 Image::makeParams(const RectD & rod,
                   const double par,
                   unsigned int mipMapLevel,
@@ -817,7 +831,8 @@ Image::makeParams(const RectD & rod,
 
     rod.toPixelEnclosing(mipMapLevel, par, &bounds);
 
-    return boost::shared_ptr<ImageParams>( new ImageParams(rod,
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
+    return ImageParamsPtr( new ImageParams(rod,
                                                            par,
                                                            mipMapLevel,
                                                            bounds,
@@ -828,9 +843,22 @@ Image::makeParams(const RectD & rod,
                                                            components,
                                                            storage,
                                                            textureTarget) );
+#else
+    return boost::make_shared<ImageParams>(rod,
+                                           par,
+                                           mipMapLevel,
+                                           bounds,
+                                           bitdepth,
+                                           fielding,
+                                           premult,
+                                           isRoDProjectFormat,
+                                           components,
+                                           storage,
+                                           textureTarget);
+#endif
 }
 
-boost::shared_ptr<ImageParams>
+ImageParamsPtr
 Image::makeParams(const RectD & rod,    // the image rod in canonical coordinates
                   const RectI& bounds,
                   const double par,
@@ -850,7 +878,8 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
             bounds.bottom() >= pixelRod.bottom() && bounds.top() <= pixelRod.top() );
 #endif
 
-    return boost::shared_ptr<ImageParams>( new ImageParams(rod,
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
+    return ImageParamsPtr( new ImageParams(rod,
                                                            par,
                                                            mipMapLevel,
                                                            bounds,
@@ -861,6 +890,19 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
                                                            components,
                                                            storage,
                                                            textureTarget) );
+#else
+    return boost::make_shared<ImageParams>(rod,
+                                           par,
+                                           mipMapLevel,
+                                           bounds,
+                                           bitdepth,
+                                           fielding,
+                                           premult,
+                                           isRoDProjectFormat,
+                                           components,
+                                           storage,
+                                           textureTarget);
+#endif
 }
 
 // code proofread and fixed by @devernay on 8/8/2014
@@ -940,11 +982,11 @@ Image::resizeInternal(const Image* srcImg,
                       bool fillWithBlackAndTransparent,
                       bool setBitmapTo1,
                       bool createInCache,
-                      boost::shared_ptr<Image>* outputImage)
+                      ImagePtr* outputImage)
 {
     ///Allocate to resized image
     if (!createInCache) {
-        outputImage->reset( new Image( srcImg->getComponents(),
+        *outputImage = boost::make_shared<Image>( srcImg->getComponents(),
                                        srcImg->getRoD(),
                                        merge,
                                        srcImg->getMipMapLevel(),
@@ -952,11 +994,11 @@ Image::resizeInternal(const Image* srcImg,
                                        srcImg->getBitDepth(),
                                        srcImg->getPremultiplication(),
                                        srcImg->getFieldingOrder(),
-                                       srcImg->usesBitMap() ) );
+                                       srcImg->usesBitMap() );
     } else {
-        boost::shared_ptr<ImageParams> params( new ImageParams( *srcImg->getParams() ) );
+        ImageParamsPtr params = boost::make_shared<ImageParams>( *srcImg->getParams() );
         params->setBounds(merge);
-        outputImage->reset( new Image( srcImg->getKey(), params, srcImg->getCacheAPI() ) );
+        *outputImage = boost::make_shared<Image>( srcImg->getKey(), params, srcImg->getCacheAPI() );
         (*outputImage)->allocateMemory();
     }
     ImageBitDepthEnum depth = srcImg->getBitDepth();
@@ -1082,7 +1124,7 @@ bool
 Image::copyAndResizeIfNeeded(const RectI& newBounds,
                              bool fillWithBlackAndTransparent,
                              bool setBitmapTo1,
-                             boost::shared_ptr<Image>* output)
+                             ImagePtr* output)
 {
     assert(getStorageMode() != eStorageModeGLTex);
     if ( getBounds().contains(newBounds) ) {
@@ -1248,7 +1290,11 @@ Image::pasteFrom(const Image & src,
         assert(gpuData);
         if (gpuData) {
             // update data directly on the mapped buffer
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
             ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
+#else
+            ImagePtr tmpImg = boost::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM);
+#endif
             tmpImg->pasteFrom(src, roi);
 
             Image::ReadAccess racc(tmpImg ? tmpImg.get() : this);
@@ -1311,7 +1357,11 @@ Image::pasteFrom(const Image & src,
         glFinish();
         glCheckError();
         // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
         ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM) );
+#else
+        ImagePtr tmpImg = boost::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM);
+#endif
 
         {
             Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : this);
@@ -1437,7 +1487,7 @@ Image::fill(const RectI & roi,
         }
 
         assert(glContext);
-        boost::shared_ptr<GLShader> shader = glContext->getOrCreateFillShader();
+        GLShaderPtr shader = glContext->getOrCreateFillShader();
         assert(shader);
         GLuint fboID = glContext->getFBOId();
 
@@ -2040,7 +2090,7 @@ Image::downscaleMipMap(const RectD& dstRod,
     assert( !copyBitMap || _bitmap.getBitmap() );
 
     RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
-    ImagePtr tmpImg( new Image( getComponents(), dstRod, dstRoI, toLevel, par, getBitDepth(), getPremultiplication(), getFieldingOrder(), true) );
+    ImagePtr tmpImg = boost::make_shared<Image>( getComponents(), dstRod, dstRoI, toLevel, par, getBitDepth(), getPremultiplication(), getFieldingOrder(), true);
 
     buildMipMapLevel( dstRod, roi, downscaleLvls, copyBitMap, tmpImg.get() );
 

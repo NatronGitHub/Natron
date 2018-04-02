@@ -93,8 +93,8 @@ private:
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
         int numPoints = (int)_controlPoints.size();
         ar & ::boost::serialization::make_nvp("NumPoints", numPoints);
-        std::list< BezierCP >::const_iterator itF = _featherPoints.begin();
-        for (std::list< BezierCP >::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it) {
+        std::list<BezierCP>::const_iterator itF = _featherPoints.begin();
+        for (std::list<BezierCP>::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it) {
             ar & ::boost::serialization::make_nvp("CP", *it);
             ar & ::boost::serialization::make_nvp("FP", *itF);
             ++itF;
@@ -138,7 +138,7 @@ private:
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
-    std::list< BezierCP > _controlPoints, _featherPoints;
+    std::list<BezierCP> _controlPoints, _featherPoints;
     bool _closed;
     bool _isOpenBezier;
 };

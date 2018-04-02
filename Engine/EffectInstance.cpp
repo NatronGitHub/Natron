@@ -40,6 +40,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/bind.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/make_shared.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
@@ -62,7 +63,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Log.h"
 #include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/Node.h"
-#include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/OfxImageEffectInstance.h"
@@ -94,13 +94,13 @@ class KnobOutputFile;
 
 void
 EffectInstance::addThreadLocalInputImageTempPointer(int inputNb,
-                                                    const boost::shared_ptr<Image> & img)
+                                                    const ImagePtr & img)
 {
     _imp->addInputImageTempPointer(inputNb, img);
 }
 
 EffectInstance::EffectInstance(NodePtr node)
-    : NamedKnobHolder( node ? node->getApp() : AppInstPtr() )
+    : NamedKnobHolder( node ? node->getApp() : AppInstancePtr() )
     , _node(node)
     , _imp( new Implementation(this) )
 {
@@ -126,7 +126,7 @@ EffectInstance::~EffectInstance()
 }
 
 void
-EffectInstance::lock(const boost::shared_ptr<Image> & entry)
+EffectInstance::lock(const ImagePtr & entry)
 {
     NodePtr n = _node.lock();
 
@@ -134,7 +134,7 @@ EffectInstance::lock(const boost::shared_ptr<Image> & entry)
 }
 
 bool
-EffectInstance::tryLock(const boost::shared_ptr<Image> & entry)
+EffectInstance::tryLock(const ImagePtr & entry)
 {
     NodePtr n = _node.lock();
 
@@ -142,7 +142,7 @@ EffectInstance::tryLock(const boost::shared_ptr<Image> & entry)
 }
 
 void
-EffectInstance::unlock(const boost::shared_ptr<Image> & entry)
+EffectInstance::unlock(const ImagePtr & entry)
 {
     NodePtr n = _node.lock();
 
@@ -189,7 +189,7 @@ static void removeFromLayersList(const std::list<ImagePlaneDesc>& toRemove,
 const std::vector<std::string>&
 EffectInstance::getUserPlanes() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
     tls->userPlaneStrings.clear();
 
@@ -213,7 +213,7 @@ EffectInstance::clearPluginMemoryChunks()
 {
     // This will remove the mem from the pluginMemoryChunks list
     QMutexLocker l(&_imp->pluginMemoryChunksMutex);
-    for (std::list<boost::weak_ptr<PluginMemory> >::iterator it = _imp->pluginMemoryChunks.begin(); it!=_imp->pluginMemoryChunks.end(); ++it) {
+    for (std::list<PluginMemoryWPtr>::iterator it = _imp->pluginMemoryChunks.begin(); it!=_imp->pluginMemoryChunks.end(); ++it) {
         PluginMemoryPtr mem = it->lock();
         if (!mem) {
             continue;
@@ -233,7 +233,7 @@ EffectInstance::setCanSetValue(bool can)
 void
 EffectInstance::invalidateCanSetValueFlag()
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     assert(tls);
     assert( !tls->canSetValue.empty() );
@@ -243,7 +243,7 @@ EffectInstance::invalidateCanSetValueFlag()
 bool
 EffectInstance::isDuringActionThatCanSetValue() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if (!tls) {
         return true;
@@ -258,16 +258,16 @@ EffectInstance::isDuringActionThatCanSetValue() const
 #endif //DEBUG
 
 void
-EffectInstance::setNodeRequestThreadLocal(const boost::shared_ptr<NodeFrameRequest> & nodeRequest)
+EffectInstance::setNodeRequestThreadLocal(const NodeFrameRequestPtr & nodeRequest)
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if (!tls) {
         assert(false);
 
         return;
     }
-    std::list<boost::shared_ptr<ParallelRenderArgs> >& argsList = tls->frameArgs;
+    std::list<ParallelRenderArgsPtr>& argsList = tls->frameArgs;
     if ( argsList.empty() ) {
         return;
     }
@@ -283,7 +283,7 @@ EffectInstance::setParallelRenderArgsTLS(double time,
                                          const AbortableRenderInfoPtr& abortInfo,
                                          const NodePtr & treeRoot,
                                          int visitsCount,
-                                         const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
+                                         const NodeFrameRequestPtr & nodeRequest,
                                          const OSGLContextPtr& glContext,
                                          int textureIndex,
                                          const TimeLine* timeline,
@@ -294,11 +294,11 @@ EffectInstance::setParallelRenderArgsTLS(double time,
                                          PluginOpenGLRenderSupport currentOpenGLSupport,
                                          bool doNanHandling,
                                          bool draftMode,
-                                         const boost::shared_ptr<RenderStats> & stats)
+                                         const RenderStatsPtr & stats)
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-    std::list<boost::shared_ptr<ParallelRenderArgs> >& argsList = tls->frameArgs;
-    boost::shared_ptr<ParallelRenderArgs> args(new ParallelRenderArgs);
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    std::list<ParallelRenderArgsPtr>& argsList = tls->frameArgs;
+    ParallelRenderArgsPtr args = boost::make_shared<ParallelRenderArgs>();
 
     args->time = time;
     args->timeline = timeline;
@@ -332,7 +332,7 @@ EffectInstance::setParallelRenderArgsTLS(double time,
 bool
 EffectInstance::getThreadLocalRotoPaintTreeNodes(NodesList* nodes) const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if (!tls) {
         return false;
@@ -348,15 +348,15 @@ EffectInstance::getThreadLocalRotoPaintTreeNodes(NodesList* nodes) const
 void
 EffectInstance::setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke)
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
 
     tls->frameArgs.back()->isDuringPaintStrokeCreation = duringPaintStroke;
 }
 
 void
-EffectInstance::setParallelRenderArgsTLS(const boost::shared_ptr<ParallelRenderArgs> & args)
+EffectInstance::setParallelRenderArgsTLS(const ParallelRenderArgsPtr & args)
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
 
     assert( args->abortInfo.lock() );
     tls->frameArgs.push_back(args);
@@ -365,27 +365,27 @@ EffectInstance::setParallelRenderArgsTLS(const boost::shared_ptr<ParallelRenderA
 void
 EffectInstance::invalidateParallelRenderArgsTLS()
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if (!tls) {
         return;
     }
 
     assert( !tls->frameArgs.empty() );
-    const boost::shared_ptr<ParallelRenderArgs>& back = tls->frameArgs.back();
+    const ParallelRenderArgsPtr& back = tls->frameArgs.back();
     for (NodesList::iterator it = back->rotoPaintNodes.begin(); it != back->rotoPaintNodes.end(); ++it) {
         (*it)->getEffectInstance()->invalidateParallelRenderArgsTLS();
     }
     tls->frameArgs.pop_back();
 }
 
-boost::shared_ptr<ParallelRenderArgs>
+ParallelRenderArgsPtr
 EffectInstance::getParallelRenderArgsTLS() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if ( !tls || tls->frameArgs.empty() ) {
-        return boost::shared_ptr<ParallelRenderArgs>();
+        return ParallelRenderArgsPtr();
     }
 
     return tls->frameArgs.back();
@@ -402,14 +402,14 @@ EffectInstance::getHash() const
 U64
 EffectInstance::getRenderHash() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if ( !tls || tls->frameArgs.empty() ) {
         //No tls: get the GUI hash
         return getHash();
     }
 
-    const boost::shared_ptr<ParallelRenderArgs> &args = tls->frameArgs.back();
+    const ParallelRenderArgsPtr &args = tls->frameArgs.back();
 
     if (args->request) {
         //A request pass was made, Hash for this thread was already computed, use it
@@ -423,7 +423,7 @@ EffectInstance::getRenderHash() const
 bool
 EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
                                         const AbortableRenderInfoPtr& abortInfo,
-                                        const EffectInstPtr& treeRoot)
+                                        const EffectInstancePtr& treeRoot)
 {
     if (!isRenderResponseToUserInteraction) {
         // Rendering is playback or render on disk
@@ -489,19 +489,19 @@ EffectInstance::aborted() const
      **/
     bool isRenderUserInteraction;
     AbortableRenderInfoPtr abortInfo;
-    EffectInstPtr treeRoot;
+    EffectInstancePtr treeRoot;
 
 
     if ( !isAbortableThread || !isAbortableThread->getAbortInfo(&isRenderUserInteraction, &abortInfo, &treeRoot) ) {
         // If this thread is not abortable or we did not set the abort info for this render yet, retrieve them from the TLS of this node.
-        EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+        EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
         if (!tls) {
             return false;
         }
         if ( tls->frameArgs.empty() ) {
             return false;
         }
-        const boost::shared_ptr<ParallelRenderArgs> & args = tls->frameArgs.back();
+        const ParallelRenderArgsPtr & args = tls->frameArgs.back();
         isRenderUserInteraction = args->isRenderResponseToUserInteraction;
         abortInfo = args->abortInfo.lock();
         if (args->treeRoot) {
@@ -566,7 +566,7 @@ EffectInstance::hasOutputConnected() const
     return getNode()->hasOutputConnected();
 }
 
-EffectInstPtr
+EffectInstancePtr
 EffectInstance::getInput(int n) const
 {
     NodePtr inputNode = getNode()->getInput(n);
@@ -575,7 +575,7 @@ EffectInstance::getInput(int n) const
         return inputNode->getEffectInstance();
     }
 
-    return EffectInstPtr();
+    return EffectInstancePtr();
 }
 
 std::string
@@ -601,7 +601,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
                                                 const RectD* optionalBoundsParam,
                                                 U64* nodeHash_p,
                                                 bool* isIdentity_p,
-                                                EffectInstPtr* identityInput_p,
+                                                EffectInstancePtr* identityInput_p,
                                                 bool* duringPaintStroke_p,
                                                 RectD* rod_p,
                                                 RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
@@ -681,7 +681,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
 void
 EffectInstance::getThreadLocalInputImages(InputImagesMap* images) const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if (!tls) {
         return;
@@ -692,7 +692,7 @@ EffectInstance::getThreadLocalInputImages(InputImagesMap* images) const
 bool
 EffectInstance::getThreadLocalRegionsOfInterests(RoIMap & roiMap) const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if (!tls) {
         return false;
@@ -705,7 +705,7 @@ EffectInstance::getThreadLocalRegionsOfInterests(RoIMap & roiMap) const
 OSGLContextPtr
 EffectInstance::getThreadLocalOpenGLContext() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if ( !tls || tls->frameArgs.empty() ) {
         return OSGLContextPtr();
@@ -726,7 +726,7 @@ EffectInstance::getImage(int inputNb,
                          const StorageModeEnum returnStorage,
                          const ImageBitDepthEnum* /*textureDepth*/, // < ignore requested texture depth because internally we use 32bit fp textures, so we offer the highest possible quality anyway.
                          RectI* roiPixel,
-                         boost::shared_ptr<Transform::Matrix3x3>* transform)
+                         Transform::Matrix3x3Ptr* transform)
 {
     if (time != time) {
         // time is NaN
@@ -734,11 +734,11 @@ EffectInstance::getImage(int inputNb,
     }
 
     ///The input we want the image from
-    EffectInstPtr inputEffect;
+    EffectInstancePtr inputEffect;
 
     //Check for transform redirections
-    boost::shared_ptr<InputMatrixMap> transformRedirections;
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    InputMatrixMapPtr transformRedirections;
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
     if (tls && tls->currentRenderArgs.validArgs) {
         transformRedirections = tls->currentRenderArgs.transformRedirections;
         if (transformRedirections) {
@@ -765,8 +765,8 @@ EffectInstance::getImage(int inputNb,
     int channelForMask = -1;
 
     ///Is this node a roto node or not. If so, find out if this input is the roto-brush
-    boost::shared_ptr<RotoContext> roto;
-    boost::shared_ptr<RotoDrawableItem> attachedStroke = node->getAttachedRotoItem();
+    RotoContextPtr roto;
+    RotoDrawableItemPtr attachedStroke = node->getAttachedRotoItem();
 
     if (attachedStroke) {
         roto = attachedStroke->getContext();
@@ -820,7 +820,7 @@ EffectInstance::getImage(int inputNb,
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     RoIMap inputsRoI;
     bool isIdentity = false;
-    EffectInstPtr identityInput;
+    EffectInstancePtr identityInput;
     U64 nodeHash;
     bool duringPaintStroke;
     /// Never by-pass the cache here because we already computed the image in renderRoI and by-passing the cache again can lead to
@@ -857,7 +857,7 @@ EffectInstance::getImage(int inputNb,
 
         if (inputEffect) {
             //When analysing we do not compute a request pass so we do not enter this condition
-            boost::shared_ptr<ParallelRenderArgs> inputFrameArgs = inputEffect->getParallelRenderArgsTLS();
+            ParallelRenderArgsPtr inputFrameArgs = inputEffect->getParallelRenderArgsTLS();
             const FrameViewRequest* request = 0;
             if (inputFrameArgs && inputFrameArgs->request) {
                 request = inputFrameArgs->request->getFrameViewRequest(time, view);
@@ -869,7 +869,7 @@ EffectInstance::getImage(int inputNb,
         }
 
         if ( !tls->frameArgs.empty() ) {
-            const boost::shared_ptr<ParallelRenderArgs>& frameRenderArgs = tls->frameArgs.back();
+            const ParallelRenderArgsPtr& frameRenderArgs = tls->frameArgs.back();
             nodeHash = frameRenderArgs->nodeHash;
             duringPaintStroke = frameRenderArgs->isDuringPaintStrokeCreation;
             isAnalysisPass = frameRenderArgs->isAnalysis;
@@ -910,7 +910,7 @@ EffectInstance::getImage(int inputNb,
     } else if (!roiWasInRequestPass) {
         //We did not have a request pass, use if possible the result of getRegionsOfInterest found in the TLS
         //If not, fallback on input RoD
-        EffectInstPtr inputToFind;
+        EffectInstancePtr inputToFind;
         if (useRotoInput) {
             if ( node->getRotoContext() ) {
                 inputToFind = shared_from_this();
@@ -1012,7 +1012,7 @@ EffectInstance::getImage(int inputNb,
                     //If the roto is inverted, we need to fill the full RoD of the input
                     bool inverted = attachedStroke->getInverted(time);
                     if (inverted) {
-                        EffectInstPtr rotoInput = getInput(0);
+                        EffectInstancePtr rotoInput = getInput(0);
                         if (rotoInput) {
                             bool isProjectFormat;
                             StatusEnum st = rotoInput->getRegionOfDefinition_public(rotoInput->getRenderHash(), time, scale, view, &rotoSrcRod, &isProjectFormat);
@@ -1119,8 +1119,8 @@ EffectInstance::getImage(int inputNb,
         ImageBitDepthEnum bitdepth = inputImg->getBitDepth();
         RectI bounds;
         inputImg->getRoD().toPixelEnclosing(0, par, &bounds);
-        ImagePtr rescaledImg( new Image( inputImg->getComponents(), inputImg->getRoD(),
-                                         bounds, 0, par, bitdepth, inputImg->getPremultiplication(), inputImg->getFieldingOrder() ) );
+        ImagePtr rescaledImg = boost::make_shared<Image>( inputImg->getComponents(), inputImg->getRoD(),
+                                                         bounds, 0, par, bitdepth, inputImg->getPremultiplication(), inputImg->getFieldingOrder() );
         inputImg->upscaleMipMap( inputImg->getBounds(), inputImgMipMapLevel, 0, rescaledImg.get() );
         if (roiPixel) {
             RectD canonicalPixelRoI;
@@ -1202,11 +1202,11 @@ EffectInstance::getRegionOfDefinition(U64 hash,
 
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
 
-    for (int i = 0; i < getMaxInputCount(); ++i) {
+    for (int i = 0; i < getNInputs(); ++i) {
         if ( isInputMask(i) ) {
             continue;
         }
-        EffectInstPtr input = getInput(i);
+        EffectInstancePtr input = getInput(i);
         if (input) {
             RectD inputRod;
             bool isProjectFormat;
@@ -1259,8 +1259,8 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
         // initialize with the effect's default RoD, because inputs may not be connected to other effects (e.g. Roto)
         calcDefaultRegionOfDefinition(hash, time, scale, view, &inputsUnion);
         bool firstInput = true;
-        for (int i = 0; i < getMaxInputCount(); ++i) {
-            EffectInstPtr input = getInput(i);
+        for (int i = 0; i < getNInputs(); ++i) {
+            EffectInstancePtr input = getInput(i);
             if (input) {
                 RectD inputRod;
                 bool isProjectFormat;
@@ -1350,8 +1350,8 @@ EffectInstance::getRegionsOfInterest(double time,
 {
     bool tilesSupported = supportsTiles();
 
-    for (int i = 0; i < getMaxInputCount(); ++i) {
-        EffectInstPtr input = getInput(i);
+    for (int i = 0; i < getNInputs(); ++i) {
+        EffectInstancePtr input = getInput(i);
         if (input) {
             if (tilesSupported) {
                 ret->insert( std::make_pair(input, renderWindow) );
@@ -1382,11 +1382,11 @@ EffectInstance::getFramesNeeded(double time,
     ranges.push_back(defaultRange);
     FrameRangesMap defViewRange;
     defViewRange.insert( std::make_pair(view, ranges) );
-    for (int i = 0; i < getMaxInputCount(); ++i) {
+    for (int i = 0; i < getNInputs(); ++i) {
         if ( isInputRotoBrush(i) ) {
             ret.insert( std::make_pair(i, defViewRange) );
         } else {
-            EffectInstPtr input = getInput(i);
+            EffectInstancePtr input = getInput(i);
             if (input) {
                 ret.insert( std::make_pair(i, defViewRange) );
             }
@@ -1403,8 +1403,8 @@ EffectInstance::getFrameRange(double *first,
     // default is infinite if there are no non optional input clips
     *first = INT_MIN;
     *last = INT_MAX;
-    for (int i = 0; i < getMaxInputCount(); ++i) {
-        EffectInstPtr input = getInput(i);
+    for (int i = 0; i < getNInputs(); ++i) {
+        EffectInstancePtr input = getInput(i);
         if (input) {
             double inpFirst, inpLast;
             input->getFrameRange(&inpFirst, &inpLast);
@@ -1430,7 +1430,7 @@ EffectInstance::NotifyRenderingStarted_RAII::NotifyRenderingStarted_RAII(Node* n
     _didEmit = node->notifyRenderingStarted();
 
     // If the node is in a group, notify also the group
-    boost::shared_ptr<NodeCollection> group = node->getGroup();
+    NodeCollectionPtr group = node->getGroup();
     if (group) {
         NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(group.get());
         if (isGroupNode) {
@@ -1445,7 +1445,7 @@ EffectInstance::NotifyRenderingStarted_RAII::~NotifyRenderingStarted_RAII()
         _node->notifyRenderingEnded();
     }
     if (_didGroupEmit) {
-        boost::shared_ptr<NodeCollection> group = _node->getGroup();
+        NodeCollectionPtr group = _node->getGroup();
         if (group) {
             NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(group.get());
             if (isGroupNode) {
@@ -1472,12 +1472,12 @@ EffectInstance::NotifyInputNRenderingStarted_RAII::~NotifyInputNRenderingStarted
 
 static void
 getOrCreateFromCacheInternal(const ImageKey & key,
-                             const boost::shared_ptr<ImageParams> & params,
+                             const ImageParamsPtr & params,
                              bool useCache,
                              ImagePtr* image)
 {
     if (!useCache) {
-        image->reset( new Image(key, params) );
+        *image = boost::make_shared<Image>(key, params);
     } else {
         assert(params->getStorageInfo().mode != eStorageModeGLTex);
 
@@ -1520,7 +1520,7 @@ EffectInstance::convertOpenGLTextureToCachedRAMImage(const ImagePtr& image)
 {
     assert(image->getStorageMode() == eStorageModeGLTex);
 
-    boost::shared_ptr<ImageParams> params( new ImageParams( *image->getParams() ) );
+    ImageParamsPtr params = boost::make_shared<ImageParams>( *image->getParams() );
     CacheEntryStorageInfo& info = params->getStorageInfo();
     info.mode = eStorageModeRAM;
 
@@ -1547,7 +1547,7 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
 {
     assert(image->getStorageMode() != eStorageModeGLTex);
 
-    boost::shared_ptr<ImageParams> params( new ImageParams( *image->getParams() ) );
+    ImageParamsPtr params = boost::make_shared<ImageParams>( *image->getParams() );
     CacheEntryStorageInfo& info = params->getStorageInfo();
     info.mode = eStorageModeGLTex;
     info.textureTarget = GL_TEXTURE_2D;
@@ -1579,7 +1579,11 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     bool useTmpImage = image->getComponentsCount() != 4;
     ImagePtr tmpImg;
     if (useTmpImage) {
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
         tmpImg.reset( new Image( ImagePlaneDesc::getRGBAComponents(), image->getRoD(), bounds, 0, image->getPixelAspectRatio(), image->getBitDepth(), image->getPremultiplication(), image->getFieldingOrder(), false, eStorageModeRAM) );
+#else
+        tmpImg = boost::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), image->getRoD(), bounds, 0, image->getPixelAspectRatio(), image->getBitDepth(), image->getPremultiplication(), image->getFieldingOrder(), false, eStorageModeRAM);
+#endif
         tmpImg->setKey(image->getKey());
         if (tmpImg->getComponents() == image->getComponents()) {
             tmpImg->pasteFrom(*image, bounds);
@@ -1628,9 +1632,9 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                                                     ImageBitDepthEnum bitdepth,
                                                     const ImagePlaneDesc & components,
                                                     const EffectInstance::InputImagesMap & inputImages,
-                                                    const boost::shared_ptr<RenderStats> & stats,
-                                                    const boost::shared_ptr<OSGLContextAttacher>& glContextAttacher,
-                                                    boost::shared_ptr<Image>* image)
+                                                    const RenderStatsPtr & stats,
+                                                    const OSGLContextAttacherPtr& glContextAttacher,
+                                                    ImagePtr* image)
 {
     ImageList cachedImages;
     bool isCached = false;
@@ -1728,7 +1732,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
 
 
             if (imageToConvert->getMipMapLevel() != mipMapLevel) {
-                boost::shared_ptr<ImageParams> oldParams = imageToConvert->getParams();
+                ImageParamsPtr oldParams = imageToConvert->getParams();
 
                 assert(imageToConvert->getMipMapLevel() < mipMapLevel);
 
@@ -1754,7 +1758,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                 //rod.toPixelEnclosing(mipMapLevel, oldParams->getPixelAspectRatio(), &pixelRoD);
                 //downscaledBounds.intersect(pixelRoD, &downscaledBounds);
 
-                boost::shared_ptr<ImageParams> imageParams = Image::makeParams(rod,
+                ImageParamsPtr imageParams = Image::makeParams(rod,
                                                                                downscaledBounds,
                                                                                oldParams->getPixelAspectRatio(),
                                                                                mipMapLevel,
@@ -1769,7 +1773,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                 imageParams->setMipMapLevel(mipMapLevel);
 
 
-                boost::shared_ptr<Image> img;
+                ImagePtr img;
                 getOrCreateFromCacheInternal(key, imageParams, imageToConvert->usesBitMap(), &img);
                 if (!img) {
                     return;
@@ -1879,7 +1883,7 @@ EffectInstance::tryConcatenateTransforms(double time,
     assert(inputHoldingTransforms.empty() || canApplyTransform);
 
     Transform::Matrix3x3 thisNodeTransform;
-    EffectInstPtr inputToTransform;
+    EffectInstancePtr inputToTransform;
     bool getTransformSucceeded = false;
 
     if (canTransform) {
@@ -1895,7 +1899,7 @@ EffectInstance::tryConcatenateTransforms(double time,
 
     if ( (canTransform && getTransformSucceeded) || ( !canTransform && canApplyTransform && !inputHoldingTransforms.empty() ) ) {
         for (std::list<int>::iterator it = inputHoldingTransforms.begin(); it != inputHoldingTransforms.end(); ++it) {
-            EffectInstPtr input = getInput(*it);
+            EffectInstancePtr input = getInput(*it);
             if (!input) {
                 continue;
             }
@@ -1958,7 +1962,7 @@ EffectInstance::tryConcatenateTransforms(double time,
                 assert(im.newInputEffect);
 
                 ///Now actually concatenate matrices together
-                im.cat.reset(new Transform::Matrix3x3);
+                im.cat= boost::make_shared<Transform::Matrix3x3>();
                 std::list<Transform::Matrix3x3>::iterator it2 = matricesByOrder.begin();
                 *im.cat = *it2;
                 ++it2;
@@ -1988,14 +1992,14 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
                                    bool renderFullScaleThenDownscale,
                                    StorageModeEnum storage,
                                    bool createInCache,
-                                   boost::shared_ptr<Image>* fullScaleImage,
-                                   boost::shared_ptr<Image>* downscaleImage)
+                                   ImagePtr* fullScaleImage,
+                                   ImagePtr* downscaleImage)
 {
     //If we're rendering full scale and with input images at full scale, don't cache the downscale image since it is cheap to
     //recreate, instead cache the full-scale image
     if (renderFullScaleThenDownscale) {
-        downscaleImage->reset( new Image(components, rod, downscaleImageBounds, mipmapLevel, par, depth, premult, fielding, true) );
-        boost::shared_ptr<ImageParams> upscaledImageParams = Image::makeParams(rod,
+        *downscaleImage = boost::make_shared<Image>(components, rod, downscaleImageBounds, mipmapLevel, par, depth, premult, fielding, true);
+        ImageParamsPtr upscaledImageParams = Image::makeParams(rod,
                                                                                fullScaleImageBounds,
                                                                                par,
                                                                                0,
@@ -2016,7 +2020,7 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
         }
     } else {
         ///Cache the image with the requested components instead of the remapped ones
-        boost::shared_ptr<ImageParams> cachedImgParams = Image::makeParams(rod,
+        ImageParamsPtr cachedImgParams = Image::makeParams(rod,
                                                                            downscaleImageBounds,
                                                                            par,
                                                                            mipmapLevel,
@@ -2045,11 +2049,11 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
 
 void
 EffectInstance::transformInputRois(const EffectInstance* self,
-                                   const boost::shared_ptr<InputMatrixMap> & inputTransforms,
+                                   const InputMatrixMapPtr & inputTransforms,
                                    double par,
                                    const RenderScale & scale,
                                    RoIMap* inputsRoi,
-                                   std::map<int, EffectInstPtr>* reroutesMap)
+                                   std::map<int, EffectInstancePtr>* reroutesMap)
 {
     if (!inputTransforms) {
         return;
@@ -2057,7 +2061,7 @@ EffectInstance::transformInputRois(const EffectInstance* self,
     //Transform the RoIs by the inverse of the transform matrix (which is in pixel coordinates)
     for (InputMatrixMap::const_iterator it = inputTransforms->begin(); it != inputTransforms->end(); ++it) {
         RectD transformedRenderWindow;
-        EffectInstPtr effectInTransformInput = self->getInput(it->first);
+        EffectInstancePtr effectInTransformInput = self->getInput(it->first);
         assert(effectInTransformInput);
 
 
@@ -2097,7 +2101,7 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
                                         ViewIdx view,
                                         const RectD & rod,
                                         const RectD & canonicalRenderWindow,
-                                        const boost::shared_ptr<InputMatrixMap>& inputTransforms,
+                                        const InputMatrixMapPtr& inputTransforms,
                                         unsigned int mipMapLevel,
                                         const RenderScale & renderMappedScale,
                                         bool useScaleOneInputImages,
@@ -2195,18 +2199,18 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                                                       const bool byPassCache,
                                                       const ImageBitDepthEnum outputClipPrefDepth,
                                                       const ImagePlaneDesc & outputClipPrefsComps,
-                                                      const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
+                                                      const ComponentsNeededMapPtr & compsNeeded,
                                                       const std::bitset<4>& processChannels,
-                                                      const boost::shared_ptr<ImagePlanesToRender> & planes) // when MT, planes is a copy so there's is no data race
+                                                      const ImagePlanesToRenderPtr & planes) // when MT, planes is a copy so there's is no data race
 {
     ///There cannot be the same thread running 2 concurrent instances of renderRoI on the same effect.
 #ifdef DEBUG
     {
-        EffectDataTLSPtr tls = tlsData->getTLSData();
+        EffectTLSDataPtr tls = tlsData->getTLSData();
         assert(!tls || !tls->currentRenderArgs.validArgs);
     }
 #endif
-    EffectDataTLSPtr tls = tlsData->getOrCreateTLSData();
+    EffectTLSDataPtr tls = tlsData->getOrCreateTLSData();
 
     assert( !rectToRender.rect.isNull() );
 
@@ -2239,7 +2243,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
 
 
-    const boost::shared_ptr<ParallelRenderArgs>& frameArgs = tls->frameArgs.back();
+    const ParallelRenderArgsPtr& frameArgs = tls->frameArgs.back();
 
       ///It might have been already rendered now
     if ( renderMappedRectToRender.isNull() ) {
@@ -2268,7 +2272,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     EffectInstance::InputImagesMap::const_iterator foundMaskInput = rectToRender.imgs.end();
 
     if ( _publicInterface->isHostMaskingEnabled() ) {
-        foundMaskInput = rectToRender.imgs.find(_publicInterface->getMaxInputCount() - 1);
+        foundMaskInput = rectToRender.imgs.find(_publicInterface->getNInputs() - 1);
     }
     if ( ( foundPrefInput != rectToRender.imgs.end() ) && !foundPrefInput->second.empty() ) {
         originalInputImage = foundPrefInput->second.front();
@@ -2377,7 +2381,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 } // EffectInstance::tiledRenderingFunctor
 
 EffectInstance::RenderingFunctorRetEnum
-EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
+EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
                                               const unsigned int mipMapLevel,
                                               const bool renderFullScaleThenDownscale,
                                               const bool isSequentialRender,
@@ -2388,16 +2392,16 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                               const ImageBitDepthEnum outputClipPrefDepth,
                                               const ImagePlaneDesc & outputClipPrefsComps,
                                               const std::bitset<4>& processChannels,
-                                              const boost::shared_ptr<Image> & originalInputImage,
-                                              const boost::shared_ptr<Image> & maskImage,
+                                              const ImagePtr & originalInputImage,
+                                              const ImagePtr & maskImage,
                                               const ImagePremultiplicationEnum originalImagePremultiplication,
                                               ImagePlanesToRender & planes)
 {
-    boost::shared_ptr<TimeLapse> timeRecorder;
-    const boost::shared_ptr<ParallelRenderArgs>& frameArgs = tls->frameArgs.back();
+    TimeLapsePtr timeRecorder;
+    const ParallelRenderArgsPtr& frameArgs = tls->frameArgs.back();
 
     if (frameArgs->stats) {
-        timeRecorder.reset( new TimeLapse() );
+        timeRecorder = boost::make_shared<TimeLapse>();
     }
 
     const EffectInstance::PlaneToRender & firstPlane = planes.planes.begin()->second;
@@ -2438,6 +2442,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         assert(glContext);
 
         // Ensure the context is current
+        // scoped_ptr
         glContextAttacher.reset( new OSGLContextAttacher(glContext, abortInfo
 #ifdef DEBUG
                                                          , frameArgs->time
@@ -2467,6 +2472,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         }
         assert( !comps.empty() );
         std::map<ImagePlaneDesc, ImagePtr> identityPlanes;
+        // scoped_ptr
         boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(tls->currentRenderArgs.identityTime,
                                                                                                        actionArgs.originalScale,
                                                                                                        mipMapLevel,
@@ -2525,15 +2531,15 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                         ///Convert format first if needed
                         ImagePtr sourceImage;
                         if ( ( it->second.fullscaleImage->getComponents() != idIt->second->getComponents() ) || ( it->second.fullscaleImage->getBitDepth() != idIt->second->getBitDepth() ) ) {
-                            sourceImage.reset( new Image(it->second.fullscaleImage->getComponents(),
-                                                         idIt->second->getRoD(),
-                                                         idIt->second->getBounds(),
-                                                         idIt->second->getMipMapLevel(),
-                                                         idIt->second->getPixelAspectRatio(),
-                                                         it->second.fullscaleImage->getBitDepth(),
-                                                         idIt->second->getPremultiplication(),
-                                                         idIt->second->getFieldingOrder(),
-                                                         false) );
+                            sourceImage = boost::make_shared<Image>(it->second.fullscaleImage->getComponents(),
+                                                                    idIt->second->getRoD(),
+                                                                    idIt->second->getBounds(),
+                                                                    idIt->second->getMipMapLevel(),
+                                                                    idIt->second->getPixelAspectRatio(),
+                                                                    it->second.fullscaleImage->getBitDepth(),
+                                                                    idIt->second->getPremultiplication(),
+                                                                    idIt->second->getFieldingOrder(),
+                                                                    false);
 
                             ViewerColorSpaceEnum colorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( idIt->second->getBitDepth() );
                             ViewerColorSpaceEnum dstColorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth() );
@@ -2546,7 +2552,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                         const RectD & rod = sourceImage->getRoD();
                         RectI bounds;
                         rod.toPixelEnclosing(it->second.renderMappedImage->getMipMapLevel(), it->second.renderMappedImage->getPixelAspectRatio(), &bounds);
-                        ImagePtr inputPlane( new Image(it->first,
+                        ImagePtr inputPlane = boost::make_shared<Image>(it->first,
                                                        rod,
                                                        bounds,
                                                        it->second.renderMappedImage->getMipMapLevel(),
@@ -2554,7 +2560,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                                        it->second.renderMappedImage->getBitDepth(),
                                                        it->second.renderMappedImage->getPremultiplication(),
                                                        it->second.renderMappedImage->getFieldingOrder(),
-                                                       false) );
+                                                       false);
                         sourceImage->upscaleMipMap( sourceImage->getBounds(), sourceImage->getMipMapLevel(), inputPlane->getMipMapLevel(), inputPlane.get() );
                         it->second.fullscaleImage->pasteFrom(*inputPlane, renderMappedRectToRender, false);
                     } else {
@@ -2602,15 +2608,15 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         // OpenGL render never use the cache and bitmaps, all images are local to a render.
         if ( ( it->second.renderMappedImage->usesBitMap() || ( prefComp != it->second.renderMappedImage->getComponents() ) ||
                ( outputClipPrefDepth != it->second.renderMappedImage->getBitDepth() ) ) && !_publicInterface->isPaintingOverItselfEnabled() && !planes.useOpenGL ) {
-            it->second.tmpImage.reset( new Image(prefComp,
-                                                 it->second.renderMappedImage->getRoD(),
-                                                 actionArgs.roi,
-                                                 it->second.renderMappedImage->getMipMapLevel(),
-                                                 it->second.renderMappedImage->getPixelAspectRatio(),
-                                                 outputClipPrefDepth,
-                                                 it->second.renderMappedImage->getPremultiplication(),
-                                                 it->second.renderMappedImage->getFieldingOrder(),
-                                                 false) ); //< no bitmap
+            it->second.tmpImage = boost::make_shared<Image>(prefComp,
+                                                            it->second.renderMappedImage->getRoD(),
+                                                            actionArgs.roi,
+                                                            it->second.renderMappedImage->getMipMapLevel(),
+                                                            it->second.renderMappedImage->getPixelAspectRatio(),
+                                                            outputClipPrefDepth,
+                                                            it->second.renderMappedImage->getPremultiplication(),
+                                                            it->second.renderMappedImage->getFieldingOrder(),
+                                                 false); //< no bitmap
         } else {
             it->second.tmpImage = it->second.renderMappedImage;
         }
@@ -2627,7 +2633,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
     actionArgs.isRenderResponseToUserInteraction = isRenderResponseToUserInteraction;
     actionArgs.inputImages = tls->currentRenderArgs.inputImages;
 
-    std::list< std::list<std::pair<ImagePlaneDesc, ImagePtr> > > planesLists;
+    std::list<std::list<std::pair<ImagePlaneDesc, ImagePtr> > > planesLists;
     if (!multiPlanar) {
         for (std::list<std::pair<ImagePlaneDesc, ImagePtr> >::iterator it = tmpPlanes.begin(); it != tmpPlanes.end(); ++it) {
             std::list<std::pair<ImagePlaneDesc, ImagePtr> > tmp;
@@ -2744,7 +2750,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
     bool unPremultIfNeeded = planes.outputPremult == eImagePremultiplicationPremultiplied;
     bool useMaskMix = _publicInterface->isHostMaskingEnabled() || _publicInterface->isHostMixingEnabled();
     double mix = useMaskMix ? _publicInterface->getNode()->getHostMixingValue(time, view) : 1.;
-    bool doMask = useMaskMix ? _publicInterface->getNode()->isMaskEnabled(_publicInterface->getMaxInputCount() - 1) : false;
+    bool doMask = useMaskMix ? _publicInterface->getNode()->isMaskEnabled(_publicInterface->getNInputs() - 1) : false;
 
     //Check for NaNs, copy to output image and mark for rendered
     for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
@@ -2802,7 +2808,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                         ///but originalInputImage is not in the correct mipMapLevel, upscale it
                         assert(originalInputImage->getMipMapLevel() > it->second.tmpImage->getMipMapLevel() &&
                                originalInputImage->getMipMapLevel() == mipMapLevel);
-                        ImagePtr tmp( new Image(it->second.tmpImage->getComponents(),
+                        ImagePtr tmp = boost::make_shared<Image>(it->second.tmpImage->getComponents(),
                                                 it->second.tmpImage->getRoD(),
                                                 renderMappedRectToRender,
                                                 0,
@@ -2810,7 +2816,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                                 it->second.tmpImage->getBitDepth(),
                                                 it->second.tmpImage->getPremultiplication(),
                                                 it->second.tmpImage->getFieldingOrder(),
-                                                false) );
+                                                false);
                         originalInputImage->upscaleMipMap( downscaledRectToRender, originalInputImage->getMipMapLevel(), 0, tmp.get() );
                         mappedOriginalInputImage = tmp;
                     }
@@ -2827,6 +2833,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                     /*
                      * BitDepth/Components conversion required as well as downscaling, do conversion to a tmp buffer
                      */
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
                     ImagePtr tmp( new Image(it->second.fullscaleImage->getComponents(),
                                             it->second.tmpImage->getRoD(),
                                             renderMappedRectToRender,
@@ -2836,6 +2843,17 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                             it->second.fullscaleImage->getPremultiplication(),
                                             it->second.fullscaleImage->getFieldingOrder(),
                                             false) );
+#else
+                    ImagePtr tmp = boost::make_shared<Image>(it->second.fullscaleImage->getComponents(),
+                                                             it->second.tmpImage->getRoD(),
+                                                             renderMappedRectToRender,
+                                                             mipMapLevel,
+                                                             it->second.tmpImage->getPixelAspectRatio(),
+                                                             it->second.fullscaleImage->getBitDepth(),
+                                                             it->second.fullscaleImage->getPremultiplication(),
+                                                             it->second.fullscaleImage->getFieldingOrder(),
+                                                             false);
+#endif
 
                     it->second.tmpImage->convertToFormat( renderMappedRectToRender,
                                                           _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
@@ -2912,7 +2930,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
      * to render and mark that we're a plane allocated on the fly so that the tiledRenderingFunctor can know this is a plane
      * to handle specifically.
      */
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if (!tls || !tls->currentRenderArgs.validArgs) {
         return ImagePtr();
@@ -2927,7 +2945,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
         useCache = false;
     }
     const ImagePtr & img = firstPlane.fullscaleImage->usesBitMap() ? firstPlane.fullscaleImage : firstPlane.downscaleImage;
-    boost::shared_ptr<ImageParams> params = img->getParams();
+    ImageParamsPtr params = img->getParams();
     EffectInstance::PlaneToRender p;
     bool ok = allocateImagePlane(img->getKey(),
                                  tls->currentRenderArgs.rod,
@@ -2955,6 +2973,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
          * Allocate a temporary image for rendering only if using cache
          */
         if (useCache) {
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
             p.tmpImage.reset( new Image(p.renderMappedImage->getComponents(),
                                         p.renderMappedImage->getRoD(),
                                         tls->currentRenderArgs.renderWindowPixel,
@@ -2965,6 +2984,18 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
                                         p.renderMappedImage->getFieldingOrder(),
                                         false /*useBitmap*/,
                                         img->getParams()->getStorageInfo().mode) );
+#else
+            p.tmpImage = boost::make_shared<Image>(p.renderMappedImage->getComponents(),
+                                                   p.renderMappedImage->getRoD(),
+                                                   tls->currentRenderArgs.renderWindowPixel,
+                                                   p.renderMappedImage->getMipMapLevel(),
+                                                   p.renderMappedImage->getPixelAspectRatio(),
+                                                   p.renderMappedImage->getBitDepth(),
+                                                   p.renderMappedImage->getPremultiplication(),
+                                                   p.renderMappedImage->getFieldingOrder(),
+                                                   false /*useBitmap*/,
+                                                   img->getParams()->getStorageInfo().mode);
+#endif
         } else {
             p.tmpImage = p.renderMappedImage;
         }
@@ -2977,11 +3008,11 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
 void
 EffectInstance::openImageFileKnob()
 {
-    const std::vector< KnobPtr > & knobs = getKnobs();
+    const std::vector<KnobIPtr> & knobs = getKnobs();
 
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->typeName() == KnobFile::typeNameStatic() ) {
-            boost::shared_ptr<KnobFile> fk = boost::dynamic_pointer_cast<KnobFile>(knobs[i]);
+            KnobFilePtr fk = boost::dynamic_pointer_cast<KnobFile>(knobs[i]);
             assert(fk);
             if ( fk->isInputImageFile() ) {
                 std::string file = fk->getValue();
@@ -2991,7 +3022,7 @@ EffectInstance::openImageFileKnob()
                 break;
             }
         } else if ( knobs[i]->typeName() == KnobOutputFile::typeNameStatic() ) {
-            boost::shared_ptr<KnobOutputFile> fk = boost::dynamic_pointer_cast<KnobOutputFile>(knobs[i]);
+            KnobOutputFilePtr fk = boost::dynamic_pointer_cast<KnobOutputFile>(knobs[i]);
             assert(fk);
             if ( fk->isOutputImageFile() ) {
                 std::string file = fk->getValue();
@@ -3109,7 +3140,7 @@ EffectInstance::clearPersistentMessage(bool recurse)
 int
 EffectInstance::getInputNumber(const EffectInstance* inputEffect) const
 {
-    for (int i = 0; i < getMaxInputCount(); ++i) {
+    for (int i = 0; i < getNInputs(); ++i) {
         if (getInput(i).get() == inputEffect) {
             return i;
         }
@@ -3169,7 +3200,7 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
     const KnobsVec & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->typeName() == KnobOutputFile::typeNameStatic() ) {
-            boost::shared_ptr<KnobOutputFile> fk = boost::dynamic_pointer_cast<KnobOutputFile>(knobs[i]);
+            KnobOutputFilePtr fk = boost::dynamic_pointer_cast<KnobOutputFile>(knobs[i]);
             assert(fk);
             if ( fk->isOutputImageFile() ) {
                 fk->setValue(pattern);
@@ -3182,7 +3213,7 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
 PluginMemoryPtr
 EffectInstance::newMemoryInstance(size_t nBytes)
 {
-    PluginMemoryPtr ret( new PluginMemory( shared_from_this() ) ); //< hack to get "this" as a shared ptr
+    PluginMemoryPtr ret = boost::make_shared<PluginMemory>( shared_from_this() ); //< hack to get "this" as a shared ptr
 
     addPluginMemoryPointer(ret);
     bool wasntLocked = ret->alloc(nBytes);
@@ -3204,13 +3235,13 @@ EffectInstance::addPluginMemoryPointer(const PluginMemoryPtr& mem)
 void
 EffectInstance::removePluginMemoryPointer(const PluginMemory* mem)
 {
-    std::list<boost::shared_ptr<PluginMemory> > safeCopy;
+    std::list<PluginMemoryPtr> safeCopy;
 
     {
         QMutexLocker l(&_imp->pluginMemoryChunksMutex);
         // make a copy of the list so that elements don't get deleted while the mutex is held
 
-        for (std::list<boost::weak_ptr<PluginMemory> >::iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
+        for (std::list<PluginMemoryWPtr>::iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
             PluginMemoryPtr p = it->lock();
             if (!p) {
                 continue;
@@ -3245,8 +3276,8 @@ EffectInstance::onAllKnobsSlaved(bool isSlave,
 }
 
 void
-EffectInstance::onKnobSlaved(const KnobPtr& slave,
-                             const KnobPtr& master,
+EffectInstance::onKnobSlaved(const KnobIPtr& slave,
+                             const KnobIPtr& master,
                              int dimension,
                              bool isSlave)
 {
@@ -3669,11 +3700,11 @@ EffectInstance::setInteractColourPicker_public(const OfxRGBAColourD& color, bool
 {
     const KnobsVec& knobs = getKnobs();
     for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-        const KnobPtr& k = *it2;
+        const KnobIPtr& k = *it2;
         if (!k) {
             continue;
         }
-        boost::shared_ptr<OfxParamOverlayInteract> interact = k->getCustomInteract();
+        OfxParamOverlayInteractPtr interact = k->getCustomInteract();
         if (!interact) {
             continue;
         }
@@ -3719,7 +3750,7 @@ EffectInstance::getTransform_public(double time,
                                     const RenderScale & renderScale,
                                     bool draftRender,
                                     ViewIdx view,
-                                    EffectInstPtr* inputToTransform,
+                                    EffectInstancePtr* inputToTransform,
                                     Transform::Matrix3x3* transform)
 {
     RECURSIVE_ACTION();
@@ -3757,7 +3788,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
 
     bool ret = false;
-    boost::shared_ptr<RotoDrawableItem> rotoItem = getNode()->getAttachedRotoItem();
+    RotoDrawableItemPtr rotoItem = getNode()->getAttachedRotoItem();
     if ( ( rotoItem && !rotoItem->isActivated(time) ) || getNode()->isNodeDisabled() || !getNode()->hasAtLeastOneChannelToProcess() ) {
         ret = true;
         *inputNb = getNode()->getPreferredInput();
@@ -3850,7 +3881,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         ///If this is running on a render thread, attempt to find the RoD in the thread local storage.
 
         if ( QThread::currentThread() != qApp->thread() ) {
-            EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+            EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
             if (tls && tls->currentRenderArgs.validArgs) {
                 *rod = tls->currentRenderArgs.rod;
                 if (isProjectFormat) {
@@ -3970,7 +4001,7 @@ EffectInstance::getFrameRange_public(U64 hash,
     } else {
         ///If this is running on a render thread, attempt to find the info in the thread local storage.
         if ( QThread::currentThread() != qApp->thread() ) {
-            EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+            EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
             if (tls && tls->currentRenderArgs.validArgs) {
                 *first = tls->currentRenderArgs.firstFrame;
                 *last = tls->currentRenderArgs.lastFrame;
@@ -4000,7 +4031,7 @@ EffectInstance::beginSequenceRender_public(double first,
 {
     NON_RECURSIVE_ACTION();
     REPORT_CURRENT_THREAD_ACTION( kOfxImageEffectActionBeginSequenceRender, getNode() );
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
     ++tls->beginEndRenderCount;
 
@@ -4023,7 +4054,7 @@ EffectInstance::endSequenceRender_public(double first,
 {
     NON_RECURSIVE_ACTION();
     REPORT_CURRENT_THREAD_ACTION( kOfxImageEffectActionEndSequenceRender, getNode() );
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
     --tls->beginEndRenderCount;
     assert(tls->beginEndRenderCount >= 0);
@@ -4031,7 +4062,7 @@ EffectInstance::endSequenceRender_public(double first,
     return endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
 }
 
-EffectInstPtr
+EffectInstancePtr
 EffectInstance::getOrCreateRenderInstance()
 {
     QMutexLocker k(&_imp->renderClonesMutex);
@@ -4042,13 +4073,13 @@ EffectInstance::getOrCreateRenderInstance()
     }
     // Ok get a clone
     if (!_imp->renderClonesPool.empty()) {
-        EffectInstPtr ret =  _imp->renderClonesPool.front();
+        EffectInstancePtr ret =  _imp->renderClonesPool.front();
         _imp->renderClonesPool.pop_front();
         ret->_imp->isDoingInstanceSafeRender = true;
         return ret;
     }
 
-    EffectInstPtr clone = createRenderClone();
+    EffectInstancePtr clone = createRenderClone();
     if (!clone) {
         // We have no way but to use this node since the effect does not support render clones
         _imp->isDoingInstanceSafeRender = true;
@@ -4066,7 +4097,7 @@ EffectInstance::clearRenderInstances()
 }
 
 void
-EffectInstance::releaseRenderInstance(const EffectInstPtr& instance)
+EffectInstance::releaseRenderInstance(const EffectInstancePtr& instance)
 {
     if (!instance) {
         return;
@@ -4097,7 +4128,7 @@ EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
         _imp->attachedContextsMutex.lock();
     }
 
-    std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
+    std::map<OSGLContextWPtr, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
     if ( found != _imp->attachedContexts.end() ) {
         // The context is already attached
         *data = found->second;
@@ -4126,7 +4157,7 @@ EffectInstance::dettachAllOpenGLContexts()
 {
     QMutexLocker locker(&_imp->attachedContextsMutex);
 
-    for (std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator it = _imp->attachedContexts.begin(); it != _imp->attachedContexts.end(); ++it) {
+    for (std::map<OSGLContextWPtr, EffectInstance::OpenGLContextEffectDataPtr>::iterator it = _imp->attachedContexts.begin(); it != _imp->attachedContexts.end(); ++it) {
         OSGLContextPtr context = it->first.lock();
         if (!context) {
             continue;
@@ -4158,7 +4189,7 @@ EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext, con
 
 
     bool mustUnlock = data->getHasTakenLock();
-    std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
+    std::map<OSGLContextWPtr, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
     if ( found != _imp->attachedContexts.end() ) {
         _imp->attachedContexts.erase(found);
     }
@@ -4321,7 +4352,7 @@ EffectInstance::getComponentsNeededDefault(double time, ViewIdx view,
     }
 
     // For each input get their needed components
-    int maxInput = getMaxInputCount();
+    int maxInput = getNInputs();
     for (int i = 0; i < maxInput; ++i) {
 
         std::list<ImagePlaneDesc> upstreamAvailableLayers;
@@ -4468,7 +4499,7 @@ void
 EffectInstance::getAvailableLayers(double time, ViewIdx view, int inputNb, std::list<ImagePlaneDesc>* availableLayers)
 {
 
-    EffectInstPtr effect;
+    EffectInstancePtr effect;
     if (inputNb >= 0) {
         effect = getInput(inputNb);
     } else {
@@ -4568,7 +4599,7 @@ EffectInstance::getThreadLocalRenderedPlanes(std::map<ImagePlaneDesc, EffectInst
                                              ImagePlaneDesc* planeBeingRendered,
                                              RectI* renderWindow) const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if (tls && tls->currentRenderArgs.validArgs) {
         assert( !tls->currentRenderArgs.outputPlanes.empty() );
@@ -4583,9 +4614,9 @@ EffectInstance::getThreadLocalRenderedPlanes(std::map<ImagePlaneDesc, EffectInst
 }
 
 bool
-EffectInstance::getThreadLocalNeededComponents(boost::shared_ptr<ComponentsNeededMap>* neededComps) const
+EffectInstance::getThreadLocalNeededComponents(ComponentsNeededMapPtr* neededComps) const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if (tls && tls->currentRenderArgs.validArgs) {
         assert( !tls->currentRenderArgs.outputPlanes.empty() );
@@ -4601,7 +4632,7 @@ void
 EffectInstance::updateThreadLocalRenderTime(double time)
 {
     if ( QThread::currentThread() != qApp->thread() ) {
-        EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+        EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
         if (tls && tls->currentRenderArgs.validArgs) {
             tls->currentRenderArgs.time = time;
         }
@@ -4611,7 +4642,7 @@ EffectInstance::updateThreadLocalRenderTime(double time)
 bool
 EffectInstance::isDuringPaintStrokeCreationThreadLocal() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if ( tls && !tls->frameArgs.empty() ) {
         return tls->frameArgs.back()->isDuringPaintStrokeCreation;
@@ -4679,7 +4710,7 @@ EffectInstance::setCurrentCursor(const QString& customCursorFilePath)
 }
 
 void
-EffectInstance::addOverlaySlaveParam(const boost::shared_ptr<KnobI>& knob)
+EffectInstance::addOverlaySlaveParam(const KnobIPtr& knob)
 {
     _imp->overlaySlaves.push_back(knob);
 }
@@ -4687,8 +4718,8 @@ EffectInstance::addOverlaySlaveParam(const boost::shared_ptr<KnobI>& knob)
 bool
 EffectInstance::isOverlaySlaveParam(const KnobI* knob) const
 {
-    for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->overlaySlaves.begin(); it != _imp->overlaySlaves.end(); ++it) {
-        boost::shared_ptr<KnobI> k = it->lock();
+    for (std::list<KnobIWPtr>::const_iterator it = _imp->overlaySlaves.begin(); it != _imp->overlaySlaves.end(); ++it) {
+        KnobIPtr k = it->lock();
         if (!k) {
             continue;
         }
@@ -4731,11 +4762,16 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
     assert(kh);
     
-    // While creating a PyPlug, never handle changes, fixes https://github.com/MrKepzie/Natron/issues/1637
-    if (kh && kh->isDeclaredByPlugin() && !wasFormatKnobCaught && !getApp()->isCreatingPythonGroup()) {
+    // While creating a PyPlug, never handle changes, but call syncPrivateData before any other action,
+    // fixes https://github.com/MrKepzie/Natron/issues/1637
+    if (getApp()->isCreatingPythonGroup() && kh && kh->isDeclaredByPlugin() && !wasFormatKnobCaught) {
+        // must sync private data in EffectInstance::getPreferredMetadata_public()
+        QMutexLocker l(&_imp->mustSyncPrivateDataMutex);
+        _imp->mustSyncPrivateData = true;
+    } else if (kh && kh->isDeclaredByPlugin() && !wasFormatKnobCaught) {
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.
-        boost::shared_ptr<ParallelRenderArgsSetter> setter;
+        ParallelRenderArgsSetterPtr setter;
         if (reason != eValueChangedReasonTimeChanged) {
             AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
             const bool isRenderUserInteraction = true;
@@ -4744,6 +4780,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             if (isAbortable) {
                 isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
             }
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
             setter.reset( new ParallelRenderArgsSetter( time,
                                                         viewIdx, //view
                                                         isRenderUserInteraction, // isRenderUserInteraction
@@ -4755,7 +4792,21 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                         NodePtr(), // activeRotoPaintNode
                                                         true, // isAnalysis
                                                         false, // draftMode
-                                                        boost::shared_ptr<RenderStats>() ) );
+                                                        RenderStatsPtr() ) );
+#else
+            setter = boost::make_shared<ParallelRenderArgsSetter>( time,
+                                                                  viewIdx, //view
+                                                                  isRenderUserInteraction, // isRenderUserInteraction
+                                                                  isSequentialRender, // isSequential
+                                                                  abortInfo, // abortInfo
+                                                                  node, // treeRoot
+                                                                  0, //texture index
+                                                                  getApp()->getTimeLine().get(),
+                                                                  NodePtr(), // activeRotoPaintNode
+                                                                  true, // isAnalysis
+                                                                  false, // draftMode
+                                                                  RenderStatsPtr() );
+#endif
         }
         {
             RECURSIVE_ACTION();
@@ -4844,7 +4895,7 @@ EffectInstance::aboutToRestoreDefaultValues()
  * When cycling through the tree, we prefer non optional inputs and we span inputs
  * from last to first.
  **/
-EffectInstPtr
+EffectInstancePtr
 EffectInstance::getNearestNonDisabled() const
 {
     NodePtr node = getNode();
@@ -4853,9 +4904,11 @@ EffectInstance::getNearestNonDisabled() const
         return node->getEffectInstance();
     } else {
         ///Test all inputs recursively, going from last to first, preferring non optional inputs.
-        std::list<EffectInstPtr> nonOptionalInputs;
-        std::list<EffectInstPtr> optionalInputs;
-        bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+        std::list<EffectInstancePtr> nonOptionalInputs;
+        std::list<EffectInstancePtr> optionalInputs;
+        // the following is wrong, because the behavior of scripts or PyPlugs when rendering will then depend on the preferences!
+        //bool useInputA = appPTR->getCurrentSettings()->useInputAForMergeAutoConnect() || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3);
+        const bool useInputA = false || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3);
 
         ///Find an input named A
         std::string inputNameToFind, otherName;
@@ -4867,11 +4920,11 @@ EffectInstance::getNearestNonDisabled() const
             otherName = "A";
         }
         int foundOther = -1;
-        int maxinputs = getMaxInputCount();
+        int maxinputs = getNInputs();
         for (int i = 0; i < maxinputs; ++i) {
             std::string inputLabel = getInputLabel(i);
             if (inputLabel == inputNameToFind) {
-                EffectInstPtr inp = getInput(i);
+                EffectInstancePtr inp = getInput(i);
                 if (inp) {
                     nonOptionalInputs.push_front(inp);
                     break;
@@ -4882,15 +4935,15 @@ EffectInstance::getNearestNonDisabled() const
         }
 
         if ( (foundOther != -1) && nonOptionalInputs.empty() ) {
-            EffectInstPtr inp = getInput(foundOther);
+            EffectInstancePtr inp = getInput(foundOther);
             if (inp) {
                 nonOptionalInputs.push_front(inp);
             }
         }
 
         ///If we found A or B so far, cycle through them
-        for (std::list<EffectInstPtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
-            EffectInstPtr inputRet = (*it)->getNearestNonDisabled();
+        for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+            EffectInstancePtr inputRet = (*it)->getNearestNonDisabled();
             if (inputRet) {
                 return inputRet;
             }
@@ -4900,7 +4953,7 @@ EffectInstance::getNearestNonDisabled() const
         ///We cycle in reverse by default. It should be a setting of the application.
         ///In this case it will return input B instead of input A of a merge for example.
         for (int i = 0; i < maxinputs; ++i) {
-            EffectInstPtr inp = getInput(i);
+            EffectInstancePtr inp = getInput(i);
             bool optional = isInputOptional(i);
             if (inp) {
                 if (optional) {
@@ -4912,16 +4965,16 @@ EffectInstance::getNearestNonDisabled() const
         }
 
         ///Cycle through all non optional inputs first
-        for (std::list<EffectInstPtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
-            EffectInstPtr inputRet = (*it)->getNearestNonDisabled();
+        for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+            EffectInstancePtr inputRet = (*it)->getNearestNonDisabled();
             if (inputRet) {
                 return inputRet;
             }
         }
 
         ///Cycle through optional inputs...
-        for (std::list<EffectInstPtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
-            EffectInstPtr inputRet = (*it)->getNearestNonDisabled();
+        for (std::list<EffectInstancePtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+            EffectInstancePtr inputRet = (*it)->getNearestNonDisabled();
             if (inputRet) {
                 return inputRet;
             }
@@ -4932,16 +4985,18 @@ EffectInstance::getNearestNonDisabled() const
     }
 } // EffectInstance::getNearestNonDisabled
 
-EffectInstPtr
+EffectInstancePtr
 EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
 {
     assert( getNode()->isNodeDisabled() );
 
     ///Test all inputs recursively, going from last to first, preferring non optional inputs.
-    std::list<EffectInstPtr> nonOptionalInputs;
-    std::list<EffectInstPtr> optionalInputs;
+    std::list<EffectInstancePtr> nonOptionalInputs;
+    std::list<EffectInstancePtr> optionalInputs;
     int localPreferredInput = -1;
-    bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+    // the following is wrong, because the behavior of scripts or PyPlugs when rendering will then depend on the preferences!
+    //bool useInputA = appPTR->getCurrentSettings()->useInputAForMergeAutoConnect() || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3);
+    const bool useInputA = false || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3);
     ///Find an input named A
     std::string inputNameToFind, otherName;
     if (useInputA) {
@@ -4952,11 +5007,11 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
         otherName = "A";
     }
     int foundOther = -1;
-    int maxinputs = getMaxInputCount();
+    int maxinputs = getNInputs();
     for (int i = 0; i < maxinputs; ++i) {
         std::string inputLabel = getInputLabel(i);
         if (inputLabel == inputNameToFind) {
-            EffectInstPtr inp = getInput(i);
+            EffectInstancePtr inp = getInput(i);
             if (inp) {
                 nonOptionalInputs.push_front(inp);
                 localPreferredInput = i;
@@ -4968,7 +5023,7 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     }
 
     if ( (foundOther != -1) && nonOptionalInputs.empty() ) {
-        EffectInstPtr inp = getInput(foundOther);
+        EffectInstancePtr inp = getInput(foundOther);
         if (inp) {
             nonOptionalInputs.push_front(inp);
             localPreferredInput = foundOther;
@@ -4976,9 +5031,9 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     }
 
     ///If we found A or B so far, cycle through them
-    for (std::list<EffectInstPtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+    for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
         if ( (*it)->getNode()->isNodeDisabled() ) {
-            EffectInstPtr inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
+            EffectInstancePtr inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
             if (inputRet) {
                 return inputRet;
             }
@@ -4989,7 +5044,7 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     ///We cycle in reverse by default. It should be a setting of the application.
     ///In this case it will return input B instead of input A of a merge for example.
     for (int i = 0; i < maxinputs; ++i) {
-        EffectInstPtr inp = getInput(i);
+        EffectInstancePtr inp = getInput(i);
         bool optional = isInputOptional(i);
         if (inp) {
             if (optional) {
@@ -5008,9 +5063,9 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
 
 
     ///Cycle through all non optional inputs first
-    for (std::list<EffectInstPtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+    for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
         if ( (*it)->getNode()->isNodeDisabled() ) {
-            EffectInstPtr inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
+            EffectInstancePtr inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
             if (inputRet) {
                 return inputRet;
             }
@@ -5018,9 +5073,9 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     }
 
     ///Cycle through optional inputs...
-    for (std::list<EffectInstPtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+    for (std::list<EffectInstancePtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
         if ( (*it)->getNode()->isNodeDisabled() ) {
-            EffectInstPtr inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
+            EffectInstancePtr inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
             if (inputRet) {
                 return inputRet;
             }
@@ -5032,7 +5087,7 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     return shared_from_this();
 } // EffectInstance::getNearestNonDisabledPrevious
 
-EffectInstPtr
+EffectInstancePtr
 EffectInstance::getNearestNonIdentity(double time)
 {
     U64 hash = getRenderHash();
@@ -5050,7 +5105,7 @@ EffectInstance::getNearestNonIdentity(double time)
         if (inputNbIdentity < 0) {
             return shared_from_this();
         }
-        EffectInstPtr effect = getInput(inputNbIdentity);
+        EffectInstancePtr effect = getInput(inputNbIdentity);
 
         return effect ? effect->getNearestNonIdentity(time) : shared_from_this();
     }
@@ -5096,10 +5151,10 @@ EffectInstance::abortAnyEvaluation(bool keepOldestRender)
             (*it)->hasOutputNodesConnected(&outputNodes);
         }
     } else {
-        boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
+        RotoDrawableItemPtr attachedStroke = getNode()->getAttachedRotoItem();
         if (attachedStroke) {
             ///For nodes internal to the rotopaint tree, check outputs of the rotopaint node instead
-            boost::shared_ptr<RotoContext> context = attachedStroke->getContext();
+            RotoContextPtr context = attachedStroke->getContext();
             assert(context);
             if (context) {
                 NodePtr rotonode = context->getNode();
@@ -5125,8 +5180,8 @@ EffectInstance::abortAnyEvaluation(bool keepOldestRender)
 double
 EffectInstance::getCurrentTime() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    AppInstPtr app = getApp();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
+    AppInstancePtr app = getApp();
     if (!app) {
         return 0.;
     }
@@ -5148,7 +5203,7 @@ EffectInstance::getCurrentTime() const
 ViewIdx
 EffectInstance::getCurrentView() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if (!tls) {
         return ViewIdx(0);
@@ -5166,7 +5221,7 @@ EffectInstance::getCurrentView() const
 SequenceTime
 EffectInstance::getFrameRenderArgsCurrentTime() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if ( !tls || tls->frameArgs.empty() ) {
         return getApp()->getTimeLine()->currentFrame();
@@ -5178,7 +5233,7 @@ EffectInstance::getFrameRenderArgsCurrentTime() const
 ViewIdx
 EffectInstance::getFrameRenderArgsCurrentView() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if ( !tls || tls->frameArgs.empty() ) {
         return ViewIdx(0);
@@ -5206,9 +5261,9 @@ isFrameVaryingOrAnimated_impl(const EffectInstance* node,
     if ( node->isFrameVarying() || node->getHasAnimation() || node->getNode()->getRotoContext() ) {
         *ret = true;
     } else {
-        int maxInputs = node->getMaxInputCount();
+        int maxInputs = node->getNInputs();
         for (int i = 0; i < maxInputs; ++i) {
-            EffectInstPtr input = node->getInput(i);
+            EffectInstancePtr input = node->getInput(i);
             if (input) {
                 isFrameVaryingOrAnimated_impl(input.get(), ret);
                 if (*ret) {
@@ -5244,6 +5299,22 @@ EffectInstance::getPreferredMetadata_public(NodeMetadata& metadata)
         return stat;
     }
     if (!getNode()->isNodeDisabled()) {
+        // call syncPrivateData if necessary
+        bool mustSyncPrivateData;
+        {
+            QMutexLocker l(&_imp->mustSyncPrivateDataMutex);
+            mustSyncPrivateData = _imp->mustSyncPrivateData;
+            _imp->mustSyncPrivateData = false;
+        }
+        if (mustSyncPrivateData) {
+            // for now, only OfxEffectInstance has syncPrivateData capabilities, but
+            // syncPrivateData() could also be a virtual member of EffectInstance
+            OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>(this);
+            if (effect) {
+                assert( QThread::currentThread() == qApp->thread() );
+                effect->onSyncPrivateDataRequested(); //syncPrivateData_other_thread();
+            }
+        }
         return getPreferredMetadata(metadata);
     }
     return stat;
@@ -5253,7 +5324,7 @@ EffectInstance::getPreferredMetadata_public(NodeMetadata& metadata)
 static int
 getUnmappedComponentsForInput(EffectInstance* self,
                               int inputNb,
-                              const std::vector<EffectInstPtr>& inputs,
+                              const std::vector<EffectInstancePtr>& inputs,
                               int firstNonOptionalConnectedInputComps)
 {
     int rawComps;
@@ -5291,7 +5362,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     }
 
     const bool multiBitDepth = supportsMultipleClipDepths();
-    int nInputs = getMaxInputCount();
+    int nInputs = getNInputs();
     metadata.clearAndResize(nInputs);
 
     // OK find the deepest chromatic component on our input clips and the one with the
@@ -5302,7 +5373,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 
     //Default to the project frame rate
     double frameRate = getApp()->getProjectFrameRate();
-    std::vector<EffectInstPtr> inputs(nInputs);
+    std::vector<EffectInstancePtr> inputs(nInputs);
 
     // Find the components of the first non optional connected input
     // They will be used for disconnected input
@@ -5319,7 +5390,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     ImagePremultiplicationEnum premult = eImagePremultiplicationOpaque;
     bool premultSet = false;
     for (int i = 0; i < nInputs; ++i) {
-        const EffectInstPtr& input = inputs[i];
+        const EffectInstancePtr& input = inputs[i];
         if (input) {
             frameRate = std::max( frameRate, input->getFrameRate() );
         }
@@ -5702,7 +5773,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
         return;
     }
     //Make sure it is valid
-    int nInputs = node->getMaxInputCount();
+    int nInputs = node->getNInputs();
 
     for (int i = -1; i < nInputs; ++i) {
         md.setBitDepth( i, node->getClosestSupportedBitDepth( md.getBitDepth(i) ) );
@@ -5740,7 +5811,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
     const bool supportsMultipleClipDepths = _publicInterface->supportsMultipleClipDepths();
     const bool supportsMultipleClipPARs = _publicInterface->supportsMultipleClipPARs();
     const bool supportsMultipleClipFPSs = _publicInterface->supportsMultipleClipFPSs();
-    std::vector<EffectInstPtr> inputs(nInputs);
+    std::vector<EffectInstancePtr> inputs(nInputs);
     for (int i = 0; i < nInputs; ++i) {
         inputs[i] = _publicInterface->getInput(i);
     }
@@ -5870,7 +5941,7 @@ EffectInstance::assertActionIsNotRecursive() const
 void
 EffectInstance::incrementRecursionLevel()
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
 
     assert(tls);
     ++tls->actionRecursionLevel;
@@ -5879,7 +5950,7 @@ EffectInstance::incrementRecursionLevel()
 void
 EffectInstance::decrementRecursionLevel()
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     assert(tls);
     --tls->actionRecursionLevel;
@@ -5888,7 +5959,7 @@ EffectInstance::decrementRecursionLevel()
 int
 EffectInstance::getRecursionLevel() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if (!tls) {
         return 0;

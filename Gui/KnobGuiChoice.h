@@ -85,7 +85,7 @@ private:
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
 
 private:
-    boost::shared_ptr<KnobWidgetDnD> _dnd;
+    KnobWidgetDnDPtr _dnd;
 };
 
 class KnobGuiChoice
@@ -96,19 +96,19 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    static KnobGui * BuildKnobGui(KnobPtr knob,
+    static KnobGui * BuildKnobGui(KnobIPtr knob,
                                   KnobGuiContainerI *container)
     {
         return new KnobGuiChoice(knob, container);
     }
 
-    KnobGuiChoice(KnobPtr knob,
+    KnobGuiChoice(KnobIPtr knob,
                   KnobGuiContainerI *container);
 
     virtual ~KnobGuiChoice() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
 
 public Q_SLOTS:
 
@@ -136,7 +136,7 @@ private:
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;
     KnobComboBox *_comboBox;
-    boost::weak_ptr<KnobChoice> _knob;
+    KnobChoiceWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

@@ -345,7 +345,7 @@ AboutWindow::AboutWindow(QWidget* parent)
 #endif
         QString gitStr = QString::fromUtf8("<p>%1</p>").arg(tr("This software was compiled from the source "
                                                                "code branch %1 at version %2 using %3 targetting %4 for %5.")
-                                                            .arg( QString::fromUtf8("<a href=\"https://github.com/MrKepzie/Natron/tree/" GIT_BRANCH "\">" GIT_BRANCH "</a>") ) // %1
+                                                            .arg( QString::fromUtf8("<a href=\"https://github.com/NatronGitHub/Natron/tree/" GIT_BRANCH "\">" GIT_BRANCH "</a>") ) // %1
                                                             .arg(argStr) // %2
                                                             .arg( QString::fromUtf8(BOOST_COMPILER OPENMP_STRING) ) // %3
                                                             .arg( QString::fromUtf8(BOOST_ARCH_NAME) ) // %4
@@ -354,32 +354,42 @@ AboutWindow::AboutWindow(QWidget* parent)
         aboutText.append(gitStr);
     }
     if ( !std::string(IO_GIT_COMMIT).empty() ) {
-        QString argStr = ( QString::fromUtf8("<a href=\"https://github.com/MrKepzie/openfx-io/tree/" IO_GIT_COMMIT "\">")
+        QString argStr = ( QString::fromUtf8("<a href=\"https://github.com/NatronGitHub/openfx-io/tree/" IO_GIT_COMMIT "\">")
                            + QString::fromUtf8(IO_GIT_COMMIT).mid(0, 7)
                            + QString::fromUtf8("</a>") );
         QString gitStr = QString::fromUtf8("<p>%1</p>").arg(tr("The bundled %1 "
                                                                "plugins were compiled from version %2.")
-                                                            .arg(QString::fromUtf8("<a href=\"https://github.com/MrKepzie/openfx-io\">openfx-io</a>")) //%1
+                                                            .arg(QString::fromUtf8("<a href=\"https://github.com/NatronGitHub/openfx-io\">openfx-io</a>")) //%1
                                                             .arg(argStr));  // %2
         aboutText.append(gitStr);
     }
     if ( !std::string(MISC_GIT_COMMIT).empty() ) {
-        QString argStr = ( QString::fromUtf8("<a href=\"https://github.com/devernay/openfx-misc/tree/" MISC_GIT_COMMIT "\">")
+        QString argStr = ( QString::fromUtf8("<a href=\"https://github.com/NatronGitHub/openfx-misc/tree/" MISC_GIT_COMMIT "\">")
                            + QString::fromUtf8(MISC_GIT_COMMIT).mid(0, 7)
                            + QString::fromUtf8("</a>") );
         QString gitStr = QString::fromUtf8("<p>%1</p>").arg(tr("The bundled %1 "
                                                                "plugins were compiled from version %2.")
-                                                            .arg(QString::fromUtf8("<a href=\"https://github.com/devernay/openfx-misc\">openfx-misc</a>")) //%1
+                                                            .arg(QString::fromUtf8("<a href=\"https://github.com/NatronGitHub/openfx-misc\">openfx-misc</a>")) //%1
                                                             .arg(argStr));  // %2
         aboutText.append(gitStr);
     }
     if ( !std::string(ARENA_GIT_COMMIT).empty() ) {
-        QString argStr = ( QString::fromUtf8("<a href=\"https://github.com/olear/openfx-arena/tree/" ARENA_GIT_COMMIT "\">")
+        QString argStr = ( QString::fromUtf8("<a href=\"https://github.com/NatronGitHub/openfx-arena/tree/" ARENA_GIT_COMMIT "\">")
                            + QString::fromUtf8(ARENA_GIT_COMMIT).mid(0, 7)
                           + QString::fromUtf8("</a>") );
         QString gitStr = QString::fromUtf8("<p>%1</p>").arg(tr("The bundled %1 "
                                                                "plugins were compiled from version %2.")
-                                                            .arg(QString::fromUtf8("<a href=\"https://github.com/olear/openfx-arena\">openfx-arena</a>")) //%1
+                                                            .arg(QString::fromUtf8("<a href=\"https://github.com/NatronGitHub/openfx-arena\">openfx-arena</a>")) //%1
+                                                            .arg(argStr));  // %2
+        aboutText.append(gitStr);
+    }
+    if ( !std::string(GMIC_GIT_COMMIT).empty() ) {
+        QString argStr = ( QString::fromUtf8("<a href=\"https://github.com/NatronGitHub/openfx-gmic/tree/" GMIC_GIT_COMMIT "\">")
+                           + QString::fromUtf8(GMIC_GIT_COMMIT).mid(0, 7)
+                          + QString::fromUtf8("</a>") );
+        QString gitStr = QString::fromUtf8("<p>%1</p>").arg(tr("The bundled %1 "
+                                                               "plugins were compiled from version %2.")
+                                                            .arg(QString::fromUtf8("<a href=\"https://github.com/NatronGitHub/openfx-gmic\">openfx-gmic</a>")) //%1
                                                             .arg(argStr));  // %2
         aboutText.append(gitStr);
     }
@@ -466,7 +476,7 @@ AboutWindow::AboutWindow(QWidget* parent)
     _view->setUniformRowHeights(true);
     _view->setSelectionMode(QAbstractItemView::SingleSelection);
     _view->header()->close();
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     _view->header()->setResizeMode(QHeaderView::ResizeToContents);
 #else
     _view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);

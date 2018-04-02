@@ -3,7 +3,7 @@ env:
   global:
    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
    #   via the "travis encrypt" command using the project repo's public key
-   - secure: "Ss+/N7eLl1cnXRP+XmXuBuuMXTZ/0TUgiGxBJMYGVTmwG2tDDAfhsUh5laeb/OE7dNxwLK5uLeb/XXI4AlP6W7tfquIAAq6/PhKIiRTXDgU6Sfa5voHiM8ni1x9rBtmaOk6/8QjWWSisrQmy9DmxRfYtP2i/sKkpIcJHCs5OCpo="
+   - secure: "Kagza287CBDBxPlNU2HC86OWMj22SfUfNb98BzwkI/LabG4HSAe1JnzTM62GZwPJxZBRX691Adtoe43Nw/sSCdP08jHgROHXQ/FQkGw4AbgSzE08B6gSpwXJhjLuOwiuBfLXYPKnXSjD3MA6VNiVNT/KhM06Vro0J6aLyhT5d5czOUnVWKzXzW4bjI2evq27xNxukgFj75Ykwp8bnKV57cZneZVyEGxUWe9hAcIJjynS9gVI0SPkun6VqW4y9Z5TDmU4ZZd/mvq2x0o9dS1qDN1Bf0kG7nNlvcWX9FMeFBo880whiyLPG1EPx8iNopZbL5HUujLP4/v24AYKPw+YoW6aaY2wDOzCZrFyEbsq2jbtnXL8Ik8Gle3WTJZ6f0NvRwwY9vVKbsBihb7vsUqgpfBqe2p8S19nt13b/9AO2eVw/By2i1Gh5yt5rGbOMM7MMFe3jzUhl48KHoGLQb7yFlB6AT2Y7rlX0l0BeZ4qN76LglV72RTW13h4+52rVcFvcVXT9MnVafYDNCO5N5AnHzOvCKNIq872eULJ7buCs3yrlv4I7fsJyVyzqGYQoZYZ6QY1eP0srS0UaIhLXBW7AQP7yaLKg6+bRYnGHzcvekJXKRzHru91n25e0Q/LstdA1vJs7ZQvY1w3VzIhr3SMJ4zRcF2RYA/7dHAgCthwy9Q="
    # Coverity run condition (avoid matrix multiple runs), need customized
    # build script. Need an update if new matrix cases.
    - coverity_scan_run_condition='"$CC" = gcc -a "$TRAVIS_OS_NAME" != osx'
@@ -42,10 +42,17 @@ addons:
     #- kalakris-cmake
     - pythonxy-devel
     packages:
+    - ca-certificates
     #- gcc-4.9
     #- g++-4.9
-    - gcc-5
-    - g++-5
+    #- gcc-5
+    #- g++-5
+    #- gcc-6
+    #- g++-6
+    - gcc-7
+    - g++-7
+    #- gcc-8
+    #- g++-8
     - libqt4-dev
     - libqt4-opengl-dev
     - libglew-dev
@@ -72,8 +79,8 @@ addons:
     - libtinyxml-dev
     - liblcms2-dev
     - libyaml-cpp-dev
-    - libopenexr-dev
-    - libilmbase-dev
+    #- libopenexr-dev
+    #- libilmbase-dev
     - libopenjpeg-dev
     - libtiff4-dev
     - libjpeg-dev
@@ -114,13 +121,14 @@ matrix:
       # see https://docs.travis-ci.com/user/osx-ci-environment/
       # we use macOS 10.12 to get the precompiled pyside bottles from
       # https://github.com/cartr/homebrew-qt4
-      osx_image: xcode8.3
+      # see https://docs.travis-ci.com/user/reference/osx/#OS-X-Version
+      osx_image: xcode9.2
       compiler: clang
   exclude:
     - os: osx
       compiler: gcc
-  allow_failures:
-    - os: osx # we exceed the time limit
+#  allow_failures:
+#    - os: osx # if we exceed the time limit
   fast_finish: true
 
 cache:
@@ -130,9 +138,12 @@ cache:
 
 # Travis CI has 1.5 cores per VM, take advantage of it
 before_install:
-   - date -u
-   - uname -a
-   - export J='-j2'
+  - date -u
+  - uname -a
+  - if [ ${TRAVIS_OS_NAME} = "linux" ]; then
+      echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca- ;
+    fi
+  - export J='-j2'
 
 install:
   - . tools/travis/coverity_env.sh
@@ -141,11 +152,24 @@ install:
         exit 0;
     fi
   - tools/travis/install_dependencies.sh
-  - curl -k -L https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz | tar zxf -
-  - mv OpenColorIO-Configs-Natron-v2.1 OpenColorIO-Configs
+  - if [ ! -d "$HOME/OpenColorIO-Configs" ]; then
+      pushd $HOME;
+      curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz | tar -xvzf -;
+      mv OpenColorIO-Configs-Natron-v2.3 OpenColorIO-Configs;
+      popd;
+    else
+      echo 'Using cached OpenColorIO-Configs';
+    fi
 
 # OSX build will timeout if we redirect its output
 #> install_dependencies.log 2>&1
+
+cache:
+  directories:
+    - $HOME/openexr
+    - $HOME/ocio
+    - $HOME/oiio
+    - $HOME/seexpr
 
 script:
   - if [[ ${COVERITY_SCAN_BRANCH} == 1 ]];

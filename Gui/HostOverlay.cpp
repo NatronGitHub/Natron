@@ -98,6 +98,14 @@ DefaultInteractI::getPixelScale(double& scaleX,
     _overlay->n_getPixelScale(scaleX, scaleY);
 }
 
+#ifdef OFX_EXTENSIONS_NATRON
+double
+DefaultInteractI::getScreenPixelRatio() const
+{
+    return _overlay->n_getScreenPixelRatio();
+}
+#endif
+
 void
 DefaultInteractI::draw(double /*time*/,
                        const RenderScale& /*renderScale*/,
@@ -221,8 +229,8 @@ enum PositionInteractState
 class PositionInteract
     : public DefaultInteractI
 {
-    boost::weak_ptr<KnobDouble> _param;
-    boost::weak_ptr<KnobBool> _interactive;
+    KnobDoubleWPtr _param;
+    KnobBoolWPtr _interactive;
     QPointF _dragPos;
     bool _interactiveDrag;
     PositionInteractState _state;
@@ -308,6 +316,7 @@ public:
                            ViewIdx view) OVERRIDE FINAL;
 };
 
+typedef boost::shared_ptr<PositionInteract> PositionInteractPtr;
 
 class TransformInteract
     : public DefaultInteractI
@@ -349,16 +358,16 @@ class TransformInteract
         eOrientationVertical
     };
 
-    boost::weak_ptr<KnobDouble> _translate;
-    boost::weak_ptr<KnobDouble> _scale;
-    boost::weak_ptr<KnobBool> _scaleUniform;
-    boost::weak_ptr<KnobDouble> _rotate;
-    boost::weak_ptr<KnobDouble> _center;
-    boost::weak_ptr<KnobDouble> _skewX;
-    boost::weak_ptr<KnobDouble> _skewY;
-    boost::weak_ptr<KnobChoice> _skewOrder;
-    boost::weak_ptr<KnobBool> _invert;
-    boost::weak_ptr<KnobBool> _interactive;
+    KnobDoubleWPtr _translate;
+    KnobDoubleWPtr _scale;
+    KnobBoolWPtr _scaleUniform;
+    KnobDoubleWPtr _rotate;
+    KnobDoubleWPtr _center;
+    KnobDoubleWPtr _skewX;
+    KnobDoubleWPtr _skewY;
+    KnobChoiceWPtr _skewOrder;
+    KnobBoolWPtr _invert;
+    KnobBoolWPtr _interactive;
     DrawStateEnum _drawState;
     MouseStateEnum _mouseState;
     int _modifierStateCtrl;
@@ -451,7 +460,7 @@ public:
                       double* tx,
                       double* ty) const
     {
-        boost::shared_ptr<KnobDouble> knob = _translate.lock();
+        KnobDoublePtr knob = _translate.lock();
 
         assert(knob);
         *tx = knob->getValueAtTime(time, 0);
@@ -462,7 +471,7 @@ public:
                    double* cx,
                    double* cy) const
     {
-        boost::shared_ptr<KnobDouble> knob = _center.lock();
+        KnobDoublePtr knob = _center.lock();
 
         assert(knob);
         *cx = knob->getValueAtTime(time, 0);
@@ -473,7 +482,7 @@ public:
                   double* sx,
                   double* sy) const
     {
-        boost::shared_ptr<KnobDouble> knob = _scale.lock();
+        KnobDoublePtr knob = _scale.lock();
 
         assert(knob);
         *sx = knob->getValueAtTime(time, 0);
@@ -483,7 +492,7 @@ public:
     void getRotate(double time,
                    double* rot) const
     {
-        boost::shared_ptr<KnobDouble> knob = _rotate.lock();
+        KnobDoublePtr knob = _rotate.lock();
 
         assert(knob);
         *rot = knob->getValueAtTime(time, 0);
@@ -492,7 +501,7 @@ public:
     void getSkewX(double time,
                   double* x) const
     {
-        boost::shared_ptr<KnobDouble> knob = _skewX.lock();
+        KnobDoublePtr knob = _skewX.lock();
 
         assert(knob);
         *x = knob->getValueAtTime(time, 0);
@@ -501,7 +510,7 @@ public:
     void getSkewY(double time,
                   double* y) const
     {
-        boost::shared_ptr<KnobDouble> knob = _skewY.lock();
+        KnobDoublePtr knob = _skewY.lock();
 
         assert(knob);
         *y = knob->getValueAtTime(time, 0);
@@ -510,7 +519,7 @@ public:
     void getSkewOrder(double time,
                       int* order) const
     {
-        boost::shared_ptr<KnobChoice> knob = _skewOrder.lock();
+        KnobChoicePtr knob = _skewOrder.lock();
 
         assert(knob);
         *order = knob->getValueAtTime(time, 0);
@@ -519,7 +528,7 @@ public:
     void getScaleUniform(double time,
                          bool* uniform) const
     {
-        boost::shared_ptr<KnobBool> knob = _scaleUniform.lock();
+        KnobBoolPtr knob = _scaleUniform.lock();
 
         assert(knob);
         *uniform = knob->getValueAtTime(time, 0);
@@ -527,7 +536,7 @@ public:
 
     bool getInvert(double time) const
     {
-        boost::shared_ptr<KnobBool> knob = _invert.lock();
+        KnobBoolPtr knob = _invert.lock();
 
         if (knob) {
             return knob->getValueAtTime(time);
@@ -593,14 +602,16 @@ public:
                            ViewIdx view) OVERRIDE FINAL;
 };
 
+typedef boost::shared_ptr<TransformInteract> TransformInteractPtr;
+
 class CornerPinInteract
     : public DefaultInteractI
 {
-    std::vector<boost::weak_ptr<KnobDouble> > _from, _to;
-    std::vector<boost::weak_ptr<KnobBool> > _enable;
-    boost::weak_ptr<KnobBool> _invert;
-    boost::weak_ptr<KnobChoice> _overlayPoints;
-    boost::weak_ptr<KnobBool> _interactive;
+    std::vector<KnobDoubleWPtr> _from, _to;
+    std::vector<KnobBoolWPtr> _enable;
+    KnobBoolWPtr _invert;
+    KnobChoiceWPtr _overlayPoints;
+    KnobBoolWPtr _interactive;
     int _dragging; // -1: idle, else dragging point number
     int _hovering; // -1: idle, else hovering point number
     Point _toDrag[4];
@@ -695,7 +706,7 @@ public:
                  double* tx,
                  double* ty) const
     {
-        boost::shared_ptr<KnobDouble> knob = _from[index].lock();
+        KnobDoublePtr knob = _from[index].lock();
 
         assert(knob);
         *tx = knob->getValueAtTime(time, 0);
@@ -707,7 +718,7 @@ public:
                double* tx,
                double* ty) const
     {
-        boost::shared_ptr<KnobDouble> knob = _to[index].lock();
+        KnobDoublePtr knob = _to[index].lock();
 
         assert(knob);
         *tx = knob->getValueAtTime(time, 0);
@@ -717,7 +728,7 @@ public:
     bool getEnabled(double time,
                     int index) const
     {
-        boost::shared_ptr<KnobBool> knob = _enable[index].lock();
+        KnobBoolPtr knob = _enable[index].lock();
 
         assert(knob);
 
@@ -726,7 +737,7 @@ public:
 
     bool getInverted(double time) const
     {
-        boost::shared_ptr<KnobBool> knob = _invert.lock();
+        KnobBoolPtr knob = _invert.lock();
 
         assert(knob);
 
@@ -735,7 +746,7 @@ public:
 
     bool getUseFromPoints(double time) const
     {
-        boost::shared_ptr<KnobChoice> knob = _overlayPoints.lock();
+        KnobChoicePtr knob = _overlayPoints.lock();
 
         assert(knob);
 
@@ -789,6 +800,7 @@ public:
                            ViewIdx view) OVERRIDE FINAL;
 };
 
+typedef boost::shared_ptr<CornerPinInteract> CornerPinInteractPtr;
 
 // round to the closest int, 1/10 int, etc
 // this make parameter editing easier
@@ -803,8 +815,7 @@ fround(double val,
     return pscale10 * std::floor(val / pscale10 + 0.5);
 }
 
-typedef boost::shared_ptr<DefaultInteractI> InteractPtr;
-typedef std::list<InteractPtr> InteractList;
+typedef std::list<DefaultInteractIPtr> DefaultInteractIPtrList;
 typedef std::list<TransformInteract> TransformInteracts;
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
@@ -813,8 +824,8 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 struct HostOverlayPrivate
 {
     HostOverlay* _publicInterface;
-    InteractList interacts;
-    boost::weak_ptr<NodeGui> node;
+    DefaultInteractIPtrList interacts;
+    NodeGuiWPtr node;
     QPointF lastPenPos;
     TextRenderer textRenderer;
     bool interactiveDrag;
@@ -871,15 +882,15 @@ HostOverlay::getNode() const
 }
 
 bool
-HostOverlay::addInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs)
+HostOverlay::addInteract(const HostOverlayKnobsPtr& knobs)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    KnobPtr firstKnob = knobs->getFirstKnob();
+    KnobIPtr firstKnob = knobs->getFirstKnob();
     if (!firstKnob) {
         return false;
     }
-    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+    for (DefaultInteractIPtrList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
         if ( (*it)->isInteractForKnob( firstKnob.get() ) ) {
             return false;
         }
@@ -892,15 +903,15 @@ HostOverlay::addInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs)
     HostOverlayKnobsPosition* isPosition = dynamic_cast<HostOverlayKnobsPosition*>( knobs.get() );
     HostOverlayKnobsTransform* isTransform = dynamic_cast<HostOverlayKnobsTransform*>( knobs.get() );
     HostOverlayKnobsCornerPin* isCornerPin = dynamic_cast<HostOverlayKnobsCornerPin*>( knobs.get() );
-    boost::shared_ptr<DefaultInteractI> overlay;
+    DefaultInteractIPtr overlay;
     if (isPosition) {
-        boost::shared_ptr<PositionInteract> p( new PositionInteract(isPosition, this) );
+        PositionInteractPtr p( new PositionInteract(isPosition, this) );
         overlay = p;
     } else if (isTransform) {
-        boost::shared_ptr<TransformInteract> p( new TransformInteract(isTransform, this) );
+        TransformInteractPtr p( new TransformInteract(isTransform, this) );
         overlay = p;
     } else if (isCornerPin) {
-        boost::shared_ptr<CornerPinInteract> p( new CornerPinInteract(isCornerPin, this) );
+        CornerPinInteractPtr p( new CornerPinInteract(isCornerPin, this) );
         overlay = p;
     }
 
@@ -920,7 +931,7 @@ PositionInteract::draw(double time,
                        const QFont& font,
                        const QFontMetrics& fm)
 {
-    boost::shared_ptr<KnobDouble> knob = _param.lock();
+    KnobDoublePtr knob = _param.lock();
 
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
@@ -1319,7 +1330,7 @@ TransformInteract::draw(double time,
 {
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    boost::shared_ptr<KnobDouble> translateKnob = _translate.lock();
+    KnobDoublePtr translateKnob = _translate.lock();
 
     if ( !translateKnob || !translateKnob->shouldDrawOverlayInteract() ) {
         return;
@@ -1458,7 +1469,7 @@ CornerPinInteract::draw(double time,
 {
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    boost::shared_ptr<KnobDouble> from1Knob = _from[0].lock();
+    KnobDoublePtr from1Knob = _from[0].lock();
 
     if ( !from1Knob || !from1Knob->shouldDrawOverlayInteract() ) {
         return;
@@ -1601,7 +1612,7 @@ HostOverlay::draw(double time,
     QFont font(appFont, appFontSize);
     QFontMetrics fm(font);
     // draw in reverse order
-    for (InteractList::reverse_iterator it = _imp->interacts.rbegin(); it != _imp->interacts.rend(); ++it) {
+    for (DefaultInteractIPtrList::reverse_iterator it = _imp->interacts.rbegin(); it != _imp->interacts.rend(); ++it) {
         (*it)->draw(time, renderScale, view, pscale, _imp->lastPenPos, color, shadow, font, fm);
     }
 }
@@ -1616,7 +1627,7 @@ PositionInteract::penMotion(double time,
                             const QPoint & /*penPosViewport*/,
                             double /*pressure*/)
 {
-    boost::shared_ptr<KnobDouble> knob = _param.lock();
+    KnobDoublePtr knob = _param.lock();
 
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
@@ -1797,7 +1808,7 @@ TransformInteract::penMotion(double time,
 {
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    boost::shared_ptr<KnobDouble> translateKnob = _translate.lock();
+    KnobDoublePtr translateKnob = _translate.lock();
 
     if ( !translateKnob || !translateKnob->shouldDrawOverlayInteract() ) {
         return false;
@@ -1909,7 +1920,7 @@ TransformInteract::penMotion(double time,
     }
 
     double minX, minY, maxX, maxY;
-    boost::shared_ptr<KnobDouble> scaleKnob = _scale.lock();
+    KnobDoublePtr scaleKnob = _scale.lock();
     assert(scaleKnob);
 
     minX = scaleKnob->getMinimum(0);
@@ -2118,31 +2129,31 @@ TransformInteract::penMotion(double time,
 
     if ( (_mouseState != TransformInteract::eReleased) && _interactiveDrag && valuesChanged ) {
         // no need to redraw overlay since it is slave to the paramaters
-        EffectInstPtr holder = _overlay->getNode()->getNode()->getEffectInstance();
+        EffectInstancePtr holder = _overlay->getNode()->getNode()->getEffectInstance();
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
         KeyFrame k;
         if (centerChanged) {
-            boost::shared_ptr<KnobDouble> knob = _center.lock();
+            KnobDoublePtr knob = _center.lock();
             knob->setValues(center.x, center.y, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
         }
         if (translateChanged) {
-            boost::shared_ptr<KnobDouble> knob = _translate.lock();
+            KnobDoublePtr knob = _translate.lock();
             knob->setValues(translate.x, translate.y, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
         }
         if (scaleChanged) {
-            boost::shared_ptr<KnobDouble> knob = _scale.lock();
+            KnobDoublePtr knob = _scale.lock();
             knob->setValues(scale.x, scale.y, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
         }
         if (rotateChanged) {
-            boost::shared_ptr<KnobDouble> knob = _rotate.lock();
+            KnobDoublePtr knob = _rotate.lock();
             knob->setValue(rotate, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
         }
         if (skewXChanged) {
-            boost::shared_ptr<KnobDouble> knob = _skewX.lock();
+            KnobDoublePtr knob = _skewX.lock();
             knob->setValue(skewX, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
         }
         if (skewYChanged) {
-            boost::shared_ptr<KnobDouble> knob = _skewY.lock();
+            KnobDoublePtr knob = _skewY.lock();
             knob->setValue(skewY, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
         }
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
@@ -2165,7 +2176,7 @@ CornerPinInteract::penMotion(double time,
 {
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    boost::shared_ptr<KnobDouble> from1Knob = _from[0].lock();
+    KnobDoublePtr from1Knob = _from[0].lock();
 
     if ( !from1Knob || !from1Knob->shouldDrawOverlayInteract() ) {
         return false;
@@ -2247,11 +2258,11 @@ CornerPinInteract::penMotion(double time,
         // no need to redraw overlay since it is slave to the paramaters
 
         if (_useFromDrag) {
-            boost::shared_ptr<KnobDouble> knob = _from[_dragging].lock();
+            KnobDoublePtr knob = _from[_dragging].lock();
             assert(knob);
             knob->setValues(from[_dragging].x, from[_dragging].y, ViewSpec::all(), eValueChangedReasonPluginEdited);
         } else {
-            boost::shared_ptr<KnobDouble> knob = _to[_dragging].lock();
+            KnobDoublePtr knob = _to[_dragging].lock();
             assert(knob);
             knob->setValues(to[_dragging].x, to[_dragging].y, ViewSpec::all(), eValueChangedReasonPluginEdited);
         }
@@ -2271,7 +2282,7 @@ HostOverlay::penMotion(double time,
     OfxPointD pscale;
 
     n_getPixelScale(pscale.x, pscale.y);
-    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+    for (DefaultInteractIPtrList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
         if ( (*it)->penMotion(time, renderScale, view, pscale, _imp->lastPenPos, penPos, penPosViewport, pressure) ) {
             _imp->lastPenPos = penPos;
 
@@ -2294,7 +2305,7 @@ PositionInteract::penUp(double time,
                         const QPoint &penPosViewport,
                         double pressure)
 {
-    boost::shared_ptr<KnobDouble> knob = _param.lock();
+    KnobDoublePtr knob = _param.lock();
 
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
@@ -2305,7 +2316,7 @@ PositionInteract::penUp(double time,
     bool didSomething = false;
     if (_state == ePositionInteractStatePicked) {
         if (!_interactiveDrag) {
-            boost::shared_ptr<KnobDouble> knob = _param.lock();
+            KnobDoublePtr knob = _param.lock();
             double p[2];
             p[0] = fround(lastPenPos.x(), pscale.x);
             p[1] = fround(lastPenPos.y(), pscale.y);
@@ -2346,32 +2357,32 @@ TransformInteract::penUp(double /*time*/,
            Give eValueChangedReasonPluginEdited reason so that the command uses the undo/redo stack
            see Knob::setValue
          */
-        EffectInstPtr holder = _overlay->getNode()->getNode()->getEffectInstance();
+        EffectInstancePtr holder = _overlay->getNode()->getNode()->getEffectInstance();
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
         {
-            boost::shared_ptr<KnobDouble> knob = _center.lock();
+            KnobDoublePtr knob = _center.lock();
             knob->setValues(_centerDrag.x, _centerDrag.y, ViewSpec::all(),  eValueChangedReasonPluginEdited);
         }
         {
-            boost::shared_ptr<KnobDouble> knob = _translate.lock();
+            KnobDoublePtr knob = _translate.lock();
             knob->setValues(_translateDrag.x, _translateDrag.y, ViewSpec::all(), eValueChangedReasonPluginEdited);
         }
         {
-            boost::shared_ptr<KnobDouble> knob = _scale.lock();
+            KnobDoublePtr knob = _scale.lock();
             knob->setValues(_scaleParamDrag.x, _scaleParamDrag.y, ViewSpec::all(), eValueChangedReasonPluginEdited);
         }
         {
-            boost::shared_ptr<KnobDouble> knob = _rotate.lock();
+            KnobDoublePtr knob = _rotate.lock();
             KeyFrame k;
             knob->setValue(_rotateDrag, ViewSpec::all(),  0, eValueChangedReasonPluginEdited, &k);
         }
         {
-            boost::shared_ptr<KnobDouble> knob = _skewX.lock();
+            KnobDoublePtr knob = _skewX.lock();
             KeyFrame k;
             knob->setValue(_skewXDrag, ViewSpec::all(), 0, eValueChangedReasonPluginEdited, &k);
         }
         {
-            boost::shared_ptr<KnobDouble> knob = _skewY.lock();
+            KnobDoublePtr knob = _skewY.lock();
             KeyFrame k;
             knob->setValue(_skewYDrag, ViewSpec::all(),  0, eValueChangedReasonPluginEdited, &k);
         }
@@ -2397,7 +2408,7 @@ CornerPinInteract::penUp(double /*time*/,
 {
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    boost::shared_ptr<KnobDouble> from1Knob = _from[0].lock();
+    KnobDoublePtr from1Knob = _from[0].lock();
 
     if ( !from1Knob || !from1Knob->shouldDrawOverlayInteract() ) {
         return false;
@@ -2408,11 +2419,11 @@ CornerPinInteract::penUp(double /*time*/,
     if ( !_interactiveDrag && (_dragging != -1) ) {
         // no need to redraw overlay since it is slave to the paramaters
         if (_useFromDrag) {
-            boost::shared_ptr<KnobDouble> knob = _from[_dragging].lock();
+            KnobDoublePtr knob = _from[_dragging].lock();
             assert(knob);
             knob->setValues(_fromDrag[_dragging].x, _fromDrag[_dragging].y, ViewSpec::all(), eValueChangedReasonPluginEdited);
         } else {
-            boost::shared_ptr<KnobDouble> knob = _to[_dragging].lock();
+            KnobDoublePtr knob = _to[_dragging].lock();
             assert(knob);
             knob->setValues(_toDrag[_dragging].x, _toDrag[_dragging].y, ViewSpec::all(), eValueChangedReasonPluginEdited);
         }
@@ -2435,7 +2446,7 @@ HostOverlay::penUp(double time,
     n_getPixelScale(pscale.x, pscale.y);
 
     bool didSomething = false;
-    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+    for (DefaultInteractIPtrList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
         didSomething |= (*it)->penUp(time, renderScale, view, pscale, _imp->lastPenPos, penPos, penPosViewport, pressure);
     }
 
@@ -2452,7 +2463,7 @@ PositionInteract::penDown(double time,
                           const QPoint &penPosViewport,
                           double pressure)
 {
-    boost::shared_ptr<KnobDouble> knob = _param.lock();
+    KnobDoublePtr knob = _param.lock();
 
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
@@ -2484,7 +2495,7 @@ TransformInteract::penDown(double time,
 {
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    boost::shared_ptr<KnobDouble> translateKnob = _translate.lock();
+    KnobDoublePtr translateKnob = _translate.lock();
 
     if ( !translateKnob || !translateKnob->shouldDrawOverlayInteract() ) {
         return false;
@@ -2631,7 +2642,7 @@ CornerPinInteract::penDown(double time,
 {
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    boost::shared_ptr<KnobDouble> from1Knob = _from[0].lock();
+    KnobDoublePtr from1Knob = _from[0].lock();
 
     if ( !from1Knob || !from1Knob->shouldDrawOverlayInteract() ) {
         return false;
@@ -2711,7 +2722,7 @@ HostOverlay::penDown(double time,
     OfxPointD pscale;
 
     n_getPixelScale(pscale.x, pscale.y);
-    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+    for (DefaultInteractIPtrList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
         if ( (*it)->penDown(time, renderScale, view, pscale, _imp->lastPenPos, penPos, penPosViewport, pressure) ) {
             _imp->lastPenPos = penPos;
 
@@ -2734,7 +2745,7 @@ HostOverlay::penDoubleClicked(double time,
     OfxPointD pscale;
 
     n_getPixelScale(pscale.x, pscale.y);
-    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+    for (DefaultInteractIPtrList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
         if ( (*it)->penDoubleClicked(time, renderScale, view, pscale, _imp->lastPenPos, penPos, penPosViewport) ) {
             _imp->lastPenPos = penPos;
 
@@ -2793,7 +2804,7 @@ HostOverlay::keyDown(double time,
                      int key,
                      char*   keyString)
 {
-    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+    for (DefaultInteractIPtrList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
         if ( (*it)->keyDown(time, renderScale, view, key, keyString) ) {
             return true;
         }
@@ -2844,7 +2855,7 @@ HostOverlay::keyUp(double time,
 {
     bool didSomething = false;
 
-    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+    for (DefaultInteractIPtrList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
         didSomething |= (*it)->keyUp(time, renderScale, view, key, keyString);
     }
 
@@ -2860,7 +2871,7 @@ HostOverlay::keyRepeat(double time,
 {
     bool didSomething = false;
 
-    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+    for (DefaultInteractIPtrList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
         didSomething |= (*it)->keyRepeat(time, renderScale, view, key, keyString);
     }
 
@@ -2874,7 +2885,7 @@ HostOverlay::gainFocus(double time,
 {
     bool didSomething = false;
 
-    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+    for (DefaultInteractIPtrList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
         didSomething |= (*it)->gainFocus(time, renderScale, view);
     }
 
@@ -2886,7 +2897,7 @@ PositionInteract::loseFocus(double /*time*/,
                             const RenderScale & /*renderScale*/,
                             ViewIdx /*view*/)
 {
-    boost::shared_ptr<KnobDouble> knob = _param.lock();
+    KnobDoublePtr knob = _param.lock();
 
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
@@ -2910,7 +2921,7 @@ TransformInteract::loseFocus(double /*time*/,
 {
     // do not show interact if knob is secret or not enabled
     // see https://github.com/MrKepzie/Natron/issues/932
-    boost::shared_ptr<KnobDouble> translateKnob = _translate.lock();
+    KnobDoublePtr translateKnob = _translate.lock();
 
     if ( !translateKnob || !translateKnob->shouldDrawOverlayInteract() ) {
         return false;
@@ -2944,7 +2955,7 @@ HostOverlay::loseFocus(double time,
 {
     bool didSomething = false;
 
-    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+    for (DefaultInteractIPtrList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
         didSomething |= (*it)->loseFocus(time, renderScale, view);
     }
 
@@ -2955,7 +2966,7 @@ bool
 HostOverlay::hasHostOverlayForParam(const KnobI* param)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+    for (DefaultInteractIPtrList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
         if ( (*it)->isInteractForKnob(param) ) {
             return true;
         }
@@ -2967,7 +2978,7 @@ HostOverlay::hasHostOverlayForParam(const KnobI* param)
 void
 HostOverlay::removePositionHostOverlay(KnobI* knob)
 {
-    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+    for (DefaultInteractIPtrList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
         if ( (*it)->isInteractForKnob(knob) ) {
             _imp->interacts.erase(it);
 

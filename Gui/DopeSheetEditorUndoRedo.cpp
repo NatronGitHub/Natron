@@ -49,7 +49,7 @@
 
 NATRON_NAMESPACE_ENTER
 
-typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
+typedef std::map<KnobIWPtr, KnobGui *> KnobsAndGuis;
 
 
 ////////////////////////// Helpers //////////////////////////
@@ -65,7 +65,7 @@ void
 moveReader(const NodePtr &reader,
            double dt)
 {
-    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>( reader->getKnobByName(kReaderParamNameStartingTime).get() );
+    KnobIntBase *startingTimeKnob = dynamic_cast<KnobIntBase *>( reader->getKnobByName(kReaderParamNameStartingTime).get() );
     assert(startingTimeKnob);
     KnobHelper::ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
@@ -75,7 +75,7 @@ void
 moveTimeOffset(const NodePtr& node,
                double dt)
 {
-    Knob<int>* timeOffsetKnob = dynamic_cast<Knob<int>*>( node->getKnobByName(kTimeOffsetParamNameTimeOffset).get() );
+    KnobIntBase* timeOffsetKnob = dynamic_cast<KnobIntBase*>( node->getKnobByName(kTimeOffsetParamNameTimeOffset).get() );
     assert(timeOffsetKnob);
     KnobHelper::ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
@@ -85,7 +85,7 @@ void
 moveFrameRange(const NodePtr& node,
                double dt)
 {
-    Knob<int>* frameRangeKnob = dynamic_cast<Knob<int>*>( node->getKnobByName(kFrameRangeParamNameFrameRange).get() );
+    KnobIntBase* frameRangeKnob = dynamic_cast<KnobIntBase*>( node->getKnobByName(kFrameRangeParamNameFrameRange).get() );
     assert(frameRangeKnob);
     frameRangeKnob->setValues(frameRangeKnob->getValue() + dt, frameRangeKnob->getValue(1)  + dt, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
 }
@@ -126,7 +126,7 @@ moveGroupNode(DopeSheetEditor* model,
         const KnobsVec &knobs = (*it)->getKnobs();
 
         for (KnobsVec::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
-            const KnobPtr& knob = *knobIt;
+            const KnobIPtr& knob = *knobIt;
             if ( !knob->hasAnimation() ) {
                 continue;
             }
@@ -153,8 +153,8 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 ////////////////////////// DSMoveKeysCommand //////////////////////////
 
-DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
-                                                     const std::vector<boost::shared_ptr<DSNode> >& nodes,
+DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DopeSheetKeyPtrList &keys,
+                                                     const std::vector<DSNodePtr>& nodes,
                                                      double dt,
                                                      DopeSheetEditor *model,
                                                      QUndoCommand *parent)
@@ -165,8 +165,8 @@ DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
     _model(model)
 {
     setText( tr("Move selected keys") );
-    std::set<NodePtr > nodesSet;
-    for (std::vector<boost::shared_ptr<DSNode> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    std::set<NodePtr> nodesSet;
+    for (std::vector<DSNodePtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         DopeSheetItemType type = (*it)->getItemType();
         if ( (type != eDopeSheetItemTypeReader) &&
              ( type != eDopeSheetItemTypeGroup) &&
@@ -187,7 +187,7 @@ DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
         }
     }
 
-    for (DSKeyPtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+    for (DopeSheetKeyPtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         KnobHolder* holder = (*it)->getContext()->getInternalKnob()->getHolder();
         assert(holder);
         EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
@@ -196,7 +196,7 @@ DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
         }
     }
 
-    for (std::set<NodePtr >::iterator it = nodesSet.begin(); it != nodesSet.end(); ++it) {
+    for (std::set<NodePtr>::iterator it = nodesSet.begin(); it != nodesSet.end(); ++it) {
         _allDifferentNodes.push_back(*it);
     }
 }
@@ -234,21 +234,21 @@ DSMoveKeysAndNodesCommand::moveSelection(double dt)
 
 
     //////////Handle selected keyframes
-    for (DSKeyPtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        const DSKeyPtr& selectedKey = (*it);
-        boost::shared_ptr<DSKnob> knobContext = selectedKey->context.lock();
+    for (DopeSheetKeyPtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+        const DopeSheetKeyPtr& selectedKey = (*it);
+        DSKnobPtr knobContext = selectedKey->context.lock();
         if (!knobContext) {
             continue;
         }
 
-        KnobPtr knob = knobContext->getKnobGui()->getKnob();
+        KnobIPtr knob = knobContext->getKnobGui()->getKnob();
 
         knob->moveValueAtTime(eCurveChangeReasonDopeSheet, selectedKey->key.getTime(), ViewIdx(0),
                               knobContext->getDimension(),
                               dt, 0, &selectedKey->key);
     }
     ////////////Handle selected nodes
-    for (std::vector<boost::shared_ptr<DSNode> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+    for (std::vector<DSNodePtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         DopeSheetItemType type = (*it)->getItemType();
         if (type == eDopeSheetItemTypeReader) {
             moveReader( (*it)->getInternalNode(), dt );
@@ -301,17 +301,17 @@ DSMoveKeysAndNodesCommand::mergeWith(const QUndoCommand *other)
     }
 
     {
-        DSKeyPtrList::const_iterator itOther = cmd->_keys.begin();
+        DopeSheetKeyPtrList::const_iterator itOther = cmd->_keys.begin();
 
-        for (DSKeyPtrList::const_iterator it = _keys.begin(); it != _keys.end(); ++it, ++itOther) {
+        for (DopeSheetKeyPtrList::const_iterator it = _keys.begin(); it != _keys.end(); ++it, ++itOther) {
             if (*itOther != *it) {
                 return false;
             }
         }
     }
 
-    std::vector<boost::shared_ptr<DSNode> >::const_iterator itOther = cmd->_nodes.begin();
-    for (std::vector<boost::shared_ptr<DSNode> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it, ++itOther) {
+    std::vector<DSNodePtr>::const_iterator itOther = cmd->_nodes.begin();
+    for (std::vector<DSNodePtr>::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it, ++itOther) {
         if (*itOther != *it) {
             return false;
         }
@@ -324,7 +324,7 @@ DSMoveKeysAndNodesCommand::mergeWith(const QUndoCommand *other)
 
 //////////////////////////DSTransformKeysCommand //////////////////////////
 
-DSTransformKeysCommand::DSTransformKeysCommand(const DSKeyPtrList &keys,
+DSTransformKeysCommand::DSTransformKeysCommand(const DopeSheetKeyPtrList &keys,
                                                const Transform::Matrix3x3& transform,
                                                DopeSheetEditor *model,
                                                QUndoCommand *parent)
@@ -333,8 +333,8 @@ DSTransformKeysCommand::DSTransformKeysCommand(const DSKeyPtrList &keys,
     , _transform(transform)
     , _model(model)
 {
-    for (DSKeyPtrList::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        boost::shared_ptr<DSKnob> knobContext = (*it)->context.lock();
+    for (DopeSheetKeyPtrList::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        DSKnobPtr knobContext = (*it)->context.lock();
         if (!knobContext) {
             continue;
         }
@@ -408,7 +408,7 @@ DSTransformKeysCommand::redo()
             it->second.oldCurve.reset( new Curve( *it->first->getInternalKnob()->getCurve( ViewIdx(0), it->first->getDimension() ) ) );
         }
         for (TransformKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-            for (DSKeyPtrList::iterator it2 = it->second.keys.begin(); it2 != it->second.keys.end(); ++it2) {
+            for (DopeSheetKeyPtrList::iterator it2 = it->second.keys.begin(); it2 != it->second.keys.end(); ++it2) {
                 transformKey(*it2);
             }
         }
@@ -434,15 +434,15 @@ DSTransformKeysCommand::redo()
 }
 
 void
-DSTransformKeysCommand::transformKey(const DSKeyPtr& key)
+DSTransformKeysCommand::transformKey(const DopeSheetKeyPtr& key)
 {
-    boost::shared_ptr<DSKnob> knobContext = key->context.lock();
+    DSKnobPtr knobContext = key->context.lock();
 
     if (!knobContext) {
         return;
     }
 
-    KnobPtr knob = knobContext->getKnobGui()->getKnob();
+    KnobIPtr knob = knobContext->getKnobGui()->getKnob();
     knob->transformValueAtTime(eCurveChangeReasonDopeSheet, key->key.getTime(), ViewSpec::all(), knobContext->getDimension(), _transform, &key->key);
 }
 
@@ -473,8 +473,8 @@ DSTransformKeysCommand::mergeWith(const QUndoCommand *other)
                 return false;
             }
 
-            DSKeyPtrList::const_iterator kItOther = itOther->second.keys.begin();
-            for (DSKeyPtrList::const_iterator it2 = it->second.keys.begin(); it2 != it->second.keys.end(); ++it2, ++kItOther) {
+            DopeSheetKeyPtrList::const_iterator kItOther = itOther->second.keys.begin();
+            for (DopeSheetKeyPtrList::const_iterator it2 = it->second.keys.begin(); it2 != it->second.keys.end(); ++it2, ++kItOther) {
                 if (*it2 != *kItOther) {
                     return false;
                 }
@@ -489,7 +489,7 @@ DSTransformKeysCommand::mergeWith(const QUndoCommand *other)
 
 ////////////////////////// DSLeftTrimReaderCommand //////////////////////////
 
-DSLeftTrimReaderCommand::DSLeftTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
+DSLeftTrimReaderCommand::DSLeftTrimReaderCommand(const DSNodePtr &reader,
                                                  double oldTime,
                                                  double newTime,
                                                  QUndoCommand *parent)
@@ -516,7 +516,7 @@ DSLeftTrimReaderCommand::redo()
 void
 DSLeftTrimReaderCommand::trimLeft(double firstFrame)
 {
-    boost::shared_ptr<DSNode> nodeContext = _readerContext.lock();
+    DSNodePtr nodeContext = _readerContext.lock();
 
     if (!nodeContext) {
         return;
@@ -524,7 +524,7 @@ DSLeftTrimReaderCommand::trimLeft(double firstFrame)
 
     NodePtr node = nodeContext->getInternalNode();
 
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
     assert(firstFrameKnob);
     if (!firstFrameKnob) {
         return;
@@ -558,8 +558,8 @@ DSLeftTrimReaderCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    boost::shared_ptr<DSNode> node = _readerContext.lock();
-    boost::shared_ptr<DSNode> otherNode = cmd->_readerContext.lock();
+    DSNodePtr node = _readerContext.lock();
+    DSNodePtr otherNode = cmd->_readerContext.lock();
     if (!node || !otherNode) {
         return false;
     }
@@ -575,7 +575,7 @@ DSLeftTrimReaderCommand::mergeWith(const QUndoCommand *other)
 
 ////////////////////////// DSRightTrimReaderCommand //////////////////////////
 
-DSRightTrimReaderCommand::DSRightTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
+DSRightTrimReaderCommand::DSRightTrimReaderCommand(const DSNodePtr &reader,
                                                    double oldTime,
                                                    double newTime,
                                                    DopeSheetEditor * /*model*/,
@@ -603,7 +603,7 @@ DSRightTrimReaderCommand::redo()
 void
 DSRightTrimReaderCommand::trimRight(double lastFrame)
 {
-    boost::shared_ptr<DSNode> nodeContext = _readerContext.lock();
+    DSNodePtr nodeContext = _readerContext.lock();
 
     if (!nodeContext) {
         return;
@@ -611,7 +611,7 @@ DSRightTrimReaderCommand::trimRight(double lastFrame)
 
     NodePtr node = nodeContext->getInternalNode();
 
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
     assert(lastFrameKnob);
     if (!lastFrameKnob) {
         return;
@@ -645,8 +645,8 @@ DSRightTrimReaderCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    boost::shared_ptr<DSNode> node = _readerContext.lock();
-    boost::shared_ptr<DSNode> otherNode = cmd->_readerContext.lock();
+    DSNodePtr node = _readerContext.lock();
+    DSNodePtr otherNode = cmd->_readerContext.lock();
     if (!node || !otherNode) {
         return false;
     }
@@ -662,7 +662,7 @@ DSRightTrimReaderCommand::mergeWith(const QUndoCommand *other)
 
 ////////////////////////// DSSlipReaderCommand //////////////////////////
 
-DSSlipReaderCommand::DSSlipReaderCommand(const boost::shared_ptr<DSNode> &dsNodeReader,
+DSSlipReaderCommand::DSSlipReaderCommand(const DSNodePtr &dsNodeReader,
                                          double dt,
                                          DopeSheetEditor *model,
                                          QUndoCommand *parent)
@@ -702,8 +702,8 @@ DSSlipReaderCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    boost::shared_ptr<DSNode> node = _readerContext.lock();
-    boost::shared_ptr<DSNode> otherNode = cmd->_readerContext.lock();
+    DSNodePtr node = _readerContext.lock();
+    DSNodePtr otherNode = cmd->_readerContext.lock();
     if (!node || !otherNode) {
         return false;
     }
@@ -720,7 +720,7 @@ DSSlipReaderCommand::mergeWith(const QUndoCommand *other)
 void
 DSSlipReaderCommand::slipReader(double dt)
 {
-    boost::shared_ptr<DSNode> nodeContext = _readerContext.lock();
+    DSNodePtr nodeContext = _readerContext.lock();
 
     if (!nodeContext) {
         return;
@@ -728,13 +728,13 @@ DSSlipReaderCommand::slipReader(double dt)
 
     NodePtr node = nodeContext->getInternalNode();
 
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
     assert(firstFrameKnob);
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
     assert(lastFrameKnob);
-    Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameTimeOffset).get() );
+    KnobIntBase *timeOffsetKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameTimeOffset).get() );
     assert(timeOffsetKnob);
-    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameStartingTime).get() );
+    KnobIntBase *startingTimeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameStartingTime).get() );
     assert(startingTimeKnob);
     if (!firstFrameKnob || !lastFrameKnob || !timeOffsetKnob || !startingTimeKnob) {
         return;
@@ -809,7 +809,7 @@ DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
     std::set<KnobGuiPtr> knobsSet;
     for (std::vector<DopeSheetKey>::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         DopeSheetKey selected = (*it);
-        boost::shared_ptr<DSKnob> knobContext = selected.context.lock();
+        DSKnobPtr knobContext = selected.context.lock();
         if (!knobContext) {
             continue;
         }
@@ -865,7 +865,7 @@ DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
 {
     for (std::list<DSKeyInterpolationChange>::iterator it = _changes.begin(); it != _changes.end(); ++it) {
         KeyframeTypeEnum interp = undo ? it->_oldInterpType : it->_newInterpType;
-        boost::shared_ptr<DSKnob> knobContext = it->_key->context.lock();
+        DSKnobPtr knobContext = it->_key->context.lock();
         if (!knobContext) {
             continue;
         }
@@ -884,7 +884,7 @@ DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
 ////////////////////////// DSAddKeysCommand //////////////////////////
 
 DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
-                                       const std::list<boost::shared_ptr<DSKnob> >& dstKnobs,
+                                       const std::list<DSKnobPtr>& dstKnobs,
                                        bool pasteRelativeToRefTime,
                                        DopeSheetEditor *model,
                                        QUndoCommand *parent)
@@ -896,7 +896,7 @@ DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
     _model(model)
 {
 
-    for (std::list<boost::shared_ptr<DSKnob> >::const_iterator it = dstKnobs.begin(); it != dstKnobs.end(); ++it) {
+    for (std::list<DSKnobPtr>::const_iterator it = dstKnobs.begin(); it != dstKnobs.end(); ++it) {
         _dstKnobs.push_back(*it);
     }
 
@@ -927,12 +927,12 @@ DSPasteKeysCommand::redo()
 }
 
 void
-DSPasteKeysCommand::setKeyValueFromKnob(const KnobPtr& knob, double keyTime, KeyFrame* key)
+DSPasteKeysCommand::setKeyValueFromKnob(const KnobIPtr& knob, double keyTime, KeyFrame* key)
 {
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+    KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( knob.get() );
+    KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( knob.get() );
+    KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( knob.get() );
+    KnobStringBase* isString = dynamic_cast<KnobStringBase*>( knob.get() );
 
 
     if (isDouble) {
@@ -956,15 +956,15 @@ DSPasteKeysCommand::setKeyValueFromKnob(const KnobPtr& knob, double keyTime, Key
 void
 DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
 {
-    for (std::list<boost::weak_ptr<DSKnob> >::const_iterator it = _dstKnobs.begin(); it != _dstKnobs.end(); ++it) {
-        boost::shared_ptr<DSKnob> knobContext = it->lock();
+    for (std::list<DSKnobWPtr>::const_iterator it = _dstKnobs.begin(); it != _dstKnobs.end(); ++it) {
+        DSKnobPtr knobContext = it->lock();
         if (!knobContext) {
             continue;
         }
         for (std::size_t i = 0; i < _keys.size(); ++i) {
 
             int dim = knobContext->getDimension();
-            KnobPtr knob = knobContext->getInternalKnob();
+            KnobIPtr knob = knobContext->getInternalKnob();
             knob->beginChanges();
 
             double keyTime = _keys[i].key.getTime();

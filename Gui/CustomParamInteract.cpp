@@ -26,6 +26,7 @@
 
 #include <stdexcept>
 
+#include <QtCore/QSize>
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>
 #include <QMouseEvent>
@@ -47,14 +48,14 @@ struct CustomParamInteractPrivate
 {
     KnobGuiWPtr knob;
     OFX::Host::Param::Instance* ofxParam;
-    boost::shared_ptr<OfxParamOverlayInteract> entryPoint;
+    OfxParamOverlayInteractPtr entryPoint;
     QSize preferredSize;
     double par;
     GLuint savedTexture;
 
     CustomParamInteractPrivate(const KnobGuiPtr& knob,
                                void* ofxParamHandle,
-                               const boost::shared_ptr<OfxParamOverlayInteract> & entryPoint)
+                               const OfxParamOverlayInteractPtr & entryPoint)
         : knob(knob)
         , ofxParam(0)
         , entryPoint(entryPoint)
@@ -76,7 +77,7 @@ struct CustomParamInteractPrivate
 
 CustomParamInteract::CustomParamInteract(const KnobGuiPtr& knob,
                                          void* ofxParamHandle,
-                                         const boost::shared_ptr<OfxParamOverlayInteract> & entryPoint,
+                                         const OfxParamOverlayInteractPtr & entryPoint,
                                          QWidget* parent)
     : QGLWidget(parent)
     , _imp( new CustomParamInteractPrivate(knob, ofxParamHandle, entryPoint) )
@@ -188,6 +189,18 @@ CustomParamInteract::getPixelScale(double & xScale,
     xScale = 1.;
     yScale = 1.;
 }
+
+#ifdef OFX_EXTENSIONS_NATRON
+double
+CustomParamInteract::getScreenPixelRatio() const
+{
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    return windowHandle()->devicePixelRatio()
+#else
+    return 1.;
+#endif
+}
+#endif
 
 void
 CustomParamInteract::getBackgroundColour(double &r,

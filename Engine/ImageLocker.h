@@ -44,14 +44,15 @@ template<typename EntryType>
 class LockManagerI
 {
 public:
+    typedef boost::shared_ptr<EntryType> EntryTypePtr;
 
     LockManagerI() {}
 
     virtual ~LockManagerI() {}
 
-    virtual void lock(const boost::shared_ptr<EntryType>& entry) = 0;
-    virtual bool tryLock(const boost::shared_ptr<EntryType>& entry) = 0;
-    virtual void unlock(const boost::shared_ptr<EntryType>& entry) = 0;
+    virtual void lock(const EntryTypePtr& entry) = 0;
+    virtual bool tryLock(const EntryTypePtr& entry) = 0;
+    virtual void unlock(const EntryTypePtr& entry) = 0;
 };
 
 
@@ -64,17 +65,14 @@ public:
 template<typename EntryType>
 class ImageLockerHelper
 {
-    LockManagerI<EntryType>* _manager;
-    std::list<boost::shared_ptr<EntryType> > _entries;
-
 public:
-
+    typedef boost::shared_ptr<EntryType> EntryTypePtr;
 
     ImageLockerHelper(LockManagerI<EntryType>* manager)
         : _manager(manager), _entries() {}
 
     ImageLockerHelper(LockManagerI<EntryType>* manager,
-                      const boost::shared_ptr<EntryType>& entry)
+                      const EntryTypePtr& entry)
         : _manager(manager), _entries()
     {
         if (entry && _manager) {
@@ -88,7 +86,7 @@ public:
         unlock();
     }
 
-    void lock(const boost::shared_ptr<EntryType>& entry)
+    void lock(const EntryTypePtr& entry)
     {
         _entries.push_back(entry);
         if (_manager) {
@@ -96,7 +94,7 @@ public:
         }
     }
 
-    bool tryLock(const boost::shared_ptr<EntryType>& entry)
+    bool tryLock(const EntryTypePtr& entry)
     {
         if (_manager) {
             if ( _manager->tryLock(entry) ) {
@@ -112,13 +110,17 @@ public:
     void unlock()
     {
         if (!_entries.empty() && _manager) {
-            for (typename std::list<boost::shared_ptr<EntryType> >::iterator it = _entries.begin(); it != _entries.end(); ++it) {
+            for (typename std::list<EntryTypePtr>::iterator it = _entries.begin(); it != _entries.end(); ++it) {
                 _manager->unlock(*it);
             }
 
             _entries.clear();
         }
     }
+    
+private:
+    LockManagerI<EntryType>* _manager;
+    std::list<EntryTypePtr> _entries;
 };
 
 typedef ImageLockerHelper<Image> ImageLocker;

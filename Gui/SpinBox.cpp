@@ -28,6 +28,7 @@
 #include <cmath>
 #include <algorithm> // min, max
 #include <stdexcept>
+#include <limits>
 
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -188,7 +189,13 @@ SpinBox::setValue_internal(double d,
         str.setNum(d, 'f', _imp->decimals);
         double toDouble = str.toDouble();
         if (d != toDouble) {
-            str.setNum(d, 'g', 8);
+            // Display the full precision, so that the displayed number always reflects the internal value
+            // 1+1e-15 should be displayed as 1.000000000000001, not 1
+            // The precision should be set to digits10+1 (i.e. 16 for double)
+            // see also:
+            // - https://github.com/jbeder/yaml-cpp/issues/197
+            // - https://stackoverflow.com/questions/4738768/printing-double-without-losing-precision
+            str.setNum(d, 'g', std::numeric_limits<double>::digits10 + 1);
         }
         break;
     }
@@ -715,6 +722,7 @@ SpinBox::keyPressEvent(QKeyEvent* e)
             _imp->hasChangedSinceLastValidation = true;
             QLineEdit::keyPressEvent(e);
             if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
+                selectAll(); // select the whole text so that it can be easily typed again, https://github.com/MrKepzie/Natron/issues/1737
                 ///Return and enter emit editingFinished() in parent implementation but do not accept the shortcut either
                 e->accept();
             }
@@ -1092,7 +1100,7 @@ KnobSpinBox::focusInEvent(QFocusEvent* e)
     if (!k) {
         return;
     }
-    KnobPtr knob = k->getKnob();
+    KnobIPtr knob = k->getKnob();
     if (!knob) {
         return;
     }

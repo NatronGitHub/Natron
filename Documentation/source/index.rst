@@ -40,4 +40,3 @@ The *Natron documentation authors* are:
     guide/index.rst
     _group.rst
     devel/index.rst
-

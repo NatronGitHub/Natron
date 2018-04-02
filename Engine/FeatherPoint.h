@@ -42,7 +42,7 @@ public:
     {
     }
 
-    FeatherPoint(const boost::shared_ptr<Bezier>& curve)
+    FeatherPoint(const BezierPtr& curve)
         : BezierCP(curve)
     {
     }

@@ -27,6 +27,8 @@
 #include <set>
 #include <stdexcept>
 
+#include <boost/make_shared.hpp>
+
 #include <QMutex>
 #include <QWaitCondition>
 
@@ -44,14 +46,14 @@ struct GPUContextPoolPrivate
     std::set<OSGLContextPtr> glContextPool;
 
 #ifdef NATRON_RENDER_SHARED_CONTEXT
-    boost::weak_ptr<OSGLContext> lastUsedGLContext;
+    OSGLContextWPtr lastUsedGLContext;
 #else
     QWaitCondition glContextPoolEmpty;
     std::set<attachedGLContexts> attachedGLContexts;
 #endif
 
     // The OpenGL context to use for sharing
-    boost::weak_ptr<OSGLContext> glShareContext;
+    OSGLContextWPtr glShareContext;
 
     int currentOpenGLRendererMaxTexSize;
 
@@ -122,7 +124,7 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
     if ( _imp->glContextPool.empty() ) {
         assert( (int)_imp->attachedGLContexts.size() < maxContexts );
         //  Create a new one
-        newContext.reset( new OSGLContext( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID ) );
+        newContext = boost::make_shared<OSGLContext>( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID );
     } else {
         std::set<OSGLContextPtr>::iterator it = _imp->glContextPool.begin();
         newContext = *it;
@@ -133,7 +135,7 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
 
     if ( (int)_imp->glContextPool.size() < maxContexts ) {
         //  Create a new one
-        newContext.reset( new OSGLContext( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID ) );
+        newContext = boost::make_shared<OSGLContext>( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID );
         _imp->glContextPool.insert(newContext);
     } else {
         while ((int)_imp->glContextPool.size() > maxContexts) {

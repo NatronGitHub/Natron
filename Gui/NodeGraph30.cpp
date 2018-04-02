@@ -67,13 +67,13 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     ViewerTab* lastUsedViewer =  getLastSelectedViewer();
 
     if (lastUsedViewer) {
-        boost::shared_ptr<NodeCollection> collection = lastUsedViewer->getInternalNode()->getNode()->getGroup();
+        NodeCollectionPtr collection = lastUsedViewer->getInternalNode()->getNode()->getGroup();
         if ( collection && (collection->getNodeGraph() != this) ) {
             //somehow the group doesn't belong to this nodegraph , pick another one
             const std::list<ViewerTab*>& tabs = getGui()->getViewersList();
             lastUsedViewer = 0;
             for (std::list<ViewerTab*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
-                boost::shared_ptr<NodeCollection> otherCollection = (*it)->getInternalNode()->getNode()->getGroup();
+                NodeCollectionPtr otherCollection = (*it)->getInternalNode()->getNode()->getGroup();
                 if ( otherCollection && (otherCollection->getNodeGraph() == this) ) {
                     lastUsedViewer = *it;
                     break;
@@ -83,7 +83,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     }
 
 
-    boost::shared_ptr<InspectorNode> v;
+    InspectorNodePtr v;
     if (lastUsedViewer) {
         v = boost::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
                                                         getInternalNode()->getNode() );
@@ -108,7 +108,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     }
 
     ///get a ptr to the NodeGui
-    boost::shared_ptr<NodeGuiI> gui_i = v->getNodeGui();
+    NodeGuiIPtr gui_i = v->getNodeGui();
     NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
     ///if there's no selected node or the viewer is selected, then try refreshing that input nb if it is connected.
@@ -227,7 +227,7 @@ NodeGraph::removeNode(const NodeGuiPtr & node)
         ///For all listeners make sure they belong to a node
         std::string foundLinkedErrorMessage;
         for (KnobI::ListenerDimsMap::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
-            KnobPtr listener = it2->first.lock();
+            KnobIPtr listener = it2->first.lock();
             if (!listener) {
                 continue;
             }
@@ -297,7 +297,7 @@ NodeGraph::deleteSelection()
                 ///For all listeners make sure they belong to a node
                 std::string foundLinkedErrorMessage;
                 for (KnobI::ListenerDimsMap::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
-                    KnobPtr listener = it2->first.lock();
+                    KnobIPtr listener = it2->first.lock();
                     if (!listener) {
                         continue;
                     }

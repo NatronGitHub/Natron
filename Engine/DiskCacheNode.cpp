@@ -38,10 +38,10 @@ NATRON_NAMESPACE_ENTER
 
 struct DiskCacheNodePrivate
 {
-    boost::weak_ptr<KnobChoice> frameRange;
-    boost::weak_ptr<KnobInt> firstFrame;
-    boost::weak_ptr<KnobInt> lastFrame;
-    boost::weak_ptr<KnobButton> preRender;
+    KnobChoiceWPtr frameRange;
+    KnobIntWPtr firstFrame;
+    KnobIntWPtr lastFrame;
+    KnobButtonWPtr preRender;
 
     DiskCacheNodePrivate()
     {
@@ -86,8 +86,8 @@ DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,
 void
 DiskCacheNode::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Controls") );
-    boost::shared_ptr<KnobChoice> frameRange = AppManager::createKnob<KnobChoice>( this, tr("Frame range") );
+    KnobPagePtr page = AppManager::createKnob<KnobPage>( this, tr("Controls") );
+    KnobChoicePtr frameRange = AppManager::createKnob<KnobChoice>( this, tr("Frame range") );
 
     frameRange->setName("frameRange");
     frameRange->setAnimationEnabled(false);
@@ -103,7 +103,7 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(frameRange);
     _imp->frameRange = frameRange;
 
-    boost::shared_ptr<KnobInt> firstFrame = AppManager::createKnob<KnobInt>( this, tr("First Frame") );
+    KnobIntPtr firstFrame = AppManager::createKnob<KnobInt>( this, tr("First Frame") );
     firstFrame->setAnimationEnabled(false);
     firstFrame->setName("firstFrame");
     firstFrame->disableSlider();
@@ -114,7 +114,7 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(firstFrame);
     _imp->firstFrame = firstFrame;
 
-    boost::shared_ptr<KnobInt> lastFrame = AppManager::createKnob<KnobInt>( this, tr("Last Frame") );
+    KnobIntPtr lastFrame = AppManager::createKnob<KnobInt>( this, tr("Last Frame") );
     lastFrame->setAnimationEnabled(false);
     lastFrame->setName("LastFrame");
     lastFrame->disableSlider();
@@ -124,7 +124,7 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(lastFrame);
     _imp->lastFrame = lastFrame;
 
-    boost::shared_ptr<KnobButton> preRender = AppManager::createKnob<KnobButton>( this, tr("Pre-cache") );
+    KnobButtonPtr preRender = AppManager::createKnob<KnobButton>( this, tr("Pre-cache") );
     preRender->setName("preRender");
     preRender->setEvaluateOnChange(false);
     preRender->setHintToolTip( tr("Cache the frame range specified by rendering images at zoom-level 100% only.") );
@@ -181,7 +181,7 @@ DiskCacheNode::getFrameRange(double *first,
 
     switch (idx) {
     case 0: {
-        EffectInstPtr input = getInput(0);
+        EffectInstancePtr input = getInput(0);
         if (input) {
             input->getFrameRange_public(input->getHash(), first, last);
         }
@@ -205,7 +205,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
 {
     assert(args.outputPlanes.size() == 1);
 
-    EffectInstPtr input = getInput(0);
+    EffectInstancePtr input = getInput(0);
     if (!input) {
         return eStatusFailed;
     }
@@ -213,7 +213,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
 
     const std::pair<ImagePlaneDesc, ImagePtr>& output = args.outputPlanes.front();
 
-    for (std::list<std::pair<ImagePlaneDesc, boost::shared_ptr<Image> > >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
+    for (std::list<std::pair<ImagePlaneDesc, ImagePtr> >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
         RectI roiPixel;
         ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, &it->first, false /*mapToClipPrefs*/, true /*dontUpscale*/, eStorageModeRAM /*useOpenGL*/, 0 /*textureDepth*/,  &roiPixel);
         if (!srcImg) {

@@ -131,13 +131,31 @@ generateUserFriendlyNatronVersionName()
     return ret;
 }
 
-Project::Project(const AppInstPtr& appInstance)
+
+Project::Project(const AppInstancePtr& appInstance)
     : KnobHolder(appInstance)
     , NodeCollection(appInstance)
     , _imp( new ProjectPrivate(this) )
 {
     QObject::connect( _imp->autoSaveTimer.get(), SIGNAL(timeout()), this, SLOT(onAutoSaveTimerTriggered()) );
 }
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct Project::MakeSharedEnabler: public Project
+{
+    MakeSharedEnabler(const AppInstancePtr& appInstance) : Project(appInstance) {
+    }
+};
+
+
+ProjectPtr
+Project::create(const AppInstancePtr& appInstance)
+{
+    return boost::make_shared<Project::MakeSharedEnabler>(appInstance);
+}
+
 
 Project::~Project()
 {
@@ -155,11 +173,11 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 class LoadProjectSplashScreen_RAII
 {
-    AppInstWPtr app;
+    AppInstanceWPtr app;
 
 public:
 
-    LoadProjectSplashScreen_RAII(const AppInstPtr& app,
+    LoadProjectSplashScreen_RAII(const AppInstancePtr& app,
                                  const QString& filename)
         : app(app)
     {
@@ -170,7 +188,7 @@ public:
 
     ~LoadProjectSplashScreen_RAII()
     {
-        AppInstPtr a = app.lock();
+        AppInstancePtr a = app.lock();
 
         if (a) {
             a->closeLoadPRojectSplashScreen();
@@ -545,7 +563,7 @@ Project::saveProjectInternal(const QString & path,
             save(&projectSerializationObj);
             oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
             if (!bgProject) {
-                AppInstPtr app = getApp();
+                AppInstancePtr app = getApp();
                 if (app) {
                     app->saveProjectGui(oArchive);
                 }
@@ -656,7 +674,7 @@ Project::onAutoSaveTimerTriggered()
     bool canAutoSave = !hasNodeRendering() && !getApp()->isShowingDialog();
 
     if (canAutoSave) {
-        boost::shared_ptr<QFutureWatcher<void> > watcher(new QFutureWatcher<void>);
+        boost::shared_ptr<QFutureWatcher<void> > watcher = boost::make_shared<QFutureWatcher<void> >();
         QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onAutoSaveFutureFinished()) );
         watcher->setFuture( QtConcurrent::run(this, &Project::autoSave) );
         _imp->autoSaveFutures.push_back(watcher);
@@ -715,7 +733,7 @@ Project::findAutoSaveForProject(const QString& projectPath,
 void
 Project::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Settings") );
+    KnobPagePtr page = AppManager::createKnob<KnobPage>( this, tr("Settings") );
 
     _imp->envVars = AppManager::createKnob<KnobPath>( this, tr("Project Paths") );
     _imp->envVars->setName("projectPaths");
@@ -838,7 +856,7 @@ Project::initializeKnobs()
     }
     page->addKnob(_imp->gpuSupport);
 
-    boost::shared_ptr<KnobPage> viewsPage = AppManager::createKnob<KnobPage>( this, tr("Views") );
+    KnobPagePtr viewsPage = AppManager::createKnob<KnobPage>( this, tr("Views") );
 
     _imp->viewsList = AppManager::createKnob<KnobPath>( this, tr("Views List") );
     _imp->viewsList->setName("viewsList");
@@ -859,7 +877,7 @@ Project::initializeKnobs()
     viewsPage->addKnob(_imp->setupForStereoButton);
 
 
-    boost::shared_ptr<KnobPage> LayersPage = AppManager::createKnob<KnobPage>( this, tr("Layers") );
+    KnobPagePtr LayersPage = AppManager::createKnob<KnobPage>( this, tr("Layers") );
 
     _imp->defaultLayersList = AppManager::createKnob<KnobLayers>( this, tr("Default Layers") );
     _imp->defaultLayersList->setName("defaultLayers");
@@ -897,38 +915,38 @@ Project::initializeKnobs()
     _imp->defaultLayersList->setDefaultValue(encodedDefaultLayers);
     LayersPage->addKnob(_imp->defaultLayersList);
 
-    boost::shared_ptr<KnobPage> lutPages = AppManager::createKnob<KnobPage>( this, tr("LUT") );
+    KnobPagePtr lutPages = AppManager::createKnob<KnobPage>( this, tr("LUT") );
     std::vector<ChoiceOption> colorSpaces;
     // Keep it in sync with ViewerColorSpaceEnum
     colorSpaces.push_back(ChoiceOption("Linear","",""));
     colorSpaces.push_back(ChoiceOption("sRGB","",""));
     colorSpaces.push_back(ChoiceOption("Rec.709","",""));
 
-    _imp->colorSpace8u = AppManager::createKnob<KnobChoice>( this, tr("8-Bit Colorspace") );
+    _imp->colorSpace8u = AppManager::createKnob<KnobChoice>( this, tr("8-Bit LUT") );
     _imp->colorSpace8u->setName("defaultColorSpace8u");
-    _imp->colorSpace8u->setHintToolTip( tr("Defines the color-space in which 8-bit images are assumed to be by default.") );
+    _imp->colorSpace8u->setHintToolTip( tr("Defines the 1D LUT used to convert to 8-bit image data if an effect cannot process floating-point images.") );
     _imp->colorSpace8u->setAnimationEnabled(false);
     _imp->colorSpace8u->populateChoices(colorSpaces);
     _imp->colorSpace8u->setDefaultValue(1);
     lutPages->addKnob(_imp->colorSpace8u);
 
-    _imp->colorSpace16u = AppManager::createKnob<KnobChoice>( this, tr("16-Bit Colorspace") );
+    _imp->colorSpace16u = AppManager::createKnob<KnobChoice>( this, tr("16-Bit LUT") );
     _imp->colorSpace16u->setName("defaultColorSpace16u");
-    _imp->colorSpace16u->setHintToolTip( tr("Defines the color-space in which 16-bit integer images are assumed to be by default.") );
+    _imp->colorSpace16u->setHintToolTip( tr("Defines the 1D LUT used to convert to 16-bit image data if an effect cannot process floating-point images.") );
     _imp->colorSpace16u->setAnimationEnabled(false);
     _imp->colorSpace16u->populateChoices(colorSpaces);
     _imp->colorSpace16u->setDefaultValue(2);
     lutPages->addKnob(_imp->colorSpace16u);
 
-    _imp->colorSpace32f = AppManager::createKnob<KnobChoice>( this, tr("32-Bit f.p Colorspace ") );
+    _imp->colorSpace32f = AppManager::createKnob<KnobChoice>( this, tr("32-Bit Floating Point LUT ") );
     _imp->colorSpace32f->setName("defaultColorSpace32f");
-    _imp->colorSpace32f->setHintToolTip( tr("Defines the color-space in which 32-bit floating point images are assumed to be by default.") );
+    _imp->colorSpace32f->setHintToolTip( tr("Defines the 1D LUT used to convert from 32-bit floating-point image data if an effect cannot process floating-point images.") );
     _imp->colorSpace32f->setAnimationEnabled(false);
     _imp->colorSpace32f->populateChoices(colorSpaces);
     _imp->colorSpace32f->setDefaultValue(0);
     lutPages->addKnob(_imp->colorSpace32f);
 
-    boost::shared_ptr<KnobPage> infoPage = AppManager::createKnob<KnobPage>( this, tr("Info").toStdString() );
+    KnobPagePtr infoPage = AppManager::createKnob<KnobPage>( this, tr("Info").toStdString() );
 
     _imp->projectName = AppManager::createKnob<KnobString>( this, tr("Project Name") );
     _imp->projectName->setName("projectName");
@@ -999,7 +1017,7 @@ Project::initializeKnobs()
     _imp->saveDate->setAnimationEnabled(false);
     infoPage->addKnob(_imp->saveDate);
 
-    boost::shared_ptr<KnobString> comments = AppManager::createKnob<KnobString>( this, tr("Comments") );
+    KnobStringPtr comments = AppManager::createKnob<KnobString>( this, tr("Comments") );
     comments->setName("comments");
     comments->setHintToolTip( tr("This area is a good place to write some informations about the project such as its authors, license "
                                  "and anything worth mentionning about it.") );
@@ -1007,7 +1025,7 @@ Project::initializeKnobs()
     comments->setAnimationEnabled(false);
     infoPage->addKnob(comments);
 
-    boost::shared_ptr<KnobPage> pythonPage = AppManager::createKnob<KnobPage>( this, tr("Python") );
+    KnobPagePtr pythonPage = AppManager::createKnob<KnobPage>( this, tr("Python") );
     _imp->onProjectLoadCB = AppManager::createKnob<KnobString>( this, tr("After Project Loaded") );
     _imp->onProjectLoadCB->setName("afterProjectLoad");
     _imp->onProjectLoadCB->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time this project "
@@ -1486,7 +1504,7 @@ Project::toggleAutoPreview()
     _imp->previewMode->setValue( !_imp->previewMode->getValue() );
 }
 
-boost::shared_ptr<TimeLine> Project::getTimeLine() const
+TimeLinePtr Project::getTimeLine() const
 {
     return _imp->timeline;
 }
@@ -1844,6 +1862,8 @@ public:
     }
 };
 
+typedef boost::shared_ptr<ResetWatcherArgs> ResetWatcherArgsPtr;
+
 void
 Project::reset(bool aboutToQuit, bool blocking)
 {
@@ -1854,7 +1874,7 @@ Project::reset(bool aboutToQuit, bool blocking)
     }
 
     if (!blocking) {
-        boost::shared_ptr<ResetWatcherArgs> args( new ResetWatcherArgs() );
+        ResetWatcherArgsPtr args = boost::make_shared<ResetWatcherArgs>();
         args->aboutToQuit = aboutToQuit;
         if ( !quitAnyProcessingForAllNodes(this, args) ) {
             doResetEnd(aboutToQuit);
@@ -1954,7 +1974,7 @@ Project::doResetEnd(bool aboutToQuit)
 
 bool
 Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
-                                      const WatcherCallerArgsPtr& args)
+                                      const GenericWatcherCallerArgsPtr& args)
 {
     NodesList nodesToWatch;
 
@@ -1962,7 +1982,7 @@ Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
     if ( nodesToWatch.empty() ) {
         return false;
     }
-    boost::shared_ptr<NodeRenderWatcher> renderWatcher( new NodeRenderWatcher(nodesToWatch) );
+    NodeRenderWatcherPtr renderWatcher( new NodeRenderWatcher(nodesToWatch) );
     QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,WatcherCallerArgsPtr)), Qt::UniqueConnection);
     ProjectPrivate::RenderWatcher p;
     p.receiver = receiver;
@@ -1975,7 +1995,7 @@ Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
 
 void
 Project::onQuitAnyProcessingWatcherTaskFinished(int taskID,
-                                                const WatcherCallerArgsPtr& args)
+                                                const GenericWatcherCallerArgsPtr& args)
 {
     NodeRenderWatcher* watcher = dynamic_cast<NodeRenderWatcher*>( sender() );
 
@@ -2004,7 +2024,7 @@ Project::onQuitAnyProcessingWatcherTaskFinished(int taskID,
 }
 
 void
-Project::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
+Project::afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
 {
     ResetWatcherArgs* inArgs = dynamic_cast<ResetWatcherArgs*>( args.get() );
 
@@ -2493,7 +2513,7 @@ Project::getProjectFrameRate() const
     return _imp->frameRate->getValue();
 }
 
-boost::shared_ptr<KnobPath>
+KnobPathPtr
 Project::getEnvVarKnob() const
 {
     return _imp->envVars;
@@ -2622,7 +2642,7 @@ static bool
 hasNodeInputsInList(const NodesList& nodes,
                     const NodePtr& node)
 {
-    const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
+    const std::vector<NodeWPtr>& inputs = node->getGuiInputs();
     bool foundInput = false;
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -2660,7 +2680,7 @@ addTreeInputs(const NodesList& nodes,
     if ( !hasNodeInputsInList(nodes, node) ) {
         Project::TreeInput input;
         input.node = node;
-        const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
+        const std::vector<NodeWPtr>& inputs = node->getGuiInputs();
         input.inputs.resize( inputs.size() );
         for (std::size_t i = 0; i < inputs.size(); ++i) {
             input.inputs[i] = inputs[i].lock();
@@ -2670,8 +2690,8 @@ addTreeInputs(const NodesList& nodes,
     } else {
         tree.inbetweenNodes.push_back(node);
         markedNodes.push_back(node);
-        const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
-        for (std::vector<NodeWPtr >::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
+        const std::vector<NodeWPtr>& inputs = node->getGuiInputs();
+        for (std::vector<NodeWPtr>::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
             NodePtr input = it2->lock();
             if (input) {
                 addTreeInputs(nodes, input, tree, markedNodes);
@@ -2701,7 +2721,7 @@ Project::extractTreesFromNodes(const NodesList& nodes,
                 tree.output.outputs.push_back( std::make_pair(idx, *it2) );
             }
 
-            const std::vector<NodeWPtr >& inputs = (*it)->getGuiInputs();
+            const std::vector<NodeWPtr>& inputs = (*it)->getGuiInputs();
             for (U32 i = 0; i < inputs.size(); ++i) {
                 NodePtr input = inputs[i].lock();
                 if (input) {
@@ -2713,7 +2733,7 @@ Project::extractTreesFromNodes(const NodesList& nodes,
                 TreeInput input;
                 input.node = *it;
 
-                const std::vector<NodeWPtr >& inputs = (*it)->getGuiInputs();
+                const std::vector<NodeWPtr>& inputs = (*it)->getGuiInputs();
                 input.inputs.resize( inputs.size() );
                 for (std::size_t i = 0; i < inputs.size(); ++i) {
                     input.inputs[i] = inputs[i].lock();
@@ -2756,7 +2776,7 @@ Project::onProjectFormatPopulated()
 }
 
 void
-Project::setTimeLine(const boost::shared_ptr<TimeLine>& timeline)
+Project::setTimeLine(const TimeLinePtr& timeline)
 {
     _imp->timeline = timeline;
 }

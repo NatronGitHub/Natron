@@ -72,7 +72,7 @@ KnobInt::KnobInt(KnobHolder* holder,
                  const std::string &label,
                  int dimension,
                  bool declaredByPlugin)
-    : Knob<int>(holder, label, dimension, declaredByPlugin)
+    : KnobIntBase(holder, label, dimension, declaredByPlugin)
     , _increments(dimension, 1)
     , _disableSlider(false)
     , _isRectangle(false)
@@ -83,7 +83,7 @@ KnobInt::KnobInt(KnobHolder* holder,
                  const QString &label,
                  int dimension,
                  bool declaredByPlugin)
-    : Knob<int>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobIntBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _increments(dimension, 1)
     , _disableSlider(false)
     , _isRectangle(false)
@@ -164,7 +164,7 @@ KnobBool::KnobBool(KnobHolder* holder,
                    const std::string &label,
                    int dimension,
                    bool declaredByPlugin)
-    : Knob<bool>(holder, label, dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label, dimension, declaredByPlugin)
 {
 }
 
@@ -172,7 +172,7 @@ KnobBool::KnobBool(KnobHolder* holder,
                    const QString &label,
                    int dimension,
                    bool declaredByPlugin)
-    : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label.toStdString(), dimension, declaredByPlugin)
 {
 }
 
@@ -202,7 +202,7 @@ KnobDouble::KnobDouble(KnobHolder* holder,
                        const std::string &label,
                        int dimension,
                        bool declaredByPlugin)
-    : Knob<double>(holder, label, dimension, declaredByPlugin)
+    : KnobDoubleBase(holder, label, dimension, declaredByPlugin)
     , _spatial(false)
     , _isRectangle(false)
     , _increments(dimension, 1)
@@ -219,7 +219,7 @@ KnobDouble::KnobDouble(KnobHolder* holder,
                        const QString &label,
                        int dimension,
                        bool declaredByPlugin)
-    : Knob<double>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobDoubleBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _spatial(false)
     , _isRectangle(false)
     , _increments(dimension, 1)
@@ -248,11 +248,11 @@ KnobDouble::setHasHostOverlayHandle(bool handle)
         if ( !effect->getNode() ) {
             return;
         }
-        boost::shared_ptr<KnobDouble> thisSharedDouble = boost::dynamic_pointer_cast<KnobDouble>(shared_from_this());
+        KnobDoublePtr thisSharedDouble = boost::dynamic_pointer_cast<KnobDouble>(shared_from_this());
         assert(thisSharedDouble);
         if (handle) {
             effect->getNode()->addPositionInteract(thisSharedDouble,
-                                                   boost::shared_ptr<KnobBool>() /*interactive*/);
+                                                   KnobBoolPtr() /*interactive*/);
         } else {
             effect->getNode()->removePositionHostOverlay(this);
         }
@@ -454,7 +454,7 @@ KnobButton::KnobButton(KnobHolder* holder,
                        const std::string &label,
                        int dimension,
                        bool declaredByPlugin)
-    : Knob<bool>(holder, label, dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label, dimension, declaredByPlugin)
     , _renderButton(false)
     , _checkable(false)
     , _isToolButtonAction(false)
@@ -466,7 +466,7 @@ KnobButton::KnobButton(KnobHolder* holder,
                        const QString &label,
                        int dimension,
                        bool declaredByPlugin)
-    : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _renderButton(false)
     , _checkable(false)
     , _isToolButtonAction(false)
@@ -508,7 +508,7 @@ KnobChoice::KnobChoice(KnobHolder* holder,
                        const std::string &label,
                        int dimension,
                        bool declaredByPlugin)
-    : Knob<int>(holder, label, dimension, declaredByPlugin)
+    : KnobIntBase(holder, label, dimension, declaredByPlugin)
     , _entriesMutex()
     , _currentEntry()
     , _addNewChoice(false)
@@ -520,7 +520,7 @@ KnobChoice::KnobChoice(KnobHolder* holder,
                        const QString &label,
                        int dimension,
                        bool declaredByPlugin)
-    : Knob<int>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobIntBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _entriesMutex()
     , _currentEntry()
     , _addNewChoice(false)
@@ -809,7 +809,7 @@ KnobChoice::setActiveEntry(const ChoiceOption& opt)
 ChoiceOption
 KnobChoice::getActiveEntry()
 {
-    std::pair<int, KnobPtr> master = getMaster(0);
+    std::pair<int, KnobIPtr> master = getMaster(0);
 
     if (master.second) {
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>( master.second.get() );
@@ -1166,7 +1166,7 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
 }
 
 void
-KnobChoice::onKnobAboutToAlias(const KnobPtr &slave)
+KnobChoice::onKnobAboutToAlias(const KnobIPtr &slave)
 {
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>( slave.get() );
 
@@ -1205,7 +1205,7 @@ KnobChoice::onOriginalKnobEntryAppend()
 }
 
 void
-KnobChoice::handleSignalSlotsForAliasLink(const KnobPtr& alias,
+KnobChoice::handleSignalSlotsForAliasLink(const KnobIPtr& alias,
                                           bool connect)
 {
     assert(alias);
@@ -1232,7 +1232,7 @@ KnobSeparator::KnobSeparator(KnobHolder* holder,
                              const std::string &label,
                              int dimension,
                              bool declaredByPlugin)
-    : Knob<bool>(holder, label, dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label, dimension, declaredByPlugin)
 {
 }
 
@@ -1240,7 +1240,7 @@ KnobSeparator::KnobSeparator(KnobHolder* holder,
                              const QString &label,
                              int dimension,
                              bool declaredByPlugin)
-    : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label.toStdString(), dimension, declaredByPlugin)
 {
 }
 
@@ -1276,7 +1276,7 @@ KnobColor::KnobColor(KnobHolder* holder,
                      const std::string &label,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<double>(holder, label, dimension, declaredByPlugin)
+    : KnobDoubleBase(holder, label, dimension, declaredByPlugin)
     , _allDimensionsEnabled(true)
     , _simplifiedMode(false)
 {
@@ -1288,7 +1288,7 @@ KnobColor::KnobColor(KnobHolder* holder,
                      const QString &label,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<double>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobDoubleBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _allDimensionsEnabled(true)
     , _simplifiedMode(false)
 {
@@ -1451,7 +1451,7 @@ KnobGroup::KnobGroup(KnobHolder* holder,
                      const std::string &label,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<bool>(holder, label, dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label, dimension, declaredByPlugin)
     , _isTab(false)
     , _isToolButton(false)
     , _isDialog(false)
@@ -1462,7 +1462,7 @@ KnobGroup::KnobGroup(KnobHolder* holder,
                      const QString &label,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _isTab(false)
     , _isToolButton(false)
     , _isDialog(false)
@@ -1525,7 +1525,7 @@ KnobGroup::typeName() const
 }
 
 void
-KnobGroup::addKnob(const KnobPtr& k)
+KnobGroup::addKnob(const KnobIPtr& k)
 {
     if ( !isUserKnob() && k->isUserKnob() ) {
         return;
@@ -1546,7 +1546,7 @@ KnobGroup::addKnob(const KnobPtr& k)
 void
 KnobGroup::removeKnob(KnobI* k)
 {
-    for (std::vector<boost::weak_ptr<KnobI> >::iterator it = _children.begin(); it != _children.end(); ++it) {
+    for (std::vector<KnobIWPtr>::iterator it = _children.begin(); it != _children.end(); ++it) {
         if (it->lock().get() == k) {
             _children.erase(it);
 
@@ -1563,7 +1563,7 @@ KnobGroup::moveOneStepUp(KnobI* k)
             if (i == 0) {
                 return false;
             }
-            boost::weak_ptr<KnobI> tmp = _children[i - 1];
+            KnobIWPtr tmp = _children[i - 1];
             _children[i - 1] = _children[i];
             _children[i] = tmp;
 
@@ -1581,7 +1581,7 @@ KnobGroup::moveOneStepDown(KnobI* k)
             if (i == _children.size() - 1) {
                 return false;
             }
-            boost::weak_ptr<KnobI> tmp = _children[i + 1];
+            KnobIWPtr tmp = _children[i + 1];
             _children[i + 1] = _children[i];
             _children[i] = tmp;
 
@@ -1593,7 +1593,7 @@ KnobGroup::moveOneStepDown(KnobI* k)
 
 void
 KnobGroup::insertKnob(int index,
-                      const KnobPtr& k)
+                      const KnobIPtr& k)
 {
     if ( !isUserKnob() && k->isUserKnob() ) {
         return;
@@ -1610,20 +1610,20 @@ KnobGroup::insertKnob(int index,
     if ( index >= (int)_children.size() ) {
         _children.push_back(k);
     } else {
-        std::vector<boost::weak_ptr<KnobI> >::iterator it = _children.begin();
+        std::vector<KnobIWPtr>::iterator it = _children.begin();
         std::advance(it, index);
         _children.insert(it, k);
     }
     k->setParentKnob( shared_from_this() );
 }
 
-std::vector< KnobPtr >
+std::vector<KnobIPtr>
 KnobGroup::getChildren() const
 {
-    std::vector< KnobPtr > ret;
+    std::vector<KnobIPtr> ret;
 
     for (std::size_t i = 0; i < _children.size(); ++i) {
-        KnobPtr k = _children[i].lock();
+        KnobIPtr k = _children[i].lock();
         if (k) {
             ret.push_back(k);
         }
@@ -1638,7 +1638,7 @@ KnobPage::KnobPage(KnobHolder* holder,
                    const std::string &label,
                    int dimension,
                    bool declaredByPlugin)
-    : Knob<bool>(holder, label, dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label, dimension, declaredByPlugin)
     , _isToolBar(false)
 {
     setIsPersistent(false);
@@ -1648,7 +1648,7 @@ KnobPage::KnobPage(KnobHolder* holder,
                    const QString &label,
                    int dimension,
                    bool declaredByPlugin)
-    : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobBoolBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _isToolBar(false)
 {
     setIsPersistent(false);
@@ -1673,13 +1673,13 @@ KnobPage::typeName() const
     return typeNameStatic();
 }
 
-std::vector< KnobPtr >
+std::vector<KnobIPtr>
 KnobPage::getChildren() const
 {
-    std::vector< KnobPtr > ret;
+    std::vector<KnobIPtr> ret;
 
     for (std::size_t i = 0; i < _children.size(); ++i) {
-        KnobPtr k = _children[i].lock();
+        KnobIPtr k = _children[i].lock();
         if (k) {
             ret.push_back(k);
         }
@@ -1689,7 +1689,7 @@ KnobPage::getChildren() const
 }
 
 void
-KnobPage::addKnob(const KnobPtr &k)
+KnobPage::addKnob(const KnobIPtr &k)
 {
     if ( !isUserKnob() && k->isUserKnob() ) {
         return;
@@ -1709,7 +1709,7 @@ KnobPage::addKnob(const KnobPtr &k)
 
 void
 KnobPage::insertKnob(int index,
-                     const KnobPtr& k)
+                     const KnobIPtr& k)
 {
     if ( !isUserKnob() && k->isUserKnob() ) {
         return;
@@ -1726,7 +1726,7 @@ KnobPage::insertKnob(int index,
     if ( index >= (int)_children.size() ) {
         _children.push_back(k);
     } else {
-        std::vector<boost::weak_ptr<KnobI> >::iterator it = _children.begin();
+        std::vector<KnobIWPtr>::iterator it = _children.begin();
         std::advance(it, index);
         _children.insert(it, k);
     }
@@ -1736,7 +1736,7 @@ KnobPage::insertKnob(int index,
 void
 KnobPage::removeKnob(KnobI* k)
 {
-    for (std::vector<boost::weak_ptr<KnobI> >::iterator it = _children.begin(); it != _children.end(); ++it) {
+    for (std::vector<KnobIWPtr>::iterator it = _children.begin(); it != _children.end(); ++it) {
         if (it->lock().get() == k) {
             _children.erase(it);
 
@@ -1753,7 +1753,7 @@ KnobPage::moveOneStepUp(KnobI* k)
             if (i == 0) {
                 return false;
             }
-            boost::weak_ptr<KnobI> tmp = _children[i - 1];
+            KnobIWPtr tmp = _children[i - 1];
             _children[i - 1] = _children[i];
             _children[i] = tmp;
 
@@ -1771,7 +1771,7 @@ KnobPage::moveOneStepDown(KnobI* k)
             if (i == _children.size() - 1) {
                 return false;
             }
-            boost::weak_ptr<KnobI> tmp = _children[i + 1];
+            KnobIWPtr tmp = _children[i + 1];
             _children[i + 1] = _children[i];
             _children[i] = tmp;
 
@@ -1788,7 +1788,7 @@ KnobParametric::KnobParametric(KnobHolder* holder,
                                const std::string &label,
                                int dimension,
                                bool declaredByPlugin)
-    : Knob<double>(holder, label, dimension, declaredByPlugin)
+    : KnobDoubleBase(holder, label, dimension, declaredByPlugin)
     , _curvesMutex()
     , _curves(dimension)
     , _defaultCurves(dimension)
@@ -1798,8 +1798,8 @@ KnobParametric::KnobParametric(KnobHolder* holder,
         RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
-        _curves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
-        _defaultCurves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
+        _curves[i] = boost::make_shared<Curve>(this, i);
+        _defaultCurves[i] = boost::make_shared<Curve>(this, i);
     }
 }
 
@@ -1807,7 +1807,7 @@ KnobParametric::KnobParametric(KnobHolder* holder,
                                const QString &label,
                                int dimension,
                                bool declaredByPlugin)
-    : Knob<double>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobDoubleBase(holder, label.toStdString(), dimension, declaredByPlugin)
     , _curvesMutex()
     , _curves(dimension)
     , _defaultCurves(dimension)
@@ -1817,8 +1817,8 @@ KnobParametric::KnobParametric(KnobHolder* holder,
         RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
-        _curves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
-        _defaultCurves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
+        _curves[i] = boost::make_shared<Curve>(this, i);
+        _defaultCurves[i] = boost::make_shared<Curve>(this, i);
     }
 }
 
@@ -1878,7 +1878,7 @@ KnobParametric::getCurveColor(int dimension,
     ///Mt-safe as it never changes
 
     assert( dimension < (int)_curvesColor.size() );
-    std::pair<int, KnobPtr >  master = getMaster(dimension);
+    std::pair<int, KnobIPtr>  master = getMaster(dimension);
     if (master.second) {
         KnobParametric* m = dynamic_cast<KnobParametric*>( master.second.get() );
         assert(m);
@@ -1912,11 +1912,11 @@ std::pair<double, double> KnobParametric::getParametricRange() const
     return _curves.front()->getXRange();
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 KnobParametric::getDefaultParametricCurve(int dimension) const
 {
     assert( dimension >= 0 && dimension < (int)_curves.size() );
-    std::pair<int, KnobPtr >  master = getMaster(dimension);
+    std::pair<int, KnobIPtr>  master = getMaster(dimension);
     if (master.second) {
         KnobParametric* m = dynamic_cast<KnobParametric*>( master.second.get() );
         assert(m);
@@ -1927,12 +1927,12 @@ KnobParametric::getDefaultParametricCurve(int dimension) const
     }
 }
 
-boost::shared_ptr<Curve> KnobParametric::getParametricCurve(int dimension) const
+CurvePtr KnobParametric::getParametricCurve(int dimension) const
 {
     ///Mt-safe as Curve is MT-safe and the pointer is never deleted
 
     assert( dimension < (int)_curves.size() );
-    std::pair<int, KnobPtr >  master = getMaster(dimension);
+    std::pair<int, KnobIPtr>  master = getMaster(dimension);
     if (master.second) {
         KnobParametric* m = dynamic_cast<KnobParametric*>( master.second.get() );
         assert(m);
@@ -2258,7 +2258,7 @@ KnobParametric::cloneExtraData(KnobI* other,
 }
 
 void
-KnobParametric::saveParametricCurves(std::list< Curve >* curves) const
+KnobParametric::saveParametricCurves(std::list<Curve >* curves) const
 {
     for (U32 i = 0; i < _curves.size(); ++i) {
         curves->push_back(*_curves[i]);
@@ -2266,11 +2266,11 @@ KnobParametric::saveParametricCurves(std::list< Curve >* curves) const
 }
 
 void
-KnobParametric::loadParametricCurves(const std::list< Curve > & curves)
+KnobParametric::loadParametricCurves(const std::list<Curve > & curves)
 {
     assert( !_curves.empty() );
     int i = 0;
-    for (std::list< Curve >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
+    for (std::list<Curve >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
         _curves[i]->clone(*it);
         ++i;
     }
@@ -2315,7 +2315,7 @@ KnobParametric::hasModificationsVirtual(int dimension) const
 }
 
 void
-KnobParametric::onKnobAboutToAlias(const KnobPtr& slave)
+KnobParametric::onKnobAboutToAlias(const KnobIPtr& slave)
 {
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>( slave.get() );
 
@@ -2324,7 +2324,7 @@ KnobParametric::onKnobAboutToAlias(const KnobPtr& slave)
         _curvesColor.resize( isParametric->_curvesColor.size() );
         assert( _curvesColor.size() == _defaultCurves.size() );
         for (std::size_t i = 0; i < isParametric->_defaultCurves.size(); ++i) {
-            _defaultCurves[i].reset( new Curve(this, i) );
+            _defaultCurves[i] = boost::make_shared<Curve>(this, i);
             _defaultCurves[i]->clone(*isParametric->_defaultCurves[i]);
             _curvesColor[i] = isParametric->_curvesColor[i];
         }
@@ -2338,7 +2338,7 @@ KnobTable::KnobTable(KnobHolder* holder,
                      const std::string &label,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<std::string>(holder, label, dimension, declaredByPlugin)
+    : KnobStringBase(holder, label, dimension, declaredByPlugin)
 {
 }
 
@@ -2346,7 +2346,7 @@ KnobTable::KnobTable(KnobHolder* holder,
                      const QString &label,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<std::string>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : KnobStringBase(holder, label.toStdString(), dimension, declaredByPlugin)
 {
 }
 

@@ -116,9 +116,9 @@ public:
                                             int textureIndex,
                                             bool isPartialRect,
                                             bool isFirstTile,
-                                            boost::shared_ptr<Texture>* texture) = 0;
+                                            TexturePtr* texture) = 0;
     virtual void endTransferBufferFromRAMToGPU(int textureIndex,
-                                               const boost::shared_ptr<Texture>& texture,
+                                               const TexturePtr& texture,
                                                const ImagePtr& image,
                                                int time,
                                                const RectD& rod,
@@ -191,7 +191,7 @@ public:
     /**
      * @brief Must return a pointer to the current timeline used by the Viewer
      **/
-    virtual boost::shared_ptr<TimeLine> getTimeline() const = 0;
+    virtual TimeLinePtr getTimeline() const = 0;
 
     /**
      * @brief Must save all relevant OpenGL bits so that they can be restored as-is after the draw action of a plugin.

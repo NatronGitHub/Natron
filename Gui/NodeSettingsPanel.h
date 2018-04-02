@@ -62,14 +62,14 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     Q_PROPERTY(bool _selected READ isSelected WRITE setSelected)
 
     /*Pointer to the node GUI*/
-    boost::weak_ptr<NodeGui> _nodeGUI;
+    NodeGuiWPtr _nodeGUI;
     bool _selected;
     Button* _settingsButton;
-    boost::shared_ptr<MultiInstancePanel> _multiPanel;
+    MultiInstancePanelPtr _multiPanel;
 
 public:
 
-    explicit NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
+    explicit NodeSettingsPanel(const MultiInstancePanelPtr & multiPanel,
                                Gui* gui,
                                const NodeGuiPtr &NodeUi,
                                QVBoxLayout* container,
@@ -89,7 +89,7 @@ public:
         return _nodeGUI.lock();
     }
 
-    virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const OVERRIDE
+    virtual MultiInstancePanelPtr getMultiInstancePanel() const OVERRIDE
     {
         return _multiPanel;
     }

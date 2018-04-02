@@ -200,7 +200,7 @@ Bool_CheckBox::focusOutEvent(QFocusEvent* e)
     AnimatedCheckBox::focusOutEvent(e);
 }
 
-KnobGuiBool::KnobGuiBool(KnobPtr knob,
+KnobGuiBool::KnobGuiBool(KnobIPtr knob,
                          KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _checkBox(0)
@@ -237,7 +237,7 @@ KnobGuiBool::removeSpecificGui()
 void
 KnobGuiBool::updateGUI(int /*dimension*/)
 {
-    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    KnobBoolPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -272,7 +272,7 @@ KnobGuiBool::reflectAnimationLevel(int /*dimension*/,
 void
 KnobGuiBool::onLabelChangedInternal()
 {
-    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    KnobBoolPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -306,7 +306,7 @@ KnobGuiBool::onLabelClicked(bool b)
         return;
     }
     _checkBox->setChecked(b);
-    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    KnobBoolPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -316,7 +316,7 @@ KnobGuiBool::onLabelClicked(bool b)
 void
 KnobGuiBool::onCheckBoxStateChanged(bool b)
 {
-    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    KnobBoolPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -338,7 +338,7 @@ KnobGuiBool::_show()
 void
 KnobGuiBool::setEnabled()
 {
-    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    KnobBoolPtr knob = _knob.lock();
     bool b = knob->isEnabled(0)  && knob->getExpression(0).empty();
 
     _checkBox->setReadOnly(!b);
@@ -357,7 +357,7 @@ KnobGuiBool::setDirty(bool dirty)
     _checkBox->setDirty(dirty);
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiBool::getKnob() const
 {
     return _knob.lock();
@@ -367,7 +367,7 @@ void
 KnobGuiBool::reflectExpressionState(int /*dimension*/,
                                     bool hasExpr)
 {
-    boost::shared_ptr<KnobBool> knob = _knob.lock();
+    KnobBoolPtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -382,7 +382,7 @@ KnobGuiBool::updateToolTip()
 {
     if ( hasToolTip() ) {
         QString tt = toolTip();
-        boost::shared_ptr<KnobBool> knob = _knob.lock();
+        KnobBoolPtr knob = _knob.lock();
         if (!knob) {
             return;
         }

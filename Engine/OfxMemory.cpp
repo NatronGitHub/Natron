@@ -36,7 +36,7 @@ CLANG_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER
 
-OfxMemory::OfxMemory(const EffectInstPtr& effect)
+OfxMemory::OfxMemory(const EffectInstancePtr& effect)
     : OFX::Host::Memory::Instance()
     , _memory( new PluginMemory(effect) )
 {

@@ -97,9 +97,9 @@ NATRON_NAMESPACE_ENTER
 ////////////////////////////////////Stroke//////////////////////////////////
 
 RotoStrokeItem::RotoStrokeItem(RotoStrokeType type,
-                               const boost::shared_ptr<RotoContext>& context,
+                               const RotoContextPtr& context,
                                const std::string & name,
-                               const boost::shared_ptr<RotoLayer>& parent)
+                               const RotoLayerPtr& parent)
 
     : RotoDrawableItem(context, name, parent, true)
     , _imp( new RotoStrokeItemPrivate(type) )
@@ -327,7 +327,7 @@ RotoStrokeItem::appendPoint(bool newStroke,
     assert( QThread::currentThread() == qApp->thread() );
 
 
-    boost::shared_ptr<RotoStrokeItem> thisShared = boost::dynamic_pointer_cast<RotoStrokeItem>( shared_from_this() );
+    RotoStrokeItemPtr thisShared = boost::dynamic_pointer_cast<RotoStrokeItem>( shared_from_this() );
     assert(thisShared);
     {
         QMutexLocker k(&itemMutex);
@@ -349,9 +349,9 @@ RotoStrokeItem::appendPoint(bool newStroke,
         RotoStrokeItemPrivate::StrokeCurves* stroke = 0;
         if (newStroke) {
             RotoStrokeItemPrivate::StrokeCurves s;
-            s.xCurve.reset(new Curve);
-            s.yCurve.reset(new Curve);
-            s.pressureCurve.reset(new Curve);
+            s.xCurve = boost::make_shared<Curve>();
+            s.yCurve = boost::make_shared<Curve>();
+            s.pressureCurve = boost::make_shared<Curve>();
             _imp->strokes.push_back(s);
         }
         stroke = &_imp->strokes.back();
@@ -476,9 +476,9 @@ RotoStrokeItem::appendPoint(bool newStroke,
 } // RotoStrokeItem::appendPoint
 
 void
-RotoStrokeItem::addStroke(const boost::shared_ptr<Curve>& xCurve,
-                          const boost::shared_ptr<Curve>& yCurve,
-                          const boost::shared_ptr<Curve>& pCurve)
+RotoStrokeItem::addStroke(const CurvePtr& xCurve,
+                          const CurvePtr& yCurve,
+                          const CurvePtr& pCurve)
 {
     RotoStrokeItemPrivate::StrokeCurves s;
 
@@ -494,9 +494,9 @@ RotoStrokeItem::addStroke(const boost::shared_ptr<Curve>& xCurve,
 }
 
 bool
-RotoStrokeItem::removeLastStroke(boost::shared_ptr<Curve>* xCurve,
-                                 boost::shared_ptr<Curve>* yCurve,
-                                 boost::shared_ptr<Curve>* pCurve)
+RotoStrokeItem::removeLastStroke(CurvePtr* xCurve,
+                                 CurvePtr* yCurve,
+                                 CurvePtr* pCurve)
 {
     bool empty;
     {
@@ -666,9 +666,9 @@ RotoStrokeItem::clone(const RotoItem* other)
         for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = otherStroke->_imp->strokes.begin();
              it != otherStroke->_imp->strokes.end(); ++it) {
             RotoStrokeItemPrivate::StrokeCurves s;
-            s.xCurve.reset(new Curve);
-            s.yCurve.reset(new Curve);
-            s.pressureCurve.reset(new Curve);
+            s.xCurve = boost::make_shared<Curve>();
+            s.yCurve = boost::make_shared<Curve>();
+            s.pressureCurve = boost::make_shared<Curve>();
             s.xCurve->clone( *(it->xCurve) );
             s.yCurve->clone( *(it->yCurve) );
             s.pressureCurve->clone( *(it->pressureCurve) );
@@ -697,9 +697,9 @@ RotoStrokeItem::save(RotoItemSerialization* obj) const
         s->_brushType = (int)_imp->type;
         for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin();
              it != _imp->strokes.end(); ++it) {
-            boost::shared_ptr<Curve> xCurve(new Curve);
-            boost::shared_ptr<Curve> yCurve(new Curve);
-            boost::shared_ptr<Curve> pressureCurve(new Curve);
+            CurvePtr xCurve = boost::make_shared<Curve>();
+            CurvePtr yCurve = boost::make_shared<Curve>();
+            CurvePtr pressureCurve = boost::make_shared<Curve>();
             xCurve->clone( *(it->xCurve) );
             yCurve->clone( *(it->yCurve) );
             pressureCurve->clone( *(it->pressureCurve) );
@@ -725,14 +725,14 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
         _imp->type = (RotoStrokeType)s->_brushType;
 
         assert( s->_xCurves.size() == s->_yCurves.size() && s->_xCurves.size() == s->_pressureCurves.size() );
-        std::list<boost::shared_ptr<Curve> >::const_iterator itY = s->_yCurves.begin();
-        std::list<boost::shared_ptr<Curve> >::const_iterator itP = s->_pressureCurves.begin();
-        for (std::list<boost::shared_ptr<Curve> >::const_iterator it = s->_xCurves.begin();
+        std::list<CurvePtr>::const_iterator itY = s->_yCurves.begin();
+        std::list<CurvePtr>::const_iterator itP = s->_pressureCurves.begin();
+        for (std::list<CurvePtr>::const_iterator it = s->_xCurves.begin();
              it != s->_xCurves.end(); ++it, ++itY, ++itP) {
             RotoStrokeItemPrivate::StrokeCurves s;
-            s.xCurve.reset(new Curve);
-            s.yCurve.reset(new Curve);
-            s.pressureCurve.reset(new Curve);
+            s.xCurve = boost::make_shared<Curve>();
+            s.yCurve = boost::make_shared<Curve>();
+            s.pressureCurve = boost::make_shared<Curve>();
             s.xCurve->clone( **(it) );
             s.yCurve->clone( **(itY) );
             s.pressureCurve->clone( **(itP) );
@@ -867,11 +867,11 @@ RotoStrokeItem::getBoundingBox(double time) const
     return computeBoundingBox(time);
 }
 
-std::list<boost::shared_ptr<Curve> >
+std::list<CurvePtr>
 RotoStrokeItem::getXControlPoints() const
 {
     assert( QThread::currentThread() == qApp->thread() );
-    std::list<boost::shared_ptr<Curve> > ret;
+    std::list<CurvePtr> ret;
     QMutexLocker k(&itemMutex);
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
         ret.push_back(it->xCurve);
@@ -880,11 +880,11 @@ RotoStrokeItem::getXControlPoints() const
     return ret;
 }
 
-std::list<boost::shared_ptr<Curve> >
+std::list<CurvePtr>
 RotoStrokeItem::getYControlPoints() const
 {
     assert( QThread::currentThread() == qApp->thread() );
-    std::list<boost::shared_ptr<Curve> > ret;
+    std::list<CurvePtr> ret;
     QMutexLocker k(&itemMutex);
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
         ret.push_back(it->xCurve);

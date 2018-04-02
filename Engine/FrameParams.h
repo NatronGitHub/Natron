@@ -105,7 +105,7 @@ public:
 private:
 
     // The image used to make this frame entry
-    boost::weak_ptr<Image>  _image;
+    ImageWPtr  _image;
 
     // The RoD of the image used to make this frame entry
     RectI _rod;

@@ -88,7 +88,8 @@ struct TextRendererPrivate
     GLint _yOffset;
 };
 
-typedef std::map<QFont, boost::shared_ptr<TextRendererPrivate> > FontRenderers;
+typedef boost::shared_ptr<TextRendererPrivate> TextRendererPrivatePtr;
+typedef std::map<QFont, TextRendererPrivatePtr> FontRenderers;
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
@@ -269,12 +270,12 @@ TextRenderer::renderText(float x,
                          int flags) const
 {
     glCheckError();
-    boost::shared_ptr<TextRendererPrivate> p;
+    TextRendererPrivatePtr p;
     FontRenderers::iterator it = _imp->renderers.find(font);
     if ( it != _imp->renderers.end() ) {
         p  = (*it).second;
     } else {
-        p = boost::shared_ptr<TextRendererPrivate>( new TextRendererPrivate(font) );
+        p = TextRendererPrivatePtr( new TextRendererPrivate(font) );
         _imp->renderers[font] = p;
     }
     assert(p);

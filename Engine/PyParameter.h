@@ -47,15 +47,15 @@ NATRON_PYTHON_NAMESPACE_ENTER;
 class Param
 {
 protected:
-    boost::weak_ptr<KnobI> _knob;
+    KnobIWPtr _knob;
 
 public:
 
-    Param(const KnobPtr& knob);
+    Param(const KnobIPtr& knob);
 
     virtual ~Param();
 
-    KnobPtr getInternalKnob() const { return _knob.lock(); }
+    KnobIPtr getInternalKnob() const { return _knob.lock(); }
 
     /**
      * @brief Returns the parent of this parameter if any. If the parameter has no parent it is assumed to be a top-level
@@ -208,7 +208,7 @@ class AnimatedParam
 {
 public:
 
-    AnimatedParam(const KnobPtr& knob);
+    AnimatedParam(const KnobIPtr& knob);
 
     virtual ~AnimatedParam();
 
@@ -304,11 +304,11 @@ class IntParam
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<KnobInt> _intKnob;
+    KnobIntWPtr _intKnob;
 
 public:
 
-    IntParam(const boost::shared_ptr<KnobInt>& knob);
+    IntParam(const KnobIntPtr& knob);
 
     virtual ~IntParam();
 
@@ -420,7 +420,7 @@ class Int2DParam
 {
 public:
 
-    Int2DParam(const boost::shared_ptr<KnobInt>& knob)
+    Int2DParam(const KnobIntPtr& knob)
         : IntParam(knob) {}
 
     virtual ~Int2DParam() {}
@@ -436,7 +436,7 @@ class Int3DParam
 {
 public:
 
-    Int3DParam(const boost::shared_ptr<KnobInt>& knob)
+    Int3DParam(const KnobIntPtr& knob)
         : Int2DParam(knob) {}
 
     virtual ~Int3DParam() {}
@@ -452,11 +452,11 @@ class DoubleParam
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<KnobDouble> _doubleKnob;
+    KnobDoubleWPtr _doubleKnob;
 
 public:
 
-    DoubleParam(const boost::shared_ptr<KnobDouble>& knob);
+    DoubleParam(const KnobDoublePtr& knob);
 
     virtual ~DoubleParam();
 
@@ -568,7 +568,7 @@ class Double2DParam
 {
 public:
 
-    Double2DParam(const boost::shared_ptr<KnobDouble>& knob)
+    Double2DParam(const KnobDoublePtr& knob)
         : DoubleParam(knob) {}
 
     virtual ~Double2DParam() {}
@@ -587,7 +587,7 @@ class Double3DParam
 {
 public:
 
-    Double3DParam(const boost::shared_ptr<KnobDouble>& knob)
+    Double3DParam(const KnobDoublePtr& knob)
         : Double2DParam(knob) {}
 
     virtual ~Double3DParam() {}
@@ -603,11 +603,11 @@ class ColorParam
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<KnobColor> _colorKnob;
+    KnobColorWPtr _colorKnob;
 
 public:
 
-    ColorParam(const boost::shared_ptr<KnobColor>& knob);
+    ColorParam(const KnobColorPtr& knob);
 
     virtual ~ColorParam();
 
@@ -719,11 +719,11 @@ class ChoiceParam
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<KnobChoice> _choiceKnob;
+    KnobChoiceWPtr _choiceKnob;
 
 public:
 
-    ChoiceParam(const boost::shared_ptr<KnobChoice>& knob);
+    ChoiceParam(const KnobChoicePtr& knob);
 
     virtual ~ChoiceParam();
 
@@ -828,11 +828,11 @@ class BooleanParam
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<KnobBool> _boolKnob;
+    KnobBoolWPtr _boolKnob;
 
 public:
 
-    BooleanParam(const boost::shared_ptr<KnobBool>& knob);
+    BooleanParam(const KnobBoolPtr& knob);
 
     virtual ~BooleanParam();
 
@@ -901,11 +901,11 @@ class StringParamBase
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<Knob<std::string> > _stringKnob;
+    KnobStringBaseWPtr _stringKnob;
 
 public:
 
-    StringParamBase(const boost::shared_ptr<Knob<std::string> >& knob);
+    StringParamBase(const KnobStringBasePtr& knob);
 
     virtual ~StringParamBase();
 
@@ -971,7 +971,7 @@ public:
 class StringParam
     : public StringParamBase
 {
-    boost::weak_ptr<KnobString> _sKnob;
+    KnobStringWPtr _sKnob;
 
 public:
 
@@ -984,7 +984,7 @@ public:
         eStringTypeDefault, //< Same as custom except that it is editable
     };
 
-    StringParam(const boost::shared_ptr<KnobString>& knob);
+    StringParam(const KnobStringPtr& knob);
 
     virtual ~StringParam();
 
@@ -998,12 +998,12 @@ public:
 class FileParam
     : public StringParamBase
 {
-    boost::weak_ptr<KnobFile> _sKnob;
+    KnobFileWPtr _sKnob;
 
 public:
 
 
-    FileParam(const boost::shared_ptr<KnobFile>& knob);
+    FileParam(const KnobFilePtr& knob);
 
     virtual ~FileParam();
 
@@ -1027,12 +1027,12 @@ public:
 class OutputFileParam
     : public StringParamBase
 {
-    boost::weak_ptr<KnobOutputFile> _sKnob;
+    KnobOutputFileWPtr _sKnob;
 
 public:
 
 
-    OutputFileParam(const boost::shared_ptr<KnobOutputFile>& knob);
+    OutputFileParam(const KnobOutputFilePtr& knob);
 
     virtual ~OutputFileParam();
 
@@ -1051,12 +1051,12 @@ public:
 class PathParam
     : public StringParamBase
 {
-    boost::weak_ptr<KnobPath> _sKnob;
+    KnobPathWPtr _sKnob;
 
 public:
 
 
-    PathParam(const boost::shared_ptr<KnobPath>& knob);
+    PathParam(const KnobPathPtr& knob);
 
     virtual ~PathParam();
 
@@ -1077,11 +1077,11 @@ class ButtonParam
     : public Param
 {
 protected:
-    boost::weak_ptr<KnobButton> _buttonKnob;
+    KnobButtonWPtr _buttonKnob;
 
 public:
 
-    ButtonParam(const boost::shared_ptr<KnobButton>& knob);
+    ButtonParam(const KnobButtonPtr& knob);
 
     virtual ~ButtonParam();
 
@@ -1094,11 +1094,11 @@ class SeparatorParam
     : public Param
 {
 protected:
-    boost::weak_ptr<KnobSeparator> _separatorKnob;
+    KnobSeparatorWPtr _separatorKnob;
 
 public:
 
-    SeparatorParam(const boost::shared_ptr<KnobSeparator>& knob);
+    SeparatorParam(const KnobSeparatorPtr& knob);
 
     virtual ~SeparatorParam();
 };
@@ -1107,11 +1107,11 @@ class GroupParam
     : public Param
 {
 protected:
-    boost::weak_ptr<KnobGroup> _groupKnob;
+    KnobGroupWPtr _groupKnob;
 
 public:
 
-    GroupParam(const boost::shared_ptr<KnobGroup>& knob);
+    GroupParam(const KnobGroupPtr& knob);
 
     virtual ~GroupParam();
 
@@ -1136,11 +1136,11 @@ class PageParam
     : public Param
 {
 protected:
-    boost::weak_ptr<KnobPage> _pageKnob;
+    KnobPageWPtr _pageKnob;
 
 public:
 
-    PageParam(const boost::shared_ptr<KnobPage>& knob);
+    PageParam(const KnobPagePtr& knob);
 
     virtual ~PageParam();
 
@@ -1154,11 +1154,11 @@ class ParametricParam
     : public Param
 {
 protected:
-    boost::weak_ptr<KnobParametric> _parametricKnob;
+    KnobParametricWPtr _parametricKnob;
 
 public:
 
-    ParametricParam(const boost::shared_ptr<KnobParametric>& knob);
+    ParametricParam(const KnobParametricPtr& knob);
 
     virtual ~ParametricParam();
 

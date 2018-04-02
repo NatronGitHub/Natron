@@ -21,7 +21,7 @@ TARGET = Natron
 # the list of currently maintained versions (those that have to be merged into the master branch)
 VERSION_21 = 2.1.10
 VERSION_22 = 2.2.10
-VERSION_23 = 2.3.5
+VERSION_23 = 2.3.10
 VERSION_30 = 3.0.0
 
 # The version for this branch
@@ -35,7 +35,7 @@ win32 {
 	CONFIG += app
 }
 CONFIG += moc
-CONFIG += boost opengl qt cairo python shiboken pyside 
+CONFIG += boost boost-serialization-lib opengl qt cairo python shiboken pyside 
 CONFIG += static-gui static-engine static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-qhttpserver static-libtess
 
 QT += gui core opengl network

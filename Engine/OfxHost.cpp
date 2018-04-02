@@ -145,7 +145,7 @@ string_format(const std::string fmt,
 
 struct OfxHostPrivate
 {
-    boost::shared_ptr<OFX::Host::ImageEffect::PluginCache> imageEffectPluginCache;
+    OFX::Host::ImageEffect::PluginCachePtr imageEffectPluginCache;
     boost::shared_ptr<TLSHolder<OfxHost::OfxHostTLSData> > tlsData;
 
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
@@ -173,7 +173,7 @@ struct OfxHostPrivate
 OfxHost::OfxHost()
     : _imp( new OfxHostPrivate() )
 {
-    _imp->imageEffectPluginCache.reset( new OFX::Host::ImageEffect::PluginCache(*this) );
+    _imp->imageEffectPluginCache = boost::make_shared<OFX::Host::ImageEffect::PluginCache>((OFX::Host::ImageEffect::Host*)this);
 }
 
 OfxHost::~OfxHost()
@@ -698,7 +698,7 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     return desc;
 } // OfxHost::getPluginContextAndDescribe
 
-boost::shared_ptr<AbstractOfxEffectInstance>
+AbstractOfxEffectInstancePtr
 OfxHost::createOfxEffect(NodePtr node,
                          const CreateNodeArgs& args
 #ifndef NATRON_ENABLE_IO_META_NODES
@@ -717,8 +717,8 @@ OfxHost::createOfxEffect(NodePtr node,
     assert(plugin && desc && ctx != eContextNone);
 
 
-    boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect( new OfxEffectInstance(node) );
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    AbstractOfxEffectInstancePtr hostSideEffect( new OfxEffectInstance(node) );
+    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
     std::string fixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
 
     if ( node && !node->getEffectInstance() ) {
@@ -784,12 +784,14 @@ getPluginShortcuts(const OFX::Host::ImageEffect::Descriptor& desc, std::list<Plu
         int nShiftDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutHasShiftModifier);
         int nAltDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutHasAltModifier);
         int nMetaDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutHasMetaModifier);
+        int nKeypadDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutHasKeypadModifier);
 
         if (nSymDims != nDims ||
             nCtrlDims != nDims ||
             nShiftDims != nDims ||
             nAltDims != nDims ||
-            nMetaDims != nDims) {
+            nMetaDims != nDims ||
+            nKeypadDims != nDims) {
             std::cerr << desc.getPlugin()->getIdentifier() << ": Invalid dimension setup of the NatronOfxImageEffectPropInViewerContextDefaultShortcuts property." << std::endl;
             return;
         }
@@ -804,6 +806,7 @@ getPluginShortcuts(const OFX::Host::ImageEffect::Descriptor& desc, std::list<Plu
         int hasShift = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutHasShiftModifier, i);
         int hasAlt = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutHasAltModifier, i);
         int hasMeta = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutHasMetaModifier, i);
+        int hasKeypad = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutHasKeypadModifier, i);
 
         std::map<std::string, OFX::Host::Param::Descriptor*>::const_iterator foundParamDesc = paramDescriptors.find(paramName);
         if (foundParamDesc == paramDescriptors.end()) {
@@ -827,6 +830,9 @@ getPluginShortcuts(const OFX::Host::ImageEffect::Descriptor& desc, std::list<Plu
         }
         if (hasMeta) {
             eMods |= eKeyboardModifierMeta;
+        }
+        if (hasKeypad) {
+            eMods |= eKeyboardModifierKeypad;
         }
         shortcuts->push_back(PluginActionShortcut(paramName, foundParamDesc->second->getLabel(), eSymbol, eMods));
     }
@@ -1111,7 +1117,7 @@ OfxHost::clearPluginsLoadedCache()
     if ( QFile::exists(oldOfxCache) ) {
         QFile::remove(oldOfxCache);
     }
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     QtCompat::removeRecursively( getOFXCacheDirPath() );
 #else
     QDir OFXCacheDir( getOFXCacheDirPath() );
@@ -1159,7 +1165,7 @@ OfxHost::fetchSuite(const char *suiteName,
 OFX::Host::Memory::Instance*
 OfxHost::newMemoryInstance(size_t nBytes)
 {
-    OfxMemory* ret = new OfxMemory( boost::shared_ptr<OfxEffectInstance>() );
+    OfxMemory* ret = new OfxMemory( OfxEffectInstancePtr() );
     bool allocated = ret->alloc(nBytes);
 
     if ( ( (nBytes != 0) && !ret->getPtr() ) || !allocated ) {
@@ -1439,7 +1445,7 @@ OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
         if (nThreadsPerEffect == 0) {
             ///Simple heuristic: limit 1 effect to start at most 8 threads because otherwise it might spend too much
             ///time scheduling than just processing
-            int hwConcurrency = appPTR->getHardwareIdealThreadCount();
+            int hwConcurrency = appPTR->getMaxThreadCount();
 
             if (hwConcurrency <= 0) {
                 nThreadsPerEffect = 1;

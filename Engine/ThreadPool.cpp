@@ -45,7 +45,7 @@ struct AbortableThreadPrivate
     mutable QMutex abortInfoMutex;
     bool isRenderResponseToUserInteraction;
     AbortableRenderInfoWPtr abortInfo;
-    EffectInstWPtr treeRoot;
+    EffectInstanceWPtr treeRoot;
     bool abortInfoValid;
     std::string currentActionName;
     NodeWPtr currentActionNode;
@@ -125,7 +125,7 @@ AbortableThread::getThread() const
 void
 AbortableThread::setAbortInfo(bool isRenderResponseToUserInteraction,
                               const AbortableRenderInfoPtr& abortInfo,
-                              const EffectInstPtr& treeRoot)
+                              const EffectInstancePtr& treeRoot)
 {
     {
         QMutexLocker k(&_imp->abortInfoMutex);
@@ -159,7 +159,7 @@ AbortableThread::clearAbortInfo()
 bool
 AbortableThread::getAbortInfo(bool* isRenderResponseToUserInteraction,
                               AbortableRenderInfoPtr* abortInfo,
-                              EffectInstPtr* treeRoot) const
+                              EffectInstancePtr* treeRoot) const
 {
     QMutexLocker k(&_imp->abortInfoMutex);
 

@@ -84,19 +84,19 @@ public:
 
     // Note: when switching to C++11, we can add variadic templates:
     //template<typename ... T>
-    //static boost::shared_ptr<AbortableRenderInfo> create( T&& ... all ) {
-    //    return boost::shared_ptr<AbortableRenderInfo>( new AbortableRenderInfo( std::forward<T>(all)... ) );
+    //static AbortableRenderInfoPtr create( T&& ... all ) {
+    //    return AbortableRenderInfoPtr( new AbortableRenderInfo( std::forward<T>(all)... ) );
     //}
 
-    static boost::shared_ptr<AbortableRenderInfo> create(bool canAbort,
+    static AbortableRenderInfoPtr create(bool canAbort,
                                                          U64 age)
     {
-        return boost::shared_ptr<AbortableRenderInfo>( new AbortableRenderInfo(canAbort, age) );
+        return AbortableRenderInfoPtr( new AbortableRenderInfo(canAbort, age) );
     }
 
-    static boost::shared_ptr<AbortableRenderInfo> create()
+    static AbortableRenderInfoPtr create()
     {
-        return boost::shared_ptr<AbortableRenderInfo>( new AbortableRenderInfo() );
+        return AbortableRenderInfoPtr( new AbortableRenderInfo() );
     }
 
     ~AbortableRenderInfo();

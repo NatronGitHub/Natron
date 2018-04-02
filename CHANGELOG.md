@@ -5,13 +5,69 @@
 # History
 
 
+## Version 2.3.10
+
+- Add "Overwrite" checkbox to writers to avoid re-rendering the whole sequence #1683.
+- Writers do not render the whole RoD on their input anymore (this may result in a huge speed improvement on some projects).
+- Fix bug where effects could be marked as pass-through if their RoD was larger than the project format #1578
+
+
+## Version 2.3.9
+
+- Numerical text fields (aka SpinBoxes) are now auto-reselected when validated #1737.
+- When a node is selected, make its inputs/outputs more visible.
+- Node shape is now thinner in the node graph.
+- In the node graph, the cursor now really reflects what a mouse click would do.
+- All nodes inside a backdrop can be enabled/disabled using the "D" key #1720.
+- Fix the "." shortcut for creating a Dot in the nodegraph on non-French keyboards.
+- Only auto-connect a newly-created node to the input of the selected node if it cannot have an input itself.
+- Made more clear what the "LUT" tab in the project settings is for #1744.
+- Better "hide all parameters without modifications" behaviour #1625
+- Only the keypad number keys should be used to nudge Bezier/tracker, regular number keys switch the viewer #1582
+
+
+## Version 2.3.8
+
+- Fix crash when Viewer/maxNodeUiOpened=1 in the preferences
+- Fix bug where an exported PyPlug would not have a correct Python syntax if a string had a backslash followed by newline (as may be seen in Shadertoy sources).
+- Fix behaviour of loop/bounce in the Read node when there is a time offset #1734.
+- G'MIC plugins by Tobias Fleischer are now bundled with the binary distributions (beta).
+- Fix bug where the "&" character was not displayed in the plugin creation menus.
+
+
+## Version 2.3.7
+
+- The viewer timeline can now display information as timecode instead of frames (see TC/TF choice next to fps below the timeline)
+- Disabled Merge nodes (and other nodes with input A and B) now always pass-thru the B input. Preferences should never affect the render results.
+- Shuffle now passes through B by default, and has a new toggle parameter "setGBAFromR" to disable automatically setting G B and A from R.
+- Grade: Add "Reverse" option to apply the inverse function. Usage: clone or copy-paste a Grade node, insert it downstream of the original node, and check "Reverse" in the downstream Grade.
+- Fix RunScript (the bugs were in ReadOIIO and Natron), and better document it.
+- GIF format is now read and written by ReadFFmpeg (most GIFs these days are animated).
+
+
+## Version 2.3.6
+
+- Fix bug when using PyPlugs containing Shadertoy (and possibly other plugins too) #1726 #1637
+- Fix bug when creating a group from a plugin with invisible inputs (e.g. Shadertoy)
+- Fix bug where Natron would crash when the "clear all panels" button is pressed #1729
+- Fix bug where Roto and RotoPaint lifetime would change randomly #1707
+
+### Plugins
+
+- ReadOIIO/ReadPNG: "Image Info..." gives a more explicit message, containing the filename and more info.
+- Fix bug in all OCIO plugins where GPU render is wrong if (un)premult is checked (disable GPU render in this case)
+
+
 ## Version 2.3.5
 
 ### Plugins
 
+- ReadOIIO: fix a bug where the Read nodes are not properly restored when timeOffset is used #1711
+- ReadOIIO: add options for reading RAW files: rawUserSat, rawHighlightMode, rawHighlightRebuildLevel
 - DenoiseSharpen: fix a bug where the plugin would not abort processing when required.
 - ColorCorrect: fix luminance computation when applying saturation #1706
 - Reformat: add a checkbox to use the input RoD instead of the input format (useful when preceded by a crop)
+- ContactSheet/LayerContactSheet: correctly set the format when the output size is changed
 
 
 ## Version 2.3.4

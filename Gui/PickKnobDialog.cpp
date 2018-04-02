@@ -66,11 +66,11 @@ struct PickKnobDialogPrivate
     ComboBox* destPageCombo;
     Label* groupLabel;
     ComboBox* groupCombo;
-    std::vector<boost::shared_ptr<KnobPage> > pages;
-    std::vector<boost::shared_ptr<KnobGroup> > groups;
+    std::vector<KnobPagePtr> pages;
+    std::vector<KnobGroupPtr> groups;
     DialogButtonBox* buttons;
     NodesList allNodes;
-    std::map<QString, boost::shared_ptr<KnobI > > allKnobs;
+    std::map<QString, KnobIPtr> allKnobs;
     KnobGuiPtr selectedKnob;
 
     PickKnobDialogPrivate(DockablePanel* panel)
@@ -94,7 +94,7 @@ struct PickKnobDialogPrivate
     {
     }
 
-    boost::shared_ptr<KnobGroup> getSelectedGroup() const;
+    KnobGroupPtr getSelectedGroup() const;
 
     void onSelectedKnobChanged()
     {
@@ -110,22 +110,22 @@ struct PickKnobDialogPrivate
     }
 };
 
-boost::shared_ptr<KnobGroup>
+KnobGroupPtr
 PickKnobDialogPrivate::getSelectedGroup() const
 {
     if ( pages.empty() ) {
-        return boost::shared_ptr<KnobGroup>();
+        return KnobGroupPtr();
     }
     std::string selectedItem = groupCombo->getCurrentIndexText().toStdString();
     if (selectedItem != "-") {
-        for (std::vector<boost::shared_ptr<KnobGroup> >::const_iterator it = groups.begin(); it != groups.end(); ++it) {
+        for (std::vector<KnobGroupPtr>::const_iterator it = groups.begin(); it != groups.end(); ++it) {
             if ( (*it)->getName() == selectedItem ) {
                 return *it;
             }
         }
     }
 
-    return boost::shared_ptr<KnobGroup>();
+    return KnobGroupPtr();
 }
 
 PickKnobDialog::PickKnobDialog(DockablePanel* panel,
@@ -142,7 +142,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
     NodeGuiPtr nodeGui = nodePanel->getNode();
     NodePtr node = nodeGui->getNode();
     NodeGroup* isGroup = node->isEffectGroup();
-    boost::shared_ptr<NodeCollection> collec = node->getGroup();
+    NodeCollectionPtr collec = node->getGroup();
     NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>( collec.get() );
     NodesList collectNodes = collec->getNodes();
     for (NodesList::iterator it = collectNodes.begin(); it != collectNodes.end(); ++it) {
@@ -202,12 +202,12 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
     const KnobsVec& knobs = node->getKnobs();
     for (std::size_t i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->isUserKnob() ) {
-            boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
+            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
             if (isPage) {
                 _imp->pages.push_back(isPage);
                 _imp->destPageCombo->addItem( QString::fromUtf8( isPage->getName().c_str() ) );
             } else {
-                boost::shared_ptr<KnobGroup> isGrp = boost::dynamic_pointer_cast<KnobGroup>(knobs[i]);
+                KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(knobs[i]);
                 if (isGrp) {
                     _imp->groups.push_back(isGrp);
                 }
@@ -252,9 +252,9 @@ PickKnobDialog::~PickKnobDialog()
 
 static KnobGuiPtr
 getKnobGuiForKnob(const NodePtr& selectedNode,
-                  const KnobPtr& knob)
+                  const KnobIPtr& knob)
 {
-    boost::shared_ptr<NodeGuiI> selectedNodeGuiI = selectedNode->getNodeGui();
+    NodeGuiIPtr selectedNodeGuiI = selectedNode->getNodeGui();
 
     assert(selectedNodeGuiI);
     if (!selectedNodeGuiI) {
@@ -280,8 +280,8 @@ getKnobGuiForKnob(const NodePtr& selectedNode,
     }
 
 
-    const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >& knobsMap = selectedPanel->getKnobsMapping();
-    for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
+    const std::list<std::pair<KnobIWPtr, KnobGuiPtr> >& knobsMap = selectedPanel->getKnobsMapping();
+    for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
         if (it->first.lock() == knob) {
             return it->second;
         }
@@ -306,8 +306,8 @@ PickKnobDialog::onKnobComboIndexChanged(int /*idx*/)
     _imp->selectedKnob.reset();
     if (selectedNode) {
         QString str = _imp->knobSelectionCombo->itemText( _imp->knobSelectionCombo->activeIndex() );
-        std::map<QString, KnobPtr >::const_iterator it = _imp->allKnobs.find(str);
-        KnobPtr selectedKnob;
+        std::map<QString, KnobIPtr>::const_iterator it = _imp->allKnobs.find(str);
+        KnobIPtr selectedKnob;
         if ( it != _imp->allKnobs.end() ) {
             selectedKnob = it->second;
             _imp->selectedKnob = getKnobGuiForKnob(selectedNode, selectedKnob);
@@ -337,7 +337,7 @@ PickKnobDialog::onNodeComboEditingFinished()
     if (!selectedNode) {
         return;
     }
-    const std::vector< KnobPtr > & knobs = selectedNode->getKnobs();
+    const std::vector<KnobIPtr> & knobs = selectedNode->getKnobs();
     for (U32 j = 0; j < knobs.size(); ++j) {
         if ( !knobs[j]->getIsSecret() ) {
             KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[j].get() );
@@ -376,10 +376,10 @@ PickKnobDialog::onPageComboIndexChanged(int index)
     _imp->groupCombo->addItem( QString::fromUtf8("-") );
 
     std::string selectedPage = _imp->destPageCombo->itemText(index).toStdString();
-    boost::shared_ptr<KnobPage> parentPage;
+    KnobPagePtr parentPage;
 
 
-    for (std::vector<boost::shared_ptr<KnobPage> >::iterator it = _imp->pages.begin(); it != _imp->pages.end(); ++it) {
+    for (std::vector<KnobPagePtr>::iterator it = _imp->pages.begin(); it != _imp->pages.end(); ++it) {
         if ( (*it)->getName() == selectedPage ) {
             parentPage = *it;
             break;
@@ -387,8 +387,8 @@ PickKnobDialog::onPageComboIndexChanged(int index)
     }
 
 
-    for (std::vector<boost::shared_ptr<KnobGroup> >::iterator it = _imp->groups.begin(); it != _imp->groups.end(); ++it) {
-        boost::shared_ptr<KnobPage> page = (*it)->getTopLevelPage();
+    for (std::vector<KnobGroupPtr>::iterator it = _imp->groups.begin(); it != _imp->groups.end(); ++it) {
+        KnobPagePtr page = (*it)->getTopLevelPage();
         assert(page);
 
         ///add only grps whose parent page is the selected page
@@ -400,8 +400,8 @@ PickKnobDialog::onPageComboIndexChanged(int index)
 
 KnobGuiPtr
 PickKnobDialog::getSelectedKnob(bool* makeAlias,
-                                boost::shared_ptr<KnobPage>* page,
-                                boost::shared_ptr<KnobGroup>* group) const
+                                KnobPagePtr* page,
+                                KnobGroupPtr* group) const
 {
     int page_i = _imp->destPageCombo->activeIndex();
 

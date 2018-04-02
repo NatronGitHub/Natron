@@ -124,7 +124,7 @@ class StatsTableModel
 
 private:
     TableView* view;
-    std::vector<NodeWPtr > rows;
+    std::vector<NodeWPtr> rows;
 
 public:
 
@@ -145,7 +145,7 @@ public:
         rows.clear();
     }
 
-    const std::vector<NodeWPtr >& getRows() const
+    const std::vector<NodeWPtr>& getRows() const
     {
         return rows;
     }
@@ -468,8 +468,8 @@ public:
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
-            std::list<std::pair<RectI, NodePtr > > tiles = stats.getIdentityRectangles();
-            for (std::list<std::pair<RectI, NodePtr > >::iterator it = tiles.begin(); it != tiles.end(); ++it) {
+            std::list<std::pair<RectI, NodePtr> > tiles = stats.getIdentityRectangles();
+            for (std::list<std::pair<RectI, NodePtr> >::iterator it = tiles.begin(); it != tiles.end(); ++it) {
                 const RectI& tile = it->first;
                 QString tileEnc = QString::fromUtf8("(%1, %2, %3, %4)").arg(tile.x1).arg(tile.y1).arg(tile.x2).arg(tile.y2);
                 tilesInfo.append(tileEnc);
@@ -900,7 +900,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     _imp->view->setSelectionBehavior(QAbstractItemView::SelectRows);
 
 
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     _imp->view->header()->setResizeMode(QHeaderView::ResizeToContents);
 #else
     _imp->view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
@@ -931,7 +931,7 @@ RenderStatsDialog::onSelectionChanged(const QItemSelection &selected,
         return;
     }
     int idx = indexes[0].row();
-    const std::vector<NodeWPtr >& rows = _imp->model->getRows();
+    const std::vector<NodeWPtr>& rows = _imp->model->getRows();
     if ( (idx < 0) || ( idx >= (int)rows.size() ) ) {
         return;
     }
@@ -1010,7 +1010,7 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter,
                                                     const QString& pluginIDFilter)
 {
     QModelIndex rootIdx = view->rootIndex();
-    const std::vector<NodeWPtr >& rows = model->getRows();
+    const std::vector<NodeWPtr>& rows = model->getRows();
 
 
     if ( useUnixWildcardsCheckbox->isChecked() ) {
@@ -1026,7 +1026,7 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter,
 
 
         int i = 0;
-        for (std::vector<NodeWPtr >::const_iterator it = rows.begin(); it != rows.end(); ++it, ++i) {
+        for (std::vector<NodeWPtr>::const_iterator it = rows.begin(); it != rows.end(); ++it, ++i) {
             NodePtr node = it->lock();
             if (!node) {
                 continue;
@@ -1046,7 +1046,7 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter,
     } else {
         int i = 0;
 
-        for (std::vector<NodeWPtr >::const_iterator it = rows.begin(); it != rows.end(); ++it, ++i) {
+        for (std::vector<NodeWPtr>::const_iterator it = rows.begin(); it != rows.end(); ++it, ++i) {
             NodePtr node = it->lock();
             if (!node) {
                 continue;

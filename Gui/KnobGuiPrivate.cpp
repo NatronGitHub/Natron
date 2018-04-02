@@ -52,9 +52,9 @@ KnobGuiPrivate::KnobGuiPrivate(KnobGuiContainerI* container)
 }
 
 void
-KnobGuiPrivate::removeFromKnobsOnSameLineVector(const KnobPtr& knob)
+KnobGuiPrivate::removeFromKnobsOnSameLineVector(const KnobIPtr& knob)
 {
-    for (std::vector< boost::weak_ptr< KnobI > >::iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
+    for (std::vector<KnobIWPtr>::iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
         if (it->lock() == knob) {
             knobsOnSameLine.erase(it);
             break;

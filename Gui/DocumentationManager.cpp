@@ -272,7 +272,7 @@ DocumentationManager::handler(QHttpRequest *req,
                             if ( node &&
                                  pluginID != QString::fromUtf8(PLUGINID_NATRON_READ) &&
                                  pluginID != QString::fromUtf8(PLUGINID_NATRON_WRITE) ) {
-                                EffectInstPtr effectInstance = node->getEffectInstance();
+                                EffectInstancePtr effectInstance = node->getEffectInstance();
                                 if ( effectInstance && effectInstance->isReader() ) {
                                     ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 

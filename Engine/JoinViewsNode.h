@@ -61,7 +61,7 @@ public:
         return 0;
     }
 
-    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int getNInputs() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return PLUGINID_NATRON_JOINVIEWS;

@@ -73,10 +73,10 @@ private:
                      const bool canPause,
                      const bool canCancel,
                      const QString& message,
-                     const boost::shared_ptr<ProcessHandler>& process);
+                     const ProcessHandlerPtr& process);
 
 public:
-    static boost::shared_ptr<ProgressTaskInfo> create(ProgressPanel* panel,
+    static ProgressTaskInfoPtr create(ProgressPanel* panel,
                                                       const NodePtr& node,
                                                       const int firstFrame,
                                                       const int lastFrame,
@@ -84,9 +84,9 @@ public:
                                                       const bool canPause,
                                                       const bool canCancel,
                                                       const QString& message,
-                                                      const boost::shared_ptr<ProcessHandler>& process)
+                                                      const ProcessHandlerPtr& process)
     {
-        return boost::shared_ptr<ProgressTaskInfo>( new ProgressTaskInfo(panel,
+        return ProgressTaskInfoPtr( new ProgressTaskInfo(panel,
                                                                          node,
                                                                          firstFrame,
                                                                          lastFrame,
@@ -119,7 +119,7 @@ public:
 
     NodePtr getNode() const;
 
-    boost::shared_ptr<ProcessHandler> getProcess() const;
+    ProcessHandlerPtr getProcess() const;
 
 public Q_SLOTS:
 
@@ -163,7 +163,7 @@ private:
     void removeCellWidgets(int row, TableView* view);
 
 
-    void setProcesshandler(const boost::shared_ptr<ProcessHandler>& process);
+    void setProcesshandler(const ProcessHandlerPtr& process);
 
 
     void clearItems();

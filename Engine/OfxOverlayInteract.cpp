@@ -209,7 +209,7 @@ OfxOverlayInteract::redraw()
 
     assert(effect);
     if ( effect && effect->getOfxEffectInstance()->getNode()->shouldDrawOverlay() ) {
-        AppInstPtr app =  effect->getOfxEffectInstance()->getApp();
+        AppInstancePtr app =  effect->getOfxEffectInstance()->getApp();
         assert(app);
         if ( effect->getOfxEffectInstance()->isDoingInteractAction() ) {
             app->queueRedrawForAllViewers();
@@ -286,6 +286,18 @@ NatronOverlayInteractSupport::n_getPixelScale(double & xScale,
         _viewport->getPixelScale(xScale, yScale);
     }
 }
+
+#ifdef OFX_EXTENSIONS_NATRON
+// hooks to live kOfxInteractPropScreenPixelRatio in the property set
+double
+NatronOverlayInteractSupport::n_getScreenPixelRatio() const
+{
+    if (_viewport) {
+        return _viewport->getScreenPixelRatio();
+    }
+    return 1.;
+}
+#endif
 
 void
 NatronOverlayInteractSupport::n_getBackgroundColour(double &r,

@@ -55,7 +55,7 @@ class AddTrackCommand
 public:
 
     AddTrackCommand(const TrackMarkerPtr &marker,
-                    const boost::shared_ptr<TrackerContext>& context);
+                    const TrackerContextPtr& context);
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
@@ -65,7 +65,7 @@ private:
     //Hold shared_ptrs otherwise no one is holding a shared_ptr while items are removed from the context
     bool _isFirstRedo;
     std::map<int, TrackMarkerPtr> _markers;
-    boost::weak_ptr<TrackerContext> _context;
+    TrackerContextWPtr _context;
 };
 
 
@@ -76,8 +76,8 @@ class RemoveTracksCommand
 
 public:
 
-    RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers,
-                        const boost::shared_ptr<TrackerContext>& context);
+    RemoveTracksCommand(const std::list<TrackMarkerPtr> &markers,
+                        const TrackerContextPtr& context);
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
@@ -88,11 +88,11 @@ private:
     struct TrackToRemove
     {
         TrackMarkerPtr track;
-        boost::weak_ptr<TrackMarker> prevTrack;
+        TrackMarkerWPtr prevTrack;
     };
 
     std::list<TrackToRemove> _markers;
-    boost::weak_ptr<TrackerContext> _context;
+    TrackerContextWPtr _context;
 };
 
 NATRON_NAMESPACE_EXIT

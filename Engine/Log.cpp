@@ -76,7 +76,7 @@ class LogPrivate
 {
 public:
 
-    QMutex _lock;
+    mutable QMutex _lock;
     QFile* _file;
     QTextStream* _stream;
     int _beginsCount;
@@ -179,7 +179,8 @@ public:
 };
 
 Log::Log()
-    : Singleton<Log>(), _imp( new LogPrivate() )
+    : Singleton<Log>()
+    , _imp( new LogPrivate() )
 {
 }
 

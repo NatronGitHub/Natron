@@ -137,7 +137,7 @@ public:
         return true;
     }
 
-    const std::list< boost::shared_ptr<NodeGuiSerialization> >& getChildren() const
+    const std::list<NodeGuiSerializationPtr>& getChildren() const
     {
         return _children;
     }
@@ -155,7 +155,7 @@ private:
     bool _hasOverlayColor;
 
     ///If this node is a group, this is the children
-    std::list< boost::shared_ptr<NodeGuiSerialization> > _children;
+    std::list<NodeGuiSerializationPtr> _children;
 
     friend class ::boost::serialization::access;
     template<class Archive>
@@ -183,7 +183,7 @@ private:
         int nodesCount = (int)_children.size();
         ar & ::boost::serialization::make_nvp("Children", nodesCount);
 
-        for (std::list< boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = _children.begin();
+        for (std::list<NodeGuiSerializationPtr>::const_iterator it = _children.begin();
              it != _children.end();
              ++it) {
             ar & ::boost::serialization::make_nvp("item", **it);
@@ -232,7 +232,7 @@ private:
             ar & ::boost::serialization::make_nvp("Children", nodesCount);
 
             for (int i = 0; i < nodesCount; ++i) {
-                boost::shared_ptr<NodeGuiSerialization> s(new NodeGuiSerialization);
+                NodeGuiSerializationPtr s = boost::make_shared<NodeGuiSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *s);
                 _children.push_back(s);
             }

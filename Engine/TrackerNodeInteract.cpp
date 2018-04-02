@@ -107,7 +107,7 @@ TrackerNodeInteract::~TrackerNodeInteract()
     }
 }
 
-boost::shared_ptr<TrackerContext>
+TrackerContextPtr
 TrackerNodeInteract::getContext() const
 {
     return _p->publicInterface->getNode()->getTrackerContext();
@@ -136,7 +136,7 @@ TrackerNodeInteract::onTrackRangeClicked()
     if (step == INT_MIN) {
         trackRangeDialogStep.lock()->setValue(1);
     }
-    boost::shared_ptr<KnobGroup> k = trackRangeDialogGroup.lock();
+    KnobGroupPtr k = trackRangeDialogGroup.lock();
     if ( k->getValue() ) {
         k->setValue(false);
     } else {
@@ -147,7 +147,7 @@ TrackerNodeInteract::onTrackRangeClicked()
 void
 TrackerNodeInteract::onTrackAllKeyframesClicked()
 {
-    boost::shared_ptr<TrackerContext> ctx = getContext();
+    TrackerContextPtr ctx = getContext();
     std::list<TrackMarkerPtr> selectedMarkers;
 
     ctx->getSelectedMarkers(&selectedMarkers);
@@ -171,7 +171,7 @@ TrackerNodeInteract::onTrackAllKeyframesClicked()
 void
 TrackerNodeInteract::onTrackCurrentKeyframeClicked()
 {
-    boost::shared_ptr<TrackerContext> ctx = getContext();
+    TrackerContextPtr ctx = getContext();
     SequenceTime currentFrame = _p->publicInterface->getCurrentTime();
     std::list<TrackMarkerPtr> selectedMarkers;
 
@@ -217,7 +217,7 @@ TrackerNodeInteract::onTrackBwClicked()
     viewer->getUiContext()->getViewerFrameRange(&first, &last);
 
     int startFrame = viewer->getTimeline()->currentFrame();
-    boost::shared_ptr<TrackerContext> ctx = getContext();
+    TrackerContextPtr ctx = getContext();
     if ( ctx->isCurrentlyTracking() ) {
         ctx->abortTracking();
     } else {
@@ -234,7 +234,7 @@ TrackerNodeInteract::onTrackPrevClicked()
     ViewerInstance* viewer = overlay->getInternalViewerNode();
     assert(viewer);
     int startFrame = viewer->getTimeline()->currentFrame();
-    boost::shared_ptr<TrackerContext> ctx = getContext();
+    TrackerContextPtr ctx = getContext();
     ctx->trackSelectedMarkers( startFrame, startFrame - 2, -1, overlay );
 }
 
@@ -253,7 +253,7 @@ TrackerNodeInteract::onTrackNextClicked()
     ViewerInstance* viewer = overlay->getInternalViewerNode();
     assert(viewer);
     int startFrame = viewer->getTimeline()->currentFrame();
-    boost::shared_ptr<TrackerContext> ctx = getContext();
+    TrackerContextPtr ctx = getContext();
     ctx->trackSelectedMarkers( startFrame, startFrame + 2, true, overlay );
 }
 
@@ -269,7 +269,7 @@ TrackerNodeInteract::onTrackFwClicked()
     viewer->getUiContext()->getViewerFrameRange(&first, &last);
 
     int startFrame = viewer->getTimeline()->currentFrame();
-    boost::shared_ptr<TrackerContext> ctx = getContext();
+    TrackerContextPtr ctx = getContext();
     if ( ctx->isCurrentlyTracking() ) {
         ctx->abortTracking();
     } else {
@@ -292,10 +292,10 @@ TrackerNodeInteract::onAddTrackClicked(bool clicked)
 void
 TrackerNodeInteract::onClearAllAnimationClicked()
 {
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     getContext()->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->clearAnimation();
     }
 }
@@ -304,10 +304,10 @@ void
 TrackerNodeInteract::onClearBwAnimationClicked()
 {
     int time = _p->publicInterface->getCurrentTime();
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     getContext()->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->clearAnimationBeforeTime(time);
     }
 }
@@ -316,10 +316,10 @@ void
 TrackerNodeInteract::onClearFwAnimationClicked()
 {
     int time = _p->publicInterface->getCurrentTime();
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     getContext()->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->clearAnimationAfterTime(time);
     }
 }
@@ -334,10 +334,10 @@ void
 TrackerNodeInteract::onSetKeyframeButtonClicked()
 {
     int time = _p->publicInterface->getCurrentTime();
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     getContext()->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->setUserKeyframe(time);
     }
 }
@@ -346,10 +346,10 @@ void
 TrackerNodeInteract::onRemoveKeyframeButtonClicked()
 {
     int time = _p->publicInterface->getCurrentTime();
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     getContext()->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->removeUserKeyframe(time);
     }
 }
@@ -357,11 +357,11 @@ TrackerNodeInteract::onRemoveKeyframeButtonClicked()
 void
 TrackerNodeInteract::onResetOffsetButtonClicked()
 {
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     getContext()->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
-        boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
+        KnobDoublePtr offsetKnob = (*it)->getOffsetKnob();
         assert(offsetKnob);
         for (int i = 0; i < offsetKnob->getDimension(); ++i) {
             offsetKnob->resetToDefaultValue(i);
@@ -372,15 +372,15 @@ TrackerNodeInteract::onResetOffsetButtonClicked()
 void
 TrackerNodeInteract::onResetTrackButtonClicked()
 {
-    boost::shared_ptr<TrackerContext> context = getContext();
+    TrackerContextPtr context = getContext();
 
     assert(context);
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
     context->getSelectedMarkers(&markers);
     context->clearSelection(TrackerContext::eTrackSelectionInternal);
     context->endEditSelection(TrackerContext::eTrackSelectionInternal);
 
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->resetTrack();
     }
     context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
@@ -663,15 +663,15 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
         overlayColor[0] = overlayColor[1] = overlayColor[2] = 0.8;
     }
 
-    boost::shared_ptr<KnobDouble> centerKnob = marker->getCenterKnob();
-    boost::shared_ptr<KnobDouble> offsetKnob = marker->getOffsetKnob();
-    boost::shared_ptr<KnobDouble> errorKnob = marker->getErrorKnob();
-    boost::shared_ptr<KnobDouble> ptnTopLeft = marker->getPatternTopLeftKnob();
-    boost::shared_ptr<KnobDouble> ptnTopRight = marker->getPatternTopRightKnob();
-    boost::shared_ptr<KnobDouble> ptnBtmRight = marker->getPatternBtmRightKnob();
-    boost::shared_ptr<KnobDouble> ptnBtmLeft = marker->getPatternBtmLeftKnob();
-    boost::shared_ptr<KnobDouble> searchWndBtmLeft = marker->getSearchWindowBottomLeftKnob();
-    boost::shared_ptr<KnobDouble> searchWndTopRight = marker->getSearchWindowTopRightKnob();
+    KnobDoublePtr centerKnob = marker->getCenterKnob();
+    KnobDoublePtr offsetKnob = marker->getOffsetKnob();
+    KnobDoublePtr errorKnob = marker->getErrorKnob();
+    KnobDoublePtr ptnTopLeft = marker->getPatternTopLeftKnob();
+    KnobDoublePtr ptnTopRight = marker->getPatternTopRightKnob();
+    KnobDoublePtr ptnBtmRight = marker->getPatternBtmRightKnob();
+    KnobDoublePtr ptnBtmLeft = marker->getPatternBtmLeftKnob();
+    KnobDoublePtr searchWndBtmLeft = marker->getSearchWindowBottomLeftKnob();
+    KnobDoublePtr searchWndTopRight = marker->getSearchWindowTopRightKnob();
     int fontHeight = overlay->getWidgetFontHeight();
 
     int selectedMarkerWidth = magWindowPxSizeKnob.lock()->getValue();
@@ -1012,7 +1012,7 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
 } // TrackerNodeInteract::drawSelectedMarkerTexture
 
 bool
-TrackerNodeInteract::isNearbyPoint(const boost::shared_ptr<KnobDouble>& knob,
+TrackerNodeInteract::isNearbyPoint(const KnobDoublePtr& knob,
                                    double xWidget,
                                    double yWidget,
                                    double toleranceWidget,
@@ -1099,7 +1099,7 @@ TrackerNodeInteract::refreshSelectedMarkerTexture()
 
     selectedMarkerImg.reset();
 
-    imageGetterWatcher.reset( new TrackWatcher() );
+    imageGetterWatcher = boost::make_shared<TrackWatcher>();
     QObject::connect( imageGetterWatcher.get(), SIGNAL(finished()), this, SLOT(onTrackImageRenderingFinished()) );
     imageGetterWatcher->setFuture( QtConcurrent::run(marker.get(), &TrackMarker::getMarkerImage, time, roi) );
 }
@@ -1147,8 +1147,8 @@ toBGRA(unsigned char r,
 }
 
 void
-TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Image>& image,
-                                                     const boost::shared_ptr<Texture>& tex,
+TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
+                                                     const TexturePtr& tex,
                                                      const RectI& renderWindow)
 {
     RectI bounds;
@@ -1297,7 +1297,7 @@ TrackerNodeInteract::onTrackingEnded()
 void
 TrackerNodeInteract::onContextSelectionChanged(int reason)
 {
-    std::list<TrackMarkerPtr > selection;
+    std::list<TrackMarkerPtr> selection;
 
     getContext()->getSelectedMarkers(&selection);
     if ( selection.empty() || (selection.size() > 1) ) {
@@ -1334,9 +1334,9 @@ void
 TrackerNodeInteract::onTrackImageRenderingFinished()
 {
     assert( QThread::currentThread() == qApp->thread() );
-    QFutureWatcher<std::pair<boost::shared_ptr<Image>, RectI> >* future = dynamic_cast<QFutureWatcher<std::pair<boost::shared_ptr<Image>, RectI> >*>( sender() );
+    QFutureWatcher<std::pair<ImagePtr, RectI> >* future = dynamic_cast<QFutureWatcher<std::pair<ImagePtr, RectI> >*>( sender() );
     assert(future);
-    std::pair<boost::shared_ptr<Image>, RectI> ret = future->result();
+    std::pair<ImagePtr, RectI> ret = future->result();
     OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
     assert(overlay);
     OpenGLViewerI* isOpenGLViewer = dynamic_cast<OpenGLViewerI*>(overlay);
@@ -1353,8 +1353,8 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
     if (!selectedMarkerTexture) {
         int format, internalFormat, glType;
         Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-        selectedMarkerTexture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
-                                                 format, internalFormat, glType) );
+        selectedMarkerTexture = boost::make_shared<Texture>(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
+                                                            format, internalFormat, glType);
     }
     selectedMarkerTextureTime = (int)ret.first->getTime();
     selectedMarkerTextureRoI = ret.second;
@@ -1370,7 +1370,7 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
     assert( QThread::currentThread() == qApp->thread() );
     TrackWatcher* future = dynamic_cast<TrackWatcher*>( sender() );
     assert(future);
-    std::pair<boost::shared_ptr<Image>, RectI> ret = future->result();
+    std::pair<ImagePtr, RectI> ret = future->result();
     if ( !ret.first || ret.second.isNull() ) {
         return;
     }
@@ -1413,10 +1413,10 @@ void
 TrackerNodeInteract::rebuildMarkerTextures()
 {
     ///Refreh textures for all markers
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     getContext()->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+    for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         std::set<int> keys;
         (*it)->getUserKeyframes(&keys);
         for (std::set<int>::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
@@ -1437,7 +1437,7 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
     if (!isInsideSelectedMarkerTexture(lastMousePos)) {
         return false;
     }
-    std::list< TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
 
     getContext()->getSelectedMarkers(&markers);
 
@@ -1448,13 +1448,13 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
         bool createkey = createKeyOnMoveButton.lock()->getValue();
 
         int hasMovedMarker = false;
-        for (std::list< TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+        for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
 
             if (!(*it)->isEnabled(time)) {
                 continue;
             }
-            boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
-            boost::shared_ptr<KnobDouble> patternCorners[4];
+            KnobDoublePtr centerKnob = (*it)->getCenterKnob();
+            KnobDoublePtr patternCorners[4];
             patternCorners[0] = (*it)->getPatternBtmLeftKnob();
             patternCorners[1] = (*it)->getPatternTopLeftKnob();
             patternCorners[2] = (*it)->getPatternTopRightKnob();
@@ -1487,11 +1487,11 @@ TrackerNodeInteract::transformPattern(double time,
                                       TrackerMouseStateEnum state,
                                       const Point& delta)
 {
-    boost::shared_ptr<KnobDouble> searchWndTopRight, searchWndBtmLeft;
-    boost::shared_ptr<KnobDouble> patternCorners[4];
-    boost::shared_ptr<TrackerContext> context = getContext();
-    boost::shared_ptr<KnobDouble> centerKnob = interactMarker->getCenterKnob();
-    boost::shared_ptr<KnobDouble> offsetKnob = interactMarker->getOffsetKnob();
+    KnobDoublePtr searchWndTopRight, searchWndBtmLeft;
+    KnobDoublePtr patternCorners[4];
+    TrackerContextPtr context = getContext();
+    KnobDoublePtr centerKnob = interactMarker->getCenterKnob();
+    KnobDoublePtr offsetKnob = interactMarker->getOffsetKnob();
     bool transformPatternCorners = state != eMouseStateDraggingOuterBtmLeft &&
                                    state != eMouseStateDraggingOuterBtmRight &&
                                    state != eMouseStateDraggingOuterTopLeft &&
@@ -1733,7 +1733,7 @@ TrackerNodeInteract::transformPattern(double time,
         searchPoints[3].rx() += delta.x;
     }
 
-    EffectInstPtr effect = context->getNode()->getEffectInstance();
+    EffectInstancePtr effect = context->getNode()->getEffectInstance();
     effect->beginChanges();
 
     if (transformPatternCorners) {
@@ -1788,7 +1788,7 @@ TrackerNodeInteract::onKeyframeRemovedOnTrack(const TrackMarkerPtr& marker,
 {
     for (TrackerNodeInteract::TrackKeysMap::iterator it = trackTextures.begin(); it != trackTextures.end(); ++it) {
         if (it->first.lock() == marker) {
-            std::map<int, boost::shared_ptr<Texture> >::iterator found = it->second.find(key);
+            std::map<int, TexturePtr>::iterator found = it->second.find(key);
             if ( found != it->second.end() ) {
                 it->second.erase(found);
             }

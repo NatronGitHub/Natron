@@ -200,7 +200,7 @@ Effect::Effect(const NodePtr& node)
     , _node(node)
 {
     if (node) {
-        boost::shared_ptr<NodeGroup> grp;
+        NodeGroupPtr grp;
         if ( node->getEffectInstance() ) {
             grp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
             init( boost::dynamic_pointer_cast<NodeCollection>(grp) );
@@ -251,7 +251,7 @@ Effect::destroy(bool autoReconnect)
 int
 Effect::getMaxInputCount() const
 {
-    return getInternalNode()->getMaxInputCount();
+    return getInternalNode()->getNInputs();
 }
 
 bool
@@ -308,7 +308,7 @@ Effect::getInput(const QString& inputLabel) const
     if (!node) {
         return 0;
     }
-    int maxInputs = node->getMaxInputCount();
+    int maxInputs = node->getNInputs();
     for (int i = 0; i < maxInputs; ++i) {
         if (QString::fromUtf8(node->getInputLabel(i).c_str()) == inputLabel) {
             NodePtr ret = node->getRealInput(i);
@@ -371,23 +371,23 @@ Effect::getPluginID() const
 }
 
 Param*
-Effect::createParamWrapperForKnob(const KnobPtr& knob)
+Effect::createParamWrapperForKnob(const KnobIPtr& knob)
 {
     int dims = knob->getDimension();
-    boost::shared_ptr<KnobInt> isInt = boost::dynamic_pointer_cast<KnobInt>(knob);
-    boost::shared_ptr<KnobDouble> isDouble = boost::dynamic_pointer_cast<KnobDouble>(knob);
-    boost::shared_ptr<KnobBool> isBool = boost::dynamic_pointer_cast<KnobBool>(knob);
-    boost::shared_ptr<KnobChoice> isChoice = boost::dynamic_pointer_cast<KnobChoice>(knob);
-    boost::shared_ptr<KnobColor> isColor = boost::dynamic_pointer_cast<KnobColor>(knob);
-    boost::shared_ptr<KnobString> isString = boost::dynamic_pointer_cast<KnobString>(knob);
-    boost::shared_ptr<KnobFile> isFile = boost::dynamic_pointer_cast<KnobFile>(knob);
-    boost::shared_ptr<KnobOutputFile> isOutputFile = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
-    boost::shared_ptr<KnobPath> isPath = boost::dynamic_pointer_cast<KnobPath>(knob);
-    boost::shared_ptr<KnobButton> isButton = boost::dynamic_pointer_cast<KnobButton>(knob);
-    boost::shared_ptr<KnobGroup> isGroup = boost::dynamic_pointer_cast<KnobGroup>(knob);
-    boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
-    boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
-    boost::shared_ptr<KnobSeparator> isSep = boost::dynamic_pointer_cast<KnobSeparator>(knob);
+    KnobIntPtr isInt = boost::dynamic_pointer_cast<KnobInt>(knob);
+    KnobDoublePtr isDouble = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(knob);
+    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(knob);
+    KnobColorPtr isColor = boost::dynamic_pointer_cast<KnobColor>(knob);
+    KnobStringPtr isString = boost::dynamic_pointer_cast<KnobString>(knob);
+    KnobFilePtr isFile = boost::dynamic_pointer_cast<KnobFile>(knob);
+    KnobOutputFilePtr isOutputFile = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
+    KnobPathPtr isPath = boost::dynamic_pointer_cast<KnobPath>(knob);
+    KnobButtonPtr isButton = boost::dynamic_pointer_cast<KnobButton>(knob);
+    KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>(knob);
+    KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
+    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+    KnobSeparatorPtr isSep = boost::dynamic_pointer_cast<KnobSeparator>(knob);
 
     if (isInt) {
         switch (dims) {
@@ -477,7 +477,7 @@ Effect::getParam(const QString& name) const
             fallbackSearchName = name.mid(0, name.size() - str.size());
         }
     }
-    KnobPtr knob = node->getKnobByName( name.toStdString() );
+    KnobIPtr knob = node->getKnobByName( name.toStdString() );
 
     if (knob) {
         return createParamWrapperForKnob(knob);
@@ -564,10 +564,10 @@ IntParam*
 UserParamHolder::createIntParam(const QString& name,
                                 const QString& label)
 {
-    boost::shared_ptr<KnobInt> knob = _holder->createIntKnob(name.toStdString(), label.toStdString(), 1);
+    KnobIntPtr knob = _holder->createIntKnob(name.toStdString(), label.toStdString(), 1);
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -582,10 +582,10 @@ Int2DParam*
 UserParamHolder::createInt2DParam(const QString& name,
                                   const QString& label)
 {
-    boost::shared_ptr<KnobInt> knob = _holder->createIntKnob(name.toStdString(), label.toStdString(), 2);
+    KnobIntPtr knob = _holder->createIntKnob(name.toStdString(), label.toStdString(), 2);
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -600,10 +600,10 @@ Int3DParam*
 UserParamHolder::createInt3DParam(const QString& name,
                                   const QString& label)
 {
-    boost::shared_ptr<KnobInt> knob = _holder->createIntKnob(name.toStdString(), label.toStdString(), 3);
+    KnobIntPtr knob = _holder->createIntKnob(name.toStdString(), label.toStdString(), 3);
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -618,10 +618,10 @@ DoubleParam*
 UserParamHolder::createDoubleParam(const QString& name,
                                    const QString& label)
 {
-    boost::shared_ptr<KnobDouble> knob = _holder->createDoubleKnob(name.toStdString(), label.toStdString(), 1);
+    KnobDoublePtr knob = _holder->createDoubleKnob(name.toStdString(), label.toStdString(), 1);
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -636,10 +636,10 @@ Double2DParam*
 UserParamHolder::createDouble2DParam(const QString& name,
                                      const QString& label)
 {
-    boost::shared_ptr<KnobDouble> knob = _holder->createDoubleKnob(name.toStdString(), label.toStdString(), 2);
+    KnobDoublePtr knob = _holder->createDoubleKnob(name.toStdString(), label.toStdString(), 2);
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -654,10 +654,10 @@ Double3DParam*
 UserParamHolder::createDouble3DParam(const QString& name,
                                      const QString& label)
 {
-    boost::shared_ptr<KnobDouble> knob = _holder->createDoubleKnob(name.toStdString(), label.toStdString(), 3);
+    KnobDoublePtr knob = _holder->createDoubleKnob(name.toStdString(), label.toStdString(), 3);
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -672,10 +672,10 @@ BooleanParam*
 UserParamHolder::createBooleanParam(const QString& name,
                                     const QString& label)
 {
-    boost::shared_ptr<KnobBool> knob = _holder->createBoolKnob( name.toStdString(), label.toStdString() );
+    KnobBoolPtr knob = _holder->createBoolKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -690,10 +690,10 @@ ChoiceParam*
 UserParamHolder::createChoiceParam(const QString& name,
                                    const QString& label)
 {
-    boost::shared_ptr<KnobChoice> knob = _holder->createChoiceKnob( name.toStdString(), label.toStdString() );
+    KnobChoicePtr knob = _holder->createChoiceKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -709,10 +709,10 @@ UserParamHolder::createColorParam(const QString& name,
                                   const QString& label,
                                   bool useAlpha)
 {
-    boost::shared_ptr<KnobColor> knob = _holder->createColorKnob(name.toStdString(), label.toStdString(), useAlpha ? 4 : 3);
+    KnobColorPtr knob = _holder->createColorKnob(name.toStdString(), label.toStdString(), useAlpha ? 4 : 3);
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -727,10 +727,10 @@ StringParam*
 UserParamHolder::createStringParam(const QString& name,
                                    const QString& label)
 {
-    boost::shared_ptr<KnobString> knob = _holder->createStringKnob( name.toStdString(), label.toStdString() );
+    KnobStringPtr knob = _holder->createStringKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -745,10 +745,10 @@ FileParam*
 UserParamHolder::createFileParam(const QString& name,
                                  const QString& label)
 {
-    boost::shared_ptr<KnobFile> knob = _holder->createFileKnob( name.toStdString(), label.toStdString() );
+    KnobFilePtr knob = _holder->createFileKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -763,10 +763,10 @@ OutputFileParam*
 UserParamHolder::createOutputFileParam(const QString& name,
                                        const QString& label)
 {
-    boost::shared_ptr<KnobOutputFile> knob = _holder->createOuptutFileKnob( name.toStdString(), label.toStdString() );
+    KnobOutputFilePtr knob = _holder->createOuptutFileKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -781,10 +781,10 @@ PathParam*
 UserParamHolder::createPathParam(const QString& name,
                                  const QString& label)
 {
-    boost::shared_ptr<KnobPath> knob = _holder->createPathKnob( name.toStdString(), label.toStdString() );
+    KnobPathPtr knob = _holder->createPathKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -799,10 +799,10 @@ ButtonParam*
 UserParamHolder::createButtonParam(const QString& name,
                                    const QString& label)
 {
-    boost::shared_ptr<KnobButton> knob = _holder->createButtonKnob( name.toStdString(), label.toStdString() );
+    KnobButtonPtr knob = _holder->createButtonKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -817,10 +817,10 @@ SeparatorParam*
 UserParamHolder::createSeparatorParam(const QString& name,
                                       const QString& label)
 {
-    boost::shared_ptr<KnobSeparator> knob = _holder->createSeparatorKnob( name.toStdString(), label.toStdString() );
+    KnobSeparatorPtr knob = _holder->createSeparatorKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -835,10 +835,10 @@ GroupParam*
 UserParamHolder::createGroupParam(const QString& name,
                                   const QString& label)
 {
-    boost::shared_ptr<KnobGroup> knob = _holder->createGroupKnob( name.toStdString(), label.toStdString() );
+    KnobGroupPtr knob = _holder->createGroupKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -858,7 +858,7 @@ UserParamHolder::createPageParam(const QString& name,
 
         return 0;
     }
-    boost::shared_ptr<KnobPage> knob = _holder->createPageKnob( name.toStdString(), label.toStdString() );
+    KnobPagePtr knob = _holder->createPageKnob( name.toStdString(), label.toStdString() );
     if (knob) {
         return new PageParam(knob);
     } else {
@@ -871,10 +871,10 @@ UserParamHolder::createParametricParam(const QString& name,
                                        const QString& label,
                                        int nbCurves)
 {
-    boost::shared_ptr<KnobParametric> knob = _holder->createParametricKnob(name.toStdString(), label.toStdString(), nbCurves);
+    KnobParametricPtr knob = _holder->createParametricKnob(name.toStdString(), label.toStdString(), nbCurves);
 
     if (knob) {
-        boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -906,7 +906,7 @@ UserParamHolder::removeParam(Param* param)
 PageParam*
 Effect::getUserPageParam() const
 {
-    boost::shared_ptr<KnobPage> page = getInternalNode()->getEffectInstance()->getOrCreateUserPageKnob();
+    KnobPagePtr page = getInternalNode()->getEffectInstance()->getOrCreateUserPageKnob();
 
     assert(page);
 
@@ -923,7 +923,7 @@ UserParamHolder::refreshUserParamsGUI()
 Roto*
 Effect::getRotoContext() const
 {
-    boost::shared_ptr<RotoContext> roto = getInternalNode()->getRotoContext();
+    RotoContextPtr roto = getInternalNode()->getRotoContext();
 
     if (roto) {
         return new Roto(roto);
@@ -935,7 +935,7 @@ Effect::getRotoContext() const
 Tracker*
 Effect::getTrackerContext() const
 {
-    boost::shared_ptr<TrackerContext> t = getInternalNode()->getTrackerContext();
+    TrackerContextPtr t = getInternalNode()->getTrackerContext();
 
     if (t) {
         return new Tracker(t);

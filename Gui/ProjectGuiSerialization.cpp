@@ -68,14 +68,14 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 
     _serializedNodes.clear();
     for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        boost::shared_ptr<NodeGuiI> nodegui_i = (*it)->getNodeGui();
+        NodeGuiIPtr nodegui_i = (*it)->getNodeGui();
         if (!nodegui_i) {
             continue;
         }
         NodeGuiPtr nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
 
         if ( nodegui->isVisible() ) {
-            boost::shared_ptr<NodeCollection> isInCollection = (*it)->getGroup();
+            NodeCollectionPtr isInCollection = (*it)->getGroup();
             NodeGroup* isCollectionAGroup = dynamic_cast<NodeGroup*>( isInCollection.get() );
             if (!isCollectionAGroup) {
                 ///Nodes within a group will be serialized recursively in the node group serialization
@@ -161,7 +161,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 
     std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string> pythonPanels = projectGui->getGui()->getPythonPanels();
     for (std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string>::iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
-        boost::shared_ptr<PythonPanelSerialization> s(new PythonPanelSerialization);
+        PythonPanelSerializationPtr s = boost::make_shared<PythonPanelSerialization>();
         s->initialize(it->first, it->second);
         _pythonPanels.push_back(s);
     }
@@ -297,14 +297,14 @@ PythonPanelSerialization::initialize(NATRON_PYTHON_NAMESPACE::PyPanel* tab,
     pythonFunction = func;
     std::list<NATRON_PYTHON_NAMESPACE::Param*> parameters = tab->getParams();
     for (std::list<NATRON_PYTHON_NAMESPACE::Param*>::iterator it = parameters.begin(); it != parameters.end(); ++it) {
-        KnobPtr knob = (*it)->getInternalKnob();
+        KnobIPtr knob = (*it)->getInternalKnob();
         KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knob.get() );
         KnobPage* isPage = dynamic_cast<KnobPage*>( knob.get() );
         KnobButton* isButton = dynamic_cast<KnobButton*>( knob.get() );
         //KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
 
         if (!isGroup && !isPage && !isButton) {
-            boost::shared_ptr<KnobSerialization> k( new KnobSerialization(knob) );
+            KnobSerializationPtr k( new KnobSerialization(knob) );
             knobs.push_back(k);
         }
         delete *it;

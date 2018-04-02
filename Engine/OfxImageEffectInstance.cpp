@@ -200,7 +200,7 @@ OfxImageEffectInstance::setPersistentMessage(const char* type,
     assert(type);
     assert(format);
     std::string message = string_format(format, args);
-    boost::shared_ptr<OfxEffectInstance> effect = _ofxEffectInstance.lock();
+    OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     assert(effect);
 
     if (effect) {
@@ -219,7 +219,7 @@ OfxImageEffectInstance::setPersistentMessage(const char* type,
 OfxStatus
 OfxImageEffectInstance::clearPersistentMessage()
 {
-    boost::shared_ptr<OfxEffectInstance> effect = _ofxEffectInstance.lock();
+    OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     if (!effect) {
         return kOfxStatFailed;
     }
@@ -238,7 +238,7 @@ OfxImageEffectInstance::vmessage(const char* msgtype,
     assert(format);
     std::string message = string_format(format, args);
     std::string type(msgtype);
-    boost::shared_ptr<OfxEffectInstance> effect = _ofxEffectInstance.lock();
+    OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     if (!effect) {
         return kOfxStatFailed;
     }
@@ -269,7 +269,7 @@ OfxImageEffectInstance::vmessage(const char* msgtype,
 const std::vector<std::string>&
 OfxImageEffectInstance::getUserCreatedPlanes() const
 {
-    boost::shared_ptr<OfxEffectInstance> effect = _ofxEffectInstance.lock();
+    OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     const std::vector<std::string>& planes = effect->getUserPlanes();
     return planes;
 }
@@ -277,7 +277,7 @@ OfxImageEffectInstance::getUserCreatedPlanes() const
 int
 OfxImageEffectInstance::getDimension(const std::string &name) const OFX_EXCEPTION_SPEC
 {
-    boost::shared_ptr<OfxEffectInstance> effect = _ofxEffectInstance.lock();
+    OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     if (!effect) {
         return 0;
     }
@@ -483,7 +483,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 {
     // note: the order for parameter types is the same as in ofxParam.h
     OFX::Host::Param::Instance* instance = NULL;
-    KnobPtr knob;
+    KnobIPtr knob;
     bool paramShouldBePersistent = true;
     bool secretByDefault = descriptor.getSecret();
     bool enabledByDefault = descriptor.getEnabled();
@@ -681,7 +681,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     knob->setSpacingBetweenItems( descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth) );
 
     if ( knob->isAnimationEnabled() ) {
-        boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
+        KnobSignalSlotHandlerPtr handler = knob->getSignalSlotHandler();
         if (handler) {
             QObject::connect( handler.get(), SIGNAL(animationLevelChanged(ViewSpec,int)), ptk,
                               SLOT(onKnobAnimationLevelChanged(ViewSpec,int)) );
@@ -730,21 +730,22 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 
 struct PageOrdered
 {
-    boost::shared_ptr<KnobPage> page;
+    KnobPagePtr page;
     std::list<OfxParamToKnob*> paramsOrdered;
 };
 
-typedef std::list<boost::shared_ptr<PageOrdered> > PagesOrdered;
+typedef boost::shared_ptr<PageOrdered> PageOrderedPtr;
+typedef std::list<PageOrderedPtr> PageOrderedPtrList;
 
 void
 OfxImageEffectInstance::addParamsToTheirParents()
 {
     //All parameters in their order of declaration by the plug-in
     const std::list<OFX::Host::Param::Instance*> & params = getParamList();
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     //Extract pages and their children and add knobs to groups
-    PagesOrdered finalPages;
+    PageOrderedPtrList finalPages;
 
     for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
         OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(*it);
@@ -752,14 +753,14 @@ OfxImageEffectInstance::addParamsToTheirParents()
         if (!isKnownKnob) {
             continue;
         }
-        KnobPtr associatedKnob = isKnownKnob->getKnob();
+        KnobIPtr associatedKnob = isKnownKnob->getKnob();
         if (!associatedKnob) {
             continue;
         }
         OfxPageInstance* isPage = dynamic_cast<OfxPageInstance*>(*it);
         if (isPage) {
             const std::map<int, OFX::Host::Param::Instance*>& children = isPage->getChildren();
-            boost::shared_ptr<PageOrdered> pageData( new PageOrdered() );
+            PageOrderedPtr pageData = boost::make_shared<PageOrdered>();
             pageData->page = boost::dynamic_pointer_cast<KnobPage>(associatedKnob);
             assert(pageData->page);
             std::map<OfxParamToKnob*, int> childrenList;
@@ -785,7 +786,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                     if ( associatedKnob->isSeparatorActivated() ) {
                         std::string separatorName = (*it)->getName() + "_separator";
                         KnobHolder* knobHolder = associatedKnob->getHolder();
-                        boost::shared_ptr<KnobSeparator> sep = knobHolder->getKnobByNameAndType<KnobSeparator>(separatorName);
+                        KnobSeparatorPtr sep = knobHolder->getKnobByNameAndType<KnobSeparator>(separatorName);
                         if (sep) {
                             sep->resetParent();
                         } else {
@@ -811,12 +812,12 @@ OfxImageEffectInstance::addParamsToTheirParents()
     }
 
     //Extract the "Main" page, i.e: the first page declared, if no page were created, create one
-    PagesOrdered::iterator mainPage = finalPages.end();
+    PageOrderedPtrList::iterator mainPage = finalPages.end();
     if ( !finalPages.empty() ) {
         mainPage = finalPages.begin();
     } else {
-        boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( effect.get(), tr("Settings") );
-        boost::shared_ptr<PageOrdered> pageData( new PageOrdered() );
+        KnobPagePtr page = AppManager::createKnob<KnobPage>( effect.get(), tr("Settings") );
+        PageOrderedPtr pageData = boost::make_shared<PageOrdered>();
         pageData->page = page;
         finalPages.push_back(pageData);
         mainPage = finalPages.begin();
@@ -838,7 +839,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
             continue;
         }
 
-        KnobPtr knob = isKnownKnob->getKnob();
+        KnobIPtr knob = isKnownKnob->getKnob();
         assert(knob);
         if (!knob) {
             continue;
@@ -860,7 +861,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         }
         if (!foundPage) {
             // param not found in main page, try in other pages
-            PagesOrdered::iterator itPage = mainPage;
+            PageOrderedPtrList::iterator itPage = mainPage;
             ++itPage;
             for (; itPage != finalPages.end(); ++itPage) {
                 for (std::list<OfxParamToKnob*>::iterator itParam = (*itPage)->paramsOrdered.begin(); itParam != (*itPage)->paramsOrdered.end(); ++itParam) {
@@ -886,8 +887,8 @@ OfxImageEffectInstance::addParamsToTheirParents()
 
 
     // For all pages, append their knobs in order
-    for (PagesOrdered::iterator itPage = finalPages.begin(); itPage != finalPages.end(); ++itPage) {
-        boost::shared_ptr<KnobPage> pageKnob = (*itPage)->page;
+    for (PageOrderedPtrList::iterator itPage = finalPages.begin(); itPage != finalPages.end(); ++itPage) {
+        KnobPagePtr pageKnob = (*itPage)->page;
 
         for (std::list<OfxParamToKnob*>::iterator itParam = (*itPage)->paramsOrdered.begin(); itParam != (*itPage)->paramsOrdered.end(); ++itParam) {
             OfxParamToKnob* isKnownKnob = *itParam;
@@ -896,7 +897,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                 continue;
             }
 
-            KnobPtr child = isKnownKnob->getKnob();
+            KnobIPtr child = isKnownKnob->getKnob();
             assert(child);
             if ( !child->getParentKnob() ) {
                 pageKnob->addKnob(child);
@@ -904,7 +905,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                 if ( child->isSeparatorActivated() ) {
                     std::string separatorName = child->getName() + "_separator";
                     KnobHolder* knobHolder = child->getHolder();
-                    boost::shared_ptr<KnobSeparator> sep = knobHolder->getKnobByNameAndType<KnobSeparator>(separatorName);
+                    KnobSeparatorPtr sep = knobHolder->getKnobByNameAndType<KnobSeparator>(separatorName);
                     if (sep) {
                         sep->resetParent();
                     } else {
@@ -940,7 +941,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(param);
         assert(isKnownKnob);
         if (isKnownKnob) {
-            KnobPtr knob = isKnownKnob->getKnob();
+            KnobIPtr knob = isKnownKnob->getKnob();
             assert(knob);
             effect->addKnobToViewerUI(knob);
         }
@@ -968,7 +969,7 @@ OfxStatus
 OfxImageEffectInstance::editBegin(const std::string & /*name*/)
 {
     ///Don't push undo/redo actions while creating a group
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     if ( !effect->getApp()->isCreatingPythonGroup() ) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -984,7 +985,7 @@ OfxStatus
 OfxImageEffectInstance::editEnd()
 {
     ///Don't push undo/redo actions while creating a group
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     if ( !effect->getApp()->isCreatingPythonGroup() ) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
@@ -1005,7 +1006,7 @@ void
 OfxImageEffectInstance::progressStart(const std::string & message,
                                       const std::string &messageid)
 {
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     effect->getApp()->progressStart(effect->getNode(), message, messageid);
 }
@@ -1014,7 +1015,7 @@ OfxImageEffectInstance::progressStart(const std::string & message,
 void
 OfxImageEffectInstance::progressEnd()
 {
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     effect->getApp()->progressEnd( effect->getNode() );
 }
@@ -1029,7 +1030,7 @@ OfxImageEffectInstance::progressEnd()
 bool
 OfxImageEffectInstance::progressUpdate(double t)
 {
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     return effect->getApp()->progressUpdate(effect->getNode(), t);
 }
@@ -1046,7 +1047,7 @@ OfxImageEffectInstance::progressUpdate(double t)
 double
 OfxImageEffectInstance::timeLineGetTime()
 {
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     return effect->getApp()->getTimeLine()->currentFrame();
 }
@@ -1055,7 +1056,7 @@ OfxImageEffectInstance::timeLineGetTime()
 void
 OfxImageEffectInstance::timeLineGotoTime(double t)
 {
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     effect->updateThreadLocalRenderTime(t);
 
@@ -1088,7 +1089,7 @@ OfxImageEffectInstance::abort()
 OFX::Host::Memory::Instance*
 OfxImageEffectInstance::newMemoryInstance(size_t nBytes)
 {
-    boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
     OfxMemory* ret = new OfxMemory(effect);
     bool allocated = ret->alloc(nBytes);
 
@@ -1200,7 +1201,7 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
 {
     /// create the out args with the stuff that does not depend on individual clips
     OFX::Host::Property::Set outArgs;
-    boost::shared_ptr<OfxEffectInstance> effect = _ofxEffectInstance.lock();
+    OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     std::map<OfxClipInstance*, int> clipInputs;
 
     setupClipPreferencesArgsFromMetadata(defaultPrefs, outArgs, clipInputs);

@@ -36,7 +36,7 @@
 #include <QtCore/QFileInfo>
 #include <QtCore/QSettings>
 
-#if QT_VERSION >= 0x050000
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QtGui/QScreen>
 #endif
 
@@ -128,7 +128,7 @@ Gui::openRecentFile()
         QString filename = path + f.fileName();
         int openedProject = appPTR->isProjectAlreadyOpened( filename.toStdString() );
         if (openedProject != -1) {
-            AppInstPtr instance = appPTR->getAppInstance(openedProject);
+            AppInstancePtr instance = appPTR->getAppInstance(openedProject);
             if (instance) {
                 GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( instance.get() );
                 assert(guiApp);
@@ -145,7 +145,7 @@ Gui::openRecentFile()
             getApp()->getProject()->loadProject( path, f.fileName() );
         } else {
             CLArgs cl;
-            AppInstPtr newApp = appPTR->newAppInstance(cl, false);
+            AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
             newApp->getProject()->loadProject( path, f.fileName() );
         }
     }
@@ -244,7 +244,7 @@ Gui::updateRecentFileActions()
 QPixmap
 Gui::screenShot(QWidget* w)
 {
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     if ( w->objectName() == QString::fromUtf8("CurveEditor") ) {
         return QPixmap::grabWidget(w);
     }
@@ -278,7 +278,7 @@ Gui::setColorPickersColor(double r,
 }
 
 void
-Gui::registerNewColorPicker(boost::shared_ptr<KnobColor> knob)
+Gui::registerNewColorPicker(KnobColorPtr knob)
 {
     assert(_imp->_projectGui);
     const std::list<ViewerTab*> &viewers = getViewersList();
@@ -291,7 +291,7 @@ Gui::registerNewColorPicker(boost::shared_ptr<KnobColor> knob)
 }
 
 void
-Gui::removeColorPicker(boost::shared_ptr<KnobColor> knob)
+Gui::removeColorPicker(KnobColorPtr knob)
 {
     assert(_imp->_projectGui);
     _imp->_projectGui->removeColorPicker(knob);
@@ -449,7 +449,7 @@ Gui::getToolButtons() const
     return _imp->_toolButtons;
 }
 
-GuiAppInstPtr
+GuiAppInstancePtr
 Gui::getApp() const
 {
     return _imp->_appInstance.lock();
@@ -735,7 +735,7 @@ Gui::onRenderStarted(const QString & sequenceName,
                      int frameStep,
                      bool canPause,
                      OutputEffectInstance* writer,
-                     const boost::shared_ptr<ProcessHandler> & process)
+                     const ProcessHandlerPtr & process)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->_progressPanel->startTask(writer->getNode(), firstFrame, lastFrame, frameStep, canPause, true, sequenceName, process);
@@ -743,7 +743,7 @@ Gui::onRenderStarted(const QString & sequenceName,
 
 void
 Gui::onRenderRestarted(OutputEffectInstance* writer,
-                       const boost::shared_ptr<ProcessHandler> & process)
+                       const ProcessHandlerPtr & process)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->_progressPanel->onTaskRestarted(writer->getNode(), process);
@@ -852,7 +852,7 @@ Gui::renderSelectedNode()
         if (!internalNode) {
             continue;
         }
-        EffectInstPtr effect = internalNode->getEffectInstance();
+        EffectInstancePtr effect = internalNode->getEffectInstance();
         if (!effect) {
             continue;
         }
@@ -958,7 +958,7 @@ Gui::onTimelineTimeAboutToChange()
     assert( QThread::currentThread() == qApp->thread() );
     const std::list<ViewerTab*>& viewers = getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        boost::shared_ptr<RenderEngine> engine = (*it)->getInternalNode()->getRenderEngine();
+        RenderEnginePtr engine = (*it)->getInternalNode()->getRenderEngine();
         engine->abortRenderingAutoRestart();
     }
 }
@@ -982,7 +982,7 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
         }
     }
 
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    ProjectPtr project = getApp()->getProject();
     bool isPlayback = reason == eTimelineChangeReasonPlaybackSeek;
 
     ///Refresh all visible knobs at the current time

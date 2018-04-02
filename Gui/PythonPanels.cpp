@@ -66,7 +66,7 @@ struct DialogParamHolderPrivate
 };
 
 DialogParamHolder::DialogParamHolder(const QString& uniqueID,
-                                     const AppInstPtr& app,
+                                     const AppInstancePtr& app,
                                      UserParamHolder* widget)
     : NamedKnobHolder(app)
     , _imp( new DialogParamHolderPrivate(widget, uniqueID) )
@@ -210,7 +210,7 @@ PyModalDialog::PyModalDialog(Gui* gui,
                                     _imp->mainLayout,
                                     DockablePanel::eHeaderModeNoHeader,
                                     false,
-                                    boost::shared_ptr<QUndoStack>(),
+                                    QUndoStackPtr(),
                                     QString(), QString(),
                                     _imp->centerContainer);
     _imp->panel->turnOffPages();
@@ -317,7 +317,7 @@ PyModalDialog::setParamChangedCallback(const QString& callback)
 Param*
 PyModalDialog::getParam(const QString& scriptName) const
 {
-    KnobPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
+    KnobIPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
 
     if (!knob) {
         return 0;
@@ -395,7 +395,7 @@ PyPanel::PyPanel(const QString& scriptName,
                                         _imp->mainLayout,
                                         DockablePanel::eHeaderModeNoHeader,
                                         false,
-                                        boost::shared_ptr<QUndoStack>(),
+                                        QUndoStackPtr(),
                                         QString(), QString(),
                                         _imp->centerContainer);
         _imp->panel->turnOffPages();
@@ -439,7 +439,7 @@ PyPanel::getParam(const QString& scriptName) const
     if (!_imp->holder) {
         return 0;
     }
-    KnobPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
+    KnobIPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
     if (!knob) {
         return 0;
     }

@@ -42,7 +42,7 @@ NATRON_NAMESPACE_ENTER
 
 struct ToolButtonPrivate
 {
-    boost::weak_ptr<GuiAppInstance> _app;
+    GuiAppInstanceWPtr _app;
     QString _id;
     int _major, _minor;
     QString _label;
@@ -50,10 +50,10 @@ struct ToolButtonPrivate
     QMenu* _menu;
     std::vector<ToolButton*> _children;
     QAction* _action;
-    boost::weak_ptr<PluginGroupNode> _pluginToolButton;
+    PluginGroupNodeWPtr _pluginToolButton;
 
-    ToolButtonPrivate(const GuiAppInstPtr& app,
-                      const boost::shared_ptr<PluginGroupNode>& pluginToolButton,
+    ToolButtonPrivate(const GuiAppInstancePtr& app,
+                      const PluginGroupNodePtr& pluginToolButton,
                       const QString & pluginID,
                       int major,
                       int minor,
@@ -75,8 +75,8 @@ struct ToolButtonPrivate
     }
 };
 
-ToolButton::ToolButton(const GuiAppInstPtr& app,
-                       const boost::shared_ptr<PluginGroupNode>& pluginToolButton,
+ToolButton::ToolButton(const GuiAppInstancePtr& app,
+                       const PluginGroupNodePtr& pluginToolButton,
                        const QString & pluginID,
                        int major,
                        int minor,
@@ -175,7 +175,7 @@ ToolButton::setAction(QAction* action)
     _imp->_action = action;
 }
 
-boost::shared_ptr<PluginGroupNode>
+PluginGroupNodePtr
 ToolButton::getPluginToolButton() const
 {
     return _imp->_pluginToolButton.lock();
@@ -184,12 +184,12 @@ ToolButton::getPluginToolButton() const
 void
 ToolButton::onTriggered()
 {
-    GuiAppInstPtr app = _imp->_app.lock();
+    GuiAppInstancePtr app = _imp->_app.lock();
 
     if (!app) {
         return;
     }
-    boost::shared_ptr<NodeCollection> group = app->getGui()->getLastSelectedNodeCollection();
+    NodeCollectionPtr group = app->getGui()->getLastSelectedNodeCollection();
 
     assert(group);
     CreateNodeArgs args(_imp->_id.toStdString(), group);

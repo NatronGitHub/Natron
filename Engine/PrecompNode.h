@@ -66,7 +66,7 @@ public:
         return 0;
     }
 
-    virtual int getMaxInputCount() const OVERRIDE WARN_UNUSED_RETURN
+    virtual int getNInputs() const OVERRIDE WARN_UNUSED_RETURN
     {
         return 0;
     }
@@ -106,7 +106,7 @@ public:
 
     void getPrecompInputs(NodesList* nodes) const;
 
-    AppInstPtr getPrecompApp() const;
+    AppInstancePtr getPrecompApp() const;
     virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
 
 public Q_SLOTS:

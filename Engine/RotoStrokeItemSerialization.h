@@ -110,12 +110,12 @@ private:
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
 
         assert( _xCurves.size() == _yCurves.size() && _xCurves.size() == _pressureCurves.size() );
-        std::list<boost::shared_ptr<Curve> >::const_iterator itY = _yCurves.begin();
-        std::list<boost::shared_ptr<Curve> >::const_iterator itP = _pressureCurves.begin();
+        std::list<CurvePtr>::const_iterator itY = _yCurves.begin();
+        std::list<CurvePtr>::const_iterator itP = _pressureCurves.begin();
         int nb = (int)_xCurves.size();
         ar & ::boost::serialization::make_nvp("BrushType", _brushType);
         ar & ::boost::serialization::make_nvp("NbItems", nb);
-        for (std::list<boost::shared_ptr<Curve> >::const_iterator it = _xCurves.begin(); it != _xCurves.end(); ++it, ++itY, ++itP) {
+        for (std::list<CurvePtr>::const_iterator it = _xCurves.begin(); it != _xCurves.end(); ++it, ++itY, ++itP) {
             ar & ::boost::serialization::make_nvp("CurveX", **it);
             ar & ::boost::serialization::make_nvp("CurveY", **itY);
             ar & ::boost::serialization::make_nvp("CurveP", **itP);
@@ -134,7 +134,9 @@ private:
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
         if (version < ROTO_STROKE_INTRODUCES_MULTIPLE_STROKES) {
             ar & ::boost::serialization::make_nvp("BrushType", _brushType);
-            boost::shared_ptr<Curve> x(new Curve), y(new Curve), p(new Curve);
+            CurvePtr x = boost::make_shared<Curve>();
+            CurvePtr y = boost::make_shared<Curve>();
+            CurvePtr p = boost::make_shared<Curve>();
             ar & ::boost::serialization::make_nvp("CurveX", *x);
             ar & ::boost::serialization::make_nvp("CurveY", *y);
             ar & ::boost::serialization::make_nvp("CurveP", *p);
@@ -146,7 +148,9 @@ private:
             ar & ::boost::serialization::make_nvp("BrushType", _brushType);
             ar & ::boost::serialization::make_nvp("NbItems", nb);
             for (int i = 0; i < nb; ++i) {
-                boost::shared_ptr<Curve> x(new Curve), y(new Curve), p(new Curve);
+                CurvePtr x = boost::make_shared<Curve>();
+                CurvePtr y = boost::make_shared<Curve>();
+                CurvePtr p = boost::make_shared<Curve>();
                 ar & ::boost::serialization::make_nvp("CurveX", *x);
                 ar & ::boost::serialization::make_nvp("CurveY", *y);
                 ar & ::boost::serialization::make_nvp("CurveP", *p);
@@ -160,7 +164,7 @@ private:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
     int _brushType;
-    std::list<boost::shared_ptr<Curve> > _xCurves, _yCurves, _pressureCurves;
+    std::list<CurvePtr> _xCurves, _yCurves, _pressureCurves;
 };
 
 NATRON_NAMESPACE_EXIT

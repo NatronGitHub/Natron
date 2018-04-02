@@ -73,14 +73,14 @@ public:
     };
 
     AddKnobDialog(DockablePanel* panel,
-                  const KnobPtr& knob,
+                  const KnobIPtr& knob,
                   const std::string& selectedPageName,
                   const std::string& selectedGroupName,
                   QWidget* parent);
 
     virtual ~AddKnobDialog();
 
-    KnobPtr getKnob() const;
+    KnobIPtr getKnob() const;
 
     void setVisibleType(bool visible);
 

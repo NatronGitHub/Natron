@@ -55,6 +55,9 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <boost/make_shared.hpp>
+
+
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Interpolation.h"
@@ -467,12 +470,12 @@ dirVect(const BezierCPs& cps,
     return a;
 } // dirVect
 
-static boost::shared_ptr<BezierCP>
+static BezierCPPtr
 makeBezierCPFromPoint(const Point& p,
                       const Point& left,
                       const Point& right)
 {
-    boost::shared_ptr<BezierCP> ret(new BezierCP);
+    BezierCPPtr ret = boost::make_shared<BezierCP>();
 
     ret->setStaticPosition(false, p.x, p.y);
     ret->setLeftBezierStaticPosition(false, left.x, left.y);
@@ -486,7 +489,7 @@ findIntersection(const BezierCPs& cps,
                  double time,
                  const Point& p,
                  const Point& q,
-                 boost::shared_ptr<BezierCP>* newPoint,
+                 BezierCPPtr* newPoint,
                  int* before)
 {
     double fuzz = 1000. * std::numeric_limits<double>::epsilon();
@@ -494,7 +497,7 @@ findIntersection(const BezierCPs& cps,
     double dx = q.x - p.x;
     double dy = q.y - p.y;
     double det = p.y * q.x - p.x * q.y;
-    std::vector<std::pair<boost::shared_ptr<BezierCP>, std::pair<BezierCPs::const_iterator, BezierCPs::const_iterator> > > intersections;
+    std::vector<std::pair<BezierCPPtr, std::pair<BezierCPs::const_iterator, BezierCPs::const_iterator> > > intersections;
     BezierCPs::const_iterator s1 = cps.begin();
     BezierCPs::const_iterator s2 = cps.begin();
 
@@ -549,14 +552,14 @@ findIntersection(const BezierCPs& cps,
                 Point interP = getPointAt(cps, time, roots[i] + index);
                 Point interLeft = getLeftPointAt(cps, time, roots[i] + index);
                 Point interRight = getRightPointAt(cps, time, roots[i] + index);
-                boost::shared_ptr<BezierCP> intersection = makeBezierCPFromPoint(interP, interLeft, interRight);
+                BezierCPPtr intersection = makeBezierCPFromPoint(interP, interLeft, interRight);
                 double distToP = std::sqrt( (p.x - interP.x) * (p.x - interP.x) + (p.y - interP.y) * (p.y - interP.y) );
                 if (std::abs(distToP) < 1e-4) {
                     continue;
                 }
 
                 bool found = false;
-                for (std::vector<std::pair<boost::shared_ptr<BezierCP>, std::pair<BezierCPs::const_iterator, BezierCPs::const_iterator> > >::iterator it = intersections.begin(); it != intersections.end(); ++it) {
+                for (std::vector<std::pair<BezierCPPtr, std::pair<BezierCPs::const_iterator, BezierCPs::const_iterator> > >::iterator it = intersections.begin(); it != intersections.end(); ++it) {
                     Point other;
                     it->first->getPositionAtTime(false, time, ViewIdx(0), &other.x, &other.y);
                     double distSquared = (interP.x - other.x) * (interP.x - other.x) + (interP.y - other.y) * (interP.y - other.y);
@@ -575,7 +578,7 @@ findIntersection(const BezierCPs& cps,
 
 
     assert(intersections.size() >= 1);
-    const std::pair<boost::shared_ptr<BezierCP>, std::pair<BezierCPs::const_iterator, BezierCPs::const_iterator> > & inter = intersections.front();
+    const std::pair<BezierCPPtr, std::pair<BezierCPs::const_iterator, BezierCPs::const_iterator> > & inter = intersections.front();
     *newPoint = inter.first;
     *before = std::distance(cps.begin(), inter.second.first);
 } // findIntersection
@@ -595,7 +598,7 @@ splitAt(const BezierCPs &cps,
         Point q;
         q.x = z.x;
         q.y = z.y + dir.y;
-        boost::shared_ptr<BezierCP> newPoint;
+        BezierCPPtr newPoint;
         int pointIdx = -1;
         findIntersection(cps, time, z, q, &newPoint, &pointIdx);
         assert( pointIdx >= 0 && pointIdx < (int)cps.size() );
@@ -617,7 +620,7 @@ splitAt(const BezierCPs &cps,
         }
 
 
-        boost::shared_ptr<BezierCP> startingPoint = makeBezierCPFromPoint(z, zLeft, zRight);
+        BezierCPPtr startingPoint = makeBezierCPFromPoint(z, zLeft, zRight);
 
         //Start by adding the split point (if it is not a control point)
         if (std::ceil(t) != t) {
@@ -914,7 +917,7 @@ findPointInside(const BezierCPs& cps,
         Point q;
         q.x = p.x;
         q.y = p.y + dir.y;
-        boost::shared_ptr<BezierCP> newPoint;
+        BezierCPPtr newPoint;
         int beforeIndex = -1;
         findIntersection(cps, time, p, q, &newPoint, &beforeIndex);
         if ( newPoint && (beforeIndex != -1) ) {

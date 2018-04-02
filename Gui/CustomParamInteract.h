@@ -54,7 +54,7 @@ class CustomParamInteract
 public:
     CustomParamInteract(const KnobGuiPtr& knob,
                         void* ofxParamHandle,
-                        const boost::shared_ptr<OfxParamOverlayInteract> & entryPoint,
+                        const OfxParamOverlayInteractPtr & entryPoint,
                         QWidget* parent = 0);
 
     virtual ~CustomParamInteract();
@@ -79,6 +79,9 @@ public:
      **/
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
 
+#ifdef OFX_EXTENSIONS_NATRON
+    virtual double getScreenPixelRatio() const OVERRIDE FINAL;
+#endif
     /**
      * @brief Returns the colour of the background (i.e: clear color) of the viewport.
      **/

@@ -126,14 +126,14 @@ optimizeRectsToRender(EffectInstance* self,
 
                 // Walk along the identity branch until we find the non identity input, or NULL in we case we will
                 // just render black and transparent
-                EffectInstPtr identityInput = self->getInput(identityInputNb);
+                EffectInstancePtr identityInput = self->getInput(identityInputNb);
                 if (identityInput) {
                     for (;; ) {
                         identity = identityInput->isIdentity_public(false, 0, time, renderMappedScale, splits[i], view, &identityInputTime, &inputIdentityView,  &identityInputNb);
                         if ( !identity || (identityInputNb == -2) ) {
                             break;
                         }
-                        EffectInstPtr subIdentityInput = identityInput->getInput(identityInputNb);
+                        EffectInstancePtr subIdentityInput = identityInput->getInput(identityInputNb);
                         if (subIdentityInput == identityInput) {
                             break;
                         }
@@ -164,7 +164,7 @@ optimizeRectsToRender(EffectInstance* self,
 } // optimizeRectsToRender
 
 ImagePtr
-EffectInstance::convertPlanesFormatsIfNeeded(const AppInstPtr& app,
+EffectInstance::convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
                                              const ImagePtr& inputImage,
                                              const RectI& roi,
                                              const ImagePlaneDesc& targetComponents,
@@ -187,7 +187,8 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstPtr& app,
          **/
         Image::ReadAccess acc = inputImage->getReadRights();
         RectI bounds = inputImage->getBounds();
-        ImagePtr tmp( new Image(targetComponents,
+#if 0 //def BOOST_NO_CXX11_VARIADIC_TEMPLATES
+       ImagePtr tmp( new Image(targetComponents,
                                 inputImage->getRoD(),
                                 bounds,
                                 inputImage->getMipMapLevel(),
@@ -196,6 +197,18 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstPtr& app,
                                 inputImage->getPremultiplication(),
                                 inputImage->getFieldingOrder(),
                                 false) );
+#else
+        ImagePtr tmp = boost::make_shared<Image>(targetComponents,
+                                                 inputImage->getRoD(),
+                                                 bounds,
+                                                 inputImage->getMipMapLevel(),
+                                                 inputImage->getPixelAspectRatio(),
+                                                 targetDepth,
+                                                 inputImage->getPremultiplication(),
+                                                 inputImage->getFieldingOrder(),
+                                                 false);
+
+#endif
         tmp->setKey(inputImage->getKey());
         RectI clippedRoi;
         roi.intersect(bounds, &clippedRoi);
@@ -329,15 +342,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
 
     //Create the TLS data for this node if it did not exist yet
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
     OSGLContextPtr glContext;
     AbortableRenderInfoPtr abortInfo;
-    boost::shared_ptr<ParallelRenderArgs>  frameArgs;
+    ParallelRenderArgsPtr  frameArgs;
     if ( tls->frameArgs.empty() ) {
         qDebug() << QThread::currentThread() << "[BUG]:" << getScriptName_mt_safe().c_str() <<  "Thread-storage for the render of the frame was not set.";
 
-        frameArgs.reset(new ParallelRenderArgs);
+        frameArgs = boost::make_shared<ParallelRenderArgs>();
         {
             NodesWList outputs;
             getNode()->getOutputs_mt_safe(outputs);
@@ -444,7 +457,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
 
     ///Determine needed planes
-    boost::shared_ptr<ComponentsNeededMap> neededComps(new ComponentsNeededMap);
+    ComponentsNeededMapPtr neededComps = boost::make_shared<ComponentsNeededMap>();
     ComponentsNeededMap::iterator foundOutputNeededComps;
     std::bitset<4> processChannels;
     std::list<ImagePlaneDesc> passThroughPlanes;
@@ -493,7 +506,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     {
         {
 
-            EffectInstPtr passThroughInput = getInput(ptInputNb);
+            EffectInstancePtr passThroughInput = getInput(ptInputNb);
             /*
              * For all requested planes, check which components can be produced in output by this node.
              * If the components are from the color plane, if another set of components of the color plane is present
@@ -618,7 +631,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             //args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
             args.roi.toCanonical_noClipping(args.mipMapLevel, par,  &canonicalRoI);
 
-            EffectInstPtr inputEffectIdentity = getInput(inputNbIdentity);
+            EffectInstancePtr inputEffectIdentity = getInput(inputNbIdentity);
             if (inputEffectIdentity) {
                 if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
                     frameArgs->stats->setNodeIdentity( getNode(), inputEffectIdentity->getNode() );
@@ -673,7 +686,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     if (fetchUserSelectedComponentsUpstream) {
                         // We fetched potentially different components, so convert them to the format requested
                         std::map<ImagePlaneDesc, ImagePtr> convertedPlanes;
-                        AppInstPtr app = getApp();
+                        AppInstancePtr app = getApp();
                         bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
                         std::list<ImagePlaneDesc>::const_iterator compIt = args.components.begin();
 
@@ -729,7 +742,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         SettingsPtr settings = appPTR->getCurrentSettings();
         useTransforms = settings && settings->isTransformConcatenationEnabled();
         if (useTransforms) {
-            tls->currentRenderArgs.transformRedirections.reset(new InputMatrixMap);
+            tls->currentRenderArgs.transformRedirections = boost::make_shared<InputMatrixMap>();
             tryConcatenateTransforms( args.time, frameArgs->draftMode, args.view, args.scale, tls->currentRenderArgs.transformRedirections.get() );
         }
     }
@@ -795,7 +808,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// End Compute RoI /////////////////////////////////////////////////////////////////////////
     const PluginOpenGLRenderSupport openGLSupport = frameArgs->currentOpenglSupport;
     StorageModeEnum storage = eStorageModeRAM;
-    boost::shared_ptr<OSGLContextAttacher> glContextLocker;
+    OSGLContextAttacherPtr glContextLocker;
 
     if ( dynamic_cast<DiskCacheNode*>(this) ) {
         storage = eStorageModeDisk;
@@ -913,9 +926,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ImageBitDepthEnum outputDepth = getBitDepth(-1);
     ImagePlaneDesc outputClipPrefComps, outputClipPrefCompsPaired;
     getMetadataComponents(-1, &outputClipPrefComps, &outputClipPrefCompsPaired);
-    boost::shared_ptr<ImagePlanesToRender> planesToRender(new ImagePlanesToRender);
+    ImagePlanesToRenderPtr planesToRender = boost::make_shared<ImagePlanesToRender>();
     planesToRender->useOpenGL = storage == eStorageModeGLTex;
-    boost::shared_ptr<FramesNeededMap> framesNeeded(new FramesNeededMap);
+    FramesNeededMapPtr framesNeeded = boost::make_shared<FramesNeededMap>();
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Look-up the cache ///////////////////////////////////////////////////////////////
 
@@ -1195,9 +1208,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         RectD inputsIntersection;
         bool inputsIntersectionSet = false;
         bool hasDifferentRods = false;
-        int maxInput = getMaxInputCount();
+        int maxInput = getNInputs();
         bool hasMask = false;
-        boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
+        RotoDrawableItemPtr attachedStroke = getNode()->getAttachedRotoItem();
         for (int i = 0; i < maxInput; ++i) {
             bool isMask = isInputMask(i) || isInputRotoBrush(i);
             RectD inputRod;
@@ -1205,12 +1218,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 getNode()->getPaintStrokeRoD(args.time, &inputRod);
                 hasMask = true;
             } else {
-                EffectInstPtr input = getInput(i);
+                EffectInstancePtr input = getInput(i);
                 if (!input) {
                     continue;
                 }
                 bool isProjectFormat;
-                boost::shared_ptr<ParallelRenderArgs> inputFrameArgs = input->getParallelRenderArgsTLS();
+                ParallelRenderArgsPtr inputFrameArgs = input->getParallelRenderArgsTLS();
                 U64 inputHash = (inputFrameArgs) ? inputFrameArgs->nodeHash : input->getHash();
                 StatusEnum stat = input->getRegionOfDefinition_public(inputHash, args.time, args.scale, args.view, &inputRod, &isProjectFormat);
                 if ( (stat != eStatusOK) && !inputRod.isNull() ) {
@@ -1338,7 +1351,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         if ( planesToRender->inputPremult.empty() ) {
             for (InputImagesMap::iterator it2 = it->imgs.begin(); it2 != it->imgs.end(); ++it2) {
-                EffectInstPtr input = getInput(it2->first);
+                EffectInstancePtr input = getInput(it2->first);
                 if (input) {
                     ImagePremultiplicationEnum inputPremult = input->getPremult();
                     if ( !it2->second.empty() ) {
@@ -1470,15 +1483,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if ( renderFullScaleThenDownscale && (it->second.fullscaleImage->getMipMapLevel() == 0) ) {
                     RectI bounds;
                     rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
-                    it->second.downscaleImage.reset( new Image(*components,
-                                                               rod,
-                                                               downscaledImageBounds,
-                                                               args.mipMapLevel,
-                                                               it->second.fullscaleImage->getPixelAspectRatio(),
-                                                               outputDepth,
-                                                               planesToRender->outputPremult,
-                                                               fieldingOrder,
-                                                               true) );
+                    it->second.downscaleImage = boost::make_shared<Image>(*components,
+                                                                          rod,
+                                                                          downscaledImageBounds,
+                                                                          args.mipMapLevel,
+                                                                          it->second.fullscaleImage->getPixelAspectRatio(),
+                                                                          outputDepth,
+                                                                          planesToRender->outputPremult,
+                                                                          fieldingOrder,
+                                                                          true);
 
                     it->second.fullscaleImage->downscaleMipMap( rod, it->second.fullscaleImage->getBounds(), 0, args.mipMapLevel, true, it->second.downscaleImage.get() );
                 }
@@ -1533,7 +1546,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         boost::scoped_ptr<QMutexLocker> locker;
 
 
-        EffectInstPtr renderInstance;
+        EffectInstancePtr renderInstance;
         /**
          * Figure out If this node should use a render clone rather than execute renderRoIInternal on the main (this) instance.
          * Reasons to use a render clone is be because a plug-in is eRenderSafetyInstanceSafe or does not support
@@ -1743,15 +1756,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
              !hasSomethingToRender ) {
             assert(it->second.fullscaleImage->getMipMapLevel() == 0);
             if (it->second.downscaleImage == it->second.fullscaleImage) {
-                it->second.downscaleImage.reset( new Image(it->second.fullscaleImage->getComponents(),
-                                                           it->second.fullscaleImage->getRoD(),
-                                                           downscaledImageBounds,
-                                                           args.mipMapLevel,
-                                                           it->second.fullscaleImage->getPixelAspectRatio(),
-                                                           it->second.fullscaleImage->getBitDepth(),
-                                                           it->second.fullscaleImage->getPremultiplication(),
-                                                           it->second.fullscaleImage->getFieldingOrder(),
-                                                           false) );
+                it->second.downscaleImage = boost::make_shared<Image>(it->second.fullscaleImage->getComponents(),
+                                                                      it->second.fullscaleImage->getRoD(),
+                                                                      downscaledImageBounds,
+                                                                      args.mipMapLevel,
+                                                                      it->second.fullscaleImage->getPixelAspectRatio(),
+                                                                      it->second.fullscaleImage->getBitDepth(),
+                                                                      it->second.fullscaleImage->getPremultiplication(),
+                                                                      it->second.fullscaleImage->getFieldingOrder(),
+                                                                      false);
                 it->second.downscaleImage->setKey(it->second.fullscaleImage->getKey());
             }
 
@@ -1840,13 +1853,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 EffectInstance::RenderRoIStatusEnum
 EffectInstance::renderRoIInternal(EffectInstance* self,
                                   double time,
-                                  const boost::shared_ptr<ParallelRenderArgs> & frameArgs,
+                                  const ParallelRenderArgsPtr & frameArgs,
                                   RenderSafetyEnum safety,
                                   unsigned int mipMapLevel,
                                   ViewIdx view,
                                   const RectD & rod, //!< effect rod in canonical coords
                                   const double par,
-                                  const boost::shared_ptr<ImagePlanesToRender> & planesToRender,
+                                  const ImagePlanesToRenderPtr & planesToRender,
                                   bool isSequentialRender,
                                   bool isRenderMadeInResponseToUserInteraction,
                                   U64 nodeHash,
@@ -1854,7 +1867,7 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
                                   bool byPassCache,
                                   ImageBitDepthEnum outputClipPrefDepth,
                                   const ImagePlaneDesc& outputClipPrefsComps,
-                                  const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
+                                  const ComponentsNeededMapPtr & compsNeeded,
                                   const std::bitset<4> processChannels)
 {
     EffectInstance::RenderRoIStatusEnum retCode;
@@ -1895,16 +1908,16 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
 
 
     ///Notify the gui we're rendering
-    boost::shared_ptr<NotifyRenderingStarted_RAII> renderingNotifier;
+    NotifyRenderingStarted_RAIIPtr renderingNotifier;
     if ( !planesToRender->rectsToRender.empty() ) {
         renderingNotifier.reset( new NotifyRenderingStarted_RAII( self->getNode().get() ) );
     }
 
 
 
-    boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > > tlsCopy;
+    boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> > tlsCopy;
     if (safety == eRenderSafetyFullySafeFrame) {
-        tlsCopy.reset(new std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >);
+        tlsCopy = boost::make_shared<std::map<NodePtr, ParallelRenderArgsPtr> >();
         /*
          * Since we're about to start new threads potentially, copy all the thread local storage on all nodes (any node may be involved in
          * expressions, and we need to retrieve the exact local time of render).

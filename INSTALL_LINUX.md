@@ -91,7 +91,7 @@ git submodule update -i --recursive
 ### Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
+to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
 Place it at the root of Natron repository.
 
 ***note:*** *If it is name something like: `OpenColorIO-Configs-Natron-v2.0` rename it to `OpenColorIO-Configs`*
@@ -112,19 +112,21 @@ You can find more examples specific to distributions below.
 INCLUDEPATH is the path to the include files
 
 LIBS is the path to the libs
-
-    ----- copy and paste the following in a terminal -----
-    cat > config.pri << EOF
-    boost: LIBS += -lboost_serialization
-    expat: LIBS += -lexpat
-    expat: PKGCONFIG -= expat
-    cairo: PKGCONFIG -= cairo
-    PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
-    pyside: PKGCONFIG += pyside
-    pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
-    pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-    EOF
-    ----- end -----
+```
+----- copy and paste the following in a terminal -----
+cat > config.pri << EOF
+boost-serialization-lib: LIBS += -lboost_serialization
+boost: LIBS += -lboost_thread -lboost_system
+expat: LIBS += -lexpat
+expat: PKGCONFIG -= expat
+cairo: PKGCONFIG -= cairo
+pyside: PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
+pyside: PKGCONFIG += pyside
+pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
+pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
+EOF
+----- end -----
+```
 
 ***note:*** *the last line for cairo is only necessary if the package for cairo in your distribution
 is lower than version 1.12 (as it is on Ubuntu 12.04 LTS for example).*
@@ -133,8 +135,8 @@ is lower than version 1.12 (as it is on Ubuntu 12.04 LTS for example).*
 
 Natron's nodes are contained in separate repositories. To use the default nodes, you must also build the following repositories:
 
-    https://github.com/devernay/openfx-misc
-    https://github.com/MrKepzie/openfx-io
+    https://github.com/NatronGitHub/openfx-misc
+    https://github.com/NatronGitHub/openfx-io
 
 
 You'll find installation instructions in the README of both these repositories. Both openfx-misc and openfx-io have submodules as well.
@@ -190,7 +192,8 @@ It should be installed in `/usr/local/lib`
 For the config.pri, use the following:
 
 ```pri
-boost: LIBS += -lboost_serialization
+boost-serialization-lib: LIBS += -lboost_serialization
+boost: LIBS += -lboost_thread -lboost_system
 expat: LIBS += -lexpat
 expat: PKGCONFIG -= expat
 cairo {
@@ -200,12 +203,10 @@ cairo {
         LIBS += /usr/local/lib/libcairo.a
 }
 pyside {
-        PKGCONFIG -= pyside
-        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)
-        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtCore
-        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtGui
-        INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
-        LIBS += -lpyside-python2.7
+        PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
+        PKGCONFIG += pyside
+        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
+        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
 }
 shiboken {
         PKGCONFIG -= shiboken
@@ -230,13 +231,14 @@ sudo add-apt-repository -y ppa:irie/boost
 ```
 Install the required packages:
 ```
-sudo apt-get install libqt4-dev libboost-serialization-dev libexpat1-dev libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev
+sudo apt-get install libqt4-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev
 ```
 
 For the config.pri use:
 
 ```
-boost: LIBS += -lboost_serialization
+boost-serialization-lib: LIBS += -lboost_serialization
+boost: LIBS += -lboost_thread -lboost_system
 expat: LIBS += -lexpat
 expat: PKGCONFIG -= expat
 cairo: PKGCONFIG -= cairo
@@ -259,7 +261,8 @@ yum install fontconfig-devel gcc-c++ expat-devel python-pyside-devel shiboken-de
 
 config.pri:
 ```pri
-boost: LIBS += -lboost_serialization
+boost-serialization-lib: LIBS += -lboost_serialization
+boost: LIBS += -lboost_thread -lboost_system
 PKGCONFIG += expat
 PKGCONFIG += fontconfig
 cairo {
@@ -267,12 +270,10 @@ cairo {
         LIBS -=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
 }
 pyside {
-        PKGCONFIG -= pyside
-        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)
-        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtCore
-        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtGui
-        INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
-        LIBS += -lpyside-python2.7
+        PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
+        PKGCONFIG += pyside
+        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
+        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
 }
 shiboken {
         PKGCONFIG -= shiboken
@@ -281,3 +282,36 @@ shiboken {
 }
 ```
 
+## Generating Python bindings
+
+This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
+typesystem.xml file. See the documentation of shiboken for an explanation of the command line arguments.
+
+```Shell
+SDK_PREFIX=/opt/Natron-sdk
+PYSIDE_PREFIX=/opt/Natron-sdk/qt4
+rm Engine/NatronEngine/* Gui/NatronGui/*
+
+shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
+
+shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+
+tools/utils/runPostShiboken.sh
+```
+
+If using PySide2 for Qt5, the command-line would be:
+
+```Shell
+SDK_PREFIX=/opt/Natron-sdk
+PYSIDE_PREFIX=/opt/Natron-sdk
+rm Engine/NatronEngine/* Gui/NatronGui/*
+
+shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide2 --typesystem-paths=$PYSIDE_PREFIX/lib/python2.7/site-packages/PySide2/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
+
+shiboken2 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide2 --typesystem-paths=$PYSIDE_PREFIX/lib/python2.7/site-packages/PySide2/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+
+tools/utils/runPostShiboken.sh
+```
+
+**Note**
+Shiboken has a few glitches which needs fixing with some sed commands, run tools/utils/runPostShiboken.sh once shiboken is called

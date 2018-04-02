@@ -68,10 +68,8 @@ class DSNodePrivate;
 class DSNode;
 class DopeSheet;
 
-typedef boost::shared_ptr<DSNode> DSNodePtr;
-typedef boost::shared_ptr<DSKnob> DSKnobPtr;
-typedef std::map<QTreeWidgetItem *, boost::shared_ptr<DSNode> > DSTreeItemNodeMap;
-typedef std::map<QTreeWidgetItem *, boost::shared_ptr<DSKnob> > DSTreeItemKnobMap;
+typedef std::map<QTreeWidgetItem *, DSNodePtr> DSTreeItemNodeMap;
+typedef std::map<QTreeWidgetItem *, DSKnobPtr> DSTreeItemKnobMap;
 // typedefs
 
 const int QT_ROLE_CONTEXT_TYPE = Qt::UserRole + 1;
@@ -230,7 +228,7 @@ public:
     QTreeWidgetItem * findDimTreeItem(int dimension) const;
 
     KnobGuiPtr getKnobGui() const;
-    KnobPtr getInternalKnob() const;
+    KnobIPtr getInternalKnob() const;
 
     bool isMultiDimRoot() const;
     int getDimension() const;
@@ -247,12 +245,12 @@ private:
 class DopeSheetKey
 {
 public:
-    DopeSheetKey(const boost::shared_ptr<DSKnob> &knob,
+    DopeSheetKey(const DSKnobPtr &knob,
                  const KeyFrame& kf)
         : context(knob)
         , key(kf)
     {
-        boost::shared_ptr<DSKnob> knobContext = context.lock();
+        DSKnobPtr knobContext = context.lock();
 
         assert(knobContext);
     }
@@ -265,8 +263,8 @@ public:
     friend bool operator==(const DopeSheetKey &key,
                            const DopeSheetKey &other)
     {
-        boost::shared_ptr<DSKnob> knobContext = key.context.lock();
-        boost::shared_ptr<DSKnob> otherKnobContext = other.context.lock();
+        DSKnobPtr knobContext = key.context.lock();
+        DSKnobPtr otherKnobContext = other.context.lock();
 
         if (!knobContext || !otherKnobContext) {
             return false;
@@ -291,21 +289,21 @@ public:
         return true;
     }
 
-    boost::shared_ptr<DSKnob> getContext() const
+    DSKnobPtr getContext() const
     {
-        boost::shared_ptr<DSKnob> ret = context.lock();
+        DSKnobPtr ret = context.lock();
 
         assert(ret);
 
         return ret;
     }
 
-    boost::weak_ptr<DSKnob> context;
+    DSKnobWPtr context;
     KeyFrame key;
 };
 
-typedef boost::shared_ptr<DopeSheetKey> DSKeyPtr;
-typedef std::list<DSKeyPtr> DSKeyPtrList;
+typedef DopeSheetKeyPtr DopeSheetKeyPtr;
+typedef std::list<DopeSheetKeyPtr> DopeSheetKeyPtrList;
 
 /**
  * @brief The DopeSheet class is the model part of the dope sheet editor.
@@ -339,7 +337,7 @@ public:
 
     DopeSheet(Gui *gui,
               DopeSheetEditor* editor,
-              const boost::shared_ptr<TimeLine> &timeline);
+              const TimeLinePtr &timeline);
     ~DopeSheet();
 
     // Model specific
@@ -348,17 +346,17 @@ public:
     void addNode(NodeGuiPtr nodeGui);
     void removeNode(NodeGui *node);
 
-    boost::shared_ptr<DSNode> mapNameItemToDSNode(QTreeWidgetItem *nodeTreeItem) const;
-    boost::shared_ptr<DSKnob> mapNameItemToDSKnob(QTreeWidgetItem *knobTreeItem) const;
-    boost::shared_ptr<DSNode> findParentDSNode(QTreeWidgetItem *treeItem) const;
-    boost::shared_ptr<DSNode> findDSNode(Node *node) const;
-    boost::shared_ptr<DSNode> findDSNode(const KnobPtr &knob) const;
-    boost::shared_ptr<DSKnob> findDSKnob(const KnobGui* knobGui) const;
+    DSNodePtr mapNameItemToDSNode(QTreeWidgetItem *nodeTreeItem) const;
+    DSKnobPtr mapNameItemToDSKnob(QTreeWidgetItem *knobTreeItem) const;
+    DSNodePtr findParentDSNode(QTreeWidgetItem *treeItem) const;
+    DSNodePtr findDSNode(Node *node) const;
+    DSNodePtr findDSNode(const KnobIPtr &knob) const;
+    DSKnobPtr findDSKnob(const KnobGui* knobGui) const;
 
     bool isPartOfGroup(DSNode *dsNode) const;
-    boost::shared_ptr<DSNode> getGroupDSNode(DSNode *dsNode) const;
-    std::vector<boost::shared_ptr<DSNode> > getImportantNodes(DSNode *dsNode) const;
-    boost::shared_ptr<DSNode> getNearestTimeNodeFromOutputs(DSNode *dsNode) const;
+    DSNodePtr getGroupDSNode(DSNode *dsNode) const;
+    std::vector<DSNodePtr> getImportantNodes(DSNode *dsNode) const;
+    DSNodePtr getNearestTimeNodeFromOutputs(DSNode *dsNode) const;
     Node * getNearestReader(DSNode *timeNode) const;
     DopeSheetSelectionModel * getSelectionModel() const;
     DopeSheetEditor* getEditor() const;
@@ -367,12 +365,12 @@ public:
     void deleteSelectedKeyframes();
 
     void moveSelectedKeysAndNodes(double dt);
-    void trimReaderLeft(const boost::shared_ptr<DSNode> &reader, double newFirstFrame);
-    void trimReaderRight(const boost::shared_ptr<DSNode> &reader, double newLastFrame);
+    void trimReaderLeft(const DSNodePtr &reader, double newFirstFrame);
+    void trimReaderRight(const DSNodePtr &reader, double newLastFrame);
 
-    bool canSlipReader(const boost::shared_ptr<DSNode> &reader) const;
+    bool canSlipReader(const DSNodePtr &reader) const;
 
-    void slipReader(const boost::shared_ptr<DSNode> &reader, double dt);
+    void slipReader(const DSNodePtr &reader, double dt);
     void copySelectedKeys();
     void pasteKeys(bool relative);
 
@@ -399,7 +397,7 @@ Q_SIGNALS:
     void keyframeSetOrRemoved(DSKnob *dsKnob);
 
 private: /* functions */
-    boost::shared_ptr<DSNode> createDSNode(const NodeGuiPtr &nodeGui, DopeSheetItemType itemType);
+    DSNodePtr createDSNode(const NodeGuiPtr &nodeGui, DopeSheetItemType itemType);
 
 private Q_SLOTS:
     void onNodeNameChanged(const QString &name);
@@ -435,16 +433,16 @@ public:
     ~DopeSheetSelectionModel();
 
     void selectAll();
-    void makeDopeSheetKeyframesForKnob(const boost::shared_ptr<DSKnob> &dsKnob, std::vector<DopeSheetKey> *result);
+    void makeDopeSheetKeyframesForKnob(const DSKnobPtr &dsKnob, std::vector<DopeSheetKey> *result);
 
     void clearKeyframeSelection();
     void makeSelection(const std::vector<DopeSheetKey> &keys,
-                       const std::vector<boost::shared_ptr<DSNode> >& rangeNodes,
+                       const std::vector<DSNodePtr>& rangeNodes,
                        DopeSheetSelectionModel::SelectionTypeFlags selectionFlags);
 
     bool isEmpty() const;
 
-    void getCurrentSelection(DSKeyPtrList* keys, std::vector<boost::shared_ptr<DSNode> >* nodes) const;
+    void getCurrentSelection(DopeSheetKeyPtrList* keys, std::vector<DSNodePtr>* nodes) const;
 
     std::vector<DopeSheetKey> getKeyframesSelectionCopy() const;
 
@@ -452,22 +450,22 @@ public:
 
     int getSelectedKeyframesCount() const;
 
-    bool keyframeIsSelected(const boost::shared_ptr<DSKnob> &dsKnob, const KeyFrame &keyframe) const;
+    bool keyframeIsSelected(const DSKnobPtr &dsKnob, const KeyFrame &keyframe) const;
 
-    DSKeyPtrList::iterator keyframeIsSelected(const DopeSheetKey &key) const;
+    DopeSheetKeyPtrList::iterator keyframeIsSelected(const DopeSheetKey &key) const;
 
-    bool rangeIsSelected(const boost::shared_ptr<DSNode>& node) const;
+    bool rangeIsSelected(const DSNodePtr& node) const;
 
     void emit_keyframeSelectionChanged(bool recurse);
 
-    void onNodeAboutToBeRemoved(const boost::shared_ptr<DSNode> &removed);
+    void onNodeAboutToBeRemoved(const DSNodePtr &removed);
 
 Q_SIGNALS:
     void keyframeSelectionChangedFromModel(bool recurse);
 
 private:
 
-    std::list<boost::weak_ptr<DSNode> >::iterator isRangeNodeSelected(const boost::shared_ptr<DSNode>& node);
+    std::list<DSNodeWPtr>::iterator isRangeNodeSelected(const DSNodePtr& node);
     boost::scoped_ptr<DopeSheetSelectionModelPrivate> _imp;
 };
 

@@ -239,7 +239,7 @@ class KnobSerializationBase;
 struct ValueSerialization
 {
     KnobSerializationBase* _serialization;
-    KnobPtr _knob;
+    KnobIPtr _knob;
     int _dimension;
     MasterSerialization _master;
     std::string _expression;
@@ -249,18 +249,18 @@ struct ValueSerialization
 
     ///Load
     ValueSerialization(KnobSerializationBase* serialization,
-                       const KnobPtr & knob,
+                       const KnobIPtr & knob,
                        int dimension);
     void initForLoad(KnobSerializationBase* serialization,
-                     const KnobPtr & knob,
+                     const KnobIPtr & knob,
                      int dimension);
 
     ///Save
-    ValueSerialization(const KnobPtr & knob,
+    ValueSerialization(const KnobIPtr & knob,
                        int dimension,
                        bool exprHasRetVar,
                        const std::string& expr);
-    void initForSave(const KnobPtr & knob,
+    void initForSave(const KnobIPtr & knob,
                      int dimension,
                      bool exprHasRetVar,
                      const std::string& expr);
@@ -272,11 +272,11 @@ struct ValueSerialization
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>( _knob.get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( _knob.get() );
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( _knob.get() );
+        KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( _knob.get() );
+        KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( _knob.get() );
+        KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( _knob.get() );
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>( _knob.get() );
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( _knob.get() );
+        KnobStringBase* isString = dynamic_cast<KnobStringBase*>( _knob.get() );
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>( _knob.get() );
         KnobPage* isPage = dynamic_cast<KnobPage*>( _knob.get() );
         KnobGroup* isGrp = dynamic_cast<KnobGroup*>( _knob.get() );
@@ -337,11 +337,11 @@ struct ValueSerialization
     void load(Archive & ar,
               const unsigned int version)
     {
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>( _knob.get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( _knob.get() );
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( _knob.get() );
+        KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( _knob.get() );
+        KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( _knob.get() );
+        KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( _knob.get() );
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>( _knob.get() );
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( _knob.get() );
+        KnobStringBase* isString = dynamic_cast<KnobStringBase*>( _knob.get() );
         KnobFile* isFile = dynamic_cast<KnobFile*>( _knob.get() );
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>( _knob.get() );
         KnobPage* isPage = dynamic_cast<KnobPage*>( _knob.get() );
@@ -364,7 +364,7 @@ struct ValueSerialization
             ///Don't try to load keyframes
             convertOldFileKeyframesToPattern = isFile && isFile->getName() == kOfxImageEffectFileParamName;
             if (!convertOldFileKeyframesToPattern) {
-                boost::shared_ptr<Curve> curve = _knob->getCurve(ViewIdx(0), _dimension);
+                CurvePtr curve = _knob->getCurve(ViewIdx(0), _dimension);
                 assert(curve);
                 if (curve) {
                     _knob->getCurve(ViewIdx(0), _dimension)->clone(c);
@@ -488,20 +488,20 @@ public:
 
 
     virtual const std::string& getName() const = 0;
-    virtual KnobPtr getKnob() const = 0;
+    virtual KnobIPtr getKnob() const = 0;
     virtual void setChoiceExtraString(const std::string& /*label*/) {}
 };
 
 class KnobSerialization
     : public KnobSerializationBase
 {
-    KnobPtr _knob; //< used when serializing
+    KnobIPtr _knob; //< used when serializing
     std::string _typeName;
     int _dimension;
     std::list<MasterSerialization> _masters; //< used when deserializating, we can't restore it before all knobs have been restored.
     bool _masterIsAlias;
     std::vector<std::pair<std::string, bool> > _expressions; //< used when deserializing, we can't restore it before all knobs have been restored.
-    std::list< Curve > parametricCurves;
+    std::list<Curve > parametricCurves;
     mutable TypeExtraData* _extraData;
     bool _isUserKnob;
     std::string _label;
@@ -545,7 +545,7 @@ private:
 
         ////restore extra datas
         if (isParametric) {
-            std::list< Curve > curves;
+            std::list<Curve > curves;
             isParametric->saveParametricCurves(&curves);
             ar & ::boost::serialization::make_nvp("ParametricCurves", curves);
         } else if (isString) {
@@ -609,7 +609,7 @@ private:
         ar & ::boost::serialization::make_nvp("Type", _typeName);
         ar & ::boost::serialization::make_nvp("Dimension", _dimension);
         _values.resize(_dimension);
-        KnobPtr created = createKnob(_typeName, _dimension);
+        KnobIPtr created = createKnob(_typeName, _dimension);
         if (!created) {
             return;
         } else {
@@ -645,7 +645,7 @@ private:
 
         ////restore extra datas
         if (isParametric) {
-            std::list< Curve > curves;
+            std::list<Curve > curves;
             ar & ::boost::serialization::make_nvp("ParametricCurves", curves);
             isParametric->loadParametricCurves(curves);
         } else if (isStringAnimated) {
@@ -758,10 +758,10 @@ private:
                 }
 
                 if (version >= KNOB_SERIALIZATION_INTRODUCES_DEFAULT_VALUES && version < KNOB_SERIALIZATION_REMOVE_DEFAULT_VALUES) {
-                    Knob<double>* isDoubleVal = dynamic_cast<Knob<double>*>( _knob.get() );
-                    Knob<int>* isIntVal = dynamic_cast<Knob<int>*>( _knob.get() );
+                    KnobDoubleBase* isDoubleVal = dynamic_cast<KnobDoubleBase*>( _knob.get() );
+                    KnobIntBase* isIntVal = dynamic_cast<KnobIntBase*>( _knob.get() );
                     KnobBool* isBool = dynamic_cast<KnobBool*>( _knob.get() );
-                    Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>( _knob.get() );
+                    KnobStringBase* isStr = dynamic_cast<KnobStringBase*>( _knob.get() );
 
                     for (int i = 0; i < _knob->getDimension(); ++i) {
                         if (isDoubleVal) {
@@ -788,7 +788,7 @@ private:
 public:
 
     ///Constructor used to serialize
-    explicit KnobSerialization(const KnobPtr & knob)
+    explicit KnobSerialization(const KnobIPtr & knob)
         : _knob()
         , _dimension(0)
         , _masterIsAlias(false)
@@ -810,7 +810,7 @@ public:
 
     ///Doing the empty param constructor + this function is the same
     ///as calling the constructore above
-    void initialize(const KnobPtr & knob)
+    void initialize(const KnobIPtr & knob)
     {
         _knob = knob;
 
@@ -929,17 +929,17 @@ public:
     /**
      * @brief This function cannot be called until all knobs of the project have been created.
      **/
-    void restoreKnobLinks(const KnobPtr & knob,
+    void restoreKnobLinks(const KnobIPtr & knob,
                           const NodesList & allNodes,
                           const std::map<std::string, std::string>& oldNewScriptNamesMapping);
 
     /**
      * @brief This function cannot be called until all knobs of the project have been created.
      **/
-    void restoreExpressions(const KnobPtr & knob,
+    void restoreExpressions(const KnobIPtr & knob,
                             const std::map<std::string, std::string>& oldNewScriptNamesMapping);
 
-    virtual KnobPtr getKnob() const OVERRIDE FINAL
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL
     {
         return _knob;
     }
@@ -949,7 +949,7 @@ public:
         return _knob->getName();
     }
 
-    static KnobPtr createKnob(const std::string & typeName, int dimension);
+    static KnobIPtr createKnob(const std::string & typeName, int dimension);
     const TypeExtraData* getExtraData() const { return _extraData; }
 
     bool isPersistent() const
@@ -997,32 +997,32 @@ private:
 
 
 template <typename T>
-boost::shared_ptr<KnobSerialization>
+KnobSerializationPtr
 createDefaultValueForParam(const std::string& paramName,
                            const T& value0,
                            const T& value1)
 {
-    boost::shared_ptr< Knob<T> > knob( new Knob<T>(NULL, paramName, 2, false) );
+    boost::shared_ptr< Knob<T> > knob = boost::make_shared<Knob<T> >(NULL, paramName, 2, false);
 
     knob->populate();
     knob->setName(paramName);
     knob->setValues(value0, value1, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-    boost::shared_ptr<KnobSerialization> ret( new KnobSerialization(knob) );
+    KnobSerializationPtr ret = boost::make_shared<KnobSerialization>(knob);
 
     return ret;
 }
 
 template <typename T>
-boost::shared_ptr<KnobSerialization>
+KnobSerializationPtr
 createDefaultValueForParam(const std::string& paramName,
                            const T& value)
 {
-    boost::shared_ptr< Knob<T> > knob( new Knob<T>(NULL, paramName, 1, false) );
+    boost::shared_ptr< Knob<T> > knob = boost::make_shared<Knob<T> >(NULL, paramName, 1, false);
 
     knob->populate();
     knob->setName(paramName);
     knob->setValue(value);
-    boost::shared_ptr<KnobSerialization> ret( new KnobSerialization(knob) );
+    KnobSerializationPtr ret = boost::make_shared<KnobSerialization>(knob);
 
     return ret;
 }
@@ -1031,8 +1031,8 @@ createDefaultValueForParam(const std::string& paramName,
 class GroupKnobSerialization
     : public KnobSerializationBase
 {
-    KnobPtr _knob;
-    std::list <boost::shared_ptr<KnobSerializationBase> > _children;
+    KnobIPtr _knob;
+    std::list<KnobSerializationBasePtr> _children;
     std::string _name, _label;
     bool _secret;
     bool _isSetAsTab; //< only valid for groups
@@ -1040,7 +1040,7 @@ class GroupKnobSerialization
 
 public:
 
-    GroupKnobSerialization(const KnobPtr& knob)
+    GroupKnobSerialization(const KnobIPtr& knob)
         : _knob(knob)
         , _children()
         , _name()
@@ -1074,19 +1074,19 @@ public:
             if (isPage) {
                 ///If page, check that the child is a top level child and not child of a sub-group
                 ///otherwise let the sub group register the child
-                KnobPtr parent = children[i]->getParentKnob();
+                KnobIPtr parent = children[i]->getParentKnob();
                 if (parent.get() != isPage) {
                     continue;
                 }
             }
-            boost::shared_ptr<KnobGroup> isGrp = boost::dynamic_pointer_cast<KnobGroup>(children[i]);
+            KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(children[i]);
             if (isGrp) {
-                boost::shared_ptr<GroupKnobSerialization> serialisation( new GroupKnobSerialization(isGrp) );
+                GroupKnobSerializationPtr serialisation = boost::make_shared<GroupKnobSerialization>(isGrp);
                 _children.push_back(serialisation);
             } else {
                 //KnobChoice* isChoice = dynamic_cast<KnobChoice*>(children[i].get());
                 //bool copyKnob = false;//isChoice != NULL;
-                boost::shared_ptr<KnobSerialization> serialisation( new KnobSerialization(children[i]) );
+                KnobSerializationPtr serialisation = boost::make_shared<KnobSerialization>(children[i]);
                 _children.push_back(serialisation);
             }
         }
@@ -1107,12 +1107,12 @@ public:
     {
     }
 
-    const std::list <boost::shared_ptr<KnobSerializationBase> >& getChildren() const
+    const std::list<KnobSerializationBasePtr>& getChildren() const
     {
         return _children;
     }
 
-    virtual KnobPtr getKnob() const OVERRIDE FINAL
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL
     {
         return _knob;
     }
@@ -1157,7 +1157,7 @@ private:
         ar & ::boost::serialization::make_nvp("IsOpened", _isOpened);
         int nbChildren = (int)_children.size();
         ar & ::boost::serialization::make_nvp("NbChildren", nbChildren);
-        for (std::list <boost::shared_ptr<KnobSerializationBase> >::const_iterator it = _children.begin();
+        for (std::list<KnobSerializationBasePtr>::const_iterator it = _children.begin();
              it != _children.end(); ++it) {
             GroupKnobSerialization* isGrp = dynamic_cast<GroupKnobSerialization*>( it->get() );
             KnobSerialization* isRegularKnob = dynamic_cast<KnobSerialization*>( it->get() );
@@ -1195,11 +1195,11 @@ private:
             ar & ::boost::serialization::make_nvp("Type", type);
 
             if (type == "Group") {
-                boost::shared_ptr<GroupKnobSerialization> knob(new GroupKnobSerialization);
+                GroupKnobSerializationPtr knob = boost::make_shared<GroupKnobSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *knob);
                 _children.push_back(knob);
             } else {
-                boost::shared_ptr<KnobSerialization> knob(new KnobSerialization);
+                KnobSerializationPtr knob = boost::make_shared<KnobSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *knob);
                 _children.push_back(knob);
             }

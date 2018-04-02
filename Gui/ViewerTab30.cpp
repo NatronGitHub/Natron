@@ -366,9 +366,9 @@ ViewerTab::createTrackerInterface(const NodeGuiPtr& n)
     } else {
         assert( n->getNode()->isMultiInstance() );
         n->ensurePanelCreated();
-        boost::shared_ptr<MultiInstancePanel> multiPanel = n->getMultiInstancePanel();
+        MultiInstancePanelPtr multiPanel = n->getMultiInstancePanel();
         if (multiPanel) {
-            boost::shared_ptr<TrackerPanelV1> trackPanel = boost::dynamic_pointer_cast<TrackerPanelV1>(multiPanel);
+            TrackerPanelV1Ptr trackPanel = boost::dynamic_pointer_cast<TrackerPanelV1>(multiPanel);
             assert(trackPanel);
             tracker = new TrackerGui(trackPanel, this);
         }
@@ -512,7 +512,7 @@ ViewerTab::createNodeViewerInterface(const NodeGuiPtr& n)
         return;
     }
 
-    boost::shared_ptr<NodeViewerContext> nodeContext = NodeViewerContext::create(n, this);
+    NodeViewerContextPtr nodeContext = NodeViewerContext::create(n, this);
     nodeContext->createGui();
     _imp->nodesContext.insert( std::make_pair(n, nodeContext) );
 
@@ -566,7 +566,7 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
 
     ///remove any existing roto gui
     if (activeNodeForPlugin) {
-        removeNodeViewerInterface(activeNodeForPlugin, false /*permanantly*/, /*setAnother*/ false);
+        removeNodeViewerInterface(activeNodeForPlugin, false /*permanently*/, /*setAnother*/ false);
     }
 
     // Add the widgets
@@ -587,19 +587,45 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
     if ( _imp->currentNodeContext.empty() ) {
         // insert before the viewer
         index = _imp->mainLayout->indexOf(_imp->viewerContainer);
+#       ifdef DEBUG_VIEWERCONTAINER
+        qDebug() << "viewer container" << _imp->viewerContainer << "index" << index;
+#       endif
     } else {
         // Remove the oldest opened interface if we reached the maximum
         int maxNodeContextOpened = appPTR->getCurrentSettings()->getMaxOpenedNodesViewerContext();
-        if ( (int)_imp->currentNodeContext.size() == maxNodeContextOpened ) {
-            const ViewerTabPrivate::PluginViewerContext& oldestNodeViewerInterface = _imp->currentNodeContext.front();
-            removeNodeViewerInterface(oldestNodeViewerInterface.currentNode.lock(), false /*permanantly*/, false /*setAnother*/);
+#       ifdef DEBUG_VIEWERCONTAINER
+        qDebug() << "currentNodeContext(" << (int)_imp->currentNodeContext.size() << "):";
+        for (std::list<ViewerTabPrivate::PluginViewerContext>::const_iterator it = _imp->currentNodeContext.begin();
+             it != _imp->currentNodeContext.end();
+             ++it) {
+            qDebug() << QString::fromUtf8(it->pluginID.c_str()) << (QObject*)it->currentNode.lock().get() << it->currentContext.get() << it->currentContext->getContainerWidget();
         }
-
-        QWidget* container = _imp->currentNodeContext.back().currentContext->getContainerWidget();
-        index = _imp->mainLayout->indexOf(container);
-        assert(index != -1);
-        if (index >= 0) {
-            ++index;
+#       endif
+        while ( (int)_imp->currentNodeContext.size() >= maxNodeContextOpened ) {
+            const ViewerTabPrivate::PluginViewerContext& oldestNodeViewerInterface = _imp->currentNodeContext.front();
+            removeNodeViewerInterface(oldestNodeViewerInterface.currentNode.lock(), false /*permanently*/, false /*setAnother*/);
+#           ifdef DEBUG_VIEWERCONTAINER
+            qDebug() << "after removal, currentNodeContext(" << (int)_imp->currentNodeContext.size() << "):";
+            for (std::list<ViewerTabPrivate::PluginViewerContext>::const_iterator it = _imp->currentNodeContext.begin();
+                 it != _imp->currentNodeContext.end();
+                 ++it) {
+                qDebug() << QString::fromUtf8(it->pluginID.c_str()) << (QObject*)it->currentNode.lock().get() << it->currentContext.get() << it->currentContext->getContainerWidget();
+            }
+#           endif
+        }
+        if ( _imp->currentNodeContext.empty() ) {
+            // insert before the viewer
+            index = _imp->mainLayout->indexOf(_imp->viewerContainer);
+        } else {
+            QWidget* container = _imp->currentNodeContext.back().currentContext->getContainerWidget();
+            index = _imp->mainLayout->indexOf(container);
+#           ifdef DEBUG_VIEWERCONTAINER
+            qDebug() << "container" << container << "index" << index;
+#           endif
+            assert(index != -1);
+            if (index >= 0) {
+                ++index;
+            }
         }
     }
     assert(index >= 0);
@@ -1120,11 +1146,11 @@ ViewerTab::refreshFPSBoxFromClipPreferences()
     int activeInputs[2];
 
     _imp->viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
-    EffectInstPtr input0 = activeInputs[0] != -1 ? _imp->viewerNode->getInput(activeInputs[0]) : EffectInstPtr();
+    EffectInstancePtr input0 = activeInputs[0] != -1 ? _imp->viewerNode->getInput(activeInputs[0]) : EffectInstancePtr();
     if (input0) {
         _imp->fpsBox->setValue( input0->getFrameRate() );
     } else {
-        EffectInstPtr input1 = activeInputs[1] != -1 ? _imp->viewerNode->getInput(activeInputs[1]) : EffectInstPtr();
+        EffectInstancePtr input1 = activeInputs[1] != -1 ? _imp->viewerNode->getInput(activeInputs[1]) : EffectInstancePtr();
         if (input1) {
             _imp->fpsBox->setValue( input1->getFrameRate() );
         } else {
@@ -1184,7 +1210,7 @@ ViewerTab::onClipPreferencesChanged()
     int activeInputs[2];
     _imp->viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
     for (int i = 0; i < 2; ++i) {
-        EffectInstPtr input;
+        EffectInstancePtr input;
         if (activeInputs[i] != -1) {
             input = _imp->viewerNode->getInput(activeInputs[i]);
         }

@@ -44,6 +44,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QRectF>
 #include <QtCore/QMutex>
+#include <QtCore/QSize>
 #include <QGraphicsItem>
 #include <QDialog>
 #include <QtCore/QMutex>
@@ -253,7 +254,7 @@ public:
 
     void markInputNull(Edge* e);
 
-    const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > & getKnobs() const;
+    const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > & getKnobs() const;
     static const int DEFAULT_OFFSET_BETWEEN_NODES = 30;
 
 
@@ -271,7 +272,7 @@ public:
 
     void removeSettingsPanel();
 
-    boost::shared_ptr<QUndoStack> getUndoStack() const;
+    QUndoStackPtr getUndoStack() const;
 
     void removeUndoStack();
 
@@ -307,7 +308,7 @@ public:
 
     void refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs, SequenceTime time);
 
-    boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const;
+    MultiInstancePanelPtr getMultiInstancePanel() const;
 
     void setParentMultiInstance(const NodeGuiPtr & parent);
 
@@ -325,9 +326,9 @@ public:
      * @brief Serialize this node. If this is a multi-instance node, every instance will
      * be serialized, hence the list.
      **/
-    void serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) const;
+    void serializeInternal(std::list<NodeSerializationPtr>& internalSerialization) const;
     void restoreInternal(const NodeGuiPtr& thisShared,
-                         const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization);
+                         const std::list<NodeSerializationPtr>& internalSerialization);
 
     void setMergeHintActive(bool active);
 
@@ -350,8 +351,8 @@ public:
     }
 
     virtual bool getOverlayColor(double* r, double* g, double* b) const OVERRIDE FINAL;
-    virtual void addDefaultInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs) OVERRIDE FINAL;
-    boost::shared_ptr<HostOverlay> getHostOverlay() const WARN_UNUSED_RETURN;
+    virtual void addDefaultInteract(const HostOverlayKnobsPtr& knobs) OVERRIDE FINAL;
+    HostOverlayPtr getHostOverlay() const WARN_UNUSED_RETURN;
     virtual void drawHostOverlay(double time,
                                  const RenderScale& renderScale,
                                  ViewIdx view)  OVERRIDE FINAL;
@@ -438,7 +439,7 @@ public Q_SLOTS:
 
     void onRightClickMenuKnobPopulated();
 
-    void setColorFromGrouping();
+    bool getColorFromGrouping(QColor* color);
 
     void onHideInputsKnobValueChanged(bool hidden);
 
@@ -517,7 +518,7 @@ public Q_SLOTS:
 
     void onStreamWarningsChanged();
 
-    void onNodeExtraLabelChanged(const QString & label);
+    void refreshNodeText(const QString & label);
 
     void onSwitchInputActionTriggered();
 
@@ -591,13 +592,13 @@ private:
     bool _panelOpenedBeforeDeactivate;
     NodeGraphPixmapItem* _pluginIcon;
     QGraphicsRectItem* _pluginIconFrame;
-    QGraphicsPixmapItem* _mergeIcon;
+    QGraphicsPixmapItem* _presetIcon;
     NodeGraphTextItem *_nameItem;
     QGraphicsRectItem *_nameFrame;
     QGraphicsPolygonItem* _resizeHandle;
 
     /*A pointer to the rectangle of the node.*/
-    QGraphicsRectItem* _boundingBox;
+    NodeGraphRectItem* _boundingBox;
 
     /*A pointer to the channels pixmap displayed*/
     QGraphicsPixmapItem* _channelsPixmap;
@@ -608,9 +609,9 @@ private:
     std::vector<unsigned int> _previewData;
     int _previewW, _previewH;
     QGraphicsSimpleTextItem* _persistentMessage;
-    QGraphicsRectItem* _stateIndicator;
+    NodeGraphRectItem* _stateIndicator;
     bool _mergeHintActive;
-    boost::shared_ptr<NodeGuiIndicator> _streamIssuesWarning;
+    NodeGuiIndicatorPtr _streamIssuesWarning;
     QGraphicsLineItem* _disabledTopLeftBtmRight;
     QGraphicsLineItem* _disabledBtmLeftTopRight;
     /*the graphical input arrows*/
@@ -633,13 +634,13 @@ private:
 
     ///This is the garphical red line displayed when the node is a clone
     LinkArrow* _slaveMasterLink;
-    boost::weak_ptr<NodeGui> _masterNodeGui;
+    NodeGuiWPtr _masterNodeGui;
 
     ///For each knob that has a link to another parameter, display an arrow
     struct LinkedKnob
     {
-        KnobWPtr master;
-        KnobWPtr slave;
+        KnobIWPtr master;
+        KnobIWPtr slave;
 
         // Is this link valid (counter for all dimensions)
         int linkInValid;
@@ -664,7 +665,7 @@ private:
 
     typedef std::map<NodeWPtr, LinkedDim> KnobGuiLinks;
     KnobGuiLinks _knobsLinks;
-    boost::shared_ptr<NodeGuiIndicator> _expressionIndicator;
+    NodeGuiIndicatorPtr _expressionIndicator;
     QPoint _magnecEnabled; //<enabled in X or/and Y
     QPointF _magnecDistance; //for x and for  y
     QPoint _updateDistanceSinceLastMagnec; //for x and for y
@@ -672,19 +673,19 @@ private:
     QPointF _magnecStartingPos; //for x and for y
     QString _nodeLabel;
     QString _channelsExtraLabel;
-    boost::weak_ptr<NodeGui> _parentMultiInstance;
+    NodeGuiWPtr _parentMultiInstance;
 
     ///For the serialization thread
     mutable QMutex _mtSafeSizeMutex;
     int _mtSafeWidth, _mtSafeHeight;
-    boost::shared_ptr<HostOverlay> _hostOverlay;
-    boost::shared_ptr<QUndoStack> _undoStack; /*!< undo/redo stack*/
+    HostOverlayPtr _hostOverlay;
+    QUndoStackPtr _undoStack; /*!< undo/redo stack*/
     bool _overlayLocked;
-    boost::shared_ptr<NodeGuiIndicator> _availableViewsIndicator;
-    boost::shared_ptr<NodeGuiIndicator> _passThroughIndicator;
+    NodeGuiIndicatorPtr _availableViewsIndicator;
+    NodeGuiIndicatorPtr _passThroughIndicator;
     NodeWPtr _identityInput;
     bool identityStateSet;
-    boost::shared_ptr<NATRON_PYTHON_NAMESPACE::PyModalDialog> _activeNodeCustomModalDialog;
+    NATRON_PYTHON_NAMESPACE::PyModalDialogPtr _activeNodeCustomModalDialog;
 };
 
 NATRON_NAMESPACE_EXIT

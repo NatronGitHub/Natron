@@ -54,7 +54,7 @@ AppTLS::~AppTLS()
 }
 
 void
-AppTLS::registerTLSHolder(const boost::shared_ptr<const TLSHolderBase>& holder)
+AppTLS::registerTLSHolder(const TLSHolderBaseConstPtr& holder)
 {
     //This must be the first time for this thread that we reach here since cleanupTLSForThread() was made, otherwise
     //the TLS data should always be available on the TLSHolder
@@ -75,7 +75,7 @@ copyAbortInfo(QThread* fromThread,
     if (fromAbortable && toAbortable) {
         bool isRenderResponseToUserInteraction;
         AbortableRenderInfoPtr abortInfo;
-        EffectInstPtr treeRoot;
+        EffectInstancePtr treeRoot;
         fromAbortable->getAbortInfo(&isRenderResponseToUserInteraction, &abortInfo, &treeRoot);
         toAbortable->setAbortInfo(isRenderResponseToUserInteraction, abortInfo, treeRoot);
     }
@@ -95,7 +95,7 @@ AppTLS::copyTLS(QThread* fromThread,
     const TLSObjects& objectsCRef = _object->objects; // take a const ref, since it's a read lock
     for (TLSObjects::const_iterator it = objectsCRef.begin();
          it != objectsCRef.end(); ++it) {
-        boost::shared_ptr<const TLSHolderBase> p = (*it).lock();
+        TLSHolderBaseConstPtr p = (*it).lock();
         if (p) {
             p->copyTLS(fromThread, toThread);
         }
@@ -138,14 +138,14 @@ AppTLS::cleanupTLSForThread()
             return;
         }
     }
-    std::list<boost::shared_ptr<const TLSHolderBase> > objectsToClean;
+    std::list<TLSHolderBaseConstPtr> objectsToClean;
     {
         QReadLocker k (&_objectMutex);
         const TLSObjects& objectsCRef = _object->objects;
         for (TLSObjects::iterator it = objectsCRef.begin();
              it != objectsCRef.end();
              ++it) {
-            boost::shared_ptr<const TLSHolderBase> p = (*it).lock();
+            TLSHolderBaseConstPtr p = (*it).lock();
             if (p) {
                 if ( p->canCleanupPerThreadData(curThread) ) {
                     objectsToClean.push_back(p);
@@ -158,7 +158,7 @@ AppTLS::cleanupTLSForThread()
         // version from 1a0712b
         // should be OK, since the bug in 1a0712b was in canCleanupPerThreadData
         QWriteLocker k (&_objectMutex);
-        for (std::list<boost::shared_ptr<const TLSHolderBase> >::iterator it = objectsToClean.begin();
+        for (std::list<TLSHolderBaseConstPtr>::iterator it = objectsToClean.begin();
              it != objectsToClean.end();
              ++it) {
             if ( (*it)->cleanupPerThreadData(curThread) ) {
@@ -174,7 +174,7 @@ AppTLS::cleanupTLSForThread()
         QWriteLocker k (&_objectMutex);
         for (TLSObjects::iterator it = _object->objects.begin();
              it != _object->objects.end(); ++it) {
-            boost::shared_ptr<const TLSHolderBase> p = (*it).lock();
+            TLSHolderBaseConstPtr p = (*it).lock();
             if (p) {
                 if ( !p->cleanupPerThreadData(curThread) ) {
                     //The TLSHolder still has TLS on it for another thread and is still alive,

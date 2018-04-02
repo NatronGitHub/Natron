@@ -86,7 +86,7 @@ PropertiesBinWrapper::getUndoStack() const
     RightClickableWidget* panel = RightClickableWidget::isParentSettingsPanelRecursive(w);
 
     if (panel) {
-        boost::shared_ptr<QUndoStack> stack = panel->getPanel()->getUndoStack();
+        QUndoStackPtr stack = panel->getPanel()->getUndoStack();
 
         return stack.get();
     }

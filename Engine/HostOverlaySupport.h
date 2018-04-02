@@ -47,21 +47,21 @@ public:
     virtual ~HostOverlayKnobs();
 
 
-    KnobPtr getFirstKnob() const;
+    KnobIPtr getFirstKnob() const;
 
     /**
      * @brief Add an overlay interact slave knob. The role name is the key that will be used to determine
      * if the knob is present when calling checkHostOverlayValid(). If empty, the roleName is the name of the knob
      * otherwise it is expected to match the name filled in the descriveOverlayKnobs function
      **/
-    void addKnob(const KnobPtr& knob, int enumID);
+    void addKnob(const KnobIPtr& knob, int enumID);
 
-    KnobPtr getKnob(int enumID) const;
+    KnobIPtr getKnob(int enumID) const;
 
     template <typename T>
     boost::shared_ptr<T> getKnob(int enumID) const
     {
-        KnobPtr knob = getKnob(enumID);
+        KnobIPtr knob = getKnob(enumID);
 
         if (!knob) {
             return boost::shared_ptr<T>();

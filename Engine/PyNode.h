@@ -51,7 +51,7 @@ class ImageLayer
     QString _layerName;
     QString _componentsPrettyName;
     QStringList _componentsName;
-    boost::shared_ptr<ImagePlaneDesc> _comps;
+    ImagePlaneDescPtr _comps;
 
 public:
 
@@ -369,7 +369,7 @@ public:
 
     RectD getRegionOfDefinition(double time, int /* Python API: do not use ViewIdx */ view) const;
 
-    static Param* createParamWrapperForKnob(const KnobPtr& knob);
+    static Param* createParamWrapperForKnob(const KnobIPtr& knob);
 
     void setSubGraphEditable(bool editable);
 

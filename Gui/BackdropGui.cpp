@@ -79,7 +79,7 @@ BackdropGui::~BackdropGui()
 std::string
 BackdropGuiPrivate::getLabelValue() const
 {
-    KnobPtr k = _publicInterface->getNode()->getKnobByName("Label");
+    KnobIPtr k = _publicInterface->getNode()->getKnobByName("Label");
 
     assert(k);
     KnobString* isStr = dynamic_cast<KnobString*>( k.get() );
@@ -105,7 +105,7 @@ BackdropGui::createGui()
     _imp->label->setDefaultTextColor( QColor(0, 0, 0, 255) );
     _imp->label->setZValue(getBaseDepth() + 1);
 
-    EffectInstPtr effect = getNode()->getEffectInstance();
+    EffectInstancePtr effect = getNode()->getEffectInstance();
     assert(effect);
     Backdrop* isBd = dynamic_cast<Backdrop*>( effect.get() );
     assert(isBd);

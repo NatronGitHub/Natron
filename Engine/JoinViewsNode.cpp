@@ -50,7 +50,7 @@ JoinViewsNode::JoinViewsNode(NodePtr node)
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
     if (node) {
-        boost::shared_ptr<Project> project = node->getApp()->getProject();
+        ProjectPtr project = node->getApp()->getProject();
         QObject::connect( project.get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()) );
     }
 }
@@ -60,7 +60,7 @@ JoinViewsNode::~JoinViewsNode()
 }
 
 int
-JoinViewsNode::getMaxInputCount() const
+JoinViewsNode::getNInputs() const
 {
     QMutexLocker k(&_imp->inputsMutex);
 
@@ -119,7 +119,7 @@ JoinViewsNode::isIdentity(double time,
                           int* inputNb)
 {
     *inputTime = time;
-    *inputNb = getMaxInputCount() - 1 - view.value();
+    *inputNb = getNInputs() - 1 - view.value();
     *inputView = view;
 
     return true;

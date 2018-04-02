@@ -55,8 +55,8 @@ class ToolButton
 public:
 
 
-    ToolButton( const GuiAppInstPtr& app,
-                const boost::shared_ptr<PluginGroupNode>& pluginToolButton,
+    ToolButton( const GuiAppInstancePtr& app,
+                const PluginGroupNodePtr& pluginToolButton,
                 const QString & pluginID,
                 int major,
                 int minor,
@@ -91,7 +91,7 @@ public:
 
     void setAction(QAction* action);
 
-    boost::shared_ptr<PluginGroupNode> getPluginToolButton() const;
+    PluginGroupNodePtr getPluginToolButton() const;
 
 public Q_SLOTS:
 

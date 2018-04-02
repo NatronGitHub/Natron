@@ -132,6 +132,10 @@ protected:
     void requestRedraw();
 
     void getPixelScale(double& scaleX, double& scaleY) const;
+
+#ifdef OFX_EXTENSIONS_NATRON
+    double getScreenPixelRatio() const;
+#endif
 };
 
 
@@ -151,7 +155,7 @@ public:
         return false;
     }
 
-    bool addInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs);
+    bool addInteract(const HostOverlayKnobsPtr& knobs);
 
 
     void draw(double time,

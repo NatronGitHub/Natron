@@ -349,8 +349,9 @@ enum libmv_MarkerChannelEnum
     LIBMV_MARKER_CHANNEL_B = (1 << 2),
 };
 
-struct TrackMarkerAndOptions
+class TrackMarkerAndOptions
 {
+public:
     TrackMarkerPtr natronMarker;
     mv::Marker mvMarker;
     mv::TrackRegionOptions mvOptions;
@@ -367,74 +368,74 @@ public:
 
 
     TrackerContext * _publicInterface;
-    boost::weak_ptr<Node> node;
-    std::list<boost::weak_ptr<KnobI> > perTrackKnobs;
+    NodeWPtr node;
+    std::list<KnobIWPtr> perTrackKnobs;
 
 #ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
-    boost::weak_ptr<KnobBool> usePatternMatching;
-    boost::weak_ptr<KnobChoice> patternMatchingScore;
+    KnobBoolWPtr usePatternMatching;
+    KnobChoiceWPtr patternMatchingScore;
 #endif
 
-    boost::weak_ptr<KnobPage> trackingPageKnob;
-    boost::weak_ptr<KnobBool> enableTrackRed, enableTrackGreen, enableTrackBlue;
-    boost::weak_ptr<KnobDouble> maxError;
-    boost::weak_ptr<KnobInt> maxIterations;
-    boost::weak_ptr<KnobInt> defaultSearchWinSize, defaultPatternWinSize;
-    boost::weak_ptr<KnobChoice> defaultMotionModel;
-    boost::weak_ptr<KnobBool> bruteForcePreTrack, useNormalizedIntensities;
-    boost::weak_ptr<KnobDouble> preBlurSigma;
-    boost::weak_ptr<KnobSeparator> perTrackParamsSeparator;
-    boost::weak_ptr<KnobBool> activateTrack;
-    boost::weak_ptr<KnobBool> autoKeyEnabled;
-    boost::weak_ptr<KnobChoice> motionModel;
-    boost::weak_ptr<KnobSeparator> exportDataSep;
-    boost::weak_ptr<KnobBool> exportLink;
-    boost::weak_ptr<KnobButton> exportButton;
+    KnobPageWPtr trackingPageKnob;
+    KnobBoolWPtr enableTrackRed, enableTrackGreen, enableTrackBlue;
+    KnobDoubleWPtr maxError;
+    KnobIntWPtr maxIterations;
+    KnobIntWPtr defaultSearchWinSize, defaultPatternWinSize;
+    KnobChoiceWPtr defaultMotionModel;
+    KnobBoolWPtr bruteForcePreTrack, useNormalizedIntensities;
+    KnobDoubleWPtr preBlurSigma;
+    KnobSeparatorWPtr perTrackParamsSeparator;
+    KnobBoolWPtr activateTrack;
+    KnobBoolWPtr autoKeyEnabled;
+    KnobChoiceWPtr motionModel;
+    KnobSeparatorWPtr exportDataSep;
+    KnobBoolWPtr exportLink;
+    KnobButtonWPtr exportButton;
     NodeWPtr transformNode, cornerPinNode;
-    boost::weak_ptr<KnobPage> transformPageKnob;
-    boost::weak_ptr<KnobSeparator> transformGenerationSeparator;
-    boost::weak_ptr<KnobChoice> transformType, motionType;
-    boost::weak_ptr<KnobBool> robustModel;
-    boost::weak_ptr<KnobDouble> fittingError;
-    boost::weak_ptr<KnobDouble> fittingErrorWarnIfAbove;
-    boost::weak_ptr<KnobString> fittingErrorWarning;
-    boost::weak_ptr<KnobInt> referenceFrame;
-    boost::weak_ptr<KnobButton> setCurrentFrameButton;
-    boost::weak_ptr<KnobInt> jitterPeriod;
-    boost::weak_ptr<KnobInt> smoothTransform;
-    boost::weak_ptr<KnobInt> smoothCornerPin;
-    boost::weak_ptr<KnobBool> autoGenerateTransform;
-    boost::weak_ptr<KnobButton> generateTransformButton;
-    boost::weak_ptr<KnobString> transformOutOfDateLabel;
-    boost::weak_ptr<KnobSeparator> transformControlsSeparator;
-    boost::weak_ptr<KnobBool> disableTransform;
-    boost::weak_ptr<KnobDouble> translate;
-    boost::weak_ptr<KnobDouble> rotate;
-    boost::weak_ptr<KnobDouble> scale;
-    boost::weak_ptr<KnobBool> scaleUniform;
-    boost::weak_ptr<KnobDouble> skewX;
-    boost::weak_ptr<KnobDouble> skewY;
-    boost::weak_ptr<KnobChoice> skewOrder;
-    boost::weak_ptr<KnobDouble> center;
-    boost::weak_ptr<KnobBool> invertTransform;
-    boost::weak_ptr<KnobChoice> filter;
-    boost::weak_ptr<KnobBool> clamp;
-    boost::weak_ptr<KnobBool> blackOutside;
-    boost::weak_ptr<KnobDouble> motionBlur;
-    boost::weak_ptr<KnobDouble> shutter;
-    boost::weak_ptr<KnobChoice> shutterOffset;
-    boost::weak_ptr<KnobDouble> customShutterOffset;
-    boost::weak_ptr<KnobGroup> fromGroup, toGroup;
-    boost::weak_ptr<KnobDouble> fromPoints[4], toPoints[4];
-    boost::weak_ptr<KnobButton> setFromPointsToInputRod;
-    boost::weak_ptr<KnobBool> cornerPinFromPointsSetOnceAutomatically;
-    boost::weak_ptr<KnobBool> enableToPoint[4];
-    boost::weak_ptr<KnobBool> enableTransform;
-    boost::weak_ptr<KnobDouble> cornerPinMatrix;
-    boost::weak_ptr<KnobChoice> cornerPinOverlayPoints;
+    KnobPageWPtr transformPageKnob;
+    KnobSeparatorWPtr transformGenerationSeparator;
+    KnobChoiceWPtr transformType, motionType;
+    KnobBoolWPtr robustModel;
+    KnobDoubleWPtr fittingError;
+    KnobDoubleWPtr fittingErrorWarnIfAbove;
+    KnobStringWPtr fittingErrorWarning;
+    KnobIntWPtr referenceFrame;
+    KnobButtonWPtr setCurrentFrameButton;
+    KnobIntWPtr jitterPeriod;
+    KnobIntWPtr smoothTransform;
+    KnobIntWPtr smoothCornerPin;
+    KnobBoolWPtr autoGenerateTransform;
+    KnobButtonWPtr generateTransformButton;
+    KnobStringWPtr transformOutOfDateLabel;
+    KnobSeparatorWPtr transformControlsSeparator;
+    KnobBoolWPtr disableTransform;
+    KnobDoubleWPtr translate;
+    KnobDoubleWPtr rotate;
+    KnobDoubleWPtr scale;
+    KnobBoolWPtr scaleUniform;
+    KnobDoubleWPtr skewX;
+    KnobDoubleWPtr skewY;
+    KnobChoiceWPtr skewOrder;
+    KnobDoubleWPtr center;
+    KnobBoolWPtr invertTransform;
+    KnobChoiceWPtr filter;
+    KnobBoolWPtr clamp;
+    KnobBoolWPtr blackOutside;
+    KnobDoubleWPtr motionBlur;
+    KnobDoubleWPtr shutter;
+    KnobChoiceWPtr shutterOffset;
+    KnobDoubleWPtr customShutterOffset;
+    KnobGroupWPtr fromGroup, toGroup;
+    KnobDoubleWPtr fromPoints[4], toPoints[4];
+    KnobButtonWPtr setFromPointsToInputRod;
+    KnobBoolWPtr cornerPinFromPointsSetOnceAutomatically;
+    KnobBoolWPtr enableToPoint[4];
+    KnobBoolWPtr enableTransform;
+    KnobDoubleWPtr cornerPinMatrix;
+    KnobChoiceWPtr cornerPinOverlayPoints;
     mutable QMutex trackerContextMutex;
-    std::vector<TrackMarkerPtr > markers;
-    std::list<TrackMarkerPtr > selectedMarkers, markersToSlave, markersToUnslave;
+    std::vector<TrackMarkerPtr> markers;
+    std::list<TrackMarkerPtr> selectedMarkers, markersToSlave, markersToUnslave;
     int beginSelectionCounter;
     int selectionRecursion;
     TrackScheduler scheduler;
@@ -498,7 +499,7 @@ public:
 
 
     TrackerContextPrivate(TrackerContext* publicInterface,
-                          const boost::shared_ptr<Node> &node);
+                          const NodePtr &node);
 
     virtual ~TrackerContextPrivate()
     {
@@ -522,7 +523,7 @@ public:
 
     void removeFromSelectionList(const TrackMarkerPtr& marker)
     {
-        std::list<TrackMarkerPtr >::iterator found = std::find(selectedMarkers.begin(), selectedMarkers.end(), marker);
+        std::list<TrackMarkerPtr>::iterator found = std::find(selectedMarkers.begin(), selectedMarkers.end(), marker);
 
         if ( found == selectedMarkers.end() ) {
             return;
@@ -543,7 +544,7 @@ public:
         }
     }
 
-    void linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr >& markers,
+    void linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr>& markers,
                                    bool multipleTrackSelected,
                                    bool slave);
 

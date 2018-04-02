@@ -114,15 +114,15 @@ class GuiApp
     Q_DECLARE_TR_FUNCTIONS(GuiApp)
 
 private:
-    boost::weak_ptr<GuiAppInstance> _app;
+    GuiAppInstanceWPtr _app;
 
 public:
 
-    GuiApp(const GuiAppInstPtr& app);
+    GuiApp(const GuiAppInstancePtr& app);
 
     virtual ~GuiApp();
 
-    GuiAppInstPtr getInternalGuiApp() const
+    GuiAppInstancePtr getInternalGuiApp() const
     {
         return _app.lock();
     }

@@ -57,7 +57,7 @@ protected:
     virtual void SetUp();
     virtual void TearDown();
 
-    AppInstPtr getApp() const
+    AppInstancePtr getApp() const
     {
         return _app.lock();
     }
@@ -92,7 +92,7 @@ protected:
     QString _readOIIOPluginID;
     QString _writeOIIOPluginID;
     std::vector<QString> _allTestPluginIDs;
-    AppInstWPtr _app;
+    AppInstanceWPtr _app;
 };
 
 NATRON_NAMESPACE_EXIT

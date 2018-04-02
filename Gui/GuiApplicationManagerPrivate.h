@@ -60,13 +60,13 @@ struct KnobsClipBoard
 {
     KnobClipBoardType type;
     int dimension;
-    KnobPtr serialization;
+    KnobIPtr serialization;
 };
 
 struct GuiApplicationManagerPrivate
 {
     GuiApplicationManager* _publicInterface;
-    std::list<boost::shared_ptr<PluginGroupNode> > _topLevelToolButtons;
+    std::list<PluginGroupNodePtr> _topLevelToolButtons;
     boost::scoped_ptr<KnobsClipBoard> _knobsClipBoard;
     boost::scoped_ptr<KnobGuiFactory> _knobGuiFactory;
     QCursor _colorPickerCursor, _linkToCursor, _linkMultCursor;
@@ -100,7 +100,7 @@ struct GuiApplicationManagerPrivate
 
     void createLinkMultCursor();
 
-    void removePluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& n, const QStringList& grouping);
+    void removePluginToolButtonInternal(const PluginGroupNodePtr& n, const QStringList& grouping);
     void removePluginToolButton(const QStringList& grouping);
 
     void addStandardKeybind(const std::string & grouping, const std::string & id,
@@ -133,8 +133,8 @@ struct GuiApplicationManagerPrivate
                           const std::string & description,
                           const Qt::KeyboardModifiers & modifiers, Qt::MouseButton button);
 
-    boost::shared_ptr<PluginGroupNode>  findPluginToolButtonInternal(const std::list<boost::shared_ptr<PluginGroupNode> >& children,
-                                                                     const boost::shared_ptr<PluginGroupNode>& parent,
+    PluginGroupNodePtr  findPluginToolButtonInternal(const std::list<PluginGroupNodePtr>& children,
+                                                                     const PluginGroupNodePtr& parent,
                                                                      const QStringList & grouping,
                                                                      const QString & name,
                                                                      const QStringList & groupingIcon,

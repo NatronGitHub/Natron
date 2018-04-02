@@ -349,7 +349,7 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
     NodesGuiList activeNodeViewerUi, nodeViewerUi;
 
     //Don't create tracker & roto interface for file dialog preview viewer
-    boost::shared_ptr<NodeCollection> group = viewer->getNode()->getGroup();
+    NodeCollectionPtr group = viewer->getNode()->getGroup();
     if (group) {
         if ( !_imp->_viewerTabs.empty() ) {
             ( *_imp->_viewerTabs.begin() )->getNodesViewerInterface(&nodeViewerUi, &activeNodeViewerUi);
@@ -493,9 +493,9 @@ Gui::removeViewerTab(ViewerTab* tab,
     tab->abortRendering();
     NodeGraph* graph = 0;
     NodeGroup* isGrp = 0;
-    boost::shared_ptr<NodeCollection> collection;
+    NodeCollectionPtr collection;
     if ( tab->getInternalNode() && tab->getInternalNode()->getNode() ) {
-        boost::shared_ptr<NodeCollection> collection = tab->getInternalNode()->getNode()->getGroup();
+        NodeCollectionPtr collection = tab->getInternalNode()->getNode()->getGroup();
         isGrp = dynamic_cast<NodeGroup*>( collection.get() );
     }
 
@@ -551,7 +551,7 @@ Gui::removeViewerTab(ViewerTab* tab,
         assert(_imp->_nodeGraphArea);
         ///call the deleteNode which will call this function again when the node will be deactivated.
         NodePtr internalNode = tab->getInternalNode()->getNode();
-        boost::shared_ptr<NodeGuiI> guiI = internalNode->getNodeGui();
+        NodeGuiIPtr guiI = internalNode->getNodeGui();
         NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(guiI);
         assert(gui);
         NodeGraphI* graph_i = internalNode->getGroup()->getNodeGraph();
@@ -800,7 +800,7 @@ Gui::sortAllPluginsToolButtons()
 }
 
 ToolButton*
-Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
+Gui::findOrCreateToolButton(const PluginGroupNodePtr & plugin)
 {
     if ( !plugin->getIsUserCreatable() && plugin->getChildren().empty() ) {
         return 0;
@@ -854,7 +854,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
             ToolButton* othersGroup = findExistingToolButton( QString::fromUtf8(PLUGIN_GROUP_DEFAULT) );
             QStringList grouping( QString::fromUtf8(PLUGIN_GROUP_DEFAULT) );
             QStringList iconGrouping( QString::fromUtf8(PLUGIN_GROUP_DEFAULT_ICON_PATH) );
-            boost::shared_ptr<PluginGroupNode> othersToolButton =
+            PluginGroupNodePtr othersToolButton =
                 appPTR->findPluginToolButtonOrCreate(grouping,
                                                      QString::fromUtf8(PLUGIN_GROUP_DEFAULT),
                                                      iconGrouping,
@@ -876,17 +876,22 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
                                                    plugin->getLabel(), toolButtonIcon, menuIcon);
 
     if (isLeaf) {
-        QString label = plugin->getNotHighestMajorVersion() ? plugin->getLabelVersionMajorEncoded() : plugin->getLabel();
+        QString pluginLabelText = plugin->getNotHighestMajorVersion() ? plugin->getLabelVersionMajorEncoded() : plugin->getLabel();
+        // see doc of QMenubar: convert & to &&
+        pluginLabelText.replace(QString::fromUtf8("&"), QString::fromUtf8("&&"));
         assert(parentToolButton);
         QAction* action = new QAction(this);
-        action->setText(label);
+        action->setText(pluginLabelText);
         action->setIcon( pluginsToolButton->getMenuIcon() );
         QObject::connect( action, SIGNAL(triggered()), pluginsToolButton, SLOT(onTriggered()) );
         pluginsToolButton->setAction(action);
     } else {
         Menu* menu = new Menu(this);
         //menu->setFont( QFont(appFont,appFontSize) );
-        menu->setTitle( pluginsToolButton->getLabel() );
+        QString pluginsToolButtonTitle = pluginsToolButton->getLabel();
+        // see doc of QMenubar: convert & to &&
+        pluginsToolButtonTitle.replace(QString::fromUtf8("&"), QString::fromUtf8("&&"));
+        menu->setTitle(pluginsToolButtonTitle);
         menu->setIcon(menuIcon);
         pluginsToolButton->setMenu(menu);
         pluginsToolButton->setAction( menu->menuAction() );
@@ -990,11 +995,11 @@ Gui::getToolButtonMenuOpened() const
     return _imp->_toolButtonMenuOpened;
 }
 
-AppInstPtr
+AppInstancePtr
 Gui::createNewProject()
 {
     CLArgs cl;
-    AppInstPtr app = appPTR->newAppInstance(cl, false);
+    AppInstancePtr app = appPTR->newAppInstance(cl, false);
 
     app->execOnProjectCreatedCallback();
 
@@ -1019,25 +1024,25 @@ Gui::openProject()
         std::string patternCpy = selectedFile;
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastLoadProjectOpenedDir = QString::fromUtf8( path.c_str() );
-        AppInstPtr appInstance = openProjectInternal(selectedFile, true);
+        AppInstancePtr appInstance = openProjectInternal(selectedFile, true);
         Q_UNUSED(appInstance);
     }
 }
 
-AppInstPtr
+AppInstancePtr
 Gui::openProject(const std::string & filename)
 {
     return openProjectInternal(filename, true);
 }
 
-AppInstPtr
+AppInstancePtr
 Gui::openProjectInternal(const std::string & absoluteFileName,
                          bool attemptToLoadAutosave)
 {
     QFileInfo file( QString::fromUtf8( absoluteFileName.c_str() ) );
 
     if ( !file.exists() ) {
-        return AppInstPtr();
+        return AppInstancePtr();
     }
     QString fileUnPathed = file.fileName();
     QString path = file.path() + QLatin1Char('/');
@@ -1046,7 +1051,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
     int openedProject = appPTR->isProjectAlreadyOpened(absoluteFileName);
 
     if (openedProject != -1) {
-        AppInstPtr instance = appPTR->getAppInstance(openedProject);
+        AppInstancePtr instance = appPTR->getAppInstance(openedProject);
         if (instance) {
             GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( instance.get() );
             if (guiApp) {
@@ -1057,8 +1062,8 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
         }
     }
 
-    AppInstPtr ret;
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    AppInstancePtr ret;
+    ProjectPtr project = getApp()->getProject();
     ///if the current graph has no value, just load the project in the same window
     if ( project->isGraphWorthLess() ) {
         bool ok = project->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
@@ -1067,7 +1072,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
         }
     } else {
         CLArgs cl;
-        AppInstPtr newApp = appPTR->newAppInstance(cl, false);
+        AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
         bool ok  = newApp->getProject()->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
         if (ok) {
             ret = newApp;
@@ -1107,7 +1112,7 @@ updateRecentFiles(const QString & filename)
 bool
 Gui::saveProject()
 {
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    ProjectPtr project = getApp()->getProject();
 
     if ( project->hasProjectBeenSavedByUser() ) {
         QString projectFilename = project->getProjectFilename();
@@ -1176,7 +1181,7 @@ Gui::saveProjectAs()
 void
 Gui::saveAndIncrVersion()
 {
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    ProjectPtr project = getApp()->getProject();
     QString path = project->getProjectPath();
     QString name = project->getProjectFilename();
     int currentVersion = 0;
@@ -1271,7 +1276,7 @@ Gui::createReader()
         } else {
             graph = _imp->_nodeGraphArea;
         }
-        boost::shared_ptr<NodeCollection> group = graph->getGroup();
+        NodeCollectionPtr group = graph->getGroup();
         assert(group);
 
 #ifdef NATRON_ENABLE_IO_META_NODES
@@ -1345,7 +1350,7 @@ Gui::createWriter()
     } else {
         graph = _imp->_nodeGraphArea;
     }
-    boost::shared_ptr<NodeCollection> group = graph->getGroup();
+    NodeCollectionPtr group = graph->getGroup();
     assert(group);
 
     CreateNodeArgs args(PLUGINID_NATRON_WRITE, group);

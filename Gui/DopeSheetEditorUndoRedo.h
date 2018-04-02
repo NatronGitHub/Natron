@@ -50,8 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER
 
-typedef boost::shared_ptr<DopeSheetKey> DSKeyPtr;
-typedef std::list<DSKeyPtr> DSKeyPtrList;
+typedef std::list<DopeSheetKeyPtr> DopeSheetKeyPtrList;
 
 
 /**
@@ -124,8 +123,8 @@ class DSMoveKeysAndNodesCommand
     Q_DECLARE_TR_FUNCTIONS(DSMoveKeysAndNodesCommand)
 
 public:
-    DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
-                              const std::vector<boost::shared_ptr<DSNode> >& nodes,
+    DSMoveKeysAndNodesCommand(const DopeSheetKeyPtrList &keys,
+                              const std::vector<DSNodePtr>& nodes,
                               double dt,
                               DopeSheetEditor *model,
                               QUndoCommand *parent = 0);
@@ -143,8 +142,8 @@ private:
     void moveSelection(double dt);
 
 private:
-    DSKeyPtrList _keys;
-    std::vector<boost::shared_ptr<DSNode> > _nodes;
+    DopeSheetKeyPtrList _keys;
+    std::vector<DSNodePtr> _nodes;
     NodesWList _allDifferentNodes;
     double _dt;
     DopeSheetEditor *_model;
@@ -157,7 +156,7 @@ class DSTransformKeysCommand
     Q_DECLARE_TR_FUNCTIONS(DSTransformKeysCommand)
 
 public:
-    DSTransformKeysCommand(const DSKeyPtrList &keys,
+    DSTransformKeysCommand(const DopeSheetKeyPtrList &keys,
                            const Transform::Matrix3x3& transform,
                            DopeSheetEditor *model,
                            QUndoCommand *parent = 0);
@@ -172,19 +171,19 @@ private:
     /**
      * @brief Move the selected keyframes by 'dt' on the dope sheet timeline.
      */
-    void transformKey(const DSKeyPtr& key);
+    void transformKey(const DopeSheetKeyPtr& key);
 
 private:
 
 
     struct TransformKeyData
     {
-        DSKeyPtrList keys;
-        boost::shared_ptr<Curve> oldCurve;
-        boost::shared_ptr<Curve> newCurve;
+        DopeSheetKeyPtrList keys;
+        CurvePtr oldCurve;
+        CurvePtr newCurve;
     };
 
-    typedef std::map<boost::shared_ptr<DSKnob>, TransformKeyData> TransformKeys;
+    typedef std::map<DSKnobPtr, TransformKeyData> TransformKeys;
 
     bool _firstRedoCalled;
     Transform::Matrix3x3 _transform;
@@ -203,7 +202,7 @@ class DSLeftTrimReaderCommand
     Q_DECLARE_TR_FUNCTIONS(DSLeftTrimReaderCommand)
 
 public:
-    DSLeftTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
+    DSLeftTrimReaderCommand(const DSNodePtr &reader,
                             double oldTime,
                             double newTime,
                             QUndoCommand *parent = 0);
@@ -221,7 +220,7 @@ private:
     void trimLeft(double firstFrame);
 
 private:
-    boost::weak_ptr<DSNode> _readerContext;
+    DSNodeWPtr _readerContext;
     double _oldTime;
     double _newTime;
 };
@@ -237,7 +236,7 @@ class DSRightTrimReaderCommand
     Q_DECLARE_TR_FUNCTIONS(DSRightTrimReaderCommand)
 
 public:
-    DSRightTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
+    DSRightTrimReaderCommand(const DSNodePtr &reader,
                              double oldTime,
                              double newTime,
                              DopeSheetEditor * /*model*/,
@@ -256,7 +255,7 @@ private:
     void trimRight(double lastFrame);
 
 private:
-    boost::weak_ptr<DSNode> _readerContext;
+    DSNodeWPtr _readerContext;
     double _oldTime;
     double _newTime;
 };
@@ -271,7 +270,7 @@ class DSSlipReaderCommand
     Q_DECLARE_TR_FUNCTIONS(DSSlipReaderCommand)
 
 public:
-    DSSlipReaderCommand(const boost::shared_ptr<DSNode> &reader,
+    DSSlipReaderCommand(const DSNodePtr &reader,
                         double dt,
                         DopeSheetEditor *model,
                         QUndoCommand *parent = 0);
@@ -289,7 +288,7 @@ private:
     void slipReader(double dt);
 
 private:
-    boost::weak_ptr<DSNode> _readerContext;
+    DSNodeWPtr _readerContext;
     double _dt;
     DopeSheetEditor *_model;
 };
@@ -331,7 +330,7 @@ struct DSKeyInterpolationChange
 {
     DSKeyInterpolationChange(KeyframeTypeEnum oldInterpType,
                              KeyframeTypeEnum newInterpType,
-                             const DSKeyPtr & key)
+                             const DopeSheetKeyPtr & key)
         : _oldInterpType(oldInterpType),
         _newInterpType(newInterpType),
         _key(key)
@@ -339,7 +338,7 @@ struct DSKeyInterpolationChange
 
     KeyframeTypeEnum _oldInterpType;
     KeyframeTypeEnum _newInterpType;
-    DSKeyPtr _key;
+    DopeSheetKeyPtr _key;
 };
 
 
@@ -383,7 +382,7 @@ class DSPasteKeysCommand
 
 public:
     DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
-                       const std::list<boost::shared_ptr<DSKnob> >& dstKnobs,
+                       const std::list<DSKnobPtr>& dstKnobs,
                        bool pasteRelativeToRefTime,
                        DopeSheetEditor *model,
                        QUndoCommand *parent = 0);
@@ -392,7 +391,7 @@ public:
     void redo() OVERRIDE FINAL;
 
 
-    static void setKeyValueFromKnob(const KnobPtr& knob, double keyTime, KeyFrame* key);
+    static void setKeyValueFromKnob(const KnobIPtr& knob, double keyTime, KeyFrame* key);
 private:
     /**
      * @brief If 'add' is true, paste the keyframes contained in the dope
@@ -408,7 +407,7 @@ private:
     int _refKeyindex;
     bool _pasteRelativeToRefTime;
     std::vector<DopeSheetKey> _keys;
-    std::list<boost::weak_ptr<DSKnob> > _dstKnobs;
+    std::list<DSKnobWPtr> _dstKnobs;
     DopeSheetEditor *_model;
 };
 

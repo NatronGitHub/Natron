@@ -66,7 +66,7 @@ private:
 
     mutable QMutex _outputEffectDataLock;
     std::list<RenderSequenceArgs> _renderSequenceRequests;
-    boost::shared_ptr<RenderEngine> _engine;
+    RenderEnginePtr _engine;
 
 public:
 
@@ -83,7 +83,7 @@ public:
         return true;
     }
 
-    boost::shared_ptr<RenderEngine> getRenderEngine() const
+    RenderEnginePtr getRenderEngine() const
     {
         return _engine;
     }

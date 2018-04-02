@@ -52,6 +52,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QUrl>
 #include <QtCore/QRegExp>
 #include <QtCore/QLatin1Char>
+#include <QtCore/QSize>
 #include <QComboBox>
 #include <QListView>
 CLANG_DIAG_ON(deprecated)
@@ -352,7 +353,7 @@ public:
      **/
     static void appendFilesFromDirRecursively(QDir* currentDir, QStringList* files);
 
-    static std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >fileSequencesFromFilesList(const QStringList & files, const QStringList & supportedFileTypes);
+    static std::vector<SequenceParsing::SequenceFromFilesPtr>fileSequencesFromFilesList(const QStringList & files, const QStringList & supportedFileTypes);
 
 public Q_SLOTS:
 
@@ -551,7 +552,7 @@ private:
     QStringList _filters;
     SequenceDialogView* _view;
     boost::scoped_ptr<SequenceItemDelegate> _itemDelegate;
-    boost::shared_ptr<FileSystemModel> _model;
+    FileSystemModelPtr _model;
 
     ///The favorite view and the dialog view don't share the same model as they don't have
     ///the same icon provider
@@ -601,7 +602,7 @@ private:
     QWidget* _centerArea;
     QHBoxLayout* _centerAreaLayout;
     Button* _togglePreviewButton;
-    boost::shared_ptr<FileDialogPreviewProvider> _preview;
+    FileDialogPreviewProviderPtr _preview;
 
     ///Remember  autoSetProjectFormat  state before opening the dialog
     bool _wasAutosetProjectFormatEnabled;

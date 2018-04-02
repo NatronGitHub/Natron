@@ -55,7 +55,7 @@ public:
     /**
      * @brief Removes a specific knob from the gui
      **/
-    virtual void deleteKnobGui(const KnobPtr& knob) = 0;
+    virtual void deleteKnobGui(const KnobIPtr& knob) = 0;
 };
 
 NATRON_NAMESPACE_EXIT

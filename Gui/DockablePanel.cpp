@@ -28,6 +28,7 @@
 
 #include <QApplication> // qApp
 #include <QColorDialog>
+#include <QtCore/QSize>
 #include <QtCore/QTimer>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -98,7 +99,7 @@ DockablePanel::DockablePanel(Gui* gui,
                              QVBoxLayout* container,
                              HeaderModeEnum headerMode,
                              bool useScrollAreasForTabs,
-                             const boost::shared_ptr<QUndoStack>& stack,
+                             const QUndoStackPtr& stack,
                              const QString & initialName,
                              const QString & helpToolTip,
                              QWidget *parent)
@@ -134,7 +135,7 @@ DockablePanel::DockablePanel(Gui* gui,
             const std::string pluginID = isEffect->getPluginID();
             if (pluginID == PLUGINID_NATRON_READ ||
                 pluginID == PLUGINID_NATRON_WRITE) {
-                EffectInstPtr effectInstance = node->getEffectInstance();
+                EffectInstancePtr effectInstance = node->getEffectInstance();
                 if ( effectInstance && effectInstance->isReader() ) {
                     ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
@@ -295,7 +296,7 @@ DockablePanel::DockablePanel(Gui* gui,
 
 
         if (node) {
-            boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
+            NodeGuiIPtr gui_i = node->getNodeGui();
             assert(gui_i);
             double r, g, b;
             gui_i->getColor(&r, &g, &b);
@@ -698,14 +699,14 @@ DockablePanel::getHolder() const
 void
 DockablePanel::onRestoreDefaultsButtonClicked()
 {
-    std::list<boost::shared_ptr<KnobI> > knobsList;
-    boost::shared_ptr<MultiInstancePanel> multiPanel = getMultiInstancePanel();
+    std::list<KnobIPtr> knobsList;
+    MultiInstancePanelPtr multiPanel = getMultiInstancePanel();
 
     if (multiPanel) {
-        const std::list<std::pair<boost::weak_ptr<Node>, bool> > & instances = multiPanel->getInstances();
-        for (std::list<std::pair<boost::weak_ptr<Node>, bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-            const std::vector<boost::shared_ptr<KnobI> > & knobs = it->first.lock()->getKnobs();
-            for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+        const std::list<std::pair<NodeWPtr, bool> > & instances = multiPanel->getInstances();
+        for (std::list<std::pair<NodeWPtr, bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+            const std::vector<KnobIPtr> & knobs = it->first.lock()->getKnobs();
+            for (std::vector<KnobIPtr>::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
                 KnobButton* isBtn = dynamic_cast<KnobButton*>( it2->get() );
                 KnobPage* isPage = dynamic_cast<KnobPage*>( it2->get() );
                 KnobGroup* isGroup = dynamic_cast<KnobGroup*>( it2->get() );
@@ -718,8 +719,8 @@ DockablePanel::onRestoreDefaultsButtonClicked()
         }
         multiPanel->clearSelection();
     } else {
-        const std::vector<boost::shared_ptr<KnobI> > & knobs = _imp->_holder->getKnobs();
-        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        const std::vector<KnobIPtr> & knobs = _imp->_holder->getKnobs();
+        for (std::vector<KnobIPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
             KnobButton* isBtn = dynamic_cast<KnobButton*>( it->get() );
             KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( it->get() );
@@ -811,7 +812,7 @@ DockablePanel::onKnobsInitialized()
         }
         assert(node);
         if (node) {
-            boost::shared_ptr<NodeCollection> collec = node->getGroup();
+            NodeCollectionPtr collec = node->getGroup();
             NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collec.get() );
             if (isGroup) {
                 if ( !isGroup->getNode()->hasPyPlugBeenEdited() ) {
@@ -867,7 +868,7 @@ DockablePanel::refreshUndoRedoButtonsEnabledNess(bool canUndo,
 void
 DockablePanel::onUndoClicked()
 {
-    boost::shared_ptr<QUndoStack> stack = getUndoStack();
+    QUndoStackPtr stack = getUndoStack();
 
     stack->undo();
     if (_imp->_undoButton && _imp->_redoButton) {
@@ -880,7 +881,7 @@ DockablePanel::onUndoClicked()
 void
 DockablePanel::onRedoPressed()
 {
-    boost::shared_ptr<QUndoStack> stack = getUndoStack();
+    QUndoStackPtr stack = getUndoStack();
 
     stack->redo();
     if (_imp->_undoButton && _imp->_redoButton) {
@@ -1025,9 +1026,9 @@ DockablePanel::setClosedInternal(bool c)
         if (gui) {
             if (internalNode && !c) {
                 // when a panel is open, refresh its knob values
-                GuiAppInstPtr app = gui->getApp();
+                GuiAppInstancePtr app = gui->getApp();
                 if (app) {
-                    boost::shared_ptr<TimeLine> timeline = app->getTimeLine();
+                    TimeLinePtr timeline = app->getTimeLine();
                     if (timeline) {
                         internalNode->getEffectInstance()->refreshAfterTimeChange( false, timeline->currentFrame() );
                     }
@@ -1035,7 +1036,7 @@ DockablePanel::setClosedInternal(bool c)
             }
         }
 
-        boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
+        MultiInstancePanelPtr panel = getMultiInstancePanel();
 
         if (gui) {
             if (!c) {
@@ -1045,7 +1046,7 @@ DockablePanel::setClosedInternal(bool c)
                 NodesList children;
                 internalNode->getChildrenMultiInstance(&children);
                 for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-                    boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
+                    NodeGuiIPtr gui_i = (*it)->getNodeGui();
                     assert(gui_i);
                     NodeGuiPtr childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
                     assert(childGui);
@@ -1059,7 +1060,7 @@ DockablePanel::setClosedInternal(bool c)
                 NodesList children;
                 internalNode->getChildrenMultiInstance(&children);
                 for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-                    boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
+                    NodeGuiIPtr gui_i = (*it)->getNodeGui();
                     assert(gui_i);
                     NodeGuiPtr childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
                     assert(childGui);
@@ -1575,18 +1576,18 @@ DockablePanel::setKeyOnAllParameters()
     const KnobsGuiMapping& knobsMap = getKnobsMapping();
 
     for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
-        KnobPtr knob = it->first.lock();
+        KnobIPtr knob = it->first.lock();
         if ( knob->isAnimationEnabled() ) {
             for (int i = 0; i < knob->getDimension(); ++i) {
-                std::list<boost::shared_ptr<CurveGui> > curves = gui->getCurveEditor()->findCurve(it->second, i);
-                for (std::list<boost::shared_ptr<CurveGui> >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
+                std::list<CurveGuiPtr> curves = gui->getCurveEditor()->findCurve(it->second, i);
+                for (std::list<CurveGuiPtr>::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
                     AddKeysCommand::KeyToAdd k;
                     KeyFrame kf;
                     kf.setTime(time);
-                    Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-                    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
+                    KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( knob.get() );
+                    KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( knob.get() );
                     AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>( knob.get() );
-                    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
+                    KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( knob.get() );
 
                     if (isInt) {
                         kf.setValue( isInt->getValueAtTime(time, i) );
@@ -1625,16 +1626,16 @@ DockablePanel::removeAnimationOnAllParameters()
     if (!gui) {
         return;
     }
-    std::map< boost::shared_ptr<CurveGui>, std::vector<KeyFrame > > keysToRemove;
+    std::map<CurveGuiPtr, std::vector<KeyFrame> > keysToRemove;
     const KnobsGuiMapping& knobsMap = getKnobsMapping();
 
     for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
-        KnobPtr knob = it->first.lock();
+        KnobIPtr knob = it->first.lock();
         if ( knob->isAnimationEnabled() ) {
             for (int i = 0; i < knob->getDimension(); ++i) {
-                std::list<boost::shared_ptr<CurveGui> > curves = gui->getCurveEditor()->findCurve(it->second, i);
+                std::list<CurveGuiPtr> curves = gui->getCurveEditor()->findCurve(it->second, i);
 
-                for (std::list<boost::shared_ptr<CurveGui> >::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
+                for (std::list<CurveGuiPtr>::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
                     KeyFrameSet keys = (*it2)->getInternalCurve()->getKeyFrames_mt_safe();
                     std::vector<KeyFrame > vect;
                     for (KeyFrameSet::const_iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {
@@ -1674,7 +1675,7 @@ DockablePanel::onEnterInGroupClicked()
     if (!node) {
         throw std::logic_error("");
     }
-    EffectInstPtr effect = node->getNode()->getEffectInstance();
+    EffectInstancePtr effect = node->getNode()->getEffectInstance();
     assert(effect);
     if (!effect) {
         throw std::logic_error("");
@@ -1722,16 +1723,46 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
     if (checked) {
         _imp->_knobsVisibilityBeforeHideModif.clear();
         const KnobsGuiMapping& knobsMap = getKnobsMapping();
+        KnobsGuiMapping groups;
+        std::set<KnobGuiPtr> toHideGui;
+        std::set<KnobIPtr> toHide;
+        //printf("hiding...\n");
         for (KnobsGuiMapping::const_iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
-            KnobPtr knob = it->first.lock();
+            KnobIPtr knob = it->first.lock();
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knob.get() );
             KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
-            if (!isGroup && !isParametric) {
-                _imp->_knobsVisibilityBeforeHideModif.insert( std::make_pair( it->second, it->second->isSecretRecursive() ) );
-                if ( !knob->hasModifications() ) {
-                    it->second->hide();
+            if (isGroup) {
+                //printf("groups += %s\n",knob->getName().c_str());
+                groups.push_back(std::make_pair(it->first, it->second));
+            } else if (!isParametric && !knob->hasModifications() && knob->getName() != kNatronWriteParamStartRender) {
+                //printf("toHide += %s\n",knob->getName().c_str());
+                toHide.insert(knob);
+                toHideGui.insert(it->second);
+            }
+        }
+        // now check if each groups is empty, i.e. all its children are either not visible or going to be hidden
+        for (KnobsGuiMapping::const_iterator it = groups.begin(); it != groups.end(); ++it) {
+            KnobIPtr knob = it->first.lock();
+            KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knob.get() );
+            assert(isGroup);
+            std::vector<KnobIPtr> children = isGroup->getChildren();
+            bool hideMe = true;
+            //printf("should we hide group %s?\n",knob->getName().c_str());
+            for (std::vector<KnobIPtr>::const_iterator it2 = children.begin(); it2 != children.end(); ++it2) {
+                KnobGroup* isGroup2 = dynamic_cast<KnobGroup*>( (*it2).get() );
+                if (!isGroup2 && toHide.find(*it2) == toHide.end() && !(*it2)->getIsSecret()) {
+                    //printf("- child %s still visible: NO\n",(*it2)->getName().c_str());
+                    hideMe = false;
+                    break;
                 }
             }
+            if (hideMe) {
+                toHideGui.insert(it->second);
+            }
+        }
+        for (std::set<KnobGuiPtr>::const_iterator it = toHideGui.begin(); it != toHideGui.end(); ++it) {
+            _imp->_knobsVisibilityBeforeHideModif.insert( std::make_pair( *it, (*it)->isSecretRecursive() ) );
+            (*it)->hide();
         }
     } else {
         for (std::map<KnobGuiWPtr, bool>::iterator it = _imp->_knobsVisibilityBeforeHideModif.begin();
@@ -1749,7 +1780,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 struct TreeItem
 {
     QTreeWidgetItem* item;
-    KnobPtr knob;
+    KnobIPtr knob;
 };
 
 struct ManageUserParamsDialogPrivate

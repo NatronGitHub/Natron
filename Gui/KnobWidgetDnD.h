@@ -30,6 +30,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
 #include <QtCore/QCoreApplication>
@@ -46,6 +47,9 @@ class KnobWidgetDnD : public boost::enable_shared_from_this<KnobWidgetDnD>
 {
     Q_DECLARE_TR_FUNCTIONS(KnobWidgetDnD)
 
+    struct MakeSharedEnabler;
+
+    // used by boost::make_shared
     KnobWidgetDnD(const KnobGuiPtr& knob,
                   int dimension,
                   QWidget* widget);
@@ -53,13 +57,9 @@ class KnobWidgetDnD : public boost::enable_shared_from_this<KnobWidgetDnD>
 public:
 
 
-    static boost::shared_ptr<KnobWidgetDnD> create(const KnobGuiPtr& knob,
+    static KnobWidgetDnDPtr create(const KnobGuiPtr& knob,
                                             int dimension,
-                                            QWidget* widget)
-    {
-        return boost::shared_ptr<KnobWidgetDnD>(new KnobWidgetDnD(knob, dimension, widget));
-    }
-
+                                                   QWidget* widget);
 
     ~KnobWidgetDnD();
 

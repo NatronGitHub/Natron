@@ -120,11 +120,11 @@ BezierCP::load(Archive & ar,
         _imp->curveRightBezierY->clone(rightCurveY);
     } else {
         ar & ::boost::serialization::make_nvp("X", _imp->x);
-        boost::shared_ptr<Curve> xCurve, yCurve, leftCurveX, leftCurveY, rightCurveX, rightCurveY;
+        CurvePtr xCurve, yCurve, leftCurveX, leftCurveY, rightCurveX, rightCurveY;
         ar & ::boost::serialization::make_nvp("X_animation", xCurve);
         _imp->curveX->clone(*xCurve);
 
-        boost::shared_ptr<Curve> curveBug;
+        CurvePtr curveBug;
         ar & ::boost::serialization::make_nvp("Y", curveBug);
         ar & ::boost::serialization::make_nvp("Y_animation", yCurve);
         _imp->curveY->clone(*yCurve);

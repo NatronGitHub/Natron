@@ -35,6 +35,7 @@
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
+#include <QtCore/QSize>
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtOpenGL/QGLWidget>
@@ -175,9 +176,9 @@ public:
                                             int textureIndex,
                                             bool isPartialRect,
                                             bool isFirstTile,
-                                            boost::shared_ptr<Texture>* texture) OVERRIDE FINAL;
+                                            TexturePtr* texture) OVERRIDE FINAL;
     virtual void endTransferBufferFromRAMToGPU(int textureIndex,
-                                               const boost::shared_ptr<Texture>& texture,
+                                               const TexturePtr& texture,
                                                const ImagePtr& image,
                                                int time,
                                                const RectD& rod,
@@ -276,7 +277,7 @@ public:
     virtual void makeOpenGLcontextCurrent() OVERRIDE FINAL;
     virtual void removeGUI() OVERRIDE FINAL;
     virtual ViewIdx getCurrentView() const OVERRIDE FINAL;
-    virtual boost::shared_ptr<TimeLine> getTimeline() const OVERRIDE FINAL;
+    virtual TimeLinePtr getTimeline() const OVERRIDE FINAL;
 
 public:
 
@@ -333,6 +334,10 @@ public:
      * @brief Returns the pixel scale of the viewport.
      **/
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
+
+#ifdef OFX_EXTENSIONS_NATRON
+    virtual double getScreenPixelRatio() const OVERRIDE FINAL;
+#endif
 
     /**
      * @brief Returns the colour of the background (i.e: clear color) of the viewport.

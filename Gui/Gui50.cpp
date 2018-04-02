@@ -214,20 +214,20 @@ Gui::onMaxPanelsSpinBoxValueChanged(double val)
 void
 Gui::clearAllVisiblePanels()
 {
+    // close panels one by one, since closing a panel updates the openedPanels list.
     while ( !_imp->openedPanels.empty() ) {
-        std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
-        if ( !(*it)->isFloating() ) {
-            (*it)->setClosed(true);
-        }
-
         bool foundNonFloating = false;
-        for (std::list<DockablePanel*>::iterator it2 = _imp->openedPanels.begin(); it2 != _imp->openedPanels.end(); ++it2) {
-            if ( !(*it2)->isFloating() ) {
+
+        // close one panel at a time - this changes the openedPanel list, so we must break the loop
+        for (std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin(); it != _imp->openedPanels.end(); ++it) {
+            if ( !(*it)->isFloating() ) {
+                (*it)->setClosed(true);
                 foundNonFloating = true;
                 break;
             }
         }
-        ///only floating windows left
+
+        // no panel was closed
         if (!foundNonFloating) {
             break;
         }
@@ -1115,7 +1115,7 @@ Gui::onFocusChanged(QWidget* /*old*/,
 
 void
 Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
-                           std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences)
+                           std::vector<SequenceParsing::SequenceFromFilesPtr>* sequences)
 {
 
     QStringList filesList;
@@ -1209,7 +1209,7 @@ void
 Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
                              const QPoint& globalPos)
 {
-    std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
+    std::vector<SequenceParsing::SequenceFromFilesPtr> sequences;
 
 
     fileSequencesFromUrls(urls, &sequences);
@@ -1228,7 +1228,7 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
     QPointF graphScenePos = graph->mapToScene( graph->mapFromGlobal(globalPos) );
     std::locale local;
     for (U32 i = 0; i < sequences.size(); ++i) {
-        boost::shared_ptr<SequenceParsing::SequenceFromFiles> & sequence = sequences[i];
+        SequenceParsing::SequenceFromFilesPtr & sequence = sequences[i];
         if (sequence->count() < 1) {
             continue;
         }
@@ -1240,7 +1240,7 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
         if (extLower == NATRON_PROJECT_FILE_EXT) {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
             assert( !content.empty() );
-            AppInstPtr appInstance = openProject( content.begin()->second.absoluteFileName() );
+            AppInstancePtr appInstance = openProject( content.begin()->second.absoluteFileName() );
             Q_UNUSED(appInstance);
         } else if (extLower == "py") {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
