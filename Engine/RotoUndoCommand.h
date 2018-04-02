@@ -47,7 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER
 
-struct RotoPaintInteract;
+class RotoPaintInteract;
 
 
 class MoveControlPointsUndoCommand

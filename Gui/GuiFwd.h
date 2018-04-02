@@ -226,7 +226,7 @@ class VerticalColorBar;
 class ViewerGL;
 class ViewerTab;
 class ViewerToolButton;
-struct KnobPageGui;
+class KnobPageGui;
 //Implementation in Gui/QtMac.mm
 namespace QtMac {
 bool isHighDPIInternal(const QWidget* w);

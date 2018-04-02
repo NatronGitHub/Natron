@@ -51,8 +51,9 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER
 
 
-struct ComboBoxMenuNode
+class ComboBoxMenuNode
 {
+public:
     MenuWithToolTips* isMenu;
     QAction* isLeaf;
     QString text;

@@ -237,8 +237,9 @@ struct ViewerData
     } // serialize
 };
 
-struct PythonPanelSerialization
+class PythonPanelSerialization
 {
+public:
     std::list<KnobSerializationPtr> knobs;
     std::string name;
     std::string pythonFunction;

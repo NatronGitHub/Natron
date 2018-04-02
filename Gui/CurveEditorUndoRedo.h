@@ -49,8 +49,9 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER
 
-struct SelectedKey
+class SelectedKey
 {
+public:
     CurveGuiPtr curve;
     KeyFrame key, prevKey, nextKey;
     bool hasPrevious;
