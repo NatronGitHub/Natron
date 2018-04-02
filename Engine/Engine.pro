@@ -182,6 +182,9 @@ SOURCES += \
     NodeRenderPreview.cpp \
     NodePrivate.cpp \
     NodeGroup.cpp \
+    NodeInputs.cpp \
+    NodeMain.cpp \
+    NodeName.cpp \
     NodeMetadata.cpp \
     NodePythonInteraction.cpp \
     NoOpBase.cpp \
