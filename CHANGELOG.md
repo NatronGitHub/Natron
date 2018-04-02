@@ -10,6 +10,7 @@
 - Add "Overwrite" checkbox to writers to avoid re-rendering the whole sequence #1683.
 - Writers do not render the whole RoD on their input anymore (this may result in a huge speed improvement on some projects).
 - Fix bug where effects could be marked as pass-through if their RoD was larger than the project format #1578
+- Add python method setCanAutoFoldDimensions(enable) to Double2DParam and Double3DParam.
 
 
 ## Version 2.3.9
