@@ -1617,7 +1617,7 @@ Node::moveToGroup(const NodeCollectionPtr& group)
 
 
 
-
+NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 class NodeDestroyNodeInternalArgs
 : public GenericWatcherCallerArgs
@@ -1633,6 +1633,8 @@ public:
 
     virtual ~NodeDestroyNodeInternalArgs() {}
 };
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 void
