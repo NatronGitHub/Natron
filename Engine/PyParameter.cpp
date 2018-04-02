@@ -1140,6 +1140,18 @@ Double2DParam::setUsePointInteract(bool use)
     return knob->setHasHostOverlayHandle(use);
 }
 
+
+void
+Double2DParam::setCanAutoFoldDimensions(bool can)
+{
+    boost::shared_ptr<KnobDouble> knob = _doubleKnob.lock();
+    if (!knob) {
+        return;
+    }
+    return knob->setCanAutoFoldDimensions(can);
+}
+
+
 void
 Double3DParam::set(double x,
                    double y,

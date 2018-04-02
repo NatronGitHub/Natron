@@ -17,6 +17,7 @@ Functions
 ^^^^^^^^^
 
 *	 def :meth:`setUsePointInteract<NatronEngine.Double2DParam.setUsePointInteract` (enabled)
+*	 def :meth:`setCanAutoFoldDimensions<NatronEngine.Double2DParam.setCanAutoFoldDimensions` (enabled)
 *    def :meth:`get<NatronEngine.Double2DParam.get>` ()
 *    def :meth:`get<NatronEngine.Double2DParam.get>` (frame)
 *    def :meth:`set<NatronEngine.Double2DParam.set>` (x, y)
@@ -36,6 +37,14 @@ that the user can select and drag.
 .. figure:: ../../positionInteract.png
 	:width: 400px
 	:align: center
+
+
+.. method:: NatronEngine.Double2DParam.setCanAutoFoldDimensions(enabled)
+
+	:param enabled: :class:`bool`
+
+Sets whether all dimensions should be presented as a single vakue/slider whenever they are equal.
+
 
 .. method:: NatronEngine.Double2DParam.get()
 	

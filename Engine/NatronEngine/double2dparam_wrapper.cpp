@@ -231,10 +231,54 @@ static PyObject* Sbk_Double2DParamFunc_setUsePointInteract(PyObject* self, PyObj
         return 0;
 }
 
+
+static PyObject* Sbk_Double2DParamFunc_setCanAutoFoldDimensions(PyObject* self, PyObject* pyArg)
+{
+    Double2DParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (Double2DParamWrapper*)((::Double2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setCanAutoFoldDimensions(bool)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
+        overloadId = 0; // setCanAutoFoldDimensions(bool)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_Double2DParamFunc_setCanAutoFoldDimensions_TypeError;
+
+    // Call function/method
+    {
+        bool cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setCanAutoFoldDimensions(bool)
+            cppSelf->setCanAutoFoldDimensions(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_Double2DParamFunc_setCanAutoFoldDimensions_TypeError:
+        const char* overloads[] = {"bool", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Double2DParam.setCanAutoFoldDimensions", overloads);
+        return 0;
+}
+
 static PyMethodDef Sbk_Double2DParam_methods[] = {
     {"get", (PyCFunction)Sbk_Double2DParamFunc_get, METH_VARARGS},
     {"set", (PyCFunction)Sbk_Double2DParamFunc_set, METH_VARARGS},
     {"setUsePointInteract", (PyCFunction)Sbk_Double2DParamFunc_setUsePointInteract, METH_O},
+    {"setCanAutoFoldDimensions", (PyCFunction)Sbk_Double2DParamFunc_setCanAutoFoldDimensions, METH_O},
 
     {0} // Sentinel
 };

@@ -579,6 +579,7 @@ public:
     void set(double x, double y, double frame);
 
     void setUsePointInteract(bool use);
+    void setCanAutoFoldDimensions(bool can);
 };
 
 class Double3DParam
