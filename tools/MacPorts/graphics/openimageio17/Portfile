@@ -21,7 +21,7 @@ github.setup     OpenImageIO oiio 1.7.17 tags/Release-
 name             openimageio17
 conflicts        openimageio16
 conflicts        openimageio
-#revision         1
+revision         1
 categories       graphics
 platforms           darwin
 license          BSD
@@ -105,7 +105,9 @@ patchfiles \
     oiio-1.5.23-invalidatespec.patch \
     oiio-1.7.10-c99math.patch \
     oiio-1.7.10-nothreads.patch \
-    oiio-1.7.12-tiffposition.patch
+    oiio-1.7.12-tiffposition.patch \
+    oiio-1.7.17-highlightmode.patch \
+    oiio-1.7.17-tifftiles.patch
 
 cmake.out_of_source yes
 
