@@ -92,3 +92,19 @@ CONFIG(debug, debug|release){
 } else {
     message("Compiling in RELEASE mode.")
 }
+
+addresssanitizer {
+  *g++* | *clang* {
+    message("Compiling with AddressSanitizer (for gcc >= 4.8 and clang). Set the ASAN_SYMBOLIZER_PATH environment variable to point to the llvm-symbolizer binary, or make sure llvm-symbolizer in in your PATH.")
+    message("For example, with Qt4 on macOS:")
+    message("- with MacPorts:")
+    message("  sudo port install clang-5.0")
+    message("  export ASAN_SYMBOLIZER_PATH=/opt/local/bin/llvm-symbolizer-mp-5.0")
+    message("  qmake QMAKE_CC=clang-mp-5.0 QMAKE_CXX='clang++-mp-5.0 -stdlib=libc++' QMAKE_LINK='clang++-mp-5.0 -stdlib=libc++' QMAKE_OBJECTIVE_CC='clang-mp-5.0 -stdlib=libc++' QMAKE_OBJECTIVE_CXX='clang++-mp-5.0 -stdlib=libc++' CONFIG+=addresssanitizer ...")
+    message("- with homebrew:")
+    message("  brew install llvm")
+    message("  export ASAN_SYMBOLIZER_PATH=/usr/local/opt/llvm/bin/llvm-symbolizer")
+    message("  qmake QMAKE_CC=/usr/local/opt/llvm/bin/clang QMAKE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_LINK='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_OBJECTIVE_CC='/usr/local/opt/llvm/bin/clang -stdlib=libc++' QMAKE_OBJECTIVE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' CONFIG+=addresssanitizer ...")
+    message("see http://clang.llvm.org/docs/AddressSanitizer.html")
+  }
+}

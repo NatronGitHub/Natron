@@ -87,6 +87,9 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Global/FStreamsSupport.h"
 #include "Global/QtCompat.h"
 #include "Global/KeySymbols.h"
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -1212,6 +1215,11 @@ threadFunctionWrapper(OfxThreadFunctionV1 func,
                       QThread* spawnerThread,
                       void *customArg)
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     assert(threadIndex < threadMax);
     OfxHost::OfxHostDataTLSPtr tls = appPTR->getOFXHost()->getTLSData();
     tls->threadIndexes.push_back( (int)threadIndex );
@@ -1265,7 +1273,12 @@ public:
 
     void run() OVERRIDE
     {
-        assert(_threadIndex < _threadMax);
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                               boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                               boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
+       assert(_threadIndex < _threadMax);
         OfxHost::OfxHostDataTLSPtr tls = appPTR->getOFXHost()->getTLSData();
         tls->threadIndexes.push_back( (int)_threadIndex );
 

@@ -359,11 +359,11 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                 } else { // if (dstNComps == 1) {
                     if (srcNComps == 1) {
                         DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[0]);
+#                     ifdef DEBUG
+                        assert(  !(boost::math::isnan)(pix) ); // check for NaN
+#                     endif
                         for (int k = 0; k < dstNComps; ++k) {
                             dstPixels[k] = pix;
-#                         ifdef DEBUG
-                            assert(  !(boost::math::isnan)(dstPixels[k]) ); // check for NaN
-#                         endif
                         }
                     } else {
                         ///In this case we've XY, RGB or RGBA input and outputs

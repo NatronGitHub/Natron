@@ -54,6 +54,7 @@
 #include <sstream> // stringstream
 #include <locale>
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #if defined(Q_OS_LINUX)
 #include <sys/signal.h>
 #ifndef __USE_GNU
@@ -98,6 +99,9 @@
 #include "Global/ProcInfo.h"
 #include "Global/GLIncludes.h"
 #include "Global/StrUtils.h"
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include "Engine/AppInstance.h"
 #include "Engine/Backdrop.h"
@@ -2707,6 +2711,9 @@ AppManager::onQueueRendersChanged(bool queuingEnabled)
 int
 AppManager::exec()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
     return qApp->exec();
 }
 

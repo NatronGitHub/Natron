@@ -31,6 +31,9 @@
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/Image.h"
 #include "Engine/Smooth1D.h"
 
@@ -378,6 +381,11 @@ computeHistogramStatic(const HistogramRequest & request,
 void
 HistogramCPU::run()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     for (;; ) {
         HistogramRequest request;
         {

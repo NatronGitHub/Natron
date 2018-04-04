@@ -1231,7 +1231,11 @@ NodeGroup::isInputOptional(int inputNb) const
             return false;
         }
     }
-    GroupInput* input = dynamic_cast<GroupInput*>( n->getEffectInstance().get() );
+    EffectInstancePtr effect = n->getEffectInstance();
+    if (!effect) {
+        return false;
+    }
+    GroupInput* input = dynamic_cast<GroupInput*>( effect.get() );
 
     assert(input);
     if (!input) {

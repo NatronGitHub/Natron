@@ -32,6 +32,9 @@
 #include <QtCore/QMetaType>
 #include <QtCore/QDebug>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/GenericSchedulerThreadWatcher.h"
 
 #ifdef DEBUG
@@ -466,6 +469,11 @@ GenericSchedulerThread::resolveState()
 void
 GenericSchedulerThread::run()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     for (;; ) {
         // Get the args to do the work
         TaskQueueBehaviorEnum behavior = tasksQueueBehaviour();

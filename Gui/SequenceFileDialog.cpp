@@ -24,6 +24,7 @@
 
 #include "SequenceFileDialog.h"
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #if defined(Q_OS_UNIX)
 #include <pwd.h>
 #include <unistd.h> // for pathconf() on OS X

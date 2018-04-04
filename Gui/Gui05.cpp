@@ -35,6 +35,9 @@
 #include <QGraphicsScene>
 #include <QUndoGroup>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeSerialization.h"
@@ -163,7 +166,12 @@ Gui::setupUi()
      */
     QMetaObject::connectSlotsByName(this);
 
-    appPTR->setOFXHostHandle( getApp()->getOfxHostOSHandle() );
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        appPTR->setOFXHostHandle( getApp()->getOfxHostOSHandle() );
+    }
 } // setupUi
 
 void

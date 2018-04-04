@@ -45,6 +45,9 @@
 #include <QtCore/QTextStream>
 #include <QtCore/QRunnable>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
@@ -2051,6 +2054,11 @@ RenderThreadTask::~RenderThreadTask()
 void
 RenderThreadTask::run()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     notifyIsRunning(true);
 
@@ -3566,6 +3574,11 @@ public:
 
     virtual void run() OVERRIDE FINAL
     {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                               boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                               boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
         ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
         ///it calls appendToBuffer by itself
         ViewerInstance::ViewerRenderRetCode stat = ViewerInstance::eViewerRenderRetCodeFail;

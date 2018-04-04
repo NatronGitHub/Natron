@@ -38,6 +38,7 @@
 ///gui
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QtCore/QDebug>
 #include <QtCore/QSettings>
 #include <QtCore/QFileInfo>

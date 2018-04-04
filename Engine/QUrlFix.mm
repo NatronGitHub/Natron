@@ -18,6 +18,7 @@
 
 #include "Global/QtCompat.h"
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #if defined(Q_OS_MAC) && QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 
 // in Qt 4.8 QUrl is broken on mac, it returns /.file/id= for local files

@@ -167,6 +167,9 @@ GuiAppInstance::GuiAppInstance(int appID)
     , _imp(new GuiAppInstancePrivate)
 
 {
+#ifdef DEBUG
+    qDebug() << "GuiAppInstance()" << (void*)(this);
+#endif
 }
 
 void
@@ -210,6 +213,9 @@ GuiAppInstance::deletePreviewProvider()
 void
 GuiAppInstance::aboutToQuit()
 {
+#ifdef DEBUG
+    qDebug() << "GuiAppInstance::aboutToQuit()" << (void*)(this);
+#endif
     deletePreviewProvider();
 
     if (_imp->_gui) {
@@ -238,6 +244,9 @@ GuiAppInstance::aboutToQuit()
 
 GuiAppInstance::~GuiAppInstance()
 {
+#ifdef DEBUG
+    qDebug() << "~GuiAppInstance()" << (void*)(this);
+#endif
 }
 
 bool

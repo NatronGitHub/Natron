@@ -33,6 +33,7 @@
 #include "Global/GlobalDefines.h"
 
 CLANG_DIAG_OFF(deprecated)
+#include <QtCore/QtGlobal> // for Q_OS_*
 // /usr/include/qt5/QtCore/qgenericatomic.h:177:13: warning: 'register' storage class specifier is deprecated [-Wdeprecated]
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)

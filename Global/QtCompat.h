@@ -20,7 +20,7 @@
 
 #include "Global/Macros.h"
 
-#include <QtCore/QtGlobal>
+#include <QtCore/QtGlobal> // for Q_OS_*
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 #include <QtCore/QDir>
 #include <QtCore/QString>

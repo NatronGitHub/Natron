@@ -34,6 +34,9 @@
 #include <QtCore/QWaitCondition>
 #include <QtCore/QDebug>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/AppManager.h"
 
 //This will check every X ms whether the crash reporter process still exist when
@@ -102,6 +105,11 @@ ExistenceCheckerThread::quitThread()
 void
 ExistenceCheckerThread::run()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     _imp->socket.reset( new QLocalSocket() );
     _imp->socket->connectToServer(_imp->comServerPipePath, QLocalSocket::ReadWrite);
 

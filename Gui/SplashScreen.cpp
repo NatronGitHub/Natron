@@ -34,6 +34,10 @@ CLANG_DIAG_OFF(deprecated)
 #include <QDesktopWidget>
 CLANG_DIAG_ON(deprecated)
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
+
 NATRON_NAMESPACE_ENTER
 
 SplashScreen::SplashScreen(const QString & filePath)
@@ -83,7 +87,12 @@ SplashScreen::updateText(const QString & text)
 {
     _text = text;
     update();
-    QCoreApplication::processEvents();
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        QCoreApplication::processEvents();
+    }
 }
 
 void
@@ -126,7 +135,12 @@ LoadProjectSplashScreen::updateText(const QString & text)
 {
     _text = text;
     update();
-    QCoreApplication::processEvents();
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        QCoreApplication::processEvents();
+    }
 }
 
 void

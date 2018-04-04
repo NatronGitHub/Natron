@@ -36,6 +36,7 @@
 
 #include "Global/GlobalDefines.h"
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #if defined(Q_OS_WIN)
 #include <windows.h>
 #include <IntShCut.h>

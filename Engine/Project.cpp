@@ -63,6 +63,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Global/StrUtils.h"
 #include "Global/FStreamsSupport.h"
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -384,7 +387,12 @@ Project::loadProjectInternal(const QString & path,
 
     ///Process all events before flagging that we're no longer loading the project
     ///to avoid multiple renders being called because of reshape events of viewers
-    QCoreApplication::processEvents();
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        QCoreApplication::processEvents();
+    }
 
     return ret;
 } // Project::loadProjectInternal

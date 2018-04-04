@@ -29,6 +29,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QtCore/QDebug>
 #include <QtCore/QSettings>
 #include <QPixmapCache>
@@ -37,6 +38,10 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include "Engine/Settings.h"
 #include "Engine/EffectInstance.h" // PLUGINID_OFX_*
@@ -915,7 +920,12 @@ GuiApplicationManager::initGui(const CLArgs& args)
     _imp->_splashScreen = new SplashScreen(filename);
     _imp->_splashScreen->setAttribute(Qt::WA_DeleteOnClose, 0);
 
-    QCoreApplication::processEvents();
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        QCoreApplication::processEvents();
+    }
     QPixmap appIcPixmap;
     appPTR->getIcon(NATRON_PIXMAP_APP_ICON, &appIcPixmap);
     QIcon appIc(appIcPixmap);
@@ -1075,6 +1085,9 @@ GuiApplicationManager::isSplashcreenVisible() const
 void
 GuiApplicationManager::hideSplashScreen()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
     if (_imp->_splashScreen) {
         _imp->_splashScreen->close();
         delete _imp->_splashScreen;

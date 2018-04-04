@@ -35,6 +35,8 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+#include <QtCore/QtGlobal> // for Q_OS_*
+
 #include "Engine/AppManager.h"
 #include "Engine/Variant.h"
 #include "Engine/EngineFwd.h"

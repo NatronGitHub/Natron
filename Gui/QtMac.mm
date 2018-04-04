@@ -18,6 +18,7 @@
 
 #include "Gui/Gui.h"
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #ifdef Q_OS_MAC
 
 #include <AppKit/NSView.h>

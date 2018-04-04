@@ -464,22 +464,14 @@ addresssanitizer {
     QMAKE_MAC_XCODE_SETTINGS += enable_cxx_container_overflow_check  
   }
   *g++* | *clang* {
-  message("Compiling with AddressSanitizer (for gcc >= 4.8 and clang). Set the ASAN_SYMBOLIZER_PATH environment variable to point to the llvm-symbolizer binary, or make sure llvm-symbolizer in in your PATH.")
-  message("To compile with clang, use a clang-specific spec, such as unsupported/linux-clang, unsupported/macx-clang, linux-clang or macx-clang.")
-  message("For example, with Qt4 on OS X:")
-  message("  sudo port install clang-3.4")
-  message("  sudo port select clang mp-clang-3.4")
-  message("  export ASAN_SYMBOLIZER_PATH=/opt/local/bin/llvm-symbolizer-mp-3.4")
-  message("  qmake -spec unsupported/macx-clang CONFIG+=addresssanitizer ...")
-  message("see http://clang.llvm.org/docs/AddressSanitizer.html")
-  CONFIG += debug
-  QMAKE_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
-  QMAKE_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
-  QMAKE_LFLAGS += -fsanitize=address -g
+    CONFIG += debug
+    QMAKE_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
+    QMAKE_CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
+    QMAKE_LFLAGS += -fsanitize=address -g
 
-#  QMAKE_LFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
-#  QMAKE_CLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
-#  QMAKE_CFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
+    #QMAKE_LFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
+    #QMAKE_CFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
+    #QMAKE_CXXFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
   }
 }
 

@@ -43,6 +43,9 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/AppInstance.h"
 #include "Engine/Node.h"
 #include "Engine/Timer.h"
@@ -553,7 +556,12 @@ ProgressPanel::updateTask(const NodePtr& node,
     if (isMainThread) {
         if (_imp->processEventsRecursionCounter == 0) {
             ++_imp->processEventsRecursionCounter;
-            QCoreApplication::processEvents();
+            {
+#ifdef DEBUG
+                boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+                QCoreApplication::processEvents();
+            }
             --_imp->processEventsRecursionCounter;
         }
     }

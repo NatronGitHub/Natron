@@ -32,6 +32,7 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QtCore/QMutex>
 #include <QtCore/QString>
 #include <QtCore/QAtomicInt>
