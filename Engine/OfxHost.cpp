@@ -92,6 +92,9 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Global/FStreamsSupport.h"
 #include "Global/QtCompat.h"
 #include "Global/KeySymbols.h"
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -1145,7 +1148,11 @@ static ActionRetCodeEnum ofxMultiThreadFunctor(unsigned int threadIndex,
                                                unsigned int threadMax,
                                                void *customArg)
 {
-
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     OfxFunctorArgs* args = (OfxFunctorArgs*)customArg;
     ThreadIsActionCaller_RAII actionCallerRaii(args->effect);
     try {
@@ -1163,6 +1170,11 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
                      unsigned int nThreads,
                      void *customArg)
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     if (!func) {
         return kOfxStatFailed;
     }

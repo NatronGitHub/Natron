@@ -29,6 +29,9 @@
 #include <QWaitCondition>
 
 #include "Global/GlobalDefines.h"
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include "Engine/Cache.h"
 #include "Engine/CacheEntryKeyBase.h"
@@ -227,6 +230,11 @@ CachedFramesThread::Implementation::refreshCachedFramesInternal()
 void
 CachedFramesThread::run()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     for (;;) {
 
         if (_imp->checkForExit()) {

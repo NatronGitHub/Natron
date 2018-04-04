@@ -41,6 +41,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QStyledItemDelegate>
 #include <QTreeView>
 #include <QDialog>

@@ -31,6 +31,9 @@
 #include <QDebug>
 
 #include "Global/GLIncludes.h"
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 //#import <Cocoa/Cocoa.h>
 #include <AvailabilityMacros.h>
@@ -332,7 +335,13 @@ OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,
 
     CGLPixelFormatObj nativePixelFormat;
     GLint num; // stores the number of possible pixel formats
-    CGLError errorCode = CGLChoosePixelFormat( &attributes[0], &nativePixelFormat, &num );
+    CGLError errorCode;
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        errorCode = CGLChoosePixelFormat( &attributes[0], &nativePixelFormat, &num );
+    }
     if (errorCode != kCGLNoError) {
         throw std::runtime_error("CGL: Failed to choose pixel format");
     }

@@ -27,6 +27,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <QtCore/QtGlobal> // for Q_OS_*
+#include <QtCore/QDebug>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QCloseEvent>
@@ -116,10 +118,16 @@ Gui::Gui(const GuiAppInstancePtr& app,
 #ifdef Q_OS_MAC
      QObject::connect( appPTR, SIGNAL(dockClicked()), this, SLOT(dockClicked()) );
 #endif
+#ifdef DEBUG
+    qDebug() << "Gui::Gui()" << (void*)(this);
+#endif
 }
 
 Gui::~Gui()
 {
+#ifdef DEBUG
+    qDebug() << "Gui::~Gui()" << (void*)(this);
+#endif
     _imp->_nodeGraphArea->invalidateAllNodesParenting();
     delete _imp->_errorLog;
     delete _imp->_projectGui;
@@ -214,18 +222,18 @@ Gui::abortProject(bool quitApp,
                   bool warnUserIfSaveNeeded,
                   bool blocking)
 {
-    AppInstancePtr app = getApp();
+    GuiAppInstancePtr app = getApp();
     if (!app) {
         return false;
     }
-    if (getApp()->getProject()->hasNodes() && warnUserIfSaveNeeded) {
+    if (app->getProject()->hasNodes() && warnUserIfSaveNeeded) {
         int ret = saveWarning();
         if (ret == 0) {
             if ( !saveProject() ) {
                 return false;
             }
         } else if (ret == 1) {
-            getApp()->getProject()->removeLastAutosave();
+            app->getProject()->removeLastAutosave();
         } else if (ret == 2) {
             return false;
         }
@@ -234,14 +242,12 @@ Gui::abortProject(bool quitApp,
 
     _imp->setUndoRedoActions(0, 0);
     if (quitApp) {
-        GuiAppInstancePtr app = getApp();
         if (app) {
             app->quit();
         }
     } else {
      
         setGuiAboutToClose(true);
-        GuiAppInstancePtr app = getApp();
         if (app) {
             app->resetPreviewProvider();
             if (!blocking) {

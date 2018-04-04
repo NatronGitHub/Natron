@@ -281,7 +281,6 @@ class RenderEngine;
 class RenderFrameResultsContainer;
 class RenderQueue;
 class RenderStats;
-class RenderThreadTask;
 class RotoDrawableItem;
 class RotoItem;
 class RotoLayer;

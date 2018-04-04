@@ -33,6 +33,7 @@
 #endif
 
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QtCore/QMutex>
 #include <QtCore/QString>
 #include <QtCore/QAtomicInt>

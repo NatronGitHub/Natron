@@ -38,6 +38,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 #include <QtCore/QFileSystemWatcher>
@@ -52,6 +53,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <SequenceParsing.h>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 NATRON_NAMESPACE_ENTER
 
@@ -1526,6 +1530,11 @@ struct WorkingSetter
 void
 FileGathererThread::run()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     for (;; ) {
         {
             WorkingSetter working( _imp.get() );

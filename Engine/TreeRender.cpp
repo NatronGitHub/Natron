@@ -32,6 +32,9 @@
 #include <QDebug>
 #include <QWaitCondition>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/Image.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/FrameViewRequest.h"
@@ -763,7 +766,11 @@ FrameViewRenderRunnable::~FrameViewRenderRunnable()
 void
 FrameViewRenderRunnable::run()
 {
-
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     TreeRenderExecutionDataPtr sharedData = _imp->sharedData.lock();
 
     // Check the status of the execution tasks because another concurrent render might have failed

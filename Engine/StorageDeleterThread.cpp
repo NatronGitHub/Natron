@@ -29,6 +29,9 @@
 #include <QMutex>
 #include <QWaitCondition>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
 #include "Engine/ImageStorage.h"
@@ -146,6 +149,11 @@ StorageDeleterThread::isWorking() const
 void
 StorageDeleterThread::run()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     for (;;) {
         bool quit;
         {
@@ -260,6 +268,11 @@ StorageAllocatorThread::isWorking() const
 void
 StorageAllocatorThread::run()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     for (;;) {
         bool quit;
         {

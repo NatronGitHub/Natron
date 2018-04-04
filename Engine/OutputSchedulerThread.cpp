@@ -57,6 +57,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Global/QtCompat.h"
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
@@ -1465,7 +1468,6 @@ OutputSchedulerThreadPrivate::runCallbackWithVariables(const QString& callback)
         }
     }
 }
-
 
 
 NATRON_NAMESPACE_EXIT

@@ -239,7 +239,7 @@ private:
     /**
      * @brief Runs the event loop the signal/slots are caught correctly.
      **/
-    virtual void run();
+    virtual void run() OVERRIDE FINAL;
 
     /**
      * @brief Called once the first time run is started.

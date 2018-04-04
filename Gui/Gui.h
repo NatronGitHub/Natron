@@ -37,6 +37,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QMainWindow>
 #include <QtCore/QUrl>
 CLANG_DIAG_ON(deprecated)

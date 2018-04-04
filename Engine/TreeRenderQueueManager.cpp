@@ -32,6 +32,9 @@
 
 #include <QtConcurrentRun>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/AppManager.h"
 #include "Engine/FrameViewRequest.h"
 #include "Engine/TreeRender.h"
@@ -758,8 +761,11 @@ TreeRenderQueueManager::Implementation::launchMoreTasks()
 void
 LaunchRenderRunnable::run()
 {
-
-
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     TreeRenderExecutionDataPtr execData = render->createMainExecutionData();
 
     if (isFailureRetCode(execData->getStatus())) {
@@ -776,7 +782,11 @@ LaunchRenderRunnable::run()
 void
 TreeRenderQueueManager::run()
 {
-
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     for (;;) {
 
         {

@@ -219,7 +219,6 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    friend class RenderThreadTask;
     enum ProcessFrameModeEnum
     {
         eProcessFrameBySchedulerThread = 0, //< the processFrame function will be called by the ProcessFrameThread thread.

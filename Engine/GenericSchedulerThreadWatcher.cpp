@@ -33,6 +33,9 @@
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/RenderEngine.h"
 #include "Engine/Node.h"
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 
 NATRON_NAMESPACE_ENTER
@@ -123,6 +126,11 @@ GenericWatcher::stopWatching()
 void
 GenericWatcher::run()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     for (;; ) {
         {
             QMutexLocker quitLocker(&_imp->mustQuitMutex);

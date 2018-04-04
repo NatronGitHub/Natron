@@ -54,6 +54,7 @@
 #include <sstream> // stringstream
 #include <locale>
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #if defined(Q_OS_LINUX)
 #include <sys/signal.h>
 #ifndef __USE_GNU
@@ -104,6 +105,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Global/PythonUtils.h"
 #include "Global/QtCompat.h"
 #include "Global/StrUtils.h"
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include "Engine/AddPlaneNode.h"
 #include "Engine/AppInstance.h"
@@ -2806,6 +2810,9 @@ AppManager::onQueueRendersChanged(bool queuingEnabled)
 int
 AppManager::exec()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
     return qApp->exec();
 }
 
