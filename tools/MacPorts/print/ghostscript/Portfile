@@ -30,6 +30,7 @@ distfiles           ${distname}.tar.gz:source \
 
 patchfiles          patch-base_unix-dll.mak.diff
 patchfiles-append   patch-base_unixinst.mak.diff
+patchfiles-append   gs_restrict-C99.patch
 
 checksums           ${distname}.tar.gz \
                     rmd160  e5ecbd1cb6777fb0968f0967d3d4b30da2fefddd \
@@ -64,7 +65,7 @@ depends_run         port:perl5
 extract.only        ${distname}.tar.gz \
                     ghostscript-fonts-other-6.0.tar.gz \
                     ghostscript-fonts-std-8.11.tar.gz \
-                    ghostscript-9.10-cross.patch \
+                    ghostscript-9.20-cross.patch \
                     ghostscript-9.05-cross-so.patch
 
 post-extract {

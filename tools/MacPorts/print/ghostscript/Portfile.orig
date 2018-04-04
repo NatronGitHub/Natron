@@ -30,6 +30,7 @@ distfiles           ${distname}.tar.gz:source \
 
 patchfiles          patch-base_unix-dll.mak.diff
 patchfiles-append   patch-base_unixinst.mak.diff
+patchfiles-append   gs_restrict-C99.patch
 
 checksums           ${distname}.tar.gz \
                     rmd160  e5ecbd1cb6777fb0968f0967d3d4b30da2fefddd \

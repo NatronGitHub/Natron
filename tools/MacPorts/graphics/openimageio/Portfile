@@ -14,7 +14,7 @@ PortGroup       compiler_blacklist_versions 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.8.9 tags/Release-
+github.setup     OpenImageIO oiio 1.8.10 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
