@@ -142,7 +142,7 @@ struct OutputSchedulerThreadPrivate
     bool processFrameEnabled;
     OutputSchedulerThread::ProcessFrameModeEnum processFrameMode;
 
-    boost::scoped_ptr<Timer> timer; // Timer regulating the engine execution. It is controlled by the GUI and MT-safe.
+    Timer timer; // Timer regulating the engine execution. It is controlled by the GUI and MT-safe.
 
     // Protects renderFinished
     mutable QMutex renderFinishedMutex;
@@ -200,7 +200,7 @@ struct OutputSchedulerThreadPrivate
         , launchedFramesMutex()
         , processFrameEnabled(false)
         , processFrameMode(OutputSchedulerThread::eProcessFrameByMainThread)
-        , timer(new Timer)
+        , timer()
         , renderFinishedMutex()
         , renderFinished(false)
         , runArgs()
@@ -261,8 +261,7 @@ OutputSchedulerThread::OutputSchedulerThread(const RenderEnginePtr& engine,
     : GenericSchedulerThread()
     , _imp( new OutputSchedulerThreadPrivate(engine, this, effect) )
 {
-    QObject::connect( _imp->timer.get(), SIGNAL(fpsChanged(double,double)), engine.get(), SIGNAL(fpsChanged(double,double)) );
-
+    QObject::connect( &_imp->timer, SIGNAL(fpsChanged(double,double)), engine.get(), SIGNAL(fpsChanged(double,double)) );
 
     setThreadName("Scheduler thread");
 }
@@ -708,7 +707,7 @@ void
 OutputSchedulerThread::beginSequenceRender()
 {
     if ( isFPSRegulationNeeded() ) {
-        _imp->timer->playState = ePlayStateRunning;
+        _imp->timer.playState = ePlayStateRunning;
     }
 
     setRenderFinished(false);
@@ -785,7 +784,6 @@ OutputSchedulerThread::beginSequenceRender()
 void
 OutputSchedulerThread::endSequenceRender()
 {
-
     // Wait that all processFrames calls are finished
     _imp->processFrameThread.quitThread(true /*allowRestart*/, false /*abortTask*/);
     _imp->processFrameThread.waitForThreadToQuit_enforce_blocking();
@@ -801,8 +799,7 @@ OutputSchedulerThread::endSequenceRender()
         _imp->runArgs.reset();
     }
 
-
-    _imp->timer->playState = ePlayStatePause;
+    _imp->timer.playState = ePlayStatePause;
 
     // Remove all active renders for the scheduler
     waitForAllTreeRenders();
@@ -1040,8 +1037,8 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
         }
 
         if (!renderFinished) {
-            if (_imp->timer->playState == ePlayStateRunning) {
-                _imp->timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
+            if (_imp->timer.playState == ePlayStateRunning) {
+                _imp->timer.waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
             }
 
             state = resolveState();
@@ -1111,13 +1108,13 @@ OutputSchedulerThread::onQuitRequested(bool allowRestarts)
 void
 OutputSchedulerThread::setDesiredFPS(double d)
 {
-    _imp->timer->setDesiredFrameRate(d);
+    _imp->timer.setDesiredFrameRate(d);
 }
 
 double
 OutputSchedulerThread::getDesiredFPS() const
 {
-    return _imp->timer->getDesiredFrameRate();
+    return _imp->timer.getDesiredFrameRate();
 }
 
 void

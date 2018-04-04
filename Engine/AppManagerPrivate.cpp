@@ -207,6 +207,7 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
 void
 AppManagerPrivate::initProcessInputChannel(const QString & mainProcessServerName)
 {
+    // scoped_ptr
     _backgroundIPC.reset( new ProcessInputChannel(mainProcessServerName) );
 }
 
@@ -417,9 +418,11 @@ void
 AppManagerPrivate::initGLAPISpecific()
 {
 #ifdef Q_OS_WIN32
+    // scoped_ptr
     wglInfo.reset(new OSGLContext_wgl_data);
     OSGLContext_win::initWGLData( wglInfo.get() );
 #elif defined(Q_OS_LINUX)
+    // scoped_ptr
     glxInfo.reset(new OSGLContext_glx_data);
     OSGLContext_x11::initGLXData( glxInfo.get() );
 

@@ -125,7 +125,7 @@ Timer::printAsTime(const double timeInSeconds,
     double timeRemain = timeInSeconds;
 
     if (timeRemain >= day) {
-        double daysRemaining = timeInSeconds / day;
+        double daysRemaining = timeRemain / day;
         double floorDays = std::floor(daysRemaining);
         if (floorDays > 0) {
             ret.append( ( floorDays > 1 ? tr("%1 days") : tr("%1 day") ).arg( QString::number(floorDays) ) );
