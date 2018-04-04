@@ -498,6 +498,7 @@ FileSystemModel::initialize(SortableViewI* view)
     initGatherer();
 
 
+    // scoped_ptr
     _imp->watcher.reset(new QFileSystemWatcher);
     assert(_imp->watcher);
     QObject::connect( _imp->watcher.get(), SIGNAL(directoryChanged(QString)), this, SLOT(onWatchedDirectoryChanged(QString)) );
@@ -1213,6 +1214,7 @@ FileSystemModel::setRootPath(const QString& path)
         return false;
     }
     if (item != _imp->rootItem) {
+        // scoped_ptr
         _imp->watcher.reset(new QFileSystemWatcher);
         assert(_imp->watcher);
         QObject::connect( _imp->watcher.get(), SIGNAL(directoryChanged(QString)), this, SLOT(onWatchedDirectoryChanged(QString)) );

@@ -1982,7 +1982,7 @@ Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
     if ( nodesToWatch.empty() ) {
         return false;
     }
-    NodeRenderWatcherPtr renderWatcher( new NodeRenderWatcher(nodesToWatch) );
+    NodeRenderWatcherPtr renderWatcher = boost::make_shared<NodeRenderWatcher>(nodesToWatch);
     QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int,GenericWatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,GenericWatcherCallerArgsPtr)), Qt::UniqueConnection);
     ProjectPrivate::RenderWatcher p;
     p.receiver = receiver;

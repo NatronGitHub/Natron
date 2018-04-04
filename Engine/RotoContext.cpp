@@ -3716,14 +3716,17 @@ static void tess_begin_primitive_callback(unsigned int which, void *polygonData)
     switch (which) {
         case LIBTESS_GL_TRIANGLE_STRIP:
             assert(!myData->stripsBeingEdited);
+            // scoped_ptr
             myData->stripsBeingEdited.reset(new RotoTriangleStrips);
             break;
         case LIBTESS_GL_TRIANGLE_FAN:
             assert(!myData->fanBeingEdited);
+            // scoped_ptr
             myData->fanBeingEdited.reset(new RotoTriangleFans);
             break;
         case LIBTESS_GL_TRIANGLES:
             assert(!myData->trianglesBeingEdited);
+            // scoped_ptr
             myData->trianglesBeingEdited.reset(new RotoTriangles);
             break;
         default:

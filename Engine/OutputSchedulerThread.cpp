@@ -186,7 +186,7 @@ struct OutputSchedulerThreadPrivate
 
     //doesn't need any protection since it never changes and is set in the constructor
     OutputSchedulerThread::ProcessFrameModeEnum mode; //is the frame to be processed on the main-thread (i.e OpenGL rendering) or on the scheduler thread
-    boost::scoped_ptr<Timer> timer; // Timer regulating the engine execution. It is controlled by the GUI and MT-safe.
+    Timer timer; // Timer regulating the engine execution. It is controlled by the GUI and MT-safe.
     boost::scoped_ptr<TimeLapse> renderTimer; // Timer used to report stats when rendering
 
     ///When the render threads are not using the appendToBuffer API, the scheduler has no way to know the rendering is finished
@@ -247,7 +247,7 @@ struct OutputSchedulerThreadPrivate
         , bufEmptyCondition()
         , bufMutex()
         , mode(mode)
-        , timer(new Timer)
+        , timer()
         , renderTimer()
         , renderFinishedMutex()
         , nFramesRendered(0)
@@ -540,7 +540,7 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,
     : GenericSchedulerThread()
     , _imp( new OutputSchedulerThreadPrivate(engine, effect, mode) )
 {
-    QObject::connect( _imp->timer.get(), SIGNAL(fpsChanged(double,double)), _imp->engine, SIGNAL(fpsChanged(double,double)) );
+    QObject::connect( &_imp->timer, SIGNAL(fpsChanged(double,double)), _imp->engine, SIGNAL(fpsChanged(double,double)) );
 
 
 #ifdef NATRON_SCHEDULER_SPAWN_THREADS_WITH_TIMER
@@ -1026,7 +1026,7 @@ void
 OutputSchedulerThread::startRender()
 {
     if ( isFPSRegulationNeeded() ) {
-        _imp->timer->playState = ePlayStateRunning;
+        _imp->timer.playState = ePlayStateRunning;
     }
 
     // Start measuring
@@ -1133,11 +1133,11 @@ OutputSchedulerThread::startRender()
 void
 OutputSchedulerThread::stopRender()
 {
-    _imp->timer->playState = ePlayStatePause;
+    _imp->timer.playState = ePlayStatePause;
 
 #ifdef NATRON_SCHEDULER_SPAWN_THREADS_WITH_TIMER
     QMutexLocker k(&_imp->lastRecordedFPSMutex);
-    _imp->lastRecordedFPS = _imp->timer->getActualFrameRate();
+    _imp->lastRecordedFPS = _imp->timer.getActualFrameRate();
     _imp->threadSpawnsTimer.stop();
 #endif
 
@@ -1373,8 +1373,8 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
                 }
             } // if (!renderFinished) {
 
-            if (_imp->timer->playState == ePlayStateRunning) {
-                _imp->timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
+            if (_imp->timer.playState == ePlayStateRunning) {
+                _imp->timer.waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
             }
 
 
@@ -1797,13 +1797,13 @@ OutputSchedulerThread::appendToBuffer(double time,
 void
 OutputSchedulerThread::setDesiredFPS(double d)
 {
-    _imp->timer->setDesiredFrameRate(d);
+    _imp->timer.setDesiredFrameRate(d);
 }
 
 double
 OutputSchedulerThread::getDesiredFPS() const
 {
-    return _imp->timer->getDesiredFrameRate();
+    return _imp->timer.getDesiredFrameRate();
 }
 
 void

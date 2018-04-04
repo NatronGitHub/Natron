@@ -827,11 +827,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
            since we do not use the cache for textures)
          */
         // Make the OpenGL context current to this thread
-        glContextLocker.reset( new OSGLContextAttacher(glContext, abortInfo
+        glContextLocker = boost::make_shared<OSGLContextAttacher>(glContext, abortInfo
 #ifdef DEBUG
-                                                       , frameArgs->time
+                                                                  , frameArgs->time
 #endif
-                                                       ) );
+                                                                  );
         storage = eStorageModeGLTex;
 
         // If the plug-in knows how to render on CPU, check if we actually should not render on CPU instead.
@@ -1151,6 +1151,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         ///We check what is left to render.
 #if NATRON_ENABLE_TRIMAP
+        // scoped_ptr
         guard.reset(new ImageBitMapMarker_RAII(planesToRender->planes, renderFullScaleThenDownscale, roi, this));
         rectsLeftToRender = guard->getRectsToRender();
 #else // !NATRON_ENABLE_TRIMAP
@@ -1508,6 +1509,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 #if NATRON_ENABLE_TRIMAP
         if (!guard) {
+            // scoped_ptr
             guard.reset(new ImageBitMapMarker_RAII(planesToRender->planes, renderFullScaleThenDownscale, roi, this));
         }
 #endif // NATRON_ENABLE_TRIMAP
@@ -1793,11 +1795,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if ( args.returnStorage == eStorageModeGLTex && (imageStorage != eStorageModeGLTex) ) {
                 if (!glContextLocker) {
                     // Make the OpenGL context current to this thread since we may use it for convertRAMImageToOpenGLTexture
-                    glContextLocker.reset( new OSGLContextAttacher(glContext, abortInfo
+                    glContextLocker = boost::make_shared<OSGLContextAttacher>(glContext, abortInfo
 #ifdef DEBUG
-                                                                   , frameArgs->time
+                                                                              , frameArgs->time
 #endif
-                                                                   ) );
+                                                                              );
                 }
                 glContextLocker->attach();
                 it->second.downscaleImage = convertRAMImageToOpenGLTexture(it->second.downscaleImage);
@@ -1910,7 +1912,7 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
     ///Notify the gui we're rendering
     NotifyRenderingStarted_RAIIPtr renderingNotifier;
     if ( !planesToRender->rectsToRender.empty() ) {
-        renderingNotifier.reset( new NotifyRenderingStarted_RAII( self->getNode().get() ) );
+        renderingNotifier = boost::make_shared<NotifyRenderingStarted_RAII>( self->getNode().get() );
     }
 
 

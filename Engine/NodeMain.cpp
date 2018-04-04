@@ -846,7 +846,7 @@ Node::destroyNode(bool blockingDestroy, bool autoReconnect)
         if (isGrp) {
             isGrp->getNodes_recursive(nodesToWatch, false);
         }
-        _imp->renderWatcher.reset( new NodeRenderWatcher(nodesToWatch) );
+        _imp->renderWatcher = boost::make_shared<NodeRenderWatcher>(nodesToWatch);
         QObject::connect( _imp->renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int,WatcherCallerArgsPtr)) );
         NodeDestroyNodeInternalArgsPtr args = boost::make_shared<NodeDestroyNodeInternalArgs>();
         args->autoReconnect = autoReconnect;
