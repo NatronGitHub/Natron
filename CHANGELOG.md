@@ -7,6 +7,7 @@
 
 ## Version 2.3.11
 
+- FrameBlend: add Over operation, add decay parameter, and fix bugs.
 
 ## Version 2.3.10
 
