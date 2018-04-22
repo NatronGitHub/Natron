@@ -113,7 +113,7 @@ if {[variant_isset universal]} {
         --host=i686-apple-${os.platform}${os.major} \
         --build=i686-apple-${os.platform}${os.major}
         default_variants    +doc
-} elseif {${build_arch} eq "x86_64"} {
+} else {
     configure.args-append \
         --host=${build_arch}-apple-${os.platform}${os.major} \
         --build=${build_arch}-apple-${os.platform}${os.major}

@@ -6,7 +6,7 @@ name            openexr
 version         2.2.0
 categories      graphics
 license         BSD
-maintainers     mcalhoun openmaintainer
+maintainers     {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
 description     OpenEXR Graphics Library
 long_description \
     OpenEXR is a high dynamic-range (HDR) image file format developed \
