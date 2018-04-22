@@ -480,9 +480,9 @@ public:
 
     virtual void cloneDefaultValues(const KnobIPtr& other) = 0;
 
-    virtual double random(TimeValue time, unsigned int seed) const = 0;
+    virtual double random(double min, double max, TimeValue time, unsigned int seed = 0) const = 0;
     virtual double random(double min = 0., double max = 1.) const = 0;
-    virtual int randomInt(TimeValue time, unsigned int seed) const = 0;
+    virtual int randomInt(int min, int max, TimeValue time, unsigned int seed = 0) const = 0;
     virtual int randomInt(int min = INT_MIN, int max = INT_MAX) const = 0;
 
 
@@ -1398,9 +1398,9 @@ protected:
 public:
 
 
-    virtual double random(TimeValue time, unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double random(double min, double max, TimeValue time, unsigned int seed = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual double random(double min = 0., double max = 1.) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int randomInt(TimeValue time, unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int randomInt(int min, int max, TimeValue time, unsigned int seed = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int randomInt(int min = 0, int max = INT_MAX) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 protected:

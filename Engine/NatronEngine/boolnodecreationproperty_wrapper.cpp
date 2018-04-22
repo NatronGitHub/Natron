@@ -136,7 +136,7 @@ Sbk_BoolNodeCreationProperty_Init(PyObject* self, PyObject* args, PyObject* kwds
     return 1;
 
     Sbk_BoolNodeCreationProperty_Init_TypeError:
-        const char* overloads[] = {"bool", "list = std.vector<bool >()", 0};
+        const char* overloads[] = {"bool", "list = std.vector< bool >()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BoolNodeCreationProperty", overloads);
         return -1;
 }

@@ -280,13 +280,13 @@ public:
 
     /**
      * @brief Returns a pseudo-random number. This will always be the same for the same time on the timeline.
-     * The version with the seed can be used to retrieve the same value for 2 successive randoms
+     * The version with the seed can be used to retrieve the same value for 2 successive randoms, or at different time frames.
      **/
     double random(double min = 0., double max = 1.) const;
-    double random(unsigned int seed) const;
+    double random(double min, double max, double time, unsigned int seed = 0) const;
 
-    int randomInt(int min, int max);
-    int randomInt(unsigned int seed) const;
+    int randomInt(int min = INT_MIN, int max = INT_MAX);
+    int randomInt(int min, int max, double time, unsigned int seed = 0) const;
 
     /**
      * @brief Returns the raw value of the curve at the given dimension at the given time. Note that

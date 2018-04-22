@@ -9,7 +9,7 @@ NATRON_NAMESPACE_ENTER NATRON_PYTHON_NAMESPACE_ENTER
 class FloatNodeCreationPropertyWrapper : public FloatNodeCreationProperty
 {
 public:
-    FloatNodeCreationPropertyWrapper(const std::vector<double > & values = std::vector<double >());
+    FloatNodeCreationPropertyWrapper(const std::vector<double > & values = std::vector< double >());
     FloatNodeCreationPropertyWrapper(double value);
     virtual ~FloatNodeCreationPropertyWrapper();
     static void pysideInitQtMetaTypes();

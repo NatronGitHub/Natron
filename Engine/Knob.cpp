@@ -2330,12 +2330,14 @@ KnobI::hasDefaultValueChanged() const
 
 
 double
-KnobHelper::random(TimeValue time,
+KnobHelper::random(double min,
+                   double max,
+                   TimeValue time,
                    unsigned int seed) const
 {
     randomSeed(time, seed);
 
-    return random();
+    return random(min, max);
 }
 
 double
@@ -2350,12 +2352,14 @@ KnobHelper::random(double min,
 }
 
 int
-KnobHelper::randomInt(TimeValue time,
+KnobHelper::randomInt(int min,
+                      int max,
+                      TimeValue time,
                       unsigned int seed) const
 {
     randomSeed(time, seed);
 
-    return randomInt();
+    return randomInt(min, max);
 }
 
 int

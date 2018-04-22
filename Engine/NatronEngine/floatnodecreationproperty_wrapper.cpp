@@ -136,7 +136,7 @@ Sbk_FloatNodeCreationProperty_Init(PyObject* self, PyObject* args, PyObject* kwd
     return 1;
 
     Sbk_FloatNodeCreationProperty_Init_TypeError:
-        const char* overloads[] = {"list = std.vector<double >()", "float", 0};
+        const char* overloads[] = {"list = std.vector< double >()", "float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.FloatNodeCreationProperty", overloads);
         return -1;
 }

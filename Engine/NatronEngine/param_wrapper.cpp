@@ -1210,35 +1210,40 @@ static PyObject* Sbk_ParamFunc_random(PyObject* self, PyObject* args, PyObject* 
     cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
     int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
+    if (numArgs + numNamedArgs > 4) {
         PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.random(): too many arguments");
         return 0;
     }
 
-    if (!PyArg_ParseTuple(args, "|OO:random", &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_ParseTuple(args, "|OOOO:random", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
         return 0;
 
 
     // Overloaded function decisor
     // 0: random(double,double)const
-    // 1: random(uint)const
+    // 1: random(double,double,double,uint)const
     if (numArgs == 0) {
         overloadId = 0; // random(double,double)const
-    } else if (numArgs == 1
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<unsigned int>(), (pyArgs[0])))) {
-        overloadId = 1; // random(uint)const
-    } else if (PyFloat_Check(pyArgs[0]) && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
         if (numArgs == 1) {
             overloadId = 0; // random(double,double)const
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
-            overloadId = 0; // random(double,double)const
+            if (numArgs == 2) {
+                overloadId = 0; // random(double,double)const
+            } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))) {
+                if (numArgs == 3) {
+                    overloadId = 1; // random(double,double,double,uint)const
+                } else if ((pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<unsigned int>(), (pyArgs[3])))) {
+                    overloadId = 1; // random(double,double,double,uint)const
+                }
+            }
         }
     }
 
@@ -1281,14 +1286,31 @@ static PyObject* Sbk_ParamFunc_random(PyObject* self, PyObject* args, PyObject* 
             }
             break;
         }
-        case 1: // random(unsigned int seed) const
+        case 1: // random(double min, double max, double time, unsigned int seed) const
         {
-            unsigned int cppArg0;
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "seed");
+                if (value && pyArgs[3]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.random(): got multiple values for keyword argument 'seed'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[3] = value;
+                    if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<unsigned int>(), (pyArgs[3]))))
+                        goto Sbk_ParamFunc_random_TypeError;
+                }
+            }
+            double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
+            double cppArg1;
+            pythonToCpp[1](pyArgs[1], &cppArg1);
+            double cppArg2;
+            pythonToCpp[2](pyArgs[2], &cppArg2);
+            unsigned int cppArg3 = 0;
+            if (pythonToCpp[3]) pythonToCpp[3](pyArgs[3], &cppArg3);
 
             if (!PyErr_Occurred()) {
-                // random(uint)const
-                double cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->random(cppArg0);
+                // random(double,double,double,uint)const
+                double cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->random(cppArg0, cppArg1, cppArg2, cppArg3);
                 pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
             }
             break;
@@ -1302,12 +1324,12 @@ static PyObject* Sbk_ParamFunc_random(PyObject* self, PyObject* args, PyObject* 
     return pyResult;
 
     Sbk_ParamFunc_random_TypeError:
-        const char* overloads[] = {"float = 0., float = 1.", "unsigned int", 0};
+        const char* overloads[] = {"float = 0., float = 1.", "float, float, float, unsigned int = 0", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.random", overloads);
         return 0;
 }
 
-static PyObject* Sbk_ParamFunc_randomInt(PyObject* self, PyObject* args)
+static PyObject* Sbk_ParamFunc_randomInt(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -1316,28 +1338,41 @@ static PyObject* Sbk_ParamFunc_randomInt(PyObject* self, PyObject* args)
     cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 4) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.randomInt(): too many arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "randomInt", 1, 2, &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_ParseTuple(args, "|OOOO:randomInt", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
         return 0;
 
 
     // Overloaded function decisor
     // 0: randomInt(int,int)
-    // 1: randomInt(uint)const
-    if (numArgs == 1
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<unsigned int>(), (pyArgs[0])))) {
-        overloadId = 1; // randomInt(uint)const
-    } else if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
+    // 1: randomInt(int,int,double,uint)const
+    if (numArgs == 0) {
         overloadId = 0; // randomInt(int,int)
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // randomInt(int,int)
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
+            if (numArgs == 2) {
+                overloadId = 0; // randomInt(int,int)
+            } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))) {
+                if (numArgs == 3) {
+                    overloadId = 1; // randomInt(int,int,double,uint)const
+                } else if ((pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<unsigned int>(), (pyArgs[3])))) {
+                    overloadId = 1; // randomInt(int,int,double,uint)const
+                }
+            }
+        }
     }
 
     // Function signature not found.
@@ -1347,10 +1382,30 @@ static PyObject* Sbk_ParamFunc_randomInt(PyObject* self, PyObject* args)
     switch (overloadId) {
         case 0: // randomInt(int min, int max)
         {
-            int cppArg0;
-            pythonToCpp[0](pyArgs[0], &cppArg0);
-            int cppArg1;
-            pythonToCpp[1](pyArgs[1], &cppArg1);
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "min");
+                if (value && pyArgs[0]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.randomInt(): got multiple values for keyword argument 'min'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[0] = value;
+                    if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0]))))
+                        goto Sbk_ParamFunc_randomInt_TypeError;
+                }
+                value = PyDict_GetItemString(kwds, "max");
+                if (value && pyArgs[1]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.randomInt(): got multiple values for keyword argument 'max'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[1] = value;
+                    if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
+                        goto Sbk_ParamFunc_randomInt_TypeError;
+                }
+            }
+            int cppArg0 = Param::INT_MIN;
+            if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
+            int cppArg1 = Param::INT_MAX;
+            if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
             if (!PyErr_Occurred()) {
                 // randomInt(int,int)
@@ -1359,14 +1414,31 @@ static PyObject* Sbk_ParamFunc_randomInt(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // randomInt(unsigned int seed) const
+        case 1: // randomInt(int min, int max, double time, unsigned int seed) const
         {
-            unsigned int cppArg0;
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "seed");
+                if (value && pyArgs[3]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.randomInt(): got multiple values for keyword argument 'seed'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[3] = value;
+                    if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<unsigned int>(), (pyArgs[3]))))
+                        goto Sbk_ParamFunc_randomInt_TypeError;
+                }
+            }
+            int cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
+            int cppArg1;
+            pythonToCpp[1](pyArgs[1], &cppArg1);
+            double cppArg2;
+            pythonToCpp[2](pyArgs[2], &cppArg2);
+            unsigned int cppArg3 = 0;
+            if (pythonToCpp[3]) pythonToCpp[3](pyArgs[3], &cppArg3);
 
             if (!PyErr_Occurred()) {
-                // randomInt(uint)const
-                int cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->randomInt(cppArg0);
+                // randomInt(int,int,double,uint)const
+                int cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->randomInt(cppArg0, cppArg1, cppArg2, cppArg3);
                 pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
             }
             break;
@@ -1380,7 +1452,7 @@ static PyObject* Sbk_ParamFunc_randomInt(PyObject* self, PyObject* args)
     return pyResult;
 
     Sbk_ParamFunc_randomInt_TypeError:
-        const char* overloads[] = {"int, int", "unsigned int", 0};
+        const char* overloads[] = {"int = INT_MIN, int = INT_MAX", "int, int, float, unsigned int = 0", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.randomInt", overloads);
         return 0;
 }
@@ -2367,7 +2439,7 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"isExpressionCacheEnabled", (PyCFunction)Sbk_ParamFunc_isExpressionCacheEnabled, METH_NOARGS},
     {"linkTo", (PyCFunction)Sbk_ParamFunc_linkTo, METH_VARARGS|METH_KEYWORDS},
     {"random", (PyCFunction)Sbk_ParamFunc_random, METH_VARARGS|METH_KEYWORDS},
-    {"randomInt", (PyCFunction)Sbk_ParamFunc_randomInt, METH_VARARGS},
+    {"randomInt", (PyCFunction)Sbk_ParamFunc_randomInt, METH_VARARGS|METH_KEYWORDS},
     {"setAddNewLine", (PyCFunction)Sbk_ParamFunc_setAddNewLine, METH_O},
     {"setAnimationEnabled", (PyCFunction)Sbk_ParamFunc_setAnimationEnabled, METH_O},
     {"setAsAlias", (PyCFunction)Sbk_ParamFunc_setAsAlias, METH_O},

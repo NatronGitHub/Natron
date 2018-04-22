@@ -32,12 +32,19 @@ Natron multiple times on the same computer, the different processes will share t
 - For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
 
 
+## Version 2.3.11
+
+- FrameBlend: add Over operation, add decay parameter, and fix bugs.
+
+
 ## Version 2.3.10
 
 - Add "Overwrite" checkbox to writers to avoid re-rendering the whole sequence #1683.
 - Writers do not render the whole RoD on their input anymore (this may result in a huge speed improvement on some projects).
 - Fix bug where effects could be marked as pass-through if their RoD was larger than the project format #1578
 - Add python method setCanAutoFoldDimensions(enable) to Double2DParam and Double3DParam.
+- Fix several plugins when included in a PyPlug: ColorSuppress, HSVTool, ImageStatistics, Ramp, Shuffle, Reformat #1749.
+- Fix Matrix3x3 and Matrix5x5 GUI (y was reversed).
 
 
 ## Version 2.3.9
