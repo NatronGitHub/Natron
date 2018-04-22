@@ -136,7 +136,7 @@ Sbk_IntNodeCreationProperty_Init(PyObject* self, PyObject* args, PyObject* kwds)
     return 1;
 
     Sbk_IntNodeCreationProperty_Init_TypeError:
-        const char* overloads[] = {"list = std.vector<int >()", "int", 0};
+        const char* overloads[] = {"list = std.vector< int >()", "int", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.IntNodeCreationProperty", overloads);
         return -1;
 }

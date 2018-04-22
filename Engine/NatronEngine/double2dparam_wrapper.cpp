@@ -189,49 +189,6 @@ static PyObject* Sbk_Double2DParamFunc_set(PyObject* self, PyObject* args)
         return 0;
 }
 
-static PyObject* Sbk_Double2DParamFunc_setUsePointInteract(PyObject* self, PyObject* pyArg)
-{
-    Double2DParamWrapper* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = (Double2DParamWrapper*)((::Double2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: setUsePointInteract(bool)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
-        overloadId = 0; // setUsePointInteract(bool)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_Double2DParamFunc_setUsePointInteract_TypeError;
-
-    // Call function/method
-    {
-        bool cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // setUsePointInteract(bool)
-            cppSelf->setUsePointInteract(cppArg0);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_Double2DParamFunc_setUsePointInteract_TypeError:
-        const char* overloads[] = {"bool", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Double2DParam.setUsePointInteract", overloads);
-        return 0;
-}
-
-
 static PyObject* Sbk_Double2DParamFunc_setCanAutoFoldDimensions(PyObject* self, PyObject* pyArg)
 {
     Double2DParamWrapper* cppSelf = 0;
@@ -274,11 +231,53 @@ static PyObject* Sbk_Double2DParamFunc_setCanAutoFoldDimensions(PyObject* self, 
         return 0;
 }
 
+static PyObject* Sbk_Double2DParamFunc_setUsePointInteract(PyObject* self, PyObject* pyArg)
+{
+    Double2DParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (Double2DParamWrapper*)((::Double2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setUsePointInteract(bool)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
+        overloadId = 0; // setUsePointInteract(bool)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_Double2DParamFunc_setUsePointInteract_TypeError;
+
+    // Call function/method
+    {
+        bool cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setUsePointInteract(bool)
+            cppSelf->setUsePointInteract(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_Double2DParamFunc_setUsePointInteract_TypeError:
+        const char* overloads[] = {"bool", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Double2DParam.setUsePointInteract", overloads);
+        return 0;
+}
+
 static PyMethodDef Sbk_Double2DParam_methods[] = {
     {"get", (PyCFunction)Sbk_Double2DParamFunc_get, METH_VARARGS},
     {"set", (PyCFunction)Sbk_Double2DParamFunc_set, METH_VARARGS},
-    {"setUsePointInteract", (PyCFunction)Sbk_Double2DParamFunc_setUsePointInteract, METH_O},
     {"setCanAutoFoldDimensions", (PyCFunction)Sbk_Double2DParamFunc_setCanAutoFoldDimensions, METH_O},
+    {"setUsePointInteract", (PyCFunction)Sbk_Double2DParamFunc_setUsePointInteract, METH_O},
 
     {0} // Sentinel
 };

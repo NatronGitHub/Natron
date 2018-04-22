@@ -4147,12 +4147,14 @@ KnobHelper::getCurrentView() const
 }
 
 double
-KnobHelper::random(double time,
+KnobHelper::random(double min,
+                   double max,
+                   double time,
                    unsigned int seed) const
 {
     randomSeed(time, seed);
 
-    return random();
+    return random(min, max);
 }
 
 double
@@ -4167,12 +4169,14 @@ KnobHelper::random(double min,
 }
 
 int
-KnobHelper::randomInt(double time,
+KnobHelper::randomInt(int min,
+                      int max,
+                      double time,
                       unsigned int seed) const
 {
     randomSeed(time, seed);
 
-    return randomInt();
+    return randomInt(min, max);
 }
 
 int

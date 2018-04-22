@@ -136,7 +136,7 @@ Sbk_StringNodeCreationProperty_Init(PyObject* self, PyObject* args, PyObject* kw
     return 1;
 
     Sbk_StringNodeCreationProperty_Init_TypeError:
-        const char* overloads[] = {"std::string", "list = std.vector<std.string >()", 0};
+        const char* overloads[] = {"std::string", "list = std.vector< std.string >()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.StringNodeCreationProperty", overloads);
         return -1;
 }

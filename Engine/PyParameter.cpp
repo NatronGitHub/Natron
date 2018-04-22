@@ -372,14 +372,17 @@ Param::random(double min,
 }
 
 double
-Param::random(unsigned int seed) const
+Param::random(double min,
+              double max,
+              double time,
+              unsigned int seed) const
 {
     KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return 0;
     }
-    return knob->random(seed);
+    return knob->random(min, max, time, seed);
 }
 
 int
@@ -395,14 +398,17 @@ Param::randomInt(int min,
 }
 
 int
-Param::randomInt(unsigned int seed) const
+Param::randomInt(int min,
+                 int max,
+                 double time,
+                 unsigned int seed) const
 {
     KnobIPtr knob = getInternalKnob();
 
     if (!knob) {
         return 0;
     }
-    return knob->randomInt(seed);
+    return knob->randomInt(min, max, time, seed);
 }
 
 double

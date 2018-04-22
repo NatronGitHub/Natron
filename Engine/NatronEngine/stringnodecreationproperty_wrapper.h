@@ -10,7 +10,7 @@ class StringNodeCreationPropertyWrapper : public StringNodeCreationProperty
 {
 public:
     StringNodeCreationPropertyWrapper(const std::string & value);
-    StringNodeCreationPropertyWrapper(const std::vector<std::string > & values = std::vector<std::string >());
+    StringNodeCreationPropertyWrapper(const std::vector<std::string > & values = std::vector< std::string >());
     virtual ~StringNodeCreationPropertyWrapper();
     static void pysideInitQtMetaTypes();
 };
