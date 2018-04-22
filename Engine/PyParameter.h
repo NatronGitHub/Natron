@@ -285,7 +285,7 @@ public:
     double random(double min = 0., double max = 1.) const;
     double random(double min, double max, double time, unsigned int seed = 0) const;
 
-    int randomInt(int min = INT_MIN, int max = INT_MAX);
+    int randomInt(int min, int max);
     int randomInt(int min, int max, double time, unsigned int seed = 0) const;
 
     /**
