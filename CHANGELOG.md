@@ -35,6 +35,8 @@ Natron multiple times on the same computer, the different processes will share t
 ## Version 2.3.11
 
 - FrameBlend: add Over operation, add decay parameter, and fix bugs.
+- fix Python pseudo-random number generators random(min,max,time,seed) and randomInt(min,max,time,seed)
+
 
 
 ## Version 2.3.10
