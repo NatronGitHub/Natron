@@ -39,6 +39,8 @@ public:
     PointOverlayInteract();
 
     virtual ~PointOverlayInteract();
+
+    std::string getName();
     
 private:
 

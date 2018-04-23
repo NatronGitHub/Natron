@@ -123,6 +123,16 @@ PointOverlayInteract::fetchKnobs(const std::map<std::string, std::string>& knobs
     _imp->interactive = getEffectKnobByRole<KnobBool>(knobs, "interactive", 1, true);
 }
 
+std::string
+PointOverlayInteract::getName()
+{
+    KnobDoublePtr knob = _imp->param.lock();
+
+    if (knob) {
+        return knob->getName();
+    }
+    return "";
+}
 
 void
 PointOverlayInteract::drawOverlay(TimeValue time,

@@ -53,7 +53,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/Project.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/LoadKnobsCompat.h"
-
+#include "Engine/PointOverlayInteract.h"
 #include "Engine/PyAppInstance.h"
 #include "Engine/PyNode.h"
 #include "Engine/PyItemsTable.h"
@@ -2215,6 +2215,60 @@ Double2DParam::set(double x,
     values[0] = x;
     values[1] = y;
     knob->setValueAtTimeAcrossDimensions(TimeValue(frame), values, DimIdx(0), thisViewSpec);
+}
+
+
+void
+Double2DParam::setUsePointInteract(bool use)
+{
+    KnobDoublePtr knob = _doubleKnob.lock();
+    if (!knob) {
+        return;
+    }
+    // Natron 2 version:
+    //return knob->setHasHostOverlayHandle(use);
+
+    // Natron 3 version:
+    KnobHolderPtr holder = knob->getHolder();
+    if (!holder) {
+        return;
+    }
+    NodePtr node;
+    EffectInstancePtr isEffect = toEffectInstance(holder);
+
+    if (!isEffect) {
+        return;
+    }
+    std::list<OverlayInteractBasePtr> overlays;
+    isEffect->getOverlays(eOverlayViewportTypeViewer, &overlays);
+    std::string name = knob->getName();
+    // check if PointOverlayInteract already exists for this knob
+    std::list<OverlayInteractBasePtr>::iterator it;
+    PointOverlayInteractPtr found;
+    for(it = overlays.begin(); it != overlays.end(); ++it) {
+        PointOverlayInteractPtr found = boost::dynamic_pointer_cast<PointOverlayInteract>(*it);
+        if (found && found->getName() == name) {
+            // we found a PointOverlayInteract associated to this param name
+            break;
+        }
+    }
+    if (use) {
+        // create it if it doesn't exist, else do nothing
+        if ( it == overlays.end() ) {
+            assert(!found);
+            // same code as in OfxDouble2DInstance::OfxDouble2DInstance()
+            boost::shared_ptr<PointOverlayInteract> interact(new PointOverlayInteract());
+            std::map<std::string,std::string> knobs;
+            knobs["position"] = name;
+            isEffect->registerOverlay(eOverlayViewportTypeViewer, interact, knobs);
+        }
+    } else {
+        // remove it if it exists, else do nothing
+        if ( it != overlays.end() ) {
+            assert(found);
+            isEffect->removeOverlay(eOverlayViewportTypeViewer, found);
+        }
+    }
 }
 
 
