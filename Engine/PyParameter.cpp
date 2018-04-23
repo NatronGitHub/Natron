@@ -881,7 +881,7 @@ Param::random(double min,
     if (!knob) {
         return 0;
     }
-    return knob->random(min, max, time, seed);
+    return knob->random(min, max, TimeValue(time), seed);
 }
 
 int
@@ -907,7 +907,7 @@ Param::randomInt(int min,
     if (!knob) {
         return 0;
     }
-    return knob->randomInt(min, max, time, seed);
+    return knob->randomInt(min, max, TimeValue(time), seed);
 }
 
 double
