@@ -12,6 +12,7 @@
 #include "yaml-cpp/node/detail/node_iterator.h"
 #include <boost/iterator/iterator_adaptor.hpp>
 #include <boost/utility.hpp>
+#include <boost/next_prior.hpp>
 
 namespace YAML {
 namespace detail {
