@@ -212,7 +212,6 @@ SOURCES += \
     TableItemAnim.cpp \
     TableModelView.cpp \
     TextRenderer.cpp \
-    ticks.cpp \
     TimeLineGui.cpp \
     ToolButton.cpp \
     UndoCommand_qt.cpp \
@@ -226,12 +225,12 @@ SOURCES += \
     ViewerTabOverlays.cpp \
     ViewerTabPrivate.cpp \
     ViewerToolButton.cpp \
-    NatronGui/natrongui_module_wrapper.cpp \
-    NatronGui/pyguiapplication_wrapper.cpp \
+    ticks.cpp \
     NatronGui/guiapp_wrapper.cpp \
+    NatronGui/pyguiapplication_wrapper.cpp \
     NatronGui/pymodaldialog_wrapper.cpp \
     NatronGui/pypanel_wrapper.cpp \
-    NatronGui/pytabwidget_wrapper.cpp
+    NatronGui/pytabwidget_wrapper.cpp \
 
 HEADERS += \
     AboutWindow.h \
@@ -353,7 +352,6 @@ HEADERS += \
     TableItemAnim.h \
     TableModelView.h \
     TextRenderer.h \
-    ticks.h \
     TimeLineGui.h \
     ToolButton.h \
     UndoCommand_qt.h \
@@ -386,9 +384,9 @@ HEADERS += \
     ../libs/OpenFX/include/nuke/fnPublicOfxExtensions.h \
     ../libs/OpenFX/include/tuttle/ofxReadWrite.h \
     ../libs/OpenFX_extensions/ofxhParametricParam.h \
+    NatronGui/guiapp_wrapper.h \
     NatronGui/natrongui_python.h \
     NatronGui/pyguiapplication_wrapper.h \
-    NatronGui/guiapp_wrapper.h \
     NatronGui/pymodaldialog_wrapper.h \
     NatronGui/pypanel_wrapper.h \
     NatronGui/pytabwidget_wrapper.h
@@ -398,21 +396,21 @@ RESOURCES += \
 
 # for i in `find Resources -type f |sort |uniq`; do fgrep -q "$i" GuiResources.qrc || echo "$i"; done |fgrep -v .git |fgrep -v .DS_Store
 OTHER_FILES += \
-Resources/Fonts/Apache_License.txt \
-Resources/Images/Other/natron_picto_tools.svg \
-Resources/Images/Other/natron_picto_viewer.svg \
-Resources/Images/natronIcon.svg \
-Resources/Images/natronIcon.icns \
-Resources/Images/natronIcon256_windows.ico \
-Resources/Images/splashscreen.svg \
-    Resources/Images/prevUserKey.png \
+    Resources/Fonts/Apache_License.txt \
+    Resources/Images/MotionTypeRTS.png \
+    Resources/Images/Other/natron_picto_tools.svg \
+    Resources/Images/Other/natron_picto_viewer.svg \
     Resources/Images/motionTypeAffine.png \
     Resources/Images/motionTypeRT.png \
-    Resources/Images/MotionTypeRTS.png \
     Resources/Images/motionTypeS.png \
     Resources/Images/motionTypeT.png \
+    Resources/Images/natronIcon.icns \
+    Resources/Images/natronIcon.svg \
+    Resources/Images/natronIcon256_windows.ico \
     Resources/Images/patternSize.png \
-    Resources/Images/searchSize.png
+    Resources/Images/prevUserKey.png \
+    Resources/Images/searchSize.png \
+    Resources/Images/splashscreen.svg \
 
 macx {
 OBJECTIVE_SOURCES += \

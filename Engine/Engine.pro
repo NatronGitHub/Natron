@@ -99,29 +99,30 @@ SOURCES += \
     Backdrop.cpp \
     Bezier.cpp \
     BezierCP.cpp \
+    CLArgs.cpp \
+    Cache.cpp \
     Cache.cpp \
     CacheEntryBase.cpp \
     CacheEntryKeyBase.cpp \
-    CLArgs.cpp \
-    CoonsRegularization.cpp \
     ColorParser.cpp \
+    CoonsRegularization.cpp \
     CornerPinOverlayInteract.cpp \
     CreateNodeArgs.cpp \
-    Curve.cpp \
     CurrentFrameRequestScheduler.cpp \
+    Curve.cpp \
     DefaultRenderScheduler.cpp \
     DiskCacheNode.cpp \
     Distortion2D.cpp \
     Dot.cpp \
     EffectDescription.cpp \
     EffectInstance.cpp \
+    EffectInstanceActionResults.cpp \
+    EffectInstanceActions.cpp \
     EffectInstanceChannelSelectors.cpp \
     EffectInstanceDefaultKnobs.cpp \
-    EffectInstanceTLSData.cpp \
-    EffectInstanceActions.cpp \
-    EffectInstanceActionResults.cpp \
     EffectInstancePrivate.cpp \
     EffectInstanceRenderRoI.cpp \
+    EffectInstanceTLSData.cpp \
     EffectOpenGLContextData.cpp \
     ExistenceCheckThread.cpp \
     ExprTk.cpp \
@@ -130,40 +131,41 @@ SOURCES += \
     FitCurve.cpp \
     Format.cpp \
     FrameViewRequest.cpp \
+    GPUContextPool.cpp \
     GenericSchedulerThread.cpp \
     GenericSchedulerThreadWatcher.cpp \
-    GPUContextPool.cpp \
     GroupInput.cpp \
     GroupOutput.cpp \
-    HashableObject.cpp \
     Hash64.cpp \
+    HashableObject.cpp \
     HistogramCPU.cpp \
+    IPCCommon.cpp \
     Image.cpp \
+    ImageApplyShader.cpp \
     ImageCacheEntry.cpp \
     ImageCacheKey.cpp \
     ImageConvert.cpp \
-    ImagePlaneDesc.cpp  \
-    ImageApplyShader.cpp \
     ImageCopyChannels.cpp \
     ImageFill.cpp \
-    ImagePrivate.cpp \
     ImageMaskMix.cpp \
+    ImagePlaneDesc.cpp  \
+    ImagePrivate.cpp \
     ImageStorage.cpp \
     ImageTilesState.cpp \
-    IPCCommon.cpp \
     InputDescription.cpp \
     Interpolation.cpp \
     JoinViewsNode.cpp \
-    KeybindShortcut.cpp \
     KeyFrameInterpolator.cpp \
+    KeybindShortcut.cpp \
     Knob.cpp \
     KnobAnimation.cpp \
     KnobExpression.cpp \
     KnobFactory.cpp \
     KnobFile.cpp \
-    KnobTypes.cpp \
     KnobItemsTable.cpp \
     KnobItemsTableUndoCommand.cpp \
+    KnobSerialization.cpp \
+    KnobTypes.cpp \
     KnobUndoCommand.cpp \
     LibraryBinary.cpp \
     LoadKnobsCompat.cpp \
@@ -171,56 +173,59 @@ SOURCES += \
     Lut.cpp \
     Markdown.cpp \
     MemoryFile.cpp \
-    MultiThread.cpp \
     MemoryInfo.cpp \
+    MultiThread.cpp \
+    NoOpBase.cpp \
+    NoOpBase.cpp \
     Node.cpp \
     NodeDocumentation.cpp \
-    NodeInputs.cpp \
-    NodeMain.cpp \
-    NodeName.cpp \
-    NodeOverlay.cpp \
-    NodeRenderPreview.cpp \
-    NodePrivate.cpp \
     NodeGroup.cpp \
     NodeInputs.cpp \
+    NodeInputs.cpp \
+    NodeMain.cpp \
     NodeMain.cpp \
     NodeMetadata.cpp \
+    NodeName.cpp \
+    NodeOverlay.cpp \
+    NodePrivate.cpp \
     NodePythonInteraction.cpp \
-    NoOpBase.cpp \
+    NodeRenderPreview.cpp \
     Noise.cpp \
+    NonKeyParams.cpp \
+    NonKeyParamsSerialization.cpp \
     OSGLContext.cpp \
-    OSGLContext_osmesa.cpp \
     OSGLContext_mac.cpp \
+    OSGLContext_osmesa.cpp \
     OSGLContext_win.cpp \
     OSGLContext_x11.cpp \
     OSGLFunctions_gl.cpp \
     OSGLFunctions_mesa.cpp \
     OfxClipInstance.cpp \
+    OfxEffectInstance.cpp \
     OfxHost.cpp \
     OfxImageEffectInstance.cpp \
-    OfxEffectInstance.cpp \
     OfxMemory.cpp \
     OfxOverlayInteract.cpp \
     OfxParamInstance.cpp \
     OneViewNode.cpp \
     OutputSchedulerThread.cpp \
     OverlayInteractBase.cpp \
-    PointOverlayInteract.cpp \
     Plugin.cpp \
     PluginMemory.cpp \
+    PointOverlayInteract.cpp \
     PrecompNode.cpp \
     ProcessFrameThread.cpp \
     ProcessHandler.cpp \
     Project.cpp \
     ProjectPrivate.cpp \
     PropertiesHolder.cpp \
-    PyPanelI.cpp \
     PyAppInstance.cpp \
-    PyItemsTable.cpp \
-    PyNodeGroup.cpp \
-    PyNode.cpp \
     PyExprUtils.cpp \
+    PyItemsTable.cpp \
+    PyNode.cpp \
+    PyNodeGroup.cpp \
     PyOverlayInteract.cpp \
+    PyPanelI.cpp \
     PyParameter.cpp \
     PyRoto.cpp \
     PySideCompat.cpp \
@@ -230,9 +235,9 @@ SOURCES += \
     RectD.cpp \
     RectI.cpp \
     RemovePlaneNode.cpp \
-    RenderStats.cpp \
-    RenderQueue.cpp \
     RenderEngine.cpp \
+    RenderQueue.cpp \
+    RenderStats.cpp \
     RotoBezierTriangulation.cpp \
     RotoDrawableItem.cpp \
     RotoItem.cpp \
@@ -240,49 +245,48 @@ SOURCES += \
     RotoPaint.cpp \
     RotoPaintInteract.cpp \
     RotoPaintPrivate.cpp \
-    RotoShapeRenderNode.cpp \
-    RotoShapeRenderNodePrivate.cpp \
     RotoShapeRenderCairo.cpp \
     RotoShapeRenderGL.cpp \
+    RotoShapeRenderNode.cpp \
+    RotoShapeRenderNodePrivate.cpp \
     RotoStrokeItem.cpp \
     RotoUndoCommand.cpp \
     ScriptObject.cpp \
-    Settings.cpp \
     SerializableWindow.cpp \
-    SplitterI.cpp \
+    Settings.cpp \
     Smooth1D.cpp \
+    SplitterI.cpp \
     StandardPaths.cpp \
     StorageDeleterThread.cpp \
     StubNode.cpp \
+    TLSHolder.cpp \
     TabWidgetI.cpp \
     Texture.cpp \
     ThreadPool.cpp \
     TimeLine.cpp \
     Timer.cpp \
     TrackArgs.cpp \
+    TrackScheduler.cpp \
     TrackerDetect.cpp \
+    TrackerFrameAccessor.cpp \
     TrackerHelper.cpp \
     TrackerHelperPrivate.cpp \
-    TrackerFrameAccessor.cpp \
-    TrackMarker.cpp \
     TrackerNode.cpp \
     TrackerNodePrivate.cpp \
     TrackerNodeTransformExport.cpp \
-    TrackScheduler.cpp \
+    Transform.cpp \
+    TransformOverlayInteract.cpp \
     TreeRender.cpp \
     TreeRenderQueueManager.cpp \
     TreeRenderQueueProvider.cpp \
-    TLSHolder.cpp \
-    Transform.cpp \
-    TransformOverlayInteract.cpp \
     Utils.cpp \
+    ViewIdx.cpp \
     ViewerDisplayScheduler.cpp \
     ViewerInstance.cpp \
     ViewerNode.cpp \
-    ViewerNodePrivate.cpp \
     ViewerNodeKnobs.cpp \
     ViewerNodeOverlays.cpp \
-    ViewIdx.cpp \
+    ViewerNodePrivate.cpp \
     WriteNode.cpp \
     ../Global/glad_source.c \
     ../Global/FStreamsSupport.cpp \
@@ -290,61 +294,69 @@ SOURCES += \
     ../Global/PythonUtils.cpp \
     ../Global/StrUtils.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
-    NatronEngine/natronengine_module_wrapper.cpp \
-    NatronEngine/natron_namespace_wrapper.cpp \
+    NatronEngine/animatedparam_wrapper.cpp \
+    NatronEngine/animatedparam_wrapper.cpp \
     NatronEngine/app_wrapper.cpp \
-    NatronEngine/effect_wrapper.cpp \
-    NatronEngine/intparam_wrapper.cpp \
-    NatronEngine/param_wrapper.cpp \
-    NatronEngine/doubleparam_wrapper.cpp \
+    NatronEngine/appsettings_wrapper.cpp \
+    NatronEngine/beziercurve_wrapper.cpp \
+    NatronEngine/beziercurve_wrapper.cpp \
+    NatronEngine/booleanparam_wrapper.cpp \
+    NatronEngine/booleanparam_wrapper.cpp \
+    NatronEngine/boolnodecreationproperty_wrapper.cpp \
+    NatronEngine/buttonparam_wrapper.cpp \
+    NatronEngine/buttonparam_wrapper.cpp \
+    NatronEngine/choiceparam_wrapper.cpp \
+    NatronEngine/choiceparam_wrapper.cpp \
+    NatronEngine/colorparam_wrapper.cpp \
+    NatronEngine/colorparam_wrapper.cpp \
     NatronEngine/colortuple_wrapper.cpp \
     NatronEngine/double2dparam_wrapper.cpp \
     NatronEngine/double2dtuple_wrapper.cpp \
     NatronEngine/double3dparam_wrapper.cpp \
     NatronEngine/double3dtuple_wrapper.cpp \
+    NatronEngine/doubleparam_wrapper.cpp \
+    NatronEngine/effect_wrapper.cpp \
+    NatronEngine/exprutils_wrapper.cpp
+    NatronEngine/exprutils_wrapper.cpp \
+    NatronEngine/fileparam_wrapper.cpp \
+    NatronEngine/fileparam_wrapper.cpp \
+    NatronEngine/floatnodecreationproperty_wrapper.cpp \
+    NatronEngine/group_wrapper.cpp \
+    NatronEngine/group_wrapper.cpp \
+    NatronEngine/groupparam_wrapper.cpp \
+    NatronEngine/groupparam_wrapper.cpp \
+    NatronEngine/imagelayer_wrapper.cpp \
+    NatronEngine/imagelayer_wrapper.cpp \
     NatronEngine/int2dparam_wrapper.cpp \
     NatronEngine/int2dtuple_wrapper.cpp \
     NatronEngine/int3dparam_wrapper.cpp \
     NatronEngine/int3dtuple_wrapper.cpp \
-    NatronEngine/colorparam_wrapper.cpp \
-    NatronEngine/booleanparam_wrapper.cpp \
-    NatronEngine/buttonparam_wrapper.cpp \
-    NatronEngine/choiceparam_wrapper.cpp \
-    NatronEngine/fileparam_wrapper.cpp \
-    NatronEngine/stringparam_wrapper.cpp \
-    NatronEngine/stringparambase_wrapper.cpp \
-    NatronEngine/pathparam_wrapper.cpp \
-    NatronEngine/animatedparam_wrapper.cpp \
-    NatronEngine/parametricparam_wrapper.cpp \
-    NatronEngine/group_wrapper.cpp \
-    NatronEngine/beziercurve_wrapper.cpp \
     NatronEngine/itembase_wrapper.cpp \
-    NatronEngine/imagelayer_wrapper.cpp \
     NatronEngine/itemstable_wrapper.cpp \
-    NatronEngine/strokeitem_wrapper.cpp \
-    NatronEngine/strokepoint_wrapper.cpp \
-    NatronEngine/roto_wrapper.cpp \
-    NatronEngine/track_wrapper.cpp \
-    NatronEngine/tracker_wrapper.cpp \
-    NatronEngine/groupparam_wrapper.cpp \
     NatronEngine/pageparam_wrapper.cpp \
-    NatronEngine/appsettings_wrapper.cpp \
+    NatronEngine/param_wrapper.cpp \
+    NatronEngine/parametricparam_wrapper.cpp \
+    NatronEngine/parametricparam_wrapper.cpp \
+    NatronEngine/pathparam_wrapper.cpp \
+    NatronEngine/pathparam_wrapper.cpp \
     NatronEngine/pycoreapplication_wrapper.cpp \
-    NatronEngine/userparamholder_wrapper.cpp \
-    NatronEngine/rectd_wrapper.cpp \
-    NatronEngine/recti_wrapper.cpp \
-    NatronEngine/separatorparam_wrapper.cpp \
-    NatronEngine/boolnodecreationproperty_wrapper.cpp \
-    NatronEngine/floatnodecreationproperty_wrapper.cpp \
-    NatronEngine/intnodecreationproperty_wrapper.cpp \
-    NatronEngine/nodecreationproperty_wrapper.cpp \
-    NatronEngine/stringnodecreationproperty_wrapper.cpp \
-    NatronEngine/exprutils_wrapper.cpp \
-    NatronEngine/pyoverlayinteract_wrapper.cpp \
     NatronEngine/pycornerpinoverlayinteract_wrapper.cpp \
+    NatronEngine/pyoverlayinteract_wrapper.cpp \
     NatronEngine/pyoverlayparamdesc_wrapper.cpp \
     NatronEngine/pypointoverlayinteract_wrapper.cpp \
-    NatronEngine/pytransformoverlayinteract_wrapper.cpp
+    NatronEngine/pytransformoverlayinteract_wrapper.cpp \
+    NatronEngine/rectd_wrapper.cpp \
+    NatronEngine/recti_wrapper.cpp \
+    NatronEngine/roto_wrapper.cpp \
+    NatronEngine/roto_wrapper.cpp \
+    NatronEngine/separatorparam_wrapper.cpp \
+    NatronEngine/stringnodecreationproperty_wrapper.cpp \
+    NatronEngine/stringparam_wrapper.cpp \
+    NatronEngine/stringparambase_wrapper.cpp \
+    NatronEngine/strokeitem_wrapper.cpp \
+    NatronEngine/strokepoint_wrapper.cpp \
+    NatronEngine/track_wrapper.cpp \
+    NatronEngine/tracker_wrapper.cpp \
 
 
 HEADERS += \
@@ -362,197 +374,200 @@ HEADERS += \
     Cache.h \
     CacheEntryBase.h \
     CacheEntryKeyBase.h \
-    CoonsRegularization.h \
-    CornerPinOverlayInteract.h \
     ChoiceOption.h \
     Color.h \
     ColorParser.h \
+    CoonsRegularization.h \
+    CornerPinOverlayInteract.h \
     CreateNodeArgs.h \
     CurrentFrameRequestScheduler.h \
     Curve.h \
     CurvePrivate.h \
     DefaultRenderScheduler.h \
     DimensionIdx.h \
+    DiskCacheNode.h \
     Distortion2D.h \
     DockablePanelI.h \
     Dot.h \
-    DiskCacheNode.h \
     EffectDescription.h \
     EffectInstance.h \
-    EffectInstanceTLSData.h \
-    EffectInstancePrivate.h \
     EffectInstanceActionResults.h \
+    EffectInstancePrivate.h \
+    EffectInstanceTLSData.h \
     EffectOpenGLContextData.h \
-    ExistenceCheckThread.h \
     EngineFwd.h \
+    ExistenceCheckThread.h \
+    ExistenceCheckThread.h \
     FeatherPoint.h \
     FileDownloader.h \
     FileSystemModel.h \
     FitCurve.h \
     Format.h \
     FrameViewRequest.h \
-    GenericSchedulerThread.h \
-    GenericSchedulerThreadWatcher.h \
     GLShader.h \
     GPUContextPool.h \
+    GenericSchedulerThread.h \
+    GenericSchedulerThread.h \
+    GenericSchedulerThreadWatcher.h \
+    GenericSchedulerThreadWatcher.h \
     GroupInput.h \
     GroupOutput.h \
-    HashableObject.h \
     Hash64.h \
+    HashableObject.h \
     HistogramCPU.h \
+    IPCCommon.h \
     Image.h \
     ImageCacheEntry.h \
     ImageCacheEntryProcessing.h \
     ImageCacheKey.h \
-    ImagePrivate.h \
     ImagePlaneDesc.h \
-    InputDescription.h \
-    Interpolation.h \
-    IPCCommon.h \
+    ImagePrivate.h \
     ImageStorage.h \
     ImageTilesState.h \
+    InputDescription.h \
+    Interpolation.h \
     JoinViewsNode.h \
     KeyFrameInterpolator.h \
     KeybindShortcut.h \
     Knob.h \
-    KnobPrivate.h \
-    KnobGuiI.h \
-    KnobImpl.h \
-    KnobGetValueImpl.h \
-    KnobSetValueImpl.h \
     KnobFactory.h \
     KnobFile.h \
-    KnobTypes.h \
+    KnobGetValueImpl.h \
+    KnobGuiI.h \
+    KnobImpl.h \
     KnobItemsTable.h \
     KnobItemsTableUndoCommand.h \
+    KnobPrivate.h \
+    KnobSetValueImpl.h \
+    KnobTypes.h \
     KnobUndoCommand.h \
     LibraryBinary.h \
     LoadKnobsCompat.h \
     Log.h \
     LogEntry.h \
-    LRUHashTable.h \
     Lut.h \
     Markdown.h \
     MemoryFile.h \
     MemoryInfo.h \
     MergingEnum.h \
     MultiThread.h \
+    NoOpBase.h \
     Node.h \
-    NodePrivate.h \
-    Noise.h \
-    NoiseTables.h \
-    NodeGroup.h \
     NodeGraphI.h \
+    NodeGraphI.h \
+    NodeGroup.h \
     NodeGuiI.h \
     NodeMetadata.h \
-    NoOpBase.h \
     OSGLContext.h \
-    OSGLContext_osmesa.h \
     OSGLContext_mac.h \
+    OSGLContext_osmesa.h \
     OSGLContext_win.h \
     OSGLContext_x11.h \
+    OSGLFramebufferConfig.h \
     OSGLFunctions.h \
     OSGLFunctions_mesa.h \
-    OSGLFramebufferConfig.h \
     OfxClipInstance.h \
     OfxEffectInstance.h \
     OfxHost.h \
     OfxImageEffectInstance.h \
-    OfxOverlayInteract.h \
     OfxMemory.h \
+    OfxOverlayInteract.h \
     OfxParamInstance.h \
     OneViewNode.h \
     OpenGLViewerI.h \
     OutputSchedulerThread.h \
-    OverlaySupport.h \
     OverlayInteractBase.h \
-    PointOverlayInteract.h \
-    ProcessFrameThread.h \
+    OverlaySupport.h \
     Plugin.h \
     PluginActionShortcut.h \
     PluginMemory.h \
+    PointOverlayInteract.h \
     PrecompNode.h \
+    ProcessFrameThread.h \
     ProcessHandler.h \
     Project.h \
     ProjectPrivate.h \
     PropertiesHolder.h \
     PyAppInstance.h \
+    PyExprUtils.h \
+    PyExprUtils.h \
     PyGlobalFunctions.h \
     PyItemsTable.h \
-    PyNodeGroup.h \
     PyNode.h \
+    PyNodeGroup.h \
     PyOverlayInteract.h \
-    PyExprUtils.h \
+    PyPanelI.h \
     PyParameter.h \
     PyRoto.h \
     PyTracker.h \
     Pyside_Engine_Python.h \
-    PyPanelI.h \
     QtEnumConvert.h \
     RamBuffer.h \
-    RemovePlaneNode.h \
     ReadNode.h \
-    RenderEngine.h \
     RectD.h \
     RectI.h \
-    RenderStats.h \
+    RemovePlaneNode.h \
+    RenderEngine.h \
     RenderQueue.h \
+    RenderStats.h \
     RotoBezierTriangulation.h \
     RotoDrawableItem.h \
-    RotoLayer.h \
     RotoItem.h \
+    RotoLayer.h \
     RotoPaint.h \
     RotoPaintPrivate.h \
     RotoPoint.h \
-    RotoShapeRenderNode.h \
-    RotoShapeRenderNodePrivate.h \
     RotoShapeRenderCairo.h \
     RotoShapeRenderGL.h \
+    RotoShapeRenderNode.h \
+    RotoShapeRenderNodePrivate.h \
     RotoStrokeItem.h \
     RotoUndoCommand.h \
-    Smooth1D.h \
     ScriptObject.h \
-    Settings.h \
     SerializableWindow.h \
+    Settings.h \
     Singleton.h \
     SplitterI.h \
     StandardPaths.h \
     StorageDeleterThread.h \
     StubNode.h \
+    TLSHolder.h \
+    TLSHolderImpl.h \
     TabWidgetI.h \
     Texture.h \
-    ThreadStorage.h \
     ThreadPool.h \
+    ThreadStorage.h \
+    ThreadStorage.h \
     TimeLine.h \
     TimeLineKeys.h \
-    Timer.h \
     TimeValue.h \
+    Timer.h \
     TrackArgs.h \
+    TrackMarker.h \
+    TrackScheduler.h \
     TrackerDetect.h \
+    TrackerFrameAccessor.h \
     TrackerHelper.h \
     TrackerHelperPrivate.h \
-    TrackerFrameAccessor.h \
     TrackerNode.h \
     TrackerNodePrivate.h \
     TrackerParamsProvider.h \
-    TrackScheduler.h \
-    TrackMarker.h \
+    Transform.h \
     TransformOverlayInteract.h \
     TreeRender.h \
     TreeRenderQueueManager.h \
     TreeRenderQueueProvider.h \
-    TLSHolder.h \
-    TLSHolderImpl.h \
-    Transform.h \
     UndoCommand.h \
+    UpdateViewerParams.h \
     Utils.h \
     Variant.h \
+    ViewIdx.h \
     ViewerDisplayScheduler.h \
     ViewerInstance.h \
     ViewerNode.h \
     ViewerNodePrivate.h \
-    ViewIdx.h \
     WriteNode.h \
+    fstream_mingw.h \
     ../Global/Enums.h \
     ../Global/FStreamsSupport.h \
     ../Global/fstream_mingw.h \
@@ -590,60 +605,69 @@ HEADERS += \
     ../libs/OpenFX/include/tuttle/ofxReadWrite.h \
     ../libs/OpenFX_extensions/ofxhParametricParam.h \
     ../libs/exprtk/exprtk.hpp \
-    NatronEngine/natronengine_python.h \
+    NatronEngine/animatedparam_wrapper.h \
     NatronEngine/app_wrapper.h \
-    NatronEngine/effect_wrapper.h \
-    NatronEngine/intparam_wrapper.h \
-    NatronEngine/param_wrapper.h \
-    NatronEngine/doubleparam_wrapper.h \
+    NatronEngine/appsettings_wrapper.h \
+    NatronEngine/beziercurve_wrapper.h \
+    NatronEngine/beziercurve_wrapper.h \
+    NatronEngine/booleanparam_wrapper.h \
+    NatronEngine/booleanparam_wrapper.h \
+    NatronEngine/boolnodecreationproperty_wrapper.h \
+    NatronEngine/buttonparam_wrapper.h \
+    NatronEngine/buttonparam_wrapper.h \
+    NatronEngine/choiceparam_wrapper.h \
+    NatronEngine/choiceparam_wrapper.h \
+    NatronEngine/colorparam_wrapper.h \
+    NatronEngine/colorparam_wrapper.h \
     NatronEngine/colortuple_wrapper.h \
     NatronEngine/double2dparam_wrapper.h \
     NatronEngine/double2dtuple_wrapper.h \
     NatronEngine/double3dparam_wrapper.h \
     NatronEngine/double3dtuple_wrapper.h \
+    NatronEngine/doubleparam_wrapper.h \
+    NatronEngine/effect_wrapper.h \
+    NatronEngine/exprutils_wrapper.h
+    NatronEngine/exprutils_wrapper.h \
+    NatronEngine/fileparam_wrapper.h \
+    NatronEngine/fileparam_wrapper.h \
+    NatronEngine/floatnodecreationproperty_wrapper.h \
+    NatronEngine/group_wrapper.h \
+    NatronEngine/group_wrapper.h \
+    NatronEngine/groupparam_wrapper.h \
+    NatronEngine/groupparam_wrapper.h \
+    NatronEngine/imagelayer_wrapper.h \
+    NatronEngine/imagelayer_wrapper.h \
     NatronEngine/int2dparam_wrapper.h \
     NatronEngine/int2dtuple_wrapper.h \
     NatronEngine/int3dparam_wrapper.h \
     NatronEngine/int3dtuple_wrapper.h \
-    NatronEngine/colorparam_wrapper.h \
-    NatronEngine/booleanparam_wrapper.h \
-    NatronEngine/buttonparam_wrapper.h \
-    NatronEngine/choiceparam_wrapper.h \
-    NatronEngine/fileparam_wrapper.h \
-    NatronEngine/stringparam_wrapper.h \
-    NatronEngine/stringparambase_wrapper.h \
-    NatronEngine/pathparam_wrapper.h \
-    NatronEngine/animatedparam_wrapper.h \
-    NatronEngine/parametricparam_wrapper.h \
-    NatronEngine/group_wrapper.h \
-    NatronEngine/beziercurve_wrapper.h \
     NatronEngine/itembase_wrapper.h \
-    NatronEngine/imagelayer_wrapper.h \
     NatronEngine/itemstable_wrapper.cpp \
-    NatronEngine/strokeitem_wrapper.cpp \
-    NatronEngine/strokepoint_wrapper.cpp \
-    NatronEngine/roto_wrapper.h \
-    NatronEngine/track_wrapper.h \
-    NatronEngine/tracker_wrapper.h \
-    NatronEngine/groupparam_wrapper.h \
+    NatronEngine/natronengine_python.h \
     NatronEngine/pageparam_wrapper.h \
-    NatronEngine/appsettings_wrapper.h \
+    NatronEngine/param_wrapper.h \
+    NatronEngine/parametricparam_wrapper.h \
+    NatronEngine/parametricparam_wrapper.h \
+    NatronEngine/pathparam_wrapper.h \
+    NatronEngine/pathparam_wrapper.h \
     NatronEngine/pycoreapplication_wrapper.h \
-    NatronEngine/userparamholder_wrapper.h \
-    NatronEngine/rectd_wrapper.h \
-    NatronEngine/recti_wrapper.h \
-    NatronEngine/separatorparam_wrapper.h \
-    NatronEngine/boolnodecreationproperty_wrapper.h \
-    NatronEngine/floatnodecreationproperty_wrapper.h \
-    NatronEngine/intnodecreationproperty_wrapper.h \
-    NatronEngine/nodecreationproperty_wrapper.h \
-    NatronEngine/stringnodecreationproperty_wrapper.h \
-    NatronEngine/exprutils_wrapper.h \
-    NatronEngine/pyoverlayinteract_wrapper.h \
     NatronEngine/pycornerpinoverlayinteract_wrapper.h \
+    NatronEngine/pyoverlayinteract_wrapper.h \
     NatronEngine/pyoverlayparamdesc_wrapper.h \
     NatronEngine/pypointoverlayinteract_wrapper.h \
-    NatronEngine/pytransformoverlayinteract_wrapper.h
+    NatronEngine/pytransformoverlayinteract_wrapper.h \
+    NatronEngine/rectd_wrapper.h \
+    NatronEngine/recti_wrapper.h \
+    NatronEngine/roto_wrapper.h \
+    NatronEngine/roto_wrapper.h \
+    NatronEngine/separatorparam_wrapper.h \
+    NatronEngine/stringnodecreationproperty_wrapper.h \
+    NatronEngine/stringparam_wrapper.h \
+    NatronEngine/stringparambase_wrapper.h \
+    NatronEngine/strokeitem_wrapper.cpp \
+    NatronEngine/strokepoint_wrapper.cpp \
+    NatronEngine/track_wrapper.h \
+    NatronEngine/tracker_wrapper.h \
 
 
 
