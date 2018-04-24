@@ -40,7 +40,6 @@ precompile_header {
   PRECOMPILED_HEADER = pch.h
 }
 
-
 #OpenFX C api includes and OpenFX c++ layer includes that are located in the submodule under /libs/OpenFX
 INCLUDEPATH += $$PWD/../libs/OpenFX/include
 DEPENDPATH  += $$PWD/../libs/OpenFX/include

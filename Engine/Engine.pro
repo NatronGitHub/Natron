@@ -101,7 +101,6 @@ SOURCES += \
     BezierCP.cpp \
     CLArgs.cpp \
     Cache.cpp \
-    Cache.cpp \
     CacheEntryBase.cpp \
     CacheEntryKeyBase.cpp \
     ColorParser.cpp \
@@ -175,7 +174,6 @@ SOURCES += \
     MemoryFile.cpp \
     MemoryInfo.cpp \
     MultiThread.cpp \
-    NoOpBase.cpp \
     NoOpBase.cpp \
     Node.cpp \
     NodeDocumentation.cpp \
@@ -293,19 +291,13 @@ SOURCES += \
     ../Global/StrUtils.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
     NatronEngine/animatedparam_wrapper.cpp \
-    NatronEngine/animatedparam_wrapper.cpp \
     NatronEngine/app_wrapper.cpp \
     NatronEngine/appsettings_wrapper.cpp \
     NatronEngine/beziercurve_wrapper.cpp \
-    NatronEngine/beziercurve_wrapper.cpp \
-    NatronEngine/booleanparam_wrapper.cpp \
     NatronEngine/booleanparam_wrapper.cpp \
     NatronEngine/boolnodecreationproperty_wrapper.cpp \
     NatronEngine/buttonparam_wrapper.cpp \
-    NatronEngine/buttonparam_wrapper.cpp \
     NatronEngine/choiceparam_wrapper.cpp \
-    NatronEngine/choiceparam_wrapper.cpp \
-    NatronEngine/colorparam_wrapper.cpp \
     NatronEngine/colorparam_wrapper.cpp \
     NatronEngine/colortuple_wrapper.cpp \
     NatronEngine/double2dparam_wrapper.cpp \
@@ -314,16 +306,11 @@ SOURCES += \
     NatronEngine/double3dtuple_wrapper.cpp \
     NatronEngine/doubleparam_wrapper.cpp \
     NatronEngine/effect_wrapper.cpp \
-    NatronEngine/exprutils_wrapper.cpp
     NatronEngine/exprutils_wrapper.cpp \
-    NatronEngine/fileparam_wrapper.cpp \
     NatronEngine/fileparam_wrapper.cpp \
     NatronEngine/floatnodecreationproperty_wrapper.cpp \
     NatronEngine/group_wrapper.cpp \
-    NatronEngine/group_wrapper.cpp \
     NatronEngine/groupparam_wrapper.cpp \
-    NatronEngine/groupparam_wrapper.cpp \
-    NatronEngine/imagelayer_wrapper.cpp \
     NatronEngine/imagelayer_wrapper.cpp \
     NatronEngine/int2dparam_wrapper.cpp \
     NatronEngine/int2dtuple_wrapper.cpp \
@@ -334,8 +321,6 @@ SOURCES += \
     NatronEngine/pageparam_wrapper.cpp \
     NatronEngine/param_wrapper.cpp \
     NatronEngine/parametricparam_wrapper.cpp \
-    NatronEngine/parametricparam_wrapper.cpp \
-    NatronEngine/pathparam_wrapper.cpp \
     NatronEngine/pathparam_wrapper.cpp \
     NatronEngine/pycoreapplication_wrapper.cpp \
     NatronEngine/pycornerpinoverlayinteract_wrapper.cpp \
@@ -346,7 +331,6 @@ SOURCES += \
     NatronEngine/rectd_wrapper.cpp \
     NatronEngine/recti_wrapper.cpp \
     NatronEngine/roto_wrapper.cpp \
-    NatronEngine/roto_wrapper.cpp \
     NatronEngine/separatorparam_wrapper.cpp \
     NatronEngine/stringnodecreationproperty_wrapper.cpp \
     NatronEngine/stringparam_wrapper.cpp \
@@ -355,7 +339,6 @@ SOURCES += \
     NatronEngine/strokepoint_wrapper.cpp \
     NatronEngine/track_wrapper.cpp \
     NatronEngine/tracker_wrapper.cpp \
-
 
 HEADERS += \
     AddPlaneNode.h \
@@ -395,7 +378,6 @@ HEADERS += \
     EffectOpenGLContextData.h \
     EngineFwd.h \
     ExistenceCheckThread.h \
-    ExistenceCheckThread.h \
     FeatherPoint.h \
     FileDownloader.h \
     FileSystemModel.h \
@@ -405,8 +387,6 @@ HEADERS += \
     GLShader.h \
     GPUContextPool.h \
     GenericSchedulerThread.h \
-    GenericSchedulerThread.h \
-    GenericSchedulerThreadWatcher.h \
     GenericSchedulerThreadWatcher.h \
     GroupInput.h \
     GroupOutput.h \
@@ -452,7 +432,6 @@ HEADERS += \
     NoOpBase.h \
     Node.h \
     NodeGraphI.h \
-    NodeGraphI.h \
     NodeGroup.h \
     NodeGuiI.h \
     NodeMetadata.h \
@@ -487,7 +466,6 @@ HEADERS += \
     ProjectPrivate.h \
     PropertiesHolder.h \
     PyAppInstance.h \
-    PyExprUtils.h \
     PyExprUtils.h \
     PyGlobalFunctions.h \
     PyItemsTable.h \
@@ -534,7 +512,6 @@ HEADERS += \
     TabWidgetI.h \
     Texture.h \
     ThreadPool.h \
-    ThreadStorage.h \
     ThreadStorage.h \
     TimeLine.h \
     TimeLineKeys.h \
@@ -607,15 +584,10 @@ HEADERS += \
     NatronEngine/app_wrapper.h \
     NatronEngine/appsettings_wrapper.h \
     NatronEngine/beziercurve_wrapper.h \
-    NatronEngine/beziercurve_wrapper.h \
-    NatronEngine/booleanparam_wrapper.h \
     NatronEngine/booleanparam_wrapper.h \
     NatronEngine/boolnodecreationproperty_wrapper.h \
     NatronEngine/buttonparam_wrapper.h \
-    NatronEngine/buttonparam_wrapper.h \
     NatronEngine/choiceparam_wrapper.h \
-    NatronEngine/choiceparam_wrapper.h \
-    NatronEngine/colorparam_wrapper.h \
     NatronEngine/colorparam_wrapper.h \
     NatronEngine/colortuple_wrapper.h \
     NatronEngine/double2dparam_wrapper.h \
@@ -627,13 +599,9 @@ HEADERS += \
     NatronEngine/exprutils_wrapper.h
     NatronEngine/exprutils_wrapper.h \
     NatronEngine/fileparam_wrapper.h \
-    NatronEngine/fileparam_wrapper.h \
     NatronEngine/floatnodecreationproperty_wrapper.h \
     NatronEngine/group_wrapper.h \
-    NatronEngine/group_wrapper.h \
     NatronEngine/groupparam_wrapper.h \
-    NatronEngine/groupparam_wrapper.h \
-    NatronEngine/imagelayer_wrapper.h \
     NatronEngine/imagelayer_wrapper.h \
     NatronEngine/int2dparam_wrapper.h \
     NatronEngine/int2dtuple_wrapper.h \
@@ -645,8 +613,6 @@ HEADERS += \
     NatronEngine/pageparam_wrapper.h \
     NatronEngine/param_wrapper.h \
     NatronEngine/parametricparam_wrapper.h \
-    NatronEngine/parametricparam_wrapper.h \
-    NatronEngine/pathparam_wrapper.h \
     NatronEngine/pathparam_wrapper.h \
     NatronEngine/pycoreapplication_wrapper.h \
     NatronEngine/pycornerpinoverlayinteract_wrapper.h \
@@ -657,7 +623,6 @@ HEADERS += \
     NatronEngine/rectd_wrapper.h \
     NatronEngine/recti_wrapper.h \
     NatronEngine/roto_wrapper.h \
-    NatronEngine/roto_wrapper.h \
     NatronEngine/separatorparam_wrapper.h \
     NatronEngine/stringnodecreationproperty_wrapper.h \
     NatronEngine/stringparam_wrapper.h \
@@ -667,12 +632,8 @@ HEADERS += \
     NatronEngine/track_wrapper.h \
     NatronEngine/tracker_wrapper.h \
 
-
-
 OTHER_FILES += \
     typesystem_engine.xml
-
-
 
 # GENERATED_SOURCES =				\
 # NatronEngine/animatedparam_wrapper.cpp		\
