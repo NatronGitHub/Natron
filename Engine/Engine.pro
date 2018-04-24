@@ -596,7 +596,6 @@ HEADERS += \
     NatronEngine/double3dtuple_wrapper.h \
     NatronEngine/doubleparam_wrapper.h \
     NatronEngine/effect_wrapper.h \
-    NatronEngine/exprutils_wrapper.h
     NatronEngine/exprutils_wrapper.h \
     NatronEngine/fileparam_wrapper.h \
     NatronEngine/floatnodecreationproperty_wrapper.h \
