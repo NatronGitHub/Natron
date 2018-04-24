@@ -259,6 +259,7 @@ SOURCES += \
     TimeLine.cpp \
     Timer.cpp \
     TrackArgs.cpp \
+    TrackMarker.cpp \
     TrackScheduler.cpp \
     TrackerDetect.cpp \
     TrackerFrameAccessor.cpp \
