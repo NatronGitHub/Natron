@@ -271,7 +271,7 @@ bezierBounds(double p0,
     if (a == 0) {
         //aX^2 + bX + c well then then this is a simple line
         //x= -c / b
-        double t = -c / b;
+        double t = b == 0. ? 0. : -c / b;
         if ( (0 < t) && (t < 1) ) {
             updateRange(Bezier::bezierEval(p0, p1, p2, p3, t), xmin, xmax);
         }
