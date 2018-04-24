@@ -258,7 +258,6 @@ SOURCES += \
     NatronEngine/tracker_wrapper.cpp \
     NatronEngine/userparamholder_wrapper.cpp \
 
-
 HEADERS += \
     AbortableRenderInfo.h \
     AfterQuitProcessingI.h \
@@ -524,11 +523,8 @@ HEADERS += \
     NatronEngine/tracker_wrapper.h \
     NatronEngine/userparamholder_wrapper.h \
 
-
 OTHER_FILES += \
     typesystem_engine.xml
-
-
 
 # GENERATED_SOURCES =				\
 # NatronEngine/animatedparam_wrapper.cpp		\
