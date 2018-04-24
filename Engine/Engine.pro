@@ -181,8 +181,6 @@ SOURCES += \
     NodeDocumentation.cpp \
     NodeGroup.cpp \
     NodeInputs.cpp \
-    NodeInputs.cpp \
-    NodeMain.cpp \
     NodeMain.cpp \
     NodeMetadata.cpp \
     NodeName.cpp \

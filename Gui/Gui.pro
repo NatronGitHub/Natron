@@ -389,7 +389,7 @@ HEADERS += \
     NatronGui/pyguiapplication_wrapper.h \
     NatronGui/pymodaldialog_wrapper.h \
     NatronGui/pypanel_wrapper.h \
-    NatronGui/pytabwidget_wrapper.h
+    NatronGui/pytabwidget_wrapper.h \
 
 RESOURCES += \
     GuiResources.qrc
