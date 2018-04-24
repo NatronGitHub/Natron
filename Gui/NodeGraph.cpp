@@ -330,12 +330,13 @@ NodeGraph::paintEvent(QPaintEvent* e)
             int pixH = _imp->unlockIcon.height();
             QRect pixRect(pixPos.x(), pixPos.y(), pixW, pixH);
             pixRect.adjust(-2, -2, 2, 2);
-            QRect selRect(pixPos.x(), pixPos.y(), pixW, pixH);
-            pixRect.adjust(-3, -3, 3, 3);
+            QRect selRect = pixRect;
+            selRect.adjust(-3, -3, 3, 3);
             p.setBrush( QColor(243, 137, 0) );
             p.setOpacity(1.);
+            p.setPen(Qt::NoPen);
             p.drawRoundedRect(selRect, 5, 5);
-            p.setBrush( QColor(50, 50, 50) );
+            p.setBrush( QColor(100, 100, 100) );
             p.drawRoundedRect(pixRect, 5, 5);
             p.drawPixmap(pixPos.x(), pixPos.y(), pixW, pixH, _imp->unlockIcon, 0, 0, pixW, pixH);
         }

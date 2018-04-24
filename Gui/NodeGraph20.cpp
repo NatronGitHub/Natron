@@ -398,15 +398,22 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     }
     if (!groupEdited && isGroupEditable) {
         ///check if user is nearby unlock
-        int iw = _imp->unlockIcon.width();
-        int ih = _imp->unlockIcon.height();
-        int w = width();
-        if ( ( e->x() >= (w - iw - 10 - 15) ) && ( e->x() <= (w - 10 + 15) ) &&
-             ( e->y() >= (10 - 15) ) && ( e->y() <= (10 + ih + 15) ) ) {
+        // see NodeGraph::paintEvent()
+        QPoint pixPos = _imp->getPyPlugUnlockPos();
+        int pixW = _imp->unlockIcon.width();
+        int pixH = _imp->unlockIcon.height();
+        QRect pixRect(pixPos.x(), pixPos.y(), pixW, pixH);
+        pixRect.adjust(-2, -2, 2, 2);
+        QRect selRect = pixRect;
+        selRect.adjust(-3, -3, 3, 3);
+        if ( selRect.contains( e->pos() ) ) {
             assert(isGroup);
             QPoint pos = mapToGlobal( e->pos() );
+            // Unfortunately, the timeout delay for the tooltip is hardcoded in Qt 4, and the last parameter to showText doesn't seem to influence anything
+            // Can not fix https://github.com/MrKepzie/Natron/issues/1151 (at least in Qt4)
             QToolTip::showText( pos, NATRON_NAMESPACE::convertFromPlainText(QCoreApplication::translate("NodeGraph", "Clicking the unlock button will convert the PyPlug to a regular group saved in the project and dettach it from the script.\n"
-                                                                                                "Any modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+                                                                                                "Any modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."), NATRON_NAMESPACE::WhiteSpaceNormal),
+                               this, selRect);
         }
     }
 
