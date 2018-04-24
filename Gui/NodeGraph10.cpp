@@ -142,9 +142,22 @@ NodeGraph::hasItemNearbyMouse(const QPoint& mousePosViewport,
             edges.insert(isEdge);
         }
     }
+
+    // first test normal nodes, then backdrops.
+    // reason is https://github.com/MrKepzie/Natron/issues/1689
+    for (std::set<NodeGuiPtr>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ( (*it)->isVisible() && (*it)->isActive() ) {
+            BackdropGui* isBd = dynamic_cast<BackdropGui*>(*it);
+            if (!isBd) {
+                *node = *it;
+
+                return eNearbyItemNode;
+            }
+        }
+    }
     NodeGuiPtr nearbyBackdrop;
     NodeGraph::NearbyItemEnum nearbyBackdropType = NodeGraph::eNearbyItemNone;
-    for (std::set<NodeGuiPtr>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::set<NodeGui*>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isVisible() && (*it)->isActive() ) {
             QPointF localPoint = (*it)->mapFromScene( mapToScene(mousePosViewport) );
             BackdropGuiPtr isBd = toBackdropGui(*it);
@@ -156,10 +169,6 @@ NodeGraph::hasItemNearbyMouse(const QPoint& mousePosViewport,
                     nearbyBackdrop = *it;
                     nearbyBackdropType = eNearbyItemBackdropResizeHandle;
                 }
-            } else {
-                *node = *it;
-
-                return eNearbyItemNode;
             }
         }
     }
