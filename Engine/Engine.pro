@@ -163,7 +163,6 @@ SOURCES += \
     KnobFile.cpp \
     KnobItemsTable.cpp \
     KnobItemsTableUndoCommand.cpp \
-    KnobSerialization.cpp \
     KnobTypes.cpp \
     KnobUndoCommand.cpp \
     LibraryBinary.cpp \
@@ -187,8 +186,6 @@ SOURCES += \
     NodePythonInteraction.cpp \
     NodeRenderPreview.cpp \
     Noise.cpp \
-    NonKeyParams.cpp \
-    NonKeyParamsSerialization.cpp \
     OSGLContext.cpp \
     OSGLContext_mac.cpp \
     OSGLContext_osmesa.cpp \
@@ -533,7 +530,6 @@ HEADERS += \
     TreeRenderQueueManager.h \
     TreeRenderQueueProvider.h \
     UndoCommand.h \
-    UpdateViewerParams.h \
     Utils.h \
     Variant.h \
     ViewIdx.h \
