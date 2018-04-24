@@ -224,7 +224,7 @@ SOURCES += \
     NatronEngine/double3dtuple_wrapper.cpp \
     NatronEngine/doubleparam_wrapper.cpp \
     NatronEngine/effect_wrapper.cpp \
-    NatronEngine/exprutils_wrapper.cpp
+    NatronEngine/exprutils_wrapper.cpp \
     NatronEngine/fileparam_wrapper.cpp \
     NatronEngine/floatnodecreationproperty_wrapper.cpp \
     NatronEngine/group_wrapper.cpp \
