@@ -314,9 +314,13 @@ SOURCES += \
     NatronEngine/int2dtuple_wrapper.cpp \
     NatronEngine/int3dparam_wrapper.cpp \
     NatronEngine/int3dtuple_wrapper.cpp \
+    NatronEngine/intnodecreationproperty_wrapper.cpp \
+    NatronEngine/intparam_wrapper.cpp \
     NatronEngine/itembase_wrapper.cpp \
     NatronEngine/itemstable_wrapper.cpp \
+    NatronEngine/natron_namespace_wrapper.cpp \
     NatronEngine/natronengine_module_wrapper.cpp \
+    NatronEngine/nodecreationproperty_wrapper.cpp \
     NatronEngine/pageparam_wrapper.cpp \
     NatronEngine/param_wrapper.cpp \
     NatronEngine/parametricparam_wrapper.cpp \
@@ -338,6 +342,7 @@ SOURCES += \
     NatronEngine/strokepoint_wrapper.cpp \
     NatronEngine/track_wrapper.cpp \
     NatronEngine/tracker_wrapper.cpp \
+    NatronEngine/userparamholder_wrapper.cpp \
 
 HEADERS += \
     AddPlaneNode.h \
@@ -604,9 +609,13 @@ HEADERS += \
     NatronEngine/int2dtuple_wrapper.h \
     NatronEngine/int3dparam_wrapper.h \
     NatronEngine/int3dtuple_wrapper.h \
+    NatronEngine/intnodecreationproperty_wrapper.h \
+    NatronEngine/intparam_wrapper.h \
     NatronEngine/itembase_wrapper.h \
-    NatronEngine/itemstable_wrapper.cpp \
+    NatronEngine/itemstable_wrapper.h \
+    NatronEngine/natron_namespace_wrapper.h \
     NatronEngine/natronengine_python.h \
+    NatronEngine/nodecreationproperty_wrapper.h \
     NatronEngine/pageparam_wrapper.h \
     NatronEngine/param_wrapper.h \
     NatronEngine/parametricparam_wrapper.h \
@@ -624,10 +633,11 @@ HEADERS += \
     NatronEngine/stringnodecreationproperty_wrapper.h \
     NatronEngine/stringparam_wrapper.h \
     NatronEngine/stringparambase_wrapper.h \
-    NatronEngine/strokeitem_wrapper.cpp \
-    NatronEngine/strokepoint_wrapper.cpp \
+    NatronEngine/strokeitem_wrapper.h \
+    NatronEngine/strokepoint_wrapper.h \
     NatronEngine/track_wrapper.h \
     NatronEngine/tracker_wrapper.h \
+    NatronEngine/userparamholder_wrapper.h \
 
 OTHER_FILES += \
     typesystem_engine.xml
