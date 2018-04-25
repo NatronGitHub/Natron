@@ -316,6 +316,7 @@ SOURCES += \
     NatronEngine/int3dtuple_wrapper.cpp \
     NatronEngine/itembase_wrapper.cpp \
     NatronEngine/itemstable_wrapper.cpp \
+    NatronEngine/natronengine_module_wrapper.cpp \
     NatronEngine/pageparam_wrapper.cpp \
     NatronEngine/param_wrapper.cpp \
     NatronEngine/parametricparam_wrapper.cpp \
