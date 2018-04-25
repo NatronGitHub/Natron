@@ -436,8 +436,7 @@ OfxParamToKnob::onChoiceMenuEntryAppended()
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
     int nProps = param->getProperties().getDimension(kOfxParamPropChoiceOption);
-    int nLabelProps = param->getProperties().getDimension(kOfxParamPropChoiceLabelOption);
-    assert(nProps == nLabelProps);
+    assert(nProps == param->getProperties().getDimension(kOfxParamPropChoiceLabelOption));
 
     KnobIPtr knob = getKnob();
     if (!knob) {

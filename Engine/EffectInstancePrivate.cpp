@@ -564,6 +564,7 @@ EffectInstance::Implementation::markImageAsBeingRendered(const ImagePtr & img, c
         ++ibr->refCount;
         std::pair<ImageBeingRenderedMap::iterator, bool> ok = imagesBeingRendered.insert( std::make_pair(img, ibr) );
         assert(ok.second);
+        Q_UNUSED(ok);
         k.unlock(); // imagesBeingRenderedMutex
         QMutexLocker k2(&ibr->lock);
         img->getRestToRender_trimap(roi, *restToRender, renderedElsewhere);

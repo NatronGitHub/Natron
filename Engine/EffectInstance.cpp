@@ -2233,17 +2233,17 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
         canonicalRectToRender.toPixelEnclosing(mipMapLevel, par, &downscaledRectToRender);
     }
 
-    const EffectInstance::PlaneToRender & firstPlaneToRender = planes->planes.begin()->second;
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
 # ifndef NDEBUG
+    const EffectInstance::PlaneToRender & firstPlaneToRender = planes->planes.begin()->second;
     RectI renderBounds = firstPlaneToRender.renderMappedImage->getBounds();
     assert(renderBounds.x1 <= renderMappedRectToRender.x1 && renderMappedRectToRender.x2 <= renderBounds.x2 &&
            renderBounds.y1 <= renderMappedRectToRender.y1 && renderMappedRectToRender.y2 <= renderBounds.y2);
 # endif
 
-
-
+#ifndef NDEBUG
     const ParallelRenderArgsPtr& frameArgs = tls->frameArgs.back();
+#endif
 
       ///It might have been already rendered now
     if ( renderMappedRectToRender.isNull() ) {
@@ -2356,7 +2356,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
         assert(firstPlaneToRender.renderMappedImage->getMipMapLevel() == 0);
         assert(renderMappedMipMapLevel == 0);
     }
-#     endif // DEBUG
+#endif // !NDEBUG
 
     RenderingFunctorRetEnum handlerRet =  renderHandler(tls,
                                                         mipMapLevel,
