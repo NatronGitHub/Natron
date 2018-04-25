@@ -226,6 +226,7 @@ SOURCES += \
     ViewerToolButton.cpp \
     ticks.cpp \
     NatronGui/guiapp_wrapper.cpp \
+    NatronGui/natrongui_module_wrapper.cpp \
     NatronGui/pyguiapplication_wrapper.cpp \
     NatronGui/pymodaldialog_wrapper.cpp \
     NatronGui/pypanel_wrapper.cpp \
