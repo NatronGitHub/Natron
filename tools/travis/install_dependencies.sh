@@ -356,7 +356,8 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
         fi
     fi
 
-    PATH=/usr/local/bin:"$PATH"
+    brew install ccache
+    PATH=/usr/local/opt/ccache/libexec:/usr/local/bin:"$PATH"
     echo "*** Path: $PATH"
     ls -l /usr/local/bin/python2
     echo "*** Python 2 version:"

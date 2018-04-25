@@ -131,10 +131,6 @@ matrix:
 #    - os: osx # if we exceed the time limit
   fast_finish: true
 
-cache:
-  apt: true
-#  directories:
-#  - /usr/local/Cellar
 
 # Travis CI has 1.5 cores per VM, take advantage of it
 before_install:
@@ -165,11 +161,15 @@ install:
 #> install_dependencies.log 2>&1
 
 cache:
+  pip: true
+  ccache: true
+  apt: true
   directories:
     - $HOME/openexr
     - $HOME/ocio
     - $HOME/oiio
     - $HOME/seexpr
+    - /usr/local/Cellar
 
 script:
   - if [[ ${COVERITY_SCAN_BRANCH} == 1 ]];
