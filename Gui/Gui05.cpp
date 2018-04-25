@@ -35,6 +35,9 @@
 #include <QGraphicsScene>
 #include <QUndoGroup>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeSerialization.h"
@@ -120,7 +123,7 @@ Gui::setupUi()
     ///Must be absolutely called once _nodeGraphArea has been initialized.
     _imp->createPropertiesBinGui();
 
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    ProjectPtr project = getApp()->getProject();
 
     _imp->_projectGui = new ProjectGui(this);
     _imp->_projectGui->create(project,
@@ -145,7 +148,7 @@ Gui::setupUi()
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
 
     QObject::connect( project.get(), SIGNAL(projectNameChanged(QString,bool)), this, SLOT(onProjectNameChanged(QString,bool)) );
-    boost::shared_ptr<TimeLine> timeline = project->getTimeLine();
+    TimeLinePtr timeline = project->getTimeLine();
     QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime,int)) );
     QObject::connect( timeline.get(), SIGNAL(frameAboutToChange()), this, SLOT(onTimelineTimeAboutToChange()) );
 
@@ -163,7 +166,12 @@ Gui::setupUi()
      */
     QMetaObject::connectSlotsByName(this);
 
-    appPTR->setOFXHostHandle( getApp()->getOfxHostOSHandle() );
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        appPTR->setOFXHostHandle( getApp()->getOfxHostOSHandle() );
+    }
 } // setupUi
 
 void
@@ -202,10 +210,10 @@ void
 Gui::createGroupGui(const NodePtr & group,
                     const CreateNodeArgs& args)
 {
-    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getEffectInstance()->shared_from_this() );
+    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getEffectInstance()->shared_from_this() );
 
     assert(isGrp);
-    boost::shared_ptr<NodeCollection> collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
+    NodeCollectionPtr collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
     assert(collection);
 
     TabWidget* where = 0;
@@ -226,7 +234,7 @@ Gui::createGroupGui(const NodePtr & group,
     nodeGraph->setObjectName( QString::fromUtf8( group->getLabel().c_str() ) );
     _imp->_groups.push_back(nodeGraph);
     
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
 
     if ( where && !serialization && !getApp()->isCreatingPythonGroup() ) {
         where->appendTab(nodeGraph, nodeGraph);
@@ -306,7 +314,7 @@ Gui::getActiveViewer() const
     return _imp->_activeViewer;
 }
 
-boost::shared_ptr<NodeCollection>
+NodeCollectionPtr
 Gui::getLastSelectedNodeCollection() const
 {
     NodeGraph* graph = 0;
@@ -316,7 +324,7 @@ Gui::getLastSelectedNodeCollection() const
     } else {
         graph = _imp->_nodeGraphArea;
     }
-    boost::shared_ptr<NodeCollection> group = graph->getGroup();
+    NodeCollectionPtr group = graph->getGroup();
     assert(group);
 
     return group;

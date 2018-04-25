@@ -62,13 +62,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    static KnobGui * BuildKnobGui(KnobPtr knob,
+    static KnobGui * BuildKnobGui(KnobIPtr knob,
                                   KnobGuiContainerI *container)
     {
         return new KnobGuiParametric(knob, container);
     }
 
-    KnobGuiParametric(KnobPtr knob,
+    KnobGuiParametric(KnobIPtr knob,
                       KnobGuiContainerI *container);
     virtual void removeSpecificGui() OVERRIDE FINAL;
     virtual bool shouldCreateLabel() const OVERRIDE
@@ -77,8 +77,8 @@ public:
     }
 
     virtual ~KnobGuiParametric() OVERRIDE;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
-    virtual void getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* selection) OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
+    virtual void getSelectedCurves(std::vector<CurveGuiPtr>* selection) OVERRIDE FINAL;
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
     virtual void redraw() OVERRIDE FINAL;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
@@ -127,13 +127,13 @@ private:
     Button* _resetButton;
     struct CurveDescriptor
     {
-        boost::shared_ptr<KnobCurveGui> curve;
+        KnobCurveGuiPtr curve;
         QTreeWidgetItem* treeItem;
     };
 
     typedef std::vector<CurveDescriptor> CurveGuis;
     CurveGuis _curves;
-    boost::weak_ptr<KnobParametric> _knob;
+    KnobParametricWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

@@ -164,7 +164,7 @@ optimizeRectsToRender(EffectInstance* self,
 } // optimizeRectsToRender
 
 ImagePtr
-EffectInstance::convertPlanesFormatsIfNeeded(const AppInstPtr& app,
+EffectInstance::convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
                                              const ImagePtr& inputImage,
                                              const RectI& roi,
                                              const ImagePlaneDesc& targetComponents,
@@ -342,11 +342,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
 
     //Create the TLS data for this node if it did not exist yet
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
     OSGLContextPtr glContext;
     AbortableRenderInfoPtr abortInfo;
-    boost::shared_ptr<ParallelRenderArgs>  frameArgs;
+    ParallelRenderArgsPtr  frameArgs;
     if ( tls->frameArgs.empty() ) {
         qDebug() << QThread::currentThread() << "[BUG]:" << getScriptName_mt_safe().c_str() <<  "Thread-storage for the render of the frame was not set.";
 
@@ -457,7 +457,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
 
     ///Determine needed planes
-    boost::shared_ptr<ComponentsNeededMap> neededComps = boost::make_shared<ComponentsNeededMap>();
+    ComponentsNeededMapPtr neededComps = boost::make_shared<ComponentsNeededMap>();
     ComponentsNeededMap::iterator foundOutputNeededComps;
     std::bitset<4> processChannels;
     std::list<ImagePlaneDesc> passThroughPlanes;
@@ -686,7 +686,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     if (fetchUserSelectedComponentsUpstream) {
                         // We fetched potentially different components, so convert them to the format requested
                         std::map<ImagePlaneDesc, ImagePtr> convertedPlanes;
-                        AppInstPtr app = getApp();
+                        AppInstancePtr app = getApp();
                         bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
                         std::list<ImagePlaneDesc>::const_iterator compIt = args.components.begin();
 
@@ -808,7 +808,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// End Compute RoI /////////////////////////////////////////////////////////////////////////
     const PluginOpenGLRenderSupport openGLSupport = frameArgs->currentOpenglSupport;
     StorageModeEnum storage = eStorageModeRAM;
-    boost::shared_ptr<OSGLContextAttacher> glContextLocker;
+    OSGLContextAttacherPtr glContextLocker;
 
     if ( dynamic_cast<DiskCacheNode*>(this) ) {
         storage = eStorageModeDisk;
@@ -827,11 +827,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
            since we do not use the cache for textures)
          */
         // Make the OpenGL context current to this thread
-        glContextLocker.reset( new OSGLContextAttacher(glContext, abortInfo
+        glContextLocker = boost::make_shared<OSGLContextAttacher>(glContext, abortInfo
 #ifdef DEBUG
-                                                       , frameArgs->time
+                                                                  , frameArgs->time
 #endif
-                                                       ) );
+                                                                  );
         storage = eStorageModeGLTex;
 
         // If the plug-in knows how to render on CPU, check if we actually should not render on CPU instead.
@@ -926,9 +926,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ImageBitDepthEnum outputDepth = getBitDepth(-1);
     ImagePlaneDesc outputClipPrefComps, outputClipPrefCompsPaired;
     getMetadataComponents(-1, &outputClipPrefComps, &outputClipPrefCompsPaired);
-    boost::shared_ptr<ImagePlanesToRender> planesToRender = boost::make_shared<ImagePlanesToRender>();
+    ImagePlanesToRenderPtr planesToRender = boost::make_shared<ImagePlanesToRender>();
     planesToRender->useOpenGL = storage == eStorageModeGLTex;
-    boost::shared_ptr<FramesNeededMap> framesNeeded = boost::make_shared<FramesNeededMap>();
+    FramesNeededMapPtr framesNeeded = boost::make_shared<FramesNeededMap>();
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Look-up the cache ///////////////////////////////////////////////////////////////
 
@@ -1151,6 +1151,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         ///We check what is left to render.
 #if NATRON_ENABLE_TRIMAP
+        // scoped_ptr
         guard.reset(new ImageBitMapMarker_RAII(planesToRender->planes, renderFullScaleThenDownscale, roi, this));
         rectsLeftToRender = guard->getRectsToRender();
 #else // !NATRON_ENABLE_TRIMAP
@@ -1210,7 +1211,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         bool hasDifferentRods = false;
         int maxInput = getNInputs();
         bool hasMask = false;
-        boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
+        RotoDrawableItemPtr attachedStroke = getNode()->getAttachedRotoItem();
         for (int i = 0; i < maxInput; ++i) {
             bool isMask = isInputMask(i) || isInputRotoBrush(i);
             RectD inputRod;
@@ -1223,7 +1224,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     continue;
                 }
                 bool isProjectFormat;
-                boost::shared_ptr<ParallelRenderArgs> inputFrameArgs = input->getParallelRenderArgsTLS();
+                ParallelRenderArgsPtr inputFrameArgs = input->getParallelRenderArgsTLS();
                 U64 inputHash = (inputFrameArgs) ? inputFrameArgs->nodeHash : input->getHash();
                 StatusEnum stat = input->getRegionOfDefinition_public(inputHash, args.time, args.scale, args.view, &inputRod, &isProjectFormat);
                 if ( (stat != eStatusOK) && !inputRod.isNull() ) {
@@ -1508,6 +1509,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 #if NATRON_ENABLE_TRIMAP
         if (!guard) {
+            // scoped_ptr
             guard.reset(new ImageBitMapMarker_RAII(planesToRender->planes, renderFullScaleThenDownscale, roi, this));
         }
 #endif // NATRON_ENABLE_TRIMAP
@@ -1793,11 +1795,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if ( args.returnStorage == eStorageModeGLTex && (imageStorage != eStorageModeGLTex) ) {
                 if (!glContextLocker) {
                     // Make the OpenGL context current to this thread since we may use it for convertRAMImageToOpenGLTexture
-                    glContextLocker.reset( new OSGLContextAttacher(glContext, abortInfo
+                    glContextLocker = boost::make_shared<OSGLContextAttacher>(glContext, abortInfo
 #ifdef DEBUG
-                                                                   , frameArgs->time
+                                                                              , frameArgs->time
 #endif
-                                                                   ) );
+                                                                              );
                 }
                 glContextLocker->attach();
                 it->second.downscaleImage = convertRAMImageToOpenGLTexture(it->second.downscaleImage);
@@ -1853,13 +1855,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 EffectInstance::RenderRoIStatusEnum
 EffectInstance::renderRoIInternal(EffectInstance* self,
                                   double time,
-                                  const boost::shared_ptr<ParallelRenderArgs> & frameArgs,
+                                  const ParallelRenderArgsPtr & frameArgs,
                                   RenderSafetyEnum safety,
                                   unsigned int mipMapLevel,
                                   ViewIdx view,
                                   const RectD & rod, //!< effect rod in canonical coords
                                   const double par,
-                                  const boost::shared_ptr<ImagePlanesToRender> & planesToRender,
+                                  const ImagePlanesToRenderPtr & planesToRender,
                                   bool isSequentialRender,
                                   bool isRenderMadeInResponseToUserInteraction,
                                   U64 nodeHash,
@@ -1867,7 +1869,7 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
                                   bool byPassCache,
                                   ImageBitDepthEnum outputClipPrefDepth,
                                   const ImagePlaneDesc& outputClipPrefsComps,
-                                  const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
+                                  const ComponentsNeededMapPtr & compsNeeded,
                                   const std::bitset<4> processChannels)
 {
     EffectInstance::RenderRoIStatusEnum retCode;
@@ -1908,16 +1910,16 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
 
 
     ///Notify the gui we're rendering
-    boost::shared_ptr<NotifyRenderingStarted_RAII> renderingNotifier;
+    NotifyRenderingStarted_RAIIPtr renderingNotifier;
     if ( !planesToRender->rectsToRender.empty() ) {
-        renderingNotifier.reset( new NotifyRenderingStarted_RAII( self->getNode().get() ) );
+        renderingNotifier = boost::make_shared<NotifyRenderingStarted_RAII>( self->getNode().get() );
     }
 
 
 
-    boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > > tlsCopy;
+    boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> > tlsCopy;
     if (safety == eRenderSafetyFullySafeFrame) {
-        tlsCopy = boost::make_shared<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > >();
+        tlsCopy = boost::make_shared<std::map<NodePtr, ParallelRenderArgsPtr> >();
         /*
          * Since we're about to start new threads potentially, copy all the thread local storage on all nodes (any node may be involved in
          * expressions, and we need to retrieve the exact local time of render).

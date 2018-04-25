@@ -70,7 +70,7 @@ NATRON_NAMESPACE_ENTER
 struct RotoPaintData
 {
     NodePtr rotoPaintNode;
-    boost::shared_ptr<RotoStrokeItem> stroke;
+    RotoStrokeItemPtr stroke;
     bool isPainting;
     bool turboAlreadyActiveBeforePainting;
 
@@ -87,7 +87,7 @@ struct RotoPaintData
     double distToNextIn, distToNextOut;
 
     //The image used to render the currently drawn stroke mask
-    boost::shared_ptr<Image> strokeImage;
+    ImagePtr strokeImage;
 
     RotoPaintData()
         : rotoPaintNode()
@@ -107,7 +107,7 @@ struct RotoPaintData
 
 struct KnobDnDData
 {
-    boost::weak_ptr<KnobI> source;
+    KnobIWPtr source;
     int sourceDimension;
     QDrag* drag;
 };
@@ -127,7 +127,7 @@ struct GuiAppInstancePrivate
     ////as the main "action" thread.
     int _showingDialog;
     mutable QMutex _showingDialogMutex;
-    boost::shared_ptr<FileDialogPreviewProvider> _previewProvider;
+    FileDialogPreviewProviderPtr _previewProvider;
     mutable QMutex lastTimelineViewerMutex;
     NodePtr lastTimelineViewer;
     LoadProjectSplashScreen* loadProjectSplash;
@@ -159,7 +159,7 @@ struct GuiAppInstancePrivate
         rotoData.turboAlreadyActiveBeforePainting = false;
     }
 
-    void findOrCreateToolButtonRecursive(const boost::shared_ptr<PluginGroupNode>& n);
+    void findOrCreateToolButtonRecursive(const PluginGroupNodePtr& n);
 };
 
 GuiAppInstance::GuiAppInstance(int appID)
@@ -167,6 +167,9 @@ GuiAppInstance::GuiAppInstance(int appID)
     , _imp(new GuiAppInstancePrivate)
 
 {
+#ifdef DEBUG
+    qDebug() << "GuiAppInstance()" << (void*)(this);
+#endif
 }
 
 void
@@ -210,6 +213,9 @@ GuiAppInstance::deletePreviewProvider()
 void
 GuiAppInstance::aboutToQuit()
 {
+#ifdef DEBUG
+    qDebug() << "GuiAppInstance::aboutToQuit()" << (void*)(this);
+#endif
     deletePreviewProvider();
 
     if (_imp->_gui) {
@@ -238,6 +244,9 @@ GuiAppInstance::aboutToQuit()
 
 GuiAppInstance::~GuiAppInstance()
 {
+#ifdef DEBUG
+    qDebug() << "~GuiAppInstance()" << (void*)(this);
+#endif
 }
 
 bool
@@ -247,11 +256,11 @@ GuiAppInstance::isClosing() const
 }
 
 void
-GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const boost::shared_ptr<PluginGroupNode>& n)
+GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const PluginGroupNodePtr& n)
 {
     _gui->findOrCreateToolButton(n);
-    const std::list<boost::shared_ptr<PluginGroupNode> >& children = n->getChildren();
-    for (std::list<boost::shared_ptr<PluginGroupNode> >::const_iterator it = children.begin(); it != children.end(); ++it) {
+    const std::list<PluginGroupNodePtr>& children = n->getChildren();
+    for (std::list<PluginGroupNodePtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
         findOrCreateToolButtonRecursive(*it);
     }
 }
@@ -270,7 +279,7 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
         throw std::runtime_error( e.what() );
     }
 
-    boost::shared_ptr<GuiAppInstance> thisShared = boost::dynamic_pointer_cast<GuiAppInstance>( shared_from_this() );
+    GuiAppInstancePtr thisShared = boost::dynamic_pointer_cast<GuiAppInstance>( shared_from_this() );
     assert(thisShared);
     _imp->_gui = new Gui(thisShared);
     _imp->_gui->createGui();
@@ -278,8 +287,8 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     printAutoDeclaredVariable(_imp->declareAppAndParamsString);
 
     ///if the app is interactive, build the plugins toolbuttons from the groups we extracted off the plugins.
-    const std::list<boost::shared_ptr<PluginGroupNode> > & _toolButtons = appPTR->getTopLevelPluginsToolButtons();
-    for (std::list<boost::shared_ptr<PluginGroupNode>  >::const_iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
+    const std::list<PluginGroupNodePtr> & _toolButtons = appPTR->getTopLevelPluginsToolButtons();
+    for (std::list<PluginGroupNodePtr  >::const_iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
         _imp->findOrCreateToolButtonRecursive(*it);
     }
     _imp->_gui->sortAllPluginsToolButtons();
@@ -453,7 +462,7 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
             }
         } else {
             CLArgs cl;
-            AppInstPtr newApp = appPTR->newAppInstance(cl, false);
+            AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
             if ( !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
                 return false;
             }
@@ -468,7 +477,7 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
                               const NodePtr& parentMultiInstance,
                               const CreateNodeArgs& args)
 {
-    boost::shared_ptr<NodeCollection> group = node->getGroup();
+    NodeCollectionPtr group = node->getGroup();
     NodeGraph* graph;
 
     if (group) {
@@ -491,7 +500,7 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
         nodegui->hideGui();
 
 
-        boost::shared_ptr<NodeGuiI> parentNodeGui_i = parentMultiInstance->getNodeGui();
+        NodeGuiIPtr parentNodeGui_i = parentMultiInstance->getNodeGui();
         assert(parentNodeGui_i);
         nodegui->setParentMultiInstance( boost::dynamic_pointer_cast<NodeGui>(parentNodeGui_i) );
     }
@@ -515,7 +524,7 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
         nodegui->initializeInputs();
     }
     
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
     if ( !serialization && !isViewer ) {
         ///we make sure we can have a clean preview.
         node->computePreviewImage( getTimeLine()->currentFrame() );
@@ -825,14 +834,14 @@ GuiAppInstance::notifyRenderStarted(const QString & sequenceName,
                                     int frameStep,
                                     bool canPause,
                                     OutputEffectInstance* writer,
-                                    const boost::shared_ptr<ProcessHandler> & process)
+                                    const ProcessHandlerPtr & process)
 {
     _imp->_gui->onRenderStarted(sequenceName, firstFrame, lastFrame, frameStep, canPause, writer, process);
 }
 
 void
 GuiAppInstance::notifyRenderRestarted( OutputEffectInstance* writer,
-                                       const boost::shared_ptr<ProcessHandler> & process)
+                                       const ProcessHandlerPtr & process)
 {
     _imp->_gui->onRenderRestarted(writer, process);
 }
@@ -895,7 +904,7 @@ GuiAppInstance::disconnectViewersFromViewerCache()
     }
 }
 
-boost::shared_ptr<FileDialogPreviewProvider>
+FileDialogPreviewProviderPtr
 GuiAppInstance::getPreviewProvider() const
 {
     return _imp->_previewProvider;
@@ -1092,12 +1101,12 @@ GuiAppInstance::clearOverlayRedrawRequests()
 
 void
 GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
-                                        const boost::shared_ptr<NodeSerialization>& serialization, bool autoConnect)
+                                        const NodeSerializationPtr& serialization, bool autoConnect)
 {
-    boost::shared_ptr<NodeGuiI> node_gui_i = node->getNodeGui();
+    NodeGuiIPtr node_gui_i = node->getNodeGui();
     if (autoConnect && !serialization && node_gui_i) {
         NodeGraph* graph = 0;
-        boost::shared_ptr<NodeCollection> collection = node->getGroup();
+        NodeCollectionPtr collection = node->getGroup();
         assert(collection);
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>( collection.get() );
         if (isGrp) {
@@ -1148,7 +1157,7 @@ GuiAppInstance::setDraftRenderEnabled(bool b)
 
 void
 GuiAppInstance::setUserIsPainting(const NodePtr& rotopaintNode,
-                                  const boost::shared_ptr<RotoStrokeItem>& stroke,
+                                  const RotoStrokeItemPtr& stroke,
                                   bool isPainting)
 {
     {
@@ -1178,7 +1187,7 @@ GuiAppInstance::setUserIsPainting(const NodePtr& rotopaintNode,
 
 void
 GuiAppInstance::getActiveRotoDrawingStroke(NodePtr* node,
-                                           boost::shared_ptr<RotoStrokeItem>* stroke,
+                                           RotoStrokeItemPtr* stroke,
                                            bool *isPainting) const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
@@ -1198,7 +1207,7 @@ bool
 GuiAppInstance::save(const std::string& filename)
 {
     if ( filename.empty() ) {
-        boost::shared_ptr<Project> project = getProject();
+        ProjectPtr project = getProject();
         if ( project->hasProjectBeenSavedByUser() ) {
             return _imp->_gui->saveProject();
         } else {
@@ -1215,7 +1224,7 @@ GuiAppInstance::saveAs(const std::string& filename)
     return _imp->_gui->saveProjectAs(filename);
 }
 
-AppInstPtr
+AppInstancePtr
 GuiAppInstance::loadProject(const std::string& filename)
 {
     return _imp->_gui->openProject(filename);
@@ -1236,7 +1245,7 @@ GuiAppInstance::closeProject()
 }
 
 ///Opens a new window
-AppInstPtr
+AppInstancePtr
 GuiAppInstance::newProject()
 {
     return _imp->_gui->createNewProject();
@@ -1250,7 +1259,7 @@ GuiAppInstance::handleFileOpenEvent(const std::string &filename)
     fileCopy.replace( QLatin1Char('\\'), QLatin1Char('/') );
     QString ext = QtCompat::removeFileExtension(fileCopy);
     if ( ext == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) {
-        AppInstPtr app = getGui()->openProject(filename);
+        AppInstancePtr app = getGui()->openProject(filename);
         if (!app) {
             Dialogs::errorDialog(tr("Project").toStdString(), tr("Failed to open project").toStdString() + ' ' + filename);
         }
@@ -1305,7 +1314,7 @@ GuiAppInstance::getStrokeLastIndex() const
 }
 
 void
-GuiAppInstance::getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* stroke,
+GuiAppInstance::getStrokeAndMultiStrokeIndex(RotoStrokeItemPtr* stroke,
                                              int* strokeIndex) const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
@@ -1318,7 +1327,7 @@ void
 GuiAppInstance::getRenderStrokeData(RectD* lastStrokeMovementBbox,
                                     std::list<std::pair<Point, double> >* lastStrokeMovementPoints,
                                     double *distNextIn,
-                                    boost::shared_ptr<Image>* strokeImage) const
+                                    ImagePtr* strokeImage) const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
 
@@ -1329,7 +1338,7 @@ GuiAppInstance::getRenderStrokeData(RectD* lastStrokeMovementBbox,
 }
 
 void
-GuiAppInstance::updateStrokeImage(const boost::shared_ptr<Image>& image,
+GuiAppInstance::updateStrokeImage(const ImagePtr& image,
                                   double distNextOut,
                                   bool setDistNextOut)
 {
@@ -1578,7 +1587,7 @@ GuiAppInstance::goToPreviousKeyframe()
     assert( QThread::currentThread() == qApp->thread() );
 
     _imp->timelineKeyframes.sort();
-    boost::shared_ptr<TimeLine> timeline = getProject()->getTimeLine();
+    TimeLinePtr timeline = getProject()->getTimeLine();
     SequenceTime currentFrame = timeline->currentFrame();
     std::list<SequenceTime>::iterator lowerBound = std::lower_bound(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), currentFrame);
     if ( lowerBound != _imp->timelineKeyframes.begin() ) {
@@ -1594,7 +1603,7 @@ GuiAppInstance::goToNextKeyframe()
     assert( QThread::currentThread() == qApp->thread() );
 
     _imp->timelineKeyframes.sort();
-    boost::shared_ptr<TimeLine> timeline = getProject()->getTimeLine();
+    TimeLinePtr timeline = getProject()->getTimeLine();
     SequenceTime currentFrame = timeline->currentFrame();
     std::list<SequenceTime>::iterator upperBound = std::upper_bound(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), currentFrame);
     if ( upperBound != _imp->timelineKeyframes.end() ) {
@@ -1604,7 +1613,7 @@ GuiAppInstance::goToNextKeyframe()
 
 void
 GuiAppInstance::setKnobDnDData(QDrag* drag,
-                               const KnobPtr& knob,
+                               const KnobIPtr& knob,
                                int dimension)
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -1615,7 +1624,7 @@ GuiAppInstance::setKnobDnDData(QDrag* drag,
 
 void
 GuiAppInstance::getKnobDnDData(QDrag** drag,
-                               KnobPtr* knob,
+                               KnobIPtr* knob,
                                int* dimension) const
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -1634,11 +1643,11 @@ GuiAppInstance::checkAllReadersModificationDate(bool errorAndWarn)
     bool changed =  false;
     for (NodesList::iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
         if ( (*it)->getEffectInstance()->isReader() ) {
-            KnobPtr fileKnobI = (*it)->getKnobByName(kOfxImageEffectFileParamName);
+            KnobIPtr fileKnobI = (*it)->getKnobByName(kOfxImageEffectFileParamName);
             if (!fileKnobI) {
                 continue;
             }
-            boost::shared_ptr<KnobGuiI> knobUi_i = fileKnobI->getKnobGuiPointer();
+            KnobGuiIPtr knobUi_i = fileKnobI->getKnobGuiPointer();
             KnobGuiFile* isFileKnob = dynamic_cast<KnobGuiFile*>( knobUi_i.get() );
 
             if (!isFileKnob) {

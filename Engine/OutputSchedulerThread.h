@@ -51,14 +51,14 @@
 
 NATRON_NAMESPACE_ENTER
 
-typedef boost::shared_ptr<RenderStats> RenderStatsPtr;
+typedef RenderStatsPtr RenderStatsPtr;
 
 struct BufferedFrame
 {
     ViewIdx view;
     double time;
     RenderStatsPtr stats;
-    boost::shared_ptr<BufferableObject> frame;
+    BufferableObjectPtr frame;
 
     BufferedFrame()
         : view(0)
@@ -106,10 +106,10 @@ class RenderThreadTask
 public:
 
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,
+    RenderThreadTask(const OutputEffectInstancePtr& output,
                      OutputSchedulerThread* scheduler);
 #else
-    RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,
+    RenderThreadTask(const OutputEffectInstancePtr& output,
                      OutputSchedulerThread* scheduler,
                      const int time,
                      const bool useRenderStats,
@@ -208,7 +208,7 @@ public:
     };
 
     OutputSchedulerThread(RenderEngine* engine,
-                          const boost::shared_ptr<OutputEffectInstance>& effect,
+                          const OutputEffectInstancePtr& effect,
                           ProcessFrameModeEnum mode);
 
     virtual ~OutputSchedulerThread();
@@ -223,18 +223,18 @@ public:
     void appendToBuffer(double time,
                         ViewIdx view,
                         const RenderStatsPtr& stats,
-                        const boost::shared_ptr<BufferableObject>& frame);
+                        const BufferableObjectPtr& frame);
     void appendToBuffer(double time,
                         ViewIdx view,
                         const RenderStatsPtr& stats,
-                        const BufferableObjectList& frames);
+                        const BufferableObjectPtrList& frames);
 
 private:
 
     void appendToBuffer_internal(double time,
                                  ViewIdx view,
                                  const RenderStatsPtr& stats,
-                                 const boost::shared_ptr<BufferableObject>& frame,
+                                 const BufferableObjectPtr& frame,
                                  bool wakeThread);
 
 public:
@@ -282,7 +282,7 @@ public:
      * @brief Returns the thread render arguments as set in the livingRunArgs
      * This can only be called on the scheduler thread (this)
      **/
-    boost::shared_ptr<OutputSchedulerThreadStartArgs> getCurrentRunArgs() const;
+    OutputSchedulerThreadStartArgsPtr getCurrentRunArgs() const;
 
     void getLastRunArgs(RenderDirectionEnum* direction, std::vector<ViewIdx>* viewsToRender) const;
 
@@ -412,7 +412,7 @@ protected:
 private:
 
     virtual void onAbortRequested(bool keepOldestRender) OVERRIDE FINAL;
-    virtual void executeOnMainThread(const ExecOnMTArgsPtr& inArgs) OVERRIDE FINAL;
+    virtual void executeOnMainThread(const GenericThreadExecOnMainThreadArgsPtr& inArgs) OVERRIDE FINAL;
 
     /**
      * @brief How to pick the task to process from the consumer thread
@@ -425,7 +425,7 @@ private:
     /**
      * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread
      **/
-    virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     void startRender();
 
@@ -479,7 +479,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     DefaultScheduler(RenderEngine* engine,
-                     const boost::shared_ptr<OutputEffectInstance>& effect);
+                     const OutputEffectInstancePtr& effect);
 
     virtual ~DefaultScheduler();
 
@@ -501,7 +501,7 @@ private:
     virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
     virtual void aboutToStartRender() OVERRIDE FINAL;
     virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
-    boost::weak_ptr<OutputEffectInstance> _effect;
+    OutputEffectInstanceWPtr _effect;
     mutable QMutex _currentTimeMutex;
     int _currentTime;
 };
@@ -514,7 +514,7 @@ class ViewerDisplayScheduler
 public:
 
     ViewerDisplayScheduler(RenderEngine* engine,
-                           const boost::shared_ptr<ViewerInstance>& viewer);
+                           const ViewerInstancePtr& viewer);
 
     virtual ~ViewerDisplayScheduler();
 
@@ -539,7 +539,7 @@ private:
 
     virtual int getLastRenderedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
-    boost::weak_ptr<ViewerInstance> _viewer;
+    ViewerInstanceWPtr _viewer;
 };
 
 /**
@@ -567,7 +567,7 @@ public:
 
     void renderCurrentFrame(bool enableRenderStats, bool canAbort);
 
-    void notifyFrameProduced(const BufferableObjectList& frames, const RenderStatsPtr& stats, const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request);
+    void notifyFrameProduced(const BufferableObjectPtrList& frames, const RenderStatsPtr& stats, const ViewerCurrentFrameRequestSchedulerStartArgsPtr& request);
 
 private:
 
@@ -575,7 +575,7 @@ private:
     virtual void onWaitForThreadToQuit() OVERRIDE FINAL;
     virtual void onAbortRequested(bool keepOldestRender) OVERRIDE FINAL;
     virtual void onQuitRequested(bool allowRestarts) OVERRIDE FINAL;
-    virtual void executeOnMainThread(const ExecOnMTArgsPtr& inArgs) OVERRIDE FINAL;
+    virtual void executeOnMainThread(const GenericThreadExecOnMainThreadArgsPtr& inArgs) OVERRIDE FINAL;
 
     /**
      * @brief How to pick the task to process from the consumer thread
@@ -585,11 +585,11 @@ private:
     /**
      * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread
      **/
-    virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<ViewerCurrentFrameRequestSchedulerPrivate> _imp;
 };
 
-struct ViewerArgs;
+class ViewerArgs;
 class CurrentFrameFunctorArgs;
 
 /**
@@ -619,7 +619,7 @@ private:
     /**
      * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread
      **/
-    virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
 
@@ -638,11 +638,11 @@ class RenderEngine
 
 public:
 
-    RenderEngine(const boost::shared_ptr<OutputEffectInstance>& output);
+    RenderEngine(const OutputEffectInstancePtr& output);
 
     virtual ~RenderEngine();
 
-    boost::shared_ptr<OutputEffectInstance> getOutput() const;
+    OutputEffectInstancePtr getOutput() const;
 
     /**
      * @brief Call this to render from firstFrame to lastFrame included.
@@ -833,7 +833,7 @@ protected:
     /**
      * @brief Must create the main-scheduler that will be used for scheduling playback/writing on disk.
      **/
-    virtual OutputSchedulerThread* createScheduler(const boost::shared_ptr<OutputEffectInstance>& effect);
+    virtual OutputSchedulerThread* createScheduler(const OutputEffectInstancePtr& effect);
 
 private:
 
@@ -857,7 +857,7 @@ private:
 
     friend class ViewerInstance;
     friend class OutputEffectInstance;
-    void notifyFrameProduced(const BufferableObjectList& frames, const RenderStatsPtr& stats, const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request);
+    void notifyFrameProduced(const BufferableObjectPtrList& frames, const RenderStatsPtr& stats, const ViewerCurrentFrameRequestSchedulerStartArgsPtr& request);
 
 
     boost::scoped_ptr<RenderEnginePrivate> _imp;
@@ -868,7 +868,7 @@ class ViewerRenderEngine
 {
 public:
 
-    ViewerRenderEngine(const boost::shared_ptr<OutputEffectInstance>& output)
+    ViewerRenderEngine(const OutputEffectInstancePtr& output)
         : RenderEngine(output)
     {}
 
@@ -876,7 +876,7 @@ public:
 
 private:
 
-    virtual OutputSchedulerThread* createScheduler(const boost::shared_ptr<OutputEffectInstance>& effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual OutputSchedulerThread* createScheduler(const OutputEffectInstancePtr& effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
 NATRON_NAMESPACE_EXIT

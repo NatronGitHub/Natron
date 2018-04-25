@@ -146,7 +146,7 @@ struct TimelineGuiPrivate
     TimeLineGui *parent;
     ViewerInstance* viewer;
     ViewerTab* viewerTab;
-    boost::shared_ptr<TimeLine> timeline; ///< ptr to the internal timeline
+    TimeLinePtr timeline; ///< ptr to the internal timeline
     Gui* gui; ///< ptr to the gui
     bool alphaCursor; ///< should cursor be drawn semi-transparent
     QPoint lastMouseEventWidgetCoord;
@@ -228,7 +228,7 @@ struct TimelineGuiPrivate
 };
 
 TimeLineGui::TimeLineGui(ViewerInstance* viewer,
-                         boost::shared_ptr<TimeLine> timeline,
+                         TimeLinePtr timeline,
                          Gui* gui,
                          ViewerTab* viewerTab)
     : QGLWidget(viewerTab)
@@ -247,9 +247,9 @@ TimeLineGui::~TimeLineGui()
 }
 
 void
-TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
+TimeLineGui::setTimeline(const TimeLinePtr& timeline)
 {
-    GuiAppInstPtr app = _imp->gui->getApp();
+    GuiAppInstancePtr app = _imp->gui->getApp();
 
     assert(app);
     if (_imp->timeline) {
@@ -267,7 +267,7 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
     _imp->timeline = timeline;
 }
 
-boost::shared_ptr<TimeLine>
+TimeLinePtr
 TimeLineGui::getTimeline() const
 {
     return _imp->timeline;
@@ -1242,7 +1242,7 @@ TimeLineGui::connectSlotsToViewerCache()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    boost::shared_ptr<CacheSignalEmitter> emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
+    CacheSignalEmitterPtr emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
     QObject::connect( emitter.get(), SIGNAL(addedEntry(SequenceTime)), this, SLOT(onCachedFrameAdded(SequenceTime)) );
     QObject::connect( emitter.get(), SIGNAL(removedEntry(SequenceTime,int)), this, SLOT(onCachedFrameRemoved(SequenceTime,int)) );
     QObject::connect( emitter.get(), SIGNAL(entryStorageChanged(SequenceTime,int,int)), this,
@@ -1257,7 +1257,7 @@ TimeLineGui::disconnectSlotsFromViewerCache()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    boost::shared_ptr<CacheSignalEmitter> emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
+    CacheSignalEmitterPtr emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
     QObject::disconnect( emitter.get(), SIGNAL(addedEntry(SequenceTime)), this, SLOT(onCachedFrameAdded(SequenceTime)) );
     QObject::disconnect( emitter.get(), SIGNAL(removedEntry(SequenceTime,int)), this, SLOT(onCachedFrameRemoved(SequenceTime,int)) );
     QObject::disconnect( emitter.get(), SIGNAL(entryStorageChanged(SequenceTime,int,int)), this,

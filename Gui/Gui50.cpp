@@ -38,6 +38,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QtCore/QDebug>
 #include <QtCore/QThread>
 #include <QtCore/QTimer>
@@ -1115,7 +1116,7 @@ Gui::onFocusChanged(QWidget* /*old*/,
 
 void
 Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
-                           std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences)
+                           std::vector<SequenceParsing::SequenceFromFilesPtr>* sequences)
 {
 
     QStringList filesList;
@@ -1209,7 +1210,7 @@ void
 Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
                              const QPoint& globalPos)
 {
-    std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
+    std::vector<SequenceParsing::SequenceFromFilesPtr> sequences;
 
 
     fileSequencesFromUrls(urls, &sequences);
@@ -1228,7 +1229,7 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
     QPointF graphScenePos = graph->mapToScene( graph->mapFromGlobal(globalPos) );
     std::locale local;
     for (U32 i = 0; i < sequences.size(); ++i) {
-        boost::shared_ptr<SequenceParsing::SequenceFromFiles> & sequence = sequences[i];
+        SequenceParsing::SequenceFromFilesPtr & sequence = sequences[i];
         if (sequence->count() < 1) {
             continue;
         }
@@ -1240,7 +1241,7 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
         if (extLower == NATRON_PROJECT_FILE_EXT) {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
             assert( !content.empty() );
-            AppInstPtr appInstance = openProject( content.begin()->second.absoluteFileName() );
+            AppInstancePtr appInstance = openProject( content.begin()->second.absoluteFileName() );
             Q_UNUSED(appInstance);
         } else if (extLower == "py") {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();

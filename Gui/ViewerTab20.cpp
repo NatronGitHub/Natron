@@ -76,7 +76,7 @@ ViewerTab::drawOverlays(double time,
                         const RenderScale & renderScale) const
 {
     NodePtr rotoPaintNode;
-    boost::shared_ptr<RotoStrokeItem> curStroke;
+    RotoStrokeItemPtr curStroke;
     bool isDrawing;
 
     getGui()->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
@@ -728,7 +728,7 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
                                  QKeyEvent* e)
 {
     bool didSomething = false;
-    GuiAppInstPtr app = getGui()->getApp();
+    GuiAppInstancePtr app = getGui()->getApp();
 
     if ( !app  || app->isClosing() ) {
         return false;
@@ -798,7 +798,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
                                QKeyEvent* e)
 {
     bool didSomething = false;
-    GuiAppInstPtr app = getGui()->getApp();
+    GuiAppInstancePtr app = getGui()->getApp();
 
     if ( !app || app->isClosing() ) {
         return false;

@@ -20,7 +20,8 @@
 
 #include "Global/Macros.h"
 
-#if QT_VERSION < 0x050000
+#include <QtCore/QtGlobal> // for Q_OS_*
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 #include <QtCore/QDir>
 #include <QtCore/QString>
 
@@ -82,14 +83,14 @@ removeFileExtension(QString & filename)
 
 // in Qt 4.8 QUrl is broken on mac, it returns /.file/id= for local files
 // See https://bugreports.qt.io/browse/QTBUG-40449
-#if defined(Q_OS_MAC) && QT_VERSION < 0x050000
+#if defined(Q_OS_MAC) && QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 //Implementation is in QUrlFix.mm
 QUrl toLocalFileUrlFixed(const QUrl& url);
-#else // #if defined(Q_OS_MAC) && QT_VERSION < 0x050000
+#else // #if defined(Q_OS_MAC) && QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 inline QUrl
 toLocalFileUrlFixed(const QUrl& url) { return url; }
 
-#endif // #if defined(Q_OS_MAC) && QT_VERSION < 0x050000
+#endif // #if defined(Q_OS_MAC) && QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 } // namespace QtCompat
 
 NATRON_NAMESPACE_EXIT

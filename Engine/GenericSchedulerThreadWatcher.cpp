@@ -32,6 +32,9 @@
 #include "Engine/GenericSchedulerThread.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Node.h"
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 
 NATRON_NAMESPACE_ENTER
@@ -44,7 +47,7 @@ class GenericWatcherCallerArgsMetaTypesRegistration
 public:
     inline GenericWatcherCallerArgsMetaTypesRegistration()
     {
-        qRegisterMetaType<WatcherCallerArgsPtr>("WatcherCallerArgsPtr");
+        qRegisterMetaType<GenericWatcherCallerArgsPtr>("GenericWatcherCallerArgsPtr");
     }
 };
 
@@ -55,7 +58,7 @@ struct GenericWatcherPrivate
     struct Task
     {
         int id;
-        boost::shared_ptr<GenericWatcherCallerArgs> args;
+        GenericWatcherCallerArgsPtr args;
     };
 
     mutable QMutex tasksMutex;
@@ -122,6 +125,11 @@ GenericWatcher::stopWatching()
 void
 GenericWatcher::run()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     for (;; ) {
         {
             QMutexLocker quitLocker(&_imp->mustQuitMutex);
@@ -133,7 +141,7 @@ GenericWatcher::run()
             }
         }
         int taskID = -1;
-        boost::shared_ptr<GenericWatcherCallerArgs> inArgs;
+        GenericWatcherCallerArgsPtr inArgs;
         {
             QMutexLocker k(&_imp->tasksMutex);
             if ( !_imp->tasks.empty() ) {
@@ -161,7 +169,7 @@ GenericWatcher::run()
 
 void
 GenericWatcher::scheduleBlockingTask(int taskID,
-                                     const boost::shared_ptr<GenericWatcherCallerArgs>& args)
+                                     const GenericWatcherCallerArgsPtr& args)
 {
     {
         QMutexLocker quitLocker(&_imp->mustQuitMutex);

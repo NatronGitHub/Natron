@@ -79,7 +79,7 @@ BackdropGui::~BackdropGui()
 std::string
 BackdropGuiPrivate::getLabelValue() const
 {
-    KnobPtr k = _publicInterface->getNode()->getKnobByName("Label");
+    KnobIPtr k = _publicInterface->getNode()->getKnobByName("Label");
 
     assert(k);
     KnobString* isStr = dynamic_cast<KnobString*>( k.get() );

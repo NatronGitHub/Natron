@@ -58,7 +58,9 @@ public:
     virtual std::size_t sizeInRAM() const = 0;
 };
 
-typedef std::list<boost::shared_ptr<BufferableObject> > BufferableObjectList;
+typedef boost::shared_ptr<BufferableObject> BufferableObjectPtr;
+
+typedef std::list<BufferableObjectPtr> BufferableObjectPtrList;
 
 NATRON_NAMESPACE_EXIT
 

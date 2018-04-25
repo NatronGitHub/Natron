@@ -203,12 +203,12 @@ KnobComboBox::focusOutEvent(QFocusEvent* e)
     ComboBox::focusOutEvent(e);
 }
 
-KnobGuiChoice::KnobGuiChoice(KnobPtr knob,
+KnobGuiChoice::KnobGuiChoice(KnobIPtr knob,
                              KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _comboBox(0)
 {
-    boost::shared_ptr<KnobChoice> k = boost::dynamic_pointer_cast<KnobChoice>(knob);
+    KnobChoicePtr k = boost::dynamic_pointer_cast<KnobChoice>(knob);
     QObject::connect( k.get(), SIGNAL(populated()), this, SLOT(onEntriesPopulated()) );
     QObject::connect( k.get(), SIGNAL(entryAppended()), this, SLOT(onEntryAppended()) );
     QObject::connect( k.get(), SIGNAL(entriesReset()), this, SLOT(onEntriesReset()) );
@@ -230,7 +230,7 @@ void
 KnobGuiChoice::createWidget(QHBoxLayout* layout)
 {
     _comboBox = new KnobComboBox( shared_from_this(), 0, layout->parentWidget() );
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -249,7 +249,7 @@ void
 KnobGuiChoice::onCurrentIndexChanged(int i)
 {
     setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -259,7 +259,7 @@ KnobGuiChoice::onCurrentIndexChanged(int i)
 void
 KnobGuiChoice::onEntryAppended()
 {
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -288,7 +288,7 @@ KnobGuiChoice::onEntriesReset()
 void
 KnobGuiChoice::onEntriesPopulated()
 {
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
 
     _comboBox->clear();
     std::vector<ChoiceOption> entries = knob->getEntries_mt_safe();
@@ -320,7 +320,7 @@ KnobGuiChoice::onItemNewSelected()
 
             return;
         }
-        boost::shared_ptr<KnobChoice> knob = _knob.lock();
+        KnobChoicePtr knob = _knob.lock();
         if (!knob) {
             return;
         }
@@ -342,7 +342,7 @@ KnobGuiChoice::reflectExpressionState(int /*dimension*/,
                                       bool hasExpr)
 {
     _comboBox->setAnimation(3);
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
@@ -386,7 +386,7 @@ KnobGuiChoice::updateGUI(int /*dimension*/)
     ///change the internal value of the knob again...
     ///The slot connected to onCurrentIndexChanged is reserved to catch user interaction with the combobox.
     ///This function is called in response to an internal change.
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
     ChoiceOption activeEntry = knob->getActiveEntry();
 
     QString activeEntryLabel;
@@ -452,7 +452,7 @@ KnobGuiChoice::_show()
 void
 KnobGuiChoice::setEnabled()
 {
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
     bool b = knob->isEnabled(0) && knob->getExpression(0).empty();
 
     _comboBox->setEnabled_natron(b);
@@ -471,7 +471,7 @@ KnobGuiChoice::setDirty(bool dirty)
     _comboBox->setDirty(dirty);
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiChoice::getKnob() const
 {
     return _knob.lock();
@@ -480,7 +480,7 @@ KnobGuiChoice::getKnob() const
 void
 KnobGuiChoice::reflectModificationsState()
 {
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
     if (!knob) {
         return;
     }

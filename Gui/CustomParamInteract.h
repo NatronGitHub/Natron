@@ -54,7 +54,7 @@ class CustomParamInteract
 public:
     CustomParamInteract(const KnobGuiPtr& knob,
                         void* ofxParamHandle,
-                        const boost::shared_ptr<OfxParamOverlayInteract> & entryPoint,
+                        const OfxParamOverlayInteractPtr & entryPoint,
                         QWidget* parent = 0);
 
     virtual ~CustomParamInteract();

@@ -247,7 +247,7 @@ TEST_F(BaseTest, GenerateDot)
 
     ASSERT_TRUE( bool(generator) && bool(writer) );
 
-    KnobPtr frameRange = generator->getApp()->getProject()->getKnobByName("frameRange");
+    KnobIPtr frameRange = generator->getApp()->getProject()->getKnobByName("frameRange");
     ASSERT_TRUE( bool(frameRange) );
     KnobInt* knob = dynamic_cast<KnobInt*>( frameRange.get() );
     ASSERT_TRUE(knob);
@@ -285,7 +285,7 @@ TEST_F(BaseTest, SetValues)
     NodePtr generator = createNode(_generatorPluginID);
 
     assert(generator);
-    KnobPtr knob = generator->getKnobByName("noiseZSlope");
+    KnobIPtr knob = generator->getKnobByName("noiseZSlope");
     KnobDouble* radius = dynamic_cast<KnobDouble*>( knob.get() );
     EXPECT_TRUE(radius != 0);
     if (!radius) {

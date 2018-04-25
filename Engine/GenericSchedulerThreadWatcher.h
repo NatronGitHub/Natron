@@ -87,13 +87,13 @@ public:
      * @params inArgs This can be derived from GenericWatcherCallerArgs to store any arguments relevant to the local function you were in when calling scheduleBlockingTask()
      * and that you want to retrieve when the taskFinished() signal is emitted.
      **/
-    void scheduleBlockingTask( int taskID, const WatcherCallerArgsPtr& inArgs = WatcherCallerArgsPtr() );
+    void scheduleBlockingTask( int taskID, const GenericWatcherCallerArgsPtr& inArgs = GenericWatcherCallerArgsPtr() );
 
     void stopWatching();
 
 Q_SIGNALS:
 
-    void taskFinished(int taskID, WatcherCallerArgsPtr args);
+    void taskFinished(int taskID, GenericWatcherCallerArgsPtr args);
 
 protected:
 

@@ -110,7 +110,7 @@ EditExpressionDialog::getDimension() const
 void
 EditExpressionDialog::setTitle()
 {
-    KnobPtr k = _knob->getKnob();
+    KnobIPtr k = _knob->getKnob();
     QString title( tr("Set expression on ") );
 
     title.append( QString::fromUtf8( k->getName().c_str() ) );

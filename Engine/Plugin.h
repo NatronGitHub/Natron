@@ -51,8 +51,8 @@ class PluginGroupNode
     QString _label;
     QString _iconPath;
     int _major, _minor;
-    std::list<boost::shared_ptr<PluginGroupNode> > _children;
-    boost::weak_ptr<PluginGroupNode> _parent;
+    std::list<PluginGroupNodePtr> _children;
+    PluginGroupNodeWPtr _parent;
     bool _notHighestMajorVersion;
     bool _isUserCreatable;
 
@@ -110,20 +110,20 @@ public:
         _iconPath = iconPath;
     }
 
-    const std::list<boost::shared_ptr<PluginGroupNode> > & getChildren() const
+    const std::list<PluginGroupNodePtr> & getChildren() const
     {
         return _children;
     }
 
-    void tryAddChild(const boost::shared_ptr<PluginGroupNode>& plugin);
+    void tryAddChild(const PluginGroupNodePtr& plugin);
     void tryRemoveChild(PluginGroupNode* plugin);
 
-    boost::shared_ptr<PluginGroupNode> getParent() const
+    PluginGroupNodePtr getParent() const
     {
         return _parent.lock();
     }
 
-    void setParent(const boost::shared_ptr<PluginGroupNode>& parent)
+    void setParent(const PluginGroupNodePtr& parent)
     {
         _parent = parent;
     }

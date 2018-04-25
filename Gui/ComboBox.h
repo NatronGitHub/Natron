@@ -36,6 +36,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QSize>
 #include <QFrame>
 #include <QtGui/QKeySequence>
 #include <QtGui/QIcon>
@@ -50,12 +51,13 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER
 
 
-struct ComboBoxMenuNode
+class ComboBoxMenuNode
 {
+public:
     MenuWithToolTips* isMenu;
     QAction* isLeaf;
     QString text;
-    std::vector<boost::shared_ptr<ComboBoxMenuNode> > children;
+    std::vector<ComboBoxMenuNodePtr> children;
     ComboBoxMenuNode* parent;
 
     ComboBoxMenuNode()
@@ -81,7 +83,7 @@ private:
     int _currentIndex;
     QString _currentText;
     std::vector<int> _separators;
-    boost::shared_ptr<ComboBoxMenuNode> _rootNode;
+    ComboBoxMenuNodePtr _rootNode;
     mutable QSize _sh; ///size hint
     mutable QSize _msh; ///minmum size hint
     mutable QSizePolicy _sizePolicy;

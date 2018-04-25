@@ -237,9 +237,10 @@ struct ViewerData
     } // serialize
 };
 
-struct PythonPanelSerialization
+class PythonPanelSerialization
 {
-    std::list<boost::shared_ptr<KnobSerialization> > knobs;
+public:
+    std::list<KnobSerializationPtr> knobs;
     std::string name;
     std::string pythonFunction;
     std::string userData;
@@ -255,7 +256,7 @@ struct PythonPanelSerialization
         int nKnobs = knobs.size();
         ar & ::boost::serialization::make_nvp("NumParams", nKnobs);
 
-        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        for (std::list<KnobSerializationPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
             ar & ::boost::serialization::make_nvp("item", **it);
         }
 
@@ -272,7 +273,7 @@ struct PythonPanelSerialization
         ar & ::boost::serialization::make_nvp("NumParams", nKnobs);
 
         for (int i = 0; i < nKnobs; ++i) {
-            boost::shared_ptr<KnobSerialization> k = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr k = boost::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("item", *k);
             knobs.push_back(k);
         }
@@ -638,7 +639,7 @@ public:
 class ProjectGuiSerialization
 {
     ///All nodes gui data
-    std::list< NodeGuiSerialization > _serializedNodes;
+    std::list<NodeGuiSerialization > _serializedNodes;
 
     ///The layout of the application
     GuiLayoutSerialization _layoutSerialization;
@@ -655,7 +656,7 @@ class ProjectGuiSerialization
     ///All properties panels opened
     std::list<std::string> _openedPanelsOrdered;
     std::string _scriptEditorInput;
-    std::list<boost::shared_ptr<PythonPanelSerialization> > _pythonPanels;
+    std::list<PythonPanelSerializationPtr> _pythonPanels;
 
     ///The boost version passed to load(), this is not used on save
     unsigned int _version;
@@ -675,7 +676,7 @@ class ProjectGuiSerialization
         ar & ::boost::serialization::make_nvp("ScriptEditorInput", _scriptEditorInput);
         int numPyPanels = (int)_pythonPanels.size();
         ar & ::boost::serialization::make_nvp("NumPyPanels", numPyPanels);
-        for (std::list<boost::shared_ptr<PythonPanelSerialization> >::const_iterator it = _pythonPanels.begin(); it != _pythonPanels.end(); ++it) {
+        for (std::list<PythonPanelSerializationPtr>::const_iterator it = _pythonPanels.begin(); it != _pythonPanels.end(); ++it) {
             ar & ::boost::serialization::make_nvp("item", **it);
         }
     }
@@ -716,7 +717,7 @@ class ProjectGuiSerialization
             int numPyPanels;
             ar & ::boost::serialization::make_nvp("NumPyPanels", numPyPanels);
             for (int i = 0; i < numPyPanels; ++i) {
-                boost::shared_ptr<PythonPanelSerialization> s = boost::make_shared<PythonPanelSerialization>();
+                PythonPanelSerializationPtr s = boost::make_shared<PythonPanelSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *s);
                 _pythonPanels.push_back(s);
             }
@@ -744,7 +745,7 @@ public:
 
     void initialize(const ProjectGui* projectGui);
 
-    const std::list< NodeGuiSerialization > & getSerializedNodesGui() const
+    const std::list<NodeGuiSerialization > & getSerializedNodesGui() const
     {
         return _serializedNodes;
     }
@@ -784,7 +785,7 @@ public:
         return _version;
     }
 
-    const std::list<boost::shared_ptr<PythonPanelSerialization> >& getPythonPanels() const
+    const std::list<PythonPanelSerializationPtr>& getPythonPanels() const
     {
         return _pythonPanels;
     }

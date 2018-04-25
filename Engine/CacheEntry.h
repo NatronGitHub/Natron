@@ -147,13 +147,14 @@ public:
 // This is a cache file with a fixed size that is a multiple of the tileByteSize.
 // A bitset represents the allocated tiles in the file.
 // A value of true means that a tile is used by a cache entry.
-struct TileCacheFile
+class TileCacheFile
 {
-    boost::shared_ptr<MemoryFile> file;
+public:
+    MemoryFilePtr file;
     std::vector<bool> usedTiles;
 };
 
-typedef boost::shared_ptr<TileCacheFile> TileCacheFilePtr;
+typedef TileCacheFilePtr TileCacheFilePtr;
 
 /**
  * @brief Defines the API of the Cache as seen by the cache entries
@@ -754,6 +755,7 @@ public:
     typedef DataType data_t;
     typedef KeyType key_t;
     typedef ParamsType param_t;
+    typedef boost::shared_ptr<ParamsType> ParamsTypePtr;
 
     /**
      * @brief Ctor
@@ -776,7 +778,7 @@ public:
      * @param cache The cache managing this entry. Can be NULL when the entry has been allocated outside the cache
      **/
     CacheEntryHelper(const KeyType & key,
-                     const boost::shared_ptr<ParamsType> & params,
+                     const ParamsTypePtr & params,
                      const CacheAPI* cache)
         : _key(key)
         , _params(params)
@@ -801,7 +803,7 @@ public:
     }
 
     void setCacheEntry(const KeyType & key,
-                       const boost::shared_ptr<ParamsType> & params,
+                       const ParamsTypePtr & params,
                        const CacheAPI* cache)
     {
         assert(!_params && _cache == NULL);
@@ -1081,7 +1083,7 @@ public:
         return _key.getTime();
     }
 
-    boost::shared_ptr<ParamsType> getParams() const WARN_UNUSED_RETURN
+    ParamsTypePtr getParams() const WARN_UNUSED_RETURN
     {
         return _params;
     }
@@ -1243,7 +1245,7 @@ protected:
     friend class Buffer<DataType>;
 
     KeyType _key;
-    boost::shared_ptr<ParamsType> _params;
+    ParamsTypePtr _params;
     Buffer<DataType> _data;
     const CacheAPI* _cache;
     mutable QReadWriteLock _entryLock;

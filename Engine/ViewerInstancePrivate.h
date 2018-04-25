@@ -70,8 +70,8 @@ typedef std::set<AbortableRenderInfoPtr, AbortableRenderInfo_CompareAge> OnGoing
 
 struct RenderViewerArgs
 {
-    RenderViewerArgs(const boost::shared_ptr<const Image> &inputImage_,
-                     const boost::shared_ptr<const Image> &matteImage_,
+    RenderViewerArgs(const ImageConstPtr &inputImage_,
+                     const ImageConstPtr &matteImage_,
                      DisplayChannelsEnum channels_,
                      ImagePremultiplicationEnum srcPremult_,
                      int bitDepth_,
@@ -99,8 +99,8 @@ struct RenderViewerArgs
     {
     }
 
-    boost::shared_ptr<const Image> inputImage;
-    boost::shared_ptr<const Image> matteImage;
+    ImageConstPtr inputImage;
+    ImageConstPtr matteImage;
     DisplayChannelsEnum channels;
     ImagePremultiplicationEnum srcPremult;
     int bitDepth;
@@ -173,7 +173,7 @@ public:
     virtual void lock(const FrameEntryPtr& entry) OVERRIDE FINAL
     {
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<FrameEntryPtr >::iterator it =
+        std::list<FrameEntryPtr>::iterator it =
             std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
 
         while ( it != textureBeingRendered.end() ) {
@@ -188,7 +188,7 @@ public:
     virtual bool tryLock(const FrameEntryPtr& entry) OVERRIDE FINAL
     {
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<FrameEntryPtr >::iterator it =
+        std::list<FrameEntryPtr>::iterator it =
             std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
 
         if ( it != textureBeingRendered.end() ) {
@@ -204,7 +204,7 @@ public:
     virtual void unlock(const FrameEntryPtr& entry) OVERRIDE FINAL
     {
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<FrameEntryPtr >::iterator it =
+        std::list<FrameEntryPtr>::iterator it =
             std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
 
         ///The image must exist, otherwise this is a bug
@@ -355,7 +355,7 @@ public Q_SLOTS:
      * @brief Slot called internally by the renderViewer() function when it wants to refresh the OpenGL viewer.
      * Do not call this yourself.
      **/
-    void updateViewer(boost::shared_ptr<UpdateViewerParams> params);
+    void updateViewer(UpdateViewerParamsPtr params);
 
 Q_SIGNALS:
 
@@ -393,13 +393,13 @@ public:
     bool activateInputChangedFromViewer;
     mutable QMutex textureBeingRenderedMutex;
     QWaitCondition textureBeingRenderedCond;
-    std::list<FrameEntryPtr > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
+    std::list<FrameEntryPtr> textureBeingRendered; ///< a list of all the texture being rendered simultaneously
     mutable QReadWriteLock gammaLookupMutex;
     std::vector<float> gammaLookup; // protected by gammaLookupMutex
 
     //When painting, this is the last texture we've drawn onto so that we can update only the specific portion needed
     mutable QMutex lastRenderParamsMutex;
-    boost::shared_ptr<UpdateViewerParams> lastRenderParams[2];
+    UpdateViewerParamsPtr lastRenderParams[2];
 
     /*
      * @brief If this list is not empty, this is the list of canonical rectangles we should update on the viewer, completly

@@ -46,14 +46,14 @@ struct GPUContextPoolPrivate
     std::set<OSGLContextPtr> glContextPool;
 
 #ifdef NATRON_RENDER_SHARED_CONTEXT
-    boost::weak_ptr<OSGLContext> lastUsedGLContext;
+    OSGLContextWPtr lastUsedGLContext;
 #else
     QWaitCondition glContextPoolEmpty;
     std::set<attachedGLContexts> attachedGLContexts;
 #endif
 
     // The OpenGL context to use for sharing
-    boost::weak_ptr<OSGLContext> glShareContext;
+    OSGLContextWPtr glShareContext;
 
     int currentOpenGLRendererMaxTexSize;
 

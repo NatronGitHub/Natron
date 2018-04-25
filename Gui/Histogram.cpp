@@ -135,7 +135,7 @@ public:
     {
     }
 
-    boost::shared_ptr<Image> getHistogramImage(RectI* imagePortion) const;
+    ImagePtr getHistogramImage(RectI* imagePortion) const;
 
 
     void showMenu(const QPoint & globalPos);
@@ -200,23 +200,23 @@ public:
 
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
     /*texture ID of the input images*/
-    boost::shared_ptr<Texture> leftImageTexture, rightImageTexture;
+    TexturePtr leftImageTexture, rightImageTexture;
 
 
     /*The shader that computes the histogram:
        Takes in input the image, and writes to the 256x1 texture*/
-    boost::shared_ptr<QGLShaderProgram> histogramComputingShader;
+    QGLShaderProgramPtr histogramComputingShader;
 
     /*The shader that computes the maximum of the histogram.
        Takes in input the reduction I and writes to the reduction I+1
        the local maximas of the reduction I. Each pixel of the texture I+1
        holds the maximum of 4 pixels in the texture I.*/
-    boost::shared_ptr<QGLShaderProgram> histogramMaximumShader;
+    QGLShaderProgramPtr histogramMaximumShader;
 
     /*The shader that renders the histogram. Takes in input the
        image and the histogram texture and produces the 256x256 image
        of the histogram.*/
-    boost::shared_ptr<QGLShaderProgram> histogramRenderingShader;
+    QGLShaderProgramPtr histogramRenderingShader;
 
     /*vbo ID, This vbo holds the texture coordinates to fetch
        to compute the histogram. It changes when the
@@ -451,7 +451,7 @@ Histogram::getViewerTextureInputDisplayed() const
     return textureIndex;
 }
 
-boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion) const
+ImagePtr HistogramPrivate::getHistogramImage(RectI* imagePortion) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -476,12 +476,12 @@ boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion
         //no viewer selected
         imagePortion->clear();
 
-        return boost::shared_ptr<Image>();
+        return ImagePtr();
     } else if (index == 1) {
         //current viewer
         viewer = widget->getGui()->getActiveViewer();
     } else {
-        boost::shared_ptr<Image> ret;
+        ImagePtr ret;
         const std::list<ViewerTab*> & viewerTabs = widget->getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
             if ( (*it)->getInternalNode()->getScriptName_mt_safe() == viewerName ) {
@@ -1504,7 +1504,7 @@ Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
 
     RectI rect;
-    boost::shared_ptr<Image> image = _imp->getHistogramImage(&rect);
+    ImagePtr image = _imp->getHistogramImage(&rect);
     if (image) {
         _imp->histogramThread.computeHistogram(_imp->mode, image, rect, width(), vmin, vmax, _imp->filterSize);
     } else {

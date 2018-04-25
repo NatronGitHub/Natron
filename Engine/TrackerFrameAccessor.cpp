@@ -111,10 +111,11 @@ public:
     }
 };
 
+typedef boost::shared_ptr<MvFloatImage> MvFloatImagePtr;
 
 struct FrameAccessorCacheEntry
 {
-    boost::shared_ptr<MvFloatImage> image;
+    MvFloatImagePtr image;
 
     // If null, this is the full image
     RectI bounds;
@@ -208,7 +209,7 @@ natronImageToLibMvFloatImage(bool enabledChannels[3],
 struct TrackerFrameAccessorPrivate
 {
     const TrackerContext* context;
-    boost::shared_ptr<Node> trackerInput;
+    NodePtr trackerInput;
     mutable QMutex cacheMutex;
     FrameAccessorCache cache;
     bool enabledChannels[3];
@@ -370,7 +371,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                               NodePtr(), // rotoPaintNode
                                               true, //isAnalysis
                                               false, //draftMode
-                                              boost::shared_ptr<RenderStats>() ); // Stats
+                                              RenderStatsPtr() ); // Stats
     EffectInstance::RenderRoIArgs args( frame,
                                         scale,
                                         downscale,

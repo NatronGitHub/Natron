@@ -681,7 +681,7 @@ Image::printUnrenderedPixels(const RectI& roi) const
     // ifdef DEBUG
 
 Image::Image(const ImageKey & key,
-             const boost::shared_ptr<ImageParams>& params,
+             const ImageParamsPtr& params,
              const CacheAPI* cache)
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>(key, params, cache)
     , _useBitmap(true)
@@ -697,7 +697,7 @@ Image::Image(const ImageKey & key,
 }
 
 Image::Image(const ImageKey & key,
-             const boost::shared_ptr<ImageParams>& params)
+             const ImageParamsPtr& params)
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>( key, params, NULL )
     , _useBitmap(false)
 {
@@ -732,7 +732,7 @@ Image::Image(const ImagePlaneDesc& components,
 {
     setCacheEntry(makeKey(0, 0, false, 0, ViewIdx(0), false, false),
 #ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-                  boost::shared_ptr<ImageParams>( new ImageParams(regionOfDefinition,
+                  ImageParamsPtr( new ImageParams(regionOfDefinition,
                                                                   par,
                                                                   mipMapLevel,
                                                                   bounds,
@@ -815,7 +815,7 @@ Image::makeKey(const CacheEntryHolder* holder,
     return ImageKey(holder, nodeHashKey, frameVaryingOrAnimated, time, view, 1., draftMode, fullScaleWithDownscaleInputs);
 }
 
-boost::shared_ptr<ImageParams>
+ImageParamsPtr
 Image::makeParams(const RectD & rod,
                   const double par,
                   unsigned int mipMapLevel,
@@ -832,7 +832,7 @@ Image::makeParams(const RectD & rod,
     rod.toPixelEnclosing(mipMapLevel, par, &bounds);
 
 #ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-    return boost::shared_ptr<ImageParams>( new ImageParams(rod,
+    return ImageParamsPtr( new ImageParams(rod,
                                                            par,
                                                            mipMapLevel,
                                                            bounds,
@@ -858,7 +858,7 @@ Image::makeParams(const RectD & rod,
 #endif
 }
 
-boost::shared_ptr<ImageParams>
+ImageParamsPtr
 Image::makeParams(const RectD & rod,    // the image rod in canonical coordinates
                   const RectI& bounds,
                   const double par,
@@ -879,7 +879,7 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
 #endif
 
 #ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-    return boost::shared_ptr<ImageParams>( new ImageParams(rod,
+    return ImageParamsPtr( new ImageParams(rod,
                                                            par,
                                                            mipMapLevel,
                                                            bounds,
@@ -982,7 +982,7 @@ Image::resizeInternal(const Image* srcImg,
                       bool fillWithBlackAndTransparent,
                       bool setBitmapTo1,
                       bool createInCache,
-                      boost::shared_ptr<Image>* outputImage)
+                      ImagePtr* outputImage)
 {
     ///Allocate to resized image
     if (!createInCache) {
@@ -996,7 +996,7 @@ Image::resizeInternal(const Image* srcImg,
                                        srcImg->getFieldingOrder(),
                                        srcImg->usesBitMap() );
     } else {
-        boost::shared_ptr<ImageParams> params = boost::make_shared<ImageParams>( *srcImg->getParams() );
+        ImageParamsPtr params = boost::make_shared<ImageParams>( *srcImg->getParams() );
         params->setBounds(merge);
         *outputImage = boost::make_shared<Image>( srcImg->getKey(), params, srcImg->getCacheAPI() );
         (*outputImage)->allocateMemory();
@@ -1124,7 +1124,7 @@ bool
 Image::copyAndResizeIfNeeded(const RectI& newBounds,
                              bool fillWithBlackAndTransparent,
                              bool setBitmapTo1,
-                             boost::shared_ptr<Image>* output)
+                             ImagePtr* output)
 {
     assert(getStorageMode() != eStorageModeGLTex);
     if ( getBounds().contains(newBounds) ) {
@@ -1487,7 +1487,7 @@ Image::fill(const RectI & roi,
         }
 
         assert(glContext);
-        boost::shared_ptr<GLShader> shader = glContext->getOrCreateFillShader();
+        GLShaderPtr shader = glContext->getOrCreateFillShader();
         assert(shader);
         GLuint fboID = glContext->getFBOId();
 

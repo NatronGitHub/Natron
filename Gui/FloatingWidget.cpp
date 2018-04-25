@@ -28,6 +28,7 @@
 #include <algorithm> // min, max
 #include <stdexcept>
 
+#include <QtCore/QSize>
 #include <QHBoxLayout>
 #include <QApplication> // qApp
 #include <QDesktopWidget>
@@ -51,7 +52,7 @@ FloatingWidget::FloatingWidget(Gui* gui,
 {
     setAttribute(Qt::WA_DeleteOnClose, true);
     if (gui) {
-        boost::shared_ptr<Project> project = gui->getApp()->getProject();
+        ProjectPtr project = gui->getApp()->getProject();
         QObject::connect( project.get(), SIGNAL(projectNameChanged(QString,bool)), this, SLOT(onProjectNameChanged(QString,bool)) );
         onProjectNameChanged(project->getProjectPath(), false);
     }

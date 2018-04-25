@@ -381,7 +381,7 @@ given time on the timeline, so that the value can be reproduced exactly.
 
 .. note::
 
-	Note that if you're calling multiple times random() in the same parameter expression,
+	Note that if you are calling multiple times random() in the same parameter expression,
 	each call would return a different value, but they would all return the same value again
 	if the expressions is interpreted at the same time, e.g::
 	
@@ -389,17 +389,20 @@ given time on the timeline, so that the value can be reproduced exactly.
 		random() - random() 
 		
 Note that you can ensure that random() returns a given value by calling the overloaded
-function :func:`random(seed)<NatronEngine.Param.random>` instead.
+function :func:`random(min,max,time,seed)<NatronEngine.Param.random>` instead.
 
-.. method:: NatronEngine.Param.random(seed)
+.. method:: NatronEngine.Param.random(min, max, time, [seed=0])
 
+	:param min: :class:`float<PySide.QtCore.float>`
+	:param max: :class:`float<PySide.QtCore.float>`
+	:param time: :class:`float<PySide.QtCore.float>`
 	:param seed: :class:`unsigned int<PySide.QtCore.int>`
-	:rtype: :class:`float<PySide.QtCore.float>`	
+	:rtype: :class:`float<PySide.QtCore.float>`
 
-Same as :func:`random()<NatronEngine.Param.random>` but takes a **seed** in parameter to control
+Same as :func:`random()<NatronEngine.Param.random>` but takes **time** and **seed** in parameters to control
 the value returned by the function. E.g::
 
-	ret = random(2) - random(2) 
+	ret = random(0,1,frame,2) - random(0,1,frame,2)
 	# ret == 0 always
 	
 .. method:: NatronEngine.Param.randomInt(min,max)
@@ -411,12 +414,15 @@ the value returned by the function. E.g::
 Same as  :func:`random(min,max)<NatronEngine.Param.random>` but returns an integer in the 
 range [*min*,*max*[
 
-.. method:: NatronEngine.Param.randomInt(seed)
+.. method:: NatronEngine.Param.randomInt(min, max, time, [seed=0])
 	
+	:param min: :class:`int<PySide.QtCore.int>`
+	:param max: :class:`int<PySide.QtCore.int>`
+	:param time: :class:`float<PySide.QtCore.float>`
 	:param seed: :class:`unsigned int<PySide.QtCore.int>`
 	:rtype: :class:`int<PySide.QtCore.int>`	
 	
-Same as :func:`random(seed)<NatronEngine.Param.random>` but returns an integer in the range
+Same as :func:`random(min,max,time,seed)<NatronEngine.Param.random>` but returns an integer in the range
 [0, INT_MAX] instead. 
 
 

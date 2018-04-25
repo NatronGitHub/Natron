@@ -185,14 +185,14 @@ public:
 
     ///Current chuncks of memory held by the plug-in
     mutable QMutex pluginMemoryChunksMutex;
-    std::list<boost::weak_ptr<PluginMemory> > pluginMemoryChunks;
+    std::list<PluginMemoryWPtr> pluginMemoryChunks;
 
     ///Does this plug-in supports render scale ?
     QMutex supportsRenderScaleMutex;
     SupportsEnum supportsRenderScale;
 
     /// Mt-Safe actions cache
-    boost::shared_ptr<ActionsCache> actionsCache;
+    ActionsCachePtr actionsCache;
 
 #if NATRON_ENABLE_TRIMAP
     ///Store all images being rendered to avoid 2 threads rendering the same portion of an image
@@ -210,13 +210,13 @@ public:
     };
 
     QMutex imagesBeingRenderedMutex;
-    typedef boost::shared_ptr<ImageBeingRendered> IBRPtr;
-    typedef std::map<ImagePtr, IBRPtr > IBRMap;
-    IBRMap imagesBeingRendered;
+    typedef boost::shared_ptr<ImageBeingRendered> ImageBeingRenderedPtr;
+    typedef std::map<ImagePtr, ImageBeingRenderedPtr> ImageBeingRenderedMap;
+    ImageBeingRenderedMap imagesBeingRendered;
 #endif
 
     ///A cache for components available
-    std::list< boost::weak_ptr<KnobI> > overlaySlaves;
+    std::list<KnobIWPtr> overlaySlaves;
     mutable QMutex metadataMutex;
     NodeMetadata metadata;
     bool runningClipPreferences; //only used on main thread
@@ -227,7 +227,7 @@ public:
     // A list of context that are currently attached (i.e attachOpenGLContext() has been called on them but not yet dettachOpenGLContext).
     // If a plug-in returns false to supportsConcurrentOpenGLRenders() then whenever trying to attach a context, we take a lock in attachOpenGLContext
     // that is released in dettachOpenGLContext so that there can only be a single attached OpenGL context at any time.
-    std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr> attachedContexts;
+    std::map<OSGLContextWPtr, EffectInstance::OpenGLContextEffectDataPtr> attachedContexts;
 
     // Render clones are very small copies holding just pointers to Knobs that are used to render plug-ins that are only
     // eRenderSafetyInstanceSafe or lower
@@ -244,11 +244,11 @@ public:
     void setDuringInteractAction(bool b);
 
 #if NATRON_ENABLE_TRIMAP
-    void markImageAsBeingRendered(const boost::shared_ptr<Image> & img, const RectI& roi, std::list<RectI>* restToRender, bool *renderedElsewhere);
+    void markImageAsBeingRendered(const ImagePtr & img, const RectI& roi, std::list<RectI>* restToRender, bool *renderedElsewhere);
 
-    bool waitForImageBeingRenderedElsewhere(const RectI & roi, const boost::shared_ptr<Image> & img);
+    bool waitForImageBeingRenderedElsewhere(const RectI & roi, const ImagePtr & img);
 
-    void unmarkImageAsBeingRendered(const boost::shared_ptr<Image> & img, const std::list<RectI>& rects, bool renderFailed);
+    void unmarkImageAsBeingRendered(const ImagePtr & img, const std::list<RectI>& rects, bool renderFailed);
 #endif
 
     /**
@@ -285,10 +285,10 @@ public:
      **/
     class ScopedRenderArgs
     {
-        EffectDataTLSPtr tlsData;
+        EffectTLSDataPtr tlsData;
 
 public:
-        ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
+        ScopedRenderArgs(const EffectTLSDataPtr& tlsData,
                          const RectD & rod,
                          const RectI & renderWindow,
                          double time,
@@ -296,20 +296,20 @@ public:
                          bool isIdentity,
                          double identityTime,
                          const EffectInstancePtr& identityInput,
-                         const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
+                         const ComponentsNeededMapPtr& compsNeeded,
                          const EffectInstance::InputImagesMap& inputImages,
                          const RoIMap & roiMap,
                          int firstFrame,
                          int lastFrame,
                          bool isDoingOpenGLRender);
 
-        ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
-                         const EffectDataTLSPtr& otherThreadData);
+        ScopedRenderArgs(const EffectTLSDataPtr& tlsData,
+                         const EffectTLSDataPtr& otherThreadData);
 
         ~ScopedRenderArgs();
     };
 
-    void addInputImageTempPointer(int inputNb, const boost::shared_ptr<Image> & img);
+    void addInputImageTempPointer(int inputNb, const ImagePtr & img);
 
     void clearInputImagePointers();
 
@@ -329,11 +329,11 @@ public:
         ViewIdx view;
         double par;
         ImageBitDepthEnum outputClipPrefDepth;
-        boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
+        ComponentsNeededMapPtr  compsNeeded;
         ImagePlaneDesc outputClipPrefsComps;
         bool byPassCache;
         std::bitset<4> processChannels;
-        boost::shared_ptr<ImagePlanesToRender> planes;
+        ImagePlanesToRenderPtr planes;
     };
 
     RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,  const RectToRender & specificData,
@@ -354,9 +354,9 @@ public:
                                                   const bool byPassCache,
                                                   const ImageBitDepthEnum outputClipPrefDepth,
                                                   const ImagePlaneDesc & outputClipPrefsComps,
-                                                  const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
+                                                  const ComponentsNeededMapPtr & compsNeeded,
                                                   const std::bitset<4>& processChannels,
-                                                  const boost::shared_ptr<ImagePlanesToRender> & planes);
+                                                  const ImagePlanesToRenderPtr & planes);
 
 
     ///These are the image passed to the plug-in to render
@@ -380,7 +380,7 @@ public:
     /// - 4) Plugin needs remapping and downscaling
     ///    * renderMappedImage points to fullScaleMappedImage
     ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
-    RenderingFunctorRetEnum renderHandler(const EffectDataTLSPtr& tls,
+    RenderingFunctorRetEnum renderHandler(const EffectTLSDataPtr& tls,
                                           const unsigned int mipMapLevel,
                                           const bool renderFullScaleThenDownscale,
                                           const bool isSequentialRender,
@@ -391,8 +391,8 @@ public:
                                           const ImageBitDepthEnum outputClipPrefDepth,
                                           const ImagePlaneDesc & outputClipPrefsComps,
                                           const std::bitset<4>& processChannels,
-                                          const boost::shared_ptr<Image> & originalInputImage,
-                                          const boost::shared_ptr<Image> & maskImage,
+                                          const ImagePtr & originalInputImage,
+                                          const ImagePtr & maskImage,
                                           const ImagePremultiplicationEnum originalImagePremultiplication,
                                           ImagePlanesToRender & planes);
 

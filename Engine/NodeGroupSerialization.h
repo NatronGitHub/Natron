@@ -64,7 +64,7 @@ class NodeCollectionSerialization
     Q_DECLARE_TR_FUNCTIONS(NodeCollection)
 
 private:
-    std::list< boost::shared_ptr<NodeSerialization> > _serializedNodes;
+    std::list<NodeSerializationPtr> _serializedNodes;
 
 public:
 
@@ -79,18 +79,18 @@ public:
 
     void initialize(const NodeCollection& group);
 
-    const std::list< boost::shared_ptr<NodeSerialization> > & getNodesSerialization() const
+    const std::list<NodeSerializationPtr> & getNodesSerialization() const
     {
         return _serializedNodes;
     }
 
-    void addNodeSerialization(const boost::shared_ptr<NodeSerialization>& s)
+    void addNodeSerialization(const NodeSerializationPtr& s)
     {
         _serializedNodes.push_back(s);
     }
 
-    static bool restoreFromSerialization(const std::list< boost::shared_ptr<NodeSerialization> > & serializedNodes,
-                                         const boost::shared_ptr<NodeCollection>& group,
+    static bool restoreFromSerialization(const std::list<NodeSerializationPtr> & serializedNodes,
+                                         const NodeCollectionPtr& group,
                                          bool createNodes,
                                          std::map<std::string, bool>* moduleUpdatesProcessed);
 
@@ -104,7 +104,7 @@ private:
         int nodesCount = (int)_serializedNodes.size();
         ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
 
-        for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = _serializedNodes.begin();
+        for (std::list<NodeSerializationPtr>::const_iterator it = _serializedNodes.begin();
              it != _serializedNodes.end();
              ++it) {
             ar & ::boost::serialization::make_nvp("item", **it);
@@ -119,7 +119,7 @@ private:
         ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
 
         for (int i = 0; i < nodesCount; ++i) {
-            boost::shared_ptr<NodeSerialization> s = boost::make_shared<NodeSerialization>();
+            NodeSerializationPtr s = boost::make_shared<NodeSerialization>();
             ar & ::boost::serialization::make_nvp("item", *s);
             _serializedNodes.push_back(s);
         }

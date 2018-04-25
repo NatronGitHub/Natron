@@ -44,14 +44,15 @@ class UpdateViewerParams; // ViewerInstancePrivate
 
 typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
 
-struct ViewerArgs
+class ViewerArgs
 {
+public:
     EffectInstancePtr activeInputToRender;
     bool forceRender;
     int activeInputIndex;
     U64 activeInputHash;
-    boost::shared_ptr<UpdateViewerParams> params;
-    boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
+    UpdateViewerParamsPtr params;
+    RenderingFlagSetterPtr isRenderingFlag;
     bool draftModeEnabled;
     unsigned int mipMapLevelWithDraft, mipmapLevelWithoutDraft;
     bool autoContrast;
@@ -121,7 +122,7 @@ public:
                                                                 U64 viewerHash,
                                                                 bool canAbort,
                                                                 const NodePtr& rotoPaintNode,
-                                                                const boost::shared_ptr<RenderStats>& stats,
+                                                                const RenderStatsPtr& stats,
                                                                 ViewerArgs* outArgs);
 
 private:
@@ -135,7 +136,7 @@ private:
                                                          U64 viewerHash,
                                                          const NodePtr& rotoPaintNode,
                                                          const AbortableRenderInfoPtr& abortInfo,
-                                                         const boost::shared_ptr<RenderStats>& stats,
+                                                         const RenderStatsPtr& stats,
                                                          ViewerArgs* outArgs);
 
 
@@ -163,7 +164,7 @@ private:
                                                const bool useCache,
                                                const bool isDraftMode,
                                                const unsigned int mipmapLevel,
-                                               const boost::shared_ptr<RenderStats>& stats,
+                                               const RenderStatsPtr& stats,
                                                ViewerArgs* outArgs);
 
 
@@ -177,7 +178,7 @@ private:
     ViewerRenderRetCode getRoDAndLookupCache(const bool useOnlyRoDCache,
                                              const U64 viewerHash,
                                              const NodePtr& rotoPaintNode,
-                                             const boost::shared_ptr<RenderStats>& stats,
+                                             const RenderStatsPtr& stats,
                                              ViewerArgs* outArgs);
 
 public:
@@ -200,23 +201,23 @@ public:
                                      bool canAbort,
                                      const NodePtr& rotoPaintNode,
                                      bool useTLS,
-                                     boost::shared_ptr<ViewerArgs> args[2],
-                                     const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
-                                     const boost::shared_ptr<RenderStats>& stats) WARN_UNUSED_RETURN;
+                                     ViewerArgsPtr args[2],
+                                     const ViewerCurrentFrameRequestSchedulerStartArgsPtr& request,
+                                     const RenderStatsPtr& stats) WARN_UNUSED_RETURN;
 
     ViewerRenderRetCode getViewerArgsAndRenderViewer(SequenceTime time,
                                                      bool canAbort,
                                                      ViewIdx view,
                                                      U64 viewerHash,
                                                      const NodePtr& rotoPaintNode,
-                                                     const boost::shared_ptr<RotoStrokeItem>& strokeItem,
-                                                     const boost::shared_ptr<RenderStats>& stats,
-                                                     boost::shared_ptr<ViewerArgs>* argsA,
-                                                     boost::shared_ptr<ViewerArgs>* argsB);
+                                                     const RotoStrokeItemPtr& strokeItem,
+                                                     const RenderStatsPtr& stats,
+                                                     ViewerArgsPtr* argsA,
+                                                     ViewerArgsPtr* argsB);
 
     void aboutToUpdateTextures();
 
-    void updateViewer(boost::shared_ptr<UpdateViewerParams> & frame);
+    void updateViewer(UpdateViewerParamsPtr & frame);
 
     virtual bool getMakeSettingsPanel() const OVERRIDE FINAL { return false; }
 
@@ -287,7 +288,7 @@ public:
 
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
     virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
-    boost::shared_ptr<TimeLine> getTimeline() const;
+    TimeLinePtr getTimeline() const;
 
     void getTimelineBounds(int* first, int* last) const;
 
@@ -426,8 +427,8 @@ private:
                                               bool canAbort,
                                               const NodePtr& rotoPaintNode,
                                               bool useTLS,
-                                              const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
-                                              const boost::shared_ptr<RenderStats>& stats,
+                                              const ViewerCurrentFrameRequestSchedulerStartArgsPtr& request,
+                                              const RenderStatsPtr& stats,
                                               ViewerArgs& inArgs) WARN_UNUSED_RETURN;
 
     virtual void getRegionsOfInterest(double time,

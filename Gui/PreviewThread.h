@@ -59,7 +59,7 @@ private:
         return eTaskQueueBehaviorProcessInOrder;
     }
 
-    virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<PreviewThreadPrivate> _imp;
 };
 

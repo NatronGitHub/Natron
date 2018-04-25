@@ -29,6 +29,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QtCore/QDebug>
 #include <QtCore/QSettings>
 #include <QPixmapCache>
@@ -37,6 +38,10 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include "Engine/Settings.h"
 #include "Engine/EffectInstance.h" // PLUGINID_OFX_*
@@ -816,7 +821,7 @@ GuiApplicationManager::getIcon(PixmapEnum e,
     }
 }
 
-const std::list<boost::shared_ptr<PluginGroupNode> >&
+const std::list<PluginGroupNodePtr>&
 GuiApplicationManager::getTopLevelPluginsToolButtons() const
 {
     return _imp->_topLevelToolButtons;
@@ -847,7 +852,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
 
 #ifdef __NATRON_UNIX__
 #ifndef __NATRON_OSX__
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     // workaround for issues with KDE4
     QApplication::setStyle( QString::fromUtf8("plastique") );
 #endif
@@ -915,7 +920,12 @@ GuiApplicationManager::initGui(const CLArgs& args)
     _imp->_splashScreen = new SplashScreen(filename);
     _imp->_splashScreen->setAttribute(Qt::WA_DeleteOnClose, 0);
 
-    QCoreApplication::processEvents();
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        QCoreApplication::processEvents();
+    }
     QPixmap appIcPixmap;
     appPTR->getIcon(NATRON_PIXMAP_APP_ICON, &appIcPixmap);
     QIcon appIc(appIcPixmap);
@@ -989,7 +999,7 @@ GuiApplicationManager::onPluginLoaded(Plugin* plugin)
     QStringList groupingWithID = groups;
 
     groupingWithID.push_back(pluginID);
-    boost::shared_ptr<PluginGroupNode> child = findPluginToolButtonOrCreate( groupingWithID,
+    PluginGroupNodePtr child = findPluginToolButtonOrCreate( groupingWithID,
                                                                              pluginLabel,
                                                                              groupIconPath,
                                                                              pluginIconPath,
@@ -1052,7 +1062,7 @@ GuiApplicationManager::ignorePlugin(Plugin* plugin)
     _imp->removeKeybind( QString::fromUtf8(kShortcutGroupNodes), plugin->getPluginID() );
 }
 
-boost::shared_ptr<PluginGroupNode>
+PluginGroupNodePtr
 GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping,
                                                     const QString & name,
                                                     const QStringList& groupIconPath,
@@ -1063,7 +1073,7 @@ GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping
 {
     assert(grouping.size() > 0);
 
-    return _imp->findPluginToolButtonInternal(_imp->_topLevelToolButtons, boost::shared_ptr<PluginGroupNode>(), grouping, name, groupIconPath, iconPath, major, minor, isUserCreatable);
+    return _imp->findPluginToolButtonInternal(_imp->_topLevelToolButtons, PluginGroupNodePtr(), grouping, name, groupIconPath, iconPath, major, minor, isUserCreatable);
 }
 
 bool
@@ -1075,6 +1085,9 @@ GuiApplicationManager::isSplashcreenVisible() const
 void
 GuiApplicationManager::hideSplashScreen()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
     if (_imp->_splashScreen) {
         _imp->_splashScreen->close();
         delete _imp->_splashScreen;
@@ -1084,7 +1097,7 @@ GuiApplicationManager::hideSplashScreen()
 
 void
 GuiApplicationManager::setKnobClipBoard(KnobClipBoardType type,
-                                        const KnobPtr& serialization,
+                                        const KnobIPtr& serialization,
                                         int dimension)
 {
     _imp->_knobsClipBoard->serialization = serialization;
@@ -1094,7 +1107,7 @@ GuiApplicationManager::setKnobClipBoard(KnobClipBoardType type,
 
 void
 GuiApplicationManager::getKnobClipBoard(KnobClipBoardType *type,
-                                        KnobPtr *serialization,
+                                        KnobIPtr *serialization,
                                         int* dimension) const
 {
     *serialization = _imp->_knobsClipBoard->serialization;

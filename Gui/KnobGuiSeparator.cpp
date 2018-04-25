@@ -82,7 +82,7 @@ using std::make_pair;
 
 //=============================SEPARATOR_KNOB_GUI===================================
 
-KnobGuiSeparator::KnobGuiSeparator(KnobPtr knob,
+KnobGuiSeparator::KnobGuiSeparator(KnobIPtr knob,
                                    KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _line(0)
@@ -139,7 +139,7 @@ KnobGuiSeparator::_show()
     _line->show();
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiSeparator::getKnob() const
 {
     return _knob.lock();

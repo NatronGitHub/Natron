@@ -110,7 +110,7 @@ private:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
     RotoLayerSerialization _baseLayer;
-    std::list< std::string > _selectedItems;
+    std::list<std::string > _selectedItems;
     bool _autoKeying;
     bool _rippleEdit;
     bool _featherLink;

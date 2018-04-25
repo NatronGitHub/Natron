@@ -130,7 +130,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
     ///if behaviour is 1 , just check that we can effectively connect the node to avoid moving them for nothing
     ///otherwise fallback on behaviour 0
     if (behavior == 1) {
-        const std::vector<NodeWPtr > & inputs = selected->getNode()->getGuiInputs();
+        const std::vector<NodeWPtr> & inputs = selected->getNode()->getGuiInputs();
         bool oneInputEmpty = false;
         for (std::size_t i = 0; i < inputs.size(); ++i) {
             if ( !inputs[i].lock() ) {
@@ -144,7 +144,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
     }
 
 
-    boost::shared_ptr<Project> proj = getGui()->getApp()->getProject();
+    ProjectPtr proj = getGui()->getApp()->getProject();
 
 
     ///default
@@ -243,7 +243,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                 if (!output) {
                     continue;
                 }
-                boost::shared_ptr<NodeGuiI> output_i = output->getNodeGui();
+                NodeGuiIPtr output_i = output->getNodeGui();
                 if (!output_i) {
                     continue;
                 }
@@ -274,7 +274,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                            Internal rotopaint nodes are connecting to the Rotopaint itself... make sure not to connect
                            internal nodes of the tree
                          */
-                        boost::shared_ptr<RotoDrawableItem> stroke = it->first->getAttachedRotoItem();
+                        RotoDrawableItemPtr stroke = it->first->getAttachedRotoItem();
                         if ( stroke && (stroke->getContext()->getNode() == selectedNodeInternal) ) {
                             continue;
                         }

@@ -63,7 +63,7 @@ void
 NodeGraph::makeFullyQualifiedLabel(Node* node,
                                    std::string* ret)
 {
-    boost::shared_ptr<NodeCollection> parent = node->getGroup();
+    NodeCollectionPtr parent = node->getGroup();
     NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>( parent.get() );
     std::string toPreprend = node->getLabel();
 
@@ -77,7 +77,7 @@ NodeGraph::makeFullyQualifiedLabel(Node* node,
 }
 
 NodeGraph::NodeGraph(Gui* gui,
-                     const boost::shared_ptr<NodeCollection>& group,
+                     const NodeCollectionPtr& group,
                      QGraphicsScene* scene,
                      QWidget *parent)
     : QGraphicsView(scene, parent)
@@ -224,13 +224,13 @@ NodeGraph::isDoingNavigatorRender() const
     return _imp->isDoingPreviewRender;
 }
 
-const std::list< NodeGuiPtr > &
+const std::list<NodeGuiPtr> &
 NodeGraph::getSelectedNodes() const
 {
     return _imp->_selection;
 }
 
-boost::shared_ptr<NodeCollection>
+NodeCollectionPtr
 NodeGraph::getGroup() const
 {
     return _imp->group.lock();
@@ -245,7 +245,7 @@ NodeGraph::getRootItem() const
 void
 NodeGraph::notifyGuiClosing()
 {
-    boost::shared_ptr<NodeCollection> group = getGroup();
+    NodeCollectionPtr group = getGroup();
 
     if (group) {
         group->discardNodeGraphPointer();
@@ -276,7 +276,7 @@ NodeGraph::resizeEvent(QResizeEvent* e)
 void
 NodeGraph::paintEvent(QPaintEvent* e)
 {
-    AppInstPtr app;
+    AppInstancePtr app;
 
     if ( getGui() ) {
         app = getGui()->getApp();
@@ -285,7 +285,7 @@ NodeGraph::paintEvent(QPaintEvent* e)
         return;
     }
 
-    boost::shared_ptr<NodeCollection> collection = getGroup();
+    NodeCollectionPtr collection = getGroup();
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
     bool isGroupEditable = true;
     bool groupEdited = true;
@@ -330,12 +330,13 @@ NodeGraph::paintEvent(QPaintEvent* e)
             int pixH = _imp->unlockIcon.height();
             QRect pixRect(pixPos.x(), pixPos.y(), pixW, pixH);
             pixRect.adjust(-2, -2, 2, 2);
-            QRect selRect(pixPos.x(), pixPos.y(), pixW, pixH);
-            pixRect.adjust(-3, -3, 3, 3);
+            QRect selRect = pixRect;
+            selRect.adjust(-3, -3, 3, 3);
             p.setBrush( QColor(243, 137, 0) );
             p.setOpacity(1.);
+            p.setPen(Qt::NoPen);
             p.drawRoundedRect(selRect, 5, 5);
-            p.setBrush( QColor(50, 50, 50) );
+            p.setBrush( QColor(100, 100, 100) );
             p.drawRoundedRect(pixRect, 5, 5);
             p.drawPixmap(pixPos.x(), pixPos.y(), pixW, pixH, _imp->unlockIcon, 0, 0, pixW, pixH);
         }
@@ -420,7 +421,7 @@ NodeGraph::createNodeGUI(const NodePtr & node,
         isTopLevelNodeBeingCreated = true;
     }
     
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
 
     bool panelOpened = args.getProperty<bool>(kCreateNodeArgsPropSettingsOpened);
     if ( !serialization && panelOpened && isTopLevelNodeBeingCreated ) {
@@ -428,7 +429,7 @@ NodeGraph::createNodeGUI(const NodePtr & node,
     }
 
 
-    boost::shared_ptr<QUndoStack> nodeStack = node_ui->getUndoStack();
+    QUndoStackPtr nodeStack = node_ui->getUndoStack();
     if (nodeStack) {
         getGui()->registerNewUndoStack( nodeStack.get() );
     }

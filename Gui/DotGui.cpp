@@ -169,7 +169,7 @@ NodeSettingsPanel*
 DotGui::createPanel(QVBoxLayout* /*container*/,
                     const NodeGuiPtr & /*thisAsShared*/)
 {
-    /* NodeSettingsPanel* panel = new NodeSettingsPanel( boost::shared_ptr<MultiInstancePanel>(),
+    /* NodeSettingsPanel* panel = new NodeSettingsPanel( MultiInstancePanelPtr(),
                                                        getDagGui()->getGui(),
                                                        thisAsShared,
                                                        container,container->parentWidget() );

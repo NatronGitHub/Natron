@@ -234,7 +234,7 @@ NodeGraph::checkForHints(bool shiftdown,
 
         ///find out if the node is already connected to what the edge is connected
         bool alreadyConnected = false;
-        const std::vector<NodeWPtr > & inpNodes = selectedNode->getNode()->getGuiInputs();
+        const std::vector<NodeWPtr> & inpNodes = selectedNode->getNode()->getGuiInputs();
         for (std::size_t i = 0; i < inpNodes.size(); ++i) {
             if ( inpNodes[i].lock() == edge->getSource()->getNode() ) {
                 alreadyConnected = true;
@@ -388,7 +388,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     _imp->_hasMovedOnce = true;
 
     bool mustUpdate = true;
-    boost::shared_ptr<NodeCollection> collection = getGroup();
+    NodeCollectionPtr collection = getGroup();
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
     bool isGroupEditable = true;
     bool groupEdited = true;
@@ -398,15 +398,22 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     }
     if (!groupEdited && isGroupEditable) {
         ///check if user is nearby unlock
-        int iw = _imp->unlockIcon.width();
-        int ih = _imp->unlockIcon.height();
-        int w = width();
-        if ( ( e->x() >= (w - iw - 10 - 15) ) && ( e->x() <= (w - 10 + 15) ) &&
-             ( e->y() >= (10 - 15) ) && ( e->y() <= (10 + ih + 15) ) ) {
+        // see NodeGraph::paintEvent()
+        QPoint pixPos = _imp->getPyPlugUnlockPos();
+        int pixW = _imp->unlockIcon.width();
+        int pixH = _imp->unlockIcon.height();
+        QRect pixRect(pixPos.x(), pixPos.y(), pixW, pixH);
+        pixRect.adjust(-2, -2, 2, 2);
+        QRect selRect = pixRect;
+        selRect.adjust(-3, -3, 3, 3);
+        if ( selRect.contains( e->pos() ) ) {
             assert(isGroup);
             QPoint pos = mapToGlobal( e->pos() );
+            // Unfortunately, the timeout delay for the tooltip is hardcoded in Qt 4, and the last parameter to showText doesn't seem to influence anything
+            // Can not fix https://github.com/MrKepzie/Natron/issues/1151 (at least in Qt4)
             QToolTip::showText( pos, NATRON_NAMESPACE::convertFromPlainText(QCoreApplication::translate("NodeGraph", "Clicking the unlock button will convert the PyPlug to a regular group saved in the project and dettach it from the script.\n"
-                                                                                                "Any modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+                                                                                                "Any modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."), NATRON_NAMESPACE::WhiteSpaceNormal),
+                               this, selRect);
         }
     }
 
@@ -504,7 +511,18 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     case eEventStateNone:
     default: {
         mustUpdate = false;
-        if (groupEdited) {
+        // Test if mouse is inside the navigator
+        QPointF mousePosSceneCoordinates;
+        bool insideNavigator = isNearbyNavigator(e->pos(), mousePosSceneCoordinates);
+        if (insideNavigator) {
+            _imp->cursorSet = true;
+            setCursor( QCursor(Qt::OpenHandCursor) );
+        } else if (!groupEdited) {
+            if (_imp->cursorSet) {
+                _imp->cursorSet = false;
+                unsetCursor();
+            }
+        } else {
             // Set cursor
             // The cursor should clearly indicate when will happen if mouse is pressed
             NodeGui* nearbyNode = NULL;
@@ -539,7 +557,6 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             }
             }
         }
-
         break;
     }
     } // switch

@@ -301,33 +301,35 @@ If you want to build in DEBUG mode change the qmake call to this line:
 ### Building with OpenMP support using clang
 
 It is possible to build Natron using clang (version 3.8 is required,
-version 4.0 is recommended) with OpenMP support on
+version 6.0 is recommended) with OpenMP support on
 MacPorts (or homebrew for OS X 10.9 or later).  OpenMP brings speed improvements in the
 tracker and in CImg-based plugins.
 
-However, the unit tests don't pass yet with clang/libomp 4.0 on OS X 10.6, so be sure tu run the unit tests from https://github.com/NatronGitHub/Natron-Tests to validate any clang/macOS combination.
+First, install clang 6.0. On OS X 10.9 and later with MacPorts, simply execute:
 
-First, install clang 5.0. On OS X 10.9 and later, simply execute:
+    sudo port -v install clang-6.0
 
-    sudo port -v install clang-5.0
+Or with homebrew:
 
-On older systems, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)", and install and set clang-4.0 as the default compiler in the end. Note that we noticed clang 3.9.1 generates wrong code with `-Os` when compiling openexr (clang 4.0 was not checked), so it is safer to also change `default configure.optflags      {-Os}` to `default configure.optflags      {-O2}` in `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` (type `sudo nano /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` to edit it).
+    brew install llvm
 
-On older systems, if you also want to install clang-4.0, check that bug [https://trac.macports.org/ticket/54135](macports#54135) is fixed, or fix it yourself by editing `/opt/local-libc++/libexec/llvm-4.0/lib/clang/4.0.0/include/float.h`. The libtool that comes with OS X 10.6 does not work well with clang-generated binaries, and you may have to `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
+On older systems, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)", and install and set clang-6.0 as the default compiler in the end. Note that we noticed clang 3.9.1 generates wrong code with `-Os` when compiling openexr (later clang versions were not checked), so it is safer to also change `default configure.optflags      {-Os}` to `default configure.optflags      {-O2}` in `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` (type `sudo nano /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` to edit it).
+
+The libtool that comes with OS X 10.6 does not work well with clang-generated binaries, and you may have to `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
 
 Then, configure using the following qmake command:
 
-    /opt/local/libexec/qt4/bin/qmake -spec unsupported/macx-clang-libc++ QMAKE_CXX=clang++-mp-5.0 QMAKE_CXX=clang++-mp-5.0 QMAKE_CC=clang-mp-5.0 QMAKE_OBJECTIVE_CXX=clang++-mp-5.0 QMAKE_OBJECTIVE_CC=clang-mp-5.0 QMAKE_LD=clang++-mp-5.0 -r CONFIG+=openmp
+    /opt/local/libexec/qt4/bin/qmake QMAKE_CXX='clang++-mp-6.0 -stdlib=libc++' QMAKE_CC=clang-mp-6.0 QMAKE_OBJECTIVE_CXX='clang++-mp-6.0 -stdlib=libc++' QMAKE_OBJECTIVE_CC='clang-mp-6.0 -stdlib=libc++' QMAKE_LD='clang++-mp-5.0 -stdlib=libc++' -r CONFIG+=openmp CONFIG+=enable-osmesa CONFIG+=enable-cairo
 
 To build the plugins, use the following command-line:
 
-    make CXX=clang++-mp-5.0 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp"
+    make CXX='clang++-mp-5.0 -stdlib=libc++' OPENMP=1
 
 Or, if you have MangledOSMesa32 installed in `OSMESA_PATH` and LLVM installed in `LLVM_PATH` (MangledOSMesa32 and LLVM build script is available from [https://github.com/devernay/osmesa-install](github:devernay/osmesa-install) :
 
     OSMESA_PATH=/opt/osmesa
     LLVM_PATH=/opt/llvm
-    make CXX=clang++-mp-5.0 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp" CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
+    make CXX='clang++-mp-5.0 -stdlib=libc++' OPENMP=1 CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
 
 ## Build on Xcode
 
@@ -415,15 +417,15 @@ On MacPorts, this would look like:
 ## Generating Python bindings
 
 This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
-typesystem.xml file. See the documentation of shiboken-3.4 for an explanation of the command line arguments.
+typesystem.xml file. See the documentation of shiboken-2.7 for an explanation of the command line arguments.
 
 On MacPorts:
 ```Shell
 rm Engine/NatronEngine/* Gui/NatronGui/*
 
-shiboken-3.4 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
+shiboken-2.7 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:/opt/local/include:/opt/local/include/PySide-2.7  --typesystem-paths=/opt/local/share/PySide-2.7/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
 
-shiboken-3.4 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+shiboken-2.7 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:/opt/local/include:/opt/local/include/PySide-2.7  --typesystem-paths=/opt/local/share/PySide-2.7/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
 
 tools/utils/runPostShiboken.sh
 ```

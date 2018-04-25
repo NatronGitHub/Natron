@@ -58,9 +58,9 @@ NATRON_NAMESPACE_ENTER
 
 struct AddKnobDialogPrivate
 {
-    KnobPtr knob;
-    boost::shared_ptr<KnobSerialization> originalKnobSerialization;
-    KnobPtr isKnobAlias;
+    KnobIPtr knob;
+    KnobSerializationPtr originalKnobSerialization;
+    KnobIPtr isKnobAlias;
     DockablePanel* panel;
     QVBoxLayout* vLayout;
     QWidget* mainContainer;
@@ -121,7 +121,7 @@ struct AddKnobDialogPrivate
     Label* parentPageLabel;
     ComboBox* parentPage;
     std::list<KnobGroup*> userGroups;
-    std::list<boost::shared_ptr<KnobPage> > userPages; //< all user pages except the "User" one
+    std::list<KnobPagePtr> userPages; //< all user pages except the "User" one
 
     AddKnobDialogPrivate(DockablePanel* panel)
         : knob()
@@ -222,7 +222,7 @@ struct AddKnobDialogPrivate
     template <typename T>
     void setKnobMinMax(KnobI* knob);
 
-    boost::shared_ptr<KnobPage> getSelectedPage() const;
+    KnobPagePtr getSelectedPage() const;
 };
 
 const char*
@@ -407,7 +407,7 @@ AddKnobDialog::getChoiceIndexFromKnobType(KnobI* knob)
 } // getChoiceIndexFromKnobType
 
 AddKnobDialog::AddKnobDialog(DockablePanel* panel,
-                             const KnobPtr& knob,
+                             const KnobIPtr& knob,
                              const std::string& selectedPageName,
                              const std::string& selectedGroupName,
                              QWidget* parent)
@@ -453,8 +453,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     _imp->vLayout->addWidget(_imp->mainContainer);
 
     {
-        KnobPtr isAlias;
-        KnobPtr listener;
+        KnobIPtr isAlias;
+        KnobIPtr listener;
         if (knob) {
             KnobI::ListenerDimsMap listeners;
             knob->getListeners(listeners);
@@ -517,7 +517,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         if (knob) {
             // get the flag on the previous knob
             bool startNewLine = true;
-            KnobPtr parentKnob = _imp->knob->getParentKnob();
+            KnobIPtr parentKnob = _imp->knob->getParentKnob();
             if (parentKnob) {
                 KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>( parentKnob.get() );
                 KnobPage* parentIsPage = dynamic_cast<KnobPage*>( parentKnob.get() );
@@ -847,10 +847,10 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         _imp->mainLayout->addRow(_imp->defaultValueLabel, defValContainer);
 
 
-        Knob<double>* isDbl = dynamic_cast<Knob<double>*>( knob.get() );
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
+        KnobDoubleBase* isDbl = dynamic_cast<KnobDoubleBase*>( knob.get() );
+        KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( knob.get() );
         KnobBool* isBool = dynamic_cast<KnobBool*>( knob.get() );
-        Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>( knob.get() );
+        KnobStringBase* isStr = dynamic_cast<KnobStringBase*>( knob.get() );
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
 
         if (isChoice) {
@@ -884,7 +884,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
 
     const KnobsGuiMapping& knobs = _imp->panel->getKnobsMapping();
     for (KnobsGuiMapping::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        KnobPtr knob = it->first.lock();
+        KnobIPtr knob = it->first.lock();
         if (!knob) {
             continue;
         }
@@ -921,14 +921,14 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     const KnobsVec& internalKnobs = _imp->panel->getHolder()->getKnobs();
     for (KnobsVec::const_iterator it = internalKnobs.begin(); it != internalKnobs.end(); ++it) {
         if ( (*it)->isUserKnob() ) {
-            boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
+            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
             if (isPage) {
                 _imp->userPages.push_back(isPage);
             }
         }
     }
 
-    for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
+    for (std::list<KnobPagePtr>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
         _imp->parentPage->addItem( QString::fromUtf8( (*it)->getName().c_str() ) );
     }
     _imp->parentPage->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The tab under which this parameter will appear."), NATRON_NAMESPACE::WhiteSpaceNormal) );
@@ -937,11 +937,11 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     int pageIndexLoaded = -1;
     if (knob) {
         ////find in which page the knob should be
-        boost::shared_ptr<KnobPage> isTopLevelParentAPage = knob->getTopLevelPage();
+        KnobPagePtr isTopLevelParentAPage = knob->getTopLevelPage();
         if (isTopLevelParentAPage) {
             int index = 0; // 1 because of the "User" item
             bool found = false;
-            for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
+            for (std::list<KnobPagePtr>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
                 if (*it == isTopLevelParentAPage) {
                     found = true;
                     break;
@@ -956,7 +956,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         ///If the selected page name in the manage user params dialog is valid, set the page accordingly
         if ( _imp->parentPage && !selectedPageName.empty() ) {
             int index = 0;
-            for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
+            for (std::list<KnobPagePtr>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
                 if ( (*it)->getName() == selectedPageName ) {
                     _imp->parentPage->setCurrentIndex_no_emit(index);
                     pageIndexLoaded = index;
@@ -971,13 +971,13 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     onPageCurrentIndexChanged(pageIndexLoaded == -1 ? 0 : pageIndexLoaded);
 
     if (_imp->parentGroup && knob) {
-        boost::shared_ptr<KnobPage> topLvlPage = knob->getTopLevelPage();
+        KnobPagePtr topLvlPage = knob->getTopLevelPage();
         if (topLvlPage) {
-            KnobPtr parent = knob->getParentKnob();
+            KnobIPtr parent = knob->getParentKnob();
             KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>( parent.get() );
             if (isParentGrp) {
                 for (std::list<KnobGroup*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it) {
-                    boost::shared_ptr<KnobPage> page = (*it)->getTopLevelPage();
+                    KnobPagePtr page = (*it)->getTopLevelPage();
                     assert(page);
 
                     ///add only grps whose parent page is the selected page
@@ -1035,9 +1035,9 @@ AddKnobDialog::onPageCurrentIndexChanged(int index)
     _imp->parentGroup->addItem( QString::fromUtf8("-") );
 
     std::string selectedPage = _imp->parentPage->itemText(index).toStdString();
-    boost::shared_ptr<KnobPage> parentPage;
+    KnobPagePtr parentPage;
 
-    for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
+    for (std::list<KnobPagePtr>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
         if ( (*it)->getName() == selectedPage ) {
             parentPage = *it;
             break;
@@ -1046,7 +1046,7 @@ AddKnobDialog::onPageCurrentIndexChanged(int index)
 
 
     for (std::list<KnobGroup*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it) {
-        boost::shared_ptr<KnobPage> page = (*it)->getTopLevelPage();
+        KnobPagePtr page = (*it)->getTopLevelPage();
         assert(page);
 
         ///add only grps whose parent page is the selected page
@@ -1293,7 +1293,7 @@ AddKnobDialog::~AddKnobDialog()
 {
 }
 
-KnobPtr
+KnobIPtr
 AddKnobDialog::getKnob() const
 {
     return _imp->knob;
@@ -1352,7 +1352,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
     case AddKnobDialog::eParamDataTypeInteger2D:
     case AddKnobDialog::eParamDataTypeInteger3D: {
         //int
-        boost::shared_ptr<KnobInt> k = AppManager::createKnob<KnobInt>(panel->getHolder(), label, dim, false);
+        KnobIntPtr k = AppManager::createKnob<KnobInt>(panel->getHolder(), label, dim, false);
         setKnobMinMax<int>( k.get() );
         knob = k;
         break;
@@ -1362,7 +1362,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
     case AddKnobDialog::eParamDataTypeFloatingPoint3D: {
         //double
         int dim = index - 2;
-        boost::shared_ptr<KnobDouble> k = AppManager::createKnob<KnobDouble>(panel->getHolder(), label, dim, false);
+        KnobDoublePtr k = AppManager::createKnob<KnobDouble>(panel->getHolder(), label, dim, false);
         setKnobMinMax<double>( k.get() );
         knob = k;
         break;
@@ -1371,13 +1371,13 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
     case AddKnobDialog::eParamDataTypeColorRGBA: {
         // color
         int dim = index - 3;
-        boost::shared_ptr<KnobColor> k = AppManager::createKnob<KnobColor>(panel->getHolder(), label, dim, false);
+        KnobColorPtr k = AppManager::createKnob<KnobColor>(panel->getHolder(), label, dim, false);
         setKnobMinMax<double>( k.get() );
         knob = k;
         break;
     }
     case AddKnobDialog::eParamDataTypeChoice: {
-        boost::shared_ptr<KnobChoice> k = AppManager::createKnob<KnobChoice>(panel->getHolder(), label, 1, false);
+        KnobChoicePtr k = AppManager::createKnob<KnobChoice>(panel->getHolder(), label, 1, false);
         QString entriesRaw = menuItemsEdit->toPlainText();
         QTextStream stream(&entriesRaw);
         std::vector<ChoiceOption> entries;
@@ -1421,7 +1421,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         break;
     }
     case AddKnobDialog::eParamDataTypeCheckbox: {
-        boost::shared_ptr<KnobBool> k = AppManager::createKnob<KnobBool>(panel->getHolder(), label, 1, false);
+        KnobBoolPtr k = AppManager::createKnob<KnobBool>(panel->getHolder(), label, 1, false);
         bool defValue = defaultBool->isChecked();
         k->setDefaultValue(defValue);
         knob = k;
@@ -1429,7 +1429,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
     }
     case AddKnobDialog::eParamDataTypeLabel:
     case AddKnobDialog::eParamDataTypeTextInput: {
-        boost::shared_ptr<KnobString> k = AppManager::createKnob<KnobString>(panel->getHolder(), label, 1, false);
+        KnobStringPtr k = AppManager::createKnob<KnobString>(panel->getHolder(), label, 1, false);
         if ( multiLine->isChecked() ) {
             k->setAsMultiLine();
             if ( richText->isChecked() ) {
@@ -1446,7 +1446,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         break;
     }
     case AddKnobDialog::eParamDataTypeInputFile: {
-        boost::shared_ptr<KnobFile> k = AppManager::createKnob<KnobFile>(panel->getHolder(), label, 1, false);
+        KnobFilePtr k = AppManager::createKnob<KnobFile>(panel->getHolder(), label, 1, false);
         if ( sequenceDialog->isChecked() ) {
             k->setAsInputImage();
         }
@@ -1456,7 +1456,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         break;
     }
     case AddKnobDialog::eParamDataTypeOutputFile: {
-        boost::shared_ptr<KnobOutputFile> k = AppManager::createKnob<KnobOutputFile>(panel->getHolder(), label, 1, false);
+        KnobOutputFilePtr k = AppManager::createKnob<KnobOutputFile>(panel->getHolder(), label, 1, false);
         if ( sequenceDialog->isChecked() ) {
             k->setAsOutputImageFile();
         }
@@ -1466,7 +1466,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         break;
     }
     case AddKnobDialog::eParamDataTypeDirectory: {
-        boost::shared_ptr<KnobPath> k = AppManager::createKnob<KnobPath>(panel->getHolder(), label, 1, false);
+        KnobPathPtr k = AppManager::createKnob<KnobPath>(panel->getHolder(), label, 1, false);
         if ( multiPath->isChecked() ) {
             k->setMultiPath(true);
         }
@@ -1476,7 +1476,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         break;
     }
     case AddKnobDialog::eParamDataTypeGroup: {
-        boost::shared_ptr<KnobGroup> k = AppManager::createKnob<KnobGroup>(panel->getHolder(), label, 1, false);
+        KnobGroupPtr k = AppManager::createKnob<KnobGroup>(panel->getHolder(), label, 1, false);
         if ( groupAsTab->isChecked() ) {
             k->setAsTab();
         }
@@ -1485,17 +1485,17 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         break;
     }
     case AddKnobDialog::eParamDataTypePage: {
-        boost::shared_ptr<KnobPage> k = AppManager::createKnob<KnobPage>(panel->getHolder(), label, 1, false);
+        KnobPagePtr k = AppManager::createKnob<KnobPage>(panel->getHolder(), label, 1, false);
         knob = k;
         break;
     }
     case AddKnobDialog::eParamDataTypeButton: {
-        boost::shared_ptr<KnobButton> k = AppManager::createKnob<KnobButton>(panel->getHolder(), label, 1, false);
+        KnobButtonPtr k = AppManager::createKnob<KnobButton>(panel->getHolder(), label, 1, false);
         knob = k;
         break;
     }
     case AddKnobDialog::eParamDataTypeSeparator: {
-        boost::shared_ptr<KnobSeparator> k = AppManager::createKnob<KnobSeparator>(panel->getHolder(), label, 1, false);
+        KnobSeparatorPtr k = AppManager::createKnob<KnobSeparator>(panel->getHolder(), label, 1, false);
         knob = k;
         break;
     }
@@ -1530,7 +1530,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
     if ( (index != 16) && parentPage && !addedInGrp ) {
 
         // Ensure the knob is in a page
-        boost::shared_ptr<KnobPage> page = getSelectedPage();
+        KnobPagePtr page = getSelectedPage();
         assert(page);
         if (page) {
             if (optionalGroupIndex != -1) {
@@ -1570,12 +1570,12 @@ AddKnobDialogPrivate::getSelectedGroup() const
     return 0;
 }
 
-boost::shared_ptr<KnobPage>
+KnobPagePtr
 AddKnobDialogPrivate::getSelectedPage() const
 {
     if ( parentPage && parentPage->isVisible() ) {
         std::string selectedItem = parentPage->getCurrentIndexText().toStdString();
-        for (std::list<boost::shared_ptr<KnobPage> >::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
+        for (std::list<KnobPagePtr>::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
             if ( (*it)->getName() == selectedItem ) {
                 return *it;
                 break;
@@ -1583,7 +1583,7 @@ AddKnobDialogPrivate::getSelectedPage() const
         }
     }
 
-    return boost::shared_ptr<KnobPage>();
+    return KnobPagePtr();
 }
 
 void
@@ -1660,14 +1660,14 @@ AddKnobDialog::onOkClicked()
     ParamDataTypeEnum t;
 
     ///Remember the old page in which to insert the knob
-    boost::shared_ptr<KnobPage> oldParentPage;
+    KnobPagePtr oldParentPage;
 
     ///If the knob was in a group, we need to place it at the same index
     int oldIndexInParent = -1;
     std::string oldKnobScriptName;
     std::vector<std::pair<std::string, bool> > expressions;
-    std::map<KnobPtr, std::vector<std::pair<std::string, bool> > > listenersExpressions;
-    boost::shared_ptr<KnobPage> oldKnobIsPage;
+    std::map<KnobIPtr, std::vector<std::pair<std::string, bool> > > listenersExpressions;
+    KnobPagePtr oldKnobIsPage;
     bool wasNewLineActivated = true;
     if (!_imp->knob) {
         assert(_imp->typeChoice);
@@ -1679,7 +1679,7 @@ AddKnobDialog::onOkClicked()
         oldParentPage = _imp->knob->getTopLevelPage();
         wasNewLineActivated = _imp->knob->isNewLineActivated();
         t = getChoiceIndexFromKnobType( _imp->knob.get() );
-        KnobPtr parent = _imp->knob->getParentKnob();
+        KnobIPtr parent = _imp->knob->getParentKnob();
         KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>( parent.get() );
         if ( isParentGrp && ( isParentGrp == _imp->getSelectedGroup() ) ) {
             KnobsVec children = isParentGrp->getChildren();
@@ -1713,7 +1713,7 @@ AddKnobDialog::onOkClicked()
         KnobI::ListenerDimsMap listeners;
         _imp->knob->getListeners(listeners);
         for (KnobI::ListenerDimsMap::iterator it = listeners.begin(); it != listeners.end(); ++it) {
-            KnobPtr listener = it->first.lock();
+            KnobIPtr listener = it->first.lock();
             if (!listener) {
                 continue;
             }
@@ -1782,11 +1782,11 @@ AddKnobDialog::onOkClicked()
     else {
         //Alias knobs can only have these properties changed
         assert(effect);
-        boost::shared_ptr<KnobPage> page = _imp->getSelectedPage();
+        KnobPagePtr page = _imp->getSelectedPage();
         assert(page);
         _imp->panel->setPageActiveIndex(page);
         KnobGroup* group = _imp->getSelectedGroup();
-        boost::shared_ptr<KnobGroup> shrdGrp;
+        KnobGroupPtr shrdGrp;
         if (group) {
             shrdGrp = boost::dynamic_pointer_cast<KnobGroup>( group->shared_from_this() );
         }
@@ -1811,7 +1811,7 @@ AddKnobDialog::onOkClicked()
         KnobColor* isColor = dynamic_cast<KnobColor*>( _imp->knob.get() );
         KnobDouble* isDbl = dynamic_cast<KnobDouble*>( _imp->knob.get() );
         KnobInt* isInt = dynamic_cast<KnobInt*>( _imp->knob.get() );
-        Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>( _imp->knob.get() );
+        KnobStringBase* isStr = dynamic_cast<KnobStringBase*>( _imp->knob.get() );
         KnobGroup* isGrp = dynamic_cast<KnobGroup*>( _imp->knob.get() );
         KnobBool* isBool = dynamic_cast<KnobBool*>( _imp->knob.get() );
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>( _imp->knob.get() );
@@ -1849,7 +1849,7 @@ AddKnobDialog::onOkClicked()
 
     //If startsNewLine is false, set the flag on the previous knob
     bool startNewLine = _imp->startNewLineBox->isChecked();
-    KnobPtr parentKnob = _imp->knob->getParentKnob();
+    KnobIPtr parentKnob = _imp->knob->getParentKnob();
     if (parentKnob) {
         KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>( parentKnob.get() );
         KnobPage* parentIsPage = dynamic_cast<KnobPage*>( parentKnob.get() );
@@ -1875,7 +1875,7 @@ AddKnobDialog::onOkClicked()
     }
 
     //Recover listeners expressions
-    for (std::map<KnobPtr, std::vector<std::pair<std::string, bool> > >::iterator it = listenersExpressions.begin(); it != listenersExpressions.end(); ++it) {
+    for (std::map<KnobIPtr, std::vector<std::pair<std::string, bool> > >::iterator it = listenersExpressions.begin(); it != listenersExpressions.end(); ++it) {
         assert( it->first->getDimension() == (int)it->second.size() );
         for (int i = 0; i < it->first->getDimension(); ++i) {
             try {

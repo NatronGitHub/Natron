@@ -69,12 +69,12 @@ public:
 
     GuiApp* getGuiInstance(int idx) const
     {
-        AppInstPtr app = appPTR->getAppInstance(idx);
+        AppInstancePtr app = appPTR->getAppInstance(idx);
 
         if (!app) {
             return 0;
         }
-        GuiAppInstPtr guiApp = boost::dynamic_pointer_cast<GuiAppInstance>(app);
+        GuiAppInstancePtr guiApp = boost::dynamic_pointer_cast<GuiAppInstance>(app);
         if (!guiApp) {
             return 0;
         }

@@ -339,10 +339,17 @@ win32-g++ {
 
     expat:     PKGCONFIG += expat
     cairo:     PKGCONFIG += cairo
-    shiboken:  PKGCONFIG += shiboken-py2
-    pyside:    PKGCONFIG += pyside-py2
-    pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtCore
-    pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtGui
+    equals(QT_MAJOR_VERSION, 5) {
+        shiboken:  INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/shiboken
+    	pyside:    INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/PySide2
+   	pyside:    INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/PySide2/QtCore
+    }
+    equals(QT_MAJOR_VERSION, 4) {
+        shiboken:  PKGCONFIG += shiboken-py2
+    	pyside:    PKGCONFIG += pyside-py2
+   	pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtCore
+        pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtGui
+    }
     python:    PKGCONFIG += python-2.7
     boost:     LIBS += -lboost_serialization-mt
     boost:     LIBS += -lboost_serialization-mt
@@ -386,37 +393,47 @@ unix {
           INCLUDEPATH *= $$PYTHON_INCLUDEPATH
      }
 
-     # There may be different pyside.pc/shiboken.pc for different versions of python.
-     # pkg-config will probably give a bad answer, unless python2 is the system default.
-     # See for example tools/travis/install_dependencies.sh for a solution that works on Linux,
-     # using a custom config.pri
-     shiboken: PKGCONFIG += shiboken
-     pyside:   PKGCONFIG += pyside
-     # The following hack also works with Homebrew if pyside is installed with option --with-python3
-     macx {
-       QMAKE_LFLAGS += '-Wl,-rpath,\'@loader_path/../Frameworks\''
-       shiboken {
-         PKGCONFIG -= shiboken
-         PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --exec-prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
-         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir shiboken)
-         # the sed stuff is to work around an Xcode generator bug
-         LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs shiboken | sed -e s/-undefined\\ dynamic_lookup//)
-       }
-       pyside {
-         PKGCONFIG -= pyside
-         PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --exec-prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
-         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)
-         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
-         # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
-         # qtextdocument.h in the QtGui module.
-         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$${QMAKE_LIBDIR_QT}/pkgconfig pkg-config --variable=includedir QtGui)
-         LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs pyside)
-       }
+     equals(QT_MAJOR_VERSION, 5) {
+         shiboken:  INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/shiboken
+    	 pyside:    INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/PySide2
+   	 pyside:    INCLUDEPATH += $$system(python2 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/PySide2/include/PySide2/QtCore
+     }
+
+     equals(QT_MAJOR_VERSION, 4) {
+         # There may be different pyside.pc/shiboken.pc for different versions of python.
+         # pkg-config will probably give a bad answer, unless python2 is the system default.
+         # See for example tools/travis/install_dependencies.sh for a solution that works on Linux,
+         # using a custom config.pri
+         shiboken: PKGCONFIG += shiboken
+         pyside:   PKGCONFIG += pyside
+         # The following hack also works with Homebrew if pyside is installed with option --with-python3
+         macx {
+           QMAKE_LFLAGS += '-Wl,-rpath,\'@loader_path/../Frameworks\''
+           shiboken {
+             PKGCONFIG -= shiboken
+             PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --exec-prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
+             INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir shiboken)
+             # the sed stuff is to work around an Xcode generator bug
+             LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs shiboken | sed -e s/-undefined\\ dynamic_lookup//)
+           }
+           pyside {
+             PKGCONFIG -= pyside
+             PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --exec-prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
+             INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)
+             INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
+             equals(QT_MAJOR_VERSION, 4) {
+               # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
+               # qtextdocument.h in the QtGui module.
+               INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
+               INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$${QMAKE_LIBDIR_QT}/pkgconfig pkg-config --variable=includedir QtGui)
+             }
+             LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs pyside)
+           }
+         }
      }
 } #unix
 
-*-xcode {
+*xcode* {
   # redefine cxx flags as qmake tends to automatically add -O2 to xcode projects
   QMAKE_CFLAGS -= -O2
   QMAKE_CXXFLAGS -= -O2
@@ -441,22 +458,21 @@ unix {
 
 # see http://clang.llvm.org/docs/AddressSanitizer.html and http://blog.qt.digia.com/blog/2013/04/17/using-gccs-4-8-0-address-sanitizer-with-qt/
 addresssanitizer {
-  message("Compiling with AddressSanitizer (for gcc >= 4.8 and clang). Set the ASAN_SYMBOLIZER_PATH environment variable to point to the llvm-symbolizer binary, or make sure llvm-symbolizer in in your PATH.")
-  message("To compile with clang, use a clang-specific spec, such as unsupported/linux-clang, unsupported/macx-clang, linux-clang or macx-clang.")
-  message("For example, with Qt4 on OS X:")
-  message("  sudo port install clang-3.4")
-  message("  sudo port select clang mp-clang-3.4")
-  message("  export ASAN_SYMBOLIZER_PATH=/opt/local/bin/llvm-symbolizer-mp-3.4")
-  message("  qmake -spec unsupported/macx-clang CONFIG+=addresssanitizer ...")
-  message("see http://clang.llvm.org/docs/AddressSanitizer.html")
-  CONFIG += debug
-  QMAKE_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
-  QMAKE_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
-  QMAKE_LFLAGS += -fsanitize=address -g
+  *xcode* {
+    enable_cxx_container_overflow_check.name = CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW
+    enable_cxx_container_overflow_check.value = YES
+    QMAKE_MAC_XCODE_SETTINGS += enable_cxx_container_overflow_check  
+  }
+  *g++* | *clang* {
+    CONFIG += debug
+    QMAKE_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
+    QMAKE_CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
+    QMAKE_LFLAGS += -fsanitize=address -g
 
-#  QMAKE_LFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
-#  QMAKE_CLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
-#  QMAKE_CFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
+    #QMAKE_LFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
+    #QMAKE_CFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
+    #QMAKE_CXXFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
+  }
 }
 
 # see http://clang.llvm.org/docs/ThreadSanitizer.html

@@ -32,6 +32,7 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QtCore/QMutex>
 #include <QtCore/QString>
 #include <QtCore/QAtomicInt>
@@ -78,11 +79,15 @@ struct AppManagerPrivate
     Q_DECLARE_TR_FUNCTIONS(AppManagerPrivate)
 
 public:
+    typedef Cache<Image> ImageCache;
+    typedef boost::shared_ptr<ImageCache> ImageCachePtr;
+    typedef Cache<FrameEntry> FrameEntryCache;
+    typedef boost::shared_ptr<FrameEntryCache> FrameEntryCachePtr;
 
     AppTLS globalTLS;
     AppManager::AppTypeEnum _appType; //< the type of app
     mutable QMutex _appInstancesMutex;
-    std::vector<AppInstPtr> _appInstances; //< the instances mapped against their ID
+    std::vector<AppInstancePtr> _appInstances; //< the instances mapped against their ID
     int _availableID; //< the ID for the next instance
     int _topLevelInstanceID; //< the top level app ID
     SettingsPtr _settings; //< app settings
@@ -92,9 +97,9 @@ public:
     IOPluginsMap writerPlugins; // for all writer plug-ins which are best suited for each format
     boost::scoped_ptr<OfxHost> ofxHost; //< OpenFX host
     boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
-    boost::shared_ptr<Cache<Image> >  _nodeCache; //< Images cache
-    boost::shared_ptr<Cache<Image> >  _diskCache; //< Images disk cache (used by DiskCache nodes)
-    boost::shared_ptr<Cache<FrameEntry> > _viewerCache; //< Viewer textures cache
+    ImageCachePtr _nodeCache; //< Images cache
+    ImageCachePtr _diskCache; //< Images disk cache (used by DiskCache nodes)
+    FrameEntryCachePtr _viewerCache; //< Viewer textures cache
     mutable QMutex diskCachesLocationMutex;
     QString diskCachesLocation;
     boost::scoped_ptr<ProcessInputChannel> _backgroundIPC; //< object used to communicate with the main app
@@ -151,7 +156,7 @@ public:
     QString breakpadProcessExecutableFilePath;
     Q_PID breakpadProcessPID;
     boost::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
-    boost::shared_ptr<ExistenceCheckerThread> breakpadAliveThread;
+    ExistenceCheckerThreadPtr breakpadAliveThread;
 #endif
 
     QMutex natronPythonGIL;

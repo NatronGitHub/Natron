@@ -390,14 +390,14 @@ NATRON_NAMESPACE_ENTER
 #define kShortcutIDActionRotoLockCurve "lock"
 #define kShortcutDescActionRotoLockCurve "Lock Shape"
 
-struct RotoPaintInteract;
+class RotoPaintInteract;
 struct RotoPaintPrivate
 {
     RotoPaint* publicInterface;
     bool isPaintByDefault;
-    boost::weak_ptr<KnobBool> premultKnob;
-    boost::weak_ptr<KnobBool> enabledKnobs[4];
-    boost::shared_ptr<RotoPaintInteract> ui;
+    KnobBoolWPtr premultKnob;
+    KnobBoolWPtr enabledKnobs[4];
+    RotoPaintInteractPtr ui;
 
     RotoPaintPrivate(RotoPaint* publicInterface,
                      bool isPaintByDefault);
@@ -405,9 +405,9 @@ struct RotoPaintPrivate
 
 ///A list of points and their counter-part, that is: either a control point and its feather point, or
 ///the feather point and its associated control point
-typedef std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > SelectedCP;
-typedef std::list< SelectedCP > SelectedCPs;
-typedef std::list< boost::shared_ptr<RotoDrawableItem> > SelectedItems;
+typedef std::pair<BezierCPPtr, BezierCPPtr> SelectedCP;
+typedef std::list<SelectedCP > SelectedCPs;
+typedef std::list<RotoDrawableItemPtr> SelectedItems;
 
 enum EventStateEnum
 {
@@ -499,9 +499,10 @@ enum RotoToolEnum
     eRotoToolBurn
 };
 
-struct RotoPaintInteract
+class RotoPaintInteract
     : public boost::enable_shared_from_this<RotoPaintInteract>
 {
+public:
     RotoPaintPrivate* p;
     SelectedItems selectedItems;
     SelectedCPs selectedCps;
@@ -511,19 +512,19 @@ struct RotoPaintInteract
     ////This is by default eSelectedCpsTransformModeTranslateAndScale. When clicking the cross-hair in the center this will toggle the transform mode
     ////like it does in inkscape.
     SelectedCpsTransformModeEnum transformMode;
-    boost::shared_ptr<Bezier> builtBezier; //< the bezier currently being built
-    boost::shared_ptr<Bezier> bezierBeingDragged;
+    BezierPtr builtBezier; //< the bezier currently being built
+    BezierPtr bezierBeingDragged;
     SelectedCP cpBeingDragged; //< the cp being dragged
-    boost::shared_ptr<BezierCP> tangentBeingDragged; //< the control point whose tangent is being dragged.
+    BezierCPPtr tangentBeingDragged; //< the control point whose tangent is being dragged.
     //only relevant when the state is DRAGGING_X_TANGENT
     SelectedCP featherBarBeingDragged, featherBarBeingHovered;
-    boost::shared_ptr<RotoStrokeItem> strokeBeingPaint;
+    RotoStrokeItemPtr strokeBeingPaint;
     int strokeBeingPaintedTimelineFrame;// the frame at which we painted the last brush stroke
     std::pair<double, double> cloneOffset;
     QPointF click; // used for drawing ellipses and rectangles, to handle center/constrain. May also be used for the selection bbox.
     RotoToolEnum selectedTool;
     RotoRoleEnum selectedRole;
-    boost::weak_ptr<KnobButton> lastPaintToolAction;
+    KnobButtonWPtr lastPaintToolAction;
     EventStateEnum state;
     HoverStateEnum hoverState;
     QPointF lastClickPos;
@@ -539,81 +540,81 @@ struct RotoPaintInteract
 
 
     //////// Toolbar
-    boost::weak_ptr<KnobPage> toolbarPage;
-    boost::weak_ptr<KnobGroup> selectedToolRole;
-    boost::weak_ptr<KnobButton> selectedToolAction;
-    boost::weak_ptr<KnobGroup> selectToolGroup;
-    boost::weak_ptr<KnobButton> selectAllAction;
-    boost::weak_ptr<KnobButton> selectPointsAction;
-    boost::weak_ptr<KnobButton> selectCurvesAction;
-    boost::weak_ptr<KnobButton> selectFeatherPointsAction;
-    boost::weak_ptr<KnobGroup> pointsEditionToolGroup;
-    boost::weak_ptr<KnobButton> addPointsAction;
-    boost::weak_ptr<KnobButton> removePointsAction;
-    boost::weak_ptr<KnobButton> cuspPointsAction;
-    boost::weak_ptr<KnobButton> smoothPointsAction;
-    boost::weak_ptr<KnobButton> openCloseCurveAction;
-    boost::weak_ptr<KnobButton> removeFeatherAction;
-    boost::weak_ptr<KnobGroup> bezierEditionToolGroup;
-    boost::weak_ptr<KnobButton> drawBezierAction;
-    boost::weak_ptr<KnobButton> drawEllipseAction;
-    boost::weak_ptr<KnobButton> drawRectangleAction;
-    boost::weak_ptr<KnobGroup> paintBrushToolGroup;
-    boost::weak_ptr<KnobButton> brushAction;
-    boost::weak_ptr<KnobButton> pencilAction;
-    boost::weak_ptr<KnobButton> eraserAction;
-    boost::weak_ptr<KnobGroup> cloneBrushToolGroup;
-    boost::weak_ptr<KnobButton> cloneAction;
-    boost::weak_ptr<KnobButton> revealAction;
-    boost::weak_ptr<KnobGroup> effectBrushToolGroup;
-    boost::weak_ptr<KnobButton> blurAction;
-    boost::weak_ptr<KnobButton> smearAction;
-    boost::weak_ptr<KnobGroup> mergeBrushToolGroup;
-    boost::weak_ptr<KnobButton> dodgeAction;
-    boost::weak_ptr<KnobButton> burnAction;
+    KnobPageWPtr toolbarPage;
+    KnobGroupWPtr selectedToolRole;
+    KnobButtonWPtr selectedToolAction;
+    KnobGroupWPtr selectToolGroup;
+    KnobButtonWPtr selectAllAction;
+    KnobButtonWPtr selectPointsAction;
+    KnobButtonWPtr selectCurvesAction;
+    KnobButtonWPtr selectFeatherPointsAction;
+    KnobGroupWPtr pointsEditionToolGroup;
+    KnobButtonWPtr addPointsAction;
+    KnobButtonWPtr removePointsAction;
+    KnobButtonWPtr cuspPointsAction;
+    KnobButtonWPtr smoothPointsAction;
+    KnobButtonWPtr openCloseCurveAction;
+    KnobButtonWPtr removeFeatherAction;
+    KnobGroupWPtr bezierEditionToolGroup;
+    KnobButtonWPtr drawBezierAction;
+    KnobButtonWPtr drawEllipseAction;
+    KnobButtonWPtr drawRectangleAction;
+    KnobGroupWPtr paintBrushToolGroup;
+    KnobButtonWPtr brushAction;
+    KnobButtonWPtr pencilAction;
+    KnobButtonWPtr eraserAction;
+    KnobGroupWPtr cloneBrushToolGroup;
+    KnobButtonWPtr cloneAction;
+    KnobButtonWPtr revealAction;
+    KnobGroupWPtr effectBrushToolGroup;
+    KnobButtonWPtr blurAction;
+    KnobButtonWPtr smearAction;
+    KnobGroupWPtr mergeBrushToolGroup;
+    KnobButtonWPtr dodgeAction;
+    KnobButtonWPtr burnAction;
 
     //////Right click menu
-    boost::weak_ptr<KnobChoice> rightClickMenuKnob;
+    KnobChoiceWPtr rightClickMenuKnob;
 
     //Right click on point
-    boost::weak_ptr<KnobButton> removeItemsMenuAction;
-    boost::weak_ptr<KnobButton> cuspItemMenuAction;
-    boost::weak_ptr<KnobButton> smoothItemMenuAction;
-    boost::weak_ptr<KnobButton> removeItemFeatherMenuAction;
-    boost::weak_ptr<KnobButton> nudgeLeftMenuAction, nudgeRightMenuAction, nudgeBottomMenuAction, nudgeTopMenuAction;
+    KnobButtonWPtr removeItemsMenuAction;
+    KnobButtonWPtr cuspItemMenuAction;
+    KnobButtonWPtr smoothItemMenuAction;
+    KnobButtonWPtr removeItemFeatherMenuAction;
+    KnobButtonWPtr nudgeLeftMenuAction, nudgeRightMenuAction, nudgeBottomMenuAction, nudgeTopMenuAction;
 
     // Right click on curve
-    boost::weak_ptr<KnobButton> selectAllMenuAction;
-    boost::weak_ptr<KnobButton> openCloseMenuAction;
-    boost::weak_ptr<KnobButton> lockShapeMenuAction;
+    KnobButtonWPtr selectAllMenuAction;
+    KnobButtonWPtr openCloseMenuAction;
+    KnobButtonWPtr lockShapeMenuAction;
 
     // Roto buttons
-    boost::weak_ptr<KnobButton> autoKeyingEnabledButton;
-    boost::weak_ptr<KnobButton> featherLinkEnabledButton;
-    boost::weak_ptr<KnobButton> displayFeatherEnabledButton;
-    boost::weak_ptr<KnobButton> stickySelectionEnabledButton;
-    boost::weak_ptr<KnobButton> bboxClickAnywhereButton;
-    boost::weak_ptr<KnobButton> rippleEditEnabledButton;
-    boost::weak_ptr<KnobButton> addKeyframeButton;
-    boost::weak_ptr<KnobButton> removeKeyframeButton;
-    boost::weak_ptr<KnobButton> showTransformHandle;
+    KnobButtonWPtr autoKeyingEnabledButton;
+    KnobButtonWPtr featherLinkEnabledButton;
+    KnobButtonWPtr displayFeatherEnabledButton;
+    KnobButtonWPtr stickySelectionEnabledButton;
+    KnobButtonWPtr bboxClickAnywhereButton;
+    KnobButtonWPtr rippleEditEnabledButton;
+    KnobButtonWPtr addKeyframeButton;
+    KnobButtonWPtr removeKeyframeButton;
+    KnobButtonWPtr showTransformHandle;
 
     // RotoPaint buttons
-    boost::weak_ptr<KnobColor> colorWheelButton;
-    boost::weak_ptr<KnobChoice> compositingOperatorChoice;
-    boost::weak_ptr<KnobDouble> opacitySpinbox;
-    boost::weak_ptr<KnobButton> pressureOpacityButton;
-    boost::weak_ptr<KnobDouble> sizeSpinbox;
-    boost::weak_ptr<KnobButton> pressureSizeButton;
-    boost::weak_ptr<KnobDouble> hardnessSpinbox;
-    boost::weak_ptr<KnobButton> pressureHardnessButton;
-    boost::weak_ptr<KnobButton> buildUpButton;
-    boost::weak_ptr<KnobDouble> effectSpinBox;
-    boost::weak_ptr<KnobInt> timeOffsetSpinBox;
-    boost::weak_ptr<KnobChoice> timeOffsetModeChoice;
-    boost::weak_ptr<KnobChoice> sourceTypeChoice;
-    boost::weak_ptr<KnobButton> resetCloneOffsetButton;
-    boost::weak_ptr<KnobBool> multiStrokeEnabled;
+    KnobColorWPtr colorWheelButton;
+    KnobChoiceWPtr compositingOperatorChoice;
+    KnobDoubleWPtr opacitySpinbox;
+    KnobButtonWPtr pressureOpacityButton;
+    KnobDoubleWPtr sizeSpinbox;
+    KnobButtonWPtr pressureSizeButton;
+    KnobDoubleWPtr hardnessSpinbox;
+    KnobButtonWPtr pressureHardnessButton;
+    KnobButtonWPtr buildUpButton;
+    KnobDoubleWPtr effectSpinBox;
+    KnobIntWPtr timeOffsetSpinBox;
+    KnobChoiceWPtr timeOffsetModeChoice;
+    KnobChoiceWPtr sourceTypeChoice;
+    KnobButtonWPtr resetCloneOffsetButton;
+    KnobBoolWPtr multiStrokeEnabled;
 
 
 private:
@@ -624,11 +625,11 @@ private:
     RotoPaintInteract(RotoPaintPrivate* p);
 
 public:
-    static boost::shared_ptr<RotoPaintInteract> create(RotoPaintPrivate* p);
+    static RotoPaintInteractPtr create(RotoPaintPrivate* p);
 
     bool isFeatherVisible() const;
 
-    boost::shared_ptr<RotoContext> getContext();
+    RotoContextPtr getContext();
 
     RotoToolEnum getSelectedTool() const
     {
@@ -639,12 +640,12 @@ public:
 
     bool isMultiStrokeEnabled() const;
 
-    bool getRoleForGroup(const boost::shared_ptr<KnobGroup>& group, RotoRoleEnum* role) const;
-    bool getToolForAction(const boost::shared_ptr<KnobButton>& action, RotoToolEnum* tool) const;
+    bool getRoleForGroup(const KnobGroupPtr& group, RotoRoleEnum* role) const;
+    bool getToolForAction(const KnobButtonPtr& action, RotoToolEnum* tool) const;
 
-    bool onRoleChangedInternal(const boost::shared_ptr<KnobGroup>& roleGroup);
+    bool onRoleChangedInternal(const KnobGroupPtr& roleGroup);
 
-    bool onToolChangedInternal(const boost::shared_ptr<KnobButton>& actionButton);
+    bool onToolChangedInternal(const KnobButtonPtr& actionButton);
 
     void clearSelection();
 
@@ -654,9 +655,9 @@ public:
 
     bool hasSelection() const;
 
-    void onCurveLockedChangedRecursive(const boost::shared_ptr<RotoItem> & item, bool* ret);
+    void onCurveLockedChangedRecursive(const RotoItemPtr & item, bool* ret);
 
-    bool removeItemFromSelection(const boost::shared_ptr<RotoDrawableItem>& b);
+    bool removeItemFromSelection(const RotoDrawableItemPtr& b);
 
     void computeSelectedCpsBBOX();
 
@@ -680,16 +681,16 @@ public:
     ///same as drawArrow but the two ends will make an angle of 90 degrees
     void drawBendedArrow(double centerX, double centerY, double rotate, bool hovered, const std::pair<double, double> & pixelScale);
 
-    void handleBezierSelection(const boost::shared_ptr<Bezier> & curve);
+    void handleBezierSelection(const BezierPtr & curve);
 
-    void handleControlPointSelection(const std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > & p);
+    void handleControlPointSelection(const std::pair<BezierCPPtr, BezierCPPtr> & p);
 
     void drawSelectedCp(double time,
-                        const boost::shared_ptr<BezierCP> & cp,
+                        const BezierCPPtr & cp,
                         double x, double y,
                         const Transform::Matrix3x3& transform);
 
-    std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> >isNearbyFeatherBar(double time, const std::pair<double, double> & pixelScale, const QPointF & pos) const;
+    std::pair<BezierCPPtr, BezierCPPtr>isNearbyFeatherBar(double time, const std::pair<double, double> & pixelScale, const QPointF & pos) const;
 
     bool isNearbySelectedCpsCrossHair(const QPointF & pos) const;
 
@@ -715,11 +716,11 @@ public:
 
     void checkViewersAreDirectlyConnected();
 
-    void showMenuForControlPoint(const boost::shared_ptr<BezierCP>& cp);
+    void showMenuForControlPoint(const BezierCPPtr& cp);
 
-    void showMenuForCurve(const boost::shared_ptr<Bezier> & curve);
+    void showMenuForCurve(const BezierPtr & curve);
 
-    void setCurrentTool(const boost::shared_ptr<KnobButton>& tool);
+    void setCurrentTool(const KnobButtonPtr& tool);
 
     void onBreakMultiStrokeTriggered();
 
@@ -728,17 +729,17 @@ public:
      * @brief Set the selection to be the given beziers and the given control points.
      * This can only be called on the main-thread.
      **/
-    void setSelection(const std::list<boost::shared_ptr<RotoDrawableItem> > & selectedBeziers,
-                      const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & selectedCps);
-    void setSelection(const boost::shared_ptr<Bezier> & curve,
-                      const std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > & point);
+    void setSelection(const std::list<RotoDrawableItemPtr> & selectedBeziers,
+                      const std::list<std::pair<BezierCPPtr, BezierCPPtr> > & selectedCps);
+    void setSelection(const BezierPtr & curve,
+                      const std::pair<BezierCPPtr, BezierCPPtr> & point);
 
-    void getSelection(std::list<boost::shared_ptr<RotoDrawableItem> >* selectedBeziers,
-                      std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >* selectedCps);
+    void getSelection(std::list<RotoDrawableItemPtr>* selectedBeziers,
+                      std::list<std::pair<BezierCPPtr, BezierCPPtr> >* selectedCps);
 
-    void setBuiltBezier(const boost::shared_ptr<Bezier> & curve);
+    void setBuiltBezier(const BezierPtr & curve);
 
-    boost::shared_ptr<Bezier> getBezierBeingBuild() const;
+    BezierPtr getBezierBeingBuild() const;
 
     bool smoothSelectedCurve();
     bool cuspSelectedCurve();
@@ -763,7 +764,7 @@ public:
      * @brief Calls RotoContext::removeItem but also clears some pointers if they point to
      * this curve. For undo/redo purpose.
      **/
-    void removeCurve(const boost::shared_ptr<RotoDrawableItem>& curve);
+    void removeCurve(const RotoDrawableItemPtr& curve);
 };
 
 NATRON_NAMESPACE_EXIT

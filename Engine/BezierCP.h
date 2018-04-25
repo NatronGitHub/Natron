@@ -76,16 +76,16 @@ public:
 
     BezierCP(const BezierCP & other);
 
-    BezierCP(const boost::shared_ptr<Bezier>& curve);
+    BezierCP(const BezierPtr& curve);
 
     virtual ~BezierCP();
 
-    boost::shared_ptr<Curve> getXCurve() const;
-    boost::shared_ptr<Curve> getYCurve() const;
-    boost::shared_ptr<Curve> getLeftXCurve() const;
-    boost::shared_ptr<Curve> getLeftYCurve() const;
-    boost::shared_ptr<Curve> getRightXCurve() const;
-    boost::shared_ptr<Curve> getRightYCurve() const;
+    CurvePtr getXCurve() const;
+    CurvePtr getYCurve() const;
+    CurvePtr getLeftXCurve() const;
+    CurvePtr getLeftYCurve() const;
+    CurvePtr getRightXCurve() const;
+    CurvePtr getRightYCurve() const;
 
     void clone(const BezierCP & other);
 
@@ -145,7 +145,7 @@ public:
      * @brief Pointer to the bezier holding this control point. This is not protected by a mutex
      * since it never changes.
      **/
-    boost::shared_ptr<Bezier> getBezier() const;
+    BezierPtr getBezier() const;
 
     /**
      * @brief Returns whether a tangent handle is nearby the given coordinates.
@@ -177,7 +177,7 @@ private:
     boost::scoped_ptr<BezierCPPrivate> _imp;
 };
 
-typedef std::list< boost::shared_ptr<BezierCP> > BezierCPs;
+typedef std::list<BezierCPPtr> BezierCPs;
 
 NATRON_NAMESPACE_EXIT
 

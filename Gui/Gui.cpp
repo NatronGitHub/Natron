@@ -27,6 +27,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <QtCore/QtGlobal> // for Q_OS_*
+#include <QtCore/QDebug>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QCloseEvent>
@@ -70,7 +72,7 @@ get_icon(const std::string &name)
     return QIcon::fromTheme( str, QIcon(QString::fromUtf8(":icons/") + str) );
 }
 
-Gui::Gui(const GuiAppInstPtr& app,
+Gui::Gui(const GuiAppInstancePtr& app,
          QWidget* parent)
 #ifndef __NATRON_WIN32__
     : QMainWindow(parent)
@@ -107,10 +109,16 @@ Gui::Gui(const GuiAppInstPtr& app,
 #ifdef Q_OS_MAC
      QObject::connect( appPTR, SIGNAL(dockClicked()), this, SLOT(dockClicked()) );
 #endif
+#ifdef DEBUG
+    qDebug() << "Gui::Gui()" << (void*)(this);
+#endif
 }
 
 Gui::~Gui()
 {
+#ifdef DEBUG
+    qDebug() << "Gui::~Gui()" << (void*)(this);
+#endif
     _imp->_nodeGraphArea->invalidateAllNodesParenting();
     delete _imp->_errorLog;
     delete _imp->_projectGui;
@@ -167,7 +175,7 @@ Gui::closeProject()
 void
 Gui::reloadProject()
 {
-    boost::shared_ptr<Project> proj = getApp()->getProject();
+    ProjectPtr proj = getApp()->getProject();
 
     if ( !proj->hasProjectBeenSavedByUser() ) {
         Dialogs::errorDialog( tr("Reload project").toStdString(), tr("This project has not been saved yet").toStdString() );
@@ -184,7 +192,7 @@ Gui::reloadProject()
         return;
     }
 
-    AppInstPtr appInstance = openProjectInternal(projectPath.toStdString(), false);
+    AppInstancePtr appInstance = openProjectInternal(projectPath.toStdString(), false);
     Q_UNUSED(appInstance);
 }
 
@@ -210,14 +218,15 @@ Gui::abortProject(bool quitApp,
                   bool warnUserIfSaveNeeded,
                   bool blocking)
 {
-    if (getApp()->getProject()->hasNodes() && warnUserIfSaveNeeded) {
+    GuiAppInstancePtr app = getApp();
+    if (app && app->getProject()->hasNodes() && warnUserIfSaveNeeded) {
         int ret = saveWarning();
         if (ret == 0) {
             if ( !saveProject() ) {
                 return false;
             }
         } else if (ret == 1) {
-            getApp()->getProject()->removeLastAutosave();
+            app->getProject()->removeLastAutosave();
         } else if (ret == 2) {
             return false;
         }
@@ -226,7 +235,6 @@ Gui::abortProject(bool quitApp,
 
     _imp->setUndoRedoActions(0, 0);
     if (quitApp) {
-        GuiAppInstPtr app = getApp();
         if (app) {
             app->quit();
         }
@@ -238,7 +246,6 @@ Gui::abortProject(bool quitApp,
         }
 
         setGuiAboutToClose(true);
-        GuiAppInstPtr app = getApp();
         if (app) {
             app->resetPreviewProvider();
             if (!blocking) {
@@ -280,7 +287,7 @@ void
 Gui::closeEvent(QCloseEvent* e)
 {
     assert(e);
-    GuiAppInstPtr app = getApp();
+    GuiAppInstancePtr app = getApp();
     if ( app && app->isClosing() ) {
         e->ignore();
     } else {
@@ -299,7 +306,7 @@ Gui::createNodeGUI(NodePtr node,
 {
     assert(_imp->_nodeGraphArea);
 
-    boost::shared_ptr<NodeCollection> group = node->getGroup();
+    NodeCollectionPtr group = node->getGroup();
     NodeGraph* graph;
     if (group) {
         NodeGraphI* graph_i = group->getNodeGraph();
@@ -360,7 +367,7 @@ Gui::createViewerGui(NodePtr viewer)
 
     ViewerTab* tab = addNewViewerTab(v, where);
     NodeGraph* graph = 0;
-    boost::shared_ptr<NodeCollection> collection = viewer->getGroup();
+    NodeCollectionPtr collection = viewer->getGroup();
     if (!collection) {
         return;
     }
@@ -407,7 +414,7 @@ Gui::eventFilter(QObject *target,
     if ( dynamic_cast<QInputEvent*>(e) ) {
         /*Make top level instance this instance since it receives all
            user inputs.*/
-        GuiAppInstPtr app = getApp();
+        GuiAppInstancePtr app = getApp();
         if (app) {
             appPTR->setAsTopLevelInstance( app->getAppID() );
         }
@@ -506,7 +513,10 @@ Gui::createMenuActions()
 
     _imp->actionClearNodeCache = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionClearNodeCache, kShortcutDescActionClearNodeCache, this);
     QObject::connect( _imp->actionClearNodeCache, SIGNAL(triggered()), appPTR, SLOT(clearNodeCache()) );
-    QObject::connect( _imp->actionClearNodeCache, SIGNAL(triggered()), _imp->_appInstance.lock().get(), SLOT(clearOpenFXPluginsCaches()) );
+    GuiAppInstancePtr app = getApp();
+    if (app) {
+        QObject::connect( _imp->actionClearNodeCache, SIGNAL(triggered()), app.get(), SLOT(clearOpenFXPluginsCaches()) );
+    }
 
     _imp->actionClearPluginsLoadingCache = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionClearPluginsLoadCache, kShortcutDescActionClearPluginsLoadCache, this);
     QObject::connect( _imp->actionClearPluginsLoadingCache, SIGNAL(triggered()), appPTR, SLOT(clearPluginsLoadedCache()) );

@@ -5,13 +5,34 @@
 # History
 
 
+## Version 2.3.11
+
+- FrameBlend: add Over operation, add decay parameter, and fix bugs.
+- fix Python pseudo-random number generators random(min,max,time,seed) and randomInt(min,max,time,seed)
+
+
+## Version 2.3.10
+
+- Add "Overwrite" checkbox to writers to avoid re-rendering the whole sequence #1683.
+- Writers do not render the whole RoD on their input anymore (this may result in a huge speed improvement on some projects).
+- Fix bug where effects could be marked as pass-through if their RoD was larger than the project format #1578
+- Add python method setCanAutoFoldDimensions(enable) to Double2DParam and Double3DParam.
+- Fix several plugins when included in a PyPlug: ColorSuppress, HSVTool, ImageStatistics, Ramp, Shuffle, Reformat #1749.
+- Fix Matrix3x3 and Matrix5x5 GUI (y was reversed).
+
+
 ## Version 2.3.9
 
-- Numerical text fields (aka SpinBoxes) are now auto-reselected when validated #1737
-- When a node is selected, make its inputs/outputs more visible
-- All nodes inside a backdrop can be enabled/disabled using the "D" key #1720
-- Fix the "." shortcut for creating a Dot in the nodegraph.
+- Numerical text fields (aka SpinBoxes) are now auto-reselected when validated #1737.
+- When a node is selected, make its inputs/outputs more visible.
+- Node shape is now thinner in the node graph.
+- In the node graph, the cursor now really reflects what a mouse click would do.
+- All nodes inside a backdrop can be enabled/disabled using the "D" key #1720.
+- Fix the "." shortcut for creating a Dot in the nodegraph on non-French keyboards.
 - Only auto-connect a newly-created node to the input of the selected node if it cannot have an input itself.
+- Made more clear what the "LUT" tab in the project settings is for #1744.
+- Better "hide all parameters without modifications" behaviour #1625
+- Only the keypad number keys should be used to nudge Bezier/tracker, regular number keys switch the viewer #1582
 
 
 ## Version 2.3.8

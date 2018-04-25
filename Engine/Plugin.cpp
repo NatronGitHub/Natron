@@ -337,9 +337,9 @@ Plugin::setActivated(bool b)
 }
 
 void
-PluginGroupNode::tryAddChild(const boost::shared_ptr<PluginGroupNode>& plugin)
+PluginGroupNode::tryAddChild(const PluginGroupNodePtr& plugin)
 {
-    for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _children.begin(); it != _children.end(); ++it) {
+    for (std::list<PluginGroupNodePtr>::iterator it = _children.begin(); it != _children.end(); ++it) {
         if (*it == plugin) {
             return;
         }
@@ -350,7 +350,7 @@ PluginGroupNode::tryAddChild(const boost::shared_ptr<PluginGroupNode>& plugin)
 void
 PluginGroupNode::tryRemoveChild(PluginGroupNode* plugin)
 {
-    for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _children.begin(); it != _children.end(); ++it) {
+    for (std::list<PluginGroupNodePtr>::iterator it = _children.begin(); it != _children.end(); ++it) {
         if (it->get() == plugin) {
             _children.erase(it);
 

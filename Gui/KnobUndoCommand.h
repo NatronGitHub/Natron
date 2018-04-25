@@ -127,7 +127,7 @@ private:
         if (!knobUI) {
             return;
         }
-        KnobPtr knob = knobUI->getKnob();
+        KnobIPtr knob = knobUI->getKnob();
 
         KnobHolder* holder = knob->getHolder();
 
@@ -195,7 +195,7 @@ private:
         if (!knobUI) {
             return;
         }
-        KnobPtr knob = knobUI->getKnob();
+        KnobIPtr knob = knobUI->getKnob();
 
         KnobHolder* holder = knob->getHolder();
 
@@ -223,7 +223,7 @@ private:
                 knob->blockValueChanges();
             }
 
-            boost::shared_ptr<Curve> c = knob->getCurve(ViewIdx(0), dimension);
+            CurvePtr c = knob->getCurve(ViewIdx(0), dimension);
             //find out if there's already an existing keyframe before calling setValue
             if (c) {
                 bool found = c->getKeyFrameWithTime(time, &_oldKeys[i]);
@@ -354,7 +354,7 @@ public:
     virtual void redo() OVERRIDE FINAL;
     virtual int id() const OVERRIDE FINAL;
     virtual bool mergeWith(const QUndoCommand *command) OVERRIDE FINAL;
-    static KnobPtr createCopyForKnob(const KnobPtr & originalKnob);
+    static KnobIPtr createCopyForKnob(const KnobIPtr & originalKnob);
 };
 
 struct PasteUndoCommandPrivate;
@@ -372,14 +372,14 @@ public:
                      KnobClipBoardType type,
                      int fromDimension,
                      int targetDimension,
-                     const KnobPtr& fromKnob);
+                     const KnobIPtr& fromKnob);
 
     virtual ~PasteUndoCommand();
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
 
-    void copyFrom(const KnobPtr& fromKnob, bool isRedo);
+    void copyFrom(const KnobIPtr& fromKnob, bool isRedo);
 };
 
 
@@ -391,7 +391,7 @@ class RestoreDefaultsCommand
 public:
 
     RestoreDefaultsCommand(bool isNodeReset,
-                           const std::list<KnobPtr > & knobs,
+                           const std::list<KnobIPtr> & knobs,
                            int targetDim,
                            QUndoCommand *parent = 0);
     virtual void undo();
@@ -401,7 +401,7 @@ private:
 
     bool _isNodeReset;
     int _targetDim;
-    std::list<KnobWPtr > _knobs, _clones;
+    std::list<KnobIWPtr> _knobs, _clones;
 };
 
 class SetExpressionCommand
@@ -411,7 +411,7 @@ class SetExpressionCommand
 
 public:
 
-    SetExpressionCommand(const KnobPtr & knob,
+    SetExpressionCommand(const KnobIPtr & knob,
                          bool hasRetVar,
                          int dimension,
                          const std::string& expr,
@@ -421,7 +421,7 @@ public:
 
 private:
 
-    KnobWPtr _knob;
+    KnobIWPtr _knob;
     std::vector<std::string> _oldExprs;
     std::vector<bool> _hadRetVar;
     std::string _newExpr;

@@ -52,7 +52,7 @@ struct NodeRenderStatsPrivate
     std::list<RectI> rectanglesRendered;
 
     //The list of rectangles for which isIdentity returned true
-    std::list<std::pair<RectI, NodeWPtr > > identityRectangles;
+    std::list<std::pair<RectI, NodeWPtr> > identityRectangles;
 
     //The different mipmaplevels rendered
     std::set<unsigned int> mipmapLevelsAccessed;
@@ -190,12 +190,12 @@ NodeRenderStats::addIdentityRectangle(const NodePtr& identity,
     _imp->identityRectangles.push_back( std::make_pair(rectangle, identity) );
 }
 
-std::list<std::pair<RectI, NodePtr > >
+std::list<std::pair<RectI, NodePtr> >
 NodeRenderStats::getIdentityRectangles() const
 {
-    std::list<std::pair<RectI, NodePtr > > ret;
+    std::list<std::pair<RectI, NodePtr> > ret;
 
-    for (std::list<std::pair<RectI, NodeWPtr > >::const_iterator it = _imp->identityRectangles.begin(); it != _imp->identityRectangles.end(); ++it) {
+    for (std::list<std::pair<RectI, NodeWPtr> >::const_iterator it = _imp->identityRectangles.begin(); it != _imp->identityRectangles.end(); ++it) {
         NodePtr n = it->second.lock();
         if (n) {
             ret.push_back( std::make_pair(it->first, n) );

@@ -86,7 +86,7 @@ struct PreferenceTab
 
     QTreeWidgetItem* treeItem;
     QFrame* tab;
-    boost::weak_ptr<KnobPageGui> page;
+    KnobPageGuiWPtr page;
 };
 
 struct PluginTreeNode
@@ -399,7 +399,7 @@ public:
 
 PreferencesPanel::PreferencesPanel(Gui *parent)
     : QWidget(parent)
-    , KnobGuiContainerHelper( appPTR->getCurrentSettings().get(), boost::shared_ptr<QUndoStack>() )
+    , KnobGuiContainerHelper( appPTR->getCurrentSettings().get(), QUndoStackPtr() )
     , _imp( new PreferencesPanelPrivate(this, parent) )
 {
 }
@@ -517,7 +517,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
     treeHeader->setText( COL_GL_ENABLED, tr("OpenGL") );
     _imp->pluginsView->setHeaderItem(treeHeader);
     _imp->pluginsView->setSelectionMode(QAbstractItemView::NoSelection);
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     _imp->pluginsView->header()->setResizeMode(QHeaderView::ResizeToContents);
 #else
     _imp->pluginsView->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
@@ -755,7 +755,7 @@ PreferencesPanel::createGui()
     QGridLayout* pluginsFrameLayout = 0;
     QTreeWidgetItem* uiTabTreeItem = 0;
     for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
-        boost::shared_ptr<KnobPage> pageKnob = _imp->tabs[i].page.lock()->pageKnob.lock();
+        KnobPagePtr pageKnob = _imp->tabs[i].page.lock()->pageKnob.lock();
         if (pageKnob->getName() == "plugins") {
             pluginsFrameLayout = _imp->tabs[i].page.lock()->gridLayout;
         } else if (pageKnob->getName() == "userInterfacePage") {
@@ -1046,11 +1046,11 @@ PreferencesPanelPrivate::createPreferenceTab(const KnobPageGuiPtr& page,
     }
 
     QTreeWidgetItem* parentItem = 0;
-    boost::shared_ptr<KnobPage> pageKnob = page->pageKnob.lock();
+    KnobPagePtr pageKnob = page->pageKnob.lock();
     if (pageKnob) {
         // In the preferences, there may be sub-pages
-        KnobPtr hasParent = pageKnob->getParentKnob();
-        boost::shared_ptr<KnobPage> parentPage;
+        KnobIPtr hasParent = pageKnob->getParentKnob();
+        KnobPagePtr parentPage;
         if (hasParent) {
             parentPage = boost::dynamic_pointer_cast<KnobPage>(hasParent);
             if (parentPage) {

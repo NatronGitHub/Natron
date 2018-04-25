@@ -43,23 +43,23 @@ NATRON_NAMESPACE_ENTER
 
 struct BezierCPPrivate
 {
-    boost::weak_ptr<Bezier> holder;
+    BezierWPtr holder;
 
     ///the animation curves for the position in the 2D plane
-    boost::shared_ptr<Curve> curveX, curveY;
-    boost::shared_ptr<Curve> guiCurveX, guiCurveY;
+    CurvePtr curveX, curveY;
+    CurvePtr guiCurveX, guiCurveY;
     double x, y; //< used when there is no keyframe
     double guiX, guiY;
 
     ///the animation curves for the derivatives
     ///They do not need to be protected as Curve is a thread-safe class.
-    boost::shared_ptr<Curve> curveLeftBezierX, curveRightBezierX, curveLeftBezierY, curveRightBezierY;
-    boost::shared_ptr<Curve> guiCurveLeftBezierX, guiCurveRightBezierX, guiCurveLeftBezierY, guiCurveRightBezierY;
+    CurvePtr curveLeftBezierX, curveRightBezierX, curveLeftBezierY, curveRightBezierY;
+    CurvePtr guiCurveLeftBezierX, guiCurveRightBezierX, guiCurveLeftBezierY, guiCurveRightBezierY;
     mutable QMutex staticPositionMutex; //< protects the  leftX,rightX,leftY,rightY
     double leftX, rightX, leftY, rightY; //< used when there is no keyframe
     double guiLeftX, guiRightX, guiLeftY, guiRightY; //< used when there is no keyframe
 
-    BezierCPPrivate(const boost::shared_ptr<Bezier>& curve)
+    BezierCPPrivate(const BezierPtr& curve)
         : holder(curve)
         , curveX()
         , curveY()

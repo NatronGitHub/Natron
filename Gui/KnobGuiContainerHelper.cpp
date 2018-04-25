@@ -58,16 +58,16 @@ struct KnobGuiContainerHelperPrivate
 
     // Stores our KnobGui refered to by the internal Knob
     KnobsGuiMapping knobsMap;
-    boost::weak_ptr<KnobPageGui> currentPage;
+    KnobPageGuiWPtr currentPage;
     PagesMap pages;
-    boost::shared_ptr<QUndoStack> undoStack; /*!< undo/redo stack*/
+    QUndoStackPtr undoStack; /*!< undo/redo stack*/
     QUndoCommand* cmdBeingPushed;
     bool clearedStackDuringPush;
     boost::scoped_ptr<KnobGuiContainerSignalsHandler> signals;
 
     KnobGuiContainerHelperPrivate(KnobGuiContainerHelper* p,
                                   KnobHolder* holder,
-                                  const boost::shared_ptr<QUndoStack>& stack)
+                                  const QUndoStackPtr& stack)
         : _p(p)
         , holder(holder)
         , knobsMap()
@@ -85,15 +85,15 @@ struct KnobGuiContainerHelperPrivate
         }
     }
 
-    KnobGuiPtr createKnobGui(const KnobPtr &knob);
+    KnobGuiPtr createKnobGui(const KnobIPtr &knob);
 
-    KnobsGuiMapping::iterator findKnobGui(const KnobPtr& knob);
+    KnobsGuiMapping::iterator findKnobGui(const KnobIPtr& knob);
 
     void refreshPagesEnabledness();
 };
 
 KnobGuiContainerHelper::KnobGuiContainerHelper(KnobHolder* holder,
-                                               const boost::shared_ptr<QUndoStack>& stack)
+                                               const QUndoStackPtr& stack)
     : KnobGuiContainerI()
     , DockablePanelI()
     , _imp( new KnobGuiContainerHelperPrivate(this, holder, stack) )
@@ -106,7 +106,7 @@ KnobGuiContainerHelper::~KnobGuiContainerHelper()
     ///normally the onKnobDeletion() function should have cleared them
     for (KnobsGuiMapping::const_iterator it = _imp->knobsMap.begin(); it != _imp->knobsMap.end(); ++it) {
         if (it->second) {
-            KnobPtr knob = it->first.lock();
+            KnobIPtr knob = it->first.lock();
             it->second->setGuiRemoved();
         }
     }
@@ -119,7 +119,7 @@ KnobGuiContainerHelper::getPages() const
 }
 
 KnobGuiPtr
-KnobGuiContainerHelper::getKnobGui(const KnobPtr& knob) const
+KnobGuiContainerHelper::getKnobGui(const KnobIPtr& knob) const
 {
     for (KnobsGuiMapping::const_iterator it = _imp->knobsMap.begin(); it != _imp->knobsMap.end(); ++it) {
         if (it->first.lock() == knob) {
@@ -137,7 +137,7 @@ KnobGuiContainerHelper::getItemsSpacingOnSameLine() const
 }
 
 KnobGuiPtr
-KnobGuiContainerHelperPrivate::createKnobGui(const KnobPtr &knob)
+KnobGuiContainerHelperPrivate::createKnobGui(const KnobIPtr &knob)
 {
     KnobsGuiMapping::iterator found = findKnobGui(knob);
 
@@ -157,7 +157,7 @@ KnobGuiContainerHelperPrivate::createKnobGui(const KnobPtr &knob)
 }
 
 KnobsGuiMapping::iterator
-KnobGuiContainerHelperPrivate::findKnobGui(const KnobPtr& knob)
+KnobGuiContainerHelperPrivate::findKnobGui(const KnobIPtr& knob)
 {
     for (KnobsGuiMapping::iterator it = knobsMap.begin(); it != knobsMap.end(); ++it) {
         if (it->first.lock() == knob) {
@@ -171,12 +171,12 @@ KnobGuiContainerHelperPrivate::findKnobGui(const KnobPtr& knob)
 KnobPageGuiPtr
 KnobGuiContainerHelper::getOrCreateDefaultPage()
 {
-    const std::vector< KnobPtr > & knobs = getInternalKnobs();
+    const std::vector<KnobIPtr> & knobs = getInternalKnobs();
 
     // Find in all knobs a page param to set this param into
-    std::list<boost::shared_ptr<KnobPage> > pagesNotDeclaredByPlugin;
+    std::list<KnobPagePtr> pagesNotDeclaredByPlugin;
     for (U32 i = 0; i < knobs.size(); ++i) {
-        boost::shared_ptr<KnobPage> p = boost::dynamic_pointer_cast<KnobPage>( knobs[i]);
+        KnobPagePtr p = boost::dynamic_pointer_cast<KnobPage>( knobs[i]);
         if (p) {
             if (p->isDeclaredByPlugin()) {
                 return getOrCreatePage(p);
@@ -191,7 +191,7 @@ KnobGuiContainerHelper::getOrCreateDefaultPage()
     // The plug-in didn't specify any page, it should have been caught before in Node::getOrCreateMainPage for nodes
     // Anyway create one.
 
-    boost::shared_ptr<KnobPage> mainPage = AppManager::createKnob<KnobPage>( _imp->holder, KnobHolder::tr("Settings") );
+    KnobPagePtr mainPage = AppManager::createKnob<KnobPage>( _imp->holder, KnobHolder::tr("Settings") );
     if (mainPage) {
         return getOrCreatePage(mainPage);
     }
@@ -213,7 +213,7 @@ KnobGuiContainerHelper::setCurrentPage(const KnobPageGuiPtr& curPage)
 }
 
 KnobPageGuiPtr
-KnobGuiContainerHelper::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)
+KnobGuiContainerHelper::getOrCreatePage(const KnobPagePtr& page)
 {
 
     if (!page || page->getIsToolBar()) {
@@ -267,7 +267,7 @@ KnobGuiContainerHelper::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)
     pageGui->groupAsTab = 0;
     pageGui->gridLayout = tabLayout;
 
-    boost::shared_ptr<KnobSignalSlotHandler> handler = page->getSignalSlotHandler();
+    KnobSignalSlotHandlerPtr handler = page->getSignalSlotHandler();
     QObject::connect( handler.get(), SIGNAL(labelChanged()), _imp->signals.get(), SLOT(onPageLabelChangedInternally()) );
     QObject::connect( handler.get(), SIGNAL(secretChanged()), _imp->signals.get(), SLOT(onPageSecretnessChanged()) );
 
@@ -317,7 +317,7 @@ getStandardIcon(QMessageBox::Icon icon,
  **/
 static void
 findKnobsOnSameLine(const KnobsVec& knobs,
-                    const KnobPtr& ref,
+                    const KnobIPtr& ref,
                     KnobsVec& knobsOnSameLine)
 {
     int idx = -1;
@@ -334,7 +334,7 @@ findKnobsOnSameLine(const KnobsVec& knobs,
     }
     ///find all knobs backward that are on the same line.
     int k = idx - 1;
-    KnobPtr parent = ref->getParentKnob();
+    KnobIPtr parent = ref->getParentKnob();
 
     while ( k >= 0 && !knobs[k]->isNewLineActivated() ) {
         if (parent) {
@@ -409,7 +409,7 @@ KnobGuiContainerHelper::initializeKnobVectorInternal(const KnobsVec& siblingsVec
 
         // If the knob is dynamic (i:e created after the initial creation of knobs)
         // it can be added as part of a group defined earlier hence we have to insert it at the proper index.
-        KnobPtr parentKnob = (*it2)->getParentKnob();
+        KnobIPtr parentKnob = (*it2)->getParentKnob();
         KnobGroup* isParentGroup = dynamic_cast<KnobGroup*>( parentKnob.get() );
 
         // Determine if we should create this knob on a new line or use the one created before
@@ -446,7 +446,7 @@ KnobGuiContainerHelper::initializeKnobVectorInternal(const KnobsVec& siblingsVec
 
         // Remove it from the "regularKnobs" to mark it as created as we will use them later
         if (regularKnobsVec) {
-            std::vector<KnobPtr>::iterator foundRegular = std::find(regularKnobsVec->begin(), regularKnobsVec->end(), *it2);
+            std::vector<KnobIPtr>::iterator foundRegular = std::find(regularKnobsVec->begin(), regularKnobsVec->end(), *it2);
             if ( foundRegular != regularKnobsVec->end() ) {
                 regularKnobsVec->erase(foundRegular);
             }
@@ -459,11 +459,11 @@ KnobGuiContainerHelper::initializeKnobVector(const KnobsVec& knobs)
 {
     // Extract pages first and initialize them recursively
     // All other knobs are put in regularKnobs
-    std::list<boost::shared_ptr<KnobPage> > pages;
+    std::list<KnobPagePtr> pages;
     KnobsVec regularKnobs;
 
     for (std::size_t i = 0; i < knobs.size(); ++i) {
-        boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
+        KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
         if (isPage) {
             if (!isPage->getIsToolBar()) {
                 pages.push_back(isPage);
@@ -472,7 +472,7 @@ KnobGuiContainerHelper::initializeKnobVector(const KnobsVec& knobs)
             regularKnobs.push_back(knobs[i]);
         }
     }
-    for (std::list<boost::shared_ptr<KnobPage> >::iterator it = pages.begin(); it != pages.end(); ++it) {
+    for (std::list<KnobPagePtr>::iterator it = pages.begin(); it != pages.end(); ++it) {
         // Create page
         KnobGuiPtr knobGui = findKnobGuiOrCreate( *it, true /*makeNewLine*/, 0/*lastKnobSpacing*/,  0 /*lastRowWidget*/, KnobsVec() /*knobsOnSameLine*/);
         Q_UNUSED(knobGui);
@@ -522,7 +522,7 @@ workAroundGridLayoutBug(QGridLayout* layout)
 }
 
 KnobGuiPtr
-KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
+KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
                                             bool makeNewLine,
                                             int lastKnobLineSpacing,
                                             QWidget* lastRowWidget,
@@ -531,8 +531,8 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
     assert(knob);
 
     // Groups and Pages have special cases in the following code as they are containers
-    boost::shared_ptr<KnobGroup> isGroup = boost::dynamic_pointer_cast<KnobGroup>(knob);
-    boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
+    KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>(knob);
+    KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
 
     // Is this knob already described in the gui ?
     for (KnobsGuiMapping::const_iterator it = _imp->knobsMap.begin(); it != _imp->knobsMap.end(); ++it) {
@@ -568,10 +568,10 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
         return KnobGuiPtr();
     }
 
-    KnobPtr parentKnob = knob->getParentKnob();
+    KnobIPtr parentKnob = knob->getParentKnob();
     assert(parentKnob || !isPagingEnabled());
 
-    boost::shared_ptr<KnobGroup> parentIsGroup = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
+    KnobGroupPtr parentIsGroup = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
     KnobGuiGroup* parentGui = 0;
 
     // If this knob is within a group, make sure the group is created so far
@@ -590,7 +590,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
 
     // For group only create the widgets if it is not a tab, otherwise do a special case
     if ( isGroup  && isGroup->isTab() ) {
-        boost::shared_ptr<KnobPage> parentIsPage = boost::dynamic_pointer_cast<KnobPage>(parentKnob);
+        KnobPagePtr parentIsPage = boost::dynamic_pointer_cast<KnobPage>(parentKnob);
         if (!parentKnob || parentIsPage) {
             KnobPageGuiPtr page = getOrCreatePage(parentIsPage);
 
@@ -619,10 +619,10 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
                     if ( parentIsGroup && parentIsGroup->isTab() ) {
                         // Insert the tab in the layout of the parent
                         // Find the page in the parentParent group
-                        KnobPtr parentParent = parentKnob->getParentKnob();
+                        KnobIPtr parentParent = parentKnob->getParentKnob();
                         assert(parentParent);
-                        boost::shared_ptr<KnobGroup> parentParentIsGroup = boost::dynamic_pointer_cast<KnobGroup>(parentParent);
-                        boost::shared_ptr<KnobPage> parentParentIsPage = boost::dynamic_pointer_cast<KnobPage>(parentParent);
+                        KnobGroupPtr parentParentIsGroup = boost::dynamic_pointer_cast<KnobGroup>(parentParent);
+                        KnobPagePtr parentParentIsPage = boost::dynamic_pointer_cast<KnobPage>(parentParent);
                         assert(parentParentIsGroup || parentParentIsPage);
                         TabGroup* parentTabGroup = 0;
                         if (parentParentIsPage) {
@@ -641,7 +641,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
                         assert(layout);
                         layout->addWidget(groupAsTab, 0, 0, 1, 2);
                     } else {
-                        boost::shared_ptr<KnobPage> topLevelPage = knob->getTopLevelPage();
+                        KnobPagePtr topLevelPage = knob->getTopLevelPage();
                         KnobPageGuiPtr page = getOrCreatePage(topLevelPage);
                         assert(page);
                         page->gridLayout->addWidget(groupAsTab, page->currentRow, 0, 1, 2);
@@ -654,8 +654,8 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
     // If widgets for the KnobGui have already been created, don't do the following
     else if ( !ret->hasWidgetBeenCreated() ) {
         // Get the top level parent
-        boost::shared_ptr<KnobPage> isTopLevelParentAPage = boost::dynamic_pointer_cast<KnobPage>(parentKnob);
-        KnobPtr parentKnobTmp = parentKnob;
+        KnobPagePtr isTopLevelParentAPage = boost::dynamic_pointer_cast<KnobPage>(parentKnob);
+        KnobIPtr parentKnobTmp = parentKnob;
         while (parentKnobTmp && !isTopLevelParentAPage) {
             parentKnobTmp = parentKnobTmp->getParentKnob();
             if (parentKnobTmp) {
@@ -768,11 +768,11 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
          * Find out in which layout the knob should be: either in the layout of the page or in the layout of
          * the nearest parent group tab in the hierarchy
          */
-        boost::shared_ptr<KnobGroup> closestParentGroupTab;
-        KnobPtr parentTmp = parentKnob;
+        KnobGroupPtr closestParentGroupTab;
+        KnobIPtr parentTmp = parentKnob;
         assert(parentKnobTmp);
         while (!closestParentGroupTab) {
-            boost::shared_ptr<KnobGroup> parentGroup = boost::dynamic_pointer_cast<KnobGroup>(parentTmp);
+            KnobGroupPtr parentGroup = boost::dynamic_pointer_cast<KnobGroup>(parentTmp);
             if ( parentGroup && parentGroup->isTab() ) {
                 closestParentGroupTab = parentGroup;
             }
@@ -791,9 +791,9 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
              * to the on of the page.
              */
 
-            KnobPtr parentParent = closestParentGroupTab->getParentKnob();
+            KnobIPtr parentParent = closestParentGroupTab->getParentKnob();
             KnobGroup* parentParentIsGroup = dynamic_cast<KnobGroup*>( parentParent.get() );
-            boost::shared_ptr<KnobPage> parentParentIsPage = boost::dynamic_pointer_cast<KnobPage>(parentParent);
+            KnobPagePtr parentParentIsPage = boost::dynamic_pointer_cast<KnobPage>(parentParent);
 
             assert(parentParentIsGroup || parentParentIsPage);
             if (parentParentIsGroup) {
@@ -895,9 +895,9 @@ KnobGuiContainerHelper::createKnobHorizontalFieldContainer(QWidget* parent) cons
 }
 
 void
-KnobGuiContainerHelper::deleteKnobGui(const KnobPtr& knob)
+KnobGuiContainerHelper::deleteKnobGui(const KnobIPtr& knob)
 {
-    boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
+    KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
 
     if ( isPage && isPagingEnabled() ) {
         // Remove the page and all its children
@@ -926,8 +926,8 @@ KnobGuiContainerHelper::deleteKnobGui(const KnobPtr& knob)
         }
         if ( isGrp && isGrp->isTab() ) {
             //find parent page
-            KnobPtr parent = knob->getParentKnob();
-            boost::shared_ptr<KnobPage> isParentPage = boost::dynamic_pointer_cast<KnobPage>(parent);
+            KnobIPtr parent = knob->getParentKnob();
+            KnobPagePtr isParentPage = boost::dynamic_pointer_cast<KnobPage>(parent);
             KnobGroup* isParentGroup = dynamic_cast<KnobGroup*>( parent.get() );
 
             assert(isParentPage || isParentGroup);
@@ -989,7 +989,7 @@ KnobGuiContainerHelper::refreshGuiForKnobsChanges(bool restorePageIndex)
         _imp->knobsMap.clear();
         for (KnobsGuiMapping::iterator it = mapping.begin(); it != mapping.end(); ++it) {
             assert(it->second);
-            KnobPtr knob = it->first.lock();
+            KnobIPtr knob = it->first.lock();
             if (knob) {
                 knob->setKnobGuiPointer( KnobGuiPtr() );
             }
@@ -1019,7 +1019,7 @@ KnobGuiContainerHelperPrivate::refreshPagesEnabledness()
     KnobPageGuiPtr curPage = _p->getCurrentPage();
 
     for (PagesMap::const_iterator it = pages.begin(); it != pages.end(); ++it) {
-        boost::shared_ptr<KnobPage> page = it->second->pageKnob.lock();
+        KnobPagePtr page = it->second->pageKnob.lock();
         if (it->second == curPage) {
             if ( !page->isEnabled(0) ) {
                 page->setEnabled(0, true);
@@ -1043,15 +1043,15 @@ KnobGuiContainerHelper::refreshPagesOrder(const KnobPageGuiPtr& curTabName,
     }
     std::list<KnobPageGuiPtr> orderedPages;
     const KnobsVec& knobs = getInternalKnobs();
-    std::list<boost::shared_ptr<KnobPage> > internalPages;
+    std::list<KnobPagePtr> internalPages;
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
+        KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
         if (isPage) {
             internalPages.push_back(isPage);
         }
     }
 
-    for (std::list<boost::shared_ptr<KnobPage> >::iterator it = internalPages.begin(); it != internalPages.end(); ++it) {
+    for (std::list<KnobPagePtr>::iterator it = internalPages.begin(); it != internalPages.end(); ++it) {
         PagesMap::const_iterator foundPage = _imp->pages.find(*it);
         if ( foundPage != _imp->pages.end() ) {
             if ( (*it)->getChildren().size() > 0 ) {
@@ -1114,7 +1114,7 @@ KnobGuiContainerHelper::getUserPages(std::list<KnobPage*>& userPages) const
 
 
 void
-KnobGuiContainerHelper::setPageActiveIndex(const boost::shared_ptr<KnobPage>& page)
+KnobGuiContainerHelper::setPageActiveIndex(const KnobPagePtr& page)
 {
     PagesMap::const_iterator foundPage = _imp->pages.find(page);
 
@@ -1159,7 +1159,7 @@ KnobGuiContainerHelper::pushUndoCommand(QUndoCommand* cmd)
     refreshUndoRedoButtonsEnabledNess( _imp->undoStack->canUndo(), _imp->undoStack->canRedo() );
 }
 
-boost::shared_ptr<QUndoStack>
+QUndoStackPtr
 KnobGuiContainerHelper::getUndoStack() const
 {
     return _imp->undoStack;
@@ -1219,8 +1219,8 @@ KnobGuiContainerSignalsHandler::onPageLabelChangedInternally()
     if (!handler) {
         return;
     }
-    KnobPtr knob = handler->getKnob();
-    boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
+    KnobIPtr knob = handler->getKnob();
+    KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
     if (!isPage) {
         return;
     }

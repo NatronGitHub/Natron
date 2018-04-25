@@ -43,7 +43,7 @@
 NATRON_NAMESPACE_ENTER
 NATRON_PYTHON_NAMESPACE_ENTER
 
-App::App(const AppInstPtr& instance)
+App::App(const AppInstancePtr& instance)
     : Group()
     , _instance(instance)
 {
@@ -58,16 +58,16 @@ App::getAppID() const
     return getInternalApp()->getAppID();
 }
 
-AppInstPtr
+AppInstancePtr
 App::getInternalApp() const
 {
     return _instance.lock();
 }
 
-boost::shared_ptr<NodeCollection>
+NodeCollectionPtr
 App::getCollectionFromGroup(Group* group) const
 {
-    boost::shared_ptr<NodeCollection> collection;
+    NodeCollectionPtr collection;
 
     if (group) {
         App* isApp = dynamic_cast<App*>(group);
@@ -77,7 +77,7 @@ App::getCollectionFromGroup(Group* group) const
         } else if (isEffect) {
             NodePtr node = isEffect->getInternalNode();
             assert(node);
-            boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
+            NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
             if (!isGrp) {
                 qDebug() << "The group passed to createNode() is not a group, defaulting to the project root.";
             } else {
@@ -94,16 +94,16 @@ App::getCollectionFromGroup(Group* group) const
     return collection;
 }
 
-static void makeCreateNodeArgs(const AppInstPtr& app,
+static void makeCreateNodeArgs(const AppInstancePtr& app,
                                const QString& pluginID,
                                int majorVersion,
-                               const boost::shared_ptr<NodeCollection>& collection,
+                               const NodeCollectionPtr& collection,
                                const NodeCreationPropertyMap& props,
                                CreateNodeArgs* args)
 {
 
     args->setProperty<std::string>(kCreateNodeArgsPropPluginID, pluginID.toStdString());
-    args->setProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer, collection);
+    args->setProperty<NodeCollectionPtr>(kCreateNodeArgsPropGroupContainer, collection);
     args->setProperty<int>(kCreateNodeArgsPropPluginVersion, majorVersion, 0);
 
     args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
@@ -159,7 +159,7 @@ App::createNode(const QString& pluginID,
                 Group* group,
                 const NodeCreationPropertyMap& props) const
 {
-    boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
+    NodeCollectionPtr collection = getCollectionFromGroup(group);
 
     assert(collection);
     CreateNodeArgs args;
@@ -178,7 +178,7 @@ App::createReader(const QString& filename,
                   Group* group,
                   const NodeCreationPropertyMap& props) const
 {
-    boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
+    NodeCollectionPtr collection = getCollectionFromGroup(group);
 
     assert(collection);
 
@@ -198,7 +198,7 @@ App::createWriter(const QString& filename,
                   Group* group,
                   const NodeCreationPropertyMap& props) const
 {
-    boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
+    NodeCollectionPtr collection = getCollectionFromGroup(group);
 
     assert(collection);
     CreateNodeArgs args;
@@ -245,7 +245,7 @@ AppSettings::AppSettings(const SettingsPtr& settings)
 Param*
 AppSettings::getParam(const QString& scriptName) const
 {
-    KnobPtr knob = _settings->getKnobByName( scriptName.toStdString() );
+    KnobIPtr knob = _settings->getKnobByName( scriptName.toStdString() );
 
     if (!knob) {
         return 0;
@@ -383,7 +383,7 @@ App::renderInternal(bool forceBlocking,
 Param*
 App::getProjectParam(const QString& name) const
 {
-    KnobPtr knob =  getInternalApp()->getProject()->getKnobByName( name.toStdString() );
+    KnobIPtr knob =  getInternalApp()->getProject()->getKnobByName( name.toStdString() );
 
     if (!knob) {
         return 0;
@@ -427,7 +427,7 @@ App::saveProjectAs(const QString& filename)
 App*
 App::loadProject(const QString& filename)
 {
-    AppInstPtr app  = getInternalApp()->loadProject( filename.toStdString() );
+    AppInstancePtr app  = getInternalApp()->loadProject( filename.toStdString() );
 
     if (!app) {
         return 0;
@@ -454,7 +454,7 @@ App::closeProject()
 App*
 App::newProject()
 {
-    AppInstPtr app  = getInternalApp()->newProject();
+    AppInstancePtr app  = getInternalApp()->newProject();
 
     if (!app) {
         return 0;

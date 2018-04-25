@@ -59,13 +59,13 @@ class KnobSignalSlotHandler
 {
     Q_OBJECT
 
-    boost::weak_ptr<KnobI> k;
+    KnobIWPtr k;
 
 public:
 
-    KnobSignalSlotHandler(const KnobPtr &knob);
+    KnobSignalSlotHandler(const KnobIPtr &knob);
 
-    KnobPtr getKnob() const
+    KnobIPtr getKnob() const
     {
         return k.lock();
     }
@@ -356,7 +356,7 @@ Q_SIGNALS:
 
 struct KnobChange
 {
-    KnobPtr knob;
+    KnobIPtr knob;
     ValueChangedReasonEnum reason, originalReason;
     bool originatedFromMainThread;
     bool refreshGui;
@@ -407,7 +407,7 @@ public:
             : isExpr(false), isListening(false), targetDim(-1) {}
     };
 
-    typedef std::map<boost::weak_ptr<KnobI>, std::vector<ListenerDim> > ListenerDimsMap;
+    typedef std::map<KnobIWPtr, std::vector<ListenerDim> > ListenerDimsMap;
 
     /**
      * @brief Do not call this. It is called right away after the constructor by the factory
@@ -502,7 +502,7 @@ public:
      * WARNING: This knob and 'other' MUST have the same dimension as well as the same type.
      **/
     virtual void clone(KnobI* other, int dimension = -1, int otherDimension = -1) = 0;
-    virtual void clone(const KnobPtr & other,
+    virtual void clone(const KnobIPtr & other,
                        int dimension = -1,
                        int otherDimension = -1)
     {
@@ -521,7 +521,7 @@ public:
     virtual bool cloneAndCheckIfChanged(KnobI* other, int dimension = -1, int otherDimension = -1) = 0;
 
     /**
-     * @brief Same as clone(const KnobPtr& ) except that the given offset is applied
+     * @brief Same as clone(const KnobIPtr& ) except that the given offset is applied
      * on the keyframes time and only the keyframes withing the given range are copied.
      * If the range is NULL everything will be copied.
      *
@@ -530,7 +530,7 @@ public:
      * The restriction on types still apply.
      **/
     virtual void clone(KnobI* other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1) = 0;
-    virtual void clone(const KnobPtr & other,
+    virtual void clone(const KnobIPtr & other,
                        double offset,
                        const RangeD* range,
                        int dimension = -1,
@@ -543,10 +543,10 @@ public:
      * @brief Must return the curve used by the GUI of the parameter
      **/
     virtual boost::shared_ptr<Curve> getGuiCurve(ViewSpec view, int dimension, bool byPassMaster = false) const = 0;
-    virtual double random(double time, unsigned int seed) const = 0;
+    virtual double random(double min, double max, double time, unsigned int seed = 0) const = 0;
     virtual double random(double min = 0., double max = 1.) const = 0;
-    virtual int randomInt(double time, unsigned int seed) const = 0;
-    virtual int randomInt(int min = INT_MIN, int max = INT_MAX) const = 0;
+    virtual int randomInt(int min, int max, double time, unsigned int seed = 0) const = 0;
+    virtual int randomInt(int min, int max) const = 0;
 
     /**
      * @brief Evaluates the curve at the given dimension and at the given time. This returns the value of the curve directly.
@@ -706,7 +706,7 @@ public:
      * @brief Returns in dependencies a list of all the knobs used in the expression at the given dimension
      * @returns True on sucess, false if no expression is set.
      **/
-    virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobWPtr, int> >& dependencies) const = 0;
+    virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobIWPtr, int> >& dependencies) const = 0;
 
 
     /**
@@ -788,7 +788,7 @@ public:
      * @brief Returns a const ref to the curves held by this knob. This is MT-safe as they're
      * never deleted (except on program exit).
      **/
-    virtual const std::vector< boost::shared_ptr<Curve>  > & getCurves() const = 0;
+    virtual const std::vector<boost::shared_ptr<Curve>  > & getCurves() const = 0;
 
     /**
      * @brief Activates or deactivates the animation for this parameter. On the GUI side that means
@@ -972,13 +972,13 @@ public:
      * @brief Set the given knob as the parent of this knob.
      * @param knob It must be a tab or group knob.
      */
-    virtual void setParentKnob(KnobPtr knob) = 0;
+    virtual void setParentKnob(KnobIPtr knob) = 0;
     virtual void resetParent() = 0;
 
     /**
      * @brief Returns a pointer to the parent knob if any.
      */
-    virtual KnobPtr getParentKnob() const = 0;
+    virtual KnobIPtr getParentKnob() const = 0;
 
     /**
      * @brief Returns the hierarchy level of this knob.
@@ -1149,8 +1149,8 @@ public:
     virtual void addListener(const bool isExpression,
                              const int listenerDimension,
                              const int listenedToDimension,
-                             const KnobPtr& listener) = 0;
-    virtual void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const = 0;
+                             const KnobIPtr& listener) = 0;
+    virtual void getAllExpressionDependenciesRecursive(std::set<NodePtr>& nodes) const = 0;
 
 private:
     virtual void removeListener(KnobI* listener, int listenerDimension) = 0;
@@ -1168,7 +1168,7 @@ protected:
      * at the same dimension for the knob 'other'.
      * In case of success, this function returns true, otherwise false.
      **/
-    virtual bool slaveToInternal(int dimension, const KnobPtr &  other, int otherDimension, ValueChangedReasonEnum reason,
+    virtual bool slaveToInternal(int dimension, const KnobIPtr &  other, int otherDimension, ValueChangedReasonEnum reason,
                                  bool ignoreMasterPersistence) = 0;
 
     /**
@@ -1179,16 +1179,16 @@ protected:
 
 public:
 
-    virtual void onKnobAboutToAlias(const KnobPtr& /*slave*/) {}
+    virtual void onKnobAboutToAlias(const KnobIPtr& /*slave*/) {}
 
 
     /**
      * @brief Calls slaveTo with a value changed reason of eValueChangedReasonNatronInternalEdited.
      * @param ignoreMasterPersistence If true the master will not be serialized.
      **/
-    bool slaveTo(int dimension, const KnobPtr & other, int otherDimension, bool ignoreMasterPersistence = false);
+    bool slaveTo(int dimension, const KnobIPtr & other, int otherDimension, bool ignoreMasterPersistence = false);
     virtual bool isMastersPersistenceIgnored() const = 0;
-    virtual KnobPtr createDuplicateOnHolder(KnobHolder* otherHolder,
+    virtual KnobIPtr createDuplicateOnHolder(KnobHolder* otherHolder,
                                             const boost::shared_ptr<KnobPage>& page,
                                             const boost::shared_ptr<KnobGroup>& group,
                                             int indexInParent,
@@ -1202,13 +1202,13 @@ public:
     /**
      * @brief If a knob was created using createDuplicateOnHolder(effect,true), this function will return true
      **/
-    virtual KnobPtr getAliasMaster() const = 0;
-    virtual bool setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias) = 0;
+    virtual KnobIPtr getAliasMaster() const = 0;
+    virtual bool setKnobAsAliasOfThis(const KnobIPtr& master, bool doAlias) = 0;
 
     /**
      * @brief Calls slaveTo with a value changed reason of eValueChangedReasonUserEdited.
      **/
-    void onKnobSlavedTo(int dimension, const KnobPtr& other, int otherDimension);
+    void onKnobSlavedTo(int dimension, const KnobIPtr& other, int otherDimension);
 
 
     /**
@@ -1230,7 +1230,7 @@ public:
      * @brief Returns a valid pointer to a knob if the value at
      * the given dimension is slaved.
      **/
-    virtual std::pair<int, KnobPtr > getMaster(int dimension) const = 0;
+    virtual std::pair<int, KnobIPtr> getMaster(int dimension) const = 0;
 
     /**
      * @brief Returns true if the value at the given dimension is slave to another parameter
@@ -1256,7 +1256,7 @@ public:
     /**
      * @brief Must return true if the other knobs type can convert to this knob's type.
      **/
-    virtual bool isTypeCompatible(const KnobPtr & other) const = 0;
+    virtual bool isTypeCompatible(const KnobIPtr & other) const = 0;
     boost::shared_ptr<KnobPage> getTopLevelPage() const;
 };
 
@@ -1369,10 +1369,10 @@ protected:
 public:
 
 
-    virtual double random(double time, unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double random(double min, double max, double time, unsigned int seed = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual double random(double min = 0., double max = 1.) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int randomInt(double time, unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int randomInt(int min = 0, int max = INT_MAX) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int randomInt(int min, int max, double time, unsigned int seed = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int randomInt(int min, int max) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 protected:
 
@@ -1460,9 +1460,9 @@ protected:
 public:
 
     virtual bool isExpressionUsingRetVariable(int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobWPtr, int> >& dependencies) const OVERRIDE FINAL;
+    virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobIWPtr, int> >& dependencies) const OVERRIDE FINAL;
     virtual std::string getExpression(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual const std::vector< boost::shared_ptr<Curve>  > & getCurves() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual const std::vector<boost::shared_ptr<Curve>  > & getCurves() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string  getLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1508,9 +1508,9 @@ public:
     virtual void setName(const std::string & name, bool throwExceptions = false) OVERRIDE FINAL;
     virtual const std::string & getName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::string & getOriginalName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setParentKnob(KnobPtr knob) OVERRIDE FINAL;
+    virtual void setParentKnob(KnobIPtr knob) OVERRIDE FINAL;
     virtual void resetParent() OVERRIDE FINAL;
-    virtual KnobPtr getParentKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual KnobIPtr getParentKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int determineHierarchySize() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setEvaluateOnChange(bool b) OVERRIDE FINAL;
     virtual bool getEvaluateOnChange() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1557,7 +1557,7 @@ public:
     virtual bool hasModifications(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasModificationsForSerialization() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void checkAnimationLevel(ViewSpec view, int dimension) OVERRIDE FINAL;
-    virtual KnobPtr createDuplicateOnHolder(KnobHolder* otherHolder,
+    virtual KnobIPtr createDuplicateOnHolder(KnobHolder* otherHolder,
                                             const boost::shared_ptr<KnobPage>& page,
                                             const boost::shared_ptr<KnobGroup>& group,
                                             int indexInParent,
@@ -1567,13 +1567,13 @@ public:
                                             const std::string& newToolTip,
                                             bool refreshParams,
                                             bool isUserKnob) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual KnobPtr getAliasMaster() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias) OVERRIDE FINAL;
+    virtual KnobIPtr getAliasMaster() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool setKnobAsAliasOfThis(const KnobIPtr& master, bool doAlias) OVERRIDE FINAL;
 
 private:
 
 
-    virtual bool slaveToInternal(int dimension, const KnobPtr &  other, int otherDimension, ValueChangedReasonEnum reason
+    virtual bool slaveToInternal(int dimension, const KnobIPtr &  other, int otherDimension, ValueChangedReasonEnum reason
                                  , bool ignoreMasterPersistence) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 protected:
@@ -1595,18 +1595,18 @@ public:
     /// The expression must put its result in the Python variable named "ret"
     static bool executeExpression(const std::string& expr, PyObject** ret, std::string* error);
 
-    virtual std::pair<int, KnobPtr > getMaster(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::pair<int, KnobIPtr> getMaster(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSlave(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual AnimationLevelEnum getAnimationLevel(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isTypeCompatible(const KnobPtr & other) const OVERRIDE WARN_UNUSED_RETURN = 0;
+    virtual bool isTypeCompatible(const KnobIPtr & other) const OVERRIDE WARN_UNUSED_RETURN = 0;
 
     /**
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
-    virtual void addListener(bool isFromExpr, int fromExprDimension, int thisDimension, const KnobPtr& knob) OVERRIDE FINAL;
+    virtual void addListener(bool isFromExpr, int fromExprDimension, int thisDimension, const KnobIPtr& knob) OVERRIDE FINAL;
     virtual void removeListener(KnobI* listener, int listenerDimension) OVERRIDE FINAL;
-    virtual void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const OVERRIDE FINAL;
+    virtual void getAllExpressionDependenciesRecursive(std::set<NodePtr>& nodes) const OVERRIDE FINAL;
     virtual void getListeners(KnobI::ListenerDimsMap& listeners) const OVERRIDE FINAL;
     virtual void clearExpressionsResults(int /*dimension*/) OVERRIDE {}
 
@@ -1639,7 +1639,7 @@ protected:
     virtual void copyValuesFromCurve(int /*dim*/) {}
 
 
-    virtual void handleSignalSlotsForAliasLink(const KnobPtr& /*alias*/,
+    virtual void handleSignalSlotsForAliasLink(const KnobIPtr& /*alias*/,
                                                bool /*connect*/)
     {
     }
@@ -2008,7 +2008,7 @@ public:
     /// You must implement it
     virtual bool canAnimate() const OVERRIDE;
     virtual bool isTypePOD() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isTypeCompatible(const KnobPtr & other) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isTypeCompatible(const KnobIPtr & other) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     ///Cannot be overloaded by KnobHelper as it requires setValueAtTime
     virtual bool onKeyFrameSet(double time, ViewSpec view, int dimension) OVERRIDE FINAL;
@@ -2171,6 +2171,8 @@ private:
         boost::scoped_ptr<QueuedSetValuePrivate> _imp;
     };
 
+    typedef boost::shared_ptr<QueuedSetValue> QueuedSetValuePtr;
+
     class QueuedSetValueAtTime
         : public QueuedSetValue
     {
@@ -2197,6 +2199,7 @@ private:
         double _time;
     };
 
+    typedef boost::shared_ptr<QueuedSetValueAtTime> QueuedSetValueAtTimePtr;
 
     ///Here is all the stuff we couldn't get rid of the template parameter
     mutable QMutex _valueMutex; //< protects _values & _guiValues & _defaultValues & ExprResults
@@ -2214,7 +2217,7 @@ private:
     mutable QReadWriteLock _minMaxMutex;
     std::vector<T>  _minimums, _maximums, _displayMins, _displayMaxs;
     mutable QMutex _setValuesQueueMutex;
-    std::list< boost::shared_ptr<QueuedSetValue> > _setValuesQueue;
+    std::list<boost::shared_ptr<QueuedSetValue> > _setValuesQueue;
 
     ///this flag is to avoid recursive setValue calls
     mutable QMutex _setValueRecursionLevelMutex;
@@ -2222,8 +2225,23 @@ private:
 };
 
 
+typedef Knob<bool> KnobBoolBase;
+typedef Knob<double> KnobDoubleBase;
+typedef Knob<int> KnobIntBase;
+typedef Knob<std::string> KnobStringBase;
+
+typedef boost::shared_ptr<KnobBoolBase> KnobBoolBasePtr;
+typedef boost::shared_ptr<KnobDoubleBase> KnobDoubleBasePtr;
+typedef boost::shared_ptr<KnobIntBase> KnobIntBasePtr;
+typedef boost::shared_ptr<KnobStringBase> KnobStringBasePtr;
+
+typedef boost::weak_ptr<KnobBoolBase> KnobBoolBaseWPtr;
+typedef boost::weak_ptr<KnobDoubleBase> KnobDoubleBaseWPtr;
+typedef boost::weak_ptr<KnobIntBase> KnobIntBaseWPtr;
+typedef boost::weak_ptr<KnobStringBase> KnobStringBaseWPtr;
+
 class AnimatingKnobStringHelper
-    : public Knob<std::string>
+    : public KnobStringBase
 {
 public:
 
@@ -2303,7 +2321,7 @@ public:
      * When appInstance is NULL the holder will be considered "application global" in which case
      * the knob holder will interact directly with the AppManager singleton.
      **/
-    KnobHolder(const AppInstPtr& appInstance);
+    KnobHolder(const AppInstancePtr& appInstance);
 
     KnobHolder(const KnobHolder& other);
 
@@ -2341,9 +2359,9 @@ public:
 
     template<typename K>
     boost::shared_ptr<K> createKnob(const std::string &label, int dimension = 1) const WARN_UNUSED_RETURN;
-    AppInstPtr getApp() const WARN_UNUSED_RETURN;
-    KnobPtr getKnobByName(const std::string & name) const WARN_UNUSED_RETURN;
-    KnobPtr getOtherKnobByName(const std::string & name, const KnobI* caller) const WARN_UNUSED_RETURN;
+    AppInstancePtr getApp() const WARN_UNUSED_RETURN;
+    KnobIPtr getKnobByName(const std::string & name) const WARN_UNUSED_RETURN;
+    KnobIPtr getOtherKnobByName(const std::string & name, const KnobI* caller) const WARN_UNUSED_RETURN;
 
     template <typename TYPE>
     boost::shared_ptr<TYPE> getKnobByNameAndType(const std::string & name) const
@@ -2363,8 +2381,8 @@ public:
         return boost::shared_ptr<TYPE>();
     }
 
-    const std::vector< KnobPtr > & getKnobs() const WARN_UNUSED_RETURN;
-    std::vector< KnobPtr >  getKnobs_mt_safe() const WARN_UNUSED_RETURN;
+    const std::vector<KnobIPtr> & getKnobs() const WARN_UNUSED_RETURN;
+    std::vector<KnobIPtr>  getKnobs_mt_safe() const WARN_UNUSED_RETURN;
 
     void refreshAfterTimeChange(bool isPlayback, double time);
 
@@ -2378,8 +2396,8 @@ public:
     void setIsInitializingKnobs(bool b);
     bool isInitializingKnobs() const;
 
-    void addKnobToViewerUI(const KnobPtr& knob);
-    bool isInViewerUIKnob(const KnobPtr& knob) const;
+    void addKnobToViewerUI(const KnobIPtr& knob);
+    bool isInViewerUIKnob(const KnobIPtr& knob) const;
     KnobsVec getViewerUIKnobs() const;
 
 protected:
@@ -2485,7 +2503,7 @@ public:
 
     bool isEvaluationBlocked() const;
 
-    void appendValueChange(const KnobPtr& knob,
+    void appendValueChange(const KnobIPtr& knob,
                            int dimension,
                            bool refreshGui,
                            double time,
@@ -2495,7 +2513,7 @@ public:
 
     bool isSetValueCurrentlyPossible() const;
 
-    void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const;
+    void getAllExpressionDependenciesRecursive(std::set<NodePtr>& nodes) const;
 
     
 protected:
@@ -2598,9 +2616,9 @@ public:
 
     /*Add a knob to the vector. This is called by the
        Knob class. Don't call this*/
-    void addKnob(const KnobPtr& k);
+    void addKnob(const KnobIPtr& k);
 
-    void insertKnob(int idx, const KnobPtr& k);
+    void insertKnob(int idx, const KnobIPtr& k);
     void removeKnobFromList(const KnobI* knob);
 
 
@@ -2702,8 +2720,8 @@ public:
     /**
      * @brief Same as onAllKnobsSlaved but called when only 1 knob is slaved
      **/
-    virtual void onKnobSlaved(const KnobPtr& /*slave*/,
-                              const KnobPtr& /*master*/,
+    virtual void onKnobSlaved(const KnobIPtr& /*slave*/,
+                              const KnobIPtr& /*master*/,
                               int /*dimension*/,
                               bool /*isSlave*/)
     {
@@ -2805,7 +2823,7 @@ class NamedKnobHolder
 {
 public:
 
-    NamedKnobHolder(const AppInstPtr& instance)
+    NamedKnobHolder(const AppInstancePtr& instance)
         : KnobHolder(instance)
     {
     }

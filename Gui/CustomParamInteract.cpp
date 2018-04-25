@@ -26,6 +26,7 @@
 
 #include <stdexcept>
 
+#include <QtCore/QSize>
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>
 #include <QMouseEvent>
@@ -47,14 +48,14 @@ struct CustomParamInteractPrivate
 {
     KnobGuiWPtr knob;
     OFX::Host::Param::Instance* ofxParam;
-    boost::shared_ptr<OfxParamOverlayInteract> entryPoint;
+    OfxParamOverlayInteractPtr entryPoint;
     QSize preferredSize;
     double par;
     GLuint savedTexture;
 
     CustomParamInteractPrivate(const KnobGuiPtr& knob,
                                void* ofxParamHandle,
-                               const boost::shared_ptr<OfxParamOverlayInteract> & entryPoint)
+                               const OfxParamOverlayInteractPtr & entryPoint)
         : knob(knob)
         , ofxParam(0)
         , entryPoint(entryPoint)
@@ -76,7 +77,7 @@ struct CustomParamInteractPrivate
 
 CustomParamInteract::CustomParamInteract(const KnobGuiPtr& knob,
                                          void* ofxParamHandle,
-                                         const boost::shared_ptr<OfxParamOverlayInteract> & entryPoint,
+                                         const OfxParamOverlayInteractPtr & entryPoint,
                                          QWidget* parent)
     : QGLWidget(parent)
     , _imp( new CustomParamInteractPrivate(knob, ofxParamHandle, entryPoint) )

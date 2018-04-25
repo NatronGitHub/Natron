@@ -249,7 +249,7 @@ ViewerTab::startPause(bool b)
         if (!gui) {
             return;
         }
-        GuiAppInstPtr app = gui->getApp();
+        GuiAppInstancePtr app = gui->getApp();
         if ( !app || app->checkAllReadersModificationDate(true) ) {
             return;
         }
@@ -365,7 +365,7 @@ ViewerTab::abortViewersAndRefresh()
     for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         ViewerInstance* viewer = (*it)->getInternalNode();
         if (viewer) {
-            boost::shared_ptr<RenderEngine> engine = viewer->getRenderEngine();
+            RenderEnginePtr engine = viewer->getRenderEngine();
             if ( engine ) {
                 engine->abortRenderingAutoRestart();
                 engine->renderCurrentFrame(false, true);
@@ -383,7 +383,7 @@ ViewerTab::startBackward(bool b)
         if (!gui) {
             return;
         }
-        GuiAppInstPtr app = gui->getApp();
+        GuiAppInstancePtr app = gui->getApp();
         if ( !app || app->checkAllReadersModificationDate(true) ) {
             return;
         }
@@ -405,7 +405,7 @@ ViewerTab::refresh(bool enableRenderStats)
     if (!gui) {
         return;
     }
-    GuiAppInstPtr app = gui->getApp();
+    GuiAppInstancePtr app = gui->getApp();
     if (!app) {
         return;
     }
@@ -493,7 +493,7 @@ ViewerTab::onTimeLineTimeChanged(SequenceTime time,
     if (!gui) {
         return;
     }
-    GuiAppInstPtr app = gui->getApp();
+    GuiAppInstancePtr app = gui->getApp();
     if (!app) {
         return;
     }
@@ -530,7 +530,7 @@ ViewerTab::~ViewerTab()
     if (gui) {
         NodeGraph* graph = 0;
         if (_imp->viewerNode) {
-            boost::shared_ptr<NodeCollection> collection = _imp->viewerNode->getNode()->getGroup();
+            NodeCollectionPtr collection = _imp->viewerNode->getNode()->getGroup();
             if (collection) {
                 NodeGroup* isGrp = dynamic_cast<NodeGroup*>( collection.get() );
                 if (isGrp) {
@@ -548,7 +548,7 @@ ViewerTab::~ViewerTab()
             graph = gui->getNodeGraph();
         }
         assert(graph);
-        GuiAppInstPtr app = gui->getApp();
+        GuiAppInstancePtr app = gui->getApp();
         if ( app && !app->isClosing() && graph && (graph->getLastSelectedViewer() == this) ) {
             graph->setLastSelectedViewer(0);
         }
@@ -606,7 +606,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     if (!gui) {
         return;
     }
-    GuiAppInstPtr app = gui->getApp();
+    GuiAppInstancePtr app = gui->getApp();
     if (!app) {
         return;
     }
@@ -950,9 +950,9 @@ ViewerTab::eventFilter(QObject *target,
     if (e->type() == QEvent::MouseButtonPress) {
         Gui* gui = getGui();
         if (gui) {
-            GuiAppInstPtr app = gui->getApp();
+            GuiAppInstancePtr app = gui->getApp();
             if (app) {
-                boost::shared_ptr<NodeGuiI> nodegui_i = _imp->viewerNode->getNode()->getNodeGui();
+                NodeGuiIPtr nodegui_i = _imp->viewerNode->getNode()->getNodeGui();
                 assert(nodegui_i);
                 NodeGuiPtr nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
                 if (nodegui) {

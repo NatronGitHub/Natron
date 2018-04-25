@@ -210,9 +210,9 @@ StatusEnum
 RotoSmear::render(const RenderActionArgs& args)
 {
     NodePtr node = getNode();
-    boost::shared_ptr<RotoDrawableItem> item = node->getAttachedRotoItem();
-    boost::shared_ptr<RotoStrokeItem> stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
-    boost::shared_ptr<RotoContext> context = stroke->getContext();
+    RotoDrawableItemPtr item = node->getAttachedRotoItem();
+    RotoStrokeItemPtr stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+    RotoContextPtr context = stroke->getContext();
 
     assert(context);
     bool duringPainting = isDuringPaintStrokeCreationThreadLocal();
@@ -311,7 +311,7 @@ RotoSmear::render(const RenderActionArgs& args)
         }
 
 
-        for (std::list<std::pair<ImagePlaneDesc, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
+        for (std::list<std::pair<ImagePlaneDesc, ImagePtr> >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
             assert(plane->second->getMipMapLevel() == mipmapLevel);
 
@@ -415,7 +415,7 @@ RotoSmear::render(const RenderActionArgs& args)
                 cur = renderPoint;
                 distToNext = 0;
             } // while (it!=visiblePortion.end()) {
-        } // for (std::list<std::pair<ImagePlaneDesc,boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
+        } // for (std::list<std::pair<ImagePlaneDesc,ImagePtr> >::const_iterator plane = args.outputPlanes.begin();
 
         if (duringPainting && didPaint) {
             QMutexLocker k(&_imp->smearDataMutex);

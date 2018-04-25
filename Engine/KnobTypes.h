@@ -59,7 +59,7 @@ NATRON_NAMESPACE_ENTER
 /******************************KnobInt**************************************/
 
 class KnobInt
-    : public QObject, public Knob<int>
+    : public QObject, public KnobIntBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -142,7 +142,7 @@ private:
 /******************************KnobBool**************************************/
 
 class KnobBool
-    :  public Knob<bool>
+    :  public KnobBoolBase
 {
 public:
 
@@ -190,7 +190,7 @@ private:
 /******************************KnobDouble**************************************/
 
 class KnobDouble
-    :  public QObject, public Knob<double>
+    :  public QObject, public KnobDoubleBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -382,7 +382,7 @@ private:
 /******************************KnobButton**************************************/
 
 class KnobButton
-    : public Knob<bool>
+    : public KnobBoolBase
 {
 public:
 
@@ -460,7 +460,7 @@ private:
 /******************************KnobChoice**************************************/
 
 class KnobChoice
-    : public QObject, public Knob<int>
+    : public QObject, public KnobIntBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -574,13 +574,13 @@ Q_SIGNALS:
 
 private:
 
-    virtual void onKnobAboutToAlias(const KnobPtr& slave) OVERRIDE FINAL;
+    virtual void onKnobAboutToAlias(const KnobIPtr& slave) OVERRIDE FINAL;
 
     void findAndSetOldChoice();
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-    virtual void handleSignalSlotsForAliasLink(const KnobPtr& alias, bool connect) OVERRIDE FINAL;
+    virtual void handleSignalSlotsForAliasLink(const KnobIPtr& alias, bool connect) OVERRIDE FINAL;
     virtual void onInternalValueChanged(int dimension, double time, ViewSpec view) OVERRIDE FINAL;
     virtual void cloneExtraData(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
     virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
@@ -599,7 +599,7 @@ private:
 /******************************KnobSeparator**************************************/
 
 class KnobSeparator
-    : public Knob<bool>
+    : public KnobBoolBase
 {
 public:
 
@@ -645,7 +645,7 @@ private:
  * In dimension 4 the knob will have R,G,B and A channels.
  **/
 class KnobColor
-    :  public QObject, public Knob<double>
+    :  public QObject, public KnobDoubleBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -835,13 +835,13 @@ private:
 
 /******************************KnobGroup**************************************/
 class KnobGroup
-    :  public QObject, public Knob<bool>
+    :  public QObject, public KnobBoolBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-    std::vector< boost::weak_ptr<KnobI> > _children;
+    std::vector<KnobIWPtr> _children;
     bool _isTab;
     bool _isToolButton;
     bool _isDialog;
@@ -866,15 +866,15 @@ public:
               int dimension,
               bool declaredByPlugin);
 
-    void addKnob(const KnobPtr& k);
+    void addKnob(const KnobIPtr& k);
     void removeKnob(KnobI* k);
 
     bool moveOneStepUp(KnobI* k);
     bool moveOneStepDown(KnobI* k);
 
-    void insertKnob(int index, const KnobPtr& k);
+    void insertKnob(int index, const KnobIPtr& k);
 
-    std::vector< KnobPtr > getChildren() const;
+    std::vector<KnobIPtr> getChildren() const;
 
     void setAsTab();
 
@@ -902,7 +902,7 @@ private:
 /******************************PAGE_KNOB**************************************/
 
 class KnobPage
-    :  public QObject, public Knob<bool>
+    :  public QObject, public KnobBoolBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -928,7 +928,7 @@ public:
              int dimension,
              bool declaredByPlugin);
 
-    void addKnob(const KnobPtr& k);
+    void addKnob(const KnobIPtr& k);
 
     void setAsToolBar(bool b)
     {
@@ -945,9 +945,9 @@ public:
 
     void removeKnob(KnobI* k);
 
-    void insertKnob(int index, const KnobPtr& k);
+    void insertKnob(int index, const KnobIPtr& k);
 
-    std::vector< KnobPtr >  getChildren() const;
+    std::vector<KnobIPtr>  getChildren() const;
     static const std::string & typeNameStatic();
 
 private:
@@ -957,7 +957,7 @@ private:
 private:
 
     bool _isToolBar;
-    std::vector< boost::weak_ptr<KnobI> > _children;
+    std::vector<KnobIWPtr> _children;
     static const std::string _typeNameStr;
 };
 
@@ -965,14 +965,14 @@ private:
 /******************************KnobParametric**************************************/
 
 class KnobParametric
-    :  public QObject, public Knob<double>
+    :  public QObject, public KnobDoubleBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     mutable QMutex _curvesMutex;
-    std::vector< boost::shared_ptr<Curve> > _curves, _defaultCurves;
+    std::vector<CurvePtr> _curves, _defaultCurves;
     std::vector<RGBAColourD> _curvesColor;
 public:
 
@@ -1004,8 +1004,8 @@ public:
     void setDefaultCurvesFromCurves();
 
     std::pair<double, double> getParametricRange() const WARN_UNUSED_RETURN;
-    boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
-    boost::shared_ptr<Curve> getDefaultParametricCurve(int dimension) const;
+    CurvePtr getParametricCurve(int dimension) const;
+    CurvePtr getDefaultParametricCurve(int dimension) const;
     StatusEnum addControlPoint(ValueChangedReasonEnum reason, int dimension, double key, double value, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
     StatusEnum addControlPoint(ValueChangedReasonEnum reason, int dimension, double key, double value, double leftDerivative, double rightDerivative, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
     StatusEnum getValue(int dimension, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;
@@ -1045,9 +1045,9 @@ public:
     StatusEnum deleteAllControlPoints(ValueChangedReasonEnum reason, int dimension) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
 
-    void saveParametricCurves(std::list< Curve >* curves) const;
+    void saveParametricCurves(std::list<Curve >* curves) const;
 
-    void loadParametricCurves(const std::list< Curve > & curves);
+    void loadParametricCurves(const std::list<Curve > & curves);
 
 Q_SIGNALS:
 
@@ -1059,7 +1059,7 @@ Q_SIGNALS:
 
 private:
 
-    virtual void onKnobAboutToAlias(const KnobPtr& slave) OVERRIDE FINAL;
+    virtual void onKnobAboutToAlias(const KnobIPtr& slave) OVERRIDE FINAL;
     virtual void resetExtraToDefaultValue(int dimension) OVERRIDE FINAL;
     virtual bool hasModificationsVirtual(int dimension) const OVERRIDE FINAL;
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -1074,7 +1074,7 @@ private:
  * @brief A Table containing strings. The number of columns is static.
  **/
 class KnobTable
-    : public QObject, public Knob<std::string>
+    : public QObject, public KnobStringBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT

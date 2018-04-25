@@ -65,12 +65,12 @@ NATRON_NAMESPACE_ENTER
 
 struct NodeCollectionPrivate
 {
-    AppInstWPtr app;
+    AppInstanceWPtr app;
     NodeGraphI* graph;
     mutable QMutex nodesMutex;
     NodesList nodes;
 
-    NodeCollectionPrivate(const AppInstPtr& app)
+    NodeCollectionPrivate(const AppInstancePtr& app)
         : app(app)
         , graph(0)
         , nodesMutex()
@@ -81,7 +81,7 @@ struct NodeCollectionPrivate
     NodePtr findNodeInternal(const std::string& name, const std::string& recurseName) const;
 };
 
-NodeCollection::NodeCollection(const AppInstPtr& app)
+NodeCollection::NodeCollection(const AppInstancePtr& app)
     : _imp( new NodeCollectionPrivate(app) )
 {
 }
@@ -90,7 +90,7 @@ NodeCollection::~NodeCollection()
 {
 }
 
-AppInstPtr
+AppInstancePtr
 NodeCollection::getApplication() const
 {
     return _imp->app.lock();
@@ -335,7 +335,7 @@ NodeCollection::refreshViewersAndPreviews()
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    AppInstPtr appInst = getApplication();
+    AppInstancePtr appInst = getApplication();
     if (!appInst) {
         return;
     }
@@ -360,7 +360,7 @@ NodeCollection::refreshViewersAndPreviews()
 void
 NodeCollection::refreshPreviews()
 {
-    AppInstPtr appInst = getApplication();
+    AppInstancePtr appInst = getApplication();
     if (!appInst) {
         return;
     }
@@ -384,7 +384,7 @@ NodeCollection::refreshPreviews()
 void
 NodeCollection::forceRefreshPreviews()
 {
-    AppInstPtr appInst = getApplication();
+    AppInstancePtr appInst = getApplication();
     if (!appInst) {
         return;
     }
@@ -839,11 +839,11 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
                                      bool blockEval)
 {
     NodesList nodes = getNodes();
-    AppInstPtr appInst = getApplication();
+    AppInstancePtr appInst = getApplication();
     if (!appInst) {
         return;
     }
-    boost::shared_ptr<Project> project = appInst->getProject();
+    ProjectPtr project = appInst->getProject();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isActivated() ) {
@@ -851,7 +851,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
 
             const KnobsVec& knobs = (*it)->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
-                Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >( knobs[j].get() );
+                KnobStringBase* isString = dynamic_cast< KnobStringBase* >( knobs[j].get() );
                 KnobString* isStringKnob = dynamic_cast<KnobString*>(isString);
                 if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
                     continue;
@@ -881,17 +881,17 @@ NodeCollection::fixPathName(const std::string& oldName,
                             const std::string& newName)
 {
     NodesList nodes = getNodes();
-    AppInstPtr appInst = getApplication();
+    AppInstancePtr appInst = getApplication();
     if (!appInst) {
         return;
     }
-    boost::shared_ptr<Project> project = appInst->getProject();
+    ProjectPtr project = appInst->getProject();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isActivated() ) {
             const KnobsVec& knobs = (*it)->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
-                Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >( knobs[j].get() );
+                KnobStringBase* isString = dynamic_cast< KnobStringBase* >( knobs[j].get() );
                 KnobString* isStringKnob = dynamic_cast<KnobString*>(isString);
                 if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
                     continue;
@@ -1002,7 +1002,7 @@ NodeCollection::forceComputeInputDependentDataOnAllTrees()
 }
 
 void
-NodeCollection::getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >& argsMap) const
+NodeCollection::getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr>& argsMap) const
 {
     NodesList nodes = getNodes();
 
@@ -1010,7 +1010,7 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<Parall
         if ( !(*it)->isActivated() ) {
             continue;
         }
-        boost::shared_ptr<ParallelRenderArgs> args = (*it)->getEffectInstance()->getParallelRenderArgsTLS();
+        ParallelRenderArgsPtr args = (*it)->getEffectInstance()->getParallelRenderArgsTLS();
         if (args) {
             argsMap.insert( std::make_pair(*it, args) );
         }
@@ -1021,7 +1021,7 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<Parall
             NodesList children;
             (*it)->getChildrenMultiInstance(&children);
             for (NodesList::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                boost::shared_ptr<ParallelRenderArgs> childArgs = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
+                ParallelRenderArgsPtr childArgs = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
                 if (childArgs) {
                     argsMap.insert( std::make_pair(*it2, childArgs) );
                 }
@@ -1029,10 +1029,10 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<Parall
         }
 
         //If the node has an attached stroke, that means it belongs to the roto paint tree, hence it is not in the project.
-        boost::shared_ptr<RotoContext> rotoContext = (*it)->getRotoContext();
+        RotoContextPtr rotoContext = (*it)->getRotoContext();
         if (args && rotoContext) {
             for (NodesList::const_iterator it2 = args->rotoPaintNodes.begin(); it2 != args->rotoPaintNodes.end(); ++it2) {
-                boost::shared_ptr<ParallelRenderArgs> args2 = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
+                ParallelRenderArgsPtr args2 = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
                 if (args2) {
                     argsMap.insert( std::make_pair(*it2, args2) );
                 }
@@ -1055,12 +1055,12 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<Parall
 struct NodeGroupPrivate
 {
     mutable QMutex nodesLock; // protects inputs & outputs
-    std::vector<NodeWPtr > inputs, guiInputs;
+    std::vector<NodeWPtr> inputs, guiInputs;
     NodesWList outputs, guiOutputs;
     bool isDeactivatingGroup;
     bool isActivatingGroup;
     bool isEditable;
-    boost::shared_ptr<KnobButton> exportAsTemplate, convertToGroup;
+    KnobButtonPtr exportAsTemplate, convertToGroup;
 
     NodeGroupPrivate()
     : nodesLock(QMutex::Recursive)
@@ -1079,7 +1079,7 @@ struct NodeGroupPrivate
 
 NodeGroup::NodeGroup(const NodePtr &node)
     : OutputEffectInstance(node)
-    , NodeCollection( node ? node->getApp() : AppInstPtr() )
+    , NodeCollection( node ? node->getApp() : AppInstancePtr() )
     , _imp( new NodeGroupPrivate() )
 {
     setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
@@ -1177,13 +1177,13 @@ NodeGroup::getInputLabel(int inputNb) const
     return inputName.toStdString();
 }
 
-boost::shared_ptr<KnobButton>
+KnobButtonPtr
 NodeGroup::getExportAsPyPlugButton() const
 {
     return _imp->exportAsTemplate;
 }
 
-boost::shared_ptr<KnobButton>
+KnobButtonPtr
 NodeGroup::getConvertToGroupButton() const
 {
     return _imp->convertToGroup;
@@ -1231,13 +1231,17 @@ NodeGroup::isInputOptional(int inputNb) const
             return false;
         }
     }
-    GroupInput* input = dynamic_cast<GroupInput*>( n->getEffectInstance().get() );
+    EffectInstancePtr effect = n->getEffectInstance();
+    if (!effect) {
+        return false;
+    }
+    GroupInput* input = dynamic_cast<GroupInput*>( effect.get() );
 
     assert(input);
     if (!input) {
         return false;
     }
-    KnobPtr knob = input->getKnobByName(kNatronGroupInputIsOptionalParamName);
+    KnobIPtr knob = input->getKnobByName(kNatronGroupInputIsOptionalParamName);
     assert(knob);
     if (!knob) {
         return false;
@@ -1280,7 +1284,7 @@ NodeGroup::isInputMask(int inputNb) const
     if (!input) {
         return false;
     }
-    KnobPtr knob = input->getKnobByName(kNatronGroupInputIsMaskParamName);
+    KnobIPtr knob = input->getKnobByName(kNatronGroupInputIsMaskParamName);
     assert(knob);
     if (!knob) {
         return false;
@@ -1294,7 +1298,7 @@ NodeGroup::isInputMask(int inputNb) const
 void
 NodeGroup::initializeKnobs()
 {
-    KnobPtr nodePage = getKnobByName(NATRON_PARAMETER_PAGE_NAME_EXTRA);
+    KnobIPtr nodePage = getKnobByName(NATRON_PARAMETER_PAGE_NAME_EXTRA);
 
     assert(nodePage);
     KnobPage* isPage = dynamic_cast<KnobPage*>( nodePage.get() );
@@ -1530,7 +1534,7 @@ NodeGroup::getInputsOutputs(NodesList* nodes,
 }
 
 void
-NodeGroup::getInputs(std::vector<NodePtr >* inputs,
+NodeGroup::getInputs(std::vector<NodePtr>* inputs,
                      bool useGuiConnexions) const
 {
     QMutexLocker k(&_imp->nodesLock);
@@ -1574,7 +1578,7 @@ NodeGroup::knobChanged(KnobI* k,
     bool ret = true;
 
     if ( k == _imp->exportAsTemplate.get() ) {
-        boost::shared_ptr<NodeGuiI> gui_i = getNode()->getNodeGui();
+        NodeGuiIPtr gui_i = getNode()->getNodeGui();
         if (gui_i) {
             gui_i->exportGroupAsPythonScript();
         }
@@ -1697,18 +1701,18 @@ escapeString(const std::string& str)
 
 static bool
 exportKnobValues(int indentLevel,
-                 const KnobPtr knob,
+                 const KnobIPtr knob,
                  const QString& paramFullName,
                  bool mustDefineParam,
                  QTextStream& ts)
 {
     bool hasExportedValue = false;
 
-    Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>( knob.get() );
+    KnobStringBase* isStr = dynamic_cast<KnobStringBase*>( knob.get() );
     AnimatingKnobStringHelper* isAnimatedStr = dynamic_cast<AnimatingKnobStringHelper*>( knob.get() );
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
+    KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( knob.get() );
+    KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( knob.get() );
+    KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( knob.get() );
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
     KnobGroup* isGrp = dynamic_cast<KnobGroup*>( knob.get() );
@@ -1747,7 +1751,7 @@ exportKnobValues(int indentLevel,
                     WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("if param is not None:") );
                 }
             }
-            boost::shared_ptr<Curve> curve = isParametric->getParametricCurve(i);
+            CurvePtr curve = isParametric->getParametricCurve(i);
             double r, g, b;
             isParametric->getCurveColor(i, &r, &g, &b);
             WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setCurveColor(") + NUM_INT(i) + QString::fromUtf8(", ") +
@@ -1800,7 +1804,7 @@ exportKnobValues(int indentLevel,
                 }
             }
         } else { // !isParametric
-            boost::shared_ptr<Curve> curve = knob->getCurve(ViewIdx(0), i, true);
+            CurvePtr curve = knob->getCurve(ViewIdx(0), i, true);
             if (curve) {
                 KeyFrameSet keys = curve->getKeyFrames_mt_safe();
 
@@ -1948,7 +1952,7 @@ exportKnobValues(int indentLevel,
 
 static void
 exportUserKnob(int indentLevel,
-               const KnobPtr& knob,
+               const KnobIPtr& knob,
                const QString& fullyQualifiedNodeName,
                KnobGroup* group,
                KnobPage* page,
@@ -1967,12 +1971,12 @@ exportUserKnob(int indentLevel,
     KnobButton* isButton = dynamic_cast<KnobButton*>( knob.get() );
     KnobSeparator* isSep = dynamic_cast<KnobSeparator*>( knob.get() );
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
-    boost::shared_ptr<KnobI > aliasedParam;
+    KnobIPtr aliasedParam;
     {
         KnobI::ListenerDimsMap listeners;
         knob->getListeners(listeners);
         if ( !listeners.empty() ) {
-            KnobPtr listener = listeners.begin()->first.lock();
+            KnobIPtr listener = listeners.begin()->first.lock();
             if ( listener && (listener->getAliasMaster() == knob) ) {
                 aliasedParam = listener;
             }
@@ -2322,7 +2326,7 @@ exportUserKnob(int indentLevel,
 
 static void
 exportBezierPointAtTime(int indentLevel,
-                        const boost::shared_ptr<BezierCP>& point,
+                        const BezierCPPtr& point,
                         bool isFeather,
                         double time,
                         int idx,
@@ -2344,20 +2348,20 @@ exportBezierPointAtTime(int indentLevel,
 
 static void
 exportRotoLayer(int indentLevel,
-                const std::list<boost::shared_ptr<RotoItem> >& items,
-                const boost::shared_ptr<RotoLayer>& layer,
+                const std::list<RotoItemPtr>& items,
+                const RotoLayerPtr& layer,
                 QTextStream& ts)
 {
     QString parentLayerName = QString::fromUtf8( layer->getScriptName().c_str() ) + QString::fromUtf8("_layer");
 
-    for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
-        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
-        boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+    for (std::list<RotoItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
+        RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
+        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
 
         if (isBezier) {
             double time;
-            const std::list<boost::shared_ptr<BezierCP> >& cps = isBezier->getControlPoints();
-            const std::list<boost::shared_ptr<BezierCP> >& fps = isBezier->getFeatherPoints();
+            const std::list<BezierCPPtr>& cps = isBezier->getControlPoints();
+            const std::list<BezierCPPtr>& fps = isBezier->getFeatherPoints();
 
             if ( cps.empty() ) {
                 continue;
@@ -2373,22 +2377,22 @@ exportRotoLayer(int indentLevel,
             QString visibleStr = isBezier->isGloballyActivated() ? QString::fromUtf8("True") : QString::fromUtf8("False");
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.setVisible(") + visibleStr + QString::fromUtf8(")") );
 
-            boost::shared_ptr<KnobBool> activatedKnob = isBezier->getActivatedKnob();
+            KnobBoolPtr activatedKnob = isBezier->getActivatedKnob();
             exportKnobValues(indentLevel, activatedKnob, QString::fromUtf8("bezier.getActivatedParam()"), true, ts);
 
-            boost::shared_ptr<KnobDouble> featherDist = isBezier->getFeatherKnob();
+            KnobDoublePtr featherDist = isBezier->getFeatherKnob();
             exportKnobValues(indentLevel, featherDist, QString::fromUtf8("bezier.getFeatherDistanceParam()"), true, ts);
 
-            boost::shared_ptr<KnobDouble> opacityKnob = isBezier->getOpacityKnob();
+            KnobDoublePtr opacityKnob = isBezier->getOpacityKnob();
             exportKnobValues(indentLevel, opacityKnob, QString::fromUtf8("bezier.getOpacityParam()"), true, ts);
 
-            boost::shared_ptr<KnobDouble> fallOffKnob = isBezier->getFeatherFallOffKnob();
+            KnobDoublePtr fallOffKnob = isBezier->getFeatherFallOffKnob();
             exportKnobValues(indentLevel, fallOffKnob, QString::fromUtf8("bezier.getFeatherFallOffParam()"), true, ts);
 
-            boost::shared_ptr<KnobColor> colorKnob = isBezier->getColorKnob();
+            KnobColorPtr colorKnob = isBezier->getColorKnob();
             exportKnobValues(indentLevel, colorKnob, QString::fromUtf8("bezier.getColorParam()"), true, ts);
 
-            boost::shared_ptr<KnobChoice> compositing = isBezier->getOperatorKnob();
+            KnobChoicePtr compositing = isBezier->getOperatorKnob();
             exportKnobValues(indentLevel, compositing, QString::fromUtf8("bezier.getCompositingOperatorParam()"), true, ts);
 
 
@@ -2407,8 +2411,8 @@ exportRotoLayer(int indentLevel,
 
             ///Now that all points are created position them
             int idx = 0;
-            std::list<boost::shared_ptr<BezierCP> >::const_iterator fpIt = fps.begin();
-            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it2 = cps.begin(); it2 != cps.end(); ++it2, ++fpIt, ++idx) {
+            std::list<BezierCPPtr>::const_iterator fpIt = fps.begin();
+            for (std::list<BezierCPPtr>::const_iterator it2 = cps.begin(); it2 != cps.end(); ++it2, ++fpIt, ++idx) {
                 for (std::set<double>::iterator it3 = kf.begin(); it3 != kf.end(); ++it3) {
                     exportBezierPointAtTime(indentLevel, *it2, false, *it3, idx, ts);
                     exportBezierPointAtTime(indentLevel, *fpIt, true, *it3, idx, ts);
@@ -2436,7 +2440,7 @@ exportRotoLayer(int indentLevel,
 
             WRITE_INDENT(indentLevel); WRITE_STRING(parentLayerName + QString::fromUtf8(".addItem(") + layerName);
 
-            const std::list<boost::shared_ptr<RotoItem> >& items = isLayer->getItems();
+            const std::list<RotoItemPtr>& items = isLayer->getItems();
             exportRotoLayer(indentLevel, items, isLayer, ts);
             WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("del ") + layerName);
         }
@@ -2509,14 +2513,14 @@ exportAllNodeKnobs(int indentLevel,
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("lastNode.refreshUserParamsGUI()");
     }
 
-    boost::shared_ptr<RotoContext> roto = node->getRotoContext();
+    RotoContextPtr roto = node->getRotoContext();
     if (roto) {
-        const std::list<boost::shared_ptr<RotoLayer> >& layers = roto->getLayers();
+        const std::list<RotoLayerPtr>& layers = roto->getLayers();
 
         if ( !layers.empty() ) {
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# For the roto node, create all layers and beziers");
             WRITE_INDENT(indentLevel); WRITE_STRING("roto = lastNode.getRotoContext()");
-            boost::shared_ptr<RotoLayer> baseLayer = layers.front();
+            RotoLayerPtr baseLayer = layers.front();
             QString baseLayerName = QString::fromUtf8( baseLayer->getScriptName().c_str() );
             QString baseLayerToken = baseLayerName + QString::fromUtf8("_layer");
             WRITE_INDENT(indentLevel); WRITE_STRING( baseLayerToken + QString::fromUtf8(" = roto.getBaseLayer()") );
@@ -2550,7 +2554,7 @@ exportKnobLinks(int indentLevel,
         bool hasDefined = false;
 
         //Check for alias link
-        KnobPtr alias = (*it2)->getAliasMaster();
+        KnobIPtr alias = (*it2)->getAliasMaster();
         if (alias) {
             if (!hasDefined) {
                 WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramName);
@@ -2588,7 +2592,7 @@ exportKnobLinks(int indentLevel,
                                                              hasRetVar + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")") );
                 }
 
-                std::pair<int, KnobPtr > master = (*it2)->getMaster(i);
+                std::pair<int, KnobIPtr> master = (*it2)->getMaster(i);
                 if (master.second) {
                     if (!hasDefined) {
                         WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramName);
@@ -2742,11 +2746,11 @@ exportGroupInternal(int indentLevel,
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("# End of node ") + ESC( (*it)->getScriptName_mt_safe() ) );
         WRITE_STATIC_LINE("");
 
-        std::list< NodePtr > children;
+        std::list<NodePtr> children;
         (*it)->getChildrenMultiInstance(&children);
         if ( !children.empty() ) {
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create children if the node is a multi-instance such as a tracker");
-            for (std::list< NodePtr > ::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
+            for (std::list<NodePtr> ::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
                 if ( (*it2)->isActivated() ) {
                     WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode = ") + nodeNameInScript + QString::fromUtf8(".createChild()") );
                     WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setScriptName(\"") + QString::fromUtf8( (*it2)->getScriptName_mt_safe().c_str() ) + QString::fromUtf8("\")") );

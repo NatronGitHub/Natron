@@ -68,7 +68,7 @@ public:
 
     virtual ~OfxImageEffectInstance();
 
-    void setOfxEffectInstance(const boost::shared_ptr<OfxEffectInstance>& node)
+    void setOfxEffectInstance(const OfxEffectInstancePtr& node)
     {
         _ofxEffectInstance = node;
     }
@@ -231,7 +231,7 @@ public:
     //
     // END of OFX::Host::ImageEffect::Instance methods
     //
-    boost::shared_ptr<OfxEffectInstance> getOfxEffectInstance() const WARN_UNUSED_RETURN
+    OfxEffectInstancePtr getOfxEffectInstance() const WARN_UNUSED_RETURN
     {
         return _ofxEffectInstance.lock();
     }
@@ -255,7 +255,7 @@ public:
     static const OFX::Host::Property::PropSpec* getOfxParamOverlayInteractDescProps();
 
 private:
-    boost::weak_ptr<OfxEffectInstance> _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
+    OfxEffectInstanceWPtr _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                                                               Not easy since every Knob need a valid pointer to a node when
                                                               AppManager::createKnob() is called. That's why we need to pass a pointer
                                                               to an OfxParamInstance. Without this pointer we would be unable

@@ -160,7 +160,7 @@ NodeGraph::cutSelectedNodes()
 
 void
 NodeGraph::pasteCliboard(const NodeClipBoard& clipboard,
-                         std::list<std::pair<std::string, NodeGuiPtr > >* newNodes)
+                         std::list<std::pair<std::string, NodeGuiPtr> >* newNodes)
 {
     QPointF position = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( QCursor::pos() ) ) );
 
@@ -177,7 +177,7 @@ NodeGraph::pasteNodeClipBoards(const QPointF& pos)
         return false;
     }
     QByteArray data = mimedata->data( QLatin1String("text/plain") );
-    std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
+    std::list<std::pair<std::string, NodeGuiPtr> > newNodes;
     NodeClipBoard& cb = appPTR->getNodeClipBoard();
     std::string s = QString::fromUtf8(data).toStdString();
     try {
@@ -213,7 +213,7 @@ NodeGraph::duplicateSelectedNodes(const QPointF& pos)
     ///Don't use the member clipboard as the user might have something copied
     NodeClipBoard tmpClipboard;
     _imp->copyNodesInternal(_imp->_selection, tmpClipboard);
-    std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
+    std::list<std::pair<std::string, NodeGuiPtr> > newNodes;
     _imp->pasteNodesInternal(tmpClipboard, pos, true, &newNodes);
 }
 
@@ -295,13 +295,13 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     }
 
     QPointF offset( scenePos.x() - ( (xmax + xmin) / 2. ), scenePos.y() -  ( (ymax + ymin) / 2. ) );
-    std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
-    std::list <boost::shared_ptr<NodeSerialization> > serializations;
-    std::list <NodeGuiPtr > newNodesList;
+    std::list<std::pair<std::string, NodeGuiPtr> > newNodes;
+    std::list<NodeSerializationPtr> serializations;
+    std::list<NodeGuiPtr> newNodesList;
     std::map<std::string, std::string> oldNewScriptNameMapping;
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        boost::shared_ptr<NodeSerialization>  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
-        boost::shared_ptr<NodeGuiSerialization> guiSerialization = boost::make_shared<NodeGuiSerialization>();
+        NodeSerializationPtr  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
+        NodeGuiSerializationPtr guiSerialization = boost::make_shared<NodeGuiSerialization>();
         (*it)->serialize( guiSerialization.get() );
         NodeGuiPtr clone = _imp->pasteNode(internalSerialization, guiSerialization, offset,
                                            _imp->group.lock(), std::string(), true, &oldNewScriptNameMapping );
@@ -324,8 +324,8 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
 
 
     //Restore links once all children are created for alias knobs/expressions
-    std::list <boost::shared_ptr<NodeSerialization> >::iterator itS = serializations.begin();
-    for (std::list <NodeGuiPtr > ::iterator it = newNodesList.begin(); it != newNodesList.end(); ++it, ++itS) {
+    std::list<NodeSerializationPtr>::iterator itS = serializations.begin();
+    for (std::list<NodeGuiPtr> ::iterator it = newNodesList.begin(); it != newNodesList.end(); ++it, ++itS) {
         (*it)->getNode()->restoreKnobsLinks(**itS, allNodes, oldNewScriptNameMapping);
     }
 

@@ -42,6 +42,8 @@
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
 
+#include <QtCore/QSize>
+
 NATRON_NAMESPACE_ENTER
 
 typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
@@ -231,8 +233,8 @@ public:
     void setAsFileDialogViewer();
     bool isFileDialogViewer() const;
 
-    void setCustomTimeline(const boost::shared_ptr<TimeLine>& timeline);
-    boost::shared_ptr<TimeLine> getTimeLine() const;
+    void setCustomTimeline(const TimeLinePtr& timeline);
+    TimeLinePtr getTimeLine() const;
 
     bool isCheckerboardEnabled() const;
     void setCheckerboardEnabled(bool enabled);
@@ -462,7 +464,7 @@ private:
     void onCompositingOperatorChangedInternal(ViewerCompositingOperatorEnum oldOp, ViewerCompositingOperatorEnum newOp);
 
 
-    void manageTimelineSlot(bool disconnectPrevious, const boost::shared_ptr<TimeLine>& timeline);
+    void manageTimelineSlot(bool disconnectPrevious, const TimeLinePtr& timeline);
 
     void manageSlotsForInfoWidget(int textureIndex, bool connect);
 

@@ -73,10 +73,10 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     struct MakeSharedEnabler;
 
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
-    Project(const AppInstPtr& appInstance);
+    Project(const AppInstancePtr& appInstance);
 
 public:
-    static boost::shared_ptr<Project> create(const AppInstPtr& appInstance);
+    static ProjectPtr create(const AppInstancePtr& appInstance);
 
     virtual ~Project();
 
@@ -182,7 +182,7 @@ public:
 
     void toggleAutoPreview();
 
-    boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN;
+    TimeLinePtr getTimeLine() const WARN_UNUSED_RETURN;
 
     int currentFrame() const WARN_UNUSED_RETURN;
 
@@ -277,7 +277,7 @@ public:
 
     double getProjectFrameRate() const;
 
-    boost::shared_ptr<KnobPath> getEnvVarKnob() const;
+    KnobPathPtr getEnvVarKnob() const;
     std::string getOnProjectLoadCB() const;
     std::string getOnProjectSaveCB() const;
     std::string getOnProjectCloseCB() const;
@@ -304,7 +304,7 @@ public:
      * This is called only when calling AppManager::abortAnyProcessing()
      * @returns True if a node is in the project and a watcher was installed, false otherwise
      **/
-    bool quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const WatcherCallerArgsPtr& args);
+    bool quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const GenericWatcherCallerArgsPtr& args);
 
     bool isOpenGLRenderActivated() const;
 
@@ -312,20 +312,20 @@ public:
 
 private:
 
-    virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) OVERRIDE FINAL;
+    virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) OVERRIDE FINAL;
 
 public:
 
     struct TreeOutput
     {
         NodePtr node;
-        std::list<std::pair<int, NodeWPtr > > outputs;
+        std::list<std::pair<int, NodeWPtr> > outputs;
     };
 
     struct TreeInput
     {
         NodePtr node;
-        std::vector<NodePtr > inputs;
+        std::vector<NodePtr> inputs;
     };
 
     struct NodesTree
@@ -341,7 +341,7 @@ public:
 
     bool addFormat(const std::string& formatSpec);
 
-    void setTimeLine(const boost::shared_ptr<TimeLine>& timeline);
+    void setTimeLine(const TimeLinePtr& timeline);
 
 
     /**
@@ -351,7 +351,7 @@ public:
 
 public Q_SLOTS:
 
-    void onQuitAnyProcessingWatcherTaskFinished(int taskID, const WatcherCallerArgsPtr& args);
+    void onQuitAnyProcessingWatcherTaskFinished(int taskID, const GenericWatcherCallerArgsPtr& args);
 
     void onAutoSaveTimerTriggered();
 

@@ -69,7 +69,7 @@ ViewerTab::onInputChanged(int inputNb)
 {
     ///rebuild the name maps
     NodePtr inp;
-    const std::vector<NodeWPtr > &inputs  = _imp->viewerNode->getNode()->getGuiInputs();
+    const std::vector<NodeWPtr> &inputs  = _imp->viewerNode->getNode()->getGuiInputs();
 
     if ( (inputNb >= 0) && ( inputNb < (int)inputs.size() ) ) {
         inp = inputs[inputNb].lock();
@@ -141,7 +141,7 @@ void
 ViewerTab::manageSlotsForInfoWidget(int textureIndex,
                                     bool connect)
 {
-    boost::shared_ptr<RenderEngine> engine = _imp->viewerNode->getRenderEngine();
+    RenderEnginePtr engine = _imp->viewerNode->getRenderEngine();
 
     assert(engine);
     if (connect) {
@@ -587,7 +587,7 @@ ViewerTab::isFileDialogViewer() const
 }
 
 void
-ViewerTab::setCustomTimeline(const boost::shared_ptr<TimeLine>& timeline)
+ViewerTab::setCustomTimeline(const TimeLinePtr& timeline)
 {
     _imp->timeLineGui->setTimeline(timeline);
     manageTimelineSlot(true, timeline);
@@ -595,10 +595,10 @@ ViewerTab::setCustomTimeline(const boost::shared_ptr<TimeLine>& timeline)
 
 void
 ViewerTab::manageTimelineSlot(bool disconnectPrevious,
-                              const boost::shared_ptr<TimeLine>& timeline)
+                              const TimeLinePtr& timeline)
 {
     if (disconnectPrevious) {
-        boost::shared_ptr<TimeLine> previous = _imp->timeLineGui->getTimeline();
+        TimeLinePtr previous = _imp->timeLineGui->getTimeline();
         QObject::disconnect( previous.get(), SIGNAL(frameChanged(SequenceTime,int)),
                              this, SLOT(onTimeLineTimeChanged(SequenceTime,int)) );
     }
@@ -607,7 +607,7 @@ ViewerTab::manageTimelineSlot(bool disconnectPrevious,
                       this, SLOT(onTimeLineTimeChanged(SequenceTime,int)) );
 }
 
-boost::shared_ptr<TimeLine>
+TimeLinePtr
 ViewerTab::getTimeLine() const
 {
     return _imp->timeLineGui->getTimeline();

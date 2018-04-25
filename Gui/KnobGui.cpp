@@ -46,7 +46,7 @@ NATRON_NAMESPACE_ENTER
 
 
 /////////////// KnobGui
-KnobGui::KnobGui(const KnobPtr& /*knob*/,
+KnobGui::KnobGui(const KnobIPtr& /*knob*/,
                  KnobGuiContainerI* container)
     : QObject()
     , KnobGuiI()
@@ -62,7 +62,7 @@ KnobGui::~KnobGui()
 void
 KnobGui::initialize()
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     KnobGuiPtr thisShared = shared_from_this();
 
     assert(thisShared);
@@ -120,7 +120,7 @@ void
 KnobGui::removeGui()
 {
     assert(!_imp->guiRemoved);
-    for (std::vector< boost::weak_ptr< KnobI > >::iterator it = _imp->knobsOnSameLine.begin(); it != _imp->knobsOnSameLine.end(); ++it) {
+    for (std::vector<KnobIWPtr>::iterator it = _imp->knobsOnSameLine.begin(); it != _imp->knobsOnSameLine.end(); ++it) {
         KnobGuiPtr kg = _imp->container->getKnobGui( it->lock() );
         if (kg) {
             kg->_imp->removeFromKnobsOnSameLineVector( getKnob() );
@@ -185,13 +185,13 @@ KnobGui::createGUI(QWidget* fieldContainer,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    int lastKnobSpacing,
-                   const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine)
+                   const std::vector<KnobIPtr> & knobsOnSameLine)
 {
     _imp->guiRemoved = false;
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     _imp->fieldLayout = layout;
-    for (std::vector< boost::shared_ptr< KnobI > >::const_iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
+    for (std::vector<KnobIPtr>::const_iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
         _imp->knobsOnSameLine.push_back(*it);
     }
     _imp->field = fieldContainer;
@@ -231,7 +231,7 @@ KnobGui::createGUI(QWidget* fieldContainer,
 
     // Parmetric knobs use the customInteract to actually draw something on top of the background
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
-    boost::shared_ptr<OfxParamOverlayInteract> customInteract = knob->getCustomInteract();
+    OfxParamOverlayInteractPtr customInteract = knob->getCustomInteract();
     if (customInteract && !isParametric) {
         _imp->customInteract = new CustomParamInteract(shared_from_this(), knob->getOfxParamHandle(), customInteract);
         layout->addWidget(_imp->customInteract);
@@ -318,7 +318,7 @@ void
 KnobGui::showRightClickMenuForDimension(const QPoint &,
                                         int dimension)
 {
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     if ( knob->getIsSecret() ) {
         return;
@@ -390,7 +390,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
         dimension = -1;
     }
 
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
     assert( dimension >= -1 && dimension < knob->getDimension() );
     menu->clear();
     bool dimensionHasKeyframeAtTime = false;
@@ -596,7 +596,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
     }
 
     ///If the clipboard is either empty or has no animation, disable the Paste animation action.
-    KnobPtr fromKnob;
+    KnobIPtr fromKnob;
     KnobClipBoardType type;
 
     //cbDim is ignored for now
@@ -723,7 +723,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
     ///find-out to which node that master knob belongs to
     KnobHolder* holder = knob->getHolder();
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
-    boost::shared_ptr<NodeCollection> collec;
+    NodeCollectionPtr collec;
     NodeGroup* isCollecGroup = 0;
     if (isEffect) {
         collec = isEffect->getNode()->getGroup();
@@ -734,12 +734,12 @@ KnobGui::createAnimationMenu(QMenu* menu,
     if ( isAppKnob && ( ( hasDimensionSlaved && (dimension == -1) ) || dimensionIsSlaved ) ) {
         menu->addSeparator();
 
-        KnobPtr aliasMaster = knob->getAliasMaster();
+        KnobIPtr aliasMaster = knob->getAliasMaster();
         std::string knobName;
         if ( aliasMaster || ((dimension != -1 || knob->getDimension() == 1) && dimensionIsSlaved) ) {
 
-            KnobPtr masterKnob;
-            std::pair<int, KnobPtr > master;
+            KnobIPtr masterKnob;
+            std::pair<int, KnobIPtr> master;
             if (aliasMaster) {
                 masterKnob = aliasMaster;
             } else {
@@ -787,7 +787,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
     KnobI::ListenerDimsMap listeners;
     knob->getListeners(listeners);
     if ( !listeners.empty() ) {
-        KnobPtr listener = listeners.begin()->first.lock();
+        KnobIPtr listener = listeners.begin()->first.lock();
         if ( listener && (listener->getAliasMaster() == knob) ) {
             QAction* removeAliasLink = new QAction(tr("Remove alias link"), menu);
             QObject::connect( removeAliasLink, SIGNAL(triggered()), this, SLOT(onRemoveAliasLinkActionTriggered()) );
@@ -801,16 +801,16 @@ KnobGui::createAnimationMenu(QMenu* menu,
     }
 } // createAnimationMenu
 
-KnobPtr
+KnobIPtr
 KnobGui::createDuplicateOnNode(EffectInstance* effect,
                                bool makeAlias,
-                               const boost::shared_ptr<KnobPage>& page,
-                               const boost::shared_ptr<KnobGroup>& group,
+                               const KnobPagePtr& page,
+                               const KnobGroupPtr& group,
                                int indexInParent)
 {
     ///find-out to which node that master knob belongs to
     assert( getKnob()->getHolder()->getApp() );
-    KnobPtr knob = getKnob();
+    KnobIPtr knob = getKnob();
 
     if (!makeAlias) {
         for (int i = 0; i < knob->getDimension(); ++i) {
@@ -822,7 +822,7 @@ KnobGui::createDuplicateOnNode(EffectInstance* effect,
                                                                                                      "Continue anyway?").toStdString(), false,
                                                                   StandardButtons(eStandardButtonOk | eStandardButtonCancel) );
                 if (rep != eStandardButtonYes) {
-                    return KnobPtr();
+                    return KnobIPtr();
                 }
             }
         }
@@ -830,11 +830,11 @@ KnobGui::createDuplicateOnNode(EffectInstance* effect,
 
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>( knob->getHolder() );
     if (!isEffect) {
-        return KnobPtr();
+        return KnobIPtr();
     }
     const std::string& nodeScriptName = isEffect->getNode()->getScriptName();
     std::string newKnobName = nodeScriptName +  knob->getName();
-    KnobPtr ret;
+    KnobIPtr ret;
     try {
         ret = knob->createDuplicateOnHolder(effect,
                                             page,
@@ -849,11 +849,11 @@ KnobGui::createDuplicateOnNode(EffectInstance* effect,
     } catch (const std::exception& e) {
         Dialogs::errorDialog( tr("Error while creating parameter").toStdString(), e.what() );
 
-        return KnobPtr();
+        return KnobIPtr();
     }
 
     if (ret) {
-        boost::shared_ptr<NodeGuiI> groupNodeGuiI = effect->getNode()->getNodeGui();
+        NodeGuiIPtr groupNodeGuiI = effect->getNode()->getNodeGui();
         NodeGui* groupNodeGui = dynamic_cast<NodeGui*>( groupNodeGuiI.get() );
         assert(groupNodeGui);
         if (groupNodeGui) {

@@ -83,7 +83,7 @@ public:
         w = width; h = height;
     }
 
-    KnobPtr getLabelSerialization() const
+    KnobIPtr getLabelSerialization() const
     {
         return label->getKnob();
     }
@@ -111,7 +111,7 @@ private:
     double posY;
     int width, height;
     std::string name;
-    boost::shared_ptr<KnobSerialization> label;
+    KnobSerializationPtr label;
     float r, g, b;
     std::string masterBackdropName;
     bool selected;
@@ -146,7 +146,7 @@ private:
         ar & ::boost::serialization::make_nvp("Name", name);
         ar & ::boost::serialization::make_nvp("MasterName", masterBackdropName);
 
-        label.reset(new KnobSerialization);
+        label = boost::make_shared<KnobSerialization>();
         ar & ::boost::serialization::make_nvp("Label", *label);
         ar & ::boost::serialization::make_nvp("r", r);
         ar & ::boost::serialization::make_nvp("g", g);

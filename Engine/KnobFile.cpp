@@ -122,7 +122,7 @@ KnobOutputFile::KnobOutputFile(KnobHolder* holder,
                                const std::string &description,
                                int dimension,
                                bool declaredByPlugin)
-    : Knob<std::string>(holder, description, dimension, declaredByPlugin)
+    : KnobStringBase(holder, description, dimension, declaredByPlugin)
     , _isOutputImage(false)
     , _sequenceDialog(true)
 {

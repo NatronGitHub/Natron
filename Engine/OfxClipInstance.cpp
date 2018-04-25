@@ -69,7 +69,7 @@ struct OfxClipInstancePrivate
 {
 public:
     OfxClipInstance* _publicInterface;
-    boost::weak_ptr<OfxEffectInstance> nodeInstance;
+    OfxEffectInstanceWPtr nodeInstance;
     OfxImageEffectInstance* const effect;
     double aspectRatio;
     bool optional;
@@ -78,7 +78,7 @@ public:
 
 public:
     OfxClipInstancePrivate(OfxClipInstance* publicInterface,
-                           const boost::shared_ptr<OfxEffectInstance>& nodeInstance,
+                           const OfxEffectInstancePtr& nodeInstance,
                            OfxImageEffectInstance* effect)
         : _publicInterface(publicInterface)
         , nodeInstance(nodeInstance)
@@ -93,7 +93,7 @@ public:
     const std::vector<std::string>& getComponentsPresentInternal(const OfxClipInstance::ClipDataTLSPtr& tls) const;
 };
 
-OfxClipInstance::OfxClipInstance(const boost::shared_ptr<OfxEffectInstance>& nodeInstance,
+OfxClipInstance::OfxClipInstance(const OfxEffectInstancePtr& nodeInstance,
                                  OfxImageEffectInstance* effect,
                                  int /*index*/,
                                  OFX::Host::ImageEffect::ClipDescriptor* desc)
@@ -113,7 +113,7 @@ OfxClipInstance::~OfxClipInstance()
 void
 OfxClipInstance::setLabel()
 {
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    OfxEffectInstancePtr effect = _imp->nodeInstance.lock();
     if (effect) {
         int inputNb = getInputNb();
         if (inputNb >= 0) {
@@ -125,7 +125,7 @@ OfxClipInstance::setLabel()
 // callback which should set secret state as appropriate
 void OfxClipInstance::setSecret()
 {
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    OfxEffectInstancePtr effect = _imp->nodeInstance.lock();
     if (effect) {
         int inputNb = getInputNb();
         if (inputNb >= 0) {
@@ -137,7 +137,7 @@ void OfxClipInstance::setSecret()
 // callback which should update hint
 void OfxClipInstance::setHint()
 {
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    OfxEffectInstancePtr effect = _imp->nodeInstance.lock();
     if (effect) {
         int inputNb = getInputNb();
         if (inputNb >= 0) {
@@ -571,7 +571,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
                                                EffectInstance* associatedNode,
                                                OfxRectD* ret) const
 {
-    boost::shared_ptr<RotoDrawableItem> attachedStroke;
+    RotoDrawableItemPtr attachedStroke;
     EffectInstancePtr effect = getEffectHolder();
 
     if (effect) {
@@ -590,7 +590,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
 
         return;
     } else if (effect) {
-        boost::shared_ptr<RotoContext> rotoCtx = effect->getNode()->getRotoContext();
+        RotoContextPtr rotoCtx = effect->getNode()->getRotoContext();
         if ( rotoCtx && (getName() == CLIP_OFX_ROTO) ) {
             rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
             ret->x1 = rod.x1;
@@ -823,7 +823,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     assert( (retImage && !retTexture) || (!retImage && retTexture) );
 
     ClipDataTLSPtr tls = _imp->tlsData->getTLSData();
-    boost::shared_ptr<RenderActionData> renderData;
+    RenderActionDataPtr renderData;
 
     //If components param is not set (i.e: the plug-in uses regular clipGetImage call) then figure out the plane from the TLS set in OfxEffectInstance::render
     //otherwise use the param sent by the plug-in call of clipGetImagePlane
@@ -846,7 +846,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     //bool isMultiplanar = effect->isMultiPlanar();
     ImagePlaneDesc comp;
     if (!ofxPlane) {
-        boost::shared_ptr<EffectInstance::ComponentsNeededMap> neededComps;
+        EffectInstance::ComponentsNeededMapPtr neededComps;
         effect->getThreadLocalNeededComponents(&neededComps);
         bool foundCompsInTLS = false;
         if (neededComps) {
@@ -987,7 +987,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
 
     bool multiPlanar = effect->isMultiPlanar();
     RectI renderWindow;
-    boost::shared_ptr<Transform::Matrix3x3> transform;
+    Transform::Matrix3x3Ptr transform;
     ImagePtr image = effect->getImage(inputnb, time, renderScale, view,
                                       optionalBounds ? &bounds : NULL,
                                       &comp,
@@ -1052,7 +1052,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
                                         OFX::Host::ImageEffect::Texture** retTexture)
 {
     ClipDataTLSPtr tls = _imp->tlsData->getTLSData();
-    boost::shared_ptr<RenderActionData> renderData;
+    RenderActionDataPtr renderData;
 
     assert( (retImage && !retTexture) || (!retImage && retTexture) );
 
@@ -1184,11 +1184,11 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
     double par = getAspectRatio();
     OfxImageCommon* retCommon = 0;
     if (retImage) {
-        OfxImage* ret =  new OfxImage(renderData, outputImage, false, renderWindow, boost::shared_ptr<Transform::Matrix3x3>(), ofxComponents, nComps, par);
+        OfxImage* ret =  new OfxImage(renderData, outputImage, false, renderWindow, Transform::Matrix3x3Ptr(), ofxComponents, nComps, par);
         *retImage = ret;
         retCommon = ret;
     } else if (retTexture) {
-        OfxTexture* ret =  new OfxTexture(renderData, outputImage, false, renderWindow, boost::shared_ptr<Transform::Matrix3x3>(), ofxComponents, nComps, par);
+        OfxTexture* ret =  new OfxTexture(renderData, outputImage, false, renderWindow, Transform::Matrix3x3Ptr(), ofxComponents, nComps, par);
         *retTexture = ret;
         retCommon = ret;
     }
@@ -1328,14 +1328,14 @@ struct OfxImageCommonPrivate
 {
     OFX::Host::ImageEffect::ImageBase* ofxImageBase;
     ImagePtr natronImage;
-    boost::shared_ptr<GenericAccess> access;
-    boost::shared_ptr<OfxClipInstance::RenderActionData> tls;
+    GenericAccessPtr access;
+    OfxClipInstance::RenderActionDataPtr tls;
     std::string components;
     boost::scoped_ptr<RamBuffer<unsigned char> > localBuffer;
 
     OfxImageCommonPrivate(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
                           const ImagePtr& image,
-                          const boost::shared_ptr<OfxClipInstance::RenderActionData>& tls)
+                          const OfxClipInstance::RenderActionDataPtr& tls)
         : ofxImageBase(ofxImageBase)
         , natronImage(image)
         , access()
@@ -1359,11 +1359,11 @@ OfxImageCommon::getComponentsString() const
 }
 
 OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
-                               const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
-                               const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
+                               const OfxClipInstance::RenderActionDataPtr& renderData,
+                               const NATRON_NAMESPACE::ImagePtr& internalImage,
                                bool isSrcImage,
                                const RectI& renderWindow,
-                               const boost::shared_ptr<Transform::Matrix3x3>& mat,
+                               const Transform::Matrix3x3Ptr& mat,
                                const std::string& components,
                                int nComps,
                                double par)
@@ -1400,7 +1400,7 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
         // when this OfxImage is destroyed. By default this local copy is deactivated, to activate it, the user has to go
         // in the preferences and check "Use input image copy for plug-ins rendering"
         const bool copySrcToPluginLocalData = appPTR->isCopyInputImageForPluginRenderEnabled();
-        boost::shared_ptr<NATRON_NAMESPACE::Image::ReadAccess> access( new NATRON_NAMESPACE::Image::ReadAccess( internalImage.get() ) );
+        NATRON_NAMESPACE::Image::ReadAccessPtr access( new NATRON_NAMESPACE::Image::ReadAccess( internalImage.get() ) );
 
         // data ptr
         const RectI bounds = internalImage->getBounds();
@@ -1451,7 +1451,7 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
         // row bytes
         ofxImageBase->setIntProperty(kOfxImagePropRowBytes, srcRowSize);
         
-        boost::shared_ptr<NATRON_NAMESPACE::Image::WriteAccess> access( new NATRON_NAMESPACE::Image::WriteAccess( internalImage.get() ) );
+        NATRON_NAMESPACE::Image::WriteAccessPtr access( new NATRON_NAMESPACE::Image::WriteAccess( internalImage.get() ) );
 
         // data ptr
         renderWindow.intersect(bounds, &pluginsSeenBounds);
@@ -1553,7 +1553,7 @@ OfxClipInstance::getInputNb() const
 EffectInstancePtr
 OfxClipInstance::getEffectHolder() const
 {
-    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    OfxEffectInstancePtr effect = _imp->nodeInstance.lock();
 
     if (!effect) {
         return effect;
@@ -1596,7 +1596,7 @@ OfxClipInstance::setClipTLS(ViewIdx view,
     assert(tls);
     tls->view.push_back(view);
     tls->mipMapLevel.push_back(mipmapLevel);
-    boost::shared_ptr<RenderActionData> d( new RenderActionData() );
+    RenderActionDataPtr d( new RenderActionData() );
     d->clipComponents = components;
     tls->renderData.push_back(d);
 }

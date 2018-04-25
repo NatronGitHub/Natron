@@ -56,7 +56,7 @@ public:
 
     virtual ~PickKnobDialog();
 
-    KnobGuiPtr getSelectedKnob(bool* makeAlias, boost::shared_ptr<KnobPage>* page, boost::shared_ptr<KnobGroup>* group) const;
+    KnobGuiPtr getSelectedKnob(bool* makeAlias, KnobPagePtr* page, KnobGroupPtr* group) const;
 
 public Q_SLOTS:
 

@@ -140,7 +140,19 @@ NodeGraph::hasItemNearbyMouse(const QPoint& mousePosViewport,
         }
     }
 
+    // first test normal nodes, then backdrops.
+    // reason is https://github.com/MrKepzie/Natron/issues/1689
     for (std::set<NodeGui*>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ( (*it)->isVisible() && (*it)->isActive() ) {
+            BackdropGui* isBd = dynamic_cast<BackdropGui*>(*it);
+            if (!isBd) {
+                *node = *it;
+
+                return eNearbyItemNode;
+            }
+        }
+    }
+   for (std::set<NodeGui*>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isVisible() && (*it)->isActive() ) {
             QPointF localPoint = (*it)->mapFromScene( mapToScene(mousePosViewport) );
             BackdropGui* isBd = dynamic_cast<BackdropGui*>(*it);
@@ -154,10 +166,6 @@ NodeGraph::hasItemNearbyMouse(const QPoint& mousePosViewport,
 
                     return eNearbyItemBackdropResizeHandle;
                 }
-            } else {
-                *node = *it;
-
-                return eNearbyItemNode;
             }
         }
     }
@@ -208,7 +216,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     }
 
 
-    boost::shared_ptr<NodeCollection> collection = getGroup();
+    NodeCollectionPtr collection = getGroup();
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
     bool isGroupEditable = true;
     bool groupEdited = true;
@@ -318,7 +326,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
         NodePtr dotNode = getGui()->getApp()->createNode(args);
         assert(dotNode);
-        boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
+        NodeGuiIPtr dotNodeGui_i = dotNode->getNodeGui();
         NodeGuiPtr dotNodeGui = boost::dynamic_pointer_cast<NodeGui>(dotNodeGui_i);
         assert(dotNodeGui);
 
@@ -327,9 +335,9 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
 
         assert( getGui() );
-        GuiAppInstPtr guiApp = getGui()->getApp();
+        GuiAppInstancePtr guiApp = getGui()->getApp();
         assert(guiApp);
-        boost::shared_ptr<Project> project = guiApp->getProject();
+        ProjectPtr project = guiApp->getProject();
         assert(project);
         bool ok = project->disconnectNodes(inputNode, outputNode);
         if (!ok) {

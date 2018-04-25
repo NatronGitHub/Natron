@@ -40,7 +40,7 @@ NATRON_NAMESPACE_ENTER
 
 struct TabGroupTab
 {
-    boost::weak_ptr<KnobGroup> groupKnob;
+    KnobGroupWPtr groupKnob;
     QWidget* tab;
     QGridLayout* layout;
     bool visible;
@@ -88,7 +88,7 @@ TabGroup::isEmpty() const
 }
 
 QGridLayout*
-TabGroup::addTab(const boost::shared_ptr<KnobGroup>& group,
+TabGroup::addTab(const KnobGroupPtr& group,
                  const QString& label)
 {
     TabGroupTab* tabGroup = 0;
@@ -116,7 +116,7 @@ TabGroup::addTab(const boost::shared_ptr<KnobGroup>& group,
         }
         //tabGroup->tab->setVisible(visible);
 
-        boost::shared_ptr<KnobSignalSlotHandler> handler = group->getSignalSlotHandler();
+        KnobSignalSlotHandlerPtr handler = group->getSignalSlotHandler();
         QObject::connect( handler.get(), SIGNAL(secretChanged()), this, SLOT(onGroupKnobSecretChanged()) );
     }
     assert(tabGroup->layout);
@@ -179,7 +179,7 @@ TabGroup::onGroupKnobSecretChanged()
         return;
     }
 
-    KnobPtr knob = handler->getKnob();
+    KnobIPtr knob = handler->getKnob();
     if (!knob) {
         return;
     }

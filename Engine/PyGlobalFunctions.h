@@ -191,7 +191,7 @@ public:
 
     inline App* getInstance(int idx) const
     {
-        AppInstPtr app = appPTR->getAppInstance(idx);
+        AppInstancePtr app = appPTR->getAppInstance(idx);
 
         if (!app) {
             return 0;
@@ -202,7 +202,7 @@ public:
 
     inline App* getActiveInstance() const
     {
-        AppInstPtr app = appPTR->getTopLevelInstance();
+        AppInstancePtr app = appPTR->getTopLevelInstance();
 
         if (!app) {
             return 0;

@@ -22,6 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #if defined(Q_OS_UNIX)
 #include <sys/time.h>     // for getrlimit on linux
 #include <sys/resource.h> // for getrlimit
@@ -35,6 +36,10 @@
 #include <iostream>
 
 #include <QtCore/QCoreApplication>
+
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include "Engine/AppManager.h"
 #include "Engine/CLArgs.h"
@@ -51,6 +56,12 @@ extern "C" {
     int main(int argc, char *argv[])
 #endif
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+    assert(boost_adaptbx::floating_point::is_invalid_trapped());
+#endif
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
     /*
      Avoid 'Too many open files' on Unix.

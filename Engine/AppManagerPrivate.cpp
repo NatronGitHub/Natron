@@ -24,6 +24,7 @@
 
 #include "AppManagerPrivate.h"
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #if defined(Q_OS_UNIX)
 #include <sys/time.h>     // for getrlimit on linux
 #include <sys/resource.h> // for getrlimit
@@ -167,9 +168,9 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath,
        We check periodically that the crash reporter process is still alive. If the user killed it somehow, then we want
        the Natron process to terminate
      */
-    breakpadAliveThread.reset( new ExistenceCheckerThread(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
-                                                          QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK),
-                                                          breakpadComPipePath) );
+    breakpadAliveThread = boost::make_shared<ExistenceCheckerThread>(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
+                                                                     QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK),
+                                                                     breakpadComPipePath);
     QObject::connect( breakpadAliveThread.get(), SIGNAL(otherProcessUnreachable()), appPTR, SLOT(onCrashReporterNoLongerResponding()) );
     breakpadAliveThread->start();
 }
@@ -222,6 +223,7 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
 void
 AppManagerPrivate::initProcessInputChannel(const QString & mainProcessServerName)
 {
+    // scoped_ptr
     _backgroundIPC.reset( new ProcessInputChannel(mainProcessServerName) );
 }
 
@@ -452,7 +454,7 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath, bool isT
 
     QDir cacheFolder(cachePath);
 
-#   if QT_VERSION < 0x050000
+#   if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     QtCompat::removeRecursively(cachePath);
 #   else
     if ( cacheFolder.exists() ) {
@@ -611,9 +613,11 @@ void
 AppManagerPrivate::initGLAPISpecific()
 {
 #ifdef Q_OS_WIN32
+    // scoped_ptr
     wglInfo.reset(new OSGLContext_wgl_data);
     OSGLContext_win::initWGLData( wglInfo.get() );
 #elif defined(Q_OS_LINUX)
+    // scoped_ptr
     glxInfo.reset(new OSGLContext_glx_data);
     OSGLContext_x11::initGLXData( glxInfo.get() );
 
