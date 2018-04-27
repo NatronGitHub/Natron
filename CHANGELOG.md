@@ -34,8 +34,10 @@ Natron multiple times on the same computer, the different processes will share t
 
 ## Version 2.3.11
 
-- FrameBlend: add Over operation, add decay parameter, and fix bugs.
-- fix Python pseudo-random number generators random(min,max,time,seed) and randomInt(min,max,time,seed)
+- User Guide: Add documentation on tracking and stabilizing.
+- FrameBlend: Add Over operation, add decay parameter, and fix bugs.
+- fix Python Pseudo-random number generators random(min,max,time,seed) and randomInt(min,max,time,seed)
+- Shadertoy: Document the process to adapt a shader from shadertoy.com to the Shadertoy plugin.
 
 
 

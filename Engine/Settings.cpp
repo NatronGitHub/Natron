@@ -1355,7 +1355,7 @@ SettingsPrivate::initializeKnobsColorManagement()
         _customOcioConfigFile->setEnabled(false);
     }
 
-    _customOcioConfigFile->setHintToolTip( tr("OpenColorIO configuration file (*.ocio) to use when \"%1\" "
+    _customOcioConfigFile->setHintToolTip( tr("OpenColorIO configuration file (config.ocio) to use when \"%1\" "
                                               "is selected as the OpenColorIO config.").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) +
                                            QLatin1Char('\n') +
                                            tr("Changing this requires a restart of the application to take effect.") );
