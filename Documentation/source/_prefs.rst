@@ -181,7 +181,7 @@ Select the OpenColorIO configuration you would like to use globally for all oper
 
 **Custom OpenColorIO configuration file**
 
-OpenColorIO configuration file (*.ocio) to use when “Custom config” is selected as the OpenColorIO config.
+OpenColorIO configuration file (config.ocio) to use when “Custom config” is selected as the OpenColorIO config.
 
 **Warn on OpenColorIO config change**
 
