@@ -234,25 +234,25 @@ Here is an example on how to pass properties to the createNode function::
 
 - *Name*: **CreateNodeArgsPropNodeInitialName**
 
-      *Dimension*: 1
+    *Dimension*: 1
 
-      *Type*: string
+    *Type*: string
 
-      *Default*: None
+    *Default*: None
 
-      *Description*: Indicates the initial *script-name* of the node
+    *Description*: Indicates the initial *script-name* of the node
   By default Natron will name the node according to the plug-in label and will add a digit
   afterwards dependending on the current number of instances of that plug-in.
 
 - *Name*: **CreateNodeArgsPropNodeInitialParamValues**
 
-     *Dimension*: N
+    *Dimension*: N
 
-     *Type*: string
+    *Type*: string
 
-     *Default*: None
+    *Default*: None
 
-     *Description*: Contains a sequence of parameter script-names for which a default value
+    *Description*: Contains a sequence of parameter script-names for which a default value
   is specified by a property. Each default value must be specified by a property whose name is
   in the form *CreateNodeArgsPropParamValue_PARAMETERNAME*  where *PARAMETERNAME* must be replaced by the
   *script-name* of the parameter.  The property must have the same type as the data-type of
@@ -261,7 +261,7 @@ Here is an example on how to pass properties to the createNode function::
 
 - *Name*: **CreateNodeArgsPropOutOfProject**
 
-      *Dimension*: 1
+    *Dimension*: 1
 
     *Type*: bool
 
@@ -310,26 +310,26 @@ Here is an example on how to pass properties to the createNode function::
 
 - *Name*: **CreateNodeArgsPropAddUndoRedoCommand**
 
-      *Dimension*: 1
+    *Dimension*: 1
 
-       *Type*: bool
+    *Type*: bool
 
-        *Default*: False
+    *Default*: False
 
-       *Description*:  Natron will push a undo/redo command to the stack when creating this node.
+    *Description*:  Natron will push a undo/redo command to the stack when creating this node.
   If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
   is set to true, this property has no effect.
 
 
 - *Name*: **CreateNodeArgsPropSilent**
 
-      *Dimension*: 1
+    *Dimension*: 1
 
-      *Type*: bool
+    *Type*: bool
 
-      *Default*: True
+    *Default*: True
 
-      *Description*:  When set to True, Natron will not show any information, error, warning, question or file dialog when creating the node.
+    *Description*:  When set to True, Natron will not show any information, error, warning, question or file dialog when creating the node.
 
 
 
