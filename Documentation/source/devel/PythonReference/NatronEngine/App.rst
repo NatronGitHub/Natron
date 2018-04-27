@@ -261,16 +261,16 @@ Here is an example on how to pass properties to the createNode function::
   in the form *CreateNodeArgsPropParamValue_PARAMETERNAME*  where *PARAMETERNAME* must be replaced by the
   *script-name* of the parameter.  The property must have the same type as the data-type of
   the parameter (e.g: int for IntParam, float for FloatParam, bool for BooleanParam, String for StringParam).
-  
-  
+
+
 - *Name*: **CreateNodeArgsPropVolatile**
 
     *Dimension*: 1
-  	
+
     *Type*: bool
-    
+
     *Default*: False
-    
+
     *Description*: When True the node will not be part visible and not saved into any project.
     The node can be used for internal use, e.g in a Python script.
 
@@ -291,22 +291,22 @@ Here is an example on how to pass properties to the createNode function::
 - *Name*: **CreateNodeArgsPropNoNodeGUI**
 
     *Dimension*: 1
-    
+
     *Type*: bool
-    
+
     *Default*: False
-    
+
     *Description*:  * If True, the node will not have any GUI created. The property CreateNodeArgsPropVolatile set to True implies this.
 
 
 - *Name*: **CreateNodeArgsPropSettingsOpened**
 
     *Dimension*: 1
-    
+
     *Type*: bool
-    
+
     *Default*: False
-    
+
     *Description*:  * If True, the node settings panel will not be opened by default when created.
   If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropVolatile
   is set to true, this property has no effet.
@@ -315,12 +315,12 @@ Here is an example on how to pass properties to the createNode function::
 - *Name*: **CreateNodeArgsPropAutoConnect**
 
     *Dimension*: 1
-    
+
     *Type*: bool
-    
+
     *Default*: False
-    
-    *Description*:  * If True, Natron will try to automatically connect the node to others depending on the user selection. 
+
+    *Description*:  * If True, Natron will try to automatically connect the node to others depending on the user selection.
   If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropVolatile
   is set to true, this property has no effet.
 
@@ -328,12 +328,12 @@ Here is an example on how to pass properties to the createNode function::
 - *Name*: **CreateNodeArgsPropAddUndoRedoCommand**
 
     *Dimension*: 1
-      
+
     *Type*: bool
- 	  
+
     *Default*: False
-  	  
-    *Description*:  Natron will push a undo/redo command to the stack when creating this node. 
+
+    *Description*:  Natron will push a undo/redo command to the stack when creating this node.
   If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropVolatile
   is set to true, this property has no effect.
 
@@ -481,18 +481,18 @@ This is a blocking call only in background mode.
 
 
 .. method:: NatronEngine.App.redrawViewer(viewerNode)
-    
+
     :param vieweNode: :class:`Effect<Effect>`
-    
+
 Just redraws the OpenGL viewer associated to the given *viewerNode*.
 The internal texture displayed will not be re-evaluated.
 If the node passed in parameter is not a viewer, this function has no effect.
 
 .. method:: NatronEngine.App.refreshViewer(viewerNode [, useCache])
-    
+
     :param vieweNode: :class:`Effect<Effect>`
     :param useCache: :class:`bool<PySide.QtCore.bool>`
-    
+
 Refresh the viewer texture. This causes a re-evaluation of the node-graph.
 If *useCache* is set to **True**, the render will not attempt
 to retrieve a texture from the cache if there is any.
