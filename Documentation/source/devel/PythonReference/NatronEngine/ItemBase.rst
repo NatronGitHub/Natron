@@ -48,11 +48,11 @@ Member functions description
 
 .. method:: NatronEngine.ItemBase.deleteUserKeyframe(time [, view="All"])
 
-	:param time: :class:`double<PySide.QtCore.double>`
-	:param view: :class:`str<PySide.QtCore.QString>`
-	
-	Removes any user keyframe set at the given timeline *time* and for the given *view*.
-	
+    :param time: :class:`double<PySide.QtCore.double>`
+    :param view: :class:`str<PySide.QtCore.QString>`
+
+    Removes any user keyframe set at the given timeline *time* and for the given *view*.
+
 
 .. method:: NatronEngine.ItemBase.getLabel()
 
@@ -89,7 +89,7 @@ returning *False* this function will always return *None*.
 If this item has a parent, returns the index of this item in the parent's children list.
 If this item is a top-level item, returns the index of this item in the model top level items list.
 This function returns -1 if the item is not in a model.
-     
+
 
 .. method:: NatronEngine.ItemBase.getChildren()
 
@@ -121,8 +121,8 @@ Returns a list of all :doc:`parameters<Param>` held by the item.
 
 .. method:: NatronEngine.ItemBase.getUserKeyframes([view="Main"])
 
-	:param view: :class:`str<PySide.QtCore.QString>`
-	:rtype: :class:`Sequence`
+    :param view: :class:`str<PySide.QtCore.QString>`
+    :rtype: :class:`Sequence`
 
 Return a list of list of double with all user keyframe times on the timeline for the given *view*.
 
@@ -155,11 +155,11 @@ Set the item's icon file path.
 
 .. method:: NatronEngine.ItemBase.setUserKeyframe(time [, view="All"])
 
-	:param time: :class:`double<PySide.QtCore.double>`
-	:param view: :class:`str<PySide.QtCore.QString>`
-	
-	Set a user keyframe at the given timeline *time* and for the given *view*.
-	
+    :param time: :class:`double<PySide.QtCore.double>`
+    :param view: :class:`str<PySide.QtCore.QString>`
+
+    Set a user keyframe at the given timeline *time* and for the given *view*.
+
 
 
 

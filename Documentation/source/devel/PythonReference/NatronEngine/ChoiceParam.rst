@@ -9,7 +9,7 @@ ChoiceParam
 Synopsis
 --------
 
-A choice parameter holds an integer value which corresponds to a choice. 
+A choice parameter holds an integer value which corresponds to a choice.
 See :ref:`detailed description<choice.details>` below.
 
 Functions
@@ -84,7 +84,7 @@ Get the value of the parameter at the given *frame* and *view*.
 
 .. method:: NatronEngine.ChoiceParam.get([view="Main"])
 
-	:param view: :class:`str<PySide.QtCore.QString>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`int<PySide.QtCore.int>`
 
 Get the value of the parameter at the current timeline's time for the given *view*.
@@ -108,8 +108,8 @@ Get the default value for this parameter.
 
 Get the active menu entry for the given *view*.
 Note that the active entry may not be present in the options returned by the
-getOptions() function if the menu was changed. In this case the option will 
-be displayed in italic in the user interface. 
+getOptions() function if the menu was changed. In this case the option will
+be displayed in italic in the user interface.
 The tuple is composed of 3 strings: the optionID, optionLabel and optionHint.
 The optionID is what uniquely identifies the entry in the drop-down menu.
 The optionLabel is what is visible in the user interface.
@@ -134,13 +134,13 @@ The optionHint is the help for the entry visible in the tooltip.
 
 .. method:: NatronEngine.ChoiceParam.getNumOptions()
 
-	:rtype: :class:`int`
+    :rtype: :class:`int`
 
 Returns the number of menu entries.
 
 .. method:: NatronEngine.ChoiceParam.getOptions()
 
-	:rtype: :class:`sequence`
+    :rtype: :class:`sequence`
 
 Returns a sequence of tuple with all menu entries from top to bottom.
 Each tuple is composed of 3 strings: the optionID, optionLabel and optionHint.
@@ -173,8 +173,8 @@ Same as :func:`get(frame,view)<NatronEngine.ChoiceParam.get>`
 .. method:: NatronEngine.ChoiceParam.restoreDefaultValue([view="All"])
 
 
-	:param view: :class:`str<PySide.QtCore.QString>`
-	
+    :param view: :class:`str<PySide.QtCore.QString>`
+
 Removes all animation and expression set on this parameter for the given *view* and set the value
 to be the default value.
 
@@ -210,7 +210,7 @@ Set a new keyframe on the parameter with the value *x* at the given *frame* and 
 
     :param label: :class:`str<NatronEngine.std::string>`
     :param view: :class:`str<PySide.QtCore.QString>`
-	
+
 Set the value of this parameter given a *label*. The *label* must match an existing option.
 Strings will be compared without case sensitivity. If not found, nothing happens.
 

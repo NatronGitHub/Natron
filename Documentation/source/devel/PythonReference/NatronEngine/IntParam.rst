@@ -11,7 +11,7 @@ IntParam
 Synopsis
 --------
 
-An IntParam can contain one or multiple int values. 
+An IntParam can contain one or multiple int values.
 See :ref:`detailed<int.details>` description...
 
 Functions
@@ -54,7 +54,7 @@ A 1-dimensional :doc:`DoubleParam`
 
 .. figure:: doubleParam.png
 
-A 2-dimensional :doc:`Double2Dparam` 
+A 2-dimensional :doc:`Double2Dparam`
 
 .. figure:: double2DParam.png
 
@@ -76,15 +76,15 @@ Member functions description
     :rtype: :class:`int<PySide.QtCore.int>`
 
 
-Returns the value of this parameter at the given *frame* and *view*. If the animation curve has an 
+Returns the value of this parameter at the given *frame* and *view*. If the animation curve has an
 animation (see :doc:`getIsAnimated<NatronEngine.AnimatedParam.getIsAnimated>` then the
-value will be interpolated using the *interpolation* chosen by the user for the curve. 
+value will be interpolated using the *interpolation* chosen by the user for the curve.
 
 
 
 .. method:: NatronEngine.IntParam.get([view="Main"])
 
-	:param view: :class:`str<PySide.QtCore.QString>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`int<PySide.QtCore.int>`
 
 
@@ -183,9 +183,9 @@ Returns the value of this parameter at the given *dimension* and *view* at the c
 
 Returns the value of this parameter at the given *dimension* and *view* at the given *time*.
 
-If the animation curve has an 
+If the animation curve has an
 animation (see :doc:`getIsAnimated<NatronEngine.AnimatedParam.getIsAnimated>` then the
-value will be interpolated using the *interpolation* chosen by the user for the curve. 
+value will be interpolated using the *interpolation* chosen by the user for the curve.
 
 
 
@@ -220,7 +220,7 @@ Set a new keyframe on the parameter with the value *x* at the given *frame* and 
     :param view: :class:`str<PySide.QtCore.QString>`
 
 
-Set the value of this parameter to be *x* for the given *view*. 
+Set the value of this parameter to be *x* for the given *view*.
 If this parameter is animated (see :func:`getIsAnimated(dimension,view)<NatronEngine.AnimatedParam.getIsAnimated>`
 then this function will automatically add a keyframe at the timeline's current time.
 

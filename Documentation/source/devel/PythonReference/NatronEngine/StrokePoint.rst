@@ -17,18 +17,18 @@ Attributes
 
 .. attribute:: NatronEngine.StrokePoint.x
 
-	The x coordinate of the point
+    The x coordinate of the point
 
 .. attribute:: NatronEngine.StrokePoint.y
 
-	The y coordinate of the point
-	
+    The y coordinate of the point
+
 .. attribute:: NatronEngine.StrokePoint.pressure
 
-	The pen pressure for the sample
-	
+    The pen pressure for the sample
+
 .. attribute:: NatronEngine.StrokePoint.timestamp
 
-	The timestamp at which the sample was created
+    The timestamp at which the sample was created
 
 

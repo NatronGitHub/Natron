@@ -8,8 +8,8 @@ ImageLayer
 Synopsis
 --------
 
-A small object representing a layer of an image. For example, the base image layer is 
-the color layer, or sometimes called "RGBA". Some other default layers include 
+A small object representing a layer of an image. For example, the base image layer is
+the color layer, or sometimes called "RGBA". Some other default layers include
 ForwardMotion, BackwardMotion, DisparityLeft,DisparityRight, etc...
 .
 
@@ -38,10 +38,10 @@ Functions
 Detailed Description
 --------------------
 
-A Layer is constituted of a layer *name* and a set of channel names (also called components). 
+A Layer is constituted of a layer *name* and a set of channel names (also called components).
 You can get a sequence with all the channels in the layer with the function :func:`getComponentsNames()<NatronEngine.ImageLayer.getComponentsNames>`.
-For some default layers, the components may be represented by a prettier name for the end-user, 
-such as *DisparityLeft* instead of XY. 
+For some default layers, the components may be represented by a prettier name for the end-user,
+such as *DisparityLeft* instead of XY.
 When the ImageLayer does not have a pretty name, its pretty name will just be a concatenation
 of all channel names in order.
 
@@ -60,87 +60,87 @@ Member functions description
 
     :param layerName: :class:`str<NatronEngine.std::string>`
 
-	Make a new image layer with the given layer name, optional components pretty name and
-	the set of channels (also called components) in the layer.
+    Make a new image layer with the given layer name, optional components pretty name and
+    the set of channels (also called components) in the layer.
 
 .. method:: NatronEngine.ImageLayer.isColorPlane()
 
 
     :rtype: :class:`bool<PySide.QtCore.bool>`
-    
+
     Returns True if this layer is a color layer, i.e: it is RGBA, RGB or alpha.
     The color layer is what is output by default by all nodes in Natron.
-	
+
 
 .. method:: NatronEngine.ImageLayer.getNumComponents()
 
 
     :rtype: :class:`int<PySide.QtCore.int>`
 
-	Returns the number of channels in this layer. Can be between 0 and 4 included.
-	
+    Returns the number of channels in this layer. Can be between 0 and 4 included.
+
 .. method:: NatronEngine.ImageLayer.getLayerName()
 
-	:rtype: :class:`str<NatronEngine.std::string>`
-	
-	Returns the layer name
+    :rtype: :class:`str<NatronEngine.std::string>`
+
+    Returns the layer name
 
 .. method:: NatronEngine.ImageLayer.getComponentsNames()
 
-	:rtype: :class:`Sequence`
-	
-	Returns a sequence with all channels in this layer in order
+    :rtype: :class:`Sequence`
+
+    Returns a sequence with all channels in this layer in order
 
 .. method:: NatronEngine.ImageLayer.getComponentsPrettyName()
 
-	:rtype: :class:`str<NatronEngine.std::string>`
-	
-	Returns the channels pretty name. E.g: DisparityLeft instead of XY 
+    :rtype: :class:`str<NatronEngine.std::string>`
+
+    Returns the channels pretty name. E.g: DisparityLeft instead of XY
 
 .. method:: NatronEngine.ImageLayer.getNoneComponents()
 
-	:rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
+    :rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
 
-	Returns the default "none" layer
+    Returns the default "none" layer
 
 .. method:: NatronEngine.ImageLayer.getRGBAComponents()
 
-	:rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
+    :rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
 
-	Returns the default "RGBA" layer
+    Returns the default "RGBA" layer
 
 .. method:: NatronEngine.ImageLayer.getRGBComponents()
 
-	:rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
+    :rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
 
-	Returns the default "RGB" layer
+    Returns the default "RGB" layer
 
 .. method:: NatronEngine.ImageLayer.getAlphaComponents()
 
-	:rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
+    :rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
 
-	Returns the default "Alpha" layer
-	
+    Returns the default "Alpha" layer
+
 .. method:: NatronEngine.ImageLayer.getBackwardMotionComponents()
 
-	:rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
+    :rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
 
-	Returns the default "Backward" layer
-	
+    Returns the default "Backward" layer
+
 .. method:: NatronEngine.ImageLayer.getForwardMotionComponents()
 
-	:rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
+    :rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
 
-	Returns the default "Forward" layer
-	
+    Returns the default "Forward" layer
+
 .. method:: NatronEngine.ImageLayer.getDisparityLeftComponents()
 
-	:rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
+    :rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
 
-	Returns the default "DisparityLeft" layer
-	
+    Returns the default "DisparityLeft" layer
+
 .. method:: NatronEngine.ImageLayer.getDisparityRightComponents()
 
-	:rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
+    :rtype: :class:`ImageLayer<NatronEngine.ImageLayer>`
 
-	Returns the default "DisparityRight" layer
+    Returns the default "DisparityRight" layer

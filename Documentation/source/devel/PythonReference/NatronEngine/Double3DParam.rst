@@ -24,21 +24,21 @@ Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. method:: NatronEngine.Double3DParam.get([view="Main"])
-	
-	:param view: :class:`str<PySide.QtCore.QString>`
-	:rtype: :class:`Double3DTuple`
-	
+
+    :param view: :class:`str<PySide.QtCore.QString>`
+    :rtype: :class:`Double3DTuple`
+
 Returns a :doc:`Double3DTuple` with the [x,y,z] values for this parameter at the current
 timeline's time for the given *view*.
 
 
 
 .. method:: NatronEngine.Double3DParam.get(frame[,view="Main"])
-	
-	:param frame: :class:`float<PySide.QtCore.float>`
-	:param view: :class:`str<PySide.QtCore.QString>`
-	:rtype: :class:`Double3DTuple`
-	
+
+    :param frame: :class:`float<PySide.QtCore.float>`
+    :param view: :class:`str<PySide.QtCore.QString>`
+    :rtype: :class:`Double3DTuple`
+
 Returns a :doc:`Double3DTuple` with the [x,y,z] values for this parameter at the given *frame*
 and *view*.
 

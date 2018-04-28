@@ -34,8 +34,8 @@ Functions
 Detailed Description
 --------------------
 
-A string parameter contains internally a string which can change over time. 
-Much like keyframes for value parameters (like :doc:`IntParam` or :doc:`DoubleParam`) 
+A string parameter contains internally a string which can change over time.
+Much like keyframes for value parameters (like :doc:`IntParam` or :doc:`DoubleParam`)
 keyframes can be set on string params, though the interpolation will remain constant
 always.
 
@@ -48,7 +48,7 @@ Member functions description
 
 .. method:: NatronEngine.StringParamBase.get([view="Main"])
 
-	:param view: :class:`str<PySide.QtCore.QString>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`str<NatronEngine.std::string>`
 
 
@@ -83,7 +83,7 @@ Get the default value for this parameter.
 
 .. method:: NatronEngine.StringParamBase.getValue([view="Main"])
 
-	:param view: :class:`str<PySide.QtCore.QString>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`str<NatronEngine.std::string>`
 
 
@@ -106,9 +106,9 @@ Same as :func:`get(frame)<NatronEngine.StringParamBase.get>`
 .. method:: NatronEngine.StringParamBase.restoreDefaultValue([view="All"])
 
 
-	:param view: :class:`str<PySide.QtCore.QString>`
-	
-Removes all animation and expression set on this parameter for the given *view* 
+    :param view: :class:`str<PySide.QtCore.QString>`
+
+Removes all animation and expression set on this parameter for the given *view*
 and set the value to be the default value.
 
 

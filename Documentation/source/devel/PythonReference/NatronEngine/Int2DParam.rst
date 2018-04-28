@@ -27,17 +27,17 @@ Detailed Description
 
 .. method:: NatronEngine.Int2DParam.get([view="Main"])
 
-	:param view: :class:`str<PySide.QtCore.QString>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class: `Int2DTuple`
-    
+
 Returns a :doc:`Int2DTuple` containing the [x,y] value of this parameter at the timeline's
 current time for the given *view*.
 
 
 .. method:: NatronEngine.Int2DParam.get(frame[,view="Main"])
 
-	 :param frame: :class:`float<PySide.QtCore.float>`
-	 :param view: :class:`str<PySide.QtCore.QString>`
+     :param frame: :class:`float<PySide.QtCore.float>`
+     :param view: :class:`str<PySide.QtCore.QString>`
      :rtype: :class: `Int2DTuple`
 
 Returns a :doc:`Int2DTuple` containing the [x,y] value of this parameter at

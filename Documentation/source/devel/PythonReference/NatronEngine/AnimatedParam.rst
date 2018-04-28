@@ -29,9 +29,9 @@ Functions
 *    def :meth:`removeAnimation<NatronEngine.AnimatedParam.removeAnimation>` ([dimension-1, view="All"])
 *    def :meth:`setExpression<NatronEngine.AnimatedParam.setExpression>` (expr, hasRetVariable[, dimension=-1,view="All"])
 *    def :meth:`setInterpolationAtTime<NatronEngine.AnimatedParam.setInterpolationAtTime>` (time, interpolation[, dimension=-1,view="All"])
-*	 def :meth:`splitView<NatronEngine.AnimatedParam.splitView>` (view)
-*	 def :meth:`unSplitView<NatronEngine.AnimatedParam.unSplitView>` (view)
-*	 def :meth:`getViewsList<NatronEngine.AnimatedParam.getViewsList>` ()
+*    def :meth:`splitView<NatronEngine.AnimatedParam.splitView>` (view)
+*    def :meth:`unSplitView<NatronEngine.AnimatedParam.unSplitView>` (view)
+*    def :meth:`getViewsList<NatronEngine.AnimatedParam.getViewsList>` ()
 
 .. _details:
 
@@ -56,37 +56,37 @@ See :ref:`this<multiViewParams>` section for more informations.
 
 Example::
 
-	# We assume the project has 2 views: the first named "Left" and the other named "Right"
+    # We assume the project has 2 views: the first named "Left" and the other named "Right"
 
-	# X and Y of the size parameter of the blur have now the value 3
-	Blur1.size.set(3,3)
+    # X and Y of the size parameter of the blur have now the value 3
+    Blur1.size.set(3,3)
 
-	# We split-off the "Right" view
-	Blur1.size.splitView("Right")
+    # We split-off the "Right" view
+    Blur1.size.splitView("Right")
 
-	Blur1.size.set(5,5,"Right")
+    Blur1.size.set(5,5,"Right")
 
-	# The left view still has (3,3) but the right view now has (5,5)
+    # The left view still has (3,3) but the right view now has (5,5)
 
-	Blur1.size.unSplitView("Right")
+    Blur1.size.unSplitView("Right")
 
-	# Imagine now the project has 3 views: "Left" "Right" "Center"
-	# Only the "Right" view is split-off
+    # Imagine now the project has 3 views: "Left" "Right" "Center"
+    # Only the "Right" view is split-off
 
-	# Setting the "Main" view will set "Left" + "Center"
-	Blur1.size.set(2,2, "Main")
+    # Setting the "Main" view will set "Left" + "Center"
+    Blur1.size.set(2,2, "Main")
 
-	# Note that this is the same as calling the following
-	# since by default all views that are not split off
-	# have the same value as the first view
-	Blur1.size.set(2,2, "Left")
+    # Note that this is the same as calling the following
+    # since by default all views that are not split off
+    # have the same value as the first view
+    Blur1.size.set(2,2, "Left")
 
-	# Calling the following will print an error
-	# because the view is not split
-	Blur1.size.set(2,2, "Center")
+    # Calling the following will print an error
+    # because the view is not split
+    Blur1.size.set(2,2, "Center")
 
-	# The following call will set all views at once
-	Blur1.size.set(10,10, "All")
+    # The following call will set all views at once
+    Blur1.size.set(10,10, "All")
 
 
 
@@ -101,7 +101,7 @@ Member functions description
 
     :param time: :class:`float<PySide.QtCore.float>`
     :param dimension: :class:`int<PySide.QtCore.int>`
-   	:param view: :class:`str<PySide.QtCore.QString>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
 Removes a keyframe at the given *time*, *dimension* and *view* for this parameter, if such
 keyframe exists.

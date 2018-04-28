@@ -42,7 +42,7 @@ Member functions description
 
 .. method:: NatronEngine.BooleanParam.get([view=Main"])
 
-	:param view: :class:`str<PySide.QtCore.QString>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
 Returns the value of the parameter at the current timeline's time for the given *view*.
@@ -74,7 +74,7 @@ Returns the default value for this parameter.
 
 .. method:: NatronEngine.BooleanParam.getValue([view="Main"])
 
-	:param view: :class:`str<PySide.QtCore.QString>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`PySide.QtCore.bool`
 
 
@@ -96,7 +96,7 @@ Same as :func:`get(frame,view)<NatronEngine.BooleanParam.get>`
 
 .. method:: NatronEngine.BooleanParam.restoreDefaultValue([view="All"])
 
-	:param view: :class:`str<PySide.QtCore.QString>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
 Removes all animation and expression set on this parameter at the given *view* and set the value
 to be the default value.

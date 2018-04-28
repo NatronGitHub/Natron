@@ -116,17 +116,17 @@ to a :doc:`Layer`, the base layer being the top-level parent of all the hierarch
     :param name: :class:`str<NatronEngine.std::string>`
     :rtype: :class:`ItemBase<NatronEngine.ItemBase>`
 
-Returns an item by its *script-name*. See :ref:`this section<autoVar>` for the details of what is the 
+Returns an item by its *script-name*. See :ref:`this section<autoVar>` for the details of what is the
 *script-name* of an item. E.g::
 
-	app1.Roto1.roto.Layer1.Bezier1 = app1.Roto1.roto.getItemByName("Bezier1")
-	
+    app1.Roto1.roto.Layer1.Bezier1 = app1.Roto1.roto.getItemByName("Bezier1")
+
 
 .. method:: NatronEngine.Roto.createStroke(type)
 
-	:param type: :class:`RotoStrokeType<NatronEngine.Natron.RotoStrokeType>`
-	:rtype: :class:`StrokeItem<NatronEngine.StrokeItem>`
-	
+    :param type: :class:`RotoStrokeType<NatronEngine.Natron.RotoStrokeType>`
+    :rtype: :class:`StrokeItem<NatronEngine.StrokeItem>`
+
 
 Creates a new empty stroke item of the given type.
 

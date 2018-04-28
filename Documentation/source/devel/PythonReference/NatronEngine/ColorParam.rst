@@ -40,7 +40,7 @@ Functions
 Detailed Description
 --------------------
 
-A color parameter can either be of dimension 3 (RGB) or dimension 4 (RGBA). 
+A color parameter can either be of dimension 3 (RGB) or dimension 4 (RGBA).
 The user interface for this parameter looks like this:
 
 .. figure:: colorParam.png
@@ -66,10 +66,10 @@ Returns a :doc:`ColorTuple` of the color held by the parameter at the given *fra
 
 .. method:: NatronEngine.ColorParam.get([view="Main"])
 
-	:param view: :class:`str<PySide.QtCore.QString>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`ColorTuple<NatronEngine.ColorTuple>`
 
-Returns a :doc:`ColorTuple` of the color held by the parameter at the current timeline's time 
+Returns a :doc:`ColorTuple` of the color held by the parameter at the current timeline's time
 for the given *view*.
 
 
@@ -103,7 +103,7 @@ can exceed this range.
 
     :param dimension: :class:`int<PySide.QtCore.int>`
     :rtype: :class:`float<PySide.QtCore.double>`
-    
+
 Returns the display minimum for this parameter at the given *dimension*.
 The display minimum is the minimum value visible on the slider, internally the value
 can exceed this range.
@@ -194,7 +194,7 @@ If this parameter is 3-dimensional, the *a* value is ignored.
     :param g: :class:`float<PySide.QtCore.double>`
     :param b: :class:`float<PySide.QtCore.double>`
     :param a: :class:`float<PySide.QtCore.double>`
-	:param view: :class:`str<PySide.QtCore.QString>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
 Set the value of this parameter to be [*r*,*g*,*b*,*a*] for the given *view*.
 If this parameter is animated (see :func:`getIsAnimated(dimension,view)<NatronEngine.AnimatedParam.getIsAnimated>`

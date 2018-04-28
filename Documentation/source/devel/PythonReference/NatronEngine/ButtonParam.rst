@@ -34,20 +34,20 @@ Triggers the button action as though the user had pressed it.
 
 .. method:: NatronEngine.ButtonParam.isCheckable()
 
-	:rtype: :class:`bool<PySide.QtCore.bool>`
-	
-	Returns whether this button parameter can be checked or not
-	
+    :rtype: :class:`bool<PySide.QtCore.bool>`
+
+    Returns whether this button parameter can be checked or not
+
 .. method:: NatronEngine.ButtonParam.setDown(down)
 
-	:param down: :class:`bool<PySide.QtCore.bool>`
-	
-	If this button is checkable, this will set the button down or up depending on
-	the value of *down*.
-	
+    :param down: :class:`bool<PySide.QtCore.bool>`
+
+    If this button is checkable, this will set the button down or up depending on
+    the value of *down*.
+
 
 .. method:: NatronEngine.ButtonParam.isDown()
 
-	:rtype: :class:`bool<PySide.QtCore.bool>`
-	
-	Returns whether this button parameter is down or not
+    :rtype: :class:`bool<PySide.QtCore.bool>`
+
+    Returns whether this button parameter is down or not

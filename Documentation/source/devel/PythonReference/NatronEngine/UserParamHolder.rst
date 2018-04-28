@@ -12,7 +12,7 @@ Synopsis
 
 This is an abstract class that serves as a base interface for all objects that can hold
 user parameters.
-See :ref:`userParams.details` 
+See :ref:`userParams.details`
 
 Functions
 ^^^^^^^^^
@@ -48,9 +48,9 @@ function. To remove a user parameter created, use the :func:`removeParam(param)<
 function. Note that this function can only be used to remove **user parameters** and cannot
 be used to remove parameters that were defined by the OpenFX plug-in.
 
-Once you have made modifications to the user parameters, you must call the 
+Once you have made modifications to the user parameters, you must call the
 :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>` function to notify
-the GUI, otherwise no change will appear on the GUI. 
+the GUI, otherwise no change will appear on the GUI.
 
 
 Member functions description
@@ -71,11 +71,11 @@ This function will return a new parameter of type boolean which will appear in t
 interface as a checkbox.
 
 .. warning::
-	
-	After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
-	to refresh the user interface. The refreshing is done in a separate function because it may
-	be expensive and thus allows you to make multiple changes to user parameters at once
-	while keeping the user interface responsive.
+
+    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
+    to refresh the user interface. The refreshing is done in a separate function because it may
+    be expensive and thus allows you to make multiple changes to user parameters at once
+    while keeping the user interface responsive.
 
 .. method:: NatronEngine.UserParamHolder.createButtonParam(name, label)
 
@@ -89,16 +89,16 @@ Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. Se
 :ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
 This function will return a new parameter of type button which will appear as a
 push button. Use the onParamChanged callback of the Effect to handle user clicks.
-	
+
 .. warning::
-	
-	After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
-	to refresh the user interface. The refreshing is done in a separate function because it may
-	be expensive and thus allows you to make multiple changes to user parameters at once
-	while keeping the user interface responsive.
-	
-	
-	
+
+    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
+    to refresh the user interface. The refreshing is done in a separate function because it may
+    be expensive and thus allows you to make multiple changes to user parameters at once
+    while keeping the user interface responsive.
+
+
+
 .. method:: NatronEngine.UserParamHolder.createChoiceParam(name, label)
 
 
@@ -109,14 +109,14 @@ push button. Use the onParamChanged callback of the Effect to handle user clicks
 Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
 :ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
 This function will return a new parameter of type choice which will appear as a
-dropdown combobox. 
+dropdown combobox.
 
 .. warning::
-	
-	After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
-	to refresh the user interface. The refreshing is done in a separate function because it may
-	be expensive and thus allows you to make multiple changes to user parameters at once
-	while keeping the user interface responsive.
+
+    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
+    to refresh the user interface. The refreshing is done in a separate function because it may
+    be expensive and thus allows you to make multiple changes to user parameters at once
+    while keeping the user interface responsive.
 
 
 .. method:: NatronEngine.UserParamHolder.createColorParam(name, label, useAlpha)
@@ -132,11 +132,11 @@ Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. Se
 This function will return a new parameter of type color.
 
 .. warning::
-	
-	After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
-	to refresh the user interface. The refreshing is done in a separate function because it may
-	be expensive and thus allows you to make multiple changes to user parameters at once
-	while keeping the user interface responsive.
+
+    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
+    to refresh the user interface. The refreshing is done in a separate function because it may
+    be expensive and thus allows you to make multiple changes to user parameters at once
+    while keeping the user interface responsive.
 
 
 .. method:: NatronEngine.UserParamHolder.createDouble2DParam(name, label)
@@ -148,15 +148,15 @@ This function will return a new parameter of type color.
 
 Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
 :ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type double with 2 dimensions. 
+This function will return a new parameter of type double with 2 dimensions.
 
 
 .. warning::
-	
-	After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
-	to refresh the user interface. The refreshing is done in a separate function because it may
-	be expensive and thus allows you to make multiple changes to user parameters at once
-	while keeping the user interface responsive.
+
+    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
+    to refresh the user interface. The refreshing is done in a separate function because it may
+    be expensive and thus allows you to make multiple changes to user parameters at once
+    while keeping the user interface responsive.
 
 .. method:: NatronEngine.UserParamHolder.createDouble3DParam(name, label)
 
@@ -191,7 +191,7 @@ This function will return a new parameter of type double with single dimension.
 A double is similar to a floating point value.
 
 .. warning::
-	
+
     After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
     to refresh the user interface. The refreshing is done in a separate function because it may
     be expensive and thus allows you to make multiple changes to user parameters at once
@@ -210,7 +210,7 @@ Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. Se
 This function will return a new parameter of type double with 2 dimensions.
 
 .. warning::
-	
+
     After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
     to refresh the user interface. The refreshing is done in a separate function because it may
     be expensive and thus allows you to make multiple changes to user parameters at once
@@ -327,12 +327,12 @@ This function will return a new parameter of type page. A page is a tab within t
 settings panel of the node.
 
 .. warning::
-	
+
     After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
     to refresh the user interface. The refreshing is done in a separate function because it may
     be expensive and thus allows you to make multiple changes to user parameters at once
     while keeping the user interface responsive.
-	
+
 .. method:: NatronEngine.UserParamHolder.createParametricParam(name, label, nbCurves)
 
 

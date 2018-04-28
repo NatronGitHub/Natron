@@ -37,7 +37,7 @@ You can set the entire stroke points at once with the  func:`setPoints(strokes)<
 
 A stroke item consists of multiple disconnected sub-strokes. For example if the user starts drawing, releases the pen
 and then draws again without changing settings, it is likely the same :ref:`item<ItemBase>` will
-be re-used instead of creating a new one. 
+be re-used instead of creating a new one.
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -48,7 +48,7 @@ Member functions description
 
 
     :param time: :class:`double<PySide.QtCore.double>`
-	:param view: :class:`str<PySide.QtCore.QString>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
 Returns the bounding box of the stroke at the given *time* and *view*.
 This takes into account any transform applied on the stroke.
@@ -57,7 +57,7 @@ This takes into account any transform applied on the stroke.
 
 .. method:: NatronEngine.StrokeItem.getBrushType()
 
-	:rtype: :class:`RotoStrokeItem<NatronEngine.Natron.RotoStrokeItem>`
+    :rtype: :class:`RotoStrokeItem<NatronEngine.Natron.RotoStrokeItem>`
 
 
 Returns the type of brush used by the stroke.
@@ -67,7 +67,7 @@ Returns the type of brush used by the stroke.
 .. method:: NatronEngine.StrokeItem.getPoints()
 
 
-	:rtype: :class:`Sequence`
+    :rtype: :class:`Sequence`
 
 Returns a list of all sub-strokes in the stroke. Each sub-stroke corresponds to one
 different stroke and sub-strokes are not necessarily connected.
@@ -80,10 +80,10 @@ A sub-stroke is a list of :ref:`StrokePoint<StrokePoint>`.
     :param subStrokes: :class:`Sequence`
 
 
-Set the item sub-strokes from the given *subStrokes*. 
+Set the item sub-strokes from the given *subStrokes*.
 Each sub-stroke corresponds to one
 different stroke and sub-strokes are not necessarily connected.
-A sub-stroke is a list of :ref:`StrokePoint<StrokePoint>`. 
+A sub-stroke is a list of :ref:`StrokePoint<StrokePoint>`.
 
 
 
