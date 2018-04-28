@@ -15,7 +15,8 @@ See :ref:`detailed<track.details>` description below.
 
 Functions
 ^^^^^^^^^
-*    def :meth:`reset<NatronEngine.Track.reset>` ()
+
+- def :meth:`reset<NatronEngine.Track.reset>` ()
 
 .. _track.details:
 

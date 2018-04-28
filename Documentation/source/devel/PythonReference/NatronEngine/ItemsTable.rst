@@ -20,14 +20,14 @@ See detailed :ref:`description<itemsTable.details>` below.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`getItemByFullyQualifiedScriptName<NatronEngine.ItemsTable.getItemByFullyQualifiedScriptName>` (fullyQualifiedName)
-*    def :meth:`getTopLevelItems<NatronEngine.ItemsTable.getTopLevelItems>` ()
-*    def :meth:`getSelectedItems<NatronEngine.ItemsTable.getSelectedItems>` ()
-*    def :meth:`insertItem<NatronEngine.ItemsTable.insertItem>`(index,item,parent)
-*    def :meth:`removeItem<NatronEngine.ItemsTable.removeItem>`(item)
-*    def :meth:`getAttributeName<NatronEngine.ItemsTable.getAttributeName>`()
-*    def :meth:`getTableName<NatronEngine.ItemsTable.getTableName>`()
-*    def :meth:`isModelParentingEnabled<NatronEngine.ItemsTable.isModelParentingEnabled>`()
+- def :meth:`getItemByFullyQualifiedScriptName<NatronEngine.ItemsTable.getItemByFullyQualifiedScriptName>` (fullyQualifiedName)
+- def :meth:`getTopLevelItems<NatronEngine.ItemsTable.getTopLevelItems>` ()
+- def :meth:`getSelectedItems<NatronEngine.ItemsTable.getSelectedItems>` ()
+- def :meth:`insertItem<NatronEngine.ItemsTable.insertItem>`(index,item,parent)
+- def :meth:`removeItem<NatronEngine.ItemsTable.removeItem>`(item)
+- def :meth:`getAttributeName<NatronEngine.ItemsTable.getAttributeName>`()
+- def :meth:`getTableName<NatronEngine.ItemsTable.getTableName>`()
+- def :meth:`isModelParentingEnabled<NatronEngine.ItemsTable.isModelParentingEnabled>`()
 
 .. _itemsTable.details:
 

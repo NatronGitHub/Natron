@@ -16,16 +16,13 @@ See :ref:`detailed<group.details>` description below.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`getChildren<NatronEngine.Group.getChildren>` ()
-*    def :meth:`getNode<NatronEngine.Group.getNode>` (fullyQualifiedName)
-
+- def :meth:`getChildren<NatronEngine.Group.getChildren>` ()
+- def :meth:`getNode<NatronEngine.Group.getNode>` (fullyQualifiedName)
 
 .. _group.details:
 
 Detailed Description
 --------------------
-
-
 
  This is an abstract class, it is derived by 2 different classes:
 

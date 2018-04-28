@@ -16,22 +16,20 @@ See :ref:`detailed<itemBase.details>` description...
 
 Functions
 ^^^^^^^^^
-.. container:: function_list
 
-*    def :meth:`deleteUserKeyframe<NatronEngine.ItemBase.deleteUserKeyframe>` (time[,view="All"])
-*    def :meth:`getLabel<NatronEngine.ItemBase.getLabel>` ()
-*    def :meth:`getIconFilePath<NatronEngine.ItemBase.getIconFilePath>` ()
-*    def :meth:`getParent<NatronEngine.ItemBase.getParent>` ()
-*    def :meth:`getIndexInParent<NatronEngine.ItemBase.getIndexInParent>` ()
-*    def :meth:`getChildren<NatronEngine.ItemBase.getChildren>` ()
-*    def :meth:`getParam<NatronEngine.ItemBase.getParam>` (name)
-*    def :meth:`getParams<NatronEngine.ItemBase.getParams>` ()
-*    def :meth:`getUserKeyframes<NatronEngine.ItemBase.getUserKeyframes>` ([view="Main"])
-*    def :meth:`getScriptName<NatronEngine.ItemBase.getScriptName>` ()
-*    def :meth:`setLabel<NatronEngine.ItemBase.setLabel>` (name)
-*    def :meth:`setIconFilePath<NatronEngine.ItemBase.setIconFilePath>` (name)
-*    def :meth:`setUserKeyframe<NatronEngine.ItemBase.setUserKeyframe>` ([view="All"])
-
+- def :meth:`deleteUserKeyframe<NatronEngine.ItemBase.deleteUserKeyframe>` (time[,view="All"])
+- def :meth:`getLabel<NatronEngine.ItemBase.getLabel>` ()
+- def :meth:`getIconFilePath<NatronEngine.ItemBase.getIconFilePath>` ()
+- def :meth:`getParent<NatronEngine.ItemBase.getParent>` ()
+- def :meth:`getIndexInParent<NatronEngine.ItemBase.getIndexInParent>` ()
+- def :meth:`getChildren<NatronEngine.ItemBase.getChildren>` ()
+- def :meth:`getParam<NatronEngine.ItemBase.getParam>` (name)
+- def :meth:`getParams<NatronEngine.ItemBase.getParams>` ()
+- def :meth:`getUserKeyframes<NatronEngine.ItemBase.getUserKeyframes>` ([view="Main"])
+- def :meth:`getScriptName<NatronEngine.ItemBase.getScriptName>` ()
+- def :meth:`setLabel<NatronEngine.ItemBase.setLabel>` (name)
+- def :meth:`setIconFilePath<NatronEngine.ItemBase.setIconFilePath>` (name)
+- def :meth:`setUserKeyframe<NatronEngine.ItemBase.setUserKeyframe>` ([view="All"])
 
 .. _itemBase.details:
 

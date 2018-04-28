@@ -734,8 +734,8 @@ Random
 Some expression may need to use a pseudo random function. It is pseudo random because
 the results of the random function are reproducible for each frame and seed.
 
-*    def :meth:`random<ExprTk.random>` (seed)
-*    def :meth:`randomInt<ExprTk.randomInt>` (seed)
+- def :meth:`random<ExprTk.random>` (seed)
+- def :meth:`randomInt<ExprTk.randomInt>` (seed)
 
 .. method:: ExprTk.random([seed=0, min=0., max=1.])
 

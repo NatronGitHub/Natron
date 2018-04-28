@@ -17,32 +17,30 @@ See :ref:`detailed<double.details>` description...
 Functions
 ^^^^^^^^^
 
-*    def :meth:`get<NatronEngine.DoubleParam.get>` ([view="Main"])
-*    def :meth:`get<NatronEngine.DoubleParam.get>` (frame[, view="Main"])
-*    def :meth:`getDefaultValue<NatronEngine.DoubleParam.getDefaultValue>` ([dimension=0])
-*    def :meth:`getDisplayMaximum<NatronEngine.DoubleParam.getDisplayMaximum>` (dimension)
-*    def :meth:`getDisplayMinimum<NatronEngine.DoubleParam.getDisplayMinimum>` (dimension)
-*    def :meth:`getMaximum<NatronEngine.DoubleParam.getMaximum>` ([dimension=0])
-*    def :meth:`getMinimum<NatronEngine.DoubleParam.getMinimum>` ([dimension=0])
-*    def :meth:`getValue<NatronEngine.DoubleParam.getValue>` ([dimension=0, view="Main"])
-*    def :meth:`getValueAtTime<NatronEngine.DoubleParam.getValueAtTime>` (time[, dimension=0, view="Main"])
-*    def :meth:`restoreDefaultValue<NatronEngine.DoubleParam.restoreDefaultValue>` ([dimension=-1, view="All"])
-*    def :meth:`set<NatronEngine.DoubleParam.set>` (x[,view="All"])
-*    def :meth:`set<NatronEngine.DoubleParam.set>` (x, frame[, view="All"])
-*    def :meth:`setDefaultValue<NatronEngine.DoubleParam.setDefaultValue>` (value[, dimension=0])
-*    def :meth:`setDisplayMaximum<NatronEngine.DoubleParam.setDisplayMaximum>` (maximum[, dimension=0])
-*    def :meth:`setDisplayMinimum<NatronEngine.DoubleParam.setDisplayMinimum>` (minimum[, dimension=0])
-*    def :meth:`setMaximum<NatronEngine.DoubleParam.setMaximum>` (maximum[, dimension=0])
-*    def :meth:`setMinimum<NatronEngine.DoubleParam.setMinimum>` (minimum[, dimension=0])
-*    def :meth:`setValue<NatronEngine.DoubleParam.setValue>` (value[, dimension=0, view="All"])
-*    def :meth:`setValueAtTime<NatronEngine.DoubleParam.setValueAtTime>` (value, time[, dimension=0, view="All"])
-
+- def :meth:`get<NatronEngine.DoubleParam.get>` ([view="Main"])
+- def :meth:`get<NatronEngine.DoubleParam.get>` (frame[, view="Main"])
+- def :meth:`getDefaultValue<NatronEngine.DoubleParam.getDefaultValue>` ([dimension=0])
+- def :meth:`getDisplayMaximum<NatronEngine.DoubleParam.getDisplayMaximum>` (dimension)
+- def :meth:`getDisplayMinimum<NatronEngine.DoubleParam.getDisplayMinimum>` (dimension)
+- def :meth:`getMaximum<NatronEngine.DoubleParam.getMaximum>` ([dimension=0])
+- def :meth:`getMinimum<NatronEngine.DoubleParam.getMinimum>` ([dimension=0])
+- def :meth:`getValue<NatronEngine.DoubleParam.getValue>` ([dimension=0, view="Main"])
+- def :meth:`getValueAtTime<NatronEngine.DoubleParam.getValueAtTime>` (time[, dimension=0, view="Main"])
+- def :meth:`restoreDefaultValue<NatronEngine.DoubleParam.restoreDefaultValue>` ([dimension=-1, view="All"])
+- def :meth:`set<NatronEngine.DoubleParam.set>` (x[,view="All"])
+- def :meth:`set<NatronEngine.DoubleParam.set>` (x, frame[, view="All"])
+- def :meth:`setDefaultValue<NatronEngine.DoubleParam.setDefaultValue>` (value[, dimension=0])
+- def :meth:`setDisplayMaximum<NatronEngine.DoubleParam.setDisplayMaximum>` (maximum[, dimension=0])
+- def :meth:`setDisplayMinimum<NatronEngine.DoubleParam.setDisplayMinimum>` (minimum[, dimension=0])
+- def :meth:`setMaximum<NatronEngine.DoubleParam.setMaximum>` (maximum[, dimension=0])
+- def :meth:`setMinimum<NatronEngine.DoubleParam.setMinimum>` (minimum[, dimension=0])
+- def :meth:`setValue<NatronEngine.DoubleParam.setValue>` (value[, dimension=0, view="All"])
+- def :meth:`setValueAtTime<NatronEngine.DoubleParam.setValueAtTime>` (value, time[, dimension=0, view="All"])
 
 .. _double.details:
 
 Detailed Description
 --------------------
-
 
 A double param can have 1 to 3 dimensions. (See :doc:`Double2DParam` and :doc:`Double3DParam`).
 Usually this is used to represent a single floating point value that may animate over time.

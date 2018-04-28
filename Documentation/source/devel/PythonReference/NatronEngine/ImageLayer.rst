@@ -18,20 +18,20 @@ See :ref:`detailed<ImageLayer.details>` description...
 Functions
 ^^^^^^^^^
 
-*    def :meth:`ImageLayer<NatronEngine.ImageLayer.ImageLayer>` (layerName,componentsPrettyName,componentsName)
-*    def :meth:`isColorPlane<NatronEngine.ImageLayer.isColorPlane>` ()
-*    def :meth:`getNumComponents<NatronEngine.ImageLayer.getNumComponents>` ()
-*    def :meth:`getLayerName<NatronEngine.ImageLayer.getLayerName>` ()
-*    def :meth:`getComponentsNames<NatronEngine.ImageLayer.getComponentsNames>` ()
-*    def :meth:`getComponentsPrettyName<NatronEngine.ImageLayer.getComponentsPrettyName>` ()
-*    def :meth:`getNoneComponents<NatronEngine.ImageLayer.getNoneComponents>` ()
-*    def :meth:`getRGBAComponents<NatronEngine.ImageLayer.getRGBAComponents>` ()
-*    def :meth:`getRGBComponents<NatronEngine.ImageLayer.getRGBComponents>` ()
-*    def :meth:`getAlphaComponents<NatronEngine.ImageLayer.getAlphaComponents>` ()
-*    def :meth:`getBackwardMotionComponents<NatronEngine.ImageLayer.getBackwardMotionComponents>` ()
-*    def :meth:`getForwardMotionComponents<NatronEngine.ImageLayer.getForwardMotionComponents>` ()
-*    def :meth:`getDisparityLeftComponents<NatronEngine.ImageLayer.getDisparityLeftComponents>` ()
-*    def :meth:`getDisparityRightComponents<NatronEngine.ImageLayer.getDisparityRightComponents>` ()
+- def :meth:`ImageLayer<NatronEngine.ImageLayer.ImageLayer>` (layerName,componentsPrettyName,componentsName)
+- def :meth:`isColorPlane<NatronEngine.ImageLayer.isColorPlane>` ()
+- def :meth:`getNumComponents<NatronEngine.ImageLayer.getNumComponents>` ()
+- def :meth:`getLayerName<NatronEngine.ImageLayer.getLayerName>` ()
+- def :meth:`getComponentsNames<NatronEngine.ImageLayer.getComponentsNames>` ()
+- def :meth:`getComponentsPrettyName<NatronEngine.ImageLayer.getComponentsPrettyName>` ()
+- def :meth:`getNoneComponents<NatronEngine.ImageLayer.getNoneComponents>` ()
+- def :meth:`getRGBAComponents<NatronEngine.ImageLayer.getRGBAComponents>` ()
+- def :meth:`getRGBComponents<NatronEngine.ImageLayer.getRGBComponents>` ()
+- def :meth:`getAlphaComponents<NatronEngine.ImageLayer.getAlphaComponents>` ()
+- def :meth:`getBackwardMotionComponents<NatronEngine.ImageLayer.getBackwardMotionComponents>` ()
+- def :meth:`getForwardMotionComponents<NatronEngine.ImageLayer.getForwardMotionComponents>` ()
+- def :meth:`getDisparityLeftComponents<NatronEngine.ImageLayer.getDisparityLeftComponents>` ()
+- def :meth:`getDisparityRightComponents<NatronEngine.ImageLayer.getDisparityRightComponents>` ()
 
 .. _ImageLayer.details:
 

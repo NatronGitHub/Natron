@@ -15,8 +15,7 @@ See :ref:`here<string.details>` for more details.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`setType<NatronEngine.StringParam.setType>` (type)
-
+- def :meth:`setType<NatronEngine.StringParam.setType>` (type)
 
 .. string.details:
 

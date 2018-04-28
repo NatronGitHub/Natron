@@ -15,29 +15,23 @@ This parameter is used to specify an input file (i.e: a file that already exist)
 Functions
 ^^^^^^^^^
 
-
-*    def :meth:`openFile<NatronEngine.FileParam.openFile>` ()
-*    def :meth:`reloadFile<NatronEngine.FileParam.reloadFile>` ()
-*    def :meth:`setSequenceEnabled<NatronEngine.FileParam.setSequenceEnabled>` (enabled)
-*    def :meth:`setDialogType<NatronEngine.FileParam.setDialogType>` (existingFiles, useSequences, fileTypes)
-
+- def :meth:`openFile<NatronEngine.FileParam.openFile>` ()
+- def :meth:`reloadFile<NatronEngine.FileParam.reloadFile>` ()
+- def :meth:`setSequenceEnabled<NatronEngine.FileParam.setSequenceEnabled>` (enabled)
+- def :meth:`setDialogType<NatronEngine.FileParam.setDialogType>` (existingFiles, useSequences, fileTypes)
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-
 .. method:: NatronEngine.FileParam.openFile()
 
-
-When called in GUI mode, this will open a file dialog for the user. Does nothing in
-background mode.
-
+   When called in GUI mode, this will open a file dialog for the user. Does nothing in
+   background mode.
 
 .. method:: NatronEngine.FileParam.reloadFile()
 
-
-Force a refresh of the data read from the file. Any cached data associated to the file will be
-discarded.
+   Force a refresh of the data read from the file. Any cached data associated to the file will be
+   discarded.
 
 
 

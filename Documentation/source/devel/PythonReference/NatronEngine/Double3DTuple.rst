@@ -13,8 +13,7 @@ Utility class to return pair of floating point values.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`__getitem__<NatronEngine.Double3DTuple.__getitem__>` (index)
-
+- def :meth:`__getitem__<NatronEngine.Double3DTuple.__getitem__>` (index)
 
 Detailed Description
 --------------------

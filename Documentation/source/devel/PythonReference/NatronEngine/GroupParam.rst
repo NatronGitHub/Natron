@@ -15,11 +15,10 @@ See :ref:`detailed<group.details>` description.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`addParam<NatronEngine.GroupParam.addParam>` (param)
-*    def :meth:`getIsOpened<NatronEngine.GroupParam.getIsOpened>` ()
-*    def :meth:`setAsTab<NatronEngine.GroupParam.setAsTab>` ()
-*    def :meth:`setOpened<NatronEngine.GroupParam.setOpened>` (opened)
-
+- def :meth:`addParam<NatronEngine.GroupParam.addParam>` (param)
+- def :meth:`getIsOpened<NatronEngine.GroupParam.getIsOpened>` ()
+- def :meth:`setAsTab<NatronEngine.GroupParam.setAsTab>` ()
+- def :meth:`setOpened<NatronEngine.GroupParam.setOpened>` (opened)
 
 .. _group.details:
 

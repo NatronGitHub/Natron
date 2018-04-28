@@ -16,12 +16,11 @@ items.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`createBezier<NatronEngine.Roto.createBezier>` (x, y, time)
-*    def :meth:`createEllipse<NatronEngine.Roto.createEllipse>` (x, y, diameter, fromCenter, time)
-*    def :meth:`createLayer<NatronEngine.Roto.createLayer>` ()
-*    def :meth:`createRectangle<NatronEngine.Roto.createRectangle>` (x, y, size, time)
-*    def :meth:`createStroke<NatronEngine.Roto.createStroke>` (type)
-
+- def :meth:`createBezier<NatronEngine.Roto.createBezier>` (x, y, time)
+- def :meth:`createEllipse<NatronEngine.Roto.createEllipse>` (x, y, diameter, fromCenter, time)
+- def :meth:`createLayer<NatronEngine.Roto.createLayer>` ()
+- def :meth:`createRectangle<NatronEngine.Roto.createRectangle>` (x, y, size, time)
+- def :meth:`createStroke<NatronEngine.Roto.createStroke>` (type)
 
 .. _roto.details:
 

@@ -15,9 +15,9 @@ See :ref:`detailed<tracker.details>` description below.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`createTrack<NatronEngine.Tracker.createTrack>` ()
-*    def :meth:`startTracking<NatronEngine.Tracker.startTracking>` (tracks, start, end, forward)
-*    def :meth:`stopTracking<NatronEngine.Tracker.stopTracking>` ()
+- def :meth:`createTrack<NatronEngine.Tracker.createTrack>` ()
+- def :meth:`startTracking<NatronEngine.Tracker.startTracking>` (tracks, start, end, forward)
+- def :meth:`stopTracking<NatronEngine.Tracker.stopTracking>` ()
 
 .. _tracker.details:
 

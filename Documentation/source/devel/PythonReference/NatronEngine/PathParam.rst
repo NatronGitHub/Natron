@@ -16,9 +16,9 @@ See :ref:`details<dirdetails>`...
 Functions
 ^^^^^^^^^
 
-*    def :meth:`setAsMultiPathTable<NatronEngine.PathParam.setAsMultiPathTable>` ()
-*    def :meth:`getTable<NatronEngine.PathParam.getTable>` ()
-*    def :meth:`setTable<NatronEngine.PathParam.setTable>` (table)
+- def :meth:`setAsMultiPathTable<NatronEngine.PathParam.setAsMultiPathTable>` ()
+- def :meth:`getTable<NatronEngine.PathParam.getTable>` ()
+- def :meth:`setTable<NatronEngine.PathParam.setTable>` (table)
 
 .. _dirdetails:
 

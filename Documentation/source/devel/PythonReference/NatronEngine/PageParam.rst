@@ -15,8 +15,7 @@ See :ref:`detailed<page.details>` description.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`addParam<NatronEngine.PageParam.addParam>` (param)
-
+- def :meth:`addParam<NatronEngine.PageParam.addParam>` (param)
 
 .. _page.details:
 

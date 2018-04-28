@@ -17,17 +17,17 @@ See :ref:`here<stringBaseDetails>` for more details.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`get<NatronEngine.StringParamBase.get>` ([view="Main"])
-*    def :meth:`get<NatronEngine.StringParamBase.get>` (frame[,view="Main"])
-*    def :meth:`getDefaultValue<NatronEngine.StringParamBase.getDefaultValue>` ()
-*    def :meth:`getValue<NatronEngine.StringParamBase.getValue>` ([view="Main"])
-*    def :meth:`getValueAtTime<NatronEngine.StringParamBase.getValueAtTime>` (time[,view="Main"])
-*    def :meth:`restoreDefaultValue<NatronEngine.StringParamBase.restoreDefaultValue>` ([view="All"])
-*    def :meth:`set<NatronEngine.StringParamBase.set>` (x[,view="All"])
-*    def :meth:`set<NatronEngine.StringParamBase.set>` (x, frame[,view="All"])
-*    def :meth:`setDefaultValue<NatronEngine.StringParamBase.setDefaultValue>` (value)
-*    def :meth:`setValue<NatronEngine.StringParamBase.setValue>` (value[,view="All"])
-*    def :meth:`setValueAtTime<NatronEngine.StringParamBase.setValueAtTime>` (value, time[,view="All")
+- def :meth:`get<NatronEngine.StringParamBase.get>` ([view="Main"])
+- def :meth:`get<NatronEngine.StringParamBase.get>` (frame[,view="Main"])
+- def :meth:`getDefaultValue<NatronEngine.StringParamBase.getDefaultValue>` ()
+- def :meth:`getValue<NatronEngine.StringParamBase.getValue>` ([view="Main"])
+- def :meth:`getValueAtTime<NatronEngine.StringParamBase.getValueAtTime>` (time[,view="Main"])
+- def :meth:`restoreDefaultValue<NatronEngine.StringParamBase.restoreDefaultValue>` ([view="All"])
+- def :meth:`set<NatronEngine.StringParamBase.set>` (x[,view="All"])
+- def :meth:`set<NatronEngine.StringParamBase.set>` (x, frame[,view="All"])
+- def :meth:`setDefaultValue<NatronEngine.StringParamBase.setDefaultValue>` (value)
+- def :meth:`setValue<NatronEngine.StringParamBase.setValue>` (value[,view="All"])
+- def :meth:`setValueAtTime<NatronEngine.StringParamBase.setValueAtTime>` (value, time[,view="All")
 
 .. _stringBaseDetails:
 
@@ -42,9 +42,6 @@ always.
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
 
 .. method:: NatronEngine.StringParamBase.get([view="Main"])
 

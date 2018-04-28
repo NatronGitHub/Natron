@@ -13,16 +13,13 @@ A small item sub-class that handles strokes painted by the user
 
 See :ref:`detailed<strokeItem.details>` description...
 
-
 Functions
 ^^^^^^^^^
 
-
-*    def :meth:`getBoundingBox<NatronEngine.StrokeItem.getBoundingBox>` (time [, view="Main"])
-*    def :meth:`getBrushType<NatronEngine.StrokeItem.getBrushType>` ()
-*    def :meth:`getPoints<NatronEngine.StrokeItem.getPoints>` ()
-*    def :meth:`setPoints<NatronEngine.StrokeItem.setPoints>` (strokes)
-
+- def :meth:`getBoundingBox<NatronEngine.StrokeItem.getBoundingBox>` (time [, view="Main"])
+- def :meth:`getBrushType<NatronEngine.StrokeItem.getBrushType>` ()
+- def :meth:`getPoints<NatronEngine.StrokeItem.getPoints>` ()
+- def :meth:`setPoints<NatronEngine.StrokeItem.setPoints>` (strokes)
 
 .. _strokeItem.details:
 

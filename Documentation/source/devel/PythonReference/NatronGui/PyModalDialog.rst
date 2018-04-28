@@ -17,10 +17,10 @@ See :ref:`detailed<modalDialog.details>` description...
 Functions
 ^^^^^^^^^
 
-*    def :meth:`addWidget<NatronGui.PyModalDialog.addWidget>` (widget)
-*    def :meth:`getParam<NatronGui.PyModalDialog.getParam>` (scriptName)
-*    def :meth:`insertWidget<NatronGui.PyModalDialog.insertWidget>` (index,widget)
-*    def :meth:`setParamChangedCallback<NatronGui.PyModalDialog.setParamChangedCallback>` (callback)
+- def :meth:`addWidget<NatronGui.PyModalDialog.addWidget>` (widget)
+- def :meth:`getParam<NatronGui.PyModalDialog.getParam>` (scriptName)
+- def :meth:`insertWidget<NatronGui.PyModalDialog.insertWidget>` (index,widget)
+- def :meth:`setParamChangedCallback<NatronGui.PyModalDialog.setParamChangedCallback>` (callback)
 
 .. _modalDialog.details:
 

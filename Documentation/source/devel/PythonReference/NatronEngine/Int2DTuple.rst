@@ -13,10 +13,8 @@ Utility class to return pair of integers values.
 
 Functions
 ^^^^^^^^^
-.. container:: function_list
 
-*    def :meth:`__getitem__<NatronEngine.Int2DTuple.__getitem__>` (index)
-
+- def :meth:`__getitem__<NatronEngine.Int2DTuple.__getitem__>` (index)
 
 Detailed Description
 --------------------

@@ -17,21 +17,21 @@ See the :ref:`detailed description<details>` below
 Functions
 ^^^^^^^^^
 
-*    def :meth:`deleteValueAtTime<NatronEngine.AnimatedParam.deleteValueAtTime>` (time[, dimension=0,view="All"])
-*    def :meth:`getCurrentTime<NatronEngine.AnimatedParam.getCurrentTime>` ()
-*    def :meth:`getDerivativeAtTime<NatronEngine.AnimatedParam.getDerivativeAtTime>` (time[, dimension=0,view="Main"])
-*    def :meth:`getExpression<NatronEngine.AnimatedParam.getExpression>` (dimension[,view="Main"])
-*    def :meth:`getIntegrateFromTimeToTime<NatronEngine.AnimatedParam.getIntegrateFromTimeToTime>` (time1, time2[, dimension=0,view="Main"])
-*    def :meth:`getIsAnimated<NatronEngine.AnimatedParam.getIsAnimated>` ([dimension=0,view="Main"])
-*    def :meth:`getKeyIndex<NatronEngine.AnimatedParam.getKeyIndex>` (time[, dimension=0,view="Main"])
-*    def :meth:`getKeyTime<NatronEngine.AnimatedParam.getKeyTime>` (index, dimension[, view="Main"])
-*    def :meth:`getNumKeys<NatronEngine.AnimatedParam.getNumKeys>` ([dimension=0,view="Main"])
-*    def :meth:`removeAnimation<NatronEngine.AnimatedParam.removeAnimation>` ([dimension-1, view="All"])
-*    def :meth:`setExpression<NatronEngine.AnimatedParam.setExpression>` (expr, hasRetVariable[, dimension=-1,view="All"])
-*    def :meth:`setInterpolationAtTime<NatronEngine.AnimatedParam.setInterpolationAtTime>` (time, interpolation[, dimension=-1,view="All"])
-*    def :meth:`splitView<NatronEngine.AnimatedParam.splitView>` (view)
-*    def :meth:`unSplitView<NatronEngine.AnimatedParam.unSplitView>` (view)
-*    def :meth:`getViewsList<NatronEngine.AnimatedParam.getViewsList>` ()
+- def :meth:`deleteValueAtTime<NatronEngine.AnimatedParam.deleteValueAtTime>` (time[, dimension=0,view="All"])
+- def :meth:`getCurrentTime<NatronEngine.AnimatedParam.getCurrentTime>` ()
+- def :meth:`getDerivativeAtTime<NatronEngine.AnimatedParam.getDerivativeAtTime>` (time[, dimension=0,view="Main"])
+- def :meth:`getExpression<NatronEngine.AnimatedParam.getExpression>` (dimension[,view="Main"])
+- def :meth:`getIntegrateFromTimeToTime<NatronEngine.AnimatedParam.getIntegrateFromTimeToTime>` (time1, time2[, dimension=0,view="Main"])
+- def :meth:`getIsAnimated<NatronEngine.AnimatedParam.getIsAnimated>` ([dimension=0,view="Main"])
+- def :meth:`getKeyIndex<NatronEngine.AnimatedParam.getKeyIndex>` (time[, dimension=0,view="Main"])
+- def :meth:`getKeyTime<NatronEngine.AnimatedParam.getKeyTime>` (index, dimension[, view="Main"])
+- def :meth:`getNumKeys<NatronEngine.AnimatedParam.getNumKeys>` ([dimension=0,view="Main"])
+- def :meth:`removeAnimation<NatronEngine.AnimatedParam.removeAnimation>` ([dimension-1, view="All"])
+- def :meth:`setExpression<NatronEngine.AnimatedParam.setExpression>` (expr, hasRetVariable[, dimension=-1,view="All"])
+- def :meth:`setInterpolationAtTime<NatronEngine.AnimatedParam.setInterpolationAtTime>` (time, interpolation[, dimension=-1,view="All"])
+- def :meth:`splitView<NatronEngine.AnimatedParam.splitView>` (view)
+- def :meth:`unSplitView<NatronEngine.AnimatedParam.unSplitView>` (view)
+- def :meth:`getViewsList<NatronEngine.AnimatedParam.getViewsList>` ()
 
 .. _details:
 

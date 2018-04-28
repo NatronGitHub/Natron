@@ -16,11 +16,11 @@ See :doc:`DoubleParam` for more informations on this class.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`setCanAutoFoldDimensions<NatronEngine.Double2DParam.setCanAutoFoldDimensions` (enabled)
-*    def :meth:`get<NatronEngine.Double2DParam.get>` ([view="Main"])
-*    def :meth:`get<NatronEngine.Double2DParam.get>` (frame[,view="Main"])
-*    def :meth:`set<NatronEngine.Double2DParam.set>` (x, y[,view="All"])
-*    def :meth:`set<NatronEngine.Double2DParam.set>` (x, y, frame[,view="All"])
+- def :meth:`setCanAutoFoldDimensions<NatronEngine.Double2DParam.setCanAutoFoldDimensions` (enabled)
+- def :meth:`get<NatronEngine.Double2DParam.get>` ([view="Main"])
+- def :meth:`get<NatronEngine.Double2DParam.get>` (frame[,view="Main"])
+- def :meth:`set<NatronEngine.Double2DParam.set>` (x, y[,view="All"])
+- def :meth:`set<NatronEngine.Double2DParam.set>` (x, y, frame[,view="All"])
 
 
 Member functions description
