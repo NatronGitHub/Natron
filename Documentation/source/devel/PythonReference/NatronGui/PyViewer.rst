@@ -14,31 +14,31 @@ See :ref:`detailed<pyViewer.details>` description...
 Functions
 ^^^^^^^^^
 
-*    def :meth:`seek<NatronGui.PyTabWidget.seek>` (frame)
-*    def :meth:`getCurrentFrame<NatronGui.PyTabWidget.getCurrentFrame>` ()
-*    def :meth:`startForward<NatronGui.PyTabWidget.startForward>` ()
-*    def :meth:`startBackward<NatronGui.PyTabWidget.startBackward>` ()
-*    def :meth:`pause<NatronGui.PyTabWidget.pause>` ()
-*    def :meth:`redraw<NatronGui.PyTabWidget.redraw>` ()
-*    def :meth:`renderCurrentFrame<NatronGui.PyTabWidget.renderCurrentFrame>` ([useCache=True])
-*    def :meth:`setFrameRange<NatronGui.PyTabWidget.setFrameRange>` (firstFrame,lastFrame)
-*    def :meth:`getFrameRange<NatronGui.PyTabWidget.getFrameRange>` ()
-*    def :meth:`setPlaybackMode<NatronGui.PyTabWidget.setPlaybackMode>` (mode)
-*    def :meth:`getPlaybackMode<NatronGui.PyTabWidget.getPlaybackMode>` ()
-*    def :meth:`getCompositingOperator<NatronGui.PyTabWidget.getCompositingOperator>` ()
-*    def :meth:`setCompositingOperator<NatronGui.PyTabWidget.setCompositingOperator>` (operator)
-*    def :meth:`getAInput<NatronGui.PyTabWidget.getAInput>` ()
-*    def :meth:`setAInput<NatronGui.PyTabWidget.setAInput>` (index)
-*    def :meth:`getBInput<NatronGui.PyTabWidget.getBInput>` ()
-*    def :meth:`setBInput<NatronGui.PyTabWidget.setBInput>` (index)
-*    def :meth:`setChannels<NatronGui.PyTabWidget.setChannels>` (channels)
-*    def :meth:`getChannels<NatronGui.PyTabWidget.getChannels>` ()
-*    def :meth:`setProxyModeEnabled<NatronGui.PyTabWidget.setProxyModeEnabled>` (enabled)
-*    def :meth:`isProxyModeEnabled<NatronGui.PyTabWidget.isProxyModeEnabled>` ()
-*    def :meth:`setProxyIndex<NatronGui.PyTabWidget.setProxyIndex>` (index)
-*    def :meth:`getProxyIndex<NatronGui.PyTabWidget.getProxyIndex>` ()
-*    def :meth:`setCurrentView<NatronGui.PyTabWidget.setCurrentView>` (viewIndex)
-*    def :meth:`getCurrentView<NatronGui.PyTabWidget.getCurrentView>` (channels)
+- def :meth:`seek<NatronGui.PyTabWidget.seek>` (frame)
+- def :meth:`getCurrentFrame<NatronGui.PyTabWidget.getCurrentFrame>` ()
+- def :meth:`startForward<NatronGui.PyTabWidget.startForward>` ()
+- def :meth:`startBackward<NatronGui.PyTabWidget.startBackward>` ()
+- def :meth:`pause<NatronGui.PyTabWidget.pause>` ()
+- def :meth:`redraw<NatronGui.PyTabWidget.redraw>` ()
+- def :meth:`renderCurrentFrame<NatronGui.PyTabWidget.renderCurrentFrame>` ([useCache=True])
+- def :meth:`setFrameRange<NatronGui.PyTabWidget.setFrameRange>` (firstFrame,lastFrame)
+- def :meth:`getFrameRange<NatronGui.PyTabWidget.getFrameRange>` ()
+- def :meth:`setPlaybackMode<NatronGui.PyTabWidget.setPlaybackMode>` (mode)
+- def :meth:`getPlaybackMode<NatronGui.PyTabWidget.getPlaybackMode>` ()
+- def :meth:`getCompositingOperator<NatronGui.PyTabWidget.getCompositingOperator>` ()
+- def :meth:`setCompositingOperator<NatronGui.PyTabWidget.setCompositingOperator>` (operator)
+- def :meth:`getAInput<NatronGui.PyTabWidget.getAInput>` ()
+- def :meth:`setAInput<NatronGui.PyTabWidget.setAInput>` (index)
+- def :meth:`getBInput<NatronGui.PyTabWidget.getBInput>` ()
+- def :meth:`setBInput<NatronGui.PyTabWidget.setBInput>` (index)
+- def :meth:`setChannels<NatronGui.PyTabWidget.setChannels>` (channels)
+- def :meth:`getChannels<NatronGui.PyTabWidget.getChannels>` ()
+- def :meth:`setProxyModeEnabled<NatronGui.PyTabWidget.setProxyModeEnabled>` (enabled)
+- def :meth:`isProxyModeEnabled<NatronGui.PyTabWidget.isProxyModeEnabled>` ()
+- def :meth:`setProxyIndex<NatronGui.PyTabWidget.setProxyIndex>` (index)
+- def :meth:`getProxyIndex<NatronGui.PyTabWidget.getProxyIndex>` ()
+- def :meth:`setCurrentView<NatronGui.PyTabWidget.setCurrentView>` (viewIndex)
+- def :meth:`getCurrentView<NatronGui.PyTabWidget.getCurrentView>` (channels)
 
 .. _pyViewer.details:
 
@@ -106,14 +106,14 @@ and the frame will be completely re-rendered.
         :param firstFrame: :class:`int`
         :param lastFrame: :class:`int`
 
-Set the frame range on the Viewer to be [*firstFrame* , *lastFrame] (included).
+Set the frame range on the Viewer to be \[*firstFrame* , *lastFrame*\] (included).
 
 
 .. method:: NatronGui.PyTabWidget.getFrameRange()
 
     :rtype: :class:`Tuple`
 
-Returns a 2-dimensional tuple of :class:`int` containing [*firstFrame* , *lastFrame].
+Returns a 2-dimensional tuple of :class:`int` containing \[*firstFrame* , *lastFrame*\].
 
 
 .. method:: NatronGui.PyTabWidget.setPlaybackMode(mode)
@@ -210,14 +210,14 @@ Returns whether the proxy mode is *enabled*.
     :param index: :class:`int`
 
 Set the *index* of the proxy to use. This is the index in the combobox on the graphical
-user interface, e.g:  *index = 0* will be *2*
+user interface, e.g.  *index = 0* will be *2*
 
 .. method:: NatronGui.PyTabWidget.getProxyIndex()
 
     :rtype: :class:`int`
 
 Returns the *index* of the proxy in use. This is the index in the combobox on the graphical
-user interface, e.g:  *index = 0* will be *2*
+user interface, e.g.  *index = 0* will be *2*
 
 
 .. method:: NatronGui.PyTabWidget.setCurrentView(viewIndex)

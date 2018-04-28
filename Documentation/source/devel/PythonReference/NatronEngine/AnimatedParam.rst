@@ -17,18 +17,18 @@ See the :ref:`detailed description<details>` below
 Functions
 ^^^^^^^^^
 
-*    def :meth:`deleteValueAtTime<NatronEngine.AnimatedParam.deleteValueAtTime>` (time[, dimension=0])
-*    def :meth:`getCurrentTime<NatronEngine.AnimatedParam.getCurrentTime>` ()
-*    def :meth:`getDerivativeAtTime<NatronEngine.AnimatedParam.getDerivativeAtTime>` (time[, dimension=0])
-*    def :meth:`getExpression<NatronEngine.AnimatedParam.getExpression>` (dimension)
-*    def :meth:`getIntegrateFromTimeToTime<NatronEngine.AnimatedParam.getIntegrateFromTimeToTime>` (time1, time2[, dimension=0])
-*    def :meth:`getIsAnimated<NatronEngine.AnimatedParam.getIsAnimated>` ([dimension=0])
-*    def :meth:`getKeyIndex<NatronEngine.AnimatedParam.getKeyIndex>` (time[, dimension=0])
-*    def :meth:`getKeyTime<NatronEngine.AnimatedParam.getKeyTime>` (index, dimension)
-*    def :meth:`getNumKeys<NatronEngine.AnimatedParam.getNumKeys>` ([dimension=0])
-*    def :meth:`removeAnimation<NatronEngine.AnimatedParam.removeAnimation>` ([dimension=0])
-*    def :meth:`setExpression<NatronEngine.AnimatedParam.setExpression>` (expr, hasRetVariable[, dimension=0])
-*    def :meth:`setInterpolationAtTime<NatronEngine.AnimatedParam.setInterpolationAtTime>` (time, interpolation[, dimension=0])
+- def :meth:`deleteValueAtTime<NatronEngine.AnimatedParam.deleteValueAtTime>` (time[, dimension=0])
+- def :meth:`getCurrentTime<NatronEngine.AnimatedParam.getCurrentTime>` ()
+- def :meth:`getDerivativeAtTime<NatronEngine.AnimatedParam.getDerivativeAtTime>` (time[, dimension=0])
+- def :meth:`getExpression<NatronEngine.AnimatedParam.getExpression>` (dimension)
+- def :meth:`getIntegrateFromTimeToTime<NatronEngine.AnimatedParam.getIntegrateFromTimeToTime>` (time1, time2[, dimension=0])
+- def :meth:`getIsAnimated<NatronEngine.AnimatedParam.getIsAnimated>` ([dimension=0])
+- def :meth:`getKeyIndex<NatronEngine.AnimatedParam.getKeyIndex>` (time[, dimension=0])
+- def :meth:`getKeyTime<NatronEngine.AnimatedParam.getKeyTime>` (index, dimension)
+- def :meth:`getNumKeys<NatronEngine.AnimatedParam.getNumKeys>` ([dimension=0])
+- def :meth:`removeAnimation<NatronEngine.AnimatedParam.removeAnimation>` ([dimension=0])
+- def :meth:`setExpression<NatronEngine.AnimatedParam.setExpression>` (expr, hasRetVariable[, dimension=0])
+- def :meth:`setInterpolationAtTime<NatronEngine.AnimatedParam.setInterpolationAtTime>` (time, interpolation[, dimension=0])
 
 .. _details:
 
@@ -40,7 +40,7 @@ the parameter should have at least 1 keyframe. Keyframes can be added in the der
 (since function signature is type specific) with the *setValueAtTime* function.
 Once 2 keyframes are active on the parameter, the value of the parameter will be interpolated
 automatically by Natron for a given time.
-You can control keyframes by adding,removing, changing their values and their :ref:`interpolation<NatronEngine.Natron.KeyframeTypeEnum>` type.
+You can control keyframes by adding,removing, changing their values and their :class:`KeyFrameTypeEnum<NatronEngine.Natron.KeyframeTypeEnum>` type.
 
 Note that by default new keyframes are always with a **Smooth** interpolation.
 

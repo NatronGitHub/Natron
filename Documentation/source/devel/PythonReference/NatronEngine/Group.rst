@@ -16,16 +16,13 @@ See :ref:`detailed<group.details>` description below.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`getChildren<NatronEngine.Group.getChildren>` ()
-*    def :meth:`getNode<NatronEngine.Group.getNode>` (fullyQualifiedName)
-
+- def :meth:`getChildren<NatronEngine.Group.getChildren>` ()
+- def :meth:`getNode<NatronEngine.Group.getNode>` (fullyQualifiedName)
 
 .. _group.details:
 
 Detailed Description
 --------------------
-
-
 
  This is an abstract class, it is derived by 2 different classes:
 
@@ -61,7 +58,7 @@ and you'd have to call **getChildren()** on all sub-groups to retrieve their chi
 
 Retrieves a node in the group with its *fully qualified name*.
 The fully qualified name of a node is the *script-name* of the node prefixed by all the
-group hierarchy into which it is, e.g::
+group hierarchy into which it is, e.g.:
 
     Blur1 # the node is a top level node
 

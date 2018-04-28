@@ -17,19 +17,18 @@ See :ref:`detailed<pypanel.details>` description...
 Functions
 ^^^^^^^^^
 
-*    def :meth:`PyPanel<NatronGui.PyPanel.PyPanel>` (scriptName,label,useUserParameters,app)
-
-*    def :meth:`addWidget<NatronGui.PyPanel.addWidget>` (widget)
-*    def :meth:`getPanelLabel<NatronGui.PyPanel.getPanelLabel>` ()
-*    def :meth:`getPanelScriptName<NatronGui.PyPanel.getPanelScriptName>` ()
-*    def :meth:`getParam<NatronGui.PyPanel.getParam>` (scriptName)
-*    def :meth:`getParams<NatronGui.PyPanel.getParams>` ()
-*    def :meth:`insertWidget<NatronGui.PyPanel.insertWidget>` (index,widget)
-*    def :meth:`onUserDataChanged<NatronGui.PyPanel.onUserDataChanged>` ()
-*    def :meth:`setParamChangedCallback<NatronGui.PyPanel.setParamChangedCallback>` (callback)
-*    def :meth:`save<NatronGui.PyPanel.save>` ()
-*    def :meth:`setPanelLabel<NatronGui.PyPanel.setPanelLabel>` (label)
-*    def :meth:`restore<NatronGui.PyPanel.restore>` (data)
+- def :meth:`PyPanel<NatronGui.PyPanel.PyPanel>` (scriptName,label,useUserParameters,app)
+- def :meth:`addWidget<NatronGui.PyPanel.addWidget>` (widget)
+- def :meth:`getPanelLabel<NatronGui.PyPanel.getPanelLabel>` ()
+- def :meth:`getPanelScriptName<NatronGui.PyPanel.getPanelScriptName>` ()
+- def :meth:`getParam<NatronGui.PyPanel.getParam>` (scriptName)
+- def :meth:`getParams<NatronGui.PyPanel.getParams>` ()
+- def :meth:`insertWidget<NatronGui.PyPanel.insertWidget>` (index,widget)
+- def :meth:`onUserDataChanged<NatronGui.PyPanel.onUserDataChanged>` ()
+- def :meth:`setParamChangedCallback<NatronGui.PyPanel.setParamChangedCallback>` (callback)
+- def :meth:`save<NatronGui.PyPanel.save>` ()
+- def :meth:`setPanelLabel<NatronGui.PyPanel.setPanelLabel>` (label)
+- def :meth:`restore<NatronGui.PyPanel.restore>` (data)
 
 .. _pypanel.details:
 
@@ -124,7 +123,7 @@ to add this panel to the pane.
 If you want the panel to persist in the project so that it gets recreated and placed at its original position
 when the user loads the project, you must use the :func:`registerPythonPanel(panel,function)< NatronGui.GuiApp.registerPythonPanel>` function.
 
-Note that the *function* parameter is the **name** of a Python-defined function that takes no parameter used to create the widget, e.g::
+Note that the *function* parameter is the **name** of a Python-defined function that takes no parameter used to create the widget, e.g.:
 
     def createMyPanel():
         panel = NatronGui.PyPanel("MyPanel",True,app)

@@ -16,27 +16,26 @@ See :ref:`detailed<int.details>` description...
 
 Functions
 ^^^^^^^^^
-.. container:: function_list
 
-*    def :meth:`get<NatronEngine.IntParam.get>` ()
-*    def :meth:`get<NatronEngine.IntParam.get>` (frame)
-*    def :meth:`getDefaultValue<NatronEngine.IntParam.getDefaultValue>` ([dimension=0])
-*    def :meth:`getDisplayMaximum<NatronEngine.IntParam.getDisplayMaximum>` (dimension)
-*    def :meth:`getDisplayMinimum<NatronEngine.IntParam.getDisplayMinimum>` (dimension)
-*    def :meth:`getMaximum<NatronEngine.IntParam.getMaximum>` ([dimension=0])
-*    def :meth:`getMinimum<NatronEngine.IntParam.getMinimum>` ([dimension=0])
-*    def :meth:`getValue<NatronEngine.IntParam.getValue>` ([dimension=0])
-*    def :meth:`getValueAtTime<NatronEngine.IntParam.getValueAtTime>` (time[, dimension=0])
-*    def :meth:`restoreDefaultValue<NatronEngine.IntParam.restoreDefaultValue>` ([dimension=0])
-*    def :meth:`set<NatronEngine.IntParam.set>` (x)
-*    def :meth:`set<NatronEngine.IntParam.set>` (x, frame)
-*    def :meth:`setDefaultValue<NatronEngine.IntParam.setDefaultValue>` (value[, dimension=0])
-*    def :meth:`setDisplayMaximum<NatronEngine.IntParam.setDisplayMaximum>` (maximum[, dimension=0])
-*    def :meth:`setDisplayMinimum<NatronEngine.IntParam.setDisplayMinimum>` (minimum[, dimension=0])
-*    def :meth:`setMaximum<NatronEngine.IntParam.setMaximum>` (maximum[, dimension=0])
-*    def :meth:`setMinimum<NatronEngine.IntParam.setMinimum>` (minimum[, dimension=0])
-*    def :meth:`setValue<NatronEngine.IntParam.setValue>` (value[, dimension=0])
-*    def :meth:`setValueAtTime<NatronEngine.IntParam.setValueAtTime>` (value, time[, dimension=0])
+- def :meth:`get<NatronEngine.IntParam.get>` ()
+- def :meth:`get<NatronEngine.IntParam.get>` (frame)
+- def :meth:`getDefaultValue<NatronEngine.IntParam.getDefaultValue>` ([dimension=0])
+- def :meth:`getDisplayMaximum<NatronEngine.IntParam.getDisplayMaximum>` (dimension)
+- def :meth:`getDisplayMinimum<NatronEngine.IntParam.getDisplayMinimum>` (dimension)
+- def :meth:`getMaximum<NatronEngine.IntParam.getMaximum>` ([dimension=0])
+- def :meth:`getMinimum<NatronEngine.IntParam.getMinimum>` ([dimension=0])
+- def :meth:`getValue<NatronEngine.IntParam.getValue>` ([dimension=0])
+- def :meth:`getValueAtTime<NatronEngine.IntParam.getValueAtTime>` (time[, dimension=0])
+- def :meth:`restoreDefaultValue<NatronEngine.IntParam.restoreDefaultValue>` ([dimension=0])
+- def :meth:`set<NatronEngine.IntParam.set>` (x)
+- def :meth:`set<NatronEngine.IntParam.set>` (x, frame)
+- def :meth:`setDefaultValue<NatronEngine.IntParam.setDefaultValue>` (value[, dimension=0])
+- def :meth:`setDisplayMaximum<NatronEngine.IntParam.setDisplayMaximum>` (maximum[, dimension=0])
+- def :meth:`setDisplayMinimum<NatronEngine.IntParam.setDisplayMinimum>` (minimum[, dimension=0])
+- def :meth:`setMaximum<NatronEngine.IntParam.setMaximum>` (maximum[, dimension=0])
+- def :meth:`setMinimum<NatronEngine.IntParam.setMinimum>` (minimum[, dimension=0])
+- def :meth:`setValue<NatronEngine.IntParam.setValue>` (value[, dimension=0])
+- def :meth:`setValueAtTime<NatronEngine.IntParam.setValueAtTime>` (value, time[, dimension=0])
 
 .. _int.details:
 
@@ -54,7 +53,7 @@ A 1-dimensional :doc:`DoubleParam`
 
 .. figure:: doubleParam.png
 
-A 2-dimensional :doc:`Double2Dparam` 
+A 2-dimensional :doc:`Double2DParam` 
 
 .. figure:: double2DParam.png
 

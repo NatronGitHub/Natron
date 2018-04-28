@@ -16,14 +16,13 @@ It gives you access to more GUI functionalities via the :doc:`GuiApp` class.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`addMenuCommand<NatronGui.PyGuiApplication.addMenuCommand>` (grouping,function)
-*    def :meth:`addMenuCommand<NatronGui.PyGuiApplication.addMenuCommand>` (grouping,function,key,modifiers)
-*    def :meth:`getGuiInstance<NatronGui.PyGuiApplication.getGuiInstance>` (idx)
-*    def :meth:`informationDialog<NatronGui.PyGuiApplication.informationDialog>` (title,message)
-*    def :meth:`warningDialog<NatronGui.PyGuiApplication.warningDialog>` (title,message)
-*    def :meth:`errorDialog<NatronGui.PyGuiApplication.errorDialog>` (title,message)
-*    def :meth:`questionDialog<NatronGui.PyGuiApplication.questionDialog>` (title,question)
-
+- def :meth:`addMenuCommand<NatronGui.PyGuiApplication.addMenuCommand>` (grouping,function)
+- def :meth:`addMenuCommand<NatronGui.PyGuiApplication.addMenuCommand>` (grouping,function,key,modifiers)
+- def :meth:`getGuiInstance<NatronGui.PyGuiApplication.getGuiInstance>` (idx)
+- def :meth:`informationDialog<NatronGui.PyGuiApplication.informationDialog>` (title,message)
+- def :meth:`warningDialog<NatronGui.PyGuiApplication.warningDialog>` (title,message)
+- def :meth:`errorDialog<NatronGui.PyGuiApplication.errorDialog>` (title,message)
+- def :meth:`questionDialog<NatronGui.PyGuiApplication.questionDialog>` (title,question)
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

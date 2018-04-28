@@ -144,7 +144,7 @@ the mouse over the "Manage layout" button (in the top left hand corner of a pane
 Knowing the script-name of a viewer:
 -------------------------------------
 
-The script-name of a viewer is the :ref:`script-name<nodeScriptName>` of the node associated to it, e.g::
+The script-name of a viewer is the :ref:`script-name<nodeScriptName>` of the node associated to it, e.g.:
 
     app1.pane1.Viewer1
 

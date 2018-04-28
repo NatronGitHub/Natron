@@ -11,20 +11,15 @@ Synopsis
 
 This parameter is used to specify an input file (i.e: a file that already exist). 
 
-
 Functions
 ^^^^^^^^^
 
-
-*    def :meth:`openFile<NatronEngine.FileParam.openFile>` ()
-*    def :meth:`reloadFile<NatronEngine.FileParam.reloadFile>` ()
-*    def :meth:`setSequenceEnabled<NatronEngine.FileParam.setSequenceEnabled>` (enabled)
-
-
+- def :meth:`openFile<NatronEngine.FileParam.openFile>` ()
+- def :meth:`reloadFile<NatronEngine.FileParam.reloadFile>` ()
+- def :meth:`setSequenceEnabled<NatronEngine.FileParam.setSequenceEnabled>` (enabled)
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 
 .. method:: NatronEngine.FileParam.openFile()
 

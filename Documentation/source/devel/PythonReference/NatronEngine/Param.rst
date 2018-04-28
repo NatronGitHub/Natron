@@ -10,45 +10,45 @@ Synopsis
 --------
 
 This is the base class for all parameters. Parameters are the controls found in the settings
-panel of a node. See :ref:`details here<details>`.
+panel of a node. See :ref:`details here<paramdetails>`.
 
 Functions
 ^^^^^^^^^
 
-*    def :meth:`copy<NatronEngine.Param.copy>` (param[, dimension=-1])
-*    def :meth:`curve<NatronEngine.Param.curve>` (time[, dimension=-1])
-*    def :meth:`getAddNewLine<NatronEngine.Param.getAddNewLine>` ()
-*    def :meth:`getCanAnimate<NatronEngine.Param.getCanAnimate>` ()
-*    def :meth:`getEvaluateOnChange<NatronEngine.Param.getEvaluateOnChange>` ()
-*    def :meth:`getHelp<NatronEngine.Param.getHelp>` ()
-*    def :meth:`getIsAnimationEnabled<NatronEngine.Param.getIsAnimationEnabled>` ()
-*    def :meth:`getIsEnabled<NatronEngine.Param.getIsEnabled>` ([dimension=0])
-*    def :meth:`getIsPersistant<NatronEngine.Param.getIsPersistant>` ()
-*    def :meth:`getIsVisible<NatronEngine.Param.getIsVisible>` ()
-*    def :meth:`getLabel<NatronEngine.Param.getLabel>` ()
-*    def :meth:`getNumDimensions<NatronEngine.Param.getNumDimensions>` ()
-*    def :meth:`getParent<NatronEngine.Param.getParent>` ()
-*    def :meth:`getScriptName<NatronEngine.Param.getScriptName>` ()
-*    def :meth:`getTypeName<NatronEngine.Param.getTypeName>` ()
-*    def :meth:`random<NatronEngine.Param.random` ([min=0.,max=1.])
-*    def :meth:`random<NatronEngine.Param.random` (seed)
-*    def :meth:`randomInt<NatronEngine.Param.randomInt` (min,max)
-*    def :meth:`randomInt<NatronEngine.Param.randomInt` (seed)
-*    def :meth:`setAddNewLine<NatronEngine.Param.setAddNewLine>` (a)
-*    def :meth:`setAnimationEnabled<NatronEngine.Param.setAnimationEnabled>` (e)
-*    def :meth:`setEnabled<NatronEngine.Param.setEnabled>` (enabled[, dimension=0])
-*    def :meth:`setEnabledByDefault<NatronEngine.Param.setEnabledByDefault>` (enabled)
-*    def :meth:`setEvaluateOnChange<NatronEngine.Param.setEvaluateOnChange>` (eval)
-*    def :meth:`setIconFilePath<NatronEngine.Param.setIconFilePath>` (icon)
-*    def :meth:`setHelp<NatronEngine.Param.setHelp>` (help)
-*    def :meth:`setPersistant<NatronEngine.Param.setPersistant>` (persistant)
-*    def :meth:`setVisible<NatronEngine.Param.setVisible>` (visible)
-*    def :meth:`setVisibleByDefault<NatronEngine.Param.setVisibleByDefault>` (visible)
-*    def :meth:`setAsAlias<NatronEngine.Param.setAsAlias>` (otherParam)
-*    def :meth:`slaveTo<NatronEngine.Param.slaveTo>` (otherParam, thisDimension, otherDimension)
-*    def :meth:`unslave<NatronEngine.Param.unslave>` (dimension)
+- def :meth:`copy<NatronEngine.Param.copy>` (param[, dimension=-1])
+- def :meth:`curve<NatronEngine.Param.curve>` (time[, dimension=-1])
+- def :meth:`getAddNewLine<NatronEngine.Param.getAddNewLine>` ()
+- def :meth:`getCanAnimate<NatronEngine.Param.getCanAnimate>` ()
+- def :meth:`getEvaluateOnChange<NatronEngine.Param.getEvaluateOnChange>` ()
+- def :meth:`getHelp<NatronEngine.Param.getHelp>` ()
+- def :meth:`getIsAnimationEnabled<NatronEngine.Param.getIsAnimationEnabled>` ()
+- def :meth:`getIsEnabled<NatronEngine.Param.getIsEnabled>` ([dimension=0])
+- def :meth:`getIsPersistant<NatronEngine.Param.getIsPersistant>` ()
+- def :meth:`getIsVisible<NatronEngine.Param.getIsVisible>` ()
+- def :meth:`getLabel<NatronEngine.Param.getLabel>` ()
+- def :meth:`getNumDimensions<NatronEngine.Param.getNumDimensions>` ()
+- def :meth:`getParent<NatronEngine.Param.getParent>` ()
+- def :meth:`getScriptName<NatronEngine.Param.getScriptName>` ()
+- def :meth:`getTypeName<NatronEngine.Param.getTypeName>` ()
+- def :meth:`random<NatronEngine.Param.random` ([min=0.,max=1.])
+- def :meth:`random<NatronEngine.Param.random` (seed)
+- def :meth:`randomInt<NatronEngine.Param.randomInt` (min,max)
+- def :meth:`randomInt<NatronEngine.Param.randomInt` (seed)
+- def :meth:`setAddNewLine<NatronEngine.Param.setAddNewLine>` (a)
+- def :meth:`setAnimationEnabled<NatronEngine.Param.setAnimationEnabled>` (e)
+- def :meth:`setEnabled<NatronEngine.Param.setEnabled>` (enabled[, dimension=0])
+- def :meth:`setEnabledByDefault<NatronEngine.Param.setEnabledByDefault>` (enabled)
+- def :meth:`setEvaluateOnChange<NatronEngine.Param.setEvaluateOnChange>` (eval)
+- def :meth:`setIconFilePath<NatronEngine.Param.setIconFilePath>` (icon)
+- def :meth:`setHelp<NatronEngine.Param.setHelp>` (help)
+- def :meth:`setPersistant<NatronEngine.Param.setPersistant>` (persistant)
+- def :meth:`setVisible<NatronEngine.Param.setVisible>` (visible)
+- def :meth:`setVisibleByDefault<NatronEngine.Param.setVisibleByDefault>` (visible)
+- def :meth:`setAsAlias<NatronEngine.Param.setAsAlias>` (otherParam)
+- def :meth:`slaveTo<NatronEngine.Param.slaveTo>` (otherParam, thisDimension, otherDimension)
+- def :meth:`unslave<NatronEngine.Param.unslave>` (dimension)
 
-.. _details:
+.. _paramdetails:
 
 Detailed Description
 --------------------
@@ -202,7 +202,7 @@ be copied.
 
     When copying a parameter, only values are copied, not properties, hence if copying a
     choice parameter, make sure that the value you copy has a meaning to the receiver otherwise
-    you might end-up with an undefined behaviour, e.g::
+    you might end-up with an undefined behaviour, e.g.:
 
     If ChoiceParam1 has 3 entries and the current index is 2 and ChoiceParam2 has 15 entries
     and current index is 10, copying ChoiceParam2 to ChoiceParam1 will end-up in undefined behaviour.
@@ -219,7 +219,7 @@ This function returns **True** upon success and **False** otherwise.
 
     If this parameter has an animation curve on the given *dimension*, then the value of
     that curve at the given *time* is returned. If the parameter has an expression on top
-    of the animation curve, the expression will be ignored, ie.g: the value of the animation
+    of the animation curve, the expression will be ignored, ie.g. the value of the animation
     curve will still be returned.
     This is useful to write custom expressions for motion design such as looping, reversing, etc...
 
@@ -374,7 +374,7 @@ Returns the type-name of the parameter.
     :param max: :class:`float<PySide.QtCore.float>`
     :rtype: :class:`float<PySide.QtCore.float>`
 
-Returns a pseudo-random value in the interval [*min*, *max*[.
+Returns a pseudo-random value in the interval \[*min*, *max*\[.
 The value is produced such that for a given parameter it will always be the same for a
 given time on the timeline, so that the value can be reproduced exactly.
 
@@ -383,7 +383,7 @@ given time on the timeline, so that the value can be reproduced exactly.
 
     Note that if you are calling multiple times random() in the same parameter expression,
     each call would return a different value, but they would all return the same value again
-    if the expressions is interpreted at the same time, e.g::
+    if the expressions is interpreted at the same time, e.g.:
 
         # Would always return the same value at a given timeline's time.
         random() - random()
@@ -549,7 +549,7 @@ This is used generally to make user parameters on groups with the "Pick" option 
     :param otherParam: :class:`Param<NatronEngine.Param>`
     :param thisDimension: :class:`int<PySide.QtCore.int>`
     :param otherDimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`bool<PySide.QtCore.bool>
+    :rtype: :class:`bool<PySide.QtCore.bool>`
 
 Set this parameter as a slave of *otherParam*.
 They need to be both of the same *type* but may vary in dimension, as long as

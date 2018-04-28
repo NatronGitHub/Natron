@@ -10,8 +10,8 @@ the following search paths in order:
   The bundled OpenFX plug-ins are located in Plugins/OFX/Natron in your Natron installation and
   the bundled PyPlugs in the directory Plugins/PyPlugs.
 
-- The standard user location for non OpenFX plug-ins (i.e PyPlugs): that is the directory
-  .Natron in the home directory, e.g:
+- The standard user location for non OpenFX plug-ins (i.e. PyPlugs): that is the directory
+  .Natron in the home directory, e.g.:
 
             On Windows that would be::
 
@@ -21,7 +21,7 @@ the following search paths in order:
 
                 ~/.Natron
 
-- The standard system location for non OpenFX plug-ins (i.e PyPlugs):
+- The standard system location for non OpenFX plug-ins (i.e. PyPlugs):
 
             Windows::
 

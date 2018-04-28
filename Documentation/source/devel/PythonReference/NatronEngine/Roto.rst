@@ -14,13 +14,12 @@ See detailed :ref:`description<roto.details>` below.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`createBezier<NatronEngine.Roto.createBezier>` (x, y, time)
-*    def :meth:`createEllipse<NatronEngine.Roto.createEllipse>` (x, y, diameter, fromCenter, time)
-*    def :meth:`createLayer<NatronEngine.Roto.createLayer>` ()
-*    def :meth:`createRectangle<NatronEngine.Roto.createRectangle>` (x, y, size, time)
-*    def :meth:`getBaseLayer<NatronEngine.Roto.getBaseLayer>` ()
-*    def :meth:`getItemByName<NatronEngine.Roto.getItemByName>` (name)
-
+- def :meth:`createBezier<NatronEngine.Roto.createBezier>` (x, y, time)
+- def :meth:`createEllipse<NatronEngine.Roto.createEllipse>` (x, y, diameter, fromCenter, time)
+- def :meth:`createLayer<NatronEngine.Roto.createLayer>` ()
+- def :meth:`createRectangle<NatronEngine.Roto.createRectangle>` (x, y, size, time)
+- def :meth:`getBaseLayer<NatronEngine.Roto.getBaseLayer>` ()
+- def :meth:`getItemByName<NatronEngine.Roto.getItemByName>` (name)
 
 .. _roto.details:
 
@@ -37,7 +36,7 @@ You can create new shapes with the :func:`createBezier(x,y,time)<NatronEngine.Ro
 To create a new :doc:`Layer` you can use the :func:`createLayer()<NatronEngine.Roto.createLayer>` function.
 
 As for other :ref:`auto-declared<autoVar>` variables, all shapes in the Roto objects can be
-accessed by their script-name, e.g::
+accessed by their script-name, e.g.:
 
     Roto1.roto.Layer1.Bezier1
 

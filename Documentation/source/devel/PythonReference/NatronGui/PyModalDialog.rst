@@ -17,10 +17,10 @@ See :ref:`detailed<modalDialog.details>` description...
 Functions
 ^^^^^^^^^
 
-*    def :meth:`addWidget<NatronGui.PyModalDialog.addWidget>` (widget)
-*    def :meth:`getParam<NatronGui.PyModalDialog.getParam>` (scriptName)
-*    def :meth:`insertWidget<NatronGui.PyModalDialog.insertWidget>` (index,widget)
-*    def :meth:`setParamChangedCallback<NatronGui.PyModalDialog.setParamChangedCallback>` (callback)
+- def :meth:`addWidget<NatronGui.PyModalDialog.addWidget>` (widget)
+- def :meth:`getParam<NatronGui.PyModalDialog.getParam>` (scriptName)
+- def :meth:`insertWidget<NatronGui.PyModalDialog.insertWidget>` (index,widget)
+- def :meth:`setParamChangedCallback<NatronGui.PyModalDialog.setParamChangedCallback>` (callback)
 
 .. _modalDialog.details:
 
@@ -28,13 +28,13 @@ Detailed Description
 ---------------------------
 
 The modal dialog is a way to ask the user for data or to inform him/her about something going on.
-A modal window means that control will not be returned to the user (i.e no event will be processed) until
+A modal window means that control will not be returned to the user (i.e. no event will be processed) until
 the user closed the dialog.
 
 If you are looking for a simple way to just ask a question or report an error, warning or even
 just a miscenalleous information, use the :func:`informationDialog(title,message)<NatronGui.PyGuiApplication.informationDialog>` function.
 
-To create a new :doc:`PyModalDialog`, just use the :func:`createModalDialog()<NatronGui.GuiApp.createModalDialog>` function, e.g::
+To create a new :doc:`PyModalDialog`, just use the :func:`createModalDialog()<NatronGui.GuiApp.createModalDialog>` function, e.g.:
 
     # In the Script Editor
 

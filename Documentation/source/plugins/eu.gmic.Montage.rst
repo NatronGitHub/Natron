@@ -18,11 +18,11 @@ This is basically a string containing expressions such as:
 
 ::
 
-     \. H\(a,b\) or V\(a,b\) stand respectively for an horizontal and vertical merge of two blocks a and b\.
+    \. H\(a,b\) or V\(a,b\) stand respectively for an horizontal and vertical merge of two blocks a and b\.
 
-     \. R\(a\), stands for a 90\-deg\. rotated version of a block a\. Use RR\(a\) and RRR\(a\) for resp\. 180\-deg and 270\-deg\. rotations\.
+    \. R\(a\), stands for a 90\-deg\. rotated version of a block a\. Use RR\(a\) and RRR\(a\) for resp\. 180\-deg and 270\-deg\. rotations\.
 
-     \. M\(a\), stands for a X\-mirrored version of a block a\. Use MRR\(a\) for a Y\-mirrored version of a\.
+    \. M\(a\), stands for a X\-mirrored version of a block a\. Use MRR\(a\) for a Y\-mirrored version of a\.
 
 - A block a can be a layer indice or a nested montage expression itself.
 

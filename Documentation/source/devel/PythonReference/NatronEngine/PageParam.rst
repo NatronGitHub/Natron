@@ -15,8 +15,7 @@ See :ref:`detailed<page.details>` description.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`addParam<NatronEngine.PageParam.addParam>` (param)
-
+- def :meth:`addParam<NatronEngine.PageParam.addParam>` (param)
 
 .. _page.details:
 
@@ -25,7 +24,7 @@ Detailed Description
 
 A page param does not hold any relevant value. Rather this is a purely graphical
 element that is used to gather parameters under a tab.
-On the graphical interface a PageParam looks like this (e.g: the *Controls* tab of the panel)
+On the graphical interface a PageParam looks like this (e.g. the *Controls* tab of the panel)
 
 .. figure:: pageParam.png
     :width: 400px
@@ -46,7 +45,7 @@ On the graphical interface a PageParam looks like this (e.g: the *Controls* tab 
 
     :param param: :class:`Param<NatronEngine.Param>`
 
-Adds *param* into the page.
+   Adds *param* into the page.
 
 
 .. warning::

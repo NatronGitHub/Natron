@@ -5,7 +5,7 @@ Working with groups
 
 Groups in Natron are a complete sub-nodegraph into which the user can manage nodes exactly
 like in the *main* nodegraph, but everything in that sub-group will be referenced as 1
-node in the hierarchy above, e.g:
+node in the hierarchy above, e.g.:
 
 .. figure:: subGroups.png
     :width: 800px
@@ -24,7 +24,7 @@ Note that you can also add *Output* nodes to the top-level graph of Natron (the 
 They are useful if you need to export your project as a group.
 
 When used in the top-level graph, there can be multiple *Output* nodes, which can then be
-used when launching Natron from the command-line to render the script, e.g::
+used when launching Natron from the command-line to render the script, e.g.:
 
     NatronRenderer -o1 /FastDisk/Pictures/sequence###.exr -o2 /FastDisk/Pictures/test###.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py
 
@@ -258,7 +258,7 @@ To work as a plug-in, your script should implemented the following functions::
     def getIconPath():
         return ICON_PATH
 
-    # This function is mandatory and should return the plug-in grouping, e.g:
+    # This function is mandatory and should return the plug-in grouping, e.g.:
     # "Other/Groups"
     def getGrouping():
         return GROUPING
@@ -297,6 +297,7 @@ how to write scripts yourself.
     or the attributes of the modules imported.
 
 .. _pyPlugHandWritten:
+
 Adding hand-written code (callbacks, etc...)
 --------------------------------------------
 
@@ -304,7 +305,7 @@ It is common to add hand-written code to a PyPlug. When making changes to the Py
 the GUI of Natron, exporting it again will overwrite any change made to the python script
 of the PyPlug.
 In order to help development, all hand-written code can be written in a separate script
-with the **same** name of the original Python script but ending with *Ext.py*, e.g::
+with the **same** name of the original Python script but ending with *Ext.py*, e.g.:
 
     MyPyPlugExt.py
 

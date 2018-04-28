@@ -11,15 +11,13 @@ Synopsis
 
 See :doc:`IntParam` for more details.
 
-
 Functions
 ^^^^^^^^^
 
-*    def :meth:`set<NatronEngine.Int3DParam.get>` ()
-*    def :meth:`set<NatronEngine.Int3DParam.get>` (frame)
-*    def :meth:`set<NatronEngine.Int3DParam.set>` (x, y, z)
-*    def :meth:`set<NatronEngine.Int3DParam.set>` (x, y, z, frame)
-
+- def :meth:`set<NatronEngine.Int3DParam.get>` ()
+- def :meth:`set<NatronEngine.Int3DParam.get>` (frame)
+- def :meth:`set<NatronEngine.Int3DParam.set>` (x, y, z)
+- def :meth:`set<NatronEngine.Int3DParam.set>` (x, y, z, frame)
 
 Detailed Description
 --------------------

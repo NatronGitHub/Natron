@@ -86,7 +86,7 @@ that are more complicated than a simple boolean value.
      A time-line seek changed the call, called when timeline time changes
    - eValueChangedReasonSlaveRefresh ,
      A master parameter ordered the slave to refresh its value
-   -  eValueChangedReasonRestoreDefault ,
+   - eValueChangedReasonRestoreDefault ,
      The param value has been restored to its defaults
 
 .. attribute:: NatronEngine.Natron.AnimationLevelEnum

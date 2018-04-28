@@ -15,24 +15,24 @@ See :ref:`detailed<pyTabWidget.details>` description...
 Functions
 ^^^^^^^^^
 
-*    def :meth:`appendTab<NatronGui.PyTabWidget.appendTab>` (tab)
-*    def :meth:`closeCurrentTab<NatronGui.PyTabWidget.closeCurrentTab>` ()
-*    def :meth:`closeTab<NatronGui.PyTabWidget.closeTab>` (index)
-*    def :meth:`closePane<NatronGui.PyTabWidget.closePane>` ()
-*    def :meth:`count<NatronGui.PyTabWidget.count>` ()
-*    def :meth:`currentWidget<NatronGui.PyTabWidget.currentWidget>` ()
-*    def :meth:`floatCurrentTab<NatronGui.PyTabWidget.floatCurrentTab>` ()
-*    def :meth:`floatPane<NatronGui.PyTabWidget.floatPane>` ()
-*    def :meth:`getCurrentIndex<NatronGui.PyTabWidget.getCurrentIndex>` ()
-*    def :meth:`getScriptName<NatronGui.PyTabWidget.getScriptName>` ()
-*    def :meth:`getTabLabel<NatronGui.PyTabWidget.getTabLabel>` (index)
-*    def :meth:`insertTab<NatronGui.PyTabWidget.insertTab>` (index,tab)
-*    def :meth:`removeTab<NatronGui.PyTabWidget.removeTab>` (tab)
-*    def :meth:`removeTab<NatronGui.PyTabWidget.removeTab>` (index)
-*    def :meth:`setCurrentIndex<NatronGui.PyTabWidget.setCurrentIndex>` (index)
-*    def :meth:`setNextTabCurrent<NatronGui.PyTabWidget.setNextTabCurrent>` ()
-*    def :meth:`splitHorizontally<NatronGui.PyTabWidget.splitHorizontally>` ()
-*    def :meth:`splitVertically<NatronGui.PyTabWidget.splitVertically>` ()
+- def :meth:`appendTab<NatronGui.PyTabWidget.appendTab>` (tab)
+- def :meth:`closeCurrentTab<NatronGui.PyTabWidget.closeCurrentTab>` ()
+- def :meth:`closeTab<NatronGui.PyTabWidget.closeTab>` (index)
+- def :meth:`closePane<NatronGui.PyTabWidget.closePane>` ()
+- def :meth:`count<NatronGui.PyTabWidget.count>` ()
+- def :meth:`currentWidget<NatronGui.PyTabWidget.currentWidget>` ()
+- def :meth:`floatCurrentTab<NatronGui.PyTabWidget.floatCurrentTab>` ()
+- def :meth:`floatPane<NatronGui.PyTabWidget.floatPane>` ()
+- def :meth:`getCurrentIndex<NatronGui.PyTabWidget.getCurrentIndex>` ()
+- def :meth:`getScriptName<NatronGui.PyTabWidget.getScriptName>` ()
+- def :meth:`getTabLabel<NatronGui.PyTabWidget.getTabLabel>` (index)
+- def :meth:`insertTab<NatronGui.PyTabWidget.insertTab>` (index,tab)
+- def :meth:`removeTab<NatronGui.PyTabWidget.removeTab>` (tab)
+- def :meth:`removeTab<NatronGui.PyTabWidget.removeTab>` (index)
+- def :meth:`setCurrentIndex<NatronGui.PyTabWidget.setCurrentIndex>` (index)
+- def :meth:`setNextTabCurrent<NatronGui.PyTabWidget.setNextTabCurrent>` ()
+- def :meth:`splitHorizontally<NatronGui.PyTabWidget.splitHorizontally>` ()
+- def :meth:`splitVertically<NatronGui.PyTabWidget.splitVertically>` ()
 
 .. _pyTabWidget.details:
 
@@ -57,7 +57,7 @@ split it to make new panes.
 
 To retrieve an existing :doc:`PyTabWidget` you can call the :func:`getTabWidget(scriptName)<NatronGui.GuiApp.getTabWidget>`
 function of :doc:`GuiApp`.
-::
+
     pane1 = app.getTabWidget("Pane1")
 
 Note that the script-name of a pane can be seen on the graphical user interface by hovering

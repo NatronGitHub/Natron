@@ -54,7 +54,7 @@ in the compositing field:
 Blender is probably the most well known open-source software in the 3D-modeling and 
 animation field. This is not so true for its compositing module. I see 2 reasons for this:
 - The graphical user interface is too complicated and is far from what industry softwares
-interfaces actually look like (i.e The Foundry Nuke ,Adobe After Effects,eyeon Fusion,...)
+interfaces actually look like (i.e. The Foundry Nuke ,Adobe After Effects,eyeon Fusion,...)
 - This open-source solution doesn't implement the standard open-source solution for making
 visual effects plug-ins: OpenFX ! 
 This is really game breaking, more and more professional studios are developing plug-ins
@@ -151,7 +151,7 @@ Also the rendering can be launched as a background process (i.e: command-line) w
 any graphical user interface. (It doesn't even require a X11 server on linux).
 This allows the application to be launched by several computers at the same time (i.e: 
 a render farm) with a simple shell script that would dispatch the total image sequences
-among the available computers (e.g: PC 1 takes frames 0-99, PC 2 takes frames 100-199
+among the available computers (e.g. PC 1 takes frames 0-99, PC 2 takes frames 100-199
 etc...).
 
 See the [command line manual](#cmdlineArgs) for more informations.
@@ -242,6 +242,6 @@ Starts Natron in background mode, no graphical user interface will be displayed.
 
 * --writer <WriterNodeName>
 WriterNodeName should contain the name of a writer node in the project that will be used
-to render. You can chain this argument multiple times, e.g:
+to render. You can chain this argument multiple times, e.g.:
 
 ./Natron --background --writer Writer_1 --writer Writer_2 toto.ntp  

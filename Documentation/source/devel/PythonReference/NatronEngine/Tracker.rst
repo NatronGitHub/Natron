@@ -13,12 +13,12 @@ See :ref:`detailed<tracker.details>` description below.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`createTrack<NatronEngine.Tracker.createTrack>` ()
-*    def :meth:`getTrackByName<NatronEngine.Tracker.getTrackByName>` (scriptName)
-*    def :meth:`getAllTracks<NatronEngine.Tracker.getAllTracks>` ()
-*    def :meth:`getSelectedTracks<NatronEngine.Tracker.getSelectedTracks>` ()
-*    def :meth:`startTracking<NatronEngine.Tracker.startTracking>` (tracks, start, end, forward)
-*    def :meth:`stopTracking<NatronEngine.Tracker.stopTracking>` ()
+- def :meth:`createTrack<NatronEngine.Tracker.createTrack>` ()
+- def :meth:`getTrackByName<NatronEngine.Tracker.getTrackByName>` (scriptName)
+- def :meth:`getAllTracks<NatronEngine.Tracker.getAllTracks>` ()
+- def :meth:`getSelectedTracks<NatronEngine.Tracker.getSelectedTracks>` ()
+- def :meth:`startTracking<NatronEngine.Tracker.startTracking>` (tracks, start, end, forward)
+- def :meth:`stopTracking<NatronEngine.Tracker.stopTracking>` ()
 
 .. _tracker.details:
 

@@ -17,27 +17,27 @@ See :ref:`detailed<guiApp.details>` description...
 Functions
 ^^^^^^^^^
 
-*    def :meth:`createModalDialog<NatronGui.GuiApp.createModalDialog>` ()
-*    def :meth:`getFilenameDialog<NatronGui.GuiApp.getFilenameDialog>` (filters[, location=None])
-*    def :meth:`getSequenceDialog<NatronGui.GuiApp.getSequenceDialog>` (filters[, location=None])
-*    def :meth:`getDirectoryDialog<NatronGui.GuiApp.getDirectoryDialog>` ([location=None])
-*    def :meth:`getRGBColorDialog<NatronGui.GuiApp.getRGBColorDialog>` ()
-*    def :meth:`getTabWidget<NatronGui.GuiApp.getTabWidget>` (scriptName)
-*    def :meth:`getSelectedNodes<NatronGui.GuiApp.getSelectedNodes>` ([group=None])
-*    def :meth:`getViewer<NatronGui.GuiApp.getViewer>` (scriptName)
-*    def :meth:`getUserPanel<NatronGui.GuiApp.getUserPanel>` (scriptName)
-*    def :meth:`moveTab<NatronGui.GuiApp.moveTab>` (tabScriptName,pane)
-*    def :meth:`saveFilenameDialog<NatronGui.GuiApp.saveFilenameDialog>` (filters[, location=None])
-*    def :meth:`saveSequenceDialog<NatronGui.GuiApp.saveSequenceDialog>` (filters[, location=None])
-*    def :meth:`selectNode<NatronGui.GuiApp.selectNode>` (node,clearPreviousSelection)
-*    def :meth:`deselectNode<NatronGui.GuiApp.deselectNode>` (node)
-*    def :meth:`setSelection<NatronGui.GuiApp.setSelection>` (nodes)
-*    def :meth:`selectAllNodes<NatronGui.GuiApp.selectAllNodes>` ([group=None])
-*    def :meth:`clearSelection<NatronGui.GuiApp.clearSelection>` ([group=None])
-*    def :meth:`registerPythonPanel<NatronGui.GuiApp.registerPythonPanel>` (panel,pythonFunction)
-*    def :meth:`unregisterPythonPanel<NatronGui.GuiApp.unregisterPythonPanel>` (panel)
-*    def :meth:`renderBlocking<NatronGui.GuiApp.render>` (effect,firstFrame,lastFrame,frameStep)
-*    def :meth:`renderBlocking<NatronGui.GuiApp.render>` (tasks)
+- def :meth:`createModalDialog<NatronGui.GuiApp.createModalDialog>` ()
+- def :meth:`getFilenameDialog<NatronGui.GuiApp.getFilenameDialog>` (filters[, location=None])
+- def :meth:`getSequenceDialog<NatronGui.GuiApp.getSequenceDialog>` (filters[, location=None])
+- def :meth:`getDirectoryDialog<NatronGui.GuiApp.getDirectoryDialog>` ([location=None])
+- def :meth:`getRGBColorDialog<NatronGui.GuiApp.getRGBColorDialog>` ()
+- def :meth:`getTabWidget<NatronGui.GuiApp.getTabWidget>` (scriptName)
+- def :meth:`getSelectedNodes<NatronGui.GuiApp.getSelectedNodes>` ([group=None])
+- def :meth:`getViewer<NatronGui.GuiApp.getViewer>` (scriptName)
+- def :meth:`getUserPanel<NatronGui.GuiApp.getUserPanel>` (scriptName)
+- def :meth:`moveTab<NatronGui.GuiApp.moveTab>` (tabScriptName,pane)
+- def :meth:`saveFilenameDialog<NatronGui.GuiApp.saveFilenameDialog>` (filters[, location=None])
+- def :meth:`saveSequenceDialog<NatronGui.GuiApp.saveSequenceDialog>` (filters[, location=None])
+- def :meth:`selectNode<NatronGui.GuiApp.selectNode>` (node,clearPreviousSelection)
+- def :meth:`deselectNode<NatronGui.GuiApp.deselectNode>` (node)
+- def :meth:`setSelection<NatronGui.GuiApp.setSelection>` (nodes)
+- def :meth:`selectAllNodes<NatronGui.GuiApp.selectAllNodes>` ([group=None])
+- def :meth:`clearSelection<NatronGui.GuiApp.clearSelection>` ([group=None])
+- def :meth:`registerPythonPanel<NatronGui.GuiApp.registerPythonPanel>` (panel,pythonFunction)
+- def :meth:`unregisterPythonPanel<NatronGui.GuiApp.unregisterPythonPanel>` (panel)
+- def :meth:`renderBlocking<NatronGui.GuiApp.render>` (effect,firstFrame,lastFrame,frameStep)
+- def :meth:`renderBlocking<NatronGui.GuiApp.render>` (tasks)
 
 .. _guiApp.details:
 
@@ -47,7 +47,7 @@ Detailed Description
 See :ref:`App<NatronEngine.App>` for the documentation of base functionnalities of this class.
 
 To create a new :ref:`modal dialog<NatronGui.PyModalDialog>` , use the
-:func:`createModalDialog()<NatronGui.GuiApp.createModalDialog>`function.
+:func:`createModalDialog()<NatronGui.GuiApp.createModalDialog>` function.
 
 Several functions are made available to pop dialogs to ask the user for filename(s) or colors.
 See :func:`getFilenameDialog(filters,location)<NatronGui.GuiApp.getFilenameDialog>` and
@@ -56,7 +56,7 @@ See :func:`getFilenameDialog(filters,location)<NatronGui.GuiApp.getFilenameDialo
 To create a new custom python panel, there are several ways to do it:
 
     * Sub-class the :doc:`PyPanel` class and make your own PySide widget
-    * Create a :doc:`PyPanel`object and add controls using user parameters (as done for modal dialogs)
+    * Create a :doc:`PyPanel` object and add controls using user parameters (as done for modal dialogs)
 
 Once created, you can register the panel in the project so that it gets saved into the layout
 by calling :func:`registerPythonPanel(panel,pythonFunction)<NatronGui.GuiApp.registerPythonPanel>`

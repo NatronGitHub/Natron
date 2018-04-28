@@ -251,40 +251,40 @@ These three comment lines describe the label, filter, and wrap parameters for ea
 
 ::
 
-    // iChannel0: Source, filter=linear, wrap=clamp
-    // iChannel1: Modulate (Image containing a factor to be applied to the Blur size in the first channel), filter=linear, wrap=clamp
-    // BBox: iChannel0
+   // iChannel0: Source, filter=linear, wrap=clamp
+   // iChannel1: Modulate (Image containing a factor to be applied to the Blur size in the first channel), filter=linear, wrap=clamp
+   // BBox: iChannel0
 
 Two constant global variables were added, which are ignored by the Shadertoy plugin, so that you can still copy-and-paste the source code in Shadertoy 0.8.8 and it still works (unfortunately, it does not work anymore with later versions of Shadertoy). You can safely ignore these:
 
 ::
 
-    const vec2 iRenderScale = vec2(1.,1.);
-    const vec2 iChannelOffset[4] = vec2[4]( vec2(0.,0.), vec2(0.,0.), vec2(0.,0.), vec2(0.,0.) );
+   const vec2 iRenderScale = vec2(1.,1.);
+   const vec2 iChannelOffset[4] = vec2[4]( vec2(0.,0.), vec2(0.,0.), vec2(0.,0.), vec2(0.,0.) );
 
 Then the uniform section gives the list of what will appear as OpenFX parameters, together with their default value, label, help string, and default range. Note that in the original Shadertoy code, the blur size was a constant hidden inside the code. Finding out the parameters of a Shadertoy requires precise code inspection. If you modify this part of the code, pressing the “Auto. Params” button will apply these changes to the OpenFX parameters:
 
 ::
 
-    uniform float size = 10.; // Size (Size of the filter kernel in pixel units. The standard deviation of the corresponding Gaussian is size/2.4.), min=0., max=21.
-    uniform bool perpixel_size = false; // Modulate (Modulate the blur size by multiplying it by the first channel of the Modulate input)
+   uniform float size = 10.; // Size (Size of the filter kernel in pixel units. The standard deviation of the corresponding Gaussian is size/2.4.), min=0., max=21.
+   uniform bool perpixel_size = false; // Modulate (Modulate the blur size by multiplying it by the first channel of the Modulate input)
 
 In the ``mainImage`` function, which does the processing, we compute the ``mSize`` and ``kSize`` variables, which are the kernel size and mask size for that particular algorithm, from the “Size” parameter, multiplied by the render scale to get a scale-invariant effect. If the “Modulate” check box is on, we also multiply the size by the value found in the first channel (which is red, not alpha) of the “Modulate” input, wich is in the iChannel1 texture according to the comments at the beginning of the source code. This can be use to modulate the blur size depending on the position in the image. The “Modulate” input may be for example connected to the output of a Roto node (with the “R” checkbox checked in the Roto node). Since the Roto output may not have the same size and origin as the Source image, we take care of these by using the iChannelOffset and iChannelResolution values for input 1.
 
 ::
 
-    float fSize = size * iRenderScale.x;
-    if (perpixel_size) {
-      fSize *= texture2D(iChannel1, (fragCoord.xy-iChannelOffset[1].xy)/iChannelResolution[1].xy).x;
-    }
-    int kSize = int(min(int((fSize-1)/2), KSIZE_MAX));
-    int mSize = kSize*2+1;
+   float fSize = size * iRenderScale.x;
+   if (perpixel_size) {
+     fSize *= texture2D(iChannel1, (fragCoord.xy-iChannelOffset[1].xy)/iChannelResolution[1].xy).x;
+   }
+   int kSize = int(min(int((fSize-1)/2), KSIZE_MAX));
+   int mSize = kSize*2+1;
 
 In the rest of the code, the only difference is that the blur size is not constant and equal to 7, but comes from the fSize variable:
 
 ::
 
-    float sigma = fSize / 2.4;
+   float sigma = fSize / 2.4;
 
 Issues with Gamma correction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

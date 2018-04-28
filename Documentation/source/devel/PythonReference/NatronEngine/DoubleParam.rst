@@ -17,25 +17,25 @@ See :ref:`detailed<double.details>` description...
 Functions
 ^^^^^^^^^
 
-*    def :meth:`get<NatronEngine.DoubleParam.get>` ()
-*    def :meth:`get<NatronEngine.DoubleParam.get>` (frame)
-*    def :meth:`getDefaultValue<NatronEngine.DoubleParam.getDefaultValue>` ([dimension=0])
-*    def :meth:`getDisplayMaximum<NatronEngine.DoubleParam.getDisplayMaximum>` (dimension)
-*    def :meth:`getDisplayMinimum<NatronEngine.DoubleParam.getDisplayMinimum>` (dimension)
-*    def :meth:`getMaximum<NatronEngine.DoubleParam.getMaximum>` ([dimension=0])
-*    def :meth:`getMinimum<NatronEngine.DoubleParam.getMinimum>` ([dimension=0])
-*    def :meth:`getValue<NatronEngine.DoubleParam.getValue>` ([dimension=0])
-*    def :meth:`getValueAtTime<NatronEngine.DoubleParam.getValueAtTime>` (time[, dimension=0])
-*    def :meth:`restoreDefaultValue<NatronEngine.DoubleParam.restoreDefaultValue>` ([dimension=0])
-*    def :meth:`set<NatronEngine.DoubleParam.set>` (x)
-*    def :meth:`set<NatronEngine.DoubleParam.set>` (x, frame)
-*    def :meth:`setDefaultValue<NatronEngine.DoubleParam.setDefaultValue>` (value[, dimension=0])
-*    def :meth:`setDisplayMaximum<NatronEngine.DoubleParam.setDisplayMaximum>` (maximum[, dimension=0])
-*    def :meth:`setDisplayMinimum<NatronEngine.DoubleParam.setDisplayMinimum>` (minimum[, dimension=0])
-*    def :meth:`setMaximum<NatronEngine.DoubleParam.setMaximum>` (maximum[, dimension=0])
-*    def :meth:`setMinimum<NatronEngine.DoubleParam.setMinimum>` (minimum[, dimension=0])
-*    def :meth:`setValue<NatronEngine.DoubleParam.setValue>` (value[, dimension=0])
-*    def :meth:`setValueAtTime<NatronEngine.DoubleParam.setValueAtTime>` (value, time[, dimension=0])
+- def :meth:`get<NatronEngine.DoubleParam.get>` ()
+- def :meth:`get<NatronEngine.DoubleParam.get>` (frame)
+- def :meth:`getDefaultValue<NatronEngine.DoubleParam.getDefaultValue>` ([dimension=0])
+- def :meth:`getDisplayMaximum<NatronEngine.DoubleParam.getDisplayMaximum>` (dimension)
+- def :meth:`getDisplayMinimum<NatronEngine.DoubleParam.getDisplayMinimum>` (dimension)
+- def :meth:`getMaximum<NatronEngine.DoubleParam.getMaximum>` ([dimension=0])
+- def :meth:`getMinimum<NatronEngine.DoubleParam.getMinimum>` ([dimension=0])
+- def :meth:`getValue<NatronEngine.DoubleParam.getValue>` ([dimension=0])
+- def :meth:`getValueAtTime<NatronEngine.DoubleParam.getValueAtTime>` (time[, dimension=0])
+- def :meth:`restoreDefaultValue<NatronEngine.DoubleParam.restoreDefaultValue>` ([dimension=0])
+- def :meth:`set<NatronEngine.DoubleParam.set>` (x)
+- def :meth:`set<NatronEngine.DoubleParam.set>` (x, frame)
+- def :meth:`setDefaultValue<NatronEngine.DoubleParam.setDefaultValue>` (value[, dimension=0])
+- def :meth:`setDisplayMaximum<NatronEngine.DoubleParam.setDisplayMaximum>` (maximum[, dimension=0])
+- def :meth:`setDisplayMinimum<NatronEngine.DoubleParam.setDisplayMinimum>` (minimum[, dimension=0])
+- def :meth:`setMaximum<NatronEngine.DoubleParam.setMaximum>` (maximum[, dimension=0])
+- def :meth:`setMinimum<NatronEngine.DoubleParam.setMinimum>` (minimum[, dimension=0])
+- def :meth:`setValue<NatronEngine.DoubleParam.setValue>` (value[, dimension=0])
+- def :meth:`setValueAtTime<NatronEngine.DoubleParam.setValueAtTime>` (value, time[, dimension=0])
 
 
 .. _double.details:
@@ -53,7 +53,7 @@ A 1-dimensional :doc:`DoubleParam`
 
 .. figure:: doubleParam.png
 
-A 2-dimensional :doc:`Double2Dparam` 
+A 2-dimensional :doc:`Double2DParam` 
 
 .. figure:: double2DParam.png
 

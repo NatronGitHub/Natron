@@ -14,11 +14,11 @@ See :ref:`detailed<track.details>` description below.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`setScriptName<NatronEngine.Track.setScriptName>` (scriptName)
-*    def :meth:`getScriptName<NatronEngine.Track.getScriptName>` ()
-*    def :meth:`getParam<NatronEngine.Track.getParam>` (paramScriptName)
-*    def :meth:`getParams<NatronEngine.Track.getParams>` ()
-*    def :meth:`reset<NatronEngine.Track.reset>` ()
+- def :meth:`setScriptName<NatronEngine.Track.setScriptName>` (scriptName)
+- def :meth:`getScriptName<NatronEngine.Track.getScriptName>` ()
+- def :meth:`getParam<NatronEngine.Track.getParam>` (paramScriptName)
+- def :meth:`getParams<NatronEngine.Track.getParams>` ()
+- def :meth:`reset<NatronEngine.Track.reset>` ()
 
 .. _track.details:
 

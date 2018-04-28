@@ -11,7 +11,7 @@ There are 2 different initialization scripts that Natron will look for in the :r
     * **init.py**
 
         This script is always run and should only initialize non-GUI stuff. You may not use
-        it to initialize e.g new menus or windows. Generally this is a good place to initialize
+        it to initialize e.g. new menus or windows. Generally this is a good place to initialize
         all the callbacks that you may want to use in your projects.
 
     * **initGui.py**

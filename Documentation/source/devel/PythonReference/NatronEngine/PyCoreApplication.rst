@@ -14,32 +14,31 @@ See :ref:`detailed description<coreApp.details>`...
 
 Functions
 ^^^^^^^^^
-.. container:: function_list
 
-*    def :meth:`appendToNatronPath<NatronEngine.PyCoreApplication.appendToNatronPath>` (path)
-*    def :meth:`getSettings<NatronEngine.PyCoreApplication.getSettings>` ()
-*    def :meth:`getBuildNumber<NatronEngine.PyCoreApplication.getBuildNumber>` ()
-*    def :meth:`getInstance<NatronEngine.PyCoreApplication.getInstance>` (idx)
-*    def :meth:`getActiveInstance<NatronEngine.PyCoreApplication.getActiveInstance>` ()
-*    def :meth:`getNatronDevelopmentStatus<NatronEngine.PyCoreApplication.getNatronDevelopmentStatus>` ()
-*    def :meth:`getNatronPath<NatronEngine.PyCoreApplication.getNatronPath>` ()
-*    def :meth:`getNatronVersionEncoded<NatronEngine.PyCoreApplication.getNatronVersionEncoded>` ()
-*    def :meth:`getNatronVersionMajor<NatronEngine.PyCoreApplication.getNatronVersionMajor>` ()
-*    def :meth:`getNatronVersionMinor<NatronEngine.PyCoreApplication.getNatronVersionMinor>` ()
-*    def :meth:`getNatronVersionRevision<NatronEngine.PyCoreApplication.getNatronVersionRevision>` ()
-*    def :meth:`getNatronVersionString<NatronEngine.PyCoreApplication.getNatronVersionString>` ()
-*    def :meth:`getNumCpus<NatronEngine.PyCoreApplication.getNumCpus>` ()
-*    def :meth:`getNumInstances<NatronEngine.PyCoreApplication.getNumInstances>` ()
-*    def :meth:`getPluginIDs<NatronEngine.PyCoreApplication.getPluginIDs>` ()
-*    def :meth:`getPluginIDs<NatronEngine.PyCoreApplication.getPluginIDs>` (filter)
-*    def :meth:`isBackground<NatronEngine.PyCoreApplication.isBackground>` ()
-*    def :meth:`is64Bit<NatronEngine.PyCoreApplication.is64Bit>` ()
-*    def :meth:`isLinux<NatronEngine.PyCoreApplication.isLinux>` ()
-*    def :meth:`isMacOSX<NatronEngine.PyCoreApplication.isMacOSX>` ()
-*    def :meth:`isUnix<NatronEngine.PyCoreApplication.isUnix>` ()
-*    def :meth:`isWindows<NatronEngine.PyCoreApplication.isWindows>` ()
-*    def :meth:`setOnProjectCreatedCallback<NatronEngine.PyCoreApplication.setOnProjectCreatedCallback>` (pythonFunctionName)
-*    def :meth:`setOnProjectLoadedCallback<NatronEngine.PyCoreApplication.setOnProjectLoadedCallback>` (pythonFunctionName)
+- def :meth:`appendToNatronPath<NatronEngine.PyCoreApplication.appendToNatronPath>` (path)
+- def :meth:`getSettings<NatronEngine.PyCoreApplication.getSettings>` ()
+- def :meth:`getBuildNumber<NatronEngine.PyCoreApplication.getBuildNumber>` ()
+- def :meth:`getInstance<NatronEngine.PyCoreApplication.getInstance>` (idx)
+- def :meth:`getActiveInstance<NatronEngine.PyCoreApplication.getActiveInstance>` ()
+- def :meth:`getNatronDevelopmentStatus<NatronEngine.PyCoreApplication.getNatronDevelopmentStatus>` ()
+- def :meth:`getNatronPath<NatronEngine.PyCoreApplication.getNatronPath>` ()
+- def :meth:`getNatronVersionEncoded<NatronEngine.PyCoreApplication.getNatronVersionEncoded>` ()
+- def :meth:`getNatronVersionMajor<NatronEngine.PyCoreApplication.getNatronVersionMajor>` ()
+- def :meth:`getNatronVersionMinor<NatronEngine.PyCoreApplication.getNatronVersionMinor>` ()
+- def :meth:`getNatronVersionRevision<NatronEngine.PyCoreApplication.getNatronVersionRevision>` ()
+- def :meth:`getNatronVersionString<NatronEngine.PyCoreApplication.getNatronVersionString>` ()
+- def :meth:`getNumCpus<NatronEngine.PyCoreApplication.getNumCpus>` ()
+- def :meth:`getNumInstances<NatronEngine.PyCoreApplication.getNumInstances>` ()
+- def :meth:`getPluginIDs<NatronEngine.PyCoreApplication.getPluginIDs>` ()
+- def :meth:`getPluginIDs<NatronEngine.PyCoreApplication.getPluginIDs>` (filter)
+- def :meth:`isBackground<NatronEngine.PyCoreApplication.isBackground>` ()
+- def :meth:`is64Bit<NatronEngine.PyCoreApplication.is64Bit>` ()
+- def :meth:`isLinux<NatronEngine.PyCoreApplication.isLinux>` ()
+- def :meth:`isMacOSX<NatronEngine.PyCoreApplication.isMacOSX>` ()
+- def :meth:`isUnix<NatronEngine.PyCoreApplication.isUnix>` ()
+- def :meth:`isWindows<NatronEngine.PyCoreApplication.isWindows>` ()
+- def :meth:`setOnProjectCreatedCallback<NatronEngine.PyCoreApplication.setOnProjectCreatedCallback>` (pythonFunctionName)
+- def :meth:`setOnProjectLoadedCallback<NatronEngine.PyCoreApplication.setOnProjectLoadedCallback>` (pythonFunctionName)
 
 .. _coreApp.details:
 
@@ -50,7 +49,7 @@ When running Natron there's a **unique** instance of the :doc:`PyCoreApplication
 It holds general informations about the process.
 
 Generally, throughout your scripts, you can access this object with the variable *natron*
-that Natron pre-declared for you, e.g::
+that Natron pre-declared for you, e.g.:
 
     natron.getPluginIDs()
 
@@ -155,7 +154,7 @@ the preferences of Natron.
     :rtype: :class:`int<PySide.QtCore.int>`
 
 Returns the build-number of the current version of Natron. Generally this is used for
-release candidates, e.g::
+release candidates, e.g.:
 
     Natron v1.0.0-RC1  : build number = 1
     Natron v1.0.0-RC2  : build number = 2
@@ -169,7 +168,7 @@ release candidates, e.g::
     :param idx: :class:`int<PySide.QtCore.int>`
     :rtype: :class:`App<NatronEngine.App>`
 
-Returns the :doc:`App` instance at the given *idx*. Note that *idx* is 0-based, e.g:
+Returns the :doc:`App` instance at the given *idx*. Note that *idx* is 0-based, e.g.:
 0 would return what's pointed to by *app1*.
 
 
@@ -254,7 +253,7 @@ Returns the revision number of the version. If the version is 1.2.3, that would 
 
     :rtype: :class:`str<NatronEngine.std::string>`
 
-Returns the version of Natron as a string, e.g:: *"1.1.0"*
+Returns the version of Natron as a string, e.g.: *"1.1.0"*
 
 
 

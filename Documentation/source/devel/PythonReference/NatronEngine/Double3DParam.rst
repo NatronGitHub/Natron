@@ -13,10 +13,11 @@ See :doc:`DoubleParam` for more informations on this class.
 
 Functions
 ^^^^^^^^^
-*    def :meth:`get<NatronEngine.Double3DParam.get>` ()
-*    def :meth:`get<NatronEngine.Double3DParam.get>` (frame)
-*    def :meth:`set<NatronEngine.Double3DParam.set>` (x, y, z)
-*    def :meth:`set<NatronEngine.Double3DParam.set>` (x, y, z, frame)
+
+- def :meth:`get<NatronEngine.Double3DParam.get>` ()
+- def :meth:`get<NatronEngine.Double3DParam.get>` (frame)
+- def :meth:`set<NatronEngine.Double3DParam.set>` (x, y, z)
+- def :meth:`set<NatronEngine.Double3DParam.set>` (x, y, z, frame)
 
 
 

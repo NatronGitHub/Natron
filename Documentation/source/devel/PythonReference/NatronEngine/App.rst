@@ -16,27 +16,28 @@ See :ref:`detailed<app.details>` description...
 
 Functions
 ^^^^^^^^^
-*    def :meth:`addProjectLayer<NatronEngine.App.addProjectLayer>` (layer)
-*    def :meth:`addFormat<NatronEngine.App.addFormat>` (formatSpec)
-*    def :meth:`createNode<NatronEngine.App.createNode>` (pluginID[, majorVersion=-1[, group=None] [, properties=None]])
-*    def :meth:`createReader<NatronEngine.App.createReader>` (filename[, group=None] [, properties=None])
-*    def :meth:`createWriter<NatronEngine.App.createWriter>` (filename[, group=None] [, properties=None])
-*    def :meth:`getAppID<NatronEngine.App.getAppID>` ()
-*    def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
-*    def :meth:`getViewNames<NatronEngine.App.getViewNames>` ()
-*    def :meth:`render<NatronEngine.App.render>` (effect,firstFrame,lastFrame[,frameStep])
-*    def :meth:`render<NatronEngine.App.render>` (tasks)
-*    def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename)
-*    def :meth:`saveProject<NatronEngine.App.saveProject>` (filename)
-*    def :meth:`saveProjectAs<NatronEngine.App.saveProjectAs>` (filename)
-*    def :meth:`loadProject<NatronEngine.App.loadProject>` (filename)
-*    def :meth:`resetProject<NatronEngine.App.resetProject>` ()
-*    def :meth:`closeProject<NatronEngine.App.closeProject>` ()
-*    def :meth:`newProject<NatronEngine.App.newProject>` ()
-*    def :meth:`timelineGetLeftBound<NatronEngine.App.timelineGetLeftBound>` ()
-*    def :meth:`timelineGetRightBound<NatronEngine.App.timelineGetRightBound>` ()
-*    def :meth:`timelineGetTime<NatronEngine.App.timelineGetTime>` ()
-*    def :meth:`writeToScriptEditor<NatronEngine.App.writeToScriptEditor>` (message)
+
+- def :meth:`addProjectLayer<NatronEngine.App.addProjectLayer>` (layer)
+- def :meth:`addFormat<NatronEngine.App.addFormat>` (formatSpec)
+- def :meth:`createNode<NatronEngine.App.createNode>` (pluginID[, majorVersion=-1[, group=None] [, properties=None]])
+- def :meth:`createReader<NatronEngine.App.createReader>` (filename[, group=None] [, properties=None])
+- def :meth:`createWriter<NatronEngine.App.createWriter>` (filename[, group=None] [, properties=None])
+- def :meth:`getAppID<NatronEngine.App.getAppID>` ()
+- def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
+- def :meth:`getViewNames<NatronEngine.App.getViewNames>` ()
+- def :meth:`render<NatronEngine.App.render>` (effect,firstFrame,lastFrame[,frameStep])
+- def :meth:`render<NatronEngine.App.render>` (tasks)
+- def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename)
+- def :meth:`saveProject<NatronEngine.App.saveProject>` (filename)
+- def :meth:`saveProjectAs<NatronEngine.App.saveProjectAs>` (filename)
+- def :meth:`loadProject<NatronEngine.App.loadProject>` (filename)
+- def :meth:`resetProject<NatronEngine.App.resetProject>` ()
+- def :meth:`closeProject<NatronEngine.App.closeProject>` ()
+- def :meth:`newProject<NatronEngine.App.newProject>` ()
+- def :meth:`timelineGetLeftBound<NatronEngine.App.timelineGetLeftBound>` ()
+- def :meth:`timelineGetRightBound<NatronEngine.App.timelineGetRightBound>` ()
+- def :meth:`timelineGetTime<NatronEngine.App.timelineGetTime>` ()
+- def :meth:`writeToScriptEditor<NatronEngine.App.writeToScriptEditor>` (message)
 
 .. _app.details:
 
@@ -99,7 +100,7 @@ given a filename::
     reader = app.createReader("/Users/me/Pictures/mySequence###.exr")
     writer = app.createWriter("/Users/me/Pictures/myVideo.mov")
 
-In case 2 plug-ins can decode/encode the same format, e.g: ReadPSD and ReadOIIO can both
+In case 2 plug-ins can decode/encode the same format, e.g. ReadPSD and ReadOIIO can both
 read .psd files, internally Natron picks the "best" OpenFX plug-in to decode/encode the image sequence/video
 according to the settings in the Preferences of Natron.
 If however you need a specific decoder/encoder to decode/encode the file format, you can use
@@ -256,7 +257,7 @@ Here is an example on how to pass properties to the createNode function::
   is specified by a property. Each default value must be specified by a property whose name is
   in the form *CreateNodeArgsPropParamValue_PARAMETERNAME*  where *PARAMETERNAME* must be replaced by the
   *script-name* of the parameter.  The property must have the same type as the data-type of
-  the parameter (e.g: int for IntParam, float for FloatParam, bool for BooleanParam, String for StringParam).
+  the parameter (e.g. int for IntParam, float for FloatParam, bool for BooleanParam, String for StringParam).
 
 
 - *Name*: **CreateNodeArgsPropOutOfProject**
@@ -267,7 +268,7 @@ Here is an example on how to pass properties to the createNode function::
 
   *Default*: False
 
-  *Description*: When True the node will not be part of the project. The node can be used for internal used, e.g in a Python script but will
+  *Description*: When True the node will not be part of the project. The node can be used for internal used, e.g. in a Python script but will
   not appear to the user. It will also not be saved in the project.
 
 
@@ -344,7 +345,7 @@ Creates a reader to decode the given *filename*.
 The optional *group* parameter can be used to specify into which :doc:`group<Group>` the node
 should be created, *None* meaning the project's top level.
 
-In case 2 plug-ins can decode the same format, e.g: ReadPSD and ReadOIIO can both
+In case 2 plug-ins can decode the same format, e.g. ReadPSD and ReadOIIO can both
 read .psd files, internally Natron picks the "best" OpenFX plug-in to decode the image sequence/video
 according to the settings in the Preferences of Natron.
 If however you need a specific decoder to decode the file format, you can use
@@ -362,7 +363,7 @@ Creates a reader to decode the given *filename*.
 The optional *group* parameter can be used to specify into which :doc:`group<Group>` the node
 should be created, *None* meaning the project's top level.
 
-In case 2 plug-ins can encode the same format, e.g: WritePFM and WriteOIIO can both
+In case 2 plug-ins can encode the same format, e.g. WritePFM and WriteOIIO can both
 write .pfm files, internally Natron picks the "best" OpenFX plug-in to encode the image sequence/video
 according to the settings in the Preferences of Natron.
 If however you need a specific decoder to encode the file format, you can use

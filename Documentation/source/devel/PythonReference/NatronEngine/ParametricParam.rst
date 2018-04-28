@@ -14,20 +14,20 @@ See :ref:`detailed<parametric.details>` explanation below.
 
 Functions
 ^^^^^^^^^
-.. container:: function_list
 
-*    def :meth:`addControlPoint<NatronEngine.ParametricParam.addControlPoint>` (dimension, key, value[,interpolation=NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeSmooth])
-*    def :meth:`addControlPoint<NatronEngine.ParametricParam.addControlPoint>` (dimension, key, value, leftDerivative, rightDerivative, [,interpolation=NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeSmooth])
-*    def :meth:`deleteAllControlPoints<NatronEngine.ParametricParam.deleteAllControlPoints>` (dimension)
-*    def :meth:`deleteControlPoint<NatronEngine.ParametricParam.deleteControlPoint>` (dimension, nthCtl)
-*    def :meth:`getCurveColor<NatronEngine.ParametricParam.getCurveColor>` (dimension)
-*    def :meth:`getNControlPoints<NatronEngine.ParametricParam.getNControlPoints>` (dimension)
-*    def :meth:`getNthControlPoint<NatronEngine.ParametricParam.getNthControlPoint>` (dimension, nthCtl)
-*    def :meth:`getValue<NatronEngine.ParametricParam.getValue>` (dimension, parametricPosition)
-*    def :meth:`setCurveColor<NatronEngine.ParametricParam.setCurveColor>` (dimension, r, g, b)
-*    def :meth:`setNthControlPoint<NatronEngine.ParametricParam.setNthControlPoint>` (dimension, nthCtl, key, value, leftDerivative, rightDerivative)
-*    def :meth:`setNthControlPointInterpolation<NatronEngine.ParametricParam.setNthControlPointInterpolation>` (dimension, nthCtl, interpolation)
-*    def :meth: `setDefaultCurvesFromCurrentCurves<NatronEngine.ParametricParam.setDefaultCurvesFromCurrentCurves>` ()
+- def :meth:`addControlPoint<NatronEngine.ParametricParam.addControlPoint>` (dimension, key, value[,interpolation=NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeSmooth])
+- def :meth:`addControlPoint<NatronEngine.ParametricParam.addControlPoint>` (dimension, key, value, leftDerivative, rightDerivative, [,interpolation=NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeSmooth])
+- def :meth:`deleteAllControlPoints<NatronEngine.ParametricParam.deleteAllControlPoints>` (dimension)
+- def :meth:`deleteControlPoint<NatronEngine.ParametricParam.deleteControlPoint>` (dimension, nthCtl)
+- def :meth:`getCurveColor<NatronEngine.ParametricParam.getCurveColor>` (dimension)
+- def :meth:`getNControlPoints<NatronEngine.ParametricParam.getNControlPoints>` (dimension)
+- def :meth:`getNthControlPoint<NatronEngine.ParametricParam.getNthControlPoint>` (dimension, nthCtl)
+- def :meth:`getValue<NatronEngine.ParametricParam.getValue>` (dimension, parametricPosition)
+- def :meth:`setCurveColor<NatronEngine.ParametricParam.setCurveColor>` (dimension, r, g, b)
+- def :meth:`setNthControlPoint<NatronEngine.ParametricParam.setNthControlPoint>` (dimension, nthCtl, key, value, leftDerivative, rightDerivative)
+- def :meth:`setNthControlPointInterpolation<NatronEngine.ParametricParam.setNthControlPointInterpolation>` (dimension, nthCtl, interpolation)
+- def :meth: `setDefaultCurvesFromCurrentCurves<NatronEngine.ParametricParam.setDefaultCurvesFromCurrentCurves>` ()
+
 .. _parametric.details:
 
 
@@ -59,7 +59,7 @@ Member functions description
     :param dimension: :class:`int<PySide.QtCore.int>`
     :param key: :class:`float<PySide.QtCore.double>`
     :param value: :class:`float<PySide.QtCore.double>`
-    :param interpolation :class:`KeyFrameTypeEnum<NatronEngine.Natron.KeyframeTypeEnum>`
+    :param interpolation: :class:`KeyFrameTypeEnum<NatronEngine.Natron.KeyframeTypeEnum>`
     :rtype: :attr:`StatusEnum<NatronEngine.Natron.StatusEnum>`
 
 Attempts to add a new control point to the curve at the given *dimension*.
@@ -76,7 +76,7 @@ NatronEngine.Natron.StatusEnum.eStatusFailed is returned upon failure.
     :param value: :class:`float<PySide.QtCore.double>`
     :param leftDerivative: :class:`float<PySide.QtCore.double>`
     :param rightDerivative: :class:`float<PySide.QtCore.double>`
-    :param interpolation :class:`KeyFrameTypeEnum<NatronEngine.Natron.KeyframeTypeEnum>`
+    :param interpolation: :class:`KeyFrameTypeEnum<NatronEngine.Natron.KeyframeTypeEnum>`
     :rtype: :attr:`StatusEnum<NatronEngine.Natron.StatusEnum>`
 
 Attempts to add a new control point to the curve at the given *dimension*.
@@ -207,7 +207,7 @@ NatronEngine.Natron.StatusEnum.eStatusFailed is returned upon failure.
 
     :param dimension: :class:`int<PySide.QtCore.int>`
     :param nthCtl: :class:`int<PySide.QtCore.int>`
-    :param interpolation :class:`KeyFrameTypeEnum<NatronEngine.Natron.KeyframeTypeEnum>`
+    :param interpolation: :class:`KeyFrameTypeEnum<NatronEngine.Natron.KeyframeTypeEnum>`
     :rtype: :attr:`StatusEnum<NatronEngine.Natron.StatusEnum>`
 
 Set the interpolation type of the curve surrounding the control point at the given index *nthCtl*.

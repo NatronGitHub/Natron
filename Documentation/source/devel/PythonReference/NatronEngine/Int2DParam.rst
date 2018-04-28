@@ -16,11 +16,10 @@ See :doc:`IntParam` for more details.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`get<NatronEngine.Int2DParam.set>` ()
-*    def :meth:`get<NatronEngine.Int2DParam.set>` (frame)
-*    def :meth:`set<NatronEngine.Int2DParam.set>` (x, y)
-*    def :meth:`set<NatronEngine.Int2DParam.set>` (x, y, frame)
-
+- def :meth:`get<NatronEngine.Int2DParam.set>` ()
+- def :meth:`get<NatronEngine.Int2DParam.set>` (frame)
+- def :meth:`set<NatronEngine.Int2DParam.set>` (x, y)
+- def :meth:`set<NatronEngine.Int2DParam.set>` (x, y, frame)
 
 Detailed Description
 --------------------

@@ -45,7 +45,7 @@ real-time feedback thanks to its optimised multi-threaded rendering pipeline and
 the render pipeline can be computed at lower res to speed-up rendering).
 
 - Multi-task: Natron can render multiple graphs at the same time, it can also be used
-as a background process in command-line mode without any display support (e.g: for render farm purpose).
+as a background process in command-line mode without any display support (e.g. for render farm purpose).
 
 - Recover easily from bugs: Natron sometimes crashes. Fear not, an  auto-save system
 detects inactivity and saves your work for yourself. Also Natron provides the option to render

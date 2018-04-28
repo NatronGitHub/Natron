@@ -14,13 +14,10 @@ the :doc:`Effect` class.
 Functions
 ^^^^^^^^^
 
-
-*    def :meth:`getParam<NatronEngine.AppSettings.getParam>` (scriptName)
-*    def :meth:`getParams<NatronEngine.AppSettings.getParams>` ()
-*    def :meth:`restoreDefaultSettings<NatronEngine.AppSettings.restoreDefaultSettings>` ()
-*    def :meth:`saveSettings<NatronEngine.AppSettings.saveSettings>` ()
-
-
+- def :meth:`getParam<NatronEngine.AppSettings.getParam>` (scriptName)
+- def :meth:`getParams<NatronEngine.AppSettings.getParams>` ()
+- def :meth:`restoreDefaultSettings<NatronEngine.AppSettings.restoreDefaultSettings>` ()
+- def :meth:`saveSettings<NatronEngine.AppSettings.saveSettings>` ()
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

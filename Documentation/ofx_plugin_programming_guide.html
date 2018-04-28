@@ -106,7 +106,7 @@ the C++ wrapper to develop plugin for Natron.</SPAN></P>
 the official guys from the OpenFX association have made a C++ wrapper
 around it so it is easier to use. The wrapper on the plug-in side is
 called the <B>Support</B> layer and the one on the Host side (the
-application, e.g: Natron) is called the <B>HostSupport</B> layer.</P>
+application, e.g. Natron) is called the <B>HostSupport</B> layer.</P>
 <P CLASS="p2" STYLE="margin-bottom: 0.5cm"><BR><BR>
 </P>
 <P CLASS="p7" STYLE="margin-bottom: 0.5cm">The official repository of
@@ -366,7 +366,7 @@ in the user interface, you need to set the
 <FONT COLOR="#c67c48"><FONT FACE="Menlo-Regular">kOfxImageEffectPluginPropGrouping</FONT></FONT><FONT COLOR="#c67c48">
 </FONT><FONT COLOR="#000000"><FONT FACE="Menlo-Regular">property that
 is a string containing the menu group under which you want your
-plug-in appear, e.g: “Transform” or “Color/Transform”</FONT></FONT></FONT></P>
+plug-in appear, e.g. “Transform” or “Color/Transform”</FONT></FONT></FONT></P>
 <P CLASS="p2" STYLE="margin-bottom: 0.5cm"><BR><BR>
 </P>
 <P CLASS="p6" STYLE="margin-bottom: 0.5cm"><B>The plug-in object</B></P>
@@ -484,7 +484,7 @@ to determine the size of the image (or region of definition) produced
 by this effect.</P>
 <P CLASS="p7" STYLE="margin-bottom: 0.5cm">If your plug-in doesn't
 apply any geometrical transformation to the image, then it is
-probably not modifying it's size (e.g: an Invert plug-in doesn't
+probably not modifying it's size (e.g. an Invert plug-in doesn't
 modify the image's region of definition.) In that case you do not
 need to implement this function, this is the default behaviour to
 return the region of definition of the source clip.</P>
@@ -619,7 +619,7 @@ void getFramesNeeded(const OFX::FramesNeededArguments &amp;args,
 OFX::FramesNeededSetter &amp;frames) OVERRIDE FINAL</FONT></FONT></FONT><FONT COLOR="#ffffff"><FONT FACE="Menlo-Regular"><FONT SIZE=2 STYLE="font-size: 11pt">;</FONT></FONT></FONT></P>
 <P CLASS="p2" STYLE="margin-bottom: 0.5cm"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">If
 you were to write a plug-in that needs images at different times to
-do its processing, e.g: a Retiming plug-in that would need the image
+do its processing, e.g. a Retiming plug-in that would need the image
 at T – 1 and T + 1 in order to produce the image at frame T, you
 need to implement this action.</FONT></FONT></FONT></P>
 <P CLASS="p2" STYLE="margin-bottom: 0.5cm"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">This
