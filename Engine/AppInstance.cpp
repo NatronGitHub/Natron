@@ -1239,6 +1239,7 @@ AppInstance::exportDocs(const QString path)
         groups << QString::fromUtf8(PLUGIN_GROUP_TRANSFORM);
         groups << QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW);
         groups << QString::fromUtf8(PLUGIN_GROUP_OTHER);
+        groups << QString::fromUtf8("GMIC"); // openfx-gmic
         groups << QString::fromUtf8("Extra"); // openfx-arena
         QVector<QStringList> plugins;
 
@@ -1355,7 +1356,7 @@ AppInstance::exportDocs(const QString path)
 
             plugMD.append( tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) );
             plugMD.append( QString::fromUtf8("\n============================================================\n\n") );
-            plugMD.append( tr("The following sections contain documentation about every node in the  %1 group.").arg( tr( group.toUtf8().constData() ) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") /*+ QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")*/ );
+            plugMD.append( tr("The following sections contain documentation about every node in the %1 group.").arg( tr( group.toUtf8().constData() ) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") /*+ QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")*/ );
             plugMD.append( QString::fromUtf8("\n\n") );
             //plugMD.append( QString::fromUtf8("Contents:\n\n") );
             plugMD.append( QString::fromUtf8(".. toctree::\n") );
