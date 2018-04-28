@@ -13,7 +13,7 @@ Editing/adding documentation for the Natron plugins requires you to edit the CPP
 
 Let's start with an example, you want to edit the description in the Checkerboard plugin.
 
-1. Fork the https://github.com/devernay/openfx-misc repository on Github.
+1. Fork the https://github.com/NatronGitHub/openfx-misc repository on Github.
 2. Open the file *Checkerboard/Checkerboard.cpp* in your favorite (plain) text-editor
 
 Navigate to the line **#define  kPluginDescription**, where you can edit the description. Line breaks are added with *\\n*. 
@@ -29,14 +29,14 @@ Markdown
 
 The plugin description and parameters supports `Markdown <https://daringfireball.net/projects/markdown/syntax>`_ format. This enables you to have more control over how the information is displayed.
 
-Enabling Markdown on a plugin requires some modifications, as the plugin must tell the host (Natron) that it supports Markdown on the description and/or parameters. See the `Shadertoy <https://github.com/devernay/openfx-misc/blob/master/Shadertoy/Shadertoy.cpp>`_ plugin for an example of how this works.
+Enabling Markdown on a plugin requires some modifications, as the plugin must tell the host (Natron) that it supports Markdown on the description and/or parameters. See the `Shadertoy <https://github.com/NatronGitHub/openfx-misc/blob/master/Shadertoy/Shadertoy.cpp>`_ plugin for an example of how this works.
 
 Basically you need to add **desc.setPluginDescription(kPluginDescriptionMarkdown, true);** in the **describe** function for each plugin. If you are not comfortable with this, contact the repository maintainer(s) and ask them to enable Markdown for you.
 
 Natron
 ------
 
-Contributing to the Natron documentation is a bit easier than contributing to the plugins. First fork the Natron repository on Github, https://github.com/MrKepzie/Natron. The source for the documentation is located in the *Documentation/source* folder. 
+Contributing to the Natron documentation is a bit easier than contributing to the plugins. First fork the Natron repository on Github, https://github.com/NatronGitHub/Natron. The source for the documentation is located in the *Documentation/source* folder. 
 
 The documentation is generated using `Sphinx <http://www.sphinx-doc.org>`_, and the source files are in `reStructuredText <http://docutils.sourceforge.net/docs/user/rst/quickref.html>`_ format.
 

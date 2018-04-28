@@ -138,7 +138,7 @@ AboutWindow::AboutWindow(QWidget* parent)
         aboutText.append(endAbout);
     }
     {
-        QString argStr = ( QString::fromUtf8("<a href=\"https://github.com/MrKepzie/Natron/tree/" GIT_COMMIT "\">")
+        QString argStr = ( QString::fromUtf8("<a href=\"https://github.com/NatronGitHub/Natron/tree/" GIT_COMMIT "\">")
                            + QString::fromUtf8(GIT_COMMIT).mid(0, 7)
                            + QString::fromUtf8("</a>") );
 #ifdef _OPENMP
