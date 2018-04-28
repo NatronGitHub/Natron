@@ -51,7 +51,7 @@ To send your contributions, you will need to:
 - To add your doc, you can either:
 
   - clone the repository to your computer, edit and add files, commit your changes locally (the github desktop application is easy to use), and then push your changes,
-  - or edit the files directly on github. see [tutorials-hsvtool.rst](https://github.com/NatronGitHub/Natron/blob/RB-2.3/Documentation/source/guide/tutorials-hsvtool.rst) for example (you will probably need to fork the repository first, see below, and browse to that file on your fork): click on the pencil icon on the top right. You get an editable the text view and can get a preview by clicking on the preview tab on top.
+  - or edit the files directly on github. see `tutorials-hsvtool.rst <https://github.com/NatronGitHub/Natron/blob/RB-2.3/Documentation/source/guide/tutorials-hsvtool.rst>`_ for example (you will probably need to fork the repository first, see below, and browse to that file on your fork): click on the pencil icon on the top right. You get an editable the text view and can get a preview by clicking on the preview tab on top.
 
 - Then, submit a `pull request <https://help.github.com/articles/about-pull-requests/>`_ to the RB-2.3 branch on the main repository from your branch (there is a button to submit a pull request when you view your fork on github), and the Natron maintainers can either accept it as it is, or ask for a few modifications.
 
