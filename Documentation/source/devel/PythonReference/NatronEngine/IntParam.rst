@@ -11,7 +11,7 @@ IntParam
 Synopsis
 --------
 
-An IntParam can contain one or multiple int values. 
+An IntParam can contain one or multiple int values.
 See :ref:`detailed<int.details>` description...
 
 Functions
@@ -53,7 +53,7 @@ A 1-dimensional :doc:`DoubleParam`
 
 .. figure:: doubleParam.png
 
-A 2-dimensional :doc:`Double2DParam` 
+A 2-dimensional :doc:`Double2DParam`
 
 .. figure:: double2DParam.png
 
@@ -74,9 +74,9 @@ Member functions description
     :rtype: :class:`int<PySide.QtCore.int>`
 
 
-Returns the value of this parameter at the given *frame*. If the animation curve has an 
+Returns the value of this parameter at the given *frame*. If the animation curve has an
 animation (see :doc:`getIsAnimated<NatronEngine.AnimatedParam.getIsAnimated>` then the
-value will be interpolated using the *interpolation* chosen by the user for the curve. 
+value will be interpolated using the *interpolation* chosen by the user for the curve.
 
 
 
@@ -179,9 +179,9 @@ Returns the value of this parameter at the given *dimension* at the current time
 
 Returns the value of this parameter at the given *dimension* at the given *time*.
 
-If the animation curve has an 
+If the animation curve has an
 animation (see :doc:`getIsAnimated<NatronEngine.AnimatedParam.getIsAnimated>` then the
-value will be interpolated using the *interpolation* chosen by the user for the curve. 
+value will be interpolated using the *interpolation* chosen by the user for the curve.
 
 
 
@@ -215,7 +215,7 @@ Set a new keyframe on the parameter with the value *x* at the given *frame*.
     :param x: :class:`int<PySide.QtCore.int>`
 
 
-Set the value of this parameter to be *x*. 
+Set the value of this parameter to be *x*.
 If this parameter is animated (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>`
 then this function will automatically add a keyframe at the timeline's current time.
 

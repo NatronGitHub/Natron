@@ -4,7 +4,7 @@
 PyPanel
 ********
 
-**Inherits** :doc:`PySide.QtGui.QWidget` :class:`NatronEngine.UserParamHolder`
+**Inherits** :class:`PySide.QtGui.QWidget` :class:`NatronEngine.UserParamHolder`
 
 
 Synopsis
