@@ -51,7 +51,7 @@ A 1-dimensional :doc:`DoubleParam`
 
 .. figure:: doubleParam.png
 
-A 2-dimensional :doc:`Double2Dparam`
+A 2-dimensional :doc:`Double2DParam`
 
 .. figure:: double2DParam.png
 

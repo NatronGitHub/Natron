@@ -4,7 +4,7 @@
 PyGuiApplication
 ****************
 
-**Inherits** :doc:`PyCoreApplication`
+**Inherits** :class:`PyCoreApplication`
 
 Synopsis
 --------
