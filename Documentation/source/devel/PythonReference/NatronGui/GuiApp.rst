@@ -47,7 +47,11 @@ Detailed Description
 See :ref:`App<NatronEngine.App>` for the documentation of base functionnalities of this class.
 
 To create a new :ref:`modal dialog<NatronGui.PyModalDialog>` , use the
+<<<<<<< HEAD
 :func:`createModalDialog()<NatronGui.GuiApp.createModalDialog>`function.
+=======
+:func:`createModalDialog()<NatronGui.GuiApp.createModalDialog>` function.
+>>>>>>> RB-2.3
 
 Several functions are made available to pop dialogs to ask the user for filename(s) or colors.
 See :func:`getFilenameDialog(filters,location)<NatronGui.GuiApp.getFilenameDialog>` and
@@ -56,7 +60,11 @@ See :func:`getFilenameDialog(filters,location)<NatronGui.GuiApp.getFilenameDialo
 To create a new custom python panel, there are several ways to do it:
 
     * Sub-class the :doc:`PyPanel` class and make your own PySide widget
+<<<<<<< HEAD
     * Create a :doc:`PyPanel`object and add controls using user parameters (as done for modal dialogs)
+=======
+    * Create a :doc:`PyPanel` object and add controls using user parameters (as done for modal dialogs)
+>>>>>>> RB-2.3
 
 Once created, you can register the panel in the project so that it gets saved into the layout
 by calling :func:`registerPythonPanel(panel,pythonFunction)<NatronGui.GuiApp.registerPythonPanel>`

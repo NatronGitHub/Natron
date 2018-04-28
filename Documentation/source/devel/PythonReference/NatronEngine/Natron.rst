@@ -96,28 +96,32 @@ that are more complicated than a simple boolean value.
 
 
     * eActionStatusOK = 0,
-    Everything went ok, the operation completed successfully
 
-    *eActionStatusFailed = 1,
-    Something failed, the plug-in is expected to post an error message
-    with setPersistentMessage
+      Everything went ok, the operation completed successfully
 
+    * eActionStatusFailed = 1,
 
-    The render failed because a mandatory input of a node is diconnected
-    In this case there's no need for a persistent message, a black image is enough
-    *eActionStatusInputDisconnected = 2,
+      Something failed, the plug-in is expected to post an error message
+      with setPersistentMessage
 
-    eActionStatusAborted = 3,
-    The render was aborted, everything should abort ASAP and
-    the UI should not be updated with the processed images
+    * eActionStatusInputDisconnected = 2,
 
-    eActionStatusOutOfMemory = 4,
-    The action failed because of a lack of memory.
-    If the action is using a GPU backend, it may re-try the same action on CPU right away
+      The render failed because a mandatory input of a node is diconnected
+      In this case there's no need for a persistent message, a black image is enough
 
-    The operation completed with default implementation
-    eActionStatusReplyDefault = 5
+    * eActionStatusAborted = 3,
 
+      The render was aborted, everything should abort ASAP and
+      the UI should not be updated with the processed images
+
+    * eActionStatusOutOfMemory = 4,
+
+      The action failed because of a lack of memory.
+      If the action is using a GPU backend, it may re-try the same action on CPU right away
+
+    * eActionStatusReplyDefault = 5
+
+      The operation completed with default implementation
 
 .. attribute:: NatronEngine.Natron.PixmapEnum
 

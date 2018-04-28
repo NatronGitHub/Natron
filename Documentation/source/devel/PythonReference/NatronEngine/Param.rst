@@ -10,7 +10,7 @@ Synopsis
 --------
 
 This is the base class for all parameters. Parameters are the controls found in the settings
-panel of a node. See :ref:`details here<details>`.
+panel of a node. See :ref:`details here<paramdetails>`.
 
 Functions
 ^^^^^^^^^
@@ -190,7 +190,7 @@ be copied.
 
     When copying a parameter, only values are copied, not properties, hence if copying a
     choice parameter, make sure that the value you copy has a meaning to the receiver otherwise
-    you might end-up with an undefined behaviour, e.g::
+    you might end-up with an undefined behaviour, e.g.:
 
     If ChoiceParam1 has 3 entries and the current index is 2 and ChoiceParam2 has 15 entries
     and current index is 10, copying ChoiceParam2 to ChoiceParam1 will end-up in undefined behaviour.
@@ -451,7 +451,7 @@ Returns the type-name of the parameter.
     :param max: :class:`float<PySide.QtCore.float>`
     :rtype: :class:`float<PySide.QtCore.float>`
 
-Returns a pseudo-random value in the interval [*min*, *max*[.
+Returns a pseudo-random value in the interval \[*min*, *max*\[.
 The value is produced such that for a given parameter it will always be the same for a
 given time on the timeline, so that the value can be reproduced exactly.
 
@@ -460,7 +460,7 @@ given time on the timeline, so that the value can be reproduced exactly.
 
     Note that if you are calling multiple times random() in the same parameter expression,
     each call would return a different value, but they would all return the same value again
-    if the expressions is interpreted at the same time, e.g::
+    if the expressions is interpreted at the same time, e.g.:
 
         # Would always return the same value at a given timeline's time.
         random() - random()

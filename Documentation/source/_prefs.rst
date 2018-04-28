@@ -43,7 +43,7 @@ Controls how many threads Natron should use to render.
 
 -1: Disable multithreading totally (useful for debugging)
 
-0: Guess the thread count from the number of cores.
+0: Guess the thread count from the number of cores. The ideal threads count for this hardware is 8.
 
 **Number of parallel renders (0=“guess”)**
 
@@ -198,7 +198,7 @@ If not checked, Natron will only cache the nodes which have multiple outputs, or
 
 **Maximum amount of RAM memory used for caching (% of total RAM)**
 
-This setting indicates the percentage of the total RAM which can be used by the memory caches.
+This setting indicates the percentage of the total RAM which can be used by the memory caches. This system has 16.00 GiB of RAM.
 
 **System RAM to keep free (% of total RAM)**
 

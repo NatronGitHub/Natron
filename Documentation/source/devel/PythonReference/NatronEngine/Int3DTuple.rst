@@ -18,32 +18,17 @@ Functions
 Detailed Description
 --------------------
 
-
-
-
 .. class:: Int3DTuple()
-
-
 
 .. attribute:: NatronEngine.Int3DTuple.x
 
-
 .. attribute:: NatronEngine.Int3DTuple.y
-
 
 .. attribute:: NatronEngine.Int3DTuple.z
 
-
 .. method:: NatronEngine.Int3DTuple.__getitem__(index)
-
 
     :param index: :class:`PySide.QtCore.int`
     :rtype: :class:`PyObject`
 
-
-Returns the item at the given index. This is the bracket operator *[]*
-
-
-
-
-
+   Returns the item at the given index. This is the bracket operator *[]*

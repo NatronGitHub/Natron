@@ -28,18 +28,25 @@ Detailed Description
 ---------------------------
 
 The modal dialog is a way to ask the user for data or to inform him/her about something going on.
-A modal window means that control will not be returned to the user (i.e no event will be processed) until
+A modal window means that control will not be returned to the user (i.e. no event will be processed) until
 the user closed the dialog.
 
 If you are looking for a simple way to just ask a question or report an error, warning or even
 just a miscenalleous information, use the :func:`informationDialog(title,message)<NatronGui.PyGuiApplication.informationDialog>` function.
 
-To create a new :doc:`PyModalDialog`, just use the :func:`createModalDialog()<NatronGui.GuiApp.createModalDialog>` function, e.g::
+To create a new :doc:`PyModalDialog`, just use the :func:`createModalDialog()<NatronGui.GuiApp.createModalDialog>` function, e.g.:
 
     # In the Script Editor
 
     dialog = app1.createModalDialog()
 
+<<<<<<< HEAD
+    # In the Script Editor
+
+    dialog = app1.createModalDialog()
+
+=======
+>>>>>>> RB-2.3
 To show the dialog to the user, use the :func:`exec_()<>` function inherited from :class:`QDialog` ::
 
     dialog.exec_()

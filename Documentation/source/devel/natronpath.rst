@@ -6,12 +6,12 @@ Natron plug-in paths
 When looking for startup scripts or Python group plug-ins, Natron will look into
 the following search paths in order:
 
-    * The bundled plug-ins path. There are 2 kinds of plug-ins: PyPlugs and OpenFX plug-ins.
-    The bundled OpenFX plug-ins are located in Plugins/OFX/Natron in your Natron installation and
-    the bundled PyPlugs in the directory Plugins/PyPlugs.
+- The bundled plug-ins path. There are 2 kinds of plug-ins: PyPlugs and OpenFX plug-ins.
+  The bundled OpenFX plug-ins are located in Plugins/OFX/Natron in your Natron installation and
+  the bundled PyPlugs in the directory Plugins/PyPlugs.
 
-    * The standard user location for non OpenFX plug-ins (i.e PyPlugs): that is the directory
-    .Natron in the home directory, e.g:
+- The standard user location for non OpenFX plug-ins (i.e. PyPlugs): that is the directory
+  .Natron in the home directory, e.g.:
 
             On Windows that would be::
 
@@ -25,7 +25,7 @@ the following search paths in order:
 
                 Note that the old ~/.Natron directory is no longer looked up by Natron.
 
-    * The standard system location for non OpenFX plug-ins (i.e PyPlugs):
+- The standard system location for non OpenFX plug-ins (i.e. PyPlugs):
 
             Windows::
 
@@ -39,10 +39,10 @@ the following search paths in order:
 
                 /usr/share/Natron/Plugins
 
-    * All the paths indicated by the **NATRON_PLUGIN_PATH** environment variable. This
-    environment variable should contain a separator between each path.
-    On Windows the separator is the character *;*, on Linux/macOS the separator is the
-    character *:* , such as::
+- All the paths indicated by the **NATRON_PLUGIN_PATH** environment variable. This
+  environment variable should contain a separator between each path.
+  On Windows the separator is the character *;*, on Linux/macOS the separator is the
+  character *:* , such as:
 
         # Windows:
         C:\MyData\NatronPlugins;C:\Users\<username>\Documents\NatronPlugins
@@ -53,7 +53,7 @@ the following search paths in order:
         # On macOS:
         /Users/<username>/NatronPluginsA:/Users/<username>/NatronPluginsB
 
-    * The user extra search paths in the Plug-ins tab of the Preferences of Natron.
+- The user extra search paths in the Plug-ins tab of the Preferences of Natron.
 
 If the setting "Prefer bundled plug-ins over system-wide plug-ins" is checked in the preferences
 then Natron will first look into the bundled plug-ins before checking the standard location.

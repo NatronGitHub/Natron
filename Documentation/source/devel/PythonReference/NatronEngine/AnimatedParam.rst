@@ -43,7 +43,7 @@ the parameter should have at least 1 keyframe. Keyframes can be added in the der
 (since function signature is type specific) with the *setValueAtTime* function.
 Once 2 keyframes are active on the parameter, the value of the parameter will be interpolated
 automatically by Natron for a given time.
-You can control keyframes by adding,removing, changing their values and their :ref:`interpolation<NatronEngine.Natron.KeyframeTypeEnum>` type.
+You can control keyframes by adding,removing, changing their values and their :class:`KeyFrameTypeEnum<NatronEngine.Natron.KeyframeTypeEnum>` type.
 
 Note that by default new keyframes are always with a **Smooth** interpolation.
 

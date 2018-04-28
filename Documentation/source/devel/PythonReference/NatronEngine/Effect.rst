@@ -10,7 +10,7 @@ Synopsis
 --------
 
 This object represents a single node in Natron, that is: an instance of a plug-in.
-See :ref:`details`
+See :ref:`Effectdetails`
 
 Functions
 ^^^^^^^^^
@@ -64,7 +64,7 @@ Functions
 - def :meth:`registerOverlay<NatronEngine.Effect.registerOverlay>` (overlay, params)
 - def :meth:`removeOverlay<NatronEngine.Effect.removeOverlay>` (overlay)
 
-.. _details:
+.. _Effectdetails:
 
 Detailed Description
 --------------------
@@ -119,7 +119,7 @@ Member functions description
     the end-user can choose to output the result of the node to this new custom plane.
     The *planeName* will identify the plane uniquely and must not contain spaces or non
     python compliant characters.
-    The *channels* are a sequence of channel names, e.g::
+    The *channels* are a sequence of channel names, e.g.:
 
         addUserPlane("MyLayer",["R", "G", "B", "A"])
 
@@ -160,7 +160,6 @@ Member functions description
     made to :func:`setValue<NatronEngine.IntParam.setValue>` this function will effectively compresss
     all evaluations into a single one.
     See :func:`beginChanges()<NatronEngine.Effect.beginChanges>`
-
 
 .. method:: NatronEngine.Effect.beginParametersUndoCommand (commandName)
 

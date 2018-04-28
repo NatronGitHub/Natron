@@ -122,7 +122,7 @@ to add this panel to the pane.
 If you want the panel to persist in the project so that it gets recreated and placed at its original position
 when the user loads the project, you must use the :func:`registerPythonPanel(panel,function)< NatronGui.GuiApp.registerPythonPanel>` function.
 
-Note that the *function* parameter is the **name** of a Python-defined function that takes no parameter used to create the widget, e.g::
+Note that the *function* parameter is the **name** of a Python-defined function that takes no parameter used to create the widget, e.g.:
 
     def createMyPanel():
         panel = NatronGui.PyPanel("MyPanel",True,app)
@@ -132,6 +132,17 @@ Note that the *function* parameter is the **name** of a Python-defined function 
 
     app.registerPythonPanel(app.mypanel,"createMyPanel")
 
+<<<<<<< HEAD
+    def createMyPanel():
+        panel = NatronGui.PyPanel("MyPanel",True,app)
+        ...
+        #Make it live after the scope of the function
+        app.mypanel = panel
+
+    app.registerPythonPanel(app.mypanel,"createMyPanel")
+
+=======
+>>>>>>> RB-2.3
 This function will also add a custom menu entry to the "Manage layout" button (located in the top-left hand
 corner of every pane) which the user can trigger to move the custom pane on the selected pane.
 

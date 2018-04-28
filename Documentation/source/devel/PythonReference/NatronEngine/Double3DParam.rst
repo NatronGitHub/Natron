@@ -38,7 +38,7 @@ timeline's time for the given *view*.
     :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`Double3DTuple`
 
-Returns a :doc:`Double3DTuple` with the [x,y,z] values for this parameter at the given *frame*
+Returns a :doc:`Double3DTuple` with the \[x,y,z\] values for this parameter at the given *frame*
 and *view*.
 
 

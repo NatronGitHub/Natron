@@ -675,7 +675,7 @@ with a scale of 10 then only the downstream node will be rendered with a scale o
     * Several outputs are connected to this node
     * The node has a single output, but that output has its settings panel opened (Meaning the user is heavily editing the output effect and would like the input branch being in the cache)
     * The node has its preview image enabled (in interactive session only)
-    * The node is using several images at different times to compute the result of the output (e.g: a retimer node)
+    * The node is using several images at different times to compute the result of the output (e.g. a retimer node)
     * The parameter "Force caching" in the "Node" tab of the settings panel is checked
 Aggressive caching can however make the interactivity of Natron slightly faster (when using it in GUI mode) but would not be any useful in background render mode, so make sure it is checked off when rendering on disk. 
 You can by-pass this behaviour and come-back to the original "Aggressive caching" solution by turning it on in the Preferences of Natron. At least 8GiB of RAM are required to use aggressive caching, 16GiB  are recommended. 
@@ -745,7 +745,7 @@ scroll the items by pressing the up/down arrows. Checkbox can now also have focu
 - New BlurGuided node using the CImg library. This is a faster bilateral blur
 - New AdjustRoD node to enlarge/shrink the region of definition (bounding box) of an image
 - A new button on the Transform node allows to recenter the handle to the center of the input image.
-- The project can now be versioned by pressing CTRL + ALT + SHIFT + S (or by the File menu). This will save the project and increment its version, e.g:
+- The project can now be versioned by pressing CTRL + ALT + SHIFT + S (or by the File menu). This will save the project and increment its version, e.g.:
   - MyProject_001.ntp
   - MyProject_002.ntp
   - ...
@@ -832,16 +832,16 @@ use the TuttleHistogramKeyer node.
 - New "turbo-mode": when enabled nothing but the viewer will be refreshed during playback for maximum efficiency. Mainly this overcomes the issue that all parameters animation refresh can be expensive during playback.
 - New checkerboard mode for the viewer: when checked, everything transparent in the image will have a checkerboard behind. This can enable you to better appreciate transparency. You can control the color of the checkerboard and its size in Natron's preferences.
 - Project paths: The project can now have path variables that allows you to express file paths relative to a variable instead of always using absolute file paths. This is great for sharing work with others and/or moving image files safely.By default there is always the variable [Project] that will be set to the location of your project file (.ntp).
-- Project paths are to be used between brackets, e.g:
+- Project paths are to be used between brackets, e.g.:
   - [MyPath]myImage.png
-- You can also express files in a relative manner to a variable, e.g:
+- You can also express files in a relative manner to a variable, e.g.:
   - [MyPath]../../Images/myImage.png
 - By default if you don't specify any project path but express the file in a relative manner, it will be understood as being relative to the [Project] path. For example, if [Project] is:
 `/Users/Me/Project/`
 Then
 `../Images/Pictures/img.png`
 would in fact expand to: `/Users/Me/Images/Pictures/img.png`
-You can also have some project paths depending on other paths, e.g:
+You can also have some project paths depending on other paths, e.g.:
 ```
 [Project] = /Users/Me/Project/
 [Scene1] = [Project]Footage/Scene1/
@@ -870,7 +870,7 @@ Then all file-paths that depended on this variable will be updated to point to t
 - Undo/Redo support was added for restoring default parameters
 - The "link to..." dialog for parameters have been re-designed for a better user interface
 - The "Tab" menu to quickly create a node has been slightly adjusted: you can now type in
-anything any word , e.g: "Blur" and it will propose all types of Blurs.
+anything any word , e.g. "Blur" and it will propose all types of Blurs.
 - Value parameters can now have their increment based on where the mouse cursor is
 - New nodes menu icons were made by Jean Christophe Levet.
 

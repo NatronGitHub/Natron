@@ -11,7 +11,6 @@ Synopsis
 
 See :doc:`IntParam` for more details.
 
-
 Functions
 ^^^^^^^^^
 

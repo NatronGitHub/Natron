@@ -5,7 +5,7 @@ Using the tracker functionalities
 
 All tracking functionalities are gathered in the :ref:`Tracker<Tracker>` class.
 For now, only the tracker node can have a :ref:`Tracker<Tracker>` object.
-The :ref:`Tracker<Tracker>`object is :ref:`auto-declared<autoVar>` by Natron and can be accessed
+The :ref:`Tracker<Tracker>` object is :ref:`auto-declared<autoVar>` by Natron and can be accessed
 as an attribute of the tracker node::
 
     app.Tracker1.tracker

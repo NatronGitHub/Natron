@@ -10,7 +10,7 @@ Synopsis
 --------
 
 A group param is a container for other parameters.
-See :ref:`detailed<group.details>` description.
+See :ref:`detailed<groupparams.details>` description.
 
 Functions
 ^^^^^^^^^
@@ -20,7 +20,7 @@ Functions
 - def :meth:`setAsTab<NatronEngine.GroupParam.setAsTab>` ()
 - def :meth:`setOpened<NatronEngine.GroupParam.setOpened>` (opened)
 
-.. _group.details:
+.. _groupparams.details:
 
 Detailed Description
 --------------------
@@ -76,7 +76,7 @@ Returns whether the group is currently expanded (True) or folded (False).
 Set this group as a tab. When set as a tab, it will be inserted into a special TabWidget
 of the Effect.
 For instance, on the following screenshot, *to* and *from* are 2 groups on which
-:func:`setAsTab()<NatronEngine.GroupParam.setAsTab>`has been called.
+:func:`setAsTab()<NatronEngine.GroupParam.setAsTab>` has been called.
 
 .. figure:: groupAsTab.png
 

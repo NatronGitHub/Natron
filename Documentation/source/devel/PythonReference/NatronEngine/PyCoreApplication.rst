@@ -49,7 +49,7 @@ When running Natron there's a **unique** instance of the :doc:`PyCoreApplication
 It holds general informations about the process.
 
 Generally, throughout your scripts, you can access this object with the variable *natron*
-that Natron pre-declared for you, e.g::
+that Natron pre-declared for you, e.g.:
 
     natron.getPluginIDs()
 
@@ -154,7 +154,7 @@ the preferences of Natron.
     :rtype: :class:`int<PySide.QtCore.int>`
 
 Returns the build-number of the current version of Natron. Generally this is used for
-release candidates, e.g::
+release candidates, e.g.:
 
     Natron v1.0.0-RC1  : build number = 1
     Natron v1.0.0-RC2  : build number = 2
@@ -168,7 +168,7 @@ release candidates, e.g::
     :param idx: :class:`int<PySide.QtCore.int>`
     :rtype: :class:`App<NatronEngine.App>`
 
-Returns the :doc:`App` instance at the given *idx*. Note that *idx* is 0-based, e.g:
+Returns the :doc:`App` instance at the given *idx*. Note that *idx* is 0-based, i.e.
 0 would return what's pointed to by *app1*.
 
 
@@ -253,7 +253,7 @@ Returns the revision number of the version. If the version is 1.2.3, that would 
 
     :rtype: :class:`str<NatronEngine.std::string>`
 
-Returns the version of Natron as a string, e.g:: *"1.1.0"*
+Returns the version of Natron as a string, e.g.: *"1.1.0"*
 
 
 

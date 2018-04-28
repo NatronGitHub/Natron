@@ -58,7 +58,7 @@ otherwise the position is sampled between the surrounding keyframes.
 
 To get a list of all keyframes time for a Bezier call the function :func:`getUserKeyframes()<NatronEngine.ItemBase.getUserKeyframes>`.
 
-Each property of a Bezier is a  regular :ref:`parameter<NatronEngine.Param>`.
+Each property of a Bezier is a regular :ref:`parameter<NatronEngine.Param>`.
 All parameters can be retrieved with their *script-name* with the function :func:`getParam(scriptName)<NatronEngine.ItemBase.getParam>`.
 
 

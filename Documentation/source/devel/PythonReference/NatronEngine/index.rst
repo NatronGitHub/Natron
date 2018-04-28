@@ -7,7 +7,7 @@ NatronEngine
 Detailed Description
 --------------------
 
-    Here are listed all classes being part of NatronEngine module. This module is always
+Here are listed all classes being part of NatronEngine module. This module is always
 loaded by Natron natively, meaning access is granted to these classes in your scripts
 without importing anything.
 

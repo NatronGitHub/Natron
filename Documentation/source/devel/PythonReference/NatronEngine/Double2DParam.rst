@@ -30,7 +30,7 @@ Member functions description
 
     :param enabled: :class:`bool`
 
-Sets whether all dimensions should be presented as a single vakue/slider whenever they are equal.
+   Sets whether all dimensions should be presented as a single vakue/slider whenever they are equal.
 
 
 .. method:: NatronEngine.Double2DParam.get([view="Main"])
@@ -38,8 +38,8 @@ Sets whether all dimensions should be presented as a single vakue/slider wheneve
     :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`Double2DTuple`
 
-Returns a :doc:`Double2DTuple` with the [x,y] values for this parameter at the current
-timeline's time for the given *view*.
+   Returns a :doc:`Double2DTuple` with the [x,y] values for this parameter at the current
+   timeline's time for the given *view*.
 
 
 
@@ -49,8 +49,8 @@ timeline's time for the given *view*.
     :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`Double2DTuple`
 
-Returns a :doc:`Double2DTuple` with the [x,y] values for this parameter at the given *frame*
-and *view*.
+   Returns a :doc:`Double2DTuple` with the [x,y] values for this parameter at the given *frame*
+   and *view*.
 
 
 
@@ -63,7 +63,7 @@ and *view*.
     :param view: :class:`str<PySide.QtCore.QString>`
 
 
-Same as :func:`set(x,frame, view)<NatronEngine.DoubleParam.set>` but for 2-dimensional doubles.
+   Same as :func:`set(x,frame, view)<NatronEngine.DoubleParam.set>` but for 2-dimensional doubles.
 
 
 
@@ -74,7 +74,7 @@ Same as :func:`set(x,frame, view)<NatronEngine.DoubleParam.set>` but for 2-dimen
     :param y: :class:`float<PySide.QtCore.double>`
     :param view: :class:`str<PySide.QtCore.QString>`
 
-Same as :func:`set(x,view)<NatronEngine.DoubleParam.set>` but for 2-dimensional doubles.
+   Same as :func:`set(x,view)<NatronEngine.DoubleParam.set>` but for 2-dimensional doubles.
 
 
 
