@@ -20,5 +20,6 @@ The first section in this manual describes the various options available from th
     _groupTransform.rst
     _groupViews.rst
     _groupOther.rst
+    _groupGMIC.rst
     _groupExtra.rst
 
