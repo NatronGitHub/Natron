@@ -47,11 +47,13 @@ If you prefer editing with `LibreOffice <https://libreoffice.org>`_ (or even `MS
 To send your contributions, you will need to:
 
 - Fork `https://github.com/NatronGitHub/Natron <https://github.com/NatronGitHub/Natron>`_ using your github account.
-- On your fork, create a branch from the RB-2.3 branch (do not use the master branch), and give it a name like "documentation-keying" if you are ghoing to write the keying doc (which we really need).
+- On your fork, create a branch from the RB-2.3 branch (do not use the master branch), and give it a name like "documentation-keying" if you are going to write the keying doc (which we really need).
 - To add your doc, you can either:
+
   - clone the repository to your computer, edit and add files, commit your changes locally (the github desktop application is easy to use), and then push your changes,
   - or edit the files directly on github. see [tutorials-hsvtool.rst](https://github.com/NatronGitHub/Natron/blob/RB-2.3/Documentation/source/guide/tutorials-hsvtool.rst) for example (you will probably need to fork the repository first, see below, and browse to that file on your fork): click on the pencil icon on the top right. You get an editable the text view and can get a preview by clicking on the preview tab on top.
-- Then you submit a pull request to the main repository with your branch (there is a button to submit a pull request when you view your fork on github), and the Natron maintainers can either accept it as it is, or ask for a few modifications.
+
+- Then, submit a `pull request <https://help.github.com/articles/about-pull-requests/>`_ to the RB-2.3 branch on the main repository from your branch (there is a button to submit a pull request when you view your fork on github), and the Natron maintainers can either accept it as it is, or ask for a few modifications.
 
 You can view the formatted documentation on your github repository, as explained above, but you can also preview your modifications by using `pandoc <https://pandoc.org/>`_ to convert it to another format, or install `Sphinx <http://sphinx-doc.org>`_ and recompile the whole documentation. On Linux and Mac you can install Sphinx through your package manager (using MacPorts type ``sudo port install py27-sphinx``, on HomeBrew type ``pip install sphinx``), on Windows refer to the `Sphinx documentation <http://www.sphinx-doc.org/en/stable/install.html#windows-install-python-and-sphinx>`_.
 

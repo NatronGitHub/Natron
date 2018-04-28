@@ -49,18 +49,17 @@ Usually this is used to represent a single integer value that may animate over t
 The user interface for them varies depending on the number of dimensions.
 *Screenshots are the same than for the :doc`DoubleParam` because the user interface is the same*
 
-A 1-dimensional :doc:`DoubleParam`
+A 1-dimensional :doc:`IntParam`
 
 .. figure:: doubleParam.png
 
-A 2-dimensional :doc:`Double2DParam`
+A 2-dimensional :doc:`Int2DParam`
 
 .. figure:: double2DParam.png
 
-A 3-dimensional :doc:`Double3DParam`
+A 3-dimensional :doc:`Int3DParam`
 
 .. figure:: double3DParam.png
-
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
