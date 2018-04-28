@@ -49,7 +49,7 @@ Member functions description
 
     :rtype: :class:`int<PySide.QtCore.int>`
 
-Returns the bottom edge, that is the 
+Returns the bottom edge, that is the
 
 
 .. method:: NatronEngine.RectI.clear()
@@ -58,12 +58,12 @@ Same as :ref:`set<NatronEngine.RectI.set>` (0,0,0,0)
 
 .. method:: NatronEngine.RectI.contains(otherRect)
 
-	:param otherRect: :class:`RectI<NatronEngine.RectI>`
+    :param otherRect: :class:`RectI<NatronEngine.RectI>`
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
 Returns True if *otherRect* is contained in or equals this rectangle, that is if::
 
-	otherRect.x1 >= x1 and
+    otherRect.x1 >= x1 and
     otherRect.y1 >= y1 and
     otherRect.x2 <= x2 and
     otherRect.y2 <= y2
@@ -78,7 +78,7 @@ Returns the height of the rectangle, that is: y2 - y1
 
 .. method:: NatronEngine.RectI.intersect(otherRect)
 
-	:param otherRect: :class:`RectI<NatronEngine.RectI>`
+    :param otherRect: :class:`RectI<NatronEngine.RectI>`
     :rtype: :class:`RectI<NatronEngine.RectI>`
 
 Returns the intersection between this rectangle and *otherRect*. If the intersection is empty,
@@ -88,10 +88,10 @@ the return value will have the :func:`isNull()<NatronEngine.Rect.isNull>` functi
 
 .. method:: NatronEngine.RectI.intersects(otherRect)
 
-	:param otherRect: :class:`RectI<NatronEngine.RectI>`
+    :param otherRect: :class:`RectI<NatronEngine.RectI>`
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
-Returns True if rectangle and *otherRect* intersect. 
+Returns True if rectangle and *otherRect* intersect.
 
 
 .. method:: NatronEngine.RectI.isInfinite()
@@ -147,10 +147,10 @@ the first element outside the rectangle.
 
 .. method:: NatronEngine.RectI.set(x1,y1,x2,y2)
 
-	:param x1: :class:`int<PySide.QtCore.int>`
-	:param y1: :class:`int<PySide.QtCore.int>`
-	:param x2: :class:`int<PySide.QtCore.int>`
-	:param y2: :class:`int<PySide.QtCore.int>`
+    :param x1: :class:`int<PySide.QtCore.int>`
+    :param y1: :class:`int<PySide.QtCore.int>`
+    :param x2: :class:`int<PySide.QtCore.int>`
+    :param y2: :class:`int<PySide.QtCore.int>`
 
 Set the x1, y1, x2, y2 coordinates of this rectangle.
 
@@ -203,7 +203,7 @@ y2 is considered to be the first element outside the rectangle.
 
 Moves all edges of the rectangle by *dx*, *dy*, that is::
 
-	    x1 += dx;
+        x1 += dx;
         y1 += dy;
         x2 += dx;
         y2 += dy;

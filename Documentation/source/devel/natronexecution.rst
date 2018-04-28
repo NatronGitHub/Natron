@@ -5,9 +5,9 @@ Natron in command-line
 
 Natron has 3 different execution modes:
 
-    * The execution of Natron projects (.ntp)
-    * The execution of Python scripts that contain commands for Natron
-    * An interpreter mode where commands can be given directly to the Python interpreter
+- The execution of Natron projects (.ntp)
+- The execution of Python scripts that contain commands for Natron
+- An interpreter mode where commands can be given directly to the Python interpreter
 
 General options:
 ----------------

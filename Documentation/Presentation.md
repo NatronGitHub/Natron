@@ -8,11 +8,11 @@ Natron <a id="top"></a>
     * Licensing
 2. [Engine](#Engine)
     * Concepts
-    	- Image processing
-    	- Animation
-    	- Rendering
-    	- Rotoscoping/Rotopainting
-    	- Interaction with other compositing softwares
+        - Image processing
+        - Animation
+        - Rendering
+        - Rotoscoping/Rotopainting
+        - Interaction with other compositing softwares
 3. [Graphical user interface](#GUI)
 4. [Features in v1](#V1Features)
 5. [Features in v2](#V2Features)
@@ -24,8 +24,8 @@ Natron <a id="top"></a>
 -----------
 
 ####Natron,what is it? 
-	
-	Natron is an open-source, cross-platform (Windows,OSX,Linux), OpenFX 1.3 compatible
+
+Natron is an open-source, cross-platform (Windows,OSX,Linux), OpenFX 1.3 compatible
 software designed for compositing and image processing.
 Compositing is the process of combining visual elements from separate sources into single
 images (wikipedia) .

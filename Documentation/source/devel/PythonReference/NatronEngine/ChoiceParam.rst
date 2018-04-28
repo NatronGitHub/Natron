@@ -9,7 +9,7 @@ ChoiceParam
 Synopsis
 --------
 
-A choice parameter holds an integer value which corresponds to a choice. 
+A choice parameter holds an integer value which corresponds to a choice.
 See :ref:`detailed description<choice.details>` below.
 
 Functions
@@ -107,13 +107,13 @@ Get the menu entry at the given *index*.
 
 .. method:: NatronEngine.ChoiceParam.getNumOptions()
 
-	:rtype: :class:`int`
+    :rtype: :class:`int`
 
 Returns the number of menu entries.
 
 .. method:: NatronEngine.ChoiceParam.getOptions()
 
-	:rtype: :class:`sequence`
+    :rtype: :class:`sequence`
 
 Returns a sequence of string with all menu entries from top to bottom.
 
@@ -173,7 +173,7 @@ Set a new keyframe on the parameter with the value *x* at the given *frame*.
 
 
     :param label: :class:`str<NatronEngine.std::string>`
-	
+
 Set the value of this parameter given a *label*. The *label* must match an existing option.
 Strings will be compared without case sensitivity. If not found, nothing happens.
 

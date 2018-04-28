@@ -29,14 +29,14 @@ Detailed Description
 
 
     :rtype: :class: `Int2DTuple`
-    
+
 Returns a :doc:`Int2DTuple` containing the [x,y] value of this parameter at the timeline's
 current time.
 
 
 .. method:: NatronEngine.Int2DParam.get(frame)
 
-	 :param: :class:`float<PySide.QtCore.float>`
+     :param: :class:`float<PySide.QtCore.float>`
      :rtype: :class: `Int2DTuple`
 
 Returns a :doc:`Int2DTuple` containing the [x,y] value of this parameter at

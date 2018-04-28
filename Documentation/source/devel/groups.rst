@@ -337,17 +337,17 @@ Natron can be started with a Python script as argument.
 When used in background mode (i.e: using NatronRenderer or Natron with the option **-b**)
 Natron will do the following steps:
 
-    * Source the script
-    * If found, run a function with the following signature *createInstance(app,group)*
-    * Start rendering the specified writer nodes (with the **-w** option) and/or the *Output* nodes (with the **-o** option)
+- Source the script
+- If found, run a function with the following signature *createInstance(app,group)*
+- Start rendering the specified writer nodes (with the **-w** option) and/or the *Output* nodes (with the **-o** option)
 
 This allows to pass a group plug-in to Natron and render it easily if needed.
 Also, it can take arbitrary scripts which are not necessarily group plug-ins.
 
 When Natron is launched in GUI mode but with a Python script in argument, it will do the following steps:
 
-    * Source the script
-    * If found, run a function with the following signature *createInstance(app,group)*
+- Source the script
+- If found, run a function with the following signature *createInstance(app,group)*
 
 
 Toolsets

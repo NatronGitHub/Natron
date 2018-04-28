@@ -23,7 +23,7 @@ Functions
 *    def :meth:`createWriter<NatronEngine.App.createWriter>` (filename[, group=None] [, properties=None])
 *    def :meth:`getAppID<NatronEngine.App.getAppID>` ()
 *    def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
-*    def :meth:`getViewNames<NatronEngine.App.getViewNames>`()
+*    def :meth:`getViewNames<NatronEngine.App.getViewNames>` ()
 *    def :meth:`render<NatronEngine.App.render>` (effect,firstFrame,lastFrame[,frameStep])
 *    def :meth:`render<NatronEngine.App.render>` (tasks)
 *    def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename)
@@ -201,58 +201,58 @@ Here is an example on how to pass properties to the createNode function::
 
 - *Name*: **CreateNodeArgsPropPluginID**
 
-    *Dimension*: 1
+  *Dimension*: 1
 
-    *Type*: string
+  *Type*: string
 
-    *Default*: None
+  *Default*: None
 
-    *Description*: Indicates the ID of the plug-in to create. This property is mandatory.
+  *Description*: Indicates the ID of the plug-in to create. This property is mandatory.
   It is set automatically by passing the pluginID to the createNode function
 
 - *Name*: **CreateNodeArgsPropPluginVersion**
 
-    *Dimension*: 2
+  *Dimension*: 2
 
-    *Type*: int
+  *Type*: int
 
-    *Default*: -1,-1
+  *Default*: -1,-1
 
-    *Description*: Indicates the version of the plug-in to create.
+  *Description*: Indicates the version of the plug-in to create.
   With the value (-1,-1) Natron will load the highest possible version available for that plug-in.
 
 - *Name*: **CreateNodeArgsPropNodeInitialPosition**
 
-    *Dimension*: 2
+  *Dimension*: 2
 
-    *Type*: float
+  *Type*: float
 
-    *Default*: None
+  *Default*: None
 
-    *Description*: Indicates the initial position of the node in the nodegraph.
+  *Description*: Indicates the initial position of the node in the nodegraph.
   By default Natron will position the node according to the state of the interface (current selection, position of the viewport, etc...)
 
 - *Name*: **CreateNodeArgsPropNodeInitialName**
 
-    *Dimension*: 1
+  *Dimension*: 1
 
-    *Type*: string
+  *Type*: string
 
-    *Default*: None
+  *Default*: None
 
-    *Description*: Indicates the initial *script-name* of the node
+  *Description*: Indicates the initial *script-name* of the node
   By default Natron will name the node according to the plug-in label and will add a digit
   afterwards dependending on the current number of instances of that plug-in.
 
 - *Name*: **CreateNodeArgsPropNodeInitialParamValues**
 
-    *Dimension*: N
+  *Dimension*: N
 
-    *Type*: string
+  *Type*: string
 
-    *Default*: None
+  *Default*: None
 
-    *Description*: Contains a sequence of parameter script-names for which a default value
+  *Description*: Contains a sequence of parameter script-names for which a default value
   is specified by a property. Each default value must be specified by a property whose name is
   in the form *CreateNodeArgsPropParamValue_PARAMETERNAME*  where *PARAMETERNAME* must be replaced by the
   *script-name* of the parameter.  The property must have the same type as the data-type of
@@ -261,75 +261,75 @@ Here is an example on how to pass properties to the createNode function::
 
 - *Name*: **CreateNodeArgsPropOutOfProject**
 
-    *Dimension*: 1
+  *Dimension*: 1
 
-    *Type*: bool
+  *Type*: bool
 
-    *Default*: False
+  *Default*: False
 
-    *Description*: When True the node will not be part of the project. The node can be used for internal used, e.g in a Python script but will
+  *Description*: When True the node will not be part of the project. The node can be used for internal used, e.g in a Python script but will
   not appear to the user. It will also not be saved in the project.
 
 
 - *Name*: **CreateNodeArgsPropNoNodeGUI**
 
-    *Dimension*: 1
+  *Dimension*: 1
 
-    *Type*: bool
+  *Type*: bool
 
-    *Default*: False
+  *Default*: False
 
-    *Description*:  * If True, the node will not have any GUI created. The property CreateNodeArgsPropOutOfProject set to True implies this.
+  *Description*:  * If True, the node will not have any GUI created. The property CreateNodeArgsPropOutOfProject set to True implies this.
 
 
 - *Name*: **CreateNodeArgsPropSettingsOpened**
 
-    *Dimension*: 1
+  *Dimension*: 1
 
-    *Type*: bool
+  *Type*: bool
 
-    *Default*: False
+  *Default*: False
 
-    *Description*:  * If True, the node settings panel will not be opened by default when created.
+  *Description*:  * If True, the node settings panel will not be opened by default when created.
   If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
   is set to true, this property has no effet.
 
 
 - *Name*: **CreateNodeArgsPropAutoConnect**
 
-    *Dimension*: 1
+  *Dimension*: 1
 
-    *Type*: bool
+  *Type*: bool
 
-    *Default*: False
+  *Default*: False
 
-    *Description*:  * If True, Natron will try to automatically connect the node to others depending on the user selection.
+  *Description*:  * If True, Natron will try to automatically connect the node to others depending on the user selection.
   If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
   is set to true, this property has no effet.
 
 
 - *Name*: **CreateNodeArgsPropAddUndoRedoCommand**
 
-    *Dimension*: 1
+  *Dimension*: 1
 
-    *Type*: bool
+  *Type*: bool
 
-    *Default*: False
+  *Default*: False
 
-    *Description*:  Natron will push a undo/redo command to the stack when creating this node.
+  *Description*:  Natron will push a undo/redo command to the stack when creating this node.
   If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
   is set to true, this property has no effect.
 
 
 - *Name*: **CreateNodeArgsPropSilent**
 
-    *Dimension*: 1
+  *Dimension*: 1
 
-    *Type*: bool
+  *Type*: bool
 
-    *Default*: True
+  *Default*: True
 
-    *Description*:  When set to True, Natron will not show any information, error, warning, question or file dialog when creating the node.
+  *Description*:  When set to True, Natron will not show any information, error, warning, question or file dialog when creating the node.
 
 
 
@@ -487,7 +487,7 @@ inform the user of various informations, warnings or errors.
 .. method:: NatronEngine.App.saveProject(filename)
 
     :param filename: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`bool<PySide.QtCore.bool`
+    :rtype: :class:`bool<PySide.QtCore.bool>`
 
     Saves the current project under the current project name. If the project has
     never been saved so far, this function e saves the project to the file indicated by the *filename*
@@ -499,7 +499,7 @@ inform the user of various informations, warnings or errors.
 .. method:: NatronEngine.App.saveProjectAs(filename)
 
     :param filename: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`bool<PySide.QtCore.bool`
+    :rtype: :class:`bool<PySide.QtCore.bool>`
 
     Save the project under the given *filename*.
     In GUI mode, if *filename* is empty, it promps the user where to save the project.
@@ -512,7 +512,7 @@ inform the user of various informations, warnings or errors.
 .. method:: NatronEngine.App.saveTempProject(filename)
 
     :param filename: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`bool<PySide.QtCore.bool
+    :rtype: :class:`bool<PySide.QtCore.bool>`
 
     Saves a copy of the project to the given *filename* without updating project properties
     such as the project path, last save time etc...
@@ -526,14 +526,14 @@ inform the user of various informations, warnings or errors.
 
     Loads the project indicated by *filename*.
     In GUI mode, this will open a new window only if the current window has modifications.
-    In background mode this will close the current project of this :ref:`App<NatronEngine.App>`
+    In background mode this will close the current project of this :class:`App<NatronEngine.App>`
     and open the project indicated by *filename* in it.
-    This function returns the :ref:`App<NatronEngine.App>` object upon success, *None* otherwise.
+    This function returns the :class:`App<NatronEngine.App>` object upon success, *None* otherwise.
 
 
 .. method:: NatronEngine.App.resetProject()
 
-    :rtype: :class:`bool<PySide.QtCore.bool`
+    :rtype: :class:`bool<PySide.QtCore.bool>`
 
     Attempts to close the current project, without wiping the window.
     In GUI mode, the user is first prompted to saved his/her changes and can abort the
@@ -543,17 +543,17 @@ inform the user of various informations, warnings or errors.
 
 .. method:: NatronEngine.App.closeProject()
 
-    :rtype: :class:`bool<PySide.QtCore.bool`
+    :rtype: :class:`bool<PySide.QtCore.bool>`
 
     Same as :func:`resetProject()<NatronEngine.App.resetProject>` except that the
     window will close in GUI mode.
-    Also, if this is the last :ref:`App<NatronEngine.App>` alive, Natron will close.
+    Also, if this is the last :class:`App<NatronEngine.App>` alive, Natron will close.
 
 .. method:: NatronEngine.App.newProject()
 
     :rtype: :class:`App<NatronEngine.App>`
 
-    Creates a new :ref:`App<NatronEngine.App>`. In GUI mode, this will open a new window.
-    Upon success, the :ref:`App<NatronEngine.App>` object is returned, otherwise *None*
+    Creates a new :class:`App<NatronEngine.App>`. In GUI mode, this will open a new window.
+    Upon success, the :class:`App<NatronEngine.App>` object is returned, otherwise *None*
     is returned.
 

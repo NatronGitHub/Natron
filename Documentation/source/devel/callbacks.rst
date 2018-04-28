@@ -35,28 +35,22 @@ The param changed callback
 This function is called every times the value of a :ref:`parameter<Param>` changes.
 This callback is available for all objects that can hold parameters,namely:
 
-    * :ref:`Effect<Effect>`
-    * :ref:`PyPanel<pypanel>`
-    * :ref:`PyModalDialog<pyModalDialog>`
+- :ref:`Effect<Effect>`
+- :ref:`PyPanel<pypanel>`
+- :ref:`PyModalDialog<pyModalDialog>`
 
 
 The signature of the callback used on the :ref:`Effect<Effect>` is::
 
     callback(thisParam, thisNode, thisGroup, app, userEdited)
 
-
 - **thisParam** : This is a :ref:`Param<Param>` pointing to the parameter which just had its value changed.
-
 - **thisNode** : This is a :ref:`Effect<Effect>` pointing to the effect holding **thisParam**
-
 - **thisGroup** : This is a :ref:`Effect<Effect>` pointing to the group  holding **thisNode** or **app** otherwise if the node is in the main node-graph.
-
 - **app** : This variable will be set so it points to the correct :ref:`application instance<App>`.
-
 - **userEdited** : This indicates whether or not the parameter change is due to user interaction (i.e: because the user changed
 the value by herself/himself) or due to another parameter changing the value of the parameter
 via a derivative of the :func:`setValue(value)<>` function.
-
 
 For the param changed callback of :ref:`PyPanel<pypanel>` and :ref:`PyModalDialog<pyModalDialog>`
 on the other hand, Natron will define a string variable **paramName** indicating the :ref:`script-name<autoVar>`

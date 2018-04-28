@@ -9,7 +9,7 @@ PyCoreApplication
 Synopsis
 --------
 
-This object represents a background instance of Natron. 
+This object represents a background instance of Natron.
 See :ref:`detailed description<coreApp.details>`...
 
 Functions
@@ -38,8 +38,8 @@ Functions
 *    def :meth:`isMacOSX<NatronEngine.PyCoreApplication.isMacOSX>` ()
 *    def :meth:`isUnix<NatronEngine.PyCoreApplication.isUnix>` ()
 *    def :meth:`isWindows<NatronEngine.PyCoreApplication.isWindows>` ()
-*	 def :meth:`setOnProjectCreatedCallback<NatronEngine.PyCoreApplication.setOnProjectCreatedCallback>` (pythonFunctionName)
-*	 def :meth:`setOnProjectLoadedCallback<NatronEngine.PyCoreApplication.setOnProjectLoadedCallback>` (pythonFunctionName)
+*    def :meth:`setOnProjectCreatedCallback<NatronEngine.PyCoreApplication.setOnProjectCreatedCallback>` (pythonFunctionName)
+*    def :meth:`setOnProjectLoadedCallback<NatronEngine.PyCoreApplication.setOnProjectLoadedCallback>` (pythonFunctionName)
 
 .. _coreApp.details:
 
@@ -47,60 +47,60 @@ Detailed Description
 --------------------
 
 When running Natron there's a **unique** instance of the :doc:`PyCoreApplication` object.
-It holds general informations about the process. 
+It holds general informations about the process.
 
 Generally, throughout your scripts, you can access this object with the variable *natron*
 that Natron pre-declared for you, e.g::
 
-	natron.getPluginIDs()
+    natron.getPluginIDs()
 
 .. warning::
 
-	The variable **natron** belongs to the module **NatronEngine**, hence make sure to make the following import::
-	
-		from NatronEngine import*
-		
-	Otherwise with a regular *import* you can still access **natron** by prepending the module::
-		
-		NatronEngine.natron
+    The variable **natron** belongs to the module **NatronEngine**, hence make sure to make the following import::
+
+        from NatronEngine import*
+
+    Otherwise with a regular *import* you can still access **natron** by prepending the module::
+
+        NatronEngine.natron
 
 .. warning::
 
-	The variable stored in the module **NatronEngine** contains a reference to a :doc:`PyCoreApplication`.
-	If you need to have the GUI functionalities provided by :doc:`PyGuiApplication`, you must then use
-	the variable **natron** belonging to the module **NatronGui**. 
-	Hence make sure to make the following import to have access to **natron**::
-	
-		from NatronGui import*
-		
-	With a regular import you can access it using **NatronGui.natron**. 
-	
+    The variable stored in the module **NatronEngine** contains a reference to a :doc:`PyCoreApplication`.
+    If you need to have the GUI functionalities provided by :doc:`PyGuiApplication`, you must then use
+    the variable **natron** belonging to the module **NatronGui**.
+    Hence make sure to make the following import to have access to **natron**::
+
+        from NatronGui import*
+
+    With a regular import you can access it using **NatronGui.natron**.
+
 .. warning::
 
-	Make sure to **not** make the 2 following imports, otherwise the **natron** variable will
-	not point to something expected::
-	
-		#This you should not do!
-		from NatronEngine import *
-		from NatronGui import *
-		
-		#This is OK
-		import NatronEngine
-		import NatronGui
-		
-		#This can also be done for convenience
-		from NatronEngine import NatronEngine.natron as NE
-		from NatronGui import NatronGui.natron as NG
-	
+    Make sure to **not** make the 2 following imports, otherwise the **natron** variable will
+    not point to something expected::
+
+        #This you should not do!
+        from NatronEngine import *
+        from NatronGui import *
+
+        #This is OK
+        import NatronEngine
+        import NatronGui
+
+        #This can also be done for convenience
+        from NatronEngine import NatronEngine.natron as NE
+        from NatronGui import NatronGui.natron as NG
+
 This class is used only for background (command-line) runs of Natron, that is when you
 launch Natron in the following ways::
 
-	Natron -b ...
-	Natron -t
-	NatronRenderer
-	
+    Natron -b ...
+    Natron -t
+    NatronRenderer
+
 For interactive runs of Natron (with the user interface displayed), the derived class :doc:`PyGuiApplication` is
-used instead, which gives access to more GUI specific functionalities. 
+used instead, which gives access to more GUI specific functionalities.
 
 You should never need to make a new instance of this object yourself. Note that even if you
 did, internally the same object will be used and they will all refer to the same Natron
@@ -112,9 +112,9 @@ you can refer to them with pre-declared variables *app1* , *app2*, etc...
 In background mode, there would be only 1 project opened, so Natron does the following
 assignment for you before calling any scripts:
 
-	app = app1
-	
-See :doc:`App` to access different opened projects. 
+    app = app1
+
+See :doc:`App` to access different opened projects.
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -124,8 +124,8 @@ Member functions description
 Defines a new variable pointing to the same underlying application that the *natron* variable
 points to. This is equivalent to calling::
 
-	myVar = natron
-	
+    myVar = natron
+
 
 .. method:: NatronEngine.PyCoreApplication.appendToNatronPath(path)
 
@@ -157,9 +157,9 @@ the preferences of Natron.
 Returns the build-number of the current version of Natron. Generally this is used for
 release candidates, e.g::
 
-	Natron v1.0.0-RC1  : build number = 1
-	Natron v1.0.0-RC2  : build number = 2
-	Natron v1.0.0-RC3  : build number = 3
+    Natron v1.0.0-RC1  : build number = 1
+    Natron v1.0.0-RC2  : build number = 2
+    Natron v1.0.0-RC3  : build number = 3
 
 
 
@@ -170,7 +170,7 @@ release candidates, e.g::
     :rtype: :class:`App<NatronEngine.App>`
 
 Returns the :doc:`App` instance at the given *idx*. Note that *idx* is 0-based, e.g:
-0 would return what's pointed to by *app1*. 
+0 would return what's pointed to by *app1*.
 
 
 .. method:: NatronEngine.PyCoreApplication.getActiveInstance()
@@ -187,10 +187,10 @@ Returns the :doc:`App` instance corresponding to the last project the user inter
 
 Returns a string describing the development status of Natron. This can be one of the following values:
 
-	* Alpha : Meaning the software has unimplemented functionalities and probably many bugs left
-	* Beta : Meaning the software has all features that were planned are implemented but there may be bugs
-	* RC : Meaning the software seems in a good shape and should be ready for release unless some last minute show-stoppers are found
-	* Release : Meaning the software is ready for production
+    * Alpha : Meaning the software has unimplemented functionalities and probably many bugs left
+    * Beta : Meaning the software has all features that were planned are implemented but there may be bugs
+    * RC : Meaning the software seems in a good shape and should be ready for release unless some last minute show-stoppers are found
+    * Release : Meaning the software is ready for production
 
 
 
@@ -200,7 +200,7 @@ Returns a string describing the development status of Natron. This can be one of
 
     :rtype: :class:`sequence`
 
-Returns a sequence of string with all natron :ref:`search paths<natronPath>`. 
+Returns a sequence of string with all natron :ref:`search paths<natronPath>`.
 
 
 
@@ -213,9 +213,9 @@ Returns a sequence of string with all natron :ref:`search paths<natronPath>`.
 Returns an *int* with the version of Natron encoded so that you can compare versions
 of Natron like this::
 
-	if natron.getNatronVersionEncoded() >= 20101:
-		...
-		
+    if natron.getNatronVersionEncoded() >= 20101:
+        ...
+
 In that example, Natron's version would be 2.1.1
 
 
@@ -284,14 +284,14 @@ Returns the number of :doc`App` instances currently active.
 
 
     :rtype: :class:`sequence`
-    
+
 Returns a sequence of strings with all plugin-IDs currently loaded.
-    
+
 
 .. method:: NatronEngine.PyCoreApplication.getPluginIDs(filter)
 
 
-	:param filter: :class:`str`
+    :param filter: :class:`str`
     :rtype: :class:`sequence`
 
 Same as :func:`getPluginIDs()<NatronEngine.PyCoreApplication.getPluginIDs>` but returns
@@ -345,8 +345,8 @@ Returns True if Natron is executed on MacOSX.
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
 Returns True if Natron is executed on Unix. Basically this is equivalent to::
-	
-	if natron.isLinux() or natron.isMacOSX():
+
+    if natron.isLinux() or natron.isMacOSX():
 
 
 
@@ -363,27 +363,27 @@ Returns True if Natron is executed on Windows.
 
 .. method:: NatronEngine.PyCoreApplication.setOnProjectCreatedCallback(pythonFunctionName)
 
-	:param: :class:`str<NatronEngine.std::string>`
-	
+    :param: :class:`str<NatronEngine.std::string>`
+
 Convenience function to set the After Project Created callback. Note that this will override
 any callback set in the Preferences-->Python-->After Project created.
 This is exactly the same as calling::
 
-	NatronEngine.settings.afterProjectCreated.set(pythonFunctionName)
-	
-.. note:: 
+    NatronEngine.settings.afterProjectCreated.set(pythonFunctionName)
 
-	Clever use of this function can be made in the **init.py** script to do generic stuff
-	for all projects (whether they are new projects or loaded projects). For instance
-	one might want to add a list of Formats to the project. See the example :ref:`here<startupScripts>`
-	
+.. note::
+
+    Clever use of this function can be made in the **init.py** script to do generic stuff
+    for all projects (whether they are new projects or loaded projects). For instance
+    one might want to add a list of Formats to the project. See the example :ref:`here<startupScripts>`
+
 .. method:: NatronEngine.PyCoreApplication.setOnProjectLoadedCallback(pythonFunctionName)
 
-	:param: :class:`str<NatronEngine.std::string>`
-	
+    :param: :class:`str<NatronEngine.std::string>`
+
 Convenience function to set the Default After Project Loaded callback. Note that this will override
 any callback set in the Preferences-->Python-->Default After Project Loaded.
 This is exactly the same as calling::
 
-	NatronEngine.settings.defOnProjectLoaded.set(pythonFunctionName)
+    NatronEngine.settings.defOnProjectLoaded.set(pythonFunctionName)
 
