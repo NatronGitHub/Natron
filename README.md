@@ -8,9 +8,9 @@ Foundry, or Blackmagic Fusion.
 
 It is portable and cross-platform (GNU/Linux, OS X, Microsoft Windows).
 
-The project home page is http://natron.fr
-
-The project source code repository is https://github.com/NatronGitHub/Natron
+- Home page: http://natron.fr
+- Source code: https://github.com/NatronGitHub/Natron
+- Forum: https://discuss.pixls.us/c/software/natron
 
 Features
 --------
@@ -138,22 +138,15 @@ This documentation may be slightly outdated, so do not hesitate to submit update
 Planned features
 ----------------
 
-### Features planned for 2.2 (ETA: End of july 2016)
-
 - Optical Flow nodes: VectorGenerator, MotionBlur, RollingShutter, Retiming
 
-- User manual and Reference guide
-
-
-### Features planned for future versions
-
 - 3D workspace: support for Cameras, 3D Cards, Camera mapping, 3D tracker
-
-- GMIC http://gmic.eu integration as an OpenFX plug-in
 
 - Natural matting: process of extracting a foreground without necessarily a green/blue-screen as background
 
 - Deep data: Support for deep data (multiple samples per pixel)
+
+- See also https://github.com/NatronGitHub/Natron/wiki/Google-Summer-of-Code-GSoC-ideas
 
 Contributing
 ------------
@@ -175,8 +168,8 @@ You can check out the easy tasks left to do [here](https://natron.fr/easy-task-l
 
 Feel free to report bugs, discuss tasks, or pick up work there. If you want to make
 changes, please fork, edit, and [send us a pull
-request](https://github.com/NatronGitHub/Natron/pull/new/master),
-preferably on the ["master"](https://github.com/NatronGitHub/Natron/tree/master)
+request](https://github.com/NatronGitHub/Natron/pull/new/RB-2.3),
+preferably on the ["RB-2.3"](https://github.com/NatronGitHub/Natron/tree/RB-2.3)
 branch.
 
 There's a `.git-hooks` directory in the root. This contains a `pre-commit`

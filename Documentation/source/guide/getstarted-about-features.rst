@@ -15,9 +15,9 @@ Features
   * `OpenFX-Misc <https://github.com/NatronGitHub/openfx-misc>`_
   * `OpenFX-Arena <https://github.com/NatronGitHub/openfx-arena>`_
   * `OpenFX-G'MIC <https://github.com/NatronGitHub/openfx-gmic>`_
-  * `OpenFX-OpenCV <https://github.com/devernay/openfx-opencv>`_
-  * `OpenFX-Yadif <https://github.com/devernay/openfx-yadif>`_ deinterlacer
-  * `OpenFX-Vegas <https://github.com/devernay/openfx-vegas>`_  SDK samples
+  * `OpenFX-OpenCV <https://github.com/NatronGitHub/openfx-opencv>`_
+  * `OpenFX-Yadif <https://github.com/NatronGitHub/openfx-yadif>`_ deinterlacer
+  * `OpenFX-Vegas <https://github.com/NatronGitHub/openfx-vegas>`_  SDK samples
   * `OpenFX <https://github.com/NatronGitHub/openfx>`_ samples
   * `TuttleOFX <https://github.com/tuttleofx/TuttleOFX>`_
 * **Support for commercial OpenFX plugins:**

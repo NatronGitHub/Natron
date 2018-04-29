@@ -25,7 +25,7 @@
 #include "Transform.h"
 
 /*
- * This file was taken from https://github.com/devernay/openfx-misc
+ * This file was taken from https://github.com/NatronGitHub/openfx-misc
  * Maybe we should make this a git submodule instead.
  */
 
