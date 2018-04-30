@@ -1,0 +1,12 @@
+diff -rupN LibRaw-0.15.4/configure.ac LibRaw-0.15.4-new/configure.ac
+--- LibRaw-0.15.4/configure.ac	2013-08-23 04:55:48.000000000 +0200
++++ LibRaw-0.15.4-new/configure.ac	2014-01-13 17:32:09.891037432 +0100
+@@ -7,7 +7,7 @@ AC_CONFIG_MACRO_DIR([m4])
+ # Tools to use
+ AC_PROG_CXX
+ AC_PROG_CC
+-AC_PROG_LIBTOOL
++LT_INIT
+ AC_ENABLE_SHARED
+ AC_ENABLE_STATIC
+ AC_LIBTOOL_WIN32_DLL

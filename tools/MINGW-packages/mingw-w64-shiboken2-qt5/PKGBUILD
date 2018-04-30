@@ -1,0 +1,120 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Xin Sun <sun.simpson@gmail.com>
+
+DLAGENTS=("https::/usr/bin/curl -k -o %o %u")
+_realname=shiboken2-qt5
+pkgname=(${MINGW_PACKAGE_PREFIX}-${_realname} ${MINGW_PACKAGE_PREFIX}-python2-${_realname})
+pkgver=master
+pkgrel=1.0
+arch=('any')
+url="http://pyside.github.io/docs/pyside/"
+license=("LGPL")
+install=${_realname}-${CARCH}.install
+source=(https://downloads.natron.fr/Third_Party_Sources/shiboken2-master.tar.gz shiboken2-mingw.diff)
+md5sums=('207ba66372e18e271430d4f44fb94360', '11de3c2b24b3535acfd06f35f34aa252')
+makedepends=("${MINGW_PACKAGE_PREFIX}-libxml2"
+             "${MINGW_PACKAGE_PREFIX}-libxslt"
+             "${MINGW_PACKAGE_PREFIX}-python2"
+             "${MINGW_PACKAGE_PREFIX}-qt5"
+             "${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-cmake")
+options=('staticlibs' 'strip')
+
+prepare() {
+  cd ${srcdir}/shiboken2-master
+  patch -p0 -i ${srcdir}/shiboken2-mingw.diff
+}
+
+build() {
+  for pyv in python2; do
+    local _conf=
+    if [ "${pyv}" = "python3" ]; then
+      _conf="-DUSE_PYTHON3=yes"
+    fi
+    [[ -d ${srcdir}/build-${MINGW_CHOST} ]] && rm -rf ${srcdir}/build-${MINGW_CHOST}
+    #cp -rf PySide-${pkgver} build-${MINGW_CHOST}-${pyv}
+    #pushd ${srcdir}/build-${MINGW_CHOST}-${pyv}/sources/shiboken > /dev/null
+
+export PATH=${MINGW_PREFIX}/qt5/bin:$PATH
+export Qt5_DIR=${MINGW_PREFIX}/qt5
+
+cd shiboken2-master
+    export MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX"
+    ${MINGW_PREFIX}/bin/cmake \
+      -G"MSYS Makefiles" \
+	  -DBUILD_TESTS=FALSE \
+      -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+      ${_conf} \
+      -DCMAKE_BUILD_TYPE=RELEASE \
+      -DPYTHON_EXECUTABLE=${MINGW_PREFIX}/bin/${pyv}.exe \
+
+    make
+    
+    #popd > /dev/null
+  done
+
+}
+
+fix_paths() {
+  local prefixwin=$(cygpath -am ${MINGW_PREFIX})
+  local prefixinst=$(cygpath -am ${pkgdir}${MINGW_PREFIX})
+  
+  local _files=$(find ${pkgdir}${MINGW_PREFIX}/lib/cmake/Shiboken-${pkgver} -type f -iname "*.cmake" -o -iname "*.pc")
+  for f in ${_files}; do
+    plain "Patching ${f}..."
+    sed -e "s|${prefixwin}|${MINGW_PREFIX}|g" \
+        -e "s|${prefixinst}|${MINGW_PREFIX}|g" \
+        -i ${f}
+  done
+}
+
+package_shiboken2() {
+  pkgdesc="CPython bindings generator for C++ libraries (mingw-w64)"
+  makedepends=("${MINGW_PACKAGE_PREFIX}-libxml2"
+               "${MINGW_PACKAGE_PREFIX}-libxslt"
+               "${MINGW_PACKAGE_PREFIX}-python2"
+               "${MINGW_PACKAGE_PREFIX}-qt5")
+
+  #cd ${srcdir}/build-${MINGW_CHOST}-python2/sources/shiboken/data
+  #install -Dm644 ShibokenConfig-python2.7.cmake ${pkgdir}${MINGW_PREFIX}/lib/cmake/Shiboken-${pkgver}/
+  #install -Dm644 shiboken.pc ${pkgdir}${MINGW_PREFIX}/lib/pkgconfig/Shiboken-py2.pc
+  
+  fix_paths
+}
+
+package_python2-shiboken2() {
+  pkgdesc="Support library for Python2 bindings (mingw-w64)"
+  makedepends=("${MINGW_PACKAGE_PREFIX}-libxml2"
+               "${MINGW_PACKAGE_PREFIX}-libxslt"
+               "${MINGW_PACKAGE_PREFIX}-python2"
+               "${MINGW_PACKAGE_PREFIX}-shiboken"
+               "${MINGW_PACKAGE_PREFIX}-qt5")
+
+  #cd ${srcdir}/build-${MINGW_CHOST}-python2/sources/shiboken
+  cd ${srcdir}/shiboken2-master
+  make DESTDIR=${pkgdir} install
+  
+  cd data
+  install -Dm644 Shiboken2Config.cmake ${pkgdir}${MINGW_PREFIX}/lib/cmake/Shiboken2-2.0.0/Shiboken2Config-python2.7.cmake
+  mv ${pkgdir}${MINGW_PREFIX}/lib/pkgconfig/shiboken2{,-py2}.pc
+  
+  fix_paths
+}
+
+# Wrappers
+package_mingw-w64-i686-shiboken2-qt5() {
+  package_shiboken2
+}
+
+package_mingw-w64-i686-python2-shiboken2-qt5() {
+  package_python2-shiboken2
+}
+
+package_mingw-w64-x86_64-shiboken2-qt5() {
+  package_shiboken2
+}
+
+package_mingw-w64-x86_64-python2-shiboken2-qt5() {
+  package_python2-shiboken2
+}
+

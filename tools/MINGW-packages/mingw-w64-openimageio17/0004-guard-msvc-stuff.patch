@@ -1,0 +1,11 @@
+--- oiio-Release-1.7.10/src/iv/ivmain.cpp.orig	2017-01-20 11:49:58.863582200 +0300
++++ oiio-Release-1.7.10/src/iv/ivmain.cpp	2017-01-20 11:50:37.016055000 +0300
+@@ -99,7 +99,7 @@
+     }
+ }
+ 
+-#ifdef WIN32
++#if defined(WIN32) && !defined(__MINGW32__)
+     // if we are not in DEBUG mode this code switch the app to
+     // full windowed mode (no console and no need to define WinMain)
+     // FIXME: this should be done in CMakeLists.txt but first we have to

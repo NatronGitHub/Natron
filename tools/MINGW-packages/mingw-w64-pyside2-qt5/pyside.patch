@@ -1,0 +1,38 @@
+--- PySide-1.2.2/sources/pyside/CMakeLists.txt.orig	2015-06-26 11:33:00.602600000 +0300
++++ PySide-1.2.2/sources/pyside/CMakeLists.txt	2015-06-26 11:33:35.406200000 +0300
+@@ -31,6 +31,9 @@
+ if(MSVC)
+     set(CMAKE_CXX_FLAGS "/Zc:wchar_t- /GR /EHsc /DNOCOLOR /DWIN32 /D_WINDOWS /D_SCL_SECURE_NO_WARNINGS")
+ else()
++    if(MINGW)
++        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWIN32 -D_WINDOWS")
++    endif()
+     if(CMAKE_HOST_UNIX AND NOT CYGWIN)
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fvisibility=hidden -Wno-strict-aliasing")
+     endif()
+--- PySide-1.2.2/sources/pyside/cmake/Macros/PySideModules.cmake.orig	2015-06-26 11:55:02.330400000 +0300
++++ PySide-1.2.2/sources/pyside/cmake/Macros/PySideModules.cmake	2015-06-26 12:29:31.912800000 +0300
+@@ -22,8 +22,8 @@
+     add_custom_command(OUTPUT ${${module_sources}}
+                         COMMAND ${SHIBOKEN_BINARY} ${GENERATOR_EXTRA_FLAGS}
+                         ${pyside_BINARY_DIR}/pyside_global.h
+-                        --include-paths=${pyside_SOURCE_DIR}${PATH_SEP}${QT_INCLUDE_DIR}
+-                        --typesystem-paths=${pyside_SOURCE_DIR}${PATH_SEP}${${module_typesystem_path}}
++                        --include-paths="${pyside_SOURCE_DIR}${PATH_SEP}${QT_INCLUDE_DIR}"
++                        --typesystem-paths="${pyside_SOURCE_DIR}${PATH_SEP}${${module_typesystem_path}}"
+                         --output-directory=${CMAKE_CURRENT_BINARY_DIR}
+                         --license-file=${CMAKE_CURRENT_SOURCE_DIR}/../licensecomment.txt
+                         ${typesystem_path}
+--- PySide-1.2.2/sources/pyside/tests/pysidetest/CMakeLists.txt.orig	2015-06-26 12:32:49.376400000 +0300
++++ PySide-1.2.2/sources/pyside/tests/pysidetest/CMakeLists.txt	2015-06-26 12:33:01.903200000 +0300
+@@ -36,8 +36,8 @@
+ add_custom_command(OUTPUT ${testbinding_SRC}
+ COMMAND ${SHIBOKEN_BINARY} ${GENERATOR_EXTRA_FLAGS}
+         ${CMAKE_CURRENT_SOURCE_DIR}/pysidetest_global.h
+-        --include-paths=${pyside_BINARY_DIR}${PATH_SEP}${CMAKE_CURRENT_SOURCE_DIR}${PATH_SEP}${QT_INCLUDE_DIR}${PATH_SEP}${QT_QTCORE_INCLUDE_DIR}${PATH_SEP}${QT_QTGUI_INCLUDE_DIR}
+-        --typesystem-paths=${CMAKE_CURRENT_SOURCE_DIR}${PATH_SEP}${pyside_SOURCE_DIR}${PATH_SEP}${QtCore_SOURCE_DIR}${PATH_SEP}${QtCore_BINARY_DIR}${PATH_SEP}${QtGui_SOURCE_DIR}${PATH_SEP}${QtGui_BINARY_DIR}
++        --include-paths="${pyside_BINARY_DIR}${PATH_SEP}${CMAKE_CURRENT_SOURCE_DIR}${PATH_SEP}${QT_INCLUDE_DIR}${PATH_SEP}${QT_QTCORE_INCLUDE_DIR}${PATH_SEP}${QT_QTGUI_INCLUDE_DIR}"
++        --typesystem-paths="${CMAKE_CURRENT_SOURCE_DIR}${PATH_SEP}${pyside_SOURCE_DIR}${PATH_SEP}${QtCore_SOURCE_DIR}${PATH_SEP}${QtCore_BINARY_DIR}${PATH_SEP}${QtGui_SOURCE_DIR}${PATH_SEP}${QtGui_BINARY_DIR}"
+         --output-directory=${CMAKE_CURRENT_BINARY_DIR}
+         ${CMAKE_CURRENT_SOURCE_DIR}/typesystem_pysidetest.xml
+ WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

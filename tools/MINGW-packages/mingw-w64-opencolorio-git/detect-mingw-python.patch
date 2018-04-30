@@ -1,0 +1,28 @@
+--- opencolorio/share/cmake/OCIOMacros.cmake.orig	2018-01-10 08:13:42.931606200 +0300
++++ opencolorio/share/cmake/OCIOMacros.cmake	2018-01-10 08:15:55.689556300 +0300
+@@ -203,7 +203,7 @@
+         set(PYTHON_OK NO)
+     endif()
+ 
+-    if(WIN32)
++    if(MSVC)
+         # LIBPL does not exist on Windows, and no variable exist
+         set(library_cmd "from distutils import sysconfig; print '%s/libs' % sysconfig.get_config_var('prefix')")
+     else()
+@@ -238,14 +238,14 @@
+         # Respect Python major/minor version, and UCS version (unicode
+         # content system). E.g install into "lib/python2.6/ucs4/site-packages"
+         # Windows & *nix does not use the same path, refer to https://docs.python.org/2/install/
+-        if(WIN32)
++        if(MSVC)
+             set(PYTHON_VARIANT_PATH "lib${LIB_SUFFIX}/${PYTHON_UCS}/site-packages")
+         else()
+             set(PYTHON_VARIANT_PATH "lib${LIB_SUFFIX}/python${PYTHON_VERSION}/${PYTHON_UCS}/site-packages")
+         endif()
+     else()
+         # Ignore UCS value and install into lib/python2.6/site-packages dir
+-        if(WIN32)
++        if(MSVC)
+             set(PYTHON_VARIANT_PATH "lib${LIB_SUFFIX}/site-packages")
+         else()
+             set(PYTHON_VARIANT_PATH "lib${LIB_SUFFIX}/python${PYTHON_VERSION}/site-packages")

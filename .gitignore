@@ -5,7 +5,6 @@
 *_resource.rc
 moc*.cpp
 *moc
-*MINGW-packages*
 build
 build32
 build64
@@ -14,6 +13,42 @@ sed*
 *latex*
 DerivedData
 .pro.user
+Documentation/html
+Documentation/pdf
+#Documentation/source/_group*
+#Documentation/source/_prefs.rst
+#Documentation/source/plugins
+#breakpadclient.pri
+#breakpadpro.pri
+google-breakpad/
+libs/hoedown/hoedown.xcodeproj/
+libs/libtess/libtess.xcodeproj/
+libs/libtess/tess.xcodeproj/
+libs/ceres/ceres.xcodeproj/
+libs/openMVG/openMVG.xcodeproj/
+libs/libmv/LibMV.xcodeproj/
+libs/glog/glog.xcodeproj/
+libs/gflags/gflags.xcodeproj/
+libs/qhttpserver/qhttpserver.xcodeproj/
+libs/qhttpserver/src/qhttpserver.xcodeproj/
+Natron.xcodeproj/
+Project-xcode-breakpad.xcodeproj/
+Natron-bin.xcodeproj/
+NatronRenderer-bin.xcodeproj/
+NatronRenderer.xcodeproj/
+NatronCrashReporter.xcodeproj/
+NatronRendererCrashReporter.xcodeproj/
+BreakpadClient.xcodeproj/
+CrashReporter/*
+CrashReporterCLI/*
+BreakpadClient/*
+tools/normalize/normalize
+Tests.xcodeproj/
+HostSupport.xcodeproj/
+Gui.xcodeproj/
+Engine.xcodeproj/
+Project.xcodeproj/
+natron-python.xcodeproj/
 *.sln
 *.xcworkspace
 *xcuserdata
@@ -23,6 +58,11 @@ DerivedData
 *Release
 *release
 *debug
+Cache
+TestImages
+TestWrite
+.pro.user
+config.pri
 *.vcxproj
 *Win32
 qrc_*.cpp
@@ -194,7 +234,6 @@ pch
 *.pyc
 
 
-*tmp*
 *commits-hash.sh*
 
 *repo.sh*

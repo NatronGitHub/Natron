@@ -1,0 +1,18 @@
+--- a/tools/activeqt/testcon/testcon.pro
++++ b/tools/activeqt/testcon/testcon.pro
+@@ -9,6 +9,8 @@
+     $$QT_BUILD_TREE/src/activeqt/container \
+     $$QT_BUILD_TREE/src/activeqt/container/.uic/release-shared \
+     $$QT_BUILD_TREE/src/activeqt/container/.uic/debug-shared \
++    $$QT_BUILD_TREE/src/activeqt/container/.uic/release-static \
++    $$QT_BUILD_TREE/src/activeqt/container/.uic/debug-static \
+ 
+ SOURCES	 = main.cpp docuwindow.cpp mainwindow.cpp invokemethod.cpp changeproperties.cpp ambientproperties.cpp controlinfo.cpp
+ HEADERS	 = docuwindow.h mainwindow.h invokemethod.h changeproperties.h ambientproperties.h controlinfo.h
+--- a/tools/activeqt/testcon/testcon.pro
++++ b/tools/activeqt/testcon/testcon.pro
+@@ -23,3 +23,4 @@
+     !win32-g++*:QMAKE_POST_LINK = midl $$QT_SOURCE_TREE/tools/activeqt/testcon/testcon.idl && move testcon.tlb $(TARGETDIR)
+ 
+ }
++QMAKE_LFLAGS += -Wl,--allow-multiple-definition

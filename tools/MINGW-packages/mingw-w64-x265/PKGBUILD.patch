@@ -1,0 +1,54 @@
+--- PKGBUILD.orig	2017-11-18 08:45:20.000000000 +0100
++++ PKGBUILD	2017-11-18 08:47:00.000000000 +0100
+@@ -5,7 +5,7 @@
+ pkgbase=mingw-w64-${_realname}
+ pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+ pkgver=2.5
+-pkgrel=1
++pkgrel=1.1
+ pkgdesc='Open Source H265/HEVC video encoder (mingw-w64)'
+ arch=('any')
+ license=('GPL')
+@@ -47,6 +47,7 @@
+     -G "MSYS Makefiles" \
+     -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+     -DWINXP_SUPPORT=${_WINXP_SUPPORT} \
++    -DENABLE_HDR10_PLUS=ON \
+     ../../../source
+   make
+ 
+@@ -67,6 +68,25 @@
+     -DENABLE_CLI=OFF \
+     ../../../source
+   make
++
++  # Build 12 bit-depth dll for x265_api_get.
++  if [ -d ../12bit ]; then
++    rm -fr ../12bit
++  fi
++  mkdir -p ../12bit
++  cd ../12bit
++
++  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
++  ${MINGW_PREFIX}/bin/cmake \
++    -G "MSYS Makefiles" \
++    -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
++    -DWINXP_SUPPORT=${_WINXP_SUPPORT} \
++    -DHIGH_BIT_DEPTH=ON \
++    -DMAIN12=ON \
++    -DENABLE_ASSEMBLY=${_ENABLE_ASM} \
++    -DENABLE_CLI=OFF \
++    ../../../source
++  make
+ }
+ 
+ package() {
+@@ -76,4 +96,8 @@
+   # Install 10 bit-depth dll.
+   cd "${srcdir}"/multicoreware-x265-*/build/msys/10bit
+   install -m 755 libx265.dll "${pkgdir}"/${MINGW_PREFIX}/bin/libx265_main10.dll
++
++  # Install 12 bit-depth dll.
++  cd "${srcdir}"/multicoreware-x265-*/build/msys/12bit
++  install -m 755 libx265.dll "${pkgdir}"/${MINGW_PREFIX}/bin/libx265_main12.dll
+ }

@@ -1,0 +1,11 @@
+--- magick/utility-private.h.orig	2016-02-08 16:25:48.181616800 +0100
++++ magick/utility-private.h	2016-02-08 16:28:09.040991800 +0100
+@@ -102,7 +102,7 @@
+ 
+ static inline FILE *fopen_utf8(const char *path,const char *mode)
+ {
+-#if !defined(MAGICKCORE_WINDOWS_SUPPORT) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)
++#if !defined(MAGICKCORE_WINDOWS_SUPPORT) || defined(__CYGWIN__)
+   return(fopen(path,mode));
+ #else
+    FILE

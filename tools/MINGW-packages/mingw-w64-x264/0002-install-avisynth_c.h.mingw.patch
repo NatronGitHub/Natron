@@ -1,0 +1,14 @@
+--- x264-snapshot-20131221-2245-stable/Makefile.orig	2013-12-21 21:45:07.000000000 +0000
++++ x264-snapshot-20131221-2245-stable/Makefile	2013-12-22 21:25:49.711777600 +0000
+@@ -252,9 +252,11 @@
+ 
+ install-lib-dev:
+ 	$(INSTALL) -d $(DESTDIR)$(includedir)
++	$(INSTALL) -d $(DESTDIR)$(includedir)/avisynth
+ 	$(INSTALL) -d $(DESTDIR)$(libdir)
+ 	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
+ 	$(INSTALL) -m 644 $(SRCPATH)/x264.h $(DESTDIR)$(includedir)
++	$(INSTALL) -m 644 $(SRCPATH)/extras/avisynth_c.h $(DESTDIR)$(includedir)/avisynth
+ 	$(INSTALL) -m 644 x264_config.h $(DESTDIR)$(includedir)
+ 	$(INSTALL) -m 644 x264.pc $(DESTDIR)$(libdir)/pkgconfig
+ 

@@ -1,0 +1,68 @@
+--- mingw-w64-i686-opencolorio-1.0.9/CMakeLists.txt.orig	2013-12-27 22:36:16.348200000 +0400
++++ mingw-w64-i686-opencolorio-1.0.9/CMakeLists.txt	2013-12-27 22:43:09.892800000 +0400
+@@ -37,7 +37,7 @@
+ option(OCIO_PYGLUE_SONAME "If ON, soname/soversion will be set for Python module library" OFF)
+ option(OCIO_PYGLUE_LIB_PREFIX "If ON, prefix the Python module with 'lib'" OFF)
+ 
+-if(UNIX AND NOT APPLE)
++if(UNIX OR MINGW AND NOT APPLE)
+     option(USE_EXTERNAL_YAML "Use system installed yaml-cpp library." OFF)
+     option(USE_EXTERNAL_TINYXML "Use system installed tinyxml library." OFF)
+     option(USE_EXTERNAL_LCMS "Use system install lcms2 library." OFF)
+@@ -219,7 +219,11 @@
+         ## => great news when build staticaly since we do not want another client project have to link also with tinyxml when he want to use this project
+         ## => could be problematic if the client project use another version of tinyxml... In this case build tinyxml as shared lib with all projects could be a solution
+         ## => TODO: so maybe provide a simple cmake way to build 3rdParty as shared and auto install with this project ?
+-        set_target_properties(TINYXML_LIB PROPERTIES COMPILE_FLAGS "-DTIXML_USE_STL -fPIC -fvisibility-inlines-hidden -fvisibility=hidden")
++        if (MINGW)
++            set_target_properties(TINYXML_LIB PROPERTIES COMPILE_FLAGS "-DTIXML_USE_STL -fvisibility-inlines-hidden -fvisibility=hidden")
++        else()
++            set_target_properties(TINYXML_LIB PROPERTIES COMPILE_FLAGS "-DTIXML_USE_STL -fPIC -fvisibility-inlines-hidden -fvisibility=hidden")
++        endif()
+         add_definitions(-DTIXML_USE_STL) ## needed to build correctly, and also need to be propagated in child projects (client projects)
+         list(APPEND EXTERNAL_OBJECTS $<TARGET_OBJECTS:TINYXML_LIB>)
+     else()
+@@ -420,7 +424,7 @@
+ messageonce("SSE Optimizations: ${OCIO_USE_SSE}")
+ 
+ if(OCIO_USE_SSE)
+-    if(WIN32)
++    if(MSVC)
+         # SSE instructions are automatically compiled into 64-bit applications so enabling the option is redundant and
+         # actually produces an unknown option warning in Visual Studio.
+         if(NOT CMAKE_CL_64)
+@@ -627,7 +631,7 @@
+         set(OCIO_STATIC_COMPILE_DEFINITIONS )
+     endif()
+ endif()
+-install(EXPORT OpenColorIO DESTINATION cmake)
++install(EXPORT OpenColorIO DESTINATION lib/cmake/opencolorio)
+ file(WRITE "${CMAKE_BINARY_DIR}/OpenColorIOConfig.cmake"
+     "
+     get_filename_component(OpenColorIO_DIR \"\${CMAKE_CURRENT_LIST_FILE}\" PATH)
+@@ -639,7 +643,7 @@
+     
+     ## targets libraries + associated definitions
+     if(NOT TARGET OpenColorIO)
+-        include(\"\${OpenColorIO_DIR}/cmake/OpenColorIO.cmake\") ## thanks to imported target
++        include(\"\${OpenColorIO_DIR}/lib/cmake/opencolorio/OpenColorIO.cmake\") ## thanks to imported target
+         if(TARGET OpenColorIO AND NOT OpenColorIO_USE_STATIC)
+             message(STATUS \"shared target OpenColorIO : see OpenColorIO_LIBRARY\")
+             set(OpenColorIO_LIBRARY         OpenColorIO)
+@@ -677,4 +681,4 @@
+     message(STATUS OPENCOLORIO_FOUND=\${OPENCOLORIO_FOUND})
+     "
+ )
+-install(FILES "${CMAKE_BINARY_DIR}/OpenColorIOConfig.cmake" DESTINATION .)
++install(FILES "${CMAKE_BINARY_DIR}/OpenColorIOConfig.cmake" DESTINATION lib/cmake/opencolorio)
+--- opencolorio/src/core/CMakeLists.txt.orig	2017-09-17 22:33:47.446262300 +0300
++++ opencolorio/src/core/CMakeLists.txt	2017-09-17 22:34:26.962522500 +0300
+@@ -75,7 +75,7 @@
+         VERSION ${OCIO_VERSION}
+         SOVERSION ${SOVERSION})
+     
+-    install(TARGETS OpenColorIO_STATIC EXPORT OpenColorIO ARCHIVE DESTINATION ${CMAKE_INSTALL_EXEC_PREFIX}/lib/static)
++    install(TARGETS OpenColorIO_STATIC EXPORT OpenColorIO ARCHIVE DESTINATION ${CMAKE_INSTALL_EXEC_PREFIX}/lib)
+ endif()
+ 
+ macro(target_link_OCIO target)

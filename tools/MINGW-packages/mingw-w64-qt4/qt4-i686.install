@@ -1,0 +1,11 @@
+post_install() {
+  if [ -f "mingw32/bin/qmake.exe" ]; then
+    cd mingw32/bin
+      ./qtbinpatcher --verbose --nobackup
+    cd -
+  fi
+}
+
+post_upgrade() {
+  post_install
+}
