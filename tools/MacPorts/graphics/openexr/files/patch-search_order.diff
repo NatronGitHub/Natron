@@ -1,6 +1,6 @@
 --- IlmImf/Makefile.in.orig	2016-05-22 12:57:47.000000000 -0700
 +++ IlmImf/Makefile.in	2016-05-22 13:18:35.000000000 -0700
-@@ -458,9 +458,10 @@
+@@ -572,9 +572,10 @@
  		 ImfOptimizedPixelReading.h
  
  EXTRA_DIST = $(noinst_HEADERS) b44ExpLogTable.cpp b44ExpLogTable.h dwaLookups.cpp dwaLookups.h CMakeLists.txt
@@ -15,7 +15,7 @@
  b44ExpLogTable_SOURCES = b44ExpLogTable.cpp
 --- IlmImfUtil/Makefile.in.orig	2014-08-09 21:48:23.000000000 -0700
 +++ IlmImfUtil/Makefile.in	2016-05-22 14:30:46.000000000 -0700
-@@ -260,15 +260,16 @@
+@@ -375,15 +375,16 @@
  	ImfImageDataWindow.h ImfImageDataWindow.cpp \
  	ImfImageChannelRenaming.h
  

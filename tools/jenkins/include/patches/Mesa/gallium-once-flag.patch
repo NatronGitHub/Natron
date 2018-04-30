@@ -1,0 +1,12 @@
+see https://bugs.freedesktop.org/show_bug.cgi?id=95128
+--- mesa-11.2.0/src/gallium/auxiliary/gallivm/lp_bld_misc.cpp	2016-03-13 19:35:33.000000000 +0100
++++ mesa-11.2.0/src/gallium/auxiliary/gallivm/lp_bld_misc.cpp.new	2016-04-25 12:31:56.000000000 +0200
+@@ -110,7 +110,7 @@
+ 
+ }
+ 
+-static once_flag init_native_targets_once_flag;
++static once_flag init_native_targets_once_flag = ONCE_FLAG_INIT;
+ 
+ static void init_native_targets()
+ {

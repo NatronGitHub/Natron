@@ -1,0 +1,13 @@
+diff -urp qt-everywhere-opensource-src-4.8.7/configure q/configure
+--- qt-everywhere-opensource-src-4.8.7/configure	2016-04-03 16:49:50.218644449 +0200
++++ q/configure	2016-04-03 17:22:35.376405024 +0200
+@@ -3331,6 +3331,9 @@ arm*)
+     CFG_ARCH=arm
+     COMPAT_ARCH=armv6
+     ;;
++mips*)
++    CFG_ARCH=mips
++    ;;
+ esac
+ 
+ if [ -d "$relpath/src/corelib/arch/$CFG_ARCH" ]; then

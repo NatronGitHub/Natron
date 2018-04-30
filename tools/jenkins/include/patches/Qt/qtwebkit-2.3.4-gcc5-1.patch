@@ -1,0 +1,81 @@
+Submitted By: Bruce Dubbs <bdubbs_AT_linuxfromscratch_DOT_org>
+Date: 2015-07-07
+Origin: https://bugreports.qt.io/browse/QTBUG-44829
+Initial Package Version: 2.3.4
+Description: Allow qtwebkit to build with gcc-5.
+Upstream Status: In repository
+
+--- a/Source/JavaScriptCore/runtime/JSObject.cpp	2014-09-24 13:42:05.000000000 +0200
++++ b/Source/JavaScriptCore/runtime/JSObject.cpp	2015-05-26 21:01:40.708178176 +0200
+@@ -1922,6 +1922,10 @@
+     }
+ }
+ 
++template void JSObject::putByIndexBeyondVectorLengthWithoutAttributes<ContiguousShape>(ExecState* exec, unsigned i, JSValue value);
++template void JSObject::putByIndexBeyondVectorLengthWithoutAttributes<DoubleShape>(ExecState* exec, unsigned i, JSValue value);
++template void JSObject::putByIndexBeyondVectorLengthWithoutAttributes<Int32Shape>(ExecState* exec, unsigned i, JSValue value);
++
+ void JSObject::putByIndexBeyondVectorLengthWithArrayStorage(ExecState* exec, unsigned i, JSValue value, bool shouldThrow, ArrayStorage* storage)
+ {
+     JSGlobalData& globalData = exec->globalData();
+--- a/Source/WebCore/loader/icon/IconController.cpp	2014-09-24 13:42:05.000000000 +0200
++++ b/Source/WebCore/loader/icon/IconController.cpp	2015-05-26 21:01:51.583361817 +0200
+@@ -163,6 +163,10 @@
+     }
+ 
+     if (iconDatabase().supportsAsynchronousMode()) {
++       //  FIXME (<rdar://problem/9168605>) - We should support in-memory-only private browsing icons in asynchronous icon database mode.
++       if (m_frame->page()->settings()->privateBrowsingEnabled())
++           return;
++
+         m_frame->loader()->documentLoader()->getIconLoadDecisionForIconURL(urlString);
+         // Commit the icon url mapping to the database just in case we don't end up loading later.
+         commitToDatabase(iconURL);
+@@ -206,10 +210,6 @@
+ {
+     ASSERT(iconLoadDecision != IconLoadUnknown);
+ 
+-    //  FIXME (<rdar://problem/9168605>) - We should support in-memory-only private browsing icons in asynchronous icon database mode.
+-    if (iconDatabase().supportsAsynchronousMode() && m_frame->page()->settings()->privateBrowsingEnabled())
+-        return;
+-
+     if (iconLoadDecision == IconLoadNo) {
+         KURL iconURL(url());
+         String urlString(iconURL.string());
+--- a/Source/WebKit/qt/declarative/experimental/experimental.pri	2014-09-24 13:42:05.000000000 +0200
++++ b/Source/WebKit/qt/declarative/experimental/experimental.pri	2015-05-26 21:01:14.413735319 +0200
+@@ -29,8 +29,8 @@
+ 
+ DESTDIR = $${ROOT_BUILD_DIR}/imports/$${TARGET.module_name}
+ 
+-CONFIG += rpath
+-RPATHDIR_RELATIVE_TO_DESTDIR = ../../lib
++#CONFIG += rpath
++#RPATHDIR_RELATIVE_TO_DESTDIR = ../../lib
+ 
+ SOURCES += plugin.cpp
+ 
+--- a/Source/WebKit/qt/declarative/public.pri	2014-09-24 13:42:05.000000000 +0200
++++ b/Source/WebKit/qt/declarative/public.pri	2015-05-26 21:01:14.413735319 +0200
+@@ -36,8 +36,8 @@
+ 
+ DESTDIR = $${ROOT_BUILD_DIR}/imports/$${TARGET.module_name}
+ 
+-CONFIG += rpath
+-RPATHDIR_RELATIVE_TO_DESTDIR = ../../lib
++#CONFIG += rpath
++#RPATHDIR_RELATIVE_TO_DESTDIR = ../../lib
+ 
+ SOURCES += plugin.cpp
+ 
+--- a/Tools/qmake/mkspecs/features/rpath.prf	2014-09-24 13:42:05.000000000 +0200
++++ b/Tools/qmake/mkspecs/features/rpath.prf	2015-05-26 21:01:14.414735336 +0200
+@@ -6,7 +6,7 @@
+ 
+ equals(ROOT_BUILD_DIR, $$dirname(DESTDIR)): RPATHDIR_RELATIVE_TO_DESTDIR = ../lib
+ 
+-linux-*:!isEmpty(RPATHDIR_RELATIVE_TO_DESTDIR) {
++linux-rpath_me_harder_no_no_no:!isEmpty(RPATHDIR_RELATIVE_TO_DESTDIR) {
+     # Do the rpath by hand since it's not possible to use ORIGIN in QMAKE_RPATHDIR
+     # this expands to $ORIGIN (after qmake and make), it does NOT read a qmake var.
+     QMAKE_RPATHDIR = \$\$ORIGIN/$${RPATHDIR_RELATIVE_TO_DESTDIR} $${QMAKE_RPATHDIR}

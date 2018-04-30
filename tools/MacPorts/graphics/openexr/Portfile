@@ -3,10 +3,10 @@
 PortSystem 1.0
 
 name            openexr
-version         2.2.0
+version         2.2.1
 categories      graphics
 license         BSD
-maintainers     mcalhoun openmaintainer
+maintainers     {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
 description     OpenEXR Graphics Library
 long_description \
     OpenEXR is a high dynamic-range (HDR) image file format developed \
@@ -14,8 +14,9 @@ long_description \
 homepage        http://www.openexr.com
 platforms       darwin
 master_sites    http://savannah.nongnu.org/download/openexr
-checksums       rmd160  a825ed42e731da3bc39f25ce2a310712a5b0f956 \
-                sha256  36a012f6c43213f840ce29a8b182700f6cf6b214bea0d5735594136b44914231
+checksums       rmd160  eb2fbbefe1399d87a4a60807cb7386ed3b300eaa \
+                sha256  8f9a5af6131583404261931d9a5c83de0a425cb4b8b25ddab2b169fbf113aecd \
+                size    18176639
 
 # avoid dependency on port:cctools
 configure.env-append NM=${prefix}/bin/nm
@@ -28,7 +29,7 @@ if {${subport} ne "ilmbase"} {
 }
 
 if {${subport} eq ${name}} {
-    revision 2
+    revision 1
 
     depends_lib-append port:ilmbase
 
@@ -75,10 +76,12 @@ if {${subport} eq ${name}} {
 }
 
 subport ilmbase {
+    #revision    0
     distname    ilmbase-${version}
     checksums   \
-        rmd160  b1adb0c96eff6b3554ddaf8f8bafe2cba8c114e3 \
-        sha256  ecf815b60695555c1fbc73679e84c7c9902f4e8faa6e8000d2f905b8b86cedc7
+        rmd160  0abe57b5c8a82e20be500a490d335816f654625c \
+        sha256  cac206e63be68136ef556c2b555df659f45098c159ce24804e9d5e9e0286609e \
+        size    573073
 
     depends_build   port:gsed
 
@@ -94,10 +97,12 @@ set python_versions {27 34 35}
 foreach pver ${python_versions} {
     subport py${pver}-pyilmbase {
         PortGroup   active_variants 1.1
+        #revision    0
         distname    pyilmbase-${version}
         checksums                \
-            rmd160  9a6b711a2842b1e0124a43fc1c2148a2e7802710 \
-            sha256  68c968fec5c40930a2c692ccc88990faa50320ed74b88553a3632d7d02c87e1a
+            rmd160  85bc89933a8ccd1c0866256d1a32b3dd95e7605c \
+            sha256  613912a92ccb4073d448f4615eb29b454025a2f5fea1c01bf14f9ac7be71726d \
+            size    497218
 
         # so long as boost can only be installed with one version of python at a time,
         #    conflict with all other pyilmbase ports
@@ -124,9 +129,11 @@ foreach pver ${python_versions} {
 }
 
 subport openexr_viewers {
+    #revision    0
     distname    openexr_viewers-${version}
-    checksums   rmd160  5f3edc7a0c706faa75a9cd205c0ac85e988c6e09 \
-                sha256  f73fe2e4d19e8fc9317d6c34f156598ad43497bb9549f03feacb8ba095dd04e9
+    checksums   rmd160  df9c5971a4401394f3fb3a8e33a0c2412fac1b48 \
+                sha256  486e11de8c87582b8180c77fc9b28431d007025072ae018fd33b932b1717bdc7 \
+                size    515124
 
     depends_lib-append  \
         port:openexr                \

@@ -1,0 +1,10 @@
+--- Portfile.orig	2017-12-26 11:06:24.000000000 +0100
++++ Portfile	2017-12-26 11:06:35.000000000 +0100
+@@ -34,3 +34,7 @@
+ 
+ depends_lib         port:lzo2 \
+                     port:zlib
++
++configure.args-append \
++                    -DBUILD_SHARED_LIBS=ON
++

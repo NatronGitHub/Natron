@@ -1,0 +1,50 @@
+Submitted by: Chris Staub (chris at clfs dot org)
+Date: 2017-06-10
+Initial Package Version: 0.51 
+Origin: https://raw.githubusercontent.com/Alexpux/MSYS2-packages/master/intltool/perl-5.22-compatibility.patch
+Description: Updates Intltool to work with Perl 5.26
+
+diff -Naur intltool-0.51.0.orig/intltool-update.in intltool-0.51.0/intltool-update.in
+--- intltool-0.51.0.orig/intltool-update.in	2015-03-09 01:39:54.000000000 +0000
++++ intltool-0.51.0/intltool-update.in	2017-06-10 07:16:39.637921936 +0000
+@@ -1062,7 +1062,7 @@
+ 	}
+     }
+ 
+-    if ($str =~ /^(.*)\${?([A-Z_]+)}?(.*)$/)
++    if ($str =~ /^(.*)\$\{?([A-Z_]+)}?(.*)$/)
+     {
+ 	my $rest = $3;
+ 	my $untouched = $1;
+@@ -1190,10 +1190,10 @@
+ 	$name    =~ s/\(+$//g;
+ 	$version =~ s/\(+$//g;
+ 
+-	$varhash{"PACKAGE_NAME"} = $name if (not $name =~ /\${?AC_PACKAGE_NAME}?/);
+-	$varhash{"PACKAGE"} = $name if (not $name =~ /\${?PACKAGE}?/);
+-	$varhash{"PACKAGE_VERSION"} = $version if (not $name =~ /\${?AC_PACKAGE_VERSION}?/);
+-	$varhash{"VERSION"} = $version if (not $name =~ /\${?VERSION}?/);
++	$varhash{"PACKAGE_NAME"} = $name if (not $name =~ /\$\{?AC_PACKAGE_NAME}?/);
++	$varhash{"PACKAGE"} = $name if (not $name =~ /\$\{?PACKAGE}?/);
++	$varhash{"PACKAGE_VERSION"} = $version if (not $name =~ /\$\{?AC_PACKAGE_VERSION}?/);
++	$varhash{"VERSION"} = $version if (not $name =~ /\$\{?VERSION}?/);
+     }
+ 
+     if ($conf_source =~ /^AC_INIT\(([^,\)]+),([^,\)]+)[,]?([^,\)]+)?/m)
+@@ -1219,11 +1219,11 @@
+ 	$version =~ s/\(+$//g;
+         $bugurl  =~ s/\(+$//g if (defined $bugurl);
+ 
+-	$varhash{"PACKAGE_NAME"} = $name if (not $name =~ /\${?AC_PACKAGE_NAME}?/);
+-	$varhash{"PACKAGE"} = $name if (not $name =~ /\${?PACKAGE}?/);
+-	$varhash{"PACKAGE_VERSION"} = $version if (not $name =~ /\${?AC_PACKAGE_VERSION}?/);
+-	$varhash{"VERSION"} = $version if (not $name =~ /\${?VERSION}?/);
+-        $varhash{"PACKAGE_BUGREPORT"} = $bugurl if (defined $bugurl and not $bugurl =~ /\${?\w+}?/);
++	$varhash{"PACKAGE_NAME"} = $name if (not $name =~ /\$\{?AC_PACKAGE_NAME}?/);
++	$varhash{"PACKAGE"} = $name if (not $name =~ /\$\{?PACKAGE}?/);
++	$varhash{"PACKAGE_VERSION"} = $version if (not $name =~ /\$\{?AC_PACKAGE_VERSION}?/);
++	$varhash{"VERSION"} = $version if (not $name =~ /\$\{?VERSION}?/);
++        $varhash{"PACKAGE_BUGREPORT"} = $bugurl if (defined $bugurl and not $bugurl =~ /\$\{?\w+}?/);
+     }
+ 
+     # \s makes this not work, why?

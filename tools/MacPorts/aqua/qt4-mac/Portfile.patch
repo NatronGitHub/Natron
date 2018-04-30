@@ -1,5 +1,5 @@
---- Portfile.orig	2017-09-01 12:13:30.000000000 +0200
-+++ Portfile	2017-09-01 12:22:14.000000000 +0200
+--- Portfile.orig	2017-09-25 13:40:11.000000000 +0200
++++ Portfile	2017-09-25 13:43:13.000000000 +0200
 @@ -11,7 +11,7 @@
  
  name                qt4-mac
@@ -28,7 +28,7 @@
      }
  }
  
-@@ -292,6 +293,35 @@
+@@ -292,6 +293,32 @@
  
  patchfiles-append patch-fix_pointer_comparison_to_0.diff
  
@@ -39,16 +39,13 @@
 +patchfiles-append patch-qt4-versions-without-underscores.diff
 +
 +# (32) Mac OS X 10.4 Tiger patches
-+platform darwin {
-+    if {${MINOR} == 4} {
-+        patchfiles-append patch-src_corelib_io_qfilesystemengine_unix.cpp-tiger.diff
-+        patchfiles-append patch-src_network_kernel_qnetworkproxy_mac.cpp-tiger.diff
-+        patchfiles-append patch-src_gui_painting_qprintengine_mac.mm-tiger.diff
-+        patchfiles-append patch-src_gui_dialogs_qfontdialog_mac.mm-tiger.diff
-+        patchfiles-append patch-src_gui_text_qfontdatabase_mac.cpp-tiger.diff
-+        patchfiles-append patch-src_gui_painting_qpaintengine_mac.cpp-tiger.diff
-+    }
-+}
++patchfiles-append patch-src_corelib_io_qfilesystemengine_unix.cpp-tiger.diff
++patchfiles-append patch-src_network_kernel_qnetworkproxy_mac.cpp-tiger.diff
++patchfiles-append patch-src_gui_painting_qprintengine_mac.mm-tiger.diff
++patchfiles-append patch-src_gui_dialogs_qfontdialog_mac.mm-tiger.diff
++patchfiles-append patch-src_gui_text_qfontdatabase_mac.cpp-tiger.diff
++patchfiles-append patch-src_gui_painting_qpaintengine_mac.cpp-tiger.diff
++patchfiles-append patch-webkit-tiger.diff
 +
 +# Qt4 enhancements (do not alter existing functionality):
 +

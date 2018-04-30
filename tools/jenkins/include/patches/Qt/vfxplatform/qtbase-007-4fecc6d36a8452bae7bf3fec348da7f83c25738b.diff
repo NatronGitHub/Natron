@@ -1,0 +1,26 @@
+diff --git a/src/corelib/tools/qstring.h b/src/corelib/tools/qstring.h
+index 886973f..96ae8c9 100644
+--- a/src/corelib/tools/qstring.h
++++ b/src/corelib/tools/qstring.h
+@@ -38,6 +38,10 @@
+ #error QT_NO_CAST_FROM_ASCII and QT_RESTRICTED_CAST_FROM_ASCII must not be defined at the same time
+ #endif
+ 
++// ADSK modified names of parameters to avoid defined name conflicts
++// aSize => asize
++// aPos  => apos
++
+ #include <QtCore/qchar.h>
+ #include <QtCore/qbytearray.h>
+ #include <QtCore/qrefcount.h>
+@@ -1495,8 +1499,8 @@ Q_DECLARE_TYPEINFO(QStringRef, Q_PRIMITIVE_TYPE);
+ inline QStringRef &QStringRef::operator=(const QString *aString)
+ { m_string = aString; m_position = 0; m_size = aString?aString->size():0; return *this; }
+ 
+-inline QStringRef::QStringRef(const QString *aString, int aPosition, int aSize)
+-        :m_string(aString), m_position(aPosition), m_size(aSize){}
++inline QStringRef::QStringRef(const QString *aString, int aposition, int asize)
++        :m_string(aString), m_position(aposition), m_size(asize){}
+ 
+ inline QStringRef::QStringRef(const QString *aString)
+     :m_string(aString), m_position(0), m_size(aString?aString->size() : 0){}

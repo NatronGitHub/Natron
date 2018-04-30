@@ -1,15 +1,16 @@
---- Portfile.orig	2017-08-24 18:54:11.000000000 +0200
-+++ Portfile	2017-09-11 21:09:59.000000000 +0200
-@@ -94,6 +94,7 @@
- 
- patchfiles          patch-libavcodec-audiotoolboxenc.c.diff \
-                     patch-openjpeg-2.2.diff \
-+                    patch-dnxhdenc.diff \
-                     patch-configure-no-static-libopenjpeg.diff
- 
- #
-@@ -108,6 +109,11 @@
-     compiler.blacklist-append {clang < 422.1.7}
+--- Portfile.orig	2017-10-24 10:13:17.000000000 +0200
++++ Portfile	2017-11-21 19:34:50.000000000 +0100
+@@ -81,6 +81,8 @@
+                     port:libass \
+                     port:libbluray \
+                     port:gnutls \
++                    port:openh264 \
++                    port:snappy \
+                     port:openjpeg \
+                     port:fontconfig \
+                     port:freetype \
+@@ -114,6 +116,11 @@
+     universal_variant     no
  }
  
 +# gcc > 4.2 is required, https://trac.ffmpeg.org/ticket/1464
@@ -20,7 +21,16 @@
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
  default_variants-append +gpl2
-@@ -136,6 +142,7 @@
+@@ -128,6 +135,8 @@
+                     --enable-librsvg \
+                     --enable-libtheora \
+                     --enable-libopenjpeg \
++                    --enable-libopenh264 \
++                    --enable-libsnappy \
+                     --enable-libmodplug \
+                     --enable-libvpx \
+                     --enable-libsoxr \
+@@ -142,6 +151,7 @@
                      --disable-libxcb \
                      --disable-libxcb-shm \
                      --disable-libxcb-xfixes \
@@ -28,7 +38,7 @@
                      --disable-indev=jack \
                      --disable-outdev=xv \
                      --disable-vda \
-@@ -144,6 +151,7 @@
+@@ -150,6 +160,7 @@
                      --disable-sdl2 \
                      --mandir=${prefix}/share/man \
                      --enable-shared --enable-pthreads \
@@ -36,7 +46,7 @@
                      --cc=${configure.cc}
  
  
-@@ -217,6 +225,17 @@
+@@ -226,6 +237,17 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -54,7 +64,7 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -241,6 +260,15 @@
+@@ -250,6 +272,15 @@
  configure.universal_args-delete --disable-dependency-tracking
  
  if {[variant_isset universal]} {
@@ -70,7 +80,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -266,11 +294,52 @@
+@@ -275,11 +306,53 @@
  #
      depends_lib-append      port:xorg-libxcb \
                              port:xorg-libXext \
@@ -85,7 +95,7 @@
 +    configure.args-append   --enable-xlib
 +}
 +
-+variant natron requires highbitdepth conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
++variant natronmini requires highbitdepth conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
 +
 +    depends_lib-delete \
 +                    port:libiconv \
@@ -104,6 +114,7 @@
 +                    --enable-fontconfig \
 +                    --enable-libfreetype \
 +                    --enable-libfribidi \
++                    --enable-sdl2 \
 +                    --cc=${configure.cc} \
 +                    --cxx=${configure.cxx}
 +
@@ -114,7 +125,7 @@
 +                    --disable-fontconfig \
 +                    --disable-libfreetype \
 +                    --disable-libfribidi \
-+                    --disable-sdl \
++                    --disable-sdl2 \
 +                    --disable-securetransport \
 +                    --disable-iconv \
 +                    --cc=${configure.cc} \
@@ -123,7 +134,7 @@
  }
  
  if {[variant_isset x11]} {
-@@ -314,12 +383,22 @@
+@@ -323,6 +396,14 @@
      require_active_variants x264 "" high10
  }
  
@@ -138,15 +149,7 @@
  variant gpl2 description {Enable GPL code, license will be GPL-2+} {
      configure.args-append   --enable-gpl \
                              --enable-postproc \
-+                            --enable-libx265 \
-                             --enable-libx264 \
-                             --enable-libxvid
-     depends_lib-append      port:XviD \
-+                            port:x265 \
-                             port:x264
- 
-     license                 GPL-2+
-@@ -335,6 +414,12 @@
+@@ -344,6 +425,12 @@
                              port:samba3
  
      license                 GPL-3+

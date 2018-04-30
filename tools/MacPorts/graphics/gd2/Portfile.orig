@@ -34,8 +34,7 @@ checksums                   rmd160  1c20f719161da596dac6c5c5b92bde71ddc9aedb \
 
 depends_build               port:gettext
 
-depends_lib                 port:expat \
-                            port:freetype \
+depends_lib                 port:freetype \
                             port:fontconfig \
                             port:jpeg \
                             port:libiconv \

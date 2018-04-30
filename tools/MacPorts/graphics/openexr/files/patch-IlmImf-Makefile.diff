@@ -20,7 +20,7 @@
  		 ImfDwaCompressor.h \
 --- IlmImf/Makefile.in.orig	2016-01-27 22:22:44.000000000 +0100
 +++ IlmImf/Makefile.in	2016-01-27 22:26:26.000000000 +0100
-@@ -409,6 +409,7 @@
+@@ -523,6 +523,7 @@
  			   ImfTiledOutputFile.h ImfTiledRgbaFile.h \
  			   ImfRgbaYca.h \
  			   ImfTestFile.h ImfThreading.h \
@@ -28,7 +28,7 @@
  			   ImfB44Compressor.h ImfStringVectorAttribute.h \
  			   ImfMultiView.h \
  			   ImfAcesFile.h \
-@@ -437,8 +438,7 @@
+@@ -551,8 +552,7 @@
  			   ImfDeepImageState.h \
  			   ImfDeepImageStateAttribute.h
  

@@ -5,7 +5,7 @@ PortGroup           xcodeversion 1.0
 PortGroup           muniversal 1.0
 
 name                tiff
-version             4.0.8
+version             4.0.9
 categories          graphics
 platforms           darwin
 maintainers         {ryandesign @ryandesign} openmaintainer
@@ -30,8 +30,8 @@ homepage            http://simplesystems.org/libtiff/
 master_sites        http://download.osgeo.org/libtiff/ \
                     freebsd
 
-checksums           rmd160  0d8bc26c98035810c73b8f876f76dc48efba7da8 \
-                    sha256  59d7a5a8ccd92059913f246877db95a2918e6c04fb9d43fd74e5c3390dac2910
+checksums           rmd160  ab5b3b7297e79344775b1e70c4d54c90c06836a3 \
+                    sha256  6e7bdeec2c310734e734d19aae3a71ebe37a4d842e0e23dbb1b8921c0026cfcd
 
 depends_lib         port:jpeg \
                     port:xz \

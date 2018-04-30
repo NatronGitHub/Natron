@@ -1,4 +1,4 @@
-Natron [![GPL2 License](http://img.shields.io/:license-gpl2-blue.svg?style=flat-square)](https://github.com/NatronGitHub/Natron/blob/master/LICENSE) [![Build Status](https://api.travis-ci.org/NatronGitHub/Natron.png?branch=master)](https://travis-ci.org/NatronGitHub/Natron)  [![Coverage Status](https://coveralls.io/repos/NatronGitHub/Natron/badge.png?branch=master)](https://coveralls.io/r/NatronGitHub/Natron?branch=master) [![Coverity Scan Build Status](https://scan.coverity.com/projects/15152/badge.svg)](https://scan.coverity.com/projects/natrongithub-natron "Coverity Badge") [![Documentation Status](https://readthedocs.org/projects/natron/badge/?version=rb-2.3)](http://natron.readthedocs.io/en/rb-2.3/) [![BountySource Status](https://api.bountysource.com/badge/team?team_id=271309)](https://www.bountysource.com/teams/natrongithub/issues?utm_source=Mozilla&utm_medium=shield&utm_campaign=bounties_received)
+Natron [![GPL2 License](http://img.shields.io/:license-gpl2-blue.svg?style=flat-square)](https://github.com/NatronGitHub/Natron/blob/master/LICENSE) [![Open Hub](https://www.openhub.net/p/Natron/widgets/project_thin_badge?format=gif&ref=Thin+badge)](https://www.openhub.net/p/Natron?ref=Thin+badge) [![Build Status](https://api.travis-ci.org/NatronGitHub/Natron.png?branch=master)](https://travis-ci.org/NatronGitHub/Natron) [![Coverage Status](https://coveralls.io/repos/NatronGitHub/Natron/badge.png?branch=master)](https://coveralls.io/r/NatronGitHub/Natron?branch=master) [![Coverity Scan Build Status](https://scan.coverity.com/projects/15152/badge.svg)](https://scan.coverity.com/projects/natrongithub-natron "Coverity Badge") [![Documentation Status](https://readthedocs.org/projects/natron/badge/?version=rb-2.3)](http://natron.readthedocs.io/en/rb-2.3/) [![BountySource Status](https://api.bountysource.com/badge/team?team_id=271309)](https://www.bountysource.com/teams/natrongithub/issues?utm_source=Mozilla&utm_medium=shield&utm_campaign=bounties_received)
 ======
 
 
@@ -8,9 +8,9 @@ Foundry, or Blackmagic Fusion.
 
 It is portable and cross-platform (GNU/Linux, OS X, Microsoft Windows).
 
-The project home page is http://natron.fr
-
-The project source code repository is https://github.com/NatronGitHub/Natron
+- Home page: http://natron.fr
+- Source code: https://github.com/NatronGitHub/Natron
+- Forum: https://discuss.pixls.us/c/software/natron
 
 Features
 --------
@@ -147,36 +147,15 @@ There is some documentation, which is probably outdated, for [GNU/Linux](tools/l
 Planned features
 ----------------
 
-### Features planned for 2.1 (ETA: End of May 2016)
-
-- Integration of Blender's production proven point tracker in Natron to replace the existing TrackerPM node.
-
-- Planar tracking of Rotoshapes
-
-- Single Read/Write node instead of many Readers (ReadOIIO, ReadFFMPEG etc...)/Writers  (WriteOIIO, WriteFFMPEG...)
-
-- Node-graph enhancement and optimization
-
-- RotoPaint: add ability to use custom masks from inputs instead of a paint brush. Also improve the tree view with more per-shape attributes.
-
-- Roto: add support for DopeSheet
-
-### Features for 2.2 (ETA: End of july 2016)
-
 - Optical Flow nodes: VectorGenerator, MotionBlur, RollingShutter, Retiming
 
-- User manual and Reference guide
-
-
-### Features planned for future versions
-
 - 3D workspace: support for Cameras, 3D Cards, Camera mapping, 3D tracker
-
-- GMIC http://gmic.eu integration as an OpenFX plug-in
 
 - Natural matting: process of extracting a foreground without necessarily a green/blue-screen as background
 
 - Deep data: Support for deep data (multiple samples per pixel)
+
+- See also https://github.com/NatronGitHub/Natron/wiki/Google-Summer-of-Code-GSoC-ideas
 
 Contributing
 ------------
@@ -186,7 +165,7 @@ tracker](https://github.com/NatronGitHub/Natron/issues).
 
 The main development branch is called
 ["master"](https://github.com/NatronGitHub/Natron/tree/master).
-The stable version is on branch RB-2.0.
+The stable version is on branch RB-2.3.
 
 Additionally each stable release supported has a branch on its own.
 For example the stable release of the v1.0. and all its bug fixes should go into that
@@ -198,8 +177,8 @@ You can check out the easy tasks left to do [here](https://natron.fr/easy-task-l
 
 Feel free to report bugs, discuss tasks, or pick up work there. If you want to make
 changes, please fork, edit, and [send us a pull
-request](https://github.com/NatronGitHub/Natron/pull/new/master),
-preferably on the ["master"](https://github.com/NatronGitHub/Natron/tree/master)
+request](https://github.com/NatronGitHub/Natron/pull/new/RB-2.3),
+preferably on the ["RB-2.3"](https://github.com/NatronGitHub/Natron/tree/RB-2.3)
 branch.
 
 There's a `.git-hooks` directory in the root. This contains a `pre-commit`

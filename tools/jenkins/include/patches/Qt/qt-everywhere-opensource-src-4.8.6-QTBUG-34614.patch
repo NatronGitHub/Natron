@@ -1,0 +1,94 @@
+--- src/corelib/kernel/qeventdispatcher_glib.cpp.sav	2014-03-28 15:26:37.000000000 +0100
++++ src/corelib/kernel/qeventdispatcher_glib.cpp	2014-04-24 09:44:09.358659204 +0200
+@@ -255,22 +255,30 @@ struct GPostEventSource
+     GSource source;
+     QAtomicInt serialNumber;
+     int lastSerialNumber;
++    QEventLoop::ProcessEventsFlags processEventsFlags;
+     QEventDispatcherGlibPrivate *d;
+ };
+ 
+ static gboolean postEventSourcePrepare(GSource *s, gint *timeout)
+ {
++    GPostEventSource *source = reinterpret_cast<GPostEventSource *>(s);
+     QThreadData *data = QThreadData::current();
+     if (!data)
+         return false;
+ 
++    QEventLoop::ProcessEventsFlags excludeAllFlags
++        = QEventLoop::ExcludeUserInputEvents
++        | QEventLoop::ExcludeSocketNotifiers
++        | QEventLoop::X11ExcludeTimers;
++    if ((source->processEventsFlags & excludeAllFlags) == excludeAllFlags)
++        return false;
++
+     gint dummy;
+     if (!timeout)
+         timeout = &dummy;
+     const bool canWait = data->canWaitLocked();
+     *timeout = canWait ? -1 : 0;
+ 
+-    GPostEventSource *source = reinterpret_cast<GPostEventSource *>(s);
+     return (!canWait
+             || (source->serialNumber != source->lastSerialNumber));
+ }
+@@ -284,8 +292,14 @@ static gboolean postEventSourceDispatch(
+ {
+     GPostEventSource *source = reinterpret_cast<GPostEventSource *>(s);
+     source->lastSerialNumber = source->serialNumber;
+-    QCoreApplication::sendPostedEvents();
+-    source->d->runTimersOnceWithNormalPriority();
++    QEventLoop::ProcessEventsFlags excludeAllFlags
++        = QEventLoop::ExcludeUserInputEvents
++        | QEventLoop::ExcludeSocketNotifiers
++        | QEventLoop::X11ExcludeTimers;
++    if ((source->processEventsFlags & excludeAllFlags) != excludeAllFlags) {
++        QCoreApplication::sendPostedEvents();
++        source->d->runTimersOnceWithNormalPriority();
++    }
+     return true; // i dunno, george...
+ }
+ 
+@@ -329,6 +343,7 @@ QEventDispatcherGlibPrivate::QEventDispa
+     postEventSource = reinterpret_cast<GPostEventSource *>(g_source_new(&postEventSourceFuncs,
+                                                                         sizeof(GPostEventSource)));
+     postEventSource->serialNumber = 1;
++    postEventSource->processEventsFlags = QEventLoop::AllEvents;
+     postEventSource->d = this;
+     g_source_set_can_recurse(&postEventSource->source, true);
+     g_source_attach(&postEventSource->source, mainContext);
+@@ -423,6 +438,7 @@ bool QEventDispatcherGlib::processEvents
+ 
+     // tell postEventSourcePrepare() and timerSource about any new flags
+     QEventLoop::ProcessEventsFlags savedFlags = d->timerSource->processEventsFlags;
++    d->postEventSource->processEventsFlags = flags;
+     d->timerSource->processEventsFlags = flags;
+     d->socketNotifierSource->processEventsFlags = flags;
+ 
+@@ -435,6 +451,7 @@ bool QEventDispatcherGlib::processEvents
+     while (!result && canWait)
+         result = g_main_context_iteration(d->mainContext, canWait);
+ 
++    d->postEventSource->processEventsFlags = savedFlags;
+     d->timerSource->processEventsFlags = savedFlags;
+     d->socketNotifierSource->processEventsFlags = savedFlags;
+ 
+--- src/corelib/kernel/qeventdispatcher_unix.cpp.sav	2013-06-07 07:16:52.000000000 +0200
++++ src/corelib/kernel/qeventdispatcher_unix.cpp	2014-04-24 09:43:06.927589535 +0200
+@@ -905,7 +905,15 @@ bool QEventDispatcherUNIX::processEvents
+ 
+     // we are awake, broadcast it
+     emit awake();
+-    QCoreApplicationPrivate::sendPostedEvents(0, 0, d->threadData);
++
++    QEventLoop::ProcessEventsFlags excludeAllFlags
++        = QEventLoop::ExcludeUserInputEvents
++        | QEventLoop::ExcludeSocketNotifiers
++        | QEventLoop::X11ExcludeTimers;
++    if ((flags & excludeAllFlags) == excludeAllFlags)
++        return false;
++    if(( flags & excludeAllFlags ) != excludeAllFlags )
++        QCoreApplicationPrivate::sendPostedEvents(0, 0, d->threadData);
+ 
+     int nevents = 0;
+     const bool canWait = (d->threadData->canWaitLocked()

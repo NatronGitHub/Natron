@@ -1,0 +1,295 @@
+Submitted by:            DJ Lucas (dj_AT_linuxfromscratch_DOT_org)
+Date:                    2017-11-04
+Initial Package Version: 2.54.2
+Upstream Status:         Not submitted
+Origin:                  Based on Arch Linux patches and upstream
+Description:             Fixes several build issue with meson
+
+diff -Naurp glib-2.54.2-orig/config.h.meson glib-2.54.2/config.h.meson
+--- glib-2.54.2-orig/config.h.meson	2017-10-27 17:42:46.000000000 -0500
++++ glib-2.54.2/config.h.meson	2017-11-02 20:25:23.523120928 -0500
+@@ -247,6 +247,9 @@
+ /* Define if libelf is available */
+ #mesondefine HAVE_LIBELF
+ 
++/* Define if libmount is available */
++#mesondefine HAVE_LIBMOUNT
++
+ /* Define to 1 if you have the <linux/magic.h> header file. */
+ #mesondefine HAVE_LINUX_MAGIC_H
+ 
+diff -Naurp glib-2.54.2-orig/docs/reference/gio/meson.build glib-2.54.2/docs/reference/gio/meson.build
+--- glib-2.54.2-orig/docs/reference/gio/meson.build	2017-07-14 14:14:02.000000000 -0500
++++ glib-2.54.2/docs/reference/gio/meson.build	2017-11-02 20:25:23.523120928 -0500
+@@ -52,9 +52,12 @@ if get_option('with-docs') != 'no'
+     'gnetworkmonitorbase.h',
+     'gnetworkmonitornetlink.h',
+     'gnetworkmonitornm.h',
++    'gnetworkmonitorportal.h',
+     'gnotificationbackend.h',
+     'gnotification-private.h',
++    'gosxappinfo.h',
+     'gpollfilemonitor.h',
++    'gproxyresolverportal.h',
+     'gregistrysettingsbackend.h',
+     'gresourcefile.h',
+     'gsettingsbackendinternal.h',
+@@ -95,12 +98,22 @@ if get_option('with-docs') != 'no'
+     configuration: version_conf
+   )
+ 
++  # Meson uses paths relative to meson.source_root() in dependencies,
++  # which is invalid relative to current_source_dir(), so the compile
++  # process fails to find glib headers
++  top_build_dir = meson.build_root()
++  top_source_dir = meson.source_root()
++  glib_top_build_dir = join_paths(top_build_dir, 'glib')
++  glib_top_source_dir = join_paths(top_source_dir, 'glib')
++
++  scan_dep = declare_dependency(include_directories : [ top_source_dir, glib_top_build_dir, glib_top_source_dir ])
++
+   gnome.gtkdoc('gio',
+     main_xml : 'gio-docs.xml',
+     namespace : 'g',
+     gobject_typesfile : 'gio.types',
+     mode : 'none',
+-    dependencies : [libgio_dep, libgobject_dep, libglib_dep],
++    dependencies : [libgio_dep, libgobject_dep, libglib_dep, scan_dep],
+     src_dir : 'gio',
+     scan_args : [
+       '--rebuild-types',
+diff -Naurp glib-2.54.2-orig/docs/reference/gobject/meson.build glib-2.54.2/docs/reference/gobject/meson.build
+--- glib-2.54.2-orig/docs/reference/gobject/meson.build	2017-07-14 14:14:02.000000000 -0500
++++ glib-2.54.2/docs/reference/gobject/meson.build	2017-11-02 20:25:23.523120928 -0500
+@@ -17,12 +17,23 @@ if get_option('with-docs') != 'no'
+     configuration: version_conf
+   )
+ 
++  # Meson uses paths relative to meson.source_root() in dependencies,
++  # which is invalid relative to current_source_dir(), so the compile
++  # process fails to find glib headers
++  doc_source_dir = meson.current_source_dir()
++  top_build_dir = meson.build_root()
++  top_source_dir = meson.source_root()
++  glib_top_build_dir = join_paths(top_build_dir, 'glib')
++  glib_top_source_dir = join_paths(top_source_dir, 'glib')
++
++  scan_dep = declare_dependency(include_directories : [ doc_source_dir, top_source_dir, glib_top_build_dir, glib_top_source_dir ])
++
+   gnome.gtkdoc('gobject',
+     main_xml : 'gobject-docs.xml',
+     namespace : 'g',
+     gobject_typesfile : join_paths(meson.current_source_dir(), 'gobject.types'),
+     mode : 'none',
+-    dependencies : [libgobject_dep, libglib_dep],
++    dependencies : [libgobject_dep, libglib_dep, scan_dep],
+     src_dir : 'gobject',
+     scan_args : [
+       '--deprecated-guards=G_DISABLE_DEPRECATED',
+diff -Naurp glib-2.54.2-orig/gio/gdbus-2.0/codegen/meson.build glib-2.54.2/gio/gdbus-2.0/codegen/meson.build
+--- glib-2.54.2-orig/gio/gdbus-2.0/codegen/meson.build	2017-10-27 17:42:46.000000000 -0500
++++ glib-2.54.2/gio/gdbus-2.0/codegen/meson.build	2017-11-02 20:25:23.523120928 -0500
+@@ -13,7 +13,6 @@ gdbus_codegen_conf.set('VERSION', glib_v
+ gdbus_codegen_conf.set('PYTHON', python.path())
+ 
+ # Install gdbus-codegen executable
+-# FIXME: Set permissions
+ gdbus_codegen = configure_file(input : 'gdbus-codegen.in',
+   output : 'gdbus-codegen',
+   install : true,
+diff -Naurp glib-2.54.2-orig/gio/meson.build glib-2.54.2/gio/meson.build
+--- glib-2.54.2-orig/gio/meson.build	2017-10-27 17:42:46.000000000 -0500
++++ glib-2.54.2/gio/meson.build	2017-11-02 20:25:23.523120928 -0500
+@@ -727,7 +727,7 @@ libgio = shared_library('gio-2.0',
+                   libgobject_dep, libgmodule_dep] + platform_deps + network_libs,
+   c_args : gio_c_args,
+   # intl.lib is not compatible with SAFESEH
+-  link_args : noseh_link_args,
++  link_args : noseh_link_args + library_link_args,
+ )
+ 
+ libgio_dep = declare_dependency(link_with : libgio,
+diff -Naurp glib-2.54.2-orig/gio/tests/gengiotypefuncs.py glib-2.54.2/gio/tests/gengiotypefuncs.py
+--- glib-2.54.2-orig/gio/tests/gengiotypefuncs.py	1969-12-31 18:00:00.000000000 -0600
++++ glib-2.54.2/gio/tests/gengiotypefuncs.py	2017-11-02 20:25:23.523120928 -0500
+@@ -0,0 +1,45 @@
++#!/usr/bin/env python3
++# -*- coding: utf-8 -*-
++
++import sys
++import re
++import os
++
++debug = os.getenv('GIO_GENTYPEFUNCS_DEBUG') is not None
++
++out_file = sys.argv[1]
++in_files = sys.argv[2:]
++
++funcs = []
++
++
++if debug: print ('Output file: ', out_file)
++
++if debug: print (len(in_files), 'input files')
++
++for filename in in_files:
++  if debug: print ('Input file: ', filename)
++  with open(filename, "r") as f:
++    for line in f:
++      line = line.rstrip('\n').rstrip('\r')
++      # print line
++      match = re.search(r'\bg_[a-zA-Z0-9_]*_get_type\b', line)
++      if match:
++        func = match.group(0)
++        if not func in funcs:
++          funcs.append(func)
++          if debug: print ('Found ', func)
++
++file_output = 'G_GNUC_BEGIN_IGNORE_DEPRECATIONS\n'
++
++funcs = sorted(funcs)
++
++for f in funcs:
++  if f not in ['g_io_extension_get_type', 'g_settings_backend_get_type']:
++    file_output += '*tp++ = {0} ();\n'.format(f)
++
++if debug: print (len(funcs), 'functions')
++
++ofile = open(out_file, "w")
++ofile.write(file_output)
++ofile.close()
+diff -Naurp glib-2.54.2-orig/glib/meson.build glib-2.54.2/glib/meson.build
+--- glib-2.54.2-orig/glib/meson.build	2017-10-02 09:17:23.000000000 -0500
++++ glib-2.54.2/glib/meson.build	2017-11-02 20:25:23.523120928 -0500
+@@ -227,7 +227,7 @@ libglib = shared_library('glib-2.0',
+   soversion : soversion,
+   install : true,
+   # intl.lib is not compatible with SAFESEH
+-  link_args : noseh_link_args,
++  link_args : noseh_link_args + library_link_args,
+   include_directories : configinc,
+   link_with : [charset_lib, gnulib_lib],
+   dependencies : [pcre, thread_dep, libintl, librt] + libiconv + platform_deps,
+@@ -283,8 +283,9 @@ configure_file(
+   input: 'libglib-gdb.py.in',
+   output: 'libglib-2.0.so.@0@-gdb.py'.format(library_version),
+   configuration: gdb_conf,
+-  install: true,
+-  install_dir: join_paths(get_option('datadir'), 'gdb/auto-load' + get_option('libdir'))
++  # FIXME: Figure out how to install this on Windows
++  install: host_system != 'windows',
++  install_dir: join_paths(glib_datadir, 'gdb', 'auto-load', './' + glib_libdir)
+ )
+ 
+ if enable_systemtap
+diff -Naurp glib-2.54.2-orig/gmodule/meson.build glib-2.54.2/gmodule/meson.build
+--- glib-2.54.2-orig/gmodule/meson.build	2017-07-14 14:14:02.000000000 -0500
++++ glib-2.54.2/gmodule/meson.build	2017-11-02 20:25:23.523120928 -0500
+@@ -37,7 +37,7 @@ elif cc.has_function('NSLinkModule')
+ elif cc.links(dlopen_dlsym_test_code, args : '-ldl', name : 'dlopen() and dlsym() in libdl')
+   g_module_impl = 'G_MODULE_IMPL_DL'
+   libdl_dep = cc.find_library('dl')
+-  g_module_lib_args = '-ldl'
++  g_module_lib_args = ['-ldl']
+ endif
+ 
+ # additional checks for G_MODULE_IMPL_DL
+@@ -72,6 +72,10 @@ if g_module_impl == ''
+   message('WARNING: No suitable GModule implementation found!')
+ endif
+ 
++# For pc files
++glib_conf.set('G_MODULE_SUPPORTED', g_module_impl == '0' ? 'false' : 'true')
++glib_conf.set('G_MODULE_LIBS', ' '.join(g_module_lib_args))
++
+ gmoduleconf_conf.set('G_MODULE_IMPL', g_module_impl)
+ gmoduleconf_conf.set('G_MODULE_SUPPORTED', g_module_impl != '0')
+ gmoduleconf_conf.set('G_MODULE_HAVE_DLERROR', g_module_have_dlerror)
+@@ -91,6 +95,7 @@ libgmodule = shared_library('gmodule-2.0
+   install : true,
+   include_directories : [configinc, gmoduleinc],
+   dependencies : [libdl_dep, libglib_dep],
++  link_args : library_link_args,
+   c_args : ['-DG_LOG_DOMAIN="GModule"', '-DG_DISABLE_DEPRECATED'] + glib_hidden_visibility_args)
+ 
+ libgmodule_dep = declare_dependency(link_with : libgmodule,
+diff -Naurp glib-2.54.2-orig/gobject/meson.build glib-2.54.2/gobject/meson.build
+--- glib-2.54.2-orig/gobject/meson.build	2017-10-27 17:42:46.000000000 -0500
++++ glib-2.54.2/gobject/meson.build	2017-11-02 20:25:23.523120928 -0500
+@@ -61,6 +61,7 @@ libgobject = shared_library('gobject-2.0
+   install : true,
+   include_directories : [configinc],
+   dependencies : [libintl, libffi_dep, libglib_dep],
++  link_args : library_link_args,
+   c_args : ['-DG_LOG_DOMAIN="GLib-GObject"', '-DGOBJECT_COMPILATION'] + glib_hidden_visibility_args)
+ 
+ libgobject_dep = declare_dependency(link_with : libgobject,
+@@ -76,7 +77,6 @@ python_tools_conf.set('VERSION', glib_ve
+ python_tools_conf.set('PYTHON', python.path())
+ 
+ foreach tool: python_tools
+-  # FIXME: Ensure we set the appropriate permissions
+   tool_bin = configure_file(
+     input : tool + '.in',
+     output : tool,
+@@ -101,8 +101,9 @@ configure_file(
+   input: 'libgobject-gdb.py.in',
+   output: 'libgobject-2.0.so.@0@-gdb.py'.format(library_version),
+   configuration: gdb_conf,
+-  install: true,
+-  install_dir: join_paths(get_option('datadir'), 'gdb/auto-load/' + get_option('libdir'))
++  # FIXME: Figure out how to install this on Windows
++  install: host_system != 'windows',
++  install_dir: join_paths(glib_datadir, 'gdb', 'auto-load', './' + glib_libdir)
+ )
+ 
+ if enable_systemtap
+diff -Naurp glib-2.54.2-orig/gthread/meson.build glib-2.54.2/gthread/meson.build
+--- glib-2.54.2-orig/gthread/meson.build	2017-07-14 14:14:02.000000000 -0500
++++ glib-2.54.2/gthread/meson.build	2017-11-02 20:25:23.523120928 -0500
+@@ -6,4 +6,5 @@ libgthread = shared_library('gthread-2.0
+   soversion : soversion,
+   install : true,
+   dependencies : [libglib_dep],
++  link_args : library_link_args,
+   c_args : ['-DG_LOG_DOMAIN="GThread"' ] + glib_hidden_visibility_args)
+diff -Naurp glib-2.54.2-orig/meson.build glib-2.54.2/meson.build
+--- glib-2.54.2-orig/meson.build	2017-10-27 17:42:46.000000000 -0500
++++ glib-2.54.2/meson.build	2017-11-02 20:25:23.523120928 -0500
+@@ -1,5 +1,5 @@
+ project('glib', 'c', 'cpp',
+-  version : '2.54.0',
++  version : '2.54.2',
+   meson_version : '>= 0.38.1',
+   default_options : [
+     'warning_level=1',
+@@ -1484,7 +1484,7 @@ libmount_opt = get_option('enable-libmou
+ if host_system == 'linux' and libmount_opt != 'no'
+   libmount_dep = [dependency('mount', version : '>=2.28', required : false)]
+   if not libmount_dep[0].found()
+-    libmount_dep = [cc.find_library('mount')]
++    libmount_dep = [cc.find_library('mount', required : false)]
+     libmount_h = cc.has_header('libmount/libmount.h')
+     libmount_needed = libmount_opt == 'yes' and host_system == 'linux'
+     if libmount_needed and (not libmount_dep[0].found() or not libmount_h)
+@@ -1527,12 +1527,20 @@ if use_system_pcre
+ endif
+ if libmount_dep.length() == 1 and libmount_dep[0].found()
+   glib_conf.set('LIBMOUNT_LIBS', '-lmount')
++  glib_conf.set('HAVE_LIBMOUNT', 1)
+ endif
+ glib_conf.set('GIO_MODULE_DIR', '${libdir}/gio/modules')
+ # FIXME: Missing:
+ # @G_MODULE_LIBS@ @SELINUX_LIBS@ @COCOA_LIBS@ @CARBON_LIBS@ @G_LIBS_EXTRA@
+ # @PCRE_REQUIRES@ @GLIB_EXTRA_CFLAGS@ @G_THREAD_CFLAGS@
+ 
++# HACK
++glib_conf.set('G_THREAD_LIBS', '-pthread')
++glib_conf.set('G_THREAD_CFLAGS', '-pthread')
++glib_conf.set('G_MODULE_LDFLAGS', '-Wl,--export-dynamic')
++glib_conf.set('PCRE_REQUIRES', 'libpcre')
++library_link_args = [ '-Wl,-z,nodelete' ]
++
+ # Tracing: dtrace
+ want_dtrace = get_option('enable-dtrace')
+ enable_dtrace = false
