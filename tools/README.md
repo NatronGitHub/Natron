@@ -27,15 +27,15 @@ This directory contains various tools to help building and maintaining Natron.
   
   For example, on macOS, if a Natron snapshot or release is installed as `/Applications/Natron.app`, The static docs can be generated in the `html` subdirectory with the following commands:
   ```
-cd <Natron source directory>/Documentation
-natron="/Applications/Natron.app"
-env FONTCONFIG_FILE="$natron/Contents/Resources/etc/fonts/fonts.conf" \
-OCIO="$natron/Contents/Resources/OpenColorIO-Configs/blender/config.ocio" \
-OFX_PLUGIN_PATH="$natron/Contents/Plugins" \
-NATRON_PLUGIN_PATH="$natron/Contents/Plugins/PyPlugs" \
-bash ../tools/genStaticDocs.sh "$natron/Contents/MacOS/NatronRenderer" /var/tmp/natrondocs .
-sphinx-build -b html source html
-```
+  cd <Natron source directory>/Documentation
+  natron="/Applications/Natron.app"
+  env FONTCONFIG_FILE="$natron/Contents/Resources/etc/fonts/fonts.conf" \
+  OCIO="$natron/Contents/Resources/OpenColorIO-Configs/blender/config.ocio" \
+  OFX_PLUGIN_PATH="$natron/Contents/Plugins" \
+  NATRON_PLUGIN_PATH="$natron/Contents/Plugins/PyPlugs" \
+  bash ../tools/genStaticDocs.sh "$natron/Contents/MacOS/NatronRenderer" /var/tmp/natrondocs .
+  sphinx-build -b html source html
+  ```
 
 - **jenkins**
 
