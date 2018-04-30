@@ -4,7 +4,7 @@ PortSystem          1.0
 PortGroup           muniversal 1.0
 
 name                ghostscript
-version             9.21
+version             9.23
 revision            2
 categories          print
 license             AGPL-3 BSD
@@ -14,7 +14,7 @@ long_description    Ghostscript is the well-known PostScript interpreter which \
                     is available for all common and most esoteric platforms and \
                     supports many different printers and some displays.
 platforms           darwin
-homepage            http://www.ghostscript.com/
+homepage            https://www.ghostscript.com/
 master_sites        https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs[strsed ${version} {g/\.//}]:source \
                     sourceforge:gs-fonts:fonts \
                     https://github.com/adobe-type-tools/mapping-resources-pdf/archive/:misc
@@ -28,14 +28,13 @@ distfiles           ${distname}.tar.gz:source \
                     ghostscript-fonts-std-8.11.tar.gz:fonts \
                     ${mappingresources_commit}.zip:misc
 
-patchfiles          patch-base_unix-dll.mak.diff \
-                    ghostscript-9.10-cross.patch \
-                    ghostscript-9.05-cross-so.patch \
-                    no-werror.diff
+patchfiles          patch-base_unix-dll.mak.diff
+patchfiles-append   patch-base_unixinst.mak.diff
+patchfiles-append   gs_restrict-C99.patch
 
 checksums           ${distname}.tar.gz \
-                    rmd160  c389ab9346f86ba4ff9e5b80aca0dda7acb866a5 \
-                    sha256  02bceadbc4dddeb6f2eec9c8b1623d945d355ca11b8b4df035332b217d58ce85 \
+                    rmd160  e5ecbd1cb6777fb0968f0967d3d4b30da2fefddd \
+                    sha256  f65964807a3c97a2c0810d4b9806585367e73129e57ae33378cea18e07a1ed9b \
                     ghostscript-fonts-other-6.0.tar.gz \
                     rmd160  ab60dbf71e7d91283a106c3df381cadfe173082f \
                     sha256  4fa051e341167008d37fe34c19d241060cd17b13909932cd7ca7fe759243c2de \
@@ -65,12 +64,14 @@ depends_run         port:perl5
 
 extract.only        ${distname}.tar.gz \
                     ghostscript-fonts-other-6.0.tar.gz \
-                    ghostscript-fonts-std-8.11.tar.gz
+                    ghostscript-fonts-std-8.11.tar.gz \
+                    ghostscript-9.20-cross.patch \
+                    ghostscript-9.05-cross-so.patch
 
 post-extract {
     system -W ${workpath} "unzip '${distpath}/${mappingresources_commit}.zip'"
 
-    foreach d {freetype jbig2dec jpeg lcms2 libpng tiff zlib} {
+    foreach d {freetype jbig2dec jpeg lcms2art libpng tiff zlib} {
         move ${worksrcpath}/${d} ${worksrcpath}/${d}_local
     }
 
@@ -90,6 +91,10 @@ post-patch {
         }
     }
 }
+
+# https://trac.macports.org/ticket/56137
+configure.ldflags-prepend \
+                    -Lsobin
 
 use_autoreconf      yes
 autoreconf.args     -fv
@@ -137,9 +142,6 @@ post-destroot {
     xinstall -m 644 {*}[glob -directory ${workpath}/fonts *.afm *.gsf *.pfa *.pfm] \
             ${destroot}${prefix}/share/${name}/fonts
 
-    xinstall -m 755 -d ${destroot}${prefix}/share/doc
-    ln -s ../${name}/${version}/doc ${destroot}${prefix}/share/doc/${name}
-
     # std fonts - "documentation"
     xinstall -m 0755 -d ${destroot}${prefix}/share/doc/${name}/fonts
     xinstall -m 0644 -W ${workpath}/fonts \
@@ -170,5 +172,5 @@ variant cups description {Enable CUPS driver} {
 default_variants    +x11
 
 livecheck.type      regex
-livecheck.url       http://www.ghostscript.com/Releases.html
+livecheck.url       ${homepage}Releases.html
 livecheck.regex     ">Ghostscript (\\d+(?:\\.\\d+)*)<"

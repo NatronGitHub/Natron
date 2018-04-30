@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Installer>
+	<Name>Natron</Name>
+	<Version>_VERSION_</Version>
+	<Title>Natron</Title>
+	<Publisher>INRIA</Publisher>
+	<StartMenuDir>Natron</StartMenuDir>
+	<ProductUrl>http://www.natron.fr</ProductUrl>
+	<RemoveTargetDir>false</RemoveTargetDir>
+	<AllowSpaceInPath>true</AllowSpaceInPath>
+	<UninstallerName>NatronSetup</UninstallerName>
+	<InstallerWindowIcon>icon.png</InstallerWindowIcon>
+	<Logo>logo.png</Logo>
+	<Watermark>watermark.png</Watermark>
+        <AdminTargetDir>/opt/_APP_ADMIN_INSTALL_SUFFIX_</AdminTargetDir>
+	<TargetDir>@HomeDir@/_APP_INSTALL_SUFFIX_</TargetDir>
+	<RemoteRepositories>
+		<Repository>
+			<Url>_REMOTE_URL_/_REMOTE_PATH_</Url>
+			<Enabled>1</Enabled>
+                        <DisplayName>Natron _RBVERSION_ Patch Releases</DisplayName>
+		</Repository>
+	</RemoteRepositories>
+</Installer>

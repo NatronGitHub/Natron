@@ -1,0 +1,41 @@
+diff -up qt-everywhere-opensource-src-4.8.0/src/corelib/tools/qlist.h.QTBUG-22037 qt-everywhere-opensource-src-4.8.0/src/corelib/tools/qlist.h
+--- qt-everywhere-opensource-src-4.8.0/src/corelib/tools/qlist.h.QTBUG-22037	2011-10-03 22:44:32.000000000 -0500
++++ qt-everywhere-opensource-src-4.8.0/src/corelib/tools/qlist.h	2011-10-15 14:25:52.238694974 -0500
+@@ -769,26 +769,18 @@ Q_OUTOFLINE_TEMPLATE void QList<T>::clea
+ template <typename T>
+ Q_OUTOFLINE_TEMPLATE int QList<T>::removeAll(const T &_t)
+ {
+-    int index = indexOf(_t);
+-    if (index == -1)
+-        return 0;
+-
++    detachShared();
+     const T t = _t;
+-    detach();
+-
+-    Node *i = reinterpret_cast<Node *>(p.at(index));
+-    Node *e = reinterpret_cast<Node *>(p.end());
+-    Node *n = i;
+-    node_destruct(i);
+-    while (++i != e) {
+-        if (i->t() == t)
+-            node_destruct(i);
+-        else
+-            *n++ = *i;
+-    }
+-
+-    int removedCount = e - n;
+-    d->end -= removedCount;
++    int removedCount=0, i=0;
++    Node *n;
++    while (i < p.size())
++        if ((n = reinterpret_cast<Node *>(p.at(i)))->t() == t) {
++            node_destruct(n);
++            p.remove(i);
++            ++removedCount;
++        } else {
++            ++i;
++        }
+     return removedCount;
+ }
+ 

@@ -1,6 +1,6 @@
---- Portfile.orig	2016-10-12 15:14:07.000000000 +0200
-+++ Portfile	2016-10-12 15:14:17.000000000 +0200
-@@ -87,13 +87,17 @@
+--- Portfile.orig	2018-04-22 17:43:58.000000000 +0200
++++ Portfile	2018-04-22 17:46:13.000000000 +0200
+@@ -106,8 +106,12 @@
  if {[variant_isset universal]} {
      set merger_host(x86_64) x86_64-apple-${os.platform}${os.major}
      set merger_host(i386) i686-apple-${os.platform}${os.major}
@@ -15,9 +15,3 @@
  } elseif {${build_arch} eq "i386"} {
      configure.args-append \
          --host=i686-apple-${os.platform}${os.major} \
-         --build=i686-apple-${os.platform}${os.major}
--} elseif {${build_arch} eq "x86_64"} {
-+} elseif {${build_arch} eq "x86_64" || ${build_arch} eq "ppc64" || ${build_arch} eq "ppc"} {
-     configure.args-append \
-         --host=${build_arch}-apple-${os.platform}${os.major} \
-         --build=${build_arch}-apple-${os.platform}${os.major}

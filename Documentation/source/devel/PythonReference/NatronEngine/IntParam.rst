@@ -11,32 +11,31 @@ IntParam
 Synopsis
 --------
 
-An IntParam can contain one or multiple int values. 
+An IntParam can contain one or multiple int values.
 See :ref:`detailed<int.details>` description...
 
 Functions
 ^^^^^^^^^
-.. container:: function_list
 
-*    def :meth:`get<NatronEngine.IntParam.get>` ()
-*    def :meth:`get<NatronEngine.IntParam.get>` (frame)
-*    def :meth:`getDefaultValue<NatronEngine.IntParam.getDefaultValue>` ([dimension=0])
-*    def :meth:`getDisplayMaximum<NatronEngine.IntParam.getDisplayMaximum>` (dimension)
-*    def :meth:`getDisplayMinimum<NatronEngine.IntParam.getDisplayMinimum>` (dimension)
-*    def :meth:`getMaximum<NatronEngine.IntParam.getMaximum>` ([dimension=0])
-*    def :meth:`getMinimum<NatronEngine.IntParam.getMinimum>` ([dimension=0])
-*    def :meth:`getValue<NatronEngine.IntParam.getValue>` ([dimension=0])
-*    def :meth:`getValueAtTime<NatronEngine.IntParam.getValueAtTime>` (time[, dimension=0])
-*    def :meth:`restoreDefaultValue<NatronEngine.IntParam.restoreDefaultValue>` ([dimension=0])
-*    def :meth:`set<NatronEngine.IntParam.set>` (x)
-*    def :meth:`set<NatronEngine.IntParam.set>` (x, frame)
-*    def :meth:`setDefaultValue<NatronEngine.IntParam.setDefaultValue>` (value[, dimension=0])
-*    def :meth:`setDisplayMaximum<NatronEngine.IntParam.setDisplayMaximum>` (maximum[, dimension=0])
-*    def :meth:`setDisplayMinimum<NatronEngine.IntParam.setDisplayMinimum>` (minimum[, dimension=0])
-*    def :meth:`setMaximum<NatronEngine.IntParam.setMaximum>` (maximum[, dimension=0])
-*    def :meth:`setMinimum<NatronEngine.IntParam.setMinimum>` (minimum[, dimension=0])
-*    def :meth:`setValue<NatronEngine.IntParam.setValue>` (value[, dimension=0])
-*    def :meth:`setValueAtTime<NatronEngine.IntParam.setValueAtTime>` (value, time[, dimension=0])
+- def :meth:`get<NatronEngine.IntParam.get>` ()
+- def :meth:`get<NatronEngine.IntParam.get>` (frame)
+- def :meth:`getDefaultValue<NatronEngine.IntParam.getDefaultValue>` ([dimension=0])
+- def :meth:`getDisplayMaximum<NatronEngine.IntParam.getDisplayMaximum>` (dimension)
+- def :meth:`getDisplayMinimum<NatronEngine.IntParam.getDisplayMinimum>` (dimension)
+- def :meth:`getMaximum<NatronEngine.IntParam.getMaximum>` ([dimension=0])
+- def :meth:`getMinimum<NatronEngine.IntParam.getMinimum>` ([dimension=0])
+- def :meth:`getValue<NatronEngine.IntParam.getValue>` ([dimension=0])
+- def :meth:`getValueAtTime<NatronEngine.IntParam.getValueAtTime>` (time[, dimension=0])
+- def :meth:`restoreDefaultValue<NatronEngine.IntParam.restoreDefaultValue>` ([dimension=0])
+- def :meth:`set<NatronEngine.IntParam.set>` (x)
+- def :meth:`set<NatronEngine.IntParam.set>` (x, frame)
+- def :meth:`setDefaultValue<NatronEngine.IntParam.setDefaultValue>` (value[, dimension=0])
+- def :meth:`setDisplayMaximum<NatronEngine.IntParam.setDisplayMaximum>` (maximum[, dimension=0])
+- def :meth:`setDisplayMinimum<NatronEngine.IntParam.setDisplayMinimum>` (minimum[, dimension=0])
+- def :meth:`setMaximum<NatronEngine.IntParam.setMaximum>` (maximum[, dimension=0])
+- def :meth:`setMinimum<NatronEngine.IntParam.setMinimum>` (minimum[, dimension=0])
+- def :meth:`setValue<NatronEngine.IntParam.setValue>` (value[, dimension=0])
+- def :meth:`setValueAtTime<NatronEngine.IntParam.setValueAtTime>` (value, time[, dimension=0])
 
 .. _int.details:
 
@@ -50,18 +49,17 @@ Usually this is used to represent a single integer value that may animate over t
 The user interface for them varies depending on the number of dimensions.
 *Screenshots are the same than for the :doc`DoubleParam` because the user interface is the same*
 
-A 1-dimensional :doc:`DoubleParam`
+A 1-dimensional :doc:`IntParam`
 
 .. figure:: doubleParam.png
 
-A 2-dimensional :doc:`Double2Dparam` 
+A 2-dimensional :doc:`Int2DParam`
 
 .. figure:: double2DParam.png
 
-A 3-dimensional :doc:`Double3DParam`
+A 3-dimensional :doc:`Int3DParam`
 
 .. figure:: double3DParam.png
-
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -75,9 +73,9 @@ Member functions description
     :rtype: :class:`int<PySide.QtCore.int>`
 
 
-Returns the value of this parameter at the given *frame*. If the animation curve has an 
+Returns the value of this parameter at the given *frame*. If the animation curve has an
 animation (see :doc:`getIsAnimated<NatronEngine.AnimatedParam.getIsAnimated>` then the
-value will be interpolated using the *interpolation* chosen by the user for the curve. 
+value will be interpolated using the *interpolation* chosen by the user for the curve.
 
 
 
@@ -180,9 +178,9 @@ Returns the value of this parameter at the given *dimension* at the current time
 
 Returns the value of this parameter at the given *dimension* at the given *time*.
 
-If the animation curve has an 
+If the animation curve has an
 animation (see :doc:`getIsAnimated<NatronEngine.AnimatedParam.getIsAnimated>` then the
-value will be interpolated using the *interpolation* chosen by the user for the curve. 
+value will be interpolated using the *interpolation* chosen by the user for the curve.
 
 
 
@@ -216,7 +214,7 @@ Set a new keyframe on the parameter with the value *x* at the given *frame*.
     :param x: :class:`int<PySide.QtCore.int>`
 
 
-Set the value of this parameter to be *x*. 
+Set the value of this parameter to be *x*.
 If this parameter is animated (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>`
 then this function will automatically add a keyframe at the timeline's current time.
 

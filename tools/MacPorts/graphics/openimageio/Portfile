@@ -14,12 +14,14 @@ PortGroup       compiler_blacklist_versions 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.7.17 tags/Release-
+github.setup     OpenImageIO oiio 1.8.10 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
 name             openimageio
-#revision         2
+conflicts        openimageio16
+conflicts        openimageio17
+#revision         1
 categories       graphics
 platforms           darwin
 license          BSD
@@ -52,22 +54,26 @@ depends_skip_archcheck txt2man
 # macports-clang < 3.3 untested
 # clang < 300 doesn't work
 # see also https://github.com/OpenImageIO/oiio/issues/1363
-# for some reason, if we compile oiio with gcc 4.9 and boost with gcc 4.2, idiff a.png b.png crashes
-#compiler.fallback-append macports-clang-3.4 macports-gcc-4.8 macports-gcc-4.9 macports-clang-3.3 macports-clang-3.4 macports-clang-3.5
-if {${configure.cxx_stdlib} eq "libstdc++"} {
-  if {[vercmp $xcodeversion 3.0] >= 0} {
-    compiler.fallback-append macports-clang-3.4
-  } else {
-    compiler.fallback-append macports-clang-3.3
-  }
-}
-compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-gcc-4.0 macports-gcc-4.2 llvm-gcc-4.2 {clang < 300}
+compiler.blacklist-append {*gcc-3*} {*gcc-4.[0-1]} {macports-gcc-4.[2-7]} {gcc-4.[2-7]} {apple-gcc-4.[2-7]} cc {clang < 300}
 
-# The PowerPC build requires GCC >= 4.8, which doesn't recognize the -arch flag, and requires libatomic
+# for some reason, if we compile oiio with gcc 4.9 and boost with gcc 4.2, idiff a.png b.png crashes
+if {${configure.cxx_stdlib} eq "libstdc++"} {
+    if {[vercmp $xcodeversion 3.0] >= 0} {
+        compiler.fallback-append macports-clang-3.4
+    } else {
+        compiler.fallback-append macports-clang-3.3
+    }
+}
+
+# GCC < 4.9 does not have proper GCC intrinsics support
+compiler.blacklist-append {*gcc-4.8}
+compiler.whitelist-append macports-clang-5.0 macports-clang-4.0 macports-gcc-7 macports-gcc-6 macports-gcc-5 {*gcc-4.9}
+
+# The PowerPC build requires GCC >= 4.9, which doesn't recognize the -arch flag, and requires libatomic
 # Unfortunately, the resulting binaries don't work (at least on PPC), so we build without threads
 if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
-     compiler.blacklist-append macports-clang-3.3 macports-clang-3.4 macports-clang-3.5
-#    compiler.blacklist-append macports-gcc-4.3 macports-gcc-4.4 macports-gcc-4.5 macports-gcc-4.6 macports-gcc-4.7
+    # there is no known working clang compiler for ppc
+    compiler.blacklist-append {macports-clang*}
 #    # the following removes the flag "-arch ppc" put by cmake-1.0 portgroup in the pre-configure phase
 #    pre-configure {
 #        configure.args-delete -DCMAKE_OSX_ARCHITECTURES="${configure.build_arch}"
@@ -86,21 +92,16 @@ if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
 #    system "touch ${worksrcpath}/LICENSE  ${workpath}/${worksrcdir}/LICENSE"
 #}
 
-# Those are Debian patches, which require -p1
-#patch.pre_args	-p1
-#patchfiles \
-#     build_in_sources.patch
-#    0001-Fix_docs_generation.patch \
-#    0002-Fix_IlmBase_issue.patch \
-#    0003-Fix_multiarch_paths.patch \
-#    0004-Fix_FTBFS_on_atomic_operations.patch \
+# As of 1.7.17, there is only one debian patch:
+# 0001-Fix_documentation_generation.patch
+# see https://packages.debian.org/source/sid/openimageio
 
 patch.pre_args	-p1
 patchfiles \
+    0003-boost-latest.patch \
     oiio-1.5.23-invalidatespec.patch \
-    oiio-1.7.10-c99math.patch \
-    oiio-1.7.10-nothreads.patch \
-    oiio-1.7.12-tiffposition.patch
+    oiio-1.8.7-c99math.patch \
+    oiio-1.8.7-nothreads.patch
 
 cmake.out_of_source yes
 
@@ -108,7 +109,6 @@ configure.args-append \
     -DOIIO_BUILD_TESTS:BOOL=FALSE \
     -DBOOST_ROOT=${prefix} \
     -DUSE_QT:BOOL=FALSE \
-    -DUSE_TBB:BOOL=FALSE \
     -DUSE_PYTHON:BOOL=FALSE \
     -DUSE_PYTHON3:BOOL=FALSE \
     -DUSE_FIELD3D:BOOL=FALSE \
@@ -128,10 +128,6 @@ default_variants    +opencolorio +openjpeg +qt4 +freetype
 
 variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype description {Natron version} {
     if {${configure.cxx_stdlib} eq "libstdc++"} {
-        # configure with GCC 4.9 for proper GCC intrinsics support
-        #configure.compiler macports-gcc-4.9
-        # but disable C++11 if not required (OIIO 1.8 requires C++11)
-        configure.args-append -DUSE_CPP11:BOOL=FALSE
     }
 }
 
@@ -150,7 +146,7 @@ variant ffmpeg description {Add FFmpeg support.} {
 variant openjpeg description {Add OpenJPEG support.} {
     depends_lib-append  port:openjpeg
     configure.args-delete       -DUSE_OPENJPEG:BOOL=FALSE
-    configure.args-append       -DUSE_OPENJPEG:BOOL=TRUE -DOPENJPEG_HOME=${prefix}
+    configure.args-append       -DUSE_OPENJPEG:BOOL=TRUE -DOPENJPEG_HOME=${prefix} -DOPENJPEG_INCLUDE_DIR=`pkg-config --variable=includedir libopenjp2`
 }
 
 variant python26 conflicts python27 description {Add Python 2.6 bindings.} {

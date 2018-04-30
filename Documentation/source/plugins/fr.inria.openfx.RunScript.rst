@@ -16,22 +16,22 @@ Sample section of a node graph which uses RunScript:
 
 ::
 
-                  ...
-                   ^
-                   |
-    Write([Project]/scriptinput#####.png)
-                   ^
-                   |
-    RunScript1(processes [Project]/scriptinput#####.png, output is [Project]/scriptoutput#####.png)
-                   ^
-                   |
-    Read([Project]/scriptoutput#####.png, set the frame range manually)
-                   ^
-                   |
-    RunScript2(deletes temporary files [Project]/scriptinput#####.png and [Project]/scriptoutput#####.png, optional)
-                   ^
-                   |
-                  ...
+                 ...
+                  ^
+                  |
+   Write([Project]/scriptinput#####.png)
+                  ^
+                  |
+   RunScript1(processes [Project]/scriptinput#####.png, output is [Project]/scriptoutput#####.png)
+                  ^
+                  |
+   Read([Project]/scriptoutput#####.png, set the frame range manually)
+                  ^
+                  |
+   RunScript2(deletes temporary files [Project]/scriptinput#####.png and [Project]/scriptoutput#####.png, optional)
+                  ^
+                  |
+                 ...
 
 Keep in mind that the input and output files are never removed in the above graph. The output of RunScript is a copy of its first input.
 
@@ -46,8 +46,8 @@ Under Unix, the script should begin with a traditional shebang line, e.g. ‘#!/
 
 ::
 
-    #!/bin/sh
-    rm "$1" "$2"
+   #!/bin/sh
+   rm "$1" "$2"
 
 This plugin uses pstream (http://pstreams.sourceforge.net), which is distributed under the Boost Software License, Version 1.0.
 

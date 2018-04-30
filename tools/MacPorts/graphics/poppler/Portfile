@@ -11,7 +11,7 @@ PortGroup           muniversal 1.0
 # hold off on update until this is sorted out
 
 name                poppler
-conflicts           pdf2json xpdf-tools
+conflicts           xpdf-tools
 version             0.57.0
 license             GPL-2+
 maintainers         {devans @dbevans} openmaintainer

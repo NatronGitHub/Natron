@@ -1,0 +1,13 @@
+diff --git a/src/3rdparty/webkit/Source/WebKit.pro b/src/3rdparty/webkit/Source/WebKit.pro
+index 9be0f4a..6744f58 100644
+--- a/src/3rdparty/webkit/Source/WebKit.pro
++++ b/src/3rdparty/webkit/Source/WebKit.pro
+@@ -22,7 +22,7 @@ contains(QT_CONFIG, declarative) {
+     exists($$PWD/WebKit/qt/declarative): SUBDIRS += WebKit/qt/declarative
+ }
+
+-exists($$PWD/WebKit/qt/tests): SUBDIRS += WebKit/qt/tests
++#exists($$PWD/WebKit/qt/tests): SUBDIRS += WebKit/qt/tests
+
+ build-qtscript {
+     SUBDIRS += \

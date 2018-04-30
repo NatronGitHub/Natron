@@ -15,41 +15,41 @@ See :ref:`detailed<bezier.details>` description....
 Functions
 ^^^^^^^^^
 
-*    def :meth:`addControlPoint<NatronEngine.BezierCurve.addControlPoint>` (x, y)
-*    def :meth:`addControlPointOnSegment<NatronEngine.BezierCurve.addControlPointOnSegment>` (index, t)
-*    def :meth:`getActivatedParam<NatronEngine.BezierCurve.getActivatedParam>` ()
-*    def :meth:`getColor<NatronEngine.BezierCurve.getColor>` (time)
-*    def :meth:`getColorParam<NatronEngine.BezierCurve.getColorParam>` ()
-*    def :meth:`getCompositingOperator<NatronEngine.BezierCurve.getCompositingOperator>` ()
-*    def :meth:`getCompositingOperatorParam<NatronEngine.BezierCurve.getCompositingOperatorParam>` ()
-*    def :meth:`getControlPointPosition<NatronEngine.BezierCurve.getControlPointPosition>` (index,time)
-*    def :meth:`getFeatherDistance<NatronEngine.BezierCurve.getFeatherDistance>` (time)
-*    def :meth:`getFeatherDistanceParam<NatronEngine.BezierCurve.getFeatherDistanceParam>` ()
-*    def :meth:`getFeatherFallOff<NatronEngine.BezierCurve.getFeatherFallOff>` (time)
-*    def :meth:`getFeatherFallOffParam<NatronEngine.BezierCurve.getFeatherFallOffParam>` ()
-*    def :meth:`getFeatherPointPosition<NatronEngine.BezierCurve.getControlPointPosition>` (index,time)
-*    def :meth:`getIsActivated<NatronEngine.BezierCurve.getIsActivated>` (time)
-*    def :meth:`getKeyframes<NatronEngine.BezierCurve.getKeyframes>` ()
-*    def :meth:`getNumControlPoints<NatronEngine.BezierCurve.getNumControlPoints>` ()
-*    def :meth:`getOpacity<NatronEngine.BezierCurve.getOpacity>` (time)
-*    def :meth:`getOpacityParam<NatronEngine.BezierCurve.getOpacityParam>` ()
-*    def :meth:`getOverlayColor<NatronEngine.BezierCurve.getOverlayColor>` ()
-*    def :meth:`isCurveFinished<NatronEngine.BezierCurve.isCurveFinished>` ()
-*    def :meth:`moveFeatherByIndex<NatronEngine.BezierCurve.moveFeatherByIndex>` (index, time, dx, dy)
-*    def :meth:`moveLeftBezierPoint<NatronEngine.BezierCurve.moveLeftBezierPoint>` (index, time, dx, dy)
-*    def :meth:`movePointByIndex<NatronEngine.BezierCurve.movePointByIndex>` (index, time, dx, dy)
-*    def :meth:`moveRightBezierPoint<NatronEngine.BezierCurve.moveRightBezierPoint>` (index, time, dx, dy)
-*    def :meth:`removeControlPointByIndex<NatronEngine.BezierCurve.removeControlPointByIndex>` (index)
-*    def :meth:`setActivated<NatronEngine.BezierCurve.setActivated>` (time, activated)
-*    def :meth:`setColor<NatronEngine.BezierCurve.setColor>` (time, r, g, b)
-*    def :meth:`setCompositingOperator<NatronEngine.BezierCurve.setCompositingOperator>` (op)
-*    def :meth:`setCurveFinished<NatronEngine.BezierCurve.setCurveFinished>` (finished)
-*    def :meth:`setFeatherDistance<NatronEngine.BezierCurve.setFeatherDistance>` (dist, time)
-*    def :meth:`setFeatherFallOff<NatronEngine.BezierCurve.setFeatherFallOff>` (falloff, time)
-*    def :meth:`setFeatherPointAtIndex<NatronEngine.BezierCurve.setFeatherPointAtIndex>` (index, time, x, y, lx, ly, rx, ry)
-*    def :meth:`setOpacity<NatronEngine.BezierCurve.setOpacity>` (opacity, time)
-*    def :meth:`setOverlayColor<NatronEngine.BezierCurve.setOverlayColor>` (r, g, b)
-*    def :meth:`setPointAtIndex<NatronEngine.BezierCurve.setPointAtIndex>` (index, time, x, y, lx, ly, rx, ry)
+- def :meth:`addControlPoint<NatronEngine.BezierCurve.addControlPoint>` (x, y)
+- def :meth:`addControlPointOnSegment<NatronEngine.BezierCurve.addControlPointOnSegment>` (index, t)
+- def :meth:`getActivatedParam<NatronEngine.BezierCurve.getActivatedParam>` ()
+- def :meth:`getColor<NatronEngine.BezierCurve.getColor>` (time)
+- def :meth:`getColorParam<NatronEngine.BezierCurve.getColorParam>` ()
+- def :meth:`getCompositingOperator<NatronEngine.BezierCurve.getCompositingOperator>` ()
+- def :meth:`getCompositingOperatorParam<NatronEngine.BezierCurve.getCompositingOperatorParam>` ()
+- def :meth:`getControlPointPosition<NatronEngine.BezierCurve.getControlPointPosition>` (index,time)
+- def :meth:`getFeatherDistance<NatronEngine.BezierCurve.getFeatherDistance>` (time)
+- def :meth:`getFeatherDistanceParam<NatronEngine.BezierCurve.getFeatherDistanceParam>` ()
+- def :meth:`getFeatherFallOff<NatronEngine.BezierCurve.getFeatherFallOff>` (time)
+- def :meth:`getFeatherFallOffParam<NatronEngine.BezierCurve.getFeatherFallOffParam>` ()
+- def :meth:`getFeatherPointPosition<NatronEngine.BezierCurve.getControlPointPosition>` (index,time)
+- def :meth:`getIsActivated<NatronEngine.BezierCurve.getIsActivated>` (time)
+- def :meth:`getKeyframes<NatronEngine.BezierCurve.getKeyframes>` ()
+- def :meth:`getNumControlPoints<NatronEngine.BezierCurve.getNumControlPoints>` ()
+- def :meth:`getOpacity<NatronEngine.BezierCurve.getOpacity>` (time)
+- def :meth:`getOpacityParam<NatronEngine.BezierCurve.getOpacityParam>` ()
+- def :meth:`getOverlayColor<NatronEngine.BezierCurve.getOverlayColor>` ()
+- def :meth:`isCurveFinished<NatronEngine.BezierCurve.isCurveFinished>` ()
+- def :meth:`moveFeatherByIndex<NatronEngine.BezierCurve.moveFeatherByIndex>` (index, time, dx, dy)
+- def :meth:`moveLeftBezierPoint<NatronEngine.BezierCurve.moveLeftBezierPoint>` (index, time, dx, dy)
+- def :meth:`movePointByIndex<NatronEngine.BezierCurve.movePointByIndex>` (index, time, dx, dy)
+- def :meth:`moveRightBezierPoint<NatronEngine.BezierCurve.moveRightBezierPoint>` (index, time, dx, dy)
+- def :meth:`removeControlPointByIndex<NatronEngine.BezierCurve.removeControlPointByIndex>` (index)
+- def :meth:`setActivated<NatronEngine.BezierCurve.setActivated>` (time, activated)
+- def :meth:`setColor<NatronEngine.BezierCurve.setColor>` (time, r, g, b)
+- def :meth:`setCompositingOperator<NatronEngine.BezierCurve.setCompositingOperator>` (op)
+- def :meth:`setCurveFinished<NatronEngine.BezierCurve.setCurveFinished>` (finished)
+- def :meth:`setFeatherDistance<NatronEngine.BezierCurve.setFeatherDistance>` (dist, time)
+- def :meth:`setFeatherFallOff<NatronEngine.BezierCurve.setFeatherFallOff>` (falloff, time)
+- def :meth:`setFeatherPointAtIndex<NatronEngine.BezierCurve.setFeatherPointAtIndex>` (index, time, x, y, lx, ly, rx, ry)
+- def :meth:`setOpacity<NatronEngine.BezierCurve.setOpacity>` (opacity, time)
+- def :meth:`setOverlayColor<NatronEngine.BezierCurve.setOverlayColor>` (r, g, b)
+- def :meth:`setPointAtIndex<NatronEngine.BezierCurve.setPointAtIndex>` (index, time, x, y, lx, ly, rx, ry)
 
 
 .. _bezier.details:
@@ -58,7 +58,7 @@ Detailed Description
 --------------------
 
 Almost all functionalities available to the user have been made available to the Python API,
-although in practise making a shape just by calling functions might be tedious due to the 
+although in practise making a shape just by calling functions might be tedious due to the
 potential huge number of control points and keyframes. You can use the Natron Group node's export
 functionality to generate automatically a script from a Roto node within that group.
 
@@ -78,20 +78,20 @@ The *index* passed to the function must be between 0 and :func:`getNumControlPoi
 
 The *time* passed to the function corresponds to a time on the timeline's in frames.
 If it lands on a keyframe of the Bezier shape, then the position at that keyframe is returned,
-otherwise the position is sampled between the surrounding keyframes. 
+otherwise the position is sampled between the surrounding keyframes.
 
 To get a list of all keyframes time for a Bezier call the function :func:`getKeyframes()<NatronEngine.BezierCurve.getKeyframes>`.
 
 A Bezier curve has several parameters that the API allows you to modify:
 
-	* opacity
-	* color
-	* feather distance
-	* feather fall-off
-	* enable state
-	* overlay color
-	* compositing operator
-	
+- opacity
+- color
+- feather distance
+- feather fall-off
+- enable state
+- overlay color
+- compositing operator
+
 Each of them is a regular :ref:`parameter<NatronEngine.Param>` that you can access to modify
 or query its properties.
 All parameters can be retrieved with their *script-name* with the function :func:`getParam(scriptName)<NatronEngine.ItemBase.getParam>`.
@@ -105,9 +105,9 @@ Member functions description
 
 .. attribute:: NatronEngine.BezierCurve.CairoOperatorEnum
 
-	This enumeration represents the different blending modes of a shape. See the user interface
-	for the different modes, or type help(NatronEngine.BezierCurve.CairoOperatorEnum) to see
-	the different values.
+    This enumeration represents the different blending modes of a shape. See the user interface
+    for the different modes, or type help(NatronEngine.BezierCurve.CairoOperatorEnum) to see
+    the different values.
 
 
 .. method:: NatronEngine.BezierCurve.addControlPoint(x, y)
@@ -117,7 +117,7 @@ Member functions description
     :param y: :class:`float<PySide.QtCore.double>`
 
 
-Adds a new control point to an *opened* shape (see :func:`isCurveFinished()<NatronEngine.BezierCurve.isCurveFinished>`) at coordinates (x,y). 
+Adds a new control point to an *opened* shape (see :func:`isCurveFinished()<NatronEngine.BezierCurve.isCurveFinished>`) at coordinates (x,y).
 By default the feather point attached to this point will be equivalent to the control point.
 If the auto-keying is enabled in the user interface, then this function will set a keyframe at
 the timeline's current time for this shape.
@@ -192,23 +192,23 @@ Returns the :doc:`Param` controlling the blending mode of the Bezier.
 
 .. method:: NatronEngine.BezierCurve.getControlPointPosition(index, time)
 
-	:param index: :class:`int<PySide.QtCore.int>`
-	:param time: :class:`float<PySide.QtCore.float>`
-	:rtype: :class:`PyTuple`
-	
+    :param index: :class:`int<PySide.QtCore.int>`
+    :param time: :class:`float<PySide.QtCore.float>`
+    :rtype: :class:`PyTuple`
+
 Returns a tuple with the position of the control point at the given *index* as well as the
 position of its left and right tangents.
 
 The tuple is encoded as such::
 
-	(x,y, leftTangentX, leftTangentY, rightTangentX, rightTangentY)
-	
+    (x,y, leftTangentX, leftTangentY, rightTangentX, rightTangentY)
+
 The position of the left and right tangents is absolute and not relative to (x,y).
 
 The *index* passed to the function must be between 0 and :func:`getNumControlPoints<NatronEngine.BezierCurve.getNumControlPoints>` -1.
 The *time* passed to the function corresponds to a time on the timeline's in frames.
 If it lands on a keyframe of the Bezier shape, then the position at that keyframe is returned,
-otherwise the position is sampled between the surrounding keyframes. 
+otherwise the position is sampled between the surrounding keyframes.
 
 To get a list of all keyframes time for a Bezier call the function :func:`getKeyframes()<NatronEngine.BezierCurve.getKeyframes>`.
 
@@ -257,23 +257,23 @@ Returns the :doc:`Param` controlling the color of the Bezier.
 
 .. method:: NatronEngine.BezierCurve.getFeatherPointPosition(index, time)
 
-	:param index: :class:`int<PySide.QtCore.int>`
-	:param time: :class:`float<PySide.QtCore.float>`
-	:rtype: :class:`PyTuple`
-	
+    :param index: :class:`int<PySide.QtCore.int>`
+    :param time: :class:`float<PySide.QtCore.float>`
+    :rtype: :class:`PyTuple`
+
 Returns a tuple with the position of the feather point at the given *index* as well as the
 position of its left and right tangents.
 
 The tuple is encoded as such::
 
-	(x,y, leftTangentX, leftTangentY, rightTangentX, rightTangentY)
-	
+    (x,y, leftTangentX, leftTangentY, rightTangentX, rightTangentY)
+
 The position of the left and right tangents is absolute and not relative to (x,y).
 
 The *index* passed to the function must be between 0 and :func:`getNumControlPoints<NatronEngine.BezierCurve.getNumControlPoints>` -1.
 The *time* passed to the function corresponds to a time on the timeline's in frames.
 If it lands on a keyframe of the Bezier shape, then the position at that keyframe is returned,
-otherwise the position is sampled between the surrounding keyframes. 
+otherwise the position is sampled between the surrounding keyframes.
 
 To get a list of all keyframes time for a Bezier call the function :func:`getKeyframes()<NatronEngine.BezierCurve.getKeyframes>`.
 
@@ -358,7 +358,7 @@ the last control point and the first control point and the Bezier will be render
     :param dx: :class:`float<PySide.QtCore.double>`
     :param dy: :class:`float<PySide.QtCore.double>`
 
-Moves the feather point at the given *index* (zero-based) by the given delta (dx,dy). 
+Moves the feather point at the given *index* (zero-based) by the given delta (dx,dy).
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
 
 
@@ -385,7 +385,7 @@ The *time* parameter is given so that if auto-keying is enabled a new keyframe w
     :param dx: :class:`float<PySide.QtCore.double>`
     :param dy: :class:`float<PySide.QtCore.double>`
 
-Moves the point at the given *index* (zero-based) by the given delta (dx,dy). 
+Moves the point at the given *index* (zero-based) by the given delta (dx,dy).
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
 
 

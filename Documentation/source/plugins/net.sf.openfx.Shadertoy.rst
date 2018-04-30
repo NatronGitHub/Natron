@@ -12,7 +12,7 @@ Description
 
 Apply a `Shadertoy <http://www.shadertoy.com>`__ fragment shader.
 
-This plugin implements `Shadertoy 0.8.8 <https://www.shadertoy.com/changelog>`__, but multipass shaders and sound are not supported.
+This plugin implements `Shadertoy 0.8.8 <https://www.shadertoy.com/changelog>`__, but multipass shaders and sound are not supported. Some multipass shaders can still be implemented by chaining several Shadertoy nodes, one for each pass.
 
 `Shadertoy 0.8.8 <https://www.shadertoy.com/changelog>`__ uses WebGL 1.0 (a.k.a. `GLSL ES 1.0 <https://www.khronos.org/registry/OpenGL/specs/es/2.0/GLSL_ES_Specification_1.00.pdf>`__ from GLES 2.0), based on `GLSL 1.20 <https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.1.20.pdf>`__
 
@@ -220,12 +220,104 @@ For sound shaders, the mainSound() function returns a vec2 containing the left a
 OpenFX extensions to Shadertoy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Shadertoy was extended to:
+
+-  Expose shader parameters as uniforms, which are presented as OpenFX parameters.
+-  Provide the description and help for these parameters directly in the GLSL code.
+-  Add a default uniform containing the render scale. In OpenFX, a render scale of 1 means that the image is rendered at full resolution, 0.5 at half resolution, etc. This can be used to scale parameter values so that the final aspect does not depend on the render scale. For example, a blur size parameter given in pixels at full resultion would have to be multiplied by the render scale.
+-  Add a default uniform containing the offset of the processed texture with respect to the position of the origin.
+
+The extensions are:
+
 -  The pre-defined ``iRenderScale`` uniform contains the current render scale. Basically all pixel sizes must be multiplied by the renderscale to get a scale-independent effect. For compatibility with Shadertoy, the first line that starts with ``const vec2 iRenderScale`` is ignored (the full line should be ``const vec2 iRenderScale = vec2(1.,1.);``).
 -  The pre-defined ``iChannelOffset`` uniform contains the texture offset for each channel relative to channel 0. For compatibility with Shadertoy, the first line that starts with ``const vec2 iChannelOffset`` is ignored (the full line should be ``const vec2 iChannelOffset[4] = vec2[4]( vec2(0.,0.), vec2(0.,0.), vec2(0.,0.), vec2(0.,0.) );``).
--  The shader may define additional uniforms, which should have a default value, as in ``uniform vec2 blurSize = vec2(5., 5.);``. These uniforms can be made available as OpenFX parameters using settings in the ‘Extra parameters’ group, which can be set automatically using the ‘Auto. Params’ button (in this case, parameters are updated when the image is rendered). A parameter label and help string can be given in the comment on the same line. The help string must be in parenthesis. ``uniform vec2 blurSize = vec2(5., 5.); // Blur Size (The blur size in pixels.)`` min/max values can also be given after a comma. The strings must be exactly ``min=`` and ``max=``, without additional spaces, separated by a comma, and the values must have the same dimension as the uniform: ``uniform vec2 blurSize = vec2(5., 5.); // Blur Size (The blur size in pixels.), min=(0.,0.), max=(1000.,1000.)``
+-  The shader may define additional uniforms, which should have a default value, as in ``uniform vec2 blurSize = vec2(5., 5.);``. These uniforms can be made available as OpenFX parameters using settings in the ‘Extra parameters’ group, which can be set automatically using the ‘Auto. Params’ button (automatic parameters are only updated if the node is connected to a Viewer). A parameter label and help string can be given in the comment on the same line. The help string must be in parenthesis. ``uniform vec2 blurSize = vec2(5., 5.); // Blur Size (The blur size in pixels.)`` min/max values can also be given after a comma. The strings must be exactly ``min=`` and ``max=``, without additional spaces, separated by a comma, and the values must have the same dimension as the uniform: ``uniform vec2 blurSize = vec2(5., 5.); // Blur Size (The blur size in pixels.), min=(0.,0.), max=(1000.,1000.)``
 -  The following comment line placed in the shader gives a label and help string to input 1 (the comment must be the only thing on the line): ``// iChannel1: Noise (A noise texture to be used for random number calculations. The texture should not be frame-varying.)``
 -  This one also sets the filter and wrap parameters: ``// iChannel0: Source (Source image.), filter=linear, wrap=clamp``
 -  And this one sets the output bouding box (possible values are Default, Union, Intersection, and iChannel0 to iChannel3): ``// BBox: iChannel0``
+
+Converting a Shadertoy for use in OpenFX
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To better understand how to modify a Shadertoy for OpenFX, let use take the simple `Gaussian blur <https://www.shadertoy.com/view/XdfGDH>`__ example, which is also available as a preset in the Shadertoy node.
+
+In Natron, create a new project, create a Shadertoy node, connect the input 1 of the Viewer to the output of the Shadertoy node. This should give you a blurry color image that corresponds to the default Shadertoy source code. The Shadertoy node should have four inputs, named “iChannel0” to “iChannel3”.
+
+In the Shadertoy node parameters, open the “Image Shader” group. You should see the GLSL source code. Now in the “Load from Preset” choice, select “Blur/Gaussian Blur”. The viewer should display a black image, but you should also notice that the Shadertoy node now has two visible inputs: “Source” and “Modulate” (in Nuke, these inputs are still called iChannel0 and iChannel1). Create a Read node that reads a still image or a video, and connect it to the “Source” input. A blurred version of the image should now appear in the viewer. You should also notice that two parameters appeared at the top of the parameters for the Shadertoy node: “Size” and “Modulate”. Play with the “Size” parameter and see how it affects the blur size (you may have to zoom on the image to see precisely the effect).
+
+Now let us examine the modifications that were brought to the `original GLSL code <https://www.shadertoy.com/view/XdfGDH>`__:
+
+These three comment lines describe the label, filter, and wrap parameters for each input, as well as the size of the output bounding box (also called “region of definition”):
+
+::
+
+   // iChannel0: Source, filter=linear, wrap=clamp
+   // iChannel1: Modulate (Image containing a factor to be applied to the Blur size in the first channel), filter=linear, wrap=clamp
+   // BBox: iChannel0
+
+Two constant global variables were added, which are ignored by the Shadertoy plugin, so that you can still copy-and-paste the source code in Shadertoy 0.8.8 and it still works (unfortunately, it does not work anymore with later versions of Shadertoy). You can safely ignore these:
+
+::
+
+   const vec2 iRenderScale = vec2(1.,1.);
+   const vec2 iChannelOffset[4] = vec2[4]( vec2(0.,0.), vec2(0.,0.), vec2(0.,0.), vec2(0.,0.) );
+
+Then the uniform section gives the list of what will appear as OpenFX parameters, together with their default value, label, help string, and default range. Note that in the original Shadertoy code, the blur size was a constant hidden inside the code. Finding out the parameters of a Shadertoy requires precise code inspection. If you modify this part of the code, pressing the “Auto. Params” button will apply these changes to the OpenFX parameters:
+
+::
+
+   uniform float size = 10.; // Size (Size of the filter kernel in pixel units. The standard deviation of the corresponding Gaussian is size/2.4.), min=0., max=21.
+   uniform bool perpixel_size = false; // Modulate (Modulate the blur size by multiplying it by the first channel of the Modulate input)
+
+In the ``mainImage`` function, which does the processing, we compute the ``mSize`` and ``kSize`` variables, which are the kernel size and mask size for that particular algorithm, from the “Size” parameter, multiplied by the render scale to get a scale-invariant effect. If the “Modulate” check box is on, we also multiply the size by the value found in the first channel (which is red, not alpha) of the “Modulate” input, wich is in the iChannel1 texture according to the comments at the beginning of the source code. This can be use to modulate the blur size depending on the position in the image. The “Modulate” input may be for example connected to the output of a Roto node (with the “R” checkbox checked in the Roto node). Since the Roto output may not have the same size and origin as the Source image, we take care of these by using the iChannelOffset and iChannelResolution values for input 1.
+
+::
+
+   float fSize = size * iRenderScale.x;
+   if (perpixel_size) {
+     fSize *= texture2D(iChannel1, (fragCoord.xy-iChannelOffset[1].xy)/iChannelResolution[1].xy).x;
+   }
+   int kSize = int(min(int((fSize-1)/2), KSIZE_MAX));
+   int mSize = kSize*2+1;
+
+In the rest of the code, the only difference is that the blur size is not constant and equal to 7, but comes from the fSize variable:
+
+::
+
+   float sigma = fSize / 2.4;
+
+Issues with Gamma correction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+OpenGL processing supposes all textures are linear, i.e. not gamma-compressed. This for example about bilinear interpolation on textures: this only works if the intensities are represented linearly. So a proper OpenGL rendering pipe should in principle:
+
+1. Convert all textures to a linear representation (many 8-bit textures are gamma-compressed)
+2. Render with OpenGL
+3. Gamma-compress the linear framebuffer for display
+
+When processing floating-point buffers in OpenFX, the color representation is usually linear, which means that the OpenFX host usually performs steps 1 and 3 anyway (that includes Natron and Nuke): the images given to an OpenFX plugins are in linear color space, and their output is also supposed to be linear.
+
+However, many OpenGL applications, including Shadertoy and most games, skip steps 1 and 3 (mainly for performance issue): they process gamma-compressed textures as if they were linear, and sometimes have to boost their output by gamma compression so that it looks nice on a standard display (which usually accepts a sRGB-compressed framebuffer).
+
+This is why many shaders from Shadertoy convert their outout from linear to sRGB or gamma=2.2, see for example the ``srgb2lin`` and ``lin2srgb`` functions in https://www.shadertoy.com/view/XsfXzf . These conversions *must* be removed when using the shader in OpenFX.
+
+An alternative solution would be to convert all Shadertoy inputs from linear to sRGB, and convert back all outputs to linear, either inside the Shadertoy node, or using external conversion nodes (such as OCIOColorSpace). But this is a bad option, because this adds useless processing. Removing the srgb2lin and lin2srgb conversions from the shader source is a much better option (these functions may have different names, or there may simply be operations line ``pow(c,vec3(2.2))`` and/or ``pow(c,vec3(1./2.2))`` in the GLSL code).
+
+As an example, take a look at the changes made to the `Barrel Blur Chroma <https://www.shadertoy.com/view/XssGz8>`__ Shadertoy: the OpenFX version is available as a preset in the Shadertoy node as “Effects/Barrel Blur Chroma”. When it was converted to OpenFX, all gamma compression and decompression operations were identified and removed.
+
+Multipass shaders
+~~~~~~~~~~~~~~~~~
+
+Most multipass shaders (those using BufA, BufB, BufC, or BufD) can be implemented using the Shadertoy plugin.
+
+The shader sources for two sample multipass shadertoys are available as Natron PyPlugs (but the shader sources are also available separately next to the PyPlugs if you want to use these in another OpenFX host:
+
+-  a `3-pass circular bokeh blur <https://www.shadertoy.com/view/Xd33Dl>`__ (available as `Community/GLSL/BokehCircular_GL <https://github.com/NatronGitHub/natron-plugins/tree/master/GLSL/Blur/BokehCircular_GL>`__ in natron-plugins)
+-  a `4-pass octagonal bokeh blur <https://www.shadertoy.com/view/lst3Df>`__ (available as `Community/GLSL/BokehOctagon_GL <https://github.com/NatronGitHub/natron-plugins/tree/master/GLSL/Blur/BokehOctagon_GL>`__ in natron-plugins)
+
+The principle is very simple: since multipass cannot be done using a single Shadertoy, use several Shadertoy nodes, route the textures between them, and link the parameters. You can learn from these two examples. To figure out the route between textures, click on the tab for each shader in shadertoy.com, and check which shader output is connected to the input textures (iChannel0, etc.) for this shader. The connections between nodes should follow these rules.
+
+The only multipass effects that can not be implemented are the shaders that read back the content of a buffer to compute that same buffer, because compositing graphs cannot have loops (the execution of such a graph would cause an infinite recursion). One example is `this progressive lightmap render <https://www.shadertoy.com/view/MttSWS>`__, where BufB from the previous render is read back as iChannel1 in the BufB shader.
 
 Default textures and videos
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

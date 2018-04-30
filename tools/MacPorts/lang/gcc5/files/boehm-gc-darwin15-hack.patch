@@ -1,0 +1,28 @@
+--- boehm-gc/include/private/gcconfig.h.orig	2015-10-11 17:19:25.000000000 -0400
++++ boehm-gc/include/private/gcconfig.h	2015-10-11 15:41:26.000000000 -0400
+@@ -1041,10 +1041,10 @@
+ #   define MACH_TYPE "I386"
+ #   if defined(__LP64__) || defined(_WIN64)
+ #     define CPP_WORDSZ 64
+-#     define ALIGNMENT 8
++#     define ALIGNMENT 2
+ #   else
+ #     define CPP_WORDSZ 32
+-#     define ALIGNMENT 4
++#     define ALIGNMENT 2
+ 			/* Appears to hold for all "32 bit" compilers	*/
+ 			/* except Borland.  The -a4 option fixes 	*/
+ 			/* Borland.					*/
+@@ -2005,10 +2005,10 @@
+ # ifdef X86_64
+ #   define MACH_TYPE "X86_64"
+ #   ifdef __ILP32__
+-#     define ALIGNMENT 4
++#     define ALIGNMENT 2
+ #     define CPP_WORDSZ 32
+ #   else
+-#     define ALIGNMENT 8
++#     define ALIGNMENT 2
+ #     define CPP_WORDSZ 64
+ #   endif
+ #   ifndef HBLKSIZE

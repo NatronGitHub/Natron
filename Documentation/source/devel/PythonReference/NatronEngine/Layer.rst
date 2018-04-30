@@ -13,16 +13,13 @@ This class is used to group several shapes together and to organize them so they
 rendered in a specific order.
 See :ref:`detailed<layer.details>` description...
 
-
 Functions
 ^^^^^^^^^
 
-
-*    def :meth:`addItem<NatronEngine.Layer.addItem>` (item)
-*    def :meth:`getChildren<NatronEngine.Layer.getChildren>` ()
-*    def :meth:`insertItem<NatronEngine.Layer.insertItem>` (pos, item)
-*    def :meth:`removeItem<NatronEngine.Layer.removeItem>` (item)
-
+- def :meth:`addItem<NatronEngine.Layer.addItem>` (item)
+- def :meth:`getChildren<NatronEngine.Layer.getChildren>` ()
+- def :meth:`insertItem<NatronEngine.Layer.insertItem>` (pos, item)
+- def :meth:`removeItem<NatronEngine.Layer.removeItem>` (item)
 
 .. _layer.details:
 

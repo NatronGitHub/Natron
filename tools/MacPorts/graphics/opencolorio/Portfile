@@ -5,19 +5,21 @@ PortSystem 1.0
 PortGroup        github 1.0
 PortGroup        cmake 1.0
 PortGroup        muniversal 1.0
+# depends on yaml-cpp 0.6+, which require C++11
+PortGroup        cxx11 1.1
 
 epoch        	 1
 
-# As of 20160917, there is no 1.0.10 release, and OCIO 1.0.9 doesn't build against yaml 0.5.1,
-# and doesn't build universal with the included yaml-cpp 0.3,
-# so we have to fetch a version from the github.
-github.setup     imageworks OpenColorIO de9491e67825687918a35d49a72daca698f112a7
-version 1.0.9.20160917
+## As of 20160917, there is no 1.0.10 release, and OCIO 1.0.9 doesn't build against yaml 0.5.1,
+## and doesn't build universal with the included yaml-cpp 0.3,
+## so we have to fetch a version from the github.
+#github.setup     imageworks OpenColorIO de9491e67825687918a35d49a72daca698f112a7
+#version 1.0.9.20160917
 
-#github.setup     imageworks OpenColorIO 1.0.9 v
-##github.version      ${version}-dist
-##github.tarball_from downloads
-##fetch.type              standard
+github.setup     imageworks OpenColorIO 1.1.0 v
+#github.version      ${version}-dist
+#github.tarball_from downloads
+#fetch.type              standard
 name             opencolorio
 categories       graphics
 platforms           darwin
@@ -27,8 +29,8 @@ description      OpenImageIO is a library for reading and writing images
 long_description ${description}
 homepage         http://opencolorio.org
 
-checksums           rmd160  e8f1c5d25aeab5a1014b23183e06f2496f5aafef \
-                    sha256  7ba4f27c2ce3437c94ee9fc0231043b7b5a3024868ff32a0476c5177801cf440
+checksums           rmd160  6337c94fbc47b85d5aae898f50c034b31a7f42b7 \
+                    sha256  ab02cc5ded1492ddd1c5320fe3578a53206f54222970c7b41a6a3167ff453d0c
 
 depends_lib      port:lcms2 port:tinyxml port:boost port:yaml-cpp
 
@@ -46,7 +48,18 @@ configure.args-append \
  	-DUSE_EXTERNAL_YAML=ON \
     -DOCIO_BUILD_APPS=OFF \
     -DOCIO_USE_BOOST_PTR=ON \
+    -DCMAKE_CXX_STANDARD=11 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
     -DAPPLE=OFF
+
+# try to enable C++11 for older compilers too.  for some reason cmake
+# doesn't recognize libstdc++ compilers as being c++11 capable, even
+# though some are. set this and hope for the best ...
+
+#if {${configure.cxx_stdlib} eq "macports-libstdc++" ||
+#    ${configure.cxx_stdlib} eq "libstdc++"} {
+    configure.cxxflags-append -std=gnu++11
+#}
 
 if {[variant_isset universal]} {
     set merger_configure_args(x86_64) "-DOCIO_USE_SSE=ON"
@@ -67,6 +80,7 @@ pre-extract {
     delete ${worksrcpath}
 }
 post-extract {
+    reinplace "s|-Werror||g" ${worksrcpath}/src/core/CMakeLists.txt
 #    move [glob ${workpath}/${github.author}-${github.project}-*] ${worksrcpath}
 }
 

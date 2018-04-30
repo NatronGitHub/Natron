@@ -1,0 +1,36 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           cmake 1.0
+PortGroup           github 1.0
+
+github.setup        google snappy 1.1.7
+categories          archivers
+platforms           darwin
+maintainers         nomaintainer
+license             BSD
+master_sites        https://github.com/google/snappy/archive/
+distname            ${version}
+worksrcdir          ${name}-${version}
+
+description         a fast compressor/decompressor
+
+long_description    Snappy is a compression/decompression library. It does \
+                    not aim for maximum compression, or compatibility with \
+                    any other compression library. Instead it aims for very \
+                    high speeds and reasonable compression. For instance, \
+                    compared to the fastest mode of zlib, Snappy is an order \
+                    of magnitude faster for most inputs, but the resulting \
+                    compressed files are anywhere from 20% to 100% bigger. \
+                    On a single core of a Core i7 processor in 64-bit mode, \
+                    Snappy compresses at about 250 MB/sec or more and \
+                    decompresses at about 500 MB/sec or more.
+
+homepage            https://google.github.io/snappy/
+
+checksums           rmd160  a512cb6b3954ef42a8a54c30787fda79d430bb20 \
+                    sha256  3dfa02e873ff51a11ee02b9ca391807f0c8ea0529a4924afa645fbf97163f9d4
+
+
+depends_lib         port:lzo2 \
+                    port:zlib

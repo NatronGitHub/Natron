@@ -1,0 +1,23 @@
+diff -up qt-everywhere-opensource-src-4.8.3/src/corelib/tools/qlocale_icu.cpp.icu_no_debug qt-everywhere-opensource-src-4.8.3/src/corelib/tools/qlocale_icu.cpp
+--- qt-everywhere-opensource-src-4.8.3/src/corelib/tools/qlocale_icu.cpp.icu_no_debug	2012-09-06 02:33:45.000000000 -0500
++++ qt-everywhere-opensource-src-4.8.3/src/corelib/tools/qlocale_icu.cpp	2012-09-11 09:04:21.542379795 -0500
+@@ -84,7 +84,9 @@ bool qt_initIcu(const QString &localeStr
+         QLibrary lib(QLatin1String("icui18n"), QLatin1String(U_ICU_VERSION_SHORT));
+         lib.setLoadHints(QLibrary::ImprovedSearchHeuristics);
+         if (!lib.load()) {
++#ifndef QT_NO_DEBUG
+             qWarning() << "Unable to load library icui18n" << lib.errorString();
++#endif
+             status = ErrorLoading;
+             return false;
+         }
+@@ -114,7 +116,9 @@ bool qt_initIcu(const QString &localeStr
+         QLibrary ucLib(QLatin1String("icuuc"), QLatin1String(U_ICU_VERSION_SHORT));
+         ucLib.setLoadHints(QLibrary::ImprovedSearchHeuristics);
+         if (!ucLib.load()) {
++#ifndef QT_NO_DEBUG
+             qWarning() << "Unable to load library icuuc" << ucLib.errorString();
++#endif
+             status = ErrorLoading;
+             return false;
+         }

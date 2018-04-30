@@ -1,0 +1,69 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=poppler
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=0.64.0
+pkgrel=1
+pkgdesc="PDF rendering library based on xpdf 3.0 (mingw-w64)"
+arch=('any')
+url="https://poppler.freedesktop.org/"
+license=("GPL")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-glib2"
+             "${MINGW_PACKAGE_PREFIX}-gobject-introspection"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             "${MINGW_PACKAGE_PREFIX}-qt5")
+depends=("${MINGW_PACKAGE_PREFIX}-cairo"
+         "${MINGW_PACKAGE_PREFIX}-curl"
+         "${MINGW_PACKAGE_PREFIX}-freetype"
+         "${MINGW_PACKAGE_PREFIX}-icu"
+         "${MINGW_PACKAGE_PREFIX}-lcms2"
+         "${MINGW_PACKAGE_PREFIX}-libjpeg"
+         "${MINGW_PACKAGE_PREFIX}-libpng"
+         "${MINGW_PACKAGE_PREFIX}-libtiff"
+         "${MINGW_PACKAGE_PREFIX}-nss"
+         "${MINGW_PACKAGE_PREFIX}-openjpeg2"
+         "${MINGW_PACKAGE_PREFIX}-poppler-data"
+         "${MINGW_PACKAGE_PREFIX}-zlib")
+optdepends=("${MINGW_PACKAGE_PREFIX}-glib2: libpoppler-glib"
+            "${MINGW_PACKAGE_PREFIX}-qt5: libpoppler-qt5")
+options=('strip' 'staticlibs')
+source=("https://poppler.freedesktop.org/${_realname}-${pkgver}.tar.xz"
+        001-enable-nss-mingw.patch
+        003-fix-introspection.patch
+        004-basename-include.patch)
+sha256sums=('b21df92ca99f78067785cf2dc8e06deb04726b62389c0ee1f5d8b103c77f64b1'
+            '1f63b502cd0f5eae61a25fc24c0ff900146da54d785ba13602638c08c9f4a890'
+            '686eccb2799763253da3f598e6469d91eb4e2d9f18321891f95bf8ba182353a3'
+            'a0d1dfb3d5e698cc8d3348b108ede52d44165122e57754c6a696efe745e93030')
+
+prepare() {
+  cd ${_realname}-${pkgver}
+  patch -p1 -i ${srcdir}/001-enable-nss-mingw.patch
+  patch -p1 -i ${srcdir}/003-fix-introspection.patch
+  patch -p1 -i ${srcdir}/004-basename-include.patch
+}
+
+build() {
+  [[ -d ${srcdir}/build-${MINGW_CHOST} ]] && rm -rf ${srcdir}/build-${MINGW_CHOST}
+  mkdir -p ${srcdir}/build-${MINGW_CHOST} && cd ${srcdir}/build-${MINGW_CHOST}
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  "${MINGW_PREFIX}/bin/cmake.exe" -Wno-dev \
+    -G"MSYS Makefiles" \
+    -DCMAKE_INSTALL_PREFIX="${MINGW_PREFIX}" \
+    -DENABLE_XPDF_HEADERS=ON \
+    -DENABLE_GTK_DOC=OFF \
+    ../${_realname}-${pkgver}
+
+  CC="${MINGW_PREFIX}/bin/gcc.exe" \
+  PKG_CONFIG_PATH=${MINGW_PREFIX}/lib/pkgconfig \
+  make
+}
+
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make DESTDIR="${pkgdir}" install
+}

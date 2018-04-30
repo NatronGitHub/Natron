@@ -1,0 +1,13 @@
+diff -up qt-everywhere-opensource-src-4.8.2/tools/assistant/tools/assistant/mainwindow.cpp.me qt-everywhere-opensource-src-4.8.2/tools/assistant/tools/assistant/mainwindow.cpp
+--- qt-everywhere-opensource-src-4.8.2/tools/assistant/tools/assistant/mainwindow.cpp.me	2012-06-19 12:52:22.740180410 +0200
++++ qt-everywhere-opensource-src-4.8.2/tools/assistant/tools/assistant/mainwindow.cpp	2012-06-19 12:52:51.953194103 +0200
+@@ -944,8 +944,7 @@ void MainWindow::updateApplicationFont()
+     if (helpEngine.usesAppFont())
+         font = helpEngine.appFont();
+ 
+-    const QWidgetList &widgets = qApp->allWidgets();
+-    foreach (QWidget* widget, widgets)
++    foreach (QWidget* widget, QApplication::allWidgets())
+         widget->setFont(font);
+ }
+ 

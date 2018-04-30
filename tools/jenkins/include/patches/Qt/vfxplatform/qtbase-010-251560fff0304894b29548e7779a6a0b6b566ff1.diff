@@ -1,0 +1,69 @@
+diff --git a/src/plugins/platforms/cocoa/qcocoahelpers.h b/src/plugins/platforms/cocoa/qcocoahelpers.h
+index 89f8bc2..c2abe4e 100644
+--- a/src/plugins/platforms/cocoa/qcocoahelpers.h
++++ b/src/plugins/platforms/cocoa/qcocoahelpers.h
+@@ -50,6 +50,8 @@
+ 
+ QT_BEGIN_NAMESPACE
+ 
++Q_DECLARE_LOGGING_CATEGORY(lcQpaCocoaWindow)
++
+ class QPixmap;
+ class QString;
+ 
+diff --git a/src/plugins/platforms/cocoa/qcocoahelpers.mm b/src/plugins/platforms/cocoa/qcocoahelpers.mm
+index 29a204d..58d2961 100644
+--- a/src/plugins/platforms/cocoa/qcocoahelpers.mm
++++ b/src/plugins/platforms/cocoa/qcocoahelpers.mm
+@@ -48,6 +48,8 @@
+ 
+ QT_BEGIN_NAMESPACE
+ 
++Q_LOGGING_CATEGORY(lcQpaCocoaWindow, "qt.qpa.cocoa.window");
++
+ //
+ // Conversion Functions
+ //
+diff --git a/src/plugins/platforms/cocoa/qnsview.mm b/src/plugins/platforms/cocoa/qnsview.mm
+index d1e444e..bce0455 100644
+--- a/src/plugins/platforms/cocoa/qnsview.mm
++++ b/src/plugins/platforms/cocoa/qnsview.mm
+@@ -880,7 +880,7 @@ - (void)mouseDragged:(NSEvent *)theEvent
+     if (m_window && (m_window->flags() & Qt::WindowTransparentForInput) )
+         return [super mouseDragged:theEvent];
+     if (!(m_buttons & (m_sendUpAsRightButton ? Qt::RightButton : Qt::LeftButton)))
+-        qWarning("QNSView mouseDragged: Internal mouse button tracking invalid (missing Qt::LeftButton)");
++        qCDebug(lcQpaCocoaWindow, "QNSView mouseDragged: Internal mouse button tracking invalid (missing Qt::LeftButton)");
+     [self handleMouseEvent:theEvent];
+ }
+ 
+@@ -1019,7 +1019,7 @@ - (void)rightMouseDragged:(NSEvent *)theEvent
+     if (m_window && (m_window->flags() & Qt::WindowTransparentForInput) )
+         return [super rightMouseDragged:theEvent];
+     if (!(m_buttons & Qt::RightButton))
+-        qWarning("QNSView rightMouseDragged: Internal mouse button tracking invalid (missing Qt::RightButton)");
++        qCDebug(lcQpaCocoaWindow, "QNSView rightMouseDragged: Internal mouse button tracking invalid (missing Qt::RightButton)");
+     [self handleMouseEvent:theEvent];
+ }
+ 
+@@ -1045,7 +1045,7 @@ - (void)otherMouseDragged:(NSEvent *)theEvent
+     if (m_window && (m_window->flags() & Qt::WindowTransparentForInput) )
+         return [super otherMouseDragged:theEvent];
+     if (!(m_buttons & ~(Qt::LeftButton | Qt::RightButton)))
+-        qWarning("QNSView otherMouseDragged: Internal mouse button tracking invalid (missing Qt::MiddleButton or Qt::ExtraButton*)");
++        qCDebug(lcQpaCocoaWindow, "QNSView otherMouseDragged: Internal mouse button tracking invalid (missing Qt::MiddleButton or Qt::ExtraButton*)");
+     [self handleMouseEvent:theEvent];
+ }
+ 
+diff --git a/src/plugins/platforms/cocoa/qt_mac_p.h b/src/plugins/platforms/cocoa/qt_mac_p.h
+index 576e0f9..299678e 100644
+--- a/src/plugins/platforms/cocoa/qt_mac_p.h
++++ b/src/plugins/platforms/cocoa/qt_mac_p.h
+@@ -58,6 +58,7 @@
+ #include "QtCore/qvariant.h"
+ #include "QtCore/qmimedata.h"
+ #include "QtCore/qpointer.h"
++#include "QtCore/qloggingcategory.h"
+ #include "private/qcore_mac_p.h"
+ 
+ 

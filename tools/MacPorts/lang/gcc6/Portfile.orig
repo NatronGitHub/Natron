@@ -43,6 +43,10 @@ depends_lib         port:cctools \
 depends_skip_archcheck-append gcc_select ld64 cctools
 license_noconflict  gmp mpfr ppl libmpc
 
+# Work around parallel building issue on APFS
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81797
+patchfiles-append   notparallel-install-headers.patch
+
 set major           [lindex [split ${version} .-] 0]
 
 platform darwin {
@@ -151,8 +155,9 @@ if {${subport} eq "libgcc6"} {
     # version should continue to provide a subport for that and older gcc
     # versions.
 
-    configure.args-delete --libdir=${prefix}/lib/${name}
-    configure.args-append --libdir=${prefix}/lib/libgcc
+    configure.args-replace \
+        --libdir=${prefix}/lib/${name} \
+        --libdir=${prefix}/lib/libgcc
 
     configure.args-delete --enable-languages=c,c++,objc,obj-c++,lto,fortran
     configure.args-append --enable-languages=fortran

@@ -162,14 +162,14 @@ install:
 
 cache:
   pip: true
-  ccache: true
+  ccache: false
   apt: true
   directories:
     - $HOME/openexr
     - $HOME/ocio
     - $HOME/oiio
     - $HOME/seexpr
-    - /usr/local/Cellar
+#    - /usr/local/Cellar
 
 script:
   - if [[ ${COVERITY_SCAN_BRANCH} == 1 ]];

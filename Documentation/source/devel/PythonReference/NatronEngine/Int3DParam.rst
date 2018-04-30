@@ -11,15 +11,13 @@ Synopsis
 
 See :doc:`IntParam` for more details.
 
-
 Functions
 ^^^^^^^^^
 
-*    def :meth:`set<NatronEngine.Int3DParam.get>` ()
-*    def :meth:`set<NatronEngine.Int3DParam.get>` (frame)
-*    def :meth:`set<NatronEngine.Int3DParam.set>` (x, y, z)
-*    def :meth:`set<NatronEngine.Int3DParam.set>` (x, y, z, frame)
-
+- def :meth:`set<NatronEngine.Int3DParam.get>` ()
+- def :meth:`set<NatronEngine.Int3DParam.get>` (frame)
+- def :meth:`set<NatronEngine.Int3DParam.set>` (x, y, z)
+- def :meth:`set<NatronEngine.Int3DParam.set>` (x, y, z, frame)
 
 Detailed Description
 --------------------
@@ -28,17 +26,17 @@ Detailed Description
 
 
     :rtype: :class:`<Int3DTuple>`
-    
+
 Returns a :doc:`Int3DTuple` containing the [x,y,z] value of this parameter at the timeline's
 current time.
 
 
 .. method:: NatronEngine.Int3DParam.get(frame)
-	
-	:param frame: :class:`float<PySide.QtCore.float>`
+
+    :param frame: :class:`float<PySide.QtCore.float>`
     :rtype: :class:`<Int3DTuple>`
-    
-    
+
+
 Returns a :doc:`Int3DTuple` containing the [x,y,z] value of this parameter at the given *frame*
 
 .. method:: NatronEngine.Int3DParam.set(x, y, z)

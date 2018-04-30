@@ -1,0 +1,51 @@
+--- a/mkspecs/features/qt_functions.prf	2014-08-01 23:54:20.441986402 +0200
++++ b/mkspecs/features/qt_functions.prf	2014-08-01 23:55:33.603172013 +0200
+@@ -83,6 +83,19 @@
+         QMAKE_LFLAGS *= --lsb-shared-libs=$${LIB_NAME}$${QT_LIBINFIX}
+     }
+     LIBS += $$LINKAGE
++
++    win32:CONFIG(static) {
++        isEqual(LIB_NAME, QtCore) {
++            LIBS += $$QMAKE_LIBS_CORE
++        } else:isEqual(LIB_NAME, QtGui) {
++            LIBS += $$QMAKE_LIBS_GUI
++        } else:isEqual(LIB_NAME, QtNetwork) {
++            LIBS += $$QMAKE_LIBS_NETWORK
++        } else:isEqual(LIB_NAME, QtOpenGL) {
++            LIBS += $$QMAKE_LIBS_OPENGL
++        }
++    }
++
+     export(LIBS)
+     export(INCLUDEPATH)
+     export(QMAKE_FRAMEWORKPATH)
+--- a/mkspecs/features/default_post.prf	2014-08-01 23:51:16.864011435 +0200
++++ b/mkspecs/features/default_post.prf	2014-08-01 23:51:29.830221559 +0200
+@@ -96,6 +96,11 @@
+ QMAKE_INCDIR += $$QMAKE_INCDIR_POST
+ QMAKE_LIBDIR += $$QMAKE_LIBDIR_POST
+ 
++win32:contains(CONFIG, static) {
++    DEFINES += QT_STATIC
++    QMAKE_LFLAGS += -static
++}
++
+ # Let every project have a standard GNU `check' target
+ !contains(QMAKE_EXTRA_TARGETS, check) {
+     # `make check' should iterate through all subdirs
+--- a/configure	2012-12-10 23:51:02.920255366 +0100
++++ b/configure	2012-12-10 23:55:58.101753703 +0100
+@@ -6032,6 +6032,12 @@
+ QT_EDITION = $Edition
+ QT_CONFIG += $QT_CONFIG
+ 
++contains(CONFIG, static) {
++    CONFIG -= shared
++    QT_CONFIG += static jpeg gif
++    QT_CONFIG -= shared
++}
++
+ #versioning
+ QT_VERSION = $QT_VERSION
+ QT_MAJOR_VERSION = $QT_MAJOR_VERSION

@@ -1,0 +1,28 @@
+diff -up qt-everywhere-opensource-src-4.8.5/src/tools/moc/moc.cpp.uic_multilib qt-everywhere-opensource-src-4.8.5/src/tools/moc/moc.cpp
+diff -up qt-everywhere-opensource-src-4.8.5/src/tools/uic3/embed.cpp.uic_multilib qt-everywhere-opensource-src-4.8.5/src/tools/uic3/embed.cpp
+--- qt-everywhere-opensource-src-4.8.5/src/tools/uic3/embed.cpp.uic_multilib	2013-05-30 16:18:04.000000000 -0500
++++ qt-everywhere-opensource-src-4.8.5/src/tools/uic3/embed.cpp	2013-06-09 11:50:25.597813974 -0500
+@@ -152,8 +152,7 @@ void Ui3Reader::embed(const char *projec
+     for ( it = images.begin(); it != images.end(); ++it )
+         out << "**      " << *it << "\n";
+     out << "**\n";
+-    out << "** Created: " << QDateTime::currentDateTime().toString() << "\n";
+-    out << "**      by: The User Interface Compiler for Qt version " << QT_VERSION_STR << "\n";
++    out << "** Created: by: The User Interface Compiler for Qt version " << QT_VERSION_STR << "\n";
+     out << "**\n";
+     out << "** WARNING! All changes made in this file will be lost!\n";
+     out << "****************************************************************************/\n";
+diff -up qt-everywhere-opensource-src-4.8.5/src/tools/uic3/uic.cpp.uic_multilib qt-everywhere-opensource-src-4.8.5/src/tools/uic3/uic.cpp
+--- qt-everywhere-opensource-src-4.8.5/src/tools/uic3/uic.cpp.uic_multilib	2013-05-30 16:18:04.000000000 -0500
++++ qt-everywhere-opensource-src-4.8.5/src/tools/uic3/uic.cpp	2013-06-09 11:51:28.310174526 -0500
+@@ -146,8 +146,7 @@ void Uic::writeCopyrightHeader(DomUI *ui
+         out << "/********************************************************************************\n";
+         out << "** Form generated from reading UI file '" << QFileInfo(opt.inputFile).fileName() << "'\n";
+         out << "**\n";
+-        out << "** Created: " << QDateTime::currentDateTime().toString() << "\n";
+-        out << "**      " << QString::fromLatin1("by: Qt User Interface Compiler version %1\n").arg(QLatin1String(QT_VERSION_STR));
++        out << "** Created by: " << QString::fromLatin1("Qt User Interface Compiler version %1\n").arg(QLatin1String(QT_VERSION_STR));
+         out << "**\n";
+         out << "** WARNING! All changes made in this file will be lost when recompiling UI file!\n";
+         out << "********************************************************************************/\n\n";
+diff -up qt-everywhere-opensource-src-4.8.5/src/tools/uic/uic.cpp.uic_multilib qt-everywhere-opensource-src-4.8.5/src/tools/uic/uic.cpp

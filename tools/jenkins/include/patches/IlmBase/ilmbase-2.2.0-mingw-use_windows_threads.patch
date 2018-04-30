@@ -1,0 +1,152 @@
+diff --git a/IlmBase/IlmThread/IlmThread.h b/IlmBase/IlmThread/IlmThread.h
+index 1f6d9e6..6ad89e8 100644
+--- a/IlmBase/IlmThread/IlmThread.h
++++ b/IlmBase/IlmThread/IlmThread.h
+@@ -95,13 +95,15 @@
+ #include "IlmThreadNamespace.h"
+ 
+ #if defined _WIN32 || defined _WIN64
++#ifndef __MINGW32__
+     #ifdef NOMINMAX
+         #undef NOMINMAX
+     #endif
+     #define NOMINMAX
++#endif
+     #include <windows.h>
+     #include <process.h>
+-#elif HAVE_PTHREAD
++#elif HAVE_PTHREAD && !defined(__MINGW32__)
+     #include <pthread.h>
+ #endif
+ 
+@@ -129,7 +131,7 @@ class ILMTHREAD_EXPORT Thread
+ 
+     #if defined _WIN32 || defined _WIN64
+ 	HANDLE _thread;
+-    #elif HAVE_PTHREAD
++    #elif HAVE_PTHREAD && !defined(__MINGW32__)
+ 	pthread_t _thread;
+     #endif
+ 
+diff --git a/IlmBase/IlmThread/IlmThreadMutex.h b/IlmBase/IlmThread/IlmThreadMutex.h
+index dd42067..84942a0 100644
+--- a/IlmBase/IlmThread/IlmThreadMutex.h
++++ b/IlmBase/IlmThread/IlmThreadMutex.h
+@@ -71,12 +71,14 @@
+ #include "IlmThreadNamespace.h"
+ 
+ #if defined _WIN32 || defined _WIN64
++#ifndef __MINGW32__
+     #ifdef NOMINMAX
+         #undef NOMINMAX
+     #endif
+     #define NOMINMAX
++#endif
+     #include <windows.h>
+-#elif HAVE_PTHREAD
++#elif HAVE_PTHREAD && !defined(__MINGW32__)
+     #include <pthread.h>
+ #endif
+ 
+@@ -99,7 +101,7 @@ class ILMTHREAD_EXPORT Mutex
+ 
+     #if defined _WIN32 || defined _WIN64
+ 	mutable CRITICAL_SECTION _mutex;
+-    #elif HAVE_PTHREAD
++    #elif HAVE_PTHREAD && !defined(__MINGW32__)
+ 	mutable pthread_mutex_t _mutex;
+     #endif
+ 
+diff --git a/IlmBase/IlmThread/IlmThreadMutexPosix.cpp b/IlmBase/IlmThread/IlmThreadMutexPosix.cpp
+index c123132..2d52205 100644
+--- a/IlmBase/IlmThread/IlmThreadMutexPosix.cpp
++++ b/IlmBase/IlmThread/IlmThreadMutexPosix.cpp
+@@ -41,7 +41,7 @@
+ 
+ #include "IlmBaseConfig.h"
+ 
+-#if HAVE_PTHREAD
++#if defined(HAVE_PTHREAD) && !defined(__MINGW32__)
+ 
+ #include "IlmThreadMutex.h"
+ #include "Iex.h"
+diff --git a/IlmBase/IlmThread/IlmThreadPosix.cpp b/IlmBase/IlmThread/IlmThreadPosix.cpp
+index c487e39..4de32ff 100644
+--- a/IlmBase/IlmThread/IlmThreadPosix.cpp
++++ b/IlmBase/IlmThread/IlmThreadPosix.cpp
+@@ -41,7 +41,7 @@
+ 
+ #include "IlmBaseConfig.h"
+ 
+-#if HAVE_PTHREAD
++#if defined(HAVE_PTHREAD) && !defined(__MINGW32__)
+ 
+ #include "IlmThread.h"
+ #include "Iex.h"
+diff --git a/IlmBase/IlmThread/IlmThreadSemaphore.h b/IlmBase/IlmThread/IlmThreadSemaphore.h
+index 46cfd02..f711248 100644
+--- a/IlmBase/IlmThread/IlmThreadSemaphore.h
++++ b/IlmBase/IlmThread/IlmThreadSemaphore.h
+@@ -47,14 +47,16 @@
+ #include "IlmThreadNamespace.h"
+ 
+ #if defined _WIN32 || defined _WIN64
++#ifndef __MINGW32__
+     #ifdef NOMINMAX
+         #undef NOMINMAX
+     #endif
+     #define NOMINMAX
++#endif
+     #include <windows.h>
+-#elif HAVE_PTHREAD && !HAVE_POSIX_SEMAPHORES
++#elif HAVE_PTHREAD && !defined(__MINGW32__) && !HAVE_POSIX_SEMAPHORES
+     #include <pthread.h>
+-#elif HAVE_PTHREAD && HAVE_POSIX_SEMAPHORES
++#elif HAVE_PTHREAD && !defined(__MINGW32__) && HAVE_POSIX_SEMAPHORES
+     #include <semaphore.h>
+ #endif
+ 
+@@ -79,7 +81,7 @@ class ILMTHREAD_EXPORT Semaphore
+ 
+ 	mutable HANDLE _semaphore;
+ 
+-    #elif HAVE_PTHREAD && !HAVE_POSIX_SEMAPHORES
++    #elif HAVE_PTHREAD && !defined(__MINGW32__)  && !HAVE_POSIX_SEMAPHORES
+ 
+ 	//
+ 	// If the platform has Posix threads but no semapohores,
+@@ -96,7 +98,7 @@ class ILMTHREAD_EXPORT Semaphore
+ 
+ 	mutable sema_t _semaphore;
+ 
+-    #elif HAVE_PTHREAD && HAVE_POSIX_SEMAPHORES
++    #elif HAVE_PTHREAD && !defined(__MINGW32__)  && HAVE_POSIX_SEMAPHORES
+ 
+ 	mutable sem_t _semaphore;
+ 
+diff --git a/IlmBase/IlmThread/IlmThreadSemaphorePosix.cpp b/IlmBase/IlmThread/IlmThreadSemaphorePosix.cpp
+index 400d90e..e4753ea 100644
+--- a/IlmBase/IlmThread/IlmThreadSemaphorePosix.cpp
++++ b/IlmBase/IlmThread/IlmThreadSemaphorePosix.cpp
+@@ -41,7 +41,7 @@
+ 
+ #include "IlmBaseConfig.h"
+ 
+-#if HAVE_PTHREAD && HAVE_POSIX_SEMAPHORES
++#if defined(HAVE_PTHREAD) && !defined(__MINGW32__) && HAVE_POSIX_SEMAPHORES
+ 
+ #include "IlmThreadSemaphore.h"
+ #include "Iex.h"
+diff --git a/IlmBase/IlmThread/IlmThreadSemaphorePosixCompat.cpp b/IlmBase/IlmThread/IlmThreadSemaphorePosixCompat.cpp
+index 29b109d..c2d4ab2 100644
+--- a/IlmBase/IlmThread/IlmThreadSemaphorePosixCompat.cpp
++++ b/IlmBase/IlmThread/IlmThreadSemaphorePosixCompat.cpp
+@@ -42,7 +42,7 @@
+ 
+ #include "IlmBaseConfig.h"
+ 
+-#if HAVE_PTHREAD && !HAVE_POSIX_SEMAPHORES
++#if defined(HAVE_PTHREAD) && !defined(__MINGW32__) && !HAVE_POSIX_SEMAPHORES
+ 
+ #include "IlmThreadSemaphore.h"
+ #include "Iex.h"

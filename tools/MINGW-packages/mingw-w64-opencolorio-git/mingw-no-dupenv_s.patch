@@ -1,0 +1,11 @@
+--- opencolorio/src/core/Platform.cpp.orig	2018-01-10 07:38:56.478513300 +0300
++++ opencolorio/src/core/Platform.cpp	2018-01-10 07:39:05.438364800 +0300
+@@ -18,7 +18,7 @@
+         // 
+         void getenv (const char* name, std::string& value)
+         {
+-#ifdef WINDOWS
++#ifdef _MSC_VER
+             // To remove the security compilation warning, the _dupenv_s method
+             // must be used (instead of the getenv). The improvement is that
+             // the buffer length is now under control to mitigate buffer overflow attacks.

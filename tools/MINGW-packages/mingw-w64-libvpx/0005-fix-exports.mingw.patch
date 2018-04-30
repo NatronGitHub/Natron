@@ -1,0 +1,11 @@
+diff -Naur libvpx-1.4.0-orig/vpx/exports_enc libvpx-1.4.0/vpx/exports_enc
+--- libvpx-1.4.0-orig/vpx/exports_enc	2015-04-03 21:49:19.000000000 +0300
++++ libvpx-1.4.0/vpx/exports_enc	2015-04-07 09:41:36.904200000 +0300
+@@ -2,6 +2,7 @@
+ text vpx_codec_enc_config_set
+ text vpx_codec_enc_init_multi_ver
+ text vpx_codec_enc_init_ver
++text vpx_codec_enc_init_multi_ver
+ text vpx_codec_encode
+ text vpx_codec_get_cx_data
+ text vpx_codec_get_global_headers

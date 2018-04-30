@@ -1,0 +1,65 @@
+diff -ur oiio-Release-1.7.10-noc99math/CMakeLists.txt oiio-Release-1.7.10/CMakeLists.txt
+--- oiio-Release-1.7.10-noc99math/CMakeLists.txt	2017-01-01 22:55:38.000000000 +0100
++++ oiio-Release-1.7.10/CMakeLists.txt	2017-01-26 11:57:58.000000000 +0100
+@@ -261,6 +261,11 @@
+             # C++ >= 11 doesn't like 'register' keyword, which is in Qt headers
+             add_definitions ("-Wno-deprecated-register")
+         endif ()
++	if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
++	    # C99 math function declarations are missing from macOS <= 10.6
++	    # just make sure <cmath> gets included with the right defines
++	    add_definitions("-D_GLIBCXX_USE_C99_MATH_TR1" "-include" "OpenImageIO/missing_math.h")
++	endif()
+     else ()
+         message (STATUS "Building for C++03!")
+     endif ()
+Only in oiio-Release-1.7.10: CMakeLists.txt~
+Only in oiio-Release-1.7.10/src/include/OpenImageIO: fmath.h~
+Only in oiio-Release-1.7.10/src/include/OpenImageIO: imageio.h~
+diff -ur oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/missing_math.h oiio-Release-1.7.10/src/include/OpenImageIO/missing_math.h
+--- oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/missing_math.h	2017-01-01 22:55:38.000000000 +0100
++++ oiio-Release-1.7.10/src/include/OpenImageIO/missing_math.h	2017-01-26 11:56:55.000000000 +0100
+@@ -38,6 +38,41 @@
+ 
+ #pragma once
+ 
++// GCC doesn't import C99 math func into the std namespace, because
++// a few declarations are missing.
++// fix from https://github.com/jeremyhu/libcxx/commit/720feba4874d4ca3131753dc31af127e3c509c36
++#ifdef __APPLE__
++#ifndef __APPLE_BAD_MATH_H
++# if __has_include(<Availability.h>)
++#  include <Availability.h>
++#  if __MAC_OS_X_VERSION_MAX_ALLOWED < 1070
++#    define __APPLE_BAD_MATH_H 1
++#  else
++#    define __APPLE_BAD_MATH_H 0
++#  endif
++# else
++#  define __APPLE_BAD_MATH_H 1
++# endif
++#endif
++
++# if __APPLE_BAD_MATH_H
++/* These prototypes are incorrectly omitted from <math.h> on Snow Leopard despite being available */
++extern "C" {
++    extern long long int llrintl(long double);
++    extern long long int llrint(double);
++    extern long long int llrintf(float);
++
++    extern long long int llroundl(long double);
++    extern long long int llround(double);
++    extern long long int llroundf(float);
++}
++# endif
++#if (OIIO_CPLUSPLUS_VERSION >= 11) && !defined(_GLIBCXX_USE_C99_MATH_TR1)
++// import C99 math into std:: in libstdc++ (it won't harm libc++)
++#define _GLIBCXX_USE_C99_MATH_TR1 1
++#endif
++#endif // __APPLE__
++
+ #include <cmath>
+ 
+ #include "oiioversion.h"   /* Just for the OIIO_NAMESPACE stuff */
+Only in oiio-Release-1.7.10/src/include/OpenImageIO: missing_math.h~
+Only in oiio-Release-1.7.10/src/include/OpenImageIO: typedesc.h~

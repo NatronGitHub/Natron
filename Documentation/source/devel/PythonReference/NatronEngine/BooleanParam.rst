@@ -14,17 +14,17 @@ A parameter that contains a boolean value. See :ref:`detailed<bparam-details>` d
 Functions
 ^^^^^^^^^
 
-*    def :meth:`get<NatronEngine.BooleanParam.get>` ()
-*    def :meth:`get<NatronEngine.BooleanParam.get>` (frame)
-*    def :meth:`getDefaultValue<NatronEngine.BooleanParam.getDefaultValue>` ()
-*    def :meth:`getValue<NatronEngine.BooleanParam.getValue>` ()
-*    def :meth:`getValueAtTime<NatronEngine.BooleanParam.getValueAtTime>` (time)
-*    def :meth:`restoreDefaultValue<NatronEngine.BooleanParam.restoreDefaultValue>` ()
-*    def :meth:`set<NatronEngine.BooleanParam.set>` (x)
-*    def :meth:`set<NatronEngine.BooleanParam.set>` (x, frame)
-*    def :meth:`setDefaultValue<NatronEngine.BooleanParam.setDefaultValue>` (value)
-*    def :meth:`setValue<NatronEngine.BooleanParam.setValue>` (value)
-*    def :meth:`setValueAtTime<NatronEngine.BooleanParam.setValueAtTime>` (value, time)
+- def :meth:`get<NatronEngine.BooleanParam.get>` ()
+- def :meth:`get<NatronEngine.BooleanParam.get>` (frame)
+- def :meth:`getDefaultValue<NatronEngine.BooleanParam.getDefaultValue>` ()
+- def :meth:`getValue<NatronEngine.BooleanParam.getValue>` ()
+- def :meth:`getValueAtTime<NatronEngine.BooleanParam.getValueAtTime>` (time)
+- def :meth:`restoreDefaultValue<NatronEngine.BooleanParam.restoreDefaultValue>` ()
+- def :meth:`set<NatronEngine.BooleanParam.set>` (x)
+- def :meth:`set<NatronEngine.BooleanParam.set>` (x, frame)
+- def :meth:`setDefaultValue<NatronEngine.BooleanParam.setDefaultValue>` (value)
+- def :meth:`setValue<NatronEngine.BooleanParam.setValue>` (value)
+- def :meth:`setValueAtTime<NatronEngine.BooleanParam.setValueAtTime>` (value, time)
 
 .. _bparam-details:
 
@@ -75,7 +75,7 @@ Returns the default value for this parameter.
 .. method:: NatronEngine.BooleanParam.getValue()
 
 
-    :rtype: :class:`PySide.QtCore.bool`
+    :rtype: :class:`bool<PySide.QtCore.bool>`
 
 
 Same as :func:`get()<NatronEngine.BooleanParam.get>`

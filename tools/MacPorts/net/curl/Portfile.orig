@@ -3,7 +3,7 @@
 PortSystem                      1.0
 
 name                            curl
-version                         7.55.1
+version                         7.59.0
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -26,8 +26,9 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  d60d416611adf59b212534a3cd652a0ea29599d1 \
-                                sha256  3eafca6e84ecb4af5f35795dee84e643d5428287e88c041122bb8dac18676bb7
+                                rmd160  e499482a354d862c82aa4ddd1f7e149f0b61cbf2 \
+                                sha256  e44eaabdf916407585bf5c7939ff1161e6242b6b015d3f2f5b758b2a330461fc \
+                                size    2318988
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
@@ -36,16 +37,16 @@ if {${name} eq ${subport}} {
 
     depends_build               port:pkgconfig
 
-    depends_lib                 port:zlib
-
-    patchfiles                  patch-include-curl-system.h.diff
+    depends_lib                 port:libidn2 \
+                                port:libpsl \
+                                port:zlib
 
     configure.args              --disable-silent-rules \
                                 --enable-ipv6 \
+                                --without-brotli \
                                 --without-cyassl \
                                 --without-gnutls \
                                 --without-gssapi \
-                                --without-libidn \
                                 --without-libmetalink \
                                 --without-librtmp \
                                 --without-libssh2 \
@@ -58,6 +59,7 @@ if {${name} eq ${subport}} {
                                 --disable-ares \
                                 --disable-ldap \
                                 --disable-ldaps \
+                                --with-libidn2=${prefix} \
                                 --with-zlib=${prefix} \
                                 ac_cv_prog_AWK=/usr/bin/awk
 
@@ -116,7 +118,7 @@ if {${name} eq ${subport}} {
             MANUAL \
             RESOURCES \
             ROADMAP.md \
-            SECURITY.md \
+            SECURITY-PROCESS.md \
             SSL-PROBLEMS.md \
             SSLCERTS.md \
             THANKS \
@@ -156,15 +158,6 @@ if {${name} eq ${subport}} {
     variant http2 description {Support HTTP/2 with nghttp2} {
         depends_lib-append      port:nghttp2
         configure.args-replace  --without-nghttp2 --with-nghttp2
-    }
-
-    variant idn description {Enable support for internationalized domain names (IDN)} {
-        depends_lib-append      port:libidn
-        configure.args-replace  --without-libidn --with-idn
-        notes-append "
-            Enabling support for internationalized domain names may be a security risk. See\
-            http://curl.haxx.se/mail/lib-2015-06/0143.html\
-        "
     }
 
     variant metalink description {Support Metalink XML download description files} {
@@ -228,8 +221,8 @@ subport curl-ca-bundle {
     set certdata_file           certdata.txt
     # The output of the Tcl command "clock seconds" (you can run it in tclsh) when
     # the certdata.txt file in the port was last updated.
-    set certdata_updated        1500995000
-    set certdata_version        be884de5820a
+    set certdata_updated        1516361900
+    set certdata_version        92dcb99abd05
     set certdata_extract_cmd    bzip2
     set certdata_extract_suffix .tar.bz2
     set certdata_distfile       certdata-${certdata_version}${certdata_extract_suffix}
@@ -245,8 +238,9 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  f923926b7c5537cd04e27f1be4c1538f099eb4bf \
-                                sha256  94f67c4c88e8655d720d7c5f9332391899fe0a96ca1d2d1370f476e718ffb760
+                                rmd160  534aab36b62694cac4b7b10c6f5acf9ed9803354 \
+                                sha256  f8eb21750d06183174abed84da8e9c99f18a0c785775ff3d0a7762d36d8fc74e \
+                                size    194520
 
     extract.only                ${curl_distfile}
     set curl_mk_ca_bundle_files "${worksrcdir}/Makefile ${worksrcdir}/lib/mk-ca-bundle.pl"
@@ -273,7 +267,7 @@ subport curl-ca-bundle {
     }
 
     livecheck.type              regexm
-    livecheck.url               http://hg.mozilla.org/mozilla-central/log/tip/${certdata_path}
+    livecheck.url               https://hg.mozilla.org/mozilla-central/log/tip/${certdata_path}
     livecheck.version           ${certdata_version}
     livecheck.regex             {/rev/([0-9a-f]+)"}
 }

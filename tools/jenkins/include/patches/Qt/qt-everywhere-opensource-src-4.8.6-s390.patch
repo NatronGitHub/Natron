@@ -1,0 +1,31 @@
+diff -up qt-everywhere-opensource-src-4.8.6/src/3rdparty/javascriptcore/JavaScriptCore/wtf/Platform.h.s390 qt-everywhere-opensource-src-4.8.6/src/3rdparty/javascriptcore/JavaScriptCore/wtf/Platform.h
+--- qt-everywhere-opensource-src-4.8.6/src/3rdparty/javascriptcore/JavaScriptCore/wtf/Platform.h.s390	2014-03-30 15:36:49.000000000 -0500
++++ qt-everywhere-opensource-src-4.8.6/src/3rdparty/javascriptcore/JavaScriptCore/wtf/Platform.h	2014-03-31 17:59:16.846465899 -0500
+@@ -189,6 +189,18 @@
+ #define WTF_CPU_SPARC 1
+ #endif
+ 
++/* CPU(S390X) - S390 64-bit */
++#if defined(__s390x__)
++#define WTF_CPU_S390X 1
++#define WTF_CPU_BIG_ENDIAN 1
++#endif
++
++/* CPU(S390) - S390 32-bit */
++#if defined(__s390__)
++#define WTF_CPU_S390 1
++#define WTF_CPU_BIG_ENDIAN 1
++#endif
++
+ /* CPU(X86) - i386 / x86 32-bit */
+ #if   defined(__i386__) \
+     || defined(i386)     \
+@@ -903,7 +915,7 @@
+ #endif
+ 
+ #if !defined(WTF_USE_JSVALUE64) && !defined(WTF_USE_JSVALUE32) && !defined(WTF_USE_JSVALUE32_64)
+-#if (CPU(X86_64) && (OS(UNIX) || OS(WINDOWS) || OS(SOLARIS) || OS(HPUX))) || (CPU(IA64) && !CPU(IA64_32)) || CPU(ALPHA) || CPU(AIX64) || CPU(SPARC64) || CPU(MIPS64) || CPU(AARCH64)
++#if (CPU(X86_64) && (OS(UNIX) || OS(WINDOWS) || OS(SOLARIS) || OS(HPUX))) || (CPU(IA64) && !CPU(IA64_32)) || CPU(ALPHA) || CPU(AIX64) || CPU(SPARC64) || CPU(MIPS64) || CPU(AARCH64) || CPU(S390X)
+ #define WTF_USE_JSVALUE64 1
+ #elif CPU(ARM) || CPU(PPC64)
+ #define WTF_USE_JSVALUE32 1

@@ -16,11 +16,10 @@ See :doc:`IntParam` for more details.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`get<NatronEngine.Int2DParam.set>` ()
-*    def :meth:`get<NatronEngine.Int2DParam.set>` (frame)
-*    def :meth:`set<NatronEngine.Int2DParam.set>` (x, y)
-*    def :meth:`set<NatronEngine.Int2DParam.set>` (x, y, frame)
-
+- def :meth:`get<NatronEngine.Int2DParam.set>` ()
+- def :meth:`get<NatronEngine.Int2DParam.set>` (frame)
+- def :meth:`set<NatronEngine.Int2DParam.set>` (x, y)
+- def :meth:`set<NatronEngine.Int2DParam.set>` (x, y, frame)
 
 Detailed Description
 --------------------
@@ -29,14 +28,14 @@ Detailed Description
 
 
     :rtype: :class: `Int2DTuple`
-    
+
 Returns a :doc:`Int2DTuple` containing the [x,y] value of this parameter at the timeline's
 current time.
 
 
 .. method:: NatronEngine.Int2DParam.get(frame)
 
-	 :param: :class:`float<PySide.QtCore.float>`
+     :param: :class:`float<PySide.QtCore.float>`
      :rtype: :class: `Int2DTuple`
 
 Returns a :doc:`Int2DTuple` containing the [x,y] value of this parameter at

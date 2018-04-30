@@ -7,8 +7,7 @@ PortGroup compiler_blacklist_versions 1.0
 name                gcc5
 
 epoch               2
-version             5.4.0
-revision            2
+version             5.5.0
 platforms           darwin
 categories          lang
 maintainers         nomaintainer
@@ -19,17 +18,34 @@ long_description    The GNU compiler collection, including front ends for \
                     C, C++, Objective-C, Objective-C++, Fortran and Java.
 
 homepage            http://gcc.gnu.org/
-master_sites        ftp://ftp.funet.fi/pub/mirrors/sources.redhat.com/pub/gcc/releases/gcc-${version}/ \
-                    ftp://ftp.gwdg.de/pub/linux/gcc/releases/gcc-${version}/ \
-                    ftp://gcc.ftp.nluug.nl/mirror/languages/gcc/releases/gcc-${version}/ \
-                    ftp://gcc.gnu.org/pub/gcc/releases/gcc-${version}/ \
-                    gnu:gcc/gcc-${version}
+master_sites        ftp://ftp.funet.fi/pub/mirrors/sources.redhat.com/pub/gcc/releases/gcc-${version}/:gcc \
+                    ftp://ftp.gwdg.de/pub/linux/gcc/releases/gcc-${version}/:gcc \
+                    ftp://gcc.ftp.nluug.nl/mirror/languages/gcc/releases/gcc-${version}/:gcc \
+                    ftp://gcc.gnu.org/pub/gcc/releases/gcc-${version}/:gcc \
+                    gnu:gcc/gcc-${version}:gcc \
+                    ftp://sourceware.org/pub/java/:ecj \
+                    http://mirrors.kernel.org/sources.redhat.com/java/:ecj \
+                    http://www.mirrorservice.org/sites/sources.redhat.com/pub/java/:ecj \
+                    http://ftp-stud.fht-esslingen.de/pub/Mirrors/sourceware.org/java/:ecj
 
+dist_subdir         gcc
 distname            gcc-${version}
-use_bzip2           yes
+use_xz              yes
 
-checksums           rmd160  7ae3413ca7e90bb21e65e637c02ddf2b675b45f4 \
-                    sha256  608df76dec2d34de6558249d8af4cbee21eceddbcb580d666f7a5a583ca3303a
+set ecj             ecj-4.9.jar
+
+distfiles           ${distname}${extract.suffix}:gcc ${ecj}:ecj
+
+extract.only        ${distname}${extract.suffix}
+
+checksums           ${distname}${extract.suffix} \
+                    rmd160  63fdc006c2289f81df664d1fd9b4124f71732e7b \
+                    sha256  530cea139d82fe542b358961130c69cfde8b3d14556370b65823d2f91f0ced87 \
+                    size    71096120 \
+                    ${ecj} \
+                    rmd160  eb1b19d9ac0e9e265bf993f38b9576e3c710e91e \
+                    sha256  9506e75b862f782213df61af67338eb7a23c35ff425d328affc65585477d34cd \
+                    size    1619429
 
 depends_lib         port:cctools \
                     port:gmp \
@@ -45,13 +61,26 @@ depends_run         port:gcc_select \
 depends_skip_archcheck-append gcc_select ld64 cctools
 license_noconflict  gmp mpfr ppl libmpc
 
-# Handle OS X deployment targets correctly (GCC PR target/63810
-# <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=63810>).
-patchfiles-append   macosx-version-min.patch
+# Work around parallel building issue on APFS
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81797
+patchfiles-append   notparallel-install-headers.patch
+
+# Provide linkage for MacPorts libiconv in gcj
+patchfiles-append   gcj-libiconv-linkage.patch
 
 set major           [lindex [split ${version} .-] 0]
 
+post-extract {
+    copy ${distpath}/${ecj} ${worksrcpath}/ecj.jar
+}
+
 platform darwin {
+    if {${os.major} > 14} {
+        # Hack around boehm-gc and associated gcj failures from recompilation
+        # of libunwind.dylib with Apple Clang in macOS >= 10.11 by reducing
+        # alignment to 2
+        patchfiles-append   boehm-gc-darwin15-hack.patch
+    }
     configure.pre_args-append --build=${build_arch}-apple-darwin${os.major}
 }
 
@@ -63,6 +92,7 @@ configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
                     --infodir=${prefix}/share/info \
                     --mandir=${prefix}/share/man \
                     --datarootdir=${prefix}/share/gcc-${major} \
+                    --with-libiconv-prefix=${prefix} \
                     --with-local-prefix=${prefix} \
                     --with-system-zlib \
                     --disable-nls \

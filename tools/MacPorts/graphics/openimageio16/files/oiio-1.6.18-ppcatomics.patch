@@ -1,0 +1,93 @@
+--- oiio-Release-1.6.18/src/libtexture/imagecache.cpp.orig	2016-11-01 08:32:47.000000000 +0100
++++ oiio-Release-1.6.18/src/libtexture/imagecache.cpp	2017-12-02 14:42:08.000000000 +0100
+@@ -57,6 +57,90 @@
+ #include <boost/foreach.hpp>
+ #include <boost/scoped_array.hpp>
+ 
++#if !defined(NOTHREADS) && !defined(OIIO_USE_GCC_NEW_ATOMICS) && defined(USE_GCC_ATOMICS) && ( (defined(__ppc__) && !defined(__ppc64__)) )
++// see https://gcc.gnu.org/onlinedocs/gcc-4.4.2/gcc/Atomic-Builtins.html
++
++static pthread_mutex_t sync_lock = PTHREAD_MUTEX_INITIALIZER;
++
++extern "C" bool
++//__sync_bool_compare_and_swap_8 (uint64* ptr, uint64 old, uint64 new)
++__sync_bool_compare_and_swap_8 (volatile void*, long long unsigned int, long long unsigned int)
++  __attribute__ ((visibility ("hidden")));
++
++bool
++__sync_bool_compare_and_swap_8 (volatile void* ptr_, long long unsigned int old, long long unsigned int new_)
++//__sync_bool_compare_and_swap_8 (uint64* ptr, uint64 old, uint64 new)
++{
++  int i;
++  bool ret;
++  long long unsigned int* ptr = (long long unsigned int*)ptr_;
++
++  i = pthread_mutex_lock (&sync_lock);
++  ASSERT (i == 0);
++
++  if (*ptr != old)
++    ret = 0;
++  else
++    {
++      *ptr = new_;
++      ret = 1;
++    }
++
++  i = pthread_mutex_unlock (&sync_lock);
++  ASSERT (i == 0);
++
++  return ret;
++}
++
++extern "C" long long unsigned int
++__sync_fetch_and_add_8 (volatile void* ptr, long long unsigned int add)
++  __attribute__ ((visibility ("hidden")));
++
++long long unsigned int
++__sync_fetch_and_add_8 (volatile void* ptr_, long long unsigned int add)
++{
++  int i;
++  long long unsigned int ret;
++  long long unsigned int* ptr = (long long unsigned int*)ptr_;
++
++  i = pthread_mutex_lock (&sync_lock);
++  ASSERT (i == 0);
++
++  ret = *ptr;
++  *ptr += add;
++
++  i = pthread_mutex_unlock (&sync_lock);
++  ASSERT (i == 0);
++
++  return ret;
++}
++
++#if 0
++extern "C" long long unsigned int
++__sync_add_and_fetch_8 (volatile void* ptr, long long unsigned int add)
++  __attribute__ ((visibility ("hidden")));
++
++long long unsigned int
++__sync_add_and_fetch_8 (volatile void* ptr_, long long unsigned int add)
++{
++  int i;
++  long long unsigned int ret;
++  long long unsigned int* ptr = (long long unsigned int*)ptr_;
++
++  i = pthread_mutex_lock (&sync_lock);
++  ASSERT (i == 0);
++
++  *ptr += add;
++  ret = *ptr;
++
++  i = pthread_mutex_unlock (&sync_lock);
++  ASSERT (i == 0);
++
++  return ret;
++}
++#endif
++
++#endif
+ 
+ OIIO_NAMESPACE_BEGIN
+     using namespace pvt;

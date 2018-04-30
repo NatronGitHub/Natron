@@ -1,0 +1,116 @@
+From 1b62b47f6fcaf5a825a5a909c91e802bffae3b1d Mon Sep 17 00:00:00 2001
+From: Giuseppe Bilotta <giuseppe.bilotta@gmail.com>
+Date: Wed, 25 May 2016 07:32:08 -0600
+Subject: scons: support 2.5.0
+
+The get_implicit_deps changed in SCons 2.5, expecting a callable rather
+than a path as third argument. Detect the SCons versions and set the
+argument appropriately to support both 2.5 and earlier versions.
+
+This closes #95211.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=95211
+Signed-off-by: Giuseppe Bilotta <giuseppe.bilotta@gmail.com>
+Cc: mesa-stable@lists.freedesktop.org
+Acked-by: Emil Velikov <emil.velikov@collabora.com>
+Reviewed-by: Brian Paul <brianp@vmware.com>
+
+diff --git a/scons/custom.py b/scons/custom.py
+index ff7a7a9..e66f496 100644
+--- a/scons/custom.py
++++ b/scons/custom.py
+@@ -43,6 +43,13 @@ import fixes
+ 
+ import source_list
+ 
++# the get_implicit_deps() method changed between 2.4 and 2.5: now it expects
++# a callable that takes a scanner as argument and returns a path, rather than
++# a path directly. We want to support both, so we need to detect the SCons version,
++# for which no API is provided by SCons 8-P
++
++scons_version = tuple(map(int, SCons.__version__.split('.')))
++
+ def quietCommandLines(env):
+     # Quiet command lines
+     # See also http://www.scons.org/wiki/HidingCommandLinesInOutput
+@@ -129,7 +136,7 @@ def code_generate(env, script, target, source, command):
+ 
+     # Explicitly mark that the generated code depends on the generator,
+     # and on implicitly imported python modules
+-    path = (script_src.get_dir(),)
++    path = (script_src.get_dir(),) if scons_version < (2, 5, 0) else lambda x: script_src
+     deps = [script_src]
+     deps += script_src.get_implicit_deps(env, python_scanner, path)
+     env.Depends(code, deps)
+-- 
+cgit v0.10.2
+
+From c521f2d7373a241a69238b95a8c0f3725a9da5ad Mon Sep 17 00:00:00 2001
+From: Jose Fonseca <jfonseca@vmware.com>
+Date: Fri, 6 May 2016 14:03:05 +0100
+Subject: scons: Improve Python module dependency discovery.
+
+Several NIR scripts were using `from ... import ...` syntax, which wasn't
+supported.
+
+Using Python standard libary's modulefinder solves the problem with less
+effort and hacks.
+
+Reviewed-by: Brian Paul <brianp@vmware.com>
+
+diff --git a/scons/custom.py b/scons/custom.py
+index 043793b..ff7a7a9 100644
+--- a/scons/custom.py
++++ b/scons/custom.py
+@@ -30,11 +30,10 @@ Custom builders and methods.
+ #
+ 
+ 
+-import os
+ import os.path
+-import re
+ import sys
+ import subprocess
++import modulefinder
+ 
+ import SCons.Action
+ import SCons.Builder
+@@ -93,27 +92,19 @@ def createConvenienceLibBuilder(env):
+     return convenience_lib
+ 
+ 
+-# TODO: handle import statements with multiple modules
+-# TODO: handle from import statements
+-import_re = re.compile(r'^\s*import\s+(\S+)\s*$', re.M)
+-
+ def python_scan(node, env, path):
+     # http://www.scons.org/doc/0.98.5/HTML/scons-user/c2781.html#AEN2789
++    # https://docs.python.org/2/library/modulefinder.html
+     contents = node.get_contents()
+     source_dir = node.get_dir()
+-    imports = import_re.findall(contents)
++    finder = modulefinder.ModuleFinder()
++    finder.run_script(node.abspath)
+     results = []
+-    for imp in imports:
+-        for dir in path:
+-            file = os.path.join(str(dir), imp.replace('.', os.sep) + '.py')
+-            if os.path.exists(file):
+-                results.append(env.File(file))
+-                break
+-            file = os.path.join(str(dir), imp.replace('.', os.sep), '__init__.py')
+-            if os.path.exists(file):
+-                results.append(env.File(file))
+-                break
+-    #print node, map(str, results)
++    for name, mod in finder.modules.iteritems():
++        if mod.__file__ is None:
++            continue
++        assert os.path.exists(mod.__file__)
++        results.append(env.File(mod.__file__))
+     return results
+ 
+ python_scanner = SCons.Scanner.Scanner(function = python_scan, skeys = ['.py'])
+-- 
+cgit v0.10.2
+

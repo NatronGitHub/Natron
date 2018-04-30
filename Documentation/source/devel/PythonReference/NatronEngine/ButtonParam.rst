@@ -19,7 +19,7 @@ onParamChanged callback on the node.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`trigger<NatronEngine.ButtonParam.trigger>` ()
+- def :meth:`trigger<NatronEngine.ButtonParam.trigger>` ()
 
 
 Member functions description

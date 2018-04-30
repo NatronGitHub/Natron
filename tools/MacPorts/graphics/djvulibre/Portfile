@@ -7,7 +7,7 @@ version             3.5.27
 categories          graphics www
 license             GPL-2+
 platforms           darwin
-maintainers         nicos openmaintainer
+maintainers         {nicos @NicosPavlov} openmaintainer
 
 description         Web centric format and software platform for distributing \
                     documents and images.
@@ -43,5 +43,4 @@ configure.args      --mandir=${prefix}/share/man \
                     --enable-xmltools \
                     --disable-desktopfiles
 
-livecheck.name      djvu
-livecheck.distname  DjVuLibre
+livecheck.regex      /${name}-(\[0-9.\]+)${extract.suffix}

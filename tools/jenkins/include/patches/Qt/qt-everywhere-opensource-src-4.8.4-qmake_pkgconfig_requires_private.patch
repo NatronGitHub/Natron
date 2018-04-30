@@ -1,0 +1,16 @@
+diff -up qt-everywhere-opensource-src-4.8.4/qmake/generators/makefile.cpp.qmake_pkgconfig_requires_private qt-everywhere-opensource-src-4.8.4/qmake/generators/makefile.cpp
+--- qt-everywhere-opensource-src-4.8.4/qmake/generators/makefile.cpp.qmake_pkgconfig_requires_private	2012-11-23 04:11:21.000000000 -0600
++++ qt-everywhere-opensource-src-4.8.4/qmake/generators/makefile.cpp	2013-02-11 07:36:36.192779528 -0600
+@@ -3293,6 +3293,12 @@ MakefileGenerator::writePkgConfigFile()
+         t << "Requires: " << requires << endl;
+     }
+ 
++    // requires.private
++    const QString requires_private = project->values("QMAKE_PKGCONFIG_REQUIRES_PRIVATE").join(" ");
++    if (!requires_private.isEmpty()) {
++        t << "Requires.private: " << requires_private << endl;
++    }
++
+     t << endl;
+ }
+ 

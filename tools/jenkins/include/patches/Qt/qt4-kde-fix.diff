@@ -1,0 +1,215 @@
+--- src/corelib/plugin/qfactoryloader.cpp.orig	2016-11-21 12:29:09.681851630 +0100
++++ src/corelib/plugin/qfactoryloader.cpp	2016-11-21 12:29:41.091512302 +0100
+@@ -223,7 +223,7 @@
+ #ifdef QT_SHARED
+     Q_D(QFactoryLoader);
+     QStringList paths = QCoreApplication::libraryPaths();
+-    QSettings settings(QSettings::UserScope, QLatin1String("Trolltech"));
++    QSettings settings(QSettings::UserScope, QLatin1String("Natron-qt"));
+     for (int i = 0; i < paths.count(); ++i) {
+         const QString &pluginDir = paths.at(i);
+         // Already loaded, skip it...
+@@ -344,7 +344,7 @@
+     QList<QFactoryLoader *> *loaders = qt_factory_loaders();
+     for (QList<QFactoryLoader *>::const_iterator it = loaders->constBegin();
+          it != loaders->constEnd(); ++it) {
+-        QSettings settings(QSettings::UserScope, QLatin1String("Trolltech"));
++        QSettings settings(QSettings::UserScope, QLatin1String("Natron-qt"));
+         (*it)->updateDir(dirName, settings);
+     }
+ }
+--- src/corelib/kernel/qcoreapplication.cpp.orig	2016-11-21 11:29:54.880473991 +0100
++++ src/corelib/kernel/qcoreapplication.cpp	2016-11-21 11:30:05.381692289 +0100
+@@ -339,7 +339,7 @@
+   be thrown out of QSetting's cache for unused settings.
+   */
+ #ifndef QT_NO_SETTINGS
+-Q_GLOBAL_STATIC_WITH_ARGS(QSettings, staticTrolltechConf, (QSettings::UserScope, QLatin1String("Trolltech")))
++Q_GLOBAL_STATIC_WITH_ARGS(QSettings, staticTrolltechConf, (QSettings::UserScope, QLatin1String("Natron-qt")))
+ 
+ QSettings *QCoreApplicationPrivate::trolltechConf()
+ {
+--- src/plugins/inputmethods/imsw-multi/qmultiinputcontext.cpp.orig	2016-11-21 12:30:12.044163362 +0100
++++ src/plugins/inputmethods/imsw-multi/qmultiinputcontext.cpp	2016-11-21 12:30:25.769452061 +0100
+@@ -77,7 +77,7 @@
+     if (def.isEmpty())
+         def = QLatin1String(getenv("QT_IM_MODULE"));
+     if (def.isEmpty()) {
+-        QSettings settings(QSettings::UserScope, QLatin1String("Trolltech"));
++        QSettings settings(QSettings::UserScope, QLatin1String("Natron-qt"));
+         settings.beginGroup(QLatin1String("Qt"));
+         def = settings.value(QLatin1String("DefaultInputMethod"), QLatin1String("xim")).toString();
+     }
+--- src/3rdparty/phonon/gstreamer/devicemanager.cpp.orig	2016-11-21 12:30:43.762830534 +0100
++++ src/3rdparty/phonon/gstreamer/devicemanager.cpp	2016-11-21 12:30:54.146048935 +0100
+@@ -79,7 +79,7 @@
+         , m_backend(backend)
+         , m_audioDeviceCounter(0)
+ {
+-    QSettings settings(QLatin1String("Trolltech"));
++    QSettings settings(QLatin1String("Natron-qt"));
+     settings.beginGroup(QLatin1String("Qt"));
+ 
+     PulseSupport *pulse = PulseSupport::getInstance();
+--- src/network/socket/qlocalserver_tcp.cpp.orig	2016-11-21 12:31:18.164554142 +0100
++++ src/network/socket/qlocalserver_tcp.cpp	2016-11-21 12:31:48.051182779 +0100
+@@ -67,7 +67,7 @@
+     else
+         fullServerName = prefix + requestedServerName;
+ 
+-    QSettings settings(QLatin1String("Trolltech"), QLatin1String("Qt"));
++    QSettings settings(QLatin1String("Natron-qt"), QLatin1String("Qt"));
+     if (settings.contains(fullServerName)) {
+         qWarning("QLocalServer::listen: server name is already in use.");
+         tcpServer.close();
+@@ -80,7 +80,7 @@
+ 
+ void QLocalServerPrivate::closeServer()
+ {
+-    QSettings settings(QLatin1String("Trolltech"), QLatin1String("Qt"));
++    QSettings settings(QLatin1String("Natron-qt"), QLatin1String("Qt"));
+     if (fullServerName == QLatin1String("QLocalServer"))
+         settings.setValue(fullServerName, QVariant());
+     else
+@@ -119,7 +119,7 @@
+     else
+         serverName = prefix + name;
+ 
+-    QSettings settings(QLatin1String("Trolltech"), QLatin1String("Qt"));
++    QSettings settings(QLatin1String("Natron-qt"), QLatin1String("Qt"));
+     if (settings.contains(serverName))
+         settings.remove(serverName);
+ 
+--- src/network/socket/qlocalsocket_tcp.cpp.orig	2016-11-21 12:39:40.999123224 +0100
++++ src/network/socket/qlocalsocket_tcp.cpp	2016-11-21 12:39:56.918457594 +0100
+@@ -235,7 +235,7 @@
+     else
+         d->fullServerName = prefix + name;
+ 
+-    QSettings settings(QLatin1String("Trolltech"), QLatin1String("Qt"));
++    QSettings settings(QLatin1String("Natron-qt"), QLatin1String("Qt"));
+     bool ok;
+     const quint16 port = settings.value(d->fullServerName).toUInt(&ok);
+     if (!ok) {
+--- src/scripttools/debugging/qscriptenginedebugger.cpp.orig	2016-11-21 12:32:15.621762700 +0100
++++ src/scripttools/debugging/qscriptenginedebugger.cpp	2016-11-21 12:32:37.724227605 +0100
+@@ -308,7 +308,7 @@
+     delete frontend;
+ #ifndef QT_NO_MAINWINDOW
+     if (standardWindow) {
+-        QSettings settings(QSettings::UserScope, QLatin1String("Trolltech"));
++        QSettings settings(QSettings::UserScope, QLatin1String("Natron-qt"));
+         QByteArray geometry = standardWindow->saveGeometry();
+         settings.setValue(QLatin1String("Qt/scripttools/debugging/mainWindowGeometry"), geometry);
+         QByteArray state = standardWindow->saveState();
+@@ -596,7 +596,7 @@
+     win->setWindowTitle(tr("Qt Script Debugger"));
+     win->setUnifiedTitleAndToolBarOnMac(true);
+ 
+-    QSettings settings(QSettings::UserScope, QLatin1String("Trolltech"));
++    QSettings settings(QSettings::UserScope, QLatin1String("Natron-qt"));
+     QVariant geometry = settings.value(QLatin1String("Qt/scripttools/debugging/mainWindowGeometry"));
+     if (geometry.isValid())
+         win->restoreGeometry(geometry.toByteArray());
+--- src/gui/text/qfontengine_x11.cpp.orig	2016-11-21 12:33:02.518749134 +0100
++++ src/gui/text/qfontengine_x11.cpp	2016-11-21 12:33:17.237058720 +0100
+@@ -140,7 +140,7 @@
+         return *qt_fontpath;
+ 
+     // append qsettings fontpath
+-    QSettings settings(QSettings::UserScope, QLatin1String("Trolltech"));
++    QSettings settings(QSettings::UserScope, QLatin1String("Natron-qt"));
+     settings.beginGroup(QLatin1String("Qt"));
+ 
+     QStringList fontpath;
+--- src/gui/styles/qs60style_s60.cpp.orig	2016-11-21 12:33:53.758826921 +0100
++++ src/gui/styles/qs60style_s60.cpp	2016-11-21 12:34:16.647308358 +0100
+@@ -799,7 +799,7 @@
+ 
+ void QS60StylePrivate::deleteStoredSettings()
+ {
+-    QSettings settings(QSettings::UserScope, QLatin1String("Trolltech"));
++    QSettings settings(QSettings::UserScope, QLatin1String("Natron-qt"));
+     settings.beginGroup(QLatin1String("QS60Style"));
+     settings.remove(QString());
+     settings.endGroup();
+@@ -835,7 +835,7 @@
+         CleanupStack::PopAndDestroy(themeRepository);
+     );
+ 
+-    QSettings settings(QSettings::UserScope, QLatin1String("Trolltech"));
++    QSettings settings(QSettings::UserScope, QLatin1String("Natron-qt"));
+     settings.beginGroup(QLatin1String("QS60Style"));
+     if (themeID != 0) {
+         QVariant buttonColor = settings.value(QLatin1String("ButtonColor"));
+--- src/gui/painting/qprintengine_ps.cpp.orig	2016-11-21 12:34:36.520726377 +0100
++++ src/gui/painting/qprintengine_ps.cpp	2016-11-21 12:34:51.783047405 +0100
+@@ -181,7 +181,7 @@
+     firstPage = true;
+ 
+ #ifndef QT_NO_SETTINGS
+-    QSettings settings(QSettings::UserScope, QLatin1String("Trolltech"));
++    QSettings settings(QSettings::UserScope, QLatin1String("Natron-qt"));
+     settings.beginGroup(QLatin1String("Qt"));
+     embedFonts = settings.value(QLatin1String("embedFonts"), true).toBool();
+ #else
+--- src/gui/dialogs/qcolordialog.cpp.orig	2016-11-21 12:35:03.689297842 +0100
++++ src/gui/dialogs/qcolordialog.cpp	2016-11-21 12:35:23.769720215 +0100
+@@ -1515,7 +1515,7 @@
+ 
+ #ifndef QT_NO_SETTINGS
+     if (!customSet) {
+-        QSettings settings(QSettings::UserScope, QLatin1String("Trolltech"));
++        QSettings settings(QSettings::UserScope, QLatin1String("Natron-qt"));
+         for (int i = 0; i < 2*8; ++i) {
+             QVariant v = settings.value(QLatin1String("Qt/customColors/") + QString::number(i));
+             if (v.isValid()) {
+@@ -2047,7 +2047,7 @@
+ 
+ #ifndef QT_NO_SETTINGS
+     if (!customSet) {
+-        QSettings settings(QSettings::UserScope, QLatin1String("Trolltech"));
++        QSettings settings(QSettings::UserScope, QLatin1String("Natron-qt"));
+         for (int i = 0; i < 2*8; ++i)
+             settings.setValue(QLatin1String("Qt/customColors/") + QString::number(i), cusrgb[i]);
+     }
+--- src/gui/dialogs/qfiledialog.cpp.orig	2016-11-21 12:35:35.617969227 +0100
++++ src/gui/dialogs/qfiledialog.cpp	2016-11-21 12:35:55.713391313 +0100
+@@ -366,7 +366,7 @@
+ {
+     Q_D(QFileDialog);
+ #ifndef QT_NO_SETTINGS
+-    QSettings settings(QSettings::UserScope, QLatin1String("Trolltech"));
++    QSettings settings(QSettings::UserScope, QLatin1String("Natron-qt"));
+     settings.beginGroup(QLatin1String("Qt"));
+     settings.setValue(QLatin1String("filedialog"), saveState());
+ #endif
+@@ -2273,7 +2273,7 @@
+     q->setFileMode(fileMode);
+ 
+ #ifndef QT_NO_SETTINGS
+-    QSettings settings(QSettings::UserScope, QLatin1String("Trolltech"));
++    QSettings settings(QSettings::UserScope, QLatin1String("Natron-qt"));
+     settings.beginGroup(QLatin1String("Qt"));
+     if (!directory.isEmpty())
+         setLastVisitedDirectory(workingDirectory(directory));
+--- src/gui/kernel/qapplication_x11.cpp.orig	2016-11-21 12:36:12.531744566 +0100
++++ src/gui/kernel/qapplication_x11.cpp	2016-11-21 12:36:33.171178077 +0100
+@@ -863,7 +863,7 @@
+ */
+ bool QApplicationPrivate::x11_apply_settings()
+ {
+-    QSettings settings(QSettings::UserScope, QLatin1String("Trolltech"));
++    QSettings settings(QSettings::UserScope, QLatin1String("Natron-qt"));
+ 
+     settings.beginGroup(QLatin1String("Qt"));
+ 
+@@ -2618,7 +2618,7 @@
+         // read some non-GUI settings when not using the X server...
+ 
+         if (QApplication::desktopSettingsAware()) {
+-            QSettings settings(QSettings::UserScope, QLatin1String("Trolltech"));
++            QSettings settings(QSettings::UserScope, QLatin1String("Natron-qt"));
+             settings.beginGroup(QLatin1String("Qt"));
+ 
+             // read library (ie. plugin) path list

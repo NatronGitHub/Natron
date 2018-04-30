@@ -17,17 +17,17 @@ See :ref:`here<stringBaseDetails>` for more details.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`get<NatronEngine.StringParamBase.get>` ()
-*    def :meth:`get<NatronEngine.StringParamBase.get>` (frame)
-*    def :meth:`getDefaultValue<NatronEngine.StringParamBase.getDefaultValue>` ()
-*    def :meth:`getValue<NatronEngine.StringParamBase.getValue>` ()
-*    def :meth:`getValueAtTime<NatronEngine.StringParamBase.getValueAtTime>` (time)
-*    def :meth:`restoreDefaultValue<NatronEngine.StringParamBase.restoreDefaultValue>` ()
-*    def :meth:`set<NatronEngine.StringParamBase.set>` (x)
-*    def :meth:`set<NatronEngine.StringParamBase.set>` (x, frame)
-*    def :meth:`setDefaultValue<NatronEngine.StringParamBase.setDefaultValue>` (value)
-*    def :meth:`setValue<NatronEngine.StringParamBase.setValue>` (value)
-*    def :meth:`setValueAtTime<NatronEngine.StringParamBase.setValueAtTime>` (value, time)
+- def :meth:`get<NatronEngine.StringParamBase.get>` ()
+- def :meth:`get<NatronEngine.StringParamBase.get>` (frame)
+- def :meth:`getDefaultValue<NatronEngine.StringParamBase.getDefaultValue>` ()
+- def :meth:`getValue<NatronEngine.StringParamBase.getValue>` ()
+- def :meth:`getValueAtTime<NatronEngine.StringParamBase.getValueAtTime>` (time)
+- def :meth:`restoreDefaultValue<NatronEngine.StringParamBase.restoreDefaultValue>` ()
+- def :meth:`set<NatronEngine.StringParamBase.set>` (x)
+- def :meth:`set<NatronEngine.StringParamBase.set>` (x, frame)
+- def :meth:`setDefaultValue<NatronEngine.StringParamBase.setDefaultValue>` (value)
+- def :meth:`setValue<NatronEngine.StringParamBase.setValue>` (value)
+- def :meth:`setValueAtTime<NatronEngine.StringParamBase.setValueAtTime>` (value, time)
 
 .. _stringBaseDetails:
 

@@ -9,30 +9,30 @@ ChoiceParam
 Synopsis
 --------
 
-A choice parameter holds an integer value which corresponds to a choice. 
+A choice parameter holds an integer value which corresponds to a choice.
 See :ref:`detailed description<choice.details>` below.
 
 Functions
 ^^^^^^^^^
 
-*    def :meth:`addOption<NatronEngine.ChoiceParam.addOption>` (option, help)
-*    def :meth:`get<NatronEngine.ChoiceParam.get>` ()
-*    def :meth:`get<NatronEngine.ChoiceParam.get>` (frame)
-*    def :meth:`getDefaultValue<NatronEngine.ChoiceParam.getDefaultValue>` ()
-*    def :meth:`getOption<NatronEngine.ChoiceParam.getOption>` (index)
-*    def :meth:`getNumOptions<NatronEngine.ChoiceParam.getNumOptions>` ()
-*    def :meth:`getOptions<NatronEngine.ChoiceParam.getOptions>` ()
-*    def :meth:`getValue<NatronEngine.ChoiceParam.getValue>` ()
-*    def :meth:`getValueAtTime<NatronEngine.ChoiceParam.getValueAtTime>` (time)
-*    def :meth:`restoreDefaultValue<NatronEngine.ChoiceParam.restoreDefaultValue>` ()
-*    def :meth:`set<NatronEngine.ChoiceParam.set>` (x)
-*    def :meth:`set<NatronEngine.ChoiceParam.set>` (x, frame)
-*    def :meth:`set<NatronEngine.ChoiceParam.set>` (label)
-*    def :meth:`setDefaultValue<NatronEngine.ChoiceParam.setDefaultValue>` (value)
-*    def :meth:`setDefaultValue<NatronEngine.ChoiceParam.setDefaultValue>` (label)
-*    def :meth:`setOptions<NatronEngine.ChoiceParam.setOptions>` (options)
-*    def :meth:`setValue<NatronEngine.ChoiceParam.setValue>` (value)
-*    def :meth:`setValueAtTime<NatronEngine.ChoiceParam.setValueAtTime>` (value, time)
+- def :meth:`addOption<NatronEngine.ChoiceParam.addOption>` (option, help)
+- def :meth:`get<NatronEngine.ChoiceParam.get>` ()
+- def :meth:`get<NatronEngine.ChoiceParam.get>` (frame)
+- def :meth:`getDefaultValue<NatronEngine.ChoiceParam.getDefaultValue>` ()
+- def :meth:`getOption<NatronEngine.ChoiceParam.getOption>` (index)
+- def :meth:`getNumOptions<NatronEngine.ChoiceParam.getNumOptions>` ()
+- def :meth:`getOptions<NatronEngine.ChoiceParam.getOptions>` ()
+- def :meth:`getValue<NatronEngine.ChoiceParam.getValue>` ()
+- def :meth:`getValueAtTime<NatronEngine.ChoiceParam.getValueAtTime>` (time)
+- def :meth:`restoreDefaultValue<NatronEngine.ChoiceParam.restoreDefaultValue>` ()
+- def :meth:`set<NatronEngine.ChoiceParam.set>` (x)
+- def :meth:`set<NatronEngine.ChoiceParam.set>` (x, frame)
+- def :meth:`set<NatronEngine.ChoiceParam.set>` (label)
+- def :meth:`setDefaultValue<NatronEngine.ChoiceParam.setDefaultValue>` (value)
+- def :meth:`setDefaultValue<NatronEngine.ChoiceParam.setDefaultValue>` (label)
+- def :meth:`setOptions<NatronEngine.ChoiceParam.setOptions>` (options)
+- def :meth:`setValue<NatronEngine.ChoiceParam.setValue>` (value)
+- def :meth:`setValueAtTime<NatronEngine.ChoiceParam.setValueAtTime>` (value, time)
 
 .. _choice.details:
 
@@ -107,13 +107,13 @@ Get the menu entry at the given *index*.
 
 .. method:: NatronEngine.ChoiceParam.getNumOptions()
 
-	:rtype: :class:`int`
+    :rtype: :class:`int`
 
 Returns the number of menu entries.
 
 .. method:: NatronEngine.ChoiceParam.getOptions()
 
-	:rtype: :class:`sequence`
+    :rtype: :class:`sequence`
 
 Returns a sequence of string with all menu entries from top to bottom.
 
@@ -173,7 +173,7 @@ Set a new keyframe on the parameter with the value *x* at the given *frame*.
 
 
     :param label: :class:`str<NatronEngine.std::string>`
-	
+
 Set the value of this parameter given a *label*. The *label* must match an existing option.
 Strings will be compared without case sensitivity. If not found, nothing happens.
 

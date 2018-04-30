@@ -1,0 +1,223 @@
+https://gcc.gnu.org/ml/gcc-testresults/2017-01/msg02971.html
+
+From e28e7068641a9ef7d1899b474fa3ddf898edc4c2 Mon Sep 17 00:00:00 2001
+From: Iain Sandoe <iain@codesourcery.com>
+Date: Fri, 2 Dec 2016 12:29:23 +0000
+Subject: [PATCH 1/4] [Darwin, powerpc] Fix bootstrap (PR77359) by copying AIX
+ amendment.
+
+PowerPC Darwin also requires 128b stack alignment (for all versions I currently have access to).  It's quite possible that it would be suitable to #define STACK_BOUNDARY 128, but for now I've left it as defined in rs6000.h.
+---
+ gcc/config/rs6000/darwin.h | 31 ++++++++++++++++++++++++++-----
+ 1 file changed, 26 insertions(+), 5 deletions(-)
+
+diff --git a/gcc/config/rs6000/darwin.h b/gcc/config/rs6000/darwin.h
+index 397ab1c..72c71f6 100644
+--- gcc/config/rs6000/darwin.h
++++ gcc/config/rs6000/darwin.h
+@@ -146,19 +146,40 @@ extern int darwin_emit_branch_islands;
+ #undef  RS6000_PIC_OFFSET_TABLE_REGNUM
+ #define RS6000_PIC_OFFSET_TABLE_REGNUM 31
+ 
+-/* Pad the outgoing args area to 16 bytes instead of the usual 8.  */
++/* Offset within stack frame to start allocating local variables at.
++   If FRAME_GROWS_DOWNWARD, this is the offset to the END of the
++   first local allocated.  Otherwise, it is the offset to the BEGINNING
++   of the first local allocated.
++
++   On the RS/6000, the frame pointer is the same as the stack pointer,
++   except for dynamic allocations.  So we start after the fixed area and
++   outgoing parameter area.
++
++   If the function uses dynamic stack space (CALLS_ALLOCA is set), that
++   space needs to be aligned to STACK_BOUNDARY, i.e. the sum of the
++   sizes of the fixed area and the parameter area must be a multiple of
++   STACK_BOUNDARY.  */
+ 
+ #undef STARTING_FRAME_OFFSET
+ #define STARTING_FRAME_OFFSET						\
+   (FRAME_GROWS_DOWNWARD							\
+    ? 0									\
+-   : (RS6000_ALIGN (crtl->outgoing_args_size, 16)		\
+-      + RS6000_SAVE_AREA))
++   : (cfun->calls_alloca						\
++      ? RS6000_ALIGN (crtl->outgoing_args_size + RS6000_SAVE_AREA, 16)	\
++      : (RS6000_ALIGN (crtl->outgoing_args_size, 16) + RS6000_SAVE_AREA)))
++
++/* Offset from the stack pointer register to an item dynamically
++   allocated on the stack, e.g., by `alloca'.
++
++   The default value for this macro is `STACK_POINTER_OFFSET' plus the
++   length of the outgoing arguments.  The default is correct for most
++   machines.  See `function.c' for details.
+ 
++   This value must be a multiple of STACK_BOUNDARY (hard coded in
++   `emit-rtl.c').  */
+ #undef STACK_DYNAMIC_OFFSET
+ #define STACK_DYNAMIC_OFFSET(FUNDECL)					\
+-  (RS6000_ALIGN (crtl->outgoing_args_size, 16)		\
+-   + (STACK_POINTER_OFFSET))
++   RS6000_ALIGN (crtl->outgoing_args_size + STACK_POINTER_OFFSET, 16)
+ 
+ /* Darwin uses a function call if everything needs to be saved/restored.  */
+ 
+-- 
+2.8.1
+
+From 8bcf01a06f997580088a8a7d69ce16b881187dfb Mon Sep 17 00:00:00 2001
+From: Iain Sandoe <iain@codesourcery.com>
+Date: Wed, 31 Aug 2016 19:45:18 +0100
+Subject: [PATCH 2/4] [Darwin,PPC] Remove uses of LR in restore_world.
+
+r 239866 removed most of the uses of LR in returns and subclass
+
+Darwin had an additional use of LR in the restore_world machinery.  This patch removes it from the pattern in altivec.md and the relevant predicate.
+
+2016-12-11  Iain Sandoe  <iain@codesourcery.com>
+
+	* config/rs6000/altivec.md (*restore_world): Remove LR use.
+	* config/rs6000/predicates.md (restore_world_operation): Adjust op
+	count, remove one USE.
+---
+ gcc/config/rs6000/altivec.md    | 1 -
+ gcc/config/rs6000/predicates.md | 3 +--
+ 2 files changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/gcc/config/rs6000/altivec.md b/gcc/config/rs6000/altivec.md
+index 8af7ac5..60fc983 100644
+--- gcc/config/rs6000/altivec.md
++++ gcc/config/rs6000/altivec.md
+@@ -414,7 +414,6 @@
+ (define_insn "*restore_world"
+  [(match_parallel 0 "restore_world_operation"
+                   [(return)
+-		   (use (reg:SI LR_REGNO))
+                    (use (match_operand:SI 1 "call_operand" "s"))
+                    (clobber (match_operand:SI 2 "gpc_reg_operand" "=r"))])]
+  "TARGET_MACHO && (DEFAULT_ABI == ABI_DARWIN) && TARGET_32BIT"
+diff --git a/gcc/config/rs6000/predicates.md b/gcc/config/rs6000/predicates.md
+index 3d69fc8..8f568a7 100644
+--- gcc/config/rs6000/predicates.md
++++ gcc/config/rs6000/predicates.md
+@@ -1468,13 +1468,12 @@
+   rtx elt;
+   int count = XVECLEN (op, 0);
+ 
+-  if (count != 59)
++  if (count != 58)
+     return 0;
+ 
+   index = 0;
+   if (GET_CODE (XVECEXP (op, 0, index++)) != RETURN
+       || GET_CODE (XVECEXP (op, 0, index++)) != USE
+-      || GET_CODE (XVECEXP (op, 0, index++)) != USE
+       || GET_CODE (XVECEXP (op, 0, index++)) != CLOBBER)
+     return 0;
+ 
+-- 
+2.8.1
+
+From 7abddda25c5d3ee568cd72477cfca89a1b3baceb Mon Sep 17 00:00:00 2001
+From: Iain Sandoe <iain@codesourcery.com>
+Date: Sun, 27 Nov 2016 15:48:23 +0000
+Subject: [PATCH 3/4] [Darwin PPC] Fix Fortran bootstrap by fixing ppc/setjmp.h
+
+Earlier Darwin headers do not declare longjmp as noreturn, this was
+already fixed for i386, but also affects the powerpc port.
+
+2016-11-27  Iain Sandoe  <iain@codesourcery.com>
+
+	PR bootstrap/72833
+	* inclhack.def (darwin_longjmp_noreturn): Amend to add ppc.
+	* fixincl.x: Regenerated.
+---
+ fixincludes/fixincl.x    | 10 +++++-----
+ fixincludes/inclhack.def |  3 ++-
+ 2 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/fixincludes/fixincl.x b/fixincludes/fixincl.x
+index 6a010d6..8567828 100644
+--- fixincludes/fixincl.x
++++ fixincludes/fixincl.x
+@@ -2753,7 +2753,7 @@ tSCC zDarwin_Longjmp_NoreturnName[] =
+  *  File name selection pattern
+  */
+ tSCC zDarwin_Longjmp_NoreturnList[] =
+-  "i386/setjmp.h\0";
++  "i386/setjmp.h\0ppc/setjmp.h\0";
+ /*
+  *  Machine/OS name selection pattern
+  */
+diff --git a/fixincludes/inclhack.def b/fixincludes/inclhack.def
+index 03a267b..6cf056c 100644
+--- fixincludes/inclhack.def
++++ fixincludes/inclhack.def
+@@ -1421,12 +1421,13 @@ fix = {
+ };
+ 
+ /*
+- *  Before Mac OS X 10.8 <i386/setjmp.h> doesn't mark longjump noreturn.
++ *  Before Mac OS X 10.8 <{i386,ppc}/setjmp.h> don't mark longjump noreturn.
+  */
+ fix = {
+     hackname  = darwin_longjmp_noreturn;
+     mach      = "*-*-darwin*";
+     files     = "i386/setjmp.h";
++    files     = "ppc/setjmp.h";
+     bypass    = "__dead2";
+     select    = "(.*longjmp\\(.*jmp_buf.*[^)]+\\));";
+     c_fix     = format;
+-- 
+2.8.1
+
+From de5187a1258e4ac036f5b787d921d5e69c4fc476 Mon Sep 17 00:00:00 2001
+From: Iain Sandoe <iain@codesourcery.com>
+Date: Sat, 18 Jun 2016 14:39:50 +0100
+Subject: [PATCH 4/4] Update of __gnat_lwp_self(), with fixes for Darwin9.
+
+---
+ gcc/ada/adaint.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/gcc/ada/adaint.c b/gcc/ada/adaint.c
+index 54a1d6e..0af8ca4 100644
+--- gcc/ada/adaint.c
++++ gcc/ada/adaint.c
+@@ -3174,9 +3174,13 @@ __gnat_lwp_self (void)
+ #endif
+ 
+ #if defined (__APPLE__)
+-#include <mach/thread_info.h>
+-#include <mach/mach_init.h>
+-#include <mach/thread_act.h>
++# if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1060
++#  include <mach/thread_info.h>
++#  include <mach/mach_init.h>
++#  include <mach/thread_act.h>
++# else
++#  include <pthread.h>
++# endif
+ 
+ /* System-wide thread identifier.  Note it could be truncated on 32 bit
+    hosts.
+@@ -3184,6 +3188,7 @@ __gnat_lwp_self (void)
+ void *
+ __gnat_lwp_self (void)
+ {
++#if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1060
+   thread_identifier_info_data_t data;
+   mach_msg_type_number_t count = THREAD_IDENTIFIER_INFO_COUNT;
+   kern_return_t kret;
+@@ -3194,6 +3199,9 @@ __gnat_lwp_self (void)
+     return (void *)(uintptr_t)data.thread_id;
+   else
+     return 0;
++#else
++    return (void *)pthread_mach_thread_np (pthread_self ());
++#endif
+ }
+ #endif
+ 
+-- 
+2.8.1
+

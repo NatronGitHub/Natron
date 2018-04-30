@@ -162,19 +162,22 @@ variant perl description {Include PERL 5 language bindings} {
     configure.perl              ${prefix}/bin/perl
 }
 
-variant php description {Include PHP language bindings} {
-    depends_lib-append          path:bin/php:php5
-    depends_build-append        port:swig-php5
+# TODO: support current PHP versions
+# https://trac.macports.org/ticket/45149
 
-    configure.args-replace      --disable-swig --enable-swig
-    configure.args-replace      --disable-php --enable-php
-
-    post-patch {
-        reinplace "s|/usr/include/php|${prefix}/include/php|g" ${worksrcpath}/configure
-        reinplace "s|/usr/lib\${LIBPOSTFIX}/php|${prefix}/lib\${LIBPOSTFIX}/php|g" ${worksrcpath}/configure
-        reinplace "s|/usr/share/php|${prefix}/share/php|g" ${worksrcpath}/configure
-    }
-}
+#variant php description {Include PHP language bindings} {
+#    depends_lib-append          path:bin/php:php5
+#    depends_build-append        port:swig-php5
+#
+#    configure.args-replace      --disable-swig --enable-swig
+#    configure.args-replace      --disable-php --enable-php
+#
+#    post-patch {
+#        reinplace "s|/usr/include/php|${prefix}/include/php|g" ${worksrcpath}/configure
+#        reinplace "s|/usr/lib\${LIBPOSTFIX}/php|${prefix}/lib\${LIBPOSTFIX}/php|g" ${worksrcpath}/configure
+#        reinplace "s|/usr/share/php|${prefix}/share/php|g" ${worksrcpath}/configure
+#    }
+#}
 
 variant python27 description {Include Python 2.7 language bindings} {
     depends_lib-append          port:python27

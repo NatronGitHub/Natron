@@ -1,0 +1,15 @@
+--- poppler-0.62.0/CMakeLists.txt.orig	2018-01-11 09:46:06.867061800 +0300
++++ poppler-0.62.0/CMakeLists.txt	2018-01-11 09:46:50.977120500 +0300
+@@ -168,8 +168,12 @@
+   endif()
+   if(ENABLE_GLIB)
+     # Check for introspection
++    if(MINGW)
++    set(HAVE_INTROSPECTION 0)
++    else()
+     macro_optional_find_package(GObjectIntrospection 0.9.12)
+     set(HAVE_INTROSPECTION ${INTROSPECTION_FOUND})
++    endif()
+     set(POPPLER_GLIB_DISABLE_DEPRECATED "${POPPLER_GLIB_DISABLE_DEPRECATED} -DG_DISABLE_DEPRECATED")
+     set(POPPLER_GLIB_DISABLE_SINGLE_INCLUDES "${POPPLER_GLIB_DISABLE_SINGLE_INCLUDES} -DG_DISABLE_SINGLE_INCLUDES")
+     macro_optional_find_package(GTK)

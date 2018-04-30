@@ -11,24 +11,24 @@ Features
 * Colorspace management handled by the famous open-source OpenColorIO library.
 * Dozens of file formats supported: EXR, DPX,TIFF, PSD, SVG, Raw, JPG, PNG …
 * **Support for many free and open-source OpenFX plugins:**
- * `OpenFX-IO <https://github.com/NatronGitHub/openfx-io>`_
- * `OpenFX-Misc <https://github.com/NatronGitHub/openfx-misc>`_
- * `OpenFX-Arena <https://github.com/NatronGitHub/openfx-arena>`_
- * `OpenFX-G'MIC <https://github.com/NatronGitHub/openfx-gmic>`_
- * `OpenFX-OpenCV <https://github.com/devernay/openfx-opencv>`_
- * `OpenFX-Yadif <https://github.com/devernay/openfx-yadif>`_ deinterlacer
- * `OpenFX-Vegas <https://github.com/devernay/openfx-vegas>`_  SDK samples
- * `OpenFX <https://github.com/NatronGitHub/openfx>`_ samples
- * `TuttleOFX <https://github.com/tuttleofx/TuttleOFX>`_
+  * `OpenFX-IO <https://github.com/NatronGitHub/openfx-io>`_
+  * `OpenFX-Misc <https://github.com/NatronGitHub/openfx-misc>`_
+  * `OpenFX-Arena <https://github.com/NatronGitHub/openfx-arena>`_
+  * `OpenFX-G'MIC <https://github.com/NatronGitHub/openfx-gmic>`_
+  * `OpenFX-OpenCV <https://github.com/NatronGitHub/openfx-opencv>`_
+  * `OpenFX-Yadif <https://github.com/NatronGitHub/openfx-yadif>`_ deinterlacer
+  * `OpenFX-Vegas <https://github.com/NatronGitHub/openfx-vegas>`_  SDK samples
+  * `OpenFX <https://github.com/NatronGitHub/openfx>`_ samples
+  * `TuttleOFX <https://github.com/tuttleofx/TuttleOFX>`_
 * **Support for commercial OpenFX plugins:**
- * `RevisionFX <http://www.revisionfx.com/>`_ products
- * `NeatVideo <https://www.neatvideo.com/>`_ denoiser
- * `Furnace <http://www.thefoundry.co.uk/products/furnace/>`_ by The Foundry
- * `KeyLight <http://www.thefoundry.co.uk/products/plugins/keylight/>`_ by The Foundry
- * GenArts `Sapphire <http://www.genarts.com/software/sapphire/overview>`_
- * Other `GenArts <http://www.genarts.com>`_ products
- * And many more....
- * OpenFX v1.4 supported
+  * `RevisionFX <http://www.revisionfx.com/>`_ products
+  * `NeatVideo <https://www.neatvideo.com/>`_ denoiser
+  * `Furnace <http://www.thefoundry.co.uk/products/furnace/>`_ by The Foundry
+  * `KeyLight <http://www.thefoundry.co.uk/products/plugins/keylight/>`_ by The Foundry
+  * GenArts `Sapphire <http://www.genarts.com/software/sapphire/overview>`_
+  * Other `GenArts <http://www.genarts.com>`_ products
+  * And many more....
+  * OpenFX v1.4 supported
 * **Intuitive user interface:** Natron aims not to break habits by providing an intuitive and familiar user interface.  It is possible to separate on any number of screens the graphical user interface. It supports Retina screens on MacOSX.
 * **Performances:**  Never wait for anything to be rendered, in Natron anything you do produces real-time feedback thanks to its optimised multi-threaded rendering pipeline and its support for proxy rendering (i.e: the render pipeline can be computed at lower res to speed-up rendering).
 * **Multi-task:** Natron can render multiple graphs at the same time and make use of 100% of the compute power of your CPU.

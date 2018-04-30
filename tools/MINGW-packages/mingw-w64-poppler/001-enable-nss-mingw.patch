@@ -1,0 +1,16 @@
+--- poppler-0.61.0/cmake/modules/FindNSS3.cmake.orig	2017-11-13 11:01:37.123173800 +0300
++++ poppler-0.61.0/cmake/modules/FindNSS3.cmake	2017-11-13 11:01:44.409386700 +0300
+@@ -12,11 +12,11 @@
+ 
+ include(FindPackageHandleStandardArgs)
+ 
+-if (NOT WIN32)
++if (NOT MSVC)
+   find_package(PkgConfig REQUIRED)
+ 
+   pkg_check_modules(NSS3 "nss>=3.19")
+ 
+   find_package_handle_standard_args(NSS3 DEFAULT_MSG NSS3_LIBRARIES NSS3_CFLAGS)
+ 
+-endif(NOT WIN32)
++endif(NOT MSVC)

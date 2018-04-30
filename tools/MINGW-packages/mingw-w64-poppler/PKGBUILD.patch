@@ -1,0 +1,42 @@
+--- PKGBUILD.orig	2018-04-26 11:21:24.000000000 +0200
++++ PKGBUILD	2018-04-26 12:56:52.000000000 +0200
+@@ -4,7 +4,7 @@
+ pkgbase=mingw-w64-${_realname}
+ pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+ pkgver=0.64.0
+-pkgrel=1
++pkgrel=1.1
+ pkgdesc="PDF rendering library based on xpdf 3.0 (mingw-w64)"
+ arch=('any')
+ url="https://poppler.freedesktop.org/"
+@@ -13,17 +13,14 @@
+              "${MINGW_PACKAGE_PREFIX}-gcc"
+              "${MINGW_PACKAGE_PREFIX}-glib2"
+              "${MINGW_PACKAGE_PREFIX}-gobject-introspection"
+-             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+-             "${MINGW_PACKAGE_PREFIX}-qt5")
++             "${MINGW_PACKAGE_PREFIX}-pkg-config")
+ depends=("${MINGW_PACKAGE_PREFIX}-cairo"
+-         "${MINGW_PACKAGE_PREFIX}-curl"
+          "${MINGW_PACKAGE_PREFIX}-freetype"
+          "${MINGW_PACKAGE_PREFIX}-icu"
+          "${MINGW_PACKAGE_PREFIX}-lcms2"
+          "${MINGW_PACKAGE_PREFIX}-libjpeg"
+          "${MINGW_PACKAGE_PREFIX}-libpng"
+          "${MINGW_PACKAGE_PREFIX}-libtiff"
+-         "${MINGW_PACKAGE_PREFIX}-nss"
+          "${MINGW_PACKAGE_PREFIX}-openjpeg2"
+          "${MINGW_PACKAGE_PREFIX}-poppler-data"
+          "${MINGW_PACKAGE_PREFIX}-zlib")
+@@ -55,6 +52,11 @@
+     -G"MSYS Makefiles" \
+     -DCMAKE_INSTALL_PREFIX="${MINGW_PREFIX}" \
+     -DENABLE_XPDF_HEADERS=ON \
++    -DENABLE_LIBCURL=OFF \
++    -DWITH_NSS3=OFF \
++    -DNSS3_FOUND=OFF \
++    -DENABLE_NSS3=OFF \
++    -DENABLE_QT5=OFF \
+     -DENABLE_GTK_DOC=OFF \
+     ../${_realname}-${pkgver}
+ 

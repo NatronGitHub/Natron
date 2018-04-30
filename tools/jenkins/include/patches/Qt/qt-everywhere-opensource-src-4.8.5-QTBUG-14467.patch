@@ -1,0 +1,24 @@
+diff -up qt-everywhere-opensource-src-4.8.5/mkspecs/features/qt_functions.prf.QTBUG-14467 qt-everywhere-opensource-src-4.8.5/mkspecs/features/qt_functions.prf
+--- qt-everywhere-opensource-src-4.8.5/mkspecs/features/qt_functions.prf.QTBUG-14467	2013-05-30 16:19:17.000000000 -0500
++++ qt-everywhere-opensource-src-4.8.5/mkspecs/features/qt_functions.prf	2013-06-09 11:53:45.709773603 -0500
+@@ -72,7 +72,7 @@ defineTest(qtAddLibrary) {
+     }
+     isEmpty(LINKAGE) {
+        if(!debug_and_release|build_pass):CONFIG(debug, debug|release) {
+-           win32:LINKAGE = -l$${LIB_NAME}$${QT_LIBINFIX}d
++           win32:LINKAGE = -l$${LIB_NAME}d$${QT_LIBINFIX}
+            mac:LINKAGE = -l$${LIB_NAME}$${QT_LIBINFIX}_debug
+        }
+        isEmpty(LINKAGE):LINKAGE = -l$${LIB_NAME}$${QT_LIBINFIX}
+diff -up qt-everywhere-opensource-src-4.8.5/mkspecs/features/win32/windows.prf.QTBUG-14467 qt-everywhere-opensource-src-4.8.5/mkspecs/features/win32/windows.prf
+--- qt-everywhere-opensource-src-4.8.5/mkspecs/features/win32/windows.prf.QTBUG-14467	2013-05-30 16:19:17.000000000 -0500
++++ qt-everywhere-opensource-src-4.8.5/mkspecs/features/win32/windows.prf	2013-06-09 11:53:45.710773593 -0500
+@@ -6,7 +6,7 @@ contains(TEMPLATE, ".*app"){
+ 
+     qt:for(entryLib, $$list($$unique(QMAKE_LIBS_QT_ENTRY))) {
+         isEqual(entryLib, -lqtmain): {
+-            CONFIG(debug, debug|release): QMAKE_LIBS += $${entryLib}$${QT_LIBINFIX}d
++            CONFIG(debug, debug|release): QMAKE_LIBS += $${entryLib}d$${QT_LIBINFIX}
+             else: QMAKE_LIBS += $${entryLib}$${QT_LIBINFIX}
+         } else {
+             QMAKE_LIBS += $${entryLib}

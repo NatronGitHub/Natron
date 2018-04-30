@@ -1,6 +1,6 @@
---- build/make/configure.sh.orig	2016-07-20 18:15:41.000000000 -0700
-+++ build/make/configure.sh	2016-11-28 08:49:54.000000000 -0800
-@@ -704,29 +704,9 @@
+--- build/make/configure.sh.orig	2018-02-06 19:44:37.000000000 -0800
++++ build/make/configure.sh	2018-02-07 05:49:18.000000000 -0800
+@@ -729,33 +729,9 @@
  
      # detect tgt_os
      case "$gcctarget" in
@@ -28,34 +28,18 @@
 -      *darwin15*)
 -        tgt_isa=x86_64
 -        tgt_os=darwin15
+-        ;;
+-      *darwin16*)
+-        tgt_isa=x86_64
+-        tgt_os=darwin16
 +        tgt_os=darwin
          ;;
        x86_64*mingw32*)
          tgt_os=win64
-@@ -793,70 +773,6 @@
-     IOS_VERSION_MIN="6.0"
-   fi
+@@ -848,54 +824,6 @@
+       ;;
+   esac
  
--  # Handle darwin variants. Newer SDKs allow targeting older
--  # platforms, so use the newest one available.
--  case ${toolchain} in
--    arm*-darwin*)
--      add_cflags "-miphoneos-version-min=${IOS_VERSION_MIN}"
--      iphoneos_sdk_dir="$(show_darwin_sdk_path iphoneos)"
--      if [ -d "${iphoneos_sdk_dir}" ]; then
--        add_cflags  "-isysroot ${iphoneos_sdk_dir}"
--        add_ldflags "-isysroot ${iphoneos_sdk_dir}"
--      fi
--      ;;
--    x86*-darwin*)
--      osx_sdk_dir="$(show_darwin_sdk_path macosx)"
--      if [ -d "${osx_sdk_dir}" ]; then
--        add_cflags  "-isysroot ${osx_sdk_dir}"
--        add_ldflags "-isysroot ${osx_sdk_dir}"
--      fi
--      ;;
--  esac
--
 -  case ${toolchain} in
 -    *-darwin8-*)
 -      add_cflags  "-mmacosx-version-min=10.4"
@@ -88,6 +72,10 @@
 -    *-darwin15-*)
 -      add_cflags  "-mmacosx-version-min=10.11"
 -      add_ldflags "-mmacosx-version-min=10.11"
+-      ;;
+-    *-darwin16-*)
+-      add_cflags  "-mmacosx-version-min=10.12"
+-      add_ldflags "-mmacosx-version-min=10.12"
 -      ;;
 -    *-iphonesimulator-*)
 -      add_cflags  "-miphoneos-version-min=${IOS_VERSION_MIN}"

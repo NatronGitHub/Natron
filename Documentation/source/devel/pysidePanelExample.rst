@@ -116,7 +116,8 @@ the function :func:`moveTab(scriptName,pane)<>` of :ref:`GuiApp<GuiApp>`.
 .. note::
 
     All application's panes are :ref:`auto-declared<autoVar>` by Natron and can be referenced directly
-    by a variable, such as::
+    by a variable, such as:
+
         app.pane2
 
 Panels also have a script-name but only :ref:`viewers<pyViewer>` and :ref:`user panels<pypanel>`

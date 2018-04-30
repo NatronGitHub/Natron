@@ -1,0 +1,43 @@
+diff --git a/src/activeqt/control/qaxserverbase.cpp b/src/activeqt/control/qaxserverbase.cpp
+index f5c495a..123e40f 100644
+--- a/src/activeqt/control/qaxserverbase.cpp
++++ b/src/activeqt/control/qaxserverbase.cpp
+@@ -4037,12 +4037,10 @@ HRESULT WINAPI QAxServerBase::SetColorScheme(LOGPALETTE*)
+ }
+ 
+ 
+-#ifdef QT_DLL // avoid conflict with symbol in static lib
+ bool qt_sendSpontaneousEvent(QObject *o, QEvent *e)
+ {
+     return QCoreApplication::sendSpontaneousEvent(o, e);
+ }
+-#endif
+ 
+ /*
+     Tries to set the size of the control.
+diff --git a/tools/activeqt/testcon/testcon.pro b/tools/activeqt/testcon/testcon.pro
+index 89f8067..696be2e 100644
+--- a/tools/activeqt/testcon/testcon.pro
++++ b/tools/activeqt/testcon/testcon.pro
+@@ -7,6 +7,8 @@ CONFIG	+= qaxserver qaxserver_no_postlink qaxcontainer
+ INCLUDEPATH += $$QT_SOURCE_TREE/tools/activeqt/container/debug \
+     $$QT_SOURCE_TREE/tools/activeqt/container/release \
+     $$QT_BUILD_TREE/src/activeqt/container \
++    $$QT_BUILD_TREE/src/activeqt/container/.uic/release-shared \
++    $$QT_BUILD_TREE/src/activeqt/container/.uic/debug-shared \
+ 
+ SOURCES	 = main.cpp docuwindow.cpp mainwindow.cpp invokemethod.cpp changeproperties.cpp ambientproperties.cpp controlinfo.cpp
+ HEADERS	 = docuwindow.h mainwindow.h invokemethod.h changeproperties.h ambientproperties.h controlinfo.h
+diff --git a/tools/designer/src/plugins/activeqt/activeqt.pro b/tools/designer/src/plugins/activeqt/activeqt.pro
+index f58df8a..5d9bdd4 100644
+--- a/tools/designer/src/plugins/activeqt/activeqt.pro
++++ b/tools/designer/src/plugins/activeqt/activeqt.pro
+@@ -10,6 +10,8 @@ build_all:!build_pass {
+ 
+ INCLUDEPATH += $$QT_SOURCE_TREE/src/activeqt/shared/ \
+                $$QT_BUILD_TREE/src/activeqt/container \
++	       $$QT_BUILD_TREE/src/activeqt/container/.uic/release-shared \
++	       $$QT_BUILD_TREE/src/activeqt/container/.uic/debug-shared \
+                ../../lib/uilib
+ 
+ # Input

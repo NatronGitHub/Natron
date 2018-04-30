@@ -10,25 +10,23 @@ ItemBase
 Synopsis
 --------
 
-This is an abstract class that serves as a base class for both :doc:`Layer`and :doc:`BezierCurve`.
+This is an abstract class that serves as a base class for both :doc:`Layer` and :doc:`BezierCurve`.
 See :ref:`detailed<itemBase.details>` description...
 
 Functions
 ^^^^^^^^^
-.. container:: function_list
 
-*    def :meth:`getLabel<NatronEngine.ItemBase.getLabel>` ()
-*    def :meth:`getLocked<NatronEngine.ItemBase.getLocked>` ()
-*    def :meth:`getLockedRecursive<NatronEngine.ItemBase.getLockedRecursive>` ()
-*    def :meth:`getParentLayer<NatronEngine.ItemBase.getParentLayer>` ()
-*    def :meth:`getParam<NatronEngine.ItemBase.getParam>` (name)
-*    def :meth:`getScriptName<NatronEngine.ItemBase.getScriptName>` ()
-*    def :meth:`getVisible<NatronEngine.ItemBase.getVisible>` ()
-*    def :meth:`setLabel<NatronEngine.ItemBase.setLabel>` (name)
-*    def :meth:`setLocked<NatronEngine.ItemBase.setLocked>` (locked)
-*    def :meth:`setScriptName<NatronEngine.ItemBase.setScriptName>` (name)
-*    def :meth:`setVisible<NatronEngine.ItemBase.setVisible>` (activated)
-
+- def :meth:`getLabel<NatronEngine.ItemBase.getLabel>` ()
+- def :meth:`getLocked<NatronEngine.ItemBase.getLocked>` ()
+- def :meth:`getLockedRecursive<NatronEngine.ItemBase.getLockedRecursive>` ()
+- def :meth:`getParentLayer<NatronEngine.ItemBase.getParentLayer>` ()
+- def :meth:`getParam<NatronEngine.ItemBase.getParam>` (name)
+- def :meth:`getScriptName<NatronEngine.ItemBase.getScriptName>` ()
+- def :meth:`getVisible<NatronEngine.ItemBase.getVisible>` ()
+- def :meth:`setLabel<NatronEngine.ItemBase.setLabel>` (name)
+- def :meth:`setLocked<NatronEngine.ItemBase.setLocked>` (locked)
+- def :meth:`setScriptName<NatronEngine.ItemBase.setScriptName>` (name)
+- def :meth:`setVisible<NatronEngine.ItemBase.setVisible>` (activated)
 
 .. _itemBase.details:
 

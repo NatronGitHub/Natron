@@ -1,0 +1,28 @@
+diff -up qt-everywhere-opensource-src-4.8.7/src/sql/drivers/mysql/qsql_mysql.cpp.mariadb qt-everywhere-opensource-src-4.8.7/src/sql/drivers/mysql/qsql_mysql.cpp
+--- qt-everywhere-opensource-src-4.8.7/src/sql/drivers/mysql/qsql_mysql.cpp.mariadb	2015-05-07 09:14:48.000000000 -0500
++++ qt-everywhere-opensource-src-4.8.7/src/sql/drivers/mysql/qsql_mysql.cpp	2017-10-23 14:13:15.871808984 -0500
+@@ -1105,11 +1105,16 @@ static void qLibraryInit()
+     }
+ # endif // MYSQL_VERSION_ID
+ #endif // Q_NO_MYSQL_EMBEDDED
++
++#if defined(MARIADB_BASE_VERSION) || defined(MARIADB_VERSION_ID)
++    qAddPostRoutine(mysql_server_end);
++#endif
+ }
+ 
+ static void qLibraryEnd()
+ {
+ #ifndef Q_NO_MYSQL_EMBEDDED
++#if !defined(MARIADB_BASE_VERSION) && !defined(MARIADB_VERSION_ID)
+ # if MYSQL_VERSION_ID > 40000
+ #  if (MYSQL_VERSION_ID >= 40110 && MYSQL_VERSION_ID < 50000) || MYSQL_VERSION_ID >= 50003
+     mysql_library_end();
+@@ -1118,6 +1123,7 @@ static void qLibraryEnd()
+ #  endif
+ # endif
+ #endif
++#endif
+ }
+ 
+ QMYSQLDriver::QMYSQLDriver(QObject * parent)

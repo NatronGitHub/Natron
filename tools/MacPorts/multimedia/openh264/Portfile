@@ -1,0 +1,52 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           muniversal 1.0
+
+name                openh264
+version             1.7.0
+categories          multimedia
+maintainers         openmaintainer
+platforms           darwin
+license             BSD
+
+description         H.264 codec from Cisco
+long_description    H.264 codec from Cisco
+
+homepage            http://www.openh264.org
+master_sites        https://github.com/cisco/openh264/archive/
+distfiles           v${version}${extract.suffix}
+
+checksums           rmd160  e03b32dea12ec4c24e373a06d5a0685839857f52 \
+                    sha256  9c07c38d7de00046c9c52b12c76a2af7648b70d05bd5460c8b67f6895738653f
+
+depends_build-append port:nasm
+
+use_configure no
+
+patchfiles          0001-openh264-1.7.0-leopardinstall.patch
+
+# AVX2 is only supported from Kaby Lake on
+# see https://en.wikipedia.org/wiki/Intel_Core
+
+if {[variant_exists universal] && [variant_isset universal]} {
+    foreach arch ${configure.universal_archs} {
+        lappend merger_build_args(${arch}) ARCH=${arch} CXX='${configure.cxx} -arch ${arch}' {*}"LDFLAGS='${configure.cxxflags} ${configure.ldflags}'"
+        if {${arch} eq "i386"} {
+            lappend merger_build_args(${arch}) {*}"LDFLAGS='${configure.cxxflags} ${configure.ldflags} -Wl,-read_only_relocs,suppress'"
+        } else {
+            lappend merger_build_args(${arch}) {*}"LDFLAGS='${configure.cxxflags} ${configure.ldflags}'"
+        }
+    }
+} else {
+    if {${build_arch} eq "i386"} {
+        configure.ld_archflags-append -read_only_relocs suppress
+    }
+    build.args-append   ARCH=${build_arch} CXX='${configure.cxx} -arch ${build_arch}' {*}"LDFLAGS='${configure.cxxflags} ${configure.ldflags}'"
+}
+build.args-append       HAVE_AVX2=No CFLAGS_OPT="${configure.cxxflags}" PREFIX=${prefix}
+
+destroot.args-append    DESTDIR=${destroot} PREFIX=${prefix}
+
+livecheck.url       https://github.com/cisco/openh264/releases
+livecheck.regex     {/v(\d+(?:\.\d+)*)}

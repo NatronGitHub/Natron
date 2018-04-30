@@ -1,0 +1,23 @@
+--- libvpx-1.6.1/build/make/configure.sh.orig	2017-04-18 07:55:35.521235500 -0400
++++ libvpx-1.6.1/build/make/configure.sh	2017-04-18 08:03:57.773345200 -0400
+@@ -636,13 +636,13 @@ post_process_cmdline() {
+ }
+ 
+ setup_gnu_toolchain() {
+-  CC=${CC:-${CROSS}gcc}
+-  CXX=${CXX:-${CROSS}g++}
+-  AR=${AR:-${CROSS}ar}
+-  LD=${LD:-${CROSS}${link_with_cc:-ld}}
+-  AS=${AS:-${CROSS}as}
+-  STRIP=${STRIP:-${CROSS}strip}
+-  NM=${NM:-${CROSS}nm}
++  CC=${CC:-gcc}
++  CXX=${CXX:-g++}
++  AR=${AR:-ar}
++  LD=${LD:-${link_with_cc:-ld}}
++  AS=${AS:-as}
++  STRIP=${STRIP:-strip}
++  NM=${NM:-nm}
+   AS_SFX=.S
+   EXE_SFX=
+ }

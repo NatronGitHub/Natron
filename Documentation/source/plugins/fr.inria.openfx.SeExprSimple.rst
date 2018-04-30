@@ -83,15 +83,15 @@ Add green channel to red, keep green, and apply a 50% gain on blue
 
 ::
 
-    r+g
-    g
-    0.5*b
+   r+g
+   g
+   0.5*b
 
 *SeExpr:*
 
 ::
 
-    [Cs[0]+Cs[1], Cs[1], 0.5*Cs[2]]
+   [Cs[0]+Cs[1], Cs[1], 0.5*Cs[2]]
 
 “Multiply” merge operator on inputs 1 and 2
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -100,17 +100,17 @@ Add green channel to red, keep green, and apply a 50% gain on blue
 
 ::
 
-    r*r2
-    g*g2
-    b*b2
-    a+a2-a*a2
+   r*r2
+   g*g2
+   b*b2
+   a+a2-a*a2
 
 *SeExpr:*
 
 ::
 
-    Cs * Cs2
-    As + As2 - As * As2
+   Cs * Cs2
+   As + As2 - As * As2
 
 “Over” merge operator on inputs 1 and 2
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -119,24 +119,24 @@ Add green channel to red, keep green, and apply a 50% gain on blue
 
 ::
 
-    r+r2*(1-a)
-    g+g2*(1-a)
-    b+b2*(1-a)
-    a+a2-a*a2
+   r+r2*(1-a)
+   g+g2*(1-a)
+   b+b2*(1-a)
+   a+a2-a*a2
 
 *SeExpr:*
 
 ::
 
-    Cs + Cs2 * (1 -  As)
-    As + As2 - As * As2
+   Cs + Cs2 * (1 -  As)
+   As + As2 - As * As2
 
 Generating a time-varying colored Perlin noise with size x1
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
-    cnoise([cx/x1,cy/x1,frame])
+   cnoise([cx/x1,cy/x1,frame])
 
 Average pixels over the previous, current and next frame
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -145,10 +145,10 @@ Average pixels over the previous, current and next frame
 
 ::
 
-    prev = cpixel(1,frame - 1,x,y);
-    cur = Cs;
-    next = cpixel(1,frame + 1,x,y);
-    (prev + cur + next) / 3;
+   prev = cpixel(1,frame - 1,x,y);
+   cur = Cs;
+   next = cpixel(1,frame + 1,x,y);
+   (prev + cur + next) / 3;
 
 “Wave” - displace columns of pixels vertically according to a sine wave function
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -157,7 +157,7 @@ Average pixels over the previous, current and next frame
 
 ::
 
-    cpixel(1,frame,x,y+x2*sy*sin(2*3.1416*(x/sx - x3)/x1),2)
+   cpixel(1,frame,x,y+x2*sy*sin(2*3.1416*(x/sx - x3)/x1),2)
 
 Set the No. of scalar params to 3.
 
@@ -172,7 +172,7 @@ To use custom variables that are pre-defined in the plug-in (scalars, positions 
 
 ::
 
-    Cs + x1
+   Cs + x1
 
 Multi-instruction expressions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

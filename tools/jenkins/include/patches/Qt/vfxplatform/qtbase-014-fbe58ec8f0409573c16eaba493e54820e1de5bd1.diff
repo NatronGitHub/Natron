@@ -1,0 +1,42 @@
+diff --git a/src/gui/painting/qplatformbackingstore.cpp b/src/gui/painting/qplatformbackingstore.cpp
+index defdcfb..9bdec55 100644
+--- a/src/gui/painting/qplatformbackingstore.cpp
++++ b/src/gui/painting/qplatformbackingstore.cpp
+@@ -93,7 +93,7 @@ class QPlatformBackingStorePrivate
+         delete blitter;
+ #endif
+     }
+-    QWindow *window;
++    QPointer<QWindow> window;
+ #ifndef QT_NO_OPENGL
+     mutable GLuint textureId;
+     mutable QSize textureSize;
+diff --git a/src/plugins/platforms/cocoa/qcocoabackingstore.mm b/src/plugins/platforms/cocoa/qcocoabackingstore.mm
+index ca92103..7f3b1fc 100644
+--- a/src/plugins/platforms/cocoa/qcocoabackingstore.mm
++++ b/src/plugins/platforms/cocoa/qcocoabackingstore.mm
+@@ -44,8 +44,9 @@
+ 
+ QCocoaBackingStore::~QCocoaBackingStore()
+ {
+-    if (QCocoaWindow *cocoaWindow = static_cast<QCocoaWindow *>(window()->handle()))
+-        [cocoaWindow->m_qtView clearBackingStore:this];
++    if (QWindow *w = window())
++        if (QCocoaWindow *cocoaWindow = static_cast<QCocoaWindow *>(w->handle()))
++            [cocoaWindow->m_qtView clearBackingStore:this];
+ }
+ 
+ QPaintDevice *QCocoaBackingStore::paintDevice()
+diff --git a/src/widgets/kernel/qwidget_p.h b/src/widgets/kernel/qwidget_p.h
+index 9d4bdc7..676fc30 100644
+--- a/src/widgets/kernel/qwidget_p.h
++++ b/src/widgets/kernel/qwidget_p.h
+@@ -153,7 +153,7 @@ struct QTLWExtra {
+     QWidgetBackingStoreTracker backingStoreTracker;
+     QBackingStore *backingStore;
+     QPainter *sharedPainter;
+-    QWindow *window;
++    QPointer<QWindow> window;
+     QOpenGLContext *shareContext;
+ 
+     // Implicit pointers (shared_null).
