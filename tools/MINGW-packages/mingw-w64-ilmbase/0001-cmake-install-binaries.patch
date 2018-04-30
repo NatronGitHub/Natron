@@ -1,0 +1,93 @@
+rom 79710748f4764bf063d465522bdd2e22f5e8aa3a Mon Sep 17 00:00:00 2001
+From: xantares <xantares09@hotmail.com>
+Date: Sun, 7 Jun 2015 18:05:45 +0200
+Subject: [PATCH 1/5] fix mingw dll install
+
+---
+ Half/CMakeLists.txt       | 5 +++--
+ Iex/CMakeLists.txt        | 5 +++--
+ IexMath/CMakeLists.txt    | 5 +++--
+ IlmThread/CMakeLists.txt  | 5 +++--
+ Imath/CMakeLists.txt      | 5 +++--
+ 5 files changed, 15 insertions(+), 10 deletions(-)
+
+diff --git a/IlmBase/Half/CMakeLists.txt b/IlmBase/Half/CMakeLists.txt
+index 6f9714d..b18391b 100644
+--- a/Half/CMakeLists.txt
++++ b/Half/CMakeLists.txt
+@@ -45,8 +45,9 @@ ADD_DEPENDENCIES ( Half toFloat eLut )
+ 
+ INSTALL ( TARGETS
+   Half
+-  DESTINATION
+-  lib
++  RUNTIME DESTINATION bin
++  LIBRARY DESTINATION lib
++  ARCHIVE DESTINATION lib
+ )
+ 
+ INSTALL ( FILES 
+diff --git a/Iex/CMakeLists.txt b/Iex/CMakeLists.txt
+index 982337c..300e79b 100644
+--- a/Iex/CMakeLists.txt
++++ b/Iex/CMakeLists.txt
+@@ -12,8 +12,9 @@ ADD_LIBRARY ( Iex ${LIB_TYPE}
+ 
+ INSTALL ( TARGETS
+   Iex
+-  DESTINATION
+-  lib
++  RUNTIME DESTINATION bin
++  LIBRARY DESTINATION lib
++  ARCHIVE DESTINATION lib
+ )
+ 
+ INSTALL ( FILES 
+diff --git a/IexMath/CMakeLists.txt b/IexMath/CMakeLists.txt
+index 9a28c21..e3c26f8 100644
+--- a/IexMath/CMakeLists.txt
++++ b/IexMath/CMakeLists.txt
+@@ -11,8 +11,9 @@ TARGET_LINK_LIBRARIES(IexMath Iex)
+ 
+ INSTALL ( TARGETS
+   IexMath
+-  DESTINATION
+-  lib
++  RUNTIME DESTINATION bin
++  LIBRARY DESTINATION lib
++  ARCHIVE DESTINATION lib
+ )
+ 
+ INSTALL ( FILES 
+diff --git a/IlmThread/CMakeLists.txt b/IlmThread/CMakeLists.txt
+index e94be04..415c56f 100644
+--- a/IlmThread/CMakeLists.txt
++++ b/IlmThread/CMakeLists.txt
+@@ -30,8 +30,9 @@ TARGET_LINK_LIBRARIES(IlmThread Iex)
+ 
+ INSTALL ( TARGETS
+   IlmThread
+-  DESTINATION
+-  lib
++  RUNTIME DESTINATION bin
++  LIBRARY DESTINATION lib
++  ARCHIVE DESTINATION lib
+ )
+ 
+ INSTALL ( FILES 
+diff --git a/Imath/CMakeLists.txt b/Imath/CMakeLists.txt
+index feed29e..9228cb5 100644
+--- a/Imath/CMakeLists.txt
++++ b/Imath/CMakeLists.txt
+@@ -18,8 +18,9 @@ TARGET_LINK_LIBRARIES(Imath Iex)
+ 
+ INSTALL ( TARGETS
+   Imath
+-  DESTINATION
+-  lib
++  RUNTIME DESTINATION bin
++  LIBRARY DESTINATION lib
++  ARCHIVE DESTINATION lib
+ )
+ 
+ INSTALL ( FILES 

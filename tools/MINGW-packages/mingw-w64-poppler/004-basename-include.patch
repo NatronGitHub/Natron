@@ -1,0 +1,19 @@
+--- poppler-0.64.0/utils/pdfsig.cc.orig	2018-04-20 07:58:26.204947200 +0300
++++ poppler-0.64.0/utils/pdfsig.cc	2018-04-20 07:57:26.815642900 +0300
+@@ -34,6 +34,7 @@
+ #include "SignatureInfo.h"
+ #include "Win32Console.h"
+ #include "numberofcharacters.h"
++#include <libgen.h>
+ 
+ static const char * getReadableSigState(SignatureValidationStatus sig_vs)
+ {
+@@ -91,7 +92,7 @@
+   return time_str;
+ }
+ 
+-static void dumpSignature(int sig_num, int sigCount, FormWidgetSignature *sig_widget, const char *filename)
++static void dumpSignature(int sig_num, int sigCount, FormWidgetSignature *sig_widget, char *filename)
+ {
+     const GooString *signature = sig_widget->getSignature();
+     if (!signature) {

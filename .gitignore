@@ -5,7 +5,6 @@
 *_resource.rc
 moc*.cpp
 *moc
-*MINGW-packages*
 build
 build32
 build64
@@ -18,8 +17,8 @@ Documentation/pdf
 #Documentation/source/_group*
 #Documentation/source/_prefs.rst
 #Documentation/source/plugins
-breakpadclient.pri
-breakpadpro.pri
+#breakpadclient.pri
+#breakpadpro.pri
 google-breakpad/
 libs/hoedown/hoedown.xcodeproj/
 libs/libtess/libtess.xcodeproj/
@@ -61,7 +60,6 @@ natron-python.xcodeproj/
 Cache
 TestImages
 TestWrite
-TODO.txt
 .pro.user
 config.pri
 *.vcxproj
@@ -241,7 +239,6 @@ pch
 
 Renderer/NatronRenderer
 
-*tmp*
 *commits-hash.sh*
 
 CrashReporterCLI/NatronRendererCrashReporter

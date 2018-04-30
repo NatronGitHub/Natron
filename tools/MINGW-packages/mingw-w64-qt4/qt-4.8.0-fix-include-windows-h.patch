@@ -1,0 +1,13 @@
+diff --git a/tools/linguist/shared/profileevaluator.cpp b/tools/linguist/shared/profileevaluator.cpp
+index 0539efa..f8767b7 100644
+--- a/tools/linguist/shared/profileevaluator.cpp
++++ b/tools/linguist/shared/profileevaluator.cpp
+@@ -65,7 +65,7 @@
+ #include <unistd.h>
+ #include <sys/utsname.h>
+ #else
+-#include <Windows.h>
++#include <windows.h>
+ #endif
+ #include <stdio.h>
+ #include <stdlib.h>

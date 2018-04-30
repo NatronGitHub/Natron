@@ -1,0 +1,11 @@
+--- oiio-Release-1.8.6/src/include/OpenImageIO/simd.h.orig	2017-12-27 08:43:48.922106900 +0300
++++ oiio-Release-1.8.6/src/include/OpenImageIO/simd.h	2017-12-27 08:43:53.009986800 +0300
+@@ -88,7 +88,7 @@
+ // OIIO_SIMD_HAS_SIMD8 : nonzero if vfloat8, vint8, vbool8 are defined
+ // OIIO_SIMD_HAS_SIMD16 : nonzero if vfloat16, vint16, vbool16 are defined
+ 
+-#if defined(_MSC_VER)
++#if defined(_WIN32)
+ #  include <intrin.h>
+ #elif defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
+ #  include <x86intrin.h>

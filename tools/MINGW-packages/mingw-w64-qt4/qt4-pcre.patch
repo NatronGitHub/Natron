@@ -1,0 +1,35 @@
+see https://github.com/LLNL/spack/pull/4270
+
+--- src/3rdparty/javascriptcore/JavaScriptCore/runtime/RegExp.cpp.orig	2017-10-19 12:31:15.746459533 +0200
++++ src/3rdparty/javascriptcore/JavaScriptCore/runtime/RegExp.cpp	2017-10-19 12:31:56.426453093 +0200
+@@ -44,7 +44,7 @@
+ #include "JIT.h"
+ #include "WRECGenerator.h"
+ #endif
+-#include <pcre/pcre.h>
++#include "../pcre/pcre.h"
+ 
+ #endif
+ 
+--- src/3rdparty/javascriptcore/JavaScriptCore/yarr/RegexJIT.cpp.orig	2017-10-19 12:30:27.103456305 +0200
++++ src/3rdparty/javascriptcore/JavaScriptCore/yarr/RegexJIT.cpp	2017-10-19 12:30:44.690456526 +0200
+@@ -32,7 +32,7 @@
+ #include "MacroAssembler.h"
+ #include "RegexCompiler.h"
+ 
+-#include "pcre.h" // temporary, remove when fallback is removed.
++#include "../pcre/pcre.h" // temporary, remove when fallback is removed.
+ 
+ #if ENABLE(YARR_JIT)
+ 
+--- src/3rdparty/javascriptcore/JavaScriptCore/yarr/RegexJIT.h.orig	2017-10-19 12:25:59.564457578 +0200
++++ src/3rdparty/javascriptcore/JavaScriptCore/yarr/RegexJIT.h	2017-10-19 12:30:06.110459690 +0200
+@@ -34,7 +34,7 @@
+ #include "RegexPattern.h"
+ #include <UString.h>
+ 
+-#include <pcre.h>
++#include "../pcre/pcre.h"
+ struct JSRegExp; // temporary, remove when fallback is removed.
+ 
+ #if CPU(X86) && !COMPILER(MSVC)

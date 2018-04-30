@@ -1,0 +1,22 @@
+--- qt-everywhere-opensource-src-4.8.0/src/3rdparty/javascriptcore/JavaScriptCore/jit/JITStubs.cpp.orig	2012-02-08 18:42:31.512669347 +0100
++++ qt-everywhere-opensource-src-4.8.0/src/3rdparty/javascriptcore/JavaScriptCore/jit/JITStubs.cpp	2012-02-08 18:43:18.812512826 +0100
+@@ -68,7 +68,7 @@
+ 
+ namespace JSC {
+ 
+-#if OS(DARWIN) || OS(WINDOWS)
++#if OS(DARWIN) || (OS(WINDOWS) && CPU(X86))
+ #define SYMBOL_STRING(name) "_" #name
+ #else
+ #define SYMBOL_STRING(name) #name
+--- qt-everywhere-opensource-src-4.8.0/src/3rdparty/webkit/Source/JavaScriptCore/wtf/Platform.h.orig	2012-02-08 18:56:13.967325973 +0100
++++ qt-everywhere-opensource-src-4.8.0/src/3rdparty/webkit/Source/JavaScriptCore/wtf/Platform.h	2012-02-08 18:58:18.977552112 +0100
+@@ -1120,7 +1120,7 @@
+ /* Pick which allocator to use; we only need an executable allocator if the assembler is compiled in.
+    On x86-64 we use a single fixed mmap, on other platforms we mmap on demand. */
+ #if ENABLE(ASSEMBLER)
+-#if CPU(X86_64)
++#if CPU(X86_64) && !OS(WINDOWS)
+ #define ENABLE_EXECUTABLE_ALLOCATOR_FIXED 1
+ #else
+ #define ENABLE_EXECUTABLE_ALLOCATOR_DEMAND 1

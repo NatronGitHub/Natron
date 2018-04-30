@@ -1,0 +1,92 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=libvpx
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=1.7.0
+pkgrel=1.1
+pkgdesc="The VP8 Codec SDK (mingw-w64)"
+arch=('any')
+license=('BSD')
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc" "${MINGW_PACKAGE_PREFIX}-yasm")
+url="https://www.webmproject.org/"
+source=(${_realname}-${pkgver}.tar.gz::https://github.com/webmproject/libvpx/archive/v${pkgver}.tar.gz
+        0001-enable-shared-on.mingw.patch
+        0002-no-pthreads.mingw.patch
+        0003-cross-with-native-binutils.mingw.patch
+        0005-fix-exports.mingw.patch)
+options=('strip' 'staticlibs')
+sha256sums=('1fec931eb5c94279ad219a5b6e0202358e94a93a90cfb1603578c326abfc1238'
+            '38f1aba2461afd007a6f6a64fdb3eab213bcc279d55b981f77d44209c9c303da'
+            'bba4f6f7f18a6c12cef99f5170ff69473049bbb1e7edf1bd83ef8b509d2c6e93'
+            'fabe7d4a756b33016947f741b1b5d8cbbf9aefd8862240645d0ed7bf7b4a3739'
+            '7c511b5df935278da2cba32b03b90582f360ab6786a5e32028bc82025193fabd')
+
+# Helper macros to help make tasks easier #
+apply_patch_with_msg() {
+  msg2 "Applying $1"
+  patch -Np1 -i "${srcdir}"/$1
+}
+
+del_file_exists() {
+  for _fname in "$@"
+  do
+    if [ -f $_fname ]; then
+      rm -rf $_fname
+    fi
+  done
+}
+# =========================================== #
+
+
+prepare() {
+  cd ${srcdir}/${_realname}-${pkgver}
+
+  apply_patch_with_msg 0001-enable-shared-on.mingw.patch
+  apply_patch_with_msg 0002-no-pthreads.mingw.patch
+  apply_patch_with_msg 0003-cross-with-native-binutils.mingw.patch
+  apply_patch_with_msg 0005-fix-exports.mingw.patch
+}
+
+build() {
+  if [ ${MINGW_CHOST} = "i686-w64-mingw32" ]; then
+    _targetarch="x86-win32-gcc"
+  else
+    _targetarch="x86_64-win64-gcc"
+  fi
+  mkdir -p ${srcdir}/build-${MINGW_CHOST}
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  ../${_realname}-${pkgver}/configure \
+    --prefix=${MINGW_PREFIX} \
+    --target=${_targetarch} \
+    --enable-vp8 \
+    --enable-vp9 \
+    --enable-vp9-highbitdepth \
+    --enable-runtime-cpu-detect \
+    --enable-postproc \
+    --enable-pic \
+    --enable-shared \
+    --enable-static \
+    --enable-experimental \
+    --enable-spatial-svc \
+    --disable-examples \
+    --disable-docs \
+    --disable-install-docs \
+    --disable-install-srcs
+
+  for _ff in *.mk; do
+    sed -i "s/HAVE_GNU_STRIP=yes/HAVE_GNU_STRIP=no/g" $_ff
+  done
+  make #-j1
+}
+
+#These tests seem to take a lot of time
+#check() {
+#  cd "${srcdir}/build-$MINGW_CHOST"
+#  make test
+#}
+
+package() {
+  cd "${srcdir}/build-$MINGW_CHOST"
+  make DIST_DIR="${pkgdir}${MINGW_PREFIX}" install
+}

@@ -1,0 +1,79 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Yuta Nakai <nak5124@live.jp>
+
+_realname=x265
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=2.5
+pkgrel=1
+pkgdesc='Open Source H265/HEVC video encoder (mingw-w64)'
+arch=('any')
+license=('GPL')
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
+makedepends=('yasm' "${MINGW_PACKAGE_PREFIX}-cmake")
+options=('strip')
+url='https://bitbucket.org/multicoreware/x265'
+source=("${_realname}-${pkgver}.tar.bz2"::"${url}/get/${pkgver}.tar.bz2"
+        "0001-winxp-condition-var.mingw.patch")
+sha256sums=('635be581968a3b10b1463eb7f566c9a77d478b215a8b44ca53e344530dd589c8'
+            'c71016ca51eb6d8916de9ef48f14048412569ae89e149f3d372158af6378e0e4')
+
+
+prepare() {
+  cd "${srcdir}"/multicoreware-x265-*
+  patch -Np1 -i ${srcdir}/0001-winxp-condition-var.mingw.patch
+}
+
+
+build() {
+  if [ "${CARCH}" = 'i686' ]; then
+    _ENABLE_ASM=OFF
+    _WINXP_SUPPORT=TRUE
+  else
+    _ENABLE_ASM=ON
+    _WINXP_SUPPORT=FALSE
+  fi
+
+  # Build 8 bit-depth lib and exe.
+  cd "${srcdir}"/multicoreware-x265-*/build/msys
+  if [ -d 8bit ]; then
+    rm -fr 8bit
+  fi
+  mkdir -p 8bit
+  cd 8bit
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MINGW_PREFIX}/bin/cmake \
+    -G "MSYS Makefiles" \
+    -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+    -DWINXP_SUPPORT=${_WINXP_SUPPORT} \
+    ../../../source
+  make
+
+  # Build 10 bit-depth dll for x265_api_get.
+  if [ -d ../10bit ]; then
+    rm -fr ../10bit
+  fi
+  mkdir -p ../10bit
+  cd ../10bit
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MINGW_PREFIX}/bin/cmake \
+    -G "MSYS Makefiles" \
+    -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+    -DWINXP_SUPPORT=${_WINXP_SUPPORT} \
+    -DHIGH_BIT_DEPTH=ON \
+    -DENABLE_ASSEMBLY=${_ENABLE_ASM} \
+    -DENABLE_CLI=OFF \
+    ../../../source
+  make
+}
+
+package() {
+  cd "${srcdir}"/multicoreware-x265-*/build/msys/8bit
+  make DESTDIR=${pkgdir} install
+
+  # Install 10 bit-depth dll.
+  cd "${srcdir}"/multicoreware-x265-*/build/msys/10bit
+  install -m 755 libx265.dll "${pkgdir}"/${MINGW_PREFIX}/bin/libx265_main10.dll
+}

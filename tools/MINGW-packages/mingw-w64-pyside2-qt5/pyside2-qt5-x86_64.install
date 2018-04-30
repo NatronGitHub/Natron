@@ -1,0 +1,14 @@
+post_install() {
+  cd mingw64
+  local _prefix=$(pwd -W)
+  cd -
+  for f in mingw64/lib/cmake/PySide2-*/*.cmake; do
+    # Do it twice if we already process one of the files
+    sed -e "s|${_prefix}|/mingw64|g" -i ${f}
+    sed -e "s|/mingw64|${_prefix}|g" -i ${f}
+  done
+}
+
+post_upgrade() {
+  post_install
+}

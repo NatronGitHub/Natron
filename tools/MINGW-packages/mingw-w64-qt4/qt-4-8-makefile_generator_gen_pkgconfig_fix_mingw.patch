@@ -1,0 +1,22 @@
+--- a/qmake/generators/makefile.cpp.orig	2014-07-28 00:26:53.515911500 +0300
++++ b/qmake/generators/makefile.cpp	2014-07-28 00:29:44.271678100 +0300
+@@ -3151,7 +3151,7 @@
+             ret.prepend(project->first("DESTDIR"));
+         ret = Option::fixPathToLocalOS(fileFixify(ret, qmake_getpwd(), Option::output_dir));
+     }
+-    return ret;
++    return ret.replace('\\', '/');
+ }
+ 
+ QString
+--- a/src/qbase.pri	2015-05-28 16:20:44.113119800 +0300
++++ b/src/qbase.pri	2015-05-28 16:21:39.712559300 +0300
+@@ -21,7 +21,7 @@
+     #sure the same version is used
+ 	VERSIONS_LIST = $$split(VERSION, ".")
+     QT_LIBS_OVERRIDE = $$member(VERSIONS_LIST, 0)
+-	for(lib, $$list(qtcore qtgui qtnetwork qtxml qtopengl qtsql qt3support)) {
++	for(lib, $$list(qtcore qtdbus qtgui qtnetwork qtxml qtopengl qtsql qtwebkit qt3support)) {
+         eval(QMAKE_$${upper($$lib)}_VERSION_OVERRIDE = $$QT_LIBS_OVERRIDE)
+ 	eval(QMAKE_$${upper($$lib)}D_VERSION_OVERRIDE = $$QT_LIBS_OVERRIDE)
+     }

@@ -1,0 +1,12 @@
+--- a/tools/assistant/tools/assistant/mainwindow.cpp	2012-06-27 03:02:37.539564947 +0200
++++ b/tools/assistant/tools/assistant/mainwindow.cpp	2012-06-27 03:03:18.843561620 +0200
+@@ -944,8 +944,7 @@ void MainWindow::updateApplicationFont()
+     if (helpEngine.usesAppFont())
+         font = helpEngine.appFont();
+ 
+-    const QWidgetList &widgets = qApp->allWidgets();
+-    foreach (QWidget* widget, widgets)
++    foreach (QWidget* widget, QApplication::allWidgets())
+         widget->setFont(font);
+ }
+ 

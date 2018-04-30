@@ -1,0 +1,37 @@
+From 6768afea5987b9fad079bee8d64b6de87eff24ee Mon Sep 17 00:00:00 2001
+From: Larry Gritz <lg@larrygritz.com>
+Date: Fri, 23 Mar 2018 16:55:51 -0700
+Subject: [PATCH] Bug fix: wrong dimensions for premult in
+ TIFFInput::read_tiles (#1907)
+
+Also didn't pass strides correctly
+---
+ src/tiff.imageio/tiffinput.cpp | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/src/tiff.imageio/tiffinput.cpp b/src/tiff.imageio/tiffinput.cpp
+index 197601dfd..fd33235bc 100644
+--- a/src/tiff.imageio/tiffinput.cpp
++++ b/src/tiff.imageio/tiffinput.cpp
+@@ -1636,7 +1636,7 @@ bool TIFFInput::read_tile (int x, int y, int z, TypeDesc format, void *data,
+         OIIO::premult (m_spec.nchannels, m_spec.tile_width, m_spec.tile_height,
+                        std::max (1, m_spec.tile_depth),
+                        0, m_spec.nchannels, format, data,
+-                       xstride, AutoStride, AutoStride,
++                       xstride, ystride, zstride,
+                        m_spec.alpha_channel, m_spec.z_channel);
+     }
+     return ok;
+@@ -1660,10 +1660,9 @@ bool TIFFInput::read_tiles (int xbegin, int xend, int ybegin, int yend,
+         // by alpha should happen after we've already done data format
+         // conversions. That's why we do it here, rather than in
+         // read_native_blah.
+-        OIIO::premult (m_spec.nchannels, m_spec.tile_width, m_spec.tile_height,
+-                       std::max (1, m_spec.tile_depth),
++        OIIO::premult (m_spec.nchannels, xend-xbegin, yend-ybegin, zend-zbegin,
+                        chbegin, chend, format, data,
+-                       xstride, AutoStride, AutoStride,
++                       xstride, ystride, zstride,
+                        m_spec.alpha_channel, m_spec.z_channel);
+     }
+     return ok;
