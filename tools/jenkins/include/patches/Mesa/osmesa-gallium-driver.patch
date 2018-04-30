@@ -1,0 +1,126 @@
+diff -ur mesa-11.2.2/include/GL/osmesa.h mesa-11.2.2.new/include/GL/osmesa.h
+--- mesa-11.2.2/include/GL/osmesa.h	2016-05-09 14:51:42.000000000 +0200
++++ mesa-11.2.2.new/include/GL/osmesa.h	2016-06-06 12:00:13.000000000 +0200
+@@ -106,6 +106,7 @@
+ #define OSMESA_COMPAT_PROFILE        0x35
+ #define OSMESA_CONTEXT_MAJOR_VERSION 0x36
+ #define OSMESA_CONTEXT_MINOR_VERSION 0x37
++#define OSMESA_GALLIUM_DRIVER        0x38
+ 
+ 
+ typedef struct osmesa_context *OSMesaContext;
+diff -ur mesa-11.2.2/src/gallium/auxiliary/target-helpers/sw_helper.h mesa-11.2.2.new/src/gallium/auxiliary/target-helpers/sw_helper.h
+--- mesa-11.2.2/src/gallium/auxiliary/target-helpers/sw_helper.h	2016-05-09 14:20:52.000000000 +0200
++++ mesa-11.2.2.new/src/gallium/auxiliary/target-helpers/sw_helper.h	2016-06-06 11:46:59.000000000 +0200
+@@ -25,7 +25,7 @@
+ #include "virgl/vtest/virgl_vtest_public.h"
+ #endif
+ 
+-static inline struct pipe_screen *
++struct pipe_screen *
+ sw_screen_create_named(struct sw_winsys *winsys, const char *driver)
+ {
+    struct pipe_screen *screen = NULL;
+@@ -53,10 +53,9 @@
+ 
+ 
+ struct pipe_screen *
+-sw_screen_create(struct sw_winsys *winsys)
++sw_screen_create(struct sw_winsys *winsys, const char *driver)
+ {
+    const char *default_driver;
+-   const char *driver;
+ 
+ #if defined(GALLIUM_LLVMPIPE)
+    default_driver = "llvmpipe";
+Only in mesa-11.2.2.new/src/gallium/auxiliary/target-helpers: sw_helper.h~
+diff -ur mesa-11.2.2/src/gallium/state_trackers/osmesa/osmesa.c mesa-11.2.2.new/src/gallium/state_trackers/osmesa/osmesa.c
+--- mesa-11.2.2/src/gallium/state_trackers/osmesa/osmesa.c	2016-06-06 12:07:27.000000000 +0200
++++ mesa-11.2.2.new/src/gallium/state_trackers/osmesa/osmesa.c	2016-06-06 12:02:19.000000000 +0200
+@@ -75,7 +75,7 @@
+ 
+ 
+ extern struct pipe_screen *
+-osmesa_create_screen(void);
++osmesa_create_screen(const char* driver);
+ 
+ 
+ 
+@@ -513,6 +513,7 @@
+    int depthBits = 0, stencilBits = 0, accumBits = 0;
+    int profile = OSMESA_COMPAT_PROFILE, version_major = 1, version_minor = 0;
+    int i;
++   const char* driver = NULL;
+ 
+    if (sharelist) {
+       st_shared = sharelist->stctx;
+@@ -570,6 +571,18 @@
+          if (version_minor < 0)
+             return NULL;
+          break;
++      case OSMESA_GALLIUM_DRIVER:
++         switch (attribList[i+1]) {
++         case 0:
++            driver = "softpipe";
++            break;
++         case 1:
++            driver = "llvmpipe";
++            break;
++         default:
++            return NULL;
++         }
++         break;
+       case 0:
+          /* end of list */
+          break;
+@@ -625,7 +638,7 @@
+    osmesa->manager = CALLOC_STRUCT(st_manager);
+    assert(osmesa->manager);
+    if (osmesa->manager) {
+-      osmesa->manager->screen = osmesa_create_screen();
++      osmesa->manager->screen = osmesa_create_screen(driver);
+       osmesa->manager->get_param = osmesa_st_get_param;
+       osmesa->manager->get_egl_image = NULL;
+    }
+diff -ur mesa-11.2.2/src/gallium/targets/osmesa/target.c mesa-11.2.2.new/src/gallium/targets/osmesa/target.c
+--- mesa-11.2.2/src/gallium/targets/osmesa/target.c	2016-01-18 08:39:26.000000000 +0100
++++ mesa-11.2.2.new/src/gallium/targets/osmesa/target.c	2016-06-06 12:03:05.000000000 +0200
+@@ -28,11 +28,11 @@
+ 
+ 
+ struct pipe_screen *
+-osmesa_create_screen(void);
++osmesa_create_screen(const char *driver);
+ 
+ 
+ struct pipe_screen *
+-osmesa_create_screen(void)
++osmesa_create_screen(const char *driver)
+ {
+    struct sw_winsys *winsys;
+    struct pipe_screen *screen;
+@@ -45,7 +45,11 @@
+       return NULL;
+ 
+    /* Create llvmpipe or softpipe screen */
+-   screen = sw_screen_create(winsys);
++   if (driver == NULL) {
++      screen = sw_screen_create(winsys);
++   } else {
++      screen = sw_screen_create_named(winsys, driver);
++   }
+    if (!screen) {
+       winsys->destroy(winsys);
+       return NULL;
+--- mesa-11.2.2/src/mesa/drivers/osmesa/osmesa.c.orig	2016-06-10 11:06:59.000000000 +0200
++++ mesa-11.2.2/src/mesa/drivers/osmesa/osmesa.c	2016-06-10 11:08:57.000000000 +0200
+@@ -731,6 +731,9 @@
+          if (version_minor < 0)
+             return NULL;
+          break;
++      case OSMESA_GALLIUM_DRIVER:
++         /* ignore */
++         break;
+       case 0:
+          /* end of list */
+          break;

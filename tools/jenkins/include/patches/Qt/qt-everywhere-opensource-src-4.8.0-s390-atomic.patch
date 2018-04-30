@@ -1,0 +1,20 @@
+diff -up qt-everywhere-opensource-src-4.8.0/src/corelib/arch/qatomic_s390.h.s390-atomic qt-everywhere-opensource-src-4.8.0/src/corelib/arch/qatomic_s390.h
+--- qt-everywhere-opensource-src-4.8.0/src/corelib/arch/qatomic_s390.h.s390-atomic	2011-12-18 16:15:20.000000000 +0100
++++ qt-everywhere-opensource-src-4.8.0/src/corelib/arch/qatomic_s390.h	2011-12-18 16:17:34.000000000 +0100
+@@ -400,6 +400,16 @@ Q_INLINE_TEMPLATE T* QBasicAtomicPointer
+ 
+ 
+ template <typename T>
++Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndAddOrdered(qptrdiff valueToAdd)
++{
++#ifndef __s390x__
++    return (T *)__CS_OLD_LOOP(&_q_value, valueToAdd * sizeof(T), "ar", "", "bcr 15,0\n");
++#else
++    return (T *)__CSG_OLD_LOOP(&_q_value, valueToAdd * sizeof(T), "agr", "", "bcr 15,0\n");
++#endif
++}
++
++template <typename T>
+ Q_INLINE_TEMPLATE T *QBasicAtomicPointer<T>::fetchAndAddRelaxed(qptrdiff valueToAdd)
+ {
+     return fetchAndAddOrdered(valueToAdd);

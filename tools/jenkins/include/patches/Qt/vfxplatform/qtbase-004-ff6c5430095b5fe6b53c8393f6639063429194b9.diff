@@ -1,0 +1,93 @@
+diff --git a/src/widgets/kernel/qapplication.cpp b/src/widgets/kernel/qapplication.cpp
+index fcc195f..4d204df 100644
+--- a/src/widgets/kernel/qapplication.cpp
++++ b/src/widgets/kernel/qapplication.cpp
+@@ -171,6 +171,9 @@ bool QApplicationPrivate::autoSipEnabled = false;
+ bool QApplicationPrivate::autoSipEnabled = true;
+ #endif
+ 
++int QApplicationPrivate::customDpiOverride = -1;
++
++
+ QApplicationPrivate::QApplicationPrivate(int &argc, char **argv, int flags)
+     : QApplicationPrivateBase(argc, argv, flags)
+ {
+@@ -663,6 +666,8 @@ void QApplicationPrivate::initialize()
+ #endif //QT_AUTO_MAXIMIZE_THRESHOLD
+ #endif //Q_OS_WINCE
+ 
++    customDpiOverride = -1;
++
+ #ifndef QT_NO_WHEELEVENT
+     QApplicationPrivate::wheel_scroll_lines = 3;
+ #endif
+@@ -1079,6 +1084,19 @@ bool QApplication::autoSipEnabled() const
+     return QApplicationPrivate::autoSipEnabled;
+ }
+ 
++
++//ADSK: allow for customized system DPI setttings
++
++void QApplication::setCustomDpiOverride(const int dpi)
++{
++    QApplicationPrivate::customDpiOverride = dpi;
++}
++
++int QApplication::customDpiOverride() const
++{
++   return QApplicationPrivate::customDpiOverride;
++}
++
+ #ifndef QT_NO_STYLE_STYLESHEET
+ 
+ QString QApplication::styleSheet() const
+diff --git a/src/widgets/kernel/qapplication.h b/src/widgets/kernel/qapplication.h
+index 7aaea2a..fb48b82 100644
+--- a/src/widgets/kernel/qapplication.h
++++ b/src/widgets/kernel/qapplication.h
+@@ -83,6 +83,10 @@ class Q_WIDGETS_EXPORT QApplication : public QGuiApplication
+ #endif
+     Q_PROPERTY(bool autoSipEnabled READ autoSipEnabled WRITE setAutoSipEnabled)
+ 
++       //ADSK:
++    // allows overwriting the current system dpi to provide a custom dpi scale.
++    Q_PROPERTY(int customDpiOverride READ customDpiOverride WRITE setCustomDpiOverride)
++
+ public:
+ #ifdef Q_QDOC
+     QApplication(int &argc, char **argv);
+@@ -195,6 +199,8 @@ public Q_SLOTS:
+ #endif
+     void setAutoSipEnabled(const bool enabled);
+     bool autoSipEnabled() const;
++    void setCustomDpiOverride(const int dpi);
++    int customDpiOverride() const;
+     static void closeAllWindows();
+     static void aboutQt();
+ 
+diff --git a/src/widgets/kernel/qapplication_p.h b/src/widgets/kernel/qapplication_p.h
+index 4b3cf77..0bea245 100644
+--- a/src/widgets/kernel/qapplication_p.h
++++ b/src/widgets/kernel/qapplication_p.h
+@@ -124,6 +124,7 @@ class Q_WIDGETS_EXPORT QApplicationPrivate : public QApplicationPrivateBase
+     static int autoMaximizeThreshold;
+ #endif
+     static bool autoSipEnabled;
++    static int customDpiOverride;
+     static QString desktopStyleKey();
+ 
+ 
+diff --git a/src/widgets/styles/qstylehelper.cpp b/src/widgets/styles/qstylehelper.cpp
+index 6602b58..6d145dc 100644
+--- a/src/widgets/styles/qstylehelper.cpp
++++ b/src/widgets/styles/qstylehelper.cpp
+@@ -76,7 +76,8 @@ qreal dpiScaled(qreal value)
+     // On mac the DPI is always 72 so we should not scale it
+     return value;
+ #else
+-    static const qreal scale = qreal(qt_defaultDpiX()) / 96.0;
++    static const qreal scale = qreal( (qApp->customDpiOverride() != -1 ? qApp->customDpiOverride() : qt_defaultDpiX()) ) / 96.0;
++
+     return value * scale;
+ #endif
+ }

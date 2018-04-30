@@ -19,9 +19,9 @@
 # This script has to be run after uncrustify, to fix various glitches.
 # Usage:
 # - run uncrustify first
-#  uncrustify -c tools/uncrustify.cfg --replace */*.cpp */*.h
+#  uncrustify -c tools/uncrustify/uncrustify.cfg --replace */*.cpp */*.h
 # - fix the output of uncrustify using this script
-#  sed -f tools/uncrustify-post.sed -i .bak */*.cpp */*.h
+#  sed -f tools/uncrustify/uncrustify-post.sed -i .bak */*.cpp */*.h
 # - run Qt's normalize utility to fix signals/slots
 #  for d in Gui Engine App Global Renderer Tests; do tools/normalize/normalize --modify $d; done
 

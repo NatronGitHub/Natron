@@ -1,0 +1,440 @@
+diff --git a/IlmBase/Imath/ImathMatrix.h b/IlmBase/Imath/ImathMatrix.h
+index 1d7f8dc6..c5d7e244 100644
+--- a/IlmBase/Imath/ImathMatrix.h
++++ b/IlmBase/Imath/ImathMatrix.h
+@@ -262,17 +262,13 @@ template <class T> class Matrix33
+     // 
+     //------------------------------------------------------------
+ 
+-    const Matrix33 &    invert (bool singExc = false)
+-                        throw (IEX_NAMESPACE::MathExc);
++    const Matrix33 &    invert (bool singExc = false);
+ 
+-    Matrix33<T>         inverse (bool singExc = false) const
+-                        throw (IEX_NAMESPACE::MathExc);
++    Matrix33<T>         inverse (bool singExc = false) const;
+ 
+-    const Matrix33 &    gjInvert (bool singExc = false)
+-                        throw (IEX_NAMESPACE::MathExc);
++    const Matrix33 &    gjInvert (bool singExc = false);
+ 
+-    Matrix33<T>         gjInverse (bool singExc = false) const
+-                        throw (IEX_NAMESPACE::MathExc);
++    Matrix33<T>         gjInverse (bool singExc = false) const;
+ 
+ 
+     //------------------------------------------------
+@@ -636,17 +632,13 @@ template <class T> class Matrix44
+     // 
+     //------------------------------------------------------------
+ 
+-    const Matrix44 &    invert (bool singExc = false)
+-                        throw (IEX_NAMESPACE::MathExc);
++    const Matrix44 &    invert (bool singExc = false);
+ 
+-    Matrix44<T>         inverse (bool singExc = false) const
+-                        throw (IEX_NAMESPACE::MathExc);
++    Matrix44<T>         inverse (bool singExc = false) const;
+ 
+-    const Matrix44 &    gjInvert (bool singExc = false)
+-                        throw (IEX_NAMESPACE::MathExc);
++    const Matrix44 &    gjInvert (bool singExc = false);
+ 
+-    Matrix44<T>         gjInverse (bool singExc = false) const
+-                        throw (IEX_NAMESPACE::MathExc);
++    Matrix44<T>         gjInverse (bool singExc = false) const;
+ 
+ 
+     //------------------------------------------------
+@@ -1430,7 +1422,7 @@ Matrix33<T>::transposed () const
+ 
+ template <class T>
+ const Matrix33<T> &
+-Matrix33<T>::gjInvert (bool singExc) throw (IEX_NAMESPACE::MathExc)
++Matrix33<T>::gjInvert (bool singExc)
+ {
+     *this = gjInverse (singExc);
+     return *this;
+@@ -1438,7 +1430,7 @@ Matrix33<T>::gjInvert (bool singExc) throw (IEX_NAMESPACE::MathExc)
+ 
+ template <class T>
+ Matrix33<T>
+-Matrix33<T>::gjInverse (bool singExc) const throw (IEX_NAMESPACE::MathExc)
++Matrix33<T>::gjInverse (bool singExc) const
+ {
+     int i, j, k;
+     Matrix33 s;
+@@ -1542,7 +1534,7 @@ Matrix33<T>::gjInverse (bool singExc) const throw (IEX_NAMESPACE::MathExc)
+ 
+ template <class T>
+ const Matrix33<T> &
+-Matrix33<T>::invert (bool singExc) throw (IEX_NAMESPACE::MathExc)
++Matrix33<T>::invert (bool singExc)
+ {
+     *this = inverse (singExc);
+     return *this;
+@@ -1550,7 +1542,7 @@ Matrix33<T>::invert (bool singExc) throw (IEX_NAMESPACE::MathExc)
+ 
+ template <class T>
+ Matrix33<T>
+-Matrix33<T>::inverse (bool singExc) const throw (IEX_NAMESPACE::MathExc)
++Matrix33<T>::inverse (bool singExc) const
+ {
+     if (x[0][2] != 0 || x[1][2] != 0 || x[2][2] != 1)
+     {
+@@ -2699,7 +2691,7 @@ Matrix44<T>::transposed () const
+ 
+ template <class T>
+ const Matrix44<T> &
+-Matrix44<T>::gjInvert (bool singExc) throw (IEX_NAMESPACE::MathExc)
++Matrix44<T>::gjInvert (bool singExc)
+ {
+     *this = gjInverse (singExc);
+     return *this;
+@@ -2707,7 +2699,7 @@ Matrix44<T>::gjInvert (bool singExc) throw (IEX_NAMESPACE::MathExc)
+ 
+ template <class T>
+ Matrix44<T>
+-Matrix44<T>::gjInverse (bool singExc) const throw (IEX_NAMESPACE::MathExc)
++Matrix44<T>::gjInverse (bool singExc) const
+ {
+     int i, j, k;
+     Matrix44 s;
+@@ -2811,7 +2803,7 @@ Matrix44<T>::gjInverse (bool singExc) const throw (IEX_NAMESPACE::MathExc)
+ 
+ template <class T>
+ const Matrix44<T> &
+-Matrix44<T>::invert (bool singExc) throw (IEX_NAMESPACE::MathExc)
++Matrix44<T>::invert (bool singExc)
+ {
+     *this = inverse (singExc);
+     return *this;
+@@ -2819,7 +2811,7 @@ Matrix44<T>::invert (bool singExc) throw (IEX_NAMESPACE::MathExc)
+ 
+ template <class T>
+ Matrix44<T>
+-Matrix44<T>::inverse (bool singExc) const throw (IEX_NAMESPACE::MathExc)
++Matrix44<T>::inverse (bool singExc) const
+ {
+     if (x[0][3] != 0 || x[1][3] != 0 || x[2][3] != 0 || x[3][3] != 1)
+         return gjInverse(singExc);
+diff --git a/IlmBase/Imath/ImathVec.cpp b/IlmBase/Imath/ImathVec.cpp
+index 5e5b2107..37edc970 100644
+--- a/IlmBase/Imath/ImathVec.cpp
++++ b/IlmBase/Imath/ImathVec.cpp
+@@ -149,7 +149,7 @@ Vec2<short>::normalize ()
+ template <>
+ IMATH_EXPORT
+ const Vec2<short> &
+-Vec2<short>::normalizeExc () throw (IEX_NAMESPACE::MathExc)
++Vec2<short>::normalizeExc ()
+ {
+     if ((x == 0) && (y == 0))
+         throw NullVecExc ("Cannot normalize null vector.");
+@@ -180,7 +180,7 @@ Vec2<short>::normalized () const
+ template <>
+ IMATH_EXPORT
+ Vec2<short>
+-Vec2<short>::normalizedExc () const throw (IEX_NAMESPACE::MathExc)
++Vec2<short>::normalizedExc () const
+ {
+     if ((x == 0) && (y == 0))
+         throw NullVecExc ("Cannot normalize null vector.");
+@@ -225,7 +225,7 @@ Vec2<int>::normalize ()
+ template <>
+ IMATH_EXPORT
+ const Vec2<int> &
+-Vec2<int>::normalizeExc () throw (IEX_NAMESPACE::MathExc)
++Vec2<int>::normalizeExc ()
+ {
+     if ((x == 0) && (y == 0))
+         throw NullVecExc ("Cannot normalize null vector.");
+@@ -256,7 +256,7 @@ Vec2<int>::normalized () const
+ template <>
+ IMATH_EXPORT
+ Vec2<int>
+-Vec2<int>::normalizedExc () const throw (IEX_NAMESPACE::MathExc)
++Vec2<int>::normalizedExc () const
+ {
+     if ((x == 0) && (y == 0))
+         throw NullVecExc ("Cannot normalize null vector.");
+@@ -301,7 +301,7 @@ Vec3<short>::normalize ()
+ template <>
+ IMATH_EXPORT
+ const Vec3<short> &
+-Vec3<short>::normalizeExc () throw (IEX_NAMESPACE::MathExc)
++Vec3<short>::normalizeExc ()
+ {
+     if ((x == 0) && (y == 0) && (z == 0))
+         throw NullVecExc ("Cannot normalize null vector.");
+@@ -332,7 +332,7 @@ Vec3<short>::normalized () const
+ template <>
+ IMATH_EXPORT
+ Vec3<short>
+-Vec3<short>::normalizedExc () const throw (IEX_NAMESPACE::MathExc)
++Vec3<short>::normalizedExc () const
+ {
+     if ((x == 0) && (y == 0) && (z == 0))
+         throw NullVecExc ("Cannot normalize null vector.");
+@@ -377,7 +377,7 @@ Vec3<int>::normalize ()
+ template <>
+ IMATH_EXPORT
+ const Vec3<int> &
+-Vec3<int>::normalizeExc () throw (IEX_NAMESPACE::MathExc)
++Vec3<int>::normalizeExc ()
+ {
+     if ((x == 0) && (y == 0) && (z == 0))
+         throw NullVecExc ("Cannot normalize null vector.");
+@@ -408,7 +408,7 @@ Vec3<int>::normalized () const
+ template <>
+ IMATH_EXPORT
+ Vec3<int>
+-Vec3<int>::normalizedExc () const throw (IEX_NAMESPACE::MathExc)
++Vec3<int>::normalizedExc () const
+ {
+     if ((x == 0) && (y == 0) && (z == 0))
+         throw NullVecExc ("Cannot normalize null vector.");
+@@ -453,7 +453,7 @@ Vec4<short>::normalize ()
+ template <>
+ IMATH_EXPORT
+ const Vec4<short> &
+-Vec4<short>::normalizeExc () throw (IEX_NAMESPACE::MathExc)
++Vec4<short>::normalizeExc ()
+ {
+     if ((x == 0) && (y == 0) && (z == 0) && (w == 0))
+         throw NullVecExc ("Cannot normalize null vector.");
+@@ -484,7 +484,7 @@ Vec4<short>::normalized () const
+ template <>
+ IMATH_EXPORT
+ Vec4<short>
+-Vec4<short>::normalizedExc () const throw (IEX_NAMESPACE::MathExc)
++Vec4<short>::normalizedExc () const
+ {
+     if ((x == 0) && (y == 0) && (z == 0) && (w == 0))
+         throw NullVecExc ("Cannot normalize null vector.");
+@@ -529,7 +529,7 @@ Vec4<int>::normalize ()
+ template <>
+ IMATH_EXPORT
+ const Vec4<int> &
+-Vec4<int>::normalizeExc () throw (IEX_NAMESPACE::MathExc)
++Vec4<int>::normalizeExc ()
+ {
+     if ((x == 0) && (y == 0) && (z == 0) && (w == 0))
+         throw NullVecExc ("Cannot normalize null vector.");
+@@ -560,7 +560,7 @@ Vec4<int>::normalized () const
+ template <>
+ IMATH_EXPORT
+ Vec4<int>
+-Vec4<int>::normalizedExc () const throw (IEX_NAMESPACE::MathExc)
++Vec4<int>::normalizedExc () const
+ {
+     if ((x == 0) && (y == 0) && (z == 0) && (w == 0))
+         throw NullVecExc ("Cannot normalize null vector.");
+diff --git a/IlmBase/Imath/ImathVec.h b/IlmBase/Imath/ImathVec.h
+index fb859ebd..6f4e82a3 100644
+--- a/IlmBase/Imath/ImathVec.h
++++ b/IlmBase/Imath/ImathVec.h
+@@ -225,11 +225,11 @@ template <class T> class Vec2
+     T			length2 () const;
+ 
+     const Vec2 &	normalize ();           // modifies *this
+-    const Vec2 &	normalizeExc () throw (IEX_NAMESPACE::MathExc);
++    const Vec2 &	normalizeExc ();
+     const Vec2 &	normalizeNonNull ();
+ 
+     Vec2<T>		normalized () const;	// does not modify *this
+-    Vec2<T>		normalizedExc () const throw (IEX_NAMESPACE::MathExc);
++    Vec2<T>		normalizedExc () const;
+     Vec2<T>		normalizedNonNull () const;
+ 
+ 
+@@ -437,11 +437,11 @@ template <class T> class Vec3
+     T			length2 () const;
+ 
+     const Vec3 &	normalize ();           // modifies *this
+-    const Vec3 &	normalizeExc () throw (IEX_NAMESPACE::MathExc);
++    const Vec3 &	normalizeExc ();
+     const Vec3 &	normalizeNonNull ();
+ 
+     Vec3<T>		normalized () const;	// does not modify *this
+-    Vec3<T>		normalizedExc () const throw (IEX_NAMESPACE::MathExc);
++    Vec3<T>		normalizedExc () const;
+     Vec3<T>		normalizedNonNull () const;
+ 
+ 
+@@ -619,11 +619,11 @@ template <class T> class Vec4
+     T               length2 () const;
+ 
+     const Vec4 &    normalize ();           // modifies *this
+-    const Vec4 &    normalizeExc () throw (IEX_NAMESPACE::MathExc);
++    const Vec4 &    normalizeExc ();
+     const Vec4 &    normalizeNonNull ();
+ 
+     Vec4<T>         normalized () const;	// does not modify *this
+-    Vec4<T>         normalizedExc () const throw (IEX_NAMESPACE::MathExc);
++    Vec4<T>         normalizedExc () const;
+     Vec4<T>         normalizedNonNull () const;
+ 
+ 
+@@ -711,7 +711,7 @@ template <> const Vec2<short> &
+ Vec2<short>::normalize ();
+ 
+ template <> const Vec2<short> &
+-Vec2<short>::normalizeExc () throw (IEX_NAMESPACE::MathExc);
++Vec2<short>::normalizeExc ();
+ 
+ template <> const Vec2<short> &
+ Vec2<short>::normalizeNonNull ();
+@@ -720,7 +720,7 @@ template <> Vec2<short>
+ Vec2<short>::normalized () const;
+ 
+ template <> Vec2<short>
+-Vec2<short>::normalizedExc () const throw (IEX_NAMESPACE::MathExc);
++Vec2<short>::normalizedExc () const;
+ 
+ template <> Vec2<short>
+ Vec2<short>::normalizedNonNull () const;
+@@ -735,7 +735,7 @@ template <> const Vec2<int> &
+ Vec2<int>::normalize ();
+ 
+ template <> const Vec2<int> &
+-Vec2<int>::normalizeExc () throw (IEX_NAMESPACE::MathExc);
++Vec2<int>::normalizeExc ();
+ 
+ template <> const Vec2<int> &
+ Vec2<int>::normalizeNonNull ();
+@@ -744,7 +744,7 @@ template <> Vec2<int>
+ Vec2<int>::normalized () const;
+ 
+ template <> Vec2<int>
+-Vec2<int>::normalizedExc () const throw (IEX_NAMESPACE::MathExc);
++Vec2<int>::normalizedExc () const;
+ 
+ template <> Vec2<int>
+ Vec2<int>::normalizedNonNull () const;
+@@ -759,7 +759,7 @@ template <> const Vec3<short> &
+ Vec3<short>::normalize ();
+ 
+ template <> const Vec3<short> &
+-Vec3<short>::normalizeExc () throw (IEX_NAMESPACE::MathExc);
++Vec3<short>::normalizeExc ();
+ 
+ template <> const Vec3<short> &
+ Vec3<short>::normalizeNonNull ();
+@@ -768,7 +768,7 @@ template <> Vec3<short>
+ Vec3<short>::normalized () const;
+ 
+ template <> Vec3<short>
+-Vec3<short>::normalizedExc () const throw (IEX_NAMESPACE::MathExc);
++Vec3<short>::normalizedExc () const;
+ 
+ template <> Vec3<short>
+ Vec3<short>::normalizedNonNull () const;
+@@ -783,7 +783,7 @@ template <> const Vec3<int> &
+ Vec3<int>::normalize ();
+ 
+ template <> const Vec3<int> &
+-Vec3<int>::normalizeExc () throw (IEX_NAMESPACE::MathExc);
++Vec3<int>::normalizeExc ();
+ 
+ template <> const Vec3<int> &
+ Vec3<int>::normalizeNonNull ();
+@@ -792,7 +792,7 @@ template <> Vec3<int>
+ Vec3<int>::normalized () const;
+ 
+ template <> Vec3<int>
+-Vec3<int>::normalizedExc () const throw (IEX_NAMESPACE::MathExc);
++Vec3<int>::normalizedExc () const;
+ 
+ template <> Vec3<int>
+ Vec3<int>::normalizedNonNull () const;
+@@ -806,7 +806,7 @@ template <> const Vec4<short> &
+ Vec4<short>::normalize ();
+ 
+ template <> const Vec4<short> &
+-Vec4<short>::normalizeExc () throw (IEX_NAMESPACE::MathExc);
++Vec4<short>::normalizeExc ();
+ 
+ template <> const Vec4<short> &
+ Vec4<short>::normalizeNonNull ();
+@@ -815,7 +815,7 @@ template <> Vec4<short>
+ Vec4<short>::normalized () const;
+ 
+ template <> Vec4<short>
+-Vec4<short>::normalizedExc () const throw (IEX_NAMESPACE::MathExc);
++Vec4<short>::normalizedExc () const;
+ 
+ template <> Vec4<short>
+ Vec4<short>::normalizedNonNull () const;
+@@ -830,7 +830,7 @@ template <> const Vec4<int> &
+ Vec4<int>::normalize ();
+ 
+ template <> const Vec4<int> &
+-Vec4<int>::normalizeExc () throw (IEX_NAMESPACE::MathExc);
++Vec4<int>::normalizeExc ();
+ 
+ template <> const Vec4<int> &
+ Vec4<int>::normalizeNonNull ();
+@@ -839,7 +839,7 @@ template <> Vec4<int>
+ Vec4<int>::normalized () const;
+ 
+ template <> Vec4<int>
+-Vec4<int>::normalizedExc () const throw (IEX_NAMESPACE::MathExc);
++Vec4<int>::normalizedExc () const;
+ 
+ template <> Vec4<int>
+ Vec4<int>::normalizedNonNull () const;
+@@ -1209,7 +1209,7 @@ Vec2<T>::normalize ()
+ 
+ template <class T>
+ const Vec2<T> &
+-Vec2<T>::normalizeExc () throw (IEX_NAMESPACE::MathExc)
++Vec2<T>::normalizeExc ()
+ {
+     T l = length();
+ 
+@@ -1246,7 +1246,7 @@ Vec2<T>::normalized () const
+ 
+ template <class T>
+ Vec2<T>
+-Vec2<T>::normalizedExc () const throw (IEX_NAMESPACE::MathExc)
++Vec2<T>::normalizedExc () const
+ {
+     T l = length();
+ 
+@@ -1701,7 +1701,7 @@ Vec3<T>::normalize ()
+ 
+ template <class T>
+ const Vec3<T> &
+-Vec3<T>::normalizeExc () throw (IEX_NAMESPACE::MathExc)
++Vec3<T>::normalizeExc ()
+ {
+     T l = length();
+ 
+@@ -1740,7 +1740,7 @@ Vec3<T>::normalized () const
+ 
+ template <class T>
+ Vec3<T>
+-Vec3<T>::normalizedExc () const throw (IEX_NAMESPACE::MathExc)
++Vec3<T>::normalizedExc () const
+ {
+     T l = length();
+ 
+@@ -2106,7 +2106,7 @@ Vec4<T>::normalize ()
+ 
+ template <class T>
+ const Vec4<T> &
+-Vec4<T>::normalizeExc () throw (IEX_NAMESPACE::MathExc)
++Vec4<T>::normalizeExc ()
+ {
+     T l = length();
+ 
+@@ -2147,7 +2147,7 @@ Vec4<T>::normalized () const
+ 
+ template <class T>
+ Vec4<T>
+-Vec4<T>::normalizedExc () const throw (IEX_NAMESPACE::MathExc)
++Vec4<T>::normalizedExc () const
+ {
+     T l = length();
+ 

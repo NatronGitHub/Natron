@@ -1,0 +1,13 @@
+diff --git a/modules/calib3d/src/polynom_solver.cpp b/modules/calib3d/src/polynom_solver.cpp
+index 1813340..051ed03 100644
+--- a/modules/calib3d/src/polynom_solver.cpp
++++ b/modules/calib3d/src/polynom_solver.cpp
+@@ -60,7 +60,7 @@ int solve_deg3(double a, double b, double c, double d,
+   double D = Q3 + R * R;
+   double b_a_3 = (1. / 3.) * b_a;
+ 
+-  if (Q == 0) {
++  if (Q3 == 0) {
+     if(R == 0) {
+       x0 = x1 = x2 = - b_a_3;
+       return 3;

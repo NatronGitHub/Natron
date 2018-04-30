@@ -1,0 +1,365 @@
+From utkarsh.ayachit at kitware.com  Thu Dec 17 13:05:06 2015
+From: utkarsh.ayachit at kitware.com (Utkarsh Ayachit)
+Date: Thu, 17 Dec 2015 13:05:06 -0500
+Subject: [Paraview] Paraview v5.0.0-RC1 with OpenGL2 backend not running
+ using OSMESA v10.5.5
+In-Reply-To: <589CEB614006334D93C1A48C1B1964C9027CEAC0201B@srvmes03.spe-ch-md9.net>
+References: <589CEB614006334D93C1A48C1B1964C9027CEAC01DCD@srvmes03.spe-ch-md9.net>
+ <CADHSJjDMqnyaRjox3iXr5TzfRZrr=xbOT5596SpVcQX9nR+bAg@mail.gmail.com>
+ <589CEB614006334D93C1A48C1B1964C9027CEAC0201B@srvmes03.spe-ch-md9.net>
+Message-ID: <CADHSJjAnO0MYzF6x2g3yFPHHY_04QV4NQ1xkvn0gKr8MLADoKA@mail.gmail.com>
+
+Frank,
+
+First of all, thanks for all your exhausting testing, it's greatly appreciated!
+
+* OSMesa and MESA_GL_VERSION_OVERRIDE
+
+Communicating with the Mesa team, we learnt that
+MESA_GL_VERSION_OVERRIDE is a bad idea since it doesnt' really create
+the specified OpenGL context. Thus if anything tries to use features
+from the specific OpenGL version, the rendering would crash and burn.
+Working with Brian Paul from the Mesa team, Ken recently pushed a fix
+to VTK (after the RC2) that uses new OSMesa API to create the correct
+OpenGL context. This new OSMesa API will appear in Mesa 11.2, however.
+Earlier version can be patched using the "alpha" patch that Brian
+provided us (attached).
+
+* Classic v/s llvm
+
+Your observation is indeed correct. llvmpipe is the way to go for
+software rendering. On my builds, classic mesa was painstakingly slow
+for rendering even small geometries.
+
+* Issues with LIC
+
+Another correct observation. There are a few regressions in the new
+implementation for SurfaceLIC. Realistically, we  may not be able to
+address these before the 5.0 release. If you're using SurfaceLIC
+heavily, I'd suggest building ParaView 5.0 with the older OpenGL
+backend (or sticking with 4.4) for the interim.
+
+* OSMesa + SWR
+
+While currently I am not sure openswr+osmesa builds are possible, I
+wouldn't be surprised if that on the roadmap. I am going to try to
+contact the OpenSWR team to see if they have any thoughts on that.
+
+Utkarsh
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: mesa.patch
+Type: text/x-patch
+Size: 11012 bytes
+Desc: not available
+URL: <http://public.kitware.com/pipermail/paraview/attachments/20151217/4854b0ad/attachment.bin>
+
+diff --git a/include/GL/osmesa.h b/include/GL/osmesa.h
+index ca0d167..c60db0a 100644
+--- a/include/GL/osmesa.h
++++ b/include/GL/osmesa.h
+@@ -58,8 +58,8 @@ extern "C" {
+ #include <GL/gl.h>
+ 
+ 
+-#define OSMESA_MAJOR_VERSION 10
+-#define OSMESA_MINOR_VERSION 0
++#define OSMESA_MAJOR_VERSION 11
++#define OSMESA_MINOR_VERSION 2
+ #define OSMESA_PATCH_VERSION 0
+ 
+ 
+@@ -95,6 +95,18 @@ extern "C" {
+ #define OSMESA_MAX_WIDTH	0x24  /* new in 4.0 */
+ #define OSMESA_MAX_HEIGHT	0x25  /* new in 4.0 */
+ 
++/*
++ * Accepted in OSMesaCreateContextAttrib's attribute list.
++ */
++#define OSMESA_DEPTH_BITS            0x30
++#define OSMESA_STENCIL_BITS          0x31
++#define OSMESA_ACCUM_BITS            0x32
++#define OSMESA_PROFILE               0x33
++#define OSMESA_CORE_PROFILE          0x34
++#define OSMESA_COMPAT_PROFILE        0x35
++#define OSMESA_CONTEXT_MAJOR_VERSION 0x36
++#define OSMESA_CONTEXT_MINOR_VERSION 0x37
++
+ 
+ typedef struct osmesa_context *OSMesaContext;
+ 
+@@ -128,6 +140,35 @@ OSMesaCreateContextExt( GLenum format, GLint depthBits, GLint stencilBits,
+ 
+ 
+ /*
++ * Create an Off-Screen Mesa rendering context with attribute list.
++ * The list is composed of (attribute, value) pairs and terminated with
++ * attribute==0.  Supported Attributes:
++ *
++ * Attributes                    Values
++ * --------------------------------------------------------------------------
++ * OSMESA_FORMAT                 OSMESA_RGBA*, OSMESA_BGRA, OSMESA_ARGB, etc.
++ * OSMESA_DEPTH_BITS             0*, 16, 24, 32
++ * OSMESA_STENCIL_BITS           0*, 8
++ * OSMESA_ACCUM_BITS             0*, 16
++ * OSMESA_PROFILE                OSMESA_COMPAT_PROFILE*, OSMESA_CORE_PROFILE
++ * OSMESA_CONTEXT_MAJOR_VERSION  1*, 2, 3
++ * OSMESA_CONTEXT_MINOR_VERSION  0+
++ *
++ * Note: * = default value
++ *
++ * We return a context version at least what's specified by
++ * OSMESA_CONTEXT_MAJOR/MINOR_VERSION for the given profile.  For example, if
++ * you request a GL 1.4 compat profile, you might get a GL 3.0 compat profile.
++ * Otherwise, null is returned if the version/profile is not supported.
++ *
++ * New in Mesa 11.2
++ */
++GLAPI OSMesaContext GLAPIENTRY
++OSMesaCreateContextAttribs( const int *attribList, OSMesaContext sharelist );
++
++
++
++/*
+  * Destroy an Off-Screen Mesa rendering context.
+  *
+  * Input:  ctx - the context to destroy
+diff --git a/src/gallium/state_trackers/osmesa/osmesa.c b/src/gallium/state_trackers/osmesa/osmesa.c
+index 0f27ba8..06884f8 100644
+--- a/src/gallium/state_trackers/osmesa/osmesa.c
++++ b/src/gallium/state_trackers/osmesa/osmesa.c
+@@ -544,11 +544,39 @@ GLAPI OSMesaContext GLAPIENTRY
+ OSMesaCreateContextExt(GLenum format, GLint depthBits, GLint stencilBits,
+                        GLint accumBits, OSMesaContext sharelist)
+ {
++   int attribs[100], n = 0;
++
++   attribs[n++] = OSMESA_FORMAT;
++   attribs[n++] = format;
++   attribs[n++] = OSMESA_DEPTH_BITS;
++   attribs[n++] = depthBits;
++   attribs[n++] = OSMESA_STENCIL_BITS;
++   attribs[n++] = stencilBits;
++   attribs[n++] = OSMESA_ACCUM_BITS;
++   attribs[n++] = accumBits;
++   attribs[n++] = 0;
++
++   return OSMesaCreateContextAttribs(attribs, sharelist);
++}
++
++
++/**
++ * New in Mesa 11.2
++ *
++ * Create context with attribute list.
++ */
++GLAPI OSMesaContext GLAPIENTRY
++OSMesaCreateContextAttribs(const int *attribList, OSMesaContext sharelist)
++{
+    OSMesaContext osmesa;
+    struct st_context_iface *st_shared;
+    enum st_context_error st_error = 0;
+    struct st_context_attribs attribs;
+    struct st_api *stapi = get_st_api();
++   GLenum format = GL_RGBA;
++   int depthBits = 0, stencilBits = 0, accumBits = 0;
++   int profile = OSMESA_COMPAT_PROFILE, version_major = 1, version_minor = 0;
++   int i;
+ 
+    if (sharelist) {
+       st_shared = sharelist->stctx;
+@@ -561,6 +589,42 @@ OSMesaCreateContextExt(GLenum format, GLint depthBits, GLint stencilBits,
+    if (!osmesa)
+       return NULL;
+ 
++   for (i = 0; attribList[i]; i += 2) {
++      switch (attribList[i]) {
++      case OSMESA_FORMAT:
++         format = attribList[i+1];
++         assert(format >= 0);
++         break;
++      case OSMESA_DEPTH_BITS:
++         depthBits = attribList[i+1];
++         assert(depthBits >= 0);
++         break;
++      case OSMESA_STENCIL_BITS:
++         stencilBits = attribList[i+1];
++         assert(stencilBits >= 0);
++         break;
++      case OSMESA_ACCUM_BITS:
++         accumBits = attribList[i+1];
++         assert(accumBits >= 0);
++         break;
++      case OSMESA_PROFILE:
++         profile = attribList[i+1];
++         assert(profile == OSMESA_CORE_PROFILE ||
++                profile == OSMESA_COMPAT_PROFILE);
++         break;
++      case OSMESA_CONTEXT_MAJOR_VERSION:
++         version_major = attribList[i+1];
++         assert(version_major >= 1);
++         break;
++      case OSMESA_CONTEXT_MINOR_VERSION:
++         version_minor = attribList[i+1];
++         assert(version_minor >= 0);
++         break;
++      default:
++         break;
++      }
++   }
++
+    /* Choose depth/stencil/accum buffer formats */
+    if (accumBits > 0) {
+       osmesa->accum_format = PIPE_FORMAT_R16G16B16A16_SNORM;
+@@ -581,9 +645,11 @@ OSMesaCreateContextExt(GLenum format, GLint depthBits, GLint stencilBits,
+    /*
+     * Create the rendering context
+     */
+-   attribs.profile = ST_PROFILE_DEFAULT;
+-   attribs.major = 2;
+-   attribs.minor = 1;
++   memset(&attribs, 0, sizeof(attribs));
++   attribs.profile = (profile == OSMESA_CORE_PROFILE)
++      ? ST_PROFILE_OPENGL_CORE : ST_PROFILE_DEFAULT;
++   attribs.major = version_major;
++   attribs.minor = version_minor;
+    attribs.flags = 0;  /* ST_CONTEXT_FLAG_x */
+    attribs.options.force_glsl_extensions_warn = FALSE;
+    attribs.options.disable_blend_func_extended = FALSE;
+@@ -614,6 +680,7 @@ OSMesaCreateContextExt(GLenum format, GLint depthBits, GLint stencilBits,
+ }
+ 
+ 
++
+ /**
+  * Destroy an Off-Screen Mesa rendering context.
+  *
+@@ -883,6 +950,7 @@ struct name_function
+ static struct name_function functions[] = {
+    { "OSMesaCreateContext", (OSMESAproc) OSMesaCreateContext },
+    { "OSMesaCreateContextExt", (OSMESAproc) OSMesaCreateContextExt },
++   { "OSMesaCreateContextAttribs", (OSMESAproc) OSMesaCreateContextAttribs },
+    { "OSMesaDestroyContext", (OSMESAproc) OSMesaDestroyContext },
+    { "OSMesaMakeCurrent", (OSMESAproc) OSMesaMakeCurrent },
+    { "OSMesaGetCurrentContext", (OSMESAproc) OSMesaGetCurrentContext },
+diff --git a/src/mesa/drivers/osmesa/osmesa.c b/src/mesa/drivers/osmesa/osmesa.c
+index 5c7dcac..dcf8e5e 100644
+--- a/src/mesa/drivers/osmesa/osmesa.c
++++ b/src/mesa/drivers/osmesa/osmesa.c
+@@ -645,10 +645,85 @@ GLAPI OSMesaContext GLAPIENTRY
+ OSMesaCreateContextExt( GLenum format, GLint depthBits, GLint stencilBits,
+                         GLint accumBits, OSMesaContext sharelist )
+ {
++   int attribs[100], n = 0;
++
++   attribs[n++] = OSMESA_FORMAT;
++   attribs[n++] = format;
++   attribs[n++] = OSMESA_DEPTH_BITS;
++   attribs[n++] = depthBits;
++   attribs[n++] = OSMESA_STENCIL_BITS;
++   attribs[n++] = stencilBits;
++   attribs[n++] = OSMESA_ACCUM_BITS;
++   attribs[n++] = accumBits;
++   attribs[n++] = 0;
++
++   return OSMesaCreateContextAttribs(attribs, sharelist);
++}
++
++
++/**
++ * New in Mesa 11.2
++ *
++ * Create context with attribute list.
++ */
++GLAPI OSMesaContext GLAPIENTRY
++OSMesaCreateContextAttribs(const int *attribList, OSMesaContext sharelist)
++{
+    OSMesaContext osmesa;
+    struct dd_function_table functions;
+    GLint rind, gind, bind, aind;
+    GLint redBits = 0, greenBits = 0, blueBits = 0, alphaBits =0;
++   GLenum format = OSMESA_RGBA;
++   GLint depthBits = 0, stencilBits = 0, accumBits = 0;
++   int profile = OSMESA_COMPAT_PROFILE, version_major = 1, version_minor = 0;
++   gl_api api_profile;
++   int i;
++
++   osmesa = (OSMesaContext) CALLOC_STRUCT(osmesa_context);
++   if (!osmesa)
++      return NULL;
++
++   for (i = 0; attribList[i]; i += 2) {
++      switch (attribList[i]) {
++      case OSMESA_FORMAT:
++         format = attribList[i+1];
++         assert(format >= 0);
++         break;
++      case OSMESA_DEPTH_BITS:
++         depthBits = attribList[i+1];
++         assert(depthBits >= 0);
++         break;
++      case OSMESA_STENCIL_BITS:
++         stencilBits = attribList[i+1];
++         assert(stencilBits >= 0);
++         break;
++      case OSMESA_ACCUM_BITS:
++         accumBits = attribList[i+1];
++         assert(accumBits >= 0);
++         break;
++      case OSMESA_PROFILE:
++         profile = attribList[i+1];
++         assert(profile == OSMESA_CORE_PROFILE ||
++                profile == OSMESA_COMPAT_PROFILE);
++         if (profile == OSMESA_COMPAT_PROFILE)
++            api_profile = API_OPENGL_COMPAT;
++         else if (profile == OSMESA_CORE_PROFILE)
++            api_profile = API_OPENGL_CORE;
++         else
++            return NULL;
++         break;
++      case OSMESA_CONTEXT_MAJOR_VERSION:
++         version_major = attribList[i+1];
++         assert(version_major >= 1);
++         break;
++      case OSMESA_CONTEXT_MINOR_VERSION:
++         version_minor = attribList[i+1];
++         assert(version_minor >= 0);
++         break;
++      default:
++         break;
++      }
++   }
+ 
+    rind = gind = bind = aind = 0;
+    if (format==OSMESA_RGBA) {
+@@ -742,7 +817,7 @@ OSMesaCreateContextExt( GLenum format, GLint depthBits, GLint stencilBits,
+       functions.UpdateState = osmesa_update_state;
+ 
+       if (!_mesa_initialize_context(&osmesa->mesa,
+-                                    API_OPENGL_COMPAT,
++                                    api_profile,
+                                     osmesa->gl_visual,
+                                     sharelist ? &sharelist->mesa
+                                               : (struct gl_context *) NULL,
+@@ -819,6 +894,13 @@ OSMesaCreateContextExt( GLenum format, GLint depthBits, GLint stencilBits,
+ 
+          _mesa_compute_version(ctx);
+ 
++         if (ctx->Version < version_major * 10 + version_minor) {
++            _mesa_destroy_visual(osmesa->gl_visual);
++            _mesa_free_context_data(ctx);
++            free(osmesa);
++            return NULL;
++         }
++
+          /* Exec table initialization requires the version to be computed */
+          _mesa_initialize_dispatch_tables(ctx);
+          _mesa_initialize_vbo_vtxfmt(ctx);
+@@ -1121,6 +1203,7 @@ struct name_function
+ static struct name_function functions[] = {
+    { "OSMesaCreateContext", (OSMESAproc) OSMesaCreateContext },
+    { "OSMesaCreateContextExt", (OSMESAproc) OSMesaCreateContextExt },
++   { "OSMesaCreateContextAttribs", (OSMESAproc) OSMesaCreateContextAttribs },
+    { "OSMesaDestroyContext", (OSMESAproc) OSMesaDestroyContext },
+    { "OSMesaMakeCurrent", (OSMESAproc) OSMesaMakeCurrent },
+    { "OSMesaGetCurrentContext", (OSMESAproc) OSMesaGetCurrentContext },

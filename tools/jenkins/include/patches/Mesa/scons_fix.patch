@@ -1,0 +1,12 @@
+--- mesa-11.2.2/src/mesa/SConscript.orig	2016-03-15 14:28:39.738816000 +0100
++++ mesa-11.2.2/src/mesa/SConscript	2016-03-15 14:28:47.066941000 +0100
+@@ -6,7 +6,8 @@
+ import filecmp
+ import os
+ import subprocess
+-from sys import executable as python_cmd
++#from sys import executable as python_cmd
++python_cmd='python2.exe'
+ 
+ env = env.Clone()
+ 

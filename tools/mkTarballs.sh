@@ -37,10 +37,11 @@ fi
 
 # repos
 REPOS="
-https://github.com/MrKepzie/Natron
-https://github.com/MrKepzie/openfx-io
-https://github.com/devernay/openfx-misc
-https://github.com/olear/openfx-arena"
+https://github.com/NatronGitHub/Natron
+https://github.com/NatronGitHub/openfx-io
+https://github.com/NatronGitHub/openfx-misc
+https://github.com/NatronGitHub/openfx-gmic
+https://github.com/NatronGitHub/openfx-arena"
 
 cd "$TMP_DIR" || exit 1
 

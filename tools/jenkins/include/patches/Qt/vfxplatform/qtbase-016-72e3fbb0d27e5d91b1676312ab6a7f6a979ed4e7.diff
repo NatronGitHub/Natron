@@ -1,0 +1,154 @@
+diff --git a/src/plugins/platforms/cocoa/qcocoabackingstore.mm b/src/plugins/platforms/cocoa/qcocoabackingstore.mm
+index 7f3b1fc..687e123 100644
+--- a/src/plugins/platforms/cocoa/qcocoabackingstore.mm
++++ b/src/plugins/platforms/cocoa/qcocoabackingstore.mm
+@@ -40,13 +40,17 @@
+ QCocoaBackingStore::QCocoaBackingStore(QWindow *window)
+     : QPlatformBackingStore(window)
+ {
++    if (QCocoaWindow *cocoaWindow = static_cast<QCocoaWindow *>(window->handle()))
++        cocoaWindow->setHasBackingStore(true);
+ }
+ 
+ QCocoaBackingStore::~QCocoaBackingStore()
+ {
+     if (QWindow *w = window())
+-        if (QCocoaWindow *cocoaWindow = static_cast<QCocoaWindow *>(w->handle()))
++        if (QCocoaWindow *cocoaWindow = static_cast<QCocoaWindow *>(w->handle())) {
++            cocoaWindow->setHasBackingStore(false);
+             [cocoaWindow->m_qtView clearBackingStore:this];
++        }
+ }
+ 
+ QPaintDevice *QCocoaBackingStore::paintDevice()
+@@ -71,8 +75,22 @@
+ void QCocoaBackingStore::flush(QWindow *win, const QRegion &region, const QPoint &offset)
+ {
+     if (!m_qImage.isNull()) {
+-        if (QCocoaWindow *cocoaWindow = static_cast<QCocoaWindow *>(win->handle()))
+-            [cocoaWindow->m_qtView flushBackingStore:this region:region offset:offset];
++        QCocoaWindow *bsCocoaWindow = static_cast<QCocoaWindow *>(window()->handle());
++        if (bsCocoaWindow) {
++            // In case the window was not created when the constructor got called.
++            bsCocoaWindow->setHasBackingStore(true);
++        }
++        QNSView *bsQtView = bsCocoaWindow ? bsCocoaWindow->qtView() : Q_NULLPTR;
++        QCocoaWindow *cocoaWindow = static_cast<QCocoaWindow *>(win->handle());
++        QNSView *qtView = cocoaWindow ? cocoaWindow->qtView() : Q_NULLPTR;
++        if (bsQtView && qtView) {
++            QNSView *daQtView = bsQtView.window == qtView.window ? bsQtView : qtView;
++            if (daQtView != qtView) {
++                // Clear any disabled backing store related view.
++                cocoaWindow->setHasBackingStore(false);
++            }
++            [daQtView flushBackingStore:this region:region offset:offset];
++        }
+     }
+ }
+ 
+diff --git a/src/plugins/platforms/cocoa/qcocoawindow.h b/src/plugins/platforms/cocoa/qcocoawindow.h
+index 9fcb221..eb44313 100644
+--- a/src/plugins/platforms/cocoa/qcocoawindow.h
++++ b/src/plugins/platforms/cocoa/qcocoawindow.h
+@@ -257,6 +257,10 @@ class QCocoaWindow : public QPlatformWindow
+ 
+     static QPoint bottomLeftClippedByNSWindowOffsetStatic(QWindow *window);
+     QPoint bottomLeftClippedByNSWindowOffset() const;
++
++    void setHasBackingStore(bool hasBS);
++    bool hasBackingStore() const;
++
+ protected:
+     void recreateWindow(const QPlatformWindow *parentWindow);
+     QCocoaNSWindow *createNSWindow();
+@@ -346,6 +350,8 @@ class QCocoaWindow : public QPlatformWindow
+     // This object is tracked by QCocoaWindowPointer,
+     // preventing the use of dangling pointers.
+     QObject sentinel;
++
++    bool m_hasBackingStore;
+ };
+ 
+ QT_END_NAMESPACE
+diff --git a/src/plugins/platforms/cocoa/qcocoawindow.mm b/src/plugins/platforms/cocoa/qcocoawindow.mm
+index 5a82cfb..0085072 100644
+--- a/src/plugins/platforms/cocoa/qcocoawindow.mm
++++ b/src/plugins/platforms/cocoa/qcocoawindow.mm
+@@ -1902,6 +1902,16 @@ - (void)dealloc
+     return QPoint(visibleRect.origin.x, -visibleRect.origin.y + (origin.y - visibleRect.size.height));
+ }
+ 
++void QCocoaWindow::setHasBackingStore(bool hasBS)
++{
++    m_hasBackingStore = hasBS;
++}
++
++bool QCocoaWindow::hasBackingStore() const
++{
++    return m_hasBackingStore;
++}
++
+ QMargins QCocoaWindow::frameMargins() const
+ {
+     NSRect frameW = [m_nsWindow frame];
+diff --git a/src/plugins/platforms/cocoa/qnsview.h b/src/plugins/platforms/cocoa/qnsview.h
+index 820ac60..431bf1a 100644
+--- a/src/plugins/platforms/cocoa/qnsview.h
++++ b/src/plugins/platforms/cocoa/qnsview.h
+@@ -52,7 +52,6 @@ Q_FORWARD_DECLARE_OBJC_CLASS(QT_MANGLE_NAMESPACE(QNSViewMouseMoveHelper));
+ 
+ @interface QT_MANGLE_NAMESPACE(QNSView) : NSView <NSTextInputClient> {
+     QCocoaBackingStore* m_backingStore;
+-    QPoint m_backingStoreOffset;
+     CGImageRef m_maskImage;
+     uchar *m_maskData;
+     bool m_shouldInvalidateWindowShadow;
+diff --git a/src/plugins/platforms/cocoa/qnsview.mm b/src/plugins/platforms/cocoa/qnsview.mm
+index 2d49442..9089755 100644
+--- a/src/plugins/platforms/cocoa/qnsview.mm
++++ b/src/plugins/platforms/cocoa/qnsview.mm
+@@ -526,9 +526,8 @@ - (void)removeFromSuperview
+ - (void) flushBackingStore:(QCocoaBackingStore *)backingStore region:(const QRegion &)region offset:(QPoint)offset
+ {
+     m_backingStore = backingStore;
+-    m_backingStoreOffset = offset * m_backingStore->getBackingStoreDevicePixelRatio();
+-    foreach (QRect rect, region.rects())
+-        [self setNeedsDisplayInRect:NSMakeRect(rect.x(), rect.y(), rect.width(), rect.height())];
++    foreach (const QRect &rect, region.rects())
++        [self setNeedsDisplayInRect:NSMakeRect(rect.x() + offset.x(), rect.y() + offset.y(), rect.width(), rect.height())];
+ }
+ 
+ - (void)clearBackingStore:(QCocoaBackingStore *)backingStore
+@@ -545,7 +544,14 @@ - (BOOL) hasMask
+ - (BOOL) isOpaque
+ {
+     if (!m_platformWindow)
+-        return true;
++        return YES;
++    if (!m_platformWindow->hasBackingStore()) {
++        // Non backing store related QNSViews are never marked dirty
++        // since we only draw the ancestor related to that BS.
++        // Therefore, they should not hide their BS related ancestor
++        // or any other view behind it.
++        return NO;
++    }
+     return m_platformWindow->isOpaque();
+ }
+ 
+@@ -628,15 +634,8 @@ - (void) drawRect:(NSRect)dirtyRect
+         CGContextClipToMask(cgContext, dirtyWindowRect, subMask);
+     }
+ 
+-    // Clip out and draw the correct sub image from the (shared) backingstore:
+-    CGRect backingStoreRect = CGRectMake(
+-        dirtyBackingRect.origin.x + m_backingStoreOffset.x(),
+-        dirtyBackingRect.origin.y + m_backingStoreOffset.y(),
+-        dirtyBackingRect.size.width,
+-        dirtyBackingRect.size.height
+-    );
+     CGImageRef bsCGImage = qt_mac_toCGImage(m_backingStore->toImage());
+-    CGImageRef cleanImg = CGImageCreateWithImageInRect(bsCGImage, backingStoreRect);
++    CGImageRef cleanImg = CGImageCreateWithImageInRect(bsCGImage, dirtyBackingRect);
+ 
+     // Optimization: Copy frame buffer content instead of blending for
+     // top-level windows where Qt fills the entire window content area.

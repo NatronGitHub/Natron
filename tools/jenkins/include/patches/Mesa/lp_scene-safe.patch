@@ -1,0 +1,12 @@
+--- mesa-11.2.0/src/gallium/drivers/llvmpipe/lp_scene.c.orig	2016-04-21 17:23:46.000000000 +0200
++++ mesa-11.2.0/src/gallium/drivers/llvmpipe/lp_scene.c	2016-04-21 17:22:28.000000000 +0200
+@@ -211,6 +211,9 @@
+ {
+    int i, j;
+ 
++   if (!scene)
++      return;
++
+    /* Unmap color buffers */
+    for (i = 0; i < scene->fb.nr_cbufs; i++) {
+       if (scene->cbufs[i].map) {

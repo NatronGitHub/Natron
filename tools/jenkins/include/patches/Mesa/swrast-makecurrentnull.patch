@@ -1,0 +1,16 @@
+--- mesa-11.2.2/src/mesa/drivers/osmesa/osmesa.c~	2016-06-10 11:20:08.000000000 +0200
++++ mesa-11.2.2/src/mesa/drivers/osmesa/osmesa.c	2016-06-10 11:43:09.000000000 +0200
+@@ -986,7 +986,12 @@
+ OSMesaMakeCurrent( OSMesaContext osmesa, void *buffer, GLenum type,
+                    GLsizei width, GLsizei height )
+ {
+-   if (!osmesa || !buffer ||
++   if (!osmesa) {
++      /* make sure the active context is not referenced anymore */
++      _mesa_make_current(NULL, NULL, NULL);
++      return GL_FALSE;
++   }
++   if (!buffer ||
+        width < 1 || height < 1 ||
+        width > SWRAST_MAX_WIDTH || height > SWRAST_MAX_HEIGHT) {
+       return GL_FALSE;

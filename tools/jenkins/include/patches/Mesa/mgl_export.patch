@@ -1,0 +1,1360 @@
+--- mesa-11.2.2/src/gallium/targets/osmesa/osmesa.def.orig	2016-01-29 13:21:30.000000000 +0100
++++ mesa-11.2.2/src/gallium/targets/osmesa/osmesa.def	2016-03-15 15:20:29.830612800 +0100
+@@ -14,340 +14,340 @@
+ 	OSMesaGetProcAddress
+ 	OSMesaColorClamp
+ 	OSMesaPostprocess
+-	glAccum
+-	glAlphaFunc
+-	glAreTexturesResident
+-	glArrayElement
+-	glBegin
+-	glBindTexture
+-	glBitmap
+-	glBlendFunc
+-	glCallList
+-	glCallLists
+-	glClear
+-	glClearAccum
+-	glClearColor
+-	glClearDepth
+-	glClearIndex
+-	glClearStencil
+-	glClipPlane
+-	glColor3b
+-	glColor3bv
+-	glColor3d
+-	glColor3dv
+-	glColor3f
+-	glColor3fv
+-	glColor3i
+-	glColor3iv
+-	glColor3s
+-	glColor3sv
+-	glColor3ub
+-	glColor3ubv
+-	glColor3ui
+-	glColor3uiv
+-	glColor3us
+-	glColor3usv
+-	glColor4b
+-	glColor4bv
+-	glColor4d
+-	glColor4dv
+-	glColor4f
+-	glColor4fv
+-	glColor4i
+-	glColor4iv
+-	glColor4s
+-	glColor4sv
+-	glColor4ub
+-	glColor4ubv
+-	glColor4ui
+-	glColor4uiv
+-	glColor4us
+-	glColor4usv
+-	glColorMask
+-	glColorMaterial
+-	glColorPointer
+-	glCopyPixels
+-	glCopyTexImage1D
+-	glCopyTexImage2D
+-	glCopyTexSubImage1D
+-	glCopyTexSubImage2D
+-	glCullFace
+-;	glDebugEntry
+-	glDeleteLists
+-	glDeleteTextures
+-	glDepthFunc
+-	glDepthMask
+-	glDepthRange
+-	glDisable
+-	glDisableClientState
+-	glDrawArrays
+-	glDrawBuffer
+-	glDrawElements
+-	glDrawPixels
+-	glEdgeFlag
+-	glEdgeFlagPointer
+-	glEdgeFlagv
+-	glEnable
+-	glEnableClientState
+-	glEnd
+-	glEndList
+-	glEvalCoord1d
+-	glEvalCoord1dv
+-	glEvalCoord1f
+-	glEvalCoord1fv
+-	glEvalCoord2d
+-	glEvalCoord2dv
+-	glEvalCoord2f
+-	glEvalCoord2fv
+-	glEvalMesh1
+-	glEvalMesh2
+-	glEvalPoint1
+-	glEvalPoint2
+-	glFeedbackBuffer
+-	glFinish
+-	glFlush
+-	glFogf
+-	glFogfv
+-	glFogi
+-	glFogiv
+-	glFrontFace
+-	glFrustum
+-	glGenLists
+-	glGenTextures
+-	glGetBooleanv
+-	glGetClipPlane
+-	glGetDoublev
+-	glGetError
+-	glGetFloatv
+-	glGetIntegerv
+-	glGetLightfv
+-	glGetLightiv
+-	glGetMapdv
+-	glGetMapfv
+-	glGetMapiv
+-	glGetMaterialfv
+-	glGetMaterialiv
+-	glGetPixelMapfv
+-	glGetPixelMapuiv
+-	glGetPixelMapusv
+-	glGetPointerv
+-	glGetPolygonStipple
+-	glGetString
+-	glGetTexEnvfv
+-	glGetTexEnviv
+-	glGetTexGendv
+-	glGetTexGenfv
+-	glGetTexGeniv
+-	glGetTexImage
+-	glGetTexLevelParameterfv
+-	glGetTexLevelParameteriv
+-	glGetTexParameterfv
+-	glGetTexParameteriv
+-	glHint
+-	glIndexMask
+-	glIndexPointer
+-	glIndexd
+-	glIndexdv
+-	glIndexf
+-	glIndexfv
+-	glIndexi
+-	glIndexiv
+-	glIndexs
+-	glIndexsv
+-	glIndexub
+-	glIndexubv
+-	glInitNames
+-	glInterleavedArrays
+-	glIsEnabled
+-	glIsList
+-	glIsTexture
+-	glLightModelf
+-	glLightModelfv
+-	glLightModeli
+-	glLightModeliv
+-	glLightf
+-	glLightfv
+-	glLighti
+-	glLightiv
+-	glLineStipple
+-	glLineWidth
+-	glListBase
+-	glLoadIdentity
+-	glLoadMatrixd
+-	glLoadMatrixf
+-	glLoadName
+-	glLogicOp
+-	glMap1d
+-	glMap1f
+-	glMap2d
+-	glMap2f
+-	glMapGrid1d
+-	glMapGrid1f
+-	glMapGrid2d
+-	glMapGrid2f
+-	glMaterialf
+-	glMaterialfv
+-	glMateriali
+-	glMaterialiv
+-	glMatrixMode
+-	glMultMatrixd
+-	glMultMatrixf
+-	glNewList
+-	glNormal3b
+-	glNormal3bv
+-	glNormal3d
+-	glNormal3dv
+-	glNormal3f
+-	glNormal3fv
+-	glNormal3i
+-	glNormal3iv
+-	glNormal3s
+-	glNormal3sv
+-	glNormalPointer
+-	glOrtho
+-	glPassThrough
+-	glPixelMapfv
+-	glPixelMapuiv
+-	glPixelMapusv
+-	glPixelStoref
+-	glPixelStorei
+-	glPixelTransferf
+-	glPixelTransferi
+-	glPixelZoom
+-	glPointSize
+-	glPolygonMode
+-	glPolygonOffset
+-	glPolygonStipple
+-	glPopAttrib
+-	glPopClientAttrib
+-	glPopMatrix
+-	glPopName
+-	glPrioritizeTextures
+-	glPushAttrib
+-	glPushClientAttrib
+-	glPushMatrix
+-	glPushName
+-	glRasterPos2d
+-	glRasterPos2dv
+-	glRasterPos2f
+-	glRasterPos2fv
+-	glRasterPos2i
+-	glRasterPos2iv
+-	glRasterPos2s
+-	glRasterPos2sv
+-	glRasterPos3d
+-	glRasterPos3dv
+-	glRasterPos3f
+-	glRasterPos3fv
+-	glRasterPos3i
+-	glRasterPos3iv
+-	glRasterPos3s
+-	glRasterPos3sv
+-	glRasterPos4d
+-	glRasterPos4dv
+-	glRasterPos4f
+-	glRasterPos4fv
+-	glRasterPos4i
+-	glRasterPos4iv
+-	glRasterPos4s
+-	glRasterPos4sv
+-	glReadBuffer
+-	glReadPixels
+-	glRectd
+-	glRectdv
+-	glRectf
+-	glRectfv
+-	glRecti
+-	glRectiv
+-	glRects
+-	glRectsv
+-	glRenderMode
+-	glRotated
+-	glRotatef
+-	glScaled
+-	glScalef
+-	glScissor
+-	glSelectBuffer
+-	glShadeModel
+-	glStencilFunc
+-	glStencilMask
+-	glStencilOp
+-	glTexCoord1d
+-	glTexCoord1dv
+-	glTexCoord1f
+-	glTexCoord1fv
+-	glTexCoord1i
+-	glTexCoord1iv
+-	glTexCoord1s
+-	glTexCoord1sv
+-	glTexCoord2d
+-	glTexCoord2dv
+-	glTexCoord2f
+-	glTexCoord2fv
+-	glTexCoord2i
+-	glTexCoord2iv
+-	glTexCoord2s
+-	glTexCoord2sv
+-	glTexCoord3d
+-	glTexCoord3dv
+-	glTexCoord3f
+-	glTexCoord3fv
+-	glTexCoord3i
+-	glTexCoord3iv
+-	glTexCoord3s
+-	glTexCoord3sv
+-	glTexCoord4d
+-	glTexCoord4dv
+-	glTexCoord4f
+-	glTexCoord4fv
+-	glTexCoord4i
+-	glTexCoord4iv
+-	glTexCoord4s
+-	glTexCoord4sv
+-	glTexCoordPointer
+-	glTexEnvf
+-	glTexEnvfv
+-	glTexEnvi
+-	glTexEnviv
+-	glTexGend
+-	glTexGendv
+-	glTexGenf
+-	glTexGenfv
+-	glTexGeni
+-	glTexGeniv
+-	glTexImage1D
+-	glTexImage2D
+-	glTexParameterf
+-	glTexParameterfv
+-	glTexParameteri
+-	glTexParameteriv
+-	glTexSubImage1D
+-	glTexSubImage2D
+-	glTranslated
+-	glTranslatef
+-	glVertex2d
+-	glVertex2dv
+-	glVertex2f
+-	glVertex2fv
+-	glVertex2i
+-	glVertex2iv
+-	glVertex2s
+-	glVertex2sv
+-	glVertex3d
+-	glVertex3dv
+-	glVertex3f
+-	glVertex3fv
+-	glVertex3i
+-	glVertex3iv
+-	glVertex3s
+-	glVertex3sv
+-	glVertex4d
+-	glVertex4dv
+-	glVertex4f
+-	glVertex4fv
+-	glVertex4i
+-	glVertex4iv
+-	glVertex4s
+-	glVertex4sv
+-	glVertexPointer
+-	glViewport
++	mglAccum
++	mglAlphaFunc
++	mglAreTexturesResident
++	mglArrayElement
++	mglBegin
++	mglBindTexture
++	mglBitmap
++	mglBlendFunc
++	mglCallList
++	mglCallLists
++	mglClear
++	mglClearAccum
++	mglClearColor
++	mglClearDepth
++	mglClearIndex
++	mglClearStencil
++	mglClipPlane
++	mglColor3b
++	mglColor3bv
++	mglColor3d
++	mglColor3dv
++	mglColor3f
++	mglColor3fv
++	mglColor3i
++	mglColor3iv
++	mglColor3s
++	mglColor3sv
++	mglColor3ub
++	mglColor3ubv
++	mglColor3ui
++	mglColor3uiv
++	mglColor3us
++	mglColor3usv
++	mglColor4b
++	mglColor4bv
++	mglColor4d
++	mglColor4dv
++	mglColor4f
++	mglColor4fv
++	mglColor4i
++	mglColor4iv
++	mglColor4s
++	mglColor4sv
++	mglColor4ub
++	mglColor4ubv
++	mglColor4ui
++	mglColor4uiv
++	mglColor4us
++	mglColor4usv
++	mglColorMask
++	mglColorMaterial
++	mglColorPointer
++	mglCopyPixels
++	mglCopyTexImage1D
++	mglCopyTexImage2D
++	mglCopyTexSubImage1D
++	mglCopyTexSubImage2D
++	mglCullFace
++;	mglDebugEntry
++	mglDeleteLists
++	mglDeleteTextures
++	mglDepthFunc
++	mglDepthMask
++	mglDepthRange
++	mglDisable
++	mglDisableClientState
++	mglDrawArrays
++	mglDrawBuffer
++	mglDrawElements
++	mglDrawPixels
++	mglEdgeFlag
++	mglEdgeFlagPointer
++	mglEdgeFlagv
++	mglEnable
++	mglEnableClientState
++	mglEnd
++	mglEndList
++	mglEvalCoord1d
++	mglEvalCoord1dv
++	mglEvalCoord1f
++	mglEvalCoord1fv
++	mglEvalCoord2d
++	mglEvalCoord2dv
++	mglEvalCoord2f
++	mglEvalCoord2fv
++	mglEvalMesh1
++	mglEvalMesh2
++	mglEvalPoint1
++	mglEvalPoint2
++	mglFeedbackBuffer
++	mglFinish
++	mglFlush
++	mglFogf
++	mglFogfv
++	mglFogi
++	mglFogiv
++	mglFrontFace
++	mglFrustum
++	mglGenLists
++	mglGenTextures
++	mglGetBooleanv
++	mglGetClipPlane
++	mglGetDoublev
++	mglGetError
++	mglGetFloatv
++	mglGetIntegerv
++	mglGetLightfv
++	mglGetLightiv
++	mglGetMapdv
++	mglGetMapfv
++	mglGetMapiv
++	mglGetMaterialfv
++	mglGetMaterialiv
++	mglGetPixelMapfv
++	mglGetPixelMapuiv
++	mglGetPixelMapusv
++	mglGetPointerv
++	mglGetPolygonStipple
++	mglGetString
++	mglGetTexEnvfv
++	mglGetTexEnviv
++	mglGetTexGendv
++	mglGetTexGenfv
++	mglGetTexGeniv
++	mglGetTexImage
++	mglGetTexLevelParameterfv
++	mglGetTexLevelParameteriv
++	mglGetTexParameterfv
++	mglGetTexParameteriv
++	mglHint
++	mglIndexMask
++	mglIndexPointer
++	mglIndexd
++	mglIndexdv
++	mglIndexf
++	mglIndexfv
++	mglIndexi
++	mglIndexiv
++	mglIndexs
++	mglIndexsv
++	mglIndexub
++	mglIndexubv
++	mglInitNames
++	mglInterleavedArrays
++	mglIsEnabled
++	mglIsList
++	mglIsTexture
++	mglLightModelf
++	mglLightModelfv
++	mglLightModeli
++	mglLightModeliv
++	mglLightf
++	mglLightfv
++	mglLighti
++	mglLightiv
++	mglLineStipple
++	mglLineWidth
++	mglListBase
++	mglLoadIdentity
++	mglLoadMatrixd
++	mglLoadMatrixf
++	mglLoadName
++	mglLogicOp
++	mglMap1d
++	mglMap1f
++	mglMap2d
++	mglMap2f
++	mglMapGrid1d
++	mglMapGrid1f
++	mglMapGrid2d
++	mglMapGrid2f
++	mglMaterialf
++	mglMaterialfv
++	mglMateriali
++	mglMaterialiv
++	mglMatrixMode
++	mglMultMatrixd
++	mglMultMatrixf
++	mglNewList
++	mglNormal3b
++	mglNormal3bv
++	mglNormal3d
++	mglNormal3dv
++	mglNormal3f
++	mglNormal3fv
++	mglNormal3i
++	mglNormal3iv
++	mglNormal3s
++	mglNormal3sv
++	mglNormalPointer
++	mglOrtho
++	mglPassThrough
++	mglPixelMapfv
++	mglPixelMapuiv
++	mglPixelMapusv
++	mglPixelStoref
++	mglPixelStorei
++	mglPixelTransferf
++	mglPixelTransferi
++	mglPixelZoom
++	mglPointSize
++	mglPolygonMode
++	mglPolygonOffset
++	mglPolygonStipple
++	mglPopAttrib
++	mglPopClientAttrib
++	mglPopMatrix
++	mglPopName
++	mglPrioritizeTextures
++	mglPushAttrib
++	mglPushClientAttrib
++	mglPushMatrix
++	mglPushName
++	mglRasterPos2d
++	mglRasterPos2dv
++	mglRasterPos2f
++	mglRasterPos2fv
++	mglRasterPos2i
++	mglRasterPos2iv
++	mglRasterPos2s
++	mglRasterPos2sv
++	mglRasterPos3d
++	mglRasterPos3dv
++	mglRasterPos3f
++	mglRasterPos3fv
++	mglRasterPos3i
++	mglRasterPos3iv
++	mglRasterPos3s
++	mglRasterPos3sv
++	mglRasterPos4d
++	mglRasterPos4dv
++	mglRasterPos4f
++	mglRasterPos4fv
++	mglRasterPos4i
++	mglRasterPos4iv
++	mglRasterPos4s
++	mglRasterPos4sv
++	mglReadBuffer
++	mglReadPixels
++	mglRectd
++	mglRectdv
++	mglRectf
++	mglRectfv
++	mglRecti
++	mglRectiv
++	mglRects
++	mglRectsv
++	mglRenderMode
++	mglRotated
++	mglRotatef
++	mglScaled
++	mglScalef
++	mglScissor
++	mglSelectBuffer
++	mglShadeModel
++	mglStencilFunc
++	mglStencilMask
++	mglStencilOp
++	mglTexCoord1d
++	mglTexCoord1dv
++	mglTexCoord1f
++	mglTexCoord1fv
++	mglTexCoord1i
++	mglTexCoord1iv
++	mglTexCoord1s
++	mglTexCoord1sv
++	mglTexCoord2d
++	mglTexCoord2dv
++	mglTexCoord2f
++	mglTexCoord2fv
++	mglTexCoord2i
++	mglTexCoord2iv
++	mglTexCoord2s
++	mglTexCoord2sv
++	mglTexCoord3d
++	mglTexCoord3dv
++	mglTexCoord3f
++	mglTexCoord3fv
++	mglTexCoord3i
++	mglTexCoord3iv
++	mglTexCoord3s
++	mglTexCoord3sv
++	mglTexCoord4d
++	mglTexCoord4dv
++	mglTexCoord4f
++	mglTexCoord4fv
++	mglTexCoord4i
++	mglTexCoord4iv
++	mglTexCoord4s
++	mglTexCoord4sv
++	mglTexCoordPointer
++	mglTexEnvf
++	mglTexEnvfv
++	mglTexEnvi
++	mglTexEnviv
++	mglTexGend
++	mglTexGendv
++	mglTexGenf
++	mglTexGenfv
++	mglTexGeni
++	mglTexGeniv
++	mglTexImage1D
++	mglTexImage2D
++	mglTexParameterf
++	mglTexParameterfv
++	mglTexParameteri
++	mglTexParameteriv
++	mglTexSubImage1D
++	mglTexSubImage2D
++	mglTranslated
++	mglTranslatef
++	mglVertex2d
++	mglVertex2dv
++	mglVertex2f
++	mglVertex2fv
++	mglVertex2i
++	mglVertex2iv
++	mglVertex2s
++	mglVertex2sv
++	mglVertex3d
++	mglVertex3dv
++	mglVertex3f
++	mglVertex3fv
++	mglVertex3i
++	mglVertex3iv
++	mglVertex3s
++	mglVertex3sv
++	mglVertex4d
++	mglVertex4dv
++	mglVertex4f
++	mglVertex4fv
++	mglVertex4i
++	mglVertex4iv
++	mglVertex4s
++	mglVertex4sv
++	mglVertexPointer
++	mglViewport
+--- mesa-11.2.2/src/gallium/targets/osmesa/osmesa.mingw.def.orig	2016-01-29 13:21:30.000000000 +0100
++++ mesa-11.2.2/src/gallium/targets/osmesa/osmesa.mingw.def	2016-03-15 15:21:33.799362800 +0100
+@@ -11,340 +11,340 @@
+ 	OSMesaGetProcAddress = OSMesaGetProcAddress@4
+ 	OSMesaColorClamp = OSMesaColorClamp@4
+ 	OSMesaPostprocess = OSMesaPostprocess@12
+-	glAccum = glAccum@8
+-	glAlphaFunc = glAlphaFunc@8
+-	glAreTexturesResident = glAreTexturesResident@12
+-	glArrayElement = glArrayElement@4
+-	glBegin = glBegin@4
+-	glBindTexture = glBindTexture@8
+-	glBitmap = glBitmap@28
+-	glBlendFunc = glBlendFunc@8
+-	glCallList = glCallList@4
+-	glCallLists = glCallLists@12
+-	glClear = glClear@4
+-	glClearAccum = glClearAccum@16
+-	glClearColor = glClearColor@16
+-	glClearDepth = glClearDepth@8
+-	glClearIndex = glClearIndex@4
+-	glClearStencil = glClearStencil@4
+-	glClipPlane = glClipPlane@8
+-	glColor3b = glColor3b@12
+-	glColor3bv = glColor3bv@4
+-	glColor3d = glColor3d@24
+-	glColor3dv = glColor3dv@4
+-	glColor3f = glColor3f@12
+-	glColor3fv = glColor3fv@4
+-	glColor3i = glColor3i@12
+-	glColor3iv = glColor3iv@4
+-	glColor3s = glColor3s@12
+-	glColor3sv = glColor3sv@4
+-	glColor3ub = glColor3ub@12
+-	glColor3ubv = glColor3ubv@4
+-	glColor3ui = glColor3ui@12
+-	glColor3uiv = glColor3uiv@4
+-	glColor3us = glColor3us@12
+-	glColor3usv = glColor3usv@4
+-	glColor4b = glColor4b@16
+-	glColor4bv = glColor4bv@4
+-	glColor4d = glColor4d@32
+-	glColor4dv = glColor4dv@4
+-	glColor4f = glColor4f@16
+-	glColor4fv = glColor4fv@4
+-	glColor4i = glColor4i@16
+-	glColor4iv = glColor4iv@4
+-	glColor4s = glColor4s@16
+-	glColor4sv = glColor4sv@4
+-	glColor4ub = glColor4ub@16
+-	glColor4ubv = glColor4ubv@4
+-	glColor4ui = glColor4ui@16
+-	glColor4uiv = glColor4uiv@4
+-	glColor4us = glColor4us@16
+-	glColor4usv = glColor4usv@4
+-	glColorMask = glColorMask@16
+-	glColorMaterial = glColorMaterial@8
+-	glColorPointer = glColorPointer@16
+-	glCopyPixels = glCopyPixels@20
+-	glCopyTexImage1D = glCopyTexImage1D@28
+-	glCopyTexImage2D = glCopyTexImage2D@32
+-	glCopyTexSubImage1D = glCopyTexSubImage1D@24
+-	glCopyTexSubImage2D = glCopyTexSubImage2D@32
+-	glCullFace = glCullFace@4
+-;	glDebugEntry = glDebugEntry@8
+-	glDeleteLists = glDeleteLists@8
+-	glDeleteTextures = glDeleteTextures@8
+-	glDepthFunc = glDepthFunc@4
+-	glDepthMask = glDepthMask@4
+-	glDepthRange = glDepthRange@16
+-	glDisable = glDisable@4
+-	glDisableClientState = glDisableClientState@4
+-	glDrawArrays = glDrawArrays@12
+-	glDrawBuffer = glDrawBuffer@4
+-	glDrawElements = glDrawElements@16
+-	glDrawPixels = glDrawPixels@20
+-	glEdgeFlag = glEdgeFlag@4
+-	glEdgeFlagPointer = glEdgeFlagPointer@8
+-	glEdgeFlagv = glEdgeFlagv@4
+-	glEnable = glEnable@4
+-	glEnableClientState = glEnableClientState@4
+-	glEnd = glEnd@0
+-	glEndList = glEndList@0
+-	glEvalCoord1d = glEvalCoord1d@8
+-	glEvalCoord1dv = glEvalCoord1dv@4
+-	glEvalCoord1f = glEvalCoord1f@4
+-	glEvalCoord1fv = glEvalCoord1fv@4
+-	glEvalCoord2d = glEvalCoord2d@16
+-	glEvalCoord2dv = glEvalCoord2dv@4
+-	glEvalCoord2f = glEvalCoord2f@8
+-	glEvalCoord2fv = glEvalCoord2fv@4
+-	glEvalMesh1 = glEvalMesh1@12
+-	glEvalMesh2 = glEvalMesh2@20
+-	glEvalPoint1 = glEvalPoint1@4
+-	glEvalPoint2 = glEvalPoint2@8
+-	glFeedbackBuffer = glFeedbackBuffer@12
+-	glFinish = glFinish@0
+-	glFlush = glFlush@0
+-	glFogf = glFogf@8
+-	glFogfv = glFogfv@8
+-	glFogi = glFogi@8
+-	glFogiv = glFogiv@8
+-	glFrontFace = glFrontFace@4
+-	glFrustum = glFrustum@48
+-	glGenLists = glGenLists@4
+-	glGenTextures = glGenTextures@8
+-	glGetBooleanv = glGetBooleanv@8
+-	glGetClipPlane = glGetClipPlane@8
+-	glGetDoublev = glGetDoublev@8
+-	glGetError = glGetError@0
+-	glGetFloatv = glGetFloatv@8
+-	glGetIntegerv = glGetIntegerv@8
+-	glGetLightfv = glGetLightfv@12
+-	glGetLightiv = glGetLightiv@12
+-	glGetMapdv = glGetMapdv@12
+-	glGetMapfv = glGetMapfv@12
+-	glGetMapiv = glGetMapiv@12
+-	glGetMaterialfv = glGetMaterialfv@12
+-	glGetMaterialiv = glGetMaterialiv@12
+-	glGetPixelMapfv = glGetPixelMapfv@8
+-	glGetPixelMapuiv = glGetPixelMapuiv@8
+-	glGetPixelMapusv = glGetPixelMapusv@8
+-	glGetPointerv = glGetPointerv@8
+-	glGetPolygonStipple = glGetPolygonStipple@4
+-	glGetString = glGetString@4
+-	glGetTexEnvfv = glGetTexEnvfv@12
+-	glGetTexEnviv = glGetTexEnviv@12
+-	glGetTexGendv = glGetTexGendv@12
+-	glGetTexGenfv = glGetTexGenfv@12
+-	glGetTexGeniv = glGetTexGeniv@12
+-	glGetTexImage = glGetTexImage@20
+-	glGetTexLevelParameterfv = glGetTexLevelParameterfv@16
+-	glGetTexLevelParameteriv = glGetTexLevelParameteriv@16
+-	glGetTexParameterfv = glGetTexParameterfv@12
+-	glGetTexParameteriv = glGetTexParameteriv@12
+-	glHint = glHint@8
+-	glIndexMask = glIndexMask@4
+-	glIndexPointer = glIndexPointer@12
+-	glIndexd = glIndexd@8
+-	glIndexdv = glIndexdv@4
+-	glIndexf = glIndexf@4
+-	glIndexfv = glIndexfv@4
+-	glIndexi = glIndexi@4
+-	glIndexiv = glIndexiv@4
+-	glIndexs = glIndexs@4
+-	glIndexsv = glIndexsv@4
+-	glIndexub = glIndexub@4
+-	glIndexubv = glIndexubv@4
+-	glInitNames = glInitNames@0
+-	glInterleavedArrays = glInterleavedArrays@12
+-	glIsEnabled = glIsEnabled@4
+-	glIsList = glIsList@4
+-	glIsTexture = glIsTexture@4
+-	glLightModelf = glLightModelf@8
+-	glLightModelfv = glLightModelfv@8
+-	glLightModeli = glLightModeli@8
+-	glLightModeliv = glLightModeliv@8
+-	glLightf = glLightf@12
+-	glLightfv = glLightfv@12
+-	glLighti = glLighti@12
+-	glLightiv = glLightiv@12
+-	glLineStipple = glLineStipple@8
+-	glLineWidth = glLineWidth@4
+-	glListBase = glListBase@4
+-	glLoadIdentity = glLoadIdentity@0
+-	glLoadMatrixd = glLoadMatrixd@4
+-	glLoadMatrixf = glLoadMatrixf@4
+-	glLoadName = glLoadName@4
+-	glLogicOp = glLogicOp@4
+-	glMap1d = glMap1d@32
+-	glMap1f = glMap1f@24
+-	glMap2d = glMap2d@56
+-	glMap2f = glMap2f@40
+-	glMapGrid1d = glMapGrid1d@20
+-	glMapGrid1f = glMapGrid1f@12
+-	glMapGrid2d = glMapGrid2d@40
+-	glMapGrid2f = glMapGrid2f@24
+-	glMaterialf = glMaterialf@12
+-	glMaterialfv = glMaterialfv@12
+-	glMateriali = glMateriali@12
+-	glMaterialiv = glMaterialiv@12
+-	glMatrixMode = glMatrixMode@4
+-	glMultMatrixd = glMultMatrixd@4
+-	glMultMatrixf = glMultMatrixf@4
+-	glNewList = glNewList@8
+-	glNormal3b = glNormal3b@12
+-	glNormal3bv = glNormal3bv@4
+-	glNormal3d = glNormal3d@24
+-	glNormal3dv = glNormal3dv@4
+-	glNormal3f = glNormal3f@12
+-	glNormal3fv = glNormal3fv@4
+-	glNormal3i = glNormal3i@12
+-	glNormal3iv = glNormal3iv@4
+-	glNormal3s = glNormal3s@12
+-	glNormal3sv = glNormal3sv@4
+-	glNormalPointer = glNormalPointer@12
+-	glOrtho = glOrtho@48
+-	glPassThrough = glPassThrough@4
+-	glPixelMapfv = glPixelMapfv@12
+-	glPixelMapuiv = glPixelMapuiv@12
+-	glPixelMapusv = glPixelMapusv@12
+-	glPixelStoref = glPixelStoref@8
+-	glPixelStorei = glPixelStorei@8
+-	glPixelTransferf = glPixelTransferf@8
+-	glPixelTransferi = glPixelTransferi@8
+-	glPixelZoom = glPixelZoom@8
+-	glPointSize = glPointSize@4
+-	glPolygonMode = glPolygonMode@8
+-	glPolygonOffset = glPolygonOffset@8
+-	glPolygonStipple = glPolygonStipple@4
+-	glPopAttrib = glPopAttrib@0
+-	glPopClientAttrib = glPopClientAttrib@0
+-	glPopMatrix = glPopMatrix@0
+-	glPopName = glPopName@0
+-	glPrioritizeTextures = glPrioritizeTextures@12
+-	glPushAttrib = glPushAttrib@4
+-	glPushClientAttrib = glPushClientAttrib@4
+-	glPushMatrix = glPushMatrix@0
+-	glPushName = glPushName@4
+-	glRasterPos2d = glRasterPos2d@16
+-	glRasterPos2dv = glRasterPos2dv@4
+-	glRasterPos2f = glRasterPos2f@8
+-	glRasterPos2fv = glRasterPos2fv@4
+-	glRasterPos2i = glRasterPos2i@8
+-	glRasterPos2iv = glRasterPos2iv@4
+-	glRasterPos2s = glRasterPos2s@8
+-	glRasterPos2sv = glRasterPos2sv@4
+-	glRasterPos3d = glRasterPos3d@24
+-	glRasterPos3dv = glRasterPos3dv@4
+-	glRasterPos3f = glRasterPos3f@12
+-	glRasterPos3fv = glRasterPos3fv@4
+-	glRasterPos3i = glRasterPos3i@12
+-	glRasterPos3iv = glRasterPos3iv@4
+-	glRasterPos3s = glRasterPos3s@12
+-	glRasterPos3sv = glRasterPos3sv@4
+-	glRasterPos4d = glRasterPos4d@32
+-	glRasterPos4dv = glRasterPos4dv@4
+-	glRasterPos4f = glRasterPos4f@16
+-	glRasterPos4fv = glRasterPos4fv@4
+-	glRasterPos4i = glRasterPos4i@16
+-	glRasterPos4iv = glRasterPos4iv@4
+-	glRasterPos4s = glRasterPos4s@16
+-	glRasterPos4sv = glRasterPos4sv@4
+-	glReadBuffer = glReadBuffer@4
+-	glReadPixels = glReadPixels@28
+-	glRectd = glRectd@32
+-	glRectdv = glRectdv@8
+-	glRectf = glRectf@16
+-	glRectfv = glRectfv@8
+-	glRecti = glRecti@16
+-	glRectiv = glRectiv@8
+-	glRects = glRects@16
+-	glRectsv = glRectsv@8
+-	glRenderMode = glRenderMode@4
+-	glRotated = glRotated@32
+-	glRotatef = glRotatef@16
+-	glScaled = glScaled@24
+-	glScalef = glScalef@12
+-	glScissor = glScissor@16
+-	glSelectBuffer = glSelectBuffer@8
+-	glShadeModel = glShadeModel@4
+-	glStencilFunc = glStencilFunc@12
+-	glStencilMask = glStencilMask@4
+-	glStencilOp = glStencilOp@12
+-	glTexCoord1d = glTexCoord1d@8
+-	glTexCoord1dv = glTexCoord1dv@4
+-	glTexCoord1f = glTexCoord1f@4
+-	glTexCoord1fv = glTexCoord1fv@4
+-	glTexCoord1i = glTexCoord1i@4
+-	glTexCoord1iv = glTexCoord1iv@4
+-	glTexCoord1s = glTexCoord1s@4
+-	glTexCoord1sv = glTexCoord1sv@4
+-	glTexCoord2d = glTexCoord2d@16
+-	glTexCoord2dv = glTexCoord2dv@4
+-	glTexCoord2f = glTexCoord2f@8
+-	glTexCoord2fv = glTexCoord2fv@4
+-	glTexCoord2i = glTexCoord2i@8
+-	glTexCoord2iv = glTexCoord2iv@4
+-	glTexCoord2s = glTexCoord2s@8
+-	glTexCoord2sv = glTexCoord2sv@4
+-	glTexCoord3d = glTexCoord3d@24
+-	glTexCoord3dv = glTexCoord3dv@4
+-	glTexCoord3f = glTexCoord3f@12
+-	glTexCoord3fv = glTexCoord3fv@4
+-	glTexCoord3i = glTexCoord3i@12
+-	glTexCoord3iv = glTexCoord3iv@4
+-	glTexCoord3s = glTexCoord3s@12
+-	glTexCoord3sv = glTexCoord3sv@4
+-	glTexCoord4d = glTexCoord4d@32
+-	glTexCoord4dv = glTexCoord4dv@4
+-	glTexCoord4f = glTexCoord4f@16
+-	glTexCoord4fv = glTexCoord4fv@4
+-	glTexCoord4i = glTexCoord4i@16
+-	glTexCoord4iv = glTexCoord4iv@4
+-	glTexCoord4s = glTexCoord4s@16
+-	glTexCoord4sv = glTexCoord4sv@4
+-	glTexCoordPointer = glTexCoordPointer@16
+-	glTexEnvf = glTexEnvf@12
+-	glTexEnvfv = glTexEnvfv@12
+-	glTexEnvi = glTexEnvi@12
+-	glTexEnviv = glTexEnviv@12
+-	glTexGend = glTexGend@16
+-	glTexGendv = glTexGendv@12
+-	glTexGenf = glTexGenf@12
+-	glTexGenfv = glTexGenfv@12
+-	glTexGeni = glTexGeni@12
+-	glTexGeniv = glTexGeniv@12
+-	glTexImage1D = glTexImage1D@32
+-	glTexImage2D = glTexImage2D@36
+-	glTexParameterf = glTexParameterf@12
+-	glTexParameterfv = glTexParameterfv@12
+-	glTexParameteri = glTexParameteri@12
+-	glTexParameteriv = glTexParameteriv@12
+-	glTexSubImage1D = glTexSubImage1D@28
+-	glTexSubImage2D = glTexSubImage2D@36
+-	glTranslated = glTranslated@24
+-	glTranslatef = glTranslatef@12
+-	glVertex2d = glVertex2d@16
+-	glVertex2dv = glVertex2dv@4
+-	glVertex2f = glVertex2f@8
+-	glVertex2fv = glVertex2fv@4
+-	glVertex2i = glVertex2i@8
+-	glVertex2iv = glVertex2iv@4
+-	glVertex2s = glVertex2s@8
+-	glVertex2sv = glVertex2sv@4
+-	glVertex3d = glVertex3d@24
+-	glVertex3dv = glVertex3dv@4
+-	glVertex3f = glVertex3f@12
+-	glVertex3fv = glVertex3fv@4
+-	glVertex3i = glVertex3i@12
+-	glVertex3iv = glVertex3iv@4
+-	glVertex3s = glVertex3s@12
+-	glVertex3sv = glVertex3sv@4
+-	glVertex4d = glVertex4d@32
+-	glVertex4dv = glVertex4dv@4
+-	glVertex4f = glVertex4f@16
+-	glVertex4fv = glVertex4fv@4
+-	glVertex4i = glVertex4i@16
+-	glVertex4iv = glVertex4iv@4
+-	glVertex4s = glVertex4s@16
+-	glVertex4sv = glVertex4sv@4
+-	glVertexPointer = glVertexPointer@16
+-	glViewport = glViewport@16
++	mglAccum = mglAccum@8
++	mglAlphaFunc = mglAlphaFunc@8
++	mglAreTexturesResident = mglAreTexturesResident@12
++	mglArrayElement = mglArrayElement@4
++	mglBegin = mglBegin@4
++	mglBindTexture = mglBindTexture@8
++	mglBitmap = mglBitmap@28
++	mglBlendFunc = mglBlendFunc@8
++	mglCallList = mglCallList@4
++	mglCallLists = mglCallLists@12
++	mglClear = mglClear@4
++	mglClearAccum = mglClearAccum@16
++	mglClearColor = mglClearColor@16
++	mglClearDepth = mglClearDepth@8
++	mglClearIndex = mglClearIndex@4
++	mglClearStencil = mglClearStencil@4
++	mglClipPlane = mglClipPlane@8
++	mglColor3b = mglColor3b@12
++	mglColor3bv = mglColor3bv@4
++	mglColor3d = mglColor3d@24
++	mglColor3dv = mglColor3dv@4
++	mglColor3f = mglColor3f@12
++	mglColor3fv = mglColor3fv@4
++	mglColor3i = mglColor3i@12
++	mglColor3iv = mglColor3iv@4
++	mglColor3s = mglColor3s@12
++	mglColor3sv = mglColor3sv@4
++	mglColor3ub = mglColor3ub@12
++	mglColor3ubv = mglColor3ubv@4
++	mglColor3ui = mglColor3ui@12
++	mglColor3uiv = mglColor3uiv@4
++	mglColor3us = mglColor3us@12
++	mglColor3usv = mglColor3usv@4
++	mglColor4b = mglColor4b@16
++	mglColor4bv = mglColor4bv@4
++	mglColor4d = mglColor4d@32
++	mglColor4dv = mglColor4dv@4
++	mglColor4f = mglColor4f@16
++	mglColor4fv = mglColor4fv@4
++	mglColor4i = mglColor4i@16
++	mglColor4iv = mglColor4iv@4
++	mglColor4s = mglColor4s@16
++	mglColor4sv = mglColor4sv@4
++	mglColor4ub = mglColor4ub@16
++	mglColor4ubv = mglColor4ubv@4
++	mglColor4ui = mglColor4ui@16
++	mglColor4uiv = mglColor4uiv@4
++	mglColor4us = mglColor4us@16
++	mglColor4usv = mglColor4usv@4
++	mglColorMask = mglColorMask@16
++	mglColorMaterial = mglColorMaterial@8
++	mglColorPointer = mglColorPointer@16
++	mglCopyPixels = mglCopyPixels@20
++	mglCopyTexImage1D = mglCopyTexImage1D@28
++	mglCopyTexImage2D = mglCopyTexImage2D@32
++	mglCopyTexSubImage1D = mglCopyTexSubImage1D@24
++	mglCopyTexSubImage2D = mglCopyTexSubImage2D@32
++	mglCullFace = mglCullFace@4
++;	mglDebugEntry = mglDebugEntry@8
++	mglDeleteLists = mglDeleteLists@8
++	mglDeleteTextures = mglDeleteTextures@8
++	mglDepthFunc = mglDepthFunc@4
++	mglDepthMask = mglDepthMask@4
++	mglDepthRange = mglDepthRange@16
++	mglDisable = mglDisable@4
++	mglDisableClientState = mglDisableClientState@4
++	mglDrawArrays = mglDrawArrays@12
++	mglDrawBuffer = mglDrawBuffer@4
++	mglDrawElements = mglDrawElements@16
++	mglDrawPixels = mglDrawPixels@20
++	mglEdgeFlag = mglEdgeFlag@4
++	mglEdgeFlagPointer = mglEdgeFlagPointer@8
++	mglEdgeFlagv = mglEdgeFlagv@4
++	mglEnable = mglEnable@4
++	mglEnableClientState = mglEnableClientState@4
++	mglEnd = mglEnd@0
++	mglEndList = mglEndList@0
++	mglEvalCoord1d = mglEvalCoord1d@8
++	mglEvalCoord1dv = mglEvalCoord1dv@4
++	mglEvalCoord1f = mglEvalCoord1f@4
++	mglEvalCoord1fv = mglEvalCoord1fv@4
++	mglEvalCoord2d = mglEvalCoord2d@16
++	mglEvalCoord2dv = mglEvalCoord2dv@4
++	mglEvalCoord2f = mglEvalCoord2f@8
++	mglEvalCoord2fv = mglEvalCoord2fv@4
++	mglEvalMesh1 = mglEvalMesh1@12
++	mglEvalMesh2 = mglEvalMesh2@20
++	mglEvalPoint1 = mglEvalPoint1@4
++	mglEvalPoint2 = mglEvalPoint2@8
++	mglFeedbackBuffer = mglFeedbackBuffer@12
++	mglFinish = mglFinish@0
++	mglFlush = mglFlush@0
++	mglFogf = mglFogf@8
++	mglFogfv = mglFogfv@8
++	mglFogi = mglFogi@8
++	mglFogiv = mglFogiv@8
++	mglFrontFace = mglFrontFace@4
++	mglFrustum = mglFrustum@48
++	mglGenLists = mglGenLists@4
++	mglGenTextures = mglGenTextures@8
++	mglGetBooleanv = mglGetBooleanv@8
++	mglGetClipPlane = mglGetClipPlane@8
++	mglGetDoublev = mglGetDoublev@8
++	mglGetError = mglGetError@0
++	mglGetFloatv = mglGetFloatv@8
++	mglGetIntegerv = mglGetIntegerv@8
++	mglGetLightfv = mglGetLightfv@12
++	mglGetLightiv = mglGetLightiv@12
++	mglGetMapdv = mglGetMapdv@12
++	mglGetMapfv = mglGetMapfv@12
++	mglGetMapiv = mglGetMapiv@12
++	mglGetMaterialfv = mglGetMaterialfv@12
++	mglGetMaterialiv = mglGetMaterialiv@12
++	mglGetPixelMapfv = mglGetPixelMapfv@8
++	mglGetPixelMapuiv = mglGetPixelMapuiv@8
++	mglGetPixelMapusv = mglGetPixelMapusv@8
++	mglGetPointerv = mglGetPointerv@8
++	mglGetPolygonStipple = mglGetPolygonStipple@4
++	mglGetString = mglGetString@4
++	mglGetTexEnvfv = mglGetTexEnvfv@12
++	mglGetTexEnviv = mglGetTexEnviv@12
++	mglGetTexGendv = mglGetTexGendv@12
++	mglGetTexGenfv = mglGetTexGenfv@12
++	mglGetTexGeniv = mglGetTexGeniv@12
++	mglGetTexImage = mglGetTexImage@20
++	mglGetTexLevelParameterfv = mglGetTexLevelParameterfv@16
++	mglGetTexLevelParameteriv = mglGetTexLevelParameteriv@16
++	mglGetTexParameterfv = mglGetTexParameterfv@12
++	mglGetTexParameteriv = mglGetTexParameteriv@12
++	mglHint = mglHint@8
++	mglIndexMask = mglIndexMask@4
++	mglIndexPointer = mglIndexPointer@12
++	mglIndexd = mglIndexd@8
++	mglIndexdv = mglIndexdv@4
++	mglIndexf = mglIndexf@4
++	mglIndexfv = mglIndexfv@4
++	mglIndexi = mglIndexi@4
++	mglIndexiv = mglIndexiv@4
++	mglIndexs = mglIndexs@4
++	mglIndexsv = mglIndexsv@4
++	mglIndexub = mglIndexub@4
++	mglIndexubv = mglIndexubv@4
++	mglInitNames = mglInitNames@0
++	mglInterleavedArrays = mglInterleavedArrays@12
++	mglIsEnabled = mglIsEnabled@4
++	mglIsList = mglIsList@4
++	mglIsTexture = mglIsTexture@4
++	mglLightModelf = mglLightModelf@8
++	mglLightModelfv = mglLightModelfv@8
++	mglLightModeli = mglLightModeli@8
++	mglLightModeliv = mglLightModeliv@8
++	mglLightf = mglLightf@12
++	mglLightfv = mglLightfv@12
++	mglLighti = mglLighti@12
++	mglLightiv = mglLightiv@12
++	mglLineStipple = mglLineStipple@8
++	mglLineWidth = mglLineWidth@4
++	mglListBase = mglListBase@4
++	mglLoadIdentity = mglLoadIdentity@0
++	mglLoadMatrixd = mglLoadMatrixd@4
++	mglLoadMatrixf = mglLoadMatrixf@4
++	mglLoadName = mglLoadName@4
++	mglLogicOp = mglLogicOp@4
++	mglMap1d = mglMap1d@32
++	mglMap1f = mglMap1f@24
++	mglMap2d = mglMap2d@56
++	mglMap2f = mglMap2f@40
++	mglMapGrid1d = mglMapGrid1d@20
++	mglMapGrid1f = mglMapGrid1f@12
++	mglMapGrid2d = mglMapGrid2d@40
++	mglMapGrid2f = mglMapGrid2f@24
++	mglMaterialf = mglMaterialf@12
++	mglMaterialfv = mglMaterialfv@12
++	mglMateriali = mglMateriali@12
++	mglMaterialiv = mglMaterialiv@12
++	mglMatrixMode = mglMatrixMode@4
++	mglMultMatrixd = mglMultMatrixd@4
++	mglMultMatrixf = mglMultMatrixf@4
++	mglNewList = mglNewList@8
++	mglNormal3b = mglNormal3b@12
++	mglNormal3bv = mglNormal3bv@4
++	mglNormal3d = mglNormal3d@24
++	mglNormal3dv = mglNormal3dv@4
++	mglNormal3f = mglNormal3f@12
++	mglNormal3fv = mglNormal3fv@4
++	mglNormal3i = mglNormal3i@12
++	mglNormal3iv = mglNormal3iv@4
++	mglNormal3s = mglNormal3s@12
++	mglNormal3sv = mglNormal3sv@4
++	mglNormalPointer = mglNormalPointer@12
++	mglOrtho = mglOrtho@48
++	mglPassThrough = mglPassThrough@4
++	mglPixelMapfv = mglPixelMapfv@12
++	mglPixelMapuiv = mglPixelMapuiv@12
++	mglPixelMapusv = mglPixelMapusv@12
++	mglPixelStoref = mglPixelStoref@8
++	mglPixelStorei = mglPixelStorei@8
++	mglPixelTransferf = mglPixelTransferf@8
++	mglPixelTransferi = mglPixelTransferi@8
++	mglPixelZoom = mglPixelZoom@8
++	mglPointSize = mglPointSize@4
++	mglPolygonMode = mglPolygonMode@8
++	mglPolygonOffset = mglPolygonOffset@8
++	mglPolygonStipple = mglPolygonStipple@4
++	mglPopAttrib = mglPopAttrib@0
++	mglPopClientAttrib = mglPopClientAttrib@0
++	mglPopMatrix = mglPopMatrix@0
++	mglPopName = mglPopName@0
++	mglPrioritizeTextures = mglPrioritizeTextures@12
++	mglPushAttrib = mglPushAttrib@4
++	mglPushClientAttrib = mglPushClientAttrib@4
++	mglPushMatrix = mglPushMatrix@0
++	mglPushName = mglPushName@4
++	mglRasterPos2d = mglRasterPos2d@16
++	mglRasterPos2dv = mglRasterPos2dv@4
++	mglRasterPos2f = mglRasterPos2f@8
++	mglRasterPos2fv = mglRasterPos2fv@4
++	mglRasterPos2i = mglRasterPos2i@8
++	mglRasterPos2iv = mglRasterPos2iv@4
++	mglRasterPos2s = mglRasterPos2s@8
++	mglRasterPos2sv = mglRasterPos2sv@4
++	mglRasterPos3d = mglRasterPos3d@24
++	mglRasterPos3dv = mglRasterPos3dv@4
++	mglRasterPos3f = mglRasterPos3f@12
++	mglRasterPos3fv = mglRasterPos3fv@4
++	mglRasterPos3i = mglRasterPos3i@12
++	mglRasterPos3iv = mglRasterPos3iv@4
++	mglRasterPos3s = mglRasterPos3s@12
++	mglRasterPos3sv = mglRasterPos3sv@4
++	mglRasterPos4d = mglRasterPos4d@32
++	mglRasterPos4dv = mglRasterPos4dv@4
++	mglRasterPos4f = mglRasterPos4f@16
++	mglRasterPos4fv = mglRasterPos4fv@4
++	mglRasterPos4i = mglRasterPos4i@16
++	mglRasterPos4iv = mglRasterPos4iv@4
++	mglRasterPos4s = mglRasterPos4s@16
++	mglRasterPos4sv = mglRasterPos4sv@4
++	mglReadBuffer = mglReadBuffer@4
++	mglReadPixels = mglReadPixels@28
++	mglRectd = mglRectd@32
++	mglRectdv = mglRectdv@8
++	mglRectf = mglRectf@16
++	mglRectfv = mglRectfv@8
++	mglRecti = mglRecti@16
++	mglRectiv = mglRectiv@8
++	mglRects = mglRects@16
++	mglRectsv = mglRectsv@8
++	mglRenderMode = mglRenderMode@4
++	mglRotated = mglRotated@32
++	mglRotatef = mglRotatef@16
++	mglScaled = mglScaled@24
++	mglScalef = mglScalef@12
++	mglScissor = mglScissor@16
++	mglSelectBuffer = mglSelectBuffer@8
++	mglShadeModel = mglShadeModel@4
++	mglStencilFunc = mglStencilFunc@12
++	mglStencilMask = mglStencilMask@4
++	mglStencilOp = mglStencilOp@12
++	mglTexCoord1d = mglTexCoord1d@8
++	mglTexCoord1dv = mglTexCoord1dv@4
++	mglTexCoord1f = mglTexCoord1f@4
++	mglTexCoord1fv = mglTexCoord1fv@4
++	mglTexCoord1i = mglTexCoord1i@4
++	mglTexCoord1iv = mglTexCoord1iv@4
++	mglTexCoord1s = mglTexCoord1s@4
++	mglTexCoord1sv = mglTexCoord1sv@4
++	mglTexCoord2d = mglTexCoord2d@16
++	mglTexCoord2dv = mglTexCoord2dv@4
++	mglTexCoord2f = mglTexCoord2f@8
++	mglTexCoord2fv = mglTexCoord2fv@4
++	mglTexCoord2i = mglTexCoord2i@8
++	mglTexCoord2iv = mglTexCoord2iv@4
++	mglTexCoord2s = mglTexCoord2s@8
++	mglTexCoord2sv = mglTexCoord2sv@4
++	mglTexCoord3d = mglTexCoord3d@24
++	mglTexCoord3dv = mglTexCoord3dv@4
++	mglTexCoord3f = mglTexCoord3f@12
++	mglTexCoord3fv = mglTexCoord3fv@4
++	mglTexCoord3i = mglTexCoord3i@12
++	mglTexCoord3iv = mglTexCoord3iv@4
++	mglTexCoord3s = mglTexCoord3s@12
++	mglTexCoord3sv = mglTexCoord3sv@4
++	mglTexCoord4d = mglTexCoord4d@32
++	mglTexCoord4dv = mglTexCoord4dv@4
++	mglTexCoord4f = mglTexCoord4f@16
++	mglTexCoord4fv = mglTexCoord4fv@4
++	mglTexCoord4i = mglTexCoord4i@16
++	mglTexCoord4iv = mglTexCoord4iv@4
++	mglTexCoord4s = mglTexCoord4s@16
++	mglTexCoord4sv = mglTexCoord4sv@4
++	mglTexCoordPointer = mglTexCoordPointer@16
++	mglTexEnvf = mglTexEnvf@12
++	mglTexEnvfv = mglTexEnvfv@12
++	mglTexEnvi = mglTexEnvi@12
++	mglTexEnviv = mglTexEnviv@12
++	mglTexGend = mglTexGend@16
++	mglTexGendv = mglTexGendv@12
++	mglTexGenf = mglTexGenf@12
++	mglTexGenfv = mglTexGenfv@12
++	mglTexGeni = mglTexGeni@12
++	mglTexGeniv = mglTexGeniv@12
++	mglTexImage1D = mglTexImage1D@32
++	mglTexImage2D = mglTexImage2D@36
++	mglTexParameterf = mglTexParameterf@12
++	mglTexParameterfv = mglTexParameterfv@12
++	mglTexParameteri = mglTexParameteri@12
++	mglTexParameteriv = mglTexParameteriv@12
++	mglTexSubImage1D = mglTexSubImage1D@28
++	mglTexSubImage2D = mglTexSubImage2D@36
++	mglTranslated = mglTranslated@24
++	mglTranslatef = mglTranslatef@12
++	mglVertex2d = mglVertex2d@16
++	mglVertex2dv = mglVertex2dv@4
++	mglVertex2f = mglVertex2f@8
++	mglVertex2fv = mglVertex2fv@4
++	mglVertex2i = mglVertex2i@8
++	mglVertex2iv = mglVertex2iv@4
++	mglVertex2s = mglVertex2s@8
++	mglVertex2sv = mglVertex2sv@4
++	mglVertex3d = mglVertex3d@24
++	mglVertex3dv = mglVertex3dv@4
++	mglVertex3f = mglVertex3f@12
++	mglVertex3fv = mglVertex3fv@4
++	mglVertex3i = mglVertex3i@12
++	mglVertex3iv = mglVertex3iv@4
++	mglVertex3s = mglVertex3s@12
++	mglVertex3sv = mglVertex3sv@4
++	mglVertex4d = mglVertex4d@32
++	mglVertex4dv = mglVertex4dv@4
++	mglVertex4f = mglVertex4f@16
++	mglVertex4fv = mglVertex4fv@4
++	mglVertex4i = mglVertex4i@16
++	mglVertex4iv = mglVertex4iv@4
++	mglVertex4s = mglVertex4s@16
++	mglVertex4sv = mglVertex4sv@4
++	mglVertexPointer = mglVertexPointer@16
++	mglViewport = mglViewport@16

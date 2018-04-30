@@ -1,0 +1,69 @@
+diff -ur qt-everywhere-opensource-src-4.6.3/src/gui/kernel/qguieventdispatcher_glib.cpp qt-everywhere-opensource-src-4.6.3-glib_eventloop_nullcheck/src/gui/kernel/qguieventdispatcher_glib.cpp
+--- qt-everywhere-opensource-src-4.6.3/src/gui/kernel/qguieventdispatcher_glib.cpp	2010-06-02 04:03:15.000000000 +0200
++++ qt-everywhere-opensource-src-4.6.3-glib_eventloop_nullcheck/src/gui/kernel/qguieventdispatcher_glib.cpp	2010-12-08 22:22:38.000000000 +0100
+@@ -76,7 +76,7 @@
+     GX11EventSource *source = reinterpret_cast<GX11EventSource *>(s);
+     return (XEventsQueued(X11->display, QueuedAfterFlush)
+             || (!(source->flags & QEventLoop::ExcludeUserInputEvents)
+-                && !source->d->queuedUserInputEvents.isEmpty()));
++                && source->d && !source->d->queuedUserInputEvents.isEmpty()));
+ }
+ 
+ static gboolean x11EventSourceCheck(GSource *s)
+@@ -84,7 +84,7 @@
+     GX11EventSource *source = reinterpret_cast<GX11EventSource *>(s);
+     return (XEventsQueued(X11->display, QueuedAfterFlush)
+             || (!(source->flags & QEventLoop::ExcludeUserInputEvents)
+-                && !source->d->queuedUserInputEvents.isEmpty()));
++                && source->d && !source->d->queuedUserInputEvents.isEmpty()));
+ }
+ 
+ static gboolean x11EventSourceDispatch(GSource *s, GSourceFunc callback, gpointer user_data)
+@@ -95,7 +95,7 @@
+     do {
+         XEvent event;
+         if (!(source->flags & QEventLoop::ExcludeUserInputEvents)
+-            && !source->d->queuedUserInputEvents.isEmpty()) {
++            && source->d && !source->d->queuedUserInputEvents.isEmpty()) {
+             // process a pending user input event
+             event = source->d->queuedUserInputEvents.takeFirst();
+         } else if (XEventsQueued(X11->display, QueuedAlready)) {
+@@ -112,7 +112,8 @@
+                 case XKeyRelease:
+                 case EnterNotify:
+                 case LeaveNotify:
+-                    source->d->queuedUserInputEvents.append(event);
++                    if (source->d)
++                        source->d->queuedUserInputEvents.append(event);
+                     continue;
+ 
+                 case ClientMessage:
+@@ -127,7 +128,8 @@
+                             break;
+                         }
+                     }
+-                    source->d->queuedUserInputEvents.append(event);
++                    if (source->d)
++                        source->d->queuedUserInputEvents.append(event);
+                     continue;
+ 
+                 default:
+@@ -140,7 +142,7 @@
+         }
+ 
+         // send through event filter
+-        if (source->q->filterEvent(&event))
++        if (source->q && source->q->filterEvent(&event))
+             continue;
+ 
+         if (qApp->x11ProcessEvent(&event) == 1)
+@@ -152,7 +154,8 @@
+ 
+  out:
+ 
+-    source->d->runTimersOnceWithNormalPriority();
++    if (source->d)
++        source->d->runTimersOnceWithNormalPriority();
+ 
+     if (callback)
+         callback(user_data);

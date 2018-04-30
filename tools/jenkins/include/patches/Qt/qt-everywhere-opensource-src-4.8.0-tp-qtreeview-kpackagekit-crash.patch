@@ -1,0 +1,12 @@
+diff -up qt-everywhere-opensource-src-4.8.0-tp/src/gui/itemviews/qtreeview.cpp.qtreeview-kpackagekit-crash qt-everywhere-opensource-src-4.8.0-tp/src/gui/itemviews/qtreeview.cpp
+--- qt-everywhere-opensource-src-4.8.0-tp/src/gui/itemviews/qtreeview.cpp.qtreeview-kpackagekit-crash	2011-05-23 12:26:21.000000000 +0200
++++ qt-everywhere-opensource-src-4.8.0-tp/src/gui/itemviews/qtreeview.cpp	2011-05-25 13:24:33.137315194 +0200
+@@ -3215,7 +3215,7 @@ int QTreeViewPrivate::itemHeight(int ite
+         return defaultItemHeight;
+     if (viewItems.isEmpty())
+         return 0;
+-    const QModelIndex &index = viewItems.at(item).index;
++    QModelIndex index = viewItems.at(item).index;
+     if (!index.isValid())
+         return 0;
+     int height = viewItems.at(item).height;

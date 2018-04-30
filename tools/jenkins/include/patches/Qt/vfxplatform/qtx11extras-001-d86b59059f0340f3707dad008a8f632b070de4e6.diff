@@ -1,0 +1,60 @@
+diff --git a/src/x11extras/qx11info_x11.cpp b/src/x11extras/qx11info_x11.cpp
+index 2d4c5d2..079bd9e 100644
+--- a/src/x11extras/qx11info_x11.cpp
++++ b/src/x11extras/qx11info_x11.cpp
+@@ -370,4 +370,29 @@ xcb_connection_t *QX11Info::connection()
+     return reinterpret_cast<xcb_connection_t *>(connection);
+ }
+ 
++/*!
++    \since 5.7
++
++    Returns true if there is a compositing manager running for the connection
++    attached to \a screen.
++
++    If \l -1, the application primary screen is used.
++*/
++bool QX11Info::isCompositingManagerRunning(int screen)
++{
++    if (!qApp)
++        return false;
++    QPlatformNativeInterface *native = qApp->platformNativeInterface();
++    if (!native)
++        return false;
++
++    QScreen *scr = screen == -1 ?  QGuiApplication::primaryScreen() : findScreenForVirtualDesktop(screen);
++    if (!scr) {
++        qWarning() << "isCompositingManagerRunning: Could not find screen number" << screen;
++        return false;
++    }
++
++    return native->nativeResourceForScreen(QByteArray("compositingEnabled"), scr);
++}
++
+ QT_END_NAMESPACE
+diff --git a/src/x11extras/qx11info_x11.h b/src/x11extras/qx11info_x11.h
+index dbe5524..32be87f 100644
+--- a/src/x11extras/qx11info_x11.h
++++ b/src/x11extras/qx11info_x11.h
+@@ -67,6 +67,8 @@ class Q_X11EXTRAS_EXPORT QX11Info
+     static Display *display();
+     static xcb_connection_t *connection();
+ 
++    static bool isCompositingManagerRunning(int screen = -1);
++
+ private:
+     QX11Info();
+ };
+diff --git a/tests/auto/qx11info/tst_qx11info.cpp b/tests/auto/qx11info/tst_qx11info.cpp
+index 68cb239..e2c23cc 100644
+--- a/tests/auto/qx11info/tst_qx11info.cpp
++++ b/tests/auto/qx11info/tst_qx11info.cpp
+@@ -101,6 +101,8 @@ void tst_QX11Info::staticFunctionsBeforeQApplication()
+     appUserTime = QX11Info::appUserTime();
+     QCOMPARE(appTime, 0ul);
+     QCOMPARE(appTime, 0ul);
++
++    QX11Info::isCompositingManagerRunning();
+ }
+ 
+ static const char idFromEnv[] = "startupid_TIME123456";
