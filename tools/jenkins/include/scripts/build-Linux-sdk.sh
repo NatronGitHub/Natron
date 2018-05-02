@@ -2224,7 +2224,7 @@ fi
 
 # Install oiio
 #OIIO_VERSION=1.7.17
-OIIO_VERSION=1.8.10
+OIIO_VERSION=1.8.11
 OIIO_VERSION_SHORT=${OIIO_VERSION%.*}
 OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
 if [ "${REBUILD_OIIO:-}" = "1" ]; then
