@@ -51,6 +51,7 @@ If compiling on Mac OS X 10.6 with Xcode 4 (using GCC 4.2.1 and libstdc++), you 
     default_compilers gcc-4.2 clang llvm-gcc-4.2 macports-clang-3.4 macports-clang-3.3 macports-llvm-gcc-4.2 apple-gcc-4.2 gcc-4.0
 
 Now, if you want to use turbojpeg instead of jpeg:
+
     sudo port -f uninstall jpeg
     sudo port -v install libjpeg-turbo
     
