@@ -251,3 +251,5 @@ BIN_PATH="$SDK_HOME_BIN"
 catDll libfftw3-
 catDll libcurl-
 catDll libnghttp2-
+catDll libbrotlidec
+catDll libbrotlicommon
