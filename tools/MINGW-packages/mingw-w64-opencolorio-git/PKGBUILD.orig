@@ -3,7 +3,7 @@
 _realname=opencolorio
 pkgbase=mingw-w64-${_realname}-git
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
-pkgver=789.9a77df3
+pkgver=807.7fece5e
 pkgrel=1
 pkgdesc="A color management framework for visual effects and animation (mingw-w64)"
 arch=('any')
@@ -30,7 +30,7 @@ source=("${_realname}"::"git+https://github.com/imageworks/OpenColorIO.git"
         mingw-no-dupenv_s.patch
         detect-mingw-python.patch)
 sha256sums=('SKIP'
-            '16c20335924a33b9db8ec142ca074ad0f06177a8ed1908da80546e78cbdec8ac'
+            '071378804d6f54a59c988d6d749b3b5e1e12a64bc1ed1558856c7b40a39782bc'
             '802b66e1e52c5b4341afbdcc31211917b1223fb2db111c49603bc415c29d4b91'
             '010780ed9be44560684459690eca690de53a70bf822eb70b4e76b3f3df4991ae'
             'e05535790881bdd719084b1da131f2c0a7d858ab6a22c2e9e061eaf451383ea1'

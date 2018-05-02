@@ -528,7 +528,6 @@ AppManager::load(int argc,
     // Warning: Qt resets it in the QCoreApplication constructor
     // see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
     setApplicationLocale();
-    setApplicationLocale();
     _imp->handleCommandLineArgs(argc, argv);
     return loadFromArgs(cl);
 }
