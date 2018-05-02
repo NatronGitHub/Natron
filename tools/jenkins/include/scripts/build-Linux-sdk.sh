@@ -1168,7 +1168,7 @@ fi
 
 # Install Python2
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/python2.html
-PY2_VERSION=2.7.14
+PY2_VERSION=2.7.15
 PY2_VERSION_SHORT=${PY2_VERSION%.*}
 PY2_TAR="Python-${PY2_VERSION}.tar.xz"
 PY2_SITE="https://www.python.org/ftp/python/${PY2_VERSION}"
