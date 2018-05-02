@@ -395,6 +395,7 @@ NATRON_DLL=(
     libxml2-2.dll
     phonon4.dll
     SSLEAY32.dll
+    yaml-cpp.dll
     zlib1.dll
 )
 if [ "$NATRON_LICENSE" = "GPL" ]; then

@@ -1168,7 +1168,7 @@ fi
 
 # Install Python2
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/python2.html
-PY2_VERSION=2.7.14
+PY2_VERSION=2.7.15
 PY2_VERSION_SHORT=${PY2_VERSION%.*}
 PY2_TAR="Python-${PY2_VERSION}.tar.xz"
 PY2_SITE="https://www.python.org/ftp/python/${PY2_VERSION}"
@@ -2224,7 +2224,7 @@ fi
 
 # Install oiio
 #OIIO_VERSION=1.7.17
-OIIO_VERSION=1.8.10
+OIIO_VERSION=1.8.11
 OIIO_VERSION_SHORT=${OIIO_VERSION%.*}
 OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
 if [ "${REBUILD_OIIO:-}" = "1" ]; then

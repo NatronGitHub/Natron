@@ -31,30 +31,6 @@
          # SSE instructions are automatically compiled into 64-bit applications so enabling the option is redundant and
          # actually produces an unknown option warning in Visual Studio.
          if(NOT CMAKE_CL_64)
-@@ -627,7 +631,7 @@
-         set(OCIO_STATIC_COMPILE_DEFINITIONS )
-     endif()
- endif()
--install(EXPORT OpenColorIO DESTINATION cmake)
-+install(EXPORT OpenColorIO DESTINATION lib/cmake/opencolorio)
- file(WRITE "${CMAKE_BINARY_DIR}/OpenColorIOConfig.cmake"
-     "
-     get_filename_component(OpenColorIO_DIR \"\${CMAKE_CURRENT_LIST_FILE}\" PATH)
-@@ -639,7 +643,7 @@
-     
-     ## targets libraries + associated definitions
-     if(NOT TARGET OpenColorIO)
--        include(\"\${OpenColorIO_DIR}/cmake/OpenColorIO.cmake\") ## thanks to imported target
-+        include(\"\${OpenColorIO_DIR}/lib/cmake/opencolorio/OpenColorIO.cmake\") ## thanks to imported target
-         if(TARGET OpenColorIO AND NOT OpenColorIO_USE_STATIC)
-             message(STATUS \"shared target OpenColorIO : see OpenColorIO_LIBRARY\")
-             set(OpenColorIO_LIBRARY         OpenColorIO)
-@@ -677,4 +681,4 @@
-     message(STATUS OPENCOLORIO_FOUND=\${OPENCOLORIO_FOUND})
-     "
- )
--install(FILES "${CMAKE_BINARY_DIR}/OpenColorIOConfig.cmake" DESTINATION .)
-+install(FILES "${CMAKE_BINARY_DIR}/OpenColorIOConfig.cmake" DESTINATION lib/cmake/opencolorio)
 --- opencolorio/src/core/CMakeLists.txt.orig	2017-09-17 22:33:47.446262300 +0300
 +++ opencolorio/src/core/CMakeLists.txt	2017-09-17 22:34:26.962522500 +0300
 @@ -75,7 +75,7 @@

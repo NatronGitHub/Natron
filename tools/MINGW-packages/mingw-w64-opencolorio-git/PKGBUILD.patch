@@ -1,19 +1,17 @@
---- PKGBUILD.orig	2018-01-16 13:22:37.000000000 +0100
-+++ PKGBUILD	2018-02-23 14:18:55.000000000 +0100
-@@ -3,8 +3,10 @@
+--- PKGBUILD.orig	2018-05-02 11:38:59.000000000 +0200
++++ PKGBUILD	2018-05-02 11:40:03.000000000 +0200
+@@ -3,8 +3,9 @@
  _realname=opencolorio
  pkgbase=mingw-w64-${_realname}-git
  pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
--pkgver=789.9a77df3
++gitcommit=7fece5e
+ pkgver=807.7fece5e
 -pkgrel=1
-+# echo "$(git rev-list --count HEAD)"."$(git rev-parse --short HEAD)"
-+gitcommit=9a77df3
-+pkgver=789.${gitcommit}
 +pkgrel=1.1
  pkgdesc="A color management framework for visual effects and animation (mingw-w64)"
  arch=('any')
  url="http://opencolorio.org"
-@@ -14,14 +16,13 @@
+@@ -14,14 +15,13 @@
  depends=("${MINGW_PACKAGE_PREFIX}-boost"
           "${MINGW_PACKAGE_PREFIX}-glew"
           "${MINGW_PACKAGE_PREFIX}-lcms2"
@@ -29,7 +27,7 @@
          #${_realname}-${pkgver}.tar.gz::https://github.com/imageworks/OpenColorIO/tarball/v${pkgver}.tar.gz
          mingw-w64.patch
          fix-redefinitions.patch
-@@ -68,10 +69,14 @@
+@@ -68,10 +68,14 @@
      -DUSE_EXTERNAL_LCMS=ON \
      -DOCIO_USE_BOOST_PTR=ON \
      -DOCIO_BUILD_PYGLUE=ON \

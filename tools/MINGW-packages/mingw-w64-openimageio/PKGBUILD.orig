@@ -4,7 +4,7 @@ _realname=openimageio
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 pkgver=1.8.10
-pkgrel=1
+pkgrel=2
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
 url="http://www.openimageio.org/"
@@ -26,6 +26,7 @@ depends=("${MINGW_PACKAGE_PREFIX}-boost"
          "${MINGW_PACKAGE_PREFIX}-openexr"
          "${MINGW_PACKAGE_PREFIX}-openjpeg"
          "${MINGW_PACKAGE_PREFIX}-openssl"
+         "${MINGW_PACKAGE_PREFIX}-pugixml"
          "${MINGW_PACKAGE_PREFIX}-zlib")
 makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
              #"${MINGW_PACKAGE_PREFIX}-qt5"
@@ -35,55 +36,54 @@ optdepends=(#"${MINGW_PACKAGE_PREFIX}-qt4: iv image viewer"
             "${MINGW_PACKAGE_PREFIX}-python2: bindings support")
 options=('strip' 'buildflags')
 source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archive/Release-${pkgver}.tar.gz
-        fix-mingw-w64.patch
-        workaround-ansidecl-h-PTR-define-conflict.patch
+        0000-fix-mingw-w64.patch
+        0000-workaround-ansidecl-h-PTR-define-conflict.patch
         0001-MinGW-w64-include-winbase-h-early-for-TCHAR-types.patch
         0003-boost-latest.patch
         0004-guard-msvc-stuff.patch
         0006-fix-intrinistic-conflict.patch
+        0007-find-pugixml.patch
+        0008-find-openjpeg.patch
         0100-ffmpeg-4.0-compatibility.patch)
 sha256sums=('9bc86cbc1df67285134bb4ac0ed7a450d52dfe75423577c469cae809a1154665'
-            'cbf339dac2e9140c77b1ef87eec3612bdf605caaf0ff18db6eb474a01057fff1'
+            '4787e771dbb9b794d47672a08fad3dbb0e36ac30e5c1058684437323b8238b37'
             'ab6bde02c0c05495a9cb13441535d42f4d5929bd930859d75f589d12be9a182b'
             'b7cc78d0f535ceb1aba68b11970c32ffbf04815d229b12e64e2c2c0b3403b4b2'
             'd6cc0ddc30e484978a89bdd8e30bbe4dee7c82f178721e571d35991b361994cf'
             '3a73e95486a5a50685eed753f11c433bcf9f1b1a46947d6ae1350c8f68568536'
             'ced593b71fab9db63fc692173dfd7625c6812d18e5a6a69e872a746e0857358c'
+            'b5db09ae6931dde76b94f09ce53b1684260a928d0af5920ae54520975b69d6d8'
+            'c644153bd6dbca0eff5b70c0bc3241faae0eb90f1bb0cf1f502bb0553a73223e'
             '4facfaa157625a2c0188e963b2daca45110ae3f8b7e6ea507085e9d1e9ad4225')
 
 prepare() {
   cd ${srcdir}/oiio-Release-${pkgver}
-  patch -p1 -i ${srcdir}/fix-mingw-w64.patch
-  patch -p1 -i ${srcdir}/workaround-ansidecl-h-PTR-define-conflict.patch
+  patch -p1 -i ${srcdir}/0000-fix-mingw-w64.patch
+  patch -p1 -i ${srcdir}/0000-workaround-ansidecl-h-PTR-define-conflict.patch
   patch -p1 -i ${srcdir}/0001-MinGW-w64-include-winbase-h-early-for-TCHAR-types.patch
   patch -p1 -i ${srcdir}/0003-boost-latest.patch
   patch -p1 -i ${srcdir}/0004-guard-msvc-stuff.patch
   patch -p1 -i ${srcdir}/0006-fix-intrinistic-conflict.patch
+  patch -p1 -i ${srcdir}/0007-find-pugixml.patch
+  patch -p1 -i ${srcdir}/0008-find-openjpeg.patch
   
   # Upstream patches
   patch -p1 -i ${srcdir}/0100-ffmpeg-4.0-compatibility.patch
 }
 
 build() {
-  export OPENJPEG_HOME=${MINGW_PREFIX}
   [[ -d "build-${MINGW_CHOST}" ]] && rm -rf "build-${MINGW_CHOST}"
-  mkdir -p ${srcdir}/build-${MINGW_CHOST}
-  cd ${srcdir}/build-${MINGW_CHOST}
-
-  CXXFLAGS+=" -faligned-new"
+  mkdir -p build-${MINGW_CHOST} && cd build-${MINGW_CHOST}
 
   MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
   ${MINGW_PREFIX}/bin/cmake.exe \
     -G"MSYS Makefiles" \
     -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
-    -DPYLIB_INSTALL_DIR=lib/python2.7/site-packages \
     -DUSE_FREETYPE=ON \
     -DUSE_OPENCV=ON \
     -DUSE_FIELD3D=ON \
     -DUSE_OPENSSL=ON \
-    -DFREETYPE_INCLUDE_PATH=${MINGW_PREFIX}/include/freetype2 \
-    -DOPENJPEG_INCLUDE_DIR=${MINGW_PREFIX}/include/openjpeg-2.2 \
-    -DOPENJPEG_OPENJPEG_LIBRARIES=${MINGW_PREFIX}/lib/libopenjp2.dll.a \
+    -DUSE_EXTERNAL_PUGIXML=ON \
     -DCMAKE_SHARED_LINKER_FLAGS=" -Wl,--export-all-symbols -Wl,--enable-auto-import " \
     -DOIIO_BUILD_TESTS=ON \
     ../oiio-Release-${pkgver}

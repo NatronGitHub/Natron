@@ -1,11 +1,11 @@
---- PKGBUILD.orig	2018-04-26 11:20:56.000000000 +0200
-+++ PKGBUILD	2018-04-26 11:23:44.000000000 +0200
+--- PKGBUILD.orig	2018-05-02 11:43:56.000000000 +0200
++++ PKGBUILD	2018-05-02 11:47:33.000000000 +0200
 @@ -4,28 +4,24 @@
  pkgbase=mingw-w64-${_realname}
  pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
  pkgver=1.8.10
--pkgrel=1
-+pkgrel=1.1
+-pkgrel=2
++pkgrel=2.1
  pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
  arch=('any')
  url="http://www.openimageio.org/"
@@ -28,30 +28,30 @@
           "${MINGW_PACKAGE_PREFIX}-openexr"
           "${MINGW_PACKAGE_PREFIX}-openjpeg"
 -         "${MINGW_PACKAGE_PREFIX}-openssl"
+          "${MINGW_PACKAGE_PREFIX}-pugixml"
           "${MINGW_PACKAGE_PREFIX}-zlib")
  makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
-              #"${MINGW_PACKAGE_PREFIX}-qt5"
-@@ -41,7 +37,8 @@
-         0003-boost-latest.patch
-         0004-guard-msvc-stuff.patch
+@@ -44,7 +40,8 @@
          0006-fix-intrinistic-conflict.patch
+         0007-find-pugixml.patch
+         0008-find-openjpeg.patch
 -        0100-ffmpeg-4.0-compatibility.patch)
 +        0100-ffmpeg-4.0-compatibility.patch
-+	oiio-1.5.23-invalidatespec.patch)
++        oiio-1.5.23-invalidatespec.patch)
  sha256sums=('9bc86cbc1df67285134bb4ac0ed7a450d52dfe75423577c469cae809a1154665'
-             'cbf339dac2e9140c77b1ef87eec3612bdf605caaf0ff18db6eb474a01057fff1'
+             '4787e771dbb9b794d47672a08fad3dbb0e36ac30e5c1058684437323b8238b37'
              'ab6bde02c0c05495a9cb13441535d42f4d5929bd930859d75f589d12be9a182b'
-@@ -49,7 +46,8 @@
-             'd6cc0ddc30e484978a89bdd8e30bbe4dee7c82f178721e571d35991b361994cf'
-             '3a73e95486a5a50685eed753f11c433bcf9f1b1a46947d6ae1350c8f68568536'
+@@ -54,7 +51,8 @@
              'ced593b71fab9db63fc692173dfd7625c6812d18e5a6a69e872a746e0857358c'
+             'b5db09ae6931dde76b94f09ce53b1684260a928d0af5920ae54520975b69d6d8'
+             'c644153bd6dbca0eff5b70c0bc3241faae0eb90f1bb0cf1f502bb0553a73223e'
 -            '4facfaa157625a2c0188e963b2daca45110ae3f8b7e6ea507085e9d1e9ad4225')
 +            '4facfaa157625a2c0188e963b2daca45110ae3f8b7e6ea507085e9d1e9ad4225'
-+	    'skip')
++            'skip')
  
  prepare() {
    cd ${srcdir}/oiio-Release-${pkgver}
-@@ -62,6 +60,8 @@
+@@ -69,6 +67,8 @@
    
    # Upstream patches
    patch -p1 -i ${srcdir}/0100-ffmpeg-4.0-compatibility.patch
@@ -60,10 +60,10 @@
  }
  
  build() {
-@@ -77,13 +77,25 @@
+@@ -79,11 +79,25 @@
+   ${MINGW_PREFIX}/bin/cmake.exe \
      -G"MSYS Makefiles" \
      -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
-     -DPYLIB_INSTALL_DIR=lib/python2.7/site-packages \
 +    -DUSE_QT=OFF \
 +    -DUSE_FIELD3D=OFF \
 +    -DUSE_FFMPEG=OFF \
@@ -82,9 +82,7 @@
 +    -DILMBASE_HOME=${MINGW_PREFIX} \
 +    -DBOOST_ROOT=${MINGW_PREFIX} \
 +    -DTHIRD_PARTY_TOOLS_HOME=${MINGW_PREFIX} \
-     -DFREETYPE_INCLUDE_PATH=${MINGW_PREFIX}/include/freetype2 \
--    -DOPENJPEG_INCLUDE_DIR=${MINGW_PREFIX}/include/openjpeg-2.2 \
--    -DOPENJPEG_OPENJPEG_LIBRARIES=${MINGW_PREFIX}/lib/libopenjp2.dll.a \
+     -DUSE_EXTERNAL_PUGIXML=ON \
 +    -DOPENJPEG_HOME=${MINGW_PREFIX} \
 +    -DOPENJPEG_INCLUDE_DIR=`pkg-config --variable=includedir libopenjp2` \
 +    -DLIBRAW_PATH=${MINGW_PREFIX}/libraw-gpl2 \
