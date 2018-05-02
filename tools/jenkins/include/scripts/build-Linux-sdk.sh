@@ -805,7 +805,7 @@ fi
 
 # Install xz
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/xz.html
-XZ_VERSION=5.2.3
+XZ_VERSION=5.2.4
 XZ_TAR="xz-${XZ_VERSION}.tar.bz2"
 XZ_SITE="https://tukaani.org/xz"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/liblzma.pc" ] || [ "$(pkg-config --modversion liblzma)" != "$XZ_VERSION" ]; then
@@ -1298,7 +1298,7 @@ fi
 
 # Install FreeType2
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/freetype2.html
-FTYPE_VERSION=2.9
+FTYPE_VERSION=2.9.1
 FTYPE_TAR="freetype-${FTYPE_VERSION}.tar.gz"
 FTYPE_SITE="http://download.savannah.gnu.org/releases/freetype"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/freetype2.pc" ]; then # || [ "$(pkg-config --modversion freetype2)" != "$FTYPE_VERSION" ]; then
@@ -2010,7 +2010,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversio
 fi
 # install ImageMagick7
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick.html
-MAGICK7_VERSION=7.0.7-28
+MAGICK7_VERSION=7.0.7-29
 MAGICK7_VERSION_SHORT=${MAGICK7_VERSION%-*}
 MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.xz"
 if [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/magick7/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Magick++)" != "$MAGICK7_VERSION_SHORT" ]; then
@@ -2811,7 +2811,7 @@ fi
 
 # Install dbus (for QtDBus)
 # see http://www.linuxfromscratch.org/lfs/view/systemd/chapter06/dbus.html
-DBUS_VERSION=1.12.4
+DBUS_VERSION=1.12.8
 DBUS_TAR="dbus-${DBUS_VERSION}.tar.gz"
 DBUS_SITE="https://dbus.freedesktop.org/releases/dbus"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/dbus-1.pc" ] || [ "$(pkg-config --modversion dbus-1)" != "$DBUS_VERSION" ]; then
