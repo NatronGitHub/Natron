@@ -2204,7 +2204,11 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/OpenColorIO.pc" ] || [ "$(pkg-config --modver
     else
         rm -rf "OpenColorIO-${OCIO_VERSION}"
     fi
-    end_build "OpenColorIO-$OCIO_COMMIT"
+    if [ "$OCIO_BUILD_GIT" = 1 ]; then
+        end_build "OpenColorIO-$OCIO_COMMIT"
+    else
+        end_build "$OCIO_TAR"
+    fi
 fi
 
 # Install webp (for OIIO)
