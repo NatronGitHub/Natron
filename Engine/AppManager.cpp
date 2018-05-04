@@ -459,7 +459,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
 
     //  QCoreApplication will hold a reference to that appManagerArgc integer until it dies.
     //  Thus ensure that the QCoreApplication is destroyed when returning this function.
-    initializeQApp(_imp->nArgs, &_imp->commandLineArgsUtf8.front());
+    initializeQApp(_imp->nArgs, &_imp->commandLineArgsUtf8.front()); // calls QCoreApplication::QCoreApplication(), which calls setlocale()
     // see C++ standard 23.2.4.2 vector capacity [lib.vector.capacity]
     // resizing to a smaller size doesn't free/move memory, so the data pointer remains valid
     assert(_imp->nArgs <= (int)_imp->commandLineArgsUtf8.size());
@@ -493,7 +493,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
     }
 
     try {
-        initPython();
+        initPython(); // calls Py_InitializeEx(), which calls setlocale()
     } catch (const std::runtime_error& e) {
         std::cerr << e.what() << std::endl;
 
@@ -811,7 +811,7 @@ AppManager::loadInternal(const CLArgs& cl)
     //Set it once setApplicationName is set since it relies on it
     refreshDiskCacheLocation();
 
-    // Set the locale AGAIN, because Qt resets it in the QCoreApplication constructor
+    // Set the locale AGAIN, because Qt resets it in the QCoreApplication constructor and in Py_InitializeEx
     // see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
     setApplicationLocale();
     
@@ -3260,7 +3260,7 @@ AppManager::initPython()
 #if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
     printf("Py_Initialize()\n");
 #endif
-    Py_Initialize();
+    Py_Initialize(); // calls setlocale()
     // pythonHome must be const, so that the c_str() pointer is never invalidated
 
     /////////////////////////////////////////
