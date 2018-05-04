@@ -55,6 +55,7 @@
         <file alias="LICENSE-libvorbis.txt">../tools/license/components/LICENSE-libvorbis.txt</file>
         <file alias="LICENSE-libxml.txt">../tools/license/components/LICENSE-libxml.txt</file>
         <file alias="LICENSE-libxml2.txt">../tools/license/components/LICENSE-libxml2.txt</file>
+        <file alias="LICENSE-lodepng.txt">../tools/license/components/LICENSE-lodepng.txt</file>
         <file alias="LICENSE-openfx.txt">../tools/license/components/LICENSE-openfx.txt</file>
         <file alias="LICENSE-openh264.txt">../tools/license/components/LICENSE-openh264.txt</file>
         <file alias="LICENSE-openjpeg.txt">../tools/license/components/LICENSE-openjpeg.txt</file>
