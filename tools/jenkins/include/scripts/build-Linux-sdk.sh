@@ -291,7 +291,8 @@ PYTHON_INCLUDE="$SDK_HOME/include/python${PYVER}"
 export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 
 # Old Natron 2 version is 4.8.5
-GCC_VERSION=7.3.0
+GCC_VERSION=8.1.0
+#GCC_VERSION=7.3.0
 #GCC_VERSION=5.4.0
 #GCC_VERSION=4.9.4
 GCC_TAR="gcc-${GCC_VERSION}.tar.gz"
@@ -1321,7 +1322,7 @@ fi
 
 # Install fontconfig
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/fontconfig.html
-FONTCONFIG_VERSION=2.12.6
+FONTCONFIG_VERSION=2.13.0
 FONTCONFIG_TAR="fontconfig-${FONTCONFIG_VERSION}.tar.gz"
 FONTCONFIG_SITE="https://www.freedesktop.org/software/fontconfig/release"
 if [ "${REBUILD_FONTCONFIG:-}" = "1" ]; then
@@ -1684,7 +1685,7 @@ fi
 
 # Install libraw
 # see http://www.at.linuxfromscratch.org/blfs/view/cvs/general/libraw.html
-LIBRAW_VERSION=0.18.9
+LIBRAW_VERSION=0.18.10
 LIBRAW_PACKS_VERSION="${LIBRAW_VERSION}"
 LIBRAW_PACKS_VERSION=0.18.8
 LIBRAW_TAR="LibRaw-${LIBRAW_VERSION}.tar.gz"
