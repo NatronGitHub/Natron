@@ -26,14 +26,14 @@
  
 +variant gpl2 description {Enable GPL demosaic pack, license will be GPL-2+} {
 +    distfiles-append \
-+        LibRaw-demosaic-pack-GPL2-${version}${extract.suffix} \
++        LibRaw-demosaic-pack-GPL2-${demosaicversion}${extract.suffix} \
 +
 +    license                 GPL-2+
 +}
 +
 +variant gpl3 requires gpl2 description {Enable GPL demosaic pack, license will be GPL-3+} {
 +    distfiles-append \
-+        LibRaw-demosaic-pack-GPL3-${version}${extract.suffix}
++        LibRaw-demosaic-pack-GPL3-${demosaicversion}${extract.suffix}
 +
 +    license                 GPL-3+
 +}
