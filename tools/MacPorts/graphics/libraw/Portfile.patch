@@ -1,17 +1,17 @@
---- Portfile.orig	2017-09-25 13:40:39.000000000 +0200
-+++ Portfile	2017-09-25 13:41:22.000000000 +0200
-@@ -16,10 +16,6 @@
+--- Portfile.orig	2018-05-07 08:49:26.000000000 +0200
++++ Portfile	2018-05-07 08:50:59.000000000 +0200
+@@ -17,10 +17,6 @@
  master_sites     ${homepage}/data/
  distname         LibRaw-${version}
  
 -distfiles-append \
--    LibRaw-demosaic-pack-GPL2-${version}${extract.suffix} \
--    LibRaw-demosaic-pack-GPL3-${version}${extract.suffix}
+-    LibRaw-demosaic-pack-GPL2-${demosaicversion}${extract.suffix} \
+-    LibRaw-demosaic-pack-GPL3-${demosaicversion}${extract.suffix}
 -
  checksums \
      LibRaw-${version}${extract.suffix} \
-     rmd160  4b1b4d97f459792388b8422bc2fd0b2c5d79017b \
-@@ -34,7 +30,7 @@
+         rmd160  11b0a05a3e82fa7261143ce87944cbe140029cd8 \
+@@ -35,7 +31,7 @@
  depends_build    port:pkgconfig
  
  depends_lib      port:jasper \
@@ -20,7 +20,7 @@
                   port:lcms2
  
  post-destroot {
-@@ -43,6 +39,20 @@
+@@ -44,6 +40,20 @@
      xinstall -m 644 {*}[glob -directory ${worksrcpath}/doc/ *.html] ${htmlDir}
  }
  
