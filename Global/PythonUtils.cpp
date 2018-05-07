@@ -264,7 +264,7 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
 #if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
     printf("Py_Initialize()\n");
 #endif
-    Py_Initialize();
+    Py_Initialize(); // calls setlocale()
     // pythonHome must be const, so that the c_str() pointer is never invalidated
 
     /////////////////////////////////////////
