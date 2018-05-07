@@ -501,24 +501,21 @@ if [ "$BUILD_GMIC" = "1" ]; then
     fi
 
     #Always bump git commit, it is only used to version-stamp binaries
-    # GMIC doesn't like Ofast for some reason: remove OPTFLAG="${OPTFLAG}"
-    # see this line in gmic.h:
-    # #error Using the -ffast-math CFLAG is known to lead to important issues in libgmic. Please disable it to compile.
     GMIC_V=$GMIC_GIT_VERSION
     $GSED -e "s/GMICPLUG_DEVEL_GIT=.*/GMICPLUG_DEVEL_GIT=${GMIC_V}/" --in-place "$COMMITS_HASH"
 
     if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
         # build with OpenMP support
         make -j"${GMIC_MKJOBS}" $MAKEFLAGS_VERBOSE OPENMP=1 \
-             CXX="$CXX" CONFIG="${BUILD_MODE}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-}" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA"
+             CXX="$CXX" CONFIG="${BUILD_MODE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-}" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA"
     elif [ -n "${GXX:-}" ]; then
         # Building with clang, but GCC is available too!
         make -j"${GMIC_MKJOBS}" $MAKEFLAGS_VERBOSE OPENMP=1 \
-             CXX="$GXX" CONFIG="${BUILD_MODE}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-} -static-libgcc" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA"
+             CXX="$GXX" CONFIG="${BUILD_MODE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-} -static-libgcc" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA"
     else
         # build without OpenMP
         make -j"${GMIC_MKJOBS}" $MAKEFLAGS_VERBOSE \
-             CXX="$CXX" CONFIG="${BUILD_MODE}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-}" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA"
+             CXX="$CXX" CONFIG="${BUILD_MODE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-}" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA"
     fi
     cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
     echo "$GMIC_V" > "$TMP_BINARIES_PATH/OFX/Plugins/GMIC.ofx.bundle-version.txt"
