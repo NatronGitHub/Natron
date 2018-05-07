@@ -79,6 +79,7 @@ Natron binaries include components from the following libraries:
 * Little CMS (MIT) http://www.littlecms.com/
 * librsvg (LGPL 2.1) http://live.gnome.org/LibRsvg
 * libzip (BSD) http://www.nih.at/libzip/
+* lodepng (zlib) http://lodev.org/lodepng/
 * Cairo (LGPL 2.1) http://cairographics.org/
 * librevenge (MPL 2.0) https://sourceforge.net/p/libwpd/librevenge/
 * libcdr (MPL 2.0) https://github.com/LibreOffice/libcdr

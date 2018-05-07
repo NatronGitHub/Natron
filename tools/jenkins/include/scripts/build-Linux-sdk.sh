@@ -291,7 +291,8 @@ PYTHON_INCLUDE="$SDK_HOME/include/python${PYVER}"
 export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 
 # Old Natron 2 version is 4.8.5
-GCC_VERSION=7.3.0
+GCC_VERSION=8.1.0
+#GCC_VERSION=7.3.0
 #GCC_VERSION=5.4.0
 #GCC_VERSION=4.9.4
 GCC_TAR="gcc-${GCC_VERSION}.tar.gz"
@@ -805,7 +806,7 @@ fi
 
 # Install xz
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/xz.html
-XZ_VERSION=5.2.3
+XZ_VERSION=5.2.4
 XZ_TAR="xz-${XZ_VERSION}.tar.bz2"
 XZ_SITE="https://tukaani.org/xz"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/liblzma.pc" ] || [ "$(pkg-config --modversion liblzma)" != "$XZ_VERSION" ]; then
@@ -1298,7 +1299,7 @@ fi
 
 # Install FreeType2
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/freetype2.html
-FTYPE_VERSION=2.9
+FTYPE_VERSION=2.9.1
 FTYPE_TAR="freetype-${FTYPE_VERSION}.tar.gz"
 FTYPE_SITE="http://download.savannah.gnu.org/releases/freetype"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/freetype2.pc" ]; then # || [ "$(pkg-config --modversion freetype2)" != "$FTYPE_VERSION" ]; then
@@ -1321,7 +1322,7 @@ fi
 
 # Install fontconfig
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/fontconfig.html
-FONTCONFIG_VERSION=2.12.6
+FONTCONFIG_VERSION=2.13.0
 FONTCONFIG_TAR="fontconfig-${FONTCONFIG_VERSION}.tar.gz"
 FONTCONFIG_SITE="https://www.freedesktop.org/software/fontconfig/release"
 if [ "${REBUILD_FONTCONFIG:-}" = "1" ]; then
@@ -1684,7 +1685,7 @@ fi
 
 # Install libraw
 # see http://www.at.linuxfromscratch.org/blfs/view/cvs/general/libraw.html
-LIBRAW_VERSION=0.18.9
+LIBRAW_VERSION=0.18.10
 LIBRAW_PACKS_VERSION="${LIBRAW_VERSION}"
 LIBRAW_PACKS_VERSION=0.18.8
 LIBRAW_TAR="LibRaw-${LIBRAW_VERSION}.tar.gz"
@@ -2010,7 +2011,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversio
 fi
 # install ImageMagick7
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick.html
-MAGICK7_VERSION=7.0.7-28
+MAGICK7_VERSION=7.0.7-29
 MAGICK7_VERSION_SHORT=${MAGICK7_VERSION%-*}
 MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.xz"
 if [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/magick7/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Magick++)" != "$MAGICK7_VERSION_SHORT" ]; then
@@ -2145,15 +2146,18 @@ EOF
     end_build "$TINYXML_TAR"
 fi
 
-# Install yaml-cpp (requires boost, used by OpenColorIO)
+# Install yaml-cpp (0.5.3 requires boost, 0.6+ requires C++11, used by OpenColorIO)
 YAMLCPP_VERSION=0.5.3
+if [[ ! "$GCC_VERSION" =~ ^4\. ]]; then
+    YAMLCPP_VERSION=0.6.2 # 0.6.0 is the first version to require C++11
+fi
 YAMLCPP_VERSION_SHORT=${YAMLCPP_VERSION%.*}
 YAMLCPP_TAR="yaml-cpp-${YAMLCPP_VERSION}.tar.gz"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/yaml-cpp.pc" ] || [ "$(pkg-config --modversion yaml-cpp)" != "$YAMLCPP_VERSION" ]; then
     start_build "$YAMLCPP_TAR"
-    download_github jbeder yaml-cpp "${YAMLCPP_VERSION}" release- "${YAMLCPP_TAR}"
+    download_github jbeder yaml-cpp "${YAMLCPP_VERSION}" yaml-cpp- "${YAMLCPP_TAR}"
     untar "$SRC_PATH/$YAMLCPP_TAR"
-    pushd "yaml-cpp-release-${YAMLCPP_VERSION}"
+    pushd "yaml-cpp-yaml-cpp-${YAMLCPP_VERSION}"
     mkdir build
     pushd build
     cmake .. -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF"  -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE"
@@ -2161,7 +2165,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/yaml-cpp.pc" ] || [ "$(pkg-config --modversio
     make install
     popd
     popd
-    rm -rf "yaml-cpp-release-${YAMLCPP_VERSION}"
+    rm -rf "yaml-cpp-yaml-cpp-${YAMLCPP_VERSION}"
     end_build "$YAMLCPP_TAR"
 fi
 
@@ -2201,7 +2205,11 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/OpenColorIO.pc" ] || [ "$(pkg-config --modver
     else
         rm -rf "OpenColorIO-${OCIO_VERSION}"
     fi
-    end_build "OpenColorIO-$OCIO_COMMIT"
+    if [ "$OCIO_BUILD_GIT" = 1 ]; then
+        end_build "OpenColorIO-$OCIO_COMMIT"
+    else
+        end_build "$OCIO_TAR"
+    fi
 fi
 
 # Install webp (for OIIO)
@@ -2811,7 +2819,7 @@ fi
 
 # Install dbus (for QtDBus)
 # see http://www.linuxfromscratch.org/lfs/view/systemd/chapter06/dbus.html
-DBUS_VERSION=1.12.4
+DBUS_VERSION=1.12.8
 DBUS_TAR="dbus-${DBUS_VERSION}.tar.gz"
 DBUS_SITE="https://dbus.freedesktop.org/releases/dbus"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/dbus-1.pc" ] || [ "$(pkg-config --modversion dbus-1)" != "$DBUS_VERSION" ]; then
