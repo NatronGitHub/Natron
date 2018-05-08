@@ -1537,7 +1537,7 @@ zero. The following are examples of variable definitions:
        var y := 3;
 
    (c) Initialise z to the expression
-       var z := if (max(1,x + y) > 2,w,v);
+       var z := if (max(1, x + y) > 2, w, v);
 
 
 (2) Vector Definition
@@ -1552,7 +1552,7 @@ zero. The following are examples of vector definitions:
        var x[3] := {};
 
    (c) Initialise all values to given expression
-       var x[3] := [123 + 3y + sin(w/z)];
+       var x[3] := [123 + 3y + sin(w / z)];
 
    (d) Initialise the first two values, all other elements to zero
        var x[3] := { 1 + x[2], sin(y[0] / x[]) + 3 };
@@ -2355,11 +2355,11 @@ default be assumed to have side-effects and hence will not participate
 in constant folding optimisations.
 
 In the following  example, a two  input parameter free  function named
-'compute', and a three input parameter lambda will be registered  with
-the given symbol_table instance:
+'compute1', and a three  input parameter lambda named  'compute2' will
+be registered with the given symbol_table instance:
 
 
-   double compute(double v0, double v1)
+   double compute1(double v0, double v1)
    {
       return 2.0 * v0 + v1 / 3.0;
    }
@@ -2372,12 +2372,12 @@ the given symbol_table instance:
 
    symbol_table_t symbol_table;
 
-   symbol_table.add_function("compute", compute);
+   symbol_table.add_function("compute1", compute1);
 
-   symbol_table.add_function("lambda",
-                             [](double v0, double v1, double v2) -> double
-                             { return v0 / v1 + v2; });
-
+   symbol_table.add_function(
+      "compute2",
+      [](double v0, double v1, double v2) -> double
+      { return v0 / v1 + v2; });
 
      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -3710,7 +3710,7 @@ follows:
 
    if (exprtk::collect_variables(expression, variable_list))
    {
-      for (auto var : variable_list)
+      for (const auto& var : variable_list)
       {
          ...
       }
@@ -3734,7 +3734,7 @@ follows:
 
    if (exprtk::collect_functions(expression, function_list))
    {
-      for (auto func : function_list)
+      for (const auto& func : function_list)
       {
          ...
       }
@@ -3779,7 +3779,7 @@ expression string are passed to the exprtk::collect_functions routine.
 
    if (exprtk::collect_functions(expression, sym_tab, function_list))
    {
-      for (auto func : function_list)
+      for (const auto& func : function_list)
       {
          ...
       }
@@ -3910,7 +3910,7 @@ function is as follows:
    // Differentiate expression at value of x = 12.3 using a reference
    // to the x variable
    x = T(12.3);
-   T derivative1 = exprtk::derivative(expression,x);
+   T derivative1 = exprtk::derivative(expression, x);
 
    // Differentiate expression where value x = 45.6 using name
    // of the x variable
@@ -3988,7 +3988,7 @@ is as follows:
    // Third derivative of expression where value of x = 12.3 using a
    // reference to the x variable
    x = T(12.3);
-   T derivative1 = exprtk::third_derivative(expression,x);
+   T derivative1 = exprtk::third_derivative(expression, x);
 
    // Third derivative of expression where value of x = 45.6 using
    // name of the x variable
