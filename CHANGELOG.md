@@ -5,12 +5,16 @@
 # History
 
 
+## Version 2.3.12
+
+
 ## Version 2.3.11
 
 - User Guide: Add documentation on tracking and stabilizing.
 - FrameBlend: Add Over operation, add decay parameter, and fix bugs.
-- fix Python Pseudo-random number generators random(min,max,time,seed) and randomInt(min,max,time,seed)
+- Fix Python Pseudo-random number generators random(min,max,time,seed) and randomInt(min,max,time,seed)
 - Shadertoy: Document the process to adapt a shader from shadertoy.com to the Shadertoy plugin.
+- Support FFmpeg 4.0 in the ReadFFmpeg and WriteFFmpeg plugins.
 
 
 ## Version 2.3.10
@@ -516,9 +520,8 @@ You may contribute to this user guide, follow (these)[http://natron.readthedocs.
 - Fixed issues on Windows where file paths with non ASCII characters would not be read/written correctly
 - Fixed issues on Windows where reading from/writing to a network share would not work correctly
 - Value parameters can now have Python expressions written directly in their spinbox and can be used as calculators
-
 - A new demo project from Francois Grassard is available at [downloads.natron.fr](http://downloads.natron.fr/Examples/Natron2_BayMaxProject.zip).
-It contains a fully-featured project demonstrating the use of a complex node-graph including usage of PyPlugs.
+  It contains a fully-featured project demonstrating the use of a complex node-graph including usage of PyPlugs.
 
 
 ## Version 2.0rc4
@@ -581,12 +584,12 @@ The pass-through input will also be indicated with a plain arrow whereas all oth
 
 ## Version 1.2.1
 
-– New GodRays and DirBlur nodes.
-– New RGBToHSI/HSIToRGB YUVToRGB/RGBToYUB YCbCrToRGB/RGBToYCbCr nodes
-– Fixed a bug where some TIFF files would not read correctly on Windows versions of Natron
-– FIxed a bug where a crash could occur with the Merge node with mix = 0
-– Fixed a bug where ReadFFMPEG would sometimes decode incorrectly files with bit depth higher than 8
-– Miscellaneous stability fixes
+- New GodRays and DirBlur nodes.
+- New RGBToHSI/HSIToRGB YUVToRGB/RGBToYUB YCbCrToRGB/RGBToYCbCr nodes
+- Fixed a bug where some TIFF files would not read correctly on Windows versions of Natron
+- FIxed a bug where a crash could occur with the Merge node with mix = 0
+- Fixed a bug where ReadFFMPEG would sometimes decode incorrectly files with bit depth higher than 8
+- Miscellaneous stability fixes
 
 
 ## Version 1.2.0
@@ -871,7 +874,7 @@ anything any word , e.g. "Blur" and it will propose all types of Blurs.
 - Can now read multilayer/multiview images using ReadOIIO (the standard image reader plugin in Natron) for formats that support it (such as OpenEXR or Photoshop PSD). ReadOIIO now lets you select the layer/view/channel for each output component.
 - Multiple nodes can now be selected/edited in the nodegraph at the same time. Hold CTRL-A to select all nodes, CTRL-SHIFT-A to select only visible nodes in the visible portion
 - The “Tab” shortcut menu is now more intuitive and easy to use
-- New shortcuts to create basic nodes: – O : Roto – C : ColorCorrect – G : Grade – T : Transform – M : Merge
+- New shortcuts to create basic nodes: - O : Roto - C : ColorCorrect - G : Grade - T : Transform - M : Merge
 - In addition the “L” shortcut allows you to rearrange automatically the layout of the selected nodes.
 - New Tracker node: 4 different algorithms can be used to track points. Tracks can be created and controlled directly from the Viewer. You can then export the results in a CornerPin node. (Transform export will be included later).
 - In addition for convenience you can also link the control points of the Roto splines directly to a given track. The tracker nodes accepts a mask in input: When tracking points inside a roto shape, plug that same shape as a mask of the tracker to help the tracker giving better results.

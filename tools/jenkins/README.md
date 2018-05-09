@@ -94,6 +94,8 @@ Disable the screensaver for the current host and user:
     defaults -currentHost write com.apple.screensaver idleTime 0
     defaults write com.apple.screensaver idleTime 0
 
+The user must be logged in, or the disk image creation at the end of the build will fail. Make sure that automatic login is set up, as described in [HT201476](https://support.apple.com/HT201476).
+
 See the INSTALL_OSX.md file in the main Natron repository. It contains all installation steps as well as setup of macports. 
 
 
@@ -188,7 +190,7 @@ Same as linux, except that the script is `include/scripts/build-Windows-sdk.sh`
 Mac:
 ----
 
-See `INSTALL_OSX.md` in the main Natron repository: libraries are handled by macports. To change a library version, the portfile of macports located in `Natron/tools/macports` in the **master** branch have to be updated.
+See `INSTALL_OSX.md` in the main Natron repository: libraries are handled by macports. To update a Natron-specific package, the MacPorts `Portfile` located in `Natron/tools/MacPorts` can to be updated.
 
 
 

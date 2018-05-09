@@ -27,15 +27,15 @@ This directory contains various tools to help building and maintaining Natron.
   
   For example, on macOS, if a Natron snapshot or release is installed as `/Applications/Natron.app`, The static docs can be generated in the `html` subdirectory with the following commands:
   ```
-cd <Natron source directory>/Documentation
-natron="/Applications/Natron.app"
-env FONTCONFIG_FILE="$natron/Contents/Resources/etc/fonts/fonts.conf" \
-OCIO="$natron/Contents/Resources/OpenColorIO-Configs/blender/config.ocio" \
-OFX_PLUGIN_PATH="$natron/Contents/Plugins" \
-NATRON_PLUGIN_PATH="$natron/Contents/Plugins/PyPlugs" \
-bash ../tools/genStaticDocs.sh "$natron/Contents/MacOS/NatronRenderer" /var/tmp/natrondocs .
-sphinx-build -b html source html
-```
+  cd <Natron source directory>/Documentation
+  natron="/Applications/Natron.app"
+  env FONTCONFIG_FILE="$natron/Contents/Resources/etc/fonts/fonts.conf" \
+  OCIO="$natron/Contents/Resources/OpenColorIO-Configs/blender/config.ocio" \
+  OFX_PLUGIN_PATH="$natron/Contents/Plugins" \
+  NATRON_PLUGIN_PATH="$natron/Contents/Plugins/PyPlugs" \
+  bash ../tools/genStaticDocs.sh "$natron/Contents/MacOS/NatronRenderer" /var/tmp/natrondocs .
+  sphinx-build -b html source html
+  ```
 
 - **jenkins**
 
@@ -54,7 +54,17 @@ sphinx-build -b html source html
 	  
       - pull updates from your local clone of the official [MINGW-packages](https://github.com/Alexpux/MINGW-packages) repository.
 	  - go to the `tools/MINGW-packages` directory in the Natron sources (detailed below), and execute `./check.sh` to see if any package needs updating. Update `PKGCONFIG` for these packages accordingly.
-	  - execute `pacman -Syu` to update MSYS2 (it may ask you to close and relaunch the terminal)
+	  - execute `pacman -Syu` to update MSYS2
+
+	    Answer "n" to those two questions, if `pacman -Syu` asks:
+
+	    ```
+		:: Replace mingw-w64-i686-x264 with mingw32/mingw-w64-i686-x264-git? [Y/n] n
+	    :: Replace mingw-w64-x86_64-x264 with mingw64/mingw-w64-x86_64-x264-git? [Y/n] n
+		``
+
+	    After execution, `pacman -Syu` may ask you to close and relaunch the terminal.
+	  
 	  - execute `MSYSTEM=MINGW64 BITS=64 ./include/scripts/build-Windows-sdk.sh` to rebuild and install the Natron-specific packages.
 	  
   - build the Natron binaries and execute the unit tests on OS X 10.9 (`macStartupJenkins.sh`), Linux CentOS 6.4 32bit and 64bit (`linuxStartupJenkins.sh`) and Windows 10 32bit and 64bit (`winStartupJenkins.bat`). These build scripts are basically updated versions of the scripts from the `buildmaster`directory, but were never tested to produce actual releases. Also note that the OS X script does not produce universal 32/64 bits binaries.

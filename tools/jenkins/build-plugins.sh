@@ -294,21 +294,18 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
     fi
 
     # build GMIC.ofx
-    # GMIC doesn't like Ofast for some reason: remove OPTFLAG="${OPTFLAG}"
-    # see this line in gmic.h:
-    # #error Using the -ffast-math CFLAG is known to lead to important issues in libgmic. Please disable it to compile.
     if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
         # build with OpenMP support (no OpenGL required)
         make -j"${GMIC_MKJOBS}" OPENMP=1 \
-             CXX="$CXX" CONFIG="${COMPILE_TYPE}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-}" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA"
+             CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-}" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA"
     elif [ -n "${GXX:-}" ]; then
         # build with OpenMP support, but statically link libgomp (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=31400)
         make -j"${GMIC_MKJOBS}" OPENMP=1 \
-             CXX="$GXX" CONFIG="${COMPILE_TYPE}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-} -static-libgcc" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA"
+             CXX="$GXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-} -static-libgcc" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA"
     else
         # build without OpenMP
         make -j"${GMIC_MKJOBS}" \
-             CXX="$CXX" CONFIG="${COMPILE_TYPE}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-}" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA"
+             CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-}" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA"
     fi
     cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
     cd "$TMP_PATH"

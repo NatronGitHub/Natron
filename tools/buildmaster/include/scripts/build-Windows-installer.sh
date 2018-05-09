@@ -395,6 +395,7 @@ NATRON_DLL=(
     libxml2-2.dll
     phonon4.dll
     SSLEAY32.dll
+    yaml-cpp.dll
     zlib1.dll
 )
 if [ "$NATRON_LICENSE" = "GPL" ]; then
@@ -676,6 +677,8 @@ if [ "${BUNDLE_GMIC:-}" = "1" ]; then
     GMIC_DLL=(
         libfftw3-3.dll
         libcurl-4.dll
+        libbrotlidec.dll
+        libbrotlicommon.dll
         libnghttp2-14.dll
     )
     OFX_GMIC_VERSION="$TAG"

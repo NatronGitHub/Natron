@@ -120,10 +120,10 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_VERSION_MINOR_30 0
 #define NATRON_VERSION_REVISION_30 0
 
-// RB-2: 2.3.11
+// RB-2: 2.3.12
 #define NATRON_VERSION_MAJOR_23 2
 #define NATRON_VERSION_MINOR_23 3
-#define NATRON_VERSION_REVISION_23 11
+#define NATRON_VERSION_REVISION_23 12
 
 // RB-2.2: 2.2.10
 #define NATRON_VERSION_MAJOR_22 2
@@ -181,7 +181,7 @@ namespace NATRON_PYTHON_NAMESPACE { }
 //#elif (NATRON_VERSION_MAJOR == NATRON_VERSION_MAJOR_30) && (NATRON_VERSION_MINOR == NATRON_VERSION_MINOR_30)
 //#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io/en/rb-3.0"
 #else
-#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io/en/master"
+#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io"
 #endif
 
 #if defined(__NATRON_LINUX__) || defined(__NATRON_OSX__)
