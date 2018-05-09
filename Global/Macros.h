@@ -199,7 +199,7 @@ namespace NATRON_PYTHON_NAMESPACE { }
 //#elif (NATRON_VERSION_MAJOR == NATRON_VERSION_MAJOR_30) && (NATRON_VERSION_MINOR == NATRON_VERSION_MINOR_30)
 //#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io/en/rb-3.0"
 #else
-#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io/en/master"
+#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io"
 #endif
 
 #if defined(__NATRON_LINUX__) || defined(__NATRON_OSX__)
