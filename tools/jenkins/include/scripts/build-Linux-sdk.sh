@@ -1402,6 +1402,7 @@ fi
 
 # Install glib
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html
+# We explicitely disable SElinux, see https://github.com/NatronGitHub/Natron/issues/265
 GLIB_VERSION=2.56.1
 if ! grep -F F_SETPIPE_SZ /usr/include/linux/fcntl.h &>/dev/null; then
     GLIB_VERSION=2.54.3
@@ -1418,7 +1419,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/glib-2.0.pc" ] || [ "$(pkg-config --modversio
     patch -Np1 -i "$INC_PATH/patches/glib/glib-2.56.0-skip_warnings-1.patch"
     # do not apply: we do not build with meson yet
     #patch -Np1 -i "$INC_PATH/patches/glib/glib-2.54.2-meson_fixes-1.patch"
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-gtk-doc-html --disable-static --enable-shared --with-pcre=system
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-selinux --disable-gtk-doc-html --disable-static --enable-shared --with-pcre=system
     make -j${MKJOBS}
     make install
     popd
