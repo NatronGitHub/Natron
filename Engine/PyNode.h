@@ -377,6 +377,8 @@ public:
 
     std::list<ImageLayer> getAvailableLayers(int inputNb) const;
 
+    RectI getOutputFormat() const;
+
     double getFrameRate() const;
 
     double getPixelAspectRatio() const;

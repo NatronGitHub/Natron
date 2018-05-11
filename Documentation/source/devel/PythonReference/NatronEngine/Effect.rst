@@ -26,6 +26,7 @@ Functions
 - def :meth:`getBitDepth<NatronEngine.Effect.getBitDepth>` ()
 - def :meth:`getColor<NatronEngine.Effect.getColor>` ()
 - def :meth:`getCurrentTime<NatronEngine.Effect.getCurrentTime>` ()
+- def :meth:`getOutputFormat<NatronEngine.Effect.getOutputFormat>` ()
 - def :meth:`getFrameRate<NatronEngine.Effect.getFrameRate>` ()
 - def :meth:`getInput<NatronEngine.Effect.getInput>` (inputNumber)
 - def :meth:`getInput<NatronEngine.Effect.getInput>` (inputName)
@@ -246,6 +247,13 @@ Returns the color of this node as it appears on the node graph as [R,G,B] 3-dime
 Returns the current time of timeline if this node is currently rendering, otherwise
 it returns the current time at which the node is currently rendering for the caller
 thread.
+
+.. method:: NatronEngine.Effect.getOutputFormat()
+
+    :rtype: :class:`RectI<NatronEngine.RectI>`
+
+    Returns the output format of this node in pixel units.
+
 
 .. method:: NatronEngine.Effect.getFrameRate()
 
