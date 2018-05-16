@@ -1151,7 +1151,7 @@ fi
 
 # Install PostgreSQL (for the Qt postgresql plugin and the python postgresql adapter)
 # see http://www.linuxfromscratch.org/blfs/view/svn/server/postgresql.html
-POSTGRESQL_VERSION=10.3
+POSTGRESQL_VERSION=10.4
 POSTGRESQL_TAR="postgresql-${POSTGRESQL_VERSION}.tar.bz2"
 POSTGRESQL_SITE="http://ftp.postgresql.org/pub/source/v${POSTGRESQL_VERSION}"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/libpq.pc" ] || [ "$(pkg-config --modversion libpq)" != "$POSTGRESQL_VERSION" ]; then
@@ -1686,13 +1686,15 @@ fi
 
 # Install libraw
 # see http://www.at.linuxfromscratch.org/blfs/view/cvs/general/libraw.html
-LIBRAW_VERSION=0.18.10
+LIBRAW_VERSION=0.18.11
 LIBRAW_PACKS_VERSION="${LIBRAW_VERSION}"
 LIBRAW_PACKS_VERSION=0.18.8
 LIBRAW_TAR="LibRaw-${LIBRAW_VERSION}.tar.gz"
 LIBRAW_DEMOSAIC_PACK_GPL2="LibRaw-demosaic-pack-GPL2-${LIBRAW_PACKS_VERSION}.tar.gz"
+LIBRAW_DEMOSAIC_PACK_GPL3="LibRaw-demosaic-pack-GPL3-${LIBRAW_PACKS_VERSION}.tar.gz"
 LIBRAW_SITE="https://www.libraw.org/data"
 if [ "${REBUILD_LIBRAW:-}" = "1" ]; then
+    rm -rf "$SDK_HOME"/libraw-gpl3 || true
     rm -rf "$SDK_HOME"/libraw-gpl2 || true
     rm -f "$SDK_HOME"/libraw-lgpl || true
 fi
@@ -1700,11 +1702,18 @@ if [ ! -s "$SDK_HOME/libraw-gpl2/lib/pkgconfig/libraw.pc" ] || [ "$(env PKG_CONF
     start_build "$LIBRAW_TAR"
     download "$LIBRAW_SITE" "$LIBRAW_TAR"
     download "$LIBRAW_SITE" "$LIBRAW_DEMOSAIC_PACK_GPL2"
+    download "$LIBRAW_SITE" "$LIBRAW_DEMOSAIC_PACK_GPL3"
     untar "$SRC_PATH/$LIBRAW_TAR"
     pushd "LibRaw-${LIBRAW_VERSION}"
     untar "$SRC_PATH/$LIBRAW_DEMOSAIC_PACK_GPL2"
+    untar "$SRC_PATH/$LIBRAW_DEMOSAIC_PACK_GPL3"
     LGPL_CONF_FLAGS=( --disable-static --enable-shared --enable-lcms --enable-jasper --enable-jpeg )
-    GPL2_CONF_FLAGS=( "${LGPL_CONF_FLAGS[@]}" --enable-demosaic-pack-gpl2 )
+    GPL2_CONF_FLAGS=( "${LGPL_CONF_FLAGS[@]}" --enable-demosaic-pack-gpl2 --disable-demosaic-pack-gpl3 )
+    GPL3_CONF_FLAGS=( "${LGPL_CONF_FLAGS[@]}" --enable-demosaic-pack-gpl2 --enable-demosaic-pack-gpl3 )
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS" ./configure --prefix="$SDK_HOME/libraw-gpl3" "${GPL3_CONF_FLAGS[@]}"
+    make -j${MKJOBS}
+    make install
+    make distclean
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS" ./configure --prefix="$SDK_HOME/libraw-gpl2" "${GPL2_CONF_FLAGS[@]}"
     make -j${MKJOBS}
     make install
@@ -1985,7 +1994,7 @@ fi
 
 # Install ImageMagick6
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick6.html
-MAGICK_VERSION=6.9.9-43
+MAGICK_VERSION=6.9.9-44
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
 MAGICK_TAR="ImageMagick-${MAGICK_VERSION}.tar.xz"
 MAGICK_SITE="https://www.imagemagick.org/download/releases"
@@ -2012,7 +2021,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversio
 fi
 # install ImageMagick7
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick.html
-MAGICK7_VERSION=7.0.7-31
+MAGICK7_VERSION=7.0.7-32
 MAGICK7_VERSION_SHORT=${MAGICK7_VERSION%-*}
 MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.xz"
 if [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/magick7/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Magick++)" != "$MAGICK7_VERSION_SHORT" ]; then
