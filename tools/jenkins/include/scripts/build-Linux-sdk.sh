@@ -984,7 +984,7 @@ fi
 
 # # Install libuv (for cmake)
 # # http://www.linuxfromscratch.org/blfs/view/svn/general/libuv.html
-# LIBUV_VERSION=1.19.1
+# LIBUV_VERSION=1.20.3
 # LIBUV_TAR="libuv-${LIBUV_VERSION}.tar.gz"
 # LIBUV_SITE="http://www.libuv.org/downloads"
 # if [ ! -s "$SDK_HOME/lib/pkgconfig/libuv.pc" ] || [ "$(pkg-config --modversion libuv)" != "$LIBUV_VERSION" ]; then
@@ -2100,7 +2100,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/poppler-glib.pc" ] || [ "$(pkg-config --modve
 fi
 
 # Install poppler-data
-POPPLERD_VERSION=0.4.8
+POPPLERD_VERSION=0.4.9
 POPPLERD_TAR="poppler-data-${POPPLERD_VERSION}.tar.gz"
 if [ ! -d "$SDK_HOME/share/poppler" ]; then
     start_build "$POPPLERD_TAR"
