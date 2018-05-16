@@ -130,8 +130,7 @@ On macOS Sierra, install the sierra-compatible recipe (to be used only in Sierra
 
 Then install pyside (the boneyard tap is for pyside, which does not yet build with Qt5 and was thus removed from the homebrew core):
 
-    brew tap homebrew/boneyard
-    brew install pyside sphinx-doc
+    brew install pyside@1.2 pyside-tools@1.2
 
 The last command above will take a while, since it builds from sources, and should finally tell you do do the following if the `homebrew.pth` file does not exist:
 
@@ -193,10 +192,10 @@ And install (after making sure `/opt/qt4` is user-writable) using:
 ### Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
+to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz).
 Place it at the root of Natron source tree:
 
-    curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz | tar zxf -
+    curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz | tar zxf -
     mv OpenColorIO-Configs-Natron-v2.1 OpenColorIO-Configs
 
 
