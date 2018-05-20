@@ -948,7 +948,7 @@ fi
 
 # Install curl
 # see http://www.linuxfromscratch.org/blfs/view/cvs/basicnet/curl.html
-CURL_VERSION=7.59.0
+CURL_VERSION=7.60.0
 CURL_TAR="curl-${CURL_VERSION}.tar.bz2"
 CURL_SITE="https://curl.haxx.se/download"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/libcurl.pc" ] || [ "$(pkg-config --modversion libcurl)" != "$CURL_VERSION" ]; then
@@ -1011,7 +1011,7 @@ fi
 #       ^~
 # Since there is no way to disable libuv alone (--no-system-libuv unavailable in ./bootstrap),
 # we disable all system libs. Voilà!
-CMAKE_VERSION=3.11.1
+CMAKE_VERSION=3.11.2
 CMAKE_VERSION_SHORT=${CMAKE_VERSION%.*}
 CMAKE_TAR="cmake-${CMAKE_VERSION}.tar.gz"
 CMAKE_SITE="https://cmake.org/files/v${CMAKE_VERSION_SHORT}"
@@ -1994,7 +1994,7 @@ fi
 
 # Install ImageMagick6
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick6.html
-MAGICK_VERSION=6.9.9-44
+MAGICK_VERSION=6.9.9-45
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
 MAGICK_TAR="ImageMagick-${MAGICK_VERSION}.tar.xz"
 MAGICK_SITE="https://www.imagemagick.org/download/releases"
@@ -2021,7 +2021,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversio
 fi
 # install ImageMagick7
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick.html
-MAGICK7_VERSION=7.0.7-32
+MAGICK7_VERSION=7.0.7-33
 MAGICK7_VERSION_SHORT=${MAGICK7_VERSION%-*}
 MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.xz"
 if [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/magick7/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Magick++)" != "$MAGICK7_VERSION_SHORT" ]; then
@@ -2065,7 +2065,7 @@ fi
 
 # Install poppler-glib (without curl, nss3, qt4, qt5)
 # see http://www.linuxfromscratch.org/blfs/view/stable/general/poppler.html
-POPPLER_VERSION=0.64.0
+POPPLER_VERSION=0.65.0
 POPPLER_TAR="poppler-${POPPLER_VERSION}.tar.xz"
 POPPLER_SITE="https://poppler.freedesktop.org"
 if [ "${REBUILD_POPPLER:-}" = "1" ]; then
@@ -2694,7 +2694,7 @@ fi
 
 # Install fribidi (for libass and ffmpeg)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/fribidi.html
-FRIBIDI_VERSION=1.0.2
+FRIBIDI_VERSION=1.0.3
 FRIBIDI_TAR="fribidi-${FRIBIDI_VERSION}.tar.bz2"
 FRIBIDI_SITE="https://github.com/fribidi/fribidi/releases/download/v${FRIBIDI_VERSION}"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/fribidi.pc" ] || [ "$(pkg-config --modversion fribidi)" != "$FRIBIDI_VERSION" ]; then
