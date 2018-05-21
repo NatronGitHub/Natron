@@ -5,7 +5,7 @@ PortGroup           muniversal 1.0
 
 name                ghostscript
 version             9.23
-revision            2
+revision            3
 categories          print
 license             AGPL-3 BSD
 maintainers         nomaintainer
@@ -65,7 +65,7 @@ depends_run         port:perl5
 extract.only        ${distname}.tar.gz \
                     ghostscript-fonts-other-6.0.tar.gz \
                     ghostscript-fonts-std-8.11.tar.gz \
-                    ghostscript-9.20-cross.patch \
+                    ghostscript-9.10-cross.patch \
                     ghostscript-9.05-cross-so.patch
 
 post-extract {
