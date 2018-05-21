@@ -111,8 +111,10 @@ public:
     // General
     KnobPagePtr _generalTab;
     KnobBoolPtr _checkForUpdates;
+#ifdef NATRON_USE_BREAKPAD
     KnobBoolPtr _enableCrashReports;
     KnobButtonPtr _testCrashReportButton;
+#endif
     KnobBoolPtr _autoSaveUnSavedProjects;
     KnobPathPtr _fileDialogSavedPaths;
     KnobIntPtr _autoSaveDelay;
@@ -778,6 +780,7 @@ SettingsPrivate::initializeKnobsGeneral()
     _knobsRequiringRestart.insert(_checkForUpdates);
     _generalTab->addKnob(_checkForUpdates);
 
+#ifdef NATRON_USE_BREAKPAD
     _enableCrashReports = _publicInterface->createKnob<KnobBool>("enableCrashReports");
     _enableCrashReports->setLabel(tr("Enable crash reporting"));
     _enableCrashReports->setHintToolTip( tr("When checked, if %1 crashes a window will pop-up asking you "
@@ -798,7 +801,7 @@ SettingsPrivate::initializeKnobsGeneral()
     _testCrashReportButton->setHintToolTip( tr("This button is for developers only to test whether the crash reporting system "
                                                "works correctly. Do not use this.") );
     _generalTab->addKnob(_testCrashReportButton);
-
+#endif
 
     _autoSaveDelay = _publicInterface->createKnob<KnobInt>("autoSaveDelay");
     _autoSaveDelay->setLabel(tr("Auto-save trigger delay"));
@@ -2839,6 +2842,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
         ChoiceOption hostName = _imp->_hostName->getCurrentEntry();
         bool isCustom = hostName.id == NATRON_CUSTOM_HOST_NAME_ENTRY;
         _imp->_customHostName->setSecret(!isCustom);
+#ifdef NATRON_USE_BREAKPAD
     } else if ( ( k == _imp->_testCrashReportButton ) && (reason == eValueChangedReasonUserEdited) ) {
         StandardButtonEnum reply = Dialogs::questionDialog( tr("Crash Test").toStdString(),
                                                            tr("You are about to make %1 crash to test the reporting system.\n"
@@ -2847,6 +2851,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
         if (reply == eStandardButtonYes) {
             crash_application();
         }
+#endif
     } else if ( ( k == _imp->_scriptEditorFontChoice ) || ( k == _imp->_scriptEditorFontSize ) ) {
         appPTR->reloadScriptEditorFonts();
     } else if ( k == _imp->_enableOpenGL ) {
@@ -3242,11 +3247,13 @@ Settings::setCheckUpdatesEnabled(bool enabled)
     _imp->_checkForUpdates->setValue(enabled);
 }
 
+#ifdef NATRON_USE_BREAKPAD
 bool
 Settings::isCrashReportingEnabled() const
 {
     return _imp->_enableCrashReports->getValue();
 }
+#endif
 
 int
 Settings::getMaxPanelsOpened() const

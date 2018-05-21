@@ -8,20 +8,6 @@ General
 
 When checked, Natron will check for new updates on start-up of the application.
 
-**Enable crash reporting**
-
-When checked, if Natron crashes a window will pop-up asking you whether you want to upload the crash dump to the developers or not. This can help them track down the bug.
-
-If you need to turn the crash reporting system off, uncheck this.
-
-Note that when using the application in command-line mode, if crash reports are enabled, they will be automatically uploaded.
-
-Changing this requires a restart of the application to take effect.
-
-**Test Crash Reporting**
-
-This button is for developers only to test whether the crash reporting system works correctly. Do not use this.
-
 **Auto-save trigger delay**
 
 The number of seconds after an event that Natron should wait before auto-saving. Note that if a render is in progress, Natron will wait until it is done to actually auto-save.

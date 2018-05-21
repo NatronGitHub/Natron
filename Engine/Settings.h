@@ -200,7 +200,9 @@ public:
 
     void setCheckUpdatesEnabled(bool enabled);
 
+#ifdef NATRON_USE_BREAKPAD
     bool isCrashReportingEnabled() const;
+#endif
 
     int getMaxPanelsOpened() const;
 
