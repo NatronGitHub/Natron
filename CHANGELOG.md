@@ -7,6 +7,9 @@
 
 ## Version 2.3.12
 
+- Fix font selection in the plugins that render text (Text and Polaroid from openfx-arena).
+- Python: add Effect.getOutputFormat() method.
+
 
 ## Version 2.3.11
 
