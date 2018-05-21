@@ -14,6 +14,9 @@ set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
 #set -x # Print commands and their arguments as they are executed.
 
+DISABLE_BREAKPAD=1 # comment to re-enable breakpad
+export DISABLE_BREAKPAD
+
 BM_PID=$$
 FINISHED=0
 RESTART=0
@@ -224,7 +227,7 @@ while [ "$FINISHED" = "0" ]; do
         if [ "$FAIL" = "0" ] && [ "$TYPE" = "RELEASE" ] && ([ "$REPO" = "Natron" ] || [ "$REPO" = "$GIT_NATRON_REPO_LABEL" ] || [ "$REPO" = "$GIT_NATRON_GFORGE_REPO_LABEL" ]); then
             RELEASE_BRANCH=$(echo "$BRANCH" | $GSED 's#tags/##;' | cut -c1-3)
             PLUGIN_COMMIT=$(echo "$BRANCH" | $GSED 's#tags/#tags/Natron-#;')
-            COMMON="$CWD/common.sh"
+            COMMON="$CWD/common-buildmaster.sh"
             sed -e "s/NATRON_RELEASE_BRANCH=.*/NATRON_RELEASE_BRANCH=RB-${RELEASE_BRANCH}/" -e "s#NATRON_GIT_TAG=.*#NATRON_GIT_TAG=${BRANCH}#" -e "s#IOPLUG_GIT_TAG=.*#IOPLUG_GIT_TAG=${PLUGIN_COMMIT}#" -e "s#MISCPLUG_GIT_TAG=.*#MISCPLUG_GIT_TAG=${PLUGIN_COMMIT}#" -e "s#ARENAPLUG_GIT_TAG=.*#ARENAPLUG_GIT_TAG=${PLUGIN_COMMIT}#" -e "s#GMICPLUG_GIT_TAG=.*#GMICPLUG_GIT_TAG=${PLUGIN_COMMIT}#" -e "s#CVPLUG_GIT_TAG=.*#CVPLUG_GIT_TAG=${PLUGIN_COMMIT}#" "$COMMON" > "$COMMON".new && mv "$COMMON".new "$COMMON" || FAIL=$?
         fi
 
