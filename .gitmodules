@@ -10,3 +10,6 @@
 [submodule "libs/SequenceParsing"]
 	path = libs/SequenceParsing
 	url = https://github.com/NatronGitHub/SequenceParsing
+[submodule "libs/google-breakpad"]
+	path = libs/google-breakpad
+	url = https://github.com/NatronGitHub/google-breakpad.git
