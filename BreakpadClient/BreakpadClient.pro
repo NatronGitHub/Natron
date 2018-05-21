@@ -38,10 +38,6 @@ win32-msvc* {
 
 win32: DEFINES *= UNICODE
 
-BREAKPAD_PATH = ../google-breakpad/src
-INCLUDEPATH += $$BREAKPAD_PATH
-DEPENDPATH += $$BREAKPAD_PATH
-
 # every *nix
 unix {
         SOURCES += \

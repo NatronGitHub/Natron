@@ -99,7 +99,7 @@ CONFIG(debug, debug|release){
     DEFINES *= NDEBUG
 }
 
-enable-breakpad {
+CONFIG(enable-breakpad) {
     include(breakpadclient.pri)
 }
 

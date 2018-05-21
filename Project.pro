@@ -18,7 +18,7 @@
 
 TEMPLATE = subdirs
 
-enable-breakpad {
+CONFIG(enable-breakpad) {
     include(breakpadpro.pri)
 }
 
