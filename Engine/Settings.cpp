@@ -2735,6 +2735,7 @@ SettingsPrivate::tryLoadOpenColorIOConfig()
     return true;
 } // tryLoadOpenColorIOConfig
 
+#ifdef NATRON_USE_BREAKPAD
 inline
 void
 crash_application()
@@ -2745,6 +2746,7 @@ crash_application()
     // coverity[var_deref_op]
     *a = 1;
 }
+#endif
 
 void
 SettingsPrivate::restoreNumThreads()
