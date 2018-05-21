@@ -18,9 +18,6 @@ Documentation/pdf
 #Documentation/source/_group*
 #Documentation/source/_prefs.rst
 #Documentation/source/plugins
-#breakpadclient.pri
-#breakpadpro.pri
-google-breakpad/
 libs/hoedown/hoedown.xcodeproj/
 libs/libtess/libtess.xcodeproj/
 libs/libtess/tess.xcodeproj/
@@ -39,9 +36,6 @@ NatronRenderer.xcodeproj/
 NatronCrashReporter.xcodeproj/
 NatronRendererCrashReporter.xcodeproj/
 BreakpadClient.xcodeproj/
-CrashReporter/*
-CrashReporterCLI/*
-BreakpadClient/*
 tools/normalize/normalize
 Tests.xcodeproj/
 HostSupport.xcodeproj/

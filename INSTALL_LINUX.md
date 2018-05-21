@@ -23,16 +23,32 @@ Natron on GNU/Linux.
     - [CentOS7/Fedora](#centos7)
 
 
-# Libraries
+# Dependencies
+
+The dependencies necessary to build and install Natron can either be built specifically for Natron, using the Natron SDK, or installed using packages from the Linux distribution.
+
+## Installing the full Natron SDK
+
+The Natron SDK is used for building the official Natron binaries. The script that builds the whole SDK and installs it in the default location (`/opt/Natron-sdk`, which must be user-writable) can be exectuted like this:
+
+    cd tools/jenkins
+	include/scripts/build-Linux-sdk.sh
+	
+It puts build logs and the list of files installed by each package in the directory `/opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK` or `/opt/Natron-sdk/var/log/Natron-Linux-i686-SDK`.
+
+Some packages, especially Qt 4.8.7, have Natron-specific patches. Take a look at the SDK script to see which patches are applied to each packages, and what configuration options are used.
+
+The SDK may be updated by pulling the last modifications to the script and re-executing it.
+
+
+## Manually install dependencies
+
+In order to have Natron compiling, first you need to install the required libraries.
 
 ***note:*** *The scripts `tools/travis/install_dependencies.sh` and
 `tools/travis/build.sh` respectively install the correct dependencies
 and build Natron and the standard set of plugins on Ubuntu
-12.04. These scripts should always be up-to-date. You can use them as a reference*
-
-## Install libraries
-
-In order to have Natron compiling, first you need to install the required libraries.
+14.04. These scripts should always be up-to-date. You can use them as a reference*
 
 ### Qt 4.8.7
 
@@ -243,6 +259,7 @@ expat: LIBS += -lexpat
 expat: PKGCONFIG -= expat
 cairo: PKGCONFIG -= cairo
 ```
+
 ## CentOS7
 
 Instructions for CentOS and Fedora.

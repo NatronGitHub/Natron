@@ -1,6 +1,6 @@
---- PKGBUILD.orig	2018-04-22 18:02:02.000000000 +0200
-+++ PKGBUILD	2018-04-22 18:02:38.000000000 +0200
-@@ -2,14 +2,14 @@
+--- PKGBUILD.orig	2018-05-16 09:13:43.000000000 +0200
++++ PKGBUILD	2018-05-16 09:14:09.000000000 +0200
+@@ -2,8 +2,8 @@
  # Contributer: Zach Bacon <11doctorwhocanada@gmail.com>
  
  _realname=ffmpeg
@@ -9,15 +9,8 @@
 +pkgbase="mingw-w64-${_realname}-lgpl"
 +pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-lgpl"
  pkgver=4.0
- pkgrel=1
+ pkgrel=2
  pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
- arch=('any')
- url="https://ffmpeg.org/"
--license=('GPL')
-+license=('LGPL')
- options=('staticlibs' 'strip')
- depends=(
-         "${MINGW_PACKAGE_PREFIX}-bzip2"
 @@ -22,21 +22,20 @@
          "${MINGW_PACKAGE_PREFIX}-libbluray"
          "${MINGW_PACKAGE_PREFIX}-libcaca"

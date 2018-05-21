@@ -1615,6 +1615,18 @@ Effect::getAvailableLayers(int inputNb) const
     return ret;
 }
 
+RectI
+Effect::getOutputFormat() const
+{
+    NodePtr node = getInternalNode();
+
+    if (!node) {
+        return RectI();
+    }
+
+    return node->getEffectInstance()->getOutputFormat();
+}
+
 double
 Effect::getFrameRate() const
 {

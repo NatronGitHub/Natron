@@ -5,9 +5,9 @@ PortGroup select 1.0
 PortGroup compiler_blacklist_versions 1.0
 
 name                gcc5
-
 epoch               2
 version             5.5.0
+revision            1
 platforms           darwin
 categories          lang
 maintainers         nomaintainer
@@ -67,6 +67,9 @@ patchfiles-append   notparallel-install-headers.patch
 
 # Provide linkage for MacPorts libiconv in gcj
 patchfiles-append   gcj-libiconv-linkage.patch
+
+# work around bug in 10.13 headers
+patchfiles-append   headers-10.13-fix.patch
 
 set major           [lindex [split ${version} .-] 0]
 

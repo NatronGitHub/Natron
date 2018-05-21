@@ -948,7 +948,7 @@ fi
 
 # Install curl
 # see http://www.linuxfromscratch.org/blfs/view/cvs/basicnet/curl.html
-CURL_VERSION=7.59.0
+CURL_VERSION=7.60.0
 CURL_TAR="curl-${CURL_VERSION}.tar.bz2"
 CURL_SITE="https://curl.haxx.se/download"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/libcurl.pc" ] || [ "$(pkg-config --modversion libcurl)" != "$CURL_VERSION" ]; then
@@ -984,7 +984,7 @@ fi
 
 # # Install libuv (for cmake)
 # # http://www.linuxfromscratch.org/blfs/view/svn/general/libuv.html
-# LIBUV_VERSION=1.19.1
+# LIBUV_VERSION=1.20.3
 # LIBUV_TAR="libuv-${LIBUV_VERSION}.tar.gz"
 # LIBUV_SITE="http://www.libuv.org/downloads"
 # if [ ! -s "$SDK_HOME/lib/pkgconfig/libuv.pc" ] || [ "$(pkg-config --modversion libuv)" != "$LIBUV_VERSION" ]; then
@@ -1011,7 +1011,7 @@ fi
 #       ^~
 # Since there is no way to disable libuv alone (--no-system-libuv unavailable in ./bootstrap),
 # we disable all system libs. Voilà!
-CMAKE_VERSION=3.11.1
+CMAKE_VERSION=3.11.2
 CMAKE_VERSION_SHORT=${CMAKE_VERSION%.*}
 CMAKE_TAR="cmake-${CMAKE_VERSION}.tar.gz"
 CMAKE_SITE="https://cmake.org/files/v${CMAKE_VERSION_SHORT}"
@@ -1151,7 +1151,7 @@ fi
 
 # Install PostgreSQL (for the Qt postgresql plugin and the python postgresql adapter)
 # see http://www.linuxfromscratch.org/blfs/view/svn/server/postgresql.html
-POSTGRESQL_VERSION=10.3
+POSTGRESQL_VERSION=10.4
 POSTGRESQL_TAR="postgresql-${POSTGRESQL_VERSION}.tar.bz2"
 POSTGRESQL_SITE="http://ftp.postgresql.org/pub/source/v${POSTGRESQL_VERSION}"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/libpq.pc" ] || [ "$(pkg-config --modversion libpq)" != "$POSTGRESQL_VERSION" ]; then
@@ -1402,6 +1402,7 @@ fi
 
 # Install glib
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html
+# We explicitely disable SElinux, see https://github.com/NatronGitHub/Natron/issues/265
 GLIB_VERSION=2.56.1
 if ! grep -F F_SETPIPE_SZ /usr/include/linux/fcntl.h &>/dev/null; then
     GLIB_VERSION=2.54.3
@@ -1418,7 +1419,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/glib-2.0.pc" ] || [ "$(pkg-config --modversio
     patch -Np1 -i "$INC_PATH/patches/glib/glib-2.56.0-skip_warnings-1.patch"
     # do not apply: we do not build with meson yet
     #patch -Np1 -i "$INC_PATH/patches/glib/glib-2.54.2-meson_fixes-1.patch"
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-gtk-doc-html --disable-static --enable-shared --with-pcre=system
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-selinux --disable-gtk-doc-html --disable-static --enable-shared --with-pcre=system
     make -j${MKJOBS}
     make install
     popd
@@ -1685,13 +1686,15 @@ fi
 
 # Install libraw
 # see http://www.at.linuxfromscratch.org/blfs/view/cvs/general/libraw.html
-LIBRAW_VERSION=0.18.10
+LIBRAW_VERSION=0.18.11
 LIBRAW_PACKS_VERSION="${LIBRAW_VERSION}"
 LIBRAW_PACKS_VERSION=0.18.8
 LIBRAW_TAR="LibRaw-${LIBRAW_VERSION}.tar.gz"
 LIBRAW_DEMOSAIC_PACK_GPL2="LibRaw-demosaic-pack-GPL2-${LIBRAW_PACKS_VERSION}.tar.gz"
+LIBRAW_DEMOSAIC_PACK_GPL3="LibRaw-demosaic-pack-GPL3-${LIBRAW_PACKS_VERSION}.tar.gz"
 LIBRAW_SITE="https://www.libraw.org/data"
 if [ "${REBUILD_LIBRAW:-}" = "1" ]; then
+    rm -rf "$SDK_HOME"/libraw-gpl3 || true
     rm -rf "$SDK_HOME"/libraw-gpl2 || true
     rm -f "$SDK_HOME"/libraw-lgpl || true
 fi
@@ -1699,11 +1702,18 @@ if [ ! -s "$SDK_HOME/libraw-gpl2/lib/pkgconfig/libraw.pc" ] || [ "$(env PKG_CONF
     start_build "$LIBRAW_TAR"
     download "$LIBRAW_SITE" "$LIBRAW_TAR"
     download "$LIBRAW_SITE" "$LIBRAW_DEMOSAIC_PACK_GPL2"
+    download "$LIBRAW_SITE" "$LIBRAW_DEMOSAIC_PACK_GPL3"
     untar "$SRC_PATH/$LIBRAW_TAR"
     pushd "LibRaw-${LIBRAW_VERSION}"
     untar "$SRC_PATH/$LIBRAW_DEMOSAIC_PACK_GPL2"
+    untar "$SRC_PATH/$LIBRAW_DEMOSAIC_PACK_GPL3"
     LGPL_CONF_FLAGS=( --disable-static --enable-shared --enable-lcms --enable-jasper --enable-jpeg )
-    GPL2_CONF_FLAGS=( "${LGPL_CONF_FLAGS[@]}" --enable-demosaic-pack-gpl2 )
+    GPL2_CONF_FLAGS=( "${LGPL_CONF_FLAGS[@]}" --enable-demosaic-pack-gpl2 --disable-demosaic-pack-gpl3 )
+    GPL3_CONF_FLAGS=( "${LGPL_CONF_FLAGS[@]}" --enable-demosaic-pack-gpl2 --enable-demosaic-pack-gpl3 )
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS" ./configure --prefix="$SDK_HOME/libraw-gpl3" "${GPL3_CONF_FLAGS[@]}"
+    make -j${MKJOBS}
+    make install
+    make distclean
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS" ./configure --prefix="$SDK_HOME/libraw-gpl2" "${GPL2_CONF_FLAGS[@]}"
     make -j${MKJOBS}
     make install
@@ -1984,7 +1994,7 @@ fi
 
 # Install ImageMagick6
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick6.html
-MAGICK_VERSION=6.9.9-43
+MAGICK_VERSION=6.9.9-45
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
 MAGICK_TAR="ImageMagick-${MAGICK_VERSION}.tar.xz"
 MAGICK_SITE="https://www.imagemagick.org/download/releases"
@@ -2011,7 +2021,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversio
 fi
 # install ImageMagick7
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick.html
-MAGICK7_VERSION=7.0.7-31
+MAGICK7_VERSION=7.0.7-33
 MAGICK7_VERSION_SHORT=${MAGICK7_VERSION%-*}
 MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.xz"
 if [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/magick7/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Magick++)" != "$MAGICK7_VERSION_SHORT" ]; then
@@ -2055,7 +2065,7 @@ fi
 
 # Install poppler-glib (without curl, nss3, qt4, qt5)
 # see http://www.linuxfromscratch.org/blfs/view/stable/general/poppler.html
-POPPLER_VERSION=0.64.0
+POPPLER_VERSION=0.65.0
 POPPLER_TAR="poppler-${POPPLER_VERSION}.tar.xz"
 POPPLER_SITE="https://poppler.freedesktop.org"
 if [ "${REBUILD_POPPLER:-}" = "1" ]; then
@@ -2090,7 +2100,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/poppler-glib.pc" ] || [ "$(pkg-config --modve
 fi
 
 # Install poppler-data
-POPPLERD_VERSION=0.4.8
+POPPLERD_VERSION=0.4.9
 POPPLERD_TAR="poppler-data-${POPPLERD_VERSION}.tar.gz"
 if [ ! -d "$SDK_HOME/share/poppler" ]; then
     start_build "$POPPLERD_TAR"
@@ -2684,7 +2694,7 @@ fi
 
 # Install fribidi (for libass and ffmpeg)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/fribidi.html
-FRIBIDI_VERSION=1.0.2
+FRIBIDI_VERSION=1.0.3
 FRIBIDI_TAR="fribidi-${FRIBIDI_VERSION}.tar.bz2"
 FRIBIDI_SITE="https://github.com/fribidi/fribidi/releases/download/v${FRIBIDI_VERSION}"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/fribidi.pc" ] || [ "$(pkg-config --modversion fribidi)" != "$FRIBIDI_VERSION" ]; then

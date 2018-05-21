@@ -1,5 +1,5 @@
---- PKGBUILD.orig	2018-04-22 18:00:08.000000000 +0200
-+++ PKGBUILD	2018-04-22 18:00:50.000000000 +0200
+--- PKGBUILD.orig	2018-05-16 09:12:11.000000000 +0200
++++ PKGBUILD	2018-05-16 09:12:11.000000000 +0200
 @@ -2,8 +2,8 @@
  # Contributer: Zach Bacon <11doctorwhocanada@gmail.com>
  
@@ -9,7 +9,7 @@
 +pkgbase="mingw-w64-${_realname}-gpl2"
 +pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2"
  pkgver=4.0
- pkgrel=1
+ pkgrel=2
  pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
 @@ -22,16 +22,18 @@
          "${MINGW_PACKAGE_PREFIX}-libbluray"
