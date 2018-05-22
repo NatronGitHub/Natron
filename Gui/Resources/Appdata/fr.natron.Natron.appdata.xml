@@ -1,0 +1,18 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <component type="desktop">
+     <id>fr.natron.Natron.desktop</id>
+     <launchable type="desktop-id">fr.natron.Natron.desktop</launchable>
+     <name>Natron</name>
+     <summary>Open-source video compositing software</summary>
+     <metadata_license>CC0-1.0</metadata_license>
+     <project_license>GPL-2.0-or-later</project_license>
+     <description>
+         <p>
+             Natron is a free open-source (GPLv2 license) video compositing software,
+             similar in functionality to Adobe After Effects, Nuke by The Foundry, or Blackmagic Fusion.
+         </p>
+         
+     </description>
+     <url type="homepage">https://natron.fr/</url>
+     <url type="bugtracker">https://github.com/NatronGitHub/Natron/issues</url>
+ </component>
