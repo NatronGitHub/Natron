@@ -212,7 +212,7 @@ fi
 if [ "$NATRON_LICENSE" = "GPL" ]; then
     catDll libx264-
     catDll libx265
-    catDll libx265_main
+    #catDll libx265_main
     catDll xvidcore
 fi
 
