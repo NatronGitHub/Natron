@@ -502,7 +502,7 @@ unix:!macx {
     target_mime.path = $${PREFIX}/share/mime/packages
     target_mime.files = $PWD/../Gui/Resources/Mime/x-natron.xml
     target_desktop.path = $${PREFIX}/share/applications
-    target_desktop.files = $PWD/../Gui/Resources/Applications/Natron.desktop
+    target_desktop.files = $PWD/../Gui/Resources/Applications/fr.natron.Natron.desktop
     target_appdata.path = $${PREFIX}/share/metainfo
     target_appdata.files = $PWD/../Gui/Resources/Metainfo/fr.natron.Natron.appdata.xml
     INSTALLS += target_icons target_mime target_desktop target_appdata
