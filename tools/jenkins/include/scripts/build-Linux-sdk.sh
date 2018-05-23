@@ -1696,7 +1696,7 @@ LIBRAW_SITE="https://www.libraw.org/data"
 if [ "${REBUILD_LIBRAW:-}" = "1" ]; then
     rm -rf "$SDK_HOME"/libraw-gpl3 || true
     rm -rf "$SDK_HOME"/libraw-gpl2 || true
-    rm -f "$SDK_HOME"/libraw-lgpl || true
+    rm -rf "$SDK_HOME"/libraw-lgpl || true
 fi
 if [ ! -s "$SDK_HOME/libraw-gpl2/lib/pkgconfig/libraw.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/libraw-gpl2/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion libraw)" != "$LIBRAW_VERSION" ]; then
     start_build "$LIBRAW_TAR"
