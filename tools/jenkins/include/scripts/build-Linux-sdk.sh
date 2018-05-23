@@ -348,7 +348,7 @@ if [ ! -s "$SDK_HOME/gcc-$GCC_VERSION/bin/gcc" ]; then
     make install
     popd #"gcc-$GCC_VERSION"
     rm -rf "gcc-$GCC_VERSION"
-    ln -sfnv "$SDK_HOME/gcc-${GCC_VERSION}" "$SDK_HOME/gcc"
+    ln -sfnv "gcc-${GCC_VERSION}" "$SDK_HOME/gcc"
     end_build "$GCC_TAR"
 fi
 
