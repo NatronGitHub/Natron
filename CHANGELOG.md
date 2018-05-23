@@ -10,7 +10,7 @@
 *Note*: all github issues were moved to https://github.com/NatronGitHub/Natron/issues , and issue numbers in the change log now refer to this github repository.
 Issue numbers up to version 2.3.10 refer to archived issues in https://github.com/MrKepzie/Natron/issues .
 
-- Fix font selection in the plugins that render text (Text and Polaroid from openfx-arena).
+- Fix font selection in the plugins that render text (Text and Polaroid from openfx-arena) #269.
 - Python: add Effect.getOutputFormat() method.
 - GCC 8.1 (used for the 2.3.11 binaries) breaks the timeline GUI, revert to GCC 7.3 for Linux builds #279.
 - Disable crash reporter in official binaries (requires maintenance to get it working again), and add crash reporter code to the source tree.
