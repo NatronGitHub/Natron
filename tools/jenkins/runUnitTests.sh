@@ -60,6 +60,10 @@ if [ "$FAIL" = "0" ]; then
         for p in "${processes[@]}"; do
             tskill "$p" || true
         done
+        mapfile -t processes < <(taskkill -f -im NatronRenderer.exe -t 2>&1 |grep "ERROR: The process with PID"| awk '{print $6}' || true)
+        for p in "${processes[@]}"; do
+            tskill "$p" || true
+        done
     fi
     UNIT_TMP="$CWD"/unit_tmp_${BITS}
     if [ -d "$UNIT_TMP" ]; then
@@ -76,7 +80,14 @@ if [ "$FAIL" = "0" ]; then
         if [ ! -f "$ocio" ]; then
             echo "*** Error: OCIO file $ocio is missing"
         fi
-        env NATRON_CACHE_PATH="$CACHEDIR" OCIO="$ocio" FFMPEG="$TMP_PORTABLE_DIR/bin/ffmpeg" COMPARE="$TMP_PORTABLE_DIR/bin/idiff"  $TIMEOUT -s KILL 7200 bash runTests.sh "$TMP_PORTABLE_DIR/bin/NatronRenderer" || FAIL=$?
+        bin="$TMP_PORTABLE_DIR/bin/NatronRenderer-bin"
+        if [ ! -f "$bin" ]; then
+            bin="$TMP_PORTABLE_DIR/bin/NatronRenderer"
+            if [ ! -f "$bin" ]; then
+                echo "*** Error: NatronRenderer binary $bin is missing" >> "$ULOG"
+            fi
+        fi
+        env NATRON_CACHE_PATH="$CACHEDIR" OCIO="$ocio" FFMPEG="$TMP_PORTABLE_DIR/bin/ffmpeg" COMPARE="$TMP_PORTABLE_DIR/bin/idiff"  $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
         FAIL=0
     elif [ "$PKGOS" = "Windows" ] && [ "${BITS}" = "64" ]; then
         cp -a "$TMP_BINARIES_PATH"/Natron-installer/packages/*/data/* "$UNIT_TMP"/
@@ -86,13 +97,24 @@ if [ "$FAIL" = "0" ]; then
         if [ ! -f "$ocio" ]; then
             echo "*** Error: OCIO file $ocio is missing"
         fi
-        env NATRON_CACHE_PATH="$CACHEDIR" OCIO="$ocio" FFMPEG="$TMP_PORTABLE_DIR/bin/ffmpeg.exe" COMPARE="$TMP_PORTABLE_DIR/bin/idiff.exe" $TIMEOUT -s KILL 7200 bash runTests.sh "$TMP_PORTABLE_DIR/bin/NatronRenderer.exe" || FAIL=$?
+	bin="$TMP_PORTABLE_DIR/bin/NatronRenderer-bin.exe"
+	if [ ! -f "$bin" ]; then
+            bin="$TMP_PORTABLE_DIR/bin/NatronRenderer.exe"
+            if [ ! -f "$bin" ]; then
+                echo "*** Error: NatronRenderer binary $bin is missing" >> "$ULOG"
+            fi
+        fi
+        env NATRON_CACHE_PATH="$CACHEDIR" OCIO="$ocio" FFMPEG="$TMP_PORTABLE_DIR/bin/ffmpeg.exe" COMPARE="$TMP_PORTABLE_DIR/bin/idiff.exe" $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
         # sometimes NatronRenderer just hangs. Try taskkill first, then tskill if it fails because of a message like:
         # $ taskkill -f -im NatronRenderer-bin.exe -t
         # ERROR: The process with PID 3260 (child process of PID 3816) could not be terminated.
         # Reason: There is no running instance of the task.
         # mapfile use: see https://github.com/koalaman/shellcheck/wiki/SC2207
         mapfile -t processes < <(taskkill -f -im NatronRenderer-bin.exe -t 2>&1 |grep "ERROR: The process with PID"| awk '{print $6}' || true)
+        for p in "${processes[@]}"; do
+            tskill "$p" || true
+        done
+        mapfile -t processes < <(taskkill -f -im NatronRenderer.exe -t 2>&1 |grep "ERROR: The process with PID"| awk '{print $6}' || true)
         for p in "${processes[@]}"; do
             tskill "$p" || true
         done
@@ -104,7 +126,14 @@ if [ "$FAIL" = "0" ]; then
         if [ ! -f "$ocio" ]; then
             echo "*** Error: OCIO file $ocio is missing"
         fi
-        env NATRON_CACHE_PATH="$CACHEDIR" OCIO="$ocio" FFMPEG="${TMP_PORTABLE_DIR}.app/Contents/MacOS/ffmpeg" COMPARE="${TMP_PORTABLE_DIR}.app/Contents/MacOS/idiff" $TIMEOUT -s KILL 7200 bash runTests.sh "${TMP_PORTABLE_DIR}.app/Contents/MacOS/NatronRenderer" || FAIL=$?
+        bin="${TMP_PORTABLE_DIR}.app/Contents/MacOS/NatronRenderer-bin"
+        if [ ! -f "$bin" ]; then
+            bin="${TMP_PORTABLE_DIR}.app/Contents/MacOS/NatronRenderer"
+            if [ ! -f "$bin" ]; then
+                echo "*** Error: NatronRenderer binary $bin is missing" >> "$ULOG"
+            fi
+        fi
+        env NATRON_CACHE_PATH="$CACHEDIR" OCIO="$ocio" FFMPEG="${TMP_PORTABLE_DIR}.app/Contents/MacOS/ffmpeg" COMPARE="${TMP_PORTABLE_DIR}.app/Contents/MacOS/idiff" $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
         FAIL=0
     fi
 

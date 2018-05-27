@@ -1,4 +1,7 @@
 DEFINES += NATRON_USE_BREAKPAD
+BREAKPAD_PATH = $$PWD/libs/google-breakpad/src
+INCLUDEPATH += $$BREAKPAD_PATH
+DEPENDPATH += $$BREAKPAD_PATH
 
 ################
 # BreakpadClient
@@ -21,9 +24,6 @@ win32-msvc*{
         else:unix: LIBS += -L$$OUT_PWD/../BreakpadClient/ -lBreakpadClient
 }
 
-BREAKPAD_PATH = $$PWD/libs/google-breakpad/src
-INCLUDEPATH += $$BREAKPAD_PATH
-DEPENDPATH += $$BREAKPAD_PATH
 
 win32-msvc*{
         CONFIG(64bit) {

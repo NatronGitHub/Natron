@@ -291,8 +291,8 @@ PYTHON_INCLUDE="$SDK_HOME/include/python${PYVER}"
 export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 
 # Old Natron 2 version is 4.8.5
-GCC_VERSION=8.1.0
-#GCC_VERSION=7.3.0
+#GCC_VERSION=8.1.0 # GCC 8.1 breaks the timeline GUI on Linux, see https://github.com/NatronGitHub/Natron/issues/279
+GCC_VERSION=7.3.0
 #GCC_VERSION=5.4.0
 #GCC_VERSION=4.9.4
 GCC_TAR="gcc-${GCC_VERSION}.tar.gz"
@@ -348,7 +348,7 @@ if [ ! -s "$SDK_HOME/gcc-$GCC_VERSION/bin/gcc" ]; then
     make install
     popd #"gcc-$GCC_VERSION"
     rm -rf "gcc-$GCC_VERSION"
-    ln -sfnv "$SDK_HOME/gcc-${GCC_VERSION}" "$SDK_HOME/gcc"
+    ln -sfnv "gcc-${GCC_VERSION}" "$SDK_HOME/gcc"
     end_build "$GCC_TAR"
 fi
 
@@ -1994,7 +1994,7 @@ fi
 
 # Install ImageMagick6
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick6.html
-MAGICK_VERSION=6.9.9-45
+MAGICK_VERSION=6.9.9-46
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
 MAGICK_TAR="ImageMagick-${MAGICK_VERSION}.tar.xz"
 MAGICK_SITE="https://www.imagemagick.org/download/releases"
@@ -2021,7 +2021,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversio
 fi
 # install ImageMagick7
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick.html
-MAGICK7_VERSION=7.0.7-33
+MAGICK7_VERSION=7.0.7-34
 MAGICK7_VERSION_SHORT=${MAGICK7_VERSION%-*}
 MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.xz"
 if [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/magick7/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Magick++)" != "$MAGICK7_VERSION_SHORT" ]; then
