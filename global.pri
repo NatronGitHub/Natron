@@ -508,5 +508,12 @@ unix:!macx {
     INSTALLS += target_icons target_mime target_desktop target_appdata
 }
 
+# GCC 8.1 gives a strange bug in the release builds, see https://github.com/NatronGitHub/Natron/issues/279
+# prevent building with GCC 8, unless configure with CONFIG+=enforce-gcc8
+
+enforce-gcc8 {
+  DEFINES += ENFORCE_GCC8
+}
+
 # and finally...
 include(config.pri)
