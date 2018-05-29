@@ -5,6 +5,11 @@
 # History
 
 
+## Version 2.3.13
+
+- Fix default value for file premult in ReadSVG (should be premultiplied).
+
+
 ## Version 2.3.12
 
 *Note*: all github issues were moved to https://github.com/NatronGitHub/Natron/issues , and issue numbers in the change log now refer to this github repository.
