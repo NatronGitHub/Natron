@@ -12,6 +12,8 @@ It is portable and cross-platform (GNU/Linux, OS X, Microsoft Windows).
 - Source code: https://github.com/NatronGitHub/Natron
 - Forum: https://discuss.pixls.us/c/software/natron
 
+![image](Gui/Resources/Images/Other/natron-screenshot.png)
+
 Features
 --------
 
