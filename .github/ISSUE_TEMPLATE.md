@@ -1,4 +1,6 @@
-Please ask questions ("how do I...?") on the [forum](http://forum.natron.fr), not by filing issues.
+Please ask questions ("how do I...?") on the [forum](https://discuss.pixls.us/c/software/natron), not by filing issues.
+
+Please read carefully the [Troubleshooting](http://natron.readthedocs.io/en/rb-2.3/guide/getstarted-troubleshooting.html) section of the [Natron documentation](http://natron.readthedocs.io) before submitting an issue: this issue may already be signaled, or may have a simple workaround.
 
 Make concrete suggestions for fixing the code ("here is a patch") by filing
 a [pull request](https://github.com/MrKepzie/Natron/pull/new/master), not an issue.
@@ -12,6 +14,8 @@ Describe the problem or suggestion here.
 
 **Actual behavior:** [What actually happened]
 
+ * If your problem can be reproduced using a Natron project, please include a link to the project on a file sharing service, or attach the project as a zip file to this issue, if possible.
+ 
  * If your problem is a crash in an official release/snapshot, please include verbose output from the application
  from a terminal if possible.  If you also submitted a crash report, indicate the CrashID if possible.
  

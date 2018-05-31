@@ -78,7 +78,7 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_ORGANIZATION_DOMAIN NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_ORGANIZATION_DOMAIN_TOPLEVEL
 #define NATRON_APPLICATION_NAME "Natron"
 #define NATRON_WEBSITE_URL "http://www.natron.fr"
-#define NATRON_FORUM_URL "https://forum.natron.fr"
+#define NATRON_FORUM_URL "https://discuss.pixls.us/c/software/natron"
 #define NATRON_ISSUE_TRACKER_URL "https://github.com/NatronGitHub/Natron/issues"
 
 // The MIME types for Natron documents are:
