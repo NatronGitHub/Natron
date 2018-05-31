@@ -10,7 +10,7 @@ Description
 
 More info at:
 
-Film Emulation Presets in G’MIC: http://gmic.eu/film_emulation/index.shtml
+Film Emulation Presets in G’MIC: https://gmic.eu/film_emulation/index.shtml
 
 Authors: David Tschumperle and Patrick David. Latest update: 2016/02/08.
 

@@ -1648,7 +1648,7 @@ TrackerContextPrivate::computeTranslationFromNPoints(const bool dataSetIsManual,
                                                      Point* translation,
                                                      double *RMS)
 {
-    openMVG::Vec2 model;
+    openMVG::Vec2 model = openMVG::Vec2::Zero();
 
     searchForModel<openMVG::robust::Translation2DSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model, RMS);
     translation->x = model(0);
@@ -1669,7 +1669,7 @@ TrackerContextPrivate::computeSimilarityFromNPoints(const bool dataSetIsManual,
                                                     double* scale,
                                                     double *RMS)
 {
-    openMVG::Vec4 model;
+    openMVG::Vec4 model = openMVG::Vec4::Zero();
 
     searchForModel<openMVG::robust::Similarity2DSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model, RMS);
     openMVG::robust::Similarity2DSolver::rtsFromVec4(model, &translation->x, &translation->y, scale, rotate);
@@ -1688,7 +1688,7 @@ TrackerContextPrivate::computeHomographyFromNPoints(const bool dataSetIsManual,
                                                     Transform::Matrix3x3* homog,
                                                     double *RMS)
 {
-    openMVG::Mat3 model;
+    openMVG::Mat3 model = openMVG::Mat3::Zero();
 
 #ifdef DEBUG
     std::vector<bool> inliers;
@@ -1731,7 +1731,7 @@ TrackerContextPrivate::computeFundamentalFromNPoints(const bool dataSetIsManual,
                                                      Transform::Matrix3x3* fundamental,
                                                      double *RMS)
 {
-    openMVG::Mat3 model;
+    openMVG::Mat3 model = openMVG::Mat3::Zero();
 
     searchForModel<openMVG::robust::FundamentalSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model, RMS);
 

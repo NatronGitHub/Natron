@@ -10,4 +10,5 @@ Getting started
    getstarted-about
    getstarted-installation
    getstarted-environment
+   getstarted-troubleshooting
    
