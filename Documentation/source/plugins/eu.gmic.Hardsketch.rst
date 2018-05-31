@@ -8,6 +8,12 @@ G’MIC Hard sketch node
 Description
 -----------
 
+Note: This filter uses lot of random values to generate its result, so running it twice will give you different results !
+
+Click here for a detailed description of this filter.: http://www.gimpchat.com/viewtopic.php?f=28&t=10036
+
+Author: David Tschumperle. Latest update: 2014/25/04.
+
 Author: David Tschumperle. Latest update: 2010/29/12.
 
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
@@ -31,6 +37,8 @@ Controls
 +---------------------------------------------+---------+----------------+----------------------------------+
 | Parameter / script name                     | Type    | Default        | Function                         |
 +=============================================+=========+================+==================================+
+| Detail level / ``Detail_level``             | Double  | 0.8            |                                  |
++---------------------------------------------+---------+----------------+----------------------------------+
 | Amplitude / ``Amplitude``                   | Double  | 300            |                                  |
 +---------------------------------------------+---------+----------------+----------------------------------+
 | Density / ``Density``                       | Double  | 50             |                                  |
@@ -43,7 +51,7 @@ Controls
 +---------------------------------------------+---------+----------------+----------------------------------+
 | Fast approximation / ``Fast_approximation`` | Boolean | Off            |                                  |
 +---------------------------------------------+---------+----------------+----------------------------------+
-| Color model / ``Color_model``               | Choice  | Black on white | |                                |
+| Color model / ``Color_model``               | Choice  | Color on white | |                                |
 |                                             |         |                | | **Black on white**             |
 |                                             |         |                | | **White on black**             |
 |                                             |         |                | | **Black on transparent white** |

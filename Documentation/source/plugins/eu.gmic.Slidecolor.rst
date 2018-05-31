@@ -10,7 +10,7 @@ Description
 
 Note: The color LUTs used in this section have been designed by Patrick David. More info at:
 
-Film Emulation Presets in G’MIC: http://gmic.eu/film_emulation/index.shtml
+Film Emulation Presets in G’MIC: https://gmic.eu/film_emulation/index.shtml
 
 Authors: Patrick David and David Tschumperle. Latest update: 2016/02/08.
 

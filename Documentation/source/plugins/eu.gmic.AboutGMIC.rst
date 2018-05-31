@@ -10,21 +10,21 @@ Description
 
 ( GREYC’s Magic for Image Computing )is proposed to you by
 
-David Tschumperle: http://tschumperle.users.greyc.fr/
+David Tschumperle: https://tschumperle.users.greyc.fr/
 
 Sebastien Fourey: https://foureys.users.greyc.fr/
 
-( IMAGE Team / GREYC Laboratory - CNRS UMR 6072 ): http://www.greyc.fr/node/36
+( IMAGE Team / GREYC Laboratory - CNRS UMR 6072 ): https://www.greyc.fr/node/36
 
 This plug-in is based on our open-source libraries G’MIC and CImg (C++ Template Image Processing Library),
 
 available at:
 
-http://gmic.eu/
+https://gmic.eu/
 
 and
 
-http://cimg.eu/
+https://cimg.eu/
 
 If you appreciate G’MIC, you are welcome to send us a nice postcard from your place, at:
 
