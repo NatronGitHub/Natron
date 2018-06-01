@@ -172,5 +172,5 @@ variant cups description {Enable CUPS driver} {
 default_variants    +x11
 
 livecheck.type      regex
-livecheck.url       ${homepage}Releases.html
+livecheck.url       ${homepage}releases.html
 livecheck.regex     ">Ghostscript (\\d+(?:\\.\\d+)*)<"
