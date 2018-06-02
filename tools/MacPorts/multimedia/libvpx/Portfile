@@ -66,6 +66,8 @@ compiler.blacklist  *gcc* {clang < 800} macports-clang-3.3 macports-clang-3.4 ma
 # as the first, and thus selected, fallback option (even though it has been blacklisted earlier).
 compiler.fallback-prepend macports-clang-3.9
 
+license_noconflict  clang-3.9
+
 # As of 1.7.0: builds both static and shared libraries
 # doesn't install docs or examples correctly, so disable them.
 configure.args      --enable-vp8 \

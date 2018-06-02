@@ -1,15 +1,16 @@
---- Portfile.orig	2017-11-18 20:07:00.000000000 +0100
-+++ Portfile	2017-11-19 22:54:00.000000000 +0100
-@@ -7,6 +7,7 @@
+--- Portfile.orig	2018-05-25 09:57:55.000000000 +0200
++++ Portfile	2018-05-25 09:58:27.000000000 +0200
+@@ -7,7 +7,7 @@
  
  name                x265
- version             2.5
-+revision            1
+ version             2.8
+-revision            1
++revision            2
  
- checksums           rmd160  612e545199dcaadef782ca0a71a5ade679876509 \
-                     sha256  2e53259b504a7edb9b21b9800163b1ff4c90e60c74e23e7001d423c69c5d3d17
-@@ -31,15 +32,27 @@
- cmake.out_of_source yes
+ checksums           rmd160  547adcf4886f9ae60c115b5da21ff12f6c718b8d \
+                     sha256  6e59f9afc0c2b87a46f98e33b5159d56ffb3558a49d8e3d79cb7fdc6b7aaa863 \
+@@ -33,15 +33,27 @@
+ 
  compiler.blacklist  *llvm-gcc-4.2
  
 +configure.env-append CONFIGURE='${configure.cmd}'
