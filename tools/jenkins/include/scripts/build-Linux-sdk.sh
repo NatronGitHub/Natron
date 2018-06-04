@@ -2565,7 +2565,7 @@ fi
 # x265
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/x265.html
 # and https://git.archlinux.org/svntogit/packages.git/tree/trunk/PKGBUILD?h=packages/x265
-X265_VERSION=2.7
+X265_VERSION=2.8
 X265_TAR="x265_${X265_VERSION}.tar.gz"
 X265_SITE="https://bitbucket.org/multicoreware/x265/downloads"
 if [ "${REBUILD_X265:-}" = "1" ]; then
