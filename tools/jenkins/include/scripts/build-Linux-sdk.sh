@@ -928,7 +928,7 @@ fi
 
 # Install gnutls (for ffmpeg)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/postlfs/gnutls.html
-GNUTLS_VERSION=3.6.1
+GNUTLS_VERSION=3.6.2
 GNUTLS_VERSION_SHORT=${GNUTLS_VERSION%.*}
 GNUTLS_TAR="gnutls-${GNUTLS_VERSION}.tar.xz"
 GNUTLS_SITE="ftp://ftp.gnupg.org/gcrypt/gnutls/v${GNUTLS_VERSION_SHORT}"
@@ -1966,7 +1966,7 @@ fi
 
 # Install fftw (GPLv2, for openfx-gmic)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/fftw.html
-FFTW_VERSION=3.3.7
+FFTW_VERSION=3.3.8
 FFTW_TAR="fftw-${FFTW_VERSION}.tar.gz"
 FFTW_SITE="http://www.fftw.org/"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/fftw3.pc" ] || [ "$(pkg-config --modversion fftw3)" != "$FFTW_VERSION" ]; then
