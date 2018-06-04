@@ -909,7 +909,7 @@ fi
 
 # Install p11-kit (for gnutls)
 # http://www.linuxfromscratch.org/blfs/view/svn/postlfs/p11-kit.html
-P11KIT_VERSION=0.23.10
+P11KIT_VERSION=0.23.12
 #P11KIT_VERSION_SHORT=${P11KIT_VERSION%.*}
 P11KIT_TAR="p11-kit-${P11KIT_VERSION}.tar.gz"
 P11KIT_SITE="https://github.com/p11-glue/p11-kit/releases/download/${P11KIT_VERSION}"
@@ -1011,7 +1011,7 @@ fi
 #       ^~
 # Since there is no way to disable libuv alone (--no-system-libuv unavailable in ./bootstrap),
 # we disable all system libs. Voilà!
-CMAKE_VERSION=3.11.2
+CMAKE_VERSION=3.11.3
 CMAKE_VERSION_SHORT=${CMAKE_VERSION%.*}
 CMAKE_TAR="cmake-${CMAKE_VERSION}.tar.gz"
 CMAKE_SITE="https://cmake.org/files/v${CMAKE_VERSION_SHORT}"
@@ -1994,7 +1994,7 @@ fi
 
 # Install ImageMagick6
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick6.html
-MAGICK_VERSION=6.9.9-47
+MAGICK_VERSION=6.9.9-50
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
 MAGICK_TAR="ImageMagick-${MAGICK_VERSION}.tar.xz"
 MAGICK_SITE="https://www.imagemagick.org/download/releases"
@@ -2021,7 +2021,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversio
 fi
 # install ImageMagick7
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick.html
-MAGICK7_VERSION=7.0.7-35
+MAGICK7_VERSION=7.0.7-38
 MAGICK7_VERSION_SHORT=${MAGICK7_VERSION%-*}
 MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.xz"
 if [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/magick7/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Magick++)" != "$MAGICK7_VERSION_SHORT" ]; then
@@ -2242,7 +2242,7 @@ fi
 
 # Install oiio
 #OIIO_VERSION=1.7.17
-OIIO_VERSION=1.8.11
+OIIO_VERSION=1.8.12
 OIIO_VERSION_SHORT=${OIIO_VERSION%.*}
 OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
 if [ "${REBUILD_OIIO:-}" = "1" ]; then
