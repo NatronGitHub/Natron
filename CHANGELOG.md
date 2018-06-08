@@ -8,6 +8,7 @@
 ## Version 2.3.13
 
 - Fix default value for file premult in ReadSVG (should be premultiplied).
+- HSV values in the viewer info lines are now computed from linear RGB #286.
 
 
 ## Version 2.3.12
