@@ -9,6 +9,7 @@
 
 - Fix default value for file premult in ReadSVG (should be premultiplied).
 - HSV values in the viewer info lines are now computed from linear RGB #286.
+- RGBToHSV, HSVToRGB, RGBToHSL, HSLToRGB, RGBToHSI, HSIToRGB: Use linear RGB values in computation #286.
 
 
 ## Version 2.3.12
