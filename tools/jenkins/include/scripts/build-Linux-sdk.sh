@@ -1067,8 +1067,8 @@ fi
 
 # Install sqlite (required for webkit and QtSql SQLite module, optional for python2)
 # see http://www.linuxfromscratch.org/blfs/view/svn/server/sqlite.html
-SQLITE_VERSION=3.23.1
-SQLITE_VERSION_INT=3230100
+SQLITE_VERSION=3.24.0
+SQLITE_VERSION_INT=3240000
 SQLITE_YEAR=2018
 SQLITE_TAR="sqlite-autoconf-${SQLITE_VERSION_INT}.tar.gz"
 SQLITE_SITE="https://sqlite.org/${SQLITE_YEAR}"
@@ -1825,7 +1825,7 @@ fi
 
 # Install harbuzz
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/harfbuzz.html
-HARFBUZZ_VERSION=1.7.6
+HARFBUZZ_VERSION=1.8.0
 HARFBUZZ_TAR="harfbuzz-${HARFBUZZ_VERSION}.tar.bz2"
 HARFBUZZ_SITE="https://www.freedesktop.org/software/harfbuzz/release"
 if [ "${REBUILD_HARFBUZZ:-}" = "1" ]; then
@@ -2694,7 +2694,7 @@ fi
 
 # Install fribidi (for libass and ffmpeg)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/fribidi.html
-FRIBIDI_VERSION=1.0.3
+FRIBIDI_VERSION=1.0.4
 FRIBIDI_TAR="fribidi-${FRIBIDI_VERSION}.tar.bz2"
 FRIBIDI_SITE="https://github.com/fribidi/fribidi/releases/download/v${FRIBIDI_VERSION}"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/fribidi.pc" ] || [ "$(pkg-config --modversion fribidi)" != "$FRIBIDI_VERSION" ]; then
