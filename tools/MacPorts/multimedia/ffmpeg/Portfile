@@ -10,6 +10,7 @@ name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
 version             4.0
+revision            1
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -226,6 +227,13 @@ destroot.env-append V=1
 #
 # configure isn't autoconf and they do use a dep cache
 #
+
+post-extract {
+    if {${configure.cxx_stdlib} eq "libc++"} {
+        # fix configure, which contains many references to libstdc++
+        reinplace -E {s|-lstdc|-lc|g} ${worksrcpath}/configure
+    }
+}
 
 post-configure {
     if {[variant_isset universal]} {

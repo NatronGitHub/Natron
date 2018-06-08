@@ -41,7 +41,7 @@ Controls
 +--------------------------------------------+---------+----------------+----------------------------------+
 | Opacity / ``Opacity``                      | Double  | 0.1            |                                  |
 +--------------------------------------------+---------+----------------+----------------------------------+
-| Color model / ``Color_model``              | Choice  | Black on white | |                                |
+| Color model / ``Color_model``              | Choice  | Color on white | |                                |
 |                                            |         |                | | **Black on white**             |
 |                                            |         |                | | **White on black**             |
 |                                            |         |                | | **Black on transparent white** |

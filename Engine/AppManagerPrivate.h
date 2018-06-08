@@ -41,7 +41,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(uninitialized)
 
 
-#ifdef Q_OS_LINUX
+#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
 #include "Engine/OSGLContext_x11.h"
 #elif defined(Q_OS_WIN32)
 #include "Engine/OSGLContext_win.h"
@@ -193,7 +193,7 @@ public:
 #ifdef Q_OS_WIN32
     boost::scoped_ptr<OSGLContext_wgl_data> wglInfo;
 #endif
-#ifdef Q_OS_LINUX
+#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
     boost::scoped_ptr<OSGLContext_glx_data> glxInfo;
 #endif
 

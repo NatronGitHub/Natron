@@ -1,5 +1,5 @@
---- Portfile.orig	2018-05-07 08:49:26.000000000 +0200
-+++ Portfile	2018-05-07 08:50:59.000000000 +0200
+--- Portfile.orig	2018-05-16 10:00:01.000000000 +0200
++++ Portfile	2018-06-08 17:05:03.000000000 +0200
 @@ -17,10 +17,6 @@
  master_sites     ${homepage}/data/
  distname         LibRaw-${version}
@@ -10,8 +10,8 @@
 -
  checksums \
      LibRaw-${version}${extract.suffix} \
-         rmd160  11b0a05a3e82fa7261143ce87944cbe140029cd8 \
-@@ -35,7 +31,7 @@
+         rmd160  58a805d969cb375c7e1cb9ffd4828de402fc88c3 \
+@@ -39,13 +35,32 @@
  depends_build    port:pkgconfig
  
  depends_lib      port:jasper \
@@ -20,10 +20,16 @@
                   port:lcms2
  
  post-destroot {
-@@ -44,6 +40,20 @@
+     set htmlDir ${destroot}${prefix}/share/doc/${name}/html
+     xinstall -d -m 0755 ${htmlDir}
      xinstall -m 644 {*}[glob -directory ${worksrcpath}/doc/ *.html] ${htmlDir}
- }
- 
++    if {${configure.cxx_stdlib} eq "libc++"} {
++        # fix pkg-config files, which contains many references to libstdc++
++        reinplace -E {s|-lstdc|-lc|g} ${destroot}${prefix}/lib/pkgconfig/libraw.pc
++        reinplace -E {s|-lstdc|-lc|g} ${destroot}${prefix}/lib/pkgconfig/libraw_r.pc
++    }
++}
++
 +variant gpl2 description {Enable GPL demosaic pack, license will be GPL-2+} {
 +    distfiles-append \
 +        LibRaw-demosaic-pack-GPL2-${demosaicversion}${extract.suffix} \
@@ -36,8 +42,6 @@
 +        LibRaw-demosaic-pack-GPL3-${demosaicversion}${extract.suffix}
 +
 +    license                 GPL-3+
-+}
-+
+ }
+ 
  livecheck.type  regex
- livecheck.url   ${homepage}/download/
- livecheck.regex "LibRaw-(\\d+(?:\\.\\d+)*)${extract.suffix}"

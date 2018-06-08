@@ -42,6 +42,11 @@ post-destroot {
     set htmlDir ${destroot}${prefix}/share/doc/${name}/html
     xinstall -d -m 0755 ${htmlDir}
     xinstall -m 644 {*}[glob -directory ${worksrcpath}/doc/ *.html] ${htmlDir}
+    if {${configure.cxx_stdlib} eq "libc++"} {
+        # fix pkg-config files, which contains many references to libstdc++
+        reinplace -E {s|-lstdc|-lc|g} ${destroot}${prefix}/lib/pkgconfig/libraw.pc
+        reinplace -E {s|-lstdc|-lc|g} ${destroot}${prefix}/lib/pkgconfig/libraw_r.pc
+    }
 }
 
 variant gpl2 description {Enable GPL demosaic pack, license will be GPL-2+} {
