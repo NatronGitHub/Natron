@@ -135,7 +135,6 @@ OfxImageEffectInstance::mainEntry(const char *action,
 #ifdef DEBUG
     boost_adaptbx::floating_point::exception_trapping trap(0);
 #endif
-    ThreadIsActionCaller_RAII t(this);
 
     return OFX::Host::ImageEffect::Instance::mainEntry(action, handle, inArgs, outArgs);
 }
