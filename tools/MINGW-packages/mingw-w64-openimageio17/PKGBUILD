@@ -38,7 +38,6 @@ source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archi
         0003-boost-latest.patch
         0004-guard-msvc-stuff.patch
         0005-fix-initialization.patch
-	0100-ffmpeg-4.0-compatibility.patch
         oiio-1.5.23-invalidatespec.patch
         oiio-1.7.10-c99math.patch
         oiio-1.7.10-nothreads.patch

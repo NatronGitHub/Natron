@@ -1,5 +1,5 @@
---- PKGBUILD.orig	2018-05-02 11:52:29.000000000 +0200
-+++ PKGBUILD	2018-06-11 10:06:15.000000000 +0200
+--- PKGBUILD.orig	2018-06-11 10:06:55.000000000 +0200
++++ PKGBUILD	2018-06-11 19:08:11.000000000 +0200
 @@ -1,31 +1,28 @@
  # Maintainer: Alexey Pavlov <alexpux@gmail.com>
  
@@ -36,14 +36,13 @@
           "${MINGW_PACKAGE_PREFIX}-zlib")
  makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
               #"${MINGW_PACKAGE_PREFIX}-qt5"
-@@ -40,14 +37,29 @@
+@@ -40,14 +37,28 @@
          0001-MinGW-w64-include-winbase-h-early-for-TCHAR-types.patch
          0003-boost-latest.patch
          0004-guard-msvc-stuff.patch
 -        0005-fix-initialization.patch)
 -sha256sums=('669c59d06399dd882c3e2469bb3a4b33d537db150f6fe056495c3429b5c3838f'
 +        0005-fix-initialization.patch
-+	0100-ffmpeg-4.0-compatibility.patch
 +        oiio-1.5.23-invalidatespec.patch
 +        oiio-1.7.10-c99math.patch
 +        oiio-1.7.10-nothreads.patch
@@ -69,7 +68,7 @@
  
  prepare() {
    cd ${srcdir}/oiio-Release-${pkgver}
-@@ -57,6 +69,12 @@
+@@ -57,6 +68,12 @@
    patch -p1 -i ${srcdir}/0003-boost-latest.patch
    patch -p1 -i ${srcdir}/0004-guard-msvc-stuff.patch
    patch -p1 -i ${srcdir}/0005-fix-initialization.patch
@@ -82,7 +81,7 @@
  }
  
  build() {
-@@ -72,13 +90,25 @@
+@@ -72,13 +89,25 @@
      -G"MSYS Makefiles" \
      -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
      -DPYLIB_INSTALL_DIR=lib/python2.7/site-packages \
