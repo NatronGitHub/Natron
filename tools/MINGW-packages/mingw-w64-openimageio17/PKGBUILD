@@ -68,7 +68,6 @@ prepare() {
   patch -p1 -i ${srcdir}/0003-boost-latest.patch
   patch -p1 -i ${srcdir}/0004-guard-msvc-stuff.patch
   patch -p1 -i ${srcdir}/0005-fix-initialization.patch
-  patch -p1 -i ${srcdir}/0100-ffmpeg-4.0-compatibility.patch
   patch -p1 -i ${srcdir}/oiio-1.5.23-invalidatespec.patch
   patch -p1 -i ${srcdir}/oiio-1.7.10-nothreads.patch
   patch -p1 -i ${srcdir}/oiio-1.7.10-c99math.patch

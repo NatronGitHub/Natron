@@ -1,5 +1,5 @@
---- PKGBUILD.orig	2018-06-11 10:06:55.000000000 +0200
-+++ PKGBUILD	2018-06-11 19:08:11.000000000 +0200
+--- PKGBUILD.orig	2018-06-11 19:09:39.000000000 +0200
++++ PKGBUILD	2018-06-11 19:19:01.000000000 +0200
 @@ -1,31 +1,28 @@
  # Maintainer: Alexey Pavlov <alexpux@gmail.com>
  
@@ -68,11 +68,10 @@
  
  prepare() {
    cd ${srcdir}/oiio-Release-${pkgver}
-@@ -57,6 +68,12 @@
+@@ -57,6 +68,11 @@
    patch -p1 -i ${srcdir}/0003-boost-latest.patch
    patch -p1 -i ${srcdir}/0004-guard-msvc-stuff.patch
    patch -p1 -i ${srcdir}/0005-fix-initialization.patch
-+  patch -p1 -i ${srcdir}/0100-ffmpeg-4.0-compatibility.patch
 +  patch -p1 -i ${srcdir}/oiio-1.5.23-invalidatespec.patch
 +  patch -p1 -i ${srcdir}/oiio-1.7.10-nothreads.patch
 +  patch -p1 -i ${srcdir}/oiio-1.7.10-c99math.patch
@@ -81,7 +80,7 @@
  }
  
  build() {
-@@ -72,13 +89,25 @@
+@@ -72,13 +88,25 @@
      -G"MSYS Makefiles" \
      -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
      -DPYLIB_INSTALL_DIR=lib/python2.7/site-packages \
