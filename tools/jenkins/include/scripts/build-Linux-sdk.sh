@@ -2269,8 +2269,7 @@ if [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; then
     if [[ ! "$GCC_VERSION" =~ ^4\. ]]; then
         OIIO_CMAKE_FLAGS+=( "-DUSE_CPP11:BOOL=FALSE" "-DUSE_CPP14:BOOL=FALSE" "-DUSE_CPP17:BOOL=FALSE" )
     fi
-    # Here we emphasis that we link against lib raw GPL2, but since it's dynamic linking it shouldn't be an issue
-    OIIO_CMAKE_FLAGS+=( "-DUSE_LIBRAW:BOOL=TRUE" "-DLIBRAW_PATH=$SDK_HOME/libraw-gpl2" "-DCMAKE_INSTALL_PREFIX=$SDK_HOME" )
+    OIIO_CMAKE_FLAGS+=( "-DUSE_LIBRAW:BOOL=TRUE" "-DCMAKE_INSTALL_PREFIX=$SDK_HOME" )
 
     mkdir build
     pushd build
