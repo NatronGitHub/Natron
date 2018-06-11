@@ -13,6 +13,7 @@ PortGroup           muniversal 1.0
 name                poppler
 conflicts           xpdf-tools
 version             0.57.0
+revision            1
 license             GPL-2+
 maintainers         {devans @dbevans} openmaintainer
 categories          graphics
@@ -62,6 +63,8 @@ configure.args      --disable-poppler-qt4 \
                     --enable-xpdf-headers \
                     --enable-zlib \
                     --enable-libcurl
+
+patchfiles          patch-CVE-2017-18267.diff
 
 post-patch {
     # clang: error: unknown argument: '-fno-check-new'

@@ -1,0 +1,290 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+
+name                mariadb
+set name_mysql      ${name}
+version             5.5.60
+set version_branch  [join [lrange [split ${version} .] 0 1] .]
+# Please set revision_client and revision_server to 0 if you bump version.
+set revision_client 0
+set revision_server 0
+categories          databases
+platforms           darwin
+license             GPL-2
+maintainers         {pixilla @pixilla} openmaintainer
+homepage            https://mariadb.org/
+
+if {$subport eq $name} {
+
+    PortGroup           cmake 1.0
+    PortGroup           select 1.0
+
+    revision            ${revision_client}
+    license             GPL-2
+    description         Multithreaded SQL database server
+    long_description    Mariadb is a fork of the MySQL server, a multi-threaded SQL database.
+
+    master_sites \
+        http://ftp.osuosl.org/pub/mariadb/mariadb-${version}/source/ \
+        http://mirror2.hs-esslingen.de/mariadb/mariadb-${version}/source/ \
+        http://mirror3.layerjet.com/mariadb/mariadb-${version}/source/ \
+        http://ftp.yz.yamagata-u.ac.jp/pub/dbms/mariadb/mariadb-${version}/source/ \
+        http://mirrors.supportex.net/mariadb/mariadb-${version}/source/ \
+        http://mirrors.fe.up.pt/pub/mariadb/mariadb-${version}/source/ \
+        http://gd.tuwien.ac.at/db/mariadb/mariadb-${version}/source/ \
+        http://mirror.aarnet.edu.au/pub/MariaDB/mariadb-${version}/source/ \
+        http://ftp.heanet.ie/mirrors/mariadb/mariadb-${version}/source/
+
+# Mirrors with bad distfiles
+# http://mirror.switch.ch/mirror/mariadb/mariadb-${version}/source/ \
+
+    cmake.out_of_source yes
+    use_parallel_build  yes
+
+    patch.pre_args      -p1
+    patchfiles          patch-cmake-install_layout.cmake.diff \
+                        patch-CMakeLists.txt.diff
+
+    checksums           rmd160  08e1556c379bca894e4c87225b6c5fbd6d5c6632 \
+                        sha256  4d3d444555416028ce39d3fb4cdc9cf6a658fcd4b0d2d0c45a73f9bf01d07929 \
+                        size    45822878
+
+    depends_lib-append  port:zlib port:tcp_wrappers port:ncurses
+    depends_run-append  port:mysql_select
+
+    select.group        mysql
+    select.file         ${filespath}/${name_mysql}
+
+    post-extract {
+        file mkdir ${cmake.build_dir}/macports
+        copy ${filespath}/macports-default.cnf \
+            ${filespath}/my.cnf \
+            ${cmake.build_dir}/macports/
+    }
+
+    post-patch {
+        reinplace "s|@NAME@|${name_mysql}|g" \
+            ${worksrcpath}/cmake/install_layout.cmake
+        reinplace "s|@NAME@|${name_mysql}|g" \
+            ${cmake.build_dir}/macports/macports-default.cnf \
+            ${cmake.build_dir}/macports/my.cnf
+        reinplace "s|@PREFIX@|${prefix}|g" \
+            ${cmake.build_dir}/macports/macports-default.cnf \
+            ${cmake.build_dir}/macports/my.cnf
+    }
+
+    configure.args-delete \
+                        -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib
+    configure.args-append \
+                        -DCMAKE_INSTALL_NAME_DIR:STRING=${prefix}/lib/${name_mysql}/mysql \
+                        -DINSTALL_LAYOUT:STRING=MACPORTS \
+                        -DSYSCONFDIR:PATH=${prefix}/etc/${name_mysql} \
+                        -DMYSQL_UNIX_ADDR:PATH=${prefix}/var/run/${name_mysql}/mysqld.sock \
+                        -DMYSQL_DATADIR:PATH=${prefix}/var/db/${name_mysql} \
+                        -DDEFAULT_CHARSET:STRING=utf8 \
+                        -DDEFAULT_COLLATION:STRING=utf8_general_ci \
+                        -DWITH_EMBEDDED_SERVER:BOOL=ON \
+                        -DWITH_ZLIB:STRING=system \
+                        -DWITH_UNIT_TESTS:BOOL=ON \
+                        -DWITHOUT_OQGRAPH_STORAGE_ENGINE:BOOL=ON \
+                        -DWITHOUT_TOKUDB_STORAGE_ENGINE:BOOL=ON \
+                        -DENABLE_GCOV:BOOL=OFF \
+                        -DENABLE_DTRACE:BOOL=OFF \
+                        -DWITH_READLINE:BOOL=ON \
+                        -DWITH_LIBWRAP:BOOL=ON \
+                        -DWITH_SSL:STRING=no
+
+    post-build {
+        set dirs ${cmake.build_dir}
+        foreach dir ${dirs} {
+            reinplace -E {s|-arch [a-z0-9_]+||g} \
+                ${dir}/scripts/mysql_config \
+                ${dir}/scripts/mysqlbug
+        }
+    }
+
+    post-destroot {
+        # proc portdestroot::destroot_finish fails to find and compress our man pages
+        # so borrow the compress command and run on our files now.
+        set manpath "${destroot}${prefix}/share/man"
+        set gzip [findBinary gzip ${portutil::autoconf::gzip_path}]
+        foreach manpage [glob -type f ${destroot}${prefix}/share/man/${name_mysql}/man\[1-9\]/*] {
+            # Fix paths in manpages
+            reinplace -q "s|/etc/|${prefix}/etc/${name_mysql}/|g" ${manpage}
+            # Compress all manpages with gzip
+            system "$gzip -9vf ${manpage}"
+        }
+        foreach samp_conffile [glob -type f ${destroot}${prefix}/share/${name_mysql}/support-files/my-*.cnf] {
+            # Fix paths in sample configuration files
+            reinplace -q "s|/etc/my.cnf|${prefix}/etc/${name_mysql}/my.cnf|g" ${samp_conffile}
+        }
+        xinstall -m 755 -o root -d \
+            ${destroot}${prefix}/etc/${name_mysql}
+        copy ${cmake.build_dir}/macports/macports-default.cnf \
+            ${destroot}${prefix}/etc/${name_mysql}/
+        xinstall -m 755 -o root -d \
+            ${destroot}${prefix}/share/${name_mysql}/support-files/macports
+        copy ${cmake.build_dir}/macports/my.cnf \
+            ${destroot}${prefix}/share/${name_mysql}/support-files/macports/
+    }
+
+    post-install {
+        if {![file exists ${prefix}/etc/LaunchDaemons/org.macports.${name_mysql}/org.macports.${name_mysql}-server.plist]} {
+            ui_msg "The ${name_mysql} client has been installed."
+            ui_msg "To install the ${name_mysql} server, install the ${name_mysql}-server port."
+        }
+    }
+
+    pre-activate {
+        # The macports-default.cnf is installed by ${name_mysql}.
+        # Early versions of ${name_mysql}-server installed macports-default.cnf so for a
+        # reasonable period we need to deactivate older versions of the ${name_mysql}-server.
+        if { [file exists ${prefix}/etc/${name_mysql}/macports-default.cnf]
+            && ![catch {set vers [lindex [registry_active ${name_mysql}-server] 0]}]
+            && [vercmp [lindex $vers 1] 5.5.24] < 0 } {
+
+            registry_deactivate_composite ${name_mysql}-server "" [list ports_nodepcheck 1]
+        }
+    }
+
+    post-activate {
+        if {![file exists ${prefix}/etc/${name_mysql}/my.cnf]} {
+            copy ${prefix}/share/${name_mysql}/support-files/macports/my.cnf \
+                ${prefix}/etc/${name_mysql}/
+        }
+    }
+
+    variant openssl description {Enable OpenSSL support} {
+
+        depends_lib-append      path:lib/libssl.dylib:openssl
+        configure.args-delete   -DWITH_SSL:STRING=no
+        configure.args-append   -DWITH_SSL:STRING=system
+    }
+
+    variant system_readline description {Use system readline instead of bundled readline} {
+    
+        # Add readline support.
+        # "-DWITH_READLINE:BOOL=OFF" has the peculiar meaning "do not use the bundled copy
+        # of readline but use the system's (i.e. MacPorts') copy of readline"
+        depends_lib-append      port:readline
+        configure.args-delete   -DWITH_READLINE:BOOL=ON
+        configure.args-append   -DWITH_READLINE:BOOL=OFF
+    }
+
+    notes "
+On activation if no ${prefix}/etc/${name_mysql}/my.cnf file exists one
+will be created which loads
+${prefix}/etc/${name_mysql}/macports-default.cnf.
+
+If a ${prefix}/etc/${name_mysql}/my.cnf file exists MacPorts does not
+touch it and any changes you make to ${prefix}/etc/${name_mysql}/my.cnf
+will be preserved (e.g., during port upgrades, deactivations or
+activations). ${prefix}/etc/${name_mysql}/my.cnf is a good place to
+customize your ${name_mysql} installation.
+
+Any changes made to ${prefix}/etc/${name_mysql}/macports-default.cnf
+will be lost during port upgrades, deactivations or activations so you
+are advised to not make changes here. Currently
+${prefix}/etc/${name_mysql}/macports-default.cnf contains only one
+directive; to disable networking. With disabled networking it is
+possible to install and have running all the MacPorts mysql ports
+simultaneously.
+"
+
+    livecheck.type      regex
+    livecheck.url       https://downloads.mariadb.org/mariadb/
+    livecheck.regex     "href=\"/mariadb/(${version_branch}\[^/\]+)/"
+}
+
+subport ${name_mysql}-server {
+
+    revision            ${revision_server}
+    license             BSD
+    description         Run ${name_mysql} as server
+    long_description    ${description}
+
+    supported_archs     noarch
+    distfiles
+
+    depends_run         port:${name_mysql}
+
+    if {"darwin" eq ${os.platform} && ${os.major} > 8} {
+        set mysqluser       _mysql
+    } else {
+        set mysqluser       mysql
+    }
+    add_users ${mysqluser} group=${mysqluser} realname=MySQL\ Server
+
+    pre-extract {
+        copy ${filespath}/org.macports.mysql-server.plist ${workpath}/org.macports.${subport}.plist
+    }
+
+    post-patch {
+        reinplace "s|@NAME@|${subport}|g" \
+            ${workpath}/org.macports.${subport}.plist
+        reinplace "s|@NAMEMYSQL@|${name_mysql}|g" \
+            ${workpath}/org.macports.${subport}.plist
+        reinplace "s|@PREFIX@|${prefix}|g" \
+            ${workpath}/org.macports.${subport}.plist
+        reinplace "s|@SUBPORT@|${subport}|g" \
+            ${workpath}/org.macports.${subport}.plist
+        reinplace "s|@USER@|${mysqluser}|g" \
+            ${workpath}/org.macports.${subport}.plist
+        reinplace "s|@GROUP@|${mysqluser}|g" \
+            ${workpath}/org.macports.${subport}.plist
+    }
+    
+    use_configure       no
+
+    build {}
+
+    destroot {
+        xinstall -d -m 755 ${destroot}${prefix}/etc/LaunchDaemons/org.macports.${subport}
+        xinstall -m 0644 -o root -W ${workpath} \
+            org.macports.${subport}.plist \
+            ${destroot}${prefix}/etc/LaunchDaemons/org.macports.${subport}
+        xinstall -d -m 755 ${destroot}/Library/LaunchDaemons
+        ln -s ${prefix}/etc/LaunchDaemons/org.macports.${subport}/org.macports.${subport}.plist \
+            ${destroot}/Library/LaunchDaemons/org.macports.${subport}.plist
+        xinstall -m 755 -o root -d \
+            ${destroot}${prefix}/var/run
+        xinstall -m 755 -o ${mysqluser} -g ${mysqluser} -d \
+            ${destroot}${prefix}/etc/${name_mysql} \
+            ${destroot}${prefix}/var/db/${name_mysql} \
+            ${destroot}${prefix}/var/log/${name_mysql} \
+            ${destroot}${prefix}/var/run/${name_mysql}
+        destroot.keepdirs-append  \
+            ${destroot}${prefix}/var/db/${name_mysql} \
+            ${destroot}${prefix}/var/log/${name_mysql} \
+            ${destroot}${prefix}/var/run/${name_mysql}
+    }
+
+    pre-pkg {
+        xinstall -m 0755 ${filespath}/preinstall ${filespath}/postinstall \
+            ${package.scripts}/
+        reinplace -locale C "s|@SUBPORT@|${subport}|g" \
+            ${package.scripts}/preinstall ${package.scripts}/postinstall
+        reinplace -locale C "s|@NAMEMYSQL@|${name_mysql}|g" \
+            ${package.scripts}/preinstall ${package.scripts}/postinstall
+        reinplace -locale C "s|@PREFIX@|${prefix}|g" \
+            ${package.scripts}/preinstall ${package.scripts}/postinstall
+        reinplace -locale C "s|@USER@|${mysqluser}|g" \
+            ${package.scripts}/postinstall
+
+        # give installer splash screen a friendly message
+        long_description \
+            MariaDB is a fast, scalable and robust relational database providing an SQL \
+            interface for accessing structured data and is made by the original developers \
+            of MySQL.  Install prefix: ${prefix}
+
+    }
+
+    notes "
+If this is a new install you might want to run:
+
+\$ sudo -u ${mysqluser} ${prefix}/lib/${name_mysql}/bin/mysql_install_db
+"
+
+    livecheck.type          none
+}
