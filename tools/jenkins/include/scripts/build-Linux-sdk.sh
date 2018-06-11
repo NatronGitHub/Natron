@@ -281,7 +281,7 @@ else
     LD_LIBRARY_PATH="$SDK_HOME/gcc/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 fi
 #export LD_RUN_PATH="$LD_LIBRARY_PATH"
-PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig"
+#PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig"
 BOOST_ROOT="$SDK_HOME"
 OPENJPEG_HOME="$SDK_HOME"
 THIRD_PARTY_TOOLS_HOME="$SDK_HOME"
@@ -2241,7 +2241,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libwebp.pc" ] || [ "$(pkg-config --modversion
 fi
 
 # Install oiio
-#OIIO_VERSION=1.7.17
+#OIIO_VERSION=1.7.19
 OIIO_VERSION=1.8.12
 OIIO_VERSION_SHORT=${OIIO_VERSION%.*}
 OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
