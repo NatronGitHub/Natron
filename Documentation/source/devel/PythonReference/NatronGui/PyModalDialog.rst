@@ -40,13 +40,6 @@ To create a new :doc:`PyModalDialog`, just use the :func:`createModalDialog()<Na
 
     dialog = app1.createModalDialog()
 
-<<<<<<< HEAD
-    # In the Script Editor
-
-    dialog = app1.createModalDialog()
-
-=======
->>>>>>> RB-2.3
 To show the dialog to the user, use the :func:`exec_()<>` function inherited from :class:`QDialog` ::
 
     dialog.exec_()
@@ -144,6 +137,3 @@ Example::
                 myBoolean.setVisible(False)
 
     dialog.setParamChangedCallback("myCallback")
-
-
-

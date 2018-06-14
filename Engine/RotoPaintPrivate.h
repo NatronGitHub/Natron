@@ -95,7 +95,7 @@ NATRON_NAMESPACE_ENTER
 
 
 #define kRotoTrackingParamReferenceFrame "referenceFrame"
-#define kRotoTrackingParamReferenceFrameLabel "Reference frame"
+#define kRotoTrackingParamReferenceFrameLabel "Reference Frame"
 #define kRotoTrackingParamReferenceFrameHint "This is the frame number at which the CornerPin is an identity"
 
 #define kRotoTrackingParamGoToReferenceFrame "goToReferenceFrame"
@@ -104,7 +104,7 @@ NATRON_NAMESPACE_ENTER
 
 
 #define kRotoTrackingParamSetToInputRoD "setToInputRod"
-#define kRotoTrackingParamSetToInputRoDLabel "Set To Input Rod"
+#define kRotoTrackingParamSetToInputRoDLabel "Set to Input Rod"
 #define kRotoTrackingParamSetToInputRoDHint "Set the 4 CornerPin points to the image rectangle in input of the RotoPaint node"
 
 #define kRotoTrackingParamExportType "exportNodeType"

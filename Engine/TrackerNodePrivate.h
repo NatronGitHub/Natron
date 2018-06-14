@@ -263,12 +263,12 @@ NATRON_NAMESPACE_ENTER
 "The error is 1 minus the normalized cross-correlation score."
 
 #define kTrackerParamMaximumIteration "maxIterations"
-#define kTrackerParamMaximumIterationLabel "Maximum iterations"
+#define kTrackerParamMaximumIterationLabel "Maximum Iterations"
 #define kTrackerParamMaximumIterationHint "Maximum number of iterations the algorithm will run for the inner minimization " \
 "before it gives up."
 
 #define kTrackerParamBruteForcePreTrack "bruteForcePretTrack"
-#define kTrackerParamBruteForcePreTrackLabel "Use brute-force pre-track"
+#define kTrackerParamBruteForcePreTrackLabel "Use Brute-Force Pre-track"
 #define kTrackerParamBruteForcePreTrackHint "Use a brute-force translation-only pre-track before refinement"
 
 #define kTrackerParamNormalizeIntensities "normalizeIntensities"
@@ -277,7 +277,7 @@ NATRON_NAMESPACE_ENTER
 " error calculation. Slower."
 
 #define kTrackerParamPreBlurSigma "preBlurSigma"
-#define kTrackerParamPreBlurSigmaLabel "Pre-blur sigma"
+#define kTrackerParamPreBlurSigmaLabel "Pre-blur Sigma"
 #define kTrackerParamPreBlurSigmaHint "The size in pixels of the blur kernel used to both smooth the image and take the image derivative."
 
 
@@ -289,7 +289,7 @@ NATRON_NAMESPACE_ENTER
 " when computing the resulting Transform to stabilize/match-move."
 
 #define kTrackerParamPerTrackParamsSeparator "perTrackParams"
-#define kTrackerParamPerTrackParamsSeparatorLabel "Per-Track Parameters"
+#define kTrackerParamPerTrackParamsSeparatorLabel "Per-track Parameters"
 
 #define kTrackerAddTrackParam "addTrackButton"
 #define kTrackerAddTrackParamLabel "New Track"
@@ -367,7 +367,7 @@ NATRON_NAMESPACE_ENTER
 "essentially the difference between the point position computed from the original point onto which is applied the fitted model and the original tracked point. "
 
 #define kTrackerParamFittingErrorWarnValue "fittingErrorWarnAbove"
-#define kTrackerParamFittingErrorWarnValueLabel "Warn If Error is Above"
+#define kTrackerParamFittingErrorWarnValueLabel "Warn If Error Is Above"
 #define kTrackerParamFittingErrorWarnValueHint "A warning will appear if the model fitting error reaches this value (or higher). The warning indicates that " \
 "the calculated model is probably poorly suited for the stabilization/match-move you want to achieve and you should either refine your tracking data or pick " \
 "another model"
@@ -379,11 +379,11 @@ NATRON_NAMESPACE_ENTER
 "another model"
 
 #define kTrackerParamReferenceFrame "referenceFrame"
-#define kTrackerParamReferenceFrameLabel "Reference frame"
+#define kTrackerParamReferenceFrameLabel "Reference Frame"
 #define kTrackerParamReferenceFrameHint "When exporting tracks to a CornerPin or Transform, this will be the frame number at which the transform will be an identity."
 
 #define kTrackerParamSetReferenceFrame "setReferenceButton"
-#define kTrackerParamSetReferenceFrameLabel "Set To Current Frame"
+#define kTrackerParamSetReferenceFrameLabel "Set to Current Frame"
 #define kTrackerParamSetReferenceFrameHint "Set the reference frame to the timeline's current frame"
 
 #define kTrackerParamJitterPeriod "jitterPeriod"
@@ -396,7 +396,7 @@ NATRON_NAMESPACE_ENTER
 
 #define kTrackerParamSmoothCornerPin "smoothCornerPin"
 #define kTrackerParamSmoothCornerPinLabel "Smooth"
-#define kTrackerParamSmoothCornerPinHint "Smooth the Corner Pin by averaging this number of frames together"
+#define kTrackerParamSmoothCornerPinHint "Smooth the CornerPin by averaging this number of frames together"
 
 #define kTrackerParamAutoGenerateTransform "autoComputeransform"
 #define kTrackerParamAutoGenerateTransformLabel "Compute Transform Automatically"
@@ -447,7 +447,7 @@ NATRON_NAMESPACE_ENTER
 #define kCornerPinParamFrom4 "from4"
 
 #define kCornerPinParamSetToInputRoD "setToInputRod"
-#define kCornerPinParamSetToInputRoDLabel "Set To Input Rod"
+#define kCornerPinParamSetToInputRoDLabel "Set to Input Rod"
 #define kCornerPinParamSetToInputRoDHint "Set the 4 from points to the image rectangle in input of the tracker node"
 
 #define kCornerPinParamTo1 "to1"

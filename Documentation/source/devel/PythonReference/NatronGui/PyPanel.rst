@@ -132,17 +132,6 @@ Note that the *function* parameter is the **name** of a Python-defined function 
 
     app.registerPythonPanel(app.mypanel,"createMyPanel")
 
-<<<<<<< HEAD
-    def createMyPanel():
-        panel = NatronGui.PyPanel("MyPanel",True,app)
-        ...
-        #Make it live after the scope of the function
-        app.mypanel = panel
-
-    app.registerPythonPanel(app.mypanel,"createMyPanel")
-
-=======
->>>>>>> RB-2.3
 This function will also add a custom menu entry to the "Manage layout" button (located in the top-left hand
 corner of every pane) which the user can trigger to move the custom pane on the selected pane.
 

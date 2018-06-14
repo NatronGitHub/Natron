@@ -57,11 +57,7 @@ split it to make new panes.
 
 To retrieve an existing :doc:`PyTabWidget` you can call the :func:`getTabWidget(scriptName)<NatronGui.GuiApp.getTabWidget>`
 function of :doc:`GuiApp`.
-<<<<<<< HEAD
-::
-=======
 
->>>>>>> RB-2.3
     pane1 = app.getTabWidget("Pane1")
 
 Note that the script-name of a pane can be seen on the graphical user interface by hovering

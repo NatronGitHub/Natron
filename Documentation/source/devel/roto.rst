@@ -52,8 +52,6 @@ To create a new :ref:`BezierCurve<BezierCurve>`, use one of the following functi
 
 Once created, the Bezier will have at least 1 control point (4 for ellipses and rectangles) and one keyframe
 at the time specified in parameter.
-<<<<<<< HEAD
-=======
 
 A Bezier initially is in an *opened* state, meaning it doesn't produce a shape yet (unless it is a rectangle or ellipse).
 At this stage you can then add control points using the :func`addControlPoint(x,y)<NatronEngine.BezierCurve.addControlPoint>`
@@ -80,4 +78,3 @@ Most of them are available via a :ref:`parameter<Param>`, e.g.:
 
     colorParam = bezier.getColorParam()
     bezierColor = colorParam.get(time)
->>>>>>> RB-2.3
