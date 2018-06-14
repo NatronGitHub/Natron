@@ -281,7 +281,7 @@ else
     LD_LIBRARY_PATH="$SDK_HOME/gcc/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 fi
 #export LD_RUN_PATH="$LD_LIBRARY_PATH"
-PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig"
+#PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig"
 BOOST_ROOT="$SDK_HOME"
 OPENJPEG_HOME="$SDK_HOME"
 THIRD_PARTY_TOOLS_HOME="$SDK_HOME"
@@ -2241,7 +2241,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libwebp.pc" ] || [ "$(pkg-config --modversion
 fi
 
 # Install oiio
-#OIIO_VERSION=1.7.17
+#OIIO_VERSION=1.7.19
 OIIO_VERSION=1.8.12
 OIIO_VERSION_SHORT=${OIIO_VERSION%.*}
 OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
@@ -2269,8 +2269,7 @@ if [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; then
     if [[ ! "$GCC_VERSION" =~ ^4\. ]]; then
         OIIO_CMAKE_FLAGS+=( "-DUSE_CPP11:BOOL=FALSE" "-DUSE_CPP14:BOOL=FALSE" "-DUSE_CPP17:BOOL=FALSE" )
     fi
-    # Here we emphasis that we link against lib raw GPL2, but since it's dynamic linking it shouldn't be an issue
-    OIIO_CMAKE_FLAGS+=( "-DUSE_LIBRAW:BOOL=TRUE" "-DLIBRAW_PATH=$SDK_HOME/libraw-gpl2" "-DCMAKE_INSTALL_PREFIX=$SDK_HOME" )
+    OIIO_CMAKE_FLAGS+=( "-DUSE_LIBRAW:BOOL=TRUE" "-DCMAKE_INSTALL_PREFIX=$SDK_HOME" )
 
     mkdir build
     pushd build

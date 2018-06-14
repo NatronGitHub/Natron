@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>org.macports.@SUBPORT@</string>
+    <key>ProcessType</key>
+    <string>Interactive</string>
+    <key>Disabled</key>
+    <false/>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>SessionCreate</key>
+    <true/>
+    <key>LaunchOnlyOnce</key>
+    <false/>
+    <key>UserName</key>
+    <string>@USER@</string>
+    <key>GroupName</key>
+    <string>@GROUP@</string>
+    <key>ExitTimeOut</key>
+    <integer>600</integer>
+    <key>ProgramArguments</key>
+        <array>
+            <string>@PREFIX@/lib/@NAMEMYSQL@/bin/mysqld</string>
+        </array>
+</dict>
+</plist>

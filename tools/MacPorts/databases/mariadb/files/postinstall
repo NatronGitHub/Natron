@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# MariaDB installer support, postinstall script
+# runs as root after installer successfully copies payload to destination
+# Adapted from https://github.com/MariaDB/server/blob/5.5/support-files/MacOSX/postflight.sh
+
+# Have experienced cases where installed directories/files have different 
+# ownership or permissions than what was fed to PackageMaker.
+# Just use blunt force to set the required permissions
+
+chmod 644 @PREFIX@/etc/LaunchDaemons/org.macports.@SUBPORT@/org.macports.@SUBPORT@.plist || exit 1
+if [ -f /Library/LaunchDaemons/org.macports.@SUBPORT@.plist ] ; then
+   rm /Library/LaunchDaemons/org.macports.@SUBPORT@.plist
+fi
+ln -s @PREFIX@/etc/LaunchDaemons/org.macports.@SUBPORT@/org.macports.@SUBPORT@.plist \
+    /Library/LaunchDaemons/org.macports.@SUBPORT@.plist || exit 1
+
+chown _mysql:_mysql @PREFIX@/var/run/@NAMEMYSQL@ || exit 1
+chown _mysql:_mysql @PREFIX@/var/db/@NAMEMYSQL@ || exit 1
+chown _mysql:_mysql @PREFIX@/var/log/@NAMEMYSQL@ || exit 1
+
+
+# standard mysql initialization
+if [ ! -f @PREFIX@/var/db/@NAMEMYSQL@/mysql/db.frm ] ; then
+    @PREFIX@/lib/@NAMEMYSQL@/bin/mysql_install_db --user=@USER@ \
+    --datadir=@PREFIX@/var/db/@NAMEMYSQL@ \
+    --tmpdir=@PREFIX@/var/db/@NAMEMYSQL@
+fi
+
+# we should be able to trust that preinstall did this, but...
+# just in case still loaded, unload
+if /bin/launchctl list "org.macports.@SUBPORT@" &> /dev/null; then
+    /bin/launchctl unload "/Library/LaunchDaemons/org.macports.@SUBPORT@.plist"
+fi
+
+# my.cnf may not be in place yet, but the server will run anyway
+/bin/launchctl load -w /Library/LaunchDaemons/org.macports.@SUBPORT@.plist 

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# MariaDB installer support, preinstall script
+# runs as root just after user clicks "Install"
+
+# if daemon loaded, unload
+if /bin/launchctl list "org.macports.@SUBPORT@" &> /dev/null; then
+    /bin/launchctl unload "/Library/LaunchDaemons/org.macports.@SUBPORT@.plist"
+fi
