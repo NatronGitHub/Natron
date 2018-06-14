@@ -246,6 +246,7 @@ public:
                                                                 bool jitterAdd,
                                                                 bool robustModel,
                                                                 const TrackerParamsProviderPtr& params,
+                                                                const KnobDoublePtr& center,
                                                                 const std::vector<TrackMarkerPtr>& allMarkers);
 
 

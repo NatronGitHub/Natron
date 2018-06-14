@@ -999,6 +999,7 @@ TrackerNodePrivate::computeTransformParamsFromTracks()
                                                                                                         lastSolveRequest.jitterAdd,
                                                                                                         lastSolveRequest.robustModel,
                                                                                                         thisShared,
+                                                                                                        center.lock(),
                                                                                                         lastSolveRequest.allMarkers)) );
 #else
     NodePtr thisNode = publicInterface->getNode();
@@ -1007,7 +1008,7 @@ TrackerNodePrivate::computeTransformParamsFromTracks()
         int nKeys = lastSolveRequest.keyframes.size();
         int keyIndex = 0;
         for (std::set<double>::const_iterator it = lastSolveRequest.keyframes.begin(); it != lastSolveRequest.keyframes.end(); ++it, ++keyIndex) {
-            TransformData data = tracker->computeTransformParamsFromTracksAtTime(lastSolveRequest.refTime, *it, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, thisShared, lastSolveRequest.allMarkers);
+            TransformData data = tracker->computeTransformParamsFromTracksAtTime(lastSolveRequest.refTime, *it, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, thisShared, center.lock(), lastSolveRequest.allMarkers);
             if (data.valid) {
                 validResults.push_back(data);
             }

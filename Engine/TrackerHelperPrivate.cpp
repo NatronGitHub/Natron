@@ -754,7 +754,7 @@ TrackerHelper::extractSortedPointsFromMarkers(TimeValue refTime,
         // We must thus subtract the transform center before computation.
         // See bug https://github.com/NatronGitHub/Natron/issues/289
         c1.x = center->getValueAtTime(refTime, DimIdx(0));
-        c1.y = center->getValueAtTime(refTime, DimIdx(1);
+        c1.y = center->getValueAtTime(refTime, DimIdx(1));
         c2.x = center->getValueAtTime(time, DimIdx(0));
         c2.y = center->getValueAtTime(time, DimIdx(1));
     }
@@ -783,8 +783,8 @@ TrackerHelper::extractSortedPointsFromMarkers(TimeValue refTime,
                 p.x = centerKnob->getValueAtTime(TimeValue(t), DimIdx(0));
                 p.y = centerKnob->getValueAtTime(TimeValue(t), DimIdx(1));
                 if (center) {
-                    p.x -= center->getValueAtTime(t, DimIdx(0);
-                    p.y -= center->getValueAtTime(t, DimIdx(1);
+                    p.x -= center->getValueAtTime(TimeValue(t), DimIdx(0));
+                    p.y -= center->getValueAtTime(TimeValue(t), DimIdx(1));
                 }
                 x2PointJitter.push_back(p);
             }
@@ -841,6 +841,7 @@ TrackerHelper::computeTransformParamsFromTracksAtTime(TimeValue refTime,
                                                       bool jitterAdd,
                                                       bool robustModel,
                                                       const TrackerParamsProviderPtr& params,
+                                                      const KnobDoublePtr& center,
                                                       const std::vector<TrackMarkerPtr>& allMarkers)
 {
     RectD rodRef = params->getNormalizationRoD(refTime, ViewIdx(0));
@@ -863,7 +864,7 @@ TrackerHelper::computeTransformParamsFromTracksAtTime(TimeValue refTime,
     data.valid = true;
     assert( !markers.empty() );
     std::vector<Point> x1, x2;
-    extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, center.lock(), &x1, &x2);
+    extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, center, &x1, &x2);
     assert( x1.size() == x2.size() );
     if ( x1.empty() ) {
         data.valid = false;
