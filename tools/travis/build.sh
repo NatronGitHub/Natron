@@ -59,7 +59,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "${COVERITY_SCAN_BRANCH}" == 1 ]; then
         qmake -r CONFIG+="$BREAKPAD $SILENT enable-cairo precompile_header";
     elif [ "$CC" = "gcc" ]; then
-        qmake -r CONFIG+="nopch coverage c++11 debug $BREAKPAD $SILENT enable-cairo"; # pch config disables precompiled headers
+        qmake -r CONFIG+="enforce-gcc8 nopch coverage c++11 debug $BREAKPAD $SILENT enable-cairo"; # pch config disables precompiled headers
     else
         qmake -r -spec unsupported/linux-clang CONFIG+="nopch c++11 debug $BREAKPAD $SILENT enable-cairo";
     fi
