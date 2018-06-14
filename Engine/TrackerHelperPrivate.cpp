@@ -736,6 +736,7 @@ TrackerHelper::extractSortedPointsFromMarkers(TimeValue refTime,
                                               const std::vector<TrackMarkerPtr>& markers,
                                               int jitterPeriod,
                                               bool jitterAdd,
+                                              const KnobDoublePtr& center,
                                               std::vector<Point>* x1,
                                               std::vector<Point>* x2)
 {
@@ -746,6 +747,17 @@ TrackerHelper::extractSortedPointsFromMarkers(TimeValue refTime,
     int halfJitter = std::max(0, jitterPeriod / 2);
     // Prosac expects the points to be sorted by decreasing correlation score (increasing error)
     int pIndex = 0;
+    Point c1 = {0., 0.};
+    Point c2 = {0., 0.};
+    if (center) {
+        // The transform parameters are all computed with respect to the transform center.
+        // We must thus subtract the transform center before computation.
+        // See bug https://github.com/NatronGitHub/Natron/issues/289
+        c1.x = center->getValueAtTime(refTime, DimIdx(0));
+        c1.y = center->getValueAtTime(refTime, DimIdx(1);
+        c2.x = center->getValueAtTime(time, DimIdx(0));
+        c2.y = center->getValueAtTime(time, DimIdx(1));
+    }
     for (std::size_t i = 0; i < markers.size(); ++i) {
         KnobDoublePtr centerKnob = markers[i]->getCenterKnob();
         KnobDoublePtr errorKnob = markers[i]->getErrorKnob();
@@ -758,10 +770,10 @@ TrackerHelper::extractSortedPointsFromMarkers(TimeValue refTime,
         PointWithError& perr = pointsWithErrors[pIndex];
 
         if (!useJitter) {
-            perr.p1.x = centerKnob->getValueAtTime(refTime, DimIdx(0));
-            perr.p1.y = centerKnob->getValueAtTime(refTime, DimIdx(1));
-            perr.p2.x = centerKnob->getValueAtTime(time, DimIdx(0));
-            perr.p2.y = centerKnob->getValueAtTime(time, DimIdx(1));
+            perr.p1.x = centerKnob->getValueAtTime(refTime, DimIdx(0)) - c1.x;
+            perr.p1.y = centerKnob->getValueAtTime(refTime, DimIdx(1)) - c1.y;
+            perr.p2.x = centerKnob->getValueAtTime(time, DimIdx(0)) - c2.x;
+            perr.p2.y = centerKnob->getValueAtTime(time, DimIdx(1)) - c2.y;
         } else {
             // Average halfJitter frames before and after refTime and time together to smooth the center
             std::vector<Point> x2PointJitter;
@@ -770,6 +782,10 @@ TrackerHelper::extractSortedPointsFromMarkers(TimeValue refTime,
                 Point p;
                 p.x = centerKnob->getValueAtTime(TimeValue(t), DimIdx(0));
                 p.y = centerKnob->getValueAtTime(TimeValue(t), DimIdx(1));
+                if (center) {
+                    p.x -= center->getValueAtTime(t, DimIdx(0);
+                    p.y -= center->getValueAtTime(t, DimIdx(1);
+                }
                 x2PointJitter.push_back(p);
             }
             Point x2avg = {0, 0};
@@ -782,16 +798,16 @@ TrackerHelper::extractSortedPointsFromMarkers(TimeValue refTime,
                 x2avg.y /= x2PointJitter.size();
             }
             if (!jitterAdd) {
-                perr.p1.x = centerKnob->getValueAtTime(time, DimIdx(0));
-                perr.p1.y = centerKnob->getValueAtTime(time, DimIdx(1));
+                perr.p1.x = centerKnob->getValueAtTime(time, DimIdx(0)) - c2.x;
+                perr.p1.y = centerKnob->getValueAtTime(time, DimIdx(1)) - c2.y;
                 perr.p2.x = x2avg.x;
                 perr.p2.y = x2avg.y;
             } else {
                 Point highFreqX2;
 
                 Point x2;
-                x2.x = centerKnob->getValueAtTime(time, DimIdx(0));
-                x2.y = centerKnob->getValueAtTime(time, DimIdx(1));
+                x2.x = centerKnob->getValueAtTime(time, DimIdx(0)) - c2.x;
+                x2.y = centerKnob->getValueAtTime(time, DimIdx(1)) - c2.y;
                 highFreqX2.x = x2.x - x2avg.x;
                 highFreqX2.y = x2.y - x2avg.y;
 
@@ -847,7 +863,7 @@ TrackerHelper::computeTransformParamsFromTracksAtTime(TimeValue refTime,
     data.valid = true;
     assert( !markers.empty() );
     std::vector<Point> x1, x2;
-    extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, &x1, &x2);
+    extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, center.lock(), &x1, &x2);
     assert( x1.size() == x2.size() );
     if ( x1.empty() ) {
         data.valid = false;
@@ -910,7 +926,7 @@ TrackerHelper::computeCornerPinParamsFromTracksAtTime(TimeValue refTime,
     data.valid = true;
     assert( !markers.empty() );
     std::vector<Point> x1, x2;
-    extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, &x1, &x2);
+    extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, KnobDoublePtr(), &x1, &x2);
     assert( x1.size() == x2.size() );
     if ( x1.empty() ) {
         data.valid = false;

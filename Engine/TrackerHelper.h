@@ -231,6 +231,7 @@ public:
                                                const std::vector<TrackMarkerPtr>& markers,
                                                int jitterPeriod,
                                                bool jitterAdd,
+                                               const KnobDoublePtr& center,
                                                std::vector<Point>* x1,
                                                std::vector<Point>* x2);
 

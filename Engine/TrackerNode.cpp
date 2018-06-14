@@ -1066,7 +1066,7 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         {
             std::vector<ChoiceOption> choices;
             choices.push_back(ChoiceOption(kTrackerParamTransformTypeTransform, "", tr(kTrackerParamTransformTypeTransformHelp).toStdString()));
-            choices.push_back(ChoiceOption(kTrackerParamTransformTypeCornerPin, "", tr(kTrackerParamTransformTypeTransformHelp).toStdString()));
+            choices.push_back(ChoiceOption(kTrackerParamTransformTypeCornerPin, "", tr(kTrackerParamTransformTypeCornerPinHelp).toStdString()));
             param->populateChoices(choices);
         }
         param->setDefaultValue(1);

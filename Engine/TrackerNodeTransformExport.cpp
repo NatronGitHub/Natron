@@ -873,7 +873,6 @@ TrackerNodePrivate::computeTransformParamsFromTracksEnd(double refTime,
     KnobDoublePtr translationKnob = translate.lock();
     KnobDoublePtr scaleKnob = scale.lock();
     KnobDoublePtr rotationKnob = rotate.lock();
-    KnobDoublePtr centerKnob = center.lock();
     KnobDoublePtr fittingErrorKnob = fittingError.lock();
     KnobStringPtr fittingWarningKnob = fittingErrorWarning.lock();
     int halfTJitter = smoothTJitter / 2;
@@ -907,52 +906,60 @@ TrackerNodePrivate::computeTransformParamsFromTracksEnd(double refTime,
         }
         if (!dataAtTime.hasRotationAndScale) {
             // no rotation or scale: simply extract the translation
+            Point translation;
             if (smoothTJitter > 1) {
                 TranslateData avgT;
                 averageDataFunctor<QList<TransformData>::const_iterator, void, TranslateData>(validResults.begin(), validResults.end(), itResults, halfTJitter, 0, &avgT, 0);
-                KeyFrame kx(dataAtTime.time, avgT.p.x);
-                KeyFrame ky(dataAtTime.time, avgT.p.y);
-                tmpTXCurve.setOrAddKeyframe(kx);
-                tmpTYCurve.setOrAddKeyframe(ky);
+                translation.x = avgT.p.x;
+                translation.y = avgT.p.y;
             } else {
-                KeyFrame kx(dataAtTime.time, dataAtTime.translation.x);
-                KeyFrame ky(dataAtTime.time, dataAtTime.translation.y);
+                translation.x = dataAtTime.translation.x;
+                translation.y = dataAtTime.translation.y;
+            }
+            {
+                KeyFrame kx(dataAtTime.time, translation.x);
+                KeyFrame ky(dataAtTime.time, translation.y);
                 tmpTXCurve.setOrAddKeyframe(kx);
                 tmpTYCurve.setOrAddKeyframe(ky);
             }
         } else {
+            double rot = 0;
             if (smoothRJitter > 1) {
                 RotateData avgR;
                 averageDataFunctor<QList<TransformData>::const_iterator, void, RotateData>(validResults.begin(), validResults.end(), itResults, halfRJitter, 0, &avgR, 0);
-
-                KeyFrame k(dataAtTime.time, avgR.r);
-                tmpRotateCurve.setOrAddKeyframe(k);
-
+                rot = avgR.r;
             } else {
-                KeyFrame k(dataAtTime.time, dataAtTime.rotation);
+                rot = dataAtTime.rotation;
+            }
+            {
+                KeyFrame k(dataAtTime.time, rot);
                 tmpRotateCurve.setOrAddKeyframe(k);
             }
+            double scale;
             if (smoothSJitter > 1) {
                 ScaleData avgR;
                 averageDataFunctor<QList<TransformData>::const_iterator, void, ScaleData>(validResults.begin(), validResults.end(), itResults, halfSJitter, 0, &avgR, 0);
-                KeyFrame k(dataAtTime.time, avgR.s);
-                tmpScaleCurve.setOrAddKeyframe(k);
-
+                scale = avgR.s;
             } else {
-                KeyFrame k(dataAtTime.time, dataAtTime.scale);
+                scale = dataAtTime.scale;
+            }
+            {
+                KeyFrame k(dataAtTime.time, scale);
                 tmpScaleCurve.setOrAddKeyframe(k);
             }
-#pragma message WARN("BUG: actual translation must be computed from centerKnob->getValueAtTime(), tmpRotateCurve, tmpScaleCurve, and validResults[*].translation before smoothing https://github.com/NatronGitHub/Natron/issues/289")
+            Point translation;
             if (smoothTJitter > 1) {
                 TranslateData avgT;
                 averageDataFunctor<QList<TransformData>::const_iterator, void, TranslateData>(validResults.begin(), validResults.end(), itResults, halfTJitter, 0, &avgT, 0);
-                KeyFrame kx(dataAtTime.time, avgT.p.x);
-                KeyFrame ky(dataAtTime.time, avgT.p.y);
-                tmpTXCurve.setOrAddKeyframe(kx);
-                tmpTYCurve.setOrAddKeyframe(ky);
+                translation.x = avgT.p.x;
+                translation.y = avgT.p.y;
             } else {
-                KeyFrame kx(dataAtTime.time, dataAtTime.translation.x);
-                KeyFrame ky(dataAtTime.time, dataAtTime.translation.y);
+                translation.x = dataAtTime.translation.x;
+                translation.y = dataAtTime.translation.y;
+            }
+            {
+                KeyFrame kx(dataAtTime.time, translation.x);
+                KeyFrame ky(dataAtTime.time, translation.y);
                 tmpTXCurve.setOrAddKeyframe(kx);
                 tmpTYCurve.setOrAddKeyframe(ky);
             }
