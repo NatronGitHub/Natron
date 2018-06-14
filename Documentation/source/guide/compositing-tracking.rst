@@ -50,7 +50,7 @@ The parameters that have an effect on the output model are:
 
 - The motion type
 - The Transform Type (i.e. Similarity or Homography)
-- The Reference frame 
+- The Reference Frame 
 - Jitter Period
 - Smooth: this can be used to smooth the resulting curve to remove some of the noise in the high frequencies of the CornerPin/Transform. Note that in "Add Jitter" mode, you can increase High frequencies to simulate a camera shake that follows the original camera movements.
 - Robust model: this is quite complicated, but in short: When trying to find a model that *best fits* all correspondences, you may have correspondences that are just wrong (bad tracking for example). These bad correspondences are called *outliers*, and this parameter when checked tells  we should not take into account those outliers to compute the final model. In most cases this should be checked. However sometimes, the user may have for example required to compute an homography (i.e. CornerPin), but the given tracked points (correspondences) just cannot make-up an homography. In this case, if the parameter were to be checked, it would fail to compute a model. If you uncheck this, it will take into account all the points and compute a model that averages the motion of all correspondences.

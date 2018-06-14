@@ -1887,7 +1887,7 @@ TrackerPanelV1::initializeExtraKnobs()
     }
     _imp->transformPage = AppManager::createKnob<KnobPage>(this, tr("Transform"), 1, false);
 
-    _imp->referenceFrame = AppManager::createKnob<KnobInt>(this, tr("Reference frame"), 1, false);
+    _imp->referenceFrame = AppManager::createKnob<KnobInt>(this, tr("Reference Frame"), 1, false);
     _imp->referenceFrame->setAnimationEnabled(false);
     _imp->referenceFrame->setHintToolTip( tr("This is the frame number at which the transform will be an identity.") );
     _imp->transformPage->addKnob(_imp->referenceFrame);
