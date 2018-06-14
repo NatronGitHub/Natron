@@ -412,11 +412,11 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb,  s
 
             std::map<int, std::list<ImagePlaneDesc> > inputLayersNeeded;
             std::list<ImagePlaneDesc> layersProduced;
-            TimeValue passThroughTime;
-            ViewIdx passThroughView;
-            int passThroughInputNb;
+            TimeValue passThroughTime(0.);
+            ViewIdx passThroughView(0);
+            int passThroughInputNb = -1; // prevent infinite recursion, because getComponentsNeededInternal() may call getAvailableLayers()
             std::bitset<4> processChannels;
-            bool processAll;
+            bool processAll = false;
             actionResults->getResults(&inputLayersNeeded, &layersProduced, &passThroughLayers, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAll);
 
             // Merge pass-through planes produced + pass-through available planes and make it as the pass-through planes for this node
