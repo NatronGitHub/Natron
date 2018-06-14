@@ -2459,6 +2459,7 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
     KnobDoublePtr translationKnob = translate.lock();
     KnobDoublePtr scaleKnob = scale.lock();
     KnobDoublePtr rotationKnob = rotate.lock();
+    KnobDoublePtr centerKnob = center.lock();
     KnobDoublePtr fittingErrorKnob = fittingError.lock();
     KnobStringPtr fittingWarningKnob = fittingErrorWarning.lock();
     translationKnob->blockValueChanges();
@@ -2484,21 +2485,23 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
             }
             tmpFittingErrorCurve.addKeyFrame(kf);
         }
-        if (smoothTJitter > 1) {
-            TranslateData avgT;
-            averageDataFunctor<QList<TransformData>::const_iterator, void, TranslateData>(validResults.begin(), validResults.end(), itResults, halfTJitter, 0, &avgT, 0);
-            KeyFrame kx(dataAtTime.time, avgT.p.x);
-            KeyFrame ky(dataAtTime.time, avgT.p.y);
-            tmpTXCurve.addKeyFrame(kx);
-            tmpTYCurve.addKeyFrame(ky);
-        } else {
-            KeyFrame kx(dataAtTime.time, dataAtTime.translation.x);
-            KeyFrame ky(dataAtTime.time, dataAtTime.translation.y);
-            tmpTXCurve.addKeyFrame(kx);
-            tmpTYCurve.addKeyFrame(ky);
+        if (!dataAtTime.hasRotationAndScale) {
+            // no rotation or scale: simply extract the translation
+            if (smoothTJitter > 1) {
+                TranslateData avgT;
+                averageDataFunctor<QList<TransformData>::const_iterator, void, TranslateData>(validResults.begin(), validResults.end(), itResults, halfTJitter, 0, &avgT, 0);
+                KeyFrame kx(dataAtTime.time, avgT.p.x);
+                KeyFrame ky(dataAtTime.time, avgT.p.y);
+                tmpTXCurve.addKeyFrame(kx);
+                tmpTYCurve.addKeyFrame(ky);
+            } else {
+                KeyFrame kx(dataAtTime.time, dataAtTime.translation.x);
+                KeyFrame ky(dataAtTime.time, dataAtTime.translation.y);
+                tmpTXCurve.addKeyFrame(kx);
+                tmpTYCurve.addKeyFrame(ky);
 
-        }
-        if (dataAtTime.hasRotationAndScale) {
+            }
+        } else {
             if (smoothRJitter > 1) {
                 RotateData avgR;
                 averageDataFunctor<QList<TransformData>::const_iterator, void, RotateData>(validResults.begin(), validResults.end(), itResults, halfRJitter, 0, &avgR, 0);
@@ -2519,6 +2522,21 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
             } else {
                 KeyFrame k(dataAtTime.time, dataAtTime.scale);
                 tmpScaleCurve.addKeyFrame(k);
+            }
+#pragma message WARN("BUG: actual translation must be computed from centerKnob->getValueAtTime(), tmpRotateCurve, tmpScaleCurve, and validResults[*].translation before smoothing https://github.com/NatronGitHub/Natron/issues/289")
+            if (smoothTJitter > 1) {
+                TranslateData avgT;
+                averageDataFunctor<QList<TransformData>::const_iterator, void, TranslateData>(validResults.begin(), validResults.end(), itResults, halfTJitter, 0, &avgT, 0);
+                KeyFrame kx(dataAtTime.time, avgT.p.x);
+                KeyFrame ky(dataAtTime.time, avgT.p.y);
+                tmpTXCurve.addKeyFrame(kx);
+                tmpTYCurve.addKeyFrame(ky);
+            } else {
+                KeyFrame kx(dataAtTime.time, dataAtTime.translation.x);
+                KeyFrame ky(dataAtTime.time, dataAtTime.translation.y);
+                tmpTXCurve.addKeyFrame(kx);
+                tmpTYCurve.addKeyFrame(ky);
+
             }
         }
     } // for all samples
