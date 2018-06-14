@@ -1351,7 +1351,7 @@ RotoPaint::initTrackingPageKnobs()
         param->setLabel(tr(kRotoTrackingParamReferenceFrameLabel));
         param->setHintToolTip( tr(kRotoTrackingParamReferenceFrameHint) );
         param->setAnimationEnabled(false);
-        param->setDefaultValue(0);
+        param->setDefaultValue(1);
         param->setEvaluateOnChange(false);
         _imp->knobsTable->addPerItemKnobMaster(param);
         trackingPage->addKnob(param);

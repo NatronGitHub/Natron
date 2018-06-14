@@ -1079,7 +1079,7 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         param->setLabel(tr(kTrackerParamReferenceFrameLabel));
         param->setHintToolTip( tr(kTrackerParamReferenceFrameHint) );
         param->setAnimationEnabled(false);
-        param->setDefaultValue(0);
+        param->setDefaultValue(1);
         param->setAddNewLine(false);
         param->setEvaluateOnChange(false);
         transformPage->addKnob(param);
