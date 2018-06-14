@@ -422,7 +422,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     referenceFrameKnob->setName(kTrackerParamReferenceFrame);
     referenceFrameKnob->setHintToolTip( tr(kTrackerParamReferenceFrameHint) );
     referenceFrameKnob->setAnimationEnabled(false);
-    referenceFrameKnob->setDefaultValue(0);
+    referenceFrameKnob->setDefaultValue(1);
     referenceFrameKnob->setAddNewLine(false);
     referenceFrameKnob->setEvaluateOnChange(false);
     transformPage->addKnob(referenceFrameKnob);
