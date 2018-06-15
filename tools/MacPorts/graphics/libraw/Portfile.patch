@@ -1,8 +1,8 @@
---- Portfile.orig	2018-05-16 10:00:01.000000000 +0200
-+++ Portfile	2018-06-08 17:05:03.000000000 +0200
+--- Portfile.orig	2018-06-15 11:26:50.000000000 +0200
++++ Portfile	2018-06-15 11:28:11.000000000 +0200
 @@ -17,10 +17,6 @@
- master_sites     ${homepage}/data/
- distname         LibRaw-${version}
+ master_sites        ${homepage}/data/
+ distname            LibRaw-${version}
  
 -distfiles-append \
 -    LibRaw-demosaic-pack-GPL2-${demosaicversion}${extract.suffix} \
@@ -10,14 +10,14 @@
 -
  checksums \
      LibRaw-${version}${extract.suffix} \
-         rmd160  58a805d969cb375c7e1cb9ffd4828de402fc88c3 \
+         rmd160  b946c4dc480b166299137b82ec4b0a313a31038d \
 @@ -39,13 +35,32 @@
- depends_build    port:pkgconfig
+ depends_build       port:pkgconfig
  
- depends_lib      port:jasper \
--                 port:jpeg \
-+                 path:lib/libjpeg.dylib:jpeg \
-                  port:lcms2
+ depends_lib         port:jasper \
+-                    port:jpeg \
++                    path:lib/libjpeg.dylib:jpeg \
+                     port:lcms2
  
  post-destroot {
      set htmlDir ${destroot}${prefix}/share/doc/${name}/html
@@ -44,4 +44,4 @@
 +    license                 GPL-3+
  }
  
- livecheck.type  regex
+ livecheck.type      regex
