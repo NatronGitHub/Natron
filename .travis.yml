@@ -49,10 +49,10 @@ addons:
     #- g++-5
     #- gcc-6
     #- g++-6
-    - gcc-7
-    - g++-7
-    #- gcc-8
-    #- g++-8
+    #- gcc-7
+    #- g++-7
+    - gcc-8
+    - g++-8
     - libqt4-dev
     - libqt4-opengl-dev
     - libglew-dev

@@ -39,7 +39,8 @@ if [ "$PKGOS" = "Linux" ]; then
     SPHINX_BIN="sphinx-build"
     "$NATRON_DOC_PATH"/genStaticDocs.sh "$TMP_PORTABLE_DIR/bin/$NATRON_RENDERER_BIN" "$TMPDIR/natrondocs$$" .
 elif [ "$PKGOS" = "Windows" ]; then
-    SPHINX_BIN="sphinx-build2.exe"
+    #SPHINX_BIN="sphinx-build2.exe" # fails with 'failed to create process (\mingw64\bin\python2.exe "C:\msys64\mingw64\bin\sphinx-build2-script.py").'
+    SPHINX_BIN="sphinx-build2-script.py"
     "$NATRON_DOC_PATH"/genStaticDocs.sh "$TMP_PORTABLE_DIR/bin/${NATRON_RENDERER_BIN}.exe" "$TMPDIR/natrondocs$$" .
 elif [ "$PKGOS" = "OSX" ]; then
     RES_DIR="$TMP_PORTABLE_DIR/Contents/Resources"
