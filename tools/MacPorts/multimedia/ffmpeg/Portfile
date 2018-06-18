@@ -9,8 +9,7 @@ PortGroup           active_variants 1.1
 name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
-version             4.0
-revision            1
+version             4.0.1
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -47,14 +46,14 @@ long_description    FFmpeg is a complete solution to record, convert and \
                     generators for all common audio/video formats.
 
 platforms           darwin
-homepage            http://www.ffmpeg.org/
-master_sites        http://www.ffmpeg.org/releases/
+homepage            https://ffmpeg.org/
+master_sites        ${homepage}releases/
 
 use_xz              yes
 
-checksums           rmd160  905285cf32e1b00d320c51c0a94cbd670fab6649 \
-                    sha256  ed945daf40b124e77a685893cc025d086f638bc703183460aff49508edb3a43f \
-                    size    8656948
+checksums           rmd160  f66f0d16ef4869c4b67b0ae7b04ef652f72956d4 \
+                    sha256  605f5c01c60db35d3b617a79cabb2c7032412be243554602eeed1b628125c0ee \
+                    size    8663660
 
 depends_build       port:pkgconfig \
                     port:gmake \
