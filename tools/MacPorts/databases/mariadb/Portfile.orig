@@ -33,7 +33,7 @@ if {$subport eq $name} {
         http://mirrors.supportex.net/mariadb/mariadb-${version}/source/ \
         http://mirrors.fe.up.pt/pub/mariadb/mariadb-${version}/source/ \
         http://gd.tuwien.ac.at/db/mariadb/mariadb-${version}/source/ \
-        http://mirror.aarnet.edu.au/pub/MariaDB/mariadb-${version}/source/ \
+        https://mirror.aarnet.edu.au/pub/MariaDB/mariadb-${version}/source/ \
         http://ftp.heanet.ie/mirrors/mariadb/mariadb-${version}/source/
 
 # Mirrors with bad distfiles
