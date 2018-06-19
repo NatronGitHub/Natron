@@ -130,11 +130,11 @@ variant natron conflicts x11 requires pango rsvg q32 hdri description {Natron ve
     } else {
         # libc++-based build
         # configure with clang-4.0 for proper OpenMP support
-        if {${os.major} < 11} {
-           configure.compiler macports-clang-4.0
-        } else {
-           configure.compiler macports-clang-5.0
-        }
+        #if {${os.major} < 11} {
+        #   configure.compiler macports-clang-4.0
+        #} else {
+           configure.compiler macports-clang-6.0
+        #}
     }
     configure.args-append --enable-openmp
     patchfiles-append pango-align-hack.diff

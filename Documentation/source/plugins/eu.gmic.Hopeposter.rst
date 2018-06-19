@@ -8,12 +8,6 @@ G’MIC Hope poster node
 Description
 -----------
 
-Note: This filter uses lot of random values to generate its result, so running it twice will give you different results !
-
-Click here for a detailed description of this filter.: http://www.gimpchat.com/viewtopic.php?f=28&t=10036
-
-Author: David Tschumperle. Latest update: 2014/25/04.
-
 Author: David Tschumperle. Latest update: 2013/07/11.
 
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
@@ -37,8 +31,6 @@ Controls
 +--------------------------------------------+---------+---------+---------------------------+
 | Parameter / script name                    | Type    | Default | Function                  |
 +============================================+=========+=========+===========================+
-| Detail level / ``Detail_level``            | Double  | 0.8     |                           |
-+--------------------------------------------+---------+---------+---------------------------+
 | Gamma / ``Gamma``                          | Double  | 0       |                           |
 +--------------------------------------------+---------+---------+---------------------------+
 | Smoothness / ``Smoothness``                | Double  | 3       |                           |

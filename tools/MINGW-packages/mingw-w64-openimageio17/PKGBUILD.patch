@@ -1,15 +1,20 @@
---- PKGBUILD.orig	2017-11-03 11:44:53.000000000 +0100
-+++ PKGBUILD	2017-11-07 08:37:48.000000000 +0100
-@@ -4,28 +4,24 @@
+--- PKGBUILD.orig	2018-06-11 19:09:39.000000000 +0200
++++ PKGBUILD	2018-06-11 19:19:01.000000000 +0200
+@@ -1,31 +1,28 @@
+ # Maintainer: Alexey Pavlov <alexpux@gmail.com>
+ 
+-_realname=openimageio
++_realname=openimageio17
  pkgbase=mingw-w64-${_realname}
  pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
- pkgver=1.7.17
--pkgrel=1
-+pkgrel=1.2
+-pkgver=1.7.17
++pkgver=1.7.19
+ pkgrel=1
  pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
  arch=('any')
  url="http://www.openimageio.org/"
  license=("custom")
++conflicts=("${MINGW_PACKAGE_PREFIX}-openimageio")
  depends=("${MINGW_PACKAGE_PREFIX}-boost"
 -         "${MINGW_PACKAGE_PREFIX}-field3d"
           "${MINGW_PACKAGE_PREFIX}-freetype"
@@ -31,17 +36,20 @@
           "${MINGW_PACKAGE_PREFIX}-zlib")
  makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
               #"${MINGW_PACKAGE_PREFIX}-qt5"
-@@ -40,14 +36,24 @@
+@@ -40,14 +37,28 @@
          0001-MinGW-w64-include-winbase-h-early-for-TCHAR-types.patch
          0003-boost-latest.patch
          0004-guard-msvc-stuff.patch
 -        0005-fix-initialization.patch)
+-sha256sums=('669c59d06399dd882c3e2469bb3a4b33d537db150f6fe056495c3429b5c3838f'
 +        0005-fix-initialization.patch
 +        oiio-1.5.23-invalidatespec.patch
 +        oiio-1.7.10-c99math.patch
 +        oiio-1.7.10-nothreads.patch
-+        oiio-1.7.12-tiffposition.patch)
- sha256sums=('669c59d06399dd882c3e2469bb3a4b33d537db150f6fe056495c3429b5c3838f'
++        oiio-1.7.12-tiffposition.patch
++	oiio-1.7.17-highlightmode.patch
++	oiio-1.7.17-tifftiles.patch)
++sha256sums=('skip'
              '138b21e2c21fc43023f5788fa107f904454fda7812d1ab4f762de18b323b8649'
              'ab6bde02c0c05495a9cb13441535d42f4d5929bd930859d75f589d12be9a182b'
              'b7cc78d0f535ceb1aba68b11970c32ffbf04815d229b12e64e2c2c0b3403b4b2'
@@ -54,11 +62,13 @@
 +            'skip'
 +            'skip'
 +            'skip'
-+            'skip')
++            'skip'
++	    'skip'
++	    'skip')
  
  prepare() {
    cd ${srcdir}/oiio-Release-${pkgver}
-@@ -57,6 +63,10 @@
+@@ -57,6 +68,11 @@
    patch -p1 -i ${srcdir}/0003-boost-latest.patch
    patch -p1 -i ${srcdir}/0004-guard-msvc-stuff.patch
    patch -p1 -i ${srcdir}/0005-fix-initialization.patch
@@ -66,10 +76,11 @@
 +  patch -p1 -i ${srcdir}/oiio-1.7.10-nothreads.patch
 +  patch -p1 -i ${srcdir}/oiio-1.7.10-c99math.patch
 +  patch -p1 -i ${srcdir}/oiio-1.7.12-tiffposition.patch
++  patch -p1 -i ${srcdir}/oiio-1.7.17-highlightmode.patch
  }
  
  build() {
-@@ -72,13 +82,25 @@
+@@ -72,13 +88,25 @@
      -G"MSYS Makefiles" \
      -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
      -DPYLIB_INSTALL_DIR=lib/python2.7/site-packages \

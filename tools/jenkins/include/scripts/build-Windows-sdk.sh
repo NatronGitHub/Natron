@@ -499,6 +499,9 @@ install_prebuilt_package x265
 # Install snappy (for ffmpeg)
 install_prebuilt_package snappy
 
+# Install aom (for ffmpeg)
+install_prebuilt_package aom
+
 # Install ffmpeg
 build_package ffmpeg-gpl2
 build_package ffmpeg-gpl3

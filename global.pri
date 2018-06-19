@@ -365,18 +365,20 @@ unix {
      expat:     PKGCONFIG += expat
 
      # GLFW will require a link to X11 on linux and OpenGL framework on OS X
-     linux-* {
+     linux-*|freebsd-* {
           LIBS += -lGL -lX11
          # link with static cairo on linux, to avoid linking to X11 libraries in NatronRenderer
          cairo {
              PKGCONFIG += pixman-1 freetype2 fontconfig
              LIBS +=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
          }
-         LIBS += -ldl
          QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/../lib\',-z,origin'
      } else {
          LIBS += -framework OpenGL
          cairo:     PKGCONFIG += cairo
+     }
+     linux-* {
+         LIBS += -ldl
      }
 
      # User may specify an alternate python2-config from the command-line,
@@ -506,6 +508,13 @@ unix:!macx {
     target_appdata.path = $${PREFIX}/share/metainfo
     target_appdata.files = $PWD/../Gui/Resources/Metainfo/fr.natron.Natron.appdata.xml
     INSTALLS += target_icons target_mime target_desktop target_appdata
+}
+
+# GCC 8.1 gives a strange bug in the release builds, see https://github.com/NatronGitHub/Natron/issues/279
+# prevent building with GCC 8, unless configure with CONFIG+=enforce-gcc8
+
+enforce-gcc8 {
+  DEFINES += ENFORCE_GCC8
 }
 
 # and finally...

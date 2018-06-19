@@ -847,7 +847,7 @@ RotoContext::getItemsRegionOfDefinition(const std::list<RotoItemPtr>& items,
     bool rodSet = false;
     NodePtr activeRotoPaintNode;
     RotoStrokeItemPtr activeStroke;
-    bool isDrawing;
+    bool isDrawing = false;
     getNode()->getApp()->getActiveRotoDrawingStroke(&activeRotoPaintNode, &activeStroke, &isDrawing);
     if (!isDrawing) {
         activeStroke.reset();

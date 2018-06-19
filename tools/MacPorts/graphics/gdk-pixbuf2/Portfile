@@ -37,6 +37,8 @@ depends_lib         path:lib/pkgconfig/glib-2.0.pc:glib2 \
 
 gobject_introspection yes
 
+license_noconflict  gobject-introspection
+
 configure.args      --with-libjasper \
                     --disable-silent-rules
 

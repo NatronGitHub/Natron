@@ -6,12 +6,12 @@ PortGroup           muniversal 1.0
 PortGroup           cmake 1.1
 
 name                x265
-version             2.6
-revision            1
+version             2.8
+revision            2
 
-checksums           rmd160  9bffc2a99c576a99a49d2ce8d8dd690c375a3972 \
-                    sha256  1bf0036415996af841884802161065b9e6be74f5f6808ac04831363e2549cdbf \
-                    size    1271976
+checksums           rmd160  547adcf4886f9ae60c115b5da21ff12f6c718b8d \
+                    sha256  6e59f9afc0c2b87a46f98e33b5159d56ffb3558a49d8e3d79cb7fdc6b7aaa863 \
+                    size    1379551
 
 categories          multimedia
 platforms           darwin
@@ -26,10 +26,10 @@ long_description    x265 is a free software library and application for \
 homepage            https://www.videolan.org/developers/x265.html
 master_sites        http://ftp.videolan.org/pub/videolan/x265/
 distname            ${name}_${version}
-worksrcdir          ${name}_v${version}/source
+worksrcdir          ${distname}/source
 
 depends_build-append \
-                    port:yasm
+                    port:nasm
 
 compiler.blacklist  *llvm-gcc-4.2
 

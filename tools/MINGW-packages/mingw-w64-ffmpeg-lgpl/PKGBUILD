@@ -1,11 +1,12 @@
 # Maintainer: Alexey Pavlov <Alexpux@gmail.com>
 # Contributer: Zach Bacon <11doctorwhocanada@gmail.com>
+# Contributer: wirx6 <wirx654@gmail.com>
 
 _realname=ffmpeg
 pkgbase="mingw-w64-${_realname}-lgpl"
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-lgpl"
 pkgver=4.0
-pkgrel=2
+pkgrel=4
 pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
 arch=('any')
 url="https://ffmpeg.org/"
@@ -40,7 +41,8 @@ depends=(
         )
 makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
-             "${MINGW_PACKAGE_PREFIX}-nasm")
+             "${MINGW_PACKAGE_PREFIX}-nasm"
+             "${MINGW_PACKAGE_PREFIX}-aom")
 source=(https://ffmpeg.org/releases/${_realname}-${pkgver}.tar.xz{,.asc})
 validpgpkeys=('FCF986EA15E6E293A5644F10B4322F04D67658D8')
 sha256sums=('ed945daf40b124e77a685893cc025d086f638bc703183460aff49508edb3a43f'
@@ -92,6 +94,7 @@ build() {
     --enable-static \
     --enable-swresample \
     --enable-zlib \
+    --enable-libaom \
     --disable-doc
     #--enable-pthreads
 
