@@ -1,14 +1,6 @@
---- Portfile.orig	2018-06-15 11:30:03.000000000 +0200
-+++ Portfile	2018-06-11 19:35:45.000000000 +0200
-@@ -13,6 +13,7 @@
- name                poppler
- conflicts           xpdf-tools
- version             0.57.0
-+revision            1
- license             GPL-2+
- maintainers         {devans @dbevans} openmaintainer
- categories          graphics
-@@ -36,7 +37,7 @@
+--- Portfile.orig	2018-06-18 15:18:36.000000000 +0200
++++ Portfile	2018-06-18 15:18:36.000000000 +0200
+@@ -34,7 +34,7 @@
                      port:expat \
                      port:fontconfig \
                      port:freetype \
@@ -17,12 +9,3 @@
                      path:lib/pkgconfig/glib-2.0.pc:glib2 \
                      path:lib/pkgconfig/cairo.pc:cairo \
                      port:lcms2 \
-@@ -63,6 +64,8 @@
-                     --enable-zlib \
-                     --enable-libcurl
- 
-+patchfiles          patch-CVE-2017-18267.diff
-+
- post-patch {
-     # clang: error: unknown argument: '-fno-check-new'
-     # Strip it out rather than --disable-compile-warnings

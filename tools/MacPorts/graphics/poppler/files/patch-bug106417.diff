@@ -1,0 +1,12 @@
+diff --git glib/CMakeLists.txt glib/CMakeLists.txt
+index 33c66082..53c47ce7 100644
+--- glib/CMakeLists.txt
++++ glib/CMakeLists.txt
+@@ -119,6 +119,7 @@ if (HAVE_INTROSPECTION AND BUILD_SHARED_LIBS)
+   include(GObjectIntrospectionMacros)
+   set(INTROSPECTION_GIRS)
+   set(INTROSPECTION_SCANNER_ARGS "--add-include-path=${CMAKE_CURRENT_SOURCE_DIR} --warn-all")
++  set(INTROSPECTION_SCANNER_ARGS "--library-path=${CMAKE_CURRENT_BINARY_DIR}")
+   set(INTROSPECTION_COMPILER_ARGS "--includedir=${CMAKE_CURRENT_SOURCE_DIR}")
+ 
+   set(introspection_files ${poppler_glib_SRCS} ${poppler_glib_public_headers})

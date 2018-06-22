@@ -48,6 +48,9 @@ depends_lib-append  port:bzip2 \
 configure.ldflags-append -liconv
 gobject_introspection yes
 
+# https://bugs.freedesktop.org/show_bug.cgi?id=106417
+patchfiles-append   patch-bug106417.diff
+
 compiler.blacklist  {gcc-4.0 < 5493}
 
 configure.args-append \
