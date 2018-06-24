@@ -3,7 +3,7 @@
 _realname=openimageio
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=1.8.11
+pkgver=1.8.12
 pkgrel=1
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
@@ -44,17 +44,19 @@ source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archi
         0006-fix-intrinistic-conflict.patch
         0007-find-pugixml.patch
         0008-find-openjpeg.patch
-        0009-msvcrt-dont-have-create-locale.patch)
-sha256sums=('5a4d4a5480569d94bcaf759d1afa729881c90a2c1a30a5603c278d74ed0cae7e'
+        0009-msvcrt-dont-have-create-locale.patch
+        0010-boost-python-find-harder.patch)
+sha256sums=('93e807d7c77a5c4c12598cc7932aa08239bc4198e3e31dca0998a3e0ab163386'
             '4787e771dbb9b794d47672a08fad3dbb0e36ac30e5c1058684437323b8238b37'
             'ab6bde02c0c05495a9cb13441535d42f4d5929bd930859d75f589d12be9a182b'
             'b7cc78d0f535ceb1aba68b11970c32ffbf04815d229b12e64e2c2c0b3403b4b2'
-            'd6cc0ddc30e484978a89bdd8e30bbe4dee7c82f178721e571d35991b361994cf'
+            '9fd7b36e7372df8238752596f9abe5cf2019ac14948dbad3f380793dc2ac155e'
             '3a73e95486a5a50685eed753f11c433bcf9f1b1a46947d6ae1350c8f68568536'
             'ced593b71fab9db63fc692173dfd7625c6812d18e5a6a69e872a746e0857358c'
             'b5db09ae6931dde76b94f09ce53b1684260a928d0af5920ae54520975b69d6d8'
             'c644153bd6dbca0eff5b70c0bc3241faae0eb90f1bb0cf1f502bb0553a73223e'
-            'd765b49b3671e9354776e33d68fc53e88c15b2c430e592a5aeae066d02a5b0da')
+            'd765b49b3671e9354776e33d68fc53e88c15b2c430e592a5aeae066d02a5b0da'
+            '215e80d109ce37f60d52bd157213e3557879a8b0bc1ff6d70f435bc11b8a60a7')
 
 prepare() {
   cd ${srcdir}/oiio-Release-${pkgver}
@@ -67,6 +69,7 @@ prepare() {
   patch -p1 -i ${srcdir}/0007-find-pugixml.patch
   patch -p1 -i ${srcdir}/0008-find-openjpeg.patch
   patch -p1 -i ${srcdir}/0009-msvcrt-dont-have-create-locale.patch
+  patch -p1 -i ${srcdir}/0010-boost-python-find-harder.patch
 }
 
 build() {
