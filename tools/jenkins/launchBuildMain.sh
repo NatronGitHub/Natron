@@ -365,9 +365,9 @@ if [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
 
 
     # add breakpad
-    cd "$TMP_PATH/Natron"
-    rm -rf CrashReporter* BreakpadClient google-breakpad || true
-    cp -a "$CWD/../Breakpad/CrashReporter"* "$CWD/../Breakpad/BreakpadClient" "$CWD/../Breakpad/google-breakpad" "$CWD/../Breakpad/breakpadclient.pri" "$CWD/../Breakpad/breakpadpro.pri" .
+    #cd "$TMP_PATH/Natron"
+    #rm -rf CrashReporter* BreakpadClient google-breakpad || true
+    #cp -a "$CWD/../Breakpad/CrashReporter"* "$CWD/../Breakpad/BreakpadClient" "$CWD/../Breakpad/google-breakpad" "$CWD/../Breakpad/breakpadclient.pri" "$CWD/../Breakpad/breakpadpro.pri" .
     fi
     cd "$CWD"
 fi
