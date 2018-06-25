@@ -77,12 +77,14 @@ if [ "$NATRON_BUILD_CONFIG" = "SNAPSHOT" ]; then
     REMOTE_PATH="${REMOTE_PREFIX}/snapshots"
     APP_INSTALL_SUFFIX="Natron-snapshot"
     APP_ADMIN_INSTALL_SUFFIX="$APP_INSTALL_SUFFIX"
-elif [ "$NATRON_BUILD_CONFIG" = "RELEASE" ]; then
+elif [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABLE" ]; then
     REMOTE_PATH="${REMOTE_PREFIX}/releases"
     APP_INSTALL_SUFFIX="Natron-${NATRON_VERSION_FULL}"
     APP_ADMIN_INSTALL_SUFFIX="$APP_INSTALL_SUFFIX"
 else
     REMOTE_PATH="${REMOTE_PREFIX}/other_builds"
+    APP_INSTALL_SUFFIX="Natron"
+    APP_ADMIN_INSTALL_SUFFIX="$APP_INSTALL_SUFFIX"
 fi
 
 REMOTE_PROJECT_PATH="$REMOTE_PATH/$PKGOS/$BITS/$BUILD_NAME"
@@ -93,7 +95,7 @@ INSTALLER_XML_DATE=$(date "+%Y-%m-%d")
 
 # tag symbols we want to keep with 'release'
 VERSION_TAG=$CURRENT_DATE
-if [ "$NATRON_BUILD_CONFIG" = "RELEASE" ]; then
+if [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABLE" ]; then
     BPAD_TAG="-release"
     VERSION_TAG=$NATRON_VERSION_FULL
 fi
@@ -603,7 +605,7 @@ fi
 # Build native packages for linux
 
 
-if [ "$BUILD_TYPE" = "RELEASE" ] && [ "$DISABLE_RPM_DEB_PKGS" != "1" ]; then
+if ( [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABLE" ] ) && [ "$DISABLE_RPM_DEB_PKGS" != "1" ]; then
     # rpm
     mkdir -p "$BUILD_ARCHIVE_DIRECTORY/$RPM_INSTALL_DIR"
 
