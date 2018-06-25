@@ -5,8 +5,8 @@
 _realname=ffmpeg
 pkgbase="mingw-w64-${_realname}"
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=4.0
-pkgrel=4
+pkgver=4.0.1
+pkgrel=1
 pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
 arch=('any')
 url="https://ffmpeg.org/"
@@ -46,7 +46,7 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-aom")
 source=(https://ffmpeg.org/releases/${_realname}-${pkgver}.tar.xz{,.asc})
 validpgpkeys=('FCF986EA15E6E293A5644F10B4322F04D67658D8')
-sha256sums=('ed945daf40b124e77a685893cc025d086f638bc703183460aff49508edb3a43f'
+sha256sums=('605f5c01c60db35d3b617a79cabb2c7032412be243554602eeed1b628125c0ee'
             'SKIP')
 
 prepare() {

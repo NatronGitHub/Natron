@@ -24,7 +24,7 @@ else
 fi
 
 pkgver=4.8.7
-pkgrel=4
+pkgrel=5
 arch=('any')
 url='https://www.qt.io/'
 install=qt4-${CARCH}.install
@@ -73,30 +73,31 @@ groups=("${MINGW_PACKAGE_PREFIX}-qt4")
 options=('!strip' 'staticlibs')
 _pkgfqn="qt-everywhere-opensource-src-${pkgver}"
 source=("https://download.qt.io/official_releases/qt/${pkgver%.*}/${pkgver}/${_pkgfqn}.tar.gz"
-        qt-4.6-demo-plugandpaint.patch
-        qt-4.8.0-fix-include-windows-h.patch
-        qt-4.8.0-fix-javascript-jit-on-mingw-x86_64.patch
-        qt-4.8.0-fix-mysql-driver-build.patch
-        qt-4.8.0-no-webkit-tests.patch
-        qt-4.8.0-use-fbclient-instead-gds32.patch
-        qt-4.8.1-fix-activeqt-compilation.patch
-        qt-4.8.1-linguist_qmake-qt4.patch
-        qt-4.8.3-assistant-4.8.2+gcc-4.7.patch
-        qt-4.8.3-qmake-cmd-mkdir-slash-direction.patch
-        qt-4.8.5-dont-set-qt-dll-define-for-static-builds.patch
-        qt-4.8.x-win32-g++-mkspec-optimization.patch
-        qt4-merge-static-and-shared-library-trees.patch
-        qt4-use-correct-pkg-config-static-flags.patch
-        qt4-fix-linking-against-static-dbus.patch
-        qt-4.8.6-use-force-with-shell-commands.patch
-        qt-4-8-makefile_generator_gen_pkgconfig_fix_mingw.patch
-        qt-4.8.7-dont-add-resource-files-to-qmake-libs.patch
-        qt4-build-debug-qmake.patch
-        qt-4.8.7-mingw-configure.patch
-        qt-4.8.7-mingw-unix-tests.patch
-        qt-4.8.7-MinGW-w64-fix-qmng-define-MNG_USE_DLL-and-use-MNG_DECL.patch
-        qt-4.8.5-qmake-implib.patch
-        qt-4.8.7-fix-testcon-static-compile.patch)
+        0001-qt-4.6-demo-plugandpaint.patch
+        0002-qt-4.8.0-fix-include-windows-h.patch
+        0003-qt-4.8.0-fix-javascript-jit-on-mingw-x86_64.patch
+        0004-qt-4.8.0-fix-mysql-driver-build.patch
+        0005-qt-4.8.0-no-webkit-tests.patch
+        0006-qt-4.8.0-use-fbclient-instead-gds32.patch
+        0007-qt-4.8.1-fix-activeqt-compilation.patch
+        0008-qt-4.8.3-assistant-4.8.2+gcc-4.7.patch
+        0009-qt-4.8.3-qmake-cmd-mkdir-slash-direction.patch
+        0010-qt-4.8.5-dont-set-qt-dll-define-for-static-builds.patch
+        0011-qt4-merge-static-and-shared-library-trees.patch
+        0012-qt4-use-correct-pkg-config-static-flags.patch
+        0013-qt4-fix-linking-against-static-dbus.patch
+        0014-qt-4.8.6-use-force-with-shell-commands.patch
+        0015-qt-4-8-makefile_generator_gen_pkgconfig_fix_mingw.patch
+        0016-qt-4.8.7-dont-add-resource-files-to-qmake-libs.patch
+        0017-qt-4.8.7-mingw-configure.patch
+        0018-qt-4.8.7-mingw-unix-tests.patch
+        0019-qt-4.8.7-MinGW-w64-fix-qmng-define-MNG_USE_DLL-and-use-MNG_DECL.patch
+        0020-qt-4.8.5-qmake-implib.patch
+        0021-qt-4.8.7-fix-testcon-static-compile.patch
+        0030-moc-boost-workaround.patch
+        0031-qt4-gcc6.patch
+        0032-qt4-icu59.patch
+        0100-qt4-build-debug-qmake.patch)
 sha256sums=('e2882295097e47fe089f8ac741a95fef47e0a73a3f3cdf21b56990638f626ea0'
             'e7c8fccf933dfee061b2960b5754e4835e7cb87c0e36166d3b11d69632732215'
             '5e6a61ced784d7d24c65d81e769b67b8f6066a33581c8b17cdf374a4c723cd23'
@@ -105,52 +106,54 @@ sha256sums=('e2882295097e47fe089f8ac741a95fef47e0a73a3f3cdf21b56990638f626ea0'
             '1e0eb85e1a88438ee1f99b5d27b775bf7d077bebf5de2e57fe831d0e39ce6df1'
             '8346737d3924598c1197202f8fcaa5cad4a5b81c2947797221357992b25260bd'
             '45cd7287a2b51a31a1e89831f4ac71aa933d504f05c780185319b91247116db5'
-            '1a9662fe9cf5f78dffde0d5bc6f797c9c1d8962ffb60bb6daa5335b35ad76c1f'
             '32e5e4cf899bbd4387c8c3633e51739b8e839ff2626b8386ea6153ae2408ead2'
             'ebd267ec82e718516cf8fb6d14035ae1b6e251d80ccef098f1514bd7599a9cb0'
             '1402443bca2ae19e983b8bbc3349c7c5d9f3f7ea53e88e339225737e76d38a64'
-            'ddc4c820aab244305ed727ce12c84991383294429bb32c91d864ddb97a87727f'
             '1f20dc102fa126f585e2fc84eb96bfe9ca617c4e475eb11f438ebcaa1cdce3d5'
             '723bcb7b17cf71bde47d223646de22b0dec715055b4a9306eb8fbf7023731f61'
             'c1084a627ec116c59ba91ed5729a7522ec82bb50457dc080161f414e6bb7d48f'
             'c9f09112daf40f5b896035d06eb71ead68db30197b8b4fcfbee6d3fcc895a7f4'
             'db6a5287c23e48c12bf1869eda7e9dd4482526df3202a78343697afa73a6ee5e'
             'e5d18b22410dedd75341edcaeb4cb32458c467d22459c754fb5c0ee711d4bb5b'
-            'e19a32b9dc050b3a605a6a5cb40fc3da8d8167ef240c105bb0737cc8bebadceb'
             '0bb41f9ddccbf5a649ffd73c1675ac3cbe7b05698abd875205ffe4f6e24913de'
             '00bc046d0c5de7bbb30d87c4fa76a0e699bb0f65bd262e5e4f4a753c46d6e757'
             'e0565cf9b3e54bbb030e478a93181314de88bebcd3bb25cbe8e597fbc5032e09'
             'e77b682e3728b835fe36d9dc48ab8c7472aed6d2ecf95a38219db95152602b32'
-            'ddee93f387730551b5f8f6f468f97c5e6fd9b43a21458171ebd7ed0e9a909043')
+            'ddee93f387730551b5f8f6f468f97c5e6fd9b43a21458171ebd7ed0e9a909043'
+            '62bc20838da22d832c550b9d38f98afb8fa4874915466945ea320575e264869a'
+            '51da49e41edac66559d3ec8dd0a152995a51a53e5d1f63f09fa089a8af7e3112'
+            '61d6bf45649c728dec5f8d22be5b496ed9d40f52c2c70102696d07133cd1750d'
+            'e19a32b9dc050b3a605a6a5cb40fc3da8d8167ef240c105bb0737cc8bebadceb')
 
 prepare() {
   cd ${srcdir}/${_pkgfqn}
-  patch -p1 -i ${srcdir}/qt-4.6-demo-plugandpaint.patch
-  patch -p1 -i ${srcdir}/qt-4.8.0-fix-include-windows-h.patch
-  patch -p1 -i ${srcdir}/qt-4.8.0-fix-javascript-jit-on-mingw-x86_64.patch
-  patch -p1 -i ${srcdir}/qt-4.8.0-fix-mysql-driver-build.patch
-  patch -p1 -i ${srcdir}/qt-4.8.0-no-webkit-tests.patch
-  patch -p1 -i ${srcdir}/qt-4.8.0-use-fbclient-instead-gds32.patch
-  patch -p1 -i ${srcdir}/qt-4.8.1-fix-activeqt-compilation.patch
-  #patch -p1 -i ${srcdir}/qt-4.8.1-linguist_qmake-qt4.patch
-  patch -p1 -i ${srcdir}/qt-4.8.3-assistant-4.8.2+gcc-4.7.patch
-  patch -p1 -i ${srcdir}/qt-4.8.3-qmake-cmd-mkdir-slash-direction.patch
-  patch -p1 -i ${srcdir}/qt-4.8.5-dont-set-qt-dll-define-for-static-builds.patch
-  #patch -p1 -i ${srcdir}/qt-4.8.x-win32-g++-mkspec-optimization.patch
-  patch -p1 -i ${srcdir}/qt4-merge-static-and-shared-library-trees.patch
-  patch -p1 -i ${srcdir}/qt4-use-correct-pkg-config-static-flags.patch
-  patch -p1 -i ${srcdir}/qt4-fix-linking-against-static-dbus.patch
-  patch -p1 -i ${srcdir}/qt-4.8.6-use-force-with-shell-commands.patch
-  patch -p1 -i ${srcdir}/qt-4-8-makefile_generator_gen_pkgconfig_fix_mingw.patch
-  patch -p1 -i ${srcdir}/qt-4.8.7-dont-add-resource-files-to-qmake-libs.patch
-  patch -p1 -i ${srcdir}/qt-4.8.7-mingw-configure.patch
-  patch -p1 -i ${srcdir}/qt-4.8.7-mingw-unix-tests.patch
-  patch -p1 -i ${srcdir}/qt-4.8.7-MinGW-w64-fix-qmng-define-MNG_USE_DLL-and-use-MNG_DECL.patch
-  patch -p2 -i ${srcdir}/qt-4.8.5-qmake-implib.patch
-  patch -p1 -i ${srcdir}/qt-4.8.7-fix-testcon-static-compile.patch
+  patch -p1 -i ${srcdir}/0001-qt-4.6-demo-plugandpaint.patch
+  patch -p1 -i ${srcdir}/0002-qt-4.8.0-fix-include-windows-h.patch
+  patch -p1 -i ${srcdir}/0003-qt-4.8.0-fix-javascript-jit-on-mingw-x86_64.patch
+  patch -p1 -i ${srcdir}/0004-qt-4.8.0-fix-mysql-driver-build.patch
+  patch -p1 -i ${srcdir}/0005-qt-4.8.0-no-webkit-tests.patch
+  patch -p1 -i ${srcdir}/0006-qt-4.8.0-use-fbclient-instead-gds32.patch
+  patch -p1 -i ${srcdir}/0007-qt-4.8.1-fix-activeqt-compilation.patch
+  patch -p1 -i ${srcdir}/0008-qt-4.8.3-assistant-4.8.2+gcc-4.7.patch
+  patch -p1 -i ${srcdir}/0009-qt-4.8.3-qmake-cmd-mkdir-slash-direction.patch
+  patch -p1 -i ${srcdir}/0010-qt-4.8.5-dont-set-qt-dll-define-for-static-builds.patch
+  patch -p1 -i ${srcdir}/0011-qt4-merge-static-and-shared-library-trees.patch
+  patch -p1 -i ${srcdir}/0012-qt4-use-correct-pkg-config-static-flags.patch
+  patch -p1 -i ${srcdir}/0013-qt4-fix-linking-against-static-dbus.patch
+  patch -p1 -i ${srcdir}/0014-qt-4.8.6-use-force-with-shell-commands.patch
+  patch -p1 -i ${srcdir}/0015-qt-4-8-makefile_generator_gen_pkgconfig_fix_mingw.patch
+  patch -p1 -i ${srcdir}/0016-qt-4.8.7-dont-add-resource-files-to-qmake-libs.patch
+  patch -p1 -i ${srcdir}/0017-qt-4.8.7-mingw-configure.patch
+  patch -p1 -i ${srcdir}/0018-qt-4.8.7-mingw-unix-tests.patch
+  patch -p1 -i ${srcdir}/0019-qt-4.8.7-MinGW-w64-fix-qmng-define-MNG_USE_DLL-and-use-MNG_DECL.patch
+  patch -p2 -i ${srcdir}/0020-qt-4.8.5-qmake-implib.patch
+  patch -p1 -i ${srcdir}/0021-qt-4.8.7-fix-testcon-static-compile.patch
+  patch -p1 -i ${srcdir}/0030-moc-boost-workaround.patch
+  patch -p1 -i ${srcdir}/0031-qt4-gcc6.patch
+  patch -p1 -i ${srcdir}/0032-qt4-icu59.patch
 
   if check_option "debug" "y"; then
-    patch -p1 -i ${srcdir}/qt4-build-debug-qmake.patch
+    patch -p1 -i ${srcdir}/0100-qt4-build-debug-qmake.patch
   fi
 
   #cd ${srcdir}
@@ -187,7 +190,7 @@ build() {
 
   local pkg_conf_inc="-I ${MINGW_PREFIX}/include/mariadb"
   #pkg_conf_inc=$(pkg-config --dont-define-prefix --cflags-only-I libxml-2.0 dbus-1)
-  export PATH=${srcdir}/${CARCH}/bin:${srcdir}/${CARCH}/lib:${PATH}
+  export PATH=${srcdir}/${_realname}-${pkgver}/bin:${srcdir}/${_realname}-${pkgver}/lib:${PATH}
 
   export CXXFLAGS="$CXXFLAGS -std=gnu++98"
   ./configure \

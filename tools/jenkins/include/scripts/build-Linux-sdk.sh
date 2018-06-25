@@ -984,7 +984,7 @@ fi
 
 # # Install libuv (for cmake)
 # # http://www.linuxfromscratch.org/blfs/view/svn/general/libuv.html
-# LIBUV_VERSION=1.20.3
+# LIBUV_VERSION=1.21.0
 # LIBUV_TAR="libuv-${LIBUV_VERSION}.tar.gz"
 # LIBUV_SITE="http://www.libuv.org/downloads"
 # if [ ! -s "$SDK_HOME/lib/pkgconfig/libuv.pc" ] || [ "$(pkg-config --modversion libuv)" != "$LIBUV_VERSION" ]; then
@@ -1030,7 +1030,7 @@ fi
 
 # Install icu
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/icu.html
-ICU_VERSION=61.1
+ICU_VERSION=62.1
 ICU_TAR="icu4c-${ICU_VERSION//./_}-src.tgz"
 ICU_SITE="http://download.icu-project.org/files/icu4c/${ICU_VERSION}"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/icu-i18n.pc" ] || [ "$(pkg-config --modversion icu-i18n)" != "$ICU_VERSION" ]; then
@@ -2065,7 +2065,7 @@ fi
 
 # Install poppler-glib (without curl, nss3, qt4, qt5)
 # see http://www.linuxfromscratch.org/blfs/view/stable/general/poppler.html
-POPPLER_VERSION=0.65.0
+POPPLER_VERSION=0.66.0
 POPPLER_TAR="poppler-${POPPLER_VERSION}.tar.xz"
 POPPLER_SITE="https://poppler.freedesktop.org"
 if [ "${REBUILD_POPPLER:-}" = "1" ]; then
