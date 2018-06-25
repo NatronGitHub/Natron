@@ -1,7 +1,6 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
 
 PortSystem          1.0
-PortGroup           compiler_blacklist_versions 1.0
 PortGroup           cxx11 1.1
 PortGroup           gobject_introspection 1.0
 PortGroup           cmake 1.1
@@ -47,8 +46,10 @@ depends_lib-append  port:bzip2 \
 
 configure.ldflags-append -liconv
 gobject_introspection yes
+configure.cxxflags-append -std=c++11
 
-compiler.blacklist  {gcc-4.0 < 5493}
+# https://bugs.freedesktop.org/show_bug.cgi?id=106417
+patchfiles-append   patch-bug106417.diff
 
 configure.args-append \
                     -DENABLE_XPDF_HEADERS=ON \

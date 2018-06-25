@@ -1,15 +1,15 @@
---- Portfile.orig	2017-08-07 17:15:37.000000000 +0200
-+++ Portfile	2017-09-14 19:15:44.000000000 +0200
-@@ -28,7 +28,7 @@
+--- Portfile.orig	2018-06-22 17:51:30.000000000 +0200
++++ Portfile	2018-06-22 17:52:10.000000000 +0200
+@@ -29,7 +29,7 @@
  }
  
  if {${subport} eq ${name}} {
--    revision 1
-+    revision 2
+-    #revision 0
++    revision 1
  
      depends_lib-append port:ilmbase
  
-@@ -60,8 +60,17 @@
+@@ -61,8 +61,17 @@
      # avoid "can't find a register in class 'BREG' while reloading 'asm'
      # see #51470 for MacPorts report
      # see https://github.com/openexr/openexr/issues/128 for upstream report
@@ -28,9 +28,9 @@
      }
  }
  
-@@ -71,6 +80,11 @@
-         rmd160  b1adb0c96eff6b3554ddaf8f8bafe2cba8c114e3 \
-         sha256  ecf815b60695555c1fbc73679e84c7c9902f4e8faa6e8000d2f905b8b86cedc7
+@@ -74,6 +83,11 @@
+         sha256  cac206e63be68136ef556c2b555df659f45098c159ce24804e9d5e9e0286609e \
+         size    573073
  
 +    depends_build   port:gsed
 +

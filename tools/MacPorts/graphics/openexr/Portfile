@@ -13,7 +13,7 @@ long_description \
     by Industrial Light & Magic for use in computer imaging applications.
 homepage        http://www.openexr.com
 platforms       darwin
-master_sites    http://savannah.nongnu.org/download/openexr
+master_sites    https://savannah.nongnu.org/download/openexr
 checksums       rmd160  eb2fbbefe1399d87a4a60807cb7386ed3b300eaa \
                 sha256  8f9a5af6131583404261931d9a5c83de0a425cb4b8b25ddab2b169fbf113aecd \
                 size    18176639
