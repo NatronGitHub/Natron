@@ -281,7 +281,7 @@ else
     LD_LIBRARY_PATH="$SDK_HOME/gcc/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 fi
 #export LD_RUN_PATH="$LD_LIBRARY_PATH"
-PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig"
+#PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig"
 BOOST_ROOT="$SDK_HOME"
 OPENJPEG_HOME="$SDK_HOME"
 THIRD_PARTY_TOOLS_HOME="$SDK_HOME"
@@ -291,8 +291,8 @@ PYTHON_INCLUDE="$SDK_HOME/include/python${PYVER}"
 export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 
 # Old Natron 2 version is 4.8.5
-GCC_VERSION=8.1.0
-#GCC_VERSION=7.3.0
+#GCC_VERSION=8.1.0 # GCC 8.1 breaks the timeline GUI on Linux, see https://github.com/NatronGitHub/Natron/issues/279
+GCC_VERSION=7.3.0
 #GCC_VERSION=5.4.0
 #GCC_VERSION=4.9.4
 GCC_TAR="gcc-${GCC_VERSION}.tar.gz"
@@ -348,7 +348,7 @@ if [ ! -s "$SDK_HOME/gcc-$GCC_VERSION/bin/gcc" ]; then
     make install
     popd #"gcc-$GCC_VERSION"
     rm -rf "gcc-$GCC_VERSION"
-    ln -sfnv "$SDK_HOME/gcc-${GCC_VERSION}" "$SDK_HOME/gcc"
+    ln -sfnv "gcc-${GCC_VERSION}" "$SDK_HOME/gcc"
     end_build "$GCC_TAR"
 fi
 
@@ -865,8 +865,8 @@ fi
 
 # Install libunistring (for gnutls)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libunistring.html
-LIBUNISTRING_VERSION=0.9.9
-LIBUNISTRING_VERSION_HEX=0x000909
+LIBUNISTRING_VERSION=0.9.10
+LIBUNISTRING_VERSION_HEX=0x00090A
 #LIBUNISTRING_VERSION_SHORT=${LIBUNISTRING_VERSION%.*}
 LIBUNISTRING_TAR="libunistring-${LIBUNISTRING_VERSION}.tar.gz"
 LIBUNISTRING_SITE="https://ftp.gnu.org/gnu/libunistring"
@@ -909,7 +909,7 @@ fi
 
 # Install p11-kit (for gnutls)
 # http://www.linuxfromscratch.org/blfs/view/svn/postlfs/p11-kit.html
-P11KIT_VERSION=0.23.10
+P11KIT_VERSION=0.23.12
 #P11KIT_VERSION_SHORT=${P11KIT_VERSION%.*}
 P11KIT_TAR="p11-kit-${P11KIT_VERSION}.tar.gz"
 P11KIT_SITE="https://github.com/p11-glue/p11-kit/releases/download/${P11KIT_VERSION}"
@@ -928,7 +928,7 @@ fi
 
 # Install gnutls (for ffmpeg)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/postlfs/gnutls.html
-GNUTLS_VERSION=3.6.1
+GNUTLS_VERSION=3.6.2
 GNUTLS_VERSION_SHORT=${GNUTLS_VERSION%.*}
 GNUTLS_TAR="gnutls-${GNUTLS_VERSION}.tar.xz"
 GNUTLS_SITE="ftp://ftp.gnupg.org/gcrypt/gnutls/v${GNUTLS_VERSION_SHORT}"
@@ -948,7 +948,7 @@ fi
 
 # Install curl
 # see http://www.linuxfromscratch.org/blfs/view/cvs/basicnet/curl.html
-CURL_VERSION=7.59.0
+CURL_VERSION=7.60.0
 CURL_TAR="curl-${CURL_VERSION}.tar.bz2"
 CURL_SITE="https://curl.haxx.se/download"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/libcurl.pc" ] || [ "$(pkg-config --modversion libcurl)" != "$CURL_VERSION" ]; then
@@ -984,7 +984,7 @@ fi
 
 # # Install libuv (for cmake)
 # # http://www.linuxfromscratch.org/blfs/view/svn/general/libuv.html
-# LIBUV_VERSION=1.19.1
+# LIBUV_VERSION=1.21.0
 # LIBUV_TAR="libuv-${LIBUV_VERSION}.tar.gz"
 # LIBUV_SITE="http://www.libuv.org/downloads"
 # if [ ! -s "$SDK_HOME/lib/pkgconfig/libuv.pc" ] || [ "$(pkg-config --modversion libuv)" != "$LIBUV_VERSION" ]; then
@@ -1011,7 +1011,7 @@ fi
 #       ^~
 # Since there is no way to disable libuv alone (--no-system-libuv unavailable in ./bootstrap),
 # we disable all system libs. Voilà!
-CMAKE_VERSION=3.11.1
+CMAKE_VERSION=3.11.4
 CMAKE_VERSION_SHORT=${CMAKE_VERSION%.*}
 CMAKE_TAR="cmake-${CMAKE_VERSION}.tar.gz"
 CMAKE_SITE="https://cmake.org/files/v${CMAKE_VERSION_SHORT}"
@@ -1030,7 +1030,7 @@ fi
 
 # Install icu
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/icu.html
-ICU_VERSION=61.1
+ICU_VERSION=62.1
 ICU_TAR="icu4c-${ICU_VERSION//./_}-src.tgz"
 ICU_SITE="http://download.icu-project.org/files/icu4c/${ICU_VERSION}"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/icu-i18n.pc" ] || [ "$(pkg-config --modversion icu-i18n)" != "$ICU_VERSION" ]; then
@@ -1067,8 +1067,8 @@ fi
 
 # Install sqlite (required for webkit and QtSql SQLite module, optional for python2)
 # see http://www.linuxfromscratch.org/blfs/view/svn/server/sqlite.html
-SQLITE_VERSION=3.23.1
-SQLITE_VERSION_INT=3230100
+SQLITE_VERSION=3.24.0
+SQLITE_VERSION_INT=3240000
 SQLITE_YEAR=2018
 SQLITE_TAR="sqlite-autoconf-${SQLITE_VERSION_INT}.tar.gz"
 SQLITE_SITE="https://sqlite.org/${SQLITE_YEAR}"
@@ -1151,7 +1151,7 @@ fi
 
 # Install PostgreSQL (for the Qt postgresql plugin and the python postgresql adapter)
 # see http://www.linuxfromscratch.org/blfs/view/svn/server/postgresql.html
-POSTGRESQL_VERSION=10.3
+POSTGRESQL_VERSION=10.4
 POSTGRESQL_TAR="postgresql-${POSTGRESQL_VERSION}.tar.bz2"
 POSTGRESQL_SITE="http://ftp.postgresql.org/pub/source/v${POSTGRESQL_VERSION}"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/libpq.pc" ] || [ "$(pkg-config --modversion libpq)" != "$POSTGRESQL_VERSION" ]; then
@@ -1402,6 +1402,7 @@ fi
 
 # Install glib
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html
+# We explicitely disable SElinux, see https://github.com/NatronGitHub/Natron/issues/265
 GLIB_VERSION=2.56.1
 if ! grep -F F_SETPIPE_SZ /usr/include/linux/fcntl.h &>/dev/null; then
     GLIB_VERSION=2.54.3
@@ -1418,7 +1419,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/glib-2.0.pc" ] || [ "$(pkg-config --modversio
     patch -Np1 -i "$INC_PATH/patches/glib/glib-2.56.0-skip_warnings-1.patch"
     # do not apply: we do not build with meson yet
     #patch -Np1 -i "$INC_PATH/patches/glib/glib-2.54.2-meson_fixes-1.patch"
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-gtk-doc-html --disable-static --enable-shared --with-pcre=system
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-selinux --disable-gtk-doc-html --disable-static --enable-shared --with-pcre=system
     make -j${MKJOBS}
     make install
     popd
@@ -1481,7 +1482,7 @@ fi
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/boost.html
 # TestImagePNG and TestImagePNGOIIO used to fail with boost 1.66.0, and succeed with boost 1.65.1,
 # but this should be fixed by https://github.com/NatronGitHub/Natron/commit/e360b4dd31a07147f2ad9073a773ff28714c2a69
-BOOST_VERSION=1.66.0
+BOOST_VERSION=1.67.0
 BOOST_LIB_VERSION=$(echo "${BOOST_VERSION//./_}" | sed -e 's/_0$//')
 BOOST_TAR="boost_${BOOST_VERSION//./_}.tar.bz2"
 BOOST_SITE="https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source"
@@ -1685,25 +1686,34 @@ fi
 
 # Install libraw
 # see http://www.at.linuxfromscratch.org/blfs/view/cvs/general/libraw.html
-LIBRAW_VERSION=0.18.10
+LIBRAW_VERSION=0.18.12
 LIBRAW_PACKS_VERSION="${LIBRAW_VERSION}"
 LIBRAW_PACKS_VERSION=0.18.8
 LIBRAW_TAR="LibRaw-${LIBRAW_VERSION}.tar.gz"
 LIBRAW_DEMOSAIC_PACK_GPL2="LibRaw-demosaic-pack-GPL2-${LIBRAW_PACKS_VERSION}.tar.gz"
+LIBRAW_DEMOSAIC_PACK_GPL3="LibRaw-demosaic-pack-GPL3-${LIBRAW_PACKS_VERSION}.tar.gz"
 LIBRAW_SITE="https://www.libraw.org/data"
 if [ "${REBUILD_LIBRAW:-}" = "1" ]; then
+    rm -rf "$SDK_HOME"/libraw-gpl3 || true
     rm -rf "$SDK_HOME"/libraw-gpl2 || true
-    rm -f "$SDK_HOME"/libraw-lgpl || true
+    rm -rf "$SDK_HOME"/libraw-lgpl || true
 fi
 if [ ! -s "$SDK_HOME/libraw-gpl2/lib/pkgconfig/libraw.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/libraw-gpl2/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion libraw)" != "$LIBRAW_VERSION" ]; then
     start_build "$LIBRAW_TAR"
     download "$LIBRAW_SITE" "$LIBRAW_TAR"
     download "$LIBRAW_SITE" "$LIBRAW_DEMOSAIC_PACK_GPL2"
+    download "$LIBRAW_SITE" "$LIBRAW_DEMOSAIC_PACK_GPL3"
     untar "$SRC_PATH/$LIBRAW_TAR"
     pushd "LibRaw-${LIBRAW_VERSION}"
     untar "$SRC_PATH/$LIBRAW_DEMOSAIC_PACK_GPL2"
+    untar "$SRC_PATH/$LIBRAW_DEMOSAIC_PACK_GPL3"
     LGPL_CONF_FLAGS=( --disable-static --enable-shared --enable-lcms --enable-jasper --enable-jpeg )
-    GPL2_CONF_FLAGS=( "${LGPL_CONF_FLAGS[@]}" --enable-demosaic-pack-gpl2 )
+    GPL2_CONF_FLAGS=( "${LGPL_CONF_FLAGS[@]}" --enable-demosaic-pack-gpl2 --disable-demosaic-pack-gpl3 )
+    GPL3_CONF_FLAGS=( "${LGPL_CONF_FLAGS[@]}" --enable-demosaic-pack-gpl2 --enable-demosaic-pack-gpl3 )
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS" ./configure --prefix="$SDK_HOME/libraw-gpl3" "${GPL3_CONF_FLAGS[@]}"
+    make -j${MKJOBS}
+    make install
+    make distclean
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS" ./configure --prefix="$SDK_HOME/libraw-gpl2" "${GPL2_CONF_FLAGS[@]}"
     make -j${MKJOBS}
     make install
@@ -1815,7 +1825,7 @@ fi
 
 # Install harbuzz
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/harfbuzz.html
-HARFBUZZ_VERSION=1.7.6
+HARFBUZZ_VERSION=1.8.1
 HARFBUZZ_TAR="harfbuzz-${HARFBUZZ_VERSION}.tar.bz2"
 HARFBUZZ_SITE="https://www.freedesktop.org/software/harfbuzz/release"
 if [ "${REBUILD_HARFBUZZ:-}" = "1" ]; then
@@ -1956,7 +1966,7 @@ fi
 
 # Install fftw (GPLv2, for openfx-gmic)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/fftw.html
-FFTW_VERSION=3.3.7
+FFTW_VERSION=3.3.8
 FFTW_TAR="fftw-${FFTW_VERSION}.tar.gz"
 FFTW_SITE="http://www.fftw.org/"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/fftw3.pc" ] || [ "$(pkg-config --modversion fftw3)" != "$FFTW_VERSION" ]; then
@@ -1984,7 +1994,7 @@ fi
 
 # Install ImageMagick6
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick6.html
-MAGICK_VERSION=6.9.9-43
+MAGICK_VERSION=6.9.10-1
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
 MAGICK_TAR="ImageMagick-${MAGICK_VERSION}.tar.xz"
 MAGICK_SITE="https://www.imagemagick.org/download/releases"
@@ -2011,7 +2021,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversio
 fi
 # install ImageMagick7
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick.html
-MAGICK7_VERSION=7.0.7-31
+MAGICK7_VERSION=7.0.8-1
 MAGICK7_VERSION_SHORT=${MAGICK7_VERSION%-*}
 MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.xz"
 if [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/magick7/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Magick++)" != "$MAGICK7_VERSION_SHORT" ]; then
@@ -2055,7 +2065,7 @@ fi
 
 # Install poppler-glib (without curl, nss3, qt4, qt5)
 # see http://www.linuxfromscratch.org/blfs/view/stable/general/poppler.html
-POPPLER_VERSION=0.64.0
+POPPLER_VERSION=0.66.0
 POPPLER_TAR="poppler-${POPPLER_VERSION}.tar.xz"
 POPPLER_SITE="https://poppler.freedesktop.org"
 if [ "${REBUILD_POPPLER:-}" = "1" ]; then
@@ -2090,7 +2100,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/poppler-glib.pc" ] || [ "$(pkg-config --modve
 fi
 
 # Install poppler-data
-POPPLERD_VERSION=0.4.8
+POPPLERD_VERSION=0.4.9
 POPPLERD_TAR="poppler-data-${POPPLERD_VERSION}.tar.gz"
 if [ ! -d "$SDK_HOME/share/poppler" ]; then
     start_build "$POPPLERD_TAR"
@@ -2231,8 +2241,8 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libwebp.pc" ] || [ "$(pkg-config --modversion
 fi
 
 # Install oiio
-#OIIO_VERSION=1.7.17
-OIIO_VERSION=1.8.11
+#OIIO_VERSION=1.7.19
+OIIO_VERSION=1.8.12
 OIIO_VERSION_SHORT=${OIIO_VERSION%.*}
 OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
 if [ "${REBUILD_OIIO:-}" = "1" ]; then
@@ -2259,8 +2269,7 @@ if [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; then
     if [[ ! "$GCC_VERSION" =~ ^4\. ]]; then
         OIIO_CMAKE_FLAGS+=( "-DUSE_CPP11:BOOL=FALSE" "-DUSE_CPP14:BOOL=FALSE" "-DUSE_CPP17:BOOL=FALSE" )
     fi
-    # Here we emphasis that we link against lib raw GPL2, but since it's dynamic linking it shouldn't be an issue
-    OIIO_CMAKE_FLAGS+=( "-DUSE_LIBRAW:BOOL=TRUE" "-DLIBRAW_PATH=$SDK_HOME/libraw-gpl2" "-DCMAKE_INSTALL_PREFIX=$SDK_HOME" )
+    OIIO_CMAKE_FLAGS+=( "-DUSE_LIBRAW:BOOL=TRUE" "-DCMAKE_INSTALL_PREFIX=$SDK_HOME" )
 
     mkdir build
     pushd build
@@ -2555,7 +2564,7 @@ fi
 # x265
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/x265.html
 # and https://git.archlinux.org/svntogit/packages.git/tree/trunk/PKGBUILD?h=packages/x265
-X265_VERSION=2.7
+X265_VERSION=2.8
 X265_TAR="x265_${X265_VERSION}.tar.gz"
 X265_SITE="https://bitbucket.org/multicoreware/x265/downloads"
 if [ "${REBUILD_X265:-}" = "1" ]; then
@@ -2684,7 +2693,7 @@ fi
 
 # Install fribidi (for libass and ffmpeg)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/fribidi.html
-FRIBIDI_VERSION=1.0.2
+FRIBIDI_VERSION=1.0.4
 FRIBIDI_TAR="fribidi-${FRIBIDI_VERSION}.tar.bz2"
 FRIBIDI_SITE="https://github.com/fribidi/fribidi/releases/download/v${FRIBIDI_VERSION}"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/fribidi.pc" ] || [ "$(pkg-config --modversion fribidi)" != "$FRIBIDI_VERSION" ]; then
@@ -2791,7 +2800,7 @@ fi
 
 # Install FFmpeg
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/ffmpeg.html
-FFMPEG_VERSION=4.0
+FFMPEG_VERSION=4.0.1
 FFMPEG_VERSION_LIBAVCODEC=58.18.100
 FFMPEG_TAR="ffmpeg-${FFMPEG_VERSION}.tar.bz2"
 FFMPEG_SITE="http://www.ffmpeg.org/releases"

@@ -154,6 +154,7 @@ Settings::initializeKnobsGeneral()
     _checkForUpdates->setHintToolTip( tr("When checked, %1 will check for new updates on start-up of the application.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _generalTab->addKnob(_checkForUpdates);
 
+#ifdef NATRON_USE_BREAKPAD
     _enableCrashReports = AppManager::createKnob<KnobBool>( this, tr("Enable crash reporting") );
     _enableCrashReports->setName("enableCrashReports");
     _enableCrashReports->setHintToolTip( tr("When checked, if %1 crashes a window will pop-up asking you "
@@ -171,7 +172,7 @@ Settings::initializeKnobsGeneral()
     _testCrashReportButton->setHintToolTip( tr("This button is for developers only to test whether the crash reporting system "
                                                "works correctly. Do not use this.") );
     _generalTab->addKnob(_testCrashReportButton);
-
+#endif
 
     _autoSaveDelay = AppManager::createKnob<KnobInt>( this, tr("Auto-save trigger delay") );
     _autoSaveDelay->setName("autoSaveDelay");
@@ -1430,7 +1431,9 @@ Settings::setDefaultValues()
 
     // General
     _checkForUpdates->setDefaultValue(false);
+#ifdef NATRON_USE_BREAKPAD
     _enableCrashReports->setDefaultValue(true);
+#endif
     _autoSaveUnSavedProjects->setDefaultValue(true);
     _autoSaveDelay->setDefaultValue(5, 0);
     _hostName->setDefaultValue(0);
@@ -2213,6 +2216,7 @@ Settings::tryLoadOpenColorIOConfig()
     return true;
 } // tryLoadOpenColorIOConfig
 
+#ifdef NATRON_USE_BREAKPAD
 inline
 void
 crash_application()
@@ -2223,6 +2227,7 @@ crash_application()
     // coverity[var_deref_op]
     *a = 1;
 }
+#endif
 
 bool
 Settings::onKnobValueChanged(KnobI* k,
@@ -2345,6 +2350,7 @@ Settings::onKnobValueChanged(KnobI* k,
         std::string hostName = _hostName->getActiveEntry().id;
         bool isCustom = hostName == NATRON_CUSTOM_HOST_NAME_ENTRY;
         _customHostName->setSecret(!isCustom);
+#ifdef NATRON_USE_BREAKPAD
     } else if ( ( k == _testCrashReportButton.get() ) && (reason == eValueChangedReasonUserEdited) ) {
         StandardButtonEnum reply = Dialogs::questionDialog( tr("Crash Test").toStdString(),
                                                             tr("You are about to make %1 crash to test the reporting system.\n"
@@ -2353,6 +2359,7 @@ Settings::onKnobValueChanged(KnobI* k,
         if (reply == eStandardButtonYes) {
             crash_application();
         }
+#endif
     } else if ( ( k == _scriptEditorFontChoice.get() ) || ( k == _scriptEditorFontSize.get() ) ) {
         appPTR->reloadScriptEditorFonts();
     } else if ( k == _pluginUseImageCopyForSource.get() ) {
@@ -2773,11 +2780,13 @@ Settings::setCheckUpdatesEnabled(bool enabled)
     saveSetting( _checkForUpdates.get() );
 }
 
+#ifdef NATRON_USE_BREAKPAD
 bool
 Settings::isCrashReportingEnabled() const
 {
     return _enableCrashReports->getValue();
 }
+#endif
 
 int
 Settings::getMaxPanelsOpened() const

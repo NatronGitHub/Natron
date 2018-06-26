@@ -56,8 +56,6 @@ INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../Global
 INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
-INCLUDEPATH += $$PWD/../google-breakpad/src
-
 # hoedown
 INCLUDEPATH += $$PWD/../libs/hoedown/src
 

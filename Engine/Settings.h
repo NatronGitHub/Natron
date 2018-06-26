@@ -184,7 +184,9 @@ public:
 
     void setCheckUpdatesEnabled(bool enabled);
 
+#ifdef NATRON_USE_BREAKPAD
     bool isCrashReportingEnabled() const;
+#endif
 
     int getMaxPanelsOpened() const;
 
@@ -418,8 +420,10 @@ private:
     // General
     KnobPagePtr _generalTab;
     KnobBoolPtr _checkForUpdates;
+#ifdef NATRON_USE_BREAKPAD
     KnobBoolPtr _enableCrashReports;
     KnobButtonPtr _testCrashReportButton;
+#endif
     KnobBoolPtr _autoSaveUnSavedProjects;
     KnobIntPtr _autoSaveDelay;
     KnobChoicePtr _hostName;

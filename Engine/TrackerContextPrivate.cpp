@@ -411,7 +411,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     {
         std::vector<ChoiceOption> choices;
         choices.push_back(ChoiceOption(kTrackerParamTransformTypeTransform, "", tr(kTrackerParamTransformTypeTransformHelp).toStdString()));
-        choices.push_back(ChoiceOption(kTrackerParamTransformTypeCornerPin, "", tr(kTrackerParamTransformTypeTransformHelp).toStdString()));
+        choices.push_back(ChoiceOption(kTrackerParamTransformTypeCornerPin, "", tr(kTrackerParamTransformTypeCornerPinHelp).toStdString()));
         transformTypeKnob->populateChoices(choices);
     }
     transformTypeKnob->setDefaultValue(1);
@@ -422,7 +422,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     referenceFrameKnob->setName(kTrackerParamReferenceFrame);
     referenceFrameKnob->setHintToolTip( tr(kTrackerParamReferenceFrameHint) );
     referenceFrameKnob->setAnimationEnabled(false);
-    referenceFrameKnob->setDefaultValue(0);
+    referenceFrameKnob->setDefaultValue(1);
     referenceFrameKnob->setAddNewLine(false);
     referenceFrameKnob->setEvaluateOnChange(false);
     transformPage->addKnob(referenceFrameKnob);
@@ -1648,7 +1648,7 @@ TrackerContextPrivate::computeTranslationFromNPoints(const bool dataSetIsManual,
                                                      Point* translation,
                                                      double *RMS)
 {
-    openMVG::Vec2 model;
+    openMVG::Vec2 model = openMVG::Vec2::Zero();
 
     searchForModel<openMVG::robust::Translation2DSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model, RMS);
     translation->x = model(0);
@@ -1669,7 +1669,7 @@ TrackerContextPrivate::computeSimilarityFromNPoints(const bool dataSetIsManual,
                                                     double* scale,
                                                     double *RMS)
 {
-    openMVG::Vec4 model;
+    openMVG::Vec4 model = openMVG::Vec4::Zero();
 
     searchForModel<openMVG::robust::Similarity2DSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model, RMS);
     openMVG::robust::Similarity2DSolver::rtsFromVec4(model, &translation->x, &translation->y, scale, rotate);
@@ -1688,7 +1688,7 @@ TrackerContextPrivate::computeHomographyFromNPoints(const bool dataSetIsManual,
                                                     Transform::Matrix3x3* homog,
                                                     double *RMS)
 {
-    openMVG::Mat3 model;
+    openMVG::Mat3 model = openMVG::Mat3::Zero();
 
 #ifdef DEBUG
     std::vector<bool> inliers;
@@ -1731,7 +1731,7 @@ TrackerContextPrivate::computeFundamentalFromNPoints(const bool dataSetIsManual,
                                                      Transform::Matrix3x3* fundamental,
                                                      double *RMS)
 {
-    openMVG::Mat3 model;
+    openMVG::Mat3 model = openMVG::Mat3::Zero();
 
     searchForModel<openMVG::robust::FundamentalSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model, RMS);
 
@@ -1759,6 +1759,7 @@ TrackerContextPrivate::extractSortedPointsFromMarkers(double refTime,
                                                       const std::vector<TrackMarkerPtr>& markers,
                                                       int jitterPeriod,
                                                       bool jitterAdd,
+                                                      const KnobDoublePtr& center,
                                                       std::vector<Point>* x1,
                                                       std::vector<Point>* x2)
 {
@@ -1769,6 +1770,17 @@ TrackerContextPrivate::extractSortedPointsFromMarkers(double refTime,
     int halfJitter = std::max(0, jitterPeriod / 2);
     // Prosac expects the points to be sorted by decreasing correlation score (increasing error)
     int pIndex = 0;
+    Point c1 = {0., 0.};
+    Point c2 = {0., 0.};
+    if (center) {
+        // The transform parameters are all computed with respect to the transform center.
+        // We must thus subtract the transform center before computation.
+        // See bug https://github.com/NatronGitHub/Natron/issues/289
+        c1.x = center->getValueAtTime(refTime, 0);
+        c1.y = center->getValueAtTime(refTime, 1);
+        c2.x = center->getValueAtTime(time, 0);
+        c2.y = center->getValueAtTime(time, 1);
+    }
     for (std::size_t i = 0; i < markers.size(); ++i) {
         KnobDoublePtr centerKnob = markers[i]->getCenterKnob();
         KnobDoublePtr errorKnob = markers[i]->getErrorKnob();
@@ -1781,10 +1793,10 @@ TrackerContextPrivate::extractSortedPointsFromMarkers(double refTime,
         PointWithError& perr = pointsWithErrors[pIndex];
 
         if (!useJitter) {
-            perr.p1.x = centerKnob->getValueAtTime(refTime, 0);
-            perr.p1.y = centerKnob->getValueAtTime(refTime, 1);
-            perr.p2.x = centerKnob->getValueAtTime(time, 0);
-            perr.p2.y = centerKnob->getValueAtTime(time, 1);
+            perr.p1.x = centerKnob->getValueAtTime(refTime, 0) - c1.x;
+            perr.p1.y = centerKnob->getValueAtTime(refTime, 1) - c1.y;
+            perr.p2.x = centerKnob->getValueAtTime(time, 0) - c2.x;
+            perr.p2.y = centerKnob->getValueAtTime(time, 1) - c2.y;
         } else {
             // Average halfJitter frames before and after refTime and time together to smooth the center
             std::vector<Point> x2PointJitter;
@@ -1793,6 +1805,10 @@ TrackerContextPrivate::extractSortedPointsFromMarkers(double refTime,
                 Point p;
                 p.x = centerKnob->getValueAtTime(t, 0);
                 p.y = centerKnob->getValueAtTime(t, 1);
+                if (center) {
+                    p.x -= center->getValueAtTime(t, 0);
+                    p.y -= center->getValueAtTime(t, 1);
+                }
                 x2PointJitter.push_back(p);
             }
             Point x2avg = {0, 0};
@@ -1805,16 +1821,16 @@ TrackerContextPrivate::extractSortedPointsFromMarkers(double refTime,
                 x2avg.y /= x2PointJitter.size();
             }
             if (!jitterAdd) {
-                perr.p1.x = centerKnob->getValueAtTime(time, 0);
-                perr.p1.y = centerKnob->getValueAtTime(time, 1);
+                perr.p1.x = centerKnob->getValueAtTime(time, 0) - c2.x;
+                perr.p1.y = centerKnob->getValueAtTime(time, 1) - c2.y;
                 perr.p2.x = x2avg.x;
                 perr.p2.y = x2avg.y;
             } else {
                 Point highFreqX2;
 
                 Point x2;
-                x2.x = centerKnob->getValueAtTime(time, 0);
-                x2.y = centerKnob->getValueAtTime(time, 1);
+                x2.x = centerKnob->getValueAtTime(time, 0) - c2.x;
+                x2.y = centerKnob->getValueAtTime(time, 1) - c2.y;
                 highFreqX2.x = x2.x - x2avg.x;
                 highFreqX2.y = x2.y - x2avg.y;
 
@@ -1870,7 +1886,7 @@ TrackerContextPrivate::computeTransformParamsFromTracksAtTime(double refTime,
     data.valid = true;
     assert( !markers.empty() );
     std::vector<Point> x1, x2;
-    extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, &x1, &x2);
+    extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, center.lock(), &x1, &x2);
     assert( x1.size() == x2.size() );
     if ( x1.empty() ) {
         data.valid = false;
@@ -1932,7 +1948,7 @@ TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime(double refTime,
     data.valid = true;
     assert( !markers.empty() );
     std::vector<Point> x1, x2;
-    extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, &x1, &x2);
+    extractSortedPointsFromMarkers(refTime, time, markers, jitterPeriod, jitterAdd, KnobDoublePtr(), &x1, &x2);
     assert( x1.size() == x2.size() );
     if ( x1.empty() ) {
         data.valid = false;
@@ -2484,41 +2500,66 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
             }
             tmpFittingErrorCurve.addKeyFrame(kf);
         }
-        if (smoothTJitter > 1) {
-            TranslateData avgT;
-            averageDataFunctor<QList<TransformData>::const_iterator, void, TranslateData>(validResults.begin(), validResults.end(), itResults, halfTJitter, 0, &avgT, 0);
-            KeyFrame kx(dataAtTime.time, avgT.p.x);
-            KeyFrame ky(dataAtTime.time, avgT.p.y);
-            tmpTXCurve.addKeyFrame(kx);
-            tmpTYCurve.addKeyFrame(ky);
+        if (!dataAtTime.hasRotationAndScale) {
+            // no rotation or scale: simply extract the translation
+            Point translation;
+            if (smoothTJitter > 1) {
+                TranslateData avgT;
+                averageDataFunctor<QList<TransformData>::const_iterator, void, TranslateData>(validResults.begin(), validResults.end(), itResults, halfTJitter, 0, &avgT, 0);
+                translation.x =  avgT.p.x;
+                translation.y =  avgT.p.y;
+            } else {
+                translation.x = dataAtTime.translation.x;
+                translation.y = dataAtTime.translation.y;
+            }
+            {
+                KeyFrame kx(dataAtTime.time, translation.x);
+                KeyFrame ky(dataAtTime.time, translation.y);
+                tmpTXCurve.addKeyFrame(kx);
+                tmpTYCurve.addKeyFrame(ky);
+            }
         } else {
-            KeyFrame kx(dataAtTime.time, dataAtTime.translation.x);
-            KeyFrame ky(dataAtTime.time, dataAtTime.translation.y);
-            tmpTXCurve.addKeyFrame(kx);
-            tmpTYCurve.addKeyFrame(ky);
-
-        }
-        if (dataAtTime.hasRotationAndScale) {
+            double rot = 0;
             if (smoothRJitter > 1) {
                 RotateData avgR;
                 averageDataFunctor<QList<TransformData>::const_iterator, void, RotateData>(validResults.begin(), validResults.end(), itResults, halfRJitter, 0, &avgR, 0);
-
-                KeyFrame k(dataAtTime.time, avgR.r);
-                tmpRotateCurve.addKeyFrame(k);
-
+                rot = avgR.r;
             } else {
-                KeyFrame k(dataAtTime.time, dataAtTime.rotation);
+                rot = dataAtTime.rotation;
+            }
+            {
+                KeyFrame k(dataAtTime.time, rot);
                 tmpRotateCurve.addKeyFrame(k);
             }
+            double scale;
             if (smoothSJitter > 1) {
                 ScaleData avgR;
                 averageDataFunctor<QList<TransformData>::const_iterator, void, ScaleData>(validResults.begin(), validResults.end(), itResults, halfSJitter, 0, &avgR, 0);
-                KeyFrame k(dataAtTime.time, avgR.s);
-                tmpScaleCurve.addKeyFrame(k);
-
+                scale = avgR.s;
             } else {
-                KeyFrame k(dataAtTime.time, dataAtTime.scale);
+                scale = dataAtTime.scale;
+            }
+            {
+                KeyFrame k(dataAtTime.time, scale);
                 tmpScaleCurve.addKeyFrame(k);
+            }
+            Point translation;
+            if (smoothTJitter > 1) {
+                // We smooth the raw translation, which is computed with a rotation and scale around (0,0).
+                // That's a bit wrong, but we don't care much at this stage.
+                TranslateData avgT;
+                averageDataFunctor<QList<TransformData>::const_iterator, void, TranslateData>(validResults.begin(), validResults.end(), itResults, halfTJitter, 0, &avgT, 0);
+                translation.x = avgT.p.x;
+                translation.y = avgT.p.y;
+            } else {
+                translation.x = dataAtTime.translation.x;
+                translation.y = dataAtTime.translation.y;
+            }
+            {
+                KeyFrame kx(dataAtTime.time, translation.x);
+                KeyFrame ky(dataAtTime.time, translation.y);
+                tmpTXCurve.addKeyFrame(kx);
+                tmpTYCurve.addKeyFrame(ky);
             }
         }
     } // for all samples

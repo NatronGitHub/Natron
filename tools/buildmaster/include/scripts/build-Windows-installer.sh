@@ -478,7 +478,8 @@ if [ "$NATRON_LICENSE" = "GPL" ]; then
         #libopencore-amrwb-0.dll # Apache 2 / GPL3
         libx264-152.dll
         libx265.dll
-        libx265_main10.dll
+        #libx265_main10.dll
+        libhdr10plus.dll
         xvidcore.dll
     )
 fi

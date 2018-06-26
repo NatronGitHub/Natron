@@ -1,18 +1,13 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
 
 PortSystem          1.0
-PortGroup           compiler_blacklist_versions 1.0
 PortGroup           cxx11 1.1
 PortGroup           gobject_introspection 1.0
-PortGroup           muniversal 1.0
-
-# version 0.58.0 includes C++11 extensions that break
-# build of a number of dependents (inkscape, texlive-bin, etc)
-# hold off on update until this is sorted out
+PortGroup           cmake 1.1
 
 name                poppler
 conflicts           xpdf-tools
-version             0.57.0
+version             0.65.0
 license             GPL-2+
 maintainers         {devans @dbevans} openmaintainer
 categories          graphics
@@ -26,12 +21,14 @@ master_sites        ${homepage}
 
 use_xz              yes
 
-checksums           rmd160  a535f7797241cf44b598ad8d60a05f5307afcd52 \
-                    sha256  0ea37de71b7db78212ebc79df59f99b66409a29c2eac4d882dae9f2397fe44d8
+checksums           rmd160  eeb55ce5f712287eeb01bd054df0033663a255ce \
+                    sha256  89c8cf73f83efda78c5a9bd37c28f4593ad0e8a51556dbe39ed81e1ae2dd8f07 \
+                    size    1451720
 
-depends_build       port:pkgconfig
+depends_build-append \
+                    port:pkgconfig
 
-depends_lib         port:bzip2 \
+depends_lib-append  port:bzip2 \
                     port:curl \
                     port:expat \
                     port:fontconfig \
@@ -40,54 +37,42 @@ depends_lib         port:bzip2 \
                     path:lib/pkgconfig/glib-2.0.pc:glib2 \
                     path:lib/pkgconfig/cairo.pc:cairo \
                     port:lcms2 \
+                    port:libiconv \
                     port:libpng \
                     port:openjpeg \
                     port:poppler-data \
                     port:tiff \
                     port:zlib
 
+configure.ldflags-append -liconv
 gobject_introspection yes
+configure.cxxflags-append -std=c++11
 
-# Generate newer libtool that passes -stdlib when linking dylibs.
-use_autoreconf      yes
-autoreconf.args     -fvi
+# https://bugs.freedesktop.org/show_bug.cgi?id=106417
+patchfiles-append   patch-bug106417.diff
 
-compiler.blacklist  {gcc-4.0 < 5493}
-
-configure.args      --disable-poppler-qt4 \
-                    --disable-poppler-qt5 \
-                    --disable-gtk-test \
-                    --disable-silent-rules \
-                    --disable-libnss \
-                    --enable-xpdf-headers \
-                    --enable-zlib \
-                    --enable-libcurl
-
-post-patch {
-    # clang: error: unknown argument: '-fno-check-new'
-    # Strip it out rather than --disable-compile-warnings
-    reinplace "s:-fno-check-new::g" ${worksrcpath}/configure.ac
-}
-
-# TODO:
-# add subport for poppler-qt4-x11 when qt4-x11 builds and port group qt4 allows
-
-subport poppler-qt4-mac {
-    PortGroup qt4 1.0
-
-    configure.env-append    MOCQT4=${qt_bins_dir}/moc
-    configure.args-delete   --disable-poppler-qt4
-}
+configure.args-append \
+                    -DENABLE_XPDF_HEADERS=ON \
+                    -DENABLE_QT5=OFF \
+                    -DBUILD_GTK_TESTS=OFF \
+                    -DBUILD_QT5_TESTS=OFF \
+                    -DBUILD_CPP_TESTS=OFF \
+                    -DWITH_NSS3=OFF
 
 subport poppler-qt5 {
     PortGroup qt5 1.0
 
+    patchfiles-append       patch-qt5-106118.diff
     configure.env-append    MOCQT5=${qt_bins_dir}/moc
-    configure.args-delete   --disable-poppler-qt5
+    configure.args-delete   -DENABLE_QT5=OFF
+    configure.args-delete   -DENABLE_XPDF_HEADERS=ON
+    configure.args-append   -DENABLE_UTILS=OFF
+    configure.args-append   -DENABLE_CPP=OFF
+    configure.args-append   -DENABLE_GLIB=OFF
 
-    # avoid:
-    #    ${prefix}/libexec/qt5/include/QtCore/qbasicatomic.h:61:4: error: "Qt requires C++11 support"
-    configure.cxxflags-append -std=c++11
+    post-destroot {
+        file delete ${destroot}${prefix}/lib/pkgconfig/poppler-cairo.pc
+    }
 }
 
 if {${subport} ne ${name}} {
@@ -99,10 +84,6 @@ if {${subport} ne ${name}} {
         system -W ${workpath} "${prefix}/bin/git clone --depth=1 http://anongit.freedesktop.org/git/poppler/test"
     }
 
-    configure.args-append   --disable-cairo-output \
-                            --disable-poppler-glib \
-                            --disable-poppler-cpp \
-                            --disable-utils
 
 # currently poppler only provides unit tests for the Qt wrappers
 

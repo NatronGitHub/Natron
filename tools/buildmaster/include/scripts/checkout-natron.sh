@@ -190,8 +190,8 @@ fi
 ln -sf "$OCIO_CONFIGS_DIR" OpenColorIO-Configs
 
 # add breakpad
-rm -rf CrashReporter* BreakpadClient google-breakpad || true
-cp -a "$CWD/../Breakpad/CrashReporter"* "$CWD/../Breakpad/BreakpadClient" "$CWD/../Breakpad/google-breakpad" "$CWD/../Breakpad/breakpadclient.pri" "$CWD/../Breakpad/breakpadpro.pri" .
+#rm -rf CrashReporter* BreakpadClient google-breakpad || true
+#cp -a "$CWD/../Breakpad/CrashReporter"* "$CWD/../Breakpad/BreakpadClient" "$CWD/../Breakpad/google-breakpad" "$CWD/../Breakpad/breakpadclient.pri" "$CWD/../Breakpad/breakpadpro.pri" .
 
 # Get commit
 REL_GIT_VERSION=$(git log|head -1|awk '{print $2}')

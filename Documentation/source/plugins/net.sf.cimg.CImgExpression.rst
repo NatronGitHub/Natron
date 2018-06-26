@@ -121,7 +121,7 @@ Expression language
       -  ’\ ``debug(expression)`` prints detailed debug information about the sequence of operations done by the math parser to evaluate the expression (and returns its value).
       -  ‘``display(_X,_w,_h,_d,_s)`` or’\ ``display(#ind)`` display the contents of the vector ‘``X``’ (or specified image) and wait for user events. if no arguments are provided, a memory snapshot of the math parser environment is displayed instead.
       -  ‘``init(expression)`` and’\ ``end(expression)`` evaluates the specified expressions only once, respectively at the beginning and end of the evaluation procedure, and this, even when multiple evaluations are required (e.g. in ‘``fill init(foo=0);++foo``’).
-      -  ‘``copy(dest,src,_nb_elts,_inc_d,_inc_s,_opacity)`` copies an entire memory block of’\ ``nb_elts``\ ‘elements starting from a source value’\ ``src``\ ‘to a specified destination’\ ``dest``\ ‘, with increments defined by’\ ``inc_d``\ ‘and’\ ``inc_s``\ ’ respectively for the destination and source pointers.
+      -  ‘``copy(dest,src,_nb_elts,_inc_d,_inc_s,_opacity)`` copies an entire memory block of’\ ``nb_elts``\ ’ elements starting from a source value ‘``src``’ to a specified destination ‘``dest``’, with increments defined by ‘``inc_d``’ and ‘``inc_s``’ respectively for the destination and source pointers.
       -  ’\ ``unref(a,b,...)`` destroys references to the named variable given as arguments.
       -  ’\ ``stats(_#ind)`` returns the statistics vector of the running image **[ind]**, i.e the vector **[ im,iM,ia,iv,xm,ym,zm,cm,xM,yM,zM,cM,is,ip ]** (14 values).
       -  ’\ ``_(expr)`` just ignores its arguments (mainly useful for debugging).

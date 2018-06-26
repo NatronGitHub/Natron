@@ -130,8 +130,7 @@ On macOS Sierra, install the sierra-compatible recipe (to be used only in Sierra
 
 Then install pyside (the boneyard tap is for pyside, which does not yet build with Qt5 and was thus removed from the homebrew core):
 
-    brew tap homebrew/boneyard
-    brew install pyside sphinx-doc
+    brew install pyside@1.2 pyside-tools@1.2
 
 The last command above will take a while, since it builds from sources, and should finally tell you do do the following if the `homebrew.pth` file does not exist:
 
@@ -193,10 +192,10 @@ And install (after making sure `/opt/qt4` is user-writable) using:
 ### Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
+to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz).
 Place it at the root of Natron source tree:
 
-    curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz | tar zxf -
+    curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz | tar zxf -
     mv OpenColorIO-Configs-Natron-v2.1 OpenColorIO-Configs
 
 
@@ -225,15 +224,17 @@ cat > config.pri << EOF
 boost: INCLUDEPATH += /opt/local/include
 boost: LIBS += -L/opt/local/lib -lboost_serialization-mt
 macx:openmp {
-  QMAKE_CC=/opt/local/bin/clang-mp-5.0
-  QMAKE_CXX=/opt/local/bin/clang++-mp-5.0
+  QMAKE_CC=/opt/local/bin/clang-mp-6.0
+  QMAKE_CXX=/opt/local/bin/clang++-mp-6.0
+  QMAKE_OBJECTIVE_CC=$$QMAKE_CC -stdlib=libc++
+  QMAKE_LINK=$$QMAKE_CXX
   
   INCLUDEPATH += /opt/local/include/libomp
   LIBS += -L/opt/local/lib/libomp -liomp5
   cc_setting.name = CC
-  cc_setting.value = /opt/local/bin/clang-mp-5.0
+  cc_setting.value = /opt/local/bin/clang-mp-6.0
   cxx_setting.name = CXX
-  cxx_setting.value = /opt/local/bin/clang++-mp-5.0
+  cxx_setting.value = /opt/local/bin/clang++-mp-6.0
   QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting
   QMAKE_FLAGS = "-B /usr/bin"
 
@@ -260,7 +261,9 @@ expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
 macx:openmp {
   QMAKE_CC=/usr/local/opt/llvm/bin/clang
   QMAKE_CXX=/usr/local/opt/llvm/bin/clang++
-
+  QMAKE_OBJECTIVE_CC=$$QMAKE_CC -stdlib=libc++
+  QMAKE_LINK=$$QMAKE_CXX
+  
   LIBS += -L/usr/local/opt/llvm/lib -liomp5
   cc_setting.name = CC
   cc_setting.value = /usr/local/opt/llvm/bin/clang

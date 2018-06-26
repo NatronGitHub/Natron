@@ -212,7 +212,7 @@ else
         NATRON_BUILD_CONFIG="$NATRON_DEV_STATUS"
         setBuildOption "NATRON_BUILD_CONFIG" "$NATRON_DEV_STATUS"
         setBuildOption "NATRON_BUILD_NUMBER" "$NATRON_BUILD_NUMBER"
-        setBuildOption "NATRON_CUSTOM_BUILD_USER_NAME" "$NATRON_CUSTOM_BUILD_USER_NAME"
+        setBuildOption "NATRON_CUSTOM_BUILD_USER_NAME" "${NATRON_CUSTOM_BUILD_USER_NAME:-}"
     elif [ ! -z "${SNAPSHOT_COMMIT:-}" ] || [ ! -z "${SNAPSHOT_BRANCH:-}" ]; then
         TYPE="SNAPSHOT"
         NATRON_BUILD_CONFIG="SNAPSHOT"
@@ -266,15 +266,15 @@ if [ "$TYPE" = "RELEASE" ]; then
     GIT_BRANCH="tags/${RELEASE_TAG:-}"
     setBuildOption "NATRON_GIT_BRANCH" "$GIT_BRANCH"
     setBuildOption "NATRON_GIT_COMMIT" ""
-    setBuildOption "OPENFX_IO_GIT_BRANCH" "tags/Natron-$NATRON_RELEASE_TAG"
+    setBuildOption "OPENFX_IO_GIT_BRANCH" "tags/Natron-$RELEASE_TAG"
     setBuildOption "OPENFX_IO_GIT_COMMIT" ""
-    setBuildOption "OPENFX_MISC_GIT_BRANCH" "tags/Natron-$NATRON_RELEASE_TAG"
+    setBuildOption "OPENFX_MISC_GIT_BRANCH" "tags/Natron-$RELEASE_TAG"
     setBuildOption "OPENFX_MISC_GIT_COMMIT" ""
-    setBuildOption "OPENFX_ARENA_GIT_BRANCH" "tags/Natron-$NATRON_RELEASE_TAG"
+    setBuildOption "OPENFX_ARENA_GIT_BRANCH" "tags/Natron-$RELEASE_TAG"
     setBuildOption "OPENFX_ARENA_GIT_COMMIT" ""
-    setBuildOption "OPENFX_GMIC_GIT_BRANCH" "tags/Natron-$NATRON_RELEASE_TAG"
+    setBuildOption "OPENFX_GMIC_GIT_BRANCH" "tags/Natron-$RELEASE_TAG"
     setBuildOption "OPENFX_GMIC_GIT_COMMIT" ""
-    setBuildOption "OPENFX_OPENCV_GIT_BRANCH" "tags/Natron-$NATRON_RELEASE_TAG"
+    setBuildOption "OPENFX_OPENCV_GIT_BRANCH" "tags/Natron-$RELEASE_TAG"
     setBuildOption "OPENFX_OPENCV_GIT_COMMIT" ""
 elif [ "$TYPE" = "SNAPSHOT" ] || [ "$TYPE" = "NATRON_CI" ]; then
     # Use the user defined variables
@@ -365,9 +365,9 @@ if [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
 
 
     # add breakpad
-    cd "$TMP_PATH/Natron"
-    rm -rf CrashReporter* BreakpadClient google-breakpad || true
-    cp -a "$CWD/../Breakpad/CrashReporter"* "$CWD/../Breakpad/BreakpadClient" "$CWD/../Breakpad/google-breakpad" "$CWD/../Breakpad/breakpadclient.pri" "$CWD/../Breakpad/breakpadpro.pri" .
+    #cd "$TMP_PATH/Natron"
+    #rm -rf CrashReporter* BreakpadClient google-breakpad || true
+    #cp -a "$CWD/../Breakpad/CrashReporter"* "$CWD/../Breakpad/BreakpadClient" "$CWD/../Breakpad/google-breakpad" "$CWD/../Breakpad/breakpadclient.pri" "$CWD/../Breakpad/breakpadpro.pri" .
     fi
     cd "$CWD"
 fi
@@ -402,13 +402,13 @@ updateBuildOptions
 
 NATRON_VERSION_STRING=""
 if [ "$NATRON_BUILD_CONFIG" = "ALPHA" ]; then
-    NATRON_VERSION_STRING=$NATRON_VERSION_FULL-alpha-$NATRON_BUILD_NUMBER
+    NATRON_VERSION_STRING="${NATRON_VERSION_FULL}-alpha-$NATRON_BUILD_NUMBER"
 elif [ "$NATRON_BUILD_CONFIG" = "BETA" ]; then
-    NATRON_VERSION_STRING=$NATRON_VERSION_FULL-beta-$NATRON_BUILD_NUMBER
+    NATRON_VERSION_STRING="${NATRON_VERSION_FULL}-beta-$NATRON_BUILD_NUMBER"
 elif [ "$NATRON_BUILD_CONFIG" = "RC" ]; then
-    NATRON_VERSION_STRING=$NATRON_VERSION_FULL-RC$NATRON_BUILD_NUMBER
+    NATRON_VERSION_STRING="$NATRON_VERSION_FULL-RC$NATRON_BUILD_NUMBER"
 elif [ "$NATRON_BUILD_CONFIG" = "STABLE" ]; then
-    NATRON_VERSION_STRING=$NATRON_VERSION_NUMBER
+    NATRON_VERSION_STRING="$RELEASE_TAG"
 elif [ "$NATRON_BUILD_CONFIG" = "CUSTOM" ]; then
     NATRON_VERSION_STRING="$NATRON_CUSTOM_BUILD_USER_NAME"
 elif [ "$NATRON_BUILD_CONFIG" = "SNAPSHOT" ]; then

@@ -551,7 +551,8 @@ fi
 
 SPHINX_BIN=""
 if [ "$PKGOS" = "Windows" ]; then
-    SPHINX_BIN="sphinx-build2.exe"
+    #SPHINX_BIN="sphinx-build2.exe" # fails with 'failed to create process (\mingw64\bin\python2.exe "C:\msys64\mingw64\bin\sphinx-build2-script.py").'
+    SPHINX_BIN="sphinx-build2-script.py"
 elif [ "$PKGOS" = "OSX" ]; then
     SPHINX_BIN="sphinx-build-${PYVER}"
 else

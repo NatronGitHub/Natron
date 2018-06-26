@@ -5,7 +5,7 @@ PortGroup           muniversal 1.0
 
 name                ghostscript
 version             9.23
-revision            2
+revision            3
 categories          print
 license             AGPL-3 BSD
 maintainers         nomaintainer
@@ -161,5 +161,5 @@ variant cups description {Enable CUPS driver} {
 default_variants    +x11
 
 livecheck.type      regex
-livecheck.url       ${homepage}Releases.html
+livecheck.url       ${homepage}releases.html
 livecheck.regex     ">Ghostscript (\\d+(?:\\.\\d+)*)<"

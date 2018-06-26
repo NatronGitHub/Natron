@@ -5,9 +5,9 @@ PortGroup select 1.0
 PortGroup compiler_blacklist_versions 1.0
 
 name                gcc5
-
 epoch               2
 version             5.5.0
+revision            1
 platforms           darwin
 categories          lang
 maintainers         nomaintainer
@@ -17,7 +17,7 @@ description         The GNU compiler collection
 long_description    The GNU compiler collection, including front ends for \
                     C, C++, Objective-C, Objective-C++, Fortran and Java.
 
-homepage            http://gcc.gnu.org/
+homepage            https://gcc.gnu.org/
 master_sites        ftp://ftp.funet.fi/pub/mirrors/sources.redhat.com/pub/gcc/releases/gcc-${version}/:gcc \
                     ftp://ftp.gwdg.de/pub/linux/gcc/releases/gcc-${version}/:gcc \
                     ftp://gcc.ftp.nluug.nl/mirror/languages/gcc/releases/gcc-${version}/:gcc \
@@ -25,7 +25,7 @@ master_sites        ftp://ftp.funet.fi/pub/mirrors/sources.redhat.com/pub/gcc/re
                     gnu:gcc/gcc-${version}:gcc \
                     ftp://sourceware.org/pub/java/:ecj \
                     http://mirrors.kernel.org/sources.redhat.com/java/:ecj \
-                    http://www.mirrorservice.org/sites/sources.redhat.com/pub/java/:ecj \
+                    https://www.mirrorservice.org/sites/sources.redhat.com/pub/java/:ecj \
                     http://ftp-stud.fht-esslingen.de/pub/Mirrors/sourceware.org/java/:ecj
 
 dist_subdir         gcc
@@ -67,6 +67,9 @@ patchfiles-append   notparallel-install-headers.patch
 
 # Provide linkage for MacPorts libiconv in gcj
 patchfiles-append   gcj-libiconv-linkage.patch
+
+# work around bug in 10.13 headers
+patchfiles-append   headers-10.13-fix.patch
 
 set major           [lindex [split ${version} .-] 0]
 
@@ -233,5 +236,5 @@ configure.universal_ldflags
 configure.universal_args
 
 livecheck.type      regex
-livecheck.url       http://ftp.gnu.org/gnu/gcc/
+livecheck.url       https://ftp.gnu.org/gnu/gcc/
 livecheck.regex     gcc-(${major}\\.\[0-9.\]+)/

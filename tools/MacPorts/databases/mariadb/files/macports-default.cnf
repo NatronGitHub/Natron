@@ -1,0 +1,9 @@
+# WARNING! ANY CHANGES TO THIS FILE WILL BE LOST ON UNINSTALL/UPGRADES!
+# Make your changes to @PREFIX@/etc/@NAME@/my.cnf
+# YOU HAVE BEEN WARNED!
+
+# MacPorts default options
+[mysqld]
+# skip-networking so multple mysql server ports can be loaded
+# without each competing for port 3306.
+skip-networking

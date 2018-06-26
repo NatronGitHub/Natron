@@ -25,6 +25,7 @@ NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 #include <PyRoto.h>
 #include <PyTracker.h>
 #include <RectD.h>
+#include <RectI.h>
 #include <list>
 
 
@@ -712,6 +713,32 @@ static PyObject* Sbk_EffectFunc_getMaxInputCount(PyObject* self)
             // getMaxInputCount()const
             int cppResult = const_cast<const ::Effect*>(cppSelf)->getMaxInputCount();
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_EffectFunc_getOutputFormat(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getOutputFormat()const
+            RectI* cppResult = new RectI(const_cast<const ::Effect*>(cppSelf)->getOutputFormat());
+            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_RECTI_IDX], cppResult, true, true);
         }
     }
 
@@ -1577,6 +1604,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"getInputLabel", (PyCFunction)Sbk_EffectFunc_getInputLabel, METH_O},
     {"getLabel", (PyCFunction)Sbk_EffectFunc_getLabel, METH_NOARGS},
     {"getMaxInputCount", (PyCFunction)Sbk_EffectFunc_getMaxInputCount, METH_NOARGS},
+    {"getOutputFormat", (PyCFunction)Sbk_EffectFunc_getOutputFormat, METH_NOARGS},
     {"getParam", (PyCFunction)Sbk_EffectFunc_getParam, METH_O},
     {"getParams", (PyCFunction)Sbk_EffectFunc_getParams, METH_NOARGS},
     {"getPixelAspectRatio", (PyCFunction)Sbk_EffectFunc_getPixelAspectRatio, METH_NOARGS},

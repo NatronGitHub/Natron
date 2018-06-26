@@ -14,6 +14,9 @@ set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
 #set -x # Print commands and their arguments as they are executed.
 
+DISABLE_BREAKPAD=1 # comment to re-enable breakpad
+export DISABLE_BREAKPAD
+
 BM_PID=$$
 FINISHED=0
 RESTART=0
@@ -224,7 +227,7 @@ while [ "$FINISHED" = "0" ]; do
         if [ "$FAIL" = "0" ] && [ "$TYPE" = "RELEASE" ] && ([ "$REPO" = "Natron" ] || [ "$REPO" = "$GIT_NATRON_REPO_LABEL" ] || [ "$REPO" = "$GIT_NATRON_GFORGE_REPO_LABEL" ]); then
             RELEASE_BRANCH=$(echo "$BRANCH" | $GSED 's#tags/##;' | cut -c1-3)
             PLUGIN_COMMIT=$(echo "$BRANCH" | $GSED 's#tags/#tags/Natron-#;')
-            COMMON="$CWD/common.sh"
+            COMMON="$CWD/common-buildmaster.sh"
             sed -e "s/NATRON_RELEASE_BRANCH=.*/NATRON_RELEASE_BRANCH=RB-${RELEASE_BRANCH}/" -e "s#NATRON_GIT_TAG=.*#NATRON_GIT_TAG=${BRANCH}#" -e "s#IOPLUG_GIT_TAG=.*#IOPLUG_GIT_TAG=${PLUGIN_COMMIT}#" -e "s#MISCPLUG_GIT_TAG=.*#MISCPLUG_GIT_TAG=${PLUGIN_COMMIT}#" -e "s#ARENAPLUG_GIT_TAG=.*#ARENAPLUG_GIT_TAG=${PLUGIN_COMMIT}#" -e "s#GMICPLUG_GIT_TAG=.*#GMICPLUG_GIT_TAG=${PLUGIN_COMMIT}#" -e "s#CVPLUG_GIT_TAG=.*#CVPLUG_GIT_TAG=${PLUGIN_COMMIT}#" "$COMMON" > "$COMMON".new && mv "$COMMON".new "$COMMON" || FAIL=$?
         fi
 
@@ -382,6 +385,10 @@ while [ "$FINISHED" = "0" ]; do
                 for p in "${processes[@]}"; do
                     tskill "$p" || true
                 done
+                mapfile -t processes < <(taskkill -f -im NatronRenderer.exe -t 2>&1 |grep "ERROR: The process with PID"| awk '{print $6}' || true)
+                for p in "${processes[@]}"; do
+                    tskill "$p" || true
+                done
             fi
             # cleanup tests (TEMPORARY) the following lines should be commented most of the time
             if [ -d "$CWD/$TESTDIR" ]; then
@@ -415,6 +422,10 @@ while [ "$FINISHED" = "0" ]; do
                     for p in "${processes[@]}"; do
                         tskill "$p" || true
                     done
+                    mapfile -t processes < <(taskkill -f -im NatronRenderer.exe -t 2>&1 |grep "ERROR: The process with PID"| awk '{print $6}' || true)
+                    for p in "${processes[@]}"; do
+                        tskill "$p" || true
+                    done
                 fi
                 UNIT_TMP="$CWD"/unit_tmp_${BITS}
                 if [ -d "$UNIT_TMP" ]; then
@@ -442,7 +453,14 @@ while [ "$FINISHED" = "0" ]; do
                      if [ ! -f "$ocio" ]; then
                         echo "*** Error: OCIO file $ocio is missing" >> "$ULOG"
                     fi
-                   env NATRON_PLUGIN_PATH="$TMP_BINARIES_PATH/PyPlugs" OFX_PLUGIN_PATH="$TMP_BINARIES_PATH/OFX/Plugins" OCIO="$ocio" FFMPEG="$FFMPEG_PATH/bin/ffmpeg" COMPARE="$SDK_HOME/bin/idiff"  $TIMEOUT -s KILL 7200 bash runTests.sh "$TMP_BINARIES_PATH/bin/NatronRenderer" >> "$ULOG" 2>&1 || FAIL=$?
+                    bin="$TMP_BINARIES_PATH/bin/NatronRenderer-bin"
+                    if [ ! -f "$bin" ]; then
+                        bin="$TMP_BINARIES_PATH/bin/NatronRenderer"
+                        if [ ! -f "$bin" ]; then
+                            echo "*** Error: NatronRenderer binary $bin is missing" >> "$ULOG"
+                        fi
+                    fi
+                    env NATRON_PLUGIN_PATH="$TMP_BINARIES_PATH/PyPlugs" OFX_PLUGIN_PATH="$TMP_BINARIES_PATH/OFX/Plugins" OCIO="$ocio" FFMPEG="$FFMPEG_PATH/bin/ffmpeg" COMPARE="$SDK_HOME/bin/idiff"  $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" >> "$ULOG" 2>&1 || FAIL=$?
                     echo "$(date '+%Y-%m-%d %H:%M:%S') *** END unit tests -> $FAIL" >> "$ILOG"
                     echo "$(date '+%Y-%m-%d %H:%M:%S') *** END unit tests -> $FAIL" >> "$ULOG"
                     FAIL=0
@@ -465,7 +483,14 @@ while [ "$FINISHED" = "0" ]; do
                     if [ ! -f "$ocio" ]; then
                         echo "*** Error: OCIO file $ocio is missing" >> "$ULOG"
                     fi
-                    env PATH="$UNIT_TMP/bin:${TMP_BINARIES_PATH}/bin:${FFMPEG_PATH}/bin:${LIBRAW_PATH}/bin:$PATH" NATRON_PLUGIN_PATH="$TMP_BINARIES_PATH/PyPlugs" OFX_PLUGIN_PATH="$TMP_BINARIES_PATH/OFX/Plugins" OCIO="$ocio" FFMPEG="$FFMPEG_PATH/bin/ffmpeg.exe" COMPARE="${SDK_HOME}/bin/idiff.exe" $TIMEOUT -s KILL 7200 bash runTests.sh "$UNIT_TMP/bin/NatronRenderer.exe" >> "$ULOG" 2>&1 || FAIL=$?
+                    bin="$UNIT_TMP/bin/NatronRenderer-bin.exe"
+                    if [ ! -f "$bin" ]; then
+                        bin="$UNIT_TMP/bin/NatronRenderer.exe"
+                        if [ ! -f "$bin" ]; then
+                            echo "*** Error: NatronRenderer binary $bin is missing" >> "$ULOG"
+                        fi
+                    fi
+                    env PATH="$UNIT_TMP/bin:${TMP_BINARIES_PATH}/bin:${FFMPEG_PATH}/bin:${LIBRAW_PATH}/bin:$PATH" NATRON_PLUGIN_PATH="$TMP_BINARIES_PATH/PyPlugs" OFX_PLUGIN_PATH="$TMP_BINARIES_PATH/OFX/Plugins" OCIO="$ocio" FFMPEG="$FFMPEG_PATH/bin/ffmpeg.exe" COMPARE="${SDK_HOME}/bin/idiff.exe" $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" >> "$ULOG" 2>&1 || FAIL=$?
                     echo "$(date '+%Y-%m-%d %H:%M:%S') *** END unit tests -> $FAIL" >> "$ILOG"
                     echo "$(date '+%Y-%m-%d %H:%M:%S') *** END unit tests -> $FAIL" >> "$ULOG"
                     # sometimes NatronRenderer just hangs. Try taskkill first, then tskill if it fails because of a message like:
@@ -474,6 +499,10 @@ while [ "$FINISHED" = "0" ]; do
                     # Reason: There is no running instance of the task.
                     # mapfile use: see https://github.com/koalaman/shellcheck/wiki/SC2207
                     mapfile -t processes < <(taskkill -f -im NatronRenderer-bin.exe -t 2>&1 |grep "ERROR: The process with PID"| awk '{print $6}' || true)
+                    for p in "${processes[@]}"; do
+                        tskill "$p" || true
+                    done
+                    mapfile -t processes < <(taskkill -f -im NatronRenderer.exe -t 2>&1 |grep "ERROR: The process with PID"| awk '{print $6}' || true)
                     for p in "${processes[@]}"; do
                         tskill "$p" || true
                     done
@@ -491,7 +520,14 @@ while [ "$FINISHED" = "0" ]; do
                     if [ ! -f "$ocio" ]; then
                         echo "*** Error: OCIO file $ocio is missing" >> "$ULOG"
                     fi
-                    env NATRON_PLUGIN_PATH="$TMP_BINARIES_PATH/Natron.app/Contents/Plugins/PyPlugs" OFX_PLUGIN_PATH="$TMP_BINARIES_PATH/Natron.app/Contents/Plugins/OFX" OCIO="$ocio" FFMPEG="$FFMPEG_PATH/bin/ffmpeg" COMPARE="idiff" $TIMEOUT -s KILL 7200 bash runTests.sh "$TMP_BINARIES_PATH/Natron.app/Contents/MacOS/NatronRenderer-bin" >> "$ULOG" 2>&1 || FAIL=$?
+                    bin="$TMP_BINARIES_PATH/Natron.app/Contents/MacOS/NatronRenderer-bin"
+                    if [ ! -f "$bin" ]; then
+                        bin="$TMP_BINARIES_PATH/Natron.app/Contents/MacOS/NatronRenderer"
+                        if [ ! -f "$bin" ]; then
+                            echo "*** Error: NatronRenderer binary $bin is missing" >> "$ULOG"
+                        fi
+                    fi
+                    env NATRON_PLUGIN_PATH="$TMP_BINARIES_PATH/Natron.app/Contents/Plugins/PyPlugs" OFX_PLUGIN_PATH="$TMP_BINARIES_PATH/Natron.app/Contents/Plugins/OFX" OCIO="$ocio" FFMPEG="$FFMPEG_PATH/bin/ffmpeg" COMPARE="idiff" $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" >> "$ULOG" 2>&1 || FAIL=$?
                     echo "$(date '+%Y-%m-%d %H:%M:%S') *** END unit tests -> $FAIL" >> "$ILOG"
                     echo "$(date '+%Y-%m-%d %H:%M:%S') *** END unit tests -> $FAIL" >> "$ULOG"
                     FAIL=0

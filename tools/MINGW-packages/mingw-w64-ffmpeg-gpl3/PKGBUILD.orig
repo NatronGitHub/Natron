@@ -1,10 +1,11 @@
 # Maintainer: Alexey Pavlov <Alexpux@gmail.com>
 # Contributer: Zach Bacon <11doctorwhocanada@gmail.com>
+# Contributer: wirx6 <wirx654@gmail.com>
 
 _realname=ffmpeg
 pkgbase="mingw-w64-${_realname}"
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=4.0
+pkgver=4.0.1
 pkgrel=1
 pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
 arch=('any')
@@ -41,10 +42,11 @@ depends=(
         )
 makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
-             "${MINGW_PACKAGE_PREFIX}-nasm")
+             "${MINGW_PACKAGE_PREFIX}-nasm"
+             "${MINGW_PACKAGE_PREFIX}-aom")
 source=(https://ffmpeg.org/releases/${_realname}-${pkgver}.tar.xz{,.asc})
 validpgpkeys=('FCF986EA15E6E293A5644F10B4322F04D67658D8')
-sha256sums=('ed945daf40b124e77a685893cc025d086f638bc703183460aff49508edb3a43f'
+sha256sums=('605f5c01c60db35d3b617a79cabb2c7032412be243554602eeed1b628125c0ee'
             'SKIP')
 
 prepare() {
@@ -98,6 +100,7 @@ build() {
     --enable-swresample \
     --enable-version3 \
     --enable-zlib \
+    --enable-libaom \
     --disable-doc
     #--enable-pthreads
 

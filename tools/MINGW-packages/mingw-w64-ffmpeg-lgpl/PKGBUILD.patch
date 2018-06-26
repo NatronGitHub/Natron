@@ -1,24 +1,17 @@
---- PKGBUILD.orig	2018-04-22 18:02:02.000000000 +0200
-+++ PKGBUILD	2018-04-22 18:02:38.000000000 +0200
-@@ -2,14 +2,14 @@
- # Contributer: Zach Bacon <11doctorwhocanada@gmail.com>
+--- PKGBUILD.orig	2018-06-25 14:23:58.000000000 +0200
++++ PKGBUILD	2018-06-25 14:24:25.000000000 +0200
+@@ -3,8 +3,8 @@
+ # Contributer: wirx6 <wirx654@gmail.com>
  
  _realname=ffmpeg
 -pkgbase="mingw-w64-${_realname}"
 -pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 +pkgbase="mingw-w64-${_realname}-lgpl"
 +pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-lgpl"
- pkgver=4.0
+ pkgver=4.0.1
  pkgrel=1
  pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
- arch=('any')
- url="https://ffmpeg.org/"
--license=('GPL')
-+license=('LGPL')
- options=('staticlibs' 'strip')
- depends=(
-         "${MINGW_PACKAGE_PREFIX}-bzip2"
-@@ -22,21 +22,20 @@
+@@ -23,21 +23,20 @@
          "${MINGW_PACKAGE_PREFIX}-libbluray"
          "${MINGW_PACKAGE_PREFIX}-libcaca"
          "${MINGW_PACKAGE_PREFIX}-libmodplug"
@@ -43,7 +36,7 @@
          "${MINGW_PACKAGE_PREFIX}-zlib"
          )
  makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
-@@ -57,7 +56,7 @@
+@@ -59,7 +58,7 @@
    cd "${srcdir}/build-${MINGW_CHOST}"
  
    ../${_realname}-${pkgver}/configure \
@@ -52,7 +45,7 @@
      --target-os=mingw32 \
      --arch=${CARCH%%-*} \
      --disable-debug \
-@@ -66,7 +65,6 @@
+@@ -68,7 +67,6 @@
      --enable-d3d11va \
      --enable-fontconfig \
      --enable-gnutls \
@@ -60,7 +53,7 @@
      --enable-libass \
      --enable-libbluray \
      --enable-libcaca \
-@@ -75,28 +73,24 @@
+@@ -77,28 +75,24 @@
      --enable-libgsm \
      --enable-libmodplug \
      --enable-libmp3lame \
@@ -90,9 +83,9 @@
      --enable-swresample \
 -    --enable-version3 \
      --enable-zlib \
+     --enable-libaom \
      --disable-doc
-     #--enable-pthreads
-@@ -108,18 +102,18 @@
+@@ -111,18 +105,18 @@
    cd "${srcdir}/build-${MINGW_CHOST}"
    # workaround for conflict with SDL main(), use it if you have SDL installed
    #make check CC_C="-c -Umain"
