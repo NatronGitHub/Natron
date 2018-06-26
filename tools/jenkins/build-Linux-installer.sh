@@ -32,15 +32,15 @@ source manageLog.sh
 updateBuildOptions
 
 
-LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib:$SDK_HOME/qt${QT_VERSION_MAJOR}/lib"
-PATH=$SDK_HOME/gcc/bin:$SDK_HOME/bin:$PATH
+LD_LIBRARY_PATH="${SDK_HOME}/lib:$FFMPEG_PATH/lib:${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib"
+PATH="${SDK_HOME}/gcc/bin:${SDK_HOME}/bin:$PATH"
 export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/include"
 export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
 
 if [ "$ARCH" = "x86_64" ]; then
-    LD_LIBRARY_PATH=$SDK_HOME/gcc/lib64:$FFMPEG_PATH/lib:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH="${SDK_HOME}/gcc/lib64:$FFMPEG_PATH/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 else
-    LD_LIBRARY_PATH=$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH="${SDK_HOME}/gcc/lib:$FFMPEG_PATH/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 fi
 export LD_LIBRARY_PATH
 
@@ -77,12 +77,14 @@ if [ "$NATRON_BUILD_CONFIG" = "SNAPSHOT" ]; then
     REMOTE_PATH="${REMOTE_PREFIX}/snapshots"
     APP_INSTALL_SUFFIX="Natron-snapshot"
     APP_ADMIN_INSTALL_SUFFIX="$APP_INSTALL_SUFFIX"
-elif [ "$NATRON_BUILD_CONFIG" = "RELEASE" ]; then
+elif [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABLE" ]; then
     REMOTE_PATH="${REMOTE_PREFIX}/releases"
     APP_INSTALL_SUFFIX="Natron-${NATRON_VERSION_FULL}"
     APP_ADMIN_INSTALL_SUFFIX="$APP_INSTALL_SUFFIX"
 else
     REMOTE_PATH="${REMOTE_PREFIX}/other_builds"
+    APP_INSTALL_SUFFIX="Natron"
+    APP_ADMIN_INSTALL_SUFFIX="$APP_INSTALL_SUFFIX"
 fi
 
 REMOTE_PROJECT_PATH="$REMOTE_PATH/$PKGOS/$BITS/$BUILD_NAME"
@@ -93,7 +95,7 @@ INSTALLER_XML_DATE=$(date "+%Y-%m-%d")
 
 # tag symbols we want to keep with 'release'
 VERSION_TAG=$CURRENT_DATE
-if [ "$NATRON_BUILD_CONFIG" = "RELEASE" ]; then
+if [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABLE" ]; then
     BPAD_TAG="-release"
     VERSION_TAG=$NATRON_VERSION_FULL
 fi
@@ -103,13 +105,13 @@ fi
 XML="$INC_PATH/xml"
 QS="$INC_PATH/qs"
 
-mkdir -p "$INSTALLER_PATH/config" "$INSTALLER_PATH/packages"
+mkdir -p "${INSTALLER_PATH}/config" "${INSTALLER_PATH}/packages"
 
 # Customize the config file
-$GSED "s/_VERSION_/${NATRON_VERSION_FULL}/;s#_RBVERSION_#${NATRON_GIT_BRANCH}#g;s#_REMOTE_PATH#${REMOTE_ONLINE_PACKAGES_PATH}#g;s#_REMOTE_URL_#${REMOTE_URL}#g;s#_APP_INSTALL_SUFFIX_#${APP_INSTALL_SUFFIX}#g;s#_APP_ADMIN_INSTALL_SUFFIX_#${APP_ADMIN_INSTALL_SUFFIX}#g" "$INC_PATH/config/$PKGOS.xml" > "$INSTALLER_PATH/config/config.xml"
+$GSED "s/_VERSION_/${NATRON_VERSION_FULL}/;s#_RBVERSION_#${NATRON_GIT_BRANCH}#g;s#_REMOTE_PATH#${REMOTE_ONLINE_PACKAGES_PATH}#g;s#_REMOTE_URL_#${REMOTE_URL}#g;s#_APP_INSTALL_SUFFIX_#${APP_INSTALL_SUFFIX}#g;s#_APP_ADMIN_INSTALL_SUFFIX_#${APP_ADMIN_INSTALL_SUFFIX}#g" "$INC_PATH/config/$PKGOS.xml" > "${INSTALLER_PATH}/config/config.xml"
 
 # Copy installer images to the config folder
-cp "$INC_PATH/config"/*.png "$INSTALLER_PATH/config/"
+cp "$INC_PATH/config"/*.png "${INSTALLER_PATH}/config/"
 
 function installPlugin() {
     OFX_BINARY="$1"
@@ -123,7 +125,7 @@ function installPlugin() {
     fi
 
     # Create package
-    PKG_PATH="$INSTALLER_PATH/packages/$PACKAGE_NAME"
+    PKG_PATH="${INSTALLER_PATH}/packages/$PACKAGE_NAME"
     if [ ! -d "$PKG_PATH" ]; then
         mkdir -p "$PKG_PATH/data" "$PKG_PATH/meta" "$PKG_PATH/data/Plugins/OFX/Natron"
     fi
@@ -143,7 +145,7 @@ function installPlugin() {
 
     # Dump symbols
     if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-        "$SDK_HOME/bin/dump_syms" "$TMP_BINARIES_PATH"/OFX/Plugins/"${OFX_BINARY}".ofx.bundle/Contents/*/"${OFX_BINARY}".ofx > "$BUILD_ARCHIVE_DIRECTORY/symbols/${OFX_BINARY}.ofx-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
+        "${SDK_HOME}/bin/dump_syms" "$TMP_BINARIES_PATH"/OFX/Plugins/"${OFX_BINARY}".ofx.bundle/Contents/*/"${OFX_BINARY}".ofx > "$BUILD_ARCHIVE_DIRECTORY/symbols/${OFX_BINARY}.ofx-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
     fi
 
 
@@ -223,7 +225,7 @@ function installPlugin() {
 # Natron package
 PACKAGES="fr.inria.natron"
 NATRON_PKG=fr.inria.natron
-NATRON_PACKAGE_PATH=$INSTALLER_PATH/packages/$NATRON_PKG
+NATRON_PACKAGE_PATH=${INSTALLER_PATH}/packages/$NATRON_PKG
 
 # Create package directories
 mkdir -p "$NATRON_PACKAGE_PATH/meta"
@@ -278,8 +280,8 @@ if [ -f "$TMP_BINARIES_PATH/bin/natron-python" ]; then
 BINARIES_TO_INSTALL="$BINARIES_TO_INSTALL $TMP_BINARIES_PATH/bin/natron-python"
 fi
 
-BINARIES_TO_INSTALL="$BINARIES_TO_INSTALL $SDK_HOME/bin/iconvert $SDK_HOME/bin/idiff $SDK_HOME/bin/igrep $SDK_HOME/bin/iinfo"
-BINARIES_TO_INSTALL="$BINARIES_TO_INSTALL $SDK_HOME/bin/exrheader $SDK_HOME/bin/tiffinfo"
+BINARIES_TO_INSTALL="$BINARIES_TO_INSTALL ${SDK_HOME}/bin/iconvert ${SDK_HOME}/bin/idiff ${SDK_HOME}/bin/igrep ${SDK_HOME}/bin/iinfo"
+BINARIES_TO_INSTALL="$BINARIES_TO_INSTALL ${SDK_HOME}/bin/exrheader ${SDK_HOME}/bin/tiffinfo"
 BINARIES_TO_INSTALL="$BINARIES_TO_INSTALL $FFMPEG_PATH/bin/ffmpeg $FFMPEG_PATH/bin/ffprobe"
 
 # We copy all files to both the portable archive and the package for the installer in a loop
@@ -318,8 +320,8 @@ done
 
 # Dump symbols for crash reporting
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    "$SDK_HOME/bin"/dump_syms "$TMP_BINARIES_PATH/bin/Natron" > "$BUILD_ARCHIVE_DIRECTORY/symbols/Natron-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
-    "$SDK_HOME/bin"/dump_syms "$TMP_BINARIES_PATH/bin/NatronRenderer" > "$BUILD_ARCHIVE_DIRECTORY/symbols/NatronRenderer-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
+    "${SDK_HOME}/bin"/dump_syms "$TMP_BINARIES_PATH/bin/Natron" > "$BUILD_ARCHIVE_DIRECTORY/symbols/Natron-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
+    "${SDK_HOME}/bin"/dump_syms "$TMP_BINARIES_PATH/bin/NatronRenderer" > "$BUILD_ARCHIVE_DIRECTORY/symbols/NatronRenderer-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
 fi
 
 # Get all dependencies of the binaries
@@ -327,7 +329,7 @@ CORE_DEPENDS=$(ldd $(find "$TMP_PORTABLE_DIR/bin" -maxdepth 1 -type f) | grep /o
 
 # icu libraries don't seem to be picked up by this ldd call above
 for dep in libicudata.so.*.* libicui18n.so.*.* libicuuc.so.*.*; do
-    CORE_DEPENDS="$CORE_DEPENDS $SDK_HOME/lib/$dep"
+    CORE_DEPENDS="$CORE_DEPENDS ${SDK_HOME}/lib/$dep"
 done
 
 
@@ -335,7 +337,7 @@ done
 # receive updates for DLLs when we actually update them
 # rather than every time we recompile Natron
 PACKAGES="${PACKAGES},fr.inria.natron.libs"
-LIBS_PACKAGE_PATH="$INSTALLER_PATH/packages/fr.inria.natron.libs"
+LIBS_PACKAGE_PATH="${INSTALLER_PATH}/packages/fr.inria.natron.libs"
 mkdir -p "$LIBS_PACKAGE_PATH/meta"
 
 # Function to fix rpath of libraries in a list of folders
@@ -367,11 +369,11 @@ COPY_LOCATIONS="$TMP_PORTABLE_DIR $LIBS_PACKAGE_PATH/data"
 for location in $COPY_LOCATIONS; do
 
 mkdir -p "$location/bin" "$location/lib" "$location/Resources/pixmaps"
-#cp "$SDK_HOME/qt${QT_VERSION_MAJOR}/lib/libQtDBus.so.4" "$location/lib/"
+#cp "${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib/libQtDBus.so.4" "$location/lib/"
 cp "$TMP_BINARIES_PATH/Resources/pixmaps/natronIcon256_linux.png" "$location/Resources/pixmaps/"
 cp "$TMP_BINARIES_PATH/Resources/pixmaps/natronProjectIcon_linux.png" "$location/Resources/pixmaps/"
-cp -a "$SDK_HOME/share/poppler" "$location/Resources/"
-cp -a "$SDK_HOME/qt${QT_VERSION_MAJOR}/plugins"/* "$location/bin/"
+cp -a "${SDK_HOME}/share/poppler" "$location/Resources/"
+cp -a "${SDK_HOME}/qt${QT_VERSION_MAJOR}/plugins"/* "$location/bin/"
 
 # Copy dependencies
 for i in $CORE_DEPENDS; do
@@ -408,8 +410,8 @@ done
 
 # done in build-natron.sh
 #mkdir -p "$location/Resources/etc/fonts/conf.d"
-#cp "$SDK_HOME/etc/fonts/fonts.conf" "$location/Resources/etc/fonts/"
-#cp "$SDK_HOME/share/fontconfig/conf.avail"/* "$location/Resources/etc/fonts/conf.d/"
+#cp "${SDK_HOME}/etc/fonts/fonts.conf" "$location/Resources/etc/fonts/"
+#cp "${SDK_HOME}/share/fontconfig/conf.avail"/* "$location/Resources/etc/fonts/conf.d/"
 #$GSED -i "s#${SDK_HOME}/#/#;/conf.d/d" "$location/Resources/etc/fonts/fonts.conf"
 
 # strip binaries
@@ -440,7 +442,7 @@ done
 if [ -d "$TMP_PORTABLE_DIR/lib/python${PYVER}" ]; then
     rm -rf "$TMP_PORTABLE_DIR/lib/python${PYVER}"
 fi
-cp -a "$SDK_HOME/lib/python${PYVER}" "$TMP_PORTABLE_DIR/lib/"
+cp -a "${SDK_HOME}/lib/python${PYVER}" "$TMP_PORTABLE_DIR/lib/"
 
 # Move PySide to plug-ins directory and keep a symbolic link in site-packages
 mv "$TMP_PORTABLE_DIR/lib/python${PYVER}/site-packages/PySide" "$TMP_PORTABLE_DIR/Plugins/"
@@ -450,7 +452,7 @@ mv "$TMP_PORTABLE_DIR/lib/python${PYVER}/site-packages/PySide" "$TMP_PORTABLE_DI
 rm -rf "$TMP_PORTABLE_DIR/lib/python${PYVER}"/{test,config,config-"${PYVER}m"}
 
 # Copy Pyside dependencies
-PYSIDE_DEPENDS=$(ldd $(find "$SDK_HOME/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f) | grep /opt | awk '{print $3}'|sort|uniq)
+PYSIDE_DEPENDS=$(ldd $(find "${SDK_HOME}/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f) | grep /opt | awk '{print $3}'|sort|uniq)
 for y in $PYSIDE_DEPENDS; do
     dep=$(basename "$y")
     if [ ! -f "$TMP_PORTABLE_DIR/lib/$dep" ]; then
@@ -479,7 +481,7 @@ fi
 fixrpath "$TMP_PORTABLE_DIR/Plugins/PySide" "/../../lib"
 fixrpath "$TMP_PORTABLE_DIR/lib/python${PYVER:-}/lib-dynload $TMP_PORTABLE_DIR/lib/python${PYVER:-}/site-packages" "/../.."
 
-export PY_BIN="$SDK_HOME/bin/python${PYVER:-}"
+export PY_BIN="${SDK_HOME}/bin/python${PYVER:-}"
 export PYDIR="$PYDIR"
 . "$CWD"/zip-python.sh
 
@@ -550,7 +552,7 @@ $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/
 rm "$TMP_PORTABLE_DIR/bin/Tests"
 
 # Clean and perms
-(cd "$INSTALLER_PATH"; find . -type d -name .git -exec rm -rf {} \;)
+(cd "${INSTALLER_PATH}"; find . -type d -name .git -exec rm -rf {} \;)
 
 # Build repo and packages
 
@@ -576,34 +578,34 @@ if [ "$WITH_ONLINE_INSTALLER" = "1" ]; then
     mkdir -p "$BUILD_ARCHIVE_DIRECTORY/$ONLINE_INSTALL_DIR"
     mkdir -p "$BUILD_ARCHIVE_DIRECTORY/$ONLINE_INSTALL_DIR/packages"
     # Gen online repo
-    "$SDK_HOME/installer/bin"/repogen -v --update-new-components -p "$INSTALLER_PATH/packages" -c "$INSTALLER_PATH/config/config.xml" "$BUILD_ARCHIVE_DIRECTORY/$ONLINE_INSTALL_DIR/packages"
+    "${SDK_HOME}/installer/bin"/repogen -v --update-new-components -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" "$BUILD_ARCHIVE_DIRECTORY/$ONLINE_INSTALL_DIR/packages"
 
     # Online installer
-    "$SDK_HOME/installer/bin"/binarycreator -v -n -p "$INSTALLER_PATH/packages" -c "$INSTALLER_PATH/config/config.xml" "$BUILD_ARCHIVE_DIRECTORY/$ONLINE_INSTALL_DIR/${INSTALLER_BASENAME}-online"
+    "${SDK_HOME}/installer/bin"/binarycreator -v -n -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" "$BUILD_ARCHIVE_DIRECTORY/$ONLINE_INSTALL_DIR/${INSTALLER_BASENAME}-online"
     (cd "$BUILD_ARCHIVE_DIRECTORY/$ONLINE_INSTALL_DIR" && tar zcf "${INSTALLER_BASENAME}-online.tgz" "${INSTALLER_BASENAME}-online" && rm "${INSTALLER_BASENAME}-online")
 fi
 
 # Offline installer
-"$SDK_HOME/installer/bin"/binarycreator -v -f -p "$INSTALLER_PATH/packages" -c "$INSTALLER_PATH/config/config.xml" -i "$PACKAGES" "$BUILD_ARCHIVE_DIRECTORY/$BUNDLED_INSTALL_DIR/$INSTALLER_BASENAME"
+"${SDK_HOME}/installer/bin"/binarycreator -v -f -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" -i "$PACKAGES" "$BUILD_ARCHIVE_DIRECTORY/$BUNDLED_INSTALL_DIR/$INSTALLER_BASENAME"
 (cd "$BUILD_ARCHIVE_DIRECTORY/$BUNDLED_INSTALL_DIR" && tar zcf "${INSTALLER_BASENAME}.tgz" "$INSTALLER_BASENAME" && rm "$INSTALLER_BASENAME")
 
 
 
 # collect debug versions for gdb
 #if [ "$NATRON_BUILD_CONFIG" = "STABLE" ]; then
-#    DEBUG_DIR=$INSTALLER_PATH/Natron-$NATRON_VERSION_STRING-Linux${BITS}-Debug
+#    DEBUG_DIR=${INSTALLER_PATH}/Natron-$NATRON_VERSION_STRING-Linux${BITS}-Debug
 #    rm -rf "$DEBUG_DIR"
 #    mkdir "$DEBUG_DIR"
-#    cp -a "$SDK_HOME/bin"/Natron* "$DEBUG_DIR/"
-#    cp -a "$SDK_HOME/Plugins"/*.ofx.bundle/Contents/Linux*/*.ofx "$DEBUG_DIR/"
-#    ( cd "$INSTALLER_PATH"; tar Jcf "Natron-$NATRON_VERSION_STRING-Linux${BITS}-Debug.tar.xz" "Natron-$NATRON_VERSION-Linux${BITS}-Debug" )
+#    cp -a "${SDK_HOME}/bin"/Natron* "$DEBUG_DIR/"
+#    cp -a "${SDK_HOME}/Plugins"/*.ofx.bundle/Contents/Linux*/*.ofx "$DEBUG_DIR/"
+#    ( cd "${INSTALLER_PATH}"; tar Jcf "Natron-$NATRON_VERSION_STRING-Linux${BITS}-Debug.tar.xz" "Natron-$NATRON_VERSION-Linux${BITS}-Debug" )
 #    mv "${DEBUG_DIR}.tar.xz" "$BUILD_ARCHIVE"/
 #fi
 
 # Build native packages for linux
 
 
-if [ "$BUILD_TYPE" = "RELEASE" ] && [ "$DISABLE_RPM_DEB_PKGS" != "1" ]; then
+if ( [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABLE" ] ) && [ "$DISABLE_RPM_DEB_PKGS" != "1" ]; then
     # rpm
     mkdir -p "$BUILD_ARCHIVE_DIRECTORY/$RPM_INSTALL_DIR"
 
@@ -622,7 +624,7 @@ if [ "$BUILD_TYPE" = "RELEASE" ] && [ "$DISABLE_RPM_DEB_PKGS" != "1" ]; then
         echo "Error: gpg key for build@natron.fr not found"
         exit
     fi
-    $GSED "s/REPLACE_VERSION/$(echo "$NATRON_VERSION_STRING" | $GSED 's/-/./g')/;s#__NATRON_INSTALLER__#${INSTALLER}#;s#__INC__#${INC_PATH}#;s#__TMP_BINARIES_PATH__#${TMP_BINARIES_PATH}#" "$INC_PATH/natron/Natron.spec" > "$TMP_PATH/Natron.spec"
+    $GSED "s/REPLACE_VERSION/$(echo "$NATRON_VERSION_STRING" | $GSED 's/-/./g')/;s#__NATRON_INSTALLER__#${INSTALLER_PATH}#;s#__INC__#${INC_PATH}#;s#__TMP_BINARIES_PATH__#${TMP_BINARIES_PATH}#" "$INC_PATH/natron/Natron.spec" > "$TMP_PATH/Natron.spec"
     #Only need to build once, so uncomment as default #echo "" | setsid rpmbuild -bb --define="%_gpg_name build@natron.fr" --sign $INC_PATH/natron/Natron-repo.spec
     echo "" | setsid rpmbuild -bb --define="%_gpg_name build@natron.fr" --sign "$TMP_PATH/Natron.spec"
     mv ~/rpmbuild/RPMS/*/Natron*.rpm "$BUILD_ARCHIVE_DIRECTORY/$RPM_INSTALL_DIR/"
@@ -640,12 +642,12 @@ if [ "$BUILD_TYPE" = "RELEASE" ] && [ "$DISABLE_RPM_DEB_PKGS" != "1" ]; then
         fi
     fi
 
-    rm -rf "$INSTALLER_PATH/natron"
-    mkdir -p "$INSTALLER_PATH/natron"
-    cd "$INSTALLER_PATH/natron"
+    rm -rf "${INSTALLER_PATH}/natron"
+    mkdir -p "${INSTALLER_PATH}/natron"
+    cd "${INSTALLER_PATH}/natron"
     mkdir -p opt/Natron2 DEBIAN usr/share/doc/natron usr/share/{applications,pixmaps} usr/share/mime/packages usr/bin
 
-    cp -a "$INSTALLER_PATH/packages"/fr.inria.*/data/* opt/Natron2/
+    cp -a "${INSTALLER_PATH}/packages"/fr.inria.*/data/* opt/Natron2/
     cp "$INC_PATH/debian"/post* DEBIAN/
     chmod +x DEBIAN/post*
 
@@ -674,12 +676,12 @@ if [ "$BUILD_TYPE" = "RELEASE" ] && [ "$DISABLE_RPM_DEB_PKGS" != "1" ]; then
     (cd usr/bin; ln -sf ../../opt/Natron2/NatronRenderer .)
 
     # why?
-    #chown root:root -R "$INSTALLER_PATH/natron"
+    #chown root:root -R "${INSTALLER_PATH}/natron"
 
-    cd "$INSTALLER_PATH"
+    cd "${INSTALLER_PATH}"
     dpkg-deb -Zxz -z9 --build natron
-    mv natron.deb "$DEB_PKG"
-    mv "$DEB_PKG" "$BUILD_ARCHIVE_DIRECTORY/$DEB_INSTALL_DIR/"
+    mv natron.deb "${DEB_PKG}"
+    mv "${DEB_PKG}" "$BUILD_ARCHIVE_DIRECTORY/$DEB_INSTALL_DIR/"
 fi
 
 

@@ -1,0 +1,23 @@
+--- Portfile.orig	2018-06-10 18:55:26.000000000 +0200
++++ Portfile	2018-06-10 18:55:26.000000000 +0200
+@@ -4,7 +4,7 @@
+ 
+ name                mariadb
+ set name_mysql      ${name}
+-version             5.5.57
++version             5.5.60
+ set version_branch  [join [lrange [split ${version} .] 0 1] .]
+ # Please set revision_client and revision_server to 0 if you bump version.
+ set revision_client 0
+@@ -46,8 +46,9 @@
+     patchfiles          patch-cmake-install_layout.cmake.diff \
+                         patch-CMakeLists.txt.diff
+ 
+-    checksums           rmd160  332179a8f94eb6d467021b2095d1c004cb7dc5b0 \
+-                        sha256  5dbde98d7e4a5a1721b6cbed7898b2549a88866247951cf586057975c6cea641
++    checksums           rmd160  08e1556c379bca894e4c87225b6c5fbd6d5c6632 \
++                        sha256  4d3d444555416028ce39d3fb4cdc9cf6a658fcd4b0d2d0c45a73f9bf01d07929 \
++                        size    45822878
+ 
+     depends_lib-append  port:zlib port:tcp_wrappers port:ncurses
+     depends_run-append  port:mysql_select

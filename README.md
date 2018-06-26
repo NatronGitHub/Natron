@@ -118,10 +118,11 @@ Installing
 ### Binary distribution ###
 
 Standalone binary distributions of Natron are available for [GNU/Linux](http://downloads.natron.fr/Linux/),
-[Windows](http://downloads.natron.fr/Windows/) and [OS X](http://downloads.natron.fr/Mac/). These distributions contain Natron and three basic sets of OpenFX plugins:
+[Windows](http://downloads.natron.fr/Windows/) and [OS X](http://downloads.natron.fr/Mac/) from [SourceForge](https://sourceforge.net/projects/natron/files) (releases and examples only) or from [the Natron web site](https://natron.fr/download). These distributions contain Natron and three basic sets of OpenFX plugins:
 * [openfx-io](https://github.com/NatronGitHub/openfx-io/),
 * [openfx-misc](https://github.com/NatronGitHub/openfx-misc),
 * [openfx-arena](https://github.com/NatronGitHub/openfx-arena).
+* [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic).
 
 For each architecture / operating system, you can either download a stable release, a release candidate (if available), or one of the latest snapshots. Note that snapshots contain the latest features and bug fixes, but may be unstable.
 

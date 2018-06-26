@@ -1,66 +1,76 @@
---- PKGBUILD.orig	2017-11-02 11:49:25.000000000 +0100
-+++ PKGBUILD	2017-11-03 11:04:20.000000000 +0100
+--- PKGBUILD.orig	2018-06-25 14:27:54.000000000 +0200
++++ PKGBUILD	2018-06-25 14:31:41.000000000 +0200
 @@ -24,7 +24,7 @@
  fi
  
  pkgver=4.8.7
--pkgrel=4
-+pkgrel=4.0
+-pkgrel=5
++pkgrel=5.0
  arch=('any')
  url='https://www.qt.io/'
  install=qt4-${CARCH}.install
-@@ -96,7 +96,13 @@
-         qt-4.8.7-mingw-unix-tests.patch
-         qt-4.8.7-MinGW-w64-fix-qmng-define-MNG_USE_DLL-and-use-MNG_DECL.patch
-         qt-4.8.5-qmake-implib.patch
--        qt-4.8.7-fix-testcon-static-compile.patch)
-+        qt-4.8.7-fix-testcon-static-compile.patch
+@@ -97,7 +97,12 @@
+         0030-moc-boost-workaround.patch
+         0031-qt4-gcc6.patch
+         0032-qt4-icu59.patch
+-        0100-qt4-build-debug-qmake.patch)
++        0100-qt4-build-debug-qmake.patch
 +        patch-qt-custom-threadpool.diff
 +        relwithdeb.diff
-+        qt-4.8.7-gcc6-fix.diff
-+	qt4-pcre.patch
-+	0001-Enable-building-with-C-11-and-C-14.patch
-+	qt4-selection-flags-static_cast.patch)
++        qt4-pcre.patch
++        0001-Enable-building-with-C-11-and-C-14.patch
++        qt4-selection-flags-static_cast.patch)
  sha256sums=('e2882295097e47fe089f8ac741a95fef47e0a73a3f3cdf21b56990638f626ea0'
              'e7c8fccf933dfee061b2960b5754e4835e7cb87c0e36166d3b11d69632732215'
              '5e6a61ced784d7d24c65d81e769b67b8f6066a33581c8b17cdf374a4c723cd23'
-@@ -121,7 +127,13 @@
-             '00bc046d0c5de7bbb30d87c4fa76a0e699bb0f65bd262e5e4f4a753c46d6e757'
-             'e0565cf9b3e54bbb030e478a93181314de88bebcd3bb25cbe8e597fbc5032e09'
-             'e77b682e3728b835fe36d9dc48ab8c7472aed6d2ecf95a38219db95152602b32'
--            'ddee93f387730551b5f8f6f468f97c5e6fd9b43a21458171ebd7ed0e9a909043')
-+            'ddee93f387730551b5f8f6f468f97c5e6fd9b43a21458171ebd7ed0e9a909043'
-+	    'SKIP'
-+	    'SKIP'
-+	    'SKIP'
-+	    'SKIP'
-+	    'SKIP'
-+	    'SKIP')
+@@ -123,7 +128,12 @@
+             '62bc20838da22d832c550b9d38f98afb8fa4874915466945ea320575e264869a'
+             '51da49e41edac66559d3ec8dd0a152995a51a53e5d1f63f09fa089a8af7e3112'
+             '61d6bf45649c728dec5f8d22be5b496ed9d40f52c2c70102696d07133cd1750d'
+-            'e19a32b9dc050b3a605a6a5cb40fc3da8d8167ef240c105bb0737cc8bebadceb')
++            'e19a32b9dc050b3a605a6a5cb40fc3da8d8167ef240c105bb0737cc8bebadceb'
++            'SKIP'
++            'SKIP'
++            'SKIP'
++            'SKIP'
++            'SKIP')
  
  prepare() {
    cd ${srcdir}/${_pkgfqn}
-@@ -148,6 +160,12 @@
-   patch -p1 -i ${srcdir}/qt-4.8.7-MinGW-w64-fix-qmng-define-MNG_USE_DLL-and-use-MNG_DECL.patch
-   patch -p2 -i ${srcdir}/qt-4.8.5-qmake-implib.patch
-   patch -p1 -i ${srcdir}/qt-4.8.7-fix-testcon-static-compile.patch
+@@ -151,6 +161,11 @@
+   patch -p1 -i ${srcdir}/0030-moc-boost-workaround.patch
+   patch -p1 -i ${srcdir}/0031-qt4-gcc6.patch
+   patch -p1 -i ${srcdir}/0032-qt4-icu59.patch
 +  patch -p0 -i ${srcdir}/patch-qt-custom-threadpool.diff
 +  patch -p0 -i ${srcdir}/relwithdeb.diff
-+  patch -p0 -i ${srcdir}/qt-4.8.7-gcc6-fix.diff
 +  patch -p0 -i ${srcdir}/qt4-pcre.patch
 +  patch -p1 -i ${srcdir}/0001-Enable-building-with-C-11-and-C-14.patch
 +  patch -p1 -i ${srcdir}/qt4-selection-flags-static_cast.patch
  
    if check_option "debug" "y"; then
-     patch -p1 -i ${srcdir}/qt4-build-debug-qmake.patch
-@@ -189,7 +207,6 @@
+     patch -p1 -i ${srcdir}/0100-qt4-build-debug-qmake.patch
+@@ -173,9 +188,9 @@
+ 
+   local STATIC_LD=
+ 
+-  sed -i "s|^QMAKE_CFLAGS		=\(.*\)$|QMAKE_CFLAGS		= \1 ${_optim} |g" mkspecs/win32-g++/qmake.conf
+-  sed -i "s|^QMAKE_LFLAGS		=\(.*\)$|QMAKE_LFLAGS		= \1 ${STATIC_LD}|g" mkspecs/win32-g++/qmake.conf
+-  sed -i "s|^QMAKE_LIBS		=\(.*\)$|QMAKE_LIBS		=\1 -llcms2 -llzma|g" mkspecs/win32-g++/qmake.conf
++  sed -i "s|^QMAKE_CFLAGS               =\(.*\)$|QMAKE_CFLAGS           = \1 ${_optim} |g" mkspecs/win32-g++/qmake.conf
++  sed -i "s|^QMAKE_LFLAGS               =\(.*\)$|QMAKE_LFLAGS           = \1 ${STATIC_LD}|g" mkspecs/win32-g++/qmake.conf
++  sed -i "s|^QMAKE_LIBS         =\(.*\)$|QMAKE_LIBS             =\1 -llcms2 -llzma|g" mkspecs/win32-g++/qmake.conf
+ 
+   cd ${srcdir}
+   mv ${_pkgfqn} ${_realname}-${pkgver}
+@@ -192,7 +207,6 @@
    #pkg_conf_inc=$(pkg-config --dont-define-prefix --cflags-only-I libxml-2.0 dbus-1)
-   export PATH=${srcdir}/${CARCH}/bin:${srcdir}/${CARCH}/lib:${PATH}
+   export PATH=${srcdir}/${_realname}-${pkgver}/bin:${srcdir}/${_realname}-${pkgver}/lib:${PATH}
  
 -  export CXXFLAGS="$CXXFLAGS -std=gnu++98"
    ./configure \
      -prefix ${_buildpkgdir} \
      -datadir ${_buildpkgdir}/share/qt4 \
-@@ -203,7 +220,7 @@
+@@ -206,7 +220,7 @@
      -demosdir ${_buildpkgdir}/share/qt4/demos \
      -opensource \
      -confirm-license \
@@ -69,7 +79,7 @@
      -platform win32-g++ \
      -xplatform win32-g++ \
      -plugin-sql-ibase \
-@@ -224,6 +241,7 @@
+@@ -227,6 +241,7 @@
      -little-endian \
      -xmlpatterns \
      -multimedia \

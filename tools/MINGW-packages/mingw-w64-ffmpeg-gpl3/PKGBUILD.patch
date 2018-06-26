@@ -1,17 +1,17 @@
---- PKGBUILD.orig	2018-05-16 09:12:38.000000000 +0200
-+++ PKGBUILD	2018-05-16 09:12:38.000000000 +0200
-@@ -2,8 +2,8 @@
- # Contributer: Zach Bacon <11doctorwhocanada@gmail.com>
+--- PKGBUILD.orig	2018-06-25 14:22:07.000000000 +0200
++++ PKGBUILD	2018-06-25 14:22:28.000000000 +0200
+@@ -3,8 +3,8 @@
+ # Contributer: wirx6 <wirx654@gmail.com>
  
  _realname=ffmpeg
 -pkgbase="mingw-w64-${_realname}"
 -pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 +pkgbase="mingw-w64-${_realname}-gpl3"
 +pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-gpl3"
- pkgver=4.0
- pkgrel=2
+ pkgver=4.0.1
+ pkgrel=1
  pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
-@@ -22,16 +22,19 @@
+@@ -23,16 +23,19 @@
          "${MINGW_PACKAGE_PREFIX}-libbluray"
          "${MINGW_PACKAGE_PREFIX}-libcaca"
          "${MINGW_PACKAGE_PREFIX}-libmodplug"
@@ -31,7 +31,7 @@
          "${MINGW_PACKAGE_PREFIX}-speex"
          "${MINGW_PACKAGE_PREFIX}-wavpack"
          "${MINGW_PACKAGE_PREFIX}-x264"
-@@ -57,7 +60,7 @@
+@@ -59,7 +62,7 @@
    cd "${srcdir}/build-${MINGW_CHOST}"
  
    ../${_realname}-${pkgver}/configure \
@@ -40,7 +40,7 @@
      --target-os=mingw32 \
      --arch=${CARCH%%-*} \
      --disable-debug \
-@@ -77,9 +80,12 @@
+@@ -79,9 +82,12 @@
      --enable-libmp3lame \
      --enable-libopencore_amrnb \
      --enable-libopencore_amrwb \
@@ -53,7 +53,7 @@
      --enable-libspeex \
      --enable-libtheora \
      --enable-libvorbis \
-@@ -108,18 +114,18 @@
+@@ -111,18 +117,18 @@
    cd "${srcdir}/build-${MINGW_CHOST}"
    # workaround for conflict with SDL main(), use it if you have SDL installed
    #make check CC_C="-c -Umain"

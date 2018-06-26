@@ -1,0 +1,11 @@
+--- qt-everywhere-opensource-src-4.8.7/src/corelib/tools/qlocale_icu.cpp~	2017-04-25 07:42:22.000000000 +0000
++++ qt-everywhere-opensource-src-4.8.7/src/corelib/tools/qlocale_icu.cpp	2017-04-25 07:44:34.675363008 +0000
+@@ -43,6 +43,8 @@
+ #include "qlibrary.h"
+ #include "qdebug.h"
+ 
++#define UCHAR_TYPE unsigned short
++
+ #include "unicode/uversion.h"
+ #include "unicode/ucol.h"
+ 
