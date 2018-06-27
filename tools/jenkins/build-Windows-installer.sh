@@ -82,11 +82,11 @@ REMOTE_PROJECT_PATH="$REMOTE_PATH/$PKGOS/$BITS/$BUILD_NAME"
 REMOTE_ONLINE_PACKAGES_PATH="$REMOTE_PROJECT_PATH/packages"
 
 # The date passed to the ReleaseDate tag of the xml config file of the installer. This has a different format than CURRENT_DATE.
-INSTALLER_XML_DATE=$(date "+%Y-%m-%d")
+INSTALLER_XML_DATE="$(date "+%Y-%m-%d")"
 
 
 # tag symbols we want to keep with 'release'
-VERSION_TAG=$CURRENT_DATE
+VERSION_TAG="$CURRENT_DATE"
 if [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABLE" ]; then
     BPAD_TAG="-release"
     VERSION_TAG="$NATRON_VERSION_FULL"
@@ -161,7 +161,7 @@ function installPlugin() {
         echo "<assemblyIdentity name=\"${OFX_BINARY}.ofx\" version=\"1.0.0.0\" type=\"win32\" processorArchitecture=\"amd64\"/>" >> "$PLUGIN_MANIFEST"
         DEPS_DLL=$(cd "$PKG_PATH/data/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}";ls ./*.dll) || true
         for depend in $DEPS_DLL; do
-            trimmeddep=$(basename "$depend")
+            trimmeddep="$(basename "$depend")"
             echo "<file name=\"${trimmeddep}\"></file>" >> "$PLUGIN_MANIFEST"
         done
         echo "</assembly>" >> "$PLUGIN_MANIFEST"
@@ -183,23 +183,23 @@ function installPlugin() {
     return 0
 }
 
-PACKAGES=""
-PACKAGES="$PACKAGES fr.inria.openfx.io"
+# Natron package
+NATRON_PKG="fr.inria.natron"
+NATRON_PACKAGE_PATH="${INSTALLER_PATH}/packages/${NATRON_PKG}"
+PACKAGES="${NATRON_PKG}"
+
+PACKAGES="${PACKAGES},fr.inria.openfx.io"
 installPlugin "IO" "" "fr.inria.openfx.io" "$XML/openfx-io.xml" "$QS/openfx-io.qs"
-PACKAGES="$PACKAGES fr.inria.openfx.misc"
+PACKAGES="${PACKAGES},fr.inria.openfx.misc"
 installPlugin "Misc" "" "fr.inria.openfx.misc" "$XML/openfx-misc.xml" "$QS/openfx-misc.qs"
 installPlugin "CImg" "" "fr.inria.openfx.misc" "$XML/openfx-misc.xml" "$QS/openfx-misc.qs"
 installPlugin "Shadertoy" "" "fr.inria.openfx.misc" "$XML/openfx-misc.xml" "$QS/openfx-misc.qs"
-PACKAGES="$PACKAGES fr.inria.openfx.extra"
+PACKAGES="${PACKAGES},fr.inria.openfx.extra"
 installPlugin "Arena" "$ARENA_DLL" "fr.inria.openfx.extra" "$XML/openfx-arena.xml" "$QS/openfx-arena.qs"
 installPlugin "ArenaCL" "$ARENA_DLL" "fr.inria.openfx.extra" "$XML/openfx-arena.xml" "$QS/openfx-arena.qs"
 installPlugin "GMIC" "$GMIC_DLL" "fr.inria.openfx.extra" "$XML/openfx-gmic.xml" "$QS/openfx-gmic.qs"
 #installPlugin "CV" "" "fr.inria.openfx.opencv" "$XML/openfx-opencv.xml" "$QS/openfx-opencv.qs"
 
-# Natron package
-PACKAGES="$PACKAGES fr.inria.natron"
-NATRON_PKG=fr.inria.natron
-NATRON_PACKAGE_PATH=$INSTALLER_PATH/packages/$NATRON_PKG
 
 # Create package directories
 mkdir -p "$NATRON_PACKAGE_PATH/meta"
@@ -274,9 +274,10 @@ fi
 
 # Distribute Natron DLLs in a separate package so that the user only receive updates for DLLs when we actually update them
 # rather than every time we recompile Natron
-PACKAGES="$PACKAGES fr.inria.natron.libs"
-DLLS_PACKAGE_PATH="$INSTALLER_PATH/packages/fr.inria.natron.libs"
-mkdir -p "$DLLS_PACKAGE_PATH/meta"
+CORELIBS_PKG="fr.inria.natron.libs"
+PACKAGES="${PACKAGES},${CORELIBS_PKG}"
+DLLS_PACKAGE_PATH="${INSTALLER_PATH}/packages/${CORELIBS_PKG}"
+mkdir -p "${DLLS_PACKAGE_PATH}/meta"
 
 # We copy all files to both the portable archive and the package for the installer in a loop
 COPY_LOCATIONS="$TMP_PORTABLE_DIR $DLLS_PACKAGE_PATH/data"
@@ -385,7 +386,7 @@ if [ ! -d "$SRC_PATH/natron-windows-mesa" ]; then
     )
 fi
 
-PACKAGES="$PACKAGES fr.inria.mesa"
+PACKAGES="${PACKAGES},fr.inria.mesa"
 MESA_PKG_PATH="$INSTALLER_PATH/packages/fr.inria.mesa"
 mkdir -p "$MESA_PKG_PATH/meta" "$MESA_PKG_PATH/data/bin" "$TMP_PORTABLE_DIR/bin/mesa"
 $GSED "s/_DATE_/${INSTALLER_XML_DATE}/" < "$XML/mesa.xml" > "$MESA_PKG_PATH/meta/package.xml"
