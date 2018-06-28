@@ -32,12 +32,16 @@ Natron multiple times on the same computer, the different processes will share t
 - For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
 
 
+## Version 2.3.14
+
+
 ## Version 2.3.13
 
 - Fix default value for file premult in ReadSVG (should be premultiplied).
 - HSV values in the viewer info lines are now computed from linear RGB #286.
 - RGBToHSV, HSVToRGB, RGBToHSL, HSLToRGB, RGBToHSI, HSIToRGB: Use linear RGB values in computation #286.
 - Tracker: fix bug where Transform tracking was wrong when using more than 1 point #289.
+
 
 ## Version 2.3.12
 

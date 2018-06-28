@@ -202,7 +202,9 @@ The maximum size that may be used by the DiskCache node on disk (in GiB)
 
 WARNING: Changing this parameter requires a restart of the application.
 
-This is points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, the default location will be used.
+This is points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, the default location will be used. The default location is:
+
+/Users/devernay/Library/Caches/INRIA/Natron
 
 **Wipe Disk Cache**
 

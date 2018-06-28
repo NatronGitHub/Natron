@@ -91,6 +91,35 @@ Controls
 |                                            |         |                | | **Duplicate left**                |
 |                                            |         |                | | **Duplicate bottom**              |
 |                                            |         |                | | **Duplicate right**               |
+|                                            |         |                | | **Duplicate horizontal**          |
+|                                            |         |                | | **Duplicate vertical**            |
+|                                            |         |                | | **Checkered**                     |
+|                                            |         |                | | **Checkered inverse)**            |
+|                                            |         |                | | **Preview split = point(50**      |
+|                                            |         |                | | **50**                            |
+|                                            |         |                | | **0**                             |
+|                                            |         |                | | **0**                             |
+|                                            |         |                | | **200**                           |
+|                                            |         |                | | **200**                           |
+|                                            |         |                | | **200**                           |
+|                                            |         |                | | **0**                             |
+|                                            |         |                | | **10**                            |
+|                                            |         |                | | **0**                             |
++--------------------------------------------+---------+----------------+-------------------------------------+
+| Preview type_2 / ``Preview_type_2``        | Choice  | Full           | |                                   |
+|                                            |         |                | | **Full**                          |
+|                                            |         |                | | **Forward horizontal**            |
+|                                            |         |                | | **Forward vertical**              |
+|                                            |         |                | | **Backward horizontal**           |
+|                                            |         |                | | **Backward vertical**             |
+|                                            |         |                | | **Duplicate top**                 |
+|                                            |         |                | | **Duplicate left**                |
+|                                            |         |                | | **Duplicate bottom**              |
+|                                            |         |                | | **Duplicate right**               |
+|                                            |         |                | | **Duplicate horizontal**          |
+|                                            |         |                | | **Duplicate vertical**            |
+|                                            |         |                | | **Checkered**                     |
+|                                            |         |                | | **Checkered inverse**             |
 +--------------------------------------------+---------+----------------+-------------------------------------+
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0        | |                                   |
 |                                            |         |                | | **Merged**                        |
