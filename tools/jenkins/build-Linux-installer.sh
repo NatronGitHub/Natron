@@ -249,19 +249,19 @@ compat_version=3.4.19
 case "${TC_GCC:-}" in
     4.7.*)
         compat_version=3.4.17
-    ;;
+        ;;
     4.8.[012])
         compat_version=3.4.18
-    ;;
+        ;;
     4.8.[3456789])
         compat_version=3.4.19
-    ;;
+        ;;
     4.9.*|5.0.*)
         compat_version=3.4.20
-    ;;
+        ;;
     5.[123456789].*|6.0.*)
         compat_version=3.4.21
-    ;;
+        ;;
     6.[123456789].*|7.0*)
         compat_version=3.4.22
         ;;
@@ -274,7 +274,6 @@ case "${TC_GCC:-}" in
     8.*|9.*)
         compat_version=3.4.25
         ;;
-    ;;
 esac
 
 
