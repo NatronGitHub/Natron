@@ -362,10 +362,10 @@ OCIO_PACKAGE_PATH="${INSTALLER_PATH}/packages/${OCIO_PKG}"
 # bump number when OpenColorIO-Configs changes
 OCIO_VERSION="20180327000000"
 # OCIO
-for c in blender blender-cycles natron; do
-    lib="${TMP_BINARIES_PATH}/Natron/OpenColorIO-Configs/${c}/config.ocio"
-    LAST_MODIFICATION_DATE=$(date -r "$lib" "+%Y%m%d%H%M%S")
-    if [ "$LAST_MODIFICATION_DATE" -gt "$CLIBS_VERSION" ]; then
+for c in blender natron nuke-default; do
+    lib="${TMP_BINARIES_PATH}/Resources/OpenColorIO-Configs/${c}/config.ocio"
+    LAST_MODIFICATION_DATE="$(date -r "$lib" "+%Y%m%d%H%M%S")"
+    if [ "$LAST_MODIFICATION_DATE" -gt "$OCIO_VERSION" ]; then
         OCIO_VERSION="$LAST_MODIFICATION_DATE"
     fi
 done
