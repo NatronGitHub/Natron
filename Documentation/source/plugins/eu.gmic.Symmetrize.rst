@@ -8,7 +8,7 @@ G’MIC Symmetrize node
 Description
 -----------
 
-Author: David Tschumperle. Latest update: 2013/07/01.
+Author: David Tschumperle. Latest update: 2018/06/11.
 
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
 
@@ -31,11 +31,11 @@ Controls
 +--------------------------------------------+---------+-------------+-----------------------+
 | Parameter / script name                    | Type    | Default     | Function              |
 +============================================+=========+=============+=======================+
-| X-center / ``Xcenter``                     | Double  | 50          |                       |
+| Point 1 / ``Point_1``                      | Double  | 0           |                       |
 +--------------------------------------------+---------+-------------+-----------------------+
-| Y-center / ``Ycenter``                     | Double  | 50          |                       |
+| Point 2 / ``Point_2``                      | Double  | 0           |                       |
 +--------------------------------------------+---------+-------------+-----------------------+
-| Angle / ``Angle``                          | Double  | 90          |                       |
+| Angle / ``Angle``                          | Double  | 0           |                       |
 +--------------------------------------------+---------+-------------+-----------------------+
 | Boundary / ``Boundary``                    | Choice  | Transparent | |                     |
 |                                            |         |             | | **Transparent**     |

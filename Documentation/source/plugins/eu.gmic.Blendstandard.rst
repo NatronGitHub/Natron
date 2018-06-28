@@ -8,9 +8,13 @@ G’MIC Blend standard node
 Description
 -----------
 
+Note: In custom formulas, a and b respectively stand for the values of the base layer and the blend layer,
+
+and are defined in value range [0,1.
+
 Note:
 
-This filter needs two layers to work properly. Set the Input layers option to handle multiple input layers.
+This filter needs at least two layers to work properly. Do not forget to set the Input layers option below to handle multiple input layers.
 
 Reference page for G’MIC blending modes: https://github.com/dtschump/gmic-community/wiki/Blending-modes
 
@@ -40,102 +44,105 @@ Controls
 
 .. cssclass:: longtable
 
-+-----------------------------------------------+---------+------------+------------------------------------------------------+
-| Parameter / script name                       | Type    | Default    | Function                                             |
-+===============================================+=========+============+======================================================+
-| Mode / ``Mode``                               | Choice  | Add        | |                                                    |
-|                                               |         |            | | **Add**                                            |
-|                                               |         |            | | **Alpha**                                          |
-|                                               |         |            | | **And**                                            |
-|                                               |         |            | | **Average**                                        |
-|                                               |         |            | | **Blue**                                           |
-|                                               |         |            | | **Burn**                                           |
-|                                               |         |            | | **Darken**                                         |
-|                                               |         |            | | **Difference**                                     |
-|                                               |         |            | | **Divide**                                         |
-|                                               |         |            | | **Dodge**                                          |
-|                                               |         |            | | **Edges**                                          |
-|                                               |         |            | | **Exclusion**                                      |
-|                                               |         |            | | **Freeze**                                         |
-|                                               |         |            | | **Grain extract**                                  |
-|                                               |         |            | | **Grain merge**                                    |
-|                                               |         |            | | **Green**                                          |
-|                                               |         |            | | **Hard light**                                     |
-|                                               |         |            | | **Hard mix**                                       |
-|                                               |         |            | | **Hue**                                            |
-|                                               |         |            | | **Interpolation**                                  |
-|                                               |         |            | | **Lighten**                                        |
-|                                               |         |            | | **Lightness**                                      |
-|                                               |         |            | | **Linear burn**                                    |
-|                                               |         |            | | **Linear light**                                   |
-|                                               |         |            | | **Luminance**                                      |
-|                                               |         |            | | **Multiply**                                       |
-|                                               |         |            | | **Negation**                                       |
-|                                               |         |            | | **Or**                                             |
-|                                               |         |            | | **Overlay**                                        |
-|                                               |         |            | | **Pin light**                                      |
-|                                               |         |            | | **Red**                                            |
-|                                               |         |            | | **Reflect**                                        |
-|                                               |         |            | | **Saturation**                                     |
-|                                               |         |            | | **Shape area max**                                 |
-|                                               |         |            | | **Shape area max0**                                |
-|                                               |         |            | | **Shape area min**                                 |
-|                                               |         |            | | **Shape area min0**                                |
-|                                               |         |            | | **Shape average**                                  |
-|                                               |         |            | | **Shape average0**                                 |
-|                                               |         |            | | **Shape median**                                   |
-|                                               |         |            | | **Shape median0**                                  |
-|                                               |         |            | | **Shape min**                                      |
-|                                               |         |            | | **Shape min0**                                     |
-|                                               |         |            | | **Shape max**                                      |
-|                                               |         |            | | **Shape max0**                                     |
-|                                               |         |            | | **Soft burn**                                      |
-|                                               |         |            | | **Soft dodge**                                     |
-|                                               |         |            | | **Soft light**                                     |
-|                                               |         |            | | **Screen**                                         |
-|                                               |         |            | | **Stamp**                                          |
-|                                               |         |            | | **Subtract**                                       |
-|                                               |         |            | | **Value**                                          |
-|                                               |         |            | | **Vivid light**                                    |
-|                                               |         |            | | **Xor**                                            |
-+-----------------------------------------------+---------+------------+------------------------------------------------------+
-| Process as / ``Process_as``                   | Choice  | Two-by-two | |                                                    |
-|                                               |         |            | | **Two-by-two**                                     |
-|                                               |         |            | | **Upper layer is the top layer for all blends**    |
-|                                               |         |            | | **Lower layer is the bottom layer for all blends** |
-+-----------------------------------------------+---------+------------+------------------------------------------------------+
-| Opacity / ``Opacity``                         | Double  | 1          |                                                      |
-+-----------------------------------------------+---------+------------+------------------------------------------------------+
-| Preview all outputs / ``Preview_all_outputs`` | Boolean | On         |                                                      |
-+-----------------------------------------------+---------+------------+------------------------------------------------------+
-| Output Layer / ``Output_Layer``               | Choice  | Layer 0    | |                                                    |
-|                                               |         |            | | **Merged**                                         |
-|                                               |         |            | | **Layer 0**                                        |
-|                                               |         |            | | **Layer 1**                                        |
-|                                               |         |            | | **Layer 2**                                        |
-|                                               |         |            | | **Layer 3**                                        |
-|                                               |         |            | | **Layer 4**                                        |
-|                                               |         |            | | **Layer 5**                                        |
-|                                               |         |            | | **Layer 6**                                        |
-|                                               |         |            | | **Layer 7**                                        |
-|                                               |         |            | | **Layer 8**                                        |
-|                                               |         |            | | **Layer 9**                                        |
-+-----------------------------------------------+---------+------------+------------------------------------------------------+
-| Resize Mode / ``Resize_Mode``                 | Choice  | Dynamic    | |                                                    |
-|                                               |         |            | | **Fixed (Inplace)**                                |
-|                                               |         |            | | **Dynamic**                                        |
-|                                               |         |            | | **Downsample 1/2**                                 |
-|                                               |         |            | | **Downsample 1/4**                                 |
-|                                               |         |            | | **Downsample 1/8**                                 |
-|                                               |         |            | | **Downsample 1/16**                                |
-+-----------------------------------------------+---------+------------+------------------------------------------------------+
-| Ignore Alpha / ``Ignore_Alpha``               | Boolean | Off        |                                                      |
-+-----------------------------------------------+---------+------------+------------------------------------------------------+
-| Preview/Draft Mode / ``PreviewDraft_Mode``    | Boolean | Off        |                                                      |
-+-----------------------------------------------+---------+------------+------------------------------------------------------+
-| Log Verbosity / ``Log_Verbosity``             | Choice  | Off        | |                                                    |
-|                                               |         |            | | **Off**                                            |
-|                                               |         |            | | **Level 1**                                        |
-|                                               |         |            | | **Level 2**                                        |
-|                                               |         |            | | **Level 3**                                        |
-+-----------------------------------------------+---------+------------+------------------------------------------------------+
++-----------------------------------------------+---------+-------------------------------------+------------------------------------------------------+
+| Parameter / script name                       | Type    | Default                             | Function                                             |
++===============================================+=========+=====================================+======================================================+
+| Mode / ``Mode``                               | Choice  | Custom formula                      | |                                                    |
+|                                               |         |                                     | | **Add**                                            |
+|                                               |         |                                     | | **Alpha**                                          |
+|                                               |         |                                     | | **And**                                            |
+|                                               |         |                                     | | **Average**                                        |
+|                                               |         |                                     | | **Blue**                                           |
+|                                               |         |                                     | | **Burn**                                           |
+|                                               |         |                                     | | **Custom formula**                                 |
+|                                               |         |                                     | | **Darken**                                         |
+|                                               |         |                                     | | **Difference**                                     |
+|                                               |         |                                     | | **Divide**                                         |
+|                                               |         |                                     | | **Dodge**                                          |
+|                                               |         |                                     | | **Edges**                                          |
+|                                               |         |                                     | | **Exclusion**                                      |
+|                                               |         |                                     | | **Freeze**                                         |
+|                                               |         |                                     | | **Grain extract**                                  |
+|                                               |         |                                     | | **Grain merge**                                    |
+|                                               |         |                                     | | **Green**                                          |
+|                                               |         |                                     | | **Hard light**                                     |
+|                                               |         |                                     | | **Hard mix**                                       |
+|                                               |         |                                     | | **Hue**                                            |
+|                                               |         |                                     | | **Interpolation**                                  |
+|                                               |         |                                     | | **Lighten**                                        |
+|                                               |         |                                     | | **Lightness**                                      |
+|                                               |         |                                     | | **Linear burn**                                    |
+|                                               |         |                                     | | **Linear light**                                   |
+|                                               |         |                                     | | **Luminance**                                      |
+|                                               |         |                                     | | **Multiply**                                       |
+|                                               |         |                                     | | **Negation**                                       |
+|                                               |         |                                     | | **Or**                                             |
+|                                               |         |                                     | | **Overlay**                                        |
+|                                               |         |                                     | | **Pin light**                                      |
+|                                               |         |                                     | | **Red**                                            |
+|                                               |         |                                     | | **Reflect**                                        |
+|                                               |         |                                     | | **Saturation**                                     |
+|                                               |         |                                     | | **Shape area max**                                 |
+|                                               |         |                                     | | **Shape area max0**                                |
+|                                               |         |                                     | | **Shape area min**                                 |
+|                                               |         |                                     | | **Shape area min0**                                |
+|                                               |         |                                     | | **Shape average**                                  |
+|                                               |         |                                     | | **Shape average0**                                 |
+|                                               |         |                                     | | **Shape median**                                   |
+|                                               |         |                                     | | **Shape median0**                                  |
+|                                               |         |                                     | | **Shape min**                                      |
+|                                               |         |                                     | | **Shape min0**                                     |
+|                                               |         |                                     | | **Shape max**                                      |
+|                                               |         |                                     | | **Shape max0**                                     |
+|                                               |         |                                     | | **Soft burn**                                      |
+|                                               |         |                                     | | **Soft dodge**                                     |
+|                                               |         |                                     | | **Soft light**                                     |
+|                                               |         |                                     | | **Screen**                                         |
+|                                               |         |                                     | | **Stamp**                                          |
+|                                               |         |                                     | | **Subtract**                                       |
+|                                               |         |                                     | | **Value**                                          |
+|                                               |         |                                     | | **Vivid light**                                    |
+|                                               |         |                                     | | **Xor**                                            |
++-----------------------------------------------+---------+-------------------------------------+------------------------------------------------------+
+| Process as / ``Process_as``                   | Choice  | Two-by-two                          | |                                                    |
+|                                               |         |                                     | | **Two-by-two**                                     |
+|                                               |         |                                     | | **Upper layer is the top layer for all blends**    |
+|                                               |         |                                     | | **Lower layer is the bottom layer for all blends** |
++-----------------------------------------------+---------+-------------------------------------+------------------------------------------------------+
+| Opacity (%) / ``Opacity_``                    | Double  | 100                                 |                                                      |
++-----------------------------------------------+---------+-------------------------------------+------------------------------------------------------+
+| Preview all outputs / ``Preview_all_outputs`` | Boolean | On                                  |                                                      |
++-----------------------------------------------+---------+-------------------------------------+------------------------------------------------------+
+| Custom formula / ``Custom_formula``           | String  | 1/2 - 1/4*cos(pi*a) - 1/4*cos(pi*b) |                                                      |
++-----------------------------------------------+---------+-------------------------------------+------------------------------------------------------+
+| Output Layer / ``Output_Layer``               | Choice  | Layer 0                             | |                                                    |
+|                                               |         |                                     | | **Merged**                                         |
+|                                               |         |                                     | | **Layer 0**                                        |
+|                                               |         |                                     | | **Layer 1**                                        |
+|                                               |         |                                     | | **Layer 2**                                        |
+|                                               |         |                                     | | **Layer 3**                                        |
+|                                               |         |                                     | | **Layer 4**                                        |
+|                                               |         |                                     | | **Layer 5**                                        |
+|                                               |         |                                     | | **Layer 6**                                        |
+|                                               |         |                                     | | **Layer 7**                                        |
+|                                               |         |                                     | | **Layer 8**                                        |
+|                                               |         |                                     | | **Layer 9**                                        |
++-----------------------------------------------+---------+-------------------------------------+------------------------------------------------------+
+| Resize Mode / ``Resize_Mode``                 | Choice  | Dynamic                             | |                                                    |
+|                                               |         |                                     | | **Fixed (Inplace)**                                |
+|                                               |         |                                     | | **Dynamic**                                        |
+|                                               |         |                                     | | **Downsample 1/2**                                 |
+|                                               |         |                                     | | **Downsample 1/4**                                 |
+|                                               |         |                                     | | **Downsample 1/8**                                 |
+|                                               |         |                                     | | **Downsample 1/16**                                |
++-----------------------------------------------+---------+-------------------------------------+------------------------------------------------------+
+| Ignore Alpha / ``Ignore_Alpha``               | Boolean | Off                                 |                                                      |
++-----------------------------------------------+---------+-------------------------------------+------------------------------------------------------+
+| Preview/Draft Mode / ``PreviewDraft_Mode``    | Boolean | Off                                 |                                                      |
++-----------------------------------------------+---------+-------------------------------------+------------------------------------------------------+
+| Log Verbosity / ``Log_Verbosity``             | Choice  | Off                                 | |                                                    |
+|                                               |         |                                     | | **Off**                                            |
+|                                               |         |                                     | | **Level 1**                                        |
+|                                               |         |                                     | | **Level 2**                                        |
+|                                               |         |                                     | | **Level 3**                                        |
++-----------------------------------------------+---------+-------------------------------------+------------------------------------------------------+
