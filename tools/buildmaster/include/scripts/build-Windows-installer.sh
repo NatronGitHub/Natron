@@ -50,10 +50,10 @@ elif [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
     FFMPEG_BIN_PATH=$SDK_HOME/ffmpeg-lgpl
 fi
 
-if [ -d "$TMP_BINARIES_PATH/symbols" ]; then
-    rm -rf $TMP_BINARIES_PATH/symbols
+if [ -d "${TMP_BINARIES_PATH}/symbols" ]; then
+    rm -rf ${TMP_BINARIES_PATH}/symbols
 fi
-mkdir -p $TMP_BINARIES_PATH/symbols
+mkdir -p ${TMP_BINARIES_PATH}/symbols
 
 
 if [ -z "${BUNDLE_IO:-}" ]; then
@@ -166,8 +166,8 @@ mkdir -p "$TMP_BUILD_DIR"
 # tag symbols we want to keep with 'release'
 if [ "$BUILD_CONFIG" != "" ] && [ "$BUILD_CONFIG" != "SNAPSHOT" ]; then
     BPAD_TAG="-release"
-    if [ -f "$TMP_BINARIES_PATH/natron-fullversion.txt" ]; then
-        GET_VER=$(cat "$TMP_BINARIES_PATH/natron-fullversion.txt")
+    if [ -f "${TMP_BINARIES_PATH}/natron-fullversion.txt" ]; then
+        GET_VER=$(cat "${TMP_BINARIES_PATH}/natron-fullversion.txt")
         if [ "$GET_VER" != "" ]; then
             TAG=$GET_VER
         fi
@@ -175,27 +175,27 @@ if [ "$BUILD_CONFIG" != "" ] && [ "$BUILD_CONFIG" != "SNAPSHOT" ]; then
 fi
 
 # SETUP
-INSTALLER="$TMP_BUILD_DIR/Natron-installer"
+INSTALLER_PATH="$TMP_BUILD_DIR/Natron-installer"
 XML="$INC_PATH/xml"
 QS="$INC_PATH/qs"
 
-mkdir -p "$INSTALLER/config" "$INSTALLER/packages"
-$GSED -e "s/_VERSION_/${NATRON_VERSION_NUMBER}/;s#_RBVERSION_#${NATRON_BRANCH}#g;s#_OS_BRANCH_LATEST_#${REPO_OS_LATEST}#g;s#_OS_BRANCH_BIT_#${REPO_OS}#g;s#_URL_#${REPO_URL}#g;s#_APP_INSTALL_SUFFIX_#${APP_INSTALL_SUFFIX}#g" < "$INC_PATH/config/$PKGOS_ORIG.xml" > "$INSTALLER/config/config.xml"
-cp "$INC_PATH/config/"*.png "$INSTALLER/config/"
+mkdir -p "${INSTALLER_PATH}/config" "${INSTALLER_PATH}/packages"
+$GSED -e "s/_VERSION_/${NATRON_VERSION_NUMBER}/;s#_RBVERSION_#${NATRON_BRANCH}#g;s#_OS_BRANCH_LATEST_#${REPO_OS_LATEST}#g;s#_OS_BRANCH_BIT_#${REPO_OS}#g;s#_URL_#${REPO_URL}#g;s#_APP_INSTALL_SUFFIX_#${APP_INSTALL_SUFFIX}#g" < "$INC_PATH/config/$PKGOS_ORIG.xml" > "${INSTALLER_PATH}/config/config.xml"
+cp "$INC_PATH/config/"*.png "${INSTALLER_PATH}/config/"
 
 
 # OFX IO
 if [ "${BUNDLE_IO:-}" = "1" ]; then         
 
     OFX_IO_VERSION="$TAG"
-    OFX_IO_PATH="$INSTALLER/packages/$IOPLUG_PKG"
+    OFX_IO_PATH="${INSTALLER_PATH}/packages/$IOPLUG_PKG"
     mkdir -p "$OFX_IO_PATH/data" "$OFX_IO_PATH/meta" "$OFX_IO_PATH/data/Plugins/OFX/Natron"
     $GSED -e "s/_VERSION_/${OFX_IO_VERSION}/;s/_DATE_/${DATE}/" < "$XML/openfx-io.xml" > "$OFX_IO_PATH/meta/package.xml"
     cp "$QS/openfx-io.qs" "$OFX_IO_PATH/meta/installscript.qs"
-    #cat "$TMP_BINARIES_PATH/docs/openfx-io/VERSION" > "$OFX_IO_PATH/meta/ofx-io-license.txt"
+    #cat "${TMP_BINARIES_PATH}/docs/openfx-io/VERSION" > "$OFX_IO_PATH/meta/ofx-io-license.txt"
     #echo "" >> "$OFX_IO_PATH/meta/ofx-io-license.txt"
-    #cat "$TMP_BINARIES_PATH/docs/openfx-io/LICENSE" >> "$OFX_IO_PATH/meta/ofx-io-license.txt"
-    cp -a "$TMP_BINARIES_PATH/OFX/Plugins/IO.ofx.bundle" "$OFX_IO_PATH/data/Plugins/OFX/Natron/"
+    #cat "${TMP_BINARIES_PATH}/docs/openfx-io/LICENSE" >> "$OFX_IO_PATH/meta/ofx-io-license.txt"
+    cp -a "${TMP_BINARIES_PATH}/OFX/Plugins/IO.ofx.bundle" "$OFX_IO_PATH/data/Plugins/OFX/Natron/"
     #for depend in "${IO_DLL[@]}"; do
     #    cp "$SDK_HOME/bin/$depend" "$OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win${BITS}/"
     #done
@@ -204,7 +204,7 @@ if [ "${BUNDLE_IO:-}" = "1" ]; then
     
 
     if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-        dump_syms_safe "$OFX_IO_PATH/data/Plugins/OFX/Natron"/*/*/*/IO.ofx "$TMP_BINARIES_PATH/symbols/IO.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+        dump_syms_safe "$OFX_IO_PATH/data/Plugins/OFX/Natron"/*/*/*/IO.ofx "${TMP_BINARIES_PATH}/symbols/IO.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
     fi
     if [ "${DEBUG_MODE:-}" != "1" ]; then
         for dir in "$OFX_IO_PATH/data/Plugins/OFX/Natron"; do
@@ -221,25 +221,25 @@ fi
 
 # OFX MISC
 if [ "${BUNDLE_MISC:-}" = "1" ]; then 
-    OFX_MISC_VERSION=$TAG
-    OFX_MISC_PATH=$INSTALLER/packages/$MISCPLUG_PKG
+    OFX_MISC_VERSION="$TAG"
+    OFX_MISC_PATH="${INSTALLER_PATH}/packages/$MISCPLUG_PKG"
     mkdir -p "$OFX_MISC_PATH/data" "$OFX_MISC_PATH/meta" "$OFX_MISC_PATH/data/Plugins/OFX/Natron"
     $GSED "s/_VERSION_/${OFX_MISC_VERSION}/;s/_DATE_/${DATE}/" < "$XML/openfx-misc.xml" > "$OFX_MISC_PATH/meta/package.xml"
     cp "$QS/openfx-misc.qs" "$OFX_MISC_PATH/meta/installscript.qs"
-    #cat "$TMP_BINARIES_PATH/docs/openfx-misc/VERSION" > "$OFX_MISC_PATH/meta/ofx-misc-license.txt"
+    #cat "${TMP_BINARIES_PATH}/docs/openfx-misc/VERSION" > "$OFX_MISC_PATH/meta/ofx-misc-license.txt"
     #echo "" >> "$OFX_MISC_PATH/meta/ofx-misc-license.txt"
-    #cat "$TMP_BINARIES_PATH/docs/openfx-misc/LICENSE" >> "$OFX_MISC_PATH/meta/ofx-misc-license.txt"
-    cp -a "$TMP_BINARIES_PATH/OFX/Plugins"/{CImg,Misc}.ofx.bundle "$OFX_MISC_PATH/data/Plugins/OFX/Natron/"
+    #cat "${TMP_BINARIES_PATH}/docs/openfx-misc/LICENSE" >> "$OFX_MISC_PATH/meta/ofx-misc-license.txt"
+    cp -a "${TMP_BINARIES_PATH}/OFX/Plugins"/{CImg,Misc}.ofx.bundle "$OFX_MISC_PATH/data/Plugins/OFX/Natron/"
 
-    if [ -d "$TMP_BINARIES_PATH/OFX/Plugins/ShaderToy.ofx.bundle"  ]; then
-        cp -a "$TMP_BINARIES_PATH/OFX/Plugins/Shadertoy.ofx.bundle" "$OFX_MISC_PATH/data/Plugins/OFX/Natron/"
+    if [ -d "${TMP_BINARIES_PATH}/OFX/Plugins/ShaderToy.ofx.bundle"  ]; then
+        cp -a "${TMP_BINARIES_PATH}/OFX/Plugins/Shadertoy.ofx.bundle" "$OFX_MISC_PATH/data/Plugins/OFX/Natron/"
     fi    
 
     if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-        dump_syms_safe "$OFX_MISC_PATH/data/Plugins/OFX/Natron"/*/*/*/CImg.ofx "$TMP_BINARIES_PATH/symbols/CImg.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
-        "$SDK_HOME/bin/dump_syms.exe" "$OFX_MISC_PATH/data/Plugins/OFX/Natron"/*/*/*/Misc.ofx > "$TMP_BINARIES_PATH/symbols/Misc.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+        dump_syms_safe "$OFX_MISC_PATH/data/Plugins/OFX/Natron"/*/*/*/CImg.ofx "${TMP_BINARIES_PATH}/symbols/CImg.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+        "$SDK_HOME/bin/dump_syms.exe" "$OFX_MISC_PATH/data/Plugins/OFX/Natron"/*/*/*/Misc.ofx > "${TMP_BINARIES_PATH}/symbols/Misc.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
         if [ -d "$OFX_MISC_PATH/data/Plugins/OFX/Natron/Shadertoy.ofx.bundle" ]; then
-            dump_syms_safe "$OFX_MISC_PATH/data/Plugins/OFX/Natron"/*/*/*/Shadertoy.ofx "$TMP_BINARIES_PATH/symbols/Shadertoy.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+            dump_syms_safe "$OFX_MISC_PATH/data/Plugins/OFX/Natron"/*/*/*/Shadertoy.ofx "${TMP_BINARIES_PATH}/symbols/Shadertoy.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
         fi
     fi
     if [ "${DEBUG_MODE:-}" != "1" ]; then
@@ -256,31 +256,31 @@ if [ "${BUNDLE_MISC:-}" = "1" ]; then
 fi
 
 # NATRON
-NATRON_PACKAGE_PATH="$INSTALLER/packages/$NATRON_PKG"
+NATRON_PACKAGE_PATH="${INSTALLER_PATH}/packages/$NATRON_PKG"
 mkdir -p "$NATRON_PACKAGE_PATH/meta" "$NATRON_PACKAGE_PATH/data/docs" "$NATRON_PACKAGE_PATH/data/bin" "$NATRON_PACKAGE_PATH/data/Resources" "$NATRON_PACKAGE_PATH/data/Plugins/PyPlugs"
 $GSED "s/_VERSION_/${TAG}/;s/_DATE_/${DATE}/" < "$XML/natron.xml" > "$NATRON_PACKAGE_PATH/meta/package.xml"
 cp "$QS/$PKGOS_ORIG/natron.qs" "$NATRON_PACKAGE_PATH/meta/installscript.qs"
-cp -a "$TMP_BINARIES_PATH/docs/natron"/* "$NATRON_PACKAGE_PATH/data/docs/"
-cat "$TMP_BINARIES_PATH/docs/natron/LICENSE.txt" > "$NATRON_PACKAGE_PATH/meta/natron-license.txt"
+cp -a "${TMP_BINARIES_PATH}/docs/natron"/* "$NATRON_PACKAGE_PATH/data/docs/"
+cat "${TMP_BINARIES_PATH}/docs/natron/LICENSE.txt" > "$NATRON_PACKAGE_PATH/meta/natron-license.txt"
 
-cp "$TMP_BINARIES_PATH/PyPlugs"/* "$NATRON_PACKAGE_PATH/data/Plugins/PyPlugs/"
+cp "${TMP_BINARIES_PATH}/PyPlugs"/* "$NATRON_PACKAGE_PATH/data/Plugins/PyPlugs/"
 
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    cp "$TMP_BINARIES_PATH/bin/Natron.exe" "$NATRON_PACKAGE_PATH/data/bin/Natron-bin.exe"
-    cp "$TMP_BINARIES_PATH/bin/NatronRenderer.exe" "$NATRON_PACKAGE_PATH/data/bin/NatronRenderer-bin.exe"
-    cp "$TMP_BINARIES_PATH/bin/NatronCrashReporter.exe" "$NATRON_PACKAGE_PATH/data/bin/Natron.exe"
-    cp "$TMP_BINARIES_PATH/bin/NatronRendererCrashReporter.exe" "$NATRON_PACKAGE_PATH/data/bin/NatronRenderer.exe"
+    cp "${TMP_BINARIES_PATH}/bin/Natron.exe" "$NATRON_PACKAGE_PATH/data/bin/Natron-bin.exe"
+    cp "${TMP_BINARIES_PATH}/bin/NatronRenderer.exe" "$NATRON_PACKAGE_PATH/data/bin/NatronRenderer-bin.exe"
+    cp "${TMP_BINARIES_PATH}/bin/NatronCrashReporter.exe" "$NATRON_PACKAGE_PATH/data/bin/Natron.exe"
+    cp "${TMP_BINARIES_PATH}/bin/NatronRendererCrashReporter.exe" "$NATRON_PACKAGE_PATH/data/bin/NatronRenderer.exe"
 else
-    cp "$TMP_BINARIES_PATH/bin/Natron.exe" "$NATRON_PACKAGE_PATH/data/bin/Natron.exe"
-    cp "$TMP_BINARIES_PATH/bin/NatronRenderer.exe" "$NATRON_PACKAGE_PATH/data/bin/NatronRenderer.exe"
+    cp "${TMP_BINARIES_PATH}/bin/Natron.exe" "$NATRON_PACKAGE_PATH/data/bin/Natron.exe"
+    cp "${TMP_BINARIES_PATH}/bin/NatronRenderer.exe" "$NATRON_PACKAGE_PATH/data/bin/NatronRenderer.exe"
 fi
 
-if [ -f "$TMP_BINARIES_PATH/bin/NatronProjectConverter.exe" ]; then
-    cp "$TMP_BINARIES_PATH/bin/NatronProjectConverter.exe" "$NATRON_PACKAGE_PATH/data/bin/NatronProjectConverter.exe"
+if [ -f "${TMP_BINARIES_PATH}/bin/NatronProjectConverter.exe" ]; then
+    cp "${TMP_BINARIES_PATH}/bin/NatronProjectConverter.exe" "$NATRON_PACKAGE_PATH/data/bin/NatronProjectConverter.exe"
 fi
 
-if [ -f "$TMP_BINARIES_PATH/bin/natron-python.exe" ]; then
-    cp "$TMP_BINARIES_PATH/bin/natron-python.exe" "$NATRON_PACKAGE_PATH/data/bin/natron-python.exe"
+if [ -f "${TMP_BINARIES_PATH}/bin/natron-python.exe" ]; then
+    cp "${TMP_BINARIES_PATH}/bin/natron-python.exe" "$NATRON_PACKAGE_PATH/data/bin/natron-python.exe"
 fi
 
 cp "$SDK_HOME"/bin/{iconvert.exe,idiff.exe,igrep.exe,iinfo.exe} "$NATRON_PACKAGE_PATH/data/bin/"
@@ -290,15 +290,15 @@ cp "$FFMPEG_BIN_PATH"/bin/{ffmpeg.exe,ffprobe.exe} "$NATRON_PACKAGE_PATH/data/bi
 #rm "$NATRON_PACKAGE_PATH"/data/docs/TuttleOFX-README.txt
 mkdir -p "$NATRON_PACKAGE_PATH"/data/Resources/{pixmaps,stylesheets}
 cp "$CWD/include/config/natronProjectIcon_windows.ico" "$NATRON_PACKAGE_PATH/data/Resources/pixmaps/"
-cp "$TMP_BINARIES_PATH/Resources/stylesheets/mainstyle.qss" "$NATRON_PACKAGE_PATH/data/Resources/stylesheets/"
+cp "${TMP_BINARIES_PATH}/Resources/stylesheets/mainstyle.qss" "$NATRON_PACKAGE_PATH/data/Resources/stylesheets/"
 
 # Docs
 mkdir -p "$NATRON_PACKAGE_PATH/data/Resources/docs"
-cp -a "$TMP_BINARIES_PATH/Resources/docs/html" "$NATRON_PACKAGE_PATH/data/Resources/docs/"
+cp -a "${TMP_BINARIES_PATH}/Resources/docs/html" "$NATRON_PACKAGE_PATH/data/Resources/docs/"
 
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    dump_syms_safe "$NATRON_PACKAGE_PATH/data/bin/Natron-bin.exe" "$TMP_BINARIES_PATH/symbols/Natron-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
-    dump_syms_safe "$NATRON_PACKAGE_PATH/data/bin/NatronRenderer-bin.exe" "$TMP_BINARIES_PATH/symbols/NatronRenderer-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+    dump_syms_safe "$NATRON_PACKAGE_PATH/data/bin/Natron-bin.exe" "${TMP_BINARIES_PATH}/symbols/Natron-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+    dump_syms_safe "$NATRON_PACKAGE_PATH/data/bin/NatronRenderer-bin.exe" "${TMP_BINARIES_PATH}/symbols/NatronRenderer-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
 fi
 
 
@@ -316,16 +316,16 @@ ls -R "$NATRON_PACKAGE_PATH"
 echo "========================================================================"
 
 # OCIO
-OCIO_VERSION="$COLOR_PROFILES_VERSION"
-OCIO_PATH="$INSTALLER/packages/$PROFILES_PKG"
-mkdir -p "$OCIO_PATH/meta" "$OCIO_PATH/data/Resources"
-$GSED "s/_VERSION_/${OCIO_VERSION}/;s/_DATE_/${DATE}/" < "$XML/ocio.xml" > "$OCIO_PATH/meta/package.xml"
-cp "$QS/ocio.qs" "$OCIO_PATH/meta/installscript.qs"
-cp -a "$TMP_BINARIES_PATH/Resources/OpenColorIO-Configs" "$OCIO_PATH/data/Resources/"
+OCIO_VERSION="$OCIO_PROFILES_VERSION"
+OCIO_PACKAGE_PATH="${INSTALLER_PATH}/packages/${OCIO_PKG}"
+mkdir -p "$OCIO_PACKAGE_PATH/meta" "$OCIO_PACKAGE_PATH/data/Resources"
+$GSED "s/_VERSION_/${OCIO_VERSION}/;s/_DATE_/${DATE}/" < "$XML/ocio.xml" > "$OCIO_PACKAGE_PATH/meta/package.xml"
+cp "$QS/ocio.qs" "$OCIO_PACKAGE_PATH/meta/installscript.qs"
+cp -a "${TMP_BINARIES_PATH}/Resources/OpenColorIO-Configs" "$OCIO_PACKAGE_PATH/data/Resources/"
 
 # CORE LIBS
 CLIBS_VERSION="$CORELIBS_VERSION"
-CLIBS_PATH="$INSTALLER/packages/$CORELIBS_PKG"
+CLIBS_PATH="${INSTALLER_PATH}/packages/$CORELIBS_PKG"
 mkdir -p "$CLIBS_PATH/meta" "$CLIBS_PATH/data/bin" "$CLIBS_PATH/data/lib" "$CLIBS_PATH/data/Resources/pixmaps" "$CLIBS_PATH/data/Resources/etc/fonts"
 $GSED "s/_VERSION_/${CLIBS_VERSION}/;s/_DATE_/${DATE}/" < "$XML/corelibs.xml" > "$CLIBS_PATH/meta/package.xml"
 cp "$QS/$PKGOS_ORIG/corelibs.qs" "$CLIBS_PATH/meta/installscript.qs"
@@ -637,13 +637,13 @@ if [ "${BUNDLE_ARENA:-}" = "1" ]; then
         ldd "$SDK_HOME/bin/libpoppler-${poppler_version}.dll"
     fi
     OFX_ARENA_VERSION="$TAG"
-    OFX_ARENA_PATH="$INSTALLER/packages/$ARENAPLUG_PKG"
+    OFX_ARENA_PATH="${INSTALLER_PATH}/packages/$ARENAPLUG_PKG"
     mkdir -p "$OFX_ARENA_PATH/meta" "$OFX_ARENA_PATH/data/Plugins/OFX/Natron"
     $GSED "s/_VERSION_/${OFX_ARENA_VERSION}/;s/_DATE_/${DATE}/" < "$XML/openfx-arena.xml" > "$OFX_ARENA_PATH/meta/package.xml"
     cp "$QS/openfx-arena.qs" "$OFX_ARENA_PATH/meta/installscript.qs"
-    cp -av "$TMP_BINARIES_PATH/OFX/Plugins/Arena.ofx.bundle" "$OFX_ARENA_PATH/data/Plugins/OFX/Natron/"
-    if [ -d "$TMP_BINARIES_PATH"/OFX/Plugins/ArenaCL.ofx.bundle ]; then
-        cp -av "$TMP_BINARIES_PATH/Plugins/ArenaCL.ofx.bundle" "$OFX_ARENA_PATH/data/Plugins/OFX/Natron/"
+    cp -av "${TMP_BINARIES_PATH}/OFX/Plugins/Arena.ofx.bundle" "$OFX_ARENA_PATH/data/Plugins/OFX/Natron/"
+    if [ -d "${TMP_BINARIES_PATH}"/OFX/Plugins/ArenaCL.ofx.bundle ]; then
+        cp -av "${TMP_BINARIES_PATH}/Plugins/ArenaCL.ofx.bundle" "$OFX_ARENA_PATH/data/Plugins/OFX/Natron/"
     fi
 
     for depend in "${ARENA_DLL[@]}"; do
@@ -654,9 +654,9 @@ if [ "${BUNDLE_ARENA:-}" = "1" ]; then
 #    cp "$SDK_HOME/lib/LIBOPENCOLORIO.DLL" "$OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win${BITS}/"
 
     if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-        dump_syms_safe "$OFX_ARENA_PATH/data/Plugins/OFX/Natron"/*/*/*/Arena.ofx "$TMP_BINARIES_PATH/symbols/Arena.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
-        if [ -d "$TMP_BINARIES_PATH"/OFX/Plugins/ArenaCL.ofx.bundle ]; then
-            dump_syms_safe "$OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/ArenaCL.ofx" "$TMP_BINARIES_PATH/symbols/ArenaCL.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+        dump_syms_safe "$OFX_ARENA_PATH/data/Plugins/OFX/Natron"/*/*/*/Arena.ofx "${TMP_BINARIES_PATH}/symbols/Arena.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+        if [ -d "${TMP_BINARIES_PATH}"/OFX/Plugins/ArenaCL.ofx.bundle ]; then
+            dump_syms_safe "$OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/ArenaCL.ofx" "${TMP_BINARIES_PATH}/symbols/ArenaCL.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
         fi
     fi
     if [ "${DEBUG_MODE:-}" != "1" ]; then
@@ -683,17 +683,17 @@ if [ "${BUNDLE_GMIC:-}" = "1" ]; then
         libnghttp2-14.dll
     )
     OFX_GMIC_VERSION="$TAG"
-    OFX_GMIC_PATH="$INSTALLER/packages/$GMICPLUG_PKG"
+    OFX_GMIC_PATH="${INSTALLER_PATH}/packages/$GMICPLUG_PKG"
     mkdir -p "$OFX_GMIC_PATH/meta" "$OFX_GMIC_PATH/data/Plugins/OFX/Natron"
     $GSED "s/_VERSION_/${OFX_GMIC_VERSION}/;s/_DATE_/${DATE}/" < "$XML/openfx-gmic.xml" > "$OFX_GMIC_PATH/meta/package.xml"
     cp "$QS/openfx-gmic.qs" "$OFX_GMIC_PATH/meta/installscript.qs"
-    cp -av "$TMP_BINARIES_PATH/OFX/Plugins/GMIC.ofx.bundle" "$OFX_GMIC_PATH/data/Plugins/OFX/Natron/"
+    cp -av "${TMP_BINARIES_PATH}/OFX/Plugins/GMIC.ofx.bundle" "$OFX_GMIC_PATH/data/Plugins/OFX/Natron/"
     for depend in "${GMIC_DLL[@]}"; do
         cp "$SDK_HOME/bin/$depend"  "$OFX_GMIC_PATH/data/Plugins/OFX/Natron/GMIC.ofx.bundle/Contents/Win${BITS}/"
     done
     
     if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-        dump_syms_safe "$OFX_GMIC_PATH/data/Plugins/OFX/Natron"/*/*/*/GMIC.ofx "$TMP_BINARIES_PATH/symbols/GMIC.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+        dump_syms_safe "$OFX_GMIC_PATH/data/Plugins/OFX/Natron"/*/*/*/GMIC.ofx "${TMP_BINARIES_PATH}/symbols/GMIC.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
     fi
     if [ "${DEBUG_MODE:-}" != "1" ]; then
         for dir in "$OFX_GMIC_PATH/data/Plugins/OFX/Natron"; do
@@ -716,7 +716,7 @@ if [ ! -d "$SRC_PATH/natron-windows-mesa" ]; then
       tar xvf natron-windows-mesa.tar
     )
 fi
-MESA_PKG_PATH="$INSTALLER/packages/fr.inria.mesa"
+MESA_PKG_PATH="${INSTALLER_PATH}/packages/fr.inria.mesa"
 mkdir -p "$MESA_PKG_PATH/meta" "$MESA_PKG_PATH/data/bin"
 $GSED "s/_DATE_/${DATE}/" < "$XML/mesa.xml" > "$MESA_PKG_PATH/meta/package.xml"
 cp "$QS/mesa.qs" "$MESA_PKG_PATH/meta/installscript.qs"
@@ -746,13 +746,13 @@ if [ "${BUNDLE_CV:-}" = "1" ]; then
         libopencv_legacy2411.dll
     )
     OFX_CV_VERSION="$TAG"
-    OFX_CV_PATH="$INSTALLER/packages/$CVPLUG_PKG"
+    OFX_CV_PATH="${INSTALLER_PATH}/packages/$CVPLUG_PKG"
     mkdir -p "$OFX_CV_PATH"/{data,meta} "$OFX_CV_PATH/data/Plugins/OFX/Natron" "$OFX_CV_PATH/data/docs/openfx-opencv"
     $GSED "s/_VERSION_/${OFX_CV_VERSION}/;s/_DATE_/${DATE}/" < "$XML/openfx-opencv.xml" > "$OFX_CV_PATH/meta/package.xml"
     cp "$QS/openfx-opencv.qs" "$OFX_CV_PATH/meta/installscript.qs"
-    cp -a "$TMP_BINARIES_PATH/docs/openfx-opencv" "$OFX_CV_PATH/data/docs/"
+    cp -a "${TMP_BINARIES_PATH}/docs/openfx-opencv" "$OFX_CV_PATH/data/docs/"
     #cat "$OFX_CV_PATH/data/docs/openfx-opencv/README" > "$OFX_CV_PATH/meta/ofx-cv-license.txt"
-    cp -a "$TMP_BINARIES_PATH/Plugins"/{inpaint,segment}.ofx.bundle "$OFX_CV_PATH/data/Plugins/OFX/Natron/"
+    cp -a "${TMP_BINARIES_PATH}/Plugins"/{inpaint,segment}.ofx.bundle "$OFX_CV_PATH/data/Plugins/OFX/Natron/"
     for depend in "${CV_DLL[@]}"; do
         cp -v "$SDK_HOME/bin/$depend" "$OFX_CV_PATH/data/Plugins/OFX/Natron/inpaint.ofx.bundle/Contents/Win${BITS}/"
         cp -v "$SDK_HOME/bin/$depend" "$OFX_CV_PATH/data/Plugins/OFX/Natron/segment.ofx.bundle/Contents/Win${BITS}/"
@@ -864,7 +864,7 @@ if [ "${BUNDLE_CV:-}" = "1" ]; then
 fi
 
 # Clean and perms
-(cd "$INSTALLER" && find . -type d -name .git -exec rm -rf {} \;)
+(cd "${INSTALLER_PATH}" && find . -type d -name .git -exec rm -rf {} \;)
 
 if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
     SNAPDATE="${NATRON_BRANCH}-${TAG}-"
@@ -884,19 +884,19 @@ if [ "${NO_INSTALLER:-}" != "1" ]; then
         BUNDLED_INSTALL="${BUNDLED_INSTALL}-debug"
     fi
 
-    "$SDK_HOME/bin/repogen" -v --update-new-components -p "$INSTALLER/packages" -c "$INSTALLER/config/config.xml" "$REPO_DIR/packages"
+    "$SDK_HOME/bin/repogen" -v --update-new-components -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" "$REPO_DIR/packages"
 
     if [ "${OFFLINE:-}" == "1" ]; then
-        "$SDK_HOME/bin/binarycreator" -v -f -p "$INSTALLER/packages" -c "$INSTALLER/config/config.xml" -i "${PACKAGES},fr.inria.mesa" "$REPO_DIR/installers/$BUNDLED_INSTALL"
+        "$SDK_HOME/bin/binarycreator" -v -f -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" -i "${PACKAGES},fr.inria.mesa" "$REPO_DIR/installers/$BUNDLED_INSTALL"
     fi
     cd "$REPO_DIR/installers"
-    "$SDK_HOME/bin/binarycreator" -v -n -p "$INSTALLER/packages" -c "$INSTALLER/config/config.xml" "$ONLINE_INSTALL"
+    "$SDK_HOME/bin/binarycreator" -v -n -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" "$ONLINE_INSTALL"
 fi
 
 if [ "${NO_ZIP:-}" != "1" ]; then
     mkdir -p "$REPO_DIR/installers" || true
     mkdir -p "$ARCHIVE_DATA_DIR" || true
-    cp -a "$INSTALLER/packages"/fr.*/data/* "$ARCHIVE_DATA_DIR/"
+    cp -a "${INSTALLER_PATH}/packages"/fr.*/data/* "$ARCHIVE_DATA_DIR/"
     mkdir -p "$ARCHIVE_DATA_DIR/bin/mesa"
     mv "$ARCHIVE_DATA_DIR/bin/opengl32.dll" "$ARCHIVE_DATA_DIR/bin/mesa/"
     mv "$ARCHIVE_DATA_DIR" "$ARCHIVE_DIR/${ZIP_ARCHIVE_BASE}"
@@ -913,13 +913,13 @@ fi
 # UnitTests
 #if [ "${UNIT_TEST:-}" = "1" ]; then
 #
-#UNIT_TMP=$INSTALLER/UnitTests
+#UNIT_TMP=${INSTALLER_PATH}/UnitTests
 #UNIT_LOG=$REPO_DIR/logs/unit_tests.Windows${BITS}.$TAG.log
 #
 #if [ ! -d "$UNIT_TMP" ]; then
 #  mkdir -p "$UNIT_TMP"
 #fi
-#cp -a $INSTALLER/packages/*/data/* $UNIT_TMP/
+#cp -a ${INSTALLER_PATH}/packages/*/data/* $UNIT_TMP/
 #cd "$CWD"
 #if [ -d "$CWD/Natron-Tests" ]; then 
 #  cd Natron-Tests

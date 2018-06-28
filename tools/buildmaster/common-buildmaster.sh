@@ -20,12 +20,12 @@
 #THE FOLLOWING CAN BE MODIFIED TO CONFIGURE RELEASE BUILDS
 #----------------------------------------------------------
 NATRON_RELEASE_BRANCH=RB-2.3
-NATRON_GIT_TAG=tags/2.3.8
-IOPLUG_GIT_TAG=tags/Natron-2.3.8
-MISCPLUG_GIT_TAG=tags/Natron-2.3.8
-ARENAPLUG_GIT_TAG=tags/Natron-2.3.8
-GMICPLUG_GIT_TAG=tags/Natron-2.3.8
-CVPLUG_GIT_TAG=tags/Natron-2.3.8
+NATRON_GIT_TAG=tags/2.3.13
+IOPLUG_GIT_TAG=tags/Natron-2.3.13
+MISCPLUG_GIT_TAG=tags/Natron-2.3.13
+ARENAPLUG_GIT_TAG=tags/Natron-2.3.13
+GMICPLUG_GIT_TAG=tags/Natron-2.3.13
+CVPLUG_GIT_TAG=tags/Natron-2.3.13
 #----------------------------------------------------------
 
 # Name of the packages in the installer
@@ -37,18 +37,18 @@ ARENAPLUG_PKG=fr.inria.openfx.extra
 GMICPLUG_PKG=fr.inria.openfx.gmic
 CVPLUG_PKG=fr.inria.openfx.opencv
 CORELIBS_PKG=fr.inria.natron.libs
-PROFILES_PKG=fr.inria.natron.color
+OCIO_PKG=fr.inria.natron.color
 
 PACKAGES="$NATRON_PKG,$CORELIBS_PKG,$PROFILES_PKG,$IOPLUG_PKG,$MISCPLUG_PKG,$ARENAPLUG_PKG,$GMICPLUG_PKG" #,$CVPLUG_PKG
 
 # OCIO package version (linux/windows)
 # bump number when OpenColorIO-Configs changes
-COLOR_PROFILES_VERSION=20160525
+OCIO_PROFILES_VERSION="20180327000000"
 
 # Libs package version (linux/windows)
 # bump timestamp on SDK changes, important!
-LINUX_CORELIBS_VERSION=20161121
-WINDOWS_CORELIBS_VERSION=20161027
+LINUX_CORELIBS_VERSION="20180627000000"
+WINDOWS_CORELIBS_VERSION="20180627000000"
 CORELIBS_VERSION=""
 
 if [ "$PKGOS" = "Linux" ]; then

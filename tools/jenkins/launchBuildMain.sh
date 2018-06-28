@@ -329,12 +329,13 @@ setBuildOption "GIT_TRIGGER_COMMIT" "$GIT_COMMIT"
 
 
 # Only use online installer for snapshots or releases
-if [ "$TYPE" = "SNAPSHOT" ] || [ "$TYPE" = "RELEASE" ]; then
-    WITH_ONLINE_INSTALLER=1
-else
+if [ "$TYPE" != "SNAPSHOT" ] && [ "$TYPE" != "RELEASE" ]; then
     WITH_ONLINE_INSTALLER=0
+else
+    WITH_ONLINE_INSTALLER="${WITH_ONLINE_INSTALLER:-0}"
 fi
-setBuildOption "WITH_ONLINE_INSTALLER" "$WITH_ONLINE_INSTALLER"
+
+setBuildOption "WITH_ONLINE_INSTALLER" "${WITH_ONLINE_INSTALLER}"
 
 
 # If 1, source files will be compressed and uploaded with the binary

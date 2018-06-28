@@ -133,7 +133,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     sudo apt-get update -qq
     # -f, --fix-broken
     # -m, --ignore-missing, --fix-missing
-    sudo apt-get install -fm $PKGS
+    sudo apt-get install -y --allow-unauthenticated -fm $PKGS
 
 
     

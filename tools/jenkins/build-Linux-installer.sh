@@ -31,39 +31,46 @@ source manageBuildOptions.sh
 source manageLog.sh
 updateBuildOptions
 
+pushd () {
+    command pushd "$@" > /dev/null
+}
 
-LD_LIBRARY_PATH="${SDK_HOME}/lib:$FFMPEG_PATH/lib:${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib"
+popd () {
+    command popd "$@" > /dev/null
+}
+
+LD_LIBRARY_PATH="${SDK_HOME}/lib:${FFMPEG_PATH}/lib:${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib"
 PATH="${SDK_HOME}/gcc/bin:${SDK_HOME}/bin:$PATH"
 export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/include"
 export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
 
-if [ "$ARCH" = "x86_64" ]; then
-    LD_LIBRARY_PATH="${SDK_HOME}/gcc/lib64:$FFMPEG_PATH/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+if [ "${ARCH}" = "x86_64" ]; then
+    LD_LIBRARY_PATH="${SDK_HOME}/gcc/lib64:${FFMPEG_PATH}/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 else
-    LD_LIBRARY_PATH="${SDK_HOME}/gcc/lib:$FFMPEG_PATH/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    LD_LIBRARY_PATH="${SDK_HOME}/gcc/lib:${FFMPEG_PATH}/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 fi
 export LD_LIBRARY_PATH
 
 
 
-if [ -d "$BUILD_ARCHIVE_DIRECTORY" ]; then
-    rm -rf "$BUILD_ARCHIVE_DIRECTORY"
+if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
+    rm -rf "${BUILD_ARCHIVE_DIRECTORY}"
 fi
 
-mkdir -p "$BUILD_ARCHIVE_DIRECTORY"
+mkdir -p "${BUILD_ARCHIVE_DIRECTORY}"
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    mkdir "$BUILD_ARCHIVE_DIRECTORY/symbols"
+    mkdir "${BUILD_ARCHIVE_DIRECTORY}/symbols"
 fi
 
-INSTALLER_PATH="$TMP_BINARIES_PATH/Natron-installer"
+INSTALLER_PATH="${TMP_BINARIES_PATH}/Natron-installer"
 
 
 # If we are in DEBUG_SYMBOLS mode there might already be deployed installer, remove them
 if [ ! -z "$DEBUG_SCRIPTS" ]; then
-    (cd "$TMP_BINARIES_PATH" ; find . -type d -name 'Natron-*' -exec rm -rf {} \;) || true
+    (cd "${TMP_BINARIES_PATH}" ; find . -type d -name 'Natron-*' -exec rm -rf {} \;) || true
 fi
 
-mkdir -p "$TMP_PORTABLE_DIR"
+mkdir -p "${TMP_PORTABLE_DIR}"
 
 
 
@@ -91,13 +98,13 @@ REMOTE_PROJECT_PATH="$REMOTE_PATH/$PKGOS/$BITS/$BUILD_NAME"
 REMOTE_ONLINE_PACKAGES_PATH="$REMOTE_PROJECT_PATH/packages"
 
 # The date passed to the ReleaseDate tag of the xml config file of the installer. This has a different format than CURRENT_DATE.
-INSTALLER_XML_DATE=$(date "+%Y-%m-%d")
+INSTALLER_XML_DATE="$(date "+%Y-%m-%d")"
 
 # tag symbols we want to keep with 'release'
-VERSION_TAG=$CURRENT_DATE
-if [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABLE" ]; then
+VERSION_TAG="${CURRENT_DATE}"
+if [ "${NATRON_BUILD_CONFIG}" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABLE" ]; then
     BPAD_TAG="-release"
-    VERSION_TAG=$NATRON_VERSION_FULL
+    VERSION_TAG="${NATRON_VERSION_FULL}"
 fi
 
 
@@ -120,7 +127,7 @@ function installPlugin() {
     PACKAGE_INSTALL_SCRIPT="$4"
     NATRON_LIBS="$5"
 
-    if [ ! -d "$TMP_BINARIES_PATH/OFX/Plugins/${OFX_BINARY}.ofx.bundle" ]; then
+    if [ ! -d "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" ]; then
         return 0
     fi
 
@@ -131,8 +138,8 @@ function installPlugin() {
     fi
 
     # Copy to portable archive
-    if [ ! -d "$TMP_PORTABLE_DIR/Plugins/OFX/Natron" ]; then
-        mkdir -p "$TMP_PORTABLE_DIR/Plugins/OFX/Natron"
+    if [ ! -d "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron" ]; then
+        mkdir -p "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron"
     fi
 
     # Configure package for installer
@@ -145,36 +152,36 @@ function installPlugin() {
 
     # Dump symbols
     if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-        "${SDK_HOME}/bin/dump_syms" "$TMP_BINARIES_PATH"/OFX/Plugins/"${OFX_BINARY}".ofx.bundle/Contents/*/"${OFX_BINARY}".ofx > "$BUILD_ARCHIVE_DIRECTORY/symbols/${OFX_BINARY}.ofx-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
+        "${SDK_HOME}/bin/dump_syms" "${TMP_BINARIES_PATH}"/OFX/Plugins/"${OFX_BINARY}".ofx.bundle/Contents/*/"${OFX_BINARY}".ofx > "${BUILD_ARCHIVE_DIRECTORY}/symbols/${OFX_BINARY}.ofx-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
     fi
 
 
 
 
     # Extract dependencies
-    OFX_DEPENDS=$(ldd $(find "$TMP_BINARIES_PATH/OFX/Plugins/${OFX_BINARY}.ofx.bundle/Contents/Linux-"* -maxdepth 1 -type f) | grep /opt | awk '{print $3}'|sort|uniq)
+    OFX_DEPENDS="$(ldd $(find "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle/Contents/Linux-"* -maxdepth 1 -type f) | grep /opt | awk '{print $3}'|sort|uniq)"
     if [ ! -z "$OFX_DEPENDS" ]; then
 
 
-        LIBS_DIR="$TMP_BINARIES_PATH/OFX/Plugins/${OFX_BINARY}.ofx.bundle/Libraries"
+        LIBS_DIR="${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle/Libraries"
         mkdir -p "$LIBS_DIR"
 
         DEPENDS_NOT_PART_OF_NATRON=()
         for x in $OFX_DEPENDS; do
             # Add the dep only if it is not part of Natron libs
-            pluginlib=$(basename "$x")
+            pluginlib="$(basename "$x")"
             CREATE_SYM_LINK=0
             for y in $NATRON_LIBS; do
-               natronlib=$(basename "$y")
+               natronlib="$(basename "$y")"
                if [ "$pluginlib" = "$natronlib" ]; then
                     CREATE_SYM_LINK=1
                     break
                fi
             done
             if [ "$CREATE_SYM_LINK" = "1" ]; then
-                # Create a sym-link to the already bundled dependency in $TMP_PORTABLE_DIR/lib
+                # Create a sym-link to the already bundled dependency in ${TMP_PORTABLE_DIR}/lib
                 # This is a relative path, assuming the plug-in Libraries directory is:
-                # $TMP_PORTABLE_DIR/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Libraries
+                # ${TMP_PORTABLE_DIR}/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Libraries
                 (cd "$LIBS_DIR"; ln -sf ../../../../../lib/"$pluginlib" .)
             else
                 DEPENDS_NOT_PART_OF_NATRON+=("$x")
@@ -184,7 +191,7 @@ function installPlugin() {
         # Copy deps to Libraries directory in the plug-in bundle
         for x in "${DEPENDS_NOT_PART_OF_NATRON[@]-}"; do
             if [ ! -z "$x" ]; then
-                pluginlib=$(basename "$x")
+                pluginlib="$(basename "$x")"
                 if [ -f "$x" ] && [ ! -f "$LIBS_DIR/$pluginlib" ] && [ ! -L "$LIBS_DIR/$pluginlib" ]; then
                     cp -f "$x" "$LIBS_DIR/"
                 fi
@@ -194,7 +201,7 @@ function installPlugin() {
         # Extract dependencies of the dependencies
         OFX_LIB_DEP=$(ldd $(find "$LIBS_DIR" -maxdepth 1 -type f) |grep /opt | awk '{print $3}'|sort|uniq)
         for y in $OFX_LIB_DEP; do
-            pluginlib=$(basename "$y")
+            pluginlib="$(basename "$y")"
             if [ ! -f "$LIBS_DIR/$pluginlib" ] && [ ! -L "$LIBS_DIR/$pluginlib" ]; then
                 cp -f "$y" "$LIBS_DIR/"
             fi
@@ -211,21 +218,21 @@ function installPlugin() {
 
     # Strip binary
     if [ "$COMPILE_TYPE" != "debug" ]; then
-        find "$TMP_BINARIES_PATH/OFX/Plugins/${OFX_BINARY}.ofx.bundle" -type f \( -iname '*.so' -o -iname '*.ofx' \) -exec strip -s {} \; &>/dev/null
+        find "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" -type f \( -iname '*.so' -o -iname '*.ofx' \) -exec strip -s {} \; &>/dev/null
     fi
 
-    for location in "$PKG_PATH/data" "$TMP_PORTABLE_DIR"; do
+    for location in "$PKG_PATH/data" "${TMP_PORTABLE_DIR}"; do
         # Copy plug-in bundle
-        cp -a "$TMP_BINARIES_PATH/OFX/Plugins/${OFX_BINARY}.ofx.bundle" "$location/Plugins/OFX/Natron/"
+        cp -a "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" "$location/Plugins/OFX/Natron/"
     done
 
 }
 
 
 # Natron package
-PACKAGES="fr.inria.natron"
-NATRON_PKG=fr.inria.natron
-NATRON_PACKAGE_PATH=${INSTALLER_PATH}/packages/$NATRON_PKG
+NATRON_PKG="fr.inria.natron"
+NATRON_PACKAGE_PATH="${INSTALLER_PATH}/packages/${NATRON_PKG}"
+PACKAGES="${NATRON_PKG}"
 
 # Create package directories
 mkdir -p "$NATRON_PACKAGE_PATH/meta"
@@ -233,7 +240,7 @@ mkdir -p "$NATRON_PACKAGE_PATH/meta"
 # Configure natron package xml
 $GSED "s/_VERSION_/${CURRENT_DATE}/;s/_DATE_/${INSTALLER_XML_DATE}/" "$XML/natron.xml" > "$NATRON_PACKAGE_PATH/meta/package.xml"
 cat "$QS/$PKGOS/natron.qs" > "$NATRON_PACKAGE_PATH/meta/installscript.qs"
-cat "$TMP_BINARIES_PATH/docs/natron/LICENSE.txt" > "$NATRON_PACKAGE_PATH/meta/natron-license.txt"
+cat "${TMP_BINARIES_PATH}/docs/natron/LICENSE.txt" > "$NATRON_PACKAGE_PATH/meta/natron-license.txt"
 
 
 #GLIBCXX 3.4.19 is for GCC 4.8.3, see https://gcc.gnu.org/onlinedocs/libstdc++/manual/abi.html
@@ -255,89 +262,141 @@ case "${TC_GCC:-}" in
     5.[123456789].*|6.0.*)
         compat_version=3.4.21
     ;;
-    6.[123456789].*|7.*)
+    6.[123456789].*|7.0*)
         compat_version=3.4.22
+        ;;
+    7.1.*)
+        compat_version=3.4.23
+        ;;
+    7.2.*)
+        compat_version=3.4.24
+        ;;
+    8.*|9.*)
+        compat_version=3.4.25
+        ;;
     ;;
 esac
 
 
 BINARIES_TO_INSTALL=""
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-mv "$TMP_BINARIES_PATH/bin/Natron" "$TMP_BINARIES_PATH/bin/Natron-bin"
-mv "$TMP_BINARIES_PATH/bin/NatronRenderer" "$TMP_BINARIES_PATH/bin/NatronRenderer-bin"
-mv "$TMP_BINARIES_PATH/bin/NatronCrashReporter" "$TMP_BINARIES_PATH/bin/Natron"
-mv "$TMP_BINARIES_PATH/bin/NatronRendererCrashReporter" "$TMP_BINARIES_PATH/bin/NatronRenderer"
-BINARIES_TO_INSTALL="$TMP_BINARIES_PATH/bin/Natron $TMP_BINARIES_PATH/bin/NatronRenderer $TMP_BINARIES_PATH/bin/Natron-bin $TMP_BINARIES_PATH/bin/NatronRenderer-bin"
+mv "${TMP_BINARIES_PATH}/bin/Natron" "${TMP_BINARIES_PATH}/bin/Natron-bin"
+mv "${TMP_BINARIES_PATH}/bin/NatronRenderer" "${TMP_BINARIES_PATH}/bin/NatronRenderer-bin"
+mv "${TMP_BINARIES_PATH}/bin/NatronCrashReporter" "${TMP_BINARIES_PATH}/bin/Natron"
+mv "${TMP_BINARIES_PATH}/bin/NatronRendererCrashReporter" "${TMP_BINARIES_PATH}/bin/NatronRenderer"
+BINARIES_TO_INSTALL="${TMP_BINARIES_PATH}/bin/Natron ${TMP_BINARIES_PATH}/bin/NatronRenderer ${TMP_BINARIES_PATH}/bin/Natron-bin ${TMP_BINARIES_PATH}/bin/NatronRenderer-bin"
 else
-BINARIES_TO_INSTALL="$TMP_BINARIES_PATH/bin/Natron $TMP_BINARIES_PATH/bin/NatronRenderer"
+BINARIES_TO_INSTALL="${TMP_BINARIES_PATH}/bin/Natron ${TMP_BINARIES_PATH}/bin/NatronRenderer"
 fi
 
-if [ -f "$TMP_BINARIES_PATH/bin/NatronProjectConverter" ]; then
-BINARIES_TO_INSTALL="$BINARIES_TO_INSTALL $TMP_BINARIES_PATH/bin/NatronProjectConverter"
+if [ -f "${TMP_BINARIES_PATH}/bin/NatronProjectConverter" ]; then
+BINARIES_TO_INSTALL="$BINARIES_TO_INSTALL ${TMP_BINARIES_PATH}/bin/NatronProjectConverter"
 fi
 
-if [ -f "$TMP_BINARIES_PATH/bin/natron-python" ]; then
-BINARIES_TO_INSTALL="$BINARIES_TO_INSTALL $TMP_BINARIES_PATH/bin/natron-python"
+if [ -f "${TMP_BINARIES_PATH}/bin/natron-python" ]; then
+BINARIES_TO_INSTALL="$BINARIES_TO_INSTALL ${TMP_BINARIES_PATH}/bin/natron-python"
 fi
 
 BINARIES_TO_INSTALL="$BINARIES_TO_INSTALL ${SDK_HOME}/bin/iconvert ${SDK_HOME}/bin/idiff ${SDK_HOME}/bin/igrep ${SDK_HOME}/bin/iinfo"
 BINARIES_TO_INSTALL="$BINARIES_TO_INSTALL ${SDK_HOME}/bin/exrheader ${SDK_HOME}/bin/tiffinfo"
-BINARIES_TO_INSTALL="$BINARIES_TO_INSTALL $FFMPEG_PATH/bin/ffmpeg $FFMPEG_PATH/bin/ffprobe"
+BINARIES_TO_INSTALL="$BINARIES_TO_INSTALL ${FFMPEG_PATH}/bin/ffmpeg ${FFMPEG_PATH}/bin/ffprobe"
 
 # We copy all files to both the portable archive and the package for the installer in a loop
-COPY_LOCATIONS="$TMP_PORTABLE_DIR $NATRON_PACKAGE_PATH/data"
+COPY_LOCATIONS=("${TMP_PORTABLE_DIR}" "$NATRON_PACKAGE_PATH/data")
 
-for location in $COPY_LOCATIONS; do
+for location in "${COPY_LOCATIONS[@]}"; do
 
-mkdir -p "$location/docs" "$location/bin" "$location/Resources" "$location/Plugins/PyPlugs" "$location/Resources/stylesheets"
-cp -a "$TMP_BINARIES_PATH/docs/natron"/* "$location/docs/"
-rm "$location/docs/TuttleOFX-README.txt" || true
-cp -r "$TMP_BINARIES_PATH/Resources/etc"  "$location/Resources/"
-cp "$TMP_BINARIES_PATH/Resources/stylesheets"/mainstyle.qss "$location/Resources/stylesheets/"
-cp "$INC_PATH/natron/natron-mime.sh" "$location/bin/"
-cp "$TMP_BINARIES_PATH/PyPlugs"/* "$location/Plugins/PyPlugs/"
+    mkdir -p "$location/docs" "$location/bin" "$location/Resources" "$location/Plugins/PyPlugs" "$location/Resources/stylesheets"
+    cp -a "${TMP_BINARIES_PATH}/docs/natron"/* "$location/docs/"
+    rm "$location/docs/TuttleOFX-README.txt" || true
+    cp -r "${TMP_BINARIES_PATH}/Resources/etc"  "$location/Resources/"
+    cp "${TMP_BINARIES_PATH}/Resources/stylesheets"/mainstyle.qss "$location/Resources/stylesheets/"
+    cp "$INC_PATH/natron/natron-mime.sh" "$location/bin/"
+    cp "${TMP_BINARIES_PATH}/PyPlugs"/* "$location/Plugins/PyPlugs/"
 
-# OCIO
-cp -LR "$TMP_PATH/Natron/OpenColorIO-Configs" "$location/Resources/"
-
-
-# Configure shell launch script with gcc compat version
-$GSED -e "s#${compat_version_script}#${compat_version}#" "$INC_PATH/scripts/Natron-Linux.sh" > "$location/Natron"
-$GSED -e "s#${compat_version_script}#${compat_version}#" -e "s#bin/Natron#bin/NatronRenderer#" "$INC_PATH/scripts/Natron-Linux.sh" > "$location/NatronRenderer"
-chmod a+x "$location/Natron" "$location/NatronRenderer"
-
-# Include in the portable version the test program that we will use later on
-if [ "$location" = "$TMP_PORTABLE_DIR" ]; then
-    cp "$TMP_BINARIES_PATH/bin/Tests" "$location/bin/"
-fi
+    # OCIO -> has its own package, see below
+    #cp -LR "${TMP_BINARIES_PATH}/Natron/OpenColorIO-Configs" "$location/Resources/"
 
 
-for b in $BINARIES_TO_INSTALL; do
-    cp "$b" "$location/bin/"
-done
+    # Configure shell launch script with gcc compat version
+    $GSED -e "s#${compat_version_script}#${compat_version}#" "$INC_PATH/scripts/Natron-Linux.sh" > "$location/Natron"
+    $GSED -e "s#${compat_version_script}#${compat_version}#" -e "s#bin/Natron#bin/NatronRenderer#" "$INC_PATH/scripts/Natron-Linux.sh" > "$location/NatronRenderer"
+    chmod a+x "$location/Natron" "$location/NatronRenderer"
 
+    # Include in the portable version the test program that we will use later on
+    if [ "$location" = "${TMP_PORTABLE_DIR}" ]; then
+        cp "${TMP_BINARIES_PATH}/bin/Tests" "$location/bin/"
+    fi
+
+
+    for b in $BINARIES_TO_INSTALL; do
+        cp "$b" "$location/bin/"
+    done
+
+    # end for all locations
 done
 
 # Dump symbols for crash reporting
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    "${SDK_HOME}/bin"/dump_syms "$TMP_BINARIES_PATH/bin/Natron" > "$BUILD_ARCHIVE_DIRECTORY/symbols/Natron-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
-    "${SDK_HOME}/bin"/dump_syms "$TMP_BINARIES_PATH/bin/NatronRenderer" > "$BUILD_ARCHIVE_DIRECTORY/symbols/NatronRenderer-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
+    "${SDK_HOME}/bin"/dump_syms "${TMP_BINARIES_PATH}/bin/Natron" > "${BUILD_ARCHIVE_DIRECTORY}/symbols/Natron-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
+    "${SDK_HOME}/bin"/dump_syms "${TMP_BINARIES_PATH}/bin/NatronRenderer" > "${BUILD_ARCHIVE_DIRECTORY}/symbols/NatronRenderer-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
 fi
 
 # Get all dependencies of the binaries
-CORE_DEPENDS=$(ldd $(find "$TMP_PORTABLE_DIR/bin" -maxdepth 1 -type f) | grep /opt | awk '{print $3}'|sort|uniq)
+CORE_DEPENDS="$(ldd $(find "${TMP_PORTABLE_DIR}/bin" -maxdepth 1 -type f) | grep /opt | awk '{print $3}'|sort|uniq)"
 
 # icu libraries don't seem to be picked up by this ldd call above
-for dep in libicudata.so.*.* libicui18n.so.*.* libicuuc.so.*.*; do
+pushd "${SDK_HOME}/lib"
+for dep in libicudata.so.[0-9][0-9] libicui18n.so.[0-9][0-9] libicuuc.so.[0-9][0-9] libbz2.so.[0-9] liblcms2.so.[0-9] libcairo.so.[0-9]; do
     CORE_DEPENDS="$CORE_DEPENDS ${SDK_HOME}/lib/$dep"
+done
+popd
+
+
+# OCIO package
+OCIO_PKG="fr.inria.natron.color"
+PACKAGES="${PACKAGES},${OCIO_PKG}"
+OCIO_PACKAGE_PATH="${INSTALLER_PATH}/packages/${OCIO_PKG}"
+
+# OCIO package version (linux/windows)
+# bump number when OpenColorIO-Configs changes
+OCIO_VERSION="20180327000000"
+# OCIO
+for c in blender blender-cycles natron; do
+    lib="${TMP_BINARIES_PATH}/Natron/OpenColorIO-Configs/${c}/config.ocio"
+    LAST_MODIFICATION_DATE=$(date -r "$lib" "+%Y%m%d%H%M%S")
+    if [ "$LAST_MODIFICATION_DATE" -gt "$CLIBS_VERSION" ]; then
+        OCIO_VERSION="$LAST_MODIFICATION_DATE"
+    fi
+done
+
+# Create package directories
+mkdir -p "$OCIO_PACKAGE_PATH/meta"
+$GSED "s/_VERSION_/${OCIO_VERSION}/;s/_DATE_/${DATE}/" "$XML/ocio.xml" > "$OCIO_PACKAGE_PATH/meta/package.xml"
+cat "$QS/ocio.qs" > "$OCIO_PACKAGE_PATH/meta/installscript.qs"
+
+# Configure natron package xml
+$GSED "s/_VERSION_/${CURRENT_DATE}/;s/_DATE_/${INSTALLER_XML_DATE}/" "$XML/natron.xml" > "$OCIO_PACKAGE_PATH/meta/package.xml"
+cat "$QS/$PKGOS/natron.qs" > "$OCIO_PACKAGE_PATH/meta/installscript.qs"
+
+# We copy all files to both the portable archive and the package for the installer in a loop
+COPY_LOCATIONS=("${TMP_PORTABLE_DIR}" "$OCIO_PACKAGE_PATH/data")
+
+for location in "${COPY_LOCATIONS[@]}"; do
+
+    mkdir -p "$location/Resources"
+    cp -LR "${TMP_BINARIES_PATH}/Natron/OpenColorIO-Configs" "$location/Resources/"
+
+    # end for all locations
 done
 
 
 # Distribute Natron dependencies in a separate package so that the user only
 # receive updates for DLLs when we actually update them
 # rather than every time we recompile Natron
-PACKAGES="${PACKAGES},fr.inria.natron.libs"
-LIBS_PACKAGE_PATH="${INSTALLER_PATH}/packages/fr.inria.natron.libs"
+CORELIBS_PKG="fr.inria.natron.libs"
+PACKAGES="${PACKAGES},${CORELIBS_PKG}"
+LIBS_PACKAGE_PATH="${INSTALLER_PATH}/packages/${CORELIBS_PKG}"
 mkdir -p "$LIBS_PACKAGE_PATH/meta"
 
 # Function to fix rpath of libraries in a list of folders
@@ -351,7 +410,7 @@ function fixrpath() {
             if [ -f "$i" ]; then
                 chmod u+w $i
                 patchelf --force-rpath --set-rpath "\$ORIGIN${RPATH}" "$i" || true
-                optlibs=$(ldd "$i" | grep /opt | awk '{print $3}'|sort|uniq)
+                optlibs="$(ldd "$i" | grep /opt | awk '{print $3}'|sort|uniq)"
                 if [ ! -z "$optlibs" ]; then
                     for r in $optlibs; do
                         echo "Warning: runtime path remaining to $r for $folder/$i"
@@ -364,112 +423,111 @@ function fixrpath() {
 }
 
 # We copy all files to both the portable archive and the package for the installer in a loop
-COPY_LOCATIONS="$TMP_PORTABLE_DIR $LIBS_PACKAGE_PATH/data"
+COPY_LOCATIONS=("${TMP_PORTABLE_DIR}" "$LIBS_PACKAGE_PATH/data")
 
-for location in $COPY_LOCATIONS; do
+for location in "${COPY_LOCATIONS[@]}"; do
 
-mkdir -p "$location/bin" "$location/lib" "$location/Resources/pixmaps"
-#cp "${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib/libQtDBus.so.4" "$location/lib/"
-cp "$TMP_BINARIES_PATH/Resources/pixmaps/natronIcon256_linux.png" "$location/Resources/pixmaps/"
-cp "$TMP_BINARIES_PATH/Resources/pixmaps/natronProjectIcon_linux.png" "$location/Resources/pixmaps/"
-cp -a "${SDK_HOME}/share/poppler" "$location/Resources/"
-cp -a "${SDK_HOME}/qt${QT_VERSION_MAJOR}/plugins"/* "$location/bin/"
+    mkdir -p "${location}/bin" "${location}/lib" "${location}/Resources/pixmaps"
+    #cp "${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib/libQtDBus.so.4" "${location}/lib/"
+    cp "${TMP_BINARIES_PATH}/Resources/pixmaps/natronIcon256_linux.png" "${location}/Resources/pixmaps/"
+    cp "${TMP_BINARIES_PATH}/Resources/pixmaps/natronProjectIcon_linux.png" "${location}/Resources/pixmaps/"
+    cp -a "${SDK_HOME}/share/poppler" "${location}/Resources/"
+    cp -a "${SDK_HOME}/qt${QT_VERSION_MAJOR}/plugins"/* "${location}/bin/"
 
-# Copy dependencies
-for i in $CORE_DEPENDS; do
-    dep=$(basename "$i")
-    if [ ! -f "$location/lib/$dep" ]; then
-        cp -f "$i" "$location/lib/"
+    # Copy dependencies
+    for i in $CORE_DEPENDS; do
+        dep=$(basename "$i")
+        if [ ! -f "${location}/lib/$dep" ]; then
+            cp -f "$i" "${location}/lib/"
+        fi
+    done
+
+    # Copy dependencies of the libraries
+    LIB_DEPENDS=$(ldd $(find "${location}/lib" -maxdepth 1 -type f) |grep /opt | awk '{print $3}'|sort|uniq)
+    for y in $LIB_DEPENDS; do
+        dep=$(basename "$y")
+        if [ ! -f "${location}/lib/$dep" ]; then
+            cp -f "$y" "${location}/lib/"
+        fi
+    done
+
+    # Qt plug-in dependencies
+    QT_PLUG_DEPENDS=$(ldd $(find "${location}/bin" -maxdepth 2 -type f -name '*.so') | grep /opt | awk '{print $3}'|sort|uniq)
+    for z in $QT_PLUG_DEPENDS; do
+        dep=$(basename "$z")
+        if [ ! -f "${location}/lib/$dep" ]; then
+            cp -f "$z" "${location}/lib/"
+        fi
+    done
+
+
+    # Copy gcc compat libs
+    #if [ -f "$INC_PATH/misc/compat${BITS}.tgz" ] && [ "$SDK_VERSION" = "CY2015" ]; then
+    #    tar xvf "$INC_PATH/misc/compat${BITS}.tgz" -C "${location}/lib/"
+    #fi
+
+
+    # done in build-natron.sh
+    #mkdir -p "${location}/Resources/etc/fonts/conf.d"
+    #cp "${SDK_HOME}/etc/fonts/fonts.conf" "${location}/Resources/etc/fonts/"
+    #cp "${SDK_HOME}/share/fontconfig/conf.avail"/* "${location}/Resources/etc/fonts/conf.d/"
+    #$GSED -i "s#${SDK_HOME}/#/#;/conf.d/d" "${location}/Resources/etc/fonts/fonts.conf"
+
+    # strip binaries
+    if [ "$COMPILE_TYPE" != "debug" ]; then
+        strip -s "${location}/bin"/* &>/dev/null || true
+        strip -s "${location}/lib"/* &>/dev/null || true
+        strip -s "${location}/bin"/*/* &>/dev/null || true
     fi
-done
 
-# Copy dependencies of the libraries
-LIB_DEPENDS=$(ldd $(find "$location/lib" -maxdepth 1 -type f) |grep /opt | awk '{print $3}'|sort|uniq)
-for y in $LIB_DEPENDS; do
-    dep=$(basename "$y")
-    if [ ! -f "$location/lib/$dep" ]; then
-        cp -f "$y" "$location/lib/"
+    if [ ! -d "${location}/Plugins" ]; then
+        mkdir -p "${location}/Plugins"
     fi
-done
 
-# Qt plug-in dependencies
-QT_PLUG_DEPENDS=$(ldd $(find "$location/bin" -maxdepth 2 -type f -name '*.so') | grep /opt | awk '{print $3}'|sort|uniq)
-for z in $QT_PLUG_DEPENDS; do
-    dep=$(basename "$z")
-    if [ ! -f "$location/lib/$dep" ]; then
-        cp -f "$z" "$location/lib/"
+    # let Natron.sh handle gcc libs
+    #mkdir "${location}/lib/compat"
+    #mv "${location}/lib"/{libgomp*,libgcc*,libstdc*} "${location}/lib/compat/"
+    if [ ! -f "$SRC_PATH/strings${BITS}.tgz" ]; then
+        $WGET "$THIRD_PARTY_SRC_URL/strings${BITS}.tgz" -O "$SRC_PATH/strings${BITS}.tgz"
     fi
-done
+    tar xvf "$SRC_PATH/strings${BITS}.tgz" -C "${location}/bin/"
 
-
-# Copy gcc compat libs
-#if [ -f "$INC_PATH/misc/compat${BITS}.tgz" ] && [ "$SDK_VERSION" = "CY2015" ]; then
-#    tar xvf "$INC_PATH/misc/compat${BITS}.tgz" -C "$location/lib/"
-#fi
-
-
-# done in build-natron.sh
-#mkdir -p "$location/Resources/etc/fonts/conf.d"
-#cp "${SDK_HOME}/etc/fonts/fonts.conf" "$location/Resources/etc/fonts/"
-#cp "${SDK_HOME}/share/fontconfig/conf.avail"/* "$location/Resources/etc/fonts/conf.d/"
-#$GSED -i "s#${SDK_HOME}/#/#;/conf.d/d" "$location/Resources/etc/fonts/fonts.conf"
-
-# strip binaries
-if [ "$COMPILE_TYPE" != "debug" ]; then
-    strip -s "$location/bin"/* &>/dev/null || true
-    strip -s "$location/lib"/* &>/dev/null || true
-    strip -s "$location/bin"/*/* &>/dev/null || true
-fi
-
-if [ ! -d "$location/Plugins" ]; then
-    mkdir -p "$location/Plugins"
-fi
-
-
-# let Natron.sh handle gcc libs
-#mkdir "$location/lib/compat"
-#mv "$location/lib"/{libgomp*,libgcc*,libstdc*} "$location/lib/compat/"
-if [ ! -f "$SRC_PATH/strings${BITS}.tgz" ]; then
-    $WGET "$THIRD_PARTY_SRC_URL/strings${BITS}.tgz" -O "$SRC_PATH/strings${BITS}.tgz"
-fi
-tar xvf "$SRC_PATH/strings${BITS}.tgz" -C "$location/bin/"
-
-# end for all locations
+    # end for all locations
 done
 
 # Copy Python distrib
 # Remove it if it existed already (with DEBUG_SCRIPTS=1)
-if [ -d "$TMP_PORTABLE_DIR/lib/python${PYVER}" ]; then
-    rm -rf "$TMP_PORTABLE_DIR/lib/python${PYVER}"
+if [ -d "${TMP_PORTABLE_DIR}/lib/python${PYVER}" ]; then
+    rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"
 fi
-cp -a "${SDK_HOME}/lib/python${PYVER}" "$TMP_PORTABLE_DIR/lib/"
+cp -a "${SDK_HOME}/lib/python${PYVER}" "${TMP_PORTABLE_DIR}/lib/"
 
 # Move PySide to plug-ins directory and keep a symbolic link in site-packages
-mv "$TMP_PORTABLE_DIR/lib/python${PYVER}/site-packages/PySide" "$TMP_PORTABLE_DIR/Plugins/"
-(cd "$TMP_PORTABLE_DIR/lib/python${PYVER}/site-packages"; ln -sf "../../../Plugins/PySide" . )
+mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide" "${TMP_PORTABLE_DIR}/Plugins/"
+(cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages"; ln -sf "../../../Plugins/PySide" . )
 
 # Remove unused stuff
-rm -rf "$TMP_PORTABLE_DIR/lib/python${PYVER}"/{test,config,config-"${PYVER}m"}
+rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}m"}
 
 # Copy Pyside dependencies
 PYSIDE_DEPENDS=$(ldd $(find "${SDK_HOME}/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f) | grep /opt | awk '{print $3}'|sort|uniq)
 for y in $PYSIDE_DEPENDS; do
     dep=$(basename "$y")
-    if [ ! -f "$TMP_PORTABLE_DIR/lib/$dep" ]; then
-        cp -f "$y" "$TMP_PORTABLE_DIR/lib/"
+    if [ ! -f "${TMP_PORTABLE_DIR}/lib/$dep" ]; then
+        cp -f "$y" "${TMP_PORTABLE_DIR}/lib/"
     fi
 done
 
 # Remove any pycache
-(cd "$TMP_PORTABLE_DIR" ; find . -type d -name __pycache__ -exec rm -rf {} \;)
+(cd "${TMP_PORTABLE_DIR}" ; find . -type d -name __pycache__ -exec rm -rf {} \;)
 
 # Strip pyside and python depends
 if [ "${COMPILE_TYPE}" != "debug" ]; then
-    strip -s "$TMP_PORTABLE_DIR/Plugins/PySide"/* "$TMP_PORTABLE_DIR/lib"/python*/* "$TMP_PORTABLE_DIR/lib"/python*/*/* &>/dev/null || true
+    strip -s "${TMP_PORTABLE_DIR}/Plugins/PySide"/* "${TMP_PORTABLE_DIR}/lib"/python*/* "${TMP_PORTABLE_DIR}/lib"/python*/*/* &>/dev/null || true
 fi
 
 # Remove pyo files and prune unneeded files using python-exclude file
-PYDIR="$TMP_PORTABLE_DIR/lib/python${PYVER:-}"
+PYDIR="${TMP_PORTABLE_DIR}/lib/python${PYVER:-}"
 find "${PYDIR}" -type f -name '*.pyo' -exec rm {} \;
 (cd "${PYDIR}"; xargs rm -rf || true) < "$INC_PATH/python-exclude.txt"
 
@@ -478,23 +536,23 @@ if [ "${USE_QT5:-}" != 1 ]; then
     rm -rf "$PYDIR"/site-packages/shiboken2* "$PYDIR"/site-packages/PySide2 || true
 fi
 
-fixrpath "$TMP_PORTABLE_DIR/Plugins/PySide" "/../../lib"
-fixrpath "$TMP_PORTABLE_DIR/lib/python${PYVER:-}/lib-dynload $TMP_PORTABLE_DIR/lib/python${PYVER:-}/site-packages" "/../.."
+fixrpath "${TMP_PORTABLE_DIR}/Plugins/PySide" "/../../lib"
+fixrpath "${TMP_PORTABLE_DIR}/lib/python${PYVER:-}/lib-dynload ${TMP_PORTABLE_DIR}/lib/python${PYVER:-}/site-packages" "/../.."
 
 export PY_BIN="${SDK_HOME}/bin/python${PYVER:-}"
 export PYDIR="$PYDIR"
 . "$CWD"/zip-python.sh
 
 # Install pip
-if [ -x "$TMP_PORTABLE_DIR"/bin/natron-python ]; then
+if [ -x "${TMP_PORTABLE_DIR}"/bin/natron-python ]; then
     wget --no-check-certificate http://bootstrap.pypa.io/get-pip.py
-    "$TMP_PORTABLE_DIR"/bin/natron-python get-pip.py
+    "${TMP_PORTABLE_DIR}"/bin/natron-python get-pip.py
     rm get-pip.py
 fi
 
 # Run extra user provided pip install scripts
 if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
-    "$TMP_PORTABLE_DIR"/bin/natron-python "$EXTRA_PYTHON_MODULES_SCRIPT" || true
+    "${TMP_PORTABLE_DIR}"/bin/natron-python "$EXTRA_PYTHON_MODULES_SCRIPT" || true
 fi
 
 
@@ -502,10 +560,10 @@ fi
 cp -r "$PYDIR" "$LIBS_PACKAGE_PATH/data/lib/"
 
 # Fix RPATH (we dont want to link against system libraries when deployed)
-for location in "$LIBS_PACKAGE_PATH/data" "$TMP_PORTABLE_DIR"; do
-    fixrpath "$location/bin" "/../lib"
-    fixrpath "$location/lib" ""
-    BIN_SUBDIRS=$(find "$location/bin" -type d ! -path "$location/bin")
+for location in "$LIBS_PACKAGE_PATH/data" "${TMP_PORTABLE_DIR}"; do
+    fixrpath "${location}/bin" "/../lib"
+    fixrpath "${location}/lib" ""
+    BIN_SUBDIRS=$(find "${location}/bin" -type d ! -path "${location}/bin")
     fixrpath "$BIN_SUBDIRS" "/../../lib"
 done
 
@@ -522,6 +580,7 @@ PACKAGES="${PACKAGES},fr.inria.openfx.extra"
 installPlugin "Arena" "fr.inria.openfx.extra" "$XML/openfx-arena.xml" "$QS/openfx-arena.qs" "$ALL_NATRON_LIBS"
 installPlugin "ArenaCL" "fr.inria.openfx.extra" "$XML/openfx-arena.xml" "$QS/openfx-arena.qs" "$ALL_NATRON_LIBS"
 installPlugin "GMIC" "fr.inria.openfx.gmic" "$XML/openfx-gmic.xml" "$QS/openfx-gmic.qs" "$ALL_NATRON_LIBS"
+
 
 # Configure the package date using the most recent library modification date
 CLIBS_VERSION="00000000000000"
@@ -541,15 +600,15 @@ bash "$CWD"/gen-natron-doc.sh
 if [ -d "$NATRON_PACKAGE_PATH/data/Resources/docs" ]; then
     rm -rf "$NATRON_PACKAGE_PATH/data/Resources/docs"
 fi
-if [ -d "$TMP_PORTABLE_DIR/Resources/docs" ]; then
-    cp -r "$TMP_PORTABLE_DIR/Resources/docs" "$NATRON_PACKAGE_PATH/data/Resources/"
+if [ -d "${TMP_PORTABLE_DIR}/Resources/docs" ]; then
+    cp -r "${TMP_PORTABLE_DIR}/Resources/docs" "$NATRON_PACKAGE_PATH/data/Resources/"
 fi
 
 
 # At this point we can run Natron unit tests to check that the deployment is ok.
 rm -rf "$HOME/.cache/INRIA/Natron"* &> /dev/null || true
-$TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python.supp" "$TMP_PORTABLE_DIR/bin/Tests"
-rm "$TMP_PORTABLE_DIR/bin/Tests"
+$TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python.supp" "${TMP_PORTABLE_DIR}/bin/Tests"
+rm "${TMP_PORTABLE_DIR}/bin/Tests"
 
 # Clean and perms
 (cd "${INSTALLER_PATH}"; find . -type d -name .git -exec rm -rf {} \;)
@@ -562,32 +621,32 @@ ZIP_INSTALL_DIR="compressed_no_installer"
 DEB_INSTALL_DIR="deb_package"
 RPM_INSTALL_DIR="rpm_package"
 
-if [ -d "$BUILD_ARCHIVE_DIRECTORY" ]; then
-    rm -rf "$BUILD_ARCHIVE_DIRECTORY"
+if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
+    rm -rf "${BUILD_ARCHIVE_DIRECTORY}"
 fi
 
-mkdir -p "$BUILD_ARCHIVE_DIRECTORY/$BUNDLED_INSTALL_DIR"
+mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR"
 
 if [ "$DISABLE_PORTABLE_ARCHIVE" != "1" ]; then
     # Portable archive
-    mkdir -p "$BUILD_ARCHIVE_DIRECTORY/$ZIP_INSTALL_DIR"
-    (cd "$TMP_BINARIES_PATH" && tar Jcf "${PORTABLE_DIRNAME}.tar.xz" "${PORTABLE_DIRNAME}"; mv "${PORTABLE_DIRNAME}.tar.xz" "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR/${PORTABLE_DIRNAME}.tar.xz")
+    mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR"
+    (cd "${TMP_BINARIES_PATH}" && tar Jcf "${PORTABLE_DIRNAME}.tar.xz" "${PORTABLE_DIRNAME}"; mv "${PORTABLE_DIRNAME}.tar.xz" "${{BUILD_ARCHIVE_DIRECTORY}}/$ZIP_INSTALL_DIR/${PORTABLE_DIRNAME}.tar.xz")
 fi
 
 if [ "$WITH_ONLINE_INSTALLER" = "1" ]; then
-    mkdir -p "$BUILD_ARCHIVE_DIRECTORY/$ONLINE_INSTALL_DIR"
-    mkdir -p "$BUILD_ARCHIVE_DIRECTORY/$ONLINE_INSTALL_DIR/packages"
+    mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR"
+    mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/packages"
     # Gen online repo
-    "${SDK_HOME}/installer/bin"/repogen -v --update-new-components -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" "$BUILD_ARCHIVE_DIRECTORY/$ONLINE_INSTALL_DIR/packages"
+    "${SDK_HOME}/installer/bin"/repogen -v --update-new-components -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/packages"
 
     # Online installer
-    "${SDK_HOME}/installer/bin"/binarycreator -v -n -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" "$BUILD_ARCHIVE_DIRECTORY/$ONLINE_INSTALL_DIR/${INSTALLER_BASENAME}-online"
-    (cd "$BUILD_ARCHIVE_DIRECTORY/$ONLINE_INSTALL_DIR" && tar zcf "${INSTALLER_BASENAME}-online.tgz" "${INSTALLER_BASENAME}-online" && rm "${INSTALLER_BASENAME}-online")
+    "${SDK_HOME}/installer/bin"/binarycreator -v -n -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/${INSTALLER_BASENAME}-online"
+    (cd "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR" && tar zcf "${INSTALLER_BASENAME}-online.tgz" "${INSTALLER_BASENAME}-online" && rm "${INSTALLER_BASENAME}-online")
 fi
 
 # Offline installer
-"${SDK_HOME}/installer/bin"/binarycreator -v -f -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" -i "$PACKAGES" "$BUILD_ARCHIVE_DIRECTORY/$BUNDLED_INSTALL_DIR/$INSTALLER_BASENAME"
-(cd "$BUILD_ARCHIVE_DIRECTORY/$BUNDLED_INSTALL_DIR" && tar zcf "${INSTALLER_BASENAME}.tgz" "$INSTALLER_BASENAME" && rm "$INSTALLER_BASENAME")
+"${SDK_HOME}/installer/bin"/binarycreator -v -f -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" -i "$PACKAGES" "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR/$INSTALLER_BASENAME"
+(cd "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR" && tar zcf "${INSTALLER_BASENAME}.tgz" "$INSTALLER_BASENAME" && rm "$INSTALLER_BASENAME")
 
 
 
@@ -607,7 +666,7 @@ fi
 
 if ( [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABLE" ] ) && [ "$DISABLE_RPM_DEB_PKGS" != "1" ]; then
     # rpm
-    mkdir -p "$BUILD_ARCHIVE_DIRECTORY/$RPM_INSTALL_DIR"
+    mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$RPM_INSTALL_DIR"
 
     if [ ! -f "/usr/bin/rpmbuild" ]; then
         if [ $EUID -ne 0 ]; then
@@ -627,11 +686,11 @@ if ( [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABL
     $GSED "s/REPLACE_VERSION/$(echo "$NATRON_VERSION_STRING" | $GSED 's/-/./g')/;s#__NATRON_INSTALLER__#${INSTALLER_PATH}#;s#__INC__#${INC_PATH}#;s#__TMP_BINARIES_PATH__#${TMP_BINARIES_PATH}#" "$INC_PATH/natron/Natron.spec" > "$TMP_PATH/Natron.spec"
     #Only need to build once, so uncomment as default #echo "" | setsid rpmbuild -bb --define="%_gpg_name build@natron.fr" --sign $INC_PATH/natron/Natron-repo.spec
     echo "" | setsid rpmbuild -bb --define="%_gpg_name build@natron.fr" --sign "$TMP_PATH/Natron.spec"
-    mv ~/rpmbuild/RPMS/*/Natron*.rpm "$BUILD_ARCHIVE_DIRECTORY/$RPM_INSTALL_DIR/"
+    mv ~/rpmbuild/RPMS/*/Natron*.rpm "${BUILD_ARCHIVE_DIRECTORY}/$RPM_INSTALL_DIR/"
 
 
     # deb
-    mkdir -p "$BUILD_ARCHIVE_DIRECTORY/$DEB_INSTALL_DIR"
+    mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$DEB_INSTALL_DIR"
 
     if [ ! -f "/usr/bin/dpkg-deb" ]; then
         if [ $EUID -ne 0 ]; then
@@ -669,8 +728,8 @@ if ( [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABL
     
     cat "$INC_PATH/natron/Natron2.desktop" > usr/share/applications/Natron2.desktop
     cat "$INC_PATH/natron/x-natron.xml" > usr/share/mime/packages/x-natron.xml
-    cp "$TMP_BINARIES_PATH/Resources/pixmaps/natronIcon256_linux.png" usr/share/pixmaps/
-    cp "$TMP_BINARIES_PATH/Resources/pixmaps/natronProjectIcon_linux.png" usr/share/pixmaps/
+    cp "${TMP_BINARIES_PATH}/Resources/pixmaps/natronIcon256_linux.png" usr/share/pixmaps/
+    cp "${TMP_BINARIES_PATH}/Resources/pixmaps/natronProjectIcon_linux.png" usr/share/pixmaps/
     
     (cd usr/bin; ln -sf ../../opt/Natron2/Natron .)
     (cd usr/bin; ln -sf ../../opt/Natron2/NatronRenderer .)
@@ -681,7 +740,7 @@ if ( [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABL
     cd "${INSTALLER_PATH}"
     dpkg-deb -Zxz -z9 --build natron
     mv natron.deb "${DEB_PKG}"
-    mv "${DEB_PKG}" "$BUILD_ARCHIVE_DIRECTORY/$DEB_INSTALL_DIR/"
+    mv "${DEB_PKG}" "${BUILD_ARCHIVE_DIRECTORY}/$DEB_INSTALL_DIR/"
 fi
 
 
