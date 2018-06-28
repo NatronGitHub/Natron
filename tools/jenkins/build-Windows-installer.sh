@@ -309,7 +309,7 @@ COPY_LOCATIONS=("${TMP_PORTABLE_DIR}" "$OCIO_PACKAGE_PATH/data")
 for location in "${COPY_LOCATIONS[@]}"; do
 
     mkdir -p "$location/Resources"
-    cp -LR "${TMP_BINARIES_PATH}/Natron/OpenColorIO-Configs" "$location/Resources/"
+    cp -LR "${TMP_BINARIES_PATH}/Resources/OpenColorIO-Configs" "$location/Resources/"
 
     # end for all locations
 done
