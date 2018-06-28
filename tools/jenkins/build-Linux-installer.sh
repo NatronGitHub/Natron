@@ -307,7 +307,7 @@ for location in "${COPY_LOCATIONS[@]}"; do
 
     mkdir -p "$location/docs" "$location/bin" "$location/Resources" "$location/Plugins/PyPlugs" "$location/Resources/stylesheets"
     cp -a "${TMP_BINARIES_PATH}/docs/natron"/* "$location/docs/"
-    [ -f "$location/docs/TuttleOFX-README.txt" ] || rm "$location/docs/TuttleOFX-README.txt"
+    [ -f "$location/docs/TuttleOFX-README.txt" ] && rm "$location/docs/TuttleOFX-README.txt"
     cp -r "${TMP_BINARIES_PATH}/Resources/etc"  "$location/Resources/"
     cp "${TMP_BINARIES_PATH}/Resources/stylesheets"/mainstyle.qss "$location/Resources/stylesheets/"
     cp "$INC_PATH/natron/natron-mime.sh" "$location/bin/"
