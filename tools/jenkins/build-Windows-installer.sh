@@ -13,6 +13,13 @@ source common.sh
 source manageBuildOptions.sh
 source manageLog.sh
 
+pushd () {
+    command pushd "$@" > /dev/null
+}
+
+popd () {
+    command popd "$@" > /dev/null
+}
 
 # Generate dll versions with dlls on the system
 env BITS="$BITS" PYVER="$PYVER" NATRON_LICENSE="$NATRON_LICENSE" ./genDllVersions.sh
@@ -48,29 +55,29 @@ dump_syms_safe() {
 }
 
 
-if [ -d "$BUILD_ARCHIVE_DIRECTORY" ]; then
-    rm -rf "$BUILD_ARCHIVE_DIRECTORY"
+if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
+    rm -rf "${BUILD_ARCHIVE_DIRECTORY}"
 fi
 
-mkdir -p "$BUILD_ARCHIVE_DIRECTORY"
+mkdir -p "${BUILD_ARCHIVE_DIRECTORY}"
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    mkdir "$BUILD_ARCHIVE_DIRECTORY/symbols"
+    mkdir "${BUILD_ARCHIVE_DIRECTORY}/symbols"
 fi
 
 # If we are in DEBUG_SYMBOLS mode there might already be deployed installer, remove them
 if [ ! -z "$DEBUG_SCRIPTS" ]; then
-    (cd "$TMP_BINARIES_PATH" ; find . -type d -name 'Natron-*' -exec rm -rf {} \;) || trye
+    (cd "${TMP_BINARIES_PATH}" ; find . -type d -name 'Natron-*' -exec rm -rf {} \;) || trye
 fi
 
 
-mkdir -p "$TMP_PORTABLE_DIR"
+mkdir -p "${TMP_PORTABLE_DIR}"
 
 
 # The following should be consistent with paths configured in uploadArtifactsMain.sh
-if [ "$NATRON_BUILD_CONFIG" = "SNAPSHOT" ]; then
+if [ "${NATRON_BUILD_CONFIG}" = "SNAPSHOT" ]; then
     REMOTE_PATH="${REMOTE_PREFIX}/snapshots"
     APP_INSTALL_SUFFIX="INRIA/Natron-snapshot"
-elif [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] ||  [ "$NATRON_BUILD_CONFIG" = "STABLE" ]; then
+elif [ "${NATRON_BUILD_CONFIG}" = "RELEASE" ] ||  [ "${NATRON_BUILD_CONFIG}" = "STABLE" ]; then
     REMOTE_PATH="${REMOTE_PREFIX}/releases"
     APP_INSTALL_SUFFIX="INRIA/Natron-${NATRON_VERSION_FULL}"
 else
@@ -86,14 +93,14 @@ INSTALLER_XML_DATE="$(date "+%Y-%m-%d")"
 
 
 # tag symbols we want to keep with 'release'
-VERSION_TAG="$CURRENT_DATE"
-if [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABLE" ]; then
+VERSION_TAG="${CURRENT_DATE}"
+if [ "${NATRON_BUILD_CONFIG}" = "RELEASE" ] || [ "${NATRON_BUILD_CONFIG}" = "STABLE" ]; then
     BPAD_TAG="-release"
     VERSION_TAG="$NATRON_VERSION_FULL"
 fi
 
 # SETUP
-INSTALLER_PATH="$TMP_BINARIES_PATH/Natron-installer"
+INSTALLER_PATH="${TMP_BINARIES_PATH}/Natron-installer"
 XML="$INC_PATH/xml"
 QS="$INC_PATH/qs"
 
@@ -113,7 +120,7 @@ function installPlugin() {
     PACKAGE_XML="$4"
     PACKAGE_INSTALL_SCRIPT="$5"
 
-    if [ ! -d "$TMP_BINARIES_PATH/OFX/Plugins/${OFX_BINARY}.ofx.bundle" ]; then
+    if [ ! -d "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" ]; then
         return 0
     fi
 
@@ -124,8 +131,8 @@ function installPlugin() {
     fi
 
     #  portable archive
-    if [ ! -d "$TMP_PORTABLE_DIR/Plugins/OFX/Natron" ]; then
-        mkdir -p "$TMP_PORTABLE_DIR/Plugins/OFX/Natron"
+    if [ ! -d "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron" ]; then
+        mkdir -p "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron"
     fi
 
     # Configure config xml file
@@ -137,19 +144,19 @@ function installPlugin() {
     fi
 
 
-    cp -a "$TMP_BINARIES_PATH/OFX/Plugins/${OFX_BINARY}.ofx.bundle" "$TMP_PORTABLE_DIR/Plugins/OFX/Natron/"
-    cp -a "$TMP_BINARIES_PATH/OFX/Plugins/${OFX_BINARY}.ofx.bundle" "$PKG_PATH/data/Plugins/OFX/Natron/"
+    cp -a "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron/"
+    cp -a "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" "$PKG_PATH/data/Plugins/OFX/Natron/"
 
         # Dump symbols
-    if [ "${DISABLE_BREAKPAD:-}" != "1" ] && [ -d "$TMP_BINARIES_PATH/OFX/Plugins/${OFX_BINARY}.ofx.bundle" ]; then
-        dump_syms_safe "$PKG_PATH/data/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}/${OFX_BINARY}.ofx" "$BUILD_ARCHIVE_DIRECTORY/symbols/${OFX_BINARY}.ofx-${VERSION_TAG}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
+    if [ "${DISABLE_BREAKPAD:-}" != "1" ] && [ -d "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" ]; then
+        dump_syms_safe "$PKG_PATH/data/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}/${OFX_BINARY}.ofx" "${BUILD_ARCHIVE_DIRECTORY}/symbols/${OFX_BINARY}.ofx-${VERSION_TAG}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
     fi
 
 
     if [ ! -z "$DEPENDENCIES_DLL" ]; then
         for depend in "${DEPENDENCIES_DLL[@]}"; do
             cp "$depend" "$PKG_PATH/data/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}/"
-            cp "$depend" "$TMP_PORTABLE_DIR/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}/"
+            cp "$depend" "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}/"
         done
 
         # The plug-in needs a manifest embedeed into its own DLL to indicate the relative path of its own
@@ -159,13 +166,13 @@ function installPlugin() {
         echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" > "$PLUGIN_MANIFEST"
         echo "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">" >> "$PLUGIN_MANIFEST"
         echo "<assemblyIdentity name=\"${OFX_BINARY}.ofx\" version=\"1.0.0.0\" type=\"win32\" processorArchitecture=\"amd64\"/>" >> "$PLUGIN_MANIFEST"
-        DEPS_DLL=$(cd "$PKG_PATH/data/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}";ls ./*.dll) || true
+        DEPS_DLL="$(cd "$PKG_PATH/data/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}";ls ./*.dll)" || true
         for depend in $DEPS_DLL; do
             trimmeddep="$(basename "$depend")"
             echo "<file name=\"${trimmeddep}\"></file>" >> "$PLUGIN_MANIFEST"
         done
         echo "</assembly>" >> "$PLUGIN_MANIFEST"
-        for location in "$PKG_PATH/data" "$TMP_PORTABLE_DIR"; do
+        for location in "$PKG_PATH/data" "${TMP_PORTABLE_DIR}"; do
             (cd "$location/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}"; mt -nologo -manifest "$PLUGIN_MANIFEST" -outputresource:"${OFX_BINARY}.ofx;2")
         done
 
@@ -174,7 +181,7 @@ function installPlugin() {
 
     # Strip all binaries
     if [ "$COMPILE_TYPE" != "debug" ]; then
-        for dir in "$PKG_PATH/data/Plugins/OFX/Natron" "$TMP_PORTABLE_DIR/Plugins/OFX/Natron"; do
+        for dir in "$PKG_PATH/data/Plugins/OFX/Natron" "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron"; do
             echo "*** stripping binaries in $dir"
             find "$dir" -type f \( -iname '*.exe' -o -iname '*.dll' -o -iname '*.pyd' -o -iname '*.ofx' \) -exec strip -s {} \;
             echo "*** stripping binaries in $dir... done!"
@@ -207,72 +214,113 @@ mkdir -p "$NATRON_PACKAGE_PATH/meta"
 # Configure natron package xml
 $GSED "s/_VERSION_/${VERSION_TAG}/;s/_DATE_/${INSTALLER_XML_DATE}/" < "$XML/natron.xml" > "$NATRON_PACKAGE_PATH/meta/package.xml"
 cp "$QS/$PKGOS/natron.qs" "$NATRON_PACKAGE_PATH/meta/installscript.qs"
-cat "$TMP_BINARIES_PATH/docs/natron/LICENSE.txt" > "$NATRON_PACKAGE_PATH/meta/natron-license.txt"
+cat "${TMP_BINARIES_PATH}/docs/natron/LICENSE.txt" > "$NATRON_PACKAGE_PATH/meta/natron-license.txt"
 
 # We copy all files to both the portable archive and the package for the installer in a loop
-COPY_LOCATIONS="$TMP_PORTABLE_DIR $NATRON_PACKAGE_PATH/data"
+COPY_LOCATIONS=("${TMP_PORTABLE_DIR}" "$NATRON_PACKAGE_PATH/data")
 
-for location in $COPY_LOCATIONS; do
+for location in "${COPY_LOCATIONS[@]}"; do
 
-mkdir -p "$location/docs" "$location/bin" "$location/Resources" "$location/Plugins/PyPlugs"
+    mkdir -p "$location/docs" "$location/bin" "$location/Resources" "$location/Plugins/PyPlugs"
 
-cp -a "$TMP_BINARIES_PATH/docs/natron"/* "$location/docs/"
-cp "$TMP_BINARIES_PATH/PyPlugs"/* "$location/Plugins/PyPlugs/"
+    cp -a "${TMP_BINARIES_PATH}/docs/natron"/* "$location/docs/"
+    cp "${TMP_BINARIES_PATH}/PyPlugs"/* "$location/Plugins/PyPlugs/"
 
-# Include in the portable version the test program that we will use later on
-if [ "$location" = "$TMP_PORTABLE_DIR" ]; then
-    cp "$TMP_BINARIES_PATH/bin/Tests.exe" "$location/bin/"
-fi
+    # Include in the portable version the test program that we will use later on
+    if [ "$location" = "${TMP_PORTABLE_DIR}" ]; then
+        cp "${TMP_BINARIES_PATH}/bin/Tests.exe" "$location/bin/"
+    fi
 
-if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    cp "$TMP_BINARIES_PATH/bin/Natron.exe" "$location/bin/Natron-bin.exe"
-    cp "$TMP_BINARIES_PATH/bin/NatronRenderer.exe" "$location/bin/NatronRenderer-bin.exe"
-    cp "$TMP_BINARIES_PATH/bin/NatronCrashReporter.exe" "$location/bin/Natron.exe"
-    cp "$TMP_BINARIES_PATH/bin/NatronRendererCrashReporter.exe" "$location/bin/NatronRenderer.exe"
-else
-    cp "$TMP_BINARIES_PATH/bin/Natron.exe" "$location/bin/Natron.exe"
-    cp "$TMP_BINARIES_PATH/bin/NatronRenderer.exe" "$location/bin/NatronRenderer.exe"
-fi
+    if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
+        cp "${TMP_BINARIES_PATH}/bin/Natron.exe" "$location/bin/Natron-bin.exe"
+        cp "${TMP_BINARIES_PATH}/bin/NatronRenderer.exe" "$location/bin/NatronRenderer-bin.exe"
+        cp "${TMP_BINARIES_PATH}/bin/NatronCrashReporter.exe" "$location/bin/Natron.exe"
+        cp "${TMP_BINARIES_PATH}/bin/NatronRendererCrashReporter.exe" "$location/bin/NatronRenderer.exe"
+    else
+        cp "${TMP_BINARIES_PATH}/bin/Natron.exe" "$location/bin/Natron.exe"
+        cp "${TMP_BINARIES_PATH}/bin/NatronRenderer.exe" "$location/bin/NatronRenderer.exe"
+    fi
 
-if [ -f "$TMP_BINARIES_PATH/bin/NatronProjectConverter.exe" ]; then
-    cp "$TMP_BINARIES_PATH/bin/NatronProjectConverter.exe" "$location/bin/NatronProjectConverter.exe"
-fi
+    if [ -f "${TMP_BINARIES_PATH}/bin/NatronProjectConverter.exe" ]; then
+        cp "${TMP_BINARIES_PATH}/bin/NatronProjectConverter.exe" "$location/bin/NatronProjectConverter.exe"
+    fi
 
-if [ -f "$TMP_BINARIES_PATH/bin/natron-python.exe" ]; then
-    cp "$TMP_BINARIES_PATH/bin/natron-python.exe" "$location/bin/natron-python.exe"
-fi
+    if [ -f "${TMP_BINARIES_PATH}/bin/natron-python.exe" ]; then
+        cp "${TMP_BINARIES_PATH}/bin/natron-python.exe" "$location/bin/natron-python.exe"
+    fi
 
-cp "$SDK_HOME"/bin/{iconvert.exe,idiff.exe,igrep.exe,iinfo.exe} "$location/bin/"
-cp "$SDK_HOME"/bin/{exrheader.exe,tiffinfo.exe} "$location/bin/"
-cp "$FFMPEG_PATH"/bin/{ffmpeg.exe,ffprobe.exe} "$location/bin/"
+    cp "$SDK_HOME"/bin/{iconvert.exe,idiff.exe,igrep.exe,iinfo.exe} "$location/bin/"
+    cp "$SDK_HOME"/bin/{exrheader.exe,tiffinfo.exe} "$location/bin/"
+    cp "${FFMPEG_PATH}"/bin/{ffmpeg.exe,ffprobe.exe} "$location/bin/"
 
-mkdir -p "${location}"/Resources/{pixmaps,stylesheets}
-cp "$CWD/include/config/natronProjectIcon_windows.ico" "$location/Resources/pixmaps/"
-cp "$TMP_BINARIES_PATH/Resources/stylesheets/mainstyle.qss" "$location/Resources/stylesheets/"
+    mkdir -p "${location}"/Resources/{pixmaps,stylesheets}
+    cp "$CWD/include/config/natronProjectIcon_windows.ico" "$location/Resources/pixmaps/"
+    cp "${TMP_BINARIES_PATH}/Resources/stylesheets/mainstyle.qss" "$location/Resources/stylesheets/"
 
 
-# Copy OCIO configuration
-cp -a "$TMP_BINARIES_PATH/Resources/OpenColorIO-Configs" "$location/Resources/"
+    # OCIO -> has its own package, see below
+    #cp -a "${TMP_BINARIES_PATH}/Resources/OpenColorIO-Configs" "$location/Resources/"
 
-# Strip binaries when not in debug
-if [ "$COMPILE_TYPE" != "debug" ]; then
-    for dir in $location/bin; do
-        echo "*** stripping binaries in $dir"
-        find "$dir" -type f \( -iname '*.exe' -o -iname '*.dll' -o -iname '*.pyd' -o -iname '*.ofx' \) -exec strip -s {} \;
-        echo "*** stripping binaries in $dir... done!"
-    done
-fi
+    # Strip binaries when not in debug
+    if [ "$COMPILE_TYPE" != "debug" ]; then
+        for dir in $location/bin; do
+            echo "*** stripping binaries in $dir"
+            find "$dir" -type f \( -iname '*.exe' -o -iname '*.dll' -o -iname '*.pyd' -o -iname '*.ofx' \) -exec strip -s {} \;
+            echo "*** stripping binaries in $dir... done!"
+        done
+    fi
 
+    # end for all locations
 done
 
 # Dump symbols for crash reporting on Natron binaries
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    dump_syms_safe "$TMP_BINARIES_PATH/bin/Natron.exe" "$BUILD_ARCHIVE_DIRECTORY/symbols/Natron-${VERSION_TAG}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
-    dump_syms_safe "$TMP_BINARIES_PATH/bin/NatronRenderer.exe" "$BUILD_ARCHIVE_DIRECTORY/symbols/NatronRenderer-${VERSION_TAG}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
+    dump_syms_safe "${TMP_BINARIES_PATH}/bin/Natron.exe" "${BUILD_ARCHIVE_DIRECTORY}/symbols/Natron-${VERSION_TAG}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
+    dump_syms_safe "${TMP_BINARIES_PATH}/bin/NatronRenderer.exe" "${BUILD_ARCHIVE_DIRECTORY}/symbols/NatronRenderer-${VERSION_TAG}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
 fi
 
 
-# Distribute Natron DLLs in a separate package so that the user only receive updates for DLLs when we actually update them
+
+# OCIO package
+OCIO_PKG="fr.inria.natron.color"
+PACKAGES="${PACKAGES},${OCIO_PKG}"
+OCIO_PACKAGE_PATH="${INSTALLER_PATH}/packages/${OCIO_PKG}"
+
+# OCIO package version (linux/windows)
+# bump number when OpenColorIO-Configs changes
+OCIO_VERSION="20180327000000"
+# OCIO
+for c in blender blender-cycles natron; do
+    lib="${TMP_BINARIES_PATH}/Natron/OpenColorIO-Configs/${c}/config.ocio"
+    LAST_MODIFICATION_DATE=$(date -r "$lib" "+%Y%m%d%H%M%S")
+    if [ "$LAST_MODIFICATION_DATE" -gt "$CLIBS_VERSION" ]; then
+        OCIO_VERSION="$LAST_MODIFICATION_DATE"
+    fi
+done
+
+# Create package directories
+mkdir -p "$OCIO_PACKAGE_PATH/meta"
+$GSED "s/_VERSION_/${OCIO_VERSION}/;s/_DATE_/${DATE}/" "$XML/ocio.xml" > "$OCIO_PACKAGE_PATH/meta/package.xml"
+cat "$QS/ocio.qs" > "$OCIO_PACKAGE_PATH/meta/installscript.qs"
+
+# Configure natron package xml
+$GSED "s/_VERSION_/${CURRENT_DATE}/;s/_DATE_/${INSTALLER_XML_DATE}/" "$XML/natron.xml" > "$OCIO_PACKAGE_PATH/meta/package.xml"
+cat "$QS/$PKGOS/natron.qs" > "$OCIO_PACKAGE_PATH/meta/installscript.qs"
+
+# We copy all files to both the portable archive and the package for the installer in a loop
+COPY_LOCATIONS=("${TMP_PORTABLE_DIR}" "$OCIO_PACKAGE_PATH/data")
+
+for location in "${COPY_LOCATIONS[@]}"; do
+
+    mkdir -p "$location/Resources"
+    cp -LR "${TMP_BINARIES_PATH}/Natron/OpenColorIO-Configs" "$location/Resources/"
+
+    # end for all locations
+done
+
+
+# Distribute Natron dependencies in a separate package so that the user only
+# receive updates for DLLs when we actually update them
 # rather than every time we recompile Natron
 CORELIBS_PKG="fr.inria.natron.libs"
 PACKAGES="${PACKAGES},${CORELIBS_PKG}"
@@ -280,10 +328,10 @@ DLLS_PACKAGE_PATH="${INSTALLER_PATH}/packages/${CORELIBS_PKG}"
 mkdir -p "${DLLS_PACKAGE_PATH}/meta"
 
 # We copy all files to both the portable archive and the package for the installer in a loop
-COPY_LOCATIONS="$TMP_PORTABLE_DIR $DLLS_PACKAGE_PATH/data"
+COPY_LOCATIONS=("${TMP_PORTABLE_DIR}" "$DLLS_PACKAGE_PATH/data")
 
 
-for location in $COPY_LOCATIONS; do
+for location in "${COPY_LOCATIONS[@]}"; do
     mkdir -p "$location/bin" "$location/lib" "$location/Resources/pixmaps" "$location/Resources/etc/fonts"
     cp -a "$SDK_HOME/etc/fonts"/* "$location/Resources/etc/fonts"
     cp -a "$SDK_HOME/share/poppler" "$location/Resources/"
@@ -309,16 +357,17 @@ for location in $COPY_LOCATIONS; do
         echo "*** stripping binaries in $dir... done!"
     fi
 
+    # end for all locations
 done
 
 # Copy Python distrib
-mkdir -p "$TMP_PORTABLE_DIR/Plugins"
-cp -a "$SDK_HOME/lib/python${PYVER}" "$TMP_PORTABLE_DIR/lib/"
+mkdir -p "${TMP_PORTABLE_DIR}/Plugins"
+cp -a "$SDK_HOME/lib/python${PYVER}" "${TMP_PORTABLE_DIR}/lib/"
 
-mv "$TMP_PORTABLE_DIR/lib/python${PYVER}/site-packages/PySide" "$TMP_PORTABLE_DIR/Plugins/"
-rm -rf "$TMP_PORTABLE_DIR/lib/python${PYVER}"/{test,config,config-"${PYVER}"m}
+mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide" "${TMP_PORTABLE_DIR}/Plugins/"
+rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}"m}
 
-( cd "$TMP_PORTABLE_DIR/lib/python${PYVER}/site-packages";
+( cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages";
 for dir in *; do
 if [ -d "$dir" ]; then
     rm -rf "$dir"
@@ -327,13 +376,13 @@ done
 )
 
 # Strip Python
-PYDIR="$TMP_PORTABLE_DIR/lib/python${PYVER:-}"
+PYDIR="${TMP_PORTABLE_DIR}/lib/python${PYVER:-}"
 find "${PYDIR}" -type f -name '*.pyo' -exec rm {} \;
 (cd "${PYDIR}"; xargs rm -rf || true) < "$INC_PATH/python-exclude.txt"
-(cd "$TMP_PORTABLE_DIR" ; find . -type d -name __pycache__ -exec rm -rf {} \;)
+(cd "${TMP_PORTABLE_DIR}" ; find . -type d -name __pycache__ -exec rm -rf {} \;)
 
 if [ "$COMPILE_TYPE" != "debug" ]; then
-for dir in "$TMP_PORTABLE_DIR/Plugins/PySide" "$TMP_PORTABLE_DIR/lib/python${PYVER:-}"; do
+for dir in "${TMP_PORTABLE_DIR}/Plugins/PySide" "${TMP_PORTABLE_DIR}/lib/python${PYVER:-}"; do
     echo "*** stripping binaries in $dir"
     find "$dir" -type f \( -iname '*.exe' -o -iname '*.dll' -o -iname '*.pyd' -o -iname '*.ofx' \) -exec strip -s {} \;
     echo "*** stripping binaries in $dir... done!"
@@ -350,15 +399,15 @@ export PYDIR="$PYDIR"
 . "$CWD"/zip-python.sh
 
 # Install pip
-if [ -x "$TMP_PORTABLE_DIR"/bin/natron-python ]; then
+if [ -x "${TMP_PORTABLE_DIR}"/bin/natron-python ]; then
     wget --no-check-certificate http://bootstrap.pypa.io/get-pip.py
-    "$TMP_PORTABLE_DIR"/bin/natron-python get-pip.py
+    "${TMP_PORTABLE_DIR}"/bin/natron-python get-pip.py
     rm get-pip.py
 fi
 
 # Run extra user provided pip install scripts
 if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
-    "$TMP_PORTABLE_DIR"/bin/natron-python "$EXTRA_PYTHON_MODULES_SCRIPT" || true
+    "${TMP_PORTABLE_DIR}"/bin/natron-python "$EXTRA_PYTHON_MODULES_SCRIPT" || true
 fi
 
 
@@ -369,7 +418,7 @@ cp -r "$PYDIR" "$DLLS_PACKAGE_PATH/data/lib/"
 # Configure the package date using the most recent DLL modification date
 CLIBS_VERSION="00000000000000"
 for depend in "${NATRON_DLL[@]}"; do
-    LAST_MODIFICATION_DATE=$(date -r "$depend" "+%Y%m%d%H%M%S")
+    LAST_MODIFICATION_DATE="$(date -r "$depend" "+%Y%m%d%H%M%S")"
     if [ "$LAST_MODIFICATION_DATE" -gt "$CLIBS_VERSION" ]; then
         CLIBS_VERSION="$LAST_MODIFICATION_DATE"
     fi
@@ -388,11 +437,11 @@ fi
 
 PACKAGES="${PACKAGES},fr.inria.mesa"
 MESA_PKG_PATH="$INSTALLER_PATH/packages/fr.inria.mesa"
-mkdir -p "$MESA_PKG_PATH/meta" "$MESA_PKG_PATH/data/bin" "$TMP_PORTABLE_DIR/bin/mesa"
+mkdir -p "$MESA_PKG_PATH/meta" "$MESA_PKG_PATH/data/bin" "${TMP_PORTABLE_DIR}/bin/mesa"
 $GSED "s/_DATE_/${INSTALLER_XML_DATE}/" < "$XML/mesa.xml" > "$MESA_PKG_PATH/meta/package.xml"
 cp "$QS/mesa.qs" "$MESA_PKG_PATH/meta/installscript.qs"
 cp "$SRC_PATH/natron-windows-mesa/win${BITS}/opengl32.dll" "$MESA_PKG_PATH/data/bin/"
-cp "$SRC_PATH/natron-windows-mesa/win${BITS}/opengl32.dll" "$TMP_PORTABLE_DIR/bin/mesa/"
+cp "$SRC_PATH/natron-windows-mesa/win${BITS}/opengl32.dll" "${TMP_PORTABLE_DIR}/bin/mesa/"
 
 # Generate documentation
 bash "$CWD"/gen-natron-doc.sh
@@ -401,15 +450,15 @@ bash "$CWD"/gen-natron-doc.sh
 if [ -d "$NATRON_PACKAGE_PATH/data/Resources/docs" ]; then
     rm -rf "$NATRON_PACKAGE_PATH/data/Resources/docs"
 fi
-if [ -d "$TMP_PORTABLE_DIR/Resources/docs" ]; then
-    cp -r "$TMP_PORTABLE_DIR/Resources/docs" "$NATRON_PACKAGE_PATH/data/Resources/"
+if [ -d "${TMP_PORTABLE_DIR}/Resources/docs" ]; then
+    cp -r "${TMP_PORTABLE_DIR}/Resources/docs" "$NATRON_PACKAGE_PATH/data/Resources/"
 fi
 
 # At this point we can run Natron unit tests to check that the deployment is ok.
 echo "Running Tests program..."
 # Do not fail tests temporarily
-$TIMEOUT -s KILL 1800 "$TMP_PORTABLE_DIR/bin/Tests" || true
-rm "$TMP_PORTABLE_DIR/bin/Tests"
+$TIMEOUT -s KILL 1800 "${TMP_PORTABLE_DIR}/bin/Tests" || true
+rm "${TMP_PORTABLE_DIR}/bin/Tests"
 echo "Done"
 
 # Clean and perms
@@ -421,27 +470,27 @@ ONLINE_INSTALL_DIR="online_installer"
 BUNDLED_INSTALL_DIR="offline_installer"
 ZIP_INSTALL_DIR="compressed_no_installer"
 
-mkdir -p "$BUILD_ARCHIVE_DIRECTORY/$BUNDLED_INSTALL_DIR"
+mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR"
 
 
 if [ "$WITH_ONLINE_INSTALLER" = "1" ]; then
-    mkdir -p "$BUILD_ARCHIVE_DIRECTORY/$ONLINE_INSTALL_DIR"
-    mkdir -p "$BUILD_ARCHIVE_DIRECTORY/$ONLINE_INSTALL_DIR/packages"
+    mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR"
+    mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/packages"
 
     # Gen repo for online install
-    "$SDK_HOME/bin/repogen" -v --update-new-components -p "$INSTALLER_PATH/packages" -c "$INSTALLER_PATH/config/config.xml" "$BUILD_ARCHIVE_DIRECTORY/$ONLINE_INSTALL_DIR/packages"
+    "$SDK_HOME/bin/repogen" -v --update-new-components -p "$INSTALLER_PATH/packages" -c "$INSTALLER_PATH/config/config.xml" "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/packages"
 
     # Online installer
-    "$SDK_HOME/bin/binarycreator" -v -n -p "$INSTALLER_PATH/packages" -c "$INSTALLER_PATH/config/config.xml" "$BUILD_ARCHIVE_DIRECTORY/$ONLINE_INSTALL_DIR/${INSTALLER_BASENAME}-online.exe"
+    "$SDK_HOME/bin/binarycreator" -v -n -p "$INSTALLER_PATH/packages" -c "$INSTALLER_PATH/config/config.xml" "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/${INSTALLER_BASENAME}-online.exe"
 fi
 
 # Offline installer
-"$SDK_HOME/bin/binarycreator" -v -f -p "$INSTALLER_PATH/packages" -c "$INSTALLER_PATH/config/config.xml" -i "${PACKAGES}" "$BUILD_ARCHIVE_DIRECTORY/$BUNDLED_INSTALL_DIR/${INSTALLER_BASENAME}.exe"
+"$SDK_HOME/bin/binarycreator" -v -f -p "$INSTALLER_PATH/packages" -c "$INSTALLER_PATH/config/config.xml" -i "${PACKAGES}" "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR/${INSTALLER_BASENAME}.exe"
 
 if [ "$DISABLE_PORTABLE_ARCHIVE" != "1" ]; then
-    mkdir -p "$BUILD_ARCHIVE_DIRECTORY/$ZIP_INSTALL_DIR"
+    mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR"
     # Portable zip
-    (cd "$TMP_BINARIES_PATH" && zip -q -r "${PORTABLE_DIRNAME}.zip" "${PORTABLE_DIRNAME}"; mv "${PORTABLE_DIRNAME}.zip" "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR/${PORTABLE_DIRNAME}.zip")
+    (cd "${TMP_BINARIES_PATH}" && zip -q -r "${PORTABLE_DIRNAME}.zip" "${PORTABLE_DIRNAME}"; mv "${PORTABLE_DIRNAME}.zip" "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR/${PORTABLE_DIRNAME}.zip")
 fi
 
 
