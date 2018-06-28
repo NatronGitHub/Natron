@@ -307,7 +307,7 @@ for location in "${COPY_LOCATIONS[@]}"; do
 
     mkdir -p "$location/docs" "$location/bin" "$location/Resources" "$location/Plugins/PyPlugs" "$location/Resources/stylesheets"
     cp -a "${TMP_BINARIES_PATH}/docs/natron"/* "$location/docs/"
-    rm "$location/docs/TuttleOFX-README.txt" || true
+    [ -f "$location/docs/TuttleOFX-README.txt" ] || rm "$location/docs/TuttleOFX-README.txt"
     cp -r "${TMP_BINARIES_PATH}/Resources/etc"  "$location/Resources/"
     cp "${TMP_BINARIES_PATH}/Resources/stylesheets"/mainstyle.qss "$location/Resources/stylesheets/"
     cp "$INC_PATH/natron/natron-mime.sh" "$location/bin/"
@@ -371,12 +371,8 @@ done
 
 # Create package directories
 mkdir -p "$OCIO_PACKAGE_PATH/meta"
-$GSED "s/_VERSION_/${OCIO_VERSION}/;s/_DATE_/${DATE}/" "$XML/ocio.xml" > "$OCIO_PACKAGE_PATH/meta/package.xml"
+$GSED "s/_VERSION_/${OCIO_VERSION}/;s/_DATE_/${INSTALLER_XML_DATE}/" "$XML/ocio.xml" > "$OCIO_PACKAGE_PATH/meta/package.xml"
 cat "$QS/ocio.qs" > "$OCIO_PACKAGE_PATH/meta/installscript.qs"
-
-# Configure natron package xml
-$GSED "s/_VERSION_/${CURRENT_DATE}/;s/_DATE_/${INSTALLER_XML_DATE}/" "$XML/natron.xml" > "$OCIO_PACKAGE_PATH/meta/package.xml"
-cat "$QS/$PKGOS/natron.qs" > "$OCIO_PACKAGE_PATH/meta/installscript.qs"
 
 # We copy all files to both the portable archive and the package for the installer in a loop
 COPY_LOCATIONS=("${TMP_PORTABLE_DIR}" "$OCIO_PACKAGE_PATH/data")
