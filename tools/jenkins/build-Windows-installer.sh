@@ -1,4 +1,21 @@
 #!/bin/bash
+# ***** BEGIN LICENSE BLOCK *****
+# This file is part of Natron <http://www.natron.fr/>,
+# Copyright (C) 2016 INRIA and Alexandre Gauthier
+#
+# Natron is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Natron is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+# ***** END LICENSE BLOCK *****
 #
 # Build packages and installer for Windows
 #
@@ -8,6 +25,8 @@
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
 set -x # Print commands and their arguments as they are executed.
+
+echo "*** Windows installer..."
 
 source common.sh
 source manageBuildOptions.sh
@@ -489,8 +508,9 @@ if [ "$DISABLE_PORTABLE_ARCHIVE" != "1" ]; then
     (cd "${TMP_BINARIES_PATH}" && zip -q -r "${PORTABLE_DIRNAME}.zip" "${PORTABLE_DIRNAME}"; mv "${PORTABLE_DIRNAME}.zip" "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR/${PORTABLE_DIRNAME}.zip")
 fi
 
-
-echo "All Done!!!"
+echo "*** Artifacts:"
+ls -R  "${BUILD_ARCHIVE_DIRECTORY}"
+echo "*** Windows installer: done!"
 
 # Local variables:
 # mode: shell-script
