@@ -16,15 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
+#
+# Build packages and installer for Linux
+#
+# Options:
+# DISABLE_BREAKPAD=1: Disable automatic crash report
+
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
 #set -x # Print commands and their arguments as they are executed.
 
-#
-# Build packages and installer for Linux
-# DISABLE_BREAKPAD=1: Disable automatic crash report
-
+echo "*** Linux installer..."
 
 source common.sh
 source manageBuildOptions.sh
@@ -249,19 +252,19 @@ compat_version=3.4.19
 case "${TC_GCC:-}" in
     4.7.*)
         compat_version=3.4.17
-    ;;
+        ;;
     4.8.[012])
         compat_version=3.4.18
-    ;;
+        ;;
     4.8.[3456789])
         compat_version=3.4.19
-    ;;
+        ;;
     4.9.*|5.0.*)
         compat_version=3.4.20
-    ;;
+        ;;
     5.[123456789].*|6.0.*)
         compat_version=3.4.21
-    ;;
+        ;;
     6.[123456789].*|7.0*)
         compat_version=3.4.22
         ;;
@@ -274,7 +277,6 @@ case "${TC_GCC:-}" in
     8.*|9.*)
         compat_version=3.4.25
         ;;
-    ;;
 esac
 
 
@@ -308,7 +310,7 @@ for location in "${COPY_LOCATIONS[@]}"; do
 
     mkdir -p "$location/docs" "$location/bin" "$location/Resources" "$location/Plugins/PyPlugs" "$location/Resources/stylesheets"
     cp -a "${TMP_BINARIES_PATH}/docs/natron"/* "$location/docs/"
-    rm "$location/docs/TuttleOFX-README.txt" || true
+    [ -f "$location/docs/TuttleOFX-README.txt" ] && rm "$location/docs/TuttleOFX-README.txt"
     cp -r "${TMP_BINARIES_PATH}/Resources/etc"  "$location/Resources/"
     cp "${TMP_BINARIES_PATH}/Resources/stylesheets"/mainstyle.qss "$location/Resources/stylesheets/"
     cp "$INC_PATH/natron/natron-mime.sh" "$location/bin/"
@@ -362,22 +364,18 @@ OCIO_PACKAGE_PATH="${INSTALLER_PATH}/packages/${OCIO_PKG}"
 # bump number when OpenColorIO-Configs changes
 OCIO_VERSION="20180327000000"
 # OCIO
-for c in blender blender-cycles natron; do
-    lib="${TMP_BINARIES_PATH}/Natron/OpenColorIO-Configs/${c}/config.ocio"
-    LAST_MODIFICATION_DATE=$(date -r "$lib" "+%Y%m%d%H%M%S")
-    if [ "$LAST_MODIFICATION_DATE" -gt "$CLIBS_VERSION" ]; then
+for c in blender natron nuke-default; do
+    lib="${TMP_BINARIES_PATH}/Resources/OpenColorIO-Configs/${c}/config.ocio"
+    LAST_MODIFICATION_DATE="$(date -r "$lib" "+%Y%m%d%H%M%S")"
+    if [ "$LAST_MODIFICATION_DATE" -gt "$OCIO_VERSION" ]; then
         OCIO_VERSION="$LAST_MODIFICATION_DATE"
     fi
 done
 
 # Create package directories
 mkdir -p "$OCIO_PACKAGE_PATH/meta"
-$GSED "s/_VERSION_/${OCIO_VERSION}/;s/_DATE_/${DATE}/" "$XML/ocio.xml" > "$OCIO_PACKAGE_PATH/meta/package.xml"
+$GSED "s/_VERSION_/${OCIO_VERSION}/;s/_DATE_/${INSTALLER_XML_DATE}/" "$XML/ocio.xml" > "$OCIO_PACKAGE_PATH/meta/package.xml"
 cat "$QS/ocio.qs" > "$OCIO_PACKAGE_PATH/meta/installscript.qs"
-
-# Configure natron package xml
-$GSED "s/_VERSION_/${CURRENT_DATE}/;s/_DATE_/${INSTALLER_XML_DATE}/" "$XML/natron.xml" > "$OCIO_PACKAGE_PATH/meta/package.xml"
-cat "$QS/$PKGOS/natron.qs" > "$OCIO_PACKAGE_PATH/meta/installscript.qs"
 
 # We copy all files to both the portable archive and the package for the installer in a loop
 COPY_LOCATIONS=("${TMP_PORTABLE_DIR}" "$OCIO_PACKAGE_PATH/data")
@@ -385,7 +383,7 @@ COPY_LOCATIONS=("${TMP_PORTABLE_DIR}" "$OCIO_PACKAGE_PATH/data")
 for location in "${COPY_LOCATIONS[@]}"; do
 
     mkdir -p "$location/Resources"
-    cp -LR "${TMP_BINARIES_PATH}/Natron/OpenColorIO-Configs" "$location/Resources/"
+    cp -LR "${TMP_BINARIES_PATH}/Resources/OpenColorIO-Configs" "$location/Resources/"
 
     # end for all locations
 done
@@ -630,7 +628,7 @@ mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR"
 if [ "$DISABLE_PORTABLE_ARCHIVE" != "1" ]; then
     # Portable archive
     mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR"
-    (cd "${TMP_BINARIES_PATH}" && tar Jcf "${PORTABLE_DIRNAME}.tar.xz" "${PORTABLE_DIRNAME}"; mv "${PORTABLE_DIRNAME}.tar.xz" "${{BUILD_ARCHIVE_DIRECTORY}}/$ZIP_INSTALL_DIR/${PORTABLE_DIRNAME}.tar.xz")
+    (cd "${TMP_BINARIES_PATH}" && tar Jcf "${PORTABLE_DIRNAME}.tar.xz" "${PORTABLE_DIRNAME}"; mv "${PORTABLE_DIRNAME}.tar.xz" "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR/${PORTABLE_DIRNAME}.tar.xz")
 fi
 
 if [ "$WITH_ONLINE_INSTALLER" = "1" ]; then
@@ -640,11 +638,13 @@ if [ "$WITH_ONLINE_INSTALLER" = "1" ]; then
     "${SDK_HOME}/installer/bin"/repogen -v --update-new-components -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/packages"
 
     # Online installer
+    echo "*** Creating online installer ${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR/$INSTALLER_BASENAME"
     "${SDK_HOME}/installer/bin"/binarycreator -v -n -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/${INSTALLER_BASENAME}-online"
     (cd "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR" && tar zcf "${INSTALLER_BASENAME}-online.tgz" "${INSTALLER_BASENAME}-online" && rm "${INSTALLER_BASENAME}-online")
 fi
 
 # Offline installer
+echo "*** Creating offline installer ${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR/$INSTALLER_BASENAME"
 "${SDK_HOME}/installer/bin"/binarycreator -v -f -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" -i "$PACKAGES" "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR/$INSTALLER_BASENAME"
 (cd "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR" && tar zcf "${INSTALLER_BASENAME}.tgz" "$INSTALLER_BASENAME" && rm "$INSTALLER_BASENAME")
 
@@ -666,6 +666,7 @@ fi
 
 if ( [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABLE" ] ) && [ "$DISABLE_RPM_DEB_PKGS" != "1" ]; then
     # rpm
+    echo "*** Creating rpm"
     mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$RPM_INSTALL_DIR"
 
     if [ ! -f "/usr/bin/rpmbuild" ]; then
@@ -690,6 +691,7 @@ if ( [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABL
 
 
     # deb
+    echo "*** Creating deb"
     mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$DEB_INSTALL_DIR"
 
     if [ ! -f "/usr/bin/dpkg-deb" ]; then
@@ -743,8 +745,9 @@ if ( [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABL
     mv "${DEB_PKG}" "${BUILD_ARCHIVE_DIRECTORY}/$DEB_INSTALL_DIR/"
 fi
 
-
-echo "All Done!!!"
+echo "*** Artifacts:"
+ls -R  "${BUILD_ARCHIVE_DIRECTORY}"
+echo "*** Linux installer: done!"
 
 # Local variables:
 # mode: shell-script

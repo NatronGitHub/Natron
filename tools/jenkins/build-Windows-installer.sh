@@ -1,4 +1,21 @@
 #!/bin/bash
+# ***** BEGIN LICENSE BLOCK *****
+# This file is part of Natron <http://www.natron.fr/>,
+# Copyright (C) 2016 INRIA and Alexandre Gauthier
+#
+# Natron is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Natron is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+# ***** END LICENSE BLOCK *****
 #
 # Build packages and installer for Windows
 #
@@ -8,6 +25,8 @@
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
 set -x # Print commands and their arguments as they are executed.
+
+echo "*** Windows installer..."
 
 source common.sh
 source manageBuildOptions.sh
@@ -290,22 +309,18 @@ OCIO_PACKAGE_PATH="${INSTALLER_PATH}/packages/${OCIO_PKG}"
 # bump number when OpenColorIO-Configs changes
 OCIO_VERSION="20180327000000"
 # OCIO
-for c in blender blender-cycles natron; do
-    lib="${TMP_BINARIES_PATH}/Natron/OpenColorIO-Configs/${c}/config.ocio"
-    LAST_MODIFICATION_DATE=$(date -r "$lib" "+%Y%m%d%H%M%S")
-    if [ "$LAST_MODIFICATION_DATE" -gt "$CLIBS_VERSION" ]; then
+for c in blender natron nuke-default; do
+    lib="${TMP_BINARIES_PATH}/Resources/OpenColorIO-Configs/${c}/config.ocio"
+    LAST_MODIFICATION_DATE="$(date -r "$lib" "+%Y%m%d%H%M%S")"
+    if [ "$LAST_MODIFICATION_DATE" -gt "$OCIO_VERSION" ]; then
         OCIO_VERSION="$LAST_MODIFICATION_DATE"
     fi
 done
 
 # Create package directories
 mkdir -p "$OCIO_PACKAGE_PATH/meta"
-$GSED "s/_VERSION_/${OCIO_VERSION}/;s/_DATE_/${DATE}/" "$XML/ocio.xml" > "$OCIO_PACKAGE_PATH/meta/package.xml"
+$GSED "s/_VERSION_/${OCIO_VERSION}/;s/_DATE_/${INSTALLER_XML_DATE}/" "$XML/ocio.xml" > "$OCIO_PACKAGE_PATH/meta/package.xml"
 cat "$QS/ocio.qs" > "$OCIO_PACKAGE_PATH/meta/installscript.qs"
-
-# Configure natron package xml
-$GSED "s/_VERSION_/${CURRENT_DATE}/;s/_DATE_/${INSTALLER_XML_DATE}/" "$XML/natron.xml" > "$OCIO_PACKAGE_PATH/meta/package.xml"
-cat "$QS/$PKGOS/natron.qs" > "$OCIO_PACKAGE_PATH/meta/installscript.qs"
 
 # We copy all files to both the portable archive and the package for the installer in a loop
 COPY_LOCATIONS=("${TMP_PORTABLE_DIR}" "$OCIO_PACKAGE_PATH/data")
@@ -313,7 +328,7 @@ COPY_LOCATIONS=("${TMP_PORTABLE_DIR}" "$OCIO_PACKAGE_PATH/data")
 for location in "${COPY_LOCATIONS[@]}"; do
 
     mkdir -p "$location/Resources"
-    cp -LR "${TMP_BINARIES_PATH}/Natron/OpenColorIO-Configs" "$location/Resources/"
+    cp -LR "${TMP_BINARIES_PATH}/Resources/OpenColorIO-Configs" "$location/Resources/"
 
     # end for all locations
 done
@@ -493,8 +508,9 @@ if [ "$DISABLE_PORTABLE_ARCHIVE" != "1" ]; then
     (cd "${TMP_BINARIES_PATH}" && zip -q -r "${PORTABLE_DIRNAME}.zip" "${PORTABLE_DIRNAME}"; mv "${PORTABLE_DIRNAME}.zip" "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR/${PORTABLE_DIRNAME}.zip")
 fi
 
-
-echo "All Done!!!"
+echo "*** Artifacts:"
+ls -R  "${BUILD_ARCHIVE_DIRECTORY}"
+echo "*** Windows installer: done!"
 
 # Local variables:
 # mode: shell-script

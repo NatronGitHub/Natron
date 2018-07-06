@@ -524,20 +524,20 @@ COPY_LOCATIONS=("$LIBS_PACKAGE_PATH/data")
 
 for location in "${COPY_LOCATIONS[@]}"; do
 
-    mkdir -p "$${location}/bin" "$${location}/lib" "$${location}/Resources/pixmaps"
+    mkdir -p "${location}/bin" "${location}/lib" "${location}/Resources/pixmaps"
 
-    cp "$QTDIR/lib/libQtDBus.so.4" "$${location}/lib/"
-    cp "${TMP_BINARIES_PATH}/Resources/pixmaps/natronIcon256_linux.png" "$${location}/Resources/pixmaps/"
-    cp "${TMP_BINARIES_PATH}/Resources/pixmaps/natronProjectIcon_linux.png" "$${location}/Resources/pixmaps/"
-    cp -a "${TMP_BINARIES_PATH}/Resources/etc"  "$${location}/Resources/"
-    cp -a "$SDK_HOME/share/poppler" "$${location}/Resources/"
-    cp -a "$QTDIR/plugins"/* "$${location}/bin/"
+    cp "$QTDIR/lib/libQtDBus.so.4" "${location}/lib/"
+    cp "${TMP_BINARIES_PATH}/Resources/pixmaps/natronIcon256_linux.png" "${location}/Resources/pixmaps/"
+    cp "${TMP_BINARIES_PATH}/Resources/pixmaps/natronProjectIcon_linux.png" "${location}/Resources/pixmaps/"
+    cp -a "${TMP_BINARIES_PATH}/Resources/etc"  "${location}/Resources/"
+    cp -a "$SDK_HOME/share/poppler" "${location}/Resources/"
+    cp -a "$QTDIR/plugins"/* "${location}/bin/"
 
     # Get all dependencies of the binaries
     CORE_DEPENDS=$(ldd $(find "$NATRON_PACKAGE_PATH/data/bin" -maxdepth 1 -type f) | grep /opt | awk '{print $3}'|sort|uniq)
     for i in $CORE_DEPENDS; do
-        if [ ! -f "$${location}/lib/$i" ]; then
-            cp -fv "$i" "$${location}/lib/"
+        if [ ! -f "${location}/lib/$i" ]; then
+            cp -fv "$i" "${location}/lib/"
         fi
     done
 
@@ -549,28 +549,28 @@ for location in "${COPY_LOCATIONS[@]}"; do
     popd
 
     # Copy dependencies of the libraries
-    LIB_DEPENDS="$(env LD_LIBRARY_PATH="$${location}/lib:$LD_LIBRARY_PATH" ldd $(find "$${location}/lib" -maxdepth 1 -type f -name 'lib*.so*')|grep /opt | awk '{print $3}'|sort|uniq)"
+    LIB_DEPENDS="$(env LD_LIBRARY_PATH="${location}/lib:$LD_LIBRARY_PATH" ldd $(find "${location}/lib" -maxdepth 1 -type f -name 'lib*.so*')|grep /opt | awk '{print $3}'|sort|uniq)"
     for y in $LIB_DEPENDS; do
-        if [ ! -f "$${location}/lib/$y" ]; then
-            cp -fv "$y" "$${location}/lib/"
+        if [ ! -f "${location}/lib/$y" ]; then
+            cp -fv "$y" "${location}/lib/"
         fi
     done
 
     # Qt plug-in dependencies
-    PLUG_DEPENDS="$(env LD_LIBRARY_PATH="$${location}/lib:$LD_LIBRARY_PATH" ldd "$${location}/bin"/*/*.so* |grep /opt | awk '{print $3}'|sort|uniq)"
+    PLUG_DEPENDS="$(env LD_LIBRARY_PATH="${location}/lib:$LD_LIBRARY_PATH" ldd "${location}/bin"/*/*.so* |grep /opt | awk '{print $3}'|sort|uniq)"
     for z in $PLUG_DEPENDS; do
-        if [ ! -f "$${location}/lib/$z" ]; then
-            cp -fv "$z" "$${location}/lib/"
+        if [ ! -f "${location}/lib/$z" ]; then
+            cp -fv "$z" "${location}/lib/"
         fi
     done
 
     # Copy gcc compat libs
     #if [ -f "$INC_PATH/misc/compat${BITS}.tgz" ] && [ "$SDK_VERSION" = "CY2015" ]; then
-    #    tar xvf "$INC_PATH/misc/compat${BITS}.tgz" -C "$${location}/lib/"
+    #    tar xvf "$INC_PATH/misc/compat${BITS}.tgz" -C "${location}/lib/"
     #fi
 
     if [ "$BUNDLE_IO" = "1" ]; then
-        mv "$IO_LIBS"/{libOpenColor*,libtinyxml*,libgomp*} "$${location}/lib/"
+        mv "$IO_LIBS"/{libOpenColor*,libtinyxml*,libgomp*} "${location}/lib/"
         (cd "$IO_LIBS" ;
          ln -sf ../../../../../lib/libOpenColorIO.so.[0-9] .
          ln -sf ../../../../../lib/libtinyxml.so .
@@ -579,26 +579,26 @@ for location in "${COPY_LOCATIONS[@]}"; do
     fi
 
     # done in build-natron.sh
-    #mkdir -p "$${location}/Resources/etc/fonts/conf.d"
-    #cp "$SDK_HOME/etc/fonts/fonts.conf" "$${location}/Resources/etc/fonts/"
-    #cp "$SDK_HOME/share/fontconfig/conf.avail"/* "$${location}/Resources/etc/fonts/conf.d/"
-    #$GSED -i "s#${SDK_HOME}/#/#;/conf.d/d" "$${location}/Resources/etc/fonts/fonts.conf"
+    #mkdir -p "${location}/Resources/etc/fonts/conf.d"
+    #cp "$SDK_HOME/etc/fonts/fonts.conf" "${location}/Resources/etc/fonts/"
+    #cp "$SDK_HOME/share/fontconfig/conf.avail"/* "${location}/Resources/etc/fonts/conf.d/"
+    #$GSED -i "s#${SDK_HOME}/#/#;/conf.d/d" "${location}/Resources/etc/fonts/fonts.conf"
 
     # strip binaries
     if [ "${DEBUG_MODE:-}" != "1" ]; then
-        strip -s "$${location}/lib"/* &>/dev/null || true
-        strip -s "$${location}/bin"/*/* &>/dev/null || true
+        strip -s "${location}/lib"/* &>/dev/null || true
+        strip -s "${location}/bin"/*/* &>/dev/null || true
     fi
 
-    mkdir -p "$${location}/Plugins"
+    mkdir -p "${location}/Plugins"
 
     # let Natron.sh handle gcc libs
-    #mkdir "$${location}/lib/compat"
-    #mv "$${location}/lib"/{libgomp*,libgcc*,libstdc*} "$${location}/lib/compat/"
+    #mkdir "${location}/lib/compat"
+    #mv "${location}/lib"/{libgomp*,libgcc*,libstdc*} "${location}/lib/compat/"
     if [ ! -f "$SRC_PATH/strings${BITS}.tgz" ]; then
         $WGET "$THIRD_PARTY_SRC_URL/strings${BITS}.tgz" -O "$SRC_PATH/strings${BITS}.tgz"
     fi
-    tar xvf "$SRC_PATH/strings${BITS}.tgz" -C "$${location}/bin/"
+    tar xvf "$SRC_PATH/strings${BITS}.tgz" -C "${location}/bin/"
 
     # end for all locations
 done
