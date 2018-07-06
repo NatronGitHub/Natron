@@ -147,13 +147,13 @@ EditExpressionDialog::compileExpression(const QString& expr)
 QString
 EditExpressionDialog::getCustomHelp()
 {
-    QString sep = QString::fromUtf8("<br/>");
+    //QString sep = QString::fromUtf8("<br/>");
 
-    return getHelpPart1() + sep +
-           getHelpThisNodeVariable() + sep +
-           getHelpThisGroupVariable() + sep +
-           getHelpThisParamVariable() + sep +
-           getHelpDimensionVariable() + sep +
+    return getHelpPart1() + /*sep +*/
+           getHelpThisNodeVariable() + /*sep +*/
+           getHelpThisGroupVariable() + /*sep +*/
+           getHelpThisParamVariable() + /*sep +*/
+           getHelpDimensionVariable() + /*sep +*/
            getHelpPart2();
 }
 
