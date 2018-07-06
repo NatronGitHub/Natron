@@ -554,6 +554,16 @@ KnobHelperPrivate::validatePythonExpression(const string& expression,
         throw std::invalid_argument("Empty expression");;
     }
 
+    // Try to execute the expression and evaluate it, if it doesn't have a good syntax, throw an exception
+    // with the error.
+    string error;
+    {
+        ExprRecursionLevel_RAII __recursionLevelIncrementer__(publicInterface);
+
+        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0) ) {
+            throw std::runtime_error(error);
+        }
+    }
 
     string exprCpy = expression;
 
@@ -627,7 +637,6 @@ KnobHelperPrivate::validatePythonExpression(const string& expression,
 
     // Try to execute the expression and evaluate it, if it doesn't have a good syntax, throw an exception
     // with the error.
-    string error;
     string funcExecScript = "ret = " + exprFuncPrefix + exprFuncName;
 
     {
