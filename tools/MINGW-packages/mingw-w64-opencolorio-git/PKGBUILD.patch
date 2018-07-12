@@ -1,5 +1,5 @@
 --- PKGBUILD.orig	2018-07-12 19:30:04.000000000 +0200
-+++ PKGBUILD	2018-07-12 19:31:23.000000000 +0200
++++ PKGBUILD	2018-07-12 19:59:03.000000000 +0200
 @@ -3,8 +3,9 @@
  _realname=opencolorio
  pkgbase=mingw-w64-${_realname}-git
@@ -27,7 +27,7 @@
          #${_realname}-${pkgver}.tar.gz::https://github.com/imageworks/OpenColorIO/tarball/v${pkgver}.tar.gz
          mingw-w64.patch
          fix-redefinitions.patch
-@@ -68,10 +68,14 @@
+@@ -68,10 +68,15 @@
      -DUSE_EXTERNAL_LCMS=ON \
      -DOCIO_USE_BOOST_PTR=ON \
      -DOCIO_BUILD_PYGLUE=ON \
@@ -39,6 +39,7 @@
 +    -DOCIO_BUILD_NUKE=OFF \
 +    -DOCIO_BUILD_DOCS=OFF \
 +    -DOCIO_BUILD_TESTS=OFF \
++    -DOCIO_BUILD_GPU_TESTS=OFF \
 +    -DOCIO_BUILD_PYGLUE=OFF \
 +    -DOCIO_BUILD_JNIGLUE=OFF \
      ../${_realname}
