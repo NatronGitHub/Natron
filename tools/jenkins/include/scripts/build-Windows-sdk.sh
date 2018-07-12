@@ -411,6 +411,10 @@ install_prebuilt_package python2-setuptools
 install_prebuilt_package python3
 install_prebuilt_package rhash
 
+# openimageio deps
+install_prebuilt_package jasper
+install_prebuilt_package ptex
+install_prebuilt_package pugixml
 
 
 fi
