@@ -579,7 +579,9 @@ install_prebuilt_package openexr
 
 # Install oiio
 # openimageio 1.8.6 hangs when quitting (even on Test.exe): https://github.com/OpenImageIO/oiio/issues/1795
-build_package openimageio17
+# it should be fixed by https://github.com/NatronGitHub/openfx-io/commit/2ba9f219e72c133ba38c597ef9273f9746ec4408
+#build_package openimageio17
+build_package openimageio
 
 # Install qt
 # TODO: add c++11 support patches from linux sdk
