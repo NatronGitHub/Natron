@@ -1,17 +1,19 @@
---- PKGBUILD.orig	2018-07-12 19:30:04.000000000 +0200
-+++ PKGBUILD	2018-07-12 19:59:03.000000000 +0200
-@@ -3,8 +3,9 @@
+--- PKGBUILD.orig	2018-07-12 19:59:48.000000000 +0200
++++ PKGBUILD	2018-07-13 00:19:04.000000000 +0200
+@@ -3,8 +3,10 @@
  _realname=opencolorio
  pkgbase=mingw-w64-${_realname}-git
  pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
-+gitcommit=75b4749
- pkgver=811.75b4749
+-pkgver=811.75b4749
 -pkgrel=1
++# we do not support the new OCIO v2 GPU API (which appeared at commit 809)
++gitcommit=a80857f7
++pkgver=808.a80857f7
 +pkgrel=1.1
  pkgdesc="A color management framework for visual effects and animation (mingw-w64)"
  arch=('any')
  url="http://opencolorio.org"
-@@ -14,14 +15,13 @@
+@@ -14,14 +16,13 @@
  depends=("${MINGW_PACKAGE_PREFIX}-boost"
           "${MINGW_PACKAGE_PREFIX}-glew"
           "${MINGW_PACKAGE_PREFIX}-lcms2"
@@ -27,7 +29,7 @@
          #${_realname}-${pkgver}.tar.gz::https://github.com/imageworks/OpenColorIO/tarball/v${pkgver}.tar.gz
          mingw-w64.patch
          fix-redefinitions.patch
-@@ -68,10 +68,15 @@
+@@ -68,10 +69,15 @@
      -DUSE_EXTERNAL_LCMS=ON \
      -DOCIO_USE_BOOST_PTR=ON \
      -DOCIO_BUILD_PYGLUE=ON \

@@ -3,8 +3,9 @@
 _realname=opencolorio
 pkgbase=mingw-w64-${_realname}-git
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
-gitcommit=75b4749
-pkgver=811.75b4749
+# we do not support the new OCIO v2 GPU API (which appeared at commit 809)
+gitcommit=a80857f7
+pkgver=808.a80857f7
 pkgrel=1.1
 pkgdesc="A color management framework for visual effects and animation (mingw-w64)"
 arch=('any')
