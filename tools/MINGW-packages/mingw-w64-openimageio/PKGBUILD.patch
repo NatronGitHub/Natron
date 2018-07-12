@@ -1,11 +1,11 @@
---- PKGBUILD.orig	2018-06-18 15:28:18.000000000 +0200
-+++ PKGBUILD	2018-06-18 15:29:46.000000000 +0200
+--- PKGBUILD.orig	2018-07-12 19:32:00.000000000 +0200
++++ PKGBUILD	2018-07-12 19:36:18.000000000 +0200
 @@ -4,28 +4,24 @@
  pkgbase=mingw-w64-${_realname}
  pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
  pkgver=1.8.12
--pkgrel=1
-+pkgrel=1.1
+-pkgrel=2
++pkgrel=2.1
  pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
  arch=('any')
  url="http://www.openimageio.org/"
@@ -28,10 +28,10 @@
           "${MINGW_PACKAGE_PREFIX}-openexr"
           "${MINGW_PACKAGE_PREFIX}-openjpeg"
 -         "${MINGW_PACKAGE_PREFIX}-openssl"
+          "${MINGW_PACKAGE_PREFIX}-ptex"
           "${MINGW_PACKAGE_PREFIX}-pugixml"
           "${MINGW_PACKAGE_PREFIX}-zlib")
- makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
-@@ -45,7 +41,8 @@
+@@ -46,7 +42,8 @@
          0007-find-pugixml.patch
          0008-find-openjpeg.patch
          0009-msvcrt-dont-have-create-locale.patch
@@ -41,7 +41,7 @@
  sha256sums=('93e807d7c77a5c4c12598cc7932aa08239bc4198e3e31dca0998a3e0ab163386'
              '4787e771dbb9b794d47672a08fad3dbb0e36ac30e5c1058684437323b8238b37'
              'ab6bde02c0c05495a9cb13441535d42f4d5929bd930859d75f589d12be9a182b'
-@@ -56,7 +53,8 @@
+@@ -57,7 +54,8 @@
              'b5db09ae6931dde76b94f09ce53b1684260a928d0af5920ae54520975b69d6d8'
              'c644153bd6dbca0eff5b70c0bc3241faae0eb90f1bb0cf1f502bb0553a73223e'
              'd765b49b3671e9354776e33d68fc53e88c15b2c430e592a5aeae066d02a5b0da'
@@ -51,7 +51,7 @@
  
  prepare() {
    cd ${srcdir}/oiio-Release-${pkgver}
-@@ -70,6 +68,7 @@
+@@ -71,6 +69,7 @@
    patch -p1 -i ${srcdir}/0008-find-openjpeg.patch
    patch -p1 -i ${srcdir}/0009-msvcrt-dont-have-create-locale.patch
    patch -p1 -i ${srcdir}/0010-boost-python-find-harder.patch
@@ -59,20 +59,19 @@
  }
  
  build() {
-@@ -80,11 +79,25 @@
+@@ -83,10 +82,23 @@
    ${MINGW_PREFIX}/bin/cmake.exe \
      -G"MSYS Makefiles" \
      -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
-+    -DUSE_QT=OFF \
-+    -DUSE_FIELD3D=OFF \
 +    -DUSE_FFMPEG=OFF \
 +    -DUSE_OPENJPEG=ON \
-+    -DUSE_OPENCV=OFF \
-+    -DUSE_OPENSSL=OFF \
      -DUSE_FREETYPE=ON \
 -    -DUSE_OPENCV=ON \
 -    -DUSE_FIELD3D=ON \
 -    -DUSE_OPENSSL=ON \
++    -DUSE_OPENCV=OFF \
++    -DUSE_FIELD3D=OFF \
++    -DUSE_OPENSSL=OFF \
 +    -DUSE_GIF=ON \
 +    -DUSE_LIBRAW=ON \
 +    -DUSE_NUKE=OFF \
@@ -81,10 +80,9 @@
 +    -DILMBASE_HOME=${MINGW_PREFIX} \
 +    -DBOOST_ROOT=${MINGW_PREFIX} \
 +    -DTHIRD_PARTY_TOOLS_HOME=${MINGW_PREFIX} \
-     -DUSE_EXTERNAL_PUGIXML=ON \
 +    -DOPENJPEG_HOME=${MINGW_PREFIX} \
 +    -DOPENJPEG_INCLUDE_DIR=`pkg-config --variable=includedir libopenjp2` \
 +    -DLIBRAW_PATH=${MINGW_PREFIX}/libraw-gpl2 \
-     -DCMAKE_SHARED_LINKER_FLAGS=" -Wl,--export-all-symbols -Wl,--enable-auto-import " \
-     -DOIIO_BUILD_TESTS=ON \
-     ../oiio-Release-${pkgver}
+     -DUSE_QT=OFF \
+     -DPYTHON_VERSION=${_pyver} \
+     -DUSE_EXTERNAL_PUGIXML=ON \

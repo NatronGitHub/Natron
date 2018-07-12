@@ -1,0 +1,94 @@
+***************
+*** 4,31 ****
+  pkgbase=mingw-w64-${_realname}
+  pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+  pkgver=1.8.12
+- pkgrel=1
+  pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
+  arch=('any')
+  url="http://www.openimageio.org/"
+  license=("custom")
+  depends=("${MINGW_PACKAGE_PREFIX}-boost"
+-          "${MINGW_PACKAGE_PREFIX}-field3d"
+           "${MINGW_PACKAGE_PREFIX}-freetype"
+           "${MINGW_PACKAGE_PREFIX}-jasper"
+           "${MINGW_PACKAGE_PREFIX}-giflib"
+           "${MINGW_PACKAGE_PREFIX}-glew"
+-          "${MINGW_PACKAGE_PREFIX}-hdf5"
+           "${MINGW_PACKAGE_PREFIX}-libjpeg"
+           "${MINGW_PACKAGE_PREFIX}-libpng"
+-          "${MINGW_PACKAGE_PREFIX}-LibRaw"
+           "${MINGW_PACKAGE_PREFIX}-libwebp"
+           "${MINGW_PACKAGE_PREFIX}-libtiff"
+           "${MINGW_PACKAGE_PREFIX}-opencolorio"
+-          "${MINGW_PACKAGE_PREFIX}-opencv"
+           "${MINGW_PACKAGE_PREFIX}-openexr"
+           "${MINGW_PACKAGE_PREFIX}-openjpeg"
+-          "${MINGW_PACKAGE_PREFIX}-openssl"
+           "${MINGW_PACKAGE_PREFIX}-pugixml"
+           "${MINGW_PACKAGE_PREFIX}-zlib")
+  makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
+--- 4,27 ----
+  pkgbase=mingw-w64-${_realname}
+  pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+  pkgver=1.8.12
++ pkgrel=1.1
+  pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
+  arch=('any')
+  url="http://www.openimageio.org/"
+  license=("custom")
+  depends=("${MINGW_PACKAGE_PREFIX}-boost"
+           "${MINGW_PACKAGE_PREFIX}-freetype"
+           "${MINGW_PACKAGE_PREFIX}-jasper"
+           "${MINGW_PACKAGE_PREFIX}-giflib"
+           "${MINGW_PACKAGE_PREFIX}-glew"
+           "${MINGW_PACKAGE_PREFIX}-libjpeg"
+           "${MINGW_PACKAGE_PREFIX}-libpng"
++          "${MINGW_PACKAGE_PREFIX}-LibRaw-gpl2"
+           "${MINGW_PACKAGE_PREFIX}-libwebp"
+           "${MINGW_PACKAGE_PREFIX}-libtiff"
+           "${MINGW_PACKAGE_PREFIX}-opencolorio"
+           "${MINGW_PACKAGE_PREFIX}-openexr"
+           "${MINGW_PACKAGE_PREFIX}-openjpeg"
+           "${MINGW_PACKAGE_PREFIX}-pugixml"
+           "${MINGW_PACKAGE_PREFIX}-zlib")
+  makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
+***************
+*** 81,91 ****
+    ${MINGW_PREFIX}/bin/cmake.exe \
+      -G"MSYS Makefiles" \
+      -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+      -DUSE_FREETYPE=ON \
+-     -DUSE_OPENCV=ON \
+-     -DUSE_FIELD3D=ON \
+-     -DUSE_OPENSSL=ON \
+      -DUSE_EXTERNAL_PUGIXML=ON \
+      -DCMAKE_SHARED_LINKER_FLAGS=" -Wl,--export-all-symbols -Wl,--enable-auto-import " \
+      -DOIIO_BUILD_TESTS=ON \
+      ../oiio-Release-${pkgver}
+--- 80,104 ----
+    ${MINGW_PREFIX}/bin/cmake.exe \
+      -G"MSYS Makefiles" \
+      -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
++     -DUSE_QT=OFF \
++     -DUSE_FIELD3D=OFF \
++     -DUSE_FFMPEG=OFF \
++     -DUSE_OPENJPEG=ON \
++     -DUSE_OPENCV=OFF \
++     -DUSE_OPENSSL=OFF \
+      -DUSE_FREETYPE=ON \
++     -DUSE_GIF=ON \
++     -DUSE_LIBRAW=ON \
++     -DUSE_NUKE=OFF \
++     -DSTOP_ON_WARNING=OFF \
++     -DOPENEXR_HOME=${MINGW_PREFIX} \
++     -DILMBASE_HOME=${MINGW_PREFIX} \
++     -DBOOST_ROOT=${MINGW_PREFIX} \
++     -DTHIRD_PARTY_TOOLS_HOME=${MINGW_PREFIX} \
+      -DUSE_EXTERNAL_PUGIXML=ON \
++     -DOPENJPEG_HOME=${MINGW_PREFIX} \
++     -DOPENJPEG_INCLUDE_DIR=`pkg-config --variable=includedir libopenjp2` \
++     -DLIBRAW_PATH=${MINGW_PREFIX}/libraw-gpl2 \
+      -DCMAKE_SHARED_LINKER_FLAGS=" -Wl,--export-all-symbols -Wl,--enable-auto-import " \
+      -DOIIO_BUILD_TESTS=ON \
+      ../oiio-Release-${pkgver}

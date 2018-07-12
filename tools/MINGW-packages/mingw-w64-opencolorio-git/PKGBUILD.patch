@@ -1,11 +1,11 @@
---- PKGBUILD.orig	2018-05-02 11:38:59.000000000 +0200
-+++ PKGBUILD	2018-05-02 11:40:03.000000000 +0200
+--- PKGBUILD.orig	2018-07-12 19:30:04.000000000 +0200
++++ PKGBUILD	2018-07-12 19:31:23.000000000 +0200
 @@ -3,8 +3,9 @@
  _realname=opencolorio
  pkgbase=mingw-w64-${_realname}-git
  pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
-+gitcommit=7fece5e
- pkgver=807.7fece5e
++gitcommit=75b4749
+ pkgver=811.75b4749
 -pkgrel=1
 +pkgrel=1.1
  pkgdesc="A color management framework for visual effects and animation (mingw-w64)"
@@ -16,9 +16,9 @@
           "${MINGW_PACKAGE_PREFIX}-glew"
           "${MINGW_PACKAGE_PREFIX}-lcms2"
 -         "${MINGW_PACKAGE_PREFIX}-python2"
-          "${MINGW_PACKAGE_PREFIX}-tinyxml")
+          "${MINGW_PACKAGE_PREFIX}-tinyxml"
+          "${MINGW_PACKAGE_PREFIX}-yaml-cpp")
  makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
-              "${MINGW_PACKAGE_PREFIX}-yaml-cpp"
               "${MINGW_PACKAGE_PREFIX}-pkg-config"
               "git")
  options=('strip')
