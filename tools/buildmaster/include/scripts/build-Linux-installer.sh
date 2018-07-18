@@ -877,7 +877,7 @@ if [ "${RPM_BUILD:-}" = "1" ]; then
         echo "Error: gpg key for build@natron.fr not found"
         exit
     fi
-    $GSED "s/REPLACE_VERSION/$(echo "$NATRON_VERSION" | $GSED 's/-/./g')/;s#__NATRON_INSTALLER__#${INSTALLER}#;s#__INC__#${INC_PATH}#;s#__TMP_BINARIES_PATH__#${TMP_BINARIES_PATH}#" "$INC_PATH/natron/Natron.spec" > "$TMP_PATH/Natron.spec"
+    $GSED "s/REPLACE_VERSION/$(echo "$NATRON_VERSION" | $GSED 's/-/./g')/;s#__NATRON_INSTALLER__#${INSTALLER_PATH}#;s#__INC__#${INC_PATH}#;s#__TMP_BINARIES_PATH__#${TMP_BINARIES_PATH}#" "$INC_PATH/natron/Natron.spec" > "$TMP_PATH/Natron.spec"
     #Only need to build once, so uncomment as default #echo "" | setsid rpmbuild -bb --define="%_gpg_name build@natron.fr" --sign $INC_PATH/natron/Natron-repo.spec
     echo "" | setsid rpmbuild -bb --define="%_gpg_name build@natron.fr" --sign "$TMP_PATH/Natron.spec"
     mv ~/rpmbuild/RPMS/*/Natron*.rpm "$REPO_DIR/installers/"

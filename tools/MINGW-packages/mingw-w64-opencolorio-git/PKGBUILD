@@ -3,8 +3,9 @@
 _realname=opencolorio
 pkgbase=mingw-w64-${_realname}-git
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
-gitcommit=7fece5e
-pkgver=807.7fece5e
+# we do not support the new OCIO v2 GPU API (which appeared at commit 809)
+gitcommit=a80857f7
+pkgver=808.a80857f7
 pkgrel=1.1
 pkgdesc="A color management framework for visual effects and animation (mingw-w64)"
 arch=('any')
@@ -15,9 +16,9 @@ conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
 depends=("${MINGW_PACKAGE_PREFIX}-boost"
          "${MINGW_PACKAGE_PREFIX}-glew"
          "${MINGW_PACKAGE_PREFIX}-lcms2"
-         "${MINGW_PACKAGE_PREFIX}-tinyxml")
+         "${MINGW_PACKAGE_PREFIX}-tinyxml"
+         "${MINGW_PACKAGE_PREFIX}-yaml-cpp")
 makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
-             "${MINGW_PACKAGE_PREFIX}-yaml-cpp"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
              "git")
 options=('strip')
@@ -74,6 +75,7 @@ build() {
     -DOCIO_BUILD_NUKE=OFF \
     -DOCIO_BUILD_DOCS=OFF \
     -DOCIO_BUILD_TESTS=OFF \
+    -DOCIO_BUILD_GPU_TESTS=OFF \
     -DOCIO_BUILD_PYGLUE=OFF \
     -DOCIO_BUILD_JNIGLUE=OFF \
     ../${_realname}

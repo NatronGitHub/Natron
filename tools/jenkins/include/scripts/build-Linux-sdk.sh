@@ -948,7 +948,7 @@ fi
 
 # Install curl
 # see http://www.linuxfromscratch.org/blfs/view/cvs/basicnet/curl.html
-CURL_VERSION=7.60.0
+CURL_VERSION=7.61.0
 CURL_TAR="curl-${CURL_VERSION}.tar.bz2"
 CURL_SITE="https://curl.haxx.se/download"
 if [ ! -s "$SDK_HOME/lib/pkgconfig/libcurl.pc" ] || [ "$(pkg-config --modversion libcurl)" != "$CURL_VERSION" ]; then
@@ -984,7 +984,7 @@ fi
 
 # # Install libuv (for cmake)
 # # http://www.linuxfromscratch.org/blfs/view/svn/general/libuv.html
-# LIBUV_VERSION=1.21.0
+# LIBUV_VERSION=1.22.0
 # LIBUV_TAR="libuv-${LIBUV_VERSION}.tar.gz"
 # LIBUV_SITE="http://www.libuv.org/downloads"
 # if [ ! -s "$SDK_HOME/lib/pkgconfig/libuv.pc" ] || [ "$(pkg-config --modversion libuv)" != "$LIBUV_VERSION" ]; then

@@ -335,7 +335,7 @@ cp -a "$SDK_HOME/share/poppler" "$CLIBS_PATH/data/Resources/"
 cp -a "$SDK_HOME/share/qt4/plugins"/* "$CLIBS_PATH/data/bin/"
 rm -f "$CLIBS_PATH/data/bin"/*/*d4.dll || true
 
-# cygcheck.exe /c/Program\ Files/INRIA/Natron-snapshots/bin/*.dll /c/Program\ Files/INRIA/Natron-snapshots/bin/*exe /c/Program\ Files/INRIA/Natron-snapshots/bin/*/*dll /c/Program\ Files/INRIA/Natron-snapshots/bin/*/*exe |fgrep mingw64 |sed -e 's@ *C:\\msys64\\mingw64\\bin\\@@' | grep -v "^Q.*4.dll$" | sort |uniq|fgrep -v libgcc_s_
+# PATH=/c/Program\ Files/INRIA/Natron-snapshots/bin:/c/Windows/System32:/c/Windows:/c/Windows/System32/Wbem:/c/Windows/System32/WindowsPowerShell/v1.0/ /usr/bin/cygcheck.exe /c/Program\ Files/INRIA/Natron-snapshots/bin/*.dll /c/Program\ Files/INRIA/Natron-snapshots/bin/*exe /c/Program\ Files/INRIA/Natron-snapshots/bin/*/*dll  |fgrep mingw64 |sed -e 's@ *C:\\msys64\\mingw64\\bin\\@@' | grep -v "^Q.*4.dll$" | sort |uniq|fgrep -v libgcc_s_
 NATRON_DLL=(
     fbclient.dll
     libboost_filesystem-mt.dll
@@ -378,6 +378,7 @@ NATRON_DLL=(
     libpcre-1.dll
     libpixman-1-0.dll
     libpng16-16.dll
+    libPtex.dll
     libpyside-python${PYVER}.dll
     libpython${PYVER}.dll
     libshiboken-python${PYVER}.dll
