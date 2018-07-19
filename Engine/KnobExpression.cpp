@@ -554,9 +554,14 @@ KnobHelperPrivate::validatePythonExpression(const string& expression,
         throw std::invalid_argument("Empty expression");;
     }
 
+    string error;
+#if 0
+    // the following is OK to detect that there's no "return" in the expression,
+    // but fails if the expression contains e.g. "thisGroup"
+    // see https://github.com/NatronGitHub/Natron/issues/294
+
     // Try to execute the expression and evaluate it, if it doesn't have a good syntax, throw an exception
     // with the error.
-    string error;
     {
         ExprRecursionLevel_RAII __recursionLevelIncrementer__(publicInterface);
 
@@ -564,6 +569,7 @@ KnobHelperPrivate::validatePythonExpression(const string& expression,
             throw std::runtime_error(error);
         }
     }
+#endif
 
     string exprCpy = expression;
 
