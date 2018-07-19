@@ -117,7 +117,7 @@ KnobHelper::KnobHelper(const KnobHolderPtr& holder, const KnobIPtr& mainKnob)
 : _signalSlotHandler()
 , _imp(new KnobHelperPrivate(this, holder, toKnobHelper(mainKnob)))
 {
-  
+
 }
 
 KnobHelper::~KnobHelper()
@@ -176,7 +176,7 @@ KnobHelper::getHashingStrategy() const
 void
 KnobHelper::deleteKnob()
 {
-    // Prevent any signal 
+    // Prevent any signal
     blockValueChanges();
 
     // Invalidate the expression of all listeners
@@ -329,7 +329,7 @@ KnobHelper::autoFoldDimensions(ViewIdx view)
     if (allEquals) {
         setAllDimensionsVisible(view, false);
     }
-    
+
 }
 
 
@@ -825,7 +825,7 @@ KnobHelper::isAutoKeyingEnabledInternal(DimIdx dimension, TimeValue time, ViewId
         level == eAnimationLevelExpression) {
         return false;
     }
-    
+
     return true;
 
 }
@@ -948,7 +948,7 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
 
         // Refresh modifications state
         computeHasModifications();
-        
+
         // Invalidate the hash cache
         invalidateHashCache();
 
@@ -961,7 +961,7 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
 
         // Refresh dependencies
         refreshListenersAfterValueChange(time, view, reason, dimension, evaluatedKnobs);
-        
+
     }
 
     return didSomething;
@@ -1647,7 +1647,7 @@ KnobI::shouldDrawOverlayInteract() const
     if (getIsSecretRecursive()) {
         return false;
     }
-    
+
     KnobPagePtr page = getTopLevelPage();
     if (!page) {
         return false;
@@ -1916,9 +1916,9 @@ KnobHelper::unlinkInternal(DimIdx dimension, ViewIdx view, bool copyState)
             }
 
         }
-        
-        
-        
+
+
+
         // If there is a savedData pointer, that means we were linked to another knob: this is easy just set back the pointer, unless
         // the user requested to copy state
         if (redirectionLink.savedData && !copyState) {
@@ -2000,7 +2000,7 @@ KnobHelper::unlink(DimSpec dimension, ViewSetSpec view, bool copyState)
         }
         TimeValue time = getHolder()->getTimelineCurrentTime();
         evaluateValueChange(dimension, time, view, eValueChangedReasonUserEdited);
-        
+
     }
 } // unlink
 
@@ -2073,17 +2073,17 @@ AnimationLevelEnum
 KnobHelper::getAnimationLevel(DimIdx dimension, TimeValue time, ViewIdx view) const
 {
     AnimationLevelEnum level = eAnimationLevelNone;
-    
+
     std::string expr = getExpression(dimension, view);
     if (!expr.empty()) {
         level = eAnimationLevelExpression;
     } else {
-        
+
         CurvePtr c;
         if (canAnimate() && isAnimationEnabled()) {
             c = getAnimationCurve(view, dimension);
         }
-        
+
         if (!c || !c->isAnimated()) {
             level = eAnimationLevelNone;
         } else {
@@ -2258,7 +2258,7 @@ KnobHelper::addListener(const DimIdx listenerDimension,
         QMutexLocker k(&listenerIsHelper->_imp->common->expressionMutex);
         KnobExprPtr& expr = listenerIsHelper->_imp->common->expressions[listenerDimension][listenerView];
         if (expr) {
-            
+
         }
         KnobExprPython* isPythonExpr = dynamic_cast<KnobExprPython*>(expr.get());
 
@@ -2796,7 +2796,7 @@ static bool serializeHardLinks(const KnobIPtr& knob,
                                const ViewIdx view,
                                ValueSerialization* serialization)
 {
-    
+
     KnobIPtr masterKnob;
     KnobDimViewKey sharedMaster;
     if (knob->getSharingMaster(dimension, view, &sharedMaster)) {
@@ -3057,7 +3057,7 @@ KnobHelper::restoreDefaultValueFromSerialization(const SERIALIZATION_NAMESPACE::
         } else {
             isStringBase->setDefaultValue(defObj.value.isString, targetDimension);
         }
-        
+
     } else if (isChoice) {
         if (isChoice->isMultiChoiceEnabled()) {
             std::vector<std::string> options;
@@ -3086,7 +3086,7 @@ KnobHelper::restoreDefaultValueFromSerialization(const SERIALIZATION_NAMESPACE::
             }
         }
     }
-    
+
 
 }
 
@@ -3249,7 +3249,7 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
             // E.g: imagine a Blur.size parameter linked to another Blur.size parameter, each dimension would be respectively linked to x and y
             // and links would be different, even though they appear equal on the interface we have to serialize the 2 different links
             bool allDimensionsEqual = areDimensionsEqual(*it);
-            
+
             if (serialization->_dimension > 1) {
                 bool linksEqual = true;
                 for (std::size_t i = 1; i < dimValues.size(); ++i) {
@@ -3723,7 +3723,7 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
                 setInViewerContextIconFilePath(serialization->_inViewerContextIconFilePath[1], true);
             }
         }
-        
+
         // Allow changes again
     } // changes
     unblockValueChanges();
@@ -3764,7 +3764,7 @@ static NodePtr findMasterNode(const NodeCollectionPtr& group,
 
     if (token != kKnobMasterNodeIsGroup) {
         // Return the node-name in the group
-        
+
         // The nodes created from the serialization may have changed name if another node with the same script-name already existed.
         // By chance since we created all nodes within the same Group at the same time, we have a list of the old node serialization
         // and the corresponding created node (with its new script-name).
@@ -4162,7 +4162,7 @@ struct KnobHolder::KnobHolderPrivate
     , currentRender()
     {
         common->app = appInstance;
-        
+
     }
 
     KnobHolderPrivate(const KnobHolderPtr& other)
@@ -4210,7 +4210,7 @@ KnobHolder::~KnobHolder()
                 // Make sure nobody is referencing this
                 helper->_imp->holder.reset();
                 helper->deleteKnob();
-                
+
             }
         }
     } else {
