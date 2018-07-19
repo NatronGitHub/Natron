@@ -7,7 +7,6 @@
 
 ## Version 2.3.14
 
-- Produce an error if a Python expression contains a "return"
 - ReadSVG: Fix reading layers of SVG files #292
 
 ## Version 2.3.13

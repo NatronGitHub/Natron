@@ -2397,9 +2397,14 @@ KnobHelper::validateExpression(const std::string& expression,
         throw std::invalid_argument("empty expression");;
     }
 
+    std::string error;
+#if 0
+    // the following is OK to detect that there's no "return" in the expression,
+    // but fails if the expression contains e.g. "thisGroup"
+    // see https://github.com/NatronGitHub/Natron/issues/294
+
     ///Try to compile the expression and evaluate it, if it doesn't have a good syntax, throw an exception
     ///with the error.
-    std::string error;
     {
         // first check that the expression does not contain return
         EXPR_RECURSION_LEVEL();
@@ -2408,6 +2413,7 @@ KnobHelper::validateExpression(const std::string& expression,
             throw std::runtime_error(error);
         }
     }
+#endif
 
     std::string exprCpy = expression;
 
