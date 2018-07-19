@@ -22,9 +22,20 @@ set -u # Treat unset variables as an error when substituting.
 set -x # Print commands and their arguments as they are executed.
 #set -v # Prints shell input lines as they are read.
 
+echo "*** OSX installer..."
+
 source common.sh
 source manageBuildOptions.sh
 source manageLog.sh
+
+pushd () {
+    command pushd "$@" > /dev/null
+}
+
+popd () {
+    command popd "$@" > /dev/null
+}
+
 updateBuildOptions
 
 DUMP_SYMS=/usr/local/bin/dump_syms
@@ -63,7 +74,7 @@ if [ -d "${TMP_PORTABLE_DIR}.app" ]; then
 fi
 fi
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    mkdir -p "$BUILD_ARCHIVE_DIRECTORY/symbols"
+    mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/symbols"
 fi
 if [ ! -d "${TMP_PORTABLE_DIR}.app" ]; then
 	mkdir -p "${TMP_PORTABLE_DIR}.app"
@@ -122,7 +133,7 @@ for bin in IO Misc CImg Arena GMIC Shadertoy Extra Magick OCL; do
                 $DSYMUTIL --arch=x86_64 "$ofx_binary" || STATUS=$?
                 if [ $STATUS == 0 ] && [ -d "${ofx_binary}.dSYM" ]; then
                     # dump_syms produces many errors. redirect stderr to stdout (pipe), then stdout to file
-                    $DUMP_SYMS "${ofx_binary}.dSYM" 2>&1 > "$BUILD_ARCHIVE_DIRECTORY/symbols/${bin}.ofx-${CURRENT_DATE}${BPAD_TAG:-}-Mac-x86_64.sym" | head -10
+                    $DUMP_SYMS "${ofx_binary}.dSYM" 2>&1 > "${BUILD_ARCHIVE_DIRECTORY}/symbols/${bin}.ofx-${CURRENT_DATE}${BPAD_TAG:-}-Mac-x86_64.sym" | head -10
                     rm -rf "${ofx_binary}.dSYM"
                 else
                     echo "Warning: $DSYMUTIL --arch=x86_64 $ofx_binary failed with exit status $STATUS"
@@ -133,7 +144,7 @@ for bin in IO Misc CImg Arena GMIC Shadertoy Extra Magick OCL; do
                 $DSYMUTIL --arch=i386 "$ofx_binary" || STATUS=$?
                 if [ $STATUS == 0 ] && [ -d "${ofx_binary}.dSYM" ]; then
                     # dump_syms produces many errors. redirect stderr to stdout (pipe), then stdout to file
-                    $DUMP_SYMS "${ofx_binary}.dSYM" 2>&1 > "$BUILD_ARCHIVE_DIRECTORY/symbols/${bin}.ofx-${CURRENT_DATE}${BPAD_TAG:-}-Mac-i386.sym" | head -10
+                    $DUMP_SYMS "${ofx_binary}.dSYM" 2>&1 > "${BUILD_ARCHIVE_DIRECTORY}/symbols/${bin}.ofx-${CURRENT_DATE}${BPAD_TAG:-}-Mac-i386.sym" | head -10
                     rm -rf "${ofx_binary}.dSYM"
                 else
                     echo "Warning: $DSYMUTIL --arch=i386 $ofx_binary failed with exit status $STATUS"
@@ -757,7 +768,7 @@ if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
                 $DSYMUTIL --arch=x86_64 "$binary" || STATUS=$?
                 if [ $STATUS == 0 ] && [ -d "${binary}.dSYM" ]; then
                     # dump_syms produces many errors. redirect stderr to stdout (pipe), then stdout to file
-                    $DUMP_SYMS "${binary}.dSYM"  2>&1 > "$BUILD_ARCHIVE_DIRECTORY/symbols/${bin}-${CURRENT_DATE}${BPAD_TAG}-Mac-x86_64.sym" | head -10
+                    $DUMP_SYMS "${binary}.dSYM"  2>&1 > "${BUILD_ARCHIVE_DIRECTORY}/symbols/${bin}-${CURRENT_DATE}${BPAD_TAG}-Mac-x86_64.sym" | head -10
                     rm -rf "${binary}.dSYM"
                 else
                     echo "Warning: $DSYMUTIL --arch=x86_64 $binary failed with exit status $STATUS"
@@ -766,7 +777,7 @@ if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
                 $DSYMUTIL --arch=i386 "$binary" || STATUS=$?
                 if [ $STATUS == 0 ] && [ -d "${binary}.dSYM" ]; then
                     # dump_syms produces many errors. redirect stderr to stdout (pipe), then stdout to file
-                    $DUMP_SYMS "${binary}.dSYM" 2>&1 > "$BUILD_ARCHIVE_DIRECTORY/symbols/${bin}-${CURRENT_DATE}${BPAD_TAG}-Mac-i386.sym" | head -10
+                    $DUMP_SYMS "${binary}.dSYM" 2>&1 > "${BUILD_ARCHIVE_DIRECTORY}/symbols/${bin}-${CURRENT_DATE}${BPAD_TAG}-Mac-i386.sym" | head -10
                     rm -rf "${binary}.dSYM"
                 else
                     echo "Warning: $DSYMUTIL --arch=x86_64 $binary failed with exit status $STATUS"
@@ -1008,14 +1019,15 @@ rm -rf splashscreen.*
 #     DISK=`echo $DIRNAME | $GSED -e s@/Volumes/@@`
 #     hdiutil eject "/Volumes/${DISK}"
 # fi
-if [ -d "$BUILD_ARCHIVE_DIRECTORY" ]; then
-    rm -rf "$BUILD_ARCHIVE_DIRECTORY"
+if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
+    rm -rf "${BUILD_ARCHIVE_DIRECTORY}"
 fi
-mkdir -p "$BUILD_ARCHIVE_DIRECTORY/compressed_no_installer"
-mv "${DMG_FINAL}" "$BUILD_ARCHIVE_DIRECTORY/compressed_no_installer/"
+mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/compressed_no_installer"
+mv "${DMG_FINAL}" "${BUILD_ARCHIVE_DIRECTORY}/compressed_no_installer/"
 
-
-echo "All Done!!!"
+echo "*** Artifacts:"
+ls -R  "${BUILD_ARCHIVE_DIRECTORY}"
+echo "*** OSX installer: done!"
 
 # Local variables:
 # mode: shell-script

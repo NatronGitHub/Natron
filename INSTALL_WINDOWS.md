@@ -7,43 +7,7 @@ Instructions for installing Natron from sources on Microsoft Windows
 toolchain that can be used to build Windows applications. It provides
 most dependencies required by Natron.
 
-
-## Packaged dependencies
-
-Clone the [MINGW-packages](https://github.com/MrKepzie/MINGW-packages) repository:
-
-    cd tools/Windows
-    git clone https://github.com/MrKepzie/MINGW-packages
-
-Set the environment variable `MINGW_PACKAGES_PATH` to the location of
-the `MINGW-packages`directory.
-
-Using `pacman`, the MSYS2 package manager, install the following
-packages:
-
-toolchain yasm gsm gdbm db python2 boost libjpeg-turbo libpng
-libtiff giflib lcms2 openjpeg LibRaw pixman cairo
-openssl freetype fontconfig eigen3 pango librsvg libzip cmake
-
-wget tar diffutils file gawk gettext grep make patch patchutils
-pkg-config sed unzip git bison flex rsync zip
-
-## Dependencies to build manually
-
-### *FFmpeg 3.0.2*
-
-### *ImageMagick 6.3.9*
-
-### *OpenColorIO 1.0.9*
-
-### *OpenEXR 2.2*
-
-### *OpenImageIO 1.6.13*
-
-### *Qt 4.8.7*
-
-
-## Configuration
+Follow the [Windows Setup](tools/jenkins/README.md) instructions from the jenkins README to setup MSYS2 and install the required MSYS packages.
 
 ### OpenFX
 

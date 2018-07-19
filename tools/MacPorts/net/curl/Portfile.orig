@@ -3,7 +3,7 @@
 PortSystem                      1.0
 
 name                            curl
-version                         7.60.0
+version                         7.61.0
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -26,9 +26,9 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  b37324b16040cff058af87727662ad246e7d4b2b \
-                                sha256  8736ff8ded89ddf7e926eec7b16f82597d029fc1469f3a551f1fafaac164e6a0 \
-                                size    2338104
+                                rmd160  eb76610e2b375210d34a7418de44555b9e852de8 \
+                                sha256  ef6e55192d04713673b4409ccbcb4cb6cd723137d6e10ca45b0c593a454e1720 \
+                                size    2348892
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0

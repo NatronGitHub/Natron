@@ -329,12 +329,13 @@ setBuildOption "GIT_TRIGGER_COMMIT" "$GIT_COMMIT"
 
 
 # Only use online installer for snapshots or releases
-if [ "$TYPE" = "SNAPSHOT" ] || [ "$TYPE" = "RELEASE" ]; then
-    WITH_ONLINE_INSTALLER=1
-else
+if [ "$TYPE" != "SNAPSHOT" ] && [ "$TYPE" != "RELEASE" ]; then
     WITH_ONLINE_INSTALLER=0
+else
+    WITH_ONLINE_INSTALLER="${WITH_ONLINE_INSTALLER:-0}"
 fi
-setBuildOption "WITH_ONLINE_INSTALLER" "$WITH_ONLINE_INSTALLER"
+
+setBuildOption "WITH_ONLINE_INSTALLER" "${WITH_ONLINE_INSTALLER}"
 
 
 # If 1, source files will be compressed and uploaded with the binary
@@ -466,10 +467,18 @@ dumpBuildOptions
 if [ "$FAIL" = "0" ]; then
     bash "build-plugins.sh" || FAIL=$?
 fi
+if [ "$FAIL" -ne "0" ]; then
+    echo "build-plugins.sh failed with status $FAIL"
+    exit $FAIL
+fi
 
 # Build Natron
 if [ "$FAIL" = "0" ] && [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
     bash "build-natron.sh" || FAIL=$?
+fi
+if [ "$FAIL" -ne "0" ]; then
+    echo "build-natron.sh failed with status $FAIL"
+    exit $FAIL
 fi
 
 # build installer(s)
@@ -477,6 +486,10 @@ fi
 if [ "$FAIL" = "0" ] && [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
     printStatusMessage "Creating installer..."
     bash "build-${PKGOS}-installer.sh" || FAIL=$?
+fi
+if [ "$FAIL" -ne "0" ]; then
+    echo "build-${PKGOS}-installer.sh failed with status $FAIL"
+    exit $FAIL
 fi
 
 

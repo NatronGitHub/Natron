@@ -244,13 +244,13 @@ QString
 EditScriptDialog::getHelpPart1()
 {
     return tr("<p>Each node in the scope already has a variable declared with its name, e.g if you have a node named "
-              "<b>Transform1</b> in your project, then you can type <i>Transform1</i> to reference that node.<br />"
-              "Note that the scope includes all nodes within the same group as thisNode and the parent group node itself, "
+              "<b>Transform1</b> in your project, then you can type <i>Transform1</i> to reference that node.</p>"
+              "<p>Note that the scope includes all nodes within the same group as thisNode and the parent group node itself, "
               "if the node belongs to a group. If the node itself is a group, then it can also have expressions depending "
               "on parameters of its children.</p>"
-              "<p>Each node has all its parameters declared as fields and you can reference a specific parameter by typing it's <b>script name</b>, e.g:<br />"
-              "Transform1.rotate</p>"
-              "<p>The script-name of a parameter is the name in bold that is shown in the tooltip when hovering a parameter with the mouse, this is what "
+              "<p>Each node has all its parameters declared as fields and you can reference a specific parameter by typing its <b>script name</b>, e.g:</p>"
+              "<pre>Transform1.rotate</pre>"
+              "<p>The script name of a parameter is the name in bold that is shown in the tooltip when hovering a parameter with the mouse, this is what "
               "identifies a parameter internally.</p>");
 }
 
@@ -286,12 +286,9 @@ QString
 EditScriptDialog::getHelpPart2()
 {
     return tr("<p>To access values of a parameter several functions are made accessible: </p>"
-              "<br />"
               "<p>The <b>get()</b> function will return a Tuple containing all the values for each dimension of the parameter. For instance "
               "let's say we have a node Transform1 in our comp, we could then reference the x value of the <i>center</i> parameter this way:</p>"
-              "<br />"
-              "<p>Transform1.center.get().x</p>"
-              "<br />"
+              "<pre>Transform1.center.get().x</pre>"
               "<p>The <b>get(</b><i>frame</i><b>)</b> works exactly like the <b>get()</b> function excepts that it takes an extra "
               "<i>frame</i> parameter corresponding to the time at which we want to fetch the value. For parameters with an animation "
               "it would then return their value at the corresponding timeline position. That value would then be either interpolated "

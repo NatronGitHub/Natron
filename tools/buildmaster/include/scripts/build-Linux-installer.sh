@@ -42,7 +42,7 @@ if [ -z "${BUILD_CONFIG:-}" ]; then
     echo "Please define BUILD_CONFIG"
     exit 1
 fi
-NATRON_BRANCH=${GIT_BRANCH:-}
+NATRON_BRANCH="${GIT_BRANCH:-}"
 if [ -z "${NATRON_BRANCH:-}" ] && [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
     echo "No branch selected, using MASTER"
     NATRON_BRANCH=$MASTER_BRANCH
@@ -121,7 +121,8 @@ else
     REPO_DIR="$REPO_DIR_PREFIX$REPO_SUFFIX$BIT"
 fi
 
-DATE=$(date +%Y-%m-%d)
+# The date passed to the ReleaseDate tag of the xml config file of the installer. This has a different format than CURRENT_DATE.
+INSTALLER_XML_DATE="$(date +%Y-%m-%d)"
 PKGOS_ORIG=$PKGOS
 PKGOS=Linux-x86_${BITS}bit
 #REPO_OS=Linux/$REPO_BRANCH/${BITS}bit/packages
@@ -139,10 +140,10 @@ else
     exit
 fi
 
-LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib"
+LD_LIBRARY_PATH="$SDK_HOME/lib:${FFMPEG_PATH}/lib:$LIBRAW_PATH/lib:$QTDIR/lib"
 PATH="$SDK_HOME/gcc/bin:$SDK_HOME/bin:$PATH"
 
-if [ "$ARCH" = "x86_64" ]; then
+if [ "${ARCH}" = "x86_64" ]; then
     LD_LIBRARY_PATH="$SDK_HOME/gcc/lib64:$LD_LIBRARY_PATH"
 else
     LD_LIBRARY_PATH="$SDK_HOME/gcc/lib:$LD_LIBRARY_PATH"
@@ -153,16 +154,16 @@ if [ ! -d "$TMP_PATH" ]; then
     mkdir -p "$TMP_PATH"
 fi
 
-if [ -d "$TMP_BINARIES_PATH/symbols" ]; then
-    rm -rf "$TMP_BINARIES_PATH/symbols"
+if [ -d "${TMP_BINARIES_PATH}/symbols" ]; then
+    rm -rf "${TMP_BINARIES_PATH}/symbols"
 fi
-mkdir -p "$TMP_BINARIES_PATH/symbols"
+mkdir -p "${TMP_BINARIES_PATH}/symbols"
 
 # tag symbols we want to keep with 'release'
 if [ "$BUILD_CONFIG" != "" ] && [ "$BUILD_CONFIG" != "SNAPSHOT" ]; then
     BPAD_TAG="-release"
-    if [ -f "$TMP_BINARIES_PATH/natron-fullversion.txt" ]; then
-        GET_VER=$(cat "$TMP_BINARIES_PATH/natron-fullversion.txt")
+    if [ -f "${TMP_BINARIES_PATH}/natron-fullversion.txt" ]; then
+        GET_VER=$(cat "${TMP_BINARIES_PATH}/natron-fullversion.txt")
         if [ "$GET_VER" != "" ]; then
             TAG=$GET_VER
         fi
@@ -183,26 +184,26 @@ if [ -z "${BUNDLE_GMIC:-}" ]; then
 fi
 
 # SETUP
-INSTALLER="$TMP_PATH/Natron-installer"
+INSTALLER_PATH="$TMP_PATH/Natron-installer"
 XML="$INC_PATH/xml"
 QS="$INC_PATH/qs"
 
-if [ -d "$INSTALLER" ]; then
-    rm -rf "$INSTALLER"
+if [ -d "${INSTALLER_PATH}" ]; then
+    rm -rf "${INSTALLER_PATH}"
 fi
 
-mkdir -p "$INSTALLER/config" "$INSTALLER/packages"
-$GSED "s/_VERSION_/${NATRON_VERSION_NUMBER}/;s#_RBVERSION_#${NATRON_BRANCH}#g;s#_OS_BRANCH_BIT_#${REPO_OS}#g;s#_OS_BRANCH_LATEST_#${REPO_OS_LATEST}#g;s#_URL_#${REPO_URL}#g" "$INC_PATH/config/$PKGOS_ORIG.xml" > "$INSTALLER/config/config.xml"
-cp "$INC_PATH/config"/*.png "$INSTALLER/config/"
+mkdir -p "${INSTALLER_PATH}/config" "${INSTALLER_PATH}/packages"
+$GSED "s/_VERSION_/${NATRON_VERSION_NUMBER}/;s#_RBVERSION_#${NATRON_BRANCH}#g;s#_OS_BRANCH_BIT_#${REPO_OS}#g;s#_OS_BRANCH_LATEST_#${REPO_OS_LATEST}#g;s#_URL_#${REPO_URL}#g" "$INC_PATH/config/$PKGOS_ORIG.xml" > "${INSTALLER_PATH}/config/config.xml"
+cp "$INC_PATH/config"/*.png "${INSTALLER_PATH}/config/"
 
 # OFX IO
 if [ "$BUNDLE_IO" = "1" ]; then
     OFX_IO_VERSION="$TAG"
-    OFX_IO_PATH="$INSTALLER/packages/$IOPLUG_PKG"
+    OFX_IO_PATH="${INSTALLER_PATH}/packages/$IOPLUG_PKG"
     mkdir -p "$OFX_IO_PATH/data" "$OFX_IO_PATH/meta" "$OFX_IO_PATH/data/Plugins/OFX/Natron" "$OFX_IO_PATH/data/bin"
-    $GSED "s/_VERSION_/${OFX_IO_VERSION}/;s/_DATE_/${DATE}/" "$XML/openfx-io.xml" > "$OFX_IO_PATH/meta/package.xml"
+    $GSED "s/_VERSION_/${OFX_IO_VERSION}/;s/_DATE_/${INSTALLER_XML_DATE}/" "$XML/openfx-io.xml" > "$OFX_IO_PATH/meta/package.xml"
     cat "$QS/openfx-io.qs" > "$OFX_IO_PATH/meta/installscript.qs"
-    cp "$FFMPEG_PATH/bin/"{ffmpeg,ffprobe} "$OFX_IO_PATH/data/"
+    cp "${FFMPEG_PATH}/bin/"{ffmpeg,ffprobe} "$OFX_IO_PATH/data/"
     ( cd "$OFX_IO_PATH/data/bin";
       ln -sf ../ffmpeg .
       ln -sf ../ffprobe .
@@ -217,11 +218,11 @@ if [ "$BUNDLE_IO" = "1" ]; then
         strip -s "$OFX_IO_PATH/data/ffprobe"
     fi
 
-    cp -a "$TMP_BINARIES_PATH/OFX/Plugins/IO.ofx.bundle" "$OFX_IO_PATH/data/Plugins/OFX/Natron/"
+    cp -a "${TMP_BINARIES_PATH}/OFX/Plugins/IO.ofx.bundle" "$OFX_IO_PATH/data/Plugins/OFX/Natron/"
 
     if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-        "$SDK_HOME/bin/dump_syms" "$OFX_IO_PATH"/data/Plugins/OFX/Natron/*/*/*/IO.ofx > "$TMP_BINARIES_PATH/symbols/IO.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
-        #$SDK_HOME/bin/dump_syms "$SDK_HOME/lib/libOpenImageIO.so.1."* > "$TMP_BINARIES_PATH/symbols/libOpenImageIO.so.1."*"-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+        "$SDK_HOME/bin/dump_syms" "$OFX_IO_PATH"/data/Plugins/OFX/Natron/*/*/*/IO.ofx > "${TMP_BINARIES_PATH}/symbols/IO.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+        #$SDK_HOME/bin/dump_syms "$SDK_HOME/lib/libOpenImageIO.so.1."* > "${TMP_BINARIES_PATH}/symbols/libOpenImageIO.so.1."*"-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
     fi
 
     if [ "${DEBUG_MODE:-}" != "1" ]; then
@@ -236,13 +237,13 @@ if [ "$BUNDLE_IO" = "1" ]; then
         cp -fv "$x" "$IO_LIBS/"
     done
 
-    OFX_DEPENDS=$(env LD_LIBRARY_PATH="$IO_LIBS:$LD_LIBRARY_PATH" ldd "$INSTALLER"/packages/*/data/Plugins/OFX/Natron/*/*/*/*|grep /opt | awk '{print $3}'|sort|uniq)
+    OFX_DEPENDS=$(env LD_LIBRARY_PATH="$IO_LIBS:$LD_LIBRARY_PATH" ldd "${INSTALLER_PATH}"/packages/*/data/Plugins/OFX/Natron/*/*/*/*|grep /opt | awk '{print $3}'|sort|uniq)
     for x in $OFX_DEPENDS; do
         cp -fv "$x" "$IO_LIBS/"
     done
 
     cp -v "$LIBRAW_PATH"/lib/libraw_r.so.16 "$IO_LIBS/"
-    cp -v "$FFMPEG_PATH"/lib/{libavcodec.so.58,libavdevice.so.58,libavfilter.so.7,libavformat.so.58,libavresample.so.4,libavutil.so.56,libpostproc.so.55,libswresample.so.3,libswscale.so.5} "$IO_LIBS/"
+    cp -v "${FFMPEG_PATH}"/lib/{libavcodec.so.58,libavdevice.so.58,libavfilter.so.7,libavformat.so.58,libavresample.so.4,libavutil.so.56,libpostproc.so.55,libswresample.so.3,libswscale.so.5} "$IO_LIBS/"
     OFX_LIB_DEP=$(env LD_LIBRARY_PATH="$IO_LIBS:$LD_LIBRARY_PATH" ldd "$IO_LIBS"/*|grep /opt | awk '{print $3}'|sort|uniq)
     for y in $OFX_LIB_DEP; do
         cp -fv "$y" "$IO_LIBS/"
@@ -274,14 +275,14 @@ fi # BUNDLE_IO
 # OFX MISC
 if [ "$BUNDLE_MISC" = "1" ]; then
     OFX_MISC_VERSION=$TAG
-    OFX_MISC_PATH=$INSTALLER/packages/$MISCPLUG_PKG
+    OFX_MISC_PATH="${INSTALLER_PATH}/packages/$MISCPLUG_PKG"
     mkdir -p "$OFX_MISC_PATH/data" "$OFX_MISC_PATH/meta" "$OFX_MISC_PATH/data/Plugins/OFX/Natron"
-    $GSED "s/_VERSION_/${OFX_MISC_VERSION}/;s/_DATE_/${DATE}/" "$XML/openfx-misc.xml" > "$OFX_MISC_PATH/meta/package.xml"
+    $GSED "s/_VERSION_/${OFX_MISC_VERSION}/;s/_DATE_/${INSTALLER_XML_DATE}/" "$XML/openfx-misc.xml" > "$OFX_MISC_PATH/meta/package.xml"
     cat "$QS/openfx-misc.qs" > "$OFX_MISC_PATH/meta/installscript.qs"
-    cp -a "$TMP_BINARIES_PATH/OFX/Plugins"/{CImg,Misc}.ofx.bundle "$OFX_MISC_PATH/data/Plugins/OFX/Natron/"
+    cp -a "${TMP_BINARIES_PATH}/OFX/Plugins"/{CImg,Misc}.ofx.bundle "$OFX_MISC_PATH/data/Plugins/OFX/Natron/"
 
-    if [ -d "$TMP_BINARIES_PATH/OFX/Plugins/Shadertoy.ofx.bundle" ]; then
-        cp -a "$TMP_BINARIES_PATH/OFX/Plugins/Shadertoy.ofx.bundle" "$OFX_MISC_PATH/data/Plugins/OFX/Natron/"
+    if [ -d "${TMP_BINARIES_PATH}/OFX/Plugins/Shadertoy.ofx.bundle" ]; then
+        cp -a "${TMP_BINARIES_PATH}/OFX/Plugins/Shadertoy.ofx.bundle" "$OFX_MISC_PATH/data/Plugins/OFX/Natron/"
         STOY_LIBS="$OFX_MISC_PATH/data/Plugins/OFX/Natron/Shadertoy.ofx.bundle/Libraries"
         mkdir -p "$STOY_LIBS"
         (cd "$STOY_LIBS" ;
@@ -291,10 +292,10 @@ if [ "$BUNDLE_MISC" = "1" ]; then
     fi
 
     if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-        "$SDK_HOME/bin"/dump_syms "$OFX_MISC_PATH/data/Plugins/OFX/Natron"/*/*/*/CImg.ofx > "$TMP_BINARIES_PATH/symbols/CImg.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
-        "$SDK_HOME/bin"/dump_syms "$OFX_MISC_PATH/data/Plugins/OFX/Natron"/*/*/*/Misc.ofx > "$TMP_BINARIES_PATH/symbols/Misc.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+        "$SDK_HOME/bin"/dump_syms "$OFX_MISC_PATH/data/Plugins/OFX/Natron"/*/*/*/CImg.ofx > "${TMP_BINARIES_PATH}/symbols/CImg.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+        "$SDK_HOME/bin"/dump_syms "$OFX_MISC_PATH/data/Plugins/OFX/Natron"/*/*/*/Misc.ofx > "${TMP_BINARIES_PATH}/symbols/Misc.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
         if [ -d "$OFX_MISC_PATH/data/Plugins/OFX/Natron/Shadertoy.ofx.bundle" ]; then
-            "$SDK_HOME/bin"/dump_syms "$OFX_MISC_PATH/data/Plugins/OFX/Natron"/*/*/*/Shadertoy.ofx > "$TMP_BINARIES_PATH/symbols/Shadertoy.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+            "$SDK_HOME/bin"/dump_syms "$OFX_MISC_PATH/data/Plugins/OFX/Natron"/*/*/*/Shadertoy.ofx > "${TMP_BINARIES_PATH}/symbols/Shadertoy.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
         fi
     fi
 
@@ -332,19 +333,19 @@ fi # BUNDLE_MISC
 # OFX ARENA
 if [ "$BUNDLE_ARENA" = "1" ]; then
     OFX_ARENA_VERSION="$TAG"
-    OFX_ARENA_PATH="$INSTALLER/packages/$ARENAPLUG_PKG"
+    OFX_ARENA_PATH="${INSTALLER_PATH}/packages/$ARENAPLUG_PKG"
     mkdir -p "$OFX_ARENA_PATH/meta" "$OFX_ARENA_PATH/data/Plugins/OFX/Natron"
-    $GSED "s/_VERSION_/${OFX_ARENA_VERSION}/;s/_DATE_/${DATE}/" "$XML/openfx-arena.xml" > "$OFX_ARENA_PATH/meta/package.xml"
+    $GSED "s/_VERSION_/${OFX_ARENA_VERSION}/;s/_DATE_/${INSTALLER_XML_DATE}/" "$XML/openfx-arena.xml" > "$OFX_ARENA_PATH/meta/package.xml"
     cat "$QS/openfx-arena.qs" > "$OFX_ARENA_PATH/meta/installscript.qs"
-    cp -av "$TMP_BINARIES_PATH/OFX/Plugins/Arena.ofx.bundle" "$OFX_ARENA_PATH/data/Plugins/OFX/Natron/"
-    if [ -d "$TMP_BINARIES_PATH/OFX/Plugins/ArenaCL.ofx.bundle" ]; then
-        cp -av "$TMP_BINARIES_PATH/Plugins/ArenaCL.ofx.bundle" "$OFX_ARENA_PATH/data/Plugins/OFX/Natron/"
+    cp -av "${TMP_BINARIES_PATH}/OFX/Plugins/Arena.ofx.bundle" "$OFX_ARENA_PATH/data/Plugins/OFX/Natron/"
+    if [ -d "${TMP_BINARIES_PATH}/OFX/Plugins/ArenaCL.ofx.bundle" ]; then
+        cp -av "${TMP_BINARIES_PATH}/Plugins/ArenaCL.ofx.bundle" "$OFX_ARENA_PATH/data/Plugins/OFX/Natron/"
     fi
 
     if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-        "$SDK_HOME/bin"/dump_syms "$OFX_ARENA_PATH/data/Plugins/OFX/Natron"/*/*/*/Arena.ofx > "$TMP_BINARIES_PATH/symbols/Arena.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
-        if [ -d "$TMP_BINARIES_PATH/Plugins/ArenaCL.ofx.bundle" ]; then
-            "$SDK_HOME/bin"/dump_syms "$OFX_ARENA_PATH/data/Plugins/OFX/Natron"/*/*/*/ArenaCL.ofx > "$TMP_BINARIES_PATH/symbols/ArenaCL.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+        "$SDK_HOME/bin"/dump_syms "$OFX_ARENA_PATH/data/Plugins/OFX/Natron"/*/*/*/Arena.ofx > "${TMP_BINARIES_PATH}/symbols/Arena.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+        if [ -d "${TMP_BINARIES_PATH}/Plugins/ArenaCL.ofx.bundle" ]; then
+            "$SDK_HOME/bin"/dump_syms "$OFX_ARENA_PATH/data/Plugins/OFX/Natron"/*/*/*/ArenaCL.ofx > "${TMP_BINARIES_PATH}/symbols/ArenaCL.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
         fi
     fi
 
@@ -390,16 +391,16 @@ fi # BUNDLE_ARENA
 # OFX GMIC
 if [ "$BUNDLE_GMIC" = "1" ]; then
     OFX_GMIC_VERSION=$TAG
-    OFX_GMIC_PATH=$INSTALLER/packages/$GMICPLUG_PKG
+    OFX_GMIC_PATH="${INSTALLER_PATH}/packages/$GMICPLUG_PKG"
     mkdir -p "$OFX_GMIC_PATH/data" "$OFX_GMIC_PATH/meta" "$OFX_GMIC_PATH/data/Plugins/OFX/Natron"
-    $GSED "s/_VERSION_/${OFX_GMIC_VERSION}/;s/_DATE_/${DATE}/" "$XML/openfx-gmic.xml" > "$OFX_GMIC_PATH/meta/package.xml"
+    $GSED "s/_VERSION_/${OFX_GMIC_VERSION}/;s/_DATE_/${INSTALLER_XML_DATE}/" "$XML/openfx-gmic.xml" > "$OFX_GMIC_PATH/meta/package.xml"
     cat "$QS/openfx-gmic.qs" > "$OFX_GMIC_PATH/meta/installscript.qs"
-    cp -a "$TMP_BINARIES_PATH/OFX/Plugins"/GMIC.ofx.bundle "$OFX_GMIC_PATH/data/Plugins/OFX/Natron/"
+    cp -a "${TMP_BINARIES_PATH}/OFX/Plugins"/GMIC.ofx.bundle "$OFX_GMIC_PATH/data/Plugins/OFX/Natron/"
 
     if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-        "$SDK_HOME/bin"/dump_syms "$OFX_GMIC_PATH/data/Plugins/OFX/Natron"/*/*/*/GMIC.ofx > "$TMP_BINARIES_PATH/symbols/GMIC.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+        "$SDK_HOME/bin"/dump_syms "$OFX_GMIC_PATH/data/Plugins/OFX/Natron"/*/*/*/GMIC.ofx > "${TMP_BINARIES_PATH}/symbols/GMIC.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
         if [ -d "$OFX_GMIC_PATH/data/Plugins/OFX/Natron/Shadertoy.ofx.bundle" ]; then
-            "$SDK_HOME/bin"/dump_syms "$OFX_GMIC_PATH/data/Plugins/OFX/Natron"/*/*/*/Shadertoy.ofx > "$TMP_BINARIES_PATH/symbols/Shadertoy.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+            "$SDK_HOME/bin"/dump_syms "$OFX_GMIC_PATH/data/Plugins/OFX/Natron"/*/*/*/Shadertoy.ofx > "${TMP_BINARIES_PATH}/symbols/Shadertoy.ofx-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
         fi
     fi
 
@@ -427,42 +428,42 @@ if [ "$BUNDLE_GMIC" = "1" ]; then
 fi # BUNDLE_GMIC
 
 # NATRON
-NATRON_PATH="$INSTALLER/packages/$NATRON_PKG"
-mkdir -p "$NATRON_PATH/meta" "$NATRON_PATH/data/docs" "$NATRON_PATH/data/bin" "$NATRON_PATH/data/Resources" "$NATRON_PATH/data/Plugins/PyPlugs" "$NATRON_PATH/data/Resources/stylesheets"
-$GSED "s/_VERSION_/${TAG}/;s/_DATE_/${DATE}/" "$XML/natron.xml" > "$NATRON_PATH/meta/package.xml"
-cat "$QS/$PKGOS_ORIG/natron.qs" > "$NATRON_PATH/meta/installscript.qs"
-cp -a "$TMP_BINARIES_PATH/docs/natron"/* "$NATRON_PATH/data/docs/"
-cp "$TMP_BINARIES_PATH/Resources/stylesheets"/mainstyle.qss "$NATRON_PATH/data/Resources/stylesheets/"
-cat "$TMP_BINARIES_PATH/docs/natron/LICENSE.txt" > "$NATRON_PATH/meta/natron-license.txt"
-cp "$INC_PATH/natron/natron-mime.sh" "$NATRON_PATH/data/bin/"
-cp "$TMP_BINARIES_PATH/PyPlugs"/* "$NATRON_PATH/data/Plugins/PyPlugs/"
+NATRON_PACKAGE_PATH="${INSTALLER_PATH}/packages/$NATRON_PKG"
+mkdir -p "$NATRON_PACKAGE_PATH/meta" "$NATRON_PACKAGE_PATH/data/docs" "$NATRON_PACKAGE_PATH/data/bin" "$NATRON_PACKAGE_PATH/data/Resources" "$NATRON_PACKAGE_PATH/data/Plugins/PyPlugs" "$NATRON_PACKAGE_PATH/data/Resources/stylesheets"
+$GSED "s/_VERSION_/${TAG}/;s/_DATE_/${INSTALLER_XML_DATE}/" "$XML/natron.xml" > "$NATRON_PACKAGE_PATH/meta/package.xml"
+cat "$QS/$PKGOS_ORIG/natron.qs" > "$NATRON_PACKAGE_PATH/meta/installscript.qs"
+cp -a "${TMP_BINARIES_PATH}/docs/natron"/* "$NATRON_PACKAGE_PATH/data/docs/"
+cp "${TMP_BINARIES_PATH}/Resources/stylesheets"/mainstyle.qss "$NATRON_PACKAGE_PATH/data/Resources/stylesheets/"
+cat "${TMP_BINARIES_PATH}/docs/natron/LICENSE.txt" > "$NATRON_PACKAGE_PATH/meta/natron-license.txt"
+cp "$INC_PATH/natron/natron-mime.sh" "$NATRON_PACKAGE_PATH/data/bin/"
+cp "${TMP_BINARIES_PATH}/PyPlugs"/* "$NATRON_PACKAGE_PATH/data/Plugins/PyPlugs/"
 
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    cp "$TMP_BINARIES_PATH/bin/Natron" "$NATRON_PATH/data/bin/Natron-bin"
-    cp "$TMP_BINARIES_PATH/bin/NatronRenderer" "$NATRON_PATH/data/bin/NatronRenderer-bin"
-    cp "$TMP_BINARIES_PATH/bin/NatronCrashReporter" "$NATRON_PATH/data/bin/Natron"
-    cp "$TMP_BINARIES_PATH/bin/NatronRendererCrashReporter" "$NATRON_PATH/data/bin/NatronRenderer"
+    cp "${TMP_BINARIES_PATH}/bin/Natron" "$NATRON_PACKAGE_PATH/data/bin/Natron-bin"
+    cp "${TMP_BINARIES_PATH}/bin/NatronRenderer" "$NATRON_PACKAGE_PATH/data/bin/NatronRenderer-bin"
+    cp "${TMP_BINARIES_PATH}/bin/NatronCrashReporter" "$NATRON_PACKAGE_PATH/data/bin/Natron"
+    cp "${TMP_BINARIES_PATH}/bin/NatronRendererCrashReporter" "$NATRON_PACKAGE_PATH/data/bin/NatronRenderer"
 
-    "$SDK_HOME/bin"/dump_syms "$NATRON_PATH/data/bin/Natron-bin" > "$TMP_BINARIES_PATH/symbols/Natron-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
-    "$SDK_HOME/bin"/dump_syms "$NATRON_PATH/data/bin/NatronRenderer-bin" > "$TMP_BINARIES_PATH/symbols/NatronRenderer-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+    "$SDK_HOME/bin"/dump_syms "$NATRON_PACKAGE_PATH/data/bin/Natron-bin" > "${TMP_BINARIES_PATH}/symbols/Natron-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
+    "$SDK_HOME/bin"/dump_syms "$NATRON_PACKAGE_PATH/data/bin/NatronRenderer-bin" > "${TMP_BINARIES_PATH}/symbols/NatronRenderer-${TAG}${BPAD_TAG:-}-${PKGOS}.sym"
 else
-    cp "$TMP_BINARIES_PATH/bin/Natron" "$NATRON_PATH/data/bin/Natron"
-    cp "$TMP_BINARIES_PATH/bin/NatronRenderer" "$NATRON_PATH/data/bin/NatronRenderer"
+    cp "${TMP_BINARIES_PATH}/bin/Natron" "$NATRON_PACKAGE_PATH/data/bin/Natron"
+    cp "${TMP_BINARIES_PATH}/bin/NatronRenderer" "$NATRON_PACKAGE_PATH/data/bin/NatronRenderer"
 fi
 
-if [ -f "$TMP_BINARIES_PATH/bin/NatronProjectConverter" ]; then
-    cp "$TMP_BINARIES_PATH/bin/NatronProjectConverter" "$NATRON_PATH/data/bin/"
+if [ -f "${TMP_BINARIES_PATH}/bin/NatronProjectConverter" ]; then
+    cp "${TMP_BINARIES_PATH}/bin/NatronProjectConverter" "$NATRON_PACKAGE_PATH/data/bin/"
 fi
 
-if [ -f "$TMP_BINARIES_PATH/bin/natron-python" ]; then
-    cp "$TMP_BINARIES_PATH/bin/natron-python" "$NATRON_PATH/data/bin/"
+if [ -f "${TMP_BINARIES_PATH}/bin/natron-python" ]; then
+    cp "${TMP_BINARIES_PATH}/bin/natron-python" "$NATRON_PACKAGE_PATH/data/bin/"
 fi
 
 if [ "${DEBUG_MODE:-}" != "1" ]; then
-    strip -s "$NATRON_PATH/data/bin"/Natron*
+    strip -s "$NATRON_PACKAGE_PATH/data/bin"/Natron*
 fi
 
-rm "$NATRON_PATH/data/docs/TuttleOFX-README.txt" || true
+rm "$NATRON_PACKAGE_PATH/data/docs/TuttleOFX-README.txt" || true
 #GLIBCXX 3.4.19 is for GCC 4.8.3, see https://gcc.gnu.org/onlinedocs/libstdc++/manual/abi.html
 compat_version_script=3.4.19
 compat_version=3.4.19
@@ -482,122 +483,154 @@ case "${TC_GCC:-}" in
     5.[123456789].*|6.0.*)
         compat_version=3.4.21
         ;;
-    6.[123456789].*|7.*)
+    6.[123456789].*|7.0*)
         compat_version=3.4.22
+        ;;
+    7.1.*)
+        compat_version=3.4.23
+        ;;
+    7.2.*)
+        compat_version=3.4.24
+        ;;
+    8.*|9.*)
+        compat_version=3.4.25
         ;;
 esac
 
-$GSED -e "s#${compat_version_script}#${compat_version}#" "$INC_PATH/scripts/Natron-Linux.sh" > "$NATRON_PATH/data/Natron"
-$GSED -e "s#${compat_version_script}#${compat_version}#" -e "s#bin/Natron#bin/NatronRenderer#" "$INC_PATH/scripts/Natron-Linux.sh" > "$NATRON_PATH/data/NatronRenderer"
-chmod a+x "$NATRON_PATH/data/Natron" "$NATRON_PATH/data/NatronRenderer"
+$GSED -e "s#${compat_version_script}#${compat_version}#" "$INC_PATH/scripts/Natron-Linux.sh" > "$NATRON_PACKAGE_PATH/data/Natron"
+$GSED -e "s#${compat_version_script}#${compat_version}#" -e "s#bin/Natron#bin/NatronRenderer#" "$INC_PATH/scripts/Natron-Linux.sh" > "$NATRON_PACKAGE_PATH/data/NatronRenderer"
+chmod a+x "$NATRON_PACKAGE_PATH/data/Natron" "$NATRON_PACKAGE_PATH/data/NatronRenderer"
 
 # Docs
-mkdir "$NATRON_PATH/data/Resources/docs"
-cp -a "$TMP_BINARIES_PATH/Resources/docs/html" "$NATRON_PATH/data/Resources/docs/"
+mkdir "$NATRON_PACKAGE_PATH/data/Resources/docs"
+cp -a "${TMP_BINARIES_PATH}/Resources/docs/html" "$NATRON_PACKAGE_PATH/data/Resources/docs/"
 
 # OCIO
-OCIO_VERSION="$COLOR_PROFILES_VERSION"
-OCIO_PATH="$INSTALLER/packages/$PROFILES_PKG"
-mkdir -p "$OCIO_PATH/meta" "$OCIO_PATH/data/Resources"
-$GSED "s/_VERSION_/${OCIO_VERSION}/;s/_DATE_/${DATE}/" "$XML/ocio.xml" > "$OCIO_PATH/meta/package.xml"
-cat "$QS/ocio.qs" > "$OCIO_PATH/meta/installscript.qs"
-cp -a "$TMP_BINARIES_PATH/Resources/OpenColorIO-Configs" "$OCIO_PATH/data/Resources/"
+OCIO_VERSION="$OCIO_PROFILES_VERSION"
+OCIO_PACKAGE_PATH="${INSTALLER_PATH}/packages/${OCIO_PKG}"
+mkdir -p "$OCIO_PACKAGE_PATH/meta" "$OCIO_PACKAGE_PATH/data/Resources"
+$GSED "s/_VERSION_/${OCIO_VERSION}/;s/_DATE_/${INSTALLER_XML_DATE}/" "$XML/ocio.xml" > "$OCIO_PACKAGE_PATH/meta/package.xml"
+cat "$QS/ocio.qs" > "$OCIO_PACKAGE_PATH/meta/installscript.qs"
+cp -a "${TMP_BINARIES_PATH}/Resources/OpenColorIO-Configs" "$OCIO_PACKAGE_PATH/data/Resources/"
 
 # CORE LIBS
 CLIBS_VERSION="$CORELIBS_VERSION"
-CLIBS_PATH="$INSTALLER/packages/$CORELIBS_PKG"
-mkdir -p "$CLIBS_PATH/meta" "$CLIBS_PATH/data/bin" "$CLIBS_PATH/data/lib" "$CLIBS_PATH/data/Resources/pixmaps"
-$GSED "s/_VERSION_/${CLIBS_VERSION}/;s/_DATE_/${DATE}/" "$XML/corelibs.xml" > "$CLIBS_PATH/meta/package.xml"
-cat "$QS/$PKGOS_ORIG/corelibs.qs" > "$CLIBS_PATH/meta/installscript.qs"
-cp "$QTDIR/lib/libQtDBus.so.4" "$CLIBS_PATH/data/lib/"
-cp "$TMP_BINARIES_PATH/Resources/pixmaps/natronIcon256_linux.png" "$CLIBS_PATH/data/Resources/pixmaps/"
-cp "$TMP_BINARIES_PATH/Resources/pixmaps/natronProjectIcon_linux.png" "$CLIBS_PATH/data/Resources/pixmaps/"
-cp -a "$TMP_BINARIES_PATH/Resources/etc"  "$CLIBS_PATH/data/Resources/"
-cp -a "$SDK_HOME/share/poppler" "$CLIBS_PATH/data/Resources/"
-cp -a "$QTDIR/plugins"/* "$CLIBS_PATH/data/bin/"
-CORE_DEPENDS=$(ldd $(find "$NATRON_PATH/data/bin" -maxdepth 1 -type f) | grep /opt | awk '{print $3}'|sort|uniq)
-for i in $CORE_DEPENDS; do
-    if [ ! -f "$CLIBS_PATH/data/lib/$i" ]; then
-        cp -fv "$i" "$CLIBS_PATH/data/lib/"
+LIBS_PACKAGE_PATH="${INSTALLER_PATH}/packages/$CORELIBS_PKG"
+mkdir -p "$LIBS_PACKAGE_PATH/meta"
+$GSED "s/_VERSION_/${CLIBS_VERSION}/;s/_DATE_/${INSTALLER_XML_DATE}/" "$XML/corelibs.xml" > "$LIBS_PACKAGE_PATH/meta/package.xml"
+cat "$QS/$PKGOS_ORIG/corelibs.qs" > "$LIBS_PACKAGE_PATH/meta/installscript.qs"
+
+COPY_LOCATIONS=("$LIBS_PACKAGE_PATH/data")
+
+for location in "${COPY_LOCATIONS[@]}"; do
+
+    mkdir -p "${location}/bin" "${location}/lib" "${location}/Resources/pixmaps"
+
+    cp "$QTDIR/lib/libQtDBus.so.4" "${location}/lib/"
+    cp "${TMP_BINARIES_PATH}/Resources/pixmaps/natronIcon256_linux.png" "${location}/Resources/pixmaps/"
+    cp "${TMP_BINARIES_PATH}/Resources/pixmaps/natronProjectIcon_linux.png" "${location}/Resources/pixmaps/"
+    cp -a "${TMP_BINARIES_PATH}/Resources/etc"  "${location}/Resources/"
+    cp -a "$SDK_HOME/share/poppler" "${location}/Resources/"
+    cp -a "$QTDIR/plugins"/* "${location}/bin/"
+
+    # Get all dependencies of the binaries
+    CORE_DEPENDS=$(ldd $(find "$NATRON_PACKAGE_PATH/data/bin" -maxdepth 1 -type f) | grep /opt | awk '{print $3}'|sort|uniq)
+    for i in $CORE_DEPENDS; do
+        if [ ! -f "${location}/lib/$i" ]; then
+            cp -fv "$i" "${location}/lib/"
+        fi
+    done
+
+    # icu libraries don't seem to be picked up by this ldd call above
+    pushd "${SDK_HOME}/lib"
+    for dep in libicudata.so.[0-9][0-9] libicui18n.so.[0-9][0-9] libicuuc.so.[0-9][0-9] libbz2.so.[0-9] liblcms2.so.[0-9] libcairo.so.[0-9]; do
+        CORE_DEPENDS="$CORE_DEPENDS ${SDK_HOME}/lib/$dep"
+    done
+    popd
+
+    # Copy dependencies of the libraries
+    LIB_DEPENDS="$(env LD_LIBRARY_PATH="${location}/lib:$LD_LIBRARY_PATH" ldd $(find "${location}/lib" -maxdepth 1 -type f -name 'lib*.so*')|grep /opt | awk '{print $3}'|sort|uniq)"
+    for y in $LIB_DEPENDS; do
+        if [ ! -f "${location}/lib/$y" ]; then
+            cp -fv "$y" "${location}/lib/"
+        fi
+    done
+
+    # Qt plug-in dependencies
+    PLUG_DEPENDS="$(env LD_LIBRARY_PATH="${location}/lib:$LD_LIBRARY_PATH" ldd "${location}/bin"/*/*.so* |grep /opt | awk '{print $3}'|sort|uniq)"
+    for z in $PLUG_DEPENDS; do
+        if [ ! -f "${location}/lib/$z" ]; then
+            cp -fv "$z" "${location}/lib/"
+        fi
+    done
+
+    # Copy gcc compat libs
+    #if [ -f "$INC_PATH/misc/compat${BITS}.tgz" ] && [ "$SDK_VERSION" = "CY2015" ]; then
+    #    tar xvf "$INC_PATH/misc/compat${BITS}.tgz" -C "${location}/lib/"
+    #fi
+
+    if [ "$BUNDLE_IO" = "1" ]; then
+        mv "$IO_LIBS"/{libOpenColor*,libtinyxml*,libgomp*} "${location}/lib/"
+        (cd "$IO_LIBS" ;
+         ln -sf ../../../../../lib/libOpenColorIO.so.[0-9] .
+         ln -sf ../../../../../lib/libtinyxml.so .
+         ln -sf ../../../../../lib/libgomp.so.[0-9] .
+        )
     fi
-done
-LIB_DEPENDS=$(env LD_LIBRARY_PATH="$CLIBS_PATH/data/lib:$LD_LIBRARY_PATH" ldd $(find "$CLIBS_PATH/data/lib" -maxdepth 1 -type f -name 'lib*.so*')|grep /opt | awk '{print $3}'|sort|uniq)
-for y in $LIB_DEPENDS; do
-    if [ ! -f "$CLIBS_PATH/data/lib/$y" ]; then
-        cp -fv "$y" "$CLIBS_PATH/data/lib/"
+
+    # done in build-natron.sh
+    #mkdir -p "${location}/Resources/etc/fonts/conf.d"
+    #cp "$SDK_HOME/etc/fonts/fonts.conf" "${location}/Resources/etc/fonts/"
+    #cp "$SDK_HOME/share/fontconfig/conf.avail"/* "${location}/Resources/etc/fonts/conf.d/"
+    #$GSED -i "s#${SDK_HOME}/#/#;/conf.d/d" "${location}/Resources/etc/fonts/fonts.conf"
+
+    # strip binaries
+    if [ "${DEBUG_MODE:-}" != "1" ]; then
+        strip -s "${location}/lib"/* &>/dev/null || true
+        strip -s "${location}/bin"/*/* &>/dev/null || true
     fi
-done
-PLUG_DEPENDS=$(env LD_LIBRARY_PATH="$CLIBS_PATH/data/lib:$LD_LIBRARY_PATH" ldd "$CLIBS_PATH/data/bin"/*/*.so* |grep /opt | awk '{print $3}'|sort|uniq)
-for z in $PLUG_DEPENDS; do
-    if [ ! -f "$CLIBS_PATH/data/lib/$z" ]; then
-        cp -fv "$z" "$CLIBS_PATH/data/lib/"
+
+    mkdir -p "${location}/Plugins"
+
+    # let Natron.sh handle gcc libs
+    #mkdir "${location}/lib/compat"
+    #mv "${location}/lib"/{libgomp*,libgcc*,libstdc*} "${location}/lib/compat/"
+    if [ ! -f "$SRC_PATH/strings${BITS}.tgz" ]; then
+        $WGET "$THIRD_PARTY_SRC_URL/strings${BITS}.tgz" -O "$SRC_PATH/strings${BITS}.tgz"
     fi
+    tar xvf "$SRC_PATH/strings${BITS}.tgz" -C "${location}/bin/"
+
+    # end for all locations
 done
-
-if [ -f "$INC_PATH/misc/compat${BITS}.tgz" ] && [ "$SDK_VERSION" = "CY2015" ]; then
-    tar xvf "$INC_PATH/misc/compat${BITS}.tgz" -C "$CLIBS_PATH/data/lib/"
-fi
-
-cp "$SDK_HOME/lib"/{libbz2.so.1,liblcms2.so.2,libcairo.so.2} "$CLIBS_PATH/data/lib/"
-cp "$SDK_HOME/lib"/{libicudata.so.59,libicui18n.so.59,libicuuc.so.59} "$CLIBS_PATH/data/lib/"
-
-if [ "$BUNDLE_IO" = "1" ]; then
-    mv "$IO_LIBS"/{libOpenColor*,libtinyxml*,libgomp*} "$CLIBS_PATH/data/lib/"
-    (cd "$IO_LIBS" ;
-     ln -sf ../../../../../lib/libOpenColorIO.so.1 .
-     ln -sf ../../../../../lib/libtinyxml.so .
-     ln -sf ../../../../../lib/libgomp.so.1 .
-    )
-fi
-
-# done in build-natron.sh
-#mkdir -p "$CLIBS_PATH/data/Resources/etc/fonts/conf.d"
-#cp "$SDK_HOME/etc/fonts/fonts.conf" "$CLIBS_PATH/data/Resources/etc/fonts/"
-#cp "$SDK_HOME/share/fontconfig/conf.avail"/* "$CLIBS_PATH/data/Resources/etc/fonts/conf.d/"
-#$GSED -i "s#${SDK_HOME}/#/#;/conf.d/d" "$CLIBS_PATH/data/Resources/etc/fonts/fonts.conf"
-
-if [ "${DEBUG_MODE:-}" != "1" ]; then
-    strip -s "$CLIBS_PATH/data/lib"/* &>/dev/null || true
-    strip -s "$CLIBS_PATH/data/bin"/*/* &>/dev/null || true
-fi
 
 #Copy Python distrib
-mkdir -p "$CLIBS_PATH/data/Plugins"
-
 PYSIDE_DIR=PySide
 if [ "$SDK_VERSION" = "CY2016" ] || [ "$SDK_VERSION" = "CY2017" ]; then
     PYSIDE_DIR=PySide2
 fi
-cp -a "$SDK_HOME/lib/python${PYVER}" "$CLIBS_PATH/data/lib/"
-mv "$CLIBS_PATH/data/lib/python${PYVER}/site-packages/$PYSIDE_DIR" "$CLIBS_PATH/data/Plugins/"
-(cd "$CLIBS_PATH/data/lib/python${PYVER}/site-packages"; ln -sf "../../../Plugins/$PYSIDE_DIR" . )
-rm -rf "$CLIBS_PATH/data/lib/python${PYVER}"/{test,config,config-"${PYVER}m"}
-PY_DEPENDS=$(env LD_LIBRARY_PATH="$CLIBS_PATH/data/lib:$LD_LIBRARY_PATH" ldd $(find "$CLIBS_PATH/data/Plugins/$PYSIDE_DIR" -maxdepth 1 -type f)| grep /opt | awk '{print $3}'|sort|uniq)
+cp -a "$SDK_HOME/lib/python${PYVER}" "$LIBS_PACKAGE_PATH/data/lib/"
+mv "$LIBS_PACKAGE_PATH/data/lib/python${PYVER}/site-packages/$PYSIDE_DIR" "$LIBS_PACKAGE_PATH/data/Plugins/"
+(cd "$LIBS_PACKAGE_PATH/data/lib/python${PYVER}/site-packages"; ln -sf "../../../Plugins/$PYSIDE_DIR" . )
+rm -rf "$LIBS_PACKAGE_PATH/data/lib/python${PYVER}"/{test,config,config-"${PYVER}m"}
+PY_DEPENDS=$(env LD_LIBRARY_PATH="$LIBS_PACKAGE_PATH/data/lib:$LD_LIBRARY_PATH" ldd $(find "$LIBS_PACKAGE_PATH/data/Plugins/$PYSIDE_DIR" -maxdepth 1 -type f)| grep /opt | awk '{print $3}'|sort|uniq)
 for y in $PY_DEPENDS; do
-    cp -fv "$y" "$CLIBS_PATH/data/lib/"
+    cp -fv "$y" "$LIBS_PACKAGE_PATH/data/lib/"
 done
-(cd "$CLIBS_PATH" ; find . -type d -name __pycache__ -exec rm -rf {} \;)
+(cd "$LIBS_PACKAGE_PATH" ; find . -type d -name __pycache__ -exec rm -rf {} \;)
 
 if [ "${DEBUG_MODE:-}" != "1" ]; then
-    strip -s "$CLIBS_PATH/data/Plugins/$PYSIDE_DIR"/* "$CLIBS_PATH/data/lib"/python*/* "$CLIBS_PATH/data/lib"/python*/*/* &>/dev/null || true
+    strip -s "$LIBS_PACKAGE_PATH/data/Plugins/$PYSIDE_DIR"/* "$LIBS_PACKAGE_PATH/data/lib"/python*/* "$LIBS_PACKAGE_PATH/data/lib"/python*/*/* &>/dev/null || true
 fi
 
 # Strip Python
-PYDIR="$CLIBS_PATH/data/lib/python${PYVER:-}"
+PYDIR="$LIBS_PACKAGE_PATH/data/lib/python${PYVER:-}"
 find "${PYDIR}" -type f -name '*.pyo' -exec rm {} \;
 (cd "${PYDIR}"; xargs rm -rf || true) < "$INC_PATH/python-exclude.txt"
 
-# let Natron.sh handle gcc libs
-#mkdir "$CLIBS_PATH/data/lib/compat"
-#mv "$CLIBS_PATH/data/lib"/{libgomp*,libgcc*,libstdc*} "$CLIBS_PATH/data/lib/compat/"
-if [ ! -f "$SRC_PATH/strings${BITS}.tgz" ]; then
-    $WGET "$THIRD_PARTY_SRC_URL/strings${BITS}.tgz" -O "$SRC_PATH/strings${BITS}.tgz"
-fi
-tar xvf "$SRC_PATH/strings${BITS}.tgz" -C "$CLIBS_PATH/data/bin/"
 
 # Fix RPATH (we dont want to link against system libraries when deployed)
 # some libs (eg libssl, libcrypto, libpython2.7) have 555 right - make sure all are 755 before patching
-(cd "$CLIBS_PATH/data/lib";
+(cd "$LIBS_PACKAGE_PATH/data/lib";
  chmod 755 *.so* || true
  for i in *.so*; do
      patchelf --set-rpath "\$ORIGIN" "$i" || true
@@ -615,13 +648,13 @@ tar xvf "$SRC_PATH/strings${BITS}.tgz" -C "$CLIBS_PATH/data/bin/"
   done
  )
 )
-(cd "$CLIBS_PATH/data/Plugins/$PYSIDE_DIR";
+(cd "$LIBS_PACKAGE_PATH/data/Plugins/$PYSIDE_DIR";
  chmod 755 *.so* || true
  for i in *.so*; do
      patchelf --set-rpath "\$ORIGIN/../../lib" "$i" || true
  done;
 )
-(cd "$CLIBS_PATH/data/bin";
+(cd "$LIBS_PACKAGE_PATH/data/bin";
  (cd accessible;
   chmod 755 *.so* || true
   for i in *.so*; do
@@ -751,8 +784,8 @@ if [ "$BUNDLE_IO" = "1" ]; then
 fi
 
 # Clean and perms
-#chown root:root -R "$INSTALLER"/*
-(cd "$INSTALLER"; find . -type d -name .git -exec rm -rf {} \;)
+#chown root:root -R "${INSTALLER_PATH}"/*
+(cd "${INSTALLER_PATH}"; find . -type d -name .git -exec rm -rf {} \;)
 
 # Build repo and packages
 if [ "$BUILD_CONFIG" = "SNAPSHOT" ]; then
@@ -777,42 +810,42 @@ mkdir -p "$REPO_DIR"/{packages,installers}
 if [ "${TAR_BUILD:-}" = "1" ]; then
     TAR_INSTALL="$TMP_PATH/$BUNDLED_INSTALL"
     mkdir -p "$TAR_INSTALL"
-    (cd "$TAR_INSTALL" && cp -a "$INSTALLER/packages"/fr.*/data/* .)
+    (cd "$TAR_INSTALL" && cp -a "${INSTALLER_PATH}/packages"/fr.*/data/* .)
     (cd "$TMP_PATH" && tar Jcf "${BUNDLED_INSTALL}-portable.tar.xz" "$BUNDLED_INSTALL" && rm -rf "$BUNDLED_INSTALL" &&  mv "${BUNDLED_INSTALL}-portable.tar.xz" "$REPO_DIR/installers/")
 fi
 
 if [ "${NO_INSTALLER:-}" != "1" ]; then
-    "$SDK_HOME/installer/bin"/repogen -v --update-new-components -p "$INSTALLER/packages" -c "$INSTALLER/config/config.xml" "$REPO_DIR/packages"
+    "$SDK_HOME/installer/bin"/repogen -v --update-new-components -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" "$REPO_DIR/packages"
     cd "$REPO_DIR/installers"
     if [ "${OFFLINE:-}" != "0" ]; then
-        "$SDK_HOME/installer/bin"/binarycreator -v -f -p "$INSTALLER/packages" -c "$INSTALLER/config/config.xml" -i "$PACKAGES" "$REPO_DIR/installers/$BUNDLED_INSTALL" 
+        "$SDK_HOME/installer/bin"/binarycreator -v -f -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" -i "$PACKAGES" "$REPO_DIR/installers/$BUNDLED_INSTALL" 
         tar zcf "$BUNDLED_INSTALL.tgz" "$BUNDLED_INSTALL"
         #ln -sf "$BUNDLED_INSTALL.tgz" "Natron-latest-$PKGOS-$ONLINE_TAG.tgz"
     fi
-    "$SDK_HOME/installer/bin"/binarycreator -v -n -p "$INSTALLER/packages" -c "$INSTALLER/config/config.xml" "$ONLINE_INSTALL"
+    "$SDK_HOME/installer/bin"/binarycreator -v -n -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" "$ONLINE_INSTALL"
     tar zcf "$ONLINE_INSTALL.tgz" "$ONLINE_INSTALL"
 fi
 
 # collect debug versions for gdb
 #if [ "$BUILD_CONFIG" = "STABLE" ]; then
-#    DEBUG_DIR=$INSTALLER/Natron-$NATRON_VERSION-Linux${BITS}-Debug
+#    DEBUG_DIR="${INSTALLER_PATH}/Natron-$NATRON_VERSION-Linux${BITS}-Debug"
 #    rm -rf "$DEBUG_DIR"
 #    mkdir "$DEBUG_DIR"
-#    cp -a "$TMP_BINARIES_PATH/bin"/Natron* "$DEBUG_DIR/"
-#    cp -a "$TMP_BINARIES_PATH/Plugins"/*.ofx.bundle/Contents/Linux*/*.ofx "$DEBUG_DIR/"
-#    ( cd "$INSTALLER"; tar Jcf "Natron-$NATRON_VERSION-Linux${BITS}-Debug.tar.xz" "Natron-$NATRON_VERSION-Linux${BITS}-Debug" )
+#    cp -a "${TMP_BINARIES_PATH}/bin"/Natron* "$DEBUG_DIR/"
+#    cp -a "${TMP_BINARIES_PATH}/Plugins"/*.ofx.bundle/Contents/Linux*/*.ofx "$DEBUG_DIR/"
+#    ( cd "${INSTALLER_PATH}"; tar Jcf "Natron-$NATRON_VERSION-Linux${BITS}-Debug.tar.xz" "Natron-$NATRON_VERSION-Linux${BITS}-Debug" )
 #    mv "${DEBUG_DIR}.tar.xz" "$BUILD_ARCHIVE"/
 #fi
 
 # Build native packages for linux
 
 #if [ "${RPM_BUILD:-}" = "1" ] || [ "${DEB_BUILD:-}" = "1" ]; then
-#   echo "#!/bin/bash" > "$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh"
-#   echo "echo \"Checking GCC compatibility for Natron ...\"" >> "$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh"
-#   echo "DIR=/opt/Natron2" >> "$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh"
-#   $GSED '42,82!d' "$INSTALLER/packages/fr.inria.natron/data/Natron" >> "$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh"
+#   echo "#!/bin/bash" > "${INSTALLER_PATH}/packages/fr.inria.natron/data/bin/postinstall.sh"
+#   echo "echo \"Checking GCC compatibility for Natron ...\"" >> "${INSTALLER_PATH}/packages/fr.inria.natron/data/bin/postinstall.sh"
+#   echo "DIR=/opt/Natron2" >> "${INSTALLER_PATH}/packages/fr.inria.natron/data/bin/postinstall.sh"
+#   $GSED '42,82!d' "${INSTALLER_PATH}/packages/fr.inria.natron/data/Natron" >> "${INSTALLER_PATH}/packages/fr.inria.natron/data/bin/postinstall.sh"
 #
-#   cat <<'EOF' >> "$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh"
+#   cat <<'EOF' >> "${INSTALLER_PATH}/packages/fr.inria.natron/data/bin/postinstall.sh"
 #   if [ -f /usr/bin/update-mime-database ]; then
 #       update-mime-database /usr/share/mime
 #   fi
@@ -823,9 +856,9 @@ fi
 #   fi
 #   EOF
 #
-#   chmod +x "$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh"
-#   $GSED -i '42,82d' "$INSTALLER/packages/fr.inria.natron/data/Natron"
-#$GSED -i '42,82d' "$INSTALLER/packages/fr.inria.natron/data/NatronRenderer"
+#   chmod +x "${INSTALLER_PATH}/packages/fr.inria.natron/data/bin/postinstall.sh"
+#   $GSED -i '42,82d' "${INSTALLER_PATH}/packages/fr.inria.natron/data/Natron"
+#$GSED -i '42,82d' "${INSTALLER_PATH}/packages/fr.inria.natron/data/NatronRenderer"
 #fi
 
 if [ "${RPM_BUILD:-}" = "1" ]; then
@@ -844,7 +877,7 @@ if [ "${RPM_BUILD:-}" = "1" ]; then
         echo "Error: gpg key for build@natron.fr not found"
         exit
     fi
-    $GSED "s/REPLACE_VERSION/$(echo "$NATRON_VERSION" | $GSED 's/-/./g')/;s#__NATRON_INSTALLER__#${INSTALLER}#;s#__INC__#${INC_PATH}#;s#__TMP_BINARIES_PATH__#${TMP_BINARIES_PATH}#" "$INC_PATH/natron/Natron.spec" > "$TMP_PATH/Natron.spec"
+    $GSED "s/REPLACE_VERSION/$(echo "$NATRON_VERSION" | $GSED 's/-/./g')/;s#__NATRON_INSTALLER__#${INSTALLER_PATH}#;s#__INC__#${INC_PATH}#;s#__TMP_BINARIES_PATH__#${TMP_BINARIES_PATH}#" "$INC_PATH/natron/Natron.spec" > "$TMP_PATH/Natron.spec"
     #Only need to build once, so uncomment as default #echo "" | setsid rpmbuild -bb --define="%_gpg_name build@natron.fr" --sign $INC_PATH/natron/Natron-repo.spec
     echo "" | setsid rpmbuild -bb --define="%_gpg_name build@natron.fr" --sign "$TMP_PATH/Natron.spec"
     mv ~/rpmbuild/RPMS/*/Natron*.rpm "$REPO_DIR/installers/"
@@ -860,12 +893,12 @@ if [ "${DEB_BUILD:-}" = "1" ]; then
         fi
     fi
 
-    rm -rf "$INSTALLER/natron"
-    mkdir -p "$INSTALLER/natron"
-    cd "$INSTALLER/natron"
+    rm -rf "${INSTALLER_PATH}/natron"
+    mkdir -p "${INSTALLER_PATH}/natron"
+    cd "${INSTALLER_PATH}/natron"
     mkdir -p opt/Natron2 DEBIAN usr/share/doc/natron usr/share/{applications,pixmaps} usr/share/mime/packages usr/bin
 
-    cp -a "$INSTALLER/packages"/fr.inria.*/data/* opt/Natron2/
+    cp -a "${INSTALLER_PATH}/packages"/fr.inria.*/data/* opt/Natron2/
     cp "$INC_PATH/debian"/post* DEBIAN/
     chmod +x DEBIAN/post*
 
@@ -887,16 +920,16 @@ if [ "${DEB_BUILD:-}" = "1" ]; then
     
     cat "$INC_PATH/natron/Natron2.desktop" > usr/share/applications/Natron2.desktop
     cat "$INC_PATH/natron/x-natron.xml" > usr/share/mime/packages/x-natron.xml
-    cp "$TMP_BINARIES_PATH/Resources/pixmaps/natronIcon256_linux.png" usr/share/pixmaps/
-    cp "$TMP_BINARIES_PATH/Resources/pixmaps/natronProjectIcon_linux.png" usr/share/pixmaps/
+    cp "${TMP_BINARIES_PATH}/Resources/pixmaps/natronIcon256_linux.png" usr/share/pixmaps/
+    cp "${TMP_BINARIES_PATH}/Resources/pixmaps/natronProjectIcon_linux.png" usr/share/pixmaps/
     
     (cd usr/bin; ln -sf ../../opt/Natron2/Natron .)
     (cd usr/bin; ln -sf ../../opt/Natron2/NatronRenderer .)
 
     # why?
-    #chown root:root -R "$INSTALLER/natron"
+    #chown root:root -R "${INSTALLER_PATH}/natron"
 
-    cd "$INSTALLER"
+    cd "${INSTALLER_PATH}"
     dpkg-deb -Zxz -z9 --build natron
     mv natron.deb "$DEB_PKG"
     mv "$DEB_PKG" "$REPO_DIR/installers/"

@@ -102,6 +102,20 @@ Controls
 |                                               |         |         | | **Duplicate left**                |
 |                                               |         |         | | **Duplicate bottom**              |
 |                                               |         |         | | **Duplicate right**               |
+|                                               |         |         | | **Duplicate horizontal**          |
+|                                               |         |         | | **Duplicate vertical**            |
+|                                               |         |         | | **Checkered**                     |
+|                                               |         |         | | **Checkered inverse)**            |
+|                                               |         |         | | **Preview split = point(50**      |
+|                                               |         |         | | **50**                            |
+|                                               |         |         | | **0**                             |
+|                                               |         |         | | **0**                             |
+|                                               |         |         | | **200**                           |
+|                                               |         |         | | **200**                           |
+|                                               |         |         | | **200**                           |
+|                                               |         |         | | **0**                             |
+|                                               |         |         | | **10**                            |
+|                                               |         |         | | **0**                             |
 +-----------------------------------------------+---------+---------+-------------------------------------+
 | Output Layer / ``Output_Layer``               | Choice  | Layer 0 | |                                   |
 |                                               |         |         | | **Merged**                        |

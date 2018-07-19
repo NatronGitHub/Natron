@@ -175,6 +175,7 @@ catDll libpangowin32-
 catDll libpcre-
 catDll libpixman-
 catDll libpng16-
+catDll libPtex
 catDll libpyside-python${PYVER}
 catDll libpython${PYVER}
 catDll librsvg-

@@ -5,12 +5,17 @@
 # History
 
 
+## Version 2.3.14
+
+- ReadSVG: Fix reading layers of SVG files #292
+
 ## Version 2.3.13
 
 - Fix default value for file premult in ReadSVG (should be premultiplied).
 - HSV values in the viewer info lines are now computed from linear RGB #286.
 - RGBToHSV, HSVToRGB, RGBToHSL, HSLToRGB, RGBToHSI, HSIToRGB: Use linear RGB values in computation #286.
 - Tracker: fix bug where Transform tracking was wrong when using more than 1 point #289.
+
 
 ## Version 2.3.12
 

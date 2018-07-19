@@ -4,7 +4,7 @@ _realname=openimageio
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 pkgver=1.8.12
-pkgrel=1
+pkgrel=2
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
 url="http://www.openimageio.org/"
@@ -26,14 +26,15 @@ depends=("${MINGW_PACKAGE_PREFIX}-boost"
          "${MINGW_PACKAGE_PREFIX}-openexr"
          "${MINGW_PACKAGE_PREFIX}-openjpeg"
          "${MINGW_PACKAGE_PREFIX}-openssl"
+         "${MINGW_PACKAGE_PREFIX}-ptex"
          "${MINGW_PACKAGE_PREFIX}-pugixml"
          "${MINGW_PACKAGE_PREFIX}-zlib")
 makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
              #"${MINGW_PACKAGE_PREFIX}-qt5"
-             "${MINGW_PACKAGE_PREFIX}-python2"
+             "${MINGW_PACKAGE_PREFIX}-python3"
              "${MINGW_PACKAGE_PREFIX}-boost")
-optdepends=(#"${MINGW_PACKAGE_PREFIX}-qt4: iv image viewer"
-            "${MINGW_PACKAGE_PREFIX}-python2: bindings support")
+optdepends=(#"${MINGW_PACKAGE_PREFIX}-qt5: iv image viewer"
+            "${MINGW_PACKAGE_PREFIX}-python3: bindings support")
 options=('strip' 'buildflags')
 source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archive/Release-${pkgver}.tar.gz
         0000-fix-mingw-w64.patch
@@ -76,6 +77,8 @@ build() {
   [[ -d "build-${MINGW_CHOST}" ]] && rm -rf "build-${MINGW_CHOST}"
   mkdir -p build-${MINGW_CHOST} && cd build-${MINGW_CHOST}
 
+  local _pyver=$(${MINGW_PREFIX}/bin/python3 -c "import sys;sys.stdout.write('.'.join(map(str, sys.version_info[:2])))")
+
   MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
   ${MINGW_PREFIX}/bin/cmake.exe \
     -G"MSYS Makefiles" \
@@ -84,6 +87,8 @@ build() {
     -DUSE_OPENCV=ON \
     -DUSE_FIELD3D=ON \
     -DUSE_OPENSSL=ON \
+    -DUSE_QT=OFF \
+    -DPYTHON_VERSION=${_pyver} \
     -DUSE_EXTERNAL_PUGIXML=ON \
     -DCMAKE_SHARED_LINKER_FLAGS=" -Wl,--export-all-symbols -Wl,--enable-auto-import " \
     -DOIIO_BUILD_TESTS=ON \

@@ -152,6 +152,7 @@ The following sections contain documentation about every node in the GMIC group.
     plugins/eu.gmic.Histogramanalysis.rst
     plugins/eu.gmic.Hopeposter.rst
     plugins/eu.gmic.Houghsketch.rst
+    plugins/eu.gmic.Illuminate2dshape.rst
     plugins/eu.gmic.Importdata.rst
     plugins/eu.gmic.Inkwash.rst
     plugins/eu.gmic.Inpaintholes.rst
