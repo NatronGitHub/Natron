@@ -318,6 +318,7 @@ The following sections contain documentation about every node in the GMIC group.
     plugins/eu.gmic.Stamp.rst
     plugins/eu.gmic.Stars.rst
     plugins/eu.gmic.Stencil.rst
+    plugins/eu.gmic.Stereographicprojection.rst
     plugins/eu.gmic.Streak.rst
     plugins/eu.gmic.Stroke.rst
     plugins/eu.gmic.Superpixels.rst
