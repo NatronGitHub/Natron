@@ -3,47 +3,27 @@
 G’MIC Colorize lineart propagation node
 =======================================
 
-*This documentation is for version 0.3 of G’MIC Colorize lineart propagation.*
+*This documentation is for version 1.0 of G’MIC Colorize lineart propagation.*
 
 Description
 -----------
 
-Layers ordering:
-
-Note: You probably need to select All for the Input layers option on the left.
-
-Color spots = your layer with color indications.
-
-Lineart = your layer with line-art (b&w or transparent).
-
-Extrapolated colors = the G’MIC generated layer with flat colors.
-
-Warnings:
-
-- Do not rely too much on the preview, it is probably not accurate !
-
-- Activate option Extrapolate color as one layer per single color/region only if you have a lot of available memory !
-
-Click here for a detailed description of this filter.: http://www.gimpchat.com/viewtopic.php?f=28&t=7567
-
-Authors: David Tschumperle, Timothee Giet and David Revoy. Latest update: 2013/19/06.
-
-Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
+Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
 ------
 
-+-----------+-------------+----------+
-| Input     | Description | Optional |
-+===========+=============+==========+
-| Input     |             | No       |
-+-----------+-------------+----------+
-| Ext. In 1 |             | Yes      |
-+-----------+-------------+----------+
-| Ext. In 2 |             | Yes      |
-+-----------+-------------+----------+
-| Ext. In 3 |             | Yes      |
-+-----------+-------------+----------+
++----------+-------------+----------+
+| Input    | Description | Optional |
++==========+=============+==========+
+| Source   |             | No       |
++----------+-------------+----------+
+| Layer -1 |             | Yes      |
++----------+-------------+----------+
+| Layer -2 |             | Yes      |
++----------+-------------+----------+
+| Layer -3 |             | Yes      |
++----------+-------------+----------+
 
 Controls
 --------
@@ -87,15 +67,15 @@ Controls
 | Output Layer / ``Output_Layer``                   | Choice  | Layer 0                       | |                                                 |
 |                                                   |         |                               | | **Merged**                                      |
 |                                                   |         |                               | | **Layer 0**                                     |
-|                                                   |         |                               | | **Layer 1**                                     |
-|                                                   |         |                               | | **Layer 2**                                     |
-|                                                   |         |                               | | **Layer 3**                                     |
-|                                                   |         |                               | | **Layer 4**                                     |
-|                                                   |         |                               | | **Layer 5**                                     |
-|                                                   |         |                               | | **Layer 6**                                     |
-|                                                   |         |                               | | **Layer 7**                                     |
-|                                                   |         |                               | | **Layer 8**                                     |
-|                                                   |         |                               | | **Layer 9**                                     |
+|                                                   |         |                               | | **Layer -1**                                    |
+|                                                   |         |                               | | **Layer -2**                                    |
+|                                                   |         |                               | | **Layer -3**                                    |
+|                                                   |         |                               | | **Layer -4**                                    |
+|                                                   |         |                               | | **Layer -5**                                    |
+|                                                   |         |                               | | **Layer -6**                                    |
+|                                                   |         |                               | | **Layer -7**                                    |
+|                                                   |         |                               | | **Layer -8**                                    |
+|                                                   |         |                               | | **Layer -9**                                    |
 +---------------------------------------------------+---------+-------------------------------+---------------------------------------------------+
 | Resize Mode / ``Resize_Mode``                     | Choice  | Dynamic                       | |                                                 |
 |                                                   |         |                               | | **Fixed (Inplace)**                             |

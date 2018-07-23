@@ -3,23 +3,21 @@
 G’MIC Equalize local histograms node
 ====================================
 
-*This documentation is for version 0.3 of G’MIC Equalize local histograms.*
+*This documentation is for version 1.0 of G’MIC Equalize local histograms.*
 
 Description
 -----------
 
-Author: David Tschumperle. Latest update: 2018/01/31.
-
-Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
+Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
 ------
 
-+-------+-------------+----------+
-| Input | Description | Optional |
-+=======+=============+==========+
-| Input |             | No       |
-+-------+-------------+----------+
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -95,30 +93,22 @@ Controls
 |                                            |         |                 | | **Duplicate horizontal**          |
 |                                            |         |                 | | **Duplicate vertical**            |
 |                                            |         |                 | | **Checkered**                     |
-|                                            |         |                 | | **Checkered inverse)**            |
-|                                            |         |                 | | **Preview split = point(50**      |
-|                                            |         |                 | | **50**                            |
-|                                            |         |                 | | **0**                             |
-|                                            |         |                 | | **0**                             |
-|                                            |         |                 | | **200**                           |
-|                                            |         |                 | | **200**                           |
-|                                            |         |                 | | **200**                           |
-|                                            |         |                 | | **0**                             |
-|                                            |         |                 | | **10**                            |
-|                                            |         |                 | | **0**                             |
+|                                            |         |                 | | **Checkered inverse**             |
++--------------------------------------------+---------+-----------------+-------------------------------------+
+| Preview split / ``Preview_split``          | Double  | x: 0.5 y: 0.5   |                                     |
 +--------------------------------------------+---------+-----------------+-------------------------------------+
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0         | |                                   |
 |                                            |         |                 | | **Merged**                        |
 |                                            |         |                 | | **Layer 0**                       |
-|                                            |         |                 | | **Layer 1**                       |
-|                                            |         |                 | | **Layer 2**                       |
-|                                            |         |                 | | **Layer 3**                       |
-|                                            |         |                 | | **Layer 4**                       |
-|                                            |         |                 | | **Layer 5**                       |
-|                                            |         |                 | | **Layer 6**                       |
-|                                            |         |                 | | **Layer 7**                       |
-|                                            |         |                 | | **Layer 8**                       |
-|                                            |         |                 | | **Layer 9**                       |
+|                                            |         |                 | | **Layer -1**                      |
+|                                            |         |                 | | **Layer -2**                      |
+|                                            |         |                 | | **Layer -3**                      |
+|                                            |         |                 | | **Layer -4**                      |
+|                                            |         |                 | | **Layer -5**                      |
+|                                            |         |                 | | **Layer -6**                      |
+|                                            |         |                 | | **Layer -7**                      |
+|                                            |         |                 | | **Layer -8**                      |
+|                                            |         |                 | | **Layer -9**                      |
 +--------------------------------------------+---------+-----------------+-------------------------------------+
 | Resize Mode / ``Resize_Mode``              | Choice  | Dynamic         | |                                   |
 |                                            |         |                 | | **Fixed (Inplace)**               |

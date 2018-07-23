@@ -3,33 +3,27 @@
 G’MIC Smooth total variation node
 =================================
 
-*This documentation is for version 0.3 of G’MIC Smooth total variation.*
+*This documentation is for version 1.0 of G’MIC Smooth total variation.*
 
 Description
 -----------
 
-Note: This set of anisotropic smoothing parameters has been suggested by PhotoComiX.
-
-Author: PhotoComiX. Latest update: 2010/26/12.
-
-Author: David Tschumperle. Latest update: 2013/27/08.
-
-Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
+Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
 ------
 
-+-----------+-------------+----------+
-| Input     | Description | Optional |
-+===========+=============+==========+
-| Input     |             | No       |
-+-----------+-------------+----------+
-| Ext. In 1 |             | Yes      |
-+-----------+-------------+----------+
-| Ext. In 2 |             | Yes      |
-+-----------+-------------+----------+
-| Ext. In 3 |             | Yes      |
-+-----------+-------------+----------+
++----------+-------------+----------+
+| Input    | Description | Optional |
++==========+=============+==========+
+| Source   |             | No       |
++----------+-------------+----------+
+| Layer -1 |             | Yes      |
++----------+-------------+----------+
+| Layer -2 |             | Yes      |
++----------+-------------+----------+
+| Layer -3 |             | Yes      |
++----------+-------------+----------+
 
 Controls
 --------
@@ -79,10 +73,9 @@ Controls
 |                                                                               |         |                  | | **Two threads**                   |
 |                                                                               |         |                  | | **Four threads**                  |
 |                                                                               |         |                  | | **Eight threads**                 |
-|                                                                               |         |                  | | **Sixteen threads)**              |
-|                                                                               |         |                  | | **Spatial overlap = int(24**      |
-|                                                                               |         |                  | | **0**                             |
-|                                                                               |         |                  | | **256**                           |
+|                                                                               |         |                  | | **Sixteen threads**               |
++-------------------------------------------------------------------------------+---------+------------------+-------------------------------------+
+| Spatial overlap / ``Spatial_overlap``                                         | Integer | 24               |                                     |
 +-------------------------------------------------------------------------------+---------+------------------+-------------------------------------+
 | Time step / ``Time_step``                                                     | Double  | 30               |                                     |
 +-------------------------------------------------------------------------------+---------+------------------+-------------------------------------+
@@ -132,10 +125,9 @@ Controls
 |                                                                               |         |                  | | **Two threads**                   |
 |                                                                               |         |                  | | **Four threads**                  |
 |                                                                               |         |                  | | **Eight threads**                 |
-|                                                                               |         |                  | | **Sixteen threads)**              |
-|                                                                               |         |                  | | **Spatial overlap = int(24**      |
-|                                                                               |         |                  | | **0**                             |
-|                                                                               |         |                  | | **256**                           |
+|                                                                               |         |                  | | **Sixteen threads**               |
++-------------------------------------------------------------------------------+---------+------------------+-------------------------------------+
+| Spatial overlap_2 / ``Spatial_overlap_2``                                     | Integer | 24               |                                     |
 +-------------------------------------------------------------------------------+---------+------------------+-------------------------------------+
 | Preview type / ``Preview_type``                                               | Choice  | Full             | |                                   |
 |                                                                               |         |                  | | **Full**                          |
@@ -150,30 +142,22 @@ Controls
 |                                                                               |         |                  | | **Duplicate horizontal**          |
 |                                                                               |         |                  | | **Duplicate vertical**            |
 |                                                                               |         |                  | | **Checkered**                     |
-|                                                                               |         |                  | | **Checkered inverse)**            |
-|                                                                               |         |                  | | **Preview split = point(50**      |
-|                                                                               |         |                  | | **50**                            |
-|                                                                               |         |                  | | **0**                             |
-|                                                                               |         |                  | | **0**                             |
-|                                                                               |         |                  | | **200**                           |
-|                                                                               |         |                  | | **200**                           |
-|                                                                               |         |                  | | **200**                           |
-|                                                                               |         |                  | | **0**                             |
-|                                                                               |         |                  | | **10**                            |
-|                                                                               |         |                  | | **0**                             |
+|                                                                               |         |                  | | **Checkered inverse**             |
++-------------------------------------------------------------------------------+---------+------------------+-------------------------------------+
+| Preview split / ``Preview_split``                                             | Double  | x: 0.5 y: 0.5    |                                     |
 +-------------------------------------------------------------------------------+---------+------------------+-------------------------------------+
 | Output Layer / ``Output_Layer``                                               | Choice  | Layer 0          | |                                   |
 |                                                                               |         |                  | | **Merged**                        |
 |                                                                               |         |                  | | **Layer 0**                       |
-|                                                                               |         |                  | | **Layer 1**                       |
-|                                                                               |         |                  | | **Layer 2**                       |
-|                                                                               |         |                  | | **Layer 3**                       |
-|                                                                               |         |                  | | **Layer 4**                       |
-|                                                                               |         |                  | | **Layer 5**                       |
-|                                                                               |         |                  | | **Layer 6**                       |
-|                                                                               |         |                  | | **Layer 7**                       |
-|                                                                               |         |                  | | **Layer 8**                       |
-|                                                                               |         |                  | | **Layer 9**                       |
+|                                                                               |         |                  | | **Layer -1**                      |
+|                                                                               |         |                  | | **Layer -2**                      |
+|                                                                               |         |                  | | **Layer -3**                      |
+|                                                                               |         |                  | | **Layer -4**                      |
+|                                                                               |         |                  | | **Layer -5**                      |
+|                                                                               |         |                  | | **Layer -6**                      |
+|                                                                               |         |                  | | **Layer -7**                      |
+|                                                                               |         |                  | | **Layer -8**                      |
+|                                                                               |         |                  | | **Layer -9**                      |
 +-------------------------------------------------------------------------------+---------+------------------+-------------------------------------+
 | Resize Mode / ``Resize_Mode``                                                 | Choice  | Dynamic          | |                                   |
 |                                                                               |         |                  | | **Fixed (Inplace)**               |

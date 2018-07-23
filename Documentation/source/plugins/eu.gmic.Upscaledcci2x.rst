@@ -3,41 +3,21 @@
 G’MIC Upscale dcci2x node
 =========================
 
-*This documentation is for version 0.3 of G’MIC Upscale dcci2x.*
+*This documentation is for version 1.0 of G’MIC Upscale dcci2x.*
 
 Description
 -----------
 
-Directional Cubic Convolution Interpolation, sep = separator()
-
-Author: Garagecoder. Latest update : 2015/11/07.
-
-Note:
-
-This filter re-implements the scaling algorithm described at :
-
-wikipedia.org: https://en.wikipedia.org/wiki/Directional_Cubic_Convolution_Interpolation
-
-The algorithm is intended for enlarging images while avoiding
-
-artifacts, e.g. staircase artifacts.
-
-Threshold controls edge[lower to texture[higher balance.
-
-Exponent controls texture edge sharpness[higher.
-
-Warning: highly experimental...
-
-Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
+Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
 ------
 
-+-------+-------------+----------+
-| Input | Description | Optional |
-+=======+=============+==========+
-| Input |             | No       |
-+-------+-------------+----------+
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -58,15 +38,15 @@ Controls
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0 | |                     |
 |                                            |         |         | | **Merged**          |
 |                                            |         |         | | **Layer 0**         |
-|                                            |         |         | | **Layer 1**         |
-|                                            |         |         | | **Layer 2**         |
-|                                            |         |         | | **Layer 3**         |
-|                                            |         |         | | **Layer 4**         |
-|                                            |         |         | | **Layer 5**         |
-|                                            |         |         | | **Layer 6**         |
-|                                            |         |         | | **Layer 7**         |
-|                                            |         |         | | **Layer 8**         |
-|                                            |         |         | | **Layer 9**         |
+|                                            |         |         | | **Layer -1**        |
+|                                            |         |         | | **Layer -2**        |
+|                                            |         |         | | **Layer -3**        |
+|                                            |         |         | | **Layer -4**        |
+|                                            |         |         | | **Layer -5**        |
+|                                            |         |         | | **Layer -6**        |
+|                                            |         |         | | **Layer -7**        |
+|                                            |         |         | | **Layer -8**        |
+|                                            |         |         | | **Layer -9**        |
 +--------------------------------------------+---------+---------+-----------------------+
 | Resize Mode / ``Resize_Mode``              | Choice  | Dynamic | |                     |
 |                                            |         |         | | **Fixed (Inplace)** |

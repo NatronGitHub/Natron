@@ -3,33 +3,21 @@
 G’MIC Illuminate 2d shape node
 ==============================
 
-*This documentation is for version 0.3 of G’MIC Illuminate 2d shape.*
+*This documentation is for version 1.0 of G’MIC Illuminate 2d shape.*
 
 Description
 -----------
 
-Input / Output:)
-
-Shape:)
-
-Parameter Minimal shape area is only active in Multiple colored shapes input mode.
-
-Illumination:)
-
-Note: This filter automatically adds illumination to an opaque shape defined over a transparent background.
-
-Author: David Tschumperle. Latest update: 2018/05/18.
-
-Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
+Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
 ------
 
-+-------+-------------+----------+
-| Input | Description | Optional |
-+=======+=============+==========+
-| Input |             | No       |
-+-------+-------------+----------+
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -52,7 +40,7 @@ Controls
 |                                                                               |         |                                      | | **Bump map**                                |
 |                                                                               |         |                                      | | **Normal map**                              |
 +-------------------------------------------------------------------------------+---------+--------------------------------------+-----------------------------------------------+
-| Input guide color / ``Input_guide_color``                                     | Color   | r: 1 g: 0 b: 0                       |                                               |
+| Input guide color / ``Input_guide_color``                                     | Color   | r: 1 g: 0 b: 0 a: 0                  |                                               |
 +-------------------------------------------------------------------------------+---------+--------------------------------------+-----------------------------------------------+
 | Keep base layer as input background / ``Keep_base_layer_as_input_background`` | Boolean | On                                   |                                               |
 +-------------------------------------------------------------------------------+---------+--------------------------------------+-----------------------------------------------+
@@ -139,15 +127,15 @@ Controls
 | Output Layer / ``Output_Layer``                                               | Choice  | Layer 0                              | |                                             |
 |                                                                               |         |                                      | | **Merged**                                  |
 |                                                                               |         |                                      | | **Layer 0**                                 |
-|                                                                               |         |                                      | | **Layer 1**                                 |
-|                                                                               |         |                                      | | **Layer 2**                                 |
-|                                                                               |         |                                      | | **Layer 3**                                 |
-|                                                                               |         |                                      | | **Layer 4**                                 |
-|                                                                               |         |                                      | | **Layer 5**                                 |
-|                                                                               |         |                                      | | **Layer 6**                                 |
-|                                                                               |         |                                      | | **Layer 7**                                 |
-|                                                                               |         |                                      | | **Layer 8**                                 |
-|                                                                               |         |                                      | | **Layer 9**                                 |
+|                                                                               |         |                                      | | **Layer -1**                                |
+|                                                                               |         |                                      | | **Layer -2**                                |
+|                                                                               |         |                                      | | **Layer -3**                                |
+|                                                                               |         |                                      | | **Layer -4**                                |
+|                                                                               |         |                                      | | **Layer -5**                                |
+|                                                                               |         |                                      | | **Layer -6**                                |
+|                                                                               |         |                                      | | **Layer -7**                                |
+|                                                                               |         |                                      | | **Layer -8**                                |
+|                                                                               |         |                                      | | **Layer -9**                                |
 +-------------------------------------------------------------------------------+---------+--------------------------------------+-----------------------------------------------+
 | Resize Mode / ``Resize_Mode``                                                 | Choice  | Dynamic                              | |                                             |
 |                                                                               |         |                                      | | **Fixed (Inplace)**                         |

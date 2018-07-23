@@ -3,45 +3,21 @@
 G’MIC Array faded node
 ======================
 
-*This documentation is for version 0.3 of G’MIC Array faded.*
+*This documentation is for version 1.0 of G’MIC Array faded.*
 
 Description
 -----------
 
-This plugin may download up-to-date filter definitions from the gmic.eu server.
-
-It is the case when first launched after a fresh installation, and periodically
-
-with a frequency which can be set in the settings dialog.
-
-The user should be aware that the following information may be retrieved
-
-from the server logs: IP address of the client; date and time of the request;
-
-as well as a short string, supplied through the HTTP protocol User Agent header
-
-field, which describes the full plugin version as shown in the window title
-
-(e.g. G’MIC-Qt for GIMP 2.8 - Linux 64 bits - 2.2.1_pre#180301.
-
-Note that this information may solely be used for purely anonymous
-
-statistical purposes.
-
-Author: Sebastien Fourey. Latest update: 2018/03/01.
-
-Author: David Tschumperle. Latest update: 2010/29/12.
-
-Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
+Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
 ------
 
-+-------+-------------+----------+
-| Input | Description | Optional |
-+=======+=============+==========+
-| Input |             | No       |
-+-------+-------------+----------+
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -79,15 +55,15 @@ Controls
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0 | |                                |
 |                                            |         |         | | **Merged**                     |
 |                                            |         |         | | **Layer 0**                    |
-|                                            |         |         | | **Layer 1**                    |
-|                                            |         |         | | **Layer 2**                    |
-|                                            |         |         | | **Layer 3**                    |
-|                                            |         |         | | **Layer 4**                    |
-|                                            |         |         | | **Layer 5**                    |
-|                                            |         |         | | **Layer 6**                    |
-|                                            |         |         | | **Layer 7**                    |
-|                                            |         |         | | **Layer 8**                    |
-|                                            |         |         | | **Layer 9**                    |
+|                                            |         |         | | **Layer -1**                   |
+|                                            |         |         | | **Layer -2**                   |
+|                                            |         |         | | **Layer -3**                   |
+|                                            |         |         | | **Layer -4**                   |
+|                                            |         |         | | **Layer -5**                   |
+|                                            |         |         | | **Layer -6**                   |
+|                                            |         |         | | **Layer -7**                   |
+|                                            |         |         | | **Layer -8**                   |
+|                                            |         |         | | **Layer -9**                   |
 +--------------------------------------------+---------+---------+----------------------------------+
 | Resize Mode / ``Resize_Mode``              | Choice  | Dynamic | |                                |
 |                                            |         |         | | **Fixed (Inplace)**            |
