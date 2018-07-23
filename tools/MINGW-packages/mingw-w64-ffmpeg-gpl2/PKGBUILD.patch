@@ -1,5 +1,5 @@
---- PKGBUILD.orig	2018-06-25 14:20:33.000000000 +0200
-+++ PKGBUILD	2018-06-25 14:21:22.000000000 +0200
+--- PKGBUILD.orig	2018-07-23 16:44:04.000000000 +0200
++++ PKGBUILD	2018-07-23 16:44:39.000000000 +0200
 @@ -3,8 +3,8 @@
  # Contributer: wirx6 <wirx654@gmail.com>
  
@@ -8,7 +8,7 @@
 -pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 +pkgbase="mingw-w64-${_realname}-gpl2"
 +pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2"
- pkgver=4.0.1
+ pkgver=4.0.2
  pkgrel=1
  pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
 @@ -23,16 +23,18 @@
