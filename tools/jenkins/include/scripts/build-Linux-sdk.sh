@@ -1686,7 +1686,7 @@ fi
 
 # Install libraw
 # see http://www.at.linuxfromscratch.org/blfs/view/cvs/general/libraw.html
-LIBRAW_VERSION=0.18.12
+LIBRAW_VERSION=0.18.13
 LIBRAW_PACKS_VERSION="${LIBRAW_VERSION}"
 LIBRAW_PACKS_VERSION=0.18.8
 LIBRAW_TAR="LibRaw-${LIBRAW_VERSION}.tar.gz"
