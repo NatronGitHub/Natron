@@ -1011,7 +1011,7 @@ fi
 #       ^~
 # Since there is no way to disable libuv alone (--no-system-libuv unavailable in ./bootstrap),
 # we disable all system libs. Voilà!
-CMAKE_VERSION=3.11.4
+CMAKE_VERSION=3.12.0
 CMAKE_VERSION_SHORT=${CMAKE_VERSION%.*}
 CMAKE_TAR="cmake-${CMAKE_VERSION}.tar.gz"
 CMAKE_SITE="https://cmake.org/files/v${CMAKE_VERSION_SHORT}"
@@ -1686,7 +1686,7 @@ fi
 
 # Install libraw
 # see http://www.at.linuxfromscratch.org/blfs/view/cvs/general/libraw.html
-LIBRAW_VERSION=0.18.12
+LIBRAW_VERSION=0.18.13
 LIBRAW_PACKS_VERSION="${LIBRAW_VERSION}"
 LIBRAW_PACKS_VERSION=0.18.8
 LIBRAW_TAR="LibRaw-${LIBRAW_VERSION}.tar.gz"
@@ -1848,7 +1848,7 @@ fi
 
 # Install pango
 # see http://www.linuxfromscratch.org/blfs/view/svn/x/pango.html
-PANGO_VERSION=1.42.1
+PANGO_VERSION=1.42.2
 PANGO_VERSION_SHORT=${PANGO_VERSION%.*}
 PANGO_TAR="pango-${PANGO_VERSION}.tar.xz"
 PANGO_SITE="http://ftp.gnome.org/pub/GNOME/sources/pango/${PANGO_VERSION_SHORT}"
@@ -2065,7 +2065,7 @@ fi
 
 # Install poppler-glib (without curl, nss3, qt4, qt5)
 # see http://www.linuxfromscratch.org/blfs/view/stable/general/poppler.html
-POPPLER_VERSION=0.66.0
+POPPLER_VERSION=0.67.0
 POPPLER_TAR="poppler-${POPPLER_VERSION}.tar.xz"
 POPPLER_SITE="https://poppler.freedesktop.org"
 if [ "${REBUILD_POPPLER:-}" = "1" ]; then
@@ -2800,7 +2800,7 @@ fi
 
 # Install FFmpeg
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/ffmpeg.html
-FFMPEG_VERSION=4.0.1
+FFMPEG_VERSION=4.0.2
 FFMPEG_VERSION_LIBAVCODEC=58.18.100
 FFMPEG_TAR="ffmpeg-${FFMPEG_VERSION}.tar.bz2"
 FFMPEG_SITE="http://www.ffmpeg.org/releases"
