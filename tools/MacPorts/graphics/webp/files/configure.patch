@@ -1,6 +1,6 @@
---- configure.orig	2017-01-30 14:41:24.000000000 -0600
-+++ configure	2017-02-07 19:28:50.000000000 -0600
-@@ -13347,8 +13347,8 @@
+--- configure.orig	2018-04-20 22:08:11.000000000 -0500
++++ configure	2018-07-22 16:21:00.000000000 -0500
+@@ -13938,8 +13938,8 @@
      darwin*)
        # Special case for OSX builds. Append these to give the user a chance to
        # override with --with-gl*
@@ -8,10 +8,10 @@
 -      glut_ldflags="$glut_ldflags|-framework GLUT -framework OpenGL"
 +      glut_cflags="-framework GLUT -framework OpenGL"
 +      glut_ldflags="-framework GLUT -framework OpenGL"
-       ;;
-   esac
- 
-@@ -13365,7 +13365,7 @@
+       # quiet deprecation warnings for glut
+       SAVED_CFLAGS="$CFLAGS"
+           CFLAGS="-Werror -Wno-deprecated-declarations"
+@@ -13975,7 +13975,7 @@
        none) ;;
        *) CPPFLAGS="$flag $CPPFLAGS";;
      esac
