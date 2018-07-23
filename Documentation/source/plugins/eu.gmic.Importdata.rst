@@ -3,29 +3,21 @@
 G’MIC Import data node
 ======================
 
-*This documentation is for version 0.3 of G’MIC Import data.*
+*This documentation is for version 1.0 of G’MIC Import data.*
 
 Description
 -----------
 
-Note:
-
-This filter can import any image data read by the G’MIC language interpreter.
-
-It includes exotic formats as : Pandore, CImg, Inrimage, AVI/MPEG (requires FFMPEG installed), ...
-
-Author: David Tschumperle. Latest update: 2010/29/12.
-
-Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
+Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
 ------
 
-+-------+-------------+----------+
-| Input | Description | Optional |
-+=======+=============+==========+
-| Input |             | No       |
-+-------+-------------+----------+
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -37,22 +29,22 @@ Controls
 +--------------------------------------------+---------+---------+-----------------------+
 | Parameter / script name                    | Type    | Default | Function              |
 +============================================+=========+=========+=======================+
-| Filename / ``Filename``                    | Double  | 0       |                       |
+| Filename / ``Filename``                    | N/A     |         |                       |
 +--------------------------------------------+---------+---------+-----------------------+
 | Normalize / ``Normalize``                  | Boolean | On      |                       |
 +--------------------------------------------+---------+---------+-----------------------+
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0 | |                     |
 |                                            |         |         | | **Merged**          |
 |                                            |         |         | | **Layer 0**         |
-|                                            |         |         | | **Layer 1**         |
-|                                            |         |         | | **Layer 2**         |
-|                                            |         |         | | **Layer 3**         |
-|                                            |         |         | | **Layer 4**         |
-|                                            |         |         | | **Layer 5**         |
-|                                            |         |         | | **Layer 6**         |
-|                                            |         |         | | **Layer 7**         |
-|                                            |         |         | | **Layer 8**         |
-|                                            |         |         | | **Layer 9**         |
+|                                            |         |         | | **Layer -1**        |
+|                                            |         |         | | **Layer -2**        |
+|                                            |         |         | | **Layer -3**        |
+|                                            |         |         | | **Layer -4**        |
+|                                            |         |         | | **Layer -5**        |
+|                                            |         |         | | **Layer -6**        |
+|                                            |         |         | | **Layer -7**        |
+|                                            |         |         | | **Layer -8**        |
+|                                            |         |         | | **Layer -9**        |
 +--------------------------------------------+---------+---------+-----------------------+
 | Resize Mode / ``Resize_Mode``              | Choice  | Dynamic | |                     |
 |                                            |         |         | | **Fixed (Inplace)** |

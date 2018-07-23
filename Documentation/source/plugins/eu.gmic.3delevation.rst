@@ -3,25 +3,21 @@
 G’MIC 3d elevation node
 =======================
 
-*This documentation is for version 0.3 of G’MIC 3d elevation.*
+*This documentation is for version 1.0 of G’MIC 3d elevation.*
 
 Description
 -----------
 
-Note: Add a top layer to define object texture.
-
-Author: David Tschumperle. Latest update: 2010/29/12.
-
-Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
+Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
 ------
 
-+-------+-------------+----------+
-| Input | Description | Optional |
-+=======+=============+==========+
-| Input |             | No       |
-+-------+-------------+----------+
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -74,15 +70,15 @@ Controls
 | Output Layer / ``Output_Layer``             | Choice  | Layer 0 | |                     |
 |                                             |         |         | | **Merged**          |
 |                                             |         |         | | **Layer 0**         |
-|                                             |         |         | | **Layer 1**         |
-|                                             |         |         | | **Layer 2**         |
-|                                             |         |         | | **Layer 3**         |
-|                                             |         |         | | **Layer 4**         |
-|                                             |         |         | | **Layer 5**         |
-|                                             |         |         | | **Layer 6**         |
-|                                             |         |         | | **Layer 7**         |
-|                                             |         |         | | **Layer 8**         |
-|                                             |         |         | | **Layer 9**         |
+|                                             |         |         | | **Layer -1**        |
+|                                             |         |         | | **Layer -2**        |
+|                                             |         |         | | **Layer -3**        |
+|                                             |         |         | | **Layer -4**        |
+|                                             |         |         | | **Layer -5**        |
+|                                             |         |         | | **Layer -6**        |
+|                                             |         |         | | **Layer -7**        |
+|                                             |         |         | | **Layer -8**        |
+|                                             |         |         | | **Layer -9**        |
 +---------------------------------------------+---------+---------+-----------------------+
 | Resize Mode / ``Resize_Mode``               | Choice  | Dynamic | |                     |
 |                                             |         |         | | **Fixed (Inplace)** |

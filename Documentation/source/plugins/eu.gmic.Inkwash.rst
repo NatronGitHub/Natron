@@ -3,29 +3,21 @@
 G’MIC Ink wash node
 ===================
 
-*This documentation is for version 0.3 of G’MIC Ink wash.*
+*This documentation is for version 1.0 of G’MIC Ink wash.*
 
 Description
 -----------
 
-Ink wash controls
-
-Check if you wish visual control on this step
-
-Author: PhotoComiX. Latest update: 2011/05/04.
-
-0,Forum thread about the filter discussion: http://gimpchat.com/viewtopic.php?f=10&t=914
-
-Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
+Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
 ------
 
-+-------+-------------+----------+
-| Input | Description | Optional |
-+=======+=============+==========+
-| Input |             | No       |
-+-------+-------------+----------+
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -43,8 +35,6 @@ Controls
 +--------------------------------------------------------------+---------+---------+---------------------------------+
 | Skip all other steps / ``Skip_all_other_steps``              | Boolean | Off     |                                 |
 +--------------------------------------------------------------+---------+---------+---------------------------------+
-| note / ``note``                                              | Double  | 0       |                                 |
-+--------------------------------------------------------------+---------+---------+---------------------------------+
 | Smoother sharpness / ``Smoother_sharpness``                  | Double  | 0.5     |                                 |
 +--------------------------------------------------------------+---------+---------+---------------------------------+
 | Smoother edge protection / ``Smoother_edge_protection``      | Double  | 0.54    |                                 |
@@ -57,8 +47,6 @@ Controls
 |                                                              |         |         | | **Automatic & Contrast Mask** |
 |                                                              |         |         | | **Manual Controls**           |
 +--------------------------------------------------------------+---------+---------+---------------------------------+
-| note_2 / ``note_2``                                          | Double  | 0       |                                 |
-+--------------------------------------------------------------+---------+---------+---------------------------------+
 | LN amplitude / ``LN_amplitude``                              | Double  | 2       |                                 |
 +--------------------------------------------------------------+---------+---------+---------------------------------+
 | LN size / ``LN_size``                                        | Double  | 6       |                                 |
@@ -70,15 +58,15 @@ Controls
 | Output Layer / ``Output_Layer``                              | Choice  | Layer 0 | |                               |
 |                                                              |         |         | | **Merged**                    |
 |                                                              |         |         | | **Layer 0**                   |
-|                                                              |         |         | | **Layer 1**                   |
-|                                                              |         |         | | **Layer 2**                   |
-|                                                              |         |         | | **Layer 3**                   |
-|                                                              |         |         | | **Layer 4**                   |
-|                                                              |         |         | | **Layer 5**                   |
-|                                                              |         |         | | **Layer 6**                   |
-|                                                              |         |         | | **Layer 7**                   |
-|                                                              |         |         | | **Layer 8**                   |
-|                                                              |         |         | | **Layer 9**                   |
+|                                                              |         |         | | **Layer -1**                  |
+|                                                              |         |         | | **Layer -2**                  |
+|                                                              |         |         | | **Layer -3**                  |
+|                                                              |         |         | | **Layer -4**                  |
+|                                                              |         |         | | **Layer -5**                  |
+|                                                              |         |         | | **Layer -6**                  |
+|                                                              |         |         | | **Layer -7**                  |
+|                                                              |         |         | | **Layer -8**                  |
+|                                                              |         |         | | **Layer -9**                  |
 +--------------------------------------------------------------+---------+---------+---------------------------------+
 | Resize Mode / ``Resize_Mode``                                | Choice  | Dynamic | |                               |
 |                                                              |         |         | | **Fixed (Inplace)**           |

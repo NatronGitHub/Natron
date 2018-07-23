@@ -3,25 +3,21 @@
 G’MIC Gradient from line node
 =============================
 
-*This documentation is for version 0.3 of G’MIC Gradient from line.*
+*This documentation is for version 1.0 of G’MIC Gradient from line.*
 
 Description
 -----------
 
-Note: Set length to 0 to release gradient length constraints.
-
-Author: David Tschumperle. Latest update: 2015/29/06.
-
-Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
+Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
 ------
 
-+-------+-------------+----------+
-| Input | Description | Optional |
-+=======+=============+==========+
-| Input |             | No       |
-+-------+-------------+----------+
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -33,9 +29,9 @@ Controls
 +--------------------------------------------+---------+------------+---------------------------+
 | Parameter / script name                    | Type    | Default    | Function                  |
 +============================================+=========+============+===========================+
-| Starting point (%) / ``Starting_point_``   | Double  | 0          |                           |
+| Starting point (%) / ``Starting_point_``   | Double  | x: 0 y: 0  |                           |
 +--------------------------------------------+---------+------------+---------------------------+
-| Ending point (%) / ``Ending_point_``       | Double  | 0          |                           |
+| Ending point (%) / ``Ending_point_``       | Double  | x: 1 y: 1  |                           |
 +--------------------------------------------+---------+------------+---------------------------+
 | Sampling / ``Sampling``                    | Double  | 100        |                           |
 +--------------------------------------------+---------+------------+---------------------------+
@@ -60,15 +56,15 @@ Controls
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0    | |                         |
 |                                            |         |            | | **Merged**              |
 |                                            |         |            | | **Layer 0**             |
-|                                            |         |            | | **Layer 1**             |
-|                                            |         |            | | **Layer 2**             |
-|                                            |         |            | | **Layer 3**             |
-|                                            |         |            | | **Layer 4**             |
-|                                            |         |            | | **Layer 5**             |
-|                                            |         |            | | **Layer 6**             |
-|                                            |         |            | | **Layer 7**             |
-|                                            |         |            | | **Layer 8**             |
-|                                            |         |            | | **Layer 9**             |
+|                                            |         |            | | **Layer -1**            |
+|                                            |         |            | | **Layer -2**            |
+|                                            |         |            | | **Layer -3**            |
+|                                            |         |            | | **Layer -4**            |
+|                                            |         |            | | **Layer -5**            |
+|                                            |         |            | | **Layer -6**            |
+|                                            |         |            | | **Layer -7**            |
+|                                            |         |            | | **Layer -8**            |
+|                                            |         |            | | **Layer -9**            |
 +--------------------------------------------+---------+------------+---------------------------+
 | Resize Mode / ``Resize_Mode``              | Choice  | Dynamic    | |                         |
 |                                            |         |            | | **Fixed (Inplace)**     |

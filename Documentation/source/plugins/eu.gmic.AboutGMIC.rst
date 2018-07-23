@@ -3,47 +3,21 @@
 About G’MIC node
 ================
 
-*This documentation is for version 0.3 of About G’MIC.*
+*This documentation is for version 1.0 of About G’MIC.*
 
 Description
 -----------
 
-( GREYC’s Magic for Image Computing )is proposed to you by
-
-David Tschumperle: https://tschumperle.users.greyc.fr/
-
-Sebastien Fourey: https://foureys.users.greyc.fr/
-
-( IMAGE Team / GREYC Laboratory - CNRS UMR 6072 ): https://www.greyc.fr/node/36
-
-This plug-in is based on our open-source libraries G’MIC and CImg (C++ Template Image Processing Library),
-
-available at:
-
-https://gmic.eu/
-
-and
-
-https://cimg.eu/
-
-If you appreciate G’MIC, you are welcome to send us a nice postcard from your place, at:
-
-David Tschumperle, Laboratoire GREYC (CNRS UMR 6072), Equipe Image,
-
-6 Bd du Marechal Juin, 14050 Caen Cedex / France.
-
-Postcards senders automatically enter the Friends Hall of Fame :) !
-
-Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
+Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
 ------
 
-+-------+-------------+----------+
-| Input | Description | Optional |
-+=======+=============+==========+
-| Input |             | No       |
-+-------+-------------+----------+
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -58,15 +32,15 @@ Controls
 | Output Layer / ``Output_Layer``   | Choice  | Layer 0 | |                     |
 |                                   |         |         | | **Merged**          |
 |                                   |         |         | | **Layer 0**         |
-|                                   |         |         | | **Layer 1**         |
-|                                   |         |         | | **Layer 2**         |
-|                                   |         |         | | **Layer 3**         |
-|                                   |         |         | | **Layer 4**         |
-|                                   |         |         | | **Layer 5**         |
-|                                   |         |         | | **Layer 6**         |
-|                                   |         |         | | **Layer 7**         |
-|                                   |         |         | | **Layer 8**         |
-|                                   |         |         | | **Layer 9**         |
+|                                   |         |         | | **Layer -1**        |
+|                                   |         |         | | **Layer -2**        |
+|                                   |         |         | | **Layer -3**        |
+|                                   |         |         | | **Layer -4**        |
+|                                   |         |         | | **Layer -5**        |
+|                                   |         |         | | **Layer -6**        |
+|                                   |         |         | | **Layer -7**        |
+|                                   |         |         | | **Layer -8**        |
+|                                   |         |         | | **Layer -9**        |
 +-----------------------------------+---------+---------+-----------------------+
 | Resize Mode / ``Resize_Mode``     | Choice  | Dynamic | |                     |
 |                                   |         |         | | **Fixed (Inplace)** |

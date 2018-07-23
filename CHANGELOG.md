@@ -35,6 +35,7 @@ Natron multiple times on the same computer, the different processes will share t
 ## Version 2.3.14
 
 - ReadSVG: Fix reading layers of SVG files #292
+- fix many G'MIC plugins - changes are not backward compatible and existing graphs may need to be reworked #295
 
 ## Version 2.3.13
 
