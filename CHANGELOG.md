@@ -34,8 +34,10 @@ Natron multiple times on the same computer, the different processes will share t
 
 ## Version 2.3.14
 
+- Error messages are not cleared anymore at each rendered frame. They can be cleared explicitely using the "Refresh" button in the viewer.
 - ReadSVG: Fix reading layers of SVG files #292
-- fix many G'MIC plugins - changes are not backward compatible and existing graphs may need to be reworked #295
+- Fix many G'MIC plugins. Changes are not backward compatible and existing graphs may need to be reworked. Note that G'MIC plugins are still beta. #295
+- LensDistortion: fix loading PFBarrel files #296
 
 ## Version 2.3.13
 
