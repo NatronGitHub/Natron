@@ -477,7 +477,7 @@ ViewerNode::initializeKnobs()
         param->addInViewerContextShortcutsReference(kViewerNodeParamActionRefreshWithStats);
         param->setSecret(true);
         param->setInViewerContextCanHaveShortcut(true);
-        // Do not set evaluate on change, trigger the render ourselves in knobChance
+        // Do not set evaluate on change, trigger the render ourselves in ViewerNode::knobChanged
         // We do this so that we can set down/up the button during render to give feedback to the user without triggering a new render
         param->setEvaluateOnChange(false);
         param->setIsPersistent(false);
@@ -1451,6 +1451,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
 
     } else if (k == _imp->refreshButtonKnob.lock() && reason == eValueChangedReasonUserEdited) {
         getApp()->checkAllReadersModificationDate(false);
+        getNode()->clearAllPersistentMessage(true); // user can explicitely clear persistent messages, which may be re-set by the next render
         forceNextRenderWithoutCacheRead();
         getNode()->getRenderEngine()->renderCurrentFrame();
     } else if (k == _imp->syncViewersButtonKnob.lock()) {
