@@ -412,6 +412,7 @@ ViewerTab::refresh(bool enableRenderStats)
     app->checkAllReadersModificationDate(false);
     abortRendering();
     _imp->viewerNode->forceFullComputationOnNextFrame();
+    _imp->viewerNode->clearPersistentMessage(true); // clear the error message, since they should be redrawn by the new render
     if (!enableRenderStats) {
         _imp->viewerNode->renderCurrentFrame(true);
     } else {
