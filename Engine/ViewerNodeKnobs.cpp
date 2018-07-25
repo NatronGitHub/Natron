@@ -1451,7 +1451,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
 
     } else if (k == _imp->refreshButtonKnob.lock() && reason == eValueChangedReasonUserEdited) {
         getApp()->checkAllReadersModificationDate(false);
-        getNode()->clearAllPersistentMessage(true); // user can explicitely clear persistent messages, which may be re-set by the next render
+        getNode()->clearAllPersistentMessages(true); // user can explicitely clear persistent messages, which may be re-set by the next render
         forceNextRenderWithoutCacheRead();
         getNode()->getRenderEngine()->renderCurrentFrame();
     } else if (k == _imp->syncViewersButtonKnob.lock()) {
