@@ -154,6 +154,8 @@ public:
 
     virtual ~KnobGuiString() OVERRIDE;
 
+    bool isLabelOnSameColumn() const OVERRIDE FINAL;
+
     virtual void reflectLinkedState(DimIdx dimension, bool linked) OVERRIDE;
 
     virtual std::string getDescriptionLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
