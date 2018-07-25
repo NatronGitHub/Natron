@@ -178,8 +178,12 @@ public:
 
     virtual ~KnobGuiString() OVERRIDE;
 
+    bool isLabelOnSameColumn() const OVERRIDE FINAL;
+
     virtual void removeSpecificGui() OVERRIDE FINAL;
+
     virtual KnobIPtr getKnob() const OVERRIDE FINAL;
+
     virtual std::string getDescriptionLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 public Q_SLOTS:

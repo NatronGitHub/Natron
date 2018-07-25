@@ -510,6 +510,13 @@ KnobGuiString::~KnobGuiString()
 {
 }
 
+bool
+KnobGuiString::isLabelOnSameColumn() const
+{
+    KnobStringPtr knob = _knob.lock();
+    return knob && knob->isLabel();
+}
+
 void
 KnobGuiString::removeSpecificGui()
 {
