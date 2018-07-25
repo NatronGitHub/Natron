@@ -11,6 +11,7 @@
 - ReadSVG: Fix reading layers of SVG files #292
 - Fix many G'MIC plugins. Changes are not backward compatible and existing graphs may need to be reworked. Note that G'MIC plugins are still beta. #295
 - LensDistortion: fix loading PFBarrel files #296
+- Label parameters now use both columns in the parameters panel.
 
 ## Version 2.3.13
 
