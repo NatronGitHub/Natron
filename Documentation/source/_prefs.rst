@@ -29,7 +29,7 @@ Controls how many threads Natron should use to render.
 
 -1: Disable multithreading totally (useful for debugging)
 
-0: Guess the thread count from the number of cores. The ideal threads count for this hardware is 8.
+0: Guess the thread count from the number of cores.
 
 **Number of parallel renders (0=“guess”)**
 
@@ -184,7 +184,7 @@ If not checked, Natron will only cache the nodes which have multiple outputs, or
 
 **Maximum amount of RAM memory used for caching (% of total RAM)**
 
-This setting indicates the percentage of the total RAM which can be used by the memory caches. This system has 16.00 GiB of RAM.
+This setting indicates the percentage of the total RAM which can be used by the memory caches.
 
 **System RAM to keep free (% of total RAM)**
 
@@ -202,9 +202,7 @@ The maximum size that may be used by the DiskCache node on disk (in GiB)
 
 WARNING: Changing this parameter requires a restart of the application.
 
-This is points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, the default location will be used. The default location is:
-
-/Users/devernay/Library/Caches/INRIA/Natron
+This is points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, the default location will be used. 
 
 **Wipe Disk Cache**
 
