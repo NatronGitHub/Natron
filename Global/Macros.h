@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <http://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -89,7 +89,7 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_ORGANIZATION_DOMAIN_SUB "inria"
 #define NATRON_ORGANIZATION_DOMAIN NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_ORGANIZATION_DOMAIN_TOPLEVEL
 #define NATRON_APPLICATION_NAME "Natron"
-#define NATRON_WEBSITE_URL "http://www.natron.fr"
+#define NATRON_WEBSITE_URL "http://natrongithub.github.io"
 #define NATRON_FORUM_URL "https://discuss.pixls.us/c/software/natron"
 #define NATRON_ISSUE_TRACKER_URL "https://github.com/NatronGitHub/Natron/issues"
 
@@ -159,7 +159,7 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_VERSION_REVISION NATRON_VERSION_REVISION_30
 
 
-#define NATRON_LAST_VERSION_URL "http://downloads.natron.fr/LATEST_VERSION.txt"
+#define NATRON_LATEST_VERSION_URL "https://natrongithub.github.io/LATEST_VERSION.txt"
 #define NATRON_LAST_VERSION_FILE_VERSION 1
 
 // homemade builds should always show "Devel"

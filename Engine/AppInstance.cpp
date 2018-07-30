@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <http://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -340,7 +340,7 @@ AppInstance::isDuringPyPlugCreation() const
 void
 AppInstance::checkForNewVersion() const
 {
-    FileDownloader* downloader = new FileDownloader( QUrl( QString::fromUtf8(NATRON_LAST_VERSION_URL) ), false );
+    FileDownloader* downloader = new FileDownloader( QUrl( QString::fromUtf8(NATRON_LATEST_VERSION_URL) ), false );
     QObject::connect( downloader, SIGNAL(downloaded()), this, SLOT(newVersionCheckDownloaded()) );
     QObject::connect( downloader, SIGNAL(error()), this, SLOT(newVersionCheckError()) );
 
@@ -508,8 +508,8 @@ AppInstance::newVersionCheckDownloaded()
                + pclose
                + popen
                + tr("You can download it from %1.")
-               .arg( QString::fromUtf8("<a href=\"https://natron.fr/download\">"
-                                       "www.natron.fr</a>") )
+               .arg( QString::fromUtf8("<a href=\"https://natrongithub.github.io/#download\">"
+                                       "natrongithub.github.io</a>") )
                + pclose;
         Dialogs::informationDialog( tr("New version").toStdString(), text.toStdString(), true );
     }

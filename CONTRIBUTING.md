@@ -27,19 +27,6 @@ Please give an account of
 with enough detail that others can reproduce the problem.
 
 
-Contributor License Agreement (CLA) and Intellectual Property
--------------------------------------------------------------
-
-To protect the project -- and the contributors! -- we do require a
-Contributor License Agreement (CLA) for anybody submitting substantial
-changes. Trivial changes (such as an alteration to the Makefiles, a one-line
-bug fix, etc.) may be accepted without a CLA, at the sole discretion of the
-project leader, but anything complex needs a CLA. This is for your own
-safety.
-
-Read more on our [website](http://natron.fr/cla)
-
-
 Pull Requests and Code Review
 -----------------------------
 
