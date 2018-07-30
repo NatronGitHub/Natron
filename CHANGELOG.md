@@ -544,7 +544,7 @@ You may contribute to this user guide, follow (these)[http://natron.readthedocs.
 - Fixed issues on Windows where file paths with non ASCII characters would not be read/written correctly
 - Fixed issues on Windows where reading from/writing to a network share would not work correctly
 - Value parameters can now have Python expressions written directly in their spinbox and can be used as calculators
-- A new demo project from Francois Grassard is available at [downloads.natron.fr](http://downloads.natron.fr/Examples/Natron2_BayMaxProject.zip).
+- A new demo project from Francois Grassard is available at [sourceforge.net/projects/natron](https://sourceforge.net/projects/natron/files/Examples/).
   It contains a fully-featured project demonstrating the use of a complex node-graph including usage of PyPlugs.
 
 

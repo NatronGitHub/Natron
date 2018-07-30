@@ -117,8 +117,8 @@ Installing
 
 ### Binary distribution ###
 
-Standalone binary distributions of Natron are available for [GNU/Linux](http://downloads.natron.fr/Linux/),
-[Windows](http://downloads.natron.fr/Windows/) and [OS X](http://downloads.natron.fr/Mac/) from [SourceForge](https://sourceforge.net/projects/natron/files) (releases and examples only) or from [the Natron web site](https://natron.fr/download). These distributions contain Natron and three basic sets of OpenFX plugins:
+Standalone binary distributions of Natron are available for [GNU/Linux](https://sourceforge.net/projects/natron/files/Linux/),
+[Windows](https://sourceforge.net/projects/natron/files/Windows/) and [macOS](https://sourceforge.net/projects/natron/files/OSX/) from [SourceForge](https://sourceforge.net/projects/natron/files) (releases and examples only) or from [the Natron web site](https://natrongithub.github.io/#download). These distributions contain Natron and three basic sets of OpenFX plugins:
 * [openfx-io](https://github.com/NatronGitHub/openfx-io/),
 * [openfx-misc](https://github.com/NatronGitHub/openfx-misc),
 * [openfx-arena](https://github.com/NatronGitHub/openfx-arena).
@@ -173,8 +173,6 @@ For example the stable release of the v1.0. and all its bug fixes should go into
 branch.
 At some point,  version which are no longer supported will get removed from github's branches
 and only a release tag will be available to get the source code at that point.
-
-You can check out the easy tasks left to do [here](https://natron.fr/easy-task-list/).
 
 Feel free to report bugs, discuss tasks, or pick up work there. If you want to make
 changes, please fork, edit, and [send us a pull

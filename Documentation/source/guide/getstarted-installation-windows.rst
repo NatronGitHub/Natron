@@ -31,7 +31,7 @@ If you don't have the minimum required OpenGL extensions we provide a Software O
 Download
 --------
 
-Navigate to http://natron.fr/download and download the latest version. This documentation will assume that you downloaded the installer (our default and recommended choice).
+Navigate to https://natrongithub.github.io/#download and download the latest version. This documentation will assume that you downloaded the installer (our default and recommended choice).
 
 .. image:: _images/win_install_01.png
    :width: 40%

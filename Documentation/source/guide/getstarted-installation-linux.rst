@@ -37,7 +37,7 @@ The basic requirements are:
 Download
 --------
 
-Navigate to http://natron.fr/download and download the latest version. This documentation will assume that you downloaded the installer (our default and recommended choice).
+Navigate to https://natrongithub.github.io/1#download and download the latest version. This documentation will assume that you downloaded the installer (our default and recommended choice).
 
 .. image:: _images/linux_install_01.png
    :width: 30%
@@ -115,4 +115,4 @@ The application also include a basic settings category, where you can configure 
 Advanced installation
 ---------------------
 
-Natron also has RPM and DEB packages, these are recommended for multi-user installations or for deployment on more than one machine. You can find more information on our website at http://natron.fr/download .
+Natron also has RPM and DEB packages, these are recommended for multi-user installations or for deployment on more than one machine. You can find more information on our website at https://natrongithub.github.io/ .
