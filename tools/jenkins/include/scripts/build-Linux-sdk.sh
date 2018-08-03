@@ -1825,7 +1825,7 @@ fi
 
 # Install harbuzz
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/harfbuzz.html
-HARFBUZZ_VERSION=1.8.2
+HARFBUZZ_VERSION=1.8.5
 HARFBUZZ_TAR="harfbuzz-${HARFBUZZ_VERSION}.tar.bz2"
 HARFBUZZ_SITE="https://www.freedesktop.org/software/harfbuzz/release"
 if [ "${REBUILD_HARFBUZZ:-}" = "1" ]; then
@@ -2242,7 +2242,7 @@ fi
 
 # Install oiio
 #OIIO_VERSION=1.7.19
-OIIO_VERSION=1.8.12
+OIIO_VERSION=1.8.13
 OIIO_VERSION_SHORT=${OIIO_VERSION%.*}
 OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
 if [ "${REBUILD_OIIO:-}" = "1" ]; then
