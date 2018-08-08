@@ -8,7 +8,7 @@ Foundry, or Blackmagic Fusion.
 
 It is portable and cross-platform (GNU/Linux, OS X, Microsoft Windows).
 
-- Home page: http://natron.fr
+- Home page: http://NatronGitHub.github.io
 - Source code: https://github.com/NatronGitHub/Natron
 - Forum: https://discuss.pixls.us/c/software/natron
 
