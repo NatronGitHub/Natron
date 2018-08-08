@@ -257,8 +257,13 @@ if [ "$BUILD_MISC" = "1" ]; then
         #make -C Shadertoy $MAKEFLAGS_VERBOSE CXXFLAGS_MESA="-DHAVE_OSMESA" OSMESA_PATH="${OSMESA_PATH}" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" CXX="$CXX" CONFIG="${BUILD_MODE}" OPTFLAG="${OPTFLAG}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" -j"${MKJOBS}" BITS="${BITS}" HAVE_CIMG=0
         #set +x
         # first, build everything except CImg (including OpenGL plugins)
+        OMP=""
+        if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
+            # compile DenoiseSharpen with OpenMP support
+            OMP="OPENMP=1"
+        fi
         make -j"${MKJOBS}" $MAKEFLAGS_VERBOSE CXXFLAGS_MESA="-DHAVE_OSMESA" OSMESA_PATH="${OSMESA_PATH}" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" HAVE_CIMG=0 \
-             CXX="$CXX" CONFIG="${BUILD_MODE}" BITS="${BITS}" OPTFLAG="${OPTFLAG}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}"
+             CXX="$CXX" CONFIG="${BUILD_MODE}" BITS="${BITS}" OPTFLAG="${OPTFLAG}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" ${OMP}
 
         #ls -la  "$TMP_BINARIES_PATH" "$TMP_BINARIES_PATH/OFX/Plugins" "$TMP_BINARIES_PATH/Plugins"
         # extract CImg.h
