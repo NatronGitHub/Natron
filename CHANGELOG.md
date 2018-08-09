@@ -5,6 +5,9 @@
 # History
 
 
+## Version 2.3.15
+
+
 ## Version 2.3.14
 
 - Error messages are not cleared anymore at each rendered frame. They can be cleared explicitely using the "Refresh" button in the viewer.
