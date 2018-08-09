@@ -291,8 +291,9 @@ PYTHON_INCLUDE="$SDK_HOME/include/python${PYVER}"
 export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 
 # Old Natron 2 version is 4.8.5
+GCC_VERSION=8.2.0
 #GCC_VERSION=8.1.0 # GCC 8.1 breaks the timeline GUI on Linux, see https://github.com/NatronGitHub/Natron/issues/279
-GCC_VERSION=7.3.0
+#GCC_VERSION=7.3.0
 #GCC_VERSION=5.4.0
 #GCC_VERSION=4.9.4
 GCC_TAR="gcc-${GCC_VERSION}.tar.gz"
@@ -311,7 +312,7 @@ GMP_VERSION=6.1.2
 GMP_TAR="gmp-${GMP_VERSION}.tar.bz2"
 GMP_SITE="https://gmplib.org/download/gmp"
 
-ISL_VERSION=0.19
+ISL_VERSION=0.20
 if [ "$GCC_VERSION" = 4.8.5 ]; then
     ISL_VERSION=0.14.1
 fi
@@ -1825,7 +1826,7 @@ fi
 
 # Install harbuzz
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/harfbuzz.html
-HARFBUZZ_VERSION=1.8.5
+HARFBUZZ_VERSION=1.8.6
 HARFBUZZ_TAR="harfbuzz-${HARFBUZZ_VERSION}.tar.bz2"
 HARFBUZZ_SITE="https://www.freedesktop.org/software/harfbuzz/release"
 if [ "${REBUILD_HARFBUZZ:-}" = "1" ]; then
@@ -1994,7 +1995,7 @@ fi
 
 # Install ImageMagick6
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick6.html
-MAGICK_VERSION=6.9.10-5
+MAGICK_VERSION=6.9.10-9
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
 MAGICK_TAR="ImageMagick-${MAGICK_VERSION}.tar.xz"
 MAGICK_SITE="https://www.imagemagick.org/download/releases"
@@ -2021,7 +2022,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversio
 fi
 # install ImageMagick7
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick.html
-MAGICK7_VERSION=7.0.8-5
+MAGICK7_VERSION=7.0.8-9
 MAGICK7_VERSION_SHORT=${MAGICK7_VERSION%-*}
 MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.xz"
 if [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/magick7/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Magick++)" != "$MAGICK7_VERSION_SHORT" ]; then
