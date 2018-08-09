@@ -248,7 +248,13 @@ if [ "$BUILD_MISC" = "1" ]; then
             CMAKE_LDFLAGS="-static -Wl,--build-id"
         fi
         rm ../DenoiseSharpen/DenoiseWavelet.cpp || true
-        env CXX="$CXX" LDFLAGS="$CMAKE_LDFLAGS" cmake .. ${MSYS:-} -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX="$TMP_BINARIES_PATH" -DBITS="${BITS}" -DUSE_OSMESA=1 -DOSMESA_INCLUDES="${OSMESA_PATH}/include" -DOSMESA_LIBRARIES="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" ${UNIVERSAL:-}
+        OMP=""
+        #if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
+        #    # compile DenoiseSharpen with OpenMP support
+        #    # see https://discuss.pixls.us/t/denoisesharpen-filter-is-crashing-natron/8564/2
+        #    OMP="OPENMP=1"
+        #fi
+        env CXX="$CXX" LDFLAGS="$CMAKE_LDFLAGS" cmake .. ${MSYS:-} -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX="$TMP_BINARIES_PATH" -DBITS="${BITS}" -DUSE_OSMESA=1 -DOSMESA_INCLUDES="${OSMESA_PATH}/include" -DOSMESA_LIBRARIES="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" ${UNIVERSAL:-} ${OMP:-}
         make -j"${MKJOBS}"
         make install
     else
@@ -257,13 +263,8 @@ if [ "$BUILD_MISC" = "1" ]; then
         #make -C Shadertoy $MAKEFLAGS_VERBOSE CXXFLAGS_MESA="-DHAVE_OSMESA" OSMESA_PATH="${OSMESA_PATH}" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" CXX="$CXX" CONFIG="${BUILD_MODE}" OPTFLAG="${OPTFLAG}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" -j"${MKJOBS}" BITS="${BITS}" HAVE_CIMG=0
         #set +x
         # first, build everything except CImg (including OpenGL plugins)
-        OMP=""
-        if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
-            # compile DenoiseSharpen with OpenMP support
-            OMP="OPENMP=1"
-        fi
         make -j"${MKJOBS}" $MAKEFLAGS_VERBOSE CXXFLAGS_MESA="-DHAVE_OSMESA" OSMESA_PATH="${OSMESA_PATH}" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" HAVE_CIMG=0 \
-             CXX="$CXX" CONFIG="${BUILD_MODE}" BITS="${BITS}" OPTFLAG="${OPTFLAG}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" ${OMP}
+             CXX="$CXX" CONFIG="${BUILD_MODE}" BITS="${BITS}" OPTFLAG="${OPTFLAG}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}"
 
         #ls -la  "$TMP_BINARIES_PATH" "$TMP_BINARIES_PATH/OFX/Plugins" "$TMP_BINARIES_PATH/Plugins"
         # extract CImg.h
