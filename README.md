@@ -12,6 +12,20 @@ It is portable and cross-platform (GNU/Linux, OS X, Microsoft Windows).
 - Source code: https://github.com/NatronGitHub/Natron
 - Forum: https://discuss.pixls.us/c/software/natron
 
+Help wanted
+-----------
+
+Natron is looking for developers and maintainers. You can help developing and maintaining Natron if you have the following skills:
+
+- [https://en.wikipedia.org/wiki/Git](git) and [https://en.wikipedia.org/wiki/GitHub](github)
+- [C++](https://en.wikipedia.org/wiki/C%2B%2B) (Natron source is still C++98, but switching to [https://en.wikipedia.org/wiki/C%2B%2B11](C++11) or [https://en.wikipedia.org/wiki/C%2B%2B11](C++14) should be straightforward if needed)
+- [https://en.wikipedia.org/wiki/Software_design_pattern](design patterns)
+- [Qt](https://www.qt.io/) (Natron still uses Qt4 because of the lack of [https://wiki.qt.io/Qt_for_Python_Development_Notes](PySide support in Qt5), which should be integrated shortly after [Qt 5.12](https://wiki.qt.io/Qt_5.12_Release) is released)
+- Basic knowledge of [https://en.wikipedia.org/wiki/OpenGL](OpenGL)
+- Basic knowledge of [https://en.wikipedia.org/wiki/Python_(programming_language)](Python)
+
+If you are willing to help, please contact the development team on the [https://discuss.pixls.us/c/software/natron](pixls.us Natron forum).
+
 Features
 --------
 
