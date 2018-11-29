@@ -68,7 +68,7 @@ would not crash the ongoing render (and the other way around).
 
 - Project format written in XML and easily editable by humans.
 
-- Fast & interactive Viewer - Smooth & accurate  zooming/panning even for very large image sizes
+- Fast & interactive Viewer - Smooth & accurate zooming/panning even for very large image sizes
 (tested on 27k x 30k images).
 
 - Real-time playback: Natron offers  a real-time playback with best performances thanks to its
