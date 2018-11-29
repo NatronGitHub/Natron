@@ -20,7 +20,7 @@ Natron is looking for developers and maintainers. You can help developing and ma
 - [Git](https://en.wikipedia.org/wiki/Git) and [GitHub](https://en.wikipedia.org/wiki/GitHub)
 - [C++](https://en.wikipedia.org/wiki/C%2B%2B) (Natron source is still C++98, but switching to [C++11](https://en.wikipedia.org/wiki/C%2B%2B11) or [C++14](https://en.wikipedia.org/wiki/C%2B%2B11) should be straightforward if needed)
 - [Design patterns](https://en.wikipedia.org/wiki/Software_design_pattern)
-- [Qt](https://www.qt.io/) (Natron still uses Qt4 because of the lack of [PySide support in Qt5](https://wiki.qt.io/Qt_for_Python_Development_Notes) ), which should be integrated shortly after [Qt 5.12](https://wiki.qt.io/Qt_5.12_Release) is released)
+- [Qt](https://www.qt.io/) (Natron still uses Qt4 because of the lack of [PySide support in Qt5](https://wiki.qt.io/Qt_for_Python_Development_Notes), which should be integrated shortly after [Qt 5.12](https://wiki.qt.io/Qt_5.12_Release) is released)
 - Basic knowledge of [OpenGL](https://en.wikipedia.org/wiki/OpenGL)
 - Basic knowledge of [Python](https://en.wikipedia.org/wiki/Python_(programming_language))
 
@@ -29,7 +29,7 @@ If you are willing to help, please contact the development team on the [pixls.us
 Features
 --------
 
-- 32 bits floating point linear colour processing pipeline.
+- 32-bit floating point linear colour processing pipeline.
 - Colorspace management handled by the OpenColorIO library.
 - Dozens of file formats supported: EXR, DPX,TIFF, JPG, PNG…thanks to OpenImageIO and FFmpeg.
 - Support for many free and open-source OpenFX plugins:
@@ -66,10 +66,10 @@ detects inactivity and saves your work for yourself. Also Natron provides the op
 a graph in a separate process, meaning that any crash in the main application
 would not crash the ongoing render (and the other way around).
 
-- Project format written in XML and easily editable by human.
+- Project format written in XML and easily editable by humans.
 
-- Fast & interactive Viewer - Smooth & accurate  zooming/panning even for very large image sizes (
-tested on 27k x 30k images).
+- Fast & interactive Viewer - Smooth & accurate  zooming/panning even for very large image sizes
+(tested on 27k x 30k images).
 
 - Real-time playback: Natron offers  a real-time playback with best performances thanks to its
 RAM/Disk cache technology. Once a frame is rendered, it can be reproduced instantly afterwards, even
@@ -98,8 +98,7 @@ the views at any time with the OneView node.
     * User-defined python callbacks to respond to particular checkpoints of the internals of the software (change of a parameter, before rendering a frame, etc…)
     * Integration of Pyside to the GUI so that the interface is extensible with new menus and windows
 
-- Multi-plane: Natron is able to deal with multi-layered EXR files thanks to OpenImageIO. It is deeply integrated into the workflow and the user can choose
-to work with any layer (or plane) on any node. New custom layers can also be created.
+- Multi-plane: Natron is able to deal with multi-layered EXR files thanks to OpenImageIO. It is deeply integrated into the workflow and the user can choose to work with any layer (or plane) on any node. New custom layers can also be created.
 
 Requirements
 ------------
