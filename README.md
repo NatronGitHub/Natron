@@ -24,6 +24,8 @@ Natron is looking for developers and maintainers. You can help developing and ma
 - Basic knowledge of [OpenGL](https://en.wikipedia.org/wiki/OpenGL)
 - Basic knowledge of [Python](https://en.wikipedia.org/wiki/Python_(programming_language))
 
+For more information, see the "Contributing" section below.
+
 If you are willing to help, please contact the development team on the [pixls.us Natron forum](https://discuss.pixls.us/c/software/natron).
 
 Features
@@ -164,6 +166,19 @@ Planned features
 
 Contributing
 ------------
+
+### Low hanging fruits
+
+You should start contributing to the Natron project by first picking an easy task, and then gradually taking more difficult tasks. Here are a few sample tasks, by order of difficulty (from 0 to 10):
+
+- 2: pyplugs, shadertoys (there are still developers for these, see https://github.com/NatronGitHub/natron-plugins )
+- 4: write an OpenFX plugin, starting from an example in [openfx-misc](https://github.com/NatronGitHub/openfx-misc) or from the [official OpenFX](https://github.com/NatronGitHub/openfx) examples, for example try to make an OpenFX plugin from a widely-used PyPlug. There are a few OFX plugin developers in the community.
+- 5: build Natron locally (on any system)
+- 7: compile a redistributable Natron binary (Linux is easier, since we build and ship most dependencies using the build scripts)
+- 9: fix a simple Natron bug
+- 10: add new functionality to Natron (see issues)
+
+### Logistics
 
 We coordinate development through the [GitHub issue
 tracker](https://github.com/NatronGitHub/Natron/issues).
