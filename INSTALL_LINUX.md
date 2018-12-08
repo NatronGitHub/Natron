@@ -175,6 +175,10 @@ To build, go into the Natron directory and type:
     make
 
 If everything has been installed and configured correctly, it should build without errors.
+if you have both QT4 and QT5 installed qmake can generate errors, you can try
+
+    QT_SELECT=4 qmake -r
+    make
 
 If you want to build in DEBUG mode change the qmake call to this line:
 
@@ -258,6 +262,17 @@ boost: LIBS += -lboost_thread -lboost_system
 expat: LIBS += -lexpat
 expat: PKGCONFIG -= expat
 cairo: PKGCONFIG -= cairo
+```
+
+for linux mint you will need to add:
+
+```
+pyside {
+        PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
+        PKGCONFIG += pyside
+        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
+        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
+}
 ```
 
 ## CentOS7
