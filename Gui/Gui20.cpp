@@ -68,6 +68,9 @@
 #include "Gui/ViewerTab.h"
 
 #include "Global/QtCompat.h" // removeFileExtension
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include <SequenceParsing.h> // for removePath
 
@@ -249,7 +252,12 @@ Gui::loadStyleSheet()
     p.setBrush( QPalette::BrightText, txtCol );
     p.setBrush( QPalette::Link, selCol ); // can only be set via palette
     p.setBrush( QPalette::LinkVisited, selCol ); // can only be set via palette
-    qApp->setPalette( p );
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        qApp->setPalette( p );
+    }
 
     QFile qss;
     std::string userQss = settings->getUserStyleSheetFilePath();
@@ -268,6 +276,9 @@ Gui::loadStyleSheet()
                                             "QInputDialog { font-family: \"%1\"; font-size: %2pt; }\n" // ... or the label doesn't get the right font
                                             ).arg(appFont).arg(appFontSize);
         content += in.readAll();
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
         qApp->setStyleSheet( content
                              .arg( qcolor_to_qstring(selCol) ) // %1: selection-color
                              .arg( qcolor_to_qstring(baseCol) ) // %2: medium background

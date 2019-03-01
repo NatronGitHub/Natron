@@ -86,11 +86,11 @@ void
 SplashScreen::updateText(const QString & text)
 {
     _text = text;
-    update();
     {
 #ifdef DEBUG
         boost_adaptbx::floating_point::exception_trapping trap(0);
 #endif
+        update();
         QCoreApplication::processEvents();
     }
 }
