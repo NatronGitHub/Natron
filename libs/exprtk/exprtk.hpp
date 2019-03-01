@@ -619,7 +619,14 @@ namespace exprtk
                return false;
          }
 
-         return (d_itr == data_end) && (p_itr == pattern_end);
+         if (d_itr != data_end)
+            return false;
+         else if (p_itr == pattern_end)
+            return true;
+         else if ((zero_or_more == *p_itr) || (zero_or_one == *p_itr))
+            ++p_itr;
+
+         return pattern_end == p_itr;
       }
 
       inline bool wc_match(const std::string& wild_card,
@@ -2305,8 +2312,8 @@ namespace exprtk
 
          inline std::string substr(const std::size_t& begin, const std::size_t& end)
          {
-            details::char_cptr begin_itr = ((base_itr_ + begin) < s_end_) ? (base_itr_ + begin) : s_end_;
-            details::char_cptr end_itr   = ((base_itr_ +   end) < s_end_) ? (base_itr_ +   end) : s_end_;
+            const details::char_cptr begin_itr = ((base_itr_ + begin) < s_end_) ? (base_itr_ + begin) : s_end_;
+            const details::char_cptr end_itr   = ((base_itr_ +   end) < s_end_) ? (base_itr_ +   end) : s_end_;
 
             return std::string(begin_itr,end_itr);
          }
@@ -3655,7 +3662,7 @@ namespace exprtk
 
             bool operator() (const lexer::token& t0, const lexer::token& t1)
             {
-               set_t::value_type p = std::make_pair(t0.type,t1.type);
+               const set_t::value_type p = std::make_pair(t0.type,t1.type);
 
                if (invalid_bracket_check(t0.type,t1.type))
                {
@@ -3669,7 +3676,7 @@ namespace exprtk
                return true;
             }
 
-            std::size_t error_count()
+            std::size_t error_count() const
             {
                return error_list_.size();
             }
@@ -4029,40 +4036,6 @@ namespace exprtk
             {
                return false;
             }
-
-            advance_token(mode);
-
-            return true;
-         }
-
-         inline bool token_is_then_assign(const token_t::token_type& ttype,
-                                          std::string& token,
-                                          const token_advance_mode mode = e_advance)
-         {
-            if (current_token_.type != ttype)
-            {
-               return false;
-            }
-
-            token = current_token_.value;
-
-            advance_token(mode);
-
-            return true;
-         }
-
-         template <typename Allocator,
-                   template <typename,typename> class Container>
-         inline bool token_is_then_assign(const token_t::token_type& ttype,
-                                          Container<std::string,Allocator>& token_list,
-                                          const token_advance_mode mode = e_advance)
-         {
-            if (current_token_.type != ttype)
-            {
-               return false;
-            }
-
-            token_list.push_back(current_token_.value);
 
             advance_token(mode);
 
@@ -4585,16 +4558,16 @@ namespace exprtk
             {}
 
             control_block(const std::size_t& dsize)
-            : ref_count(1),
+            : ref_count(1    ),
               size     (dsize),
-              data     (0),
-              destruct (true)
+              data     (0    ),
+              destruct (true )
             { create_data(); }
 
             control_block(const std::size_t& dsize, data_t dptr, bool dstrct = false)
-            : ref_count(1),
-              size     (dsize),
-              data     (dptr ),
+            : ref_count(1     ),
+              size     (dsize ),
+              data     (dptr  ),
               destruct (dstrct)
             {}
 
@@ -4757,8 +4730,8 @@ namespace exprtk
 
          static inline std::size_t min_size(control_block* cb0, control_block* cb1)
          {
-            std::size_t size0 = cb0->size;
-            std::size_t size1 = cb1->size;
+            const std::size_t size0 = cb0->size;
+            const std::size_t size1 = cb1->size;
 
             if (size0 && size1)
                return std::min(size0,size1);
@@ -4845,19 +4818,19 @@ namespace exprtk
                   case e_ne     : return std::not_equal_to<T>()(arg0,arg1) ? T(1) : T(0);
                   case e_gte    : return (arg0 >= arg1) ? T(1) : T(0);
                   case e_gt     : return (arg0 >  arg1) ? T(1) : T(0);
-                  case e_and    : return and_opr<T> (arg0,arg1);
+                  case e_and    : return and_opr <T>(arg0,arg1);
                   case e_nand   : return nand_opr<T>(arg0,arg1);
-                  case e_or     : return or_opr<T>  (arg0,arg1);
-                  case e_nor    : return nor_opr<T> (arg0,arg1);
-                  case e_xor    : return xor_opr<T> (arg0,arg1);
+                  case e_or     : return or_opr  <T>(arg0,arg1);
+                  case e_nor    : return nor_opr <T>(arg0,arg1);
+                  case e_xor    : return xor_opr <T>(arg0,arg1);
                   case e_xnor   : return xnor_opr<T>(arg0,arg1);
-                  case e_root   : return root<T>    (arg0,arg1);
-                  case e_roundn : return roundn<T>  (arg0,arg1);
+                  case e_root   : return root    <T>(arg0,arg1);
+                  case e_roundn : return roundn  <T>(arg0,arg1);
                   case e_equal  : return equal      (arg0,arg1);
                   case e_nequal : return nequal     (arg0,arg1);
-                  case e_hypot  : return hypot<T>   (arg0,arg1);
-                  case e_shr    : return shr<T>     (arg0,arg1);
-                  case e_shl    : return shl<T>     (arg0,arg1);
+                  case e_hypot  : return hypot   <T>(arg0,arg1);
+                  case e_shr    : return shr     <T>(arg0,arg1);
+                  case e_shl    : return shl     <T>(arg0,arg1);
 
                   default       : exprtk_debug(("numeric::details::process_impl<T> - Invalid binary operation.\n"));
                                   return std::numeric_limits<T>::quiet_NaN();
@@ -8677,7 +8650,7 @@ namespace exprtk
 
                   range_t& range = str0_range_ptr_->range_ref();
 
-                  if (range(r0,r1,str0_base_ptr_->size()))
+                  if (range(r0, r1, str0_base_ptr_->size()))
                   {
                      const std::size_t size = (r1 - r0) + 1;
 
@@ -8695,7 +8668,7 @@ namespace exprtk
 
                   range_t& range = str1_range_ptr_->range_ref();
 
-                  if (range(r0,r1,str1_base_ptr_->size()))
+                  if (range(r0, r1, str1_base_ptr_->size()))
                   {
                      const std::size_t size = (r1 - r0) + 1;
 
@@ -8815,7 +8788,7 @@ namespace exprtk
                   std::size_t r0 = 0;
                   std::size_t r1 = 0;
 
-                  if (range(r0,r1,str0_base_ptr_->size()))
+                  if (range(r0, r1, str0_base_ptr_->size()))
                   {
                      const std::size_t size = (r1 - r0) + 1;
 
@@ -12300,14 +12273,14 @@ namespace exprtk
          static inline T process_3(const Sequence& arg_list)
          {
             return value(arg_list[0]) + value(arg_list[1]) +
-                   value(arg_list[2]);
+                   value(arg_list[2]) ;
          }
 
          template <typename Sequence>
          static inline T process_4(const Sequence& arg_list)
          {
             return value(arg_list[0]) + value(arg_list[1]) +
-                   value(arg_list[2]) + value(arg_list[3]);
+                   value(arg_list[2]) + value(arg_list[3]) ;
          }
 
          template <typename Sequence>
@@ -12315,7 +12288,7 @@ namespace exprtk
          {
             return value(arg_list[0]) + value(arg_list[1]) +
                    value(arg_list[2]) + value(arg_list[3]) +
-                   value(arg_list[4]);
+                   value(arg_list[4]) ;
          }
       };
 
@@ -12367,14 +12340,14 @@ namespace exprtk
          static inline T process_3(const Sequence& arg_list)
          {
             return value(arg_list[0]) * value(arg_list[1]) *
-                   value(arg_list[2]);
+                   value(arg_list[2]) ;
          }
 
          template <typename Sequence>
          static inline T process_4(const Sequence& arg_list)
          {
             return value(arg_list[0]) * value(arg_list[1]) *
-                   value(arg_list[2]) * value(arg_list[3]);
+                   value(arg_list[2]) * value(arg_list[3]) ;
          }
 
          template <typename Sequence>
@@ -12382,7 +12355,7 @@ namespace exprtk
          {
             return value(arg_list[0]) * value(arg_list[1]) *
                    value(arg_list[2]) * value(arg_list[3]) *
-                   value(arg_list[4]);
+                   value(arg_list[4]) ;
          }
       };
 
@@ -16631,11 +16604,11 @@ namespace exprtk
             #ifndef exprtk_disable_string_capabilities
             type_store<typename details::stringvar_node<T>,std::string> stringvar_store;
             #endif
-            type_store<ifunction<T>,ifunction<T> > function_store;
+            type_store<ifunction<T>,ifunction<T> >                 function_store;
             type_store<ivararg_function <T>,ivararg_function <T> > vararg_function_store;
             type_store<igeneric_function<T>,igeneric_function<T> > generic_function_store;
             type_store<igeneric_function<T>,igeneric_function<T> > string_function_store;
-            type_store<vector_holder_t,vector_holder_t> vector_store;
+            type_store<vector_holder_t,vector_holder_t>            vector_store;
 
             st_data()
             {
@@ -17337,8 +17310,8 @@ namespace exprtk
       {
          /*
             Function will return true if symbol_name exists as either a
-            reserved symbol, variable, stringvar or function name in any
-            of the type stores.
+            reserved symbol, variable, stringvar, vector or function name
+            in any of the type stores.
          */
          if (!valid())
             return false;
@@ -17348,6 +17321,8 @@ namespace exprtk
          else if (local_data().stringvar_store.symbol_exists(symbol_name))
             return true;
          #endif
+         else if (local_data().vector_store.symbol_exists(symbol_name))
+            return true;
          else if (local_data().function_store.symbol_exists(symbol_name))
             return true;
          else if (check_reserved_symb && local_data().is_reserved_symbol(symbol_name))
@@ -17903,7 +17878,7 @@ namespace exprtk
                control_block_->
                   local_data_list.push_back(
                      typename expression<T>::control_block::
-                        data_pack(reinterpret_cast<void*>(data),dt,size));
+                        data_pack(reinterpret_cast<void*>(data), dt, size));
             }
          }
       }
@@ -22664,7 +22639,6 @@ namespace exprtk
                              exprtk_error_location));
 
                return false;
-
             }
             else if (is_constant_node(r0))
             {
@@ -22730,7 +22704,6 @@ namespace exprtk
                rp.free();
 
                return false;
-
             }
             else if (is_constant_node(r1))
             {
@@ -26020,11 +25993,11 @@ namespace exprtk
          inline bool is_constpow_operation(const details::operator_type& operation, expression_node_ptr(&branch)[2])
          {
             if (
-                 !is_constant_node(branch[1]) ||
-                  is_constant_node(branch[0]) ||
-                  is_variable_node(branch[0]) ||
-                  is_vector_node  (branch[0]) ||
-                  is_generally_string_node(branch[0])
+                 !details::is_constant_node(branch[1]) ||
+                  details::is_constant_node(branch[0]) ||
+                  details::is_variable_node(branch[0]) ||
+                  details::is_vector_node  (branch[0]) ||
+                  details::is_generally_string_node(branch[0])
                )
                return false;
 
@@ -26102,7 +26075,7 @@ namespace exprtk
          }
 
          #ifndef exprtk_disable_sc_andor
-         inline bool is_shortcircuit_expression(const details::operator_type& operation)
+         inline bool is_shortcircuit_expression(const details::operator_type& operation) const
          {
             return (
                      (details::e_scand == operation) ||
@@ -26110,13 +26083,13 @@ namespace exprtk
                    );
          }
          #else
-         inline bool is_shortcircuit_expression(const details::operator_type&)
+         inline bool is_shortcircuit_expression(const details::operator_type&) const
          {
             return false;
          }
          #endif
 
-         inline bool is_null_present(expression_node_ptr (&branch)[2])
+         inline bool is_null_present(expression_node_ptr (&branch)[2]) const
          {
             return (
                      details::is_null_node(branch[0]) ||
@@ -26124,7 +26097,7 @@ namespace exprtk
                    );
          }
 
-         inline bool is_vector_eqineq_logic_operation(const details::operator_type& operation, expression_node_ptr (&branch)[2])
+         inline bool is_vector_eqineq_logic_operation(const details::operator_type& operation, expression_node_ptr (&branch)[2]) const
          {
             if (!is_ivector_node(branch[0]) && !is_ivector_node(branch[1]))
                return false;
@@ -26146,7 +26119,7 @@ namespace exprtk
                       );
          }
 
-         inline bool is_vector_arithmetic_operation(const details::operator_type& operation, expression_node_ptr (&branch)[2])
+         inline bool is_vector_arithmetic_operation(const details::operator_type& operation, expression_node_ptr (&branch)[2]) const
          {
             if (!is_ivector_node(branch[0]) && !is_ivector_node(branch[1]))
                return false;
@@ -27666,6 +27639,8 @@ namespace exprtk
             }
             else if (details::is_vector_elem_node(branch[0]))
             {
+               lodge_assignment(e_st_vecelem,branch[0]);
+
                switch (operation)
                {
                   #define case_stmt(op0,op1)                                                                            \
@@ -27684,6 +27659,8 @@ namespace exprtk
             }
             else if (details::is_rebasevector_elem_node(branch[0]))
             {
+               lodge_assignment(e_st_vecelem,branch[0]);
+
                switch (operation)
                {
                   #define case_stmt(op0,op1)                                                                                  \
@@ -27702,6 +27679,8 @@ namespace exprtk
             }
             else if (details::is_rebasevector_celem_node(branch[0]))
             {
+               lodge_assignment(e_st_vecelem,branch[0]);
+
                switch (operation)
                {
                   #define case_stmt(op0,op1)                                                                                   \
@@ -36290,8 +36269,8 @@ namespace exprtk
          {
             static const T lower_bound = T(-20);
             static const T upper_bound = T(+20);
+            static const T delta       = T(0.1);
 
-            T delta = T(0.1);
             T total = T(0);
 
             for (x = lower_bound; x <= upper_bound; x += delta)
@@ -36315,7 +36294,7 @@ namespace exprtk
       {
          for (std::size_t i = 0; i < 10000; ++i)
          {
-            T v = T(123.456 + i);
+            const T v = T(123.456 + i);
 
             if (details::is_true(details::numeric::nequal(details::numeric::fast_exp<T, 1>::result(v),details::numeric::pow(v,T( 1)))))
                return false;
@@ -37877,7 +37856,7 @@ namespace exprtk
 
          if ((1 == ps_index) && !helper::load_vector_range<T>::process(parameters, r0, r1, 3, 4, 1))
             return std::numeric_limits<T>::quiet_NaN();
-         else if (helper::invalid_range(y,r0,r1))
+         else if (helper::invalid_range(y, r0, r1))
             return std::numeric_limits<T>::quiet_NaN();
 
          T a = scalar_t(parameters[0])();
@@ -37924,7 +37903,7 @@ namespace exprtk
 
          if ((1 == ps_index) && !helper::load_vector_range<T>::process(parameters, r0, r1, 4, 5, 1))
             return std::numeric_limits<T>::quiet_NaN();
-         else if (helper::invalid_range(y,r0,r1))
+         else if (helper::invalid_range(y, r0, r1))
             return std::numeric_limits<T>::quiet_NaN();
 
          const T a = scalar_t(parameters[0])();
@@ -37973,9 +37952,9 @@ namespace exprtk
 
          if ((1 == ps_index) && !helper::load_vector_range<T>::process(parameters, r0, r1, 3, 4, 1))
             return std::numeric_limits<T>::quiet_NaN();
-         else if (helper::invalid_range(y,r0,r1))
+         else if (helper::invalid_range(y, r0, r1))
             return std::numeric_limits<T>::quiet_NaN();
-         else if (helper::invalid_range(z,r0,r1))
+         else if (helper::invalid_range(z, r0, r1))
             return std::numeric_limits<T>::quiet_NaN();
 
          T a = scalar_t(parameters[0])();
@@ -38023,9 +38002,9 @@ namespace exprtk
 
          if ((1 == ps_index) && !helper::load_vector_range<T>::process(parameters, r0, r1, 4, 5, 1))
             return std::numeric_limits<T>::quiet_NaN();
-         else if (helper::invalid_range(y,r0,r1))
+         else if (helper::invalid_range(y, r0, r1))
             return std::numeric_limits<T>::quiet_NaN();
-         else if (helper::invalid_range(z,r0,r1))
+         else if (helper::invalid_range(z, r0, r1))
             return std::numeric_limits<T>::quiet_NaN();
 
          const T a = scalar_t(parameters[0])();
@@ -38073,7 +38052,7 @@ namespace exprtk
 
          if ((1 == ps_index) && !helper::load_vector_range<T>::process(parameters, r0, r1, 4, 5, 1))
             return std::numeric_limits<T>::quiet_NaN();
-         else if (helper::invalid_range(z,r0,r1))
+         else if (helper::invalid_range(z, r0, r1))
             return std::numeric_limits<T>::quiet_NaN();
 
          const T a = scalar_t(parameters[0])();
@@ -38120,7 +38099,7 @@ namespace exprtk
 
          if ((1 == ps_index) && !helper::load_vector_range<T>::process(parameters, r0, r1, 2, 3, 0))
             return std::numeric_limits<T>::quiet_NaN();
-         else if (helper::invalid_range(y,r0,r1))
+         else if (helper::invalid_range(y, r0, r1))
             return std::numeric_limits<T>::quiet_NaN();
 
          T result = T(0);
@@ -38166,7 +38145,7 @@ namespace exprtk
 
          if ((1 == ps_index) && !helper::load_vector_range<T>::process(parameters, r0, r1, 2, 3, 0))
             return std::numeric_limits<T>::quiet_NaN();
-         else if (helper::invalid_range(y,r0,r1))
+         else if (helper::invalid_range(y, r0, r1))
             return std::numeric_limits<T>::quiet_NaN();
 
          T result = T(0);
@@ -38256,9 +38235,9 @@ namespace exprtk
    namespace information
    {
       static const char* library = "Mathematical Expression Toolkit";
-      static const char* version = "2.71828182845904523536028747135266249775724709369"
-                                   "9959574966967627724076630353547594571382178525166";
-      static const char* date    = "20180101";
+      static const char* version = "2.718281828459045235360287471352662497757247093699"
+                                   "95957496696762772407663035354759457138217852516642";
+      static const char* date    = "20180913";
 
       static inline std::string data()
       {
