@@ -3,11 +3,14 @@
 PortSystem      1.0
 
 PortGroup       compiler_blacklist_versions 1.0
+PortGroup       conflicts_build 1.0
 PortGroup       muniversal 1.0
-PortGroup       snowleopard_fixes 1.0
+PortGroup       legacysupport 1.0
+PortGroup       active_variants 1.1
 
 name            gnutls
-version         3.5.19
+version         3.6.6
+revision        1
 set branch      [join [lrange [split ${version} .] 0 1] .]
 categories      devel security
 # yes, some of the libs are GPL only
@@ -26,14 +29,21 @@ long_description \
 master_sites    https://www.gnupg.org/ftp/gcrypt/gnutls/v${branch}/ \
                 http://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
-checksums       rmd160  5fc41c32d875395d4b27ce07837b0b59e69821bd \
-                sha256  1936eb64f03aaefd6eb16cef0567457777618573826b94d03376bb6a4afadc44 \
-                size    7239744
+checksums       rmd160  b83342901fc4d0f597d4d97e1d853431a27cc162 \
+                sha256  bb9acab8af2ac430edf45faaaa4ed2c51f86e57cb57689be6701aceef4732ca7 \
+                size    8257612
 
 use_xz          yes
 
+# see: https://trac.macports.org/ticket/57958 for autoconf-archive
+# see: https://trac.macports.org/ticket/57893
+# and https://github.com/macports/macports-ports/pull/3379 for autogen
+conflicts_build autoconf-archive \
+                autogen
+
 depends_build-append \
                 port:gettext \
+                port:gtk-doc \
                 port:pkgconfig
 
 depends_lib-append \
@@ -134,12 +144,41 @@ post-destroot {
 
 platform darwin 8 {
     depends_build-append   port:texinfo
+    configure.cppflags-append -D__WORDSIZE=32
 }
 
 if { ${build_arch} eq "i386" || ${build_arch} eq "x86_64" } {
     compiler.blacklist-append *gcc-4.0
     compiler.blacklist-append *gcc-4.2
     compiler.blacklist-append {clang < 400}
+}
+
+# needs a TLS supporting compiler on older systems
+# most of this code can disappear once the new compilers selection logic comes into base
+platform darwin powerpc {
+    compiler.whitelist macports-gcc-6
+    universal_variant no
+}
+platform darwin i386 {
+    if {${os.major} < 9} {
+        compiler.whitelist macports-gcc-6
+        universal_variant no
+    } elseif {${os.major} < 11} {
+        compiler.whitelist macports-clang-5.0
+        if {[file exists ${prefix}/bin/clang-mp-5.0]} {
+            if {[active_variants clang-5.0 emulated_tls]} {
+                # needs to use a newer NM version to handle clang-5.0's objects on leopard
+                if {${os.major} < 10} {
+                    depends_build-append port:cctools
+                    configure.env-append NM=${prefix}/bin/nm
+                    configure.args-append lt_cv_path_NM=${prefix}/bin/nm
+                }
+            } else {
+                ui_error "Please install clang-5.0 first, with the emulated_tls variant enabled."
+                error "unsupported configuration"
+            }
+        }
+    }
 }
 
 livecheck.type  regex

@@ -6,12 +6,12 @@ PortGroup           muniversal 1.0
 PortGroup           cmake 1.1
 
 name                x265
-version             2.8
-revision            1
+version             3.0
+revision            0
 
-checksums           rmd160  547adcf4886f9ae60c115b5da21ff12f6c718b8d \
-                    sha256  6e59f9afc0c2b87a46f98e33b5159d56ffb3558a49d8e3d79cb7fdc6b7aaa863 \
-                    size    1379551
+checksums           rmd160  6f866d290f0df0356f5a10a898fedf64fda53f0f \
+                    sha256  c5b9fc260cabbc4a81561a448f4ce9cad7218272b4011feabc3a6b751b2f0662 \
+                    size    1398519
 
 categories          multimedia
 platforms           darwin
@@ -29,6 +29,7 @@ distname            ${name}_${version}
 worksrcdir          ${distname}/source
 
 depends_build-append \
+                    port:gmake \
                     port:nasm
 
 compiler.blacklist  *llvm-gcc-4.2

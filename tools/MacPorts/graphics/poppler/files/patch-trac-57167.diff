@@ -1,0 +1,14 @@
+diff --git CMakeLists.txt CMakeLists.txt
+index 88a53c47..26cefd28 100644
+--- CMakeLists.txt
++++ CMakeLists.txt
+@@ -1,7 +1,7 @@
+-project(poppler)
+-
+ cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
+ 
++project(poppler)
++
+ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
+ 
+ include(PopplerDefaults)

@@ -155,7 +155,7 @@ To install the [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic) set of
 also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):
 
-    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig
+    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig
 
 ### Installing manually (outside of MacPorts or homebrew) a patched Qt to avoid stack overflows
 
@@ -225,18 +225,22 @@ boost: INCLUDEPATH += /opt/local/include
 boost-serialization-lib: LIBS += -lboost_serialization-mt
 boost: LIBS += -L/opt/local/lib -lboost_thread-mt -lboost_system-mt
 macx:openmp {
-  QMAKE_CC=/opt/local/bin/clang-mp-6.0
-  QMAKE_CXX=/opt/local/bin/clang++-mp-6.0
+  QMAKE_CC=/opt/local/bin/clang-mp-7.0
+  QMAKE_CXX=/opt/local/bin/clang++-mp-7.0
   QMAKE_OBJECTIVE_CC=$$QMAKE_CC -stdlib=libc++
   QMAKE_LINK=$$QMAKE_CXX
   
   INCLUDEPATH += /opt/local/include/libomp
   LIBS += -L/opt/local/lib/libomp -liomp5
   cc_setting.name = CC
-  cc_setting.value = /opt/local/bin/clang-mp-6.0
+  cc_setting.value = /opt/local/bin/clang-mp-7.0
   cxx_setting.name = CXX
-  cxx_setting.value = /opt/local/bin/clang++-mp-6.0
-  QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting
+  cxx_setting.value = /opt/local/bin/clang++-mp-7.0
+  ld_setting.name = LD
+  ld_setting.value = /opt/local/bin/clang-mp-7.0
+  ldplusplus_setting.name = LDPLUSPLUS
+  ldplusplus_setting.value = /opt/local/bin/clang++-mp-7.0
+  QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting ld_setting ldplusplus_setting
   QMAKE_FLAGS = "-B /usr/bin"
 
   # clang (as of 5.0) does not yet support index-while-building functionality
@@ -271,7 +275,11 @@ macx:openmp {
   cc_setting.value = /usr/local/opt/llvm/bin/clang
   cxx_setting.name = CXX
   cxx_setting.value = /usr/local/opt/llvm/bin/clang++
-  QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting
+  ld_setting.name = LD
+  ld_setting.value = /usr/local/opt/llvm/bin/clang
+  ldplusplus_setting.name = LDPLUSPLUS
+  ldplusplus_setting.value = /usr/local/opt/llvm/bin/clang++
+  QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting ld_setting ldplusplus_setting
   QMAKE_FLAGS = "-B /usr/bin"
 
   # clang (as of 5.0) does not yet support index-while-building functionality

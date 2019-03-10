@@ -7,7 +7,7 @@ PortGroup compiler_blacklist_versions 1.0
 name                gcc5
 epoch               2
 version             5.5.0
-revision            1
+revision            4
 platforms           darwin
 categories          lang
 maintainers         nomaintainer
@@ -49,9 +49,9 @@ checksums           ${distname}${extract.suffix} \
 
 depends_lib         port:cctools \
                     port:gmp \
-                    path:lib/pkgconfig/isl.pc:isl \
+                    port:isl18 \
                     port:ld64 \
-                    path:lib/libgcc/libgcc_s.1.dylib:libgcc \
+                    port:zlib \
                     port:libiconv \
                     port:libmpc \
                     port:mpfr
@@ -70,6 +70,12 @@ patchfiles-append   gcj-libiconv-linkage.patch
 
 # work around bug in 10.13 headers
 patchfiles-append   headers-10.13-fix.patch
+
+# See https://trac.macports.org/ticket/53662 for a similar issue
+patchfiles-append   patch-libisl.diff
+post-extract {
+    ln -s ${prefix}/libexec/isl18/include/isl ${worksrcpath}/gcc
+}
 
 set major           [lindex [split ${version} .-] 0]
 
@@ -104,7 +110,7 @@ configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
                     --with-gmp=${prefix} \
                     --with-mpfr=${prefix} \
                     --with-mpc=${prefix} \
-                    --with-isl=${prefix} \
+                    --with-isl=${prefix}/libexec/isl18 \
                     --enable-stage1-checking \
                     --disable-multilib \
                     --enable-lto \

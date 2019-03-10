@@ -3,7 +3,12 @@
 PortSystem              1.0
 
 name                    webp
-version                 1.0.0
+version                 1.0.2
+revision                0
+checksums               rmd160  71858bc4e858917f84278be9ab8b9808f0aca9cc \
+                        sha256  3d47b48c40ed6476e8047b2ddb81d93835e0ca1b8d3e8c679afbb3004dd564b1 \
+                        size    4036397
+
 categories              graphics science devel
 platforms               darwin
 maintainers             {ryandesign @ryandesign} openmaintainer
@@ -26,10 +31,6 @@ long_description        WebP is a new image format that provides lossy \
 
 homepage                https://developers.google.com/speed/webp/
 master_sites            http://downloads.webmproject.org/releases/webp/
-
-checksums               rmd160  ede348e5f06913f1b876e7704ea626807f637755 \
-                        sha256  84259c4388f18637af3c5a6361536d754a5394492f91be1abc2e981d4983225b \
-                        size    4023549
 
 depends_lib             port:giflib \
                         port:jpeg \

@@ -1,10 +1,10 @@
 --- IlmImf/ImfSystemSpecific.h.orig	2016-05-22 21:41:02.000000000 -0700
 +++ IlmImf/ImfSystemSpecific.h	2016-05-22 21:42:42.000000000 -0700
-@@ -54,7 +54,7 @@ static bool GLOBAL_SYSTEM_LITTLE_ENDIAN 
+@@ -54,7 +54,7 @@
  
  #ifdef IMF_HAVE_SSE2
  
--#ifdef __GNUC__
+-#if defined(__GNUC__)
 +#if defined(__GNUC__) && (!defined(__APPLE__) || __MAC_OS_X_VERSION_MIN_REQUIRED >= 1060)
  // Causes issues on certain gcc versions
  //#define EXR_FORCEINLINE inline __attribute__((always_inline))

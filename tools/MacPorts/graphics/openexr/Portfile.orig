@@ -1,9 +1,12 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 PortSystem 1.0
+PortGroup       compiler_blacklist_versions 1.0
+PortGroup       github 1.0
+PortGroup       cxx11  1.1
 
-name            openexr
-version         2.2.1
+github.setup    openexr openexr 2.3.0 v
+revision        1
 categories      graphics
 license         BSD
 maintainers     {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
@@ -13,16 +16,16 @@ long_description \
     by Industrial Light & Magic for use in computer imaging applications.
 homepage        http://www.openexr.com
 platforms       darwin
-master_sites    https://savannah.nongnu.org/download/openexr
-checksums       rmd160  eb2fbbefe1399d87a4a60807cb7386ed3b300eaa \
-                sha256  8f9a5af6131583404261931d9a5c83de0a425cb4b8b25ddab2b169fbf113aecd \
-                size    18176639
+github.tarball_from releases
 
-# avoid dependency on port:cctools
+depends_build-append port:cctools
 configure.env-append NM=${prefix}/bin/nm
 
 # avoid dependency on port:grep
 configure.env-append GREP=/usr/bin/grep
+
+# C++14
+compiler.blacklist-append {clang < 602}
 
 if {${subport} ne "ilmbase"} {
     depends_build-append port:pkgconfig
@@ -31,7 +34,14 @@ if {${subport} ne "ilmbase"} {
 if {${subport} eq ${name}} {
     #revision 0
 
-    depends_lib-append port:ilmbase
+    checksums \
+        rmd160  3444fe1aa647be9ab2e6ea1638e27ea97c3f6688 \
+        sha256  fd6cb3a87f8c1a233be17b94c74799e6241d50fc5efd4df75c7a4b9cf4e25ea6 \
+        size    18412067
+
+    depends_lib-append \
+        port:ilmbase \
+        port:zlib
 
     # ImfCompressor.h is included in other header files
     # see #49965
@@ -50,14 +60,6 @@ if {${subport} eq ${name}} {
     patchfiles-append patch-search_order.diff
     configure.ldflags-delete -L${prefix}/lib
 
-    # see #51470 for MacPorts report
-    # see https://github.com/openexr/openexr/pull/126 for upstream report
-    # see
-    #    https://github.com/openexr/openexr/commit/353cbc2e89c582e07796f01bce8f203e84c8ae46
-    #    https://github.com/openexr/openexr/commit/57ecf581d053f5cacf2e8fc3c024490e0bbe536f
-    #    for upstream fix
-    patchfiles-append patch-64bit_types.diff
-
     # avoid "can't find a register in class 'BREG' while reloading 'asm'
     # see #51470 for MacPorts report
     # see https://github.com/openexr/openexr/issues/128 for upstream report
@@ -69,26 +71,24 @@ if {${subport} eq ${name}} {
 subport ilmbase {
     #revision    0
     distname    ilmbase-${version}
-    checksums   \
-        rmd160  0abe57b5c8a82e20be500a490d335816f654625c \
-        sha256  cac206e63be68136ef556c2b555df659f45098c159ce24804e9d5e9e0286609e \
-        size    573073
+    checksums   rmd160  bd60ebfdc114e186db87f8c8b92c4f031b17e0d9 \
+                sha256  456978d1a978a5f823c7c675f3f36b0ae14dba36638aeaa3c4b0e784f12a3862 \
+                size    595490
 
     # Bitrotted ucontext usage is buggy, don't bother with it.
     patchfiles-append patch-configure.diff
 }
 
-set python_versions {27 34 35}
+set python_versions {27 34 35 36 37}
 
 foreach pver ${python_versions} {
     subport py${pver}-pyilmbase {
         PortGroup   active_variants 1.1
         #revision    0
         distname    pyilmbase-${version}
-        checksums                \
-            rmd160  85bc89933a8ccd1c0866256d1a32b3dd95e7605c \
-            sha256  613912a92ccb4073d448f4615eb29b454025a2f5fea1c01bf14f9ac7be71726d \
-            size    497218
+        checksums   rmd160  127329978f2fd5793a267d1c7c46d5514d1d46b7 \
+                    sha256  9c898bb16e7bc916c82bebdf32c343c0f2878fc3eacbafa49937e78f2079a425 \
+                    size    524975
 
         # so long as boost can only be installed with one version of python at a time,
         #    conflict with all other pyilmbase ports
@@ -98,13 +98,19 @@ foreach pver ${python_versions} {
             }
         }
 
-        configure.args-append   \
-            --with-boost-python-libname=boost_python-mt
+        if {${pver} >= 30} {
+            configure.args-append   \
+                --with-boost-python-libname=boost_python3-mt
+        } else {
+            configure.args-append   \
+                --with-boost-python-libname=boost_python-mt
+        }
 
         set pbranch [string range ${pver} 0 end-1].[string index ${pver} end]
         configure.python ${prefix}/bin/python${pbranch}
 
         depends_lib-append     \
+            port:zlib          \
             port:ilmbase       \
             port:python${pver} \
             port:boost         \
@@ -117,9 +123,9 @@ foreach pver ${python_versions} {
 subport openexr_viewers {
     #revision    0
     distname    openexr_viewers-${version}
-    checksums   rmd160  df9c5971a4401394f3fb3a8e33a0c2412fac1b48 \
-                sha256  486e11de8c87582b8180c77fc9b28431d007025072ae018fd33b932b1717bdc7 \
-                size    515124
+    checksums   rmd160  cf8cebf8075959db7539cc1f2858b1177b9b8c3e \
+                sha256  9b8a6abebfda17586ef7e5fea9ba8e87a3cc688676681ef306b445c3f4034175 \
+                size    532154
 
     depends_lib-append  \
         port:openexr                \

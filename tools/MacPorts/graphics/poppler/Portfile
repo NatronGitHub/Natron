@@ -1,13 +1,16 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
 
 PortSystem          1.0
+PortGroup           compiler_blacklist_versions 1.0
+PortGroup           conflicts_build 1.0
 PortGroup           cxx11 1.1
 PortGroup           gobject_introspection 1.0
 PortGroup           cmake 1.1
+PortGroup           legacysupport 1.0
 
 name                poppler
 conflicts           xpdf-tools
-version             0.66.0
+version             0.74.0
 license             GPL-2+
 maintainers         {devans @dbevans} openmaintainer
 categories          graphics
@@ -21,9 +24,9 @@ master_sites        ${homepage}
 
 use_xz              yes
 
-checksums           rmd160  2a0da566c0bbed653fccac91be1031bcf553be63 \
-                    sha256  2c096431adfb74bc2f53be466889b7646e1b599f28fa036094f3f7235cc9eae7 \
-                    size    1457420
+checksums           rmd160  a50bb9ec9522f5ddf70907e0bbed1bbee10372ad \
+                    sha256  92e09fd3302567fd36146b36bb707db43ce436e8841219025a82ea9fb0076b2f \
+                    size    1514044
 
 depends_build-append \
                     port:pkgconfig
@@ -46,13 +49,19 @@ depends_lib-append  port:bzip2 \
 
 configure.ldflags-append -liconv
 gobject_introspection yes
-configure.cxxflags-append -std=c++11
+
+# C++14, thread_local
+configure.cxxflags-append -std=c++14
+compiler.blacklist-append {clang < 800.0.38}
 
 # https://bugs.freedesktop.org/show_bug.cgi?id=106417
 patchfiles-append   patch-bug106417.diff
 
+# https://trac.macports.org/ticket/57167
+patchfiles-append   patch-trac-57167.diff
+  
 configure.args-append \
-                    -DENABLE_XPDF_HEADERS=ON \
+                    -DENABLE_UNSTABLE_API_ABI_HEADERS=ON \
                     -DENABLE_QT5=OFF \
                     -DBUILD_GTK_TESTS=OFF \
                     -DBUILD_QT5_TESTS=OFF \
@@ -63,6 +72,7 @@ subport poppler-qt5 {
     PortGroup qt5 1.0
 
     patchfiles-append       patch-qt5-106118.diff
+
     configure.env-append    MOCQT5=${qt_bins_dir}/moc
     configure.args-delete   -DENABLE_QT5=OFF
     configure.args-delete   -DENABLE_XPDF_HEADERS=ON
@@ -88,7 +98,8 @@ if {${subport} ne ${name}} {
 # currently poppler only provides unit tests for the Qt wrappers
 
     test.run    yes
-    test.target check
+    test.dir    test
+    test.target test
 
     post-destroot {
         foreach dot_h [glob -nocomplain -directory ${destroot}${prefix}/include/poppler *.h] {
@@ -103,6 +114,10 @@ if {${subport} ne ${name}} {
                 ${destroot}${prefix}/lib/pkgconfig/poppler-splash.pc \
                 ${destroot}${prefix}/lib/pkgconfig/poppler.pc
     }
+} else {
+    # generation of Poppler-0.18.gir fails if previous version of poppler is active
+    # appropriate for main poppler port only
+    conflicts_build ${name}
 }
 
 livecheck.type      regex
