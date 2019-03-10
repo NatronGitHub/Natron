@@ -37,8 +37,8 @@ def myCallback(app):
 
 
 #Set the After Project Created/Loaded callbacks
-NatronEngine.natron.setOnProjectCreatedCallback("myCallback")
-NatronEngine.natron.setOnProjectLoadedCallback("myCallback")
+NatronEngine.natron.setOnProjectCreatedCallback("init.myCallback")
+NatronEngine.natron.setOnProjectLoadedCallback("init.myCallback")
 
 #Add this path to the Natron search paths so that our PyPlug can be found.
 #Note that we could also set this from the NATRON_PLUGIN_PATH environment variable
