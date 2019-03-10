@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -412,6 +412,7 @@ ViewerTab::refresh(bool enableRenderStats)
     app->checkAllReadersModificationDate(false);
     abortRendering();
     _imp->viewerNode->forceFullComputationOnNextFrame();
+    _imp->viewerNode->clearPersistentMessage(true); // clear the error message, since they should be redrawn by the new render
     if (!enableRenderStats) {
         _imp->viewerNode->renderCurrentFrame(true);
     } else {

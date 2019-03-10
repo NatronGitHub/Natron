@@ -1,5 +1,5 @@
 # ***** BEGIN LICENSE BLOCK *****
-# This file is part of Natron <http://www.natron.fr/>,
+# This file is part of Natron <https://natrongithub.github.io/>,
 # Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
 #
 # Natron is free software: you can redistribute it and/or modify
@@ -21,7 +21,7 @@ TARGET = Natron
 # the list of currently maintained versions (those that have to be merged into the master branch)
 VERSION_21 = 2.1.10
 VERSION_22 = 2.2.10
-VERSION_23 = 2.3.14
+VERSION_23 = 2.3.15
 VERSION_30 = 3.0.0
 
 # The version for this branch

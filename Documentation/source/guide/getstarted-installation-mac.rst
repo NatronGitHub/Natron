@@ -26,7 +26,7 @@ Requirements
 Download
 --------
 
-Navigate to http://natron.fr/download and download the latest version.
+Navigate to https://natrongithub.github.io/#download and download the latest version.
 
 .. image:: _images/mac_install_01.png
    :width: 40%

@@ -3,37 +3,27 @@
 G’MIC Blend fade node
 =====================
 
-*This documentation is for version 0.3 of G’MIC Blend fade.*
+*This documentation is for version 1.0 of G’MIC Blend fade.*
 
 Description
 -----------
 
-The parameters below are used in most presets.
-
-The formula below is used for the Custom preset.
-
-Note:
-
-This filter needs two layers to work properly. Set the Input layers option to handle multiple input layers.
-
-Author: David Tschumperle. Latest update: 2013/21/01.
-
-Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
+Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
 ------
 
-+-----------+-------------+----------+
-| Input     | Description | Optional |
-+===========+=============+==========+
-| Input     |             | No       |
-+-----------+-------------+----------+
-| Ext. In 1 |             | Yes      |
-+-----------+-------------+----------+
-| Ext. In 2 |             | Yes      |
-+-----------+-------------+----------+
-| Ext. In 3 |             | Yes      |
-+-----------+-------------+----------+
++----------+-------------+----------+
+| Input    | Description | Optional |
++==========+=============+==========+
+| Source   |             | No       |
++----------+-------------+----------+
+| Layer -1 |             | Yes      |
++----------+-------------+----------+
+| Layer -2 |             | Yes      |
++----------+-------------+----------+
+| Layer -3 |             | Yes      |
++----------+-------------+----------+
 
 Controls
 --------
@@ -78,15 +68,15 @@ Controls
 | Output Layer / ``Output_Layer``    | Choice  | Layer 0                        | |                     |
 |                                    |         |                                | | **Merged**          |
 |                                    |         |                                | | **Layer 0**         |
-|                                    |         |                                | | **Layer 1**         |
-|                                    |         |                                | | **Layer 2**         |
-|                                    |         |                                | | **Layer 3**         |
-|                                    |         |                                | | **Layer 4**         |
-|                                    |         |                                | | **Layer 5**         |
-|                                    |         |                                | | **Layer 6**         |
-|                                    |         |                                | | **Layer 7**         |
-|                                    |         |                                | | **Layer 8**         |
-|                                    |         |                                | | **Layer 9**         |
+|                                    |         |                                | | **Layer -1**        |
+|                                    |         |                                | | **Layer -2**        |
+|                                    |         |                                | | **Layer -3**        |
+|                                    |         |                                | | **Layer -4**        |
+|                                    |         |                                | | **Layer -5**        |
+|                                    |         |                                | | **Layer -6**        |
+|                                    |         |                                | | **Layer -7**        |
+|                                    |         |                                | | **Layer -8**        |
+|                                    |         |                                | | **Layer -9**        |
 +------------------------------------+---------+--------------------------------+-----------------------+
 | Resize Mode / ``Resize_Mode``      | Choice  | Dynamic                        | |                     |
 |                                    |         |                                | | **Fixed (Inplace)** |

@@ -248,7 +248,13 @@ if [ "$BUILD_MISC" = "1" ]; then
             CMAKE_LDFLAGS="-static -Wl,--build-id"
         fi
         rm ../DenoiseSharpen/DenoiseWavelet.cpp || true
-        env CXX="$CXX" LDFLAGS="$CMAKE_LDFLAGS" cmake .. ${MSYS:-} -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX="$TMP_BINARIES_PATH" -DBITS="${BITS}" -DUSE_OSMESA=1 -DOSMESA_INCLUDES="${OSMESA_PATH}/include" -DOSMESA_LIBRARIES="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" ${UNIVERSAL:-}
+        OMP=""
+        #if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
+        #    # compile DenoiseSharpen with OpenMP support
+        #    # see https://discuss.pixls.us/t/denoisesharpen-filter-is-crashing-natron/8564/2
+        #    OMP="OPENMP=1"
+        #fi
+        env CXX="$CXX" LDFLAGS="$CMAKE_LDFLAGS" cmake .. ${MSYS:-} -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX="$TMP_BINARIES_PATH" -DBITS="${BITS}" -DUSE_OSMESA=1 -DOSMESA_INCLUDES="${OSMESA_PATH}/include" -DOSMESA_LIBRARIES="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" ${UNIVERSAL:-} ${OMP:-}
         make -j"${MKJOBS}"
         make install
     else
