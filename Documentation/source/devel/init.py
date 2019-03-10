@@ -30,9 +30,20 @@ def afterNodeCreatedCallback(thisNode, app, userEdited):
 def setNodeDefaults(app):
     app.afterNodeCreated.set("afterNodeCreatedCallback")
 
+    
+def setProjectDefaults(app):
+    app.getProjectParam('autoPreviews').setValue(False)
+    app.getProjectParam('outputFormat').setValue("2k_185")
+    app.getProjectParam('frameRate').setValue(24)
+    app.getProjectParam('frameRange').setValue(1, 0)
+    app.getProjectParam('frameRange').setValue(30, 1)
+    app.getProjectParam('lockRange').setValue(True)
+
+
 def myCallback(app):
     addFormats(app)
     setNodeDefaults(app)
+    setProjectDefaults(app)
 
 
 
