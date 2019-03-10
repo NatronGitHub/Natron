@@ -1,6 +1,6 @@
---- configure.ac.orig	2012-09-22 09:05:24.000000000 -0700
-+++ configure.ac	2014-05-25 07:13:21.000000000 -0700
-@@ -288,13 +288,13 @@
+--- configure.ac.orig	2018-11-10 09:05:43.000000000 -0600
++++ configure.ac	2018-11-12 11:12:44.000000000 -0600
+@@ -282,13 +282,13 @@
  AC_MSG_CHECKING(for signed 64-bit type)
  INT64_T='none'
  INT64_FORMAT='none'
@@ -18,7 +18,7 @@
    case "${host_os}" in
      mingw32*)
        # MinGW32 understands 'long long', but uses printf from WIN32 CRT
-@@ -314,13 +314,13 @@
+@@ -308,13 +308,13 @@
  AC_MSG_CHECKING(for unsigned 64-bit type)
  UINT64_T='none'
  UINT64_FORMAT='none'
@@ -36,7 +36,7 @@
    case "${host_os}" in
      mingw32*)
        # MinGW32 understands 'unsigned long long', but uses printf from WIN32 CRT
-@@ -893,7 +893,7 @@
+@@ -988,7 +988,7 @@
  dnl AX_CHECK_GLUT sets GLUT_CFLAGS & GLUT_LIBS
  AX_CHECK_GLUT
  

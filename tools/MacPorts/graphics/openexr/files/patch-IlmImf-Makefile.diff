@@ -1,6 +1,6 @@
 --- IlmImf/Makefile.am.orig	2016-01-27 22:22:38.000000000 +0100
 +++ IlmImf/Makefile.am	2016-01-27 22:26:22.000000000 +0100
-@@ -136,6 +136,7 @@
+@@ -137,6 +137,7 @@
  			   ImfTiledOutputFile.h ImfTiledRgbaFile.h \
  			   ImfRgbaYca.h \
  			   ImfTestFile.h ImfThreading.h \
@@ -8,7 +8,7 @@
  			   ImfB44Compressor.h ImfStringVectorAttribute.h \
  			   ImfMultiView.h \
  			   ImfAcesFile.h \
-@@ -164,8 +165,7 @@
+@@ -165,8 +166,7 @@
  			   ImfDeepImageState.h \
  			   ImfDeepImageStateAttribute.h
  
@@ -20,7 +20,7 @@
  		 ImfDwaCompressor.h \
 --- IlmImf/Makefile.in.orig	2016-01-27 22:22:44.000000000 +0100
 +++ IlmImf/Makefile.in	2016-01-27 22:26:26.000000000 +0100
-@@ -523,6 +523,7 @@
+@@ -532,6 +532,7 @@
  			   ImfTiledOutputFile.h ImfTiledRgbaFile.h \
  			   ImfRgbaYca.h \
  			   ImfTestFile.h ImfThreading.h \
@@ -28,7 +28,7 @@
  			   ImfB44Compressor.h ImfStringVectorAttribute.h \
  			   ImfMultiView.h \
  			   ImfAcesFile.h \
-@@ -551,8 +552,7 @@
+@@ -560,8 +561,7 @@
  			   ImfDeepImageState.h \
  			   ImfDeepImageStateAttribute.h
  

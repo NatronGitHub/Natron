@@ -10,6 +10,7 @@ PortGroup                   conflicts_build 1.0
 
 name                        ImageMagick
 version                     6.9.9-40
+revision                    5
 set reasonable_version      [lindex [split ${version} -] 0]
 homepage                    http://www.imagemagick.org/
 categories                  graphics devel

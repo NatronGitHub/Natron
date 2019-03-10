@@ -1,6 +1,6 @@
---- build/make/configure.sh.orig	2018-02-06 19:44:37.000000000 -0800
-+++ build/make/configure.sh	2018-02-07 05:49:18.000000000 -0800
-@@ -729,33 +729,9 @@
+--- build/make/configure.sh.orig	2019-02-09 23:18:41.000000000 -0800
++++ build/make/configure.sh	2019-02-09 23:29:38.000000000 -0800
+@@ -770,37 +770,9 @@
  
      # detect tgt_os
      case "$gcctarget" in
@@ -32,11 +32,15 @@
 -      *darwin16*)
 -        tgt_isa=x86_64
 -        tgt_os=darwin16
+-        ;;
+-      *darwin17*)
+-        tgt_isa=x86_64
+-        tgt_os=darwin17
 +        tgt_os=darwin
          ;;
        x86_64*mingw32*)
          tgt_os=win64
-@@ -848,54 +824,6 @@
+@@ -893,58 +865,6 @@
        ;;
    esac
  
@@ -76,6 +80,10 @@
 -    *-darwin16-*)
 -      add_cflags  "-mmacosx-version-min=10.12"
 -      add_ldflags "-mmacosx-version-min=10.12"
+-      ;;
+-    *-darwin17-*)
+-      add_cflags  "-mmacosx-version-min=10.13"
+-      add_ldflags "-mmacosx-version-min=10.13"
 -      ;;
 -    *-iphonesimulator-*)
 -      add_cflags  "-miphoneos-version-min=${IOS_VERSION_MIN}"

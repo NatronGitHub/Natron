@@ -7,12 +7,12 @@ set name_mysql      ${name}
 version             5.5.57
 set version_branch  [join [lrange [split ${version} .] 0 1] .]
 # Please set revision_client and revision_server to 0 if you bump version.
-set revision_client 0
-set revision_server 0
+set revision_client 1
+set revision_server 1
 categories          databases
 platforms           darwin
 license             GPL-2
-maintainers         {pixilla @pixilla} openmaintainer
+maintainers         nomaintainer
 homepage            https://mariadb.org/
 
 if {$subport eq $name} {

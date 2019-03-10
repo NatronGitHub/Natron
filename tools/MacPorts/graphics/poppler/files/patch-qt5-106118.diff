@@ -1,6 +1,6 @@
 --- qt5/src/ArthurOutputDev.cc.orig	2018-05-15 16:27:29.000000000 -0700
 +++ qt5/src/ArthurOutputDev.cc	2018-05-15 16:27:44.000000000 -0700
-@@ -60,6 +60,7 @@
+@@ -62,6 +62,7 @@
  #include <QGlyphRun>
  #include <QtGui/QPainterPath>
  #include <QPicture>

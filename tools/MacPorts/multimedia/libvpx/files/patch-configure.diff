@@ -8,7 +8,7 @@
  all_platforms="${all_platforms} x86-darwin8-gcc"
  all_platforms="${all_platforms} x86-darwin8-icc"
  all_platforms="${all_platforms} x86-darwin9-gcc"
-@@ -141,6 +142,7 @@
+@@ -139,6 +140,7 @@
  all_platforms="${all_platforms} x86-win32-vs14"
  all_platforms="${all_platforms} x86-win32-vs15"
  all_platforms="${all_platforms} x86_64-android-gcc"
