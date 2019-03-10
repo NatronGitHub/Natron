@@ -7,6 +7,7 @@
 
 ## Version 2.3.15
 
+- Inputs of the selected nodes are now always visible
 
 ## Version 2.3.14
 
