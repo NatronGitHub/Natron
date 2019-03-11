@@ -5,47 +5,47 @@
 _realname=ffmpeg
 pkgbase="mingw-w64-${_realname}-lgpl"
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-lgpl"
-pkgver=4.0.2
+pkgver=4.1.1
 pkgrel=1
 pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
 arch=('any')
 url="https://ffmpeg.org/"
 license=('GPL')
 options=('staticlibs' 'strip')
-depends=(
-        "${MINGW_PACKAGE_PREFIX}-bzip2"
-        "${MINGW_PACKAGE_PREFIX}-celt"
-        "${MINGW_PACKAGE_PREFIX}-fontconfig"
-        "${MINGW_PACKAGE_PREFIX}-gnutls"
-        "${MINGW_PACKAGE_PREFIX}-gsm"
-        "${MINGW_PACKAGE_PREFIX}-lame"
-        "${MINGW_PACKAGE_PREFIX}-libass"
-        "${MINGW_PACKAGE_PREFIX}-libbluray"
-        "${MINGW_PACKAGE_PREFIX}-libcaca"
-        "${MINGW_PACKAGE_PREFIX}-libmodplug"
-        "${MINGW_PACKAGE_PREFIX}-librsvg"
-        "${MINGW_PACKAGE_PREFIX}-libtheora"
-        "${MINGW_PACKAGE_PREFIX}-libvorbis"
-        "${MINGW_PACKAGE_PREFIX}-libvpx"
-        "${MINGW_PACKAGE_PREFIX}-libwebp"
-        "${MINGW_PACKAGE_PREFIX}-openal"
-        "${MINGW_PACKAGE_PREFIX}-openh264"
-        "${MINGW_PACKAGE_PREFIX}-openjpeg2"
-        "${MINGW_PACKAGE_PREFIX}-opus"
-        "${MINGW_PACKAGE_PREFIX}-rtmpdump"
-        "${MINGW_PACKAGE_PREFIX}-SDL2"
-        "${MINGW_PACKAGE_PREFIX}-snappy"
-        "${MINGW_PACKAGE_PREFIX}-speex"
-        "${MINGW_PACKAGE_PREFIX}-wavpack"
-        "${MINGW_PACKAGE_PREFIX}-zlib"
-        )
+depends=("${MINGW_PACKAGE_PREFIX}-bzip2"
+         "${MINGW_PACKAGE_PREFIX}-celt"
+         "${MINGW_PACKAGE_PREFIX}-fontconfig"
+         "${MINGW_PACKAGE_PREFIX}-gnutls"
+         "${MINGW_PACKAGE_PREFIX}-gsm"
+         "${MINGW_PACKAGE_PREFIX}-lame"
+         "${MINGW_PACKAGE_PREFIX}-libass"
+         "${MINGW_PACKAGE_PREFIX}-libbluray"
+         "${MINGW_PACKAGE_PREFIX}-libcaca"
+         "${MINGW_PACKAGE_PREFIX}-libmfx"
+         "${MINGW_PACKAGE_PREFIX}-libmodplug"
+	 "${MINGW_PACKAGE_PREFIX}-librsvg"
+         "${MINGW_PACKAGE_PREFIX}-libtheora"
+         "${MINGW_PACKAGE_PREFIX}-libvorbis"
+         "${MINGW_PACKAGE_PREFIX}-libvpx"
+         "${MINGW_PACKAGE_PREFIX}-libwebp"
+         "${MINGW_PACKAGE_PREFIX}-openal"
+	 "${MINGW_PACKAGE_PREFIX}-openh264"
+         "${MINGW_PACKAGE_PREFIX}-openjpeg2"
+         "${MINGW_PACKAGE_PREFIX}-opus"
+         "${MINGW_PACKAGE_PREFIX}-rtmpdump"
+         "${MINGW_PACKAGE_PREFIX}-SDL2"
+	 "${MINGW_PACKAGE_PREFIX}-snappy"
+         "${MINGW_PACKAGE_PREFIX}-speex"
+         "${MINGW_PACKAGE_PREFIX}-srt"
+         "${MINGW_PACKAGE_PREFIX}-wavpack"
+         "${MINGW_PACKAGE_PREFIX}-zlib")
 makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
              "${MINGW_PACKAGE_PREFIX}-nasm"
              "${MINGW_PACKAGE_PREFIX}-aom")
 source=(https://ffmpeg.org/releases/${_realname}-${pkgver}.tar.xz{,.asc})
 validpgpkeys=('FCF986EA15E6E293A5644F10B4322F04D67658D8')
-sha256sums=('a95c0cc9eb990e94031d2183f2e6e444cc61c99f6f182d1575c433d62afb2f97'
+sha256sums=('373749824dfd334d84e55dff406729edfd1606575ee44dd485d97d45ea4d2d86'
             'SKIP')
 
 prepare() {
@@ -57,6 +57,12 @@ build() {
   mkdir -p "${srcdir}/build-${MINGW_CHOST}"
   cd "${srcdir}/build-${MINGW_CHOST}"
 
+  # Fix using SRT headers
+  CFLAGS+=" -DWIN32"
+  CXXFLAGS+=" -DWIN32"
+
+  CC=${MINGW_PREFIX}/bin/gcc \
+  CXX=${MINGW_PREFIX}/bin/g++ \
   ../${_realname}-${pkgver}/configure \
     --prefix=${MINGW_PREFIX}/ffmpeg-lgpl \
     --target-os=mingw32 \
@@ -67,12 +73,14 @@ build() {
     --enable-d3d11va \
     --enable-fontconfig \
     --enable-gnutls \
+    --enable-libaom \
     --enable-libass \
     --enable-libbluray \
     --enable-libcaca \
     --enable-libcelt \
     --enable-libfreetype \
     --enable-libgsm \
+    --enable-libmfx \
     --enable-libmodplug \
     --enable-libmp3lame \
     --enable-libopenh264 \
@@ -82,6 +90,7 @@ build() {
     --enable-librtmp \
     --enable-libsnappy \
     --enable-libspeex \
+    --enable-libsrt \
     --enable-libtheora \
     --enable-libvorbis \
     --enable-libvpx \
@@ -94,7 +103,6 @@ build() {
     --enable-static \
     --enable-swresample \
     --enable-zlib \
-    --enable-libaom \
     --disable-doc
     #--enable-pthreads
 

@@ -3,8 +3,8 @@
 _realname=openimageio
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=1.8.12
-pkgrel=2
+pkgver=1.8.17
+pkgrel=1
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
 url="http://www.openimageio.org/"
@@ -32,11 +32,13 @@ depends=("${MINGW_PACKAGE_PREFIX}-boost"
 makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
              #"${MINGW_PACKAGE_PREFIX}-qt5"
              "${MINGW_PACKAGE_PREFIX}-python3"
-             "${MINGW_PACKAGE_PREFIX}-boost")
+             "${MINGW_PACKAGE_PREFIX}-boost"
+             "git")
 optdepends=(#"${MINGW_PACKAGE_PREFIX}-qt5: iv image viewer"
             "${MINGW_PACKAGE_PREFIX}-python3: bindings support")
-options=('strip' 'buildflags')
+options=('strip' 'buildflags' '!debug')
 source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archive/Release-${pkgver}.tar.gz
+        git+https://github.com/OpenImageIO/oiio-images.git
         0000-fix-mingw-w64.patch
         0000-workaround-ansidecl-h-PTR-define-conflict.patch
         0001-MinGW-w64-include-winbase-h-early-for-TCHAR-types.patch
@@ -46,8 +48,11 @@ source=(${_realname}-${pkgver}.tar.gz::https://github.com/OpenImageIO/oiio/archi
         0007-find-pugixml.patch
         0008-find-openjpeg.patch
         0009-msvcrt-dont-have-create-locale.patch
-        0010-boost-python-find-harder.patch)
-sha256sums=('93e807d7c77a5c4c12598cc7932aa08239bc4198e3e31dca0998a3e0ab163386'
+        0010-boost-python-find-harder.patch
+        0011-fix-casting.patch
+        0012-maybe-uninitialized-errors.patch)
+sha256sums=('a019086c05a6150d445a2240bab1723dff540dde5f5c327c36a97f0b5ae0e157'
+            'SKIP'
             '4787e771dbb9b794d47672a08fad3dbb0e36ac30e5c1058684437323b8238b37'
             'ab6bde02c0c05495a9cb13441535d42f4d5929bd930859d75f589d12be9a182b'
             'b7cc78d0f535ceb1aba68b11970c32ffbf04815d229b12e64e2c2c0b3403b4b2'
@@ -57,7 +62,9 @@ sha256sums=('93e807d7c77a5c4c12598cc7932aa08239bc4198e3e31dca0998a3e0ab163386'
             'b5db09ae6931dde76b94f09ce53b1684260a928d0af5920ae54520975b69d6d8'
             'c644153bd6dbca0eff5b70c0bc3241faae0eb90f1bb0cf1f502bb0553a73223e'
             'd765b49b3671e9354776e33d68fc53e88c15b2c430e592a5aeae066d02a5b0da'
-            '215e80d109ce37f60d52bd157213e3557879a8b0bc1ff6d70f435bc11b8a60a7')
+            '215e80d109ce37f60d52bd157213e3557879a8b0bc1ff6d70f435bc11b8a60a7'
+            '07a11a18356aebc314843c39bd61fc830d88f3a5cc47670dca5e6de920ca5dea'
+            '11475c00245a31bdd299bed9a5bcd4051edcd6d149fd833b6067965f20cf3312')
 
 prepare() {
   cd ${srcdir}/oiio-Release-${pkgver}
@@ -71,9 +78,18 @@ prepare() {
   patch -p1 -i ${srcdir}/0008-find-openjpeg.patch
   patch -p1 -i ${srcdir}/0009-msvcrt-dont-have-create-locale.patch
   patch -p1 -i ${srcdir}/0010-boost-python-find-harder.patch
+  patch -p1 -i ${srcdir}/0011-fix-casting.patch
+  patch -p1 -i ${srcdir}/0012-maybe-uninitialized-errors.patch
 }
 
 build() {
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
+
   [[ -d "build-${MINGW_CHOST}" ]] && rm -rf "build-${MINGW_CHOST}"
   mkdir -p build-${MINGW_CHOST} && cd build-${MINGW_CHOST}
 
@@ -92,6 +108,7 @@ build() {
     -DUSE_EXTERNAL_PUGIXML=ON \
     -DCMAKE_SHARED_LINKER_FLAGS=" -Wl,--export-all-symbols -Wl,--enable-auto-import " \
     -DOIIO_BUILD_TESTS=ON \
+    ${extra_config} \
     ../oiio-Release-${pkgver}
 
   make
