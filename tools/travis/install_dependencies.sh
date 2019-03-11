@@ -282,6 +282,15 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #echo "* Brew update"
     #brew update >/dev/null
     brew --config
+
+    # avoid error:
+    #Error: The `brew link` step did not complete successfully
+    #The formula built, but is not symlinked into /usr/local
+    #Could not symlink bin/f2py
+    # (see https://travis-ci.org/NatronGitHub/Natron/jobs/504468941)
+    brew install numpy || true
+    brew link --overwrite numpy || true
+    
     brew outdated xctool || brew upgrade xctool || true
     echo "* Adding brew taps"
     #brew tap homebrew/python # deprecated
@@ -325,8 +334,6 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # Natron's dependencies only
     # install qt-webkit@2.3 if needed
     brew install qt@4 expat cairo gnu-sed glew
-    brew install numpy || true
-    brew link --overwrite numpy || true
     brew install boost
     # pyside/shiboken with python3 support take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
     #brew install pyside --with-python3 --without-python &
