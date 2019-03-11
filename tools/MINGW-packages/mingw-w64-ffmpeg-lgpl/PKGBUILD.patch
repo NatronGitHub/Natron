@@ -1,5 +1,5 @@
---- PKGBUILD.orig	2018-07-23 16:46:07.000000000 +0200
-+++ PKGBUILD	2018-07-23 16:46:36.000000000 +0200
+--- PKGBUILD.orig	2019-03-10 17:00:44.000000000 -0700
++++ PKGBUILD	2019-03-10 17:03:03.000000000 -0700
 @@ -3,8 +3,8 @@
  # Contributer: wirx6 <wirx654@gmail.com>
  
@@ -8,53 +8,54 @@
 -pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 +pkgbase="mingw-w64-${_realname}-lgpl"
 +pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-lgpl"
- pkgver=4.0.2
+ pkgver=4.1.1
  pkgrel=1
  pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
-@@ -23,21 +23,20 @@
-         "${MINGW_PACKAGE_PREFIX}-libbluray"
-         "${MINGW_PACKAGE_PREFIX}-libcaca"
-         "${MINGW_PACKAGE_PREFIX}-libmodplug"
-+        "${MINGW_PACKAGE_PREFIX}-librsvg"
-         "${MINGW_PACKAGE_PREFIX}-libtheora"
-         "${MINGW_PACKAGE_PREFIX}-libvorbis"
-         "${MINGW_PACKAGE_PREFIX}-libvpx"
-         "${MINGW_PACKAGE_PREFIX}-libwebp"
-         "${MINGW_PACKAGE_PREFIX}-openal"
--        "${MINGW_PACKAGE_PREFIX}-opencore-amr"
-+        "${MINGW_PACKAGE_PREFIX}-openh264"
-         "${MINGW_PACKAGE_PREFIX}-openjpeg2"
-         "${MINGW_PACKAGE_PREFIX}-opus"
-         "${MINGW_PACKAGE_PREFIX}-rtmpdump"
-         "${MINGW_PACKAGE_PREFIX}-SDL2"
-+        "${MINGW_PACKAGE_PREFIX}-snappy"
-         "${MINGW_PACKAGE_PREFIX}-speex"
-         "${MINGW_PACKAGE_PREFIX}-wavpack"
--        "${MINGW_PACKAGE_PREFIX}-x264"
--        "${MINGW_PACKAGE_PREFIX}-x265"
--        "${MINGW_PACKAGE_PREFIX}-xvidcore"
-         "${MINGW_PACKAGE_PREFIX}-zlib"
-         )
+@@ -23,22 +23,21 @@
+          "${MINGW_PACKAGE_PREFIX}-libcaca"
+          "${MINGW_PACKAGE_PREFIX}-libmfx"
+          "${MINGW_PACKAGE_PREFIX}-libmodplug"
++	 "${MINGW_PACKAGE_PREFIX}-librsvg"
+          "${MINGW_PACKAGE_PREFIX}-libtheora"
+          "${MINGW_PACKAGE_PREFIX}-libvorbis"
+          "${MINGW_PACKAGE_PREFIX}-libvpx"
+          "${MINGW_PACKAGE_PREFIX}-libwebp"
+          "${MINGW_PACKAGE_PREFIX}-openal"
+-         "${MINGW_PACKAGE_PREFIX}-opencore-amr"
++	 "${MINGW_PACKAGE_PREFIX}-openh264"
+          "${MINGW_PACKAGE_PREFIX}-openjpeg2"
+          "${MINGW_PACKAGE_PREFIX}-opus"
+          "${MINGW_PACKAGE_PREFIX}-rtmpdump"
+          "${MINGW_PACKAGE_PREFIX}-SDL2"
++	 "${MINGW_PACKAGE_PREFIX}-snappy"
+          "${MINGW_PACKAGE_PREFIX}-speex"
+          "${MINGW_PACKAGE_PREFIX}-srt"
+          "${MINGW_PACKAGE_PREFIX}-wavpack"
+-         "${MINGW_PACKAGE_PREFIX}-x264"
+-         "${MINGW_PACKAGE_PREFIX}-x265"
+-         "${MINGW_PACKAGE_PREFIX}-xvidcore"
+          "${MINGW_PACKAGE_PREFIX}-zlib")
  makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
-@@ -59,7 +58,7 @@
-   cd "${srcdir}/build-${MINGW_CHOST}"
- 
+              "${MINGW_PACKAGE_PREFIX}-pkg-config"
+@@ -65,7 +64,7 @@
+   CC=${MINGW_PREFIX}/bin/gcc \
+   CXX=${MINGW_PREFIX}/bin/g++ \
    ../${_realname}-${pkgver}/configure \
 -    --prefix=${MINGW_PREFIX} \
 +    --prefix=${MINGW_PREFIX}/ffmpeg-lgpl \
      --target-os=mingw32 \
      --arch=${CARCH%%-*} \
      --disable-debug \
-@@ -68,7 +67,6 @@
+@@ -74,7 +73,6 @@
      --enable-d3d11va \
      --enable-fontconfig \
      --enable-gnutls \
 -    --enable-gpl \
+     --enable-libaom \
      --enable-libass \
      --enable-libbluray \
-     --enable-libcaca \
-@@ -77,28 +75,24 @@
-     --enable-libgsm \
+@@ -85,29 +83,25 @@
+     --enable-libmfx \
      --enable-libmodplug \
      --enable-libmp3lame \
 -    --enable-libopencore_amrnb \
@@ -66,6 +67,7 @@
      --enable-librtmp \
 +    --enable-libsnappy \
      --enable-libspeex \
+     --enable-libsrt \
      --enable-libtheora \
      --enable-libvorbis \
 -    --enable-libx264 \
@@ -83,9 +85,9 @@
      --enable-swresample \
 -    --enable-version3 \
      --enable-zlib \
-     --enable-libaom \
      --disable-doc
-@@ -111,18 +105,18 @@
+     #--enable-pthreads
+@@ -119,18 +113,18 @@
    cd "${srcdir}/build-${MINGW_CHOST}"
    # workaround for conflict with SDL main(), use it if you have SDL installed
    #make check CC_C="-c -Umain"

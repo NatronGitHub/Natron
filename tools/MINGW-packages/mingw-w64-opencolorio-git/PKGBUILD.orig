@@ -3,7 +3,7 @@
 _realname=opencolorio
 pkgbase=mingw-w64-${_realname}-git
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
-pkgver=811.75b4749
+pkgver=815.15e96c1f
 pkgrel=1
 pkgdesc="A color management framework for visual effects and animation (mingw-w64)"
 arch=('any')
@@ -14,7 +14,7 @@ conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
 depends=("${MINGW_PACKAGE_PREFIX}-boost"
          "${MINGW_PACKAGE_PREFIX}-glew"
          "${MINGW_PACKAGE_PREFIX}-lcms2"
-         "${MINGW_PACKAGE_PREFIX}-python2"
+         "${MINGW_PACKAGE_PREFIX}-python3"
          "${MINGW_PACKAGE_PREFIX}-tinyxml"
          "${MINGW_PACKAGE_PREFIX}-yaml-cpp")
 makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
@@ -54,8 +54,9 @@ prepare() {
 
 build() {
   [[ -d "build-${MINGW_CHOST}" ]] && rm -rf "build-${MINGW_CHOST}"
-  mkdir -p ${srcdir}/build-${MINGW_CHOST}
-  cd ${srcdir}/build-${MINGW_CHOST}
+  mkdir -p ${srcdir}/build-${MINGW_CHOST} && cd ${srcdir}/build-${MINGW_CHOST}
+  
+  local _py3ver=$(${MINGW_PREFIX}/bin/python3 -c "import sys;sys.stdout.write('.'.join(map(str, sys.version_info[:2])))")
 
   MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
   ${MINGW_PREFIX}/bin/cmake \
@@ -69,8 +70,9 @@ build() {
     -DOCIO_USE_BOOST_PTR=ON \
     -DOCIO_BUILD_PYGLUE=ON \
     -DOCIO_PYGLUE_LINK=ON \
-    -DPYTHON=${MINGW_PREFIX}/bin/python2.exe \
-    -DPYTHON_EXECUTABLE=${MINGW_PREFIX}/bin/python2.exe \
+    -DPYTHON_VERSION=${_py3ver} \
+    -DPYTHON=${MINGW_PREFIX}/bin/python3.exe \
+    -DPYTHON_EXECUTABLE=${MINGW_PREFIX}/bin/python3.exe \
     -DOCIO_BUILD_TRUELIGHT=OFF \
     ../${_realname}
 
