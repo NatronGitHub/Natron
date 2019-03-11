@@ -151,7 +151,7 @@ elif [ "$PKGOS" = "Windows" ]; then
     if [ ! -d "$TMP" ]; then
         mkdir -p "$TMP"
     fi
-    MINGW_PACKAGES_PATH="$CWD/msys2-packages"
+    MINGW_PACKAGES_PATH="$CWD/../MINGW-packages"
 
     # Windows build bot can build both 32 and 64 bit so provide 2 different tmp directory depending on the build
     TMP_PATH="$TMP_PATH${BITS}"
