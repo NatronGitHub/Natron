@@ -489,6 +489,9 @@ install_prebuilt_package openjpeg2
 # Install libwebp
 install_prebuilt_package libwebp
 
+# Install libmfx
+install_prebuilt_package libmfx
+
 # Install libvpx (adds --enable-vp9-highbitdepth)
 build_package libvpx
 
