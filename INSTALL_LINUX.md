@@ -4,8 +4,11 @@ Instructions for installing Natron from sources on GNU/Linux
 This file is supposed to guide you step by step to have working (compiling) version of
 Natron on GNU/Linux.
 
-1. [Libraries](#libraries)
-    - [Qt4](#qt-486)
+1. [Dependencies](#dependencies)
+  - [Installing the full Natron SDK](#installing-the-full-natron-sdk)
+    - [Environment to use the Natron SDK](#environment-to-use-the-natron-sdk)
+  - [Manually install dependencies](#manually-install-dependencies)
+    - [Qt4](#qt-487)
     - [Boost](#boost)
     - [Expat](#expat)
     - [Cairo](#cairo)
@@ -21,6 +24,7 @@ Natron on GNU/Linux.
     - [Arch Linux](#arch-linux)
     - [Debian-based](#debian-based)
     - [CentOS7/Fedora](#centos7)
+5. [Generating Python bindings](#generating-python-bindings)
 
 
 # Dependencies
@@ -337,7 +341,7 @@ shiboken {
 }
 ```
 
-## Generating Python bindings
+# Generating Python bindings
 
 This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
 typesystem.xml file. See the documentation of shiboken for an explanation of the command line arguments.
