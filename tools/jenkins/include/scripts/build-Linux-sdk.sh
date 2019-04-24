@@ -316,6 +316,9 @@ ISL_VERSION=0.20
 if [ "$GCC_VERSION" = 4.8.5 ]; then
     ISL_VERSION=0.14.1
 fi
+if [ "$GCC_VERSION" = 8.2.0 ]; then
+    ISL_VERSION=0.19
+fi
 ISL_TAR="isl-${ISL_VERSION}.tar.bz2"
 ISL_SITE="http://isl.gforge.inria.fr"
 
