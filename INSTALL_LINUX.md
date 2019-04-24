@@ -4,8 +4,11 @@ Instructions for installing Natron from sources on GNU/Linux
 This file is supposed to guide you step by step to have working (compiling) version of
 Natron on GNU/Linux.
 
-1. [Libraries](#libraries)
-    - [Qt4](#qt-486)
+1. [Dependencies](#dependencies)
+  - [Installing the full Natron SDK](#installing-the-full-natron-sdk)
+    - [Environment to use the Natron SDK](#environment-to-use-the-natron-sdk)
+  - [Manually install dependencies](#manually-install-dependencies)
+    - [Qt4](#qt-487)
     - [Boost](#boost)
     - [Expat](#expat)
     - [Cairo](#cairo)
@@ -21,6 +24,7 @@ Natron on GNU/Linux.
     - [Arch Linux](#arch-linux)
     - [Debian-based](#debian-based)
     - [CentOS7/Fedora](#centos7)
+5. [Generating Python bindings](#generating-python-bindings)
 
 
 # Dependencies
@@ -40,10 +44,28 @@ Some packages, especially Qt 4.8.7, have Natron-specific patches. Take a look at
 
 The SDK may be updated by pulling the last modifications to the script and re-executing it.
 
+### Environment to use the Natron SDK
+
+Once the SDK is built, you should set your environment as follows, to make sure that the Natron SDK is preferred over any other system library. This must be done in every terminal where you intend to compile and/or run Natron:
+
+```
+SDK=/opt/Natron-sdk
+GCC="$SDK/gcc"
+QTDIR="$SDK/qt4"
+FFMPEG="$SDK/ffmpeg-gpl2"
+LIBRAW="$SDK/libraw-gpl2"
+PATH="$SDK/bin:$QTDIR/bin:$GCC/bin:$FFMPEG/bin:$LIBRAW_PATH:$PATH"
+LIBRARY_PATH="$SDK/lib:$QTDIR/lib:$GCC/lib64:$GCC/lib:$FFMPEG/lib:$LIBRAW/lib"
+LD_LIBRARY_PATH="$SDK/lib:$QTDIR/lib:$GCC/lib64:$GCC/lib:$FFMPEG/lib:$LIBRAW/lib"
+LD_RUN_PATH="$SDK/lib:$QTDIR/lib:$GCC/lib:$FFMPEG/lib:$LIBRAW/lib"
+CPATH="$SDK/include:$QTDIR/include:$GCC/include:$FFMPEG/include:$LIBRAW/include"
+export PKG_CONFIG_PATH="$SDK/lib/pkgconfig:$SDK/osmesa/lib/pkgconfig:$QTDIR/lib/pkgconfig:$GCC/lib/pkgconfig:$FFMPEG/lib/pkgconfig:$LIBRAW/lib/pkgconfig"
+export QTDIR LD_LIBRARY_PATH LD_RUN_PATH PKG_CONFIG_PATH CPATH
+```
 
 ## Manually install dependencies
 
-In order to have Natron compiling, first you need to install the required libraries.
+Alternatively, *if you don't want to use the Natron SDK*, you still need to install the required libraries.
 
 ***note:*** *The scripts `tools/travis/install_dependencies.sh` and
 `tools/travis/build.sh` respectively install the correct dependencies
@@ -319,7 +341,7 @@ shiboken {
 }
 ```
 
-## Generating Python bindings
+# Generating Python bindings
 
 This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
 typesystem.xml file. See the documentation of shiboken for an explanation of the command line arguments.
