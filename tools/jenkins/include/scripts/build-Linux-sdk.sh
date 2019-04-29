@@ -604,6 +604,9 @@ if [ ! -s "$SDK_HOME/bin/nasm" ]; then
     download "$NASM_SITE" "$NASM_TAR"
     untar "$SRC_PATH/$NASM_TAR"
     pushd "nasm-${NASM_VERSION}"
+    if [ "${GCC_VERSION:0:2}" = 8. ]; then
+        patch -Np1 -i "$INC_PATH"/patches/nasm/0001-Remove-invalid-pure_func-qualifiers.patch
+    fi
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-static --enable-shared
     make -j${MKJOBS}
     make install
