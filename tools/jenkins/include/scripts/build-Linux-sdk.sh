@@ -451,6 +451,9 @@ if [ ! -s "$SDK_HOME/bin/bison" ]; then
     download "$BISON_SITE" "$BISON_TAR"
     untar "$SRC_PATH/$BISON_TAR"
     pushd "bison-${BISON_VERSION}"
+    # 2 patches for use with glibc 2.28 and up.
+    patch -Np1 -i "$INC_PATH"/patches/bison/0001-fflush-adjust-to-glibc-2.28-libio.h-removal.patch
+    patch -Np1 -i "$INC_PATH"/patches/bison/0002-fflush-be-more-paranoid-about-libio.h-change.patch
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME"
     make -j${MKJOBS}
     make install
