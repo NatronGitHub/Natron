@@ -2932,6 +2932,10 @@ if [ ! -s "$SDK_HOME/bin/gdb" ]; then
     download "$GDB_SITE" "$GDB_TAR"
     untar "$SRC_PATH/$GDB_TAR"
     pushd "gdb-${GDB_VERSION}"
+
+    # Patch issue with header ordering for TRAP_HWBKPT
+    patch -Np1 -i "$INC_PATH"/patches/gdb/gdb-Fix-ia64-defining-TRAP_HWBKPT-before-including-g.patch
+
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --enable-tui --with-system-readline --without-guile
     make -j${MKJOBS}
     make install
