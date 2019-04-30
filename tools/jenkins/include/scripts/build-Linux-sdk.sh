@@ -2891,6 +2891,10 @@ if [ ! -s "${SDK_HOME}/bin/dump_syms" ]; then
     git_clone_commit "$GIT_BREAKPAD" "$GIT_BREAKPAD_COMMIT"
     pushd breakpad
     git submodule update -i
+
+    # Patch bug due to fix of glibc
+    patch -Np1 -i "$INC_PATH"/patches/breakpad/0002-Replace-remaining-references-to-struct-ucontext-with.patch
+
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure -prefix "$SDK_HOME"
     make
     cp src/tools/linux/dump_syms/dump_syms "$SDK_HOME/bin/"
