@@ -1789,7 +1789,7 @@ fi
 # Install pixman
 # see http://www.at.linuxfromscratch.org/blfs/view/cvs/general/pixman.html
 PIX_VERSION=0.34.0
-PIX_TAR="pixman-${PIX_VERSION}.tar.bz2"
+PIX_TAR="pixman-${PIX_VERSION}.tar.gz"
 PIX_SITE="https://www.cairographics.org/releases"
 if [ "${REBUILD_PIXMAN:-}" = "1" ]; then
     rm -rf "$SDK_HOME"/{lib,include}/*pixman* || true
