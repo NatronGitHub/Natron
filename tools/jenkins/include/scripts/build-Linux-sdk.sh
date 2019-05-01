@@ -1244,7 +1244,7 @@ fi
 # Install llvm+osmesa
 OSMESA_VERSION=17.1.10
 OSMESA_TAR="mesa-${OSMESA_VERSION}.tar.gz"
-OSMESA_SITE="ftp://ftp.freedesktop.org/pub/mesa"
+OSMESA_SITE="ftp://ftp.freedesktop.org/pub/mesa/older-versions/17.x" # OSMESA_SITE="ftp://ftp.freedesktop.org/pub/mesa"
 OSMESA_GLU_VERSION=9.0.0
 OSMESA_GLU_TAR="glu-${OSMESA_GLU_VERSION}.tar.gz"
 OSMESA_GLU_SITE="ftp://ftp.freedesktop.org/pub/mesa/glu"
@@ -1270,7 +1270,10 @@ if [ ! -s "$SDK_HOME/osmesa/lib/pkgconfig/gl.pc" ] || [ "$(env PKG_CONFIG_PATH=$
         download "$OSMESA_LLVM_SITE" "$OSMESA_LLVM_TAR"
         mkdir -p "${SDK_HOME}/llvm" || true
     fi
-    git clone https://github.com/devernay/osmesa-install
+    
+    #git clone https://github.com/devernay/osmesa-install
+    git clone https://github.com/fonkle/osmesa-install
+  
     pushd osmesa-install
     mkdir build
     pushd build
