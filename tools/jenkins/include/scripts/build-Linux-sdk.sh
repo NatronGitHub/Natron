@@ -383,7 +383,7 @@ fi
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/bzip2.html
 BZIP2_VERSION=1.0.6
 BZIP2_TAR="bzip2-${BZIP2_VERSION}.tar.gz"
-BZIP2_SITE="http://www.bzip.org/${BZIP2_VERSION}"
+BZIP2_SITE="http://anduin.linuxfromscratch.org/LFS" # BZIP2_SITE="http://www.bzip.org/${BZIP2_VERSION}"
 if [ ! -s "$SDK_HOME/lib/libbz2.so.1" ]; then
     start_build "$BZIP2_TAR"
     download "$BZIP2_SITE" "$BZIP2_TAR"
