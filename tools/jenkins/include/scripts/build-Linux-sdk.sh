@@ -1142,7 +1142,7 @@ fi
 # see http://www.linuxfromscratch.org/blfs/view/svn/server/mariadb.html
 MARIADB_VERSION=10.2.12
 MARIADB_TAR="mariadb-${MARIADB_VERSION}.tar.gz"
-MARIADB_SITE="https://downloads.mariadb.org/interstitial/mariadb-${MARIADB_VERSION}/source"
+MARIADB_SITE="http://ftp.hosteurope.de/mirror/archive.mariadb.org/mariadb-${MARIADB_VERSION}/source" # MARIADB_SITE="https://downloads.mariadb.org/interstitial/mariadb-${MARIADB_VERSION}/source"
 if [ ! -s "$SDK_HOME/bin/mariadb_config" ] || [ "$("${SDK_HOME}/bin/mariadb_config" --version)" != "$MARIADB_VERSION" ] ; then
     start_build "$MARIADB_TAR"
     download "$MARIADB_SITE" "$MARIADB_TAR"
