@@ -2066,10 +2066,11 @@ fi
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick.html
 MAGICK7_VERSION=7.0.8-9
 MAGICK7_VERSION_SHORT=${MAGICK7_VERSION%-*}
-MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.xz"
+MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.gz"
+MAGICK7_SITE="https://gitlab.com/ImageMagick/ImageMagick/-/archive/${MAGICK7_VERSION}"
 if [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/magick7/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Magick++)" != "$MAGICK7_VERSION_SHORT" ]; then
     start_build "$MAGICK7_TAR"
-    download "$MAGICK_SITE" "$MAGICK7_TAR"
+    download "$MAGICK7_SITE" "$MAGICK7_TAR"
     untar "$SRC_PATH/$MAGICK7_TAR"
     pushd "ImageMagick-${MAGICK7_VERSION}"
     #if [ "${MAGICK_CL:-}" = "1" ]; then
