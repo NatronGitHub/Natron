@@ -2039,8 +2039,8 @@ fi
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick6.html
 MAGICK_VERSION=6.9.10-9
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
-MAGICK_TAR="ImageMagick-${MAGICK_VERSION}.tar.xz"
-MAGICK_SITE="https://www.imagemagick.org/download/releases"
+MAGICK_TAR="ImageMagick6-${MAGICK_VERSION}.tar.gz" # MAGICK_TAR="ImageMagick-${MAGICK_VERSION}.tar.gz"
+MAGICK_SITE="https://gitlab.com/ImageMagick/ImageMagick6/-/archive/${MAGICK_VERSION}" # MAGICK_SITE="https://www.imagemagick.org/download/releases"
 if [ "${REBUILD_MAGICK:-}" = "1" ]; then
     rm -rf "$SDK_HOME"/include/ImageMagick-6/ "$SDK_HOME"/lib/libMagick* "$SDK_HOME"/share/ImageMagick-6/ "$SDK_HOME"/lib/pkgconfig/{Image,Magick}* "$SDK_HOME"/magick7 || true
 fi
@@ -2048,7 +2048,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversio
     start_build "$MAGICK_TAR"
     download "$MAGICK_SITE" "$MAGICK_TAR"
     untar "$SRC_PATH/$MAGICK_TAR"
-    pushd "ImageMagick-${MAGICK_VERSION}"
+    pushd "ImageMagick6-${MAGICK_VERSION}"
     #if [ "${MAGICK_CL:-}" = "1" ]; then
     #  MAGICK_CL_OPT="--with-x --enable-opencl"
     #else
@@ -2059,7 +2059,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversio
     make -j${MKJOBS}
     make install
     popd
-    rm -rf "ImageMagick-${MAGICK_VERSION}"
+    rm -rf "ImageMagick6-${MAGICK_VERSION}"
     end_build "$MAGICK_TAR"
 fi
 # install ImageMagick7
