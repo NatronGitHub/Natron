@@ -489,8 +489,11 @@ install_prebuilt_package openjpeg2
 # Install libwebp
 install_prebuilt_package libwebp
 
-# Install libmfx
+# Install libmfx (for ffmpeg)
 install_prebuilt_package libmfx
+
+# Install srt (for ffmpeg)
+install_prebuilt_package srt
 
 # Install libvpx (adds --enable-vp9-highbitdepth)
 build_package libvpx
