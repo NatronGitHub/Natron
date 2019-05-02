@@ -205,7 +205,7 @@ fi
 QT4_VERSION=4.8.7
 QT4_VERSION_SHORT=${QT4_VERSION%.*}
 QT4_TAR="qt-everywhere-opensource-src-${QT4_VERSION}.tar.gz"
-QT4_SITE="https://download.qt.io/official_releases/qt/${QT4_VERSION_SHORT}/${QT4_VERSION}"
+QT4_SITE="https://download.qt.io/archive/qt/${QT4_VERSION_SHORT}/${QT4_VERSION}"
 QT4WEBKIT_VERSION=2.3.4
 QT4WEBKIT_VERSION_SHORT=${QT4WEBKIT_VERSION%.*}
 QT4WEBKIT_VERSION_PKG=4.10.4 # version from QtWebkit.pc
