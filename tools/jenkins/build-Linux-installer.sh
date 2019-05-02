@@ -486,7 +486,7 @@ for location in "${COPY_LOCATIONS[@]}"; do
     #mkdir "${location}/lib/compat"
     #mv "${location}/lib"/{libgomp*,libgcc*,libstdc*} "${location}/lib/compat/"
     if [ ! -f "$SRC_PATH/strings${BITS}.tgz" ]; then
-        $WGET "$THIRD_PARTY_SRC_URL/strings${BITS}.tgz" -O "$SRC_PATH/strings${BITS}.tgz"
+        $WGET "$THIRD_PARTY_BIN_URL/strings${BITS}.tgz" -O "$SRC_PATH/strings${BITS}.tgz"
     fi
     tar xvf "$SRC_PATH/strings${BITS}.tgz" -C "${location}/bin/"
 

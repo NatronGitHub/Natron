@@ -436,6 +436,7 @@ NATRON_DLL=(
     libidn2-0.dll
     libintl-8.dll
     liblzma-5.dll
+    libmfx-1.dll
     libmodplug-1.dll
     libmp3lame-0.dll
     libnettle-6.dll
@@ -456,6 +457,7 @@ NATRON_DLL=(
     librtmp-1.dll
     libsnappy.dll
     libspeex-1.dll
+    libsrt.dll
     libstdc++-6.dll
     libtasn1-6.dll
     libtheoradec-1.dll

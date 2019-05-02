@@ -156,6 +156,7 @@ catDll libjasper-
 catDll libjpeg-
 catDll liblcms2-
 catDll liblzma-
+catDll libmfx
 catDll libmng-
 catDll libmodplug-
 catDll libmp3lame-
@@ -183,6 +184,7 @@ catDll librtmp-
 catDll libshiboken-python${PYVER}
 catDll libspeex-
 catDll libsqlite3-
+catDll libsrt
 catDll libssh2-
 catDll libstdc++-
 catDll libtasn1-
