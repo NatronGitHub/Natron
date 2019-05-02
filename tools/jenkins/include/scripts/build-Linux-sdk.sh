@@ -369,6 +369,8 @@ if [ ! -s "$SDK_HOME/bin/m4" ]; then
     download "$M4_SITE" "$M4_TAR"
     untar "$SRC_PATH/$M4_TAR"
     pushd "m4-${M4_VERSION}"
+    # Patch for use with glibc 2.28 and up.
+    patch -Np1 -i "$INC_PATH"/patches/m4/m4-1.4.18-glibc-change-work-around.patch
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --enable-static --enable-shared
     make -j${MKJOBS}
     make install
@@ -449,6 +451,9 @@ if [ ! -s "$SDK_HOME/bin/bison" ]; then
     download "$BISON_SITE" "$BISON_TAR"
     untar "$SRC_PATH/$BISON_TAR"
     pushd "bison-${BISON_VERSION}"
+    # 2 patches for use with glibc 2.28 and up.
+    patch -Np1 -i "$INC_PATH"/patches/bison/0001-fflush-adjust-to-glibc-2.28-libio.h-removal.patch
+    patch -Np1 -i "$INC_PATH"/patches/bison/0002-fflush-be-more-paranoid-about-libio.h-change.patch
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME"
     make -j${MKJOBS}
     make install
@@ -599,6 +604,9 @@ if [ ! -s "$SDK_HOME/bin/nasm" ]; then
     download "$NASM_SITE" "$NASM_TAR"
     untar "$SRC_PATH/$NASM_TAR"
     pushd "nasm-${NASM_VERSION}"
+    if [ "${GCC_VERSION:0:2}" = 8. ]; then
+        patch -Np1 -i "$INC_PATH"/patches/nasm/0001-Remove-invalid-pure_func-qualifiers.patch
+    fi
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-static --enable-shared
     make -j${MKJOBS}
     make install
@@ -1324,29 +1332,6 @@ env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-stati
     end_build "$FTYPE_TAR"
 fi
 
-# Install fontconfig
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/fontconfig.html
-FONTCONFIG_VERSION=2.13.0
-FONTCONFIG_TAR="fontconfig-${FONTCONFIG_VERSION}.tar.gz"
-FONTCONFIG_SITE="https://www.freedesktop.org/software/fontconfig/release"
-if [ "${REBUILD_FONTCONFIG:-}" = "1" ]; then
-    rm -f "$SDK_HOME"/lib/libfontconfig* || true
-    rm -rf "$SDK_HOME"/include/fontconfig || true
-    rm -f "$SDK_HOME"/lib/pkgconfig/fontconfig.pc || true
-fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/fontconfig.pc" ] || [ "$(pkg-config --modversion fontconfig)" != "$FONTCONFIG_VERSION" ]; then
-    start_build "$FONTCONFIG_TAR"
-    download "$FONTCONFIG_SITE" "$FONTCONFIG_TAR"
-    untar "$SRC_PATH/$FONTCONFIG_TAR"
-    pushd "fontconfig-${FONTCONFIG_VERSION}"
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared
-    make -j${MKJOBS}
-    make install
-    popd
-    rm -rf "fontconfig-${FONTCONFIG_VERSION}"
-    end_build "$FONTCONFIG_TAR"
-fi
-
 # Install libmount (required by glib)
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/util-linux.html
 if [ "${RHEL_MAJOR:-7}" -le 6 ]; then
@@ -1385,6 +1370,30 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/mount.pc" ] || [ "$(pkg-config --modversion m
     rm -rf "util-linux-${UTILLINUX_VERSION}"
     end_build "$UTILLINUX_TAR"
 fi
+
+# Install fontconfig
+# see http://www.linuxfromscratch.org/blfs/view/cvs/general/fontconfig.html
+FONTCONFIG_VERSION=2.13.0
+FONTCONFIG_TAR="fontconfig-${FONTCONFIG_VERSION}.tar.gz"
+FONTCONFIG_SITE="https://www.freedesktop.org/software/fontconfig/release"
+if [ "${REBUILD_FONTCONFIG:-}" = "1" ]; then
+    rm -f "$SDK_HOME"/lib/libfontconfig* || true
+    rm -rf "$SDK_HOME"/include/fontconfig || true
+    rm -f "$SDK_HOME"/lib/pkgconfig/fontconfig.pc || true
+fi
+if [ ! -s "$SDK_HOME/lib/pkgconfig/fontconfig.pc" ] || [ "$(pkg-config --modversion fontconfig)" != "$FONTCONFIG_VERSION" ]; then
+    start_build "$FONTCONFIG_TAR"
+    download "$FONTCONFIG_SITE" "$FONTCONFIG_TAR"
+    untar "$SRC_PATH/$FONTCONFIG_TAR"
+    pushd "fontconfig-${FONTCONFIG_VERSION}"
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared
+    make -j${MKJOBS}
+    make install
+    popd
+    rm -rf "fontconfig-${FONTCONFIG_VERSION}"
+    end_build "$FONTCONFIG_TAR"
+fi
+
 
 # Install Texinfo (for gdb)
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/texinfo.html
@@ -1780,7 +1789,7 @@ fi
 # Install pixman
 # see http://www.at.linuxfromscratch.org/blfs/view/cvs/general/pixman.html
 PIX_VERSION=0.34.0
-PIX_TAR="pixman-${PIX_VERSION}.tar.bz2"
+PIX_TAR="pixman-${PIX_VERSION}.tar.gz"
 PIX_SITE="https://www.cairographics.org/releases"
 if [ "${REBUILD_PIXMAN:-}" = "1" ]; then
     rm -rf "$SDK_HOME"/{lib,include}/*pixman* || true
@@ -1849,6 +1858,33 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/harfbuzz.pc" ] || [ "$(pkg-config --modversio
     end_build "$HARFBUZZ_TAR"
 fi
 
+# Install fribidi (for libass and ffmpeg)
+# see http://www.linuxfromscratch.org/blfs/view/cvs/general/fribidi.html
+FRIBIDI_VERSION=1.0.4
+FRIBIDI_TAR="fribidi-${FRIBIDI_VERSION}.tar.bz2"
+FRIBIDI_SITE="https://github.com/fribidi/fribidi/releases/download/v${FRIBIDI_VERSION}"
+if [ ! -s "$SDK_HOME/lib/pkgconfig/fribidi.pc" ] || [ "$(pkg-config --modversion fribidi)" != "$FRIBIDI_VERSION" ]; then
+    REBUILD_FFMPEG=1
+    start_build "$FRIBIDI_TAR"
+    download "$FRIBIDI_SITE" "$FRIBIDI_TAR"
+    untar "$SRC_PATH/$FRIBIDI_TAR"
+    pushd "fribidi-${FRIBIDI_VERSION}"
+    # git.mk seems to trigger a ./config.status --recheck, which is unnecessary
+    # and additionally fails due to quoting
+    # (git.mk was removed after 0.19.7)
+    if [ -f git.mk ]; then
+        rm git.mk
+    fi
+    if [ ! -f configure ]; then
+        autoreconf -i -f
+    fi
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-static --enable-shared --disable-docs
+    make #  -j${MKJOBS}
+    make install
+    popd
+    rm -rf "fribidi-${FRIBIDI_VERSION}"
+    end_build "$FRIBIDI_TAR"
+fi
 
 # Install pango
 # see http://www.linuxfromscratch.org/blfs/view/svn/x/pango.html
@@ -2695,34 +2731,6 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/soxr.pc" ] || [ "$(pkg-config --modversion so
     end_build "$SOXR_TAR"
 fi
 
-# Install fribidi (for libass and ffmpeg)
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/fribidi.html
-FRIBIDI_VERSION=1.0.4
-FRIBIDI_TAR="fribidi-${FRIBIDI_VERSION}.tar.bz2"
-FRIBIDI_SITE="https://github.com/fribidi/fribidi/releases/download/v${FRIBIDI_VERSION}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/fribidi.pc" ] || [ "$(pkg-config --modversion fribidi)" != "$FRIBIDI_VERSION" ]; then
-    REBUILD_FFMPEG=1
-    start_build "$FRIBIDI_TAR"
-    download "$FRIBIDI_SITE" "$FRIBIDI_TAR"
-    untar "$SRC_PATH/$FRIBIDI_TAR"
-    pushd "fribidi-${FRIBIDI_VERSION}"
-    # git.mk seems to trigger a ./config.status --recheck, which is unnecessary
-    # and additionally fails due to quoting
-    # (git.mk was removed after 0.19.7)
-    if [ -f git.mk ]; then
-        rm git.mk
-    fi
-    if [ ! -f configure ]; then
-        autoreconf -i -f
-    fi
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-static --enable-shared --disable-docs
-    make #  -j${MKJOBS}
-    make install
-    popd
-    rm -rf "fribidi-${FRIBIDI_VERSION}"
-    end_build "$FRIBIDI_TAR"
-fi
-
 # Install libass (for ffmpeg)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/multimedia/libass.html
 LIBASS_VERSION=0.14.0
@@ -2883,6 +2891,10 @@ if [ ! -s "${SDK_HOME}/bin/dump_syms" ]; then
     git_clone_commit "$GIT_BREAKPAD" "$GIT_BREAKPAD_COMMIT"
     pushd breakpad
     git submodule update -i
+
+    # Patch bug due to fix of glibc
+    patch -Np1 -i "$INC_PATH"/patches/breakpad/0002-Replace-remaining-references-to-struct-ucontext-with.patch
+
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure -prefix "$SDK_HOME"
     make
     cp src/tools/linux/dump_syms/dump_syms "$SDK_HOME/bin/"
@@ -2920,6 +2932,10 @@ if [ ! -s "$SDK_HOME/bin/gdb" ]; then
     download "$GDB_SITE" "$GDB_TAR"
     untar "$SRC_PATH/$GDB_TAR"
     pushd "gdb-${GDB_VERSION}"
+
+    # Patch issue with header ordering for TRAP_HWBKPT
+    patch -Np1 -i "$INC_PATH"/patches/gdb/gdb-Fix-ia64-defining-TRAP_HWBKPT-before-including-g.patch
+
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --enable-tui --with-system-readline --without-guile
     make -j${MKJOBS}
     make install
