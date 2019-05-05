@@ -199,12 +199,12 @@ else
     REPO_URL=http://downloads.natron.fr
 fi
 
-THIRD_PARTY_SRC_URL=http://downloads.natron.fr/Third_Party_Sources
+THIRD_PARTY_SRC_URL=https://sourceforge.net/projects/natron/files/Third_Party/Sources
 THIRD_PARTY_BIN_URL=$REPO_URL/Third_Party_Binaries
 
 
 # Threads
-#
+#	
 # Set build threads to 2 if not exists
 if [ -z "${MKJOBS:-}" ]; then
     if [ "$PKGOS" = "Linux" ]; then
