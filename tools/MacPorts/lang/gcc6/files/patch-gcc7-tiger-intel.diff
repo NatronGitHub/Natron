@@ -1,0 +1,104 @@
+--- Makefile.in.orig	2018-04-15 11:27:24.000000000 -0700
++++ Makefile.in	2018-04-15 11:31:29.000000000 -0700
+@@ -356,7 +356,7 @@
+ 
+ # Flags to pass to stage2 and later makes.  They are defined
+ # here so that they can be overridden by Makefile fragments.
+-BOOT_CFLAGS= -g -O2
++BOOT_CFLAGS= -g -O2 -mmacosx-version-min=10.4
+ BOOT_LDFLAGS=
+ BOOT_ADAFLAGS= -gnatpg
+ 
+@@ -403,7 +403,7 @@
+ GNATMAKE = @GNATMAKE@
+ 
+ CFLAGS = @CFLAGS@
+-LDFLAGS = @LDFLAGS@
++LDFLAGS = @LDFLAGS@ -mmacosx-version-min=10.4
+ LIBCFLAGS = $(CFLAGS)
+ CXXFLAGS = @CXXFLAGS@
+ LIBCXXFLAGS = $(CXXFLAGS) -fno-implicit-templates
+@@ -421,7 +421,7 @@
+ 
+ 
+ # Defaults for stage 1; some are overridden below.
+-STAGE1_CFLAGS = $(STAGE_CFLAGS)
++STAGE1_CFLAGS = $(STAGE_CFLAGS) -mmacosx-version-min=10.4
+ STAGE1_CXXFLAGS = $(CXXFLAGS)
+ @if target-libstdc++-v3-bootstrap
+ # Override the above if we're bootstrapping C++.
+@@ -568,8 +568,8 @@
+ COMPILER_LD_FOR_TARGET=@COMPILER_LD_FOR_TARGET@
+ COMPILER_NM_FOR_TARGET=@COMPILER_NM_FOR_TARGET@
+ 
+-CFLAGS_FOR_TARGET = @CFLAGS_FOR_TARGET@
+-CXXFLAGS_FOR_TARGET = @CXXFLAGS_FOR_TARGET@
++CFLAGS_FOR_TARGET = @CFLAGS_FOR_TARGET@ -mmacosx-version-min=10.4
++CXXFLAGS_FOR_TARGET = @CXXFLAGS_FOR_TARGET@ -mmacosx-version-min=10.4
+ 
+ LIBCFLAGS_FOR_TARGET = $(CFLAGS_FOR_TARGET)
+ LIBCXXFLAGS_FOR_TARGET = $(CXXFLAGS_FOR_TARGET) -fno-implicit-templates
+
+--- libcilkrts/runtime/sysdep-unix.c.orig	2018-04-15 15:19:32.000000000 -0700
++++ libcilkrts/runtime/sysdep-unix.c	2018-04-15 15:58:16.000000000 -0700
+@@ -102,6 +102,46 @@
+ #   include <vxCpuLib.h>  
+ #endif
+ 
++#ifdef __APPLE__
++#ifndef __MAC_OS_X_VERSION_MIN_REQUIRED
++#if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1050
++#include <Availability.h>
++#else
++#include <AvailabilityMacros.h>
++#endif
++#endif //#ifndef __MAC_OS_X_VERSION_MIN_REQUIRED
++
++
++#if __MAC_OS_X_VERSION_MIN_REQUIRED < 1050
++#include <sys/types.h>
++#include <sys/sysctl.h>
++#define _SC_NPROCESSORS_ONLN 58
++
++long tigersysconf(int name){
++
++    if (name == _SC_NPROCESSORS_ONLN) {
++		int nm[2];
++		size_t len = 4;
++		uint32_t count;
++		
++		nm[0] = CTL_HW; nm[1] = HW_AVAILCPU;
++		sysctl(nm, 2, &count, &len, NULL, 0);
++		
++		if (count < 1) {
++			nm[1] = HW_NCPU;
++			sysctl(nm, 2, &count, &len, NULL, 0);
++			if (count < 1) { count = 1; }
++			}
++			
++		return (long)count;
++    }
++    return -1;
++}
++#endif //#if __MAC_OS_X_VERSION_MIN_REQUIRED < 1050
++#endif //#ifdef __APPLE__
++
++
++
+ struct global_sysdep_state
+ {
+     pthread_t *threads;    ///< Array of pthreads for system workers
+@@ -695,7 +735,13 @@
+ #ifdef __VXWORKS__      
+     fprintf(fp, "System cores: %d\n", (int)__builtin_popcount(vxCpuEnabledGet()));
+ #else    
++
++#if __MAC_OS_X_VERSION_MIN_REQUIRED < 1050
++    fprintf(fp, "System cores: %d\n", (int)tigersysconf(_SC_NPROCESSORS_ONLN));
++#else
+     fprintf(fp, "System cores: %d\n", (int)sysconf(_SC_NPROCESSORS_ONLN));
++#endif //__MAC_OS_X_VERSION_MIN_REQUIRED < 1050
++
+ #endif    
+     fprintf(fp, "Cilk workers requested: %d\n", n);
+ 

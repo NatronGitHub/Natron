@@ -1,0 +1,11 @@
+--- Portfile.orig	2017-11-22 09:21:41.000000000 +0100
++++ Portfile	2017-11-22 09:21:41.000000000 +0100
+@@ -37,7 +37,7 @@
+ depends_lib                 port:expat \
+                             port:freetype \
+                             port:fontconfig \
+-                            port:jpeg \
++                            path:lib/libjpeg.dylib:jpeg \
+                             port:libiconv \
+                             port:libpng \
+                             port:tiff \

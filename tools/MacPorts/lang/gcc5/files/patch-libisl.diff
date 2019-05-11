@@ -1,0 +1,20 @@
+--- configure.orig	2017-01-09 14:06:20.000000000 -0700
++++ configure	2018-10-07 05:48:37.000000000 -0700
+@@ -5976,7 +5976,7 @@
+ $as_echo "$as_me: WARNING: using in-tree ISL, disabling version check" >&2;}
+   fi
+ 
+-  isllibs="${isllibs} -lisl"
++  isllibs="${isllibs} -lisl.15"
+ 
+ 
+ 
+@@ -5987,7 +5987,7 @@
+ 
+     CFLAGS="${_isl_saved_CFLAGS} ${islinc} ${gmpinc}"
+     LDFLAGS="${_isl_saved_LDFLAGS} ${isllibs}"
+-    LIBS="${_isl_saved_LIBS} -lisl"
++    LIBS="${_isl_saved_LIBS} -lisl.15"
+ 
+     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for compatible ISL" >&5
+ $as_echo_n "checking for compatible ISL... " >&6; }
