@@ -14,6 +14,7 @@
 - Fix bugs in DenoiseSharpen that caused crashes #300
 - Add support for chromatic aberration correction when reading RAW files #309 
 
+
 ## Version 2.3.14
 
 - Error messages are not cleared anymore at each rendered frame. They can be cleared explicitely using the "Refresh" button in the viewer.
@@ -21,6 +22,7 @@
 - Fix many G'MIC plugins. Changes are not backward compatible and existing graphs may need to be reworked. Note that G'MIC plugins are still beta. #295
 - LensDistortion: fix loading PFBarrel files #296
 - Label parameters now use both columns in the parameters panel.
+
 
 ## Version 2.3.13
 
