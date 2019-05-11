@@ -42,6 +42,7 @@ Natron multiple times on the same computer, the different processes will share t
 - Add support for chromatic aberration correction when reading RAW files #309
 
 
+
 ## Version 2.3.14
 
 - Error messages are not cleared anymore at each rendered frame. They can be cleared explicitely using the "Refresh" button in the viewer.
