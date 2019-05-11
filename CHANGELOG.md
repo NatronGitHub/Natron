@@ -36,6 +36,11 @@ Natron multiple times on the same computer, the different processes will share t
 
 - Inputs of the selected nodes are now always visible
 
+### Plugins
+
+- Fix bugs in DenoiseSharpen that caused crashes #300
+- Add support for chromatic aberration correction when reading RAW files #309
+
 
 ## Version 2.3.14
 
@@ -44,6 +49,7 @@ Natron multiple times on the same computer, the different processes will share t
 - Fix many G'MIC plugins. Changes are not backward compatible and existing graphs may need to be reworked. Note that G'MIC plugins are still beta. #295
 - LensDistortion: fix loading PFBarrel files #296
 - Label parameters now use both columns in the parameters panel.
+
 
 ## Version 2.3.13
 
