@@ -1244,7 +1244,7 @@ fi
 # Install llvm+osmesa
 OSMESA_VERSION=17.1.10
 OSMESA_TAR="mesa-${OSMESA_VERSION}.tar.gz"
-OSMESA_SITE="ftp://ftp.freedesktop.org/pub/mesa"
+OSMESA_SITE="ftp://ftp.freedesktop.org/pub/mesa/older-versions/17.x"
 OSMESA_GLU_VERSION=9.0.0
 OSMESA_GLU_TAR="glu-${OSMESA_GLU_VERSION}.tar.gz"
 OSMESA_GLU_SITE="ftp://ftp.freedesktop.org/pub/mesa/glu"
