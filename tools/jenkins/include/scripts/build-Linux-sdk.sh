@@ -2945,7 +2945,7 @@ if [ ! -s "$SDK_HOME/bin/gdb" ]; then
     end_build "$GDB_TAR"
 fi
 
-
+if false; then # <--- Disabled Qt 5.6 (temporary)
 if [ "${REBUILD_QT5:-}" = "1" ]; then
     rm -rf "$QT5PREFIX"
 fi
@@ -3057,7 +3057,7 @@ if [ ! -s "$QT5PREFIX/lib/pkgconfig/Qt5Core.pc" ] || [ "$(env PKG_CONFIG_PATH=$Q
         end_build "${module}-${QT5_VERSION}"
     done
 fi
-
+fi # ---> Disabled Qt 5.6 (temporary)
 
 # pysetup
 if [ "$PYV" = "3" ]; then
@@ -3112,6 +3112,7 @@ if false; then #[ ! -s "$QT5PREFIX/lib/pkgconfig/shiboken2.pc" ] || [ "$(env PKG
     end_build "shiboken2"
 fi
 
+if false; then # <--- Disabled pyside 2 (temporary)
 # Install pyside2
 PYSIDE2_VERSION="5.6.0"
 PYSIDE2_GIT="https://code.qt.io/pyside/pyside-setup"
@@ -3145,7 +3146,7 @@ if [ ! -x "$SDK_HOME/lib/python${PY2_VERSION_SHORT}/site-packages/PySide2/shibok
     rm -rf pyside-setup
     end_build "pyside2-${PYSIDE2_COMMIT}"
 fi
-
+fi # ---> Disabled pyside 2 (temporary)
 
 
 if [ "${REBUILD_QT4:-}" = "1" ]; then
@@ -3547,7 +3548,7 @@ fi
 echo
 echo "Check for broken libraries and binaries... (everything is OK if nothing is printed)"
 # SDK_HOME=/opt/Natron-sdk; LD_LIBRARY_PATH=$SDK_HOME/qt4/lib:$SDK_HOME/gcc/lib:$SDK_HOME/lib:$SDK_HOME/qt5/lib
-for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl qt4 qt5; do
+for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl qt4; do # removed qt5 (temporary) to prevent script error
     LD_LIBRARY_PATH="$SDK_HOME/$subdir/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" find "$SDK_HOME/$subdir/lib" -name '*.so' -exec bash -c 'ldd {} 2>&1 | fgrep "not found" &>/dev/null' \; -print
     LD_LIBRARY_PATH="$SDK_HOME/$subdir/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" find "$SDK_HOME/$subdir/bin" -maxdepth 1 -exec bash -c 'ldd {} 2>&1 | fgrep "not found" &>/dev/null' \; -print
 done
