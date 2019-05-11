@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,6 +30,15 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
+#include <boost/bind.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/make_shared.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDir>
 #include <QtCore/QTextStream>
@@ -40,14 +49,6 @@
 #include <QtCore/QSettings>
 #include <QtNetwork/QNetworkReply>
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
@@ -57,23 +58,34 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Global/QtCompat.h" // removeFileExtension
 
-#include "Engine/BlockingBackgroundRender.h"
 #include "Engine/CLArgs.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/FileDownloader.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/DiskCacheNode.h"
-#include "Engine/ProjectSerialization.h"
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/KnobFile.h"
 #include "Engine/ReadNode.h"
+#include "Engine/RenderQueue.h"
+#include "Engine/SerializableWindow.h"
 #include "Engine/Settings.h"
+#include "Engine/PyPanelI.h"
+#include "Engine/TabWidgetI.h"
+#include "Engine/ViewerInstance.h"
 #include "Engine/WriteNode.h"
 
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/ProjectSerialization.h"
+
+#include <SequenceParsing.h> // for SequenceParsing::removePath
+
+
 NATRON_NAMESPACE_ENTER
+
 
 FlagSetter::FlagSetter(bool initialValue,
                        bool* p)
@@ -133,12 +145,96 @@ FlagIncrementer::~FlagIncrementer()
     }
 }
 
-struct RenderQueueItem
+
+
+
+class CreateNodeStackItem
 {
-    AppInstance::RenderWork work;
-    QString sequenceName;
-    QString savePath;
-    boost::shared_ptr<ProcessHandler> process;
+public:
+
+    NodePtr node;
+
+    CreateNodeArgsPtr args;
+
+    CreateNodeStackItemWPtr parent;
+    CreateNodeStackItemPtrList children;
+
+    CreateNodeStackItem()
+    : node()
+    , args()
+    , parent()
+    {
+
+    }
+
+    bool isGuiDisabledRecursive() const
+    {
+        assert(args);
+        if (args->getPropertyUnsafe<bool>(kCreateNodeArgsPropNoNodeGUI)) {
+            return true;
+        }
+        CreateNodeStackItemPtr p = parent.lock();
+        if (p) {
+            return p->isGuiDisabledRecursive();
+        }
+        return false;
+    }
+
+    bool isPyPlug() const
+    {
+        std::string pyPlugID = args->getPropertyUnsafe<std::string>(kCreateNodeArgsPropPyPlugID);
+        if (pyPlugID.empty()) {
+            return false;
+        }
+        return true;
+    }
+
+
+    bool isPythonPyPlug() const
+    {
+        std::string pyPlugID = args->getPropertyUnsafe<std::string>(kCreateNodeArgsPropPyPlugID);
+        if (pyPlugID.empty()) {
+            return false;
+        }
+        PluginPtr pyPlugPlugin;
+        try {
+            pyPlugPlugin = appPTR->getPluginBinary(QString::fromUtf8(pyPlugID.c_str()), -1, -1, true);
+        } catch (...) {
+            return false;
+        }
+        assert(pyPlugPlugin);
+        bool isPyPlugEncodedWithPythonScript = pyPlugPlugin->getPropertyUnsafe<bool>(kNatronPluginPropPyPlugIsPythonScript);
+        return isPyPlugEncodedWithPythonScript;
+    }
+
+    bool isPythonPyPlugRecursive() const
+    {
+        if (isPythonPyPlug()) {
+            return true;
+        }
+        CreateNodeStackItemPtr p = parent.lock();
+        if (p) {
+            return p->isPythonPyPlug();
+        }
+        return false;
+    }
+
+    bool isDuringPyPlugCreationRecursive() const
+    {
+        if (isPyPlug()) {
+            return true;
+        }
+        CreateNodeStackItemPtr p = parent.lock();
+        if (p) {
+            return p->isPyPlug();
+        }
+        return false;
+    }
+};
+
+struct CreateNodeStack {
+    CreateNodeStackItemPtrList recursionStack;
+    CreateNodeStackItemPtr root;
 };
 
 struct AppInstancePrivate
@@ -146,28 +242,35 @@ struct AppInstancePrivate
     Q_DECLARE_TR_FUNCTIONS(AppInstance)
 
 public:
+
+    // ptr to the public object, can not be a smart ptr
     AppInstance* _publicInterface;
-    boost::shared_ptr<Project> _currentProject; //< ptr to the project
-    int _appID; //< the unique ID of this instance (or window)
-    bool _projectCreatedWithLowerCaseIDs;
-    mutable QMutex creatingGroupMutex;
 
-    //When a pyplug is created
-    int _creatingGroup;
-    // True when a pyplug is being created internally without being shown to the user
-    bool _creatingInternalNode;
+    // ptr to the project
 
-    //When a node is created, it gets appended to this list (since for a PyPlug more than 1 node can be created)
-    std::list<NodePtr> _creatingNodeQueue;
+    ProjectPtr _currentProject;
 
-    //When a node tree is created
-    int _creatingTree;
-    mutable QMutex renderQueueMutex;
-    std::list<RenderQueueItem> renderQueue, activeRenders;
+    // the unique ID of this instance
+    int _appID;
+
+    RenderQueuePtr renderQueue;
+
+
+    // Stack to recursively keep track of created nodes
+    CreateNodeStack createNodeStack;
+
+
     mutable QMutex invalidExprKnobsMutex;
-    std::list<KnobWPtr> invalidExprKnobs;
+    std::list<KnobIWPtr> invalidExprKnobs;
 
-    ProjectBeingLoadedInfo projectBeingLoaded;
+    mutable QMutex uiInfoMutex;
+
+    SerializableWindow* mainWindow;
+    std::list<SerializableWindow*> floatingWindows;
+    std::list<TabWidgetI*> tabWidgets;
+    std::list<SplitterI*> splitters;
+    std::list<PyPanelI*> pythonPanels;
+    std::list<DockablePanelI*> openedSettingsPanels;
 
     AppInstancePrivate(int appID,
                        AppInstance* app)
@@ -175,34 +278,23 @@ public:
         : _publicInterface(app)
         , _currentProject()
         , _appID(appID)
-        , _projectCreatedWithLowerCaseIDs(false)
-        , creatingGroupMutex()
-        , _creatingGroup(0)
-        , _creatingInternalNode(false)
-        , _creatingNodeQueue()
-        , _creatingTree(0)
-        , renderQueueMutex()
-        , renderQueue()
-        , activeRenders()
+        , createNodeStack()
         , invalidExprKnobsMutex()
         , invalidExprKnobs()
-        , projectBeingLoaded()
+        , mainWindow(0)
+        , floatingWindows()
+        , tabWidgets()
+        , pythonPanels()
     {
     }
 
     void declareCurrentAppVariable_Python();
 
-
     void executeCommandLinePythonCommands(const CLArgs& args);
 
-    bool validateRenderOptions(const AppInstance::RenderWork& w,
-                               int* firstFrame,
-                               int* lastFrame,
-                               int* frameStep);
 
-    void getSequenceNameFromWriter(const OutputEffectInstance* writer, QString* sequenceName);
+    void checkNumberOfNonFloatingPanes();
 
-    void startRenderingFullSequence(bool blocking, const RenderQueueItem& writerWork);
 };
 
 AppInstance::AppInstance(int appID)
@@ -216,56 +308,39 @@ AppInstance::~AppInstance()
     _imp->_currentProject->clearNodesBlocking();
 }
 
-const ProjectBeingLoadedInfo&
-AppInstance::getProjectBeingLoadedInfo() const
-{
-    assert(QThread::currentThread() == qApp->thread());
-    return _imp->projectBeingLoaded;
-}
-
-void
-AppInstance::setProjectBeingLoadedInfo(const ProjectBeingLoadedInfo& info)
-{
-    assert(QThread::currentThread() == qApp->thread());
-    _imp->projectBeingLoaded = info;
-}
-
-const std::list<NodePtr>&
-AppInstance::getNodesBeingCreated() const
+bool
+AppInstance::isTopLevelNodeBeingCreated(const NodePtr& node) const
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    return _imp->_creatingNodeQueue;
+    if (!_imp->createNodeStack.root) {
+        return false;
+    }
+    return _imp->createNodeStack.root->node == node;
 }
 
 bool
-AppInstance::isCreatingNodeTree() const
+AppInstance::isDuringPythonPyPlugCreation() const
 {
-    QMutexLocker k(&_imp->creatingGroupMutex);
-
-    return _imp->_creatingTree;
+    if (_imp->createNodeStack.recursionStack.empty()) {
+        return false;
+    }
+    return _imp->createNodeStack.recursionStack.back()->isPythonPyPlugRecursive();
 }
 
-void
-AppInstance::setIsCreatingNodeTree(bool b)
+bool
+AppInstance::isDuringPyPlugCreation() const
 {
-    QMutexLocker k(&_imp->creatingGroupMutex);
-
-    if (b) {
-        ++_imp->_creatingTree;
-    } else {
-        if (_imp->_creatingTree >= 1) {
-            --_imp->_creatingTree;
-        } else {
-            _imp->_creatingTree = 0;
-        }
+    if (_imp->createNodeStack.recursionStack.empty()) {
+        return false;
     }
+    return _imp->createNodeStack.recursionStack.back()->isDuringPyPlugCreationRecursive();
 }
 
 void
 AppInstance::checkForNewVersion() const
 {
-    FileDownloader* downloader = new FileDownloader( QUrl( QString::fromUtf8(NATRON_LAST_VERSION_URL) ), false );
+    FileDownloader* downloader = new FileDownloader( QUrl( QString::fromUtf8(NATRON_LATEST_VERSION_URL) ), false );
     QObject::connect( downloader, SIGNAL(downloaded()), this, SLOT(newVersionCheckDownloaded()) );
     QObject::connect( downloader, SIGNAL(error()), this, SLOT(newVersionCheckError()) );
 
@@ -433,8 +508,8 @@ AppInstance::newVersionCheckDownloaded()
                + pclose
                + popen
                + tr("You can download it from %1.")
-               .arg( QString::fromUtf8("<a href=\"https://natron.fr/download\">"
-                                       "www.natron.fr</a>") )
+               .arg( QString::fromUtf8("<a href=\"https://natrongithub.github.io/#download\">"
+                                       "natrongithub.github.io</a>") )
                + pclose;
         Dialogs::informationDialog( tr("New version").toStdString(), text.toStdString(), true );
     }
@@ -449,78 +524,6 @@ AppInstance::newVersionCheckError()
     assert(downloader);
     downloader->deleteLater();
 }
-
-void
-AppInstance::getWritersWorkForCL(const CLArgs& cl,
-                                 std::list<AppInstance::RenderWork>& requests)
-{
-    const std::list<CLArgs::WriterArg>& writers = cl.getWriterArgs();
-
-    for (std::list<CLArgs::WriterArg>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
-        NodePtr writerNode;
-        if (!it->mustCreate) {
-            std::string writerName = it->name.toStdString();
-            writerNode = getNodeByFullySpecifiedName(writerName);
-
-            if (!writerNode) {
-                QString s = tr("%1 does not belong to the project file. Please enter a valid Write node script-name.").arg(it->name);
-                throw std::invalid_argument( s.toStdString() );
-            } else {
-                if ( !writerNode->isOutputNode() ) {
-                    QString s = tr("%1 is not an output node! It cannot render anything.").arg(it->name);
-                    throw std::invalid_argument( s.toStdString() );
-                }
-            }
-
-            if ( !it->filename.isEmpty() ) {
-                KnobPtr fileKnob = writerNode->getKnobByName(kOfxImageEffectFileParamName);
-                if (fileKnob) {
-                    KnobOutputFile* outFile = dynamic_cast<KnobOutputFile*>( fileKnob.get() );
-                    if (outFile) {
-                        outFile->setValue( it->filename.toStdString() );
-                    }
-                }
-            }
-        } else {
-            CreateNodeArgs args(PLUGINID_NATRON_WRITE, getProject());
-            args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-            args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-            args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-            writerNode = createWriter( it->filename.toStdString(), args );
-            if (!writerNode) {
-                throw std::runtime_error( tr("Failed to create writer for %1.").arg(it->filename).toStdString() );
-            }
-
-            //Connect the writer to the corresponding Output node input
-            NodePtr output = getProject()->getNodeByFullySpecifiedName( it->name.toStdString() );
-            if (!output) {
-                throw std::invalid_argument( tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
-            }
-            GroupOutput* isGrpOutput = dynamic_cast<GroupOutput*>( output->getEffectInstance().get() );
-            if (!isGrpOutput) {
-                throw std::invalid_argument( tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
-            }
-            NodePtr outputInput = output->getRealInput(0);
-            if (outputInput) {
-                writerNode->connectInput(outputInput, 0);
-            }
-        }
-
-        assert(writerNode);
-        OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( writerNode->getEffectInstance().get() );
-
-        if ( cl.hasFrameRange() ) {
-            const std::list<std::pair<int, std::pair<int, int> > >& frameRanges = cl.getFrameRanges();
-            for (std::list<std::pair<int, std::pair<int, int> > >::const_iterator it2 = frameRanges.begin(); it2 != frameRanges.end(); ++it2) {
-                AppInstance::RenderWork r( effect, it2->second.first, it2->second.second, it2->first, cl.areRenderStatsEnabled() );
-                requests.push_back(r);
-            }
-        } else {
-            AppInstance::RenderWork r( effect, INT_MIN, INT_MAX, INT_MIN, cl.areRenderStatsEnabled() );
-            requests.push_back(r);
-        }
-    }
-} // AppInstance::getWritersWorkForCL
 
 void
 AppInstancePrivate::executeCommandLinePythonCommands(const CLArgs& args)
@@ -558,6 +561,8 @@ AppInstance::load(const CLArgs& cl,
     assert(!_imp->_currentProject); // < This function may only be called once per AppInstance
     _imp->_currentProject = Project::create( shared_from_this() );
     _imp->_currentProject->initializeKnobsPublic();
+
+    _imp->renderQueue = boost::make_shared<RenderQueue>( shared_from_this() );
 
     loadInternal(cl, makeEmptyInstance);
 }
@@ -601,7 +606,7 @@ AppInstance::loadInternal(const CLArgs& cl,
             throw std::invalid_argument( tr("%1: No such file.").arg(scriptFilename).toStdString() );
         }
 
-        std::list<AppInstance::RenderWork> writersWork;
+        std::list<RenderQueue::RenderWork> writersWork;
 
 
         if ( info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) {
@@ -625,9 +630,7 @@ AppInstance::loadInternal(const CLArgs& cl,
             }
         }
 
-
-        getWritersWorkForCL(cl, writersWork);
-
+        _imp->renderQueue->createRenderRequestsFromCommandLineArgs(cl, writersWork);
 
         ///Set reader parameters if specified from the command-line
         const std::list<CLArgs::ReaderArg>& readerArgs = cl.getReaderArgs();
@@ -649,21 +652,18 @@ AppInstance::loadInternal(const CLArgs& cl,
                 std::string exc( tr("%1: Filename specified is empty but [-i] or [--reader] was passed to the command-line.").arg( QString::fromUtf8( readerName.c_str() ) ).toStdString() );
                 throw std::invalid_argument(exc);
             }
-            KnobPtr fileKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
+            KnobIPtr fileKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
             if (fileKnob) {
-                KnobFile* outFile = dynamic_cast<KnobFile*>( fileKnob.get() );
+                KnobFilePtr outFile = toKnobFile(fileKnob);
                 if (outFile) {
-                    outFile->setValue( it->filename.toStdString() );
+                    outFile->setValue(it->filename.toStdString());
                 }
             }
         }
 
         ///launch renders
         if ( !writersWork.empty() ) {
-            startWritersRendering(false, writersWork);
-        } else {
-            std::list<std::string> writers;
-            startWritersRenderingFromNames( cl.areRenderStatsEnabled(), false, writers, cl.getFrameRanges() );
+            _imp->renderQueue->renderNonBlocking(writersWork);
         }
     } else if (appPTR->getAppType() == AppManager::eAppTypeInterpreter) {
         QFileInfo info( cl.getScriptFilename() );
@@ -703,26 +703,34 @@ AppInstance::loadInternal(const CLArgs& cl,
 } // AppInstance::load
 
 bool
+AppInstance::loadPythonScriptAndReportToScriptEditor(const QString& script)
+{
+
+    {
+        std::string err;
+        bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript("app = app1\n", &err, 0);
+        assert(ok);
+        (void)ok;
+    }
+
+    std::string err, output;
+
+    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script.toStdString(), &err, &output);
+
+    if (!ok) {
+        QString message( QString::fromUtf8("Failed to load python script: ") );
+        message.append( QString::fromUtf8( err.c_str() ) );
+        appendToScriptEditor( message.toStdString() );
+        return false;
+    } else if (!output.empty()) {
+        appendToScriptEditor(output);
+    }
+    return true;
+}
+
+bool
 AppInstance::loadPythonScript(const QFileInfo& file)
 {
-    std::string addToPythonPath("sys.path.append(\"");
-
-    addToPythonPath += file.path().toStdString();
-    addToPythonPath += "\")\n";
-
-    std::string err;
-    bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(addToPythonPath, &err, 0);
-    assert(ok);
-    if (!ok) {
-        throw std::runtime_error("AppInstance::loadPythonScript(" + file.path().toStdString() + "): interpretPythonScript(" + addToPythonPath + " failed!");
-    }
-
-    std::string s = "app = app1\n";
-    ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
-    assert(ok);
-    if (!ok) {
-        throw std::runtime_error("AppInstance::loadPythonScript(" + file.path().toStdString() + "): interpretPythonScript(" + s + " failed!");
-    }
 
     QFile f( file.absoluteFilePath() );
     if ( !f.open(QIODevice::ReadOnly) ) {
@@ -730,265 +738,223 @@ AppInstance::loadPythonScript(const QFileInfo& file)
     }
     QTextStream ts(&f);
     QString content = ts.readAll();
-    bool hasCreateInstance = content.contains( QString::fromUtf8("def createInstance") );
-    /*
-       The old way of doing it was
-
-        QString hasCreateInstanceScript = QString("import sys\n"
-        "import %1\n"
-        "ret = True\n"
-        "if not hasattr(%1,\"createInstance\") or not hasattr(%1.createInstance,\"__call__\"):\n"
-        "    ret = False\n").arg(filename);
+    return loadPythonScriptAndReportToScriptEditor(content);
+}
 
 
-        ok = interpretPythonScript(hasCreateInstanceScript.toStdString(), &err, 0);
 
-
-       which is wrong because it will try to import the script first.
-       But we in the case of regular scripts, we allow the user to access externally declared variables such as "app", "app1" etc...
-       and this would not be possible if the script was imported. Importing the module would then fail because it could not
-       find the variables and the script could not be executed.
-     */
-
-    if (hasCreateInstance) {
-        QString moduleName = file.fileName();
-        int lastDotPos = moduleName.lastIndexOf( QChar::fromLatin1('.') );
-        if (lastDotPos != -1) {
-            moduleName = moduleName.left(lastDotPos);
-        }
-
-        std::stringstream ss;
-        ss << "import " << moduleName.toStdString() << '\n';
-        ss << moduleName.toStdString() << ".createInstance(app,app)";
-
-        std::string output;
-        FlagIncrementer flag(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
-        CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
-        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
-            if ( !err.empty() ) {
-                Dialogs::errorDialog(tr("Python").toStdString(), err);
-            }
-
-            return false;
-        } else {
-            if ( !output.empty() ) {
-                if ( appPTR->isBackground() ) {
-                    std::cout << output << std::endl;
-                } else {
-                    appendToScriptEditor(output);
-                }
-            }
-        }
-
-        getProject()->forceComputeInputDependentDataOnAllTrees();
-    } else {
-        PyRun_SimpleString( content.toStdString().c_str() );
-
-        PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
-        std::string error;
-        ///Gui session, do stdout, stderr redirection
-        PyObject *errCatcher = 0;
-
-        if ( PyObject_HasAttrString(mainModule, "catchErr") ) {
-            errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
-        }
-
-        PyErr_Print(); //make python print any errors
-
-        PyObject *errorObj = 0;
-        if (errCatcher) {
-            errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
-            assert(errorObj);
-            error = NATRON_PYTHON_NAMESPACE::PyStringToStdString(errorObj);
-            PyObject* unicode = PyUnicode_FromString("");
-            PyObject_SetAttrString(errCatcher, "value", unicode);
-            Py_DECREF(errorObj);
-            Py_DECREF(errCatcher);
-        }
-
-        if ( !error.empty() ) {
-            QString message( QString::fromUtf8("Failed to load ") );
-            message.append( file.absoluteFilePath() );
-            message.append( QString::fromUtf8(": ") );
-            message.append( QString::fromUtf8( error.c_str() ) );
-            appendToScriptEditor( message.toStdString() );
-        }
-    }
-
-    return true;
-} // AppInstance::loadPythonScript
-
-class AddCreateNode_RAII
+AddCreateNode_RAII::AddCreateNode_RAII(const AppInstancePtr& app,
+                                       const NodePtr& node,
+                                       const CreateNodeArgsPtr& args)
+: _imp(app->_imp.get())
+, _item()
 {
-    AppInstancePrivate* _imp;
-    NodePtr _node;
+    _item = boost::make_shared<CreateNodeStackItem>();
+    _item->args = args;
+    _item->node = node;
 
-public:
-
-
-    AddCreateNode_RAII(AppInstancePrivate* imp,
-                       const NodePtr& node)
-        : _imp(imp)
-        , _node(node)
-    {
-        _imp->_creatingNodeQueue.push_back(node);
+    if (!_imp->createNodeStack.recursionStack.empty()) {
+        // There is a parent node being created
+        const CreateNodeStackItemPtr& parent = _imp->createNodeStack.recursionStack.back();
+        parent->children.push_back(_item);
+        _item->parent  = parent;
     }
 
-    virtual ~AddCreateNode_RAII()
-    {
-        std::list<NodePtr>::iterator found = std::find(_imp->_creatingNodeQueue.begin(), _imp->_creatingNodeQueue.end(), _node);
+    if (!_imp->createNodeStack.root) {
+        _imp->createNodeStack.root = _item;
+    }
 
-        if ( found != _imp->_creatingNodeQueue.end() ) {
-            _imp->_creatingNodeQueue.erase(found);
+
+    // Check recursively if we should create the node UI or not
+    bool argsNoNodeGui = args->getPropertyUnsafe<bool>(kCreateNodeArgsPropNoNodeGUI);
+    CreateNodeStackItemPtr parent = _item->parent.lock();
+    if (!argsNoNodeGui && parent) {
+        argsNoNodeGui |= parent->isGuiDisabledRecursive();
+        if (argsNoNodeGui) {
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         }
     }
-};
+
+    _imp->createNodeStack.recursionStack.push_back(_item);
+
+}
+
+AddCreateNode_RAII::~AddCreateNode_RAII()
+{
+    CreateNodeStackItemPtrList::iterator found = std::find(_imp->createNodeStack.recursionStack.begin(), _imp->createNodeStack.recursionStack.end(), _item);
+
+    if ( found != _imp->createNodeStack.recursionStack.end() ) {
+        _imp->createNodeStack.recursionStack.erase(found);
+    }
+
+
+    if (_item == _imp->createNodeStack.root) {
+        _imp->createNodeStack.root.reset();
+    }
+
+}
+
 
 NodePtr
-AppInstance::createNodeFromPythonModule(Plugin* plugin,
-                                        const CreateNodeArgs& args)
+AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsPtr& args)
 
 {
     /*If the plug-in is a toolset, execute the toolset script and don't actually create a node*/
-    bool istoolsetScript = plugin->getToolsetScript();
+    bool istoolsetScript = plugin->getPropertyUnsafe<bool>(kNatronPluginPropPyPlugIsToolset);
     NodePtr node;
 
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
-    boost::shared_ptr<NodeCollection> group = args.getProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer);
-    {
-        FlagIncrementer fs(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
-        if (_imp->_creatingGroup == 1) {
-            bool createGui = !args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI) && !args.getProperty<bool>(kCreateNodeArgsPropOutOfProject);
-            _imp->_creatingInternalNode = !createGui;
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
+    NodeCollectionPtr group = args->getPropertyUnsafe<NodeCollectionPtr>(kCreateNodeArgsPropGroupContainer);
+
+    std::string pyPlugFile = plugin->getPropertyUnsafe<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
+    std::string pyPlugDirPath;
+
+    std::size_t foundSlash = pyPlugFile.find_last_of("/");
+    if (foundSlash != std::string::npos) {
+        pyPlugDirPath = pyPlugFile.substr(0, foundSlash);
+    }
+
+    std::string pyPlugID = plugin->getPluginID();
+
+    // Backward compat with older PyPlugs using Python scripts
+    bool isPyPlugEncodedWithPythonScript = plugin->getPropertyUnsafe<bool>(kNatronPluginPropPyPlugIsPythonScript);
+    QString extScriptFile = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropPyPlugExtScriptFile).c_str());
+    if (!isPyPlugEncodedWithPythonScript && !extScriptFile.isEmpty()) {
+        // A pyplug might have custom functions defined in a custmo Python script, check if such
+        // file exists. If so import it
+
+        QString moduleName = extScriptFile;
+        // Remove extension to get module name
+        {
+            int foundDot = moduleName.lastIndexOf(QLatin1Char('.'));
+            if (foundDot != -1) {
+                moduleName = moduleName.mid(0, foundDot);
+            }
         }
-        CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
+
+
+        QString script = QString::fromUtf8("import %1").arg(moduleName);
+        std::string error, output;
+        if (!NATRON_PYTHON_NAMESPACE::interpretPythonScript(script.toStdString(), &error, &output)) {
+            appendToScriptEditor(error);
+        } else if (!output.empty()) {
+            appendToScriptEditor(output);
+        }
+    }
+
+    std::string originalPluginID = plugin->getPropertyUnsafe<std::string>(kNatronPluginPropPyPlugContainerID);
+    if (originalPluginID.empty()) {
+        originalPluginID = PLUGINID_NATRON_GROUP;
+    }
+    {
+
+        // If the pyplug-id and original plug-id are the same, this is a bug in the PyPlug.
+        // We must avoid infinite recursion so bail out now.
+        if (pyPlugID == originalPluginID) {
+            return node;
+        }
         NodePtr containerNode;
+        CreateNodeArgsPtr groupArgs;
         if (!istoolsetScript) {
-            CreateNodeArgs groupArgs = args;
-            groupArgs.setProperty<std::string>(kCreateNodeArgsPropPluginID,PLUGINID_NATRON_GROUP);
-            groupArgs.setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, true);
+            groupArgs = boost::make_shared<CreateNodeArgs>(*args);
+            groupArgs->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
+            groupArgs->setProperty<std::string>(kCreateNodeArgsPropPluginID, originalPluginID);
+            groupArgs->setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, true);
+            groupArgs->setProperty<std::string>(kCreateNodeArgsPropPyPlugID, pyPlugID);
             containerNode = createNode(groupArgs);
             if (!containerNode) {
                 return containerNode;
             }
 
-            if (!serialization && args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName).empty()) {
-                std::string containerName;
-                try {
-                    if (group) {
-                        group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(), &containerName);
-                    }
-                    containerNode->setScriptName(containerName);
-                    containerNode->setLabel(containerName);
-                } catch (...) {
+        }
+        node = containerNode;
+
+        // For older pyPlugs with Python script, we must create the nodes now.
+        // For newer pyPlugs this is taken care of in the Node::load function when creating
+        // the container group
+        if (isPyPlugEncodedWithPythonScript) {
+
+            boost::scoped_ptr<AddCreateNode_RAII> creatingNode_raii;
+            if (containerNode) {
+                creatingNode_raii.reset(new AddCreateNode_RAII(shared_from_this(), containerNode, groupArgs));
+            }
+            std::string containerFullySpecifiedName;
+            if (containerNode) {
+                containerFullySpecifiedName = containerNode->getFullyQualifiedName();
+            }
+
+            std::string pythonModuleName = pyPlugFile.substr(foundSlash + 1);
+
+            // Remove file exstension
+            std::size_t foundDot = pythonModuleName.find_last_of(".");
+            if (foundDot != std::string::npos) {
+                pythonModuleName = pythonModuleName.substr(0, foundDot);
+            }
+
+            int appID = getAppID() + 1;
+            std::stringstream ss;
+            ss << pythonModuleName;
+            ss << ".createInstance(app" << appID;
+            if (istoolsetScript) {
+                ss << ",\"\"";
+            } else {
+                ss << ", app" << appID << "." << containerFullySpecifiedName;
+            }
+            ss << ")\n";
+            std::string err;
+            std::string output;
+            if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
+                Dialogs::errorDialog(tr("Group plugin creation error").toStdString(), err);
+                if (containerNode) {
+                    containerNode->destroyNode();
+                }
+
+                return node;
+            } else {
+                if ( !output.empty() ) {
+                    appendToScriptEditor(output);
+                }
+                node = containerNode;
+            }
+            if (istoolsetScript) {
+                return NodePtr();
+            }
+
+            // Mark all knobs as non-user knobs. Since they were created with the Python API the isUserKnob flag is set to true
+            // but they are not actually user knobs since its a PyPlug
+            const KnobsVec& knobs = containerNode->getKnobs();
+            for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+                if ((*it)->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser) {
+                    (*it)->setKnobDeclarationType(KnobI::eKnobDeclarationTypePlugin);
                 }
             }
-        }
-
-        AddCreateNode_RAII creatingNode_raii(_imp.get(), containerNode);
-        std::string containerFullySpecifiedName;
-        if (containerNode) {
-            containerFullySpecifiedName = containerNode->getFullyQualifiedName();
-        }
 
 
-        QString moduleName;
-        QString modulePath;
-        plugin->getPythonModuleNameAndPath(&moduleName, &modulePath);
-
-        if ( !moduleName.isEmpty() ) {
-            setGroupLabelIDAndVersion(containerNode, modulePath, moduleName);
-        }
-
-        int appID = getAppID() + 1;
-        std::stringstream ss;
-        ss << moduleName.toStdString();
-        ss << ".createInstance(app" << appID;
-        if (istoolsetScript) {
-            ss << ",\"\"";
-        } else {
-            ss << ", app" << appID << "." << containerFullySpecifiedName;
-        }
-        ss << ")\n";
-        std::string err;
-        std::string output;
-        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
-            Dialogs::errorDialog(tr("Group plugin creation error").toStdString(), err);
-            if (containerNode) {
-                containerNode->destroyNode(false, false);
+            // If there's a serialization, restore the serialization of the group node because the Python script probably overriden any state
+            if (serialization) {
+                containerNode->fromSerialization(*serialization);
             }
 
-            return node;
-        } else {
-            if ( !output.empty() ) {
-                appendToScriptEditor(output);
-            }
-            node = containerNode;
-        }
-        if (istoolsetScript) {
-            return NodePtr();
-        }
 
-        // If there's a serialization, restore the serialization of the group node because the Python script probably overriden any state
-        if (serialization) {
-            containerNode->loadKnobs(*serialization);
-        }
-    } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
-
-    ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-    bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
-    onGroupCreationFinished(node, serialization, autoConnect);
+            
+            // Now that we ran the python script, refresh the default page order so it doesn't get serialized into the project for nothing
+            containerNode->refreshDefaultPagesOrder();
+        } // isPyPlugEncodedWithPythonScript
+        
+    } // CreatingNodeTreeFlag_RAII
 
     return node;
 } // AppInstance::createNodeFromPythonModule
 
-void
-AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
-                                       const QString& pythonModulePath,
-                                       const QString &pythonModule)
-{
-    std::string pluginID, pluginLabel, iconFilePath, pluginGrouping, description;
-    unsigned int version;
-    bool istoolset;
 
-    if ( NATRON_PYTHON_NAMESPACE::getGroupInfos(pythonModulePath.toStdString(), pythonModule.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &istoolset, &version) ) {
-        QString groupingStr = QString::fromUtf8( pluginGrouping.c_str() );
-        QStringList groupingSplits = groupingStr.split( QLatin1Char('/') );
-        std::list<std::string> stdGrouping;
-        for (QStringList::iterator it = groupingSplits.begin(); it != groupingSplits.end(); ++it) {
-            stdGrouping.push_back( it->toStdString() );
-        }
-
-        node->setPluginIDAndVersionForGui(stdGrouping, pluginLabel, pluginID, description, iconFilePath, version);
-        node->setPluginPythonModule( QString( pythonModulePath + pythonModule + QString::fromUtf8(".py") ).toStdString() );
-    }
-}
 
 NodePtr
 AppInstance::createReader(const std::string& filename,
-                          CreateNodeArgs& args)
+                          const CreateNodeArgsPtr& args)
 {
     std::string pluginID;
 
-#ifndef NATRON_ENABLE_IO_META_NODES
-
-    std::map<std::string, std::string> readersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-    QString fileCpy = QString::fromUtf8( filename.c_str() );
-    QString extq = QtCompat::removeFileExtension(fileCpy).toLower();
-    std::string ext = extq.toStdString();
-    std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
-    if ( found == readersForFormat.end() ) {
-        Dialogs::errorDialog( tr("Reader").toStdString(),
-                              tr("No plugin capable of decoding %1 was found").arg(extq).toStdString(), false );
-
-        return NodePtr();
-    }
-    pluginID = found->second;
-    CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), reason, group);
-#endif
-
-    args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
+    args->addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
     std::string canonicalFilename = filename;
     getProject()->canonicalizePath(canonicalFilename);
 
@@ -997,161 +963,145 @@ AppInstance::createReader(const std::string& filename,
     std::vector<int> originalRange(2);
     originalRange[0] = firstFrame;
     originalRange[1] = lastFrame;
-    args.addParamDefaultValueN<int>(kReaderParamNameOriginalFrameRange, originalRange);
+    args->addParamDefaultValueN<int>(kReaderParamNameOriginalFrameRange, originalRange);
 
     return createNode(args);
 }
 
 NodePtr
 AppInstance::createWriter(const std::string& filename,
-                          CreateNodeArgs& args,
+                          const CreateNodeArgsPtr& args,
                           int firstFrame,
                           int lastFrame)
 {
-#ifndef NATRON_ENABLE_IO_META_NODES
-    std::map<std::string, std::string> writersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
 
-    QString fileCpy = QString::fromUtf8( filename.c_str() );
-    QString extq = QtCompat::removeFileExtension(fileCpy).toLower();
-    std::string ext = extq.toStdString();
-    std::map<std::string, std::string>::iterator found = writersForFormat.find(ext);
-    if ( found == writersForFormat.end() ) {
-        Dialogs::errorDialog( tr("Writer").toStdString(),
-                              tr("No plugin capable of encoding %1 was found.").arg(extq).toStdString(), false );
-
-        return NodePtr();
-    }
-
-
-    CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), reason, collection);
-#endif
-    args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
+    args->addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
     if ( (firstFrame != INT_MIN) && (lastFrame != INT_MAX) ) {
-        args.addParamDefaultValue<int>("frameRange", 2);
-        args.addParamDefaultValue<int>("firstFrame", firstFrame);
-        args.addParamDefaultValue<int>("lastFrame", lastFrame);
+        args->addParamDefaultValue<int>("frameRange", 2);
+        args->addParamDefaultValue<int>("firstFrame", firstFrame);
+        args->addParamDefaultValue<int>("lastFrame", lastFrame);
     }
 
     return createNode(args);
 }
 
-static std::string removeTrailingDigits(const std::string& str)
+bool
+AppInstance::openFileDialogIfNeeded(const CreateNodeArgsPtr& args, bool openFile)
 {
-    if (str.empty()) {
-        return std::string();
-    }
-    std::size_t i = str.size() - 1;
-    while (i > 0 && std::isdigit(str[i])) {
-        --i;
-    }
 
-    if (i == 0) {
-        // Name only consists of digits
-        return std::string();
-    }
-
-    return str.substr(0, i + 1);
-}
-
-/**
- * @brief An inspector node is like a viewer node with hidden inputs that unfolds one after another.
- * This functions returns the number of inputs to use for inspectors or 0 for a regular node.
- **/
-static bool
-isEntitledForInspector(Plugin* plugin,
-                       OFX::Host::ImageEffect::Descriptor* ofxDesc)
-{
-    if ( ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_VIEWER) ) ||
-         ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_ROTOPAINT) ) ||
-         ( plugin->getPluginID() == QString::fromUtf8(PLUGINID_NATRON_ROTO) ) ) {
-        return true;
-    }
-
-    if (!ofxDesc) {
-        return false;
-    }
-
-    // Find the number of inputs that share the same basename
-
-    int nInputsWithSameBasename = 0;
-
-    std::string baseInputName;
-
-    // We need a boolean here because the baseInputName may be empty in the case input names only contain numbers
-    bool baseInputNameSet = false;
-
-    const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = ofxDesc->getClipsByOrder();
-    int nInputs = 0;
-    for (std::vector<OFX::Host::ImageEffect::ClipDescriptor*>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
-        if ( !(*it)->isOutput() ) {
-            ++nInputs;
-            if (!baseInputNameSet) {
-                baseInputName = removeTrailingDigits((*it)->getName());
-                baseInputNameSet = true;
-                nInputsWithSameBasename = 1;
-            } else {
-                std::string thisBaseName = removeTrailingDigits((*it)->getName());
-                if (thisBaseName == baseInputName) {
-                    ++nInputsWithSameBasename;
-                }
-            }
+    // True if the caller set a value for the kOfxImageEffectFileParamName parameter
+    bool hasDefaultFilename = false;
+    {
+        std::vector<std::string> defaultParamValues = args->getPropertyNUnsafe<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
+        std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
+        if (foundFileName != defaultParamValues.end()) {
+            std::string propName(kCreateNodeArgsPropParamValue);
+            propName += "_";
+            propName += kOfxImageEffectFileParamName;
+            hasDefaultFilename = !args->getPropertyUnsafe<std::string>(propName).empty();
         }
     }
-    return nInputs > 4 && nInputsWithSameBasename >= 4;
 
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
+
+    bool isSilent = args->getPropertyUnsafe<bool>(kCreateNodeArgsPropSilent);
+    bool isPersistent = !args->getPropertyUnsafe<bool>(kCreateNodeArgsPropVolatile);
+    bool hasGui = !args->getPropertyUnsafe<bool>(kCreateNodeArgsPropNoNodeGUI);
+    bool mustOpenDialog = !isSilent && !serialization && isPersistent && !hasDefaultFilename && hasGui && !isBackground();
+
+    if (mustOpenDialog) {
+        std::string pattern;
+        if (openFile) {
+            pattern = openImageFileDialog();
+        } else {
+            pattern = saveImageFileDialog();
+        }
+        if (!pattern.empty()) {
+            args->addParamDefaultValue(kOfxImageEffectFileParamName, pattern);
+            return true;
+        }
+
+        // User canceled operation
+        return false;
+    } else {
+        // We already have a filename
+        return true;
+    }
+}
+
+void
+AppInstance::onNodeAboutToBeCreated(const NodePtr& /*node*/, const CreateNodeArgsPtr& /*args*/)
+{
+
+}
+
+void
+AppInstance::onNodeCreated(const NodePtr& /*node*/, const CreateNodeArgsPtr& /*args*/)
+{
+    
 }
 
 NodePtr
-AppInstance::createNodeInternal(CreateNodeArgs& args)
+AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
 {
     NodePtr node;
-    Plugin* plugin = 0;
-    QString findId;
+    PluginPtr plugin;
 
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
-    bool trustPluginID = args.getProperty<bool>(kCreateNodeArgsPropTrustPluginID);
-    QString argsPluginID = QString::fromUtf8(args.getProperty<std::string>(kCreateNodeArgsPropPluginID).c_str());
-    int versionMajor = args.getProperty<int>(kCreateNodeArgsPropPluginVersion, 0);
-    int versionMinor = args.getProperty<int>(kCreateNodeArgsPropPluginVersion, 1);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
 
-    //Roto has moved to a built-in plugin
-    if ( (!trustPluginID || serialization) &&
-         ( ( !_imp->_projectCreatedWithLowerCaseIDs && ( argsPluginID == QString::fromUtf8(PLUGINID_OFX_ROTO) ) ) || ( _imp->_projectCreatedWithLowerCaseIDs && ( argsPluginID == QString::fromUtf8(PLUGINID_OFX_ROTO).toLower() ) ) ) ) {
-        findId = QString::fromUtf8(PLUGINID_NATRON_ROTO);
-    } else {
-        findId = argsPluginID;
+    QString argsPluginID = QString::fromUtf8(args->getPropertyUnsafe<std::string>(kCreateNodeArgsPropPluginID).c_str());
+    int versionMajor = args->getPropertyUnsafe<int>(kCreateNodeArgsPropPluginVersion, 0);
+    int versionMinor = args->getPropertyUnsafe<int>(kCreateNodeArgsPropPluginVersion, 1);
+
+    bool isSilentCreation = args->getPropertyUnsafe<bool>(kCreateNodeArgsPropSilent);
+
+    QString findId = argsPluginID;
+
+    // In Natron 1.0.0 plug-in IDs were serialized lower case.
+    // To ensure we load properly these projects we need to perform a case insensitive search on the plug-in ID.
+    bool caseSensitivePluginSearch = true;
+
+    {
+
+        SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo pInfo;
+        if (getProject()->getProjectLoadedVersionInfo(&pInfo)) {
+            if (pInfo.vMajor == 1 && pInfo.vMinor == 0 && pInfo.vRev == 0) {
+                caseSensitivePluginSearch = false;
+            }
+            if (pInfo.vMajor <= 2 && pInfo.vMinor < 1) {
+                // In Natron 1.x the Roto node was implemented as a OpenFX plug-in. Now it is built-in, so convert plug-in ID.
+                if (findId.compare(QString::fromUtf8(PLUGINID_OFX_ROTO).toLower(), Qt::CaseInsensitive) == 0) {
+                    findId = QString::fromUtf8(PLUGINID_NATRON_ROTO);
+                }
+            }
+        }
+
     }
 
-    bool isSilentCreation = args.getProperty<bool>(kCreateNodeArgsPropSilent);
-
-
-#ifdef NATRON_ENABLE_IO_META_NODES
-    NodePtr argsIOContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
-    //If it is a reader or writer, create a ReadNode or WriteNode
+    // If it is a reader or writer, create a ReadNode or WriteNode instead that will contain this plug-in
+    NodePtr argsIOContainer = args->getPropertyUnsafe<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
     if (!argsIOContainer) {
-        if ( ReadNode::isBundledReader( argsPluginID.toStdString(), wasProjectCreatedWithLowerCaseIDs() ) ) {
-            args.addParamDefaultValue(kNatronReadNodeParamDecodingPluginID, argsPluginID.toStdString());
+        if ( ReadNode::isBundledReader( argsPluginID.toStdString() ) ) {
+            args->addParamDefaultValue(kNatronWriteNodeParamEncodingPluginChoice, argsPluginID.toStdString());
             findId = QString::fromUtf8(PLUGINID_NATRON_READ);
-        } else if ( WriteNode::isBundledWriter( argsPluginID.toStdString(), wasProjectCreatedWithLowerCaseIDs() ) ) {
-            args.addParamDefaultValue(kNatronWriteNodeParamEncodingPluginID, argsPluginID.toStdString());
+        } else if ( WriteNode::isBundledWriter( argsPluginID.toStdString() ) ) {
+            args->addParamDefaultValue(kNatronWriteNodeParamEncodingPluginChoice, argsPluginID.toStdString());
             findId = QString::fromUtf8(PLUGINID_NATRON_WRITE);
         }
     }
-#endif
 
     try {
-        plugin = appPTR->getPluginBinary(findId, versionMajor, versionMinor, _imp->_projectCreatedWithLowerCaseIDs && serialization);
+        plugin = appPTR->getPluginBinary(findId, versionMajor, versionMinor, caseSensitivePluginSearch);
     } catch (const std::exception & e1) {
         ///Ok try with the old Ids we had in Natron prior to 1.0
         try {
-            plugin = appPTR->getPluginBinaryFromOldID(argsPluginID, versionMajor, versionMinor);
+            plugin = appPTR->getPluginBinaryFromOldID(argsPluginID, versionMajor, versionMinor, caseSensitivePluginSearch);
         } catch (const std::exception& e2) {
             if (!isSilentCreation) {
                 Dialogs::errorDialog(tr("Plugin error").toStdString(),
-                                 tr("Cannot load plug-in executable.").toStdString() + ": " + e2.what(), false );
+                                 tr("Cannot load plug-in executable").toStdString() + ": " + e2.what(), false );
             } else {
-                std::cerr << tr("Cannot load plug-in executable.").toStdString() + ": " + e2.what() << std::endl;
+                std::cerr << tr("Cannot load plug-in executable").toStdString() + ": " + e2.what() << std::endl;
             }
             return node;
         }
@@ -1161,7 +1111,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         return node;
     }
 
-    bool allowUserCreatablePlugins = args.getProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins);
+    bool allowUserCreatablePlugins = args->getPropertyUnsafe<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins);
     if ( !plugin->getIsUserCreatable() && !allowUserCreatablePlugins ) {
         //The plug-in should not be instantiable by the user
         qDebug() << "Attempt to create" << argsPluginID << "which is not user creatable";
@@ -1169,100 +1119,55 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         return node;
     }
 
+    std::string foundPluginID = plugin->getPluginID();
+    
+    {
+        bool useDialogForWriters = appPTR->getCurrentSettings()->isFileDialogEnabledForNewWriters();
 
-    /*
-       If the plug-in is a PyPlug create it with createNodeFromPythonModule() except in the following situations:
-       - The user speicifed in the Preferences that he/she prefers loading PyPlugs from their serialization in the .ntp
-       file rather than load the Python script
-       - The user is copy/pasting in which case we don't want to run the Python code which could override modifications
-       made by the user on the original node
-     */
-    const QString& pythonModule = plugin->getPythonModule();
-    if ( !pythonModule.isEmpty() ) {
-        bool disableLoadFromScript = args.getProperty<bool>(kCreateNodeArgsPropDoNotLoadPyPlugFromScript);
-        if (!disableLoadFromScript) {
-            try {
-                return createNodeFromPythonModule(plugin, args);
-            } catch (const std::exception& e) {
-                if (!isSilentCreation) {
-                    Dialogs::errorDialog(tr("Plugin error").toStdString(),
-                                     tr("Cannot create PyPlug:").toStdString() + e.what(), false );
-                } else {
-                    std::cerr << tr("Cannot create PyPlug").toStdString() + ": " + e.what() << std::endl;
-                }
+        // For Read/Write, open file dialog if needed
+        bool isReader = foundPluginID == PLUGINID_NATRON_READ;
+        bool isWriter = foundPluginID == PLUGINID_NATRON_WRITE;
+        if (isReader || (useDialogForWriters && isWriter)) {
+            if (!openFileDialogIfNeeded(args, isReader)) {
                 return node;
             }
-        } else {
-            plugin = appPTR->getPluginBinary(QString::fromUtf8(PLUGINID_NATRON_GROUP), -1, -1, false);
-            assert(plugin);
         }
     }
 
-    std::string foundPluginID = plugin->getPluginID().toStdString();
-    ContextEnum ctx;
-    OFX::Host::ImageEffect::Descriptor* ofxDesc = plugin->getOfxDesc(&ctx);
-
-    if (!ofxDesc) {
-        OFX::Host::ImageEffect::ImageEffectPlugin* ofxPlugin = plugin->getOfxPlugin();
-        if (ofxPlugin) {
-            try {
-                //  Should this method be in AppManager?
-                // ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin, &ctx);
-                ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin, &ctx);
-            } catch (const std::exception& e) {
-                if (!isSilentCreation) {
-                    errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of %1:").arg(argsPluginID).toStdString()
-                            + '\n' + e.what(), false);
-                } else {
-                    std::cerr << tr("Failed to create an instance of %1:").arg(argsPluginID).toStdString() + '\n' + e.what() << std::endl;
-                }
-                return NodePtr();
+    // If the plug-in is a PyPlug create it with createNodeFromPyPlug()
+    std::string pyPlugFile = plugin->getPropertyUnsafe<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
+    if ( !pyPlugFile.empty() ) {
+        try {
+            return createNodeFromPyPlug(plugin, args);
+        } catch (const std::exception& e) {
+            if (!isSilentCreation) {
+                Dialogs::errorDialog(tr("Plugin error").toStdString(),
+                                     tr("Cannot create PyPlug:").toStdString() + e.what(), false );
+            } else {
+                std::cerr << tr("Cannot create PyPlug").toStdString() + ": " + e.what() << std::endl;
             }
-
-            assert(ofxDesc);
-            plugin->setOfxDesc(ofxDesc, ctx);
+            return node;
         }
     }
 
-    boost::shared_ptr<NodeCollection> argsGroup = args.getProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer);
+
+    // Get the group container
+    NodeCollectionPtr argsGroup = args->getPropertyUnsafe<NodeCollectionPtr>(kCreateNodeArgsPropGroupContainer);
     if (!argsGroup) {
         argsGroup = getProject();
     }
+    assert(argsGroup);
 
-    bool useInspector = isEntitledForInspector(plugin, ofxDesc);
+    AppInstancePtr thisShared = shared_from_this();
 
-    if (!useInspector) {
-        node = boost::make_shared<Node>(shared_from_this(), argsGroup, plugin);
-    } else {
-        node = boost::make_shared<InspectorNode>(shared_from_this(), argsGroup, plugin);
-    }
-
-
-
-
-    AddCreateNode_RAII creatingNode_raii(_imp.get(), node);
+    node = Node::create(thisShared, argsGroup, plugin);
 
     {
-        ///Furnace plug-ins don't handle using the thread pool
-        SettingsPtr settings = appPTR->getCurrentSettings();
-        if ( !isSilentCreation && boost::starts_with(foundPluginID, "uk.co.thefoundry.furnace") &&
-             ( settings->useGlobalThreadPool() || ( settings->getNumberOfParallelRenders() != 1) ) ) {
-            StandardButtonEnum reply = Dialogs::questionDialog(tr("Warning").toStdString(),
-                                                               tr("The settings of the application are currently set to use "
-                                                                  "the global thread-pool for rendering effects.\n"
-                                                                  "The Foundry Furnace "
-                                                                  "is known not to work well when this setting is checked.\n"
-                                                                  "Would you like to turn it off?").toStdString(), false);
-            if (reply == eStandardButtonYes) {
-                settings->setUseGlobalThreadPool(false);
-                settings->setNumberOfParallelRenders(1);
-            }
-        }
 
         // If this is a stereo plug-in, check that the project has been set for multi-view
-        if (!isSilentCreation) {
-            const QStringList& grouping = plugin->getGrouping();
-            if ( !grouping.isEmpty() && ( grouping[0] == QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW) ) ) {
+        if (!isSilentCreation && !isBackground()) {
+            std::vector<std::string> grouping = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
+            if (!grouping.empty() && grouping[0] == PLUGIN_GROUP_MULTIVIEW) {
                 int nbViews = getProject()->getProjectViewsCount();
                 if (nbViews < 2) {
                     StandardButtonEnum reply = Dialogs::questionDialog(tr("Multi-View").toStdString(),
@@ -1277,21 +1182,17 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         }
     }
 
-
-    //if (args.addToProject) {
-    //Add the node to the project before loading it so it is present when the python script that registers a variable of the name
-    //of the node works
-    if (argsGroup) {
-        argsGroup->addNode(node);
-    }
-    //}
     assert(node);
+    // Call load: this will setup the node from the plug-in and its knobs. It also read from the serialization object if any
     try {
+        onNodeAboutToBeCreated(node, args);
         node->load(args);
+        onNodeCreated(node, args);
     } catch (const std::exception & e) {
         if (argsGroup) {
             argsGroup->removeNode(node.get());
         }
+        node->destroyNode();
         std::string error( e.what() );
         if ( !error.empty() ) {
             std::string title("Error while creating node");
@@ -1305,93 +1206,12 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         return NodePtr();
     }
 
-    NodePtr multiInstanceParent = node->getParentMultiInstance();
-
-
-    // _imp->_creatingInternalNode will be set to false if we created a pyPlug with the flag args.createGui = false
-    bool createGui = !_imp->_creatingInternalNode;
-    bool argsNoNodeGui = args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
-    if (argsNoNodeGui) {
-        createGui = false;
-    }
-    if (createGui) {
-        try {
-            createNodeGui(node, multiInstanceParent, args);
-        } catch (const std::exception& e) {
-            node->destroyNode(true, false);
-            if (!isSilentCreation) {
-                std::string title("Error while creating node");
-                std::string message = title + " " + foundPluginID + ": " + e.what();
-                qDebug() << message.c_str();
-                errorDialog(title, message, false);
-            }
-            return boost::shared_ptr<Node>();
-        }
-    }
-
-    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
-
-    if (isGrp) {
-        bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
-        bool createInitialNodes = !args.getProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes);
-        if (serialization) {
-            if ( serialization && !serialization->getPythonModule().empty() ) {
-                QString pythonModulePath = QString::fromUtf8( ( serialization->getPythonModule().c_str() ) );
-                QString moduleName;
-                QString modulePath;
-                int foundLastSlash = pythonModulePath.lastIndexOf( QChar::fromLatin1('/') );
-                if (foundLastSlash != -1) {
-                    modulePath = pythonModulePath.mid(0, foundLastSlash + 1);
-                    moduleName = pythonModulePath.remove(0, foundLastSlash + 1);
-                }
-                QtCompat::removeFileExtension(moduleName);
-                setGroupLabelIDAndVersion(node, modulePath, moduleName);
-            }
-            onGroupCreationFinished(node, serialization, autoConnect);
-        } else if ( createInitialNodes && !serialization  && createGui && !_imp->_creatingGroup && (isGrp->getPluginID() == PLUGINID_NATRON_GROUP) ) {
-            //if the node is a group and we're not loading the project, create one input and one output
-            NodePtr input, output;
-
-            {
-                CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, isGrp);
-                args.setProperty(kCreateNodeArgsPropAutoConnect, false);
-                args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
-                args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
-                output = createNode(args);
-                try {
-                    output->setLabel("Output");
-                } catch (...) {
-                }
-
-                assert(output);
-            }
-            {
-                CreateNodeArgs args(PLUGINID_NATRON_INPUT, isGrp);
-                args.setProperty(kCreateNodeArgsPropAutoConnect, false);
-                args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
-                args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
-                input = createNode(args);
-                assert(input);
-            }
-            if ( input && output && !output->getInput(0) ) {
-                output->connectInput(input, 0);
-
-                double x, y;
-                output->getPosition(&x, &y);
-                y -= 100;
-                input->setPosition(x, y);
-            }
-            onGroupCreationFinished(node, serialization, autoConnect);
-
-            ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-        }
-    }
 
     return node;
 } // createNodeInternal
 
 NodePtr
-AppInstance::createNode(CreateNodeArgs & args)
+AppInstance::createNode(const CreateNodeArgsPtr & args)
 {
     return createNodeInternal(args);
 }
@@ -1419,6 +1239,7 @@ AppInstance::exportDocs(const QString path)
         groups << QString::fromUtf8(PLUGIN_GROUP_TRANSFORM);
         groups << QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW);
         groups << QString::fromUtf8(PLUGIN_GROUP_OTHER);
+        groups << QString::fromUtf8("GMIC"); // openfx-gmic
         groups << QString::fromUtf8("Extra"); // openfx-arena
         QVector<QStringList> plugins;
 
@@ -1427,80 +1248,92 @@ AppInstance::exportDocs(const QString path)
         std::list<std::string> pluginIDs = appPTR->getPluginIDs();
         for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
             QString pluginID = QString::fromUtf8( it->c_str() );
-            if ( !pluginID.isEmpty() ) {
-                Plugin* plugin = 0;
-                QString pluginID = QString::fromUtf8( it->c_str() );
-                plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
-                if ( plugin && !plugin->getIsDeprecated() && ( !plugin->getIsForInternalUseOnly() || plugin->isReader() || plugin->isWriter() ) ) {
-                    QStringList groups = plugin->getGrouping();
-                    groups << groups.at(0);
-                    QStringList plugList;
-                    plugList << plugin->getGrouping().at(0) << pluginID << Plugin::makeLabelWithoutSuffix( plugin->getPluginLabel() );
-                    plugins << plugList;
-                    CreateNodeArgs args( pluginID.toStdString(), boost::shared_ptr<NodeCollection>() );
-                    args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-                    args.setProperty(kCreateNodeArgsPropOutOfProject, true);
-                    args.setProperty(kCreateNodeArgsPropSilent, true);
-                    qDebug() << pluginID;
-                    // IMPORTANT: this code is *very* similar to DocumentationManager::handler(...) is section "_plugin.html"
-                    NodePtr node = createNode(args);
-                    if ( node &&
-                         pluginID != QString::fromUtf8(PLUGINID_NATRON_READ) &&
-                         pluginID != QString::fromUtf8(PLUGINID_NATRON_WRITE) ) {
-                        EffectInstancePtr effectInstance = node->getEffectInstance();
-                        if ( effectInstance && effectInstance->isReader() ) {
-                            ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
+            if (pluginID.isEmpty()) {
+                continue;
+            }
+            PluginPtr plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
+            if (!plugin) {
+                continue;
+            }
+            if (plugin->getPropertyUnsafe<bool>(kNatronPluginPropIsDeprecated) ) {
+                continue;
+            }
+            if (!ReadNode::isBundledReader(*it) &&
+                !WriteNode::isBundledWriter(*it) &&
+                plugin->getPropertyUnsafe<bool>(kNatronPluginPropIsInternalOnly) ) {
+                continue;
+            }
 
-                            if (isReadNode) {
-                                NodePtr subnode = isReadNode->getEmbeddedReader();
-                                if (subnode) {
-                                    node = subnode;
-                                }
-                            }
-                        } else if ( effectInstance && effectInstance->isWriter() ) {
-                            WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
 
-                            if (isWriteNode) {
-                                NodePtr subnode = isWriteNode->getEmbeddedWriter();
-                                if (subnode) {
-                                    node = subnode;
-                                }
-                            }
-                        }
-                    }
-                    if (node) {
-                        QDir mdDir(path);
-                        if ( !mdDir.exists() ) {
-                            mdDir.mkpath(path);
-                        }
+            std::vector<std::string> grouping = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
 
-                        mdDir.mkdir(QLatin1String("plugins"));
-                        mdDir.cd(QLatin1String("plugins"));
+            QString group0 = QString::fromUtf8(grouping[0].c_str());
+            groups.push_back(group0);
 
-                        QFile imgFile( plugin->getIconFilePath() );
-                        if ( imgFile.exists() ) {
-                            QString dstPath = mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".png");
-                            if (QFile::exists(dstPath)) {
-                                QFile::remove(dstPath);
-                            }
-                            if ( !imgFile.copy(dstPath) ) {
-                                std::cout << "ERROR: failed to copy image: " << imgFile.fileName().toStdString() << std::endl;
-                            }
-                        }
+            QStringList plugList;
+            plugList << group0  << pluginID << QString::fromUtf8( Plugin::makeLabelWithoutSuffix( plugin->getPluginLabel() ).c_str() );
+            plugins << plugList;
+            CreateNodeArgsPtr args(CreateNodeArgs::create(pluginID.toStdString(), NodeCollectionPtr() ));
+            args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+            args->setProperty(kCreateNodeArgsPropVolatile, true);
+            args->setProperty(kCreateNodeArgsPropSilent, true);
+            qDebug() << pluginID;
+            NodePtr node = createNode(args);
+            if (node) {
+                // IMPORTANT: this code is *very* similar to DocumentationManager::handler(...) is section "_plugin.html"
+                EffectInstancePtr effectInstance = node->getEffectInstance();
+                if ( effectInstance->isReader() ) {
+                    ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
-                        QString md = node->makeDocumentation(false);
-                        QFile mdFile( mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".md") );
-                        if ( mdFile.open(QIODevice::Text | QIODevice::WriteOnly) ) {
-                            QTextStream out(&mdFile);
-                            out << md;
-                            mdFile.close();
-                        } else {
-                            std::cout << "ERROR: failed to write to file: " << mdFile.fileName().toStdString() << std::endl;
+                    if (isReadNode) {
+                        NodePtr subnode = isReadNode->getEmbeddedReader();
+                        if (subnode) {
+                            node = subnode;
                         }
                     }
                 }
+                if ( effectInstance->isWriter() ) {
+                    WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
+
+                    if (isWriteNode) {
+                        NodePtr subnode = isWriteNode->getEmbeddedWriter();
+                        if (subnode) {
+                            node = subnode;
+                        }
+                    }
+                }
+                QDir mdDir(path);
+                if ( !mdDir.exists() ) {
+                    mdDir.mkpath(path);
+                }
+
+                mdDir.mkdir(QLatin1String("plugins"));
+                mdDir.cd(QLatin1String("plugins"));
+
+                QFile imgFile( QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str()) );
+                if ( imgFile.exists() ) {
+                    QString dstPath = mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".png");
+                    if (QFile::exists(dstPath)) {
+                        QFile::remove(dstPath);
+                    }
+                    if ( !imgFile.copy(dstPath) ) {
+                        std::cout << "ERROR: failed to copy image: " << imgFile.fileName().toStdString() << std::endl;
+                    }
+                }
+
+                assert(node);
+                QString md = node->makeDocumentation(false);
+                QFile mdFile( mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".md") );
+                if ( mdFile.open(QIODevice::Text | QIODevice::WriteOnly) ) {
+                    QTextStream out(&mdFile);
+                    out << md;
+                    mdFile.close();
+                } else {
+                    std::cout << "ERROR: failed to write to file: " << mdFile.fileName().toStdString() << std::endl;
+                }
             }
         }
+
 
         // Generate RST for plugin groups
         // IMPORTANT: this code is *very* similar to DocumentationManager::handler in the "_group.html" section
@@ -1518,11 +1351,12 @@ AppInstance::exportDocs(const QString path)
         groupMD.append( QString::fromUtf8("    _prefs.rst\n") );
 
         Q_FOREACH(const QString &group, groups) {
+
             QString plugMD;
 
             plugMD.append( tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) );
             plugMD.append( QString::fromUtf8("\n============================================================\n\n") );
-            plugMD.append( tr("The following sections contain documentation about every node in the  %1 group.").arg( tr( group.toUtf8().constData() ) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") /*+ QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")*/ );
+            plugMD.append( tr("The following sections contain documentation about every node in the %1 group.").arg( tr( group.toUtf8().constData() ) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") /*+ QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")*/ );
             plugMD.append( QString::fromUtf8("\n\n") );
             //plugMD.append( QString::fromUtf8("Contents:\n\n") );
             plugMD.append( QString::fromUtf8(".. toctree::\n") );
@@ -1543,7 +1377,6 @@ AppInstance::exportDocs(const QString path)
                 //const QString& plugName = i.key();
                 plugMD.append( QString::fromUtf8("    plugins/") + plugID + QString::fromUtf8(".rst\n") );
             }
-
             groupMD.append( QString::fromUtf8("    _group") + group + QString::fromUtf8(".rst\n") );
 
             QFile plugFile( path + QString::fromUtf8("/_group") + group + QString::fromUtf8(".rst") );
@@ -1582,16 +1415,22 @@ AppInstance::getNodeByFullySpecifiedName(const std::string & name) const
     return _imp->_currentProject->getNodeByFullySpecifiedName(name);
 }
 
-boost::shared_ptr<Project>
+ProjectPtr
 AppInstance::getProject() const
 {
     return _imp->_currentProject;
 }
 
-boost::shared_ptr<TimeLine>
+TimeLinePtr
 AppInstance::getTimeLine() const
 {
     return _imp->_currentProject->getTimeLine();
+}
+
+RenderQueuePtr
+AppInstance::getRenderQueue() const
+{
+    return _imp->renderQueue;
 }
 
 void
@@ -1669,321 +1508,8 @@ AppInstance::triggerAutoSave()
     _imp->_currentProject->triggerAutoSave();
 }
 
-void
-AppInstance::startWritersRenderingFromNames(bool enableRenderStats,
-                                            bool doBlockingRender,
-                                            const std::list<std::string>& writers,
-                                            const std::list<std::pair<int, std::pair<int, int> > >& frameRanges)
-{
-    std::list<RenderWork> renderers;
-
-    if ( !writers.empty() ) {
-        for (std::list<std::string>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
-            const std::string& writerName = *it;
-            NodePtr node = getNodeByFullySpecifiedName(writerName);
-
-            if (!node) {
-                std::string exc(writerName);
-                exc.append( tr(" does not belong to the project file. Please enter a valid Write node script-name.").toStdString() );
-                throw std::invalid_argument(exc);
-            } else {
-                if ( !node->isOutputNode() ) {
-                    std::string exc(writerName);
-                    exc.append( tr(" is not an output node! It cannot render anything.").toStdString() );
-                    throw std::invalid_argument(exc);
-                }
-                ViewerInstance* isViewer = node->isEffectViewer();
-                if (isViewer) {
-                    throw std::invalid_argument("Internal issue with the project loader...viewers should have been evicted from the project.");
-                }
-
-                if (node->isNodeDisabled() || !node->isActivated()) {
-                    continue;
-                }
-                OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
-                assert(effect);
-
-                for (std::list<std::pair<int, std::pair<int, int> > >::const_iterator it2 = frameRanges.begin(); it2 != frameRanges.end(); ++it2) {
-                    RenderWork w(effect, it2->second.first, it2->second.second, it2->first, enableRenderStats);
-                    renderers.push_back(w);
-                }
-
-                if ( frameRanges.empty() ) {
-                    RenderWork r(effect, INT_MIN, INT_MAX, INT_MIN, enableRenderStats);
-                    renderers.push_back(r);
-                }
-            }
-        }
-    } else {
-        //start rendering for all writers found in the project
-        std::list<OutputEffectInstance*> writers;
-        getProject()->getWriters(&writers);
-
-        for (std::list<OutputEffectInstance*>::const_iterator it2 = writers.begin(); it2 != writers.end(); ++it2) {
-            assert(*it2);
-            if (*it2) {
-
-                if ((*it2)->getNode()->isNodeDisabled() || !(*it2)->getNode()->isActivated()) {
-                    continue;
-                }
-
-                for (std::list<std::pair<int, std::pair<int, int> > >::const_iterator it3 = frameRanges.begin(); it3 != frameRanges.end(); ++it3) {
-                    RenderWork w(*it2, it3->second.first, it3->second.second, it3->first, enableRenderStats);
-                    renderers.push_back(w);
-                }
-
-                if ( frameRanges.empty() ) {
-                    RenderWork r(*it2, INT_MIN, INT_MAX, INT_MIN, enableRenderStats);
-                    renderers.push_back(r);
-                }
-            }
-        }
-    }
 
 
-    if ( renderers.empty() ) {
-        throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
-    }
-
-    startWritersRendering(doBlockingRender, renderers);
-} // AppInstance::startWritersRenderingFromNames
-
-void
-AppInstance::startWritersRendering(bool doBlockingRender,
-                                   const std::list<RenderWork>& writers)
-{
-    if ( writers.empty() ) {
-        return;
-    }
-
-
-    bool renderInSeparateProcess = appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled();
-    QString savePath;
-    if (renderInSeparateProcess) {
-        getProject()->saveProject_imp(QString(), QString::fromUtf8("RENDER_SAVE.ntp"), true, false, &savePath);
-    }
-
-    std::list<RenderQueueItem> itemsToQueue;
-    for (std::list<RenderWork>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
-        if (it->writer->getNode()->isNodeDisabled() || !it->writer->getNode()->isActivated()) {
-            continue;
-        }
-        RenderQueueItem item;
-        item.work = *it;
-        if ( !_imp->validateRenderOptions(item.work, &item.work.firstFrame, &item.work.lastFrame, &item.work.frameStep) ) {
-            continue;;
-        }
-        _imp->getSequenceNameFromWriter(it->writer, &item.sequenceName);
-        item.savePath = savePath;
-
-        if (renderInSeparateProcess) {
-            item.process = boost::make_shared<ProcessHandler>(savePath, item.work.writer);
-            QObject::connect( item.process.get(), SIGNAL(processFinished(int)), this, SLOT(onBackgroundRenderProcessFinished()) );
-        } else {
-            QObject::connect(item.work.writer->getRenderEngine().get(), SIGNAL(renderFinished(int)), this, SLOT(onQueuedRenderFinished(int)), Qt::UniqueConnection);
-        }
-
-        bool canPause = !item.work.writer->isVideoWriter();
-
-        if (!it->isRestart) {
-            notifyRenderStarted(item.sequenceName, item.work.firstFrame, item.work.lastFrame, item.work.frameStep, canPause, item.work.writer, item.process);
-        } else {
-            notifyRenderRestarted(item.work.writer, item.process);
-        }
-        itemsToQueue.push_back(item);
-    }
-    if ( itemsToQueue.empty() ) {
-        return;
-    }
-
-    if (appPTR->isBackground() || doBlockingRender) {
-        //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
-        QtConcurrent::blockingMap( itemsToQueue, boost::bind(&AppInstancePrivate::startRenderingFullSequence, _imp.get(), true, _1) );
-    } else {
-        bool isQueuingEnabled = appPTR->getCurrentSettings()->isRenderQueuingEnabled();
-        if (isQueuingEnabled) {
-            QMutexLocker k(&_imp->renderQueueMutex);
-            if ( !_imp->activeRenders.empty() ) {
-                _imp->renderQueue.insert( _imp->renderQueue.end(), itemsToQueue.begin(), itemsToQueue.end() );
-
-                return;
-            } else {
-                std::list<RenderQueueItem>::const_iterator it = itemsToQueue.begin();
-                const RenderQueueItem& firstWork = *it;
-                ++it;
-                for (; it != itemsToQueue.end(); ++it) {
-                    _imp->renderQueue.push_back(*it);
-                }
-                k.unlock();
-                _imp->startRenderingFullSequence(false, firstWork);
-            }
-        } else {
-            for (std::list<RenderQueueItem>::const_iterator it = itemsToQueue.begin(); it != itemsToQueue.end(); ++it) {
-                _imp->startRenderingFullSequence(false, *it);
-            }
-        }
-    }
-} // AppInstance::startWritersRendering
-
-void
-AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstance* writer,
-                                              QString* sequenceName)
-{
-    ///get the output file knob to get the name of the sequence
-    const DiskCacheNode* isDiskCache = dynamic_cast<const DiskCacheNode*>(writer);
-
-    if (isDiskCache) {
-        *sequenceName = tr("Caching");
-    } else {
-        *sequenceName = QString();
-        KnobPtr fileKnob = writer->getKnobByName(kOfxImageEffectFileParamName);
-        if (fileKnob) {
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( fileKnob.get() );
-            assert(isString);
-            if (isString) {
-                *sequenceName = QString::fromUtf8( isString->getValue().c_str() );
-            }
-        }
-    }
-}
-
-bool
-AppInstancePrivate::validateRenderOptions(const AppInstance::RenderWork& w,
-                                          int* firstFrame,
-                                          int* lastFrame,
-                                          int* frameStep)
-{
-    ///validate the frame range to render
-    if ( (w.firstFrame == INT_MIN) || (w.lastFrame == INT_MAX) ) {
-        double firstFrameD, lastFrameD;
-        w.writer->getFrameRange_public(w.writer->getHash(), &firstFrameD, &lastFrameD, true);
-        if ( (firstFrameD == INT_MIN) || (lastFrameD == INT_MAX) ) {
-            _publicInterface->getFrameRange(&firstFrameD, &lastFrameD);
-        }
-
-        if (firstFrameD > lastFrameD) {
-            Dialogs::errorDialog(w.writer->getNode()->getLabel_mt_safe(),
-                                 tr("First frame index in the sequence is greater than the last frame index.").toStdString(), false );
-
-            return false;
-        }
-        *firstFrame = (int)firstFrameD;
-        *lastFrame = (int)lastFrameD;
-    } else {
-        *firstFrame = w.firstFrame;
-        *lastFrame = w.lastFrame;
-    }
-
-    if ( (w.frameStep == INT_MAX) || (w.frameStep == INT_MIN) ) {
-        ///Get the frame step from the frame step parameter of the Writer
-        *frameStep = w.writer->getNode()->getFrameStepKnobValue();
-    } else {
-        *frameStep = std::max(1, w.frameStep);
-    }
-
-    return true;
-}
-
-void
-AppInstancePrivate::startRenderingFullSequence(bool blocking,
-                                               const RenderQueueItem& w)
-{
-    if (blocking) {
-        BlockingBackgroundRender backgroundRender(w.work.writer);
-        backgroundRender.blockingRender(w.work.useRenderStats, w.work.firstFrame, w.work.lastFrame, w.work.frameStep); //< doesn't return before rendering is finished
-        return;
-    }
-
-
-    {
-        QMutexLocker k(&renderQueueMutex);
-        activeRenders.push_back(w);
-    }
-
-
-    if (w.process) {
-        w.process->startProcess();
-    } else {
-        w.work.writer->renderFullSequence(false, w.work.useRenderStats, NULL, w.work.firstFrame, w.work.lastFrame, w.work.frameStep);
-    }
-}
-
-void
-AppInstance::onQueuedRenderFinished(int /*retCode*/)
-{
-    RenderEngine* engine = qobject_cast<RenderEngine*>( sender() );
-
-    if (!engine) {
-        return;
-    }
-    boost::shared_ptr<OutputEffectInstance> effect = engine->getOutput();
-    if (!effect) {
-        return;
-    }
-    startNextQueuedRender( effect.get() );
-}
-
-void
-AppInstance::removeRenderFromQueue(OutputEffectInstance* writer)
-{
-    QMutexLocker k(&_imp->renderQueueMutex);
-
-    for (std::list<RenderQueueItem>::iterator it = _imp->renderQueue.begin(); it != _imp->renderQueue.end(); ++it) {
-        if (it->work.writer == writer) {
-            _imp->renderQueue.erase(it);
-            break;
-        }
-    }
-}
-
-void
-AppInstance::startNextQueuedRender(OutputEffectInstance* finishedWriter)
-{
-    RenderQueueItem nextWork;
-
-    // Do not make the process die under the mutex otherwise we may deadlock
-    boost::shared_ptr<ProcessHandler> processDying;
-    {
-        QMutexLocker k(&_imp->renderQueueMutex);
-        for (std::list<RenderQueueItem>::iterator it = _imp->activeRenders.begin(); it != _imp->activeRenders.end(); ++it) {
-            if (it->work.writer == finishedWriter) {
-                processDying = it->process;
-                _imp->activeRenders.erase(it);
-                break;
-            }
-        }
-        if ( !_imp->renderQueue.empty() ) {
-            nextWork = _imp->renderQueue.front();
-            _imp->renderQueue.pop_front();
-        } else {
-            return;
-        }
-    }
-    processDying.reset();
-
-    _imp->startRenderingFullSequence(false, nextWork);
-}
-
-void
-AppInstance::onBackgroundRenderProcessFinished()
-{
-    ProcessHandler* proc = qobject_cast<ProcessHandler*>( sender() );
-    OutputEffectInstance* effect = 0;
-
-    if (proc) {
-        effect = proc->getWriter();
-    }
-    if (effect) {
-        startNextQueuedRender(effect);
-    }
-}
-
-void
-AppInstance::getFrameRange(double* first,
-                           double* last) const
-{
-    return _imp->_currentProject->getFrameRange(first, last);
-}
 
 void
 AppInstance::clearOpenFXPluginsCaches()
@@ -1993,19 +1519,17 @@ AppInstance::clearOpenFXPluginsCaches()
     _imp->_currentProject->getActiveNodes(&activeNodes);
 
     for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        (*it)->purgeAllInstancesCaches();
+        (*it)->getEffectInstance()->purgeCaches_public();
     }
 }
 
 void
 AppInstance::clearAllLastRenderedImages()
 {
-    NodesList activeNodes;
-
-    _imp->_currentProject->getNodes_recursive(activeNodes, false);
+    NodesList activeNodes = _imp->_currentProject->getNodes();
 
     for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        (*it)->clearLastRenderedImage();
+        (*it)->getEffectInstance()->clearLastRenderedImage();
     }
 }
 
@@ -2078,24 +1602,10 @@ AppInstance::getProjectFrameRate() const
     return _imp->_currentProject->getProjectFrameRate();
 }
 
-void
-AppInstance::setProjectWasCreatedWithLowerCaseIDs(bool b)
-{
-    _imp->_projectCreatedWithLowerCaseIDs = b;
-}
-
 bool
-AppInstance::wasProjectCreatedWithLowerCaseIDs() const
+AppInstance::isCreatingNode() const
 {
-    return _imp->_projectCreatedWithLowerCaseIDs;
-}
-
-bool
-AppInstance::isCreatingPythonGroup() const
-{
-    QMutexLocker k(&_imp->creatingGroupMutex);
-
-    return _imp->_creatingGroup;
+    return _imp->createNodeStack.root.get() != 0;
 }
 
 void
@@ -2178,32 +1688,13 @@ AppInstance::getAppIDString() const
     }
 }
 
-void
-AppInstance::onGroupCreationFinished(const NodePtr& node,
-                                     const boost::shared_ptr<NodeSerialization>& serialization, bool /*autoConnect*/)
-{
-    assert(node);
-
-    // If the node is a PyPlug we might have set in the Python scripts the Mask and Optional knobs of the GroupInput
-    // nodes, but nothing updated the inputs since we were loading the PyPlug, ensure they are up to date.
-    node->initializeInputs();
-    if ( !_imp->_currentProject->isLoadingProject() && !serialization ) {
-        NodeGroup* isGrp = node->isEffectGroup();
-        assert(isGrp);
-        if (!isGrp) {
-            return;
-        }
-
-        isGrp->forceComputeInputDependentDataOnAllTrees();
-    }
-}
 
 bool
 AppInstance::saveTemp(const std::string& filename)
 {
     std::string outFile = filename;
     std::string path = SequenceParsing::removePath(outFile);
-    boost::shared_ptr<Project> project = getProject();
+    ProjectPtr project = getProject();
 
     return project->saveProject_imp(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), false, false, 0);
 }
@@ -2211,7 +1702,7 @@ AppInstance::saveTemp(const std::string& filename)
 bool
 AppInstance::save(const std::string& filename)
 {
-    boost::shared_ptr<Project> project = getProject();
+    ProjectPtr project = getProject();
 
     if ( project->hasProjectBeenSavedByUser() ) {
         QString projectFilename = project->getProjectFilename();
@@ -2232,19 +1723,19 @@ AppInstance::saveAs(const std::string& filename)
     return getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), 0);
 }
 
-AppInstPtr
+AppInstancePtr
 AppInstance::loadProject(const std::string& filename)
 {
     QFileInfo file( QString::fromUtf8( filename.c_str() ) );
 
     if ( !file.exists() ) {
-        return AppInstPtr();
+        return AppInstancePtr();
     }
     QString fileUnPathed = file.fileName();
     QString path = file.path() + QChar::fromLatin1('/');
 
     //We are in background mode, there can only be 1 instance active, wipe the current project
-    boost::shared_ptr<Project> project = getProject();
+    ProjectPtr project = getProject();
     project->resetProject();
 
     bool ok  = project->loadProject( path, fileUnPathed);
@@ -2254,7 +1745,7 @@ AppInstance::loadProject(const std::string& filename)
 
     project->resetProject();
 
-    return AppInstPtr();
+    return AppInstancePtr();
 }
 
 ///Close the current project but keep the window
@@ -2277,22 +1768,28 @@ AppInstance::closeProject()
 }
 
 ///Opens a new project
-AppInstPtr
+AppInstancePtr
 AppInstance::newProject()
 {
     CLArgs cl;
-    AppInstPtr app = appPTR->newAppInstance(cl, false);
+    AppInstancePtr app = appPTR->newAppInstance(cl, false);
 
     return app;
 }
 
 void
-AppInstance::addInvalidExpressionKnob(const KnobPtr& knob)
+AppInstance::updateProjectLoadStatus(const QString& str)
+{
+    std::cout << str.toStdString() << std::endl;
+}
+
+void
+AppInstance::addInvalidExpressionKnob(const KnobIPtr& knob)
 {
     QMutexLocker k(&_imp->invalidExprKnobsMutex);
 
-    for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
-        if ( it->lock().get() ) {
+    for (std::list<KnobIWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
+        if ( it->lock() == knob ) {
             return;
         }
     }
@@ -2300,12 +1797,12 @@ AppInstance::addInvalidExpressionKnob(const KnobPtr& knob)
 }
 
 void
-AppInstance::removeInvalidExpressionKnob(const KnobI* knob)
+AppInstance::removeInvalidExpressionKnob(const KnobIConstPtr& knob)
 {
     QMutexLocker k(&_imp->invalidExprKnobsMutex);
 
-    for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
-        if (it->lock().get() == knob) {
+    for (std::list<KnobIWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
+        if (it->lock() == knob) {
             _imp->invalidExprKnobs.erase(it);
             break;
         }
@@ -2313,25 +1810,26 @@ AppInstance::removeInvalidExpressionKnob(const KnobI* knob)
 }
 
 void
-AppInstance::recheckInvalidExpressions()
+AppInstance::recheckInvalidLinks()
 {
     if (getProject()->isProjectClosing()) {
         return;
     }
-    std::list<KnobPtr> knobs;
+    std::list<KnobIPtr> knobs;
+
     {
         QMutexLocker k(&_imp->invalidExprKnobsMutex);
-        for (std::list<KnobWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
-            KnobPtr k = it->lock();
+        for (std::list<KnobIWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
+            KnobIPtr k = it->lock();
             if (k) {
                 knobs.push_back(k);
             }
         }
     }
-    std::list<KnobWPtr> newInvalidKnobs;
+    std::list<KnobIWPtr> newInvalidKnobs;
 
-    for (std::list<KnobPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ( !(*it)->checkInvalidExpressions() ) {
+    for (std::list<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        if ( !(*it)->checkInvalidLinks() ) {
             newInvalidKnobs.push_back(*it);
         }
     }
@@ -2340,6 +1838,300 @@ AppInstance::recheckInvalidExpressions()
         _imp->invalidExprKnobs = newInvalidKnobs;
     }
 }
+
+
+void
+AppInstance::setMainWindowPointer(SerializableWindow* window)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->mainWindow = window;
+}
+
+SerializableWindow*
+AppInstance::getMainWindowSerialization() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->mainWindow;
+}
+
+std::list<SerializableWindow*>
+AppInstance::getFloatingWindowsSerialization() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->floatingWindows;
+}
+
+std::list<SplitterI*>
+AppInstance::getSplittersSerialization() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->splitters;
+}
+
+std::list<TabWidgetI*>
+AppInstance::getTabWidgetsSerialization() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->tabWidgets;
+}
+
+std::list<PyPanelI*>
+AppInstance::getPyPanelsSerialization() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->pythonPanels;
+}
+
+void
+AppInstance::registerFloatingWindow(SerializableWindow* window)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<SerializableWindow*>::iterator found = std::find(_imp->floatingWindows.begin(), _imp->floatingWindows.end(), window);
+
+    if ( found == _imp->floatingWindows.end() ) {
+        _imp->floatingWindows.push_back(window);
+    }
+}
+
+void
+AppInstance::unregisterFloatingWindow(SerializableWindow* window)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<SerializableWindow*>::iterator found = std::find(_imp->floatingWindows.begin(), _imp->floatingWindows.end(), window);
+
+    if ( found != _imp->floatingWindows.end() ) {
+        _imp->floatingWindows.erase(found);
+    }
+}
+
+void
+AppInstance::registerSplitter(SplitterI* splitter)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<SplitterI*>::iterator found = std::find(_imp->splitters.begin(), _imp->splitters.end(), splitter);
+
+    if ( found == _imp->splitters.end() ) {
+        _imp->splitters.push_back(splitter);
+    }
+}
+
+void
+AppInstance::unregisterSplitter(SplitterI* splitter)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<SplitterI*>::iterator found = std::find(_imp->splitters.begin(), _imp->splitters.end(), splitter);
+
+    if ( found != _imp->splitters.end() ) {
+        _imp->splitters.erase(found);
+    }
+}
+
+void
+AppInstance::registerTabWidget(TabWidgetI* tabWidget)
+{
+
+    onTabWidgetRegistered(tabWidget);
+    {
+        QMutexLocker k(&_imp->uiInfoMutex);
+        bool hasAnchor = false;
+
+        for (std::list<TabWidgetI*>::iterator it = _imp->tabWidgets.begin(); it != _imp->tabWidgets.end(); ++it) {
+            if ( (*it)->isAnchor() ) {
+                hasAnchor = true;
+                break;
+            }
+        }
+        std::list<TabWidgetI*>::iterator found = std::find(_imp->tabWidgets.begin(), _imp->tabWidgets.end(), tabWidget);
+
+        if ( found == _imp->tabWidgets.end() ) {
+            if ( _imp->tabWidgets.empty() ) {
+                tabWidget->setClosable(false);
+            }
+            _imp->tabWidgets.push_back(tabWidget);
+
+            if (!hasAnchor) {
+                tabWidget->setAsAnchor(true);
+            }
+        }
+    }
+
+}
+
+void
+AppInstance::unregisterTabWidget(TabWidgetI* tabWidget)
+{
+    {
+        QMutexLocker k(&_imp->uiInfoMutex);
+        std::list<TabWidgetI*>::iterator found = std::find(_imp->tabWidgets.begin(), _imp->tabWidgets.end(), tabWidget);
+
+        if ( found != _imp->tabWidgets.end() ) {
+            _imp->tabWidgets.erase(found);
+        }
+        if ( ( tabWidget->isAnchor() ) && !_imp->tabWidgets.empty() ) {
+            _imp->tabWidgets.front()->setAsAnchor(true);
+        }
+    }
+    onTabWidgetUnregistered(tabWidget);
+}
+
+void
+AppInstance::clearTabWidgets()
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->tabWidgets.clear();
+}
+
+void
+AppInstance::clearFloatingWindows()
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->floatingWindows.clear();
+}
+
+void
+AppInstance::clearSplitters()
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->splitters.clear();
+}
+
+void
+AppInstance::registerPyPanel(PyPanelI* panel, const std::string& pythonFunction)
+{
+    panel->setPythonFunction(QString::fromUtf8(pythonFunction.c_str()));
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<PyPanelI*>::iterator found = std::find(_imp->pythonPanels.begin(), _imp->pythonPanels.end(), panel);
+
+    if ( found == _imp->pythonPanels.end() ) {
+        _imp->pythonPanels.push_back(panel);
+    }
+}
+
+void
+AppInstance::unregisterPyPanel(PyPanelI* panel)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<PyPanelI*>::iterator found = std::find(_imp->pythonPanels.begin(), _imp->pythonPanels.end(), panel);
+
+    if ( found != _imp->pythonPanels.end() ) {
+        _imp->pythonPanels.erase(found);
+    }
+
+}
+
+void
+AppInstance::registerSettingsPanel(DockablePanelI* panel, int index)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<DockablePanelI*>::iterator found = std::find(_imp->openedSettingsPanels.begin(), _imp->openedSettingsPanels.end(), panel);
+
+    if ( found == _imp->openedSettingsPanels.end() ) {
+        if (index == -1 || index >= (int)_imp->openedSettingsPanels.size()) {
+            _imp->openedSettingsPanels.push_back(panel);
+        } else {
+            std::list<DockablePanelI*>::iterator it = _imp->openedSettingsPanels.begin();
+            std::advance(it, index);
+            _imp->openedSettingsPanels.insert(it, panel);
+        }
+    }
+}
+
+void
+AppInstance::unregisterSettingsPanel(DockablePanelI* panel)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    std::list<DockablePanelI*>::iterator found = std::find(_imp->openedSettingsPanels.begin(), _imp->openedSettingsPanels.end(), panel);
+
+    if ( found != _imp->openedSettingsPanels.end() ) {
+        _imp->openedSettingsPanels.erase(found);
+    }
+}
+
+void
+AppInstance::clearSettingsPanels()
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->openedSettingsPanels.clear();
+}
+
+std::list<DockablePanelI*>
+AppInstance::getOpenedSettingsPanels() const
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    return _imp->openedSettingsPanels;
+}
+
+void
+AppInstance::setOpenedSettingsPanelsInternal(const std::list<DockablePanelI*>& panels)
+{
+    QMutexLocker k(&_imp->uiInfoMutex);
+    _imp->openedSettingsPanels = panels;
+}
+
+QString
+AppInstance::getAvailablePaneName(const QString & baseName) const
+{
+    std::string name = baseName.toStdString();
+    QMutexLocker l(&_imp->uiInfoMutex);
+    int baseNumber = _imp->tabWidgets.size();
+
+    if ( name.empty() ) {
+        name.append("pane");
+        name.append( QString::number(baseNumber).toStdString() );
+    }
+
+    for (;;) {
+        bool foundName = false;
+        for (std::list<TabWidgetI*>::const_iterator it = _imp->tabWidgets.begin(); it != _imp->tabWidgets.end(); ++it) {
+            if ( (*it)->getScriptName() == name ) {
+                foundName = true;
+                break;
+            }
+        }
+        if (foundName) {
+            ++baseNumber;
+            name = QString::fromUtf8("pane%1").arg(baseNumber).toStdString();
+        } else {
+            break;
+        }
+    }
+
+    return QString::fromUtf8(name.c_str());
+}
+
+void
+AppInstance::saveApplicationWorkspace(SERIALIZATION_NAMESPACE::WorkspaceSerialization* serialization)
+{
+
+    // Main window
+    SerializableWindow* mainWindow = getMainWindowSerialization();
+    if (mainWindow) {
+        serialization->_mainWindowSerialization.reset(new SERIALIZATION_NAMESPACE::WindowSerialization);
+        mainWindow->toSerialization(serialization->_mainWindowSerialization.get());
+    }
+
+    // Floating windows
+    std::list<SerializableWindow*> floatingWindows = getFloatingWindowsSerialization();
+    for (std::list<SerializableWindow*>::iterator it = floatingWindows.begin(); it!=floatingWindows.end(); ++it) {
+        boost::shared_ptr<SERIALIZATION_NAMESPACE::WindowSerialization> s = boost::make_shared<SERIALIZATION_NAMESPACE::WindowSerialization>();
+        (*it)->toSerialization(s.get());
+        serialization->_floatingWindowsSerialization.push_back(s);
+
+    }
+
+    // Save active python panels
+    std::list<PyPanelI*> pythonPanels = getPyPanelsSerialization();
+    for (std::list<PyPanelI*>::iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
+        SERIALIZATION_NAMESPACE::PythonPanelSerialization s;
+        (*it)->toSerialization(&s);
+        serialization->_pythonPanels.push_back(s);
+    }
+
+    // Save opened histograms
+    getHistogramScriptNames(&serialization->_histograms);
+
+}
+
 
 NATRON_NAMESPACE_EXIT
 

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -45,6 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 #include "Global/Enums.h"
+#include "Engine/DimensionIdx.h"
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"
 #include "Engine/KnobGuiI.h"
@@ -82,266 +83,167 @@ public:
         eKnobWarningChoiceMenuOutOfDate
     };
 
-public:
-    // TODO: enable_shared_from_this
+    enum KnobLayoutTypeEnum
+    {
+        // The knob widgets will be used in a paged layout such as the property panel
+        eKnobLayoutTypePage,
+
+        // The knob widgets will be used in an horizontal layout such as the viewer top toolbar
+        eKnobLayoutTypeViewerUI,
+
+        // The knob widgets will be used in a table such as the RotoPaint items table. Ideally,
+        // there should be a single widget so the table is not cluttered
+        eKnobLayoutTypeTableItemWidget
+    };
+
+private:
+    struct MakeSharedEnabler;
+
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    KnobGui(const KnobPtr& knob,
-            KnobGuiContainerI* container);
-
-public:
-    virtual ~KnobGui() OVERRIDE;
+    // used by make_shared
+    KnobGui(const KnobIPtr& knob, KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container);
 
     void initialize();
 
+
+public:
+    static KnobGuiPtr create(const KnobIPtr& knob, KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container);
+
+    virtual ~KnobGui() OVERRIDE;
+
     KnobGuiContainerI* getContainer();
 
-    void removeGui();
+    /**
+     * @brief Calls deleteLater on all widgets owned by this knob. If the knob is on a same layout line of the other,
+     * it will not re-adjust the layout. If removing a knob it is advised to wipe all knobs in the grid layout and
+     * reconstruct them.
+     **/
+    void destroyWidgetsLater();
+
+    void removeTabWidget();
 
     void setGuiRemoved();
 
-protected:
-    /**
-     * @brief Override this to delete all user interface created for this knob
-     **/
-    virtual void removeSpecificGui() = 0;
+    KnobIPtr getKnob() const;
 
-public:
+    KnobLayoutTypeEnum getLayoutType() const;
 
-    /**
-     * @brief This function must return a pointer to the internal knob.
-     * This is virtual as it is easier to hold the knob in the derived class
-     * avoiding many dynamic_cast in the deriving class.
-     **/
-    virtual KnobPtr getKnob() const = 0;
-
-    bool isViewerUIKnob() const;
-
-    bool triggerNewLine() const;
-
-    void turnOffNewLine();
-
-    /*Set the spacing between items in the layout*/
-    void setSpacingBetweenItems(int spacing);
-
-    int getSpacingBetweenItems() const;
 
     bool hasWidgetBeenCreated() const;
 
-    void createGUI(QWidget* fieldContainer,
-                   QWidget* labelContainer,
-                   KnobClickableLabel* label,
-                   Label* warningIndicator,
-                   QHBoxLayout* layout,
-                   bool isOnNewLine,
-                   int lastKnobSpacing,
-                   const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);
+    /**
+     * @brief When enabled, only the given dimension will be created for the knob.
+     * This should be called before calling createGUI otherwise this will not be taken
+     * into account.
+     **/
+    void setSingleDimensionalEnabled(bool enabled, DimIdx dimension);
+    bool isSingleDimensionalEnabled(DimIdx* dimension) const;
 
-    virtual bool shouldAddStretch() const { return true; }
+    void createGUI(QWidget* parentWidget);
 
+
+    void pushUndoCommand(const UndoCommandPtr& command);
+
+    // Takes ownership, command is deleted when returning call
+    void pushUndoCommand(UndoCommand* command);
     void pushUndoCommand(QUndoCommand* cmd);
     const QUndoCommand* getLastUndoCommand() const;
 
-
-    void setKeyframe(double time, int dimension, ViewSpec view);
-    void setKeyframe(double time, const KeyFrame& key, int dimension, ViewSpec view);
-    void removeKeyFrame(double time, int dimension, ViewSpec view);
-
-    void setKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewSpec view);
-    void removeKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewSpec view);
-
     QString getScriptNameHtml() const;
 
-    QString toolTip() const;
+    // Apply the tooltip on the widget if non-null, otherwise return it
+    QString toolTip(QWidget* w, ViewIdx view) const;
 
     bool hasToolTip() const;
 
     Gui* getGui() const;
 
-    void enableRightClickMenu(QWidget* widget, int dimension);
 
-    virtual bool shouldCreateLabel() const;
-    virtual bool isLabelOnSameColumn() const;
-    virtual bool isLabelBold() const;
-    virtual std::string getDescriptionLabel() const;
     QWidget* getFieldContainer() const;
+    QWidget* getLabelContainer() const;
+
+    KnobGuiWidgetsPtr getWidgetsForView(ViewIdx view);
+
+    bool isLabelOnSameColumn() const;
 
     /**
      * @brief Returns the row index of the knob in the layout.
      * The knob MUST be in the layout for this function to work,
      * that is, it must be visible.
      **/
-    int getActualIndexInLayout() const;
+   // int getActualIndexInLayout() const;
 
     bool isOnNewLine() const;
 
-    ////calls setReadOnly and also set the label black
-    void setReadOnly_(bool readOnly, int dimension);
 
     int getKnobsCountOnSameLine() const;
 
 
-    void removeAllKeyframeMarkersOnTimeline(int dim);
-    void setAllKeyframeMarkersOnTimeline(int dim);
-    void setKeyframeMarkerOnTimeline(double time);
-
-    /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
-       signal/slot sequence can cause an infinite loop.*/
-    template<typename T>
-    int setValue(int dimension,
-                 const T & v,
-                 KeyFrame* newKey,
-                 bool refreshGui,
-                 ValueChangedReasonEnum reason)
-    {
-        KnobHelper::ValueChangedReturnCodeEnum ret = KnobHelper::eValueChangedReturnCodeNothingChanged;
-
-        Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
-        assert(knob);
-        if (knob) {
-            ret = knob->setValue(v, ViewSpec::current(), dimension, reason, newKey);
-        }
-        if ( (ret > 0) && (ret != KnobHelper::eValueChangedReturnCodeNothingChanged) && (reason == eValueChangedReasonUserEdited) ) {
-            assert(newKey);
-            if (ret == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
-                setKeyframeMarkerOnTimeline( newKey->getTime() );
-            }
-            Q_EMIT keyFrameSet();
-        }
-        if (refreshGui) {
-            updateGUI(dimension);
-        }
-
-        return (int)ret;
-    }
-
-    /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
-       signal/slot sequence can cause an infinite loop.*/
-    template<typename T>
-    bool setValueAtTime(int dimension,
-                        const T & v,
-                        double time,
-                        ViewSpec view,
-                        KeyFrame* newKey,
-                        bool refreshGui,
-                        ValueChangedReasonEnum reason)
-    {
-        Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
-        assert(knob);
-        KnobHelper::ValueChangedReturnCodeEnum addedKey = KnobHelper::eValueChangedReturnCodeNothingChanged;
-        if (knob) {
-            addedKey = knob->setValueAtTime(time, v, view, dimension, reason, newKey);
-        }
-        if ( (knob) && (reason == eValueChangedReasonUserEdited) ) {
-            assert(newKey);
-            setKeyframeMarkerOnTimeline( newKey->getTime() );
-        }
-        if (refreshGui) {
-            updateGUI(dimension);
-        }
-
-        return ( (addedKey != KnobHelper::eValueChangedReturnCodeNoKeyframeAdded) &&
-                 (addedKey != KnobHelper::eValueChangedReturnCodeNothingChanged) );
-    }
-
-    virtual RectD getViewportRect() const OVERRIDE FINAL;
-    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
-    /**
-     * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
-     **/
-    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL;
-
-    /**
-     * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
-     **/
-    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL;
-
-
-    /**
-     * @brief Returns the font height, i.e: the height of the highest letter for this font
-     **/
-    virtual int getWidgetFontHeight() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Returns for a string the estimated pixel size it would take on the widget
-     **/
-    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void swapOpenGLBuffers() OVERRIDE;
-    virtual void redraw() OVERRIDE;
-    virtual void getViewportSize(double &width, double &height) const OVERRIDE;
-    virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE;
-#ifdef OFX_EXTENSIONS_NATRON
-    virtual double getScreenPixelRatio() const OVERRIDE;
-#endif
-   virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE;
-    virtual void saveOpenGLContext() OVERRIDE;
-    virtual void restoreOpenGLContext() OVERRIDE;
-
-    ///Should set to the underlying knob the gui ptr
-    virtual void setKnobGuiPointer() OVERRIDE FINAL;
     virtual bool isGuiFrozenForPlayback() const OVERRIDE FINAL;
-    virtual void copyAnimationToClipboard(int dimension = -1) const OVERRIDE FINAL;
-    virtual void copyValuesToClipboard(int dimension = -1) const OVERRIDE FINAL;
-    virtual void copyLinkToClipboard(int dimension = -1) const OVERRIDE FINAL;
-    virtual boost::shared_ptr<Curve> getCurve(ViewSpec view, int dimension) const OVERRIDE FINAL;
+    virtual void copyAnimationToClipboard(DimSpec dimension, ViewSetSpec view) const OVERRIDE FINAL;
+    virtual void copyValuesToClipboard(DimSpec dimension, ViewSetSpec view) const OVERRIDE FINAL;
+    virtual void copyLinkToClipboard(DimSpec dimension, ViewSetSpec view) const OVERRIDE FINAL;
+
+    bool getAllViewsVisible() const;
 
     /**
      * @brief Check if the knob is secret by also checking the parent group visibility
      **/
     bool isSecretRecursive() const;
 
-    KnobPtr createDuplicateOnNode(EffectInstance* effect,
+    KnobIPtr createDuplicateOnNode(const EffectInstancePtr& effect,
                                   bool makeAlias,
-                                  const boost::shared_ptr<KnobPage>& page,
-                                  const boost::shared_ptr<KnobGroup>& group,
+                                  const KnobPagePtr& page,
+                                  const KnobGroupPtr& group,
                                   int indexInParent);
 
 
-    static bool shouldSliderBeVisible(int sliderMin,
-                                      int sliderMax)
-    {
-        return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN);
-    }
-
-    static bool shouldSliderBeVisible(double sliderMin,
-                                      double sliderMax)
-    {
-        return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX);
-    }
-
-    virtual bool getAllDimensionsVisible() const OVERRIDE { return true; }
 
     void setWarningValue(KnobWarningEnum warn, const QString& value);
 
+
+
+    /**
+     * @brief Check if the given clipboard copy operation can be processed. 
+     * @param showErrorDialog If true, show an error dialog upon failure.
+     **/
+    bool canPasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec fromDim, ViewSetSpec fromView, DimSpec targetDimension, ViewSetSpec targetView, bool showErrorDialog);
+
+    /**
+     * @brief Copy from the given fromKnob according to the given copy type.
+     **/
+    bool pasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec fromDim, ViewSetSpec fromView, DimSpec targetDimension, ViewSetSpec targetView);
+
+    TabGroup* getTabWidget() const;
+    TabGroup* getOrCreateTabWidget();
+
+    void addSpacerItemAtEndOfLine();
+    void removeSpacerItemAtEndOfLine();
+
+    void reflectKnobSelectionState(bool selected);
+
+    void removeAnimation(DimSpec dimension, ViewSetSpec view);
+
+    void removeKeyAtCurrentTime(DimSpec dimension, ViewSetSpec view);
+
 public Q_SLOTS:
 
-    void onRemoveAliasLinkActionTriggered();
+    void onProjectViewsChanged();
 
     void onUnlinkActionTriggered();
 
-    void onRedrawGuiCurve(int reason, ViewSpec view, int dimension);
+    void onDimensionNameChanged(DimIdx dimension);
 
-    void onDimensionNameChanged(int dimension);
+    void onInternalKnobLinksChanged();
+
+    void onInternalKnobDimensionsVisibilityChanged(ViewSetSpec view);
+
 
     /**
      * @brief Called when the internal value held by the knob is changed. It calls updateGUI().
      **/
-    void onInternalValueChanged(ViewSpec view, int dimension, int reason);
-
-    void onInternalKeySet(double time, ViewSpec view, int dimension, int reason, bool added);
-
-    void onInternalKeyRemoved(double time, ViewSpec view, int dimension, int reason);
-
-    void onMultipleKeySet(const std::list<double>& keys, ViewSpec view, int dimension, int reason);
-
-    void onMultipleKeyRemoved(const std::list<double>& keys, ViewSpec view, int dimension, int reason);
-
-    void onInternalAnimationAboutToBeRemoved(ViewSpec view, int dimension);
-
-    void onInternalAnimationRemoved();
-
-    ///Handler when a keyframe is moved in the curve editor/dope sheet
-    void onKeyFrameMoved(ViewSpec view, int dimension, double oldTime, double newTime);
+    void onMustRefreshGuiActionTriggered(ViewSetSpec view ,DimSpec dimension ,ValueChangedReasonEnum reason);
 
     void setSecret();
 
@@ -349,14 +251,13 @@ public Q_SLOTS:
 
     void onRightClickClicked(const QPoint & pos);
 
-    void showRightClickMenuForDimension(const QPoint & pos, int dimension);
+    void showRightClickMenuForDimension(const QPoint & pos, DimSpec dimension, ViewSetSpec view);
 
     void setEnabledSlot();
 
     void hide();
 
-    ///if index is != -1 then it will reinsert the knob at this index in the layout
-    void show(int index = -1);
+    void show();
 
     void onSetKeyActionTriggered();
 
@@ -366,17 +267,7 @@ public Q_SLOTS:
 
     void onRemoveAnimationActionTriggered();
 
-    void onConstantInterpActionTriggered();
-
-    void onLinearInterpActionTriggered();
-
-    void onSmoothInterpActionTriggered();
-
-    void onCatmullromInterpActionTriggered();
-
-    void onCubicInterpActionTriggered();
-
-    void onHorizontalInterpActionTriggered();
+    void onInterpolationActionTriggered();
 
     void onCopyValuesActionTriggered();
 
@@ -387,34 +278,24 @@ public Q_SLOTS:
     void onPasteActionTriggered();
 
     void onLinkToActionTriggered();
-    void linkTo(int dimension);
+    void linkTo(DimSpec dimension, ViewSetSpec view);
 
     void onResetDefaultValuesActionTriggered();
 
     ///Actually restores all dimensions, the parameter is disregarded.
-    void resetDefault(int dimension);
+    void resetDefault(DimSpec dimension, ViewSetSpec view);
 
-    void onKnobSlavedChanged(int dimension, bool b);
-
-    void onSetValueUsingUndoStack(const Variant & v, ViewSpec view, int dim);
-
-    void onSetDirty(bool d);
-
-    void onAnimationLevelChanged(ViewSpec view, int dim);
-
-    void onAppendParamEditChanged(int reason, const Variant & v, ViewSpec view, int dim, double time, bool createNewCommand, bool setKeyFrame);
+    void onKnobMultipleSelectionChanged(bool d);
 
     void onFrozenChanged(bool frozen);
-
-    void updateCurveEditorKeyframes();
-
+    
     void onSetExprActionTriggered();
 
     void onClearExprActionTriggered();
 
-    void onEditExprDialogFinished();
+    void onEditExprDialogFinished(bool accepted);
 
-    void onExprChanged(int dimension);
+    void onExprChanged(DimIdx dimension, ViewIdx view);
 
     void onHelpChanged();
 
@@ -424,94 +305,58 @@ public Q_SLOTS:
 
     void onCreateAliasOnGroupActionTriggered();
 
+    void onMultiViewUnfoldClicked(bool expanded);
+
+    void onDoUpdateGuiLaterReceived();
+
+    void onSplitViewActionTriggered();
+
+    void onUnSplitViewActionTriggered();
+
+    void onInternalKnobAvailableViewsChanged();
+
+    void onDoUpdateModificationsStateLaterReceived();
+
+    void onRefreshDimensionsVisibilityLaterReceived();
+
 Q_SIGNALS:
 
-    void knobUndoneChange();
-
-    void knobRedoneChange();
-
-    void refreshCurveEditor();
-
-    void refreshDopeSheet();
-
-    void expressionChanged();
-
-    /**
-     *@brief Emitted whenever a keyframe is set by the user or by the plugin.
-     **/
-    void keyFrameSet();
-
-    /**
-     *@brief Emitted whenever a keyframe is removed by the user or by the plugin.
-     **/
-    void keyFrameRemoved();
-
-    /**
-     *@brief Emitted whenever a keyframe's interpolation method is changed by the user or by the plugin.
-     **/
-    void keyInterpolationChanged();
-
-    ///emitted when the description label is clicked
+    // Emitted when the description label is clicked
     void labelClicked(bool);
 
-protected:
+    void s_doUpdateGuiLater();
 
-    /**
-     * @brief Called when the internal value held by the knob is changed, you must implement
-     * it to update the interface to reflect the new value. You can query the new value
-     * by calling knob->getValue()
-     * The dimension is either -1 indicating that all dimensions should be updated or the dimension index.
-     **/
-    virtual void updateGUI(int dimension) = 0;
-    virtual void addRightClickMenuEntries(QMenu* /*menu*/) {}
+    void s_updateModificationsStateLater();
 
-    virtual void reflectModificationsState() {}
+    void s_refreshDimensionsVisibilityLater();
 
 private:
+
+    KnobAnimPtr findKnobAnim() const;
+
+    void setViewEnabledInternal(const std::vector<bool>& perDimEnabled, ViewIdx view);
+
+    void refreshModificationsStateNow();
+
+    void refreshGuiNow();
+
+    void createViewContainers(ViewIdx view);
+
+    static void getDimViewFromActionData(const QAction* action, ViewSetSpec* view, DimSpec* dimension);
 
     void refreshKnobWarningIndicatorVisibility();
 
-    void updateGuiInternal(int dimension);
+    void copyToClipBoard(KnobClipBoardType type, DimSpec dimension, ViewSetSpec view) const;
 
-    void copyToClipBoard(KnobClipBoardType type, int dimension) const;
+    void pasteClipBoard(DimSpec dimension, ViewSetSpec view);
 
-    void pasteClipBoard(int targetDimension);
+    void createAnimationMenu(QMenu* menu, DimSpec dimension, ViewSetSpec view);
+    Menu* createInterpolationMenu(QMenu* menu, DimSpec dimension, ViewSetSpec view, bool isEnabled);
 
-    virtual void _hide() = 0;
-    virtual void _show() = 0;
-    virtual void setEnabled() = 0;
-    virtual void setReadOnly(bool readOnly, int dimension) = 0;
-    virtual void setDirty(bool dirty) = 0;
-    virtual void onLabelChangedInternal() {}
-
-    virtual void refreshDimensionName(int /*dim*/) {}
-
-    /**
-     * @brief Must fill the horizontal layout with all the widgets composing the knob.
-     **/
-    virtual void createWidget(QHBoxLayout* layout) = 0;
-
-
-    /*Called right away after updateGUI(). Depending in the animation level
-       the widget for the knob could display its gui a bit differently.
-     */
-    virtual void reflectAnimationLevel(int /*dimension*/,
-                                       AnimationLevelEnum /*level*/)
-    {
-    }
-
-    virtual void reflectExpressionState(int /*dimension*/,
-                                        bool /*hasExpr*/) {}
-
-    virtual void updateToolTip() {}
-
-    void createAnimationMenu(QMenu* menu, int dimension);
-    Menu* createInterpolationMenu(QMenu* menu, int dimension, bool isEnabled);
-
-    void setInterpolationForDimensions(QAction* action, KeyframeTypeEnum interp);
 
 private:
 
+    friend struct KnobGuiPrivate;
     boost::scoped_ptr<KnobGuiPrivate> _imp;
 };
 

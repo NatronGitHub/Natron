@@ -12,10 +12,8 @@ Utility class to return pair of floating point values.
 
 Functions
 ^^^^^^^^^
-.. container:: function_list
 
-*    def :meth:`__getitem__<NatronEngine.Double2DTuple.__getitem__>` (arg__1)
-
+- def :meth:`__getitem__<NatronEngine.Double2DTuple.__getitem__>` (arg__1)
 
 Detailed Description
 --------------------

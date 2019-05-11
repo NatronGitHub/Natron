@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -44,7 +44,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 struct StringKeyFrame
 {
     std::string value;
-    double time;
+    TimeValue time;
 };
 
 struct StringKeyFrame_compare_time
@@ -65,28 +65,47 @@ struct StringAnimationManagerPrivate
 {
     StringAnimationManager::customParamInterpolationV1Entry_t customInterpolation;
     void* ofxParamHandle;
+    std::string knobName;
+    
     mutable QMutex keyframesMutex;
     Keyframes keyframes;
-    const KnobI* knob;
 
-    StringAnimationManagerPrivate(const KnobI* knob)
+
+    StringAnimationManagerPrivate()
         : customInterpolation(NULL)
         , ofxParamHandle(NULL)
+        , knobName()
         , keyframesMutex()
         , keyframes()
-        , knob(knob)
     {
+    }
+
+    StringAnimationManagerPrivate(const StringAnimationManagerPrivate& other)
+    : customInterpolation(other.customInterpolation)
+    , ofxParamHandle(other.ofxParamHandle)
+    , knobName(other.knobName)
+    , keyframesMutex()
+    , keyframes(other.keyframes)
+    {
+
     }
 };
 
-StringAnimationManager::StringAnimationManager(const KnobI* knob)
-    : _imp( new StringAnimationManagerPrivate(knob) )
+StringAnimationManager::StringAnimationManager()
+    : _imp( new StringAnimationManagerPrivate() )
 {
 }
 
 StringAnimationManager::~StringAnimationManager()
 {
 }
+
+StringAnimationManager::StringAnimationManager(const StringAnimationManager& other)
+: _imp(new StringAnimationManagerPrivate(*other._imp))
+{
+
+}
+
 
 bool
 StringAnimationManager::hasCustomInterp() const
@@ -96,14 +115,16 @@ StringAnimationManager::hasCustomInterp() const
 
 void
 StringAnimationManager::setCustomInterpolation(customParamInterpolationV1Entry_t func,
-                                               void* ofxParamHandle)
+                                               void* ofxParamHandle,
+                                               const std::string& knobName)
 {
     _imp->customInterpolation = func;
     _imp->ofxParamHandle = ofxParamHandle;
+    _imp->knobName = knobName;
 }
 
 bool
-StringAnimationManager::customInterpolation(double time,
+StringAnimationManager::customInterpolation(TimeValue time,
                                             std::string* ret) const
 {
     QMutexLocker l(&_imp->keyframesMutex);
@@ -114,10 +135,9 @@ StringAnimationManager::customInterpolation(double time,
     if ( _imp->keyframes.empty() ) {
         return false;
     }
-
+    
     if (_imp->keyframes.size() == 1) {
         *ret = _imp->keyframes.begin()->value;
-
         return true;
     }
 
@@ -163,7 +183,7 @@ StringAnimationManager::customInterpolation(double time,
         OFX::Host::Property::propSpecEnd
     };
     OFX::Host::Property::Set inArgs(inArgsSpec);
-    inArgs.setStringProperty( kOfxPropName, _imp->knob->getName() );
+    inArgs.setStringProperty( kOfxPropName, _imp->knobName );
     inArgs.setDoubleProperty(kOfxPropTime, time);
 
     inArgs.setStringProperty(kOfxParamPropCustomValue, lower->value, 0);
@@ -187,8 +207,8 @@ StringAnimationManager::customInterpolation(double time,
     return true;
 } // customInterpolation
 
-void
-StringAnimationManager::insertKeyFrame(double time,
+ValueChangedReturnCodeEnum
+StringAnimationManager::insertKeyFrame(TimeValue time,
                                        const std::string & v,
                                        double* index)
 {
@@ -196,21 +216,30 @@ StringAnimationManager::insertKeyFrame(double time,
 
     k.time = time;
     k.value = v;
+
+    ValueChangedReturnCodeEnum retCode = eValueChangedReturnCodeNothingChanged;
+
     QMutexLocker l(&_imp->keyframesMutex);
     std::pair<Keyframes::iterator, bool> ret = _imp->keyframes.insert(k);
-    if (!ret.second) {
+    if (ret.second) {
+        retCode = eValueChangedReturnCodeKeyframeAdded;
+    } else {
+        if (ret.first->value != v) {
+            retCode = eValueChangedReturnCodeKeyframeModified;
+        }
         _imp->keyframes.erase(ret.first);
         ret = _imp->keyframes.insert(k);
         assert(ret.second);
     }
     *index = std::distance(_imp->keyframes.begin(), ret.first);
+    return retCode;
 }
 
 void
-StringAnimationManager::removeKeyFrame(double time)
+StringAnimationManager::removeKeyFrame(TimeValue time)
 {
     QMutexLocker l(&_imp->keyframesMutex);
-
+ 
     for (Keyframes::iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it) {
         if (it->time == time) {
             _imp->keyframes.erase(it);
@@ -219,6 +248,16 @@ StringAnimationManager::removeKeyFrame(double time)
         }
     }
 }
+
+
+void
+StringAnimationManager::removeKeyframes(const std::list<double>& keysRemoved)
+{
+    for (std::list<double>::const_iterator it = keysRemoved.begin(); it != keysRemoved.end(); ++it) {
+        removeKeyFrame(TimeValue(*it));
+    }
+}
+
 
 void
 StringAnimationManager::clearKeyFrames()
@@ -235,6 +274,7 @@ StringAnimationManager::stringFromInterpolatedIndex(double interpolated,
     int index = std::floor(interpolated + 0.5);
     QMutexLocker l(&_imp->keyframesMutex);
 
+ 
     if ( _imp->keyframes.empty() ) {
         return;
     }
@@ -259,21 +299,16 @@ StringAnimationManager::stringFromInterpolatedIndex(double interpolated,
     }
 }
 
-void
-StringAnimationManager::clone(const StringAnimationManager & other)
-{
-    QMutexLocker l(&_imp->keyframesMutex);
-    QMutexLocker l2(&other._imp->keyframesMutex);
-
-    _imp->keyframes = other._imp->keyframes;
-}
 
 bool
-StringAnimationManager::cloneAndCheckIfChanged(const StringAnimationManager & other)
+StringAnimationManager::clone(const StringAnimationManager & other,
+                              SequenceTime offset,
+                              const RangeD* range)
 {
     QMutexLocker l(&_imp->keyframesMutex);
     QMutexLocker l2(&other._imp->keyframesMutex);
     bool hasChanged = false;
+
 
     if ( _imp->keyframes.size() != other._imp->keyframes.size() ) {
         hasChanged = true;
@@ -288,58 +323,53 @@ StringAnimationManager::cloneAndCheckIfChanged(const StringAnimationManager & ot
         }
     }
     if (hasChanged) {
-        _imp->keyframes = other._imp->keyframes;
+        _imp->keyframes.clear();
+        for (Keyframes::const_iterator it = other._imp->keyframes.begin(); it != other._imp->keyframes.end(); ++it) {
+            TimeValue time = it->time;
+            if ( range && ( (time < range->min) || (time > range->max) ) ) {
+                // We ignore a keyframe, then consider the curve has changed
+                hasChanged = true;
+                continue;
+            }
+            StringKeyFrame k;
+            k.time = TimeValue(time + offset);
+            k.value = it->value;
+            _imp->keyframes.insert(k);
+
+        }
+
     }
 
     return hasChanged;
 }
 
+
 void
-StringAnimationManager::clone(const StringAnimationManager & other,
-                              SequenceTime offset,
-                              const RangeD* range)
+StringAnimationManager::load(const std::map<double, std::string > & keyframes)
 {
-    // The range=[0,0] case is obviously a bug in the spec of paramCopy() from the parameter suite:
-    // it prevents copying the value of frame 0.
-    bool copyRange = range != NULL /*&& (range->min != 0 || range->max != 0)*/;
     QMutexLocker l(&_imp->keyframesMutex);
 
     _imp->keyframes.clear();
-    QMutexLocker l2(&other._imp->keyframesMutex);
-    for (Keyframes::const_iterator it = other._imp->keyframes.begin(); it != other._imp->keyframes.end(); ++it) {
-        if ( copyRange && ( (it->time < range->min) || (it->time > range->max) ) ) {
-            continue;
-        }
+    for (std::map<double, std::string>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
+        
         StringKeyFrame k;
-        k.time = it->time + offset;
-        k.value = it->value;
-        _imp->keyframes.insert(k);
-    }
-}
-
-void
-StringAnimationManager::load(const std::map<int, std::string> & keyframes)
-{
-    QMutexLocker l(&_imp->keyframesMutex);
-
-    assert( _imp->keyframes.empty() );
-    for (std::map<int, std::string>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
-        StringKeyFrame k;
-        k.time = it->first;
+        k.time = TimeValue(it->first);
         k.value = it->second;
         std::pair<Keyframes::iterator, bool> ret = _imp->keyframes.insert(k);
         assert(ret.second);
         Q_UNUSED(ret);
+        
+        
     }
 }
 
 void
-StringAnimationManager::save(std::map<int, std::string>* keyframes) const
+StringAnimationManager::save(std::map<double, std::string>* keyframes) const
 {
     QMutexLocker l(&_imp->keyframesMutex);
-
-    for (Keyframes::const_iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it) {
-        std::pair<std::map<int, std::string>::iterator, bool> success = keyframes->insert( std::make_pair(it->time, it->value) );
+    
+    for (Keyframes::const_iterator it2 = _imp->keyframes.begin(); it2 != _imp->keyframes.end(); ++it2) {
+        std::pair<std::map<double, std::string>::iterator, bool> success = keyframes->insert( std::make_pair(it2->time, it2->value) );
         assert(success.second);
         Q_UNUSED(success);
     }

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
-
 
 #ifndef GPUCONTEXTPOOL_H
 #define GPUCONTEXTPOOL_H
@@ -36,8 +35,6 @@
 
 NATRON_NAMESPACE_ENTER
 
-// If set, multiple frame renders may use the same GPU context instead of locking it for the whole render of a frame.
-#define NATRON_RENDER_SHARED_CONTEXT
 
 struct GPUContextPoolPrivate;
 class GPUContextPool
@@ -48,49 +45,47 @@ public:
 
     ~GPUContextPool();
 
-
-    //////////////////////////////// OpenGL related /////////////////////////////////
-
     /**
-     * @brief Attaches one of the OpenGL context in the pool to a specific frame render.
-     * The context will not be available to other renders until releaseGLContextFromRender() is called
-     * for on the same thread that called this function.
-     * This function is blocking and the calling thread will wait until one context is made available
-     * in the pool again.
-     * If a context is already attached on the thread, this function returns immediately
-     * After returning this function, the context must be made current before
-     * OpenGL calls can be made.
-     * If during the render, other threads are participating and needs to make the context current, they
-     * may call makeContextCurrent with the context returned from this function.
+     * @brief Get an existing OpenGL context in the GPU pool or create a new one.
+     * This function cycles through existing contexts so that each contexts gets to work.
+     * When exiting this function, the context is not necessarily current to the thread.
+     * To make it current, create a OSGLContextAttacher object and call the attach() function.
      *
-     * @param renderUniqueAbortInfo These are the infos that uniquely identify the render attached to the context
+     * @param retrieveLastContext If true, the context that was asked for the last time is re-used
+     * @param checkIfGLLoaded If true, this function will check if OpenGL was loaded before attempting to create a context
      **/
-    OSGLContextPtr attachGLContextToRender(bool checkIfGLLoaded = true);
+    OSGLContextPtr getOrCreateOpenGLContext(bool retrieveLastContext = false, bool checkIfGLLoaded = true);
 
     /**
-     * @brief Releases the given OpenGL context from a render. After this call the context may be re-used
-     * by other threads waiting in attachContextToThread().
-     * This function MUST be call when a render is finished and the argument passed should be the context returned
-     * from the function attachGLContextToRender().
+     * @brief Get an existing OpenGL OSMA context in the GPU pool or create a new one.
+     * This function cycles through existing contexts so that each contexts gets to work.
+     * When exiting this function, the context is not necessarily current to the thread.
+     * To make it current, create a OSGLContextAttacher object and call the attach() function.
+     *
+     * @param retrieveLastContext If true, the context that was asked for the last time is re-used
      **/
-    void releaseGLContextFromRender(const OSGLContextPtr& context);
+    OSGLContextPtr getOrCreateCPUOpenGLContext(bool retrieveLastContext = false);
 
-    /**
-     * @brief Returns the max texture size, i.e: the value returned by glGetIntegerv(GL_MAX_TEXTURE_SIZE,&v)
-     * This does not call glGetIntegerv and does not require a context to be bound.
-     **/
-    int getCurrentOpenGLRendererMaxTextureSize() const;
-
-    ////////////////////////////////////////////////////////////////
 
     /**
      * @brief Clear all created contexts
      **/
     void clear();
 
+    /**
+     * @brief If this thread currently has a bound OpenGL context, this returns a valid pointer to the object
+     * that attached the context, otherwise NULL.
+     **/
+    OSGLContextAttacherPtr getThreadLocalContext() const;
+
 private:
 
+    void registerContextForThread(const OSGLContextAttacherPtr& context);
 
+    void unregisterContextForThread();
+
+
+    friend class OSGLContextAttacher;
     boost::scoped_ptr<GPUContextPoolPrivate> _imp;
 };
 

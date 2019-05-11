@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,7 +29,6 @@
 
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
 
@@ -37,17 +36,17 @@
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
-#include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGraph.h"
-#include "Gui/NodeGuiSerialization.h"
 
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/NodeClipBoard.h"
 
 NATRON_NAMESPACE_ENTER
 
 
 NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
-                                   const boost::shared_ptr<NodeCollection>& group)
+                                   const NodeCollectionPtr& group)
     : _publicInterface(p)
     , group(group)
     , _lastMousePos()
@@ -59,16 +58,15 @@ NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
     , _arrowSelected(NULL)
     , _nodesMutex()
     , _nodes()
-    , _nodesTrash()
     , _nodeCreationShortcutEnabled(false)
-    , _lastNodeCreatedName()
+    , _lastPluginCreatedID()
     , _root(NULL)
     , _nodeRoot(NULL)
     , _cacheSizeText(NULL)
     , cacheSizeHidden(true)
     , _refreshCacheTextTimer()
     , _navigator(NULL)
-    , _undoStack(NULL)
+    , _undoStack()
     , _menu(NULL)
     , _tL(NULL)
     , _tR(NULL)
@@ -93,6 +91,8 @@ NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
     , lastSelectedViewer(0)
     , isDoingPreviewRender(false)
     , autoScrollTimer()
+    , linkedNodes()
+    , refreshNodesLinkRequest(0)
 {
     appPTR->getIcon(NATRON_PIXMAP_LOCKED, &unlockIcon);
 }
@@ -106,8 +106,11 @@ NodeGraphPrivate::getPyPlugUnlockPos() const
 void
 NodeGraphPrivate::resetSelection()
 {
-    for (NodesGuiList::iterator it = _selection.begin(); it != _selection.end(); ++it) {
-        (*it)->setUserSelected(false);
+    for (NodesGuiWList::iterator it = _selection.begin(); it != _selection.end(); ++it) {
+        NodeGuiPtr n = it->lock();
+        if (n) {
+            n->setUserSelected(false);
+        }
     }
 
     _selection.clear();
@@ -125,7 +128,7 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
     for (NodesGuiList::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
         if ( selection.contains(bbox) ) {
-            NodesGuiList::iterator foundInSel = std::find(_selection.begin(), _selection.end(), *it);
+            NodesGuiWList::iterator foundInSel = findSelectedNode(*it);
             if ( foundInSel != _selection.end() ) {
                 continue;
             }
@@ -140,7 +143,7 @@ bool
 NodeGraphPrivate::rearrangeSelectedNodes()
 {
     if ( !_selection.empty() ) {
-        _publicInterface->pushUndoCommand( new RearrangeNodesCommand(_selection) );
+        _publicInterface->pushUndoCommand( new RearrangeNodesCommand(_publicInterface->getSelectedNodes()) );
 
         return true;
     }
@@ -184,23 +187,28 @@ NodeGraphPrivate::calcNodesBoundingRect()
     return ret;
 }
 
-void
-NodeGraphPrivate::resetAllClipboards()
-{
-    appPTR->clearNodeClipBoard();
-}
 
 void
 NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection,
-                                    NodeClipBoard & clipboard)
+                                   SERIALIZATION_NAMESPACE::NodeSerializationList* clipboard)
 {
-    ///Clear clipboard
-    clipboard.nodes.clear();
-    clipboard.nodesUI.clear();
+    clipboard->clear();
+    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> > tmp;
+    copyNodesInternal(selection, &tmp);
+    for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> >::const_iterator it = tmp.begin(); it!=tmp.end(); ++it) {
+        clipboard->push_back(it->second);
+    }
+}
+
+void
+NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection, std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> >* clipboard)
+{
+    // Clear the list
+    clipboard->clear();
 
     NodesGuiList nodesToCopy = selection;
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        ///Also copy all nodes within the backdrop
+        // Also copy all nodes within the backdrop
         NodesGuiList nodesWithinBD = _publicInterface->getNodesWithinBackdrop(*it);
         for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
             NodesGuiList::iterator found = std::find(nodesToCopy.begin(), nodesToCopy.end(), *it2);
@@ -212,11 +220,10 @@ NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection,
 
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            boost::shared_ptr<NodeSerialization> ns( new NodeSerialization( (*it)->getNode(), true ) );
-            boost::shared_ptr<NodeGuiSerialization> nGuiS = boost::make_shared<NodeGuiSerialization>();
-            (*it)->serialize( nGuiS.get() );
-            clipboard.nodes.push_back(ns);
-            clipboard.nodesUI.push_back(nGuiS);
+            NodePtr internalNode = (*it)->getNode();
+            SERIALIZATION_NAMESPACE::NodeSerializationPtr ns = boost::make_shared<SERIALIZATION_NAMESPACE::NodeSerialization>();
+            internalNode->toSerialization(ns.get());
+            clipboard->push_back(std::make_pair(internalNode, ns));
         }
     }
 }

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -40,367 +40,551 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Image.h"
+#include "Engine/ImageStorage.h"
+#include "Engine/EffectDescription.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/NodeMetadata.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/EffectInstance.h"
+#include "Engine/EffectInstanceTLSData.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
 
-struct ActionKey
+struct RectToRender
 {
-    double time;
-    ViewIdx view;
-    unsigned int mipMapLevel;
-};
+    // The region in pixels to render
+    RectI rect;
 
-struct IdentityResults
-{
-    int inputIdentityNb;
-    double inputIdentityTime;
-    ViewIdx inputView;
-};
+    // If this region is identity, this is the
+    // input time/view on which we should copy the image
+    int identityInputNumber;
+    TimeValue identityTime;
+    ViewIdx identityView;
+    ImagePlaneDesc identityPlane;
 
-struct ComponentsNeededResults
-{
-    EffectInstance::ComponentsNeededMap neededComps;
-    std::bitset<4> processChannels;
-    bool processAll;
-    std::list<ImagePlaneDesc> passThroughPlanes;
-    int passThroughInputNb;
-    double passThroughTime;
-    ViewIdx passThroughView;
-};
-
-struct CompareActionsCacheKeys
-{
-    bool operator() (const ActionKey & lhs,
-                     const ActionKey & rhs) const
+    RectToRender()
+    : rect()
+    , identityInputNumber(-1)
+    , identityTime(0)
+    , identityView(0)
+    , identityPlane()
     {
-        if (lhs.time < rhs.time) {
-            return true;
-        } else if (lhs.time == rhs.time) {
-            if (lhs.mipMapLevel < rhs.mipMapLevel) {
-                return true;
-            } else if (lhs.mipMapLevel == rhs.mipMapLevel) {
-                if (lhs.view < rhs.view) {
-                    return true;
-                } else {
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        } else {
-            return false;
-        }
+
     }
 };
 
-typedef std::map<ActionKey, IdentityResults, CompareActionsCacheKeys> IdentityCacheMap;
-typedef std::map<ActionKey, RectD, CompareActionsCacheKeys> RoDCacheMap;
-typedef std::map<ActionKey, FramesNeededMap, CompareActionsCacheKeys> FramesNeededCacheMap;
-typedef std::map<ActionKey, ComponentsNeededResults, CompareActionsCacheKeys> ComponentsNeededCacheMap;
-
-/**
- * @brief This class stores all results of the following actions:
-   - getRegionOfDefinition (invalidated on hash change, mapped across time + scale)
-   - getTimeDomain (invalidated on hash change, only 1 value possible
-   - isIdentity (invalidated on hash change,mapped across time + scale)
- * The reason we store them is that the OFX Clip API can potentially call these actions recursively
- * but this is forbidden by the spec:
- * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#id475585
- **/
-class ActionsCache
+struct ChannelSelector
 {
-public:
-    ActionsCache(int maxAvailableHashes);
 
-    void clearAll();
+    KnobChoiceWPtr layer;
 
-    void invalidateAll(U64 newHash);
 
-    bool getIdentityResult(U64 hash, double time, ViewIdx view, int* inputNbIdentity, ViewIdx *inputView, double* identityTime);
-
-    void setIdentityResult(U64 hash, double time, ViewIdx view, int inputNbIdentity, ViewIdx inputView, double identityTime);
-
-    bool getComponentsNeededResults(U64 hash, double time, ViewIdx view, EffectInstance::ComponentsNeededMap* neededComps, std::bitset<4> *processChannels, bool *processAll,
-                                    std::list<ImagePlaneDesc> *passThroughPlanes, int* passThroughInputNb, ViewIdx *passThroughView, double* passThroughTime);
-
-    void setComponentsNeededResults(U64 hash, double time, ViewIdx view, const EffectInstance::ComponentsNeededMap& neededComps, std::bitset<4> processChannels,  bool processAll,
-                                    const std::list<ImagePlaneDesc>& passThroughPlanes,int passThroughInputNb, ViewIdx passThroughView, double passThroughTime);
-
-    bool getRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, RectD* rod);
-
-    void setRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const RectD & rod);
-
-    bool getFramesNeededResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, FramesNeededMap* framesNeeded);
-
-    void setFramesNeededResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const FramesNeededMap & framesNeeded);
-
-    bool getTimeDomainResult(U64 hash, double *first, double* last);
-
-    void setTimeDomainResult(U64 hash, double first, double last);
-
-private:
-    mutable QMutex _cacheMutex; //< protects everything in the cache
-    struct ActionsCacheInstance
-    {
-        U64 _hash;
-        OfxRangeD _timeDomain;
-        bool _timeDomainSet;
-        IdentityCacheMap _identityCache;
-        RoDCacheMap _rodCache;
-        FramesNeededCacheMap _framesNeededCache;
-        ComponentsNeededCacheMap _componentsNeededCache;
-
-        ActionsCacheInstance();
-    };
-
-    //In  a list to track the LRU
-    std::list<ActionsCacheInstance> _instances;
-    std::size_t _maxInstances;
-    std::list<ActionsCacheInstance>::iterator createActionCacheInternal(U64 newHash);
-    ActionsCacheInstance & getOrCreateActionCache(U64 newHash);
 };
 
+struct MaskSelector
+{
+
+    KnobBoolWPtr enabled;
+    KnobChoiceWPtr channel;
+
+};
+
+
+struct FormatKnob
+{
+    KnobIntWPtr size;
+    KnobDoubleWPtr par;
+    KnobChoiceWPtr formatChoice;
+};
+
+struct DefaultKnobs
+{
+    KnobIntWPtr frameIncrKnob;
+
+    // PyPlug page
+    KnobPageWPtr pyPlugPage;
+    KnobStringWPtr pyPlugIDKnob, pyPlugDescKnob, pyPlugGroupingKnob, pyPlugLabelKnob;
+    KnobFileWPtr pyPlugIconKnob, pyPlugExtPythonScript;
+    KnobBoolWPtr pyPlugDescIsMarkdownKnob;
+    KnobIntWPtr pyPlugVersionKnob;
+    KnobIntWPtr pyPlugShortcutKnob;
+    KnobFileWPtr pyPlugExportDialogFile;
+    KnobButtonWPtr pyPlugExportButtonKnob;
+    KnobButtonWPtr pyPlugConvertToGroupButtonKnob;
+
+    KnobStringWPtr nodeLabelKnob, ofxSubLabelKnob;
+    KnobBoolWPtr previewEnabledKnob;
+    KnobChoiceWPtr openglRenderingEnabledKnob;
+    KnobButtonWPtr keepInAnimationModuleKnob;
+    KnobStringWPtr knobChangedCallback;
+    KnobStringWPtr inputChangedCallback;
+    KnobStringWPtr nodeCreatedCallback;
+    KnobStringWPtr nodeRemovalCallback;
+    KnobStringWPtr tableSelectionChangedCallback;
+    KnobPageWPtr infoPage;
+    KnobStringWPtr nodeInfos;
+    KnobButtonWPtr refreshInfoButton;
+    KnobBoolWPtr forceCaching;
+    KnobBoolWPtr hideInputs;
+    KnobStringWPtr beforeFrameRender;
+    KnobStringWPtr beforeRender;
+    KnobStringWPtr afterFrameRender;
+    KnobStringWPtr afterRender;
+    KnobBoolWPtr enabledChan[4];
+    KnobStringWPtr premultWarning;
+    KnobDoubleWPtr mixWithSource;
+    KnobButtonWPtr renderButton; //< render button for writers
+    FormatKnob pluginFormatKnobs;
+    std::map<int, ChannelSelector> channelsSelectors;
+    KnobBoolWPtr processAllLayersKnob;
+    std::map<int, MaskSelector> maskSelectors;
+    KnobLayersWPtr createPlanesKnob;
+
+
+    DefaultKnobs()
+    {
+
+    }
+
+};
+
+struct RenderDefaultKnobs
+{
+    KnobBoolWPtr disableNodeKnob;
+    KnobIntWPtr lifeTimeKnob;
+    KnobDoubleWPtr mixWithSource;
+    KnobBoolWPtr enableLifeTimeKnob;
+
+};
+
+
+
+// Data shared accross all clones
+struct EffectInstanceCommonData
+{
+    mutable QMutex attachedContextsMutex;
+
+    // A list of context that are currently attached (i.e attachOpenGLContext() has been called on them but not yet dettachOpenGLContext).
+    // If a plug-in returns false to supportsConcurrentOpenGLRenders() then whenever trying to attach a context, we take a lock in attachOpenGLContext
+    // that is released in dettachOpenGLContext so that there can only be a single attached OpenGL context at any time.
+    std::map<OSGLContextWPtr, EffectOpenGLContextDataPtr> attachedContexts;
+
+
+    // Protects all plug-in properties
+    mutable QMutex pluginsPropMutex;
+
+    // When true descriptor cannot be changed by the plug-in
+    bool descriptorLocked;
+
+    // Properties of the main instance
+    EffectDescriptionPtr descriptor;
+
+    // If this node is part of a RotoPaint item implementation
+    // this is a pointer to the roto item itself
+    boost::weak_ptr<RotoDrawableItem> paintStroke;
+
+    // During painting we keep track of the image that was rendered
+    // at the previous step so that we can accumulate the renders
+    mutable QMutex accumBufferMutex;
+    std::map<ImagePlaneDesc,ImagePtr> accumBuffer;
+
+    // Active Viewer interacts, only accessed on the main thread
+    std::list<OverlayInteractBasePtr> interacts;
+
+    // Active Timeline interacts, only accesses on the main thread
+    std::list<OverlayInteractBasePtr> timelineInteracts;
+
+    // Weak pointer to the node holding this EffectInstance.
+    // The node itself manages the lifetime of the main-thread EffectInstance.
+    // However, render clones are managed themselves by the main EffectInstance.
+    // To ensure that the node pointer is not NULL suddenly on a render thread because the main-thread is destroying it,
+    // we keep another shared pointer for render clones only, in  RenderCloneData
+    NodeWPtr node;
+
+    EffectInstanceCommonData()
+    : attachedContextsMutex(QMutex::Recursive)
+    , attachedContexts()
+    , pluginsPropMutex()
+    , descriptorLocked(false)
+    , descriptor(new EffectDescription)
+    , paintStroke()
+    , accumBufferMutex()
+    , accumBuffer()
+    , interacts()
+    , timelineInteracts()
+    , node()
+    {
+
+    }
+
+};
+
+typedef std::map<FrameViewPair, EffectInstanceWPtr, FrameView_compare_less> FrameViewEffectMap;
+
+struct FrameViewKey
+{
+    unsigned int mipMapLevel;
+    RenderScale proxyScale;
+    ImagePlaneDesc plane;
+};
+
+struct FrameViewKey_Compare
+{
+    bool operator() (const FrameViewKey& lhs, const FrameViewKey& rhs) const
+    {
+        if (lhs.mipMapLevel < rhs.mipMapLevel) {
+            return true;
+        } else if (lhs.mipMapLevel > rhs.mipMapLevel) {
+            return false;
+        }
+
+        if (lhs.proxyScale.x < rhs.proxyScale.x) {
+            return true;
+        } else if (lhs.proxyScale.x > rhs.proxyScale.x) {
+            return false;
+        }
+
+        if (lhs.proxyScale.y < rhs.proxyScale.y) {
+            return true;
+        } else if (lhs.proxyScale.y > rhs.proxyScale.y) {
+            return false;
+        }
+
+        // This will compare the planeID: color plane is equal even if e.g: lhs is Alpha and rhs is RGBA
+        if (lhs.plane < rhs.plane) {
+            return true;
+        } else if (lhs.plane > rhs.plane) {
+            return false;
+        }
+        
+        
+        return false;
+    }
+};
+
+
+
+typedef std::map<FrameViewKey, FrameViewRequestWPtr, FrameViewKey_Compare> FrameViewRequestMap;
+
+// Data specific to a render clone
+struct RenderCloneData
+{
+    // Protects data in this structure accross multiple render threads
+    mutable QMutex lock;
+
+    // Used to lock out render instances when the plug-in render thread safety is set to eRenderSafetyInstanceSafe
+    mutable QMutex instanceSafeRenderMutex;
+
+    // Frozen state of the main-instance inputs.
+    // They can only be used to determine the state of the graph
+    // To recurse upstream on render effects, use renderInputs instead
+    std::vector<EffectInstanceWPtr> mainInstanceInputs;
+
+    // These are the render clones in input for each frame/view
+    std::vector<FrameViewEffectMap> renderInputs;
+
+    // All requests made on the clone
+    FrameViewRequestMap requests;
+
+    // The results of the get frame range action for this render
+    GetFrameRangeResultsPtr frameRangeResults;
+
+    // The time invariant metadas for the render
+    GetTimeInvariantMetadataResultsPtr metadataResults;
+
+    // A shared pointer to the node, to ensure it does not get deleted while rendering
+    NodePtr node;
+
+    RenderCloneData()
+    : lock()
+    , instanceSafeRenderMutex()
+    , mainInstanceInputs()
+    , renderInputs()
+    , requests()
+    , frameRangeResults()
+    , metadataResults()
+    , node()
+    {
+
+    }
+
+};
 
 class EffectInstance::Implementation
 {
     Q_DECLARE_TR_FUNCTIONS(EffectInstance)
 
 public:
-    Implementation(EffectInstance* publicInterface);
 
-    Implementation(const Implementation& other);
 
-public:
+    // can not be a smart ptr
     EffectInstance* _publicInterface;
 
-    ///Thread-local storage living through the render_public action and used by getImage to retrieve all parameters
-    boost::shared_ptr<TLSHolder<EffectInstance::EffectTLSData> > tlsData;
-    mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
-    bool duringInteractAction; //< true when we're running inside an interact action
+    // Common data shared accross the main instance and all render instances.
+    boost::shared_ptr<EffectInstanceCommonData> common;
 
-    ///Current chuncks of memory held by the plug-in
+    // Data specific to a render clone. Each render clone is tied to a single render but these datas may be
+    // accessed by multiple threads in the render.
+    boost::scoped_ptr<RenderCloneData> renderData;
+
+    // Pointer to the effect description. For the effect main instance, this points to the description in the common structure.
+    // For a render clone ,this is a copy of the main instance data.
+    EffectDescriptionPtr descriptionPtr;
+
+    // Default implementation knobs. They are shared with the main instance implementation.
+    boost::shared_ptr<DefaultKnobs> defKnobs;
+
+    // Knobs specific to each render clone
+    RenderDefaultKnobs renderKnobs;
+
+    // Register memory chunks by the plug-in. Kept here to avoid plug-in memory leaks
     mutable QMutex pluginMemoryChunksMutex;
-    std::list<boost::weak_ptr<PluginMemory> > pluginMemoryChunks;
+    std::list<PluginMemoryPtr> pluginMemoryChunks;
 
-    ///Does this plug-in supports render scale ?
-    QMutex supportsRenderScaleMutex;
-    SupportsEnum supportsRenderScale;
+public:
 
-    /// Mt-Safe actions cache
-    boost::shared_ptr<ActionsCache> actionsCache;
+    Implementation(EffectInstance* publicInterface);
 
-#if NATRON_ENABLE_TRIMAP
-    ///Store all images being rendered to avoid 2 threads rendering the same portion of an image
-    struct ImageBeingRendered
+    Implementation(EffectInstance* publicInterface, const Implementation& other);
+
+    ~Implementation();
+    
+    void fetchSubLabelKnob();
+
+
+    /**
+     * @brief Same as getFrameViewRequest excepts that if it does not exist it will create it.
+     * @returns True if it was created, false otherwise
+     **/
+    FrameViewRequestPtr createFrameViewRequest(TimeValue time,
+                                ViewIdx view,
+                                const RenderScale& proxyScale,
+                                unsigned int mipMapLevel,
+                                const ImagePlaneDesc& plane);
+
+
+    /**
+     * @brief Set the results of the getFrameRange action for this render
+     **/
+    void setFrameRangeResults(const GetFrameRangeResultsPtr& range);
+
+    /**
+     * @brief Get the results of the getFrameRange action for this render
+     **/
+    GetFrameRangeResultsPtr getFrameRangeResults() const;
+
+    /**
+     * @brief Set the results of the getMetadata action for this render
+     **/
+    void setTimeInvariantMetadataResults(const GetTimeInvariantMetadataResultsPtr& metadata);
+
+    /**
+     * @brief Get the results of the getFrameRange action for this render
+     **/
+    GetTimeInvariantMetadataResultsPtr getTimeInvariantMetadataResults() const;
+    
+
+    /**
+     * @brief Helper function in the implementation of renderRoI to determine from the planes requested
+     * what planes can actually be rendered from this node. Pass-through planes are rendered from upstream
+     * nodes.
+     **/
+    ActionRetCodeEnum handlePassThroughPlanes(const FrameViewRequestPtr& requestData,
+                                              const TreeRenderExecutionDataPtr& requestPassSharedData,
+                                              const RectD& roiCanonical,
+                                              AcceptedRequestConcatenationFlags concatenationFlags,
+                                              std::map<int, std::list<ImagePlaneDesc> >* neededComp,
+                                              bool *isPassThrough);
+
+    /**
+     * @brief Helper function in the implementation of renderRoI to handle identity effects
+     **/
+    ActionRetCodeEnum handleIdentityEffect(double par,
+                                           const RectD& rod,
+                                           const RenderScale& combinedScale,
+                                           const RectD& canonicalRoi,
+                                           const FrameViewRequestPtr& requestData,
+                                           const TreeRenderExecutionDataPtr& requestPassSharedData,
+                                           AcceptedRequestConcatenationFlags concatenationFlags,
+                                           bool *isIdentity);
+
+    /**
+     * @brief Helper function in the implementation of renderRoI to handle effects that can concatenate (distortion etc...)
+     **/
+    ActionRetCodeEnum handleConcatenation(const TreeRenderExecutionDataPtr& requestPassSharedData,
+                                          const FrameViewRequestPtr& requestData,
+                                          AcceptedRequestConcatenationFlags concatenationFlags,
+                                          const RenderScale& renderScale,
+                                          const RectD& canonicalRoi,
+                                          bool draftRender,
+                                          bool *concatenated);
+
+
+    /**
+     * @brief Returns accepted concatenations with the given input nb
+     **/
+    AcceptedRequestConcatenationFlags getConcatenationFlagsForInput(int inputNb) const;
+
+
+   
+    /**
+     * @brief Helper function in the implementation of renderRoI to determine the image backend (OpenGL, CPU...)
+     **/
+    ActionRetCodeEnum resolveRenderBackend(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData, const RectI& roi, CacheAccessModeEnum *cachePolicy, RenderBackendTypeEnum* renderBackend);
+
+    /**
+     * @brief Helper function in the implementation of renderRoI to determine if a render should use the Cache or not.
+     * @returns The cache access type, i.e: none, write only or read/write
+     **/
+    CacheAccessModeEnum shouldRenderUseCache(const TreeRenderExecutionDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData);
+
+    /**
+     * @brief If a plug-in is using host frame-threading, potentially concurrent threads are calling getImagePlane().
+     * If they all need to perform modification to the same image, we need to return individual images (and FrameViewRequest).
+     **/
+    ActionRetCodeEnum launchIsolatedRender(const FrameViewRequestPtr& requestPassData);
+
+    ActionRetCodeEnum handleUpstreamFramesNeeded(const TreeRenderExecutionDataPtr& requestPassSharedData,
+                                                 const FrameViewRequestPtr& requestPassData,
+                                                 const RenderScale& proxyScale,
+                                                 unsigned int mipMapLevel,
+                                                 const RectD& roi,
+                                                 const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers);
+
+
+    bool canSplitRenderWindowWithIdentityRectangles(const RenderScale& renderMappedScale,
+                                                    RectD* inputRoDIntersection);
+
+    static RenderBackendTypeEnum storageModeToBackendType(StorageModeEnum storage);
+
+    static StorageModeEnum storageModeFromBackendType(RenderBackendTypeEnum backend);
+
+    ImagePtr createCachedImage(const RectI& roiPixels,
+                               const std::vector<RectI>& perMipMapPixelRoD,
+                               unsigned int mappedMipMapLevel,
+                               const RenderScale& proxyScale,
+                               const ImagePlaneDesc& plane,
+                               RenderBackendTypeEnum backend,
+                               CacheAccessModeEnum cachePolicy,
+                               bool delayAllocation);
+
+
+
+
+    /**
+     * @brief Check if the given request has stuff left to render in the image plane or not.
+     * @param renderRects In output the rectangles left to render (identity or plain render).
+     * @param hasPendingTiles True if some tiles are pending from another render
+     **/
+    ActionRetCodeEnum checkRestToRender(bool updateTilesStateFromCache,
+                                        const FrameViewRequestPtr& requestData,
+                                        const RectI& renderMappedRoI,
+                                        const RenderScale& renderMappedScale,
+                                        const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes,
+                                        std::list<RectToRender>* renderRects,
+                                        bool* hasPendingTiles);
+
+
+    ActionRetCodeEnum launchRenderForSafetyAndBackend(const FrameViewRequestPtr& requestData,
+                                                      const RenderScale& combinedScale,
+                                                      RenderBackendTypeEnum backendType,
+                                                      const std::list<RectToRender>& renderRects,
+                                                      const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes);
+
+
+    ActionRetCodeEnum launchPluginRenderAndHostFrameThreading(const FrameViewRequestPtr& requestData,
+                                                              const OSGLContextPtr& glContext,
+                                                              const EffectOpenGLContextDataPtr& glContextData,
+                                                              const RenderScale& combinedScale,
+                                                              RenderBackendTypeEnum backendType,
+                                                              const std::list<RectToRender>& renderRects,
+                                                              const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes);
+
+
+    ActionRetCodeEnum lookupCachedImage(unsigned int mipMapLevel,
+                                        const RenderScale& proxyScale,
+                                        const ImagePlaneDesc& plane,
+                                        const std::vector<RectI>& perMipMapPixelRoD,
+                                        const RectI& pixelRoi,
+                                        CacheAccessModeEnum cachePolicy,
+                                        RenderBackendTypeEnum backend,
+                                        bool readOnly,
+                                        ImagePtr* image,
+                                        bool* hasPendingTiles,
+                                        bool* hasUnrenderedTiles);
+
+    struct IdentityPlaneKey
     {
-        QWaitCondition cond;
-        QMutex lock;
-        int refCount;
-        bool failed;
+        int identityInputNb;
+        ViewIdx identityView;
+        TimeValue identityTime;
+        ImagePlaneDesc identityPlane;
+    };
 
-        ImageBeingRendered()
-            : cond(), lock(), refCount(0), failed(false)
+    struct IdentityPlaneKeyCompare
+    {
+        bool operator()(const IdentityPlaneKey& lhs, const IdentityPlaneKey& rhs) const
         {
+            if (lhs.identityInputNb < rhs.identityInputNb) {
+                return true;
+            } else if (lhs.identityInputNb > rhs.identityInputNb) {
+                return false;
+            }
+            if (lhs.identityView < rhs.identityView) {
+                return true;
+            } else if (lhs.identityView > rhs.identityView) {
+                return false;
+            }
+            if (lhs.identityTime < rhs.identityTime) {
+                return true;
+            } else if (lhs.identityTime > rhs.identityTime) {
+                return false;
+            }
+            return lhs.identityPlane < rhs.identityPlane;
         }
     };
 
-    QMutex imagesBeingRenderedMutex;
-    typedef boost::shared_ptr<ImageBeingRendered> IBRPtr;
-    typedef std::map<ImagePtr, IBRPtr > IBRMap;
-    IBRMap imagesBeingRendered;
-#endif
-
-    ///A cache for components available
-    std::list< boost::weak_ptr<KnobI> > overlaySlaves;
-    mutable QMutex metadataMutex;
-    NodeMetadata metadata;
-    bool runningClipPreferences; //only used on main thread
-
-    // set during interact actions on main-thread
-    OverlaySupport* overlaysViewport;
-    mutable QMutex attachedContextsMutex;
-    // A list of context that are currently attached (i.e attachOpenGLContext() has been called on them but not yet dettachOpenGLContext).
-    // If a plug-in returns false to supportsConcurrentOpenGLRenders() then whenever trying to attach a context, we take a lock in attachOpenGLContext
-    // that is released in dettachOpenGLContext so that there can only be a single attached OpenGL context at any time.
-    std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr> attachedContexts;
-
-    // Render clones are very small copies holding just pointers to Knobs that are used to render plug-ins that are only
-    // eRenderSafetyInstanceSafe or lower
-    EffectInstance* mainInstance; // pointer to the main-instance if this instance is a clone
-    bool isDoingInstanceSafeRender; // true if this intance is rendering
-    mutable QMutex renderClonesMutex;
-    std::list<EffectInstancePtr> renderClonesPool;
-    bool mustSyncPrivateData; //!< true if the effect's knobs were changed but instanceChanged could not be called (e.g. when loading a PyPlug), so that syncPrivateData should be called in getPreferredMetadata_public before calling getPreferredMetadata
-    mutable QMutex mustSyncPrivateDataMutex; //!< protects mustSyncPrivateData
-
-public:
-    void runChangedParamCallback(KnobI* k, bool userEdited, const std::string & callback);
-
-    void setDuringInteractAction(bool b);
-
-#if NATRON_ENABLE_TRIMAP
-    void markImageAsBeingRendered(const boost::shared_ptr<Image> & img, const RectI& roi, std::list<RectI>* restToRender, bool *renderedElsewhere);
-
-    bool waitForImageBeingRenderedElsewhere(const RectI & roi, const boost::shared_ptr<Image> & img);
-
-    void unmarkImageAsBeingRendered(const boost::shared_ptr<Image> & img, const std::list<RectI>& rects, bool renderFailed);
-#endif
-
-    /**
-     * @brief This function sets on the thread storage given in parameter all the arguments which
-     * are used to render an image.
-     * This is used exclusively on the render thread in the renderRoI function or renderRoIInternal function.
-     * The reason we use thread-storage is because the OpenFX API doesn't give all the parameters to the
-     * ImageEffect suite functions except the desired time. That is the Host has to maintain an internal state to "guess" what are the
-     * expected parameters in order to respond correctly to the function call. This state is maintained throughout the render thread work
-     * for all these actions:
-     *
-       - getRegionsOfInterest
-       - getFrameRange
-       - render
-       - beginRender
-       - endRender
-       - isIdentity
-     *
-     * The object that will need to know these datas is OfxClipInstance, more precisely in the following functions:
-       - OfxClipInstance::getRegionOfDefinition
-       - OfxClipInstance::getImage
-     *
-     * We don't provide these datas for the getRegionOfDefinition with these render args because this action can be called way
-     * prior we have all the other parameters. getRegionOfDefinition only needs the current render view and mipMapLevel if it is
-     * called on a render thread or during an analysis. We provide it by setting those 2 parameters directly on a thread-storage
-     * object local to the clip.
-     *
-     * For getImage, all the ScopedRenderArgs are active (except for analysis). The view and mipMapLevel parameters will be retrieved
-     * on the clip that needs the image. All the other parameters will be retrieved in EffectInstance::getImage on the ScopedRenderArgs.
-     *
-     * During an analysis effect we don't set any ScopedRenderArgs and call some actions recursively if needed.
-     * WARNING: analysis effect's are set the current view and mipmapLevel to 0 in the OfxEffectInstance::knobChanged function
-     * If we were to have analysis that perform on different views we would have to change that.
-     **/
-    class ScopedRenderArgs
-    {
-        EffectDataTLSPtr tlsData;
-
-public:
-        ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
-                         const RectD & rod,
-                         const RectI & renderWindow,
-                         double time,
-                         ViewIdx view,
-                         bool isIdentity,
-                         double identityTime,
-                         const EffectInstancePtr& identityInput,
-                         const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
-                         const EffectInstance::InputImagesMap& inputImages,
-                         const RoIMap & roiMap,
-                         int firstFrame,
-                         int lastFrame,
-                         bool isDoingOpenGLRender);
-
-        ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
-                         const EffectDataTLSPtr& otherThreadData);
-
-        ~ScopedRenderArgs();
-    };
-
-    void addInputImageTempPointer(int inputNb, const boost::shared_ptr<Image> & img);
-
-    void clearInputImagePointers();
-
+    typedef std::map<IdentityPlaneKey, ImagePtr, IdentityPlaneKeyCompare> IdentityPlanesMap;
 
     struct TiledRenderingFunctorArgs
     {
-        bool renderFullScaleThenDownscale;
-        bool isSequentialRender;
-        bool isRenderResponseToUserInteraction;
-        int firstFrame;
-        int lastFrame;
-        int preferredInput;
-        unsigned int mipMapLevel;
-        unsigned int renderMappedMipMapLevel;
-        RectD rod;
-        double time;
-        ViewIdx view;
-        double par;
-        ImageBitDepthEnum outputClipPrefDepth;
-        boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
-        ImagePlaneDesc outputClipPrefsComps;
-        bool byPassCache;
-        std::bitset<4> processChannels;
-        boost::shared_ptr<ImagePlanesToRender> planes;
+        FrameViewRequestPtr requestData;
+        OSGLContextPtr glContext;
+        EffectOpenGLContextDataPtr glContextData;
+        RenderBackendTypeEnum backendType;
+        std::map<ImagePlaneDesc, ImagePtr> cachedPlanes;
+
+        // For identity rectangles, this is the input identity image for each plane
+        IdentityPlanesMap identityPlanes;
     };
 
-    RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,  const RectToRender & specificData,
-                                                  QThread* callingThread);
-
-    RenderingFunctorRetEnum tiledRenderingFunctor(const RectToRender & rectToRender,
-                                                  const bool renderFullScaleThenDownscale,
-                                                  const bool isSequentialRender,
-                                                  const bool isRenderResponseToUserInteraction,
-                                                  const int firstFrame, const int lastFrame,
-                                                  const int preferredInput,
-                                                  const unsigned int mipMapLevel,
-                                                  const unsigned int renderMappedMipMapLevel,
-                                                  const RectD & rod,
-                                                  const double time,
-                                                  const ViewIdx view,
-                                                  const double par,
-                                                  const bool byPassCache,
-                                                  const ImageBitDepthEnum outputClipPrefDepth,
-                                                  const ImagePlaneDesc & outputClipPrefsComps,
-                                                  const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
-                                                  const std::bitset<4>& processChannels,
-                                                  const boost::shared_ptr<ImagePlanesToRender> & planes);
+    ActionRetCodeEnum tiledRenderingFunctor(const RectToRender & rectToRender,
+                                            const TiledRenderingFunctorArgs& args);
 
 
-    ///These are the image passed to the plug-in to render
-    /// - fullscaleMappedImage is the fullscale image remapped to what the plugin can support (components/bitdepth)
-    /// - downscaledMappedImage is the downscaled image remapped to what the plugin can support (components/bitdepth wise)
-    /// - fullscaleMappedImage is pointing to "image" if the plug-in does support the renderscale, meaning we don't use it.
-    /// - Similarily downscaledMappedImage is pointing to "downscaledImage" if the plug-in doesn't support the render scale.
-    ///
-    /// - renderMappedImage is what is given to the plug-in to render the image into,it is mapped to an image that the plug-in
-    ///can render onto (good scale, good components, good bitdepth)
-    ///
-    /// These are the possible scenarios:
-    /// - 1) Plugin doesn't need remapping and doesn't need downscaling
-    ///    * We render in downscaledImage always, all image pointers point to it.
-    /// - 2) Plugin doesn't need remapping but needs downscaling (doesn't support the renderscale)
-    ///    * We render in fullScaleImage, fullscaleMappedImage points to it and then we downscale into downscaledImage.
-    ///    * renderMappedImage points to fullScaleImage
-    /// - 3) Plugin needs remapping (doesn't support requested components or bitdepth) but doesn't need downscaling
-    ///    * renderMappedImage points to downscaledMappedImage
-    ///    * We render in downscaledMappedImage and then convert back to downscaledImage with requested comps/bitdepth
-    /// - 4) Plugin needs remapping and downscaling
-    ///    * renderMappedImage points to fullScaleMappedImage
-    ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
-    RenderingFunctorRetEnum renderHandler(const EffectDataTLSPtr& tls,
-                                          const unsigned int mipMapLevel,
-                                          const bool renderFullScaleThenDownscale,
-                                          const bool isSequentialRender,
-                                          const bool isRenderResponseToUserInteraction,
-                                          const RectI & renderMappedRectToRender,
-                                          const RectI & downscaledRectToRender,
-                                          const bool byPassCache,
-                                          const ImageBitDepthEnum outputClipPrefDepth,
-                                          const ImagePlaneDesc & outputClipPrefsComps,
-                                          const std::bitset<4>& processChannels,
-                                          const boost::shared_ptr<Image> & originalInputImage,
-                                          const boost::shared_ptr<Image> & maskImage,
-                                          const ImagePremultiplicationEnum originalImagePremultiplication,
-                                          ImagePlanesToRender & planes);
+    ActionRetCodeEnum renderHandlerIdentity(const RectToRender & rectToRender,
+                                            const TiledRenderingFunctorArgs& args);
 
-    static bool aborted(bool isRenderResponseToUserInteraction,
-                        const AbortableRenderInfoPtr& abortInfo,
-                        const EffectInstancePtr& treeRoot)  WARN_UNUSED_RETURN;
+    ActionRetCodeEnum renderHandlerPlugin(const RectToRender & rectToRender,
+                                          const TiledRenderingFunctorArgs& args);
+
+    ActionRetCodeEnum renderHandlerPostProcess(const RectToRender & rectToRender,
+                                  const TiledRenderingFunctorArgs& args);
+
 
     void checkMetadata(NodeMetadata &metadata);
+
+    void onMaskSelectorChanged(int inputNb, const MaskSelector& selector);
+
+    ImagePlaneDesc getSelectedLayerInternal(const std::list<ImagePlaneDesc>& availableLayers,
+                                            const ChannelSelector& selector) const;
+
+    void onLayerChanged(bool isOutput);
+
+    
 };
 
 

@@ -1,0 +1,84 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=poppler
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=0.74.0
+pkgrel=1
+pkgdesc="PDF rendering library based on xpdf 3.0 (mingw-w64)"
+arch=('any')
+url="https://poppler.freedesktop.org/"
+license=("GPL")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-glib2"
+             "${MINGW_PACKAGE_PREFIX}-gobject-introspection"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+             "${MINGW_PACKAGE_PREFIX}-qt5"
+             'git')
+depends=("${MINGW_PACKAGE_PREFIX}-cairo"
+         "${MINGW_PACKAGE_PREFIX}-curl"
+         "${MINGW_PACKAGE_PREFIX}-freetype"
+         "${MINGW_PACKAGE_PREFIX}-icu"
+         "${MINGW_PACKAGE_PREFIX}-lcms2"
+         "${MINGW_PACKAGE_PREFIX}-libjpeg"
+         "${MINGW_PACKAGE_PREFIX}-libpng"
+         "${MINGW_PACKAGE_PREFIX}-libtiff"
+         "${MINGW_PACKAGE_PREFIX}-nss"
+         "${MINGW_PACKAGE_PREFIX}-openjpeg2"
+         "${MINGW_PACKAGE_PREFIX}-poppler-data"
+         "${MINGW_PACKAGE_PREFIX}-zlib")
+optdepends=("${MINGW_PACKAGE_PREFIX}-glib2: libpoppler-glib"
+            "${MINGW_PACKAGE_PREFIX}-qt5: libpoppler-qt5")
+options=('strip' 'staticlibs')
+source=("https://poppler.freedesktop.org/${_realname}-${pkgver}.tar.xz"
+        "test::git+https://anongit.freedesktop.org/git/poppler/test/#commit=45f55f1e03b9bf3fbd334c31776b6f5e472889ec")
+sha256sums=('92e09fd3302567fd36146b36bb707db43ce436e8841219025a82ea9fb0076b2f'
+            'SKIP')
+
+prepare() {
+  cd ${_realname}-${pkgver}
+}
+
+build() {
+  [[ -d ${srcdir}/build-${MINGW_CHOST} ]] && rm -rf ${srcdir}/build-${MINGW_CHOST}
+  mkdir -p ${srcdir}/build-${MINGW_CHOST} && cd ${srcdir}/build-${MINGW_CHOST}
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  "${MINGW_PREFIX}/bin/cmake.exe" -Wno-dev \
+    -G"MSYS Makefiles" \
+    -DCMAKE_INSTALL_PREFIX="${MINGW_PREFIX}" \
+    -DENABLE_UNSTABLE_API_ABI_HEADERS=ON \
+    -DSPLASH_CMYK=ON \
+    -DENABLE_GLIB=ON \
+    -DENABLE_GOBJECT_INTROSPECTION=ON \
+    -DENABLE_CPP=ON \
+    -DENABLE_DCTDECODER=libjpeg \
+    -DENABLE_LIBOPENJPEG=openjpeg2 \
+    -DENABLE_CMS=lcms2 \
+    -DENABLE_NSS3=ON \
+    -DENABLE_UTILS=ON \
+    -DENABLE_LIBCURL=ON \
+    -DENABLE_ZLIB=ON \
+    -DENABLE_ZLIB_UNCOMPRESS=OFF \
+    -DENABLE_GTK_DOC=OFF \
+    ../${_realname}-${pkgver}
+
+  CC="${MINGW_PREFIX}/bin/gcc.exe" \
+  PKG_CONFIG_PATH=${MINGW_PREFIX}/lib/pkgconfig \
+  make
+}
+
+check() {
+  cd ${srcdir}/build-${MINGW_CHOST}
+  cp libpoppler-85.dll qt5/tests
+  cp cpp/libpoppler-cpp-0.dll qt5/tests
+  cp qt5/src/libpoppler-qt5-1.dll qt5/tests
+
+  make test
+}
+
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make DESTDIR="${pkgdir}" install
+}

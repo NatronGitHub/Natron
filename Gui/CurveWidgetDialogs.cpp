@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -43,19 +43,22 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Knob.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
+#include "Gui/AnimationModuleBase.h"
+#include "Gui/AnimationModuleSelectionModel.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/DialogButtonBox.h"
 #include "Gui/LineEdit.h" // LineEdit
 #include "Gui/SpinBox.h" // SpinBox
 #include "Gui/Button.h" // Button
-#include "Gui/CurveWidget.h" // CurveWidget
 #include "Gui/SequenceFileDialog.h" // SequenceFileDialog
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Label.h" // Label
+#include "Gui/AnimationModuleUndoRedo.h"
 
 NATRON_NAMESPACE_ENTER
 
 ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
-                                                 const std::vector<boost::shared_ptr<CurveGui> > & curves,
+                                                 const std::vector<CurveGuiPtr> & curves,
                                                  Gui* gui,
                                                  QWidget* parent)
     : QDialog(parent)
@@ -101,8 +104,8 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
         xend = std::max(xstart + 1., 1.);
     }
     _mainLayout = new QVBoxLayout(this);
-    _mainLayout->setContentsMargins(0, 3, 0, 0);
-    _mainLayout->setSpacing(2);
+    _mainLayout->setContentsMargins(0, TO_DPIX(3), 0, 0);
+    _mainLayout->setSpacing(TO_DPIX(2));
     setLayout(_mainLayout);
 
     //////File
@@ -293,8 +296,12 @@ ImportExportCurveDialog::getXStart() const
     double ret = 0.;
     std::string expr = std::string("ret = float(") + _startLineEdit->text().toStdString() + ')';
     std::string error;
-    bool ok = Knob<double>::evaluateExpression(expr, &ret, &error);
-    Q_UNUSED(ok);
+    std::string retIsString;
+    KnobHelper::ExpressionReturnValueTypeEnum stat = KnobHelper::evaluateExpression(expr, eExpressionLanguagePython, &ret, &retIsString, &error);
+    if (stat != KnobHelper::eExpressionReturnValueTypeScalar) {
+        return 0;
+    }
+
     //qDebug() << "xstart=" << expr.c_str() << ret;
     return ret;
 }
@@ -308,8 +315,12 @@ ImportExportCurveDialog::getXIncrement() const
     double ret = 0.01;
     std::string expr = std::string("ret = float(") + _incrLineEdit->text().toStdString() + ')';
     std::string error;
-    bool ok = Knob<double>::evaluateExpression(expr, &ret, &error);
-    Q_UNUSED(ok);
+    std::string retIsString;
+    KnobHelper::ExpressionReturnValueTypeEnum stat = KnobHelper::evaluateExpression(expr, eExpressionLanguagePython, &ret, &retIsString, &error);
+    if (stat != KnobHelper::eExpressionReturnValueTypeScalar) {
+        return 0;
+    }
+
     //qDebug() << "incr=" << expr.c_str() << ret;
     return ret;
 }
@@ -320,11 +331,18 @@ ImportExportCurveDialog::getXCount() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
+    ///only valid for export dialogs
+    assert(_isExportDialog);
+
     double ret = 0.;
     std::string expr = std::string("ret = float(1+((")  + _endLineEdit->text().toStdString() + std::string(")-(") + _startLineEdit->text().toStdString() + std::string("))/(") + _incrLineEdit->text().toStdString() + std::string("))");
     std::string error;
-    bool ok = Knob<double>::evaluateExpression(expr, &ret, &error);
-    Q_UNUSED(ok);
+    std::string retIsString;
+    KnobHelper::ExpressionReturnValueTypeEnum stat = KnobHelper::evaluateExpression(expr, eExpressionLanguagePython, &ret, &retIsString, &error);
+    if (stat != KnobHelper::eExpressionReturnValueTypeScalar) {
+        return 0;
+    }
+
     //qDebug() << "count=" << expr.c_str() << ret;
     return (int) (std::floor(ret + 0.5));
 }
@@ -340,15 +358,18 @@ ImportExportCurveDialog::getXEnd() const
 
     double ret = 1.;
     std::string expr = std::string("ret = float(") + _endLineEdit->text().toStdString() + ')';
-    std::string error;
-    bool ok = Knob<double>::evaluateExpression(expr, &ret, &error);
-    Q_UNUSED(ok);
+    std::string retIsString, error;
+    KnobHelper::ExpressionReturnValueTypeEnum stat = KnobHelper::evaluateExpression(expr, eExpressionLanguagePython, &ret, &retIsString, &error);
+    if (stat != KnobHelper::eExpressionReturnValueTypeScalar) {
+        return 0;
+    }
+
     //qDebug() << "xend=" << expr.c_str() << ret;
     return ret;
 }
 
 void
-ImportExportCurveDialog::getCurveColumns(std::map<int, boost::shared_ptr<CurveGui> >* columns) const
+ImportExportCurveDialog::getCurveColumns(std::map<int, CurveGuiPtr>* columns) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -360,8 +381,8 @@ ImportExportCurveDialog::getCurveColumns(std::map<int, boost::shared_ptr<CurveGu
 
 struct EditKeyFrameDialogPrivate
 {
-    CurveWidget* curveWidget;
-    KeyPtr key;
+    AnimationModuleView* curveWidget;
+    AnimItemDimViewKeyFrame key;
     double originalX, originalY;
     QVBoxLayout* mainLayout;
     QWidget* boxContainer;
@@ -374,12 +395,12 @@ struct EditKeyFrameDialogPrivate
     EditKeyFrameDialog::EditModeEnum mode;
 
     EditKeyFrameDialogPrivate(EditKeyFrameDialog::EditModeEnum mode,
-                              CurveWidget* curveWidget,
-                              const KeyPtr& key)
+                              AnimationModuleView* curveWidget,
+                              const AnimItemDimViewKeyFrame& key)
         : curveWidget(curveWidget)
         , key(key)
-        , originalX( key->key.getTime() )
-        , originalY( key->key.getValue() )
+        , originalX( key.key.getTime() )
+        , originalY( key.key.getValue() )
         , mainLayout(0)
         , boxContainer(0)
         , boxLayout(0)
@@ -391,16 +412,16 @@ struct EditKeyFrameDialogPrivate
         , mode(mode)
     {
         if (mode == EditKeyFrameDialog::eEditModeLeftDerivative) {
-            originalX = key->key.getLeftDerivative();
+            originalX = key.key.getLeftDerivative();
         } else if (mode == EditKeyFrameDialog::eEditModeRightDerivative) {
-            originalX = key->key.getRightDerivative();
+            originalX = key.key.getRightDerivative();
         }
     }
 };
 
 EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,
-                                       CurveWidget* curveWidget,
-                                       const KeyPtr& key,
+                                       AnimationModuleView* curveWidget,
+                                       const AnimItemDimViewKeyFrame& key,
                                        QWidget* parent)
     : QDialog(parent)
     , _imp( new EditKeyFrameDialogPrivate(mode, curveWidget, key) )
@@ -449,8 +470,10 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,
         _imp->yLabel->setFont( QApplication::font() ); // necessary, or the labels will get the default font size
         _imp->boxLayout->addWidget(_imp->yLabel);
 
-        bool clampedToInt = key->curve->areKeyFramesValuesClampedToIntegers();
-        bool clampedToBool = key->curve->areKeyFramesValuesClampedToBooleans();
+        CurveGuiPtr curve = key.id.item->getCurveGui(key.id.dim, key.id.view);
+        assert(curve);
+        bool clampedToInt = curve->areKeyFramesValuesClampedToIntegers();
+        bool clampedToBool = curve->areKeyFramesValuesClampedToBooleans();
         SpinBox::SpinBoxTypeEnum yType = (clampedToBool || clampedToInt) ? SpinBox::eSpinBoxTypeInt : SpinBox::eSpinBoxTypeDouble;
 
         _imp->ySpinbox = new SpinBox(_imp->boxContainer, yType);
@@ -459,7 +482,7 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,
             _imp->ySpinbox->setMinimum(0);
             _imp->ySpinbox->setMaximum(1);
         } else {
-            Curve::YRange range = key->curve->getCurveYRange();
+            Curve::YRange range = curve->getCurveYRange();
             _imp->ySpinbox->setMinimum(range.min);
             _imp->ySpinbox->setMaximum(range.max);
         }
@@ -478,21 +501,24 @@ EditKeyFrameDialog::~EditKeyFrameDialog()
 }
 
 void
-EditKeyFrameDialog::moveKeyTo(double newX,
-                              double newY)
+EditKeyFrameDialog::moveKeyTo(double newX, double newY)
 {
-    std::map<boost::shared_ptr<CurveGui>, std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
-    std::vector<MoveKeysCommand::KeyToMove> &keys = keysToMove[_imp->key->curve];
+    AnimationModuleBasePtr model = _imp->key.id.item->getModel();
 
-    keys.resize(1);
-    keys[0].key = _imp->key;
-    keys[0].prevIsSelected = false;
-    keys[0].nextIsSelected = false;
-    double curY = _imp->key->key.getValue();
-    double curX = _imp->key->key.getTime();
+    CurvePtr curve = _imp->key.id.item->getCurve(_imp->key.id.dim, _imp->key.id.view);
+    if (!curve) {
+        return;
+    }
+
+    AnimItemDimViewKeyFramesMap keysToMove;
+    KeyFrameSet& keys = keysToMove[_imp->key.id];
+    keys.insert(_imp->key.key);
+
+    double curY = _imp->key.key.getValue();
+    double curX = _imp->key.key.getTime();
 
     if (_imp->mode == eEditModeKeyframePosition) {
-        ///Check that another keyframe doesn't have this time
+        // Check that another keyframe doesn't have this time
 
         int expectedEqualKeys = 0;
         if (newX == curX) {
@@ -500,7 +526,7 @@ EditKeyFrameDialog::moveKeyTo(double newX,
         }
 
         int curEqualKeys = 0;
-        KeyFrameSet set = _imp->key->curve->getKeyFrames();
+        KeyFrameSet set = curve->getKeyFrames_mt_safe();
         for (KeyFrameSet::iterator it = set.begin(); it != set.end(); ++it) {
             if (std::abs(it->getTime() - newX) <= NATRON_CURVE_X_SPACING_EPSILON) {
                 _imp->xSpinbox->setValue(curX);
@@ -510,9 +536,26 @@ EditKeyFrameDialog::moveKeyTo(double newX,
                 ++curEqualKeys;
             }
         }
+
+        std::vector<NodeAnimPtr> nodesToMove;
+        std::vector<TableItemAnimPtr> tableItemsToMove;
+        model->pushUndoCommand( new WarpKeysCommand(keysToMove, model, nodesToMove, tableItemsToMove, newX - curX, newY - curY) );
+        refreshSelectedKey();
     }
 
-    _imp->curveWidget->pushUndoCommand( new MoveKeysCommand(_imp->curveWidget, keysToMove, newX - curX, newY - curY, true) );
+}
+
+void
+EditKeyFrameDialog::refreshSelectedKey()
+{
+    AnimationModuleBasePtr model = _imp->key.id.item->getModel();
+    const AnimItemDimViewKeyFramesMap& selectedKeys = model->getSelectionModel()->getCurrentKeyFramesSelection();
+    assert(!selectedKeys.empty() && selectedKeys.size() == 1);
+    AnimItemDimViewKeyFramesMap::const_iterator it = selectedKeys.begin();
+    _imp->key.id = it->first;
+    assert(!it->second.empty() && it->second.size() == 1);
+    _imp->key.key = *it->second.begin();
+
 }
 
 void
@@ -525,14 +568,16 @@ EditKeyFrameDialog::moveDerivativeTo(double d)
     } else {
         deriv = MoveTangentCommand::eSelectedTangentRight;
     }
-    _imp->curveWidget->pushUndoCommand( new MoveTangentCommand(_imp->curveWidget, deriv, _imp->key, d) );
+    AnimationModuleBasePtr model = _imp->key.id.item->getModel();
+    model->pushUndoCommand( new MoveTangentCommand(_imp->key.id.item->getModel(), deriv, _imp->key, d) );
+    refreshSelectedKey();
 }
 
 void
 EditKeyFrameDialog::onXSpinBoxValueChanged(double d)
 {
     if (_imp->mode == eEditModeKeyframePosition) {
-        moveKeyTo( d, _imp->key->key.getValue() );
+        moveKeyTo( d, _imp->key.key.getValue() );
     } else {
         moveDerivativeTo(d);
     }
@@ -541,14 +586,14 @@ EditKeyFrameDialog::onXSpinBoxValueChanged(double d)
 void
 EditKeyFrameDialog::onYSpinBoxValueChanged(double d)
 {
-    moveKeyTo(_imp->key->key.getTime(), d);
+    moveKeyTo(_imp->key.key.getTime(), d);
 }
 
 void
 EditKeyFrameDialog::onEditingFinished()
 {
     _imp->wasAccepted = true;
-    accept();
+    Q_EMIT dialogFinished(true);
 }
 
 void
@@ -556,7 +601,7 @@ EditKeyFrameDialog::keyPressEvent(QKeyEvent* e)
 {
     if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
         _imp->wasAccepted = true;
-        accept();
+        Q_EMIT dialogFinished(true);
     } else if (e->key() == Qt::Key_Escape) {
         if (_imp->mode == eEditModeKeyframePosition) {
             moveKeyTo(_imp->originalX, _imp->originalY);
@@ -567,7 +612,7 @@ EditKeyFrameDialog::keyPressEvent(QKeyEvent* e)
         if (_imp->ySpinbox) {
             _imp->ySpinbox->blockSignals(true);
         }
-        reject();
+        Q_EMIT dialogFinished(false);
     } else {
         QDialog::keyPressEvent(e);
     }
@@ -587,7 +632,7 @@ EditKeyFrameDialog::changeEvent(QEvent* e)
             if (_imp->ySpinbox) {
                 _imp->ySpinbox->blockSignals(true);
             }
-            reject();
+            Q_EMIT dialogFinished(false);
 
             return;
         }

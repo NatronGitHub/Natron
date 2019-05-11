@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -42,7 +42,7 @@ CLANG_DIAG_ON(deprecated-register)
 
 NATRON_NAMESPACE_ENTER
 AnimatedCheckBox::AnimatedCheckBox(QWidget *parent)
-    : QFrame(parent), animation(0), readOnly(false), dirty(false), altered(false), checked(false)
+    : QFrame(parent), readOnly(false), checked(false), _linked(false)
 {
     setFocusPolicy(Qt::StrongFocus);
     setSizePolicy( QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed, QSizePolicy::Label) );
@@ -51,23 +51,9 @@ AnimatedCheckBox::AnimatedCheckBox(QWidget *parent)
 }
 
 void
-AnimatedCheckBox::setAnimation(int i)
-{
-    animation = i;
-    update();
-}
-
-void
 AnimatedCheckBox::setReadOnly(bool readOnly)
 {
     this->readOnly = readOnly;
-    update();
-}
-
-void
-AnimatedCheckBox::setDirty(bool b)
-{
-    dirty = b;
     update();
 }
 
@@ -88,6 +74,14 @@ AnimatedCheckBox::setChecked(bool c)
 {
     checked = c;
     Q_EMIT toggled(checked);
+    update();
+}
+
+void
+AnimatedCheckBox::refreshStylesheet()
+{
+    style()->unpolish(this);
+    style()->polish(this);
     update();
 }
 
@@ -119,6 +113,12 @@ AnimatedCheckBox::mousePressEvent(QMouseEvent* e)
     } else {
         QFrame::mousePressEvent(e);
     }
+}
+
+void
+AnimatedCheckBox::setLinked(bool linked)
+{
+    _linked = linked;
 }
 
 void
@@ -164,15 +164,19 @@ AnimatedCheckBox::paintEvent(QPaintEvent* e)
 
     ///Draw tick
     if (checked) {
-        if (animation == 3) {
+        if (_linked) {
+            double r, g, b;
+            appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
+            activeColor.setRgbF(r, g, b);
+        } else if (animation == 3) {
             activeColor = Qt::black;
         } else if (readOnly) {
             activeColor.setRgbF(0.5, 0.5, 0.5);
-        } else if (altered) {
+        } else if (!modified) {
             double r, g, b;
             appPTR->getCurrentSettings()->getAltTextColor(&r, &g, &b);
             activeColor.setRgbF(r, g, b);
-        } else if (dirty) {
+        } else if (multipleSelection) {
             activeColor = Qt::black;
         } else {
             double r, g, b;

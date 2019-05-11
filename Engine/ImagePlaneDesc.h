@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,25 +29,17 @@
 
 #include <string>
 #include <vector>
+#include <list>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/version.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
-
-#define IMAGEPLANEDESC_SERIALIZATION_INTRODUCES_ID 2
-#define IMAGEPLANEDESC_SERIALIZATION_VERSION IMAGEPLANEDESC_SERIALIZATION_INTRODUCES_ID
 
 #include <nuke/fnOfxExtensions.h>
 #include "Engine/EngineFwd.h"
 #include "Engine/ChoiceOption.h"
+#include "Serialization/SerializationBase.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER
 
 #define kNatronColorPlaneID kFnOfxImagePlaneColour
 #define kNatronColorPlaneLabel "Color"
@@ -67,11 +59,23 @@ GCC_DIAG_ON(unused-parameter)
 #define kNatronDisparityComponentsLabel "Disparity"
 #define kNatronMotionComponentsLabel "Motion"
 
-NATRON_NAMESPACE_ENTER
 
-class ImagePlaneDesc
+/**
+ * @brief An ImagePlaneDesc represents an image plane and its components type.
+ * The plane is uniquely identified by its planeID, it is used internally to compare planes.
+ * The plane label is used for any UI related display: this is what the user sees.
+ * If empty, the plane label is the same as the planeID.
+ * The channels label is an optional string indicating in a more convenient way the types
+ * of components expressed by the channels e.g: Instead of having "XY" for motion vectors,
+ * they could be labeled with "Motion".
+ * If empty, the channels label is set to the concatenation of all channels.
+ * The channels are the unique identifier for each channel composing the plane.
+ * The plane can only be composed from 1 to 4 (included) channels.
+ **/
+class ImagePlaneDesc : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
+
 
     ImagePlaneDesc();
 
@@ -241,25 +245,18 @@ public:
     static const ImagePlaneDesc& getXYComponents();
 
 
-    template<class Archive>
-    void save(Archive & ar, const unsigned int version) const;
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
 
-    template<class Archive>
-    void load(Archive & ar, const unsigned int version);
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE FINAL;
+
 
 private:
     std::string _planeID, _planeLabel;
     std::vector<std::string> _channels;
     std::string _channelsLabel;
-    
-    friend class boost::serialization::access;
 
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
 NATRON_NAMESPACE_EXIT
-
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::ImagePlaneDesc, IMAGEPLANEDESC_SERIALIZATION_VERSION)
-
 
 #endif // IMAGECOMPONENTS_H

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,8 +26,9 @@
 
 #include <stdexcept>
 
+#include "Engine/KnobUndoCommand.h"
 #include "Engine/KnobTypes.h"
-#include "Gui/KnobUndoCommand.h"
+
 #include "Gui/KnobGuiValue.h"
 #include "Gui/KnobGuiColor.h"
 #include "Gui/SpinBox.h"
@@ -37,34 +38,41 @@ NATRON_NAMESPACE_ENTER
 struct NumericKnobValidatorPrivate
 {
     const SpinBox* spinbox;
-    KnobGuiWPtr knobUi;
+    KnobGuiWidgetsWPtr knobGui;
+    ViewIdx view;
 
     ///Only these knobs have spinboxes
-    KnobGuiDouble* isDoubleGui;
-    KnobGuiColor* isColorGui;
-    KnobGuiInt* isIntGui;
-    boost::weak_ptr<Knob<double> > isDouble;
-    boost::weak_ptr<Knob<int> > isInt;
+    KnobGuiDoublePtr isDoubleGui;
+    KnobGuiColorPtr isColorGui;
+    KnobGuiIntPtr isIntGui;
+    KnobDoubleBasePtr isDouble;
+    KnobIntBasePtr isInt;
 
     NumericKnobValidatorPrivate(const SpinBox* spinbox,
-                                const KnobGuiPtr& knob)
+                                const KnobGuiWidgetsPtr& knob,
+                                ViewIdx view)
         : spinbox(spinbox)
-        , knobUi(knob)
-        , isDoubleGui( dynamic_cast<KnobGuiDouble*>( knob.get() ) )
-        , isColorGui( dynamic_cast<KnobGuiColor*>( knob.get() ) )
-        , isIntGui( dynamic_cast<KnobGuiInt*>( knob.get() ) )
-    {
-        KnobPtr internalKnob = knob->getKnob();
+        , knobGui(knob)
+        , view(view)
 
-        isDouble = boost::dynamic_pointer_cast<Knob<double> >(internalKnob);
-        isInt = boost::dynamic_pointer_cast<Knob<int> >(internalKnob);
-        assert( isDouble.lock() || isInt.lock() );
+    {
+
+        isDoubleGui = toKnobGuiDouble(knob);
+        isColorGui = toKnobGuiColor(knob);
+        isIntGui = toKnobGuiInt(knob);
+
+        KnobIPtr internalKnob = knob->getKnobGui()->getKnob();
+
+        isDouble = toKnobDoubleBase(internalKnob);
+        isInt = toKnobIntBase(internalKnob);
+        assert( isDouble || isInt );
     }
 };
 
 NumericKnobValidator::NumericKnobValidator(const SpinBox* spinbox,
-                                           const KnobGuiPtr& knob)
-    : _imp( new NumericKnobValidatorPrivate(spinbox, knob) )
+                                           const KnobGuiWidgetsPtr& knob,
+                                           ViewIdx view)
+    : _imp( new NumericKnobValidatorPrivate(spinbox, knob, view) )
 {
 }
 
@@ -76,30 +84,14 @@ bool
 NumericKnobValidator::validateInput(const QString& userText,
                                     double* valueToDisplay) const
 {
-    int dimension;
-    bool allDimsVisible = true;
+    DimSpec dimension;
+    KnobGuiWidgetsPtr knobWidgets = _imp->knobGui.lock();
+    bool allDimsVisible = knobWidgets->getKnobGui()->getKnob()->getAllDimensionsVisible(_imp->view);
 
-    if (_imp->isDoubleGui) {
-        allDimsVisible = _imp->isDoubleGui->getAllDimensionsVisible();
-    } else if (_imp->isIntGui) {
-        allDimsVisible = _imp->isIntGui->getAllDimensionsVisible();
-    } else if (_imp->isColorGui) {
-        allDimsVisible = _imp->isColorGui->getAllDimensionsVisible();
-    } else {
-        assert(0);
-    }
     if (!allDimsVisible) {
-        dimension = -1;
+        dimension = DimSpec::all();
     } else {
-        if (_imp->isDoubleGui) {
-            dimension = _imp->isDoubleGui->getDimensionForSpinBox(_imp->spinbox);
-        } else if (_imp->isIntGui) {
-            dimension = _imp->isIntGui->getDimensionForSpinBox(_imp->spinbox);
-        } else if (_imp->isColorGui) {
-            dimension = _imp->isColorGui->getDimensionForSpinBox(_imp->spinbox);
-        } else {
-            dimension = 0;
-        }
+        dimension = DimSpec(_imp->spinbox->property(kKnobGuiValueSpinBoxDimensionProperty).toInt());
     }
 
     *valueToDisplay = 0;
@@ -110,23 +102,24 @@ NumericKnobValidator::validateInput(const QString& userText,
         simplifiedUserText.remove(0, 1);
     }
     std::string expr = simplifiedUserText.toStdString();
-    KnobGuiPtr knob = _imp->knobUi.lock();
-
-    if (!expr.empty() && knob) {
+    if (!expr.empty() && knobWidgets) {
+        KnobIPtr internalKnob = knobWidgets->getKnobGui()->getKnob();
         try {
-            knob->getKnob()->validateExpression(expr, 0, false, &ret);
+            internalKnob->validateExpression(expr, eExpressionLanguageExprTk, DimIdx(0), _imp->view, false, &ret);
         } catch (...) {
             return false;
         }
 
         if (isPersistentExpression) {
             //Only set the expression if it starts with '='
-            knob->pushUndoCommand( new SetExpressionCommand(knob->getKnob(),
-                                                            false,
-                                                            dimension,
-                                                            expr) );
+            knobWidgets->getKnobGui()->pushUndoCommand( new SetExpressionCommand(internalKnob,
+                                                                                 eExpressionLanguageExprTk,
+                                                                                 false,
+                                                                                 dimension,
+                                                                                 _imp->view,
+                                                                                 expr) );
         }
-
+        
 
         bool ok = false;
         *valueToDisplay = QString::fromUtf8( ret.c_str() ).toDouble(&ok);

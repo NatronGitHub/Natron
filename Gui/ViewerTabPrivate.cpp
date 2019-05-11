@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -35,9 +35,9 @@
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/ActionShortcuts.h"
-#include "Gui/ChannelsComboBox.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/Gui.h"
 #include "Gui/NodeGui.h"
@@ -49,158 +49,108 @@ NATRON_NAMESPACE_ENTER
 
 
 ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
-                                   ViewerInstance* node)
+                                   const NodeGuiPtr& node_ui)
     : publicInterface(publicInterface)
+    , viewerNode()
     , viewer(NULL)
     , viewerContainer(NULL)
     , viewerLayout(NULL)
     , viewerSubContainer(NULL)
     , viewerSubContainerLayout(NULL)
     , mainLayout(NULL)
-    , firstSettingsRow(NULL)
-    , secondSettingsRow(NULL)
-    , firstRowLayout(NULL)
-    , secondRowLayout(NULL)
-    , layerChoice(NULL)
-    , alphaChannelChoice(NULL)
-    , viewerChannels(NULL)
-    , viewerChannelsAutoswitchedToAlpha(false)
-    , zoomCombobox(NULL)
-    , syncViewerButton(NULL)
-    , centerViewerButton(NULL)
-    , clipToProjectFormatButton(NULL)
-    , fullFrameProcessingButton(NULL)
-    , enableViewerRoI(NULL)
-    , refreshButton(NULL)
-    , pauseButton(NULL)
-    , iconRefreshOff()
-    , iconRefreshOn()
-    , activateRenderScale(NULL)
-    , renderScaleActive(false)
-    , renderScaleCombo(NULL)
-    , firstInputLabel(NULL)
-    , firstInputImage(NULL)
-    , compositingOperatorLabel(NULL)
-    , compositingOperator(NULL)
-    , secondInputLabel(NULL)
-    , secondInputImage(NULL)
-    , toggleGainButton(NULL)
-    , gainBox(NULL)
-    , gainSlider(NULL)
-    , lastFstopValue(0.)
-    , autoContrast(NULL)
-    , gammaBox(NULL)
-    , lastGammaValue(1.)
-    , toggleGammaButton(NULL)
-    , gammaSlider(NULL)
-    , viewerColorSpace(NULL)
-    , checkerboardButton(NULL)
-    , pickerButton(NULL)
-    , viewsComboBox(NULL)
-    , currentViewIndex(0)
-    , currentViewMutex()
     , infoWidget()
-    , playerButtonsContainer(0)
-    , playerLayout(NULL)
-    , currentFrameBox(NULL)
-    , firstFrame_Button(NULL)
-    , previousKeyFrame_Button(NULL)
-    , play_Backward_Button(NULL)
-    , previousFrame_Button(NULL)
-    , nextFrame_Button(NULL)
-    , play_Forward_Button(NULL)
-    , nextKeyFrame_Button(NULL)
-    , lastFrame_Button(NULL)
-    , previousIncrement_Button(NULL)
-    , incrementSpinBox(NULL)
-    , nextIncrement_Button(NULL)
-    , playbackMode_Button(NULL)
-    , playBackInputButton(NULL)
-    , playBackInputSpinbox(NULL)
-    , playBackOutputButton(NULL)
-    , playBackOutputSpinbox(NULL)
-    , playbackModeMutex()
-    , playbackMode(ePlaybackModeLoop)
-    , tripleSyncButton(0)
-    , canEditFpsBox(NULL)
-    , canEditFpsLabel(NULL)
-    , fpsLockedMutex()
-    , fpsLocked(true)
-    , fpsBox(NULL)
-    , userFps(24)
-    , turboButton(NULL)
     , timeLineGui(NULL)
+    , cachedFramesThread()
     , nodesContext()
     , currentNodeContext()
-    , inputNamesMap()
-    , compOperatorMutex()
-    , compOperator(eViewerCompositingOperatorNone)
-    , compOperatorPrevious(eViewerCompositingOperatorWipeUnder)
-    , viewerNode(node)
-    , visibleToolbarsMutex()
-    , infobarVisible(true)
-    , playerVisible(true)
-    , timelineVisible(true)
-    , leftToolbarVisible(true)
-    , rightToolbarVisible(true)
-    , topToolbarVisible(true)
     , isFileDialogViewer(false)
-    , checkerboardMutex()
-    , checkerboardEnabled(false)
-    , fpsMutex()
-    , fps(24.)
     , lastOverlayNode()
     , hasPenDown(false)
+    , canEnableDraftOnPenMotion(false)
     , hasCaughtPenMotionWhileDragging(false)
 {
+    viewerNode = node_ui->getNode()->isEffectViewerNode();
     infoWidget[0] = infoWidget[1] = NULL;
 }
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 bool
-ViewerTabPrivate::getOverlayTransform(double time,
+ViewerTabPrivate::getOverlayTransform(TimeValue time,
                                       ViewIdx view,
                                       const NodePtr& target,
-                                      EffectInstance* currentNode,
+                                      const EffectInstancePtr& currentNode,
                                       Transform::Matrix3x3* transform) const
 {
-    if ( currentNode == target->getEffectInstance().get() ) {
+    if ( currentNode == target->getEffectInstance() ) {
         return true;
+    }
+    if (!currentNode) {
+        return false;
     }
     RenderScale s(1.);
     EffectInstancePtr input;
-    StatusEnum stat = eStatusReplyDefault;
-    Transform::Matrix3x3 mat;
-    // call getTransform even of effects that claim not to support it, because it may still return
+    ActionRetCodeEnum stat = eActionStatusReplyDefault;
+    DistortionFunction2DPtr disto;
+
+    // call getTransform even if the effect claims not to support it: it may still return
     // a transform to apply to the overlays (eg for Reformat).
     // If transform is not implemented, it should return eStatusReplyDefault:
     // http://openfx.sourceforge.net/Documentation/1.4/ofxProgrammingReference.html#mainEntryPoint
     // "the value kOfxStatReplyDefault is returned if the plug-in does not trap the action"
-    if ( !currentNode->getNode()->isNodeDisabled() /*&& currentNode->getNode()->getCurrentCanTransform()*/ ) {
-        // Always use draft mode to draw overlay (so that transforms are applied,
-        // even in case of motion blur, see Transform3x3Plugin::getTransform() )
-        stat = currentNode->getTransform_public(time, s, /*draftRender=*/true, view, &input, &mat);
-    }
-    if (stat == eStatusFailed) {
-        return false;
-    } else if (stat == eStatusReplyDefault) {
-        //No transfo matrix found, pass to the input...
 
-        ///Test all inputs recursively, going from last to first, preferring non optional inputs.
-        std::list<EffectInstance*> nonOptionalInputs;
-        std::list<EffectInstance*> optionalInputs;
+    // Internally this will return an identity matrix if the node is identity
+
+    {
+        GetDistortionResultsPtr results;
+        stat = currentNode->getInverseDistortion_public(time, s, /*draftRender=*/true, view, &results);
+        if (isFailureRetCode(stat)) {
+            return false;
+        }
+        if (stat != eActionStatusReplyDefault && results) {
+            disto = results->getResults();
+        }
+        if (disto && disto->inputNbToDistort != -1) {
+            input = currentNode->getInputMainInstance(disto->inputNbToDistort);
+        }
+
+    }
+
+
+    if (stat == eActionStatusOK) {
+        if (!input) {
+            return false;
+        }
+
+        if (disto->transformMatrix) {
+            Transform::Matrix3x3 mat(*disto->transformMatrix);
+
+            // The matrix must be inversed because this is the inversed transform
+            Transform::Matrix3x3 invTransform;
+            if (!transform->inverse(&invTransform)) {
+                return false;
+            }
+            *transform = Transform::matMul(invTransform, mat);
+        }
+
+        return getOverlayTransform(time, view, target, input, transform);
+    } else if (stat == eActionStatusReplyDefault) {
+        // No transfo matrix found, pass to the input...
+
+        // Test all inputs recursively, going from last to first, preferring non optional inputs.
+        std::list<EffectInstancePtr> nonOptionalInputs;
+        std::list<EffectInstancePtr> optionalInputs;
         int maxInp = currentNode->getNInputs();
 
-        ///We cycle in reverse by default. It should be a setting of the application.
-        ///In this case it will return input B instead of input A of a merge for example.
+        // We cycle in reverse by default. It should be a setting of the application.
+        // In this case it will return input B instead of input A of a merge for example.
         for (int i = maxInp - 1; i >= 0; --i) {
-            EffectInstancePtr inp = currentNode->getInput(i);
-            bool optional = currentNode->isInputOptional(i);
+            EffectInstancePtr inp = currentNode->getInputMainInstance(i);
+            bool optional = currentNode->getNode()->isInputOptional(i);
             if (inp) {
                 if (optional) {
-                    optionalInputs.push_back( inp.get() );
+                    optionalInputs.push_back(inp);
                 } else {
-                    nonOptionalInputs.push_back( inp.get() );
+                    nonOptionalInputs.push_back(inp);
                 }
             }
         }
@@ -209,9 +159,10 @@ ViewerTabPrivate::getOverlayTransform(double time,
             return false;
         }
 
-        ///Cycle through all non optional inputs first
-        for (std::list<EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
-            mat = Transform::Matrix3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
+        // Cycle through all non optional inputs first
+        for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+            Transform::Matrix3x3 mat;
+            mat.setIdentity();
             bool isOk = getOverlayTransform(time, view, target, *it, &mat);
             if (isOk) {
                 *transform = Transform::matMul(*transform, mat);
@@ -221,8 +172,9 @@ ViewerTabPrivate::getOverlayTransform(double time,
         }
 
         ///Cycle through optional inputs...
-        for (std::list<EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
-            mat = Transform::Matrix3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
+        for (std::list<EffectInstancePtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+            Transform::Matrix3x3 mat;
+            mat.setIdentity();
             bool isOk = getOverlayTransform(time, view, target, *it, &mat);
             if (isOk) {
                 *transform = Transform::matMul(*transform, mat);
@@ -230,38 +182,38 @@ ViewerTabPrivate::getOverlayTransform(double time,
                 return true;
             }
         }
-
-        return false;
-    } else {
-        assert(input);
-        double par = input->getAspectRatio(-1);
-
-        //The mat is in pixel coordinates, though
-        mat = Transform::matMul(Transform::matPixelToCanonical(par, 1, 1, false), mat);
-        mat = Transform::matMul( mat, Transform::matCanonicalToPixel(par, 1, 1, false) );
-        *transform = Transform::matMul(*transform, mat);
-        bool isOk = getOverlayTransform(time, view, target, input.get(), transform);
-
-        return isOk;
+        
     }
 
     return false;
+
+
+
 } // ViewerTabPrivate::getOverlayTransform
 
-static double
-transformTimeForNode(EffectInstance* currentNode,
+static TimeValue
+transformTimeForNode(const EffectInstancePtr& currentNode,
                      int inputNb,
-                     double inTime)
+                     TimeValue inTime,
+                     ViewIdx view)
 {
-    U64 nodeHash = currentNode->getHash();
-    FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(nodeHash, inTime, ViewIdx(0), 0);
+    FramesNeededMap framesNeeded;
+    {
+        GetFramesNeededResultsPtr results;
+        ActionRetCodeEnum stat = currentNode->getFramesNeeded_public(TimeValue(inTime), view, &results);
+        if (isFailureRetCode(stat)) {
+            return inTime;
+        }
+        results->getFramesNeeded(&framesNeeded);
+    }
     FramesNeededMap::iterator foundInput0 = framesNeeded.find(inputNb /*input*/);
+
 
     if ( foundInput0 == framesNeeded.end() ) {
         return inTime;
     }
 
-    FrameRangesMap::iterator foundView0 = foundInput0->second.find( ViewIdx(0) );
+    FrameRangesMap::iterator foundView0 = foundInput0->second.find(view);
     if ( foundView0 == foundInput0->second.end() ) {
         return inTime;
     }
@@ -269,27 +221,26 @@ transformTimeForNode(EffectInstance* currentNode,
     if ( foundView0->second.empty() ) {
         return inTime;
     } else {
-        return (foundView0->second.front().min);
+        return TimeValue(foundView0->second.front().min);
     }
 }
 
 bool
-ViewerTabPrivate::getTimeTransform(double time,
+ViewerTabPrivate::getTimeTransform(TimeValue time,
                                    ViewIdx view,
                                    const NodePtr& target,
-                                   EffectInstance* currentNode,
-                                   double *newTime) const
+                                   const EffectInstancePtr& currentNode,
+                                   TimeValue *newTime) const
 {
-    if (!currentNode) {
+    if (!currentNode || !currentNode->getNode()) {
         return false;
     }
-    if ( currentNode == target->getEffectInstance().get() ) {
+    if ( currentNode == target->getEffectInstance() ) {
         *newTime = time;
 
         return true;
     }
 
-    bool isDisabled = currentNode->getNode()->isNodeDisabled();
 
 
     ///Test all inputs recursively, going from last to first, preferring non optional inputs.
@@ -300,30 +251,34 @@ ViewerTabPrivate::getTimeTransform(double time,
     ///We cycle in reverse by default. It should be a setting of the application.
     ///In this case it will return input B instead of input A of a merge for example.
     for (int i = maxInp - 1; i >= 0; --i) {
-        bool optional = currentNode->isInputOptional(i);
+        EffectInstancePtr inp = currentNode->getInputMainInstance(i);
+        bool optional = currentNode->getNode()->isInputOptional(i);
+        if (inp) {
+            if (optional) {
+                optionalInputs.push_back(i);
+            } else {
+                nonOptionalInputs.push_back(i);
+            }
 
-        if (optional) {
-            optionalInputs.push_back(i);
-        } else {
-            nonOptionalInputs.push_back(i);
         }
 
     }
 
 
     ///Cycle through all non optional inputs first
+
     for (std::list<int> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
-        double inputTime;
+        TimeValue inputTime;
         bool isOk = false;
-        EffectInstancePtr input = currentNode->getInput(*it);
+        EffectInstancePtr input = currentNode->getInputMainInstance(*it);
         if (input) {
 
-            if ( !isDisabled ) {
-                *newTime = transformTimeForNode(currentNode, *it, time);
+            if ( !currentNode->getNode()->getEffectInstance()->isNodeDisabledForFrame(time, view) ) {
+                *newTime = transformTimeForNode(currentNode, *it, time, view);
             } else {
                 *newTime = time;
             }
-            isOk = getTimeTransform(*newTime, view, target, input.get(), &inputTime);
+            isOk = getTimeTransform(*newTime, view, target, input, &inputTime);
         }
         if (isOk) {
             *newTime = inputTime;
@@ -334,16 +289,16 @@ ViewerTabPrivate::getTimeTransform(double time,
 
     ///Cycle through optional inputs...
     for (std::list<int> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
-        double inputTime;
+        TimeValue inputTime;
         bool isOk = false;
-        EffectInstancePtr input = currentNode->getInput(*it);
+        EffectInstancePtr input = currentNode->getInputMainInstance(*it);
         if (input) {
-            if ( !isDisabled ) {
-                *newTime = transformTimeForNode(currentNode, *it, time);
+            if ( !currentNode->getNode()->getEffectInstance()->isNodeDisabledForFrame(time, view) ) {
+                *newTime = transformTimeForNode(currentNode, *it, time, view);
             } else {
                 *newTime = time;
             }
-            isOk = getTimeTransform(*newTime, view, target, input.get(), &inputTime);
+            isOk = getTimeTransform(*newTime, view, target, input, &inputTime);
         }
         if (isOk) {
             *newTime = inputTime;
@@ -357,38 +312,28 @@ ViewerTabPrivate::getTimeTransform(double time,
 
 #endif // ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 
-void
-ViewerTabPrivate::getComponentsAvailabel(std::set<ImagePlaneDesc>* comps) const
+std::list<ViewerTabPrivate::PluginViewerContext>::iterator
+ViewerTabPrivate::findActiveNodeContextForNode(const NodePtr& node)
 {
-    int activeInputIdx[2];
-
-    viewerNode->getActiveInputs(activeInputIdx[0], activeInputIdx[1]);
-    EffectInstancePtr activeInput[2] = {EffectInstancePtr(), EffectInstancePtr()};
-    double time = publicInterface->getGui()->getApp()->getTimeLine()->currentFrame();
-    for (int i = 0; i < 2; ++i) {
-        activeInput[i] = viewerNode->getInput(activeInputIdx[i]);
-        if (activeInput[i]) {
-            std::list<ImagePlaneDesc> compsAvailable;
-            activeInput[i]->getAvailableLayers(time, ViewIdx(0), -1, &compsAvailable);
-            for (std::list<ImagePlaneDesc>::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
-                comps->insert(*it);
-            }
-        }
-    }
+    // Try once with the pyplug if any and once without, because the plug-in may have changed
+    PluginPtr plug = node->getPlugin();
+    return findActiveNodeContextForPlugin(plug);
 }
 
 std::list<ViewerTabPrivate::PluginViewerContext>::iterator
-ViewerTabPrivate::findActiveNodeContextForPlugin(const std::string& pluginID)
+ViewerTabPrivate::findActiveNodeContextForPlugin(const PluginPtr& plugin)
 {
+    std::string pluginID = plugin->getPluginID();
     // Roto and RotoPaint are 2 different plug-ins but we don't want them at the same time in the viewer
     bool isRotoOrRotoPaint = pluginID == PLUGINID_NATRON_ROTO || pluginID == PLUGINID_NATRON_ROTOPAINT;
     for (std::list<PluginViewerContext>::iterator it = currentNodeContext.begin(); it != currentNodeContext.end(); ++it) {
         if (isRotoOrRotoPaint) {
-            if (it->pluginID == PLUGINID_NATRON_ROTO || it->pluginID == PLUGINID_NATRON_ROTOPAINT) {
+            std::string otherID = it->plugin.lock()->getPluginID();
+            if (otherID == PLUGINID_NATRON_ROTO || otherID == PLUGINID_NATRON_ROTOPAINT) {
                 return it;
             }
         } else {
-            if (it->pluginID == pluginID) {
+            if (plugin == it->plugin.lock() || plugin == it->pyPlug.lock()) {
                 return it;
             }
         }
@@ -401,7 +346,10 @@ ViewerTabPrivate::findActiveNodeContextForPlugin(const std::string& pluginID)
 bool
 ViewerTabPrivate::hasInactiveNodeViewerContext(const NodePtr& node)
 {
-    std::list<ViewerTabPrivate::PluginViewerContext>::iterator found = findActiveNodeContextForPlugin( node->getPluginID() );
+    if (node->isEffectViewerNode()) {
+        return false;
+    }
+    std::list<ViewerTabPrivate::PluginViewerContext>::iterator found = findActiveNodeContextForNode(node);
 
     if ( found == currentNodeContext.end() ) {
         return false;

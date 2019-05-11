@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,7 +34,6 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
@@ -46,10 +45,17 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Global/GlobalDefines.h"
 #include "Engine/FitCurve.h"
+#include "Engine/KnobItemsTable.h"
+#include "Serialization/SerializationBase.h"
+
 #include "Engine/EngineFwd.h"
 
 
-#define kRotoLayerBaseName "Layer"
+NATRON_NAMESPACE_ENTER
+
+
+#define kRotoLayerBaseName "Group"
+#define kPlanarTrackLayerBaseName "PlanarTrackGroup"
 #define kRotoBezierBaseName "Bezier"
 #define kRotoOpenBezierBaseName "Pencil"
 #define kRotoEllipseBaseName "Ellipse"
@@ -63,135 +69,90 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoPaintRevealBaseName "Reveal"
 #define kRotoPaintDodgeBaseName "Dodge"
 #define kRotoPaintBurnBaseName "Burn"
+#define kRotoCompItemBaseName "Layer"
 
-NATRON_NAMESPACE_ENTER
+#define kParamRotoItemEnabled "enabledButton"
+#define kParamRotoItemEnabledLabel "Enabled"
+#define kParamRotoItemEnabledHint "When unchecked, the parameter will not be rendered.\n" \
+"This is a global switch that is saved with the project and supersedes the life time parameter."
+
+#define kParamRotoItemLocked "lockedButton"
+#define kParamRotoItemLockedLabel "Locked"
+#define kParamRotoItemLockedHint "When checked, the parameter is no longer editable in the viewer and its parameters are greyed out."
+
+#define kParamRotoItemSolo "soloButton"
+#define kParamRotoItemSoloLabel "Solo"
+#define kParamRotoItemSoloHint "Includes the current item in renders, ignoring others without this switch set"
+
 
 struct RotoItemPrivate;
 class RotoItem
-    : public QObject
-    , public boost::enable_shared_from_this<RotoItem>
+    : public KnobTableItem
 {
 public:
 
-    enum SelectionReasonEnum
-    {
-        eSelectionReasonOverlayInteract = 0, ///when the user presses an interact
-        eSelectionReasonSettingsPanel, ///when the user interacts with the settings panel
-        eSelectionReasonOther ///when the project loader restores the selection
-    };
+    // This class is virtual pure so no need to privatize the constructor
 
+    RotoItem(const KnobItemsTablePtr& model);
 
-public:
-    // TODO: enable_shared_from_this
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
-
-    RotoItem( const boost::shared_ptr<RotoContext>& context,
-              const std::string & name,
-              boost::shared_ptr<RotoLayer> parent = boost::shared_ptr<RotoLayer>() );
-
-public:
-    static boost::shared_ptr<RotoItem> create( const boost::shared_ptr<RotoContext>& context,
-                                               const std::string & name,
-                                               boost::shared_ptr<RotoLayer> parent = boost::shared_ptr<RotoLayer>() )
-    {
-        return boost::make_shared<RotoItem>(context, name, parent);
-    }
+    RotoItem(const RotoItemPtr& other, const FrameViewRenderKey& key);
 
     virtual ~RotoItem();
 
-    virtual void clone(const RotoItem*  other);
-
-    ///only callable on the main-thread
-    bool setScriptName(const std::string & name);
-
-    std::string getScriptName() const;
-    std::string getFullyQualifiedName() const;
-    std::string getLabel() const;
-
-    void setLabel(const std::string& label);
-
-    ///only callable on the main-thread
-    void setParentLayer(boost::shared_ptr<RotoLayer> layer);
-
-    ///MT-safe
-    boost::shared_ptr<RotoLayer> getParentLayer() const;
-
-    ///only callable from the main-thread
-    void setGloballyActivated(bool a, bool setChildren);
-
+    virtual bool isItemContainer() const OVERRIDE { return false; }
+    
     ///MT-safe
     bool isGloballyActivated() const;
 
-    bool isDeactivatedRecursive() const;
-
-    void setLocked(bool l, bool lockChildren, RotoItem::SelectionReasonEnum reason);
-    bool getLocked() const;
+    bool isGloballyActivatedRecursive() const;
 
     bool isLockedRecursive() const;
 
-    /**
-     * @brief Returns at which hierarchy level the item is.
-     * The base layer is 0.
-     * All items into that base layer are on level 1.
-     * etc...
-     **/
-    int getHierarchyLevel() const;
+    KnobButtonPtr getLockedKnob() const;
 
-    /**
-     * @brief Must be implemented by the derived class to save the state into
-     * the serialization object.
-     * Derived implementations must call the parent class implementation.
-     **/
-    virtual void save(RotoItemSerialization* obj) const;
+    KnobButtonPtr getActivatedKnob() const;
 
-    /**
-     * @brief Must be implemented by the derived class to load the state from
-     * the serialization object.
-     * Derived implementations must call the parent class implementation.
-     **/
-    virtual void load(const RotoItemSerialization & obj);
+    KnobButtonPtr getSoloKnob() const;
 
-    /**
-     * @brief Returns the name of the node holding this item
-     **/
-    std::string getRotoNodeName() const;
-    boost::shared_ptr<RotoContext> getContext() const;
-    boost::shared_ptr<RotoItem> getPreviousItemInLayer() const;
+    virtual std::string getBaseItemName() const OVERRIDE = 0;
+
+    void getTransformAtTime(TimeValue time, ViewIdx view, Transform::Matrix3x3* matrix) const;
 
 protected:
 
+    virtual bool getTransformAtTimeInternal(TimeValue time, ViewIdx view, Transform::Matrix3x3* matrix) const;
 
-    ///This mutex protects every-member this class and the derived class might have.
-    ///That is for the RotoItem class:
-    ///  - name
-    ///  - globallyActivated
-    ///  - locked
-    ///  - parentLayer
-    ///
-    ///For the RotoDrawableItem:
-    ///  - overlayColor
-    ///
-    ///For the RotoLayer class:
-    ///  - items
-    ///
-    ///For the Bezier class:
-    ///  - points
-    ///  - featherPoints
-    ///  - finished
-    ///  - pointsAtDistance
-    ///  - featherPointsAtDistance
-    ///  - featherPointsAtDistanceVal
-    mutable QMutex itemMutex;
+    virtual void fetchRenderCloneKnobs() OVERRIDE;
+
+    virtual void initializeKnobs() OVERRIDE;
+
+
+    virtual bool onKnobValueChanged(const KnobIPtr& k,
+                                    ValueChangedReasonEnum reason,
+                                    TimeValue time,
+                                    ViewSetSpec view) OVERRIDE;
 
 private:
-
-    void setGloballyActivated_recursive(bool a);
-    void setLocked_recursive(bool locked, RotoItem::SelectionReasonEnum reason);
 
     boost::scoped_ptr<RotoItemPrivate> _imp;
 };
 
+
+inline RotoItemPtr
+toRotoItem(const KnobHolderPtr& holder)
+{
+    return boost::dynamic_pointer_cast<RotoItem>(holder);
+}
+
+inline RotoItemConstPtr
+toRotoItem(const KnobHolderConstPtr& holder)
+{
+    return boost::dynamic_pointer_cast<const RotoItem>(holder);
+}
+
+
 NATRON_NAMESPACE_EXIT
+
 
 Q_DECLARE_METATYPE(NATRON_NAMESPACE::RotoItem*);
 

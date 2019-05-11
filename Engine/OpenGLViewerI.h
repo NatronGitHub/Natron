@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,9 +34,10 @@
 #endif
 #include "Engine/OverlaySupport.h"
 #include "Engine/ViewIdx.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/Texture.h"
+#include "Engine/TimeValue.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -68,38 +69,86 @@ public:
     virtual void fitImageToFormat() = 0;
 
     /**
-     * @brief Must return true if the portion of the image displayed is clipped to the input format
-     **/
-    virtual bool isClippingImageToFormat() const = 0;
-
-    /**
      * @brief Given the region of definition of an image, must return the portion of that image which is
      * actually displayed on the viewport. (It cannot be bigger than the rod)
      **/
-    virtual RectI getImageRectangleDisplayed(const RectI & pixelRod, const double par, unsigned int mipMapLevel) = 0;
-    virtual RectI getImageRectangleDisplayedRoundedToTileSize(int texIndex, const RectD & rod, const double par, unsigned int mipMapLevel,
-                                                              std::vector<RectI>* tiles, std::vector<RectI>* tilesRounded, int *tileSize, RectI* roiNotRounded) = 0;
-    virtual RectI getExactImageRectangleDisplayed(int texIndex, const RectD & rod, const double par, unsigned int mipMapLevel) = 0;
-
-    /**
-     * @brief Must return the bit depth of the texture used to render. (Byte, half or float)
-     **/
-    virtual ImageBitDepthEnum getBitDepth() const = 0;
-
-    /**
-     * @brief Returns true if the user has enabled the region of interest
-     **/
-    virtual bool isUserRegionOfInterestEnabled() const = 0;
-
-    /**
-     * @brief Must return the user's region of interest rectangle in canonical coordinates.
-     **/
-    virtual RectD getUserRegionOfInterest() const = 0;
-
+    virtual RectD getImageRectangleDisplayed() const = 0;
     /**
      * @brief Should clear any partial texture overlayed previously transferred with transferBufferFromRAMtoGPU
      **/
     virtual void clearPartialUpdateTextures()  = 0;
+
+    struct TextureTransferArgs
+    {
+        enum TypeEnum
+        {
+            // The newly created texture will replace the existing one in the given viewer input
+            eTextureTransferTypeReplace,
+
+            // The newly created texture will be drawn as an overlay over the current texture.
+            // This is used for example during tracking to only update small areas of the viewer
+            eTextureTransferTypeOverlay,
+
+            // If no texture already exists or it does not contain the image bounds
+            // this mode is similar to eTextureTransferTypeReplace.
+            // Otherwise only the portion corresponding to the image bounds is updated in the current texture.
+            // This mode is used while drawing a preview with the RotoPaint node.
+            eTextureTransferTypeModify
+        };
+
+        // What should the viewer do with the provided image, see the enum
+        TypeEnum type;
+
+        // 0 or 1: Indicates if we want to upload to the A(=0) viewer input or the B (=1) viewer input
+        int textureIndex;
+
+        // The image to upload as a texture: this must be a RAM image
+        ImagePtr image;
+
+        // The color picker image: this is the image produced by the node upstream of the
+        // ViewerProcess node corresponding to the given textureIndex
+        ImagePtr colorPickerImage;
+
+        // The color picker image input: this is the image produced by the input node of the node
+        // upstrea m of the ViewerProcess node corresponding to the given textureIndex
+        ImagePtr colorPickerInputImage;
+
+        // This is the time at which the image was rendered.
+        TimeValue time;
+
+        // This is the view at which the image was rendered
+        ViewIdx view;
+
+        // This is the region of definition that was used to produce this image
+        RectD rod;
+
+        // If true, the viewport will center its projection on the viewportCenter point
+        bool recenterViewer;
+
+        // If recenterViewer is true, the viewport will center its projection on this point
+        Point viewportCenter;
+
+        // This is the image cache key of the image produced by the viewer process node at the bottom
+        // of the tree. This is used in turn by the timeline to update the cached frames line.
+        ImageCacheKeyPtr viewerProcessNodeKey;
+
+        TextureTransferArgs()
+        : type(eTextureTransferTypeReplace)
+        , textureIndex(0)
+        , image()
+        , colorPickerImage()
+        , colorPickerInputImage()
+        , time(0)
+        , view(0)
+        , rod()
+        , recenterViewer(false)
+        , viewportCenter()
+        , viewerProcessNodeKey()
+        {
+
+        }
+
+    };
 
     /**
      * @brief This function must do the following:
@@ -108,31 +157,12 @@ public:
      * 3) glUnmapBuffer to unmap the GPU buffer
      * 4) glTexSubImage2D or glTexImage2D depending whether yo need to resize the texture or not.
      **/
-    virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
-                                            size_t bytesCount,
-                                            const RectI &roiRoundedToTileSize,
-                                            const RectI& roi,
-                                            const TextureRect & tileRect,
-                                            int textureIndex,
-                                            bool isPartialRect,
-                                            bool isFirstTile,
-                                            boost::shared_ptr<Texture>* texture) = 0;
-    virtual void endTransferBufferFromRAMToGPU(int textureIndex,
-                                               const boost::shared_ptr<Texture>& texture,
-                                               const ImagePtr& image,
-                                               int time,
-                                               const RectD& rod,
-                                               double par,
-                                               ImageBitDepthEnum depth,
-                                               unsigned int mipMapLevel,
-                                               ImagePremultiplicationEnum premult,
-                                               double gain,
-                                               double gamma,
-                                               double offset,
-                                               int lut,
-                                               bool recenterViewer,
-                                               const Point& viewportCenter,
-                                               bool isPartialRect) = 0;
+    virtual void transferBufferFromRAMtoGPU(const TextureTransferArgs& args) = 0;
+
+    /**
+     * @brief Clear the image pointers of the last image sent to transferBufferFromRAMtoGPU
+     **/
+    virtual void clearLastRenderedImage() = 0;
 
     /**
      * @brief Called when the input of a viewer should render black.
@@ -152,10 +182,9 @@ public:
     virtual void getTextureColorAt(int x, int y, double* r, double *g, double *b, double *a) = 0;
 
     /**
-     * @brief Make the OpenGL context current to the thread.
+     * @brief Called when the viewer should refresh the foramt
      **/
-    virtual void makeOpenGLcontextCurrent()  = 0;
-
+    virtual void refreshMetadata(int inputNb, const NodeMetadata& metadata) = 0;
 
     /**
      * @brief Called when the live instance of the viewer node is killed. (i.e: when the node is deleted).
@@ -164,14 +193,9 @@ public:
     virtual void removeGUI() = 0;
 
     /**
-     * @brief Must return the current view displayed if multi-view is enabled, 0 otherwise.
-     **/
-    virtual ViewIdx getCurrentView() const = 0;
-
-    /**
      * @brief Must return the time currently displayed
      **/
-    virtual int getCurrentlyDisplayedTime() const = 0;
+    virtual TimeValue getCurrentlyDisplayedTime() const = 0;
 
     /**
      * @brief Get the viewer's timeline's range
@@ -179,19 +203,9 @@ public:
     virtual void getViewerFrameRange(int* first, int* last) const = 0;
 
     /**
-     * @brief Must return the current compositing operator applied to the viewer input A and B.
-     **/
-    virtual ViewerCompositingOperatorEnum getCompositingOperator() const = 0;
-
-    /**
-     * @brief Set the current compositing operator
-     **/
-    virtual void setCompositingOperator(ViewerCompositingOperatorEnum op) = 0;
-
-    /**
      * @brief Must return a pointer to the current timeline used by the Viewer
      **/
-    virtual boost::shared_ptr<TimeLine> getTimeline() const = 0;
+    virtual TimeLinePtr getTimeline() const = 0;
 
     /**
      * @brief Must save all relevant OpenGL bits so that they can be restored as-is after the draw action of a plugin.
@@ -202,12 +216,6 @@ public:
      * @brief Must restore all OpenGL bits saved in saveOpenGLContext()
      **/
     virtual void restoreOpenGLContext() OVERRIDE = 0;
-
-    /**
-     * @brief Clears pointers to images that may be left
-     **/
-    virtual void clearLastRenderedImage() = 0;
-
     /**
      *@brief To be called if redraw needs to  be called now without waiting the end of the event loop
      **/
@@ -232,6 +240,78 @@ public:
      * @brief Returns for a string the estimated pixel size it would take on the widget
      **/
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE = 0;
+
+    /**
+     * @brief Get the current orthographic projection
+     **/
+    virtual void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const = 0;
+
+    /**
+     * @brief Set the current orthographic projection
+     **/
+    virtual void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio) = 0;
+
+    /**
+     * @brief Translates the viewport by dx, dy
+     **/
+    virtual void translateViewport(double dx, double dy) = 0;
+
+    /**
+     * @brief Zoom the viewport so that it's new scale factor is equal to newZoomFactor
+     **/
+    virtual void zoomViewport(double newZoomFactor) = 0;
+
+    /**
+     * @brief Set the color picker info bar visibility
+     **/
+    virtual void setInfoBarVisible(bool visible) = 0;
+
+    /**
+     * @brief Set the color picker info bar visibility for one input only
+     **/
+    virtual void setInfoBarVisible(int index, bool visible) = 0;
+
+    /**
+     * @brief Set the left toolbar visibility (the one used by Roto)
+     **/
+    virtual void setLeftToolBarVisible(bool visible) = 0;
+
+    /**
+     * @brief Set the left toolbar visibility
+     **/
+    virtual void setTopToolBarVisible(bool visible) = 0;
+
+    /**
+     * @brief Set the left toolbar visibility
+     **/
+    virtual void setPlayerVisible(bool visible) = 0;
+
+    /**
+     * @brief Set the left toolbar visibility
+     **/
+    virtual void setTimelineVisible(bool visible) = 0;
+
+    /**
+     * @brief Set the tab header visible
+     **/
+    virtual void setTabHeaderVisible(bool visible) = 0;
+
+    /**
+     * @brief Set the timeline bounds on the GUI
+     **/
+    virtual void setTimelineBounds(double first, double last) = 0;
+
+    /**
+     * @brief Set the timeline to display frames or timecode
+     **/
+    virtual void setTimelineFormatFrames(bool value) = 0;
+
+    /**
+     * @brief Set triple sync enabled
+     **/
+    virtual void setTripleSyncEnabled(bool toggled) = 0;
+
+    virtual OSGLContextPtr getOpenGLViewerContext() const = 0;
 };
 
 NATRON_NAMESPACE_EXIT

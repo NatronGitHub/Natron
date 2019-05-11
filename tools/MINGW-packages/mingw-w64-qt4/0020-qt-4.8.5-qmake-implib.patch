@@ -1,0 +1,41 @@
+--- origsrc/qt-everywhere-opensource-src-4.8.5/qmake/generators/makefile.cpp	2013-06-07 00:17:01.000000000 -0500
++++ src/qt-everywhere-opensource-src-4.8.5/qmake/generators/makefile.cpp	2014-01-02 03:14:39.097301000 -0600
+@@ -3258,8 +3258,6 @@ MakefileGenerator::writePkgConfigFile()
+     } else {
+         pkgConfiglibDir = "-L${libdir}";
+         pkgConfiglibName = "-l" + lname.left(lname.length()-Option::libtool_ext.length());
+-        if (project->isActiveConfig("shared"))
+-            pkgConfiglibName += project->first("TARGET_VERSION_EXT");
+     }
+     t << pkgConfiglibDir << " " << pkgConfiglibName << " " << endl;
+ 
+--- origsrc/qt-everywhere-opensource-src-4.8.5/qmake/generators/win32/mingw_make.cpp	2013-06-07 00:17:01.000000000 -0500
++++ src/qt-everywhere-opensource-src-4.8.5/qmake/generators/win32/mingw_make.cpp	2014-01-02 14:54:11.503450300 -0600
+@@ -77,7 +77,7 @@ QString MingwMakefileGenerator::escapeDe
+ 
+ QString MingwMakefileGenerator::getLibTarget()
+ {
+-    return QString("lib" + project->first("TARGET") + project->first("TARGET_VERSION_EXT") + ".a");
++    return QString("lib" + project->first("TARGET") + ".dll.a");
+ }
+ 
+ bool MingwMakefileGenerator::findLibraries()
+@@ -106,9 +106,6 @@ bool MingwMakefileGenerator::findLibrari
+                 suffix = project->first("QMAKE_" + steam.toUpper() + "_SUFFIX");
+             for (QList<QMakeLocalFileName>::Iterator dir_it = dirs.begin(); dir_it != dirs.end(); ++dir_it) {
+                 QString extension;
+-                int ver = findHighestVersion((*dir_it).local(), steam, "dll.a|a");
+-                if (ver != -1)
+-                    extension += QString::number(ver);
+                 extension += suffix;
+                 if(QMakeMetaInfo::libExists((*dir_it).local() + Option::dir_sep + steam) ||
+                     exists((*dir_it).local() + Option::dir_sep + steam + extension + ".a") ||
+@@ -299,7 +296,7 @@ void MingwMakefileGenerator::init()
+         if(!project->first("DESTDIR").isEmpty())
+             destDir = Option::fixPathToTargetOS(project->first("DESTDIR") + Option::dir_sep, false, false);
+         project->values("MINGW_IMPORT_LIB").prepend(destDir + "lib" + project->first("TARGET")
+-                                                         + project->first("TARGET_VERSION_EXT") + ".a");
++                                                         + ".dll.a");
+ 	project->values("QMAKE_LFLAGS").append(QString("-Wl,--out-implib,") + project->first("MINGW_IMPORT_LIB"));
+     }
+ 

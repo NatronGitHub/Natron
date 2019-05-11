@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -36,23 +36,24 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 
-#include "Gui/GuiFwd.h"
+#include "Gui/StyledKnobWidgetBase.h"
 
 
 NATRON_NAMESPACE_ENTER
 
 class AnimatedCheckBox
     : public QFrame
+    , public StyledKnobWidgetBase
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-    int animation;
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+    DEFINE_KNOB_GUI_STYLE_PROPERTIES
+    
     bool readOnly;
-    bool dirty;
-    bool altered;
     bool checked;
+    bool _linked;
 
 public:
 
@@ -69,13 +70,6 @@ public:
 
     void setChecked(bool c);
 
-    void setAnimation(int i);
-
-    int getAnimation() const
-    {
-        return animation;
-    }
-
     void setReadOnly(bool readOnly);
 
     bool getReadOnly() const
@@ -83,12 +77,7 @@ public:
         return readOnly;
     }
 
-    bool getDirty() const
-    {
-        return dirty;
-    }
-
-    void setDirty(bool b);
+    void setLinked(bool linked);
 
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
@@ -106,6 +95,8 @@ protected:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
 
 private:
+
+    virtual void refreshStylesheet() OVERRIDE FINAL;
 
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 };

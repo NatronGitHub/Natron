@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -40,7 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
-
+#include "Engine/TimeValue.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -57,7 +57,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    ProgressPanel(Gui* gui);
+    ProgressPanel(const std::string& scriptName, Gui* gui);
 
     virtual ~ProgressPanel();
 
@@ -67,16 +67,16 @@ public:
      * value if the task uses the progressUpdate(const int frame) function.
      **/
     void startTask( const NodePtr& node,
-                    const int firstFrame,
-                    const int lastFrame,
-                    const int frameStep,
+                    const TimeValue firstFrame,
+                    const TimeValue lastFrame,
+                    const TimeValue frameStep,
                     const bool canPause,
                     const bool canCancel,
                     const QString& message,
-                    const boost::shared_ptr<ProcessHandler>& process = boost::shared_ptr<ProcessHandler>() );
+                    const ProcessHandlerPtr& process = ProcessHandlerPtr() );
 
     void onTaskRestarted( const NodePtr& node,
-                          const boost::shared_ptr<ProcessHandler>& process = boost::shared_ptr<ProcessHandler>() );
+                          const ProcessHandlerPtr& process = ProcessHandlerPtr() );
 
     /**
      * @brief Start progress report for the given node. The progress bar will be displayed only if the estimated remaining
@@ -107,15 +107,19 @@ public:
 
     void onLastTaskAddedFinished(const ProgressTaskInfo* task);
 
+    TableModelPtr getModel() const;
+
+    virtual QIcon getIcon() const OVERRIDE FINAL;
+
 public Q_SLOTS:
 
     void onCancelTasksTriggered();
 
-    void doProgressStartOnMainThread(const boost::shared_ptr<Node>& node, const QString &message, const QString &messageid, bool canCancel);
+    void doProgressStartOnMainThread(const NodePtr& node, const QString &message, const QString &messageid, bool canCancel);
 
     void doProgressOnMainThread(const ProgressTaskInfoPtr& task, double progress);
 
-    void doProgressEndOnMainThread(const boost::shared_ptr<Node>& node);
+    void doProgressEndOnMainThread(const NodePtr& node);
 
     void onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 
@@ -123,15 +127,15 @@ public Q_SLOTS:
 
     void onShowProgressPanelTimerTriggered();
 
-    void onItemRightClicked(TableItem* item);
+    void onItemRightClicked(QPoint globalPos, const TableItemPtr& item);
 
 Q_SIGNALS:
 
-    void s_doProgressStartOnMainThread(const boost::shared_ptr<Node>& node, const QString &message, const QString &messageid, bool canCancel);
+    void s_doProgressStartOnMainThread(const NodePtr& node, const QString &message, const QString &messageid, bool canCancel);
 
     void s_doProgressUpdateOnMainThread(const ProgressTaskInfoPtr& task, double progress);
 
-    void s_doProgressEndOnMainThread(const boost::shared_ptr<Node>& node);
+    void s_doProgressEndOnMainThread(const NodePtr& node);
 
 private:
     void getSelectedTaskInternal(const QItemSelection& selected, std::list<ProgressTaskInfoPtr>& selection) const;

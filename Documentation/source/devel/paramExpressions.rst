@@ -149,7 +149,7 @@ For convenience the following variables have been declared to Python when execut
     * **thisParam**: It references the param being edited
 
     * **dimension**: Defined only for multi-dimensional parameters, it indicates the dimension (0-based index)
-    of the parameter on which the expression has effect.
+      of the parameter on which the expression has effect.
 
     * **frame**: It references the current time on the timeline
 
@@ -166,7 +166,7 @@ the value of the parameter at a specific *dimension*. The following is equivalen
 
     ColorCorrect1.MasterSaturation.getValue(dimension)
 
-Note that for 1-dimensional parameter, the :func:`get()<>`function cannot be used with subscript, e.g::
+Note that for 1-dimensional parameter, the :func:`get()<>` function cannot be used with subscript, e.g.:
 
     Blur1.size.get()
 
@@ -221,7 +221,7 @@ parameter and the current time on the timeline as a seed function to random.
     standard library, as the values produced by these functions will not be reproducible
     between 2 runs of Natron for the same project.
 
-The Natron specific random functions are exposed in the :ref:`Param<Param>`class.
+The Natron specific random functions are exposed in the :ref:`Param<Param>` class.
 
 When executing an expression, Natron pre-declares the **random()** function so that you do not
 have to do stuff like::
@@ -233,10 +233,8 @@ Instead you can just type the following in your expression::
     myOtherNode.myOtherNodeParam.get() * random()
 
 The :func:`random(min = 0.,max = 1.)<>` function also takes 2 optional arguments indicating
-the range into which the return value should fall in. The range is defined by [min,max[.
-When using this function in your expression, make sure to add a '.' after the numbers so that
-the interpreter understands your using :func:`random(min,max)<>` and not :func:`random(seed)<>`
-::
+the range into which the return value should fall in. The range is defined by \[min,max\[.
+
     #Returns a random floating point value in the range [1., 10.[
     random(1.,10.)
 
@@ -247,7 +245,7 @@ For integers, use the :func:`randomInt(min,max)<>` function instead::
 
     #Using the randomInt function with a given seed
     seed = 5
-    randomInt(seed)
+    randomInt(1,100,frame,seed)
 
 Advanced expressions:
 ----------------------

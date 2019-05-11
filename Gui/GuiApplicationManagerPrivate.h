@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -41,32 +41,37 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QFutureWatcher>
 #include <QtCore/QString>
 #include <QtCore/QTimer>
+#include <QCursor>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Variant.h"
 #include "Engine/CLArgs.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/DimensionIdx.h"
+#include "Engine/ViewIdx.h"
 
-#include "Gui/ActionShortcuts.h" // AppShortcuts
 #include "Gui/GuiApplicationManager.h" // PythonUserCommand
-#include "Gui/NodeClipBoard.h"
+#include "Serialization/NodeClipBoard.h"
 #include "Gui/GuiFwd.h"
 #include "Gui/PreviewThread.h"
 
+
 NATRON_NAMESPACE_ENTER
+
 
 struct KnobsClipBoard
 {
     KnobClipBoardType type;
-    int dimension;
-    KnobPtr serialization;
+    DimSpec dimension;
+    ViewSetSpec view;
+    KnobIPtr serialization;
 };
 
 struct GuiApplicationManagerPrivate
 {
-    GuiApplicationManager* _publicInterface;
-    std::list<boost::shared_ptr<PluginGroupNode> > _topLevelToolButtons;
+    GuiApplicationManager* _publicInterface; // can not be a smart ptr
+    std::list<PluginGroupNodePtr> _topLevelToolButtons;
     boost::scoped_ptr<KnobsClipBoard> _knobsClipBoard;
     boost::scoped_ptr<KnobGuiFactory> _knobGuiFactory;
     QCursor _colorPickerCursor, _linkToCursor, _linkMultCursor;
@@ -75,12 +80,8 @@ struct GuiApplicationManagerPrivate
     ///We store here the file open request that was made on startup but that
     ///we couldn't handle at that time
     QString _openFileRequest;
-    AppShortcuts _actionShortcuts;
-    bool _shortcutsChangedVersion;
     QString _fontFamily;
     int _fontSize;
-    NodeClipBoard _nodeCB;
-    std::list<PythonUserCommand> pythonCommands;
 
     ///Used temporarily to store startup args while we load fonts
     CLArgs startupArgs;
@@ -100,48 +101,18 @@ struct GuiApplicationManagerPrivate
 
     void createLinkMultCursor();
 
-    void removePluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& n, const QStringList& grouping);
-    void removePluginToolButton(const QStringList& grouping);
+    void removePluginToolButtonInternal(const PluginGroupNodePtr& n, const std::vector<std::string>& grouping);
+    void removePluginToolButton(const std::vector<std::string>& grouping);
 
-    void addStandardKeybind(const std::string & grouping, const std::string & id,
-                            const std::string & description, QKeySequence::StandardKey key,
-                            const Qt::KeyboardModifiers & fallbackmodifiers, Qt::Key fallbacksymbol);
 
-    void addKeybind(const std::string & grouping, const std::string & id,
-                    const std::string & description,
-                    const Qt::KeyboardModifiers & modifiers, Qt::Key symbol);
-
-    void addKeybind(const std::string & grouping, const std::string & id,
-                    const std::string & description,
-                    const Qt::KeyboardModifiers & modifiers, Qt::Key symbol,
-                    const Qt::KeyboardModifiers & modifiersMask);
-
-    void addKeybind(const std::string & grouping, const std::string & id,
-                    const std::string & description,
-                    const Qt::KeyboardModifiers & modifiers1, Qt::Key symbol1,
-                    const Qt::KeyboardModifiers & modifiers2, Qt::Key symbol2);
-
-    void addKeybindInternal(const QString & grouping, const QString & id,
-                            const QString & description,
-                            const std::list<Qt::KeyboardModifiers>& modifiersList,
-                            const std::list<Qt::Key>& symbolsList,
-                            const Qt::KeyboardModifiers& modifiersMask);
-
-    void removeKeybind(const QString& grouping, const QString& id);
-
-    void addMouseShortcut(const std::string & grouping, const std::string & id,
-                          const std::string & description,
-                          const Qt::KeyboardModifiers & modifiers, Qt::MouseButton button);
-
-    boost::shared_ptr<PluginGroupNode>  findPluginToolButtonInternal(const std::list<boost::shared_ptr<PluginGroupNode> >& children,
-                                                                     const boost::shared_ptr<PluginGroupNode>& parent,
-                                                                     const QStringList & grouping,
-                                                                     const QString & name,
-                                                                     const QStringList & groupingIcon,
-                                                                     const QString & iconPath,
-                                                                     int major,
-                                                                     int minor,
-                                                                     bool isUserCreatable);
+    /**
+     * @brief Finds and existing (or create) PluginGroupNode that matches the given grouping, e.g: "Color/Math" and plugin
+     **/
+    PluginGroupNodePtr  findPluginToolButtonOrCreateInternal(const std::list<PluginGroupNodePtr>& children,
+                                                             const PluginGroupNodePtr& parent,
+                                                             const PluginPtr& plugin,
+                                                             const QStringList& grouping,
+                                                             const QStringList& groupingIcon);
 
     void updateFontConfigCache();
 };

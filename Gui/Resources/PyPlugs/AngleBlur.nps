@@ -1,0 +1,78 @@
+# Natron Presets File
+PluginID: fr.inria.built-in.Group
+Params:
+  - Name: pyPlugPluginID
+    String: fr.inria.AngleBlur
+  - Name: pyPlugPluginLabel
+    String: AngleBlur
+  - Name: pyPlugPluginGrouping
+    String: Filter
+  - Name: pyPlugPluginDescription
+    String: The Angle Blur effect gives the illusion of motion in a given direction.
+  - Name: pyPlugPluginVersion
+    Int: [1, 0]
+UserPages:
+  - TypeName: Page
+    Name: controls
+    Label: Controls
+    Params:
+      - Name: angleBlur_angle
+        DefaultFloat: 0
+        NDims: 1
+        TypeName: Double
+        Label: Angle
+        Hint: Determines the direction into which the image is blurred. This is an angle in degrees.
+        DisplayMin: -360
+        DisplayMax: 360
+      - Name: angleBlur_distance
+        DefaultFloat: 0
+        NDims: 1
+        TypeName: Double
+        Label: Distance
+        Hint: Determines how much the image will be blurred
+        DisplayMin: 0
+        DisplayMax: 1000
+PagesOrder: [controls, nodePage, pyPlugPage]
+Children:
+  - PluginID: fr.inria.built-in.Input
+    Name: Source
+    Pos: [1000, 67]
+  - PluginID: fr.inria.built-in.Output
+    Name: Output
+    Label: Output1
+    Inputs: Transform3
+    Pos: [1000, 497]
+  - PluginID: net.sf.openfx.TransformPlugin
+    Name: Transform1
+    Inputs: Source
+    Params:
+      - Name: rotate
+        Float: {pyExpr: thisGroup.angleBlur_angle.get()}
+      - Name: center
+        Float: [480, 270]
+      - Name: transformCenterChanged
+        Bool: true
+    Pos: [1000, 173]
+  - PluginID: net.sf.openfx.TransformPlugin
+    Name: Transform3
+    Inputs: Blur2
+    Params:
+      - Name: rotate
+        Float: {pyExpr: thisGroup.angleBlur_angle.get()}
+      - Name: center
+        Float: [{pyExpr: "thisGroup.Transform1.center.get()[dimension]"}, {pyExpr: "thisGroup.Transform1.center.get()[dimension]"}]
+      - Name: transformCenterChanged
+        Bool: true
+      - Name: invert
+        Bool: true
+    Pos: [1000, 328]
+  - PluginID: net.sf.cimg.CImgBlur
+    Name: Blur2
+    Version: [3, 0]
+    Inputs: Transform1
+    Params:
+      - Name: NatronOfxParamProcessA
+        Bool: true
+      - Name: size
+        Float: [{pyExpr: thisGroup.angleBlur_distance.get()}, 0]
+    Pos: [1000, 246]

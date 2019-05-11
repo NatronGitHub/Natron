@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -37,7 +37,6 @@
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Dot.h"
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
@@ -49,9 +48,12 @@
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/Menu.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGraphTextItem.h"
+
+#include "Serialization/NodeSerialization.h"
 
 #include "Global/QtCompat.h"
 
@@ -60,11 +62,11 @@ NATRON_NAMESPACE_ENTER
 
 
 void
-NodeGraph::makeFullyQualifiedLabel(Node* node,
+NodeGraph::makeFullyQualifiedLabel(const NodePtr& node,
                                    std::string* ret)
 {
-    boost::shared_ptr<NodeCollection> parent = node->getGroup();
-    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>( parent.get() );
+    NodeCollectionPtr parent = node->getGroup();
+    NodeGroupPtr isParentGrp = toNodeGroup(parent);
     std::string toPreprend = node->getLabel();
 
     if (isParentGrp) {
@@ -72,40 +74,31 @@ NodeGraph::makeFullyQualifiedLabel(Node* node,
     }
     ret->insert(0, toPreprend);
     if (isParentGrp) {
-        makeFullyQualifiedLabel(isParentGrp->getNode().get(), ret);
+        makeFullyQualifiedLabel(isParentGrp->getNode(), ret);
     }
 }
 
 NodeGraph::NodeGraph(Gui* gui,
-                     const boost::shared_ptr<NodeCollection>& group,
+                     const NodeCollectionPtr& group,
+                     const std::string& scriptName,
                      QGraphicsScene* scene,
                      QWidget *parent)
     : QGraphicsView(scene, parent)
     , NodeGraphI()
-    , PanelWidget(this, gui)
+    , PanelWidget(scriptName, this, gui)
     , _imp( new NodeGraphPrivate(this, group) )
 {
+
+    QObject::connect(this, SIGNAL(mustRefreshNodeLinksLater()), this, SLOT(onMustRefreshNodeLinksLaterReceived()), Qt::QueuedConnection);
+
     group->setNodeGraphPointer(this);
 
     setAttribute(Qt::WA_MacShowFocusRect, 0);
 
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>( group.get() );
+    NodeGroupPtr isGrp = toNodeGroup( group );
     if (isGrp) {
-        std::string newName = isGrp->getNode()->getFullyQualifiedName();
-        for (std::size_t i = 0; i < newName.size(); ++i) {
-            if (newName[i] == '.') {
-                newName[i] = '_';
-            }
-        }
-        setScriptName(newName);
-        std::string label;
-        makeFullyQualifiedLabel(isGrp->getNode().get(), &label);
-        setLabel(label);
-        QObject::connect( isGrp->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT(onGroupNameChanged(QString)) );
+        QObject::connect( isGrp->getNode().get(), SIGNAL(labelChanged(QString, QString)), this, SLOT(onGroupNameChanged(QString, QString)) );
         QObject::connect( isGrp->getNode().get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onGroupScriptNameChanged(QString)) );
-    } else {
-        setScriptName(kNodeGraphObjectName);
-        setLabel( tr("Node Graph").toStdString() );
     }
 
     QObject::connect( &_imp->autoScrollTimer, SIGNAL(timeout()), this, SLOT(onAutoScrollTimerTriggered()) );
@@ -142,7 +135,7 @@ NodeGraph::NodeGraph(Gui* gui,
     QObject::connect( &_imp->_refreshCacheTextTimer, SIGNAL(timeout()), this, SLOT(updateCacheSizeText()) );
     _imp->_refreshCacheTextTimer.start(NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS);
 
-    _imp->_undoStack = new QUndoStack(this);
+    _imp->_undoStack = boost::make_shared<QUndoStack>(this);
     _imp->_undoStack->setUndoLimit( appPTR->getCurrentSettings()->getMaximumUndoRedoNodeGraph() );
     getGui()->registerNewUndoStack(_imp->_undoStack);
 
@@ -187,18 +180,18 @@ NodeGraph::NodeGraph(Gui* gui,
 
 NodeGraph::~NodeGraph()
 {
+
     for (NodesGuiList::iterator it = _imp->_nodes.begin();
          it != _imp->_nodes.end();
          ++it) {
         (*it)->discardGraphPointer();
     }
-    for (NodesGuiList::iterator it = _imp->_nodesTrash.begin();
-         it != _imp->_nodesTrash.end();
-         ++it) {
-        (*it)->discardGraphPointer();
-    }
-
+ 
     if ( getGui() ) {
+
+        if (!getGui()->getApp()->isClosing()) {
+            getGui()->removeUndoStack(_imp->_undoStack);
+        }
         QGraphicsScene* scene = _imp->_hintInputEdge->scene();
         if (scene) {
             scene->removeItem(_imp->_hintInputEdge);
@@ -224,13 +217,21 @@ NodeGraph::isDoingNavigatorRender() const
     return _imp->isDoingPreviewRender;
 }
 
-const std::list< NodeGuiPtr > &
+NodesGuiList
 NodeGraph::getSelectedNodes() const
 {
-    return _imp->_selection;
+    NodesGuiList ret;
+    for (NodesGuiWList::const_iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+        NodeGuiPtr n = it->lock();
+        if (!n) {
+            continue;
+        }
+        ret.push_back(n);
+    }
+    return ret;
 }
 
-boost::shared_ptr<NodeCollection>
+NodeCollectionPtr
 NodeGraph::getGroup() const
 {
     return _imp->group.lock();
@@ -245,7 +246,7 @@ NodeGraph::getRootItem() const
 void
 NodeGraph::notifyGuiClosing()
 {
-    boost::shared_ptr<NodeCollection> group = getGroup();
+    NodeCollectionPtr group = getGroup();
 
     if (group) {
         group->discardNodeGraphPointer();
@@ -255,12 +256,6 @@ NodeGraph::notifyGuiClosing()
 void
 NodeGraph::onNodesCleared()
 {
-    {
-        QMutexLocker l(&_imp->_nodesMutex);
-        _imp->_nodes.clear();
-        _imp->_nodesTrash.clear();
-    }
-
     _imp->_selection.clear();
     _imp->_magnifiedNode.reset();
     _imp->_undoStack->clear();
@@ -276,7 +271,7 @@ NodeGraph::resizeEvent(QResizeEvent* e)
 void
 NodeGraph::paintEvent(QPaintEvent* e)
 {
-    AppInstPtr app;
+    AppInstancePtr app;
 
     if ( getGui() ) {
         app = getGui()->getApp();
@@ -285,13 +280,13 @@ NodeGraph::paintEvent(QPaintEvent* e)
         return;
     }
 
-    boost::shared_ptr<NodeCollection> collection = getGroup();
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+    NodeCollectionPtr collection = getGroup();
+    NodeGroupPtr isGroup = toNodeGroup(collection);
     bool isGroupEditable = true;
     bool groupEdited = true;
-    if (isGroup && isGroup->getNode()->isPyPlug()) {
+    if (isGroup) {
         isGroupEditable = isGroup->isSubGraphEditable();
-        groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
+        groupEdited = isGroup->isSubGraphEditedByUser();
     }
 
     bool drawLockedMode = !isGroupEditable || !groupEdited;
@@ -330,12 +325,13 @@ NodeGraph::paintEvent(QPaintEvent* e)
             int pixH = _imp->unlockIcon.height();
             QRect pixRect(pixPos.x(), pixPos.y(), pixW, pixH);
             pixRect.adjust(-2, -2, 2, 2);
-            QRect selRect(pixPos.x(), pixPos.y(), pixW, pixH);
-            pixRect.adjust(-3, -3, 3, 3);
+            QRect selRect = pixRect;
+            selRect.adjust(-3, -3, 3, 3);
             p.setBrush( QColor(243, 137, 0) );
             p.setOpacity(1.);
+            p.setPen(Qt::NoPen);
             p.drawRoundedRect(selRect, 5, 5);
-            p.setBrush( QColor(50, 50, 50) );
+            p.setBrush( QColor(100, 100, 100) );
             p.drawRoundedRect(pixRect, 5, 5);
             p.drawPixmap(pixPos.x(), pixPos.y(), pixW, pixH, _imp->unlockIcon, 0, 0, pixW, pixH);
         }
@@ -364,88 +360,96 @@ NodeGraph::visibleWidgetRect() const
     return viewport()->rect();
 }
 
-NodeGuiPtr
-NodeGraph::createNodeGUI(const NodePtr & node,
-                         const CreateNodeArgs& args)
+void
+NodeGraph::createNodeGui(const NodePtr & node, const CreateNodeArgs& args)
 {
+    // Save current selection
+    NodesGuiList selectedNodes = getSelectedNodes();
+
+    // Create the correct node gui class according to type
     NodeGuiPtr node_ui;
-    Dot* isDot = dynamic_cast<Dot*>( node->getEffectInstance().get() );
-    Backdrop* isBd = dynamic_cast<Backdrop*>( node->getEffectInstance().get() );
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>( node->getEffectInstance().get() );
+    {
+        DotPtr isDotNode = toDot( node->getEffectInstance() );
+        BackdropPtr isBd = toBackdrop( node->getEffectInstance() );
+        NodeGroupPtr isGrp = toNodeGroup( node->getEffectInstance() );
 
-
-    if (isDot) {
-        node_ui.reset( new DotGui(_imp->_nodeRoot) );
-    } else if (isBd) {
-        node_ui.reset( new BackdropGui(_imp->_nodeRoot) );
-    } else {
-        node_ui.reset( new NodeGui(_imp->_nodeRoot) );
-    }
-    assert(node_ui);
-    node_ui->initialize(this, node);
-
-    if (isBd) {
-        BackdropGui* bd = dynamic_cast<BackdropGui*>( node_ui.get() );
-        assert(bd);
-        NodesGuiList selectedNodes = _imp->_selection;
-        if ( bd && !selectedNodes.empty() ) {
-            ///make the backdrop large enough to contain the selected nodes and position it correctly
-            QRectF bbox;
-            for (NodesGuiList::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
-                QRectF nodeBbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
-                bbox = bbox.united(nodeBbox);
-            }
-
-            double border50 = mapToScene( QPoint(50, 0) ).x();
-            double border0 = mapToScene( QPoint(0, 0) ).x();
-            double border = border50 - border0;
-            double headerHeight = bd->getFrameNameHeight();
-            QPointF scenePos(bbox.x() - border, bbox.y() - border);
-
-            bd->setPos( bd->mapToParent( bd->mapFromScene(scenePos) ) );
-            bd->resize(bbox.width() + 2 * border, bbox.height() + 2 * border - headerHeight);
+        if (isDotNode) {
+            node_ui = DotGui::create(_imp->_nodeRoot);
+        } else if (isBd) {
+            node_ui = BackdropGui::create(_imp->_nodeRoot);
+        } else {
+            node_ui = NodeGui::create(_imp->_nodeRoot);
         }
     }
+    assert(node_ui);
 
-
+    // Add the node to the list. The shared pointer is held as a strong ref on the NodeGraph object.
     {
         QMutexLocker l(&_imp->_nodesMutex);
         _imp->_nodes.push_back(node_ui);
     }
 
-    //NodeGroup* parentIsGroup = dynamic_cast<NodeGroup*>(node->getGroup().get());;
-    const std::list<NodePtr>& nodesBeingCreated = getGui()->getApp()->getNodesBeingCreated();
-    bool isTopLevelNodeBeingCreated = false;
-    if ( !nodesBeingCreated.empty() && (nodesBeingCreated.front() == node) ) {
-        isTopLevelNodeBeingCreated = true;
-    }
-    
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    // This will create the node GUI across all Natron
+    node_ui->initialize(this, node, args);
 
-    bool panelOpened = args.getProperty<bool>(kCreateNodeArgsPropSettingsOpened);
-    if ( !serialization && panelOpened && isTopLevelNodeBeingCreated ) {
-        node_ui->ensurePanelCreated();
-    }
-
-
-    boost::shared_ptr<QUndoStack> nodeStack = node_ui->getUndoStack();
-    if (nodeStack) {
-        getGui()->registerNewUndoStack( nodeStack.get() );
-    }
-
-    bool addUndoRedo = args.getProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
+    bool addUndoRedo = args.getPropertyUnsafe<bool>(kCreateNodeArgsPropAddUndoRedoCommand);
     if (addUndoRedo) {
-        pushUndoCommand( new AddMultipleNodesCommand(this, node_ui) );
-    } else if ( !serialization && !isGrp ) {
+        pushUndoCommand( new AddMultipleNodesCommand(this, node) );
+    } else if (!serialization ) {
+
         selectNode(node_ui, false);
+
+
+        getGui()->getApp()->triggerAutoSave();
     }
+
+    
 
     _imp->_evtState = eEventStateNone;
 
-    return node_ui;
 } // NodeGraph::createNodeGUI
 
-QUndoStack*
+void
+NodeGraph::onNodeAboutToBeCreated(const NodePtr& /*node*/, const CreateNodeArgsPtr& /*args*/)
+{
+    // Save the current node selection
+    _imp->_selectionBeforeNodeCreated = _imp->_selection;
+}
+
+void
+NodeGraph::onNodeCreated(const NodePtr& node, const CreateNodeArgsPtr& args)
+{
+
+    NodeGuiPtr node_ui = boost::dynamic_pointer_cast<NodeGui>(node->getNodeGui());
+    if (!node_ui) {
+        return;
+    }
+
+    NodesGuiList selectedNodes;
+    for (NodesGuiWList::const_iterator it = _imp->_selectionBeforeNodeCreated.begin(); it != _imp->_selectionBeforeNodeCreated.end(); ++it) {
+        NodeGuiPtr n = it->lock();
+        if (n) {
+            selectedNodes.push_back(n);
+        }
+    }
+    _imp->_selectionBeforeNodeCreated.clear();
+
+    setNodeToDefaultPosition(node_ui, selectedNodes, *args);
+
+}
+
+QIcon
+NodeGraph::getIcon() const
+{
+    int iconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+    QPixmap p;
+    appPTR->getIcon(NATRON_PIXMAP_NODE_GRAPH, iconSize, &p);
+    return QIcon(p);
+}
+
+
+boost::shared_ptr<QUndoStack>
 NodeGraph::getUndoStack() const
 {
     return _imp->_undoStack;

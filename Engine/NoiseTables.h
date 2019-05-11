@@ -1,3 +1,35 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <http://www.natron.fr/>,
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
+
+#ifndef Engine_NoiseTables_h
+#define Engine_NoiseTables_h
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
+#include "Engine/EngineFwd.h"
+
+
 /*
  Copyright Disney Enterprises, Inc.  All rights reserved.
 
@@ -14,8 +46,6 @@
  You may obtain a copy of the License at
  http://www.apache.org/licenses/LICENSE-2.0
 */
-#ifndef _NoiseTables_h_
-#define _NoiseTables_h_
 
 static const int p[514] = {
     37,  197, 187, 204, 20,  12,  242, 79,  52,  48,  160, 53,  142, 209, 166, 1,   198, 49,  233, 114, 230, 141, 155,
@@ -2120,5 +2150,6 @@ double NOISE_TABLES<4>::g[514][4] = {{0.3966, 0.564479, 0.423247, 0.58731},
                                      {-0.739379, 0.626192, -0.219025, -0.115026},
                                      {0.3966, 0.564479, 0.423247, 0.58731},
                                      {0.207686, 0.293048, -0.883543, -0.300569}};
+
 
 #endif

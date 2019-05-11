@@ -1,0 +1,19 @@
+diff -up qt-everywhere-opensource-src-4.8.5/src/corelib/kernel/qcoreapplication.cpp.qt_plugin_path qt-everywhere-opensource-src-4.8.5/src/corelib/kernel/qcoreapplication.cpp
+--- qt-everywhere-opensource-src-4.8.5/src/corelib/kernel/qcoreapplication.cpp.qt_plugin_path	2013-06-07 00:16:52.000000000 -0500
++++ qt-everywhere-opensource-src-4.8.5/src/corelib/kernel/qcoreapplication.cpp	2013-06-21 07:14:10.045039936 -0500
+@@ -2511,6 +2511,15 @@ QStringList QCoreApplication::libraryPat
+             if (!app_libpaths->contains(installPathPlugins))
+                 app_libpaths->append(installPathPlugins);
+         }
++
++        // hack in support for kde4 plugin paths -- Rex
++        QString kde4PathPlugins = QLibraryInfo::location(QLibraryInfo::LibrariesPath) + QLatin1String("/kde4/plugins");
++        if (QFile::exists(kde4PathPlugins)) {
++            // Make sure we convert from backslashes to slashes.
++            //kde4PathPlugins = QDir(kde4PathPlugins).canonicalPath();
++            if (!app_libpaths->contains(kde4PathPlugins))
++                app_libpaths->append(kde4PathPlugins);
++        }
+ #endif
+ 
+         // If QCoreApplication is not yet instantiated,

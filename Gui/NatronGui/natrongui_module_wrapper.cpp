@@ -35,12 +35,11 @@ static PyMethodDef NatronGui_methods[] = {
 };
 
 // Classes initialization functions ------------------------------------------------------------
+void init_PyTabWidget(PyObject* module);
 void init_PyGuiApplication(PyObject* module);
 void init_GuiApp(PyObject* module);
-void init_PyViewer(PyObject* module);
-void init_PyTabWidget(PyObject* module);
-void init_PyModalDialog(PyObject* module);
 void init_PyPanel(PyObject* module);
+void init_PyModalDialog(PyObject* module);
 
 // Required modules' type and converter arrays.
 PyTypeObject** SbkPySide_QtGuiTypes;
@@ -504,12 +503,11 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronGui)
 #endif
 
     // Initialize classes in the type system
+    init_PyTabWidget(module);
     init_PyGuiApplication(module);
     init_GuiApp(module);
-    init_PyViewer(module);
-    init_PyTabWidget(module);
-    init_PyModalDialog(module);
     init_PyPanel(module);
+    init_PyModalDialog(module);
 
     // Register converter for type 'const std::map<QString,NodeCreationProperty*>&'.
     SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_MAP_QSTRING_NODECREATIONPROPERTYPTR_IDX] = Shiboken::Conversions::createConverter(&PyDict_Type, _conststd_map_QString_NodeCreationPropertyPTR_REF_CppToPython__conststd_map_QString_NodeCreationPropertyPTR_REF);

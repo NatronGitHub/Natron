@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -24,14 +24,15 @@
 
 #include "GenericSchedulerThread.h"
 
-#include <boost/make_shared.hpp>
-
 #include <QtCore/QCoreApplication>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 #include <QtCore/QMetaType>
 #include <QtCore/QDebug>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/GenericSchedulerThreadWatcher.h"
 
 #ifdef DEBUG
@@ -48,7 +49,7 @@ class GenericSchedulerThreadMetaTypesRegistration
 public:
     inline GenericSchedulerThreadMetaTypesRegistration()
     {
-        qRegisterMetaType<ExecOnMTArgsPtr>("ExecOnMTArgsPtr");
+        qRegisterMetaType<GenericThreadExecOnMainThreadArgsPtr>("GenericThreadExecOnMainThreadArgsPtr");
     }
 };
 
@@ -68,10 +69,6 @@ struct GenericSchedulerThreadPrivate
     QWaitCondition mustQuitCond;
     mutable QMutex mustQuitMutex;
 
-    // Positive if a thread enqueued a task with startTask, protected by startRequestsMutex
-    int startRequests;
-    QWaitCondition startRequestsCond;
-    mutable QMutex startRequestsMutex;
 
     // positive when the user wants to stop the thread, protected by abortRequestedMutex
     int abortRequested;
@@ -83,7 +80,8 @@ struct GenericSchedulerThreadPrivate
     mutable QMutex threadStateMutex;
 
     // The tasks queue, protected by enqueuedTasksMutex
-    std::list<ThreadStartArgsPtr> enqueuedTasks, queuedTaskWhileProcessingAbort;
+    std::list<GenericThreadStartArgsPtr> enqueuedTasks, queuedTaskWhileProcessingAbort;
+    QWaitCondition tasksEmptyCond;
     mutable QMutex enqueuedTasksMutex;
 
     // true when the main-thread is calling executeOnMainThread
@@ -95,27 +93,25 @@ struct GenericSchedulerThreadPrivate
     boost::scoped_ptr<GenericSchedulerThreadWatcher> blockingOperationWatcher;
 
     GenericSchedulerThreadPrivate(GenericSchedulerThread* p)
-        : _p(p)
-        , mustQuit(false)
-        , startingThreadAllowed(true)
-        , lastQuitThreadAllowedRestart(true)
-        , mustQuitCond()
-        , mustQuitMutex()
-        , startRequests(0)
-        , startRequestsCond()
-        , startRequestsMutex()
-        , abortRequested(0)
-        , abortRequestedMutex()
-        , abortRequestedCond()
-        , threadState(GenericSchedulerThread::eThreadStateStopped)
-        , threadStateMutex()
-        , enqueuedTasks()
-        , queuedTaskWhileProcessingAbort()
-        , enqueuedTasksMutex()
-        , executingOnMainThread(false)
-        , executingOnMainThreadCond()
-        , executingOnMainThreadMutex()
-        , blockingOperationWatcher()
+    : _p(p)
+    , mustQuit(false)
+    , startingThreadAllowed(true)
+    , lastQuitThreadAllowedRestart(true)
+    , mustQuitCond()
+    , mustQuitMutex()
+    , abortRequested(0)
+    , abortRequestedMutex()
+    , abortRequestedCond()
+    , threadState(GenericSchedulerThread::eThreadStateStopped)
+    , threadStateMutex()
+    , enqueuedTasks()
+    , queuedTaskWhileProcessingAbort()
+    , tasksEmptyCond()
+    , enqueuedTasksMutex()
+    , executingOnMainThread(false)
+    , executingOnMainThreadCond()
+    , executingOnMainThreadMutex()
+    , blockingOperationWatcher()
     {
     }
 
@@ -139,7 +135,7 @@ GenericSchedulerThread::GenericSchedulerThread()
     , AbortableThread(this)
     , _imp( new GenericSchedulerThreadPrivate(this) )
 {
-    QObject::connect( this, SIGNAL(executionOnMainThreadRequested(ExecOnMTArgsPtr)), this, SLOT(onExecutionOnMainThreadReceived(ExecOnMTArgsPtr)) );
+    QObject::connect( this, SIGNAL(executionOnMainThreadRequested(GenericThreadExecOnMainThreadArgsPtr)), this, SLOT(onExecutionOnMainThreadReceived(GenericThreadExecOnMainThreadArgsPtr)) );
 }
 
 GenericSchedulerThread::~GenericSchedulerThread()
@@ -152,7 +148,7 @@ GenericSchedulerThread::~GenericSchedulerThread()
 }
 
 bool
-GenericSchedulerThread::quitThread(bool allowRestarts)
+GenericSchedulerThread::quitThread(bool allowRestarts, bool abortTask)
 {
     if ( !isRunning() ) {
         return false;
@@ -171,7 +167,7 @@ GenericSchedulerThread::quitThread(bool allowRestarts)
         _imp->lastQuitThreadAllowedRestart = allowRestarts;
     }
 
-    if (getThreadState() == eThreadStateActive) {
+    if (abortTask && getThreadState() == eThreadStateActive) {
         abortThreadedTask();
     }
 
@@ -179,18 +175,9 @@ GenericSchedulerThread::quitThread(bool allowRestarts)
     // Clear any task enqueued and push a fake request
     {
         QMutexLocker k(&_imp->enqueuedTasksMutex);
-        _imp->enqueuedTasks.clear();
-        boost::shared_ptr<GenericThreadStartArgs> stubArgs = boost::make_shared<GenericThreadStartArgs>(true);
-        _imp->enqueuedTasks.push_back(stubArgs);
+        _imp->tasksEmptyCond.wakeOne();
     }
 
-
-    // Wake-up the thread with a fake request
-    {
-        QMutexLocker l3(&_imp->startRequestsMutex);
-        ++_imp->startRequests;
-        _imp->startRequestsCond.wakeOne();
-    }
 #ifdef TRACE_GENERIC_SCHEDULER_THREAD
     qDebug() << QThread::currentThread() << ": Termination request on " << getThreadName().c_str();
 #endif
@@ -212,12 +199,6 @@ GenericSchedulerThreadPrivate::waitForThreadsToQuit_internal(bool allowBlockingF
         return false;
     }
 
-    {
-        QMutexLocker k(&threadStateMutex);
-        if (threadState == GenericSchedulerThread::eThreadStateStopped) {
-            return false;
-        }
-    }
 
     // This function may NOT be called on the main-thread, because we may deadlock if executeOnMainThread is called OR block the UI.
     if ( !allowBlockingForMainThread && ( QThread::currentThread() == qApp->thread() ) ) {
@@ -243,6 +224,7 @@ void
 GenericSchedulerThread::waitForThreadToQuitQueued_main_thread(bool allowRestart)
 {
     assert( QThread::currentThread() == qApp->thread() );
+    // scoped_ptr
     _imp->blockingOperationWatcher.reset( new GenericSchedulerThreadWatcher(this) );
     QObject::connect( _imp->blockingOperationWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onWatcherTaskFinishedEmitted()) );
     GenericSchedulerThreadWatcher::BlockingTaskEnum task = allowRestart ? GenericSchedulerThreadWatcher::eBlockingTaskWaitForQuitAllowRestart : GenericSchedulerThreadWatcher::eBlockingTaskWaitForQuitDisallowRestart;
@@ -329,26 +311,16 @@ GenericSchedulerThread::abortThreadedTask(bool keepOldestRender)
     }
 
     ThreadStateEnum state = getThreadState();
-    bool shouldRequestAbort = state != eThreadStateAborted && state != eThreadStateIdle;
-    if ( keepOldestRender && !shouldRequestAbort ) {
-        return false;
-    }
+    bool shouldRequestAbort = state != eThreadStateIdle;
 
-    {
+    if (shouldRequestAbort) {
         QMutexLocker l(&_imp->abortRequestedMutex);
-
-
-        // We are already aborting
-        if (_imp->abortRequested > 0 && keepOldestRender) {
-            return false;
-        }
 
 #ifdef TRACE_GENERIC_SCHEDULER_THREAD
         qDebug() << QThread::currentThread() << ": Aborting task on" <<  getThreadName().c_str();
 #endif
-        if (shouldRequestAbort) {
-            ++_imp->abortRequested;
-        }
+        ++_imp->abortRequested;
+
     }
 
     onAbortRequested(keepOldestRender);
@@ -415,13 +387,14 @@ void
 GenericSchedulerThread::waitForAbortToCompleteQueued_main_thread()
 {
     assert( QThread::currentThread() == qApp->thread() );
+    // scoped_ptr
     _imp->blockingOperationWatcher.reset( new GenericSchedulerThreadWatcher(this) );
     QObject::connect( _imp->blockingOperationWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onWatcherTaskAbortedEmitted()) );
     _imp->blockingOperationWatcher->scheduleBlockingTask(GenericSchedulerThreadWatcher::eBlockingTaskWaitForAbort);
 }
 
 bool
-GenericSchedulerThread::startTask(const ThreadStartArgsPtr& inArgs)
+GenericSchedulerThread::startTask(const GenericThreadStartArgsPtr& inArgs)
 {
     {
         QMutexLocker quitLocker(&_imp->mustQuitMutex);
@@ -430,6 +403,7 @@ GenericSchedulerThread::startTask(const ThreadStartArgsPtr& inArgs)
         }
     }
 
+    bool running = isRunning();
     {
         QMutexLocker k1(&_imp->enqueuedTasksMutex);
         QMutexLocker k2(&_imp->abortRequestedMutex);
@@ -441,18 +415,14 @@ GenericSchedulerThread::startTask(const ThreadStartArgsPtr& inArgs)
         } else {
             _imp->enqueuedTasks.push_back(inArgs);
         }
-    }
 
-    if ( !isRunning() ) {
+        if (running) {
+            _imp->tasksEmptyCond.wakeOne();
+        }
+    }
+    if (!running) {
         start();
-    } else {
-        ///Wake up the thread with a start request
-        QMutexLocker locker(&_imp->startRequestsMutex);
-        ++_imp->startRequests;
-
-        _imp->startRequestsCond.wakeOne();
     }
-
     return true;
 }
 
@@ -465,12 +435,17 @@ GenericSchedulerThread::resolveState()
 void
 GenericSchedulerThread::run()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     for (;; ) {
         // Get the args to do the work
         TaskQueueBehaviorEnum behavior = tasksQueueBehaviour();
         ThreadStateEnum state = eThreadStateActive;
         {
-            ThreadStartArgsPtr args;
+            GenericThreadStartArgsPtr args;
             {
                 QMutexLocker k(&_imp->enqueuedTasksMutex);
                 switch (behavior) {
@@ -484,7 +459,14 @@ GenericSchedulerThread::run()
                     case eTaskQueueBehaviorSkipToMostRecent: {
                         if ( !_imp->enqueuedTasks.empty() ) {
                             args = _imp->enqueuedTasks.back();
-                            _imp->enqueuedTasks.clear();
+                            _imp->enqueuedTasks.pop_back();
+                            std::list<GenericThreadStartArgsPtr> unskippableTasks;
+                            for (std::list<GenericThreadStartArgsPtr>::iterator it = _imp->enqueuedTasks.begin(); it != _imp->enqueuedTasks.end(); ++it) {
+                                if (!(*it)->isSkippable()) {
+                                    unskippableTasks.push_back(*it);
+                                }
+                            }
+                            _imp->enqueuedTasks = unskippableTasks;
                         }
                         break;
                     }
@@ -500,7 +482,7 @@ GenericSchedulerThread::run()
                 // Do the work!
                 state = threadLoopOnce(args);
             }
-        }  // ThreadStartArgsPtr args;
+        }  // GenericThreadStartArgsPtr args;
         
         // The implementation might call resolveState from threadLoopOnce. If not, it will return eThreadStateActive by default so make
         // sure resolveState was called at least once
@@ -520,22 +502,14 @@ GenericSchedulerThread::run()
         Q_EMIT stateChanged( (int)state );
 
         if (state == eThreadStateStopped) {
-            // The thread is now stopped
-#ifdef TRACE_GENERIC_SCHEDULER_THREAD
-            qDebug() << getThreadName().c_str() << ": Quitting thread";
-#endif
-
-            QMutexLocker k(&_imp->mustQuitMutex);
-            _imp->mustQuit = false;
-            _imp->mustQuitCond.wakeAll();
             return;
         }
         
         // Reset the abort requested flag:
         // If a thread A called abortThreadedTask() multiple times and the scheduler thread B was running in the meantime, it could very well
-        // stop and wait in the startRequestsCond
+        // stop and wait in the tasksEmptyCond
+        QMutexLocker tasksLocker(&_imp->enqueuedTasksMutex);
         {
-            QMutexLocker tasksLocker(&_imp->enqueuedTasksMutex);
             QMutexLocker k(&_imp->abortRequestedMutex);
             if (state == eThreadStateAborted) {
                 // If the processing was aborted, clear task that were requested prior to the abort flag was passed, and insert the task that were posted
@@ -561,25 +535,26 @@ GenericSchedulerThread::run()
             }
         }
 
+        while (_imp->enqueuedTasks.empty() && _imp->queuedTaskWhileProcessingAbort.empty()) {
 
-        {
-            QMutexLocker l(&_imp->startRequestsMutex);
-            while (_imp->startRequests <= 0) {
-                _imp->startRequestsCond.wait(&_imp->startRequestsMutex);
+            state = _imp->resolveState();
+
+            if (state == eThreadStateStopped) {
+                return;
             }
-            ///We got the request
-            if (_imp->startRequests > 0) {
-                --_imp->startRequests;
-            }
-#ifdef TRACE_GENERIC_SCHEDULER_THREAD
-            qDebug() << getThreadName().c_str() << ": Received start request, startRequest = " << _imp->startRequests;
-#endif
+
+            _imp->tasksEmptyCond.wait(&_imp->enqueuedTasksMutex);
+
         }
+#ifdef TRACE_GENERIC_SCHEDULER_THREAD
+        qDebug() << getThreadName().c_str() << ": Received start request";
+#endif
+
     } // for (;;)
 } // run()
 
 void
-GenericSchedulerThread::requestExecutionOnMainThread(const ExecOnMTArgsPtr& inArgs)
+GenericSchedulerThread::requestExecutionOnMainThread(const GenericThreadExecOnMainThreadArgsPtr& inArgs)
 {
     // We must be within the run() function
     assert(QThread::currentThread() == this);
@@ -597,7 +572,7 @@ GenericSchedulerThread::requestExecutionOnMainThread(const ExecOnMTArgsPtr& inAr
 }
 
 void
-GenericSchedulerThread::onExecutionOnMainThreadReceived(const ExecOnMTArgsPtr& args)
+GenericSchedulerThread::onExecutionOnMainThreadReceived(const GenericThreadExecOnMainThreadArgsPtr& args)
 {
     assert( QThread::currentThread() == qApp->thread() );
     executeOnMainThread(args);

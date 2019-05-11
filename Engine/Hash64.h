@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,6 +28,7 @@
 #include "Global/Macros.h"
 
 #include <vector>
+#include <string>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/static_assert.hpp>
 #endif
@@ -47,18 +48,24 @@ class Hash64
 {
 public:
     Hash64()
+    : hash(0)
+    , node_values()
+    , hashValid(false)
     {
-        hash = 0;
     }
 
     ~Hash64()
     {
-        node_values.clear();
     }
 
     U64 value() const
     {
         return hash;
+    }
+
+    bool isEmpty() const
+    {
+        return node_values.empty();
     }
 
     void computeHash();
@@ -67,7 +74,7 @@ public:
 
     bool valid() const
     {
-        return hash != 0;
+        return hashValid;
     }
 
     template<typename T>
@@ -84,10 +91,43 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
     }
 
     template<typename T>
+    static T fromU64(U64 raw)
+    {
+        GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+        BOOST_STATIC_ASSERT(sizeof(T) <= 8);
+        GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+        alias_cast_t<T> ac;
+
+        ac.raw = raw;
+
+        return ac.data;
+
+    }
+
+    void insert(const std::vector<U64>& elements)
+    {
+        std::size_t curSize = node_values.size();
+        node_values.resize(curSize + elements.size());
+
+        int c = curSize;
+        for (std::vector<U64>::const_iterator it = elements.begin(); it != elements.end(); ++it, ++c) {
+            node_values[c] = *it;
+        }
+        hashValid = false;
+
+    }
+
+    template<typename T>
     void append(T value)
     {
         node_values.push_back( toU64(value) );
+        hashValid = false;
     }
+
+
+    static void appendQString(const QString & str, Hash64* hash);
+
+    static void appendCurve(const CurvePtr& curve, Hash64* hash);
 
     bool operator== (const Hash64 & h) const
     {
@@ -117,9 +157,9 @@ private:
 
     U64 hash;
     std::vector<U64> node_values;
+    bool hashValid;
 };
 
-void Hash64_appendQString(Hash64* hash, const QString & str);
 
 NATRON_NAMESPACE_EXIT
 

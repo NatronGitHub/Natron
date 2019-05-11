@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,13 +32,13 @@
 #endif
 
 #include "Gui/GuiFwd.h"
-#include "Gui/KnobGui.h"
+#include "Gui/KnobGuiWidgets.h"
 
 NATRON_NAMESPACE_ENTER
 
 struct KnobGuiTablePrivate;
 class KnobGuiTable
-    : public KnobGui
+    : public QObject, public KnobGuiWidgets
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -46,12 +46,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    KnobGuiTable(KnobPtr knob,
-                 KnobGuiContainerI *container);
+    KnobGuiTable(const KnobGuiPtr& knob, ViewIdx view);
 
     virtual ~KnobGuiTable() OVERRIDE;
-
-    virtual void removeSpecificGui() OVERRIDE;
 
     int rowCount() const;
 
@@ -64,33 +61,29 @@ public Q_SLOTS:
 
     void onEditButtonClicked();
 
-    void onItemDataChanged(TableItem* item);
+    void onItemDataChanged(const TableItemPtr& item, int col, int role);
 
     void onItemAboutToDrop();
 
     void onItemDropped();
 
-    void onItemDoubleClicked(TableItem* item);
+    void onItemDoubleClicked(const TableItemPtr& item);
 
 protected:
 
-    virtual void setDirty(bool /*dirty*/) OVERRIDE
+    virtual void reflectMultipleSelection(bool /*dirty*/) OVERRIDE
     {
     }
+    virtual void reflectSelectionState(bool /*selected*/) OVERRIDE
+    {
 
+    }
     virtual void createWidget(QHBoxLayout *layout) OVERRIDE;
-    virtual void _hide() OVERRIDE;
-    virtual void _show() OVERRIDE;
-    virtual void setEnabled() OVERRIDE;
-    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE;
-    virtual void updateGUI(int dimension) OVERRIDE;
-    virtual void reflectAnimationLevel(int /*dimension*/,
+    virtual void setWidgetsVisible(bool visible) OVERRIDE;
+    virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE;
+    virtual void updateGUI() OVERRIDE;
+    virtual void reflectAnimationLevel(DimIdx /*dimension*/,
                                        AnimationLevelEnum /*level*/) OVERRIDE
-    {
-    }
-
-    virtual void reflectExpressionState(int /*dimension*/,
-                                        bool /*hasExpr*/) OVERRIDE
     {
     }
 
@@ -123,19 +116,14 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(KnobPtr knob,
-                                  KnobGuiContainerI *container)
+    static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knob, ViewIdx view)
     {
-        return new KnobGuiLayers(knob, container);
+        return new KnobGuiLayers(knob, view);
     }
 
-    KnobGuiLayers(KnobPtr knob,
-                  KnobGuiContainerI *container);
+    KnobGuiLayers(const KnobGuiPtr& knob, ViewIdx view);
 
     virtual ~KnobGuiLayers() OVERRIDE;
-
-
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
 private:
 
@@ -147,7 +135,7 @@ private:
     virtual void entryRemoved(const QStringList& /*row*/)  OVERRIDE {}
 
     virtual void tableChanged(int row, int col, std::string* newEncodedValue) OVERRIDE FINAL;
-    boost::weak_ptr<KnobLayers> _knob;
+    KnobLayersWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

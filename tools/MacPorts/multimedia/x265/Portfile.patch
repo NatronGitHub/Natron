@@ -1,0 +1,39 @@
+--- Portfile.orig	2019-03-10 23:36:34.000000000 +0100
++++ Portfile	2019-03-10 23:36:59.000000000 +0100
+@@ -7,7 +7,7 @@
+ 
+ name                x265
+ version             3.0
+-revision            0
++revision            1
+ 
+ checksums           rmd160  6f866d290f0df0356f5a10a898fedf64fda53f0f \
+                     sha256  c5b9fc260cabbc4a81561a448f4ce9cad7218272b4011feabc3a6b751b2f0662 \
+@@ -34,15 +34,27 @@
+ 
+ compiler.blacklist  *llvm-gcc-4.2
+ 
++configure.env-append CONFIGURE='${configure.cmd}'
++build.env-append     BUILD='${build.cmd}'
++destroot.env-append  BUILD='${build.cmd}' ARCH=none
++configure.cmd        ${portpath}/${filesdir}/configure.sh
++build.cmd            ${portpath}/${filesdir}/build.sh
++
+ #    error: illegal text-relocation to '_x265_pw_1'
+ #   report: https://mailman.videolan.org/pipermail/x265-devel/2014-May/004476.html
+ # solution: http://lists.apple.com/archives/unix-porting/2008/Jan/msg00027.html
+ if {[variant_exists universal] && [variant_isset universal]} {
+     lappend merger_configure_ldflags(i386) -Wl,-read_only_relocs,suppress
++    foreach arch ${configure.universal_archs} {
++        lappend merger_configure_env(${arch}) ARCH='${arch}'
++        lappend merger_build_env(${arch}) ARCH='${arch}'
++    }
+ } else {
+     if {${build_arch} eq "i386"} {
+         configure.ldflags-append -Wl,-read_only_relocs,suppress
+     }
++    configure.env-append ARCH='${build_arch}'
++    build.env-append ARCH='${build_arch}'
+ }
+ 
+ livecheck.regex     "${name}_(\\d+(?:\\.\\d+)*)${extract.suffix}"

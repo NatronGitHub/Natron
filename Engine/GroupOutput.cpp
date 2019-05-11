@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,12 +27,38 @@
 #include <cassert>
 #include <stdexcept>
 
+#include "Engine/InputDescription.h"
+
 NATRON_NAMESPACE_ENTER
 
-std::string
-GroupOutput::getPluginDescription() const
+
+
+PluginPtr
+GroupOutput::createPlugin()
 {
-    return "This node can only be used within a Group. There can only be 1 Output node in the group. It defines the output of the group.";
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_OTHER);
+    PluginPtr ret = Plugin::create(GroupOutput::create, GroupOutput::createRenderClone, PLUGINID_NATRON_OUTPUT, "Output", 1, 0, grouping);
+
+    QString desc =  tr("This node can only be used within a Group. There can only be 1 Output node in the group. It defines the output of the group.");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/output_icon.png");
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
+    {
+        InputDescriptionPtr input = InputDescription::create("Source", "Source", "", false, false, std::bitset<4>(std::string("1111")));
+        ret->addInputDescription(input);
+    }
+    return ret;
 }
 
+
 NATRON_NAMESPACE_EXIT
+
+NATRON_NAMESPACE_USING
+#include "moc_GroupOutput.cpp"

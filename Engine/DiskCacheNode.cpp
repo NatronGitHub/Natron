@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,65 +31,111 @@
 #include "Engine/Image.h"
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/InputDescription.h"
+#include "Engine/Project.h"
+#include "Engine/RenderQueue.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 
+
 NATRON_NAMESPACE_ENTER
+
+
+#define kDiskCacheNodeFirstFrame "firstFrame"
+#define kDiskCacheNodeFirstFrameLabel "First Frame"
+#define kDiskCacheNodeFirstFrameHint ""
+
+#define kDiskCacheNodeLastFrame "lastFrame"
+#define kDiskCacheNodeLastFrameLabel "Last Frame"
+#define kDiskCacheNodeLastFrameHint ""
+
+#define kDiskCacheNodeFrameRange "frameRange"
+#define kDiskCacheNodeFrameRangeLabel "Frame Range"
+#define kDiskCacheNodeFrameRangeHint ""
+
 
 struct DiskCacheNodePrivate
 {
-    boost::weak_ptr<KnobChoice> frameRange;
-    boost::weak_ptr<KnobInt> firstFrame;
-    boost::weak_ptr<KnobInt> lastFrame;
-    boost::weak_ptr<KnobButton> preRender;
+    KnobChoiceWPtr frameRange;
+    KnobIntWPtr firstFrame;
+    KnobIntWPtr lastFrame;
+    KnobButtonWPtr preRender;
 
     DiskCacheNodePrivate()
     {
     }
 };
 
-DiskCacheNode::DiskCacheNode(NodePtr node)
-    : OutputEffectInstance(node)
+PluginPtr
+DiskCacheNode::createPlugin()
+{
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_OTHER);
+    PluginPtr ret = Plugin::create(DiskCacheNode::create, DiskCacheNode::createRenderClone, PLUGINID_NATRON_DISKCACHE, "DiskCache", 1, 0, grouping);
+
+    QString desc =  tr("This node caches all images of the connected input node onto the disk with full 32bit floating point raw data. "
+                       "When an image is found in the cache, %1 will then not request the input branch to render out that image. "
+                       "The DiskCache node only caches full images and does not split up the images in chunks.  "
+                       "The DiskCache node is useful if working with a large and complex node tree: this allows to break the tree into smaller "
+                       "branches and cache any branch that one is no longer working on. The cached images are saved by default in the same directory that is used "
+                       "for the viewer cache but you can set its location and size in the preferences. A solid state drive disk is recommended for efficiency of this node. "
+                       "By default all images that pass into the node are cached but they depend on the zoom-level of the viewer. For convenience you can cache "
+                       "a specific frame range at scale 100% much like a writer node would do.\n"
+                       "WARNING: The DiskCache node must be part of the tree when you want to read cached data from it.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, false);
+    effectDesc->setProperty<bool>(kEffectPropSupportsMultiResolution, true);
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/diskcache_icon.png");
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
+
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
+    {
+        InputDescriptionPtr input = InputDescription::create("Source", "", "", false, false, std::bitset<4>(std::string("1111")));
+        ret->addInputDescription(input);
+    }
+
+    return ret;
+}
+
+
+DiskCacheNode::DiskCacheNode(const NodePtr& node)
+    : EffectInstance(node)
     , _imp( new DiskCacheNodePrivate() )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
+}
+
+DiskCacheNode::DiskCacheNode(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+: EffectInstance(mainInstance, key)
+, _imp(new DiskCacheNodePrivate())
+{
+
 }
 
 DiskCacheNode::~DiskCacheNode()
 {
 }
 
-void
-DiskCacheNode::addAcceptedComponents(int /*inputNb*/,
-                                     std::list<ImagePlaneDesc>* comps)
-{
-    comps->push_back( ImagePlaneDesc::getRGBAComponents() );
-    comps->push_back( ImagePlaneDesc::getRGBComponents() );
-    comps->push_back( ImagePlaneDesc::getAlphaComponents() );
-}
-
-void
-DiskCacheNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
-{
-    depths->push_back(eImageBitDepthFloat);
-}
 
 bool
 DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,
-                                 double /*time*/,
-                                 ViewIdx /*view*/,
                                  int /*visitsCount*/) const
 {
+    // The disk cache node always caches.
     return true;
 }
 
 void
 DiskCacheNode::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Controls") );
-    boost::shared_ptr<KnobChoice> frameRange = AppManager::createKnob<KnobChoice>( this, tr("Frame range") );
-
-    frameRange->setName("frameRange");
+    KnobPagePtr page = createKnob<KnobPage>("controlsPage");
+    page->setLabel(tr("Controls") );
+    KnobChoicePtr frameRange = createKnob<KnobChoice>(kDiskCacheNodeFrameRange);
+    frameRange->setLabel(tr(kDiskCacheNodeFrameRangeLabel) );
+    frameRange->setHintToolTip(tr(kDiskCacheNodeFrameRangeHint));
     frameRange->setAnimationEnabled(false);
     {
         std::vector<ChoiceOption> choices;
@@ -103,46 +149,56 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(frameRange);
     _imp->frameRange = frameRange;
 
-    boost::shared_ptr<KnobInt> firstFrame = AppManager::createKnob<KnobInt>( this, tr("First Frame") );
+    KnobIntPtr firstFrame = createKnob<KnobInt>(kDiskCacheNodeFirstFrame);
+    firstFrame->setLabel(tr(kDiskCacheNodeFirstFrameLabel) );
+    firstFrame->setHintToolTip(tr(kDiskCacheNodeFirstFrameHint));
     firstFrame->setAnimationEnabled(false);
-    firstFrame->setName("firstFrame");
     firstFrame->disableSlider();
     firstFrame->setEvaluateOnChange(false);
     firstFrame->setAddNewLine(false);
     firstFrame->setDefaultValue(1);
-    firstFrame->setSecretByDefault(true);
+    firstFrame->setSecret(true);
     page->addKnob(firstFrame);
     _imp->firstFrame = firstFrame;
 
-    boost::shared_ptr<KnobInt> lastFrame = AppManager::createKnob<KnobInt>( this, tr("Last Frame") );
+    KnobIntPtr lastFrame = createKnob<KnobInt>(kDiskCacheNodeLastFrame);
     lastFrame->setAnimationEnabled(false);
-    lastFrame->setName("LastFrame");
+    lastFrame->setLabel(tr(kDiskCacheNodeLastFrameLabel));
+    lastFrame->setHintToolTip(tr(kDiskCacheNodeLastFrameHint));
     lastFrame->disableSlider();
     lastFrame->setEvaluateOnChange(false);
     lastFrame->setDefaultValue(100);
-    lastFrame->setSecretByDefault(true);
+    lastFrame->setSecret(true);
     page->addKnob(lastFrame);
     _imp->lastFrame = lastFrame;
 
-    boost::shared_ptr<KnobButton> preRender = AppManager::createKnob<KnobButton>( this, tr("Pre-cache") );
-    preRender->setName("preRender");
+    KnobButtonPtr preRender = createKnob<KnobButton>("preRender");
+    preRender->setLabel(tr("Pre-cache"));
     preRender->setEvaluateOnChange(false);
     preRender->setHintToolTip( tr("Cache the frame range specified by rendering images at zoom-level 100% only.") );
     page->addKnob(preRender);
     _imp->preRender = preRender;
 }
 
+void
+DiskCacheNode::fetchRenderCloneKnobs()
+{
+    EffectInstance::fetchRenderCloneKnobs();
+    _imp->frameRange = toKnobChoice(getKnobByName(kDiskCacheNodeFrameRange));
+    _imp->firstFrame = toKnobInt(getKnobByName(kDiskCacheNodeFirstFrame));
+    _imp->lastFrame = toKnobInt(getKnobByName(kDiskCacheNodeLastFrame));
+}
+
 bool
-DiskCacheNode::knobChanged(KnobI* k,
+DiskCacheNode::knobChanged(const KnobIPtr& k,
                            ValueChangedReasonEnum /*reason*/,
-                           ViewSpec /*view*/,
-                           double /*time*/,
-                           bool /*originatedFromMainThread*/)
+                           ViewSetSpec /*view*/,
+                           TimeValue /*time*/)
 {
     bool ret = true;
 
-    if (_imp->frameRange.lock().get() == k) {
-        int idx = _imp->frameRange.lock()->getValue(0);
+    if (_imp->frameRange.lock() == k) {
+        int idx = _imp->frameRange.lock()->getValue(DimIdx(0));
         switch (idx) {
         case 0:
         case 1:
@@ -156,16 +212,15 @@ DiskCacheNode::knobChanged(KnobI* k,
         default:
             break;
         }
-    } else if (_imp->preRender.lock().get() == k) {
-        AppInstance::RenderWork w;
-        w.writer = this;
-        w.firstFrame = INT_MIN;
-        w.lastFrame = INT_MAX;
-        w.frameStep = 1;
+    } else if (_imp->preRender.lock() == k) {
+        RenderQueue::RenderWork w;
+        w.renderLabel = tr("Caching").toStdString();
+        w.treeRoot = getNode();
+        w.frameStep = TimeValue(1.);
         w.useRenderStats = false;
-        std::list<AppInstance::RenderWork> works;
+        std::list<RenderQueue::RenderWork> works;
         works.push_back(w);
-        getApp()->startWritersRendering(false, works);
+        getApp()->getRenderQueue()->renderNonBlocking(works);
     } else {
         ret = false;
     }
@@ -173,7 +228,7 @@ DiskCacheNode::knobChanged(KnobI* k,
     return ret;
 }
 
-void
+ActionRetCodeEnum
 DiskCacheNode::getFrameRange(double *first,
                              double *last)
 {
@@ -181,14 +236,27 @@ DiskCacheNode::getFrameRange(double *first,
 
     switch (idx) {
     case 0: {
-        EffectInstancePtr input = getInput(0);
+        EffectInstancePtr input = getInputRenderEffectAtAnyTimeView(0);
         if (input) {
-            input->getFrameRange_public(input->getHash(), first, last);
+
+            GetFrameRangeResultsPtr results;
+            ActionRetCodeEnum stat = input->getFrameRange_public(&results);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+            RangeD range;
+            results->getFrameRangeResults(&range);
+            *first = range.min;
+            *last = range.max;
+
         }
         break;
     }
     case 1: {
-        getApp()->getFrameRange(first, last);
+        TimeValue left, right;
+        getApp()->getProject()->getFrameRange(&left, &right);
+        *first = left;
+        *last = right;
         break;
     }
     case 2: {
@@ -198,49 +266,35 @@ DiskCacheNode::getFrameRange(double *first,
     default:
         break;
     }
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 DiskCacheNode::render(const RenderActionArgs& args)
 {
-    assert(args.outputPlanes.size() == 1);
+    // fetch source images and copy them
 
-    EffectInstancePtr input = getInput(0);
-    if (!input) {
-        return eStatusFailed;
+    for (std::list<std::pair<ImagePlaneDesc, ImagePtr> >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
+
+        GetImageInArgs inArgs(&args.mipMapLevel, &args.proxyScale, &args.roi, &args.backendType);
+        inArgs.inputNb = 0;
+        inArgs.plane = &it->first;
+        GetImageOutArgs outArgs;
+        if (!getImagePlane(inArgs, &outArgs)) {
+            return eActionStatusInputDisconnected;
+        }
+
+        Image::CopyPixelsArgs cpyArgs;
+        cpyArgs.roi = args.roi;
+        ActionRetCodeEnum stat = it->second->copyPixels(*outArgs.image, cpyArgs);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+
     }
+    return eActionStatusOK;
 
-
-    const std::pair<ImagePlaneDesc, ImagePtr>& output = args.outputPlanes.front();
-
-    for (std::list<std::pair<ImagePlaneDesc, boost::shared_ptr<Image> > >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
-        RectI roiPixel;
-        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, &it->first, false /*mapToClipPrefs*/, true /*dontUpscale*/, eStorageModeRAM /*useOpenGL*/, 0 /*textureDepth*/,  &roiPixel);
-        if (!srcImg) {
-            return eStatusFailed;
-        }
-        if ( srcImg->getMipMapLevel() != output.second->getMipMapLevel() ) {
-            throw std::runtime_error("Host gave image with wrong scale");
-        }
-        if ( ( srcImg->getComponents() != output.second->getComponents() ) || ( srcImg->getBitDepth() != output.second->getBitDepth() ) ) {
-            srcImg->convertToFormat( args.roi, getApp()->getDefaultColorSpaceForBitDepth( srcImg->getBitDepth() ),
-                                     getApp()->getDefaultColorSpaceForBitDepth( output.second->getBitDepth() ), 3, true, false, output.second.get() );
-        } else {
-            output.second->pasteFrom( *srcImg, args.roi, output.second->usesBitMap() && srcImg->usesBitMap() );
-        }
-    }
-
-    return eStatusOK;
-}
-
-bool
-DiskCacheNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
-                                              bool* /*defaultG*/,
-                                              bool* /*defaultB*/,
-                                              bool* /*defaultA*/) const
-{
-    return false;
-}
+} // render
 
 NATRON_NAMESPACE_EXIT
 NATRON_NAMESPACE_USING

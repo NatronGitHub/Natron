@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -40,44 +40,50 @@ NATRON_NAMESPACE_ENTER
 class GroupOutput
     : public NoOpBase
 {
-public:
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-    static EffectInstance* BuildEffect(NodePtr n)
-    {
-        return new GroupOutput(n);
-    }
-
-    GroupOutput(NodePtr n)
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    GroupOutput(const NodePtr& n)
         : NoOpBase(n)
     {
     }
 
-    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    GroupOutput(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+    : NoOpBase(mainInstance, key)
     {
-        return PLUGINID_NATRON_OUTPUT;
     }
 
-    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
+public:
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
-        return "Output";
+        return EffectInstancePtr( new GroupOutput(node) );
     }
 
-    virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key) WARN_UNUSED_RETURN
     {
-        return "Source";
+        return EffectInstancePtr( new GroupOutput(mainInstance, key) );
     }
 
-    virtual int getNInputs() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
+    static PluginPtr createPlugin();
+
+  
 
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
 };
+
+
+inline GroupOutputPtr
+toGroupOutput(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<GroupOutput>(effect);
+}
+
 
 NATRON_NAMESPACE_EXIT
 

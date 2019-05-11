@@ -1,0 +1,27 @@
+diff -up qt-everywhere-opensource-src-4.8.2/tools/linguist/lrelease/main.cpp.linguist_qtmake-qt4 qt-everywhere-opensource-src-4.8.2/tools/linguist/lrelease/main.cpp
+--- qt-everywhere-opensource-src-4.8.2/tools/linguist/lrelease/main.cpp.linguist_qtmake-qt4	2012-04-26 21:45:50.000000000 +0200
++++ qt-everywhere-opensource-src-4.8.2/tools/linguist/lrelease/main.cpp	2012-05-29 12:17:03.416561535 +0200
+@@ -314,9 +314,9 @@ int main(int argc, char **argv)
+             parseHandler.verbose = evalHandler.verbose = cd.isVerbose();
+             ProFileOption option;
+ #ifdef QT_BOOTSTRAPPED
+-            option.initProperties(binDir + QLatin1String("/qmake"));
++            option.initProperties(binDir + QLatin1String("/qmake-qt4"));
+ #else
+-            option.initProperties(app.applicationDirPath() + QLatin1String("/qmake"));
++            option.initProperties(app.applicationDirPath() + QLatin1String("/qmake-qt4"));
+ #endif
+             ProFileParser parser(0, &parseHandler);
+             ProFileEvaluator visitor(&option, &parser, &evalHandler);
+diff -up qt-everywhere-opensource-src-4.8.2/tools/linguist/lupdate/main.cpp.linguist_qtmake-qt4 qt-everywhere-opensource-src-4.8.2/tools/linguist/lupdate/main.cpp
+--- qt-everywhere-opensource-src-4.8.2/tools/linguist/lupdate/main.cpp.linguist_qtmake-qt4	2012-04-26 21:45:50.000000000 +0200
++++ qt-everywhere-opensource-src-4.8.2/tools/linguist/lupdate/main.cpp	2012-05-29 11:46:48.811134546 +0200
+@@ -765,7 +765,7 @@ int main(int argc, char **argv)
+ 
+         parseHandler.verbose = evalHandler.verbose = !!(options & Verbose);
+         ProFileOption option;
+-        option.initProperties(app.applicationDirPath() + QLatin1String("/qmake"));
++        option.initProperties(app.applicationDirPath() + QLatin1String("/qmake-qt4"));
+         option.setCommandLineArguments(QStringList() << QLatin1String("CONFIG+=lupdate_run"));
+         ProFileParser parser(0, &parseHandler);
+ 

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -35,18 +35,17 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
 #include <QStyledItemDelegate>
 #include <QTextEdit>
+#include <QPixmap>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/Singleton.h"
 #include "Engine/Knob.h"
 #include "Engine/ImagePlaneDesc.h"
 #include "Engine/EngineFwd.h"
 
-#include "Gui/CurveSelection.h"
-#include "Gui/KnobGui.h"
+#include "Gui/KnobGuiWidgets.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
@@ -55,31 +54,30 @@ NATRON_NAMESPACE_ENTER
 
 //================================
 class KnobGuiButton
-    : public KnobGui
+    : QObject
+    , public KnobGuiWidgets
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    static KnobGui * BuildKnobGui(KnobPtr knob,
-                                  KnobGuiContainerI *container)
+    static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knob, ViewIdx view)
     {
-        return new KnobGuiButton(knob, container);
+        return new KnobGuiButton(knob, view);
     }
 
-    KnobGuiButton(KnobPtr knob,
-                  KnobGuiContainerI *container);
+    KnobGuiButton(const KnobGuiPtr& knob, ViewIdx view);
 
     virtual ~KnobGuiButton() OVERRIDE;
 
-    virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual std::string getDescriptionLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool shouldCreateLabel() const OVERRIDE FINAL
+    virtual bool mustCreateLabelWidget() const OVERRIDE FINAL
     {
         return false;
     }
+
+    void disableButtonBorder();
 
 public Q_SLOTS:
 
@@ -87,21 +85,21 @@ public Q_SLOTS:
 
 private:
 
-    virtual void onLabelChangedInternal() OVERRIDE FINAL;
-    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
-    virtual void _show() OVERRIDE FINAL;
-    virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
-    virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL
-    {
-    }
+    void loadPixmaps(bool applyColorOverlay, const QColor& overlayColor);
 
-    virtual void updateGUI(int /*dimension*/) OVERRIDE FINAL;
+    QPixmap loadPixmapInternal(bool checked, bool applyColorOverlay, const QColor& overlayColor);
+
+    virtual void onLabelChanged() OVERRIDE FINAL;
+    virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
+    virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
+    virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE FINAL;
+    virtual void reflectMultipleSelection(bool /*dirty*/) OVERRIDE FINAL;
+    virtual void reflectSelectionState(bool selected) OVERRIDE FINAL;
+    virtual void updateGUI() OVERRIDE FINAL;
 
 private:
     Button *_button;
-    boost::weak_ptr<KnobButton> _knob;
+    KnobButtonWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

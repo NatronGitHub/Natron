@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,8 +27,6 @@
 
 #include "Global/Macros.h"
 
-#include <vector>
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <Qt>
@@ -36,30 +34,18 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Global/KeySymbols.h"
-#include "Global/Enums.h"
-
+#include "Engine/QtEnumConvert.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER
 
-class QtEnumConvert
+namespace QtEnumConvert
 {
-public:
 
-    static Key fromQtKey(Qt::Key k);
-    static KeyboardModifierEnum fromQtModifier(Qt::KeyboardModifier m);
-    static KeyboardModifiers fromQtModifiers(Qt::KeyboardModifiers m);
-    static Qt::Key toQtKey(Key k);
-    static Qt::KeyboardModifiers fromOfxtoQtModifiers(const std::list<int>& modifiers);
-    static bool fromOfxtoQtModifier(int modifier, Qt::KeyboardModifier* mod);
-    static Qt::KeyboardModifier  toQtModifier(KeyboardModifierEnum m);
-    static Qt::KeyboardModifiers toQtModifiers(const KeyboardModifiers& modifiers);
-    static StandardButtonEnum fromQtStandardButton(QMessageBox::StandardButton b);
-    static QMessageBox::StandardButton toQtStandardButton(StandardButtonEnum b);
-    static QMessageBox::StandardButtons toQtStandarButtons(StandardButtons buttons);
-    static bool toQtCursor(CursorEnum c, Qt::CursorShape* ret);
-};
+    StandardButtonEnum fromQtStandardButton(QMessageBox::StandardButton b);
+    QMessageBox::StandardButton toQtStandardButton(StandardButtonEnum b);
+    QMessageBox::StandardButtons toQtStandarButtons(StandardButtons buttons);
+}
 
 NATRON_NAMESPACE_EXIT
 

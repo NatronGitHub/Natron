@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -55,7 +55,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/Curve.h"
 #include "Engine/KnobFile.h"
-#include "Engine/KnobSerialization.h"
+#include "Serialization/KnobSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Node.h"
@@ -68,7 +68,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/ComboBox.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveGui.h"
 #include "Gui/CustomParamInteract.h"
 #include "Gui/DialogButtonBox.h"
@@ -78,6 +77,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiGroup.h"
 #include "Gui/Label.h"
+#include "Gui/KnobGui.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Menu.h"
 #include "Gui/Menu.h"
@@ -104,7 +104,7 @@ struct LinkToKnobDialogPrivate
     ComboBox* knobSelectionCombo;
     DialogButtonBox* buttons;
     NodesList allNodes;
-    std::map<QString, boost::shared_ptr<KnobI > > allKnobs;
+    std::map<QString, KnobIPtr> allKnobs;
 
     LinkToKnobDialogPrivate(const KnobGuiPtr& from)
         : fromKnob(from)
@@ -143,14 +143,14 @@ LinkToKnobDialog::LinkToKnobDialog(const KnobGuiPtr& from,
     _imp->firstLineLayout->addWidget(_imp->selectNodeLabel);
 
 
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>( from->getKnob()->getHolder() );
+    EffectInstancePtr isEffect = toEffectInstance( from->getKnob()->getHolder() );
     assert(isEffect);
     if (!isEffect) {
         throw std::logic_error("");
     }
-    boost::shared_ptr<NodeCollection> group = isEffect->getNode()->getGroup();
+    NodeCollectionPtr group = isEffect->getNode()->getGroup();
     group->getActiveNodes(&_imp->allNodes);
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( group.get() );
+    NodeGroupPtr isGroup = toNodeGroup( group );
     if (isGroup) {
         _imp->allNodes.push_back( isGroup->getNode() );
     }
@@ -199,40 +199,50 @@ LinkToKnobDialog::onNodeComboEditingFinished()
         return;
     }
 
-    const std::vector< KnobPtr > & knobs = selectedNode->getKnobs();
-    KnobPtr from = _imp->fromKnob->getKnob();
+    const std::vector<KnobIPtr> & knobs = selectedNode->getKnobs();
+    KnobIPtr from = _imp->fromKnob->getKnob();
     for (U32 j = 0; j < knobs.size(); ++j) {
         if ( !knobs[j]->getIsSecret() && (knobs[j] != from) ) {
-            KnobButton* isButton = dynamic_cast<KnobButton*>( knobs[j].get() );
-            KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[j].get() );
-            KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[j].get() );
-            if (from->isTypeCompatible(knobs[j]) && !isButton && !isPage && !isGroup) {
-                QString name = QString::fromUtf8( knobs[j]->getName().c_str() );
-                bool canInsertKnob = true;
-                for (int k = 0; k < knobs[j]->getDimension(); ++k) {
-                    if ( knobs[j]->isSlave(k) || !knobs[j]->isEnabled(k) || name.isEmpty() ) {
-                        canInsertKnob = false;
-                    }
-                }
-                if (canInsertKnob) {
-                    _imp->allKnobs.insert( std::make_pair( name, knobs[j]) );
-                    _imp->knobSelectionCombo->addItem(name);
+            KnobButtonPtr isButton = toKnobButton(knobs[j]);
+            KnobPagePtr isPage = toKnobPage(knobs[j]);
+            KnobGroupPtr isGroup = toKnobGroup(knobs[j]);
+            if ((isButton && !isButton->getIsCheckable()) || isPage || !isGroup) {
+                continue;
+            }
+            {
+                DimIdx thisDimToCheck = DimIdx(0);
+                ViewIdx thisViewToCheck = ViewIdx(0);
+                DimIdx otherDimToCheck = DimIdx(0);
+                ViewIdx otherViewToCheck = ViewIdx(0);
+                std::string error;
+                if ( !from->canLinkWith(knobs[j], thisDimToCheck, thisViewToCheck, otherDimToCheck, otherViewToCheck,&error ) ) {
+                    continue;
                 }
             }
+
+
+            QString name = QString::fromUtf8( knobs[j]->getName().c_str() );
+            bool canInsertKnob = knobs[j]->isEnabled() && !name.isEmpty();
+        
+            if (canInsertKnob) {
+                _imp->allKnobs.insert( std::make_pair( name, knobs[j]) );
+                _imp->knobSelectionCombo->addItem(name);
+            }
+
         }
     }
-}
+} // 
 
-KnobPtr
+KnobIPtr
 LinkToKnobDialog::getSelectedKnobs() const
 {
     QString str = _imp->knobSelectionCombo->itemText( _imp->knobSelectionCombo->activeIndex() );
-    std::map<QString, KnobPtr >::const_iterator it = _imp->allKnobs.find(str);
+    std::map<QString, KnobIPtr>::const_iterator it = _imp->allKnobs.find(str);
 
     if ( it != _imp->allKnobs.end() ) {
         return it->second;
     } else {
-        return KnobPtr();
+        return KnobIPtr();
     }
 }
 

@@ -15,12 +15,12 @@ The Natron documentation is organized as follows:
 - The :ref:`developers-guide` contains documentation about using the Python scripting language within Natron, and using the Natron command-line interface (a.k.a. NatronRenderer).
 
 This documentation is also
-`available online <http://natron.readthedocs.io/en/rb-2.2/>`_
+`available online <http://natron.readthedocs.io/en/master/>`_
 and can be downloaded as a
-`PDF <https://readthedocs.org/projects/natron/downloads/pdf/rb-2.2/>`_,
-`HTML zip <https://readthedocs.org/projects/natron/downloads/htmlzip/rb-2.2/>`_
+`PDF <https://readthedocs.org/projects/natron/downloads/pdf/master/>`_,
+`HTML zip <https://readthedocs.org/projects/natron/downloads/htmlzip/master/>`_
 or
-`ePub <https://readthedocs.org/projects/natron/downloads/epub/rb-2.2/>`_
+`ePub <https://readthedocs.org/projects/natron/downloads/epub/master/>`_
 file.
 
 This manual is maintained largely by volunteers.

@@ -19,9 +19,22 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
+#include <PyItemsTable.h>
 #include <PyRoto.h>
+#include <list>
 
 
+// Native ---------------------------------------------------------
+
+void RotoWrapper::pysideInitQtMetaTypes()
+{
+}
+
+RotoWrapper::~RotoWrapper()
+{
+    SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
+    Shiboken::Object::destroy(wrapper, this);
+}
 
 // Target ---------------------------------------------------------
 
@@ -188,8 +201,8 @@ static PyObject* Sbk_RotoFunc_createLayer(PyObject* self)
             // createLayer()
             // Begin code injection
 
-            Layer * cppResult = cppSelf->createLayer();
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_LAYER_IDX], cppResult);
+            ItemBase * cppResult = cppSelf->createLayer();
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_ITEMBASE_IDX], cppResult);
 
             // End of code injection
 
@@ -280,36 +293,7 @@ static PyObject* Sbk_RotoFunc_createRectangle(PyObject* self, PyObject* args)
         return 0;
 }
 
-static PyObject* Sbk_RotoFunc_getBaseLayer(PyObject* self)
-{
-    ::Roto* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Roto*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ROTO_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getBaseLayer()const
-            Layer * cppResult = const_cast<const ::Roto*>(cppSelf)->getBaseLayer();
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_LAYER_IDX], cppResult);
-
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_RotoFunc_getItemByName(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_RotoFunc_createStroke(PyObject* self, PyObject* pyArg)
 {
     ::Roto* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -322,23 +306,29 @@ static PyObject* Sbk_RotoFunc_getItemByName(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getItemByName(QString)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
-        overloadId = 0; // getItemByName(QString)const
+    // 0: createStroke(NATRON_NAMESPACE::RotoStrokeType)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_ROTOSTROKETYPE_IDX]), (pyArg)))) {
+        overloadId = 0; // createStroke(NATRON_NAMESPACE::RotoStrokeType)
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_RotoFunc_getItemByName_TypeError;
+    if (overloadId == -1) goto Sbk_RotoFunc_createStroke_TypeError;
 
     // Call function/method
     {
-        ::QString cppArg0 = ::QString();
+        ::NATRON_NAMESPACE::RotoStrokeType cppArg0 = ((::NATRON_NAMESPACE::RotoStrokeType)0);
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getItemByName(QString)const
-            ItemBase * cppResult = const_cast<const ::Roto*>(cppSelf)->getItemByName(cppArg0);
+            // createStroke(NATRON_NAMESPACE::RotoStrokeType)
+            // Begin code injection
+
+            ItemBase * cppResult = cppSelf->createStroke(cppArg0);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_ITEMBASE_IDX], cppResult);
+
+            // End of code injection
+
+
 
             // Ownership transferences.
             Shiboken::Object::getOwnership(pyResult);
@@ -351,9 +341,9 @@ static PyObject* Sbk_RotoFunc_getItemByName(PyObject* self, PyObject* pyArg)
     }
     return pyResult;
 
-    Sbk_RotoFunc_getItemByName_TypeError:
-        const char* overloads[] = {"unicode", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Roto.getItemByName", overloads);
+    Sbk_RotoFunc_createStroke_TypeError:
+        const char* overloads[] = {"NatronEngine.NATRON_NAMESPACE.RotoStrokeType", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Roto.createStroke", overloads);
         return 0;
 }
 
@@ -362,8 +352,7 @@ static PyMethodDef Sbk_Roto_methods[] = {
     {"createEllipse", (PyCFunction)Sbk_RotoFunc_createEllipse, METH_VARARGS},
     {"createLayer", (PyCFunction)Sbk_RotoFunc_createLayer, METH_NOARGS},
     {"createRectangle", (PyCFunction)Sbk_RotoFunc_createRectangle, METH_VARARGS},
-    {"getBaseLayer", (PyCFunction)Sbk_RotoFunc_getBaseLayer, METH_NOARGS},
-    {"getItemByName", (PyCFunction)Sbk_RotoFunc_getItemByName, METH_O},
+    {"createStroke", (PyCFunction)Sbk_RotoFunc_createStroke, METH_O},
 
     {0} // Sentinel
 };
@@ -411,7 +400,7 @@ static SbkObjectType Sbk_Roto_Type = { { {
     /*tp_methods*/          Sbk_Roto_methods,
     /*tp_members*/          0,
     /*tp_getset*/           0,
-    /*tp_base*/             reinterpret_cast<PyTypeObject*>(&SbkObject_Type),
+    /*tp_base*/             0,
     /*tp_dict*/             0,
     /*tp_descr_get*/        0,
     /*tp_descr_set*/        0,
@@ -430,6 +419,13 @@ static SbkObjectType Sbk_Roto_Type = { { {
     /*priv_data*/           0
 };
 } //extern
+
+static void* Sbk_Roto_typeDiscovery(void* cptr, SbkObjectType* instanceType)
+{
+    if (instanceType == reinterpret_cast<SbkObjectType*>(Shiboken::SbkType< ::ItemsTable >()))
+        return dynamic_cast< ::Roto*>(reinterpret_cast< ::ItemsTable*>(cptr));
+    return 0;
+}
 
 
 // Type conversion functions.
@@ -462,7 +458,7 @@ void init_Roto(PyObject* module)
     SbkNatronEngineTypes[SBK_ROTO_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_Roto_Type);
 
     if (!Shiboken::ObjectType::introduceWrapperType(module, "Roto", "Roto*",
-        &Sbk_Roto_Type, &Shiboken::callCppDestructor< ::Roto >)) {
+        &Sbk_Roto_Type, &Shiboken::callCppDestructor< ::Roto >, (SbkObjectType*)SbkNatronEngineTypes[SBK_ITEMSTABLE_IDX])) {
         return;
     }
 
@@ -476,7 +472,11 @@ void init_Roto(PyObject* module)
     Shiboken::Conversions::registerConverterName(converter, "Roto*");
     Shiboken::Conversions::registerConverterName(converter, "Roto&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::Roto).name());
+    Shiboken::Conversions::registerConverterName(converter, typeid(::RotoWrapper).name());
 
 
+    Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_Roto_Type, &Sbk_Roto_typeDiscovery);
 
+
+    RotoWrapper::pysideInitQtMetaTypes();
 }

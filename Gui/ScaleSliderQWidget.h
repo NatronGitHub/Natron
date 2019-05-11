@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -40,7 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-#include "Gui/GuiFwd.h"
+#include "Gui/StyledKnobWidgetBase.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -48,11 +48,13 @@ struct ScaleSliderQWidgetPrivate;
 
 class ScaleSliderQWidget
     : public QWidget
+    , public StyledKnobWidgetBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
-
+    DEFINE_KNOB_GUI_STYLE_PROPERTIES
+    
 public:
 
     enum DataTypeEnum
@@ -91,11 +93,6 @@ public:
     // the size of a pixel increment (used to round the value)
     double increment();
 
-    void setAltered(bool b);
-    bool getAltered() const;
-
-    void setUseLineColor(bool use, const QColor& color);
-
 Q_SIGNALS:
     void editingFinished(bool hasMovedOnce);
     void positionChanged(double);
@@ -106,6 +103,8 @@ public Q_SLOTS:
     void seekScalePosition(double v);
 
 private:
+
+    virtual void refreshStylesheet() OVERRIDE FINAL;
 
     void zoomRange();
 

@@ -8,11 +8,10 @@ or :func:`render(tasks)<NatronEngine.App.render>` functions
 of the :ref:`App<App>` class.
 The parameters passed are:
 
-    * The *writeNode*: This should point to the node you want to start rendering with
-    * The *firstFrame*: This is the first frame to render in the sequence
-    * The *lastFrame*: This is the last frame to render in the sequence
-    * The *frameStep*: This is the number of frames the timeline should step before rendering a new frame
-e.g To render frames 1,3,5,7,9, you can use a frameStep of 2
+* The *writeNode*: This should point to the node you want to start rendering with
+* The *firstFrame*: This is the first frame to render in the sequence
+* The *lastFrame*: This is the last frame to render in the sequence
+* The *frameStep*: This is the number of frames the timeline should step before rendering a new frame, e.g. To render frames 1,3,5,7,9, you can use a frameStep of 2
 
 Natron always renders from the *firstFrame* to the *lastFrame*.
 Generally Natron uses multiple threads to render concurrently several frames, you can control

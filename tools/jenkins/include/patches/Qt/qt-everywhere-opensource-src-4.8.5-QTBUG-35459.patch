@@ -1,0 +1,12 @@
+diff -ur qt-everywhere-opensource-src-4.8.5-CVE-2013-4549/src/xml/sax/qxml.cpp qt-everywhere-opensource-src-4.8.5-QTBUG-35459/src/xml/sax/qxml.cpp
+--- qt-everywhere-opensource-src-4.8.5-CVE-2013-4549/src/xml/sax/qxml.cpp	2013-12-05 19:23:33.000000000 +0100
++++ qt-everywhere-opensource-src-4.8.5-QTBUG-35459/src/xml/sax/qxml.cpp	2014-01-13 20:13:59.000000000 +0100
+@@ -428,7 +428,7 @@
+     // for the DTD currently being parsed.
+     static const int dtdRecursionLimit = 2;
+     // The maximum amount of characters an entity value may contain, after expansion.
+-    static const int entityCharacterLimit = 1024;
++    static const int entityCharacterLimit = 4096;
+ 
+     const QString &string();
+     void stringClear();

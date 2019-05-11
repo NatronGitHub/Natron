@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,6 +29,7 @@
 #include <stdexcept>
 
 #include "Engine/RectD.h"
+#include "Serialization/RectISerialization.h"
 
 #define MINAREA64 4096  // = 4096 pixels (=64*64)
 #define MINAREA128 16384
@@ -38,9 +39,9 @@
 NATRON_NAMESPACE_ENTER
 
 /// if splitCount is zero, this function returns a set of less than area()/MINAREA rects which are no smaller than MINAREA
-std::vector<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
+std::list<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
 {
-    std::vector<RectI> ret;
+    std::list<RectI> ret;
 
     if ( isNull() ) {
         return ret;
@@ -124,14 +125,76 @@ RectI::toCanonical(unsigned int thisLevel,
 }
 
 void
+RectI::toCanonical(const RenderScale& thisScale,
+                   double par,
+                   const RectD & rod,
+                   RectD *rect) const
+{
+    toCanonical_noClipping(thisScale, par, rect);
+    rect->intersect(rod, rect);
+}
+
+
+void
 RectI::toCanonical_noClipping(unsigned int thisLevel,
                               double par,
                               RectD *rect) const
 {
-    rect->x1 = (x1 << thisLevel) * par;
-    rect->x2 = (x2 << thisLevel) * par;
-    rect->y1 = y1 << thisLevel;
-    rect->y2 = y2 << thisLevel;
+    double scale = (1 << thisLevel);
+    
+    rect->x1 = (x1 * scale) * par;
+    rect->x2 = (x2 * scale) * par;
+    rect->y1 = y1 * scale;
+    rect->y2 = y2 * scale;
+}
+
+void
+RectI::toCanonical_noClipping(const RenderScale& thisScale,
+                              double par,
+                              RectD *rect) const
+{
+    RenderScale inverseScale;
+    inverseScale.x = 1. / thisScale.x;
+    inverseScale.y = 1./ thisScale.y;
+    rect->x1 = (x1 * inverseScale.x) * par;
+    rect->x2 = (x2 * inverseScale.x) * par;
+    rect->y1 = y1 * inverseScale.y;
+    rect->y2 = y2 * inverseScale.y;
+}
+
+void
+RectI::roundToTileSize(int tileSizeX, int tileSizeY)
+{
+    x1 = (int)std::floor((double)x1 / tileSizeX) * tileSizeX;
+    y1 = (int)std::floor((double)y1 / tileSizeY) * tileSizeY;
+    x2 = (int)std::ceil((double)x2 / tileSizeX) * tileSizeX;
+    y2 = (int)std::ceil((double)y2 / tileSizeY) * tileSizeY;
+}
+
+void
+RectI::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
+{
+    SERIALIZATION_NAMESPACE::RectISerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::RectISerialization*>(obj);
+    if (!s) {
+        return;
+    }
+    s->x1 = x1;
+    s->y1 = y1;
+    s->x2 = x2;
+    s->y2 = y2;
+}
+
+void
+RectI::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
+{
+    const SERIALIZATION_NAMESPACE::RectISerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::RectISerialization*>(&obj);
+    if (!s) {
+        return;
+    }
+    x1 = s->x1;
+    y1 = s->y1;
+    x2 = s->x2;
+    y2 = s->y2;
 }
 
 NATRON_NAMESPACE_EXIT

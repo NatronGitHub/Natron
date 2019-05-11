@@ -1,0 +1,60 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+
+PortGroup           muniversal 1.0
+PortGroup           cmake 1.1
+
+name                x265
+version             3.0
+revision            1
+
+checksums           rmd160  6f866d290f0df0356f5a10a898fedf64fda53f0f \
+                    sha256  c5b9fc260cabbc4a81561a448f4ce9cad7218272b4011feabc3a6b751b2f0662 \
+                    size    1398519
+
+categories          multimedia
+platforms           darwin
+license             GPL-2+
+maintainers         nomaintainer
+
+description         H.265 encoder
+long_description    x265 is a free software library and application for \
+                    encoding video streams into the H.265/MPEG-H HEVC \
+                    compression format, and is released under the terms of the \
+                    GNU GPL.
+homepage            https://www.videolan.org/developers/x265.html
+master_sites        http://ftp.videolan.org/pub/videolan/x265/
+distname            ${name}_${version}
+worksrcdir          ${distname}/source
+
+depends_build-append \
+                    port:gmake \
+                    port:nasm
+
+compiler.blacklist  *llvm-gcc-4.2
+
+configure.env-append CONFIGURE='${configure.cmd}'
+build.env-append     BUILD='${build.cmd}'
+destroot.env-append  BUILD='${build.cmd}' ARCH=none
+configure.cmd        ${portpath}/${filesdir}/configure.sh
+build.cmd            ${portpath}/${filesdir}/build.sh
+
+#    error: illegal text-relocation to '_x265_pw_1'
+#   report: https://mailman.videolan.org/pipermail/x265-devel/2014-May/004476.html
+# solution: http://lists.apple.com/archives/unix-porting/2008/Jan/msg00027.html
+if {[variant_exists universal] && [variant_isset universal]} {
+    lappend merger_configure_ldflags(i386) -Wl,-read_only_relocs,suppress
+    foreach arch ${configure.universal_archs} {
+        lappend merger_configure_env(${arch}) ARCH='${arch}'
+        lappend merger_build_env(${arch}) ARCH='${arch}'
+    }
+} else {
+    if {${build_arch} eq "i386"} {
+        configure.ldflags-append -Wl,-read_only_relocs,suppress
+    }
+    configure.env-append ARCH='${build_arch}'
+    build.env-append ARCH='${build_arch}'
+}
+
+livecheck.regex     "${name}_(\\d+(?:\\.\\d+)*)${extract.suffix}"

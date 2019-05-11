@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -42,6 +42,9 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/DimensionIdx.h"
+#include "Engine/ViewIdx.h"
+#include "Global/GlobalDefines.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER
@@ -57,13 +60,18 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     EditScriptDialog(Gui* gui,
+                     const KnobGuiPtr& knobExpressionReceiver,
+                     DimSpec knobDimension,
+                     ViewSetSpec knobView,
                      QWidget* parent);
 
     virtual ~EditScriptDialog();
+    
+    void create(ExpressionLanguageEnum language, const QString& initialScript);
 
-    void create(const QString& initialScript, bool makeUseRetButton);
+    QString getScript() const;
 
-    QString getExpression(bool* hasRetVariable) const;
+    ExpressionLanguageEnum getSelectedLanguage() const;
 
     bool isUseRetButtonChecked() const;
 
@@ -71,23 +79,28 @@ public Q_SLOTS:
 
     void onUseRetButtonClicked(bool useRet);
     void onTextEditChanged();
-    void onHelpRequested();
 
-protected:
+    void onAcceptedPressed()
+    {
+        Q_EMIT dialogFinished(true);
+    }
+    void onRejectedPressed()
+    {
+        Q_EMIT dialogFinished(false);
+    }
+
+    void onLanguageCurrentIndexChanged();
+
+Q_SIGNALS:
+
+    void dialogFinished(bool accepted);
+
+public:
 
     virtual void setTitle() = 0;
     virtual bool hasRetVariable() const { return false; }
 
-    virtual void getImportedModules(QStringList& modules) const = 0;
-    virtual void getDeclaredVariables(std::list<std::pair<QString, QString> >& variables) const = 0;
-    virtual QString compileExpression(const QString& expr) = 0;
-    static QString getHelpPart1();
-    static QString getHelpThisNodeVariable();
-    static QString getHelpThisGroupVariable();
-    static QString getHelpThisParamVariable();
-    static QString getHelpDimensionVariable();
-    static QString getHelpPart2();
-    virtual QString getCustomHelp() = 0;
+    virtual QString compileExpression(const QString& expr, ExpressionLanguageEnum language) = 0;
 
 private:
 

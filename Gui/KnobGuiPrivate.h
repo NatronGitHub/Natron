@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * This file is part of Natron <https://natrongithub.github.io/>,
+ * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,8 +27,6 @@
 
 #include "Gui/KnobGui.h"
 
-//#include "Gui/KnobUndoCommand.h"
-
 #include <cassert>
 #include <climits>
 #include <cfloat>
@@ -54,7 +52,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QGroupBox>
 #include <QtGui/QVector4D>
 #include <QStyleFactory>
-#include <QComboBox>
 #include <QDialogButtonBox>
 #include <QCompleter>
 
@@ -62,7 +59,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/Curve.h"
 #include "Engine/KnobFile.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Node.h"
@@ -76,7 +72,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Gui/ComboBox.h"
 #include "Gui/ClickableLabel.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveGui.h"
 #include "Gui/CustomParamInteract.h"
 #include "Gui/DockablePanel.h"
@@ -84,7 +79,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GroupBoxLabel.h"
 #include "Gui/KnobGuiGroup.h"
+#include "Gui/KnobGuiWidgets.h"
 #include "Gui/LineEdit.h"
 #include "Gui/LinkToKnobDialog.h"
 #include "Gui/Menu.h"
@@ -99,38 +96,135 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TimeLineGui.h"
 #include "Gui/ViewerTab.h"
 
-NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_ENTER
 
 
 struct KnobGuiPrivate
 {
-    bool triggerNewLine;
-    int spacingBetweenItems;
-    bool widgetCreated;
-    KnobGuiContainerI*  container;
-    QMenu* copyRightClickMenu;
-    QHBoxLayout* fieldLayout; //< the layout containing the widgets of the knob
 
-    ////A vector of all other knobs on the same line.
-    std::vector< boost::weak_ptr< KnobI > > knobsOnSameLine;
-    QWidget* field;
+    KnobGui* _publicInterface;
+
+    // The internal knob
+    KnobIWPtr knob;
+
+    // When enabled, only the dimension indicated by singleDimension will be created for the knob
+    bool singleDimensionEnabled;
+
+    DimIdx singleDimension;
+
+    // Whether we place the knob on a new line in a vertical layout
+    bool isOnNewLine;
+
+    // True when createGui has been called already
+    bool widgetCreated;
+
+    // Pointer to the widgets containing this knob
+    KnobGuiContainerI*  container;
+
+    // Right click menu
+    QMenu* copyRightClickMenu;
+
+    // A pointer to the previous knob on the row
+    KnobIWPtr prevKnob;
+
+
+    struct ViewWidgets
+    {
+        // A pointer to the widget containing all widgets for a given view
+        QWidget* field;
+
+        // the layout of the field widget
+        QHBoxLayout* fieldLayout;
+
+        // The view label
+        KnobClickableLabel* viewLabel;
+
+        // View name used in the right click menu
+        QString viewLongName;
+
+        // The implementation of the knob gui
+        KnobGuiWidgetsPtr widgets;
+
+    };
+
+    typedef std::map<ViewIdx, ViewWidgets> PerViewWidgetsMap;
+
+    PerViewWidgetsMap views;
+
+    // A container the label
     QWidget* labelContainer;
+
+    // If multi-view, an arrow to unfold views
+    GroupBoxLabel* viewUnfoldArrow;
+
+    //  each view row is contained in this widget
+    QWidget* viewsContainer;
+    QVBoxLayout* viewsContainerLayout;
+
+    // Contains all knobs in the second column of the grid layout for this knob
+    QWidget* mainContainer;
+    QHBoxLayout* mainLayout;
+
+    // If non null, this is the stretch object at the end of the layout
+    QSpacerItem* endOfLineSpacer;
+
+    // True if endOfLineSpacer is currently added to the layout, false otherwise
+    bool spacerAdded;
+
+    // If endOfLineSpacer is non null, specifies if we must add the spacer by default
+    bool mustAddSpacerByDefault;
+
+    // If this knob is not on a new line, this is a reference (weak) to the first knob
+    // on the layout line.
+    KnobGuiWPtr firstKnobOnLine;
+
+    // If this knob is the first knob on the line, potentially it may have other knobs
+    // on the same layout line. This is a list, in order, of the knobs that
+    // are on the same layout line.
+    std::list<KnobGuiWPtr> otherKnobsInMainLayout;
+
+    // The label
     KnobClickableLabel* descriptionLabel;
+
+    // A warning indicator
     Label* warningIndicator;
     std::map<KnobGui::KnobWarningEnum, QString> warningsMapping;
-    bool isOnNewLine;
+
+    // If the UI of the knob is handled by a custom interact, this is a pointer to it
     CustomParamInteract* customInteract;
-    std::vector< boost::shared_ptr<Curve> > guiCurves;
+
+    // True when the gui is no longer valid
     bool guiRemoved;
 
+    // If the knob is a group as tab, this will be the tab widget
+    TabGroup* tabGroup;
+
+    // Used to concatenate updateGui() request
+    int refreshGuiRequests;
+
+    // Used to concatenate onHasModificationsChanged() request
+    int refreshModifStateRequests;
+    
+
+    // used to concatenate onInternalKnobDimensionsVisibilityChanged
+    std::list<ViewSetSpec> refreshDimensionVisibilityRequests;
+
     // True if this KnobGui is used in the viewer
-    bool isInViewerUIKnob;
+    KnobGui::KnobLayoutTypeEnum layoutType;
 
-    KnobGuiPrivate(KnobGuiContainerI* container);
+    KnobGuiPrivate(KnobGui* publicInterface, const KnobIPtr& knob, KnobGui::KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container);
 
-    void removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob);
+    void refreshIsOnNewLineFlag();
+
+    void createLabel(QWidget* parentWidget);
+
+    void createViewWidgets(KnobGuiPrivate::PerViewWidgetsMap::iterator it);
+
+    void addWidgetsToPreviousKnobLayout();
+
+    void removeViewGui(KnobGuiPrivate::PerViewWidgetsMap::iterator it);
 };
 
-NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_EXIT
 
 #endif // _Gui_KnobGuiPrivate_h_

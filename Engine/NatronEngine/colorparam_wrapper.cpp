@@ -19,6 +19,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
+#include <PyAppInstance.h>
+#include <PyItemsTable.h>
+#include <PyNode.h>
 #include <PyParameter.h>
 
 
@@ -46,25 +49,27 @@ static PyObject* Sbk_ColorParamFunc_addAsDependencyOf(PyObject* self, PyObject* 
     cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0, 0};
 
     // invalid argument lengths
 
 
-    if (!PyArg_UnpackTuple(args, "addAsDependencyOf", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+    if (!PyArg_UnpackTuple(args, "addAsDependencyOf", 5, 5, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: addAsDependencyOf(int,Param*,int)
-    if (numArgs == 3
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], (pyArgs[1])))
-        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
-        overloadId = 0; // addAsDependencyOf(int,Param*,int)
+    // 0: addAsDependencyOf(Param*,int,int,QString,QString)
+    if (numArgs == 5
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))
+        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))
+        && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[3])))
+        && (pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[4])))) {
+        overloadId = 0; // addAsDependencyOf(Param*,int,int,QString,QString)
     }
 
     // Function signature not found.
@@ -72,18 +77,22 @@ static PyObject* Sbk_ColorParamFunc_addAsDependencyOf(PyObject* self, PyObject* 
 
     // Call function/method
     {
-        int cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        if (!Shiboken::Object::isValid(pyArgs[1]))
+        if (!Shiboken::Object::isValid(pyArgs[0]))
             return 0;
-        ::Param* cppArg1;
+        ::Param* cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        int cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
         int cppArg2;
         pythonToCpp[2](pyArgs[2], &cppArg2);
+        ::QString cppArg3 = ::QString();
+        pythonToCpp[3](pyArgs[3], &cppArg3);
+        ::QString cppArg4 = ::QString();
+        pythonToCpp[4](pyArgs[4], &cppArg4);
 
         if (!PyErr_Occurred()) {
-            // addAsDependencyOf(int,Param*,int)
-            double cppResult = cppSelf->addAsDependencyOf(cppArg0, cppArg1, cppArg2);
+            // addAsDependencyOf(Param*,int,int,QString,QString)
+            double cppResult = cppSelf->addAsDependencyOf(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
@@ -95,12 +104,12 @@ static PyObject* Sbk_ColorParamFunc_addAsDependencyOf(PyObject* self, PyObject* 
     return pyResult;
 
     Sbk_ColorParamFunc_addAsDependencyOf_TypeError:
-        const char* overloads[] = {"int, NatronEngine.Param, int", 0};
+        const char* overloads[] = {"NatronEngine.Param, int, int, unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ColorParam.addAsDependencyOf", overloads);
         return 0;
 }
 
-static PyObject* Sbk_ColorParamFunc_get(PyObject* self, PyObject* args)
+static PyObject* Sbk_ColorParamFunc_get(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -109,26 +118,35 @@ static PyObject* Sbk_ColorParamFunc_get(PyObject* self, PyObject* args)
     cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0};
+    PyObject* pyArgs[] = {0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.get(): too many arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "get", 0, 1, &(pyArgs[0])))
+    if (!PyArg_ParseTuple(args, "|OO:get", &(pyArgs[0]), &(pyArgs[1])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: get()const
-    // 1: get(double)const
+    // 0: get(QString)const
+    // 1: get(double,QString)const
     if (numArgs == 0) {
-        overloadId = 0; // get()const
-    } else if (numArgs == 1
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
-        overloadId = 1; // get(double)const
+        overloadId = 0; // get(QString)const
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 1; // get(double,QString)const
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+            overloadId = 1; // get(double,QString)const
+        }
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
+        overloadId = 0; // get(QString)const
     }
 
     // Function signature not found.
@@ -136,24 +154,50 @@ static PyObject* Sbk_ColorParamFunc_get(PyObject* self, PyObject* args)
 
     // Call function/method
     switch (overloadId) {
-        case 0: // get() const
+        case 0: // get(const QString & view) const
         {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "view");
+                if (value && pyArgs[0]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.get(): got multiple values for keyword argument 'view'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[0] = value;
+                    if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0]))))
+                        goto Sbk_ColorParamFunc_get_TypeError;
+                }
+            }
+            ::QString cppArg0 = QLatin1String("Main");
+            if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
 
             if (!PyErr_Occurred()) {
-                // get()const
-                ColorTuple* cppResult = new ColorTuple(const_cast<const ::ColorParamWrapper*>(cppSelf)->get());
+                // get(QString)const
+                ColorTuple* cppResult = new ColorTuple(const_cast<const ::ColorParamWrapper*>(cppSelf)->get(cppArg0));
                 pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], cppResult, true, true);
             }
             break;
         }
-        case 1: // get(double frame) const
+        case 1: // get(double frame, const QString & view) const
         {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "view");
+                if (value && pyArgs[1]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.get(): got multiple values for keyword argument 'view'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[1] = value;
+                    if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
+                        goto Sbk_ColorParamFunc_get_TypeError;
+                }
+            }
             double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
+            ::QString cppArg1 = QLatin1String("Main");
+            if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
             if (!PyErr_Occurred()) {
-                // get(double)const
-                ColorTuple* cppResult = new ColorTuple(const_cast<const ::ColorParamWrapper*>(cppSelf)->get(cppArg0));
+                // get(double,QString)const
+                ColorTuple* cppResult = new ColorTuple(const_cast<const ::ColorParamWrapper*>(cppSelf)->get(cppArg0, cppArg1));
                 pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], cppResult, true, true);
             }
             break;
@@ -167,7 +211,7 @@ static PyObject* Sbk_ColorParamFunc_get(PyObject* self, PyObject* args)
     return pyResult;
 
     Sbk_ColorParamFunc_get_TypeError:
-        const char* overloads[] = {"", "float", 0};
+        const char* overloads[] = {"unicode = QLatin1String(\"Main\")", "float, unicode = QLatin1String(\"Main\")", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ColorParam.get", overloads);
         return 0;
 }
@@ -484,28 +528,32 @@ static PyObject* Sbk_ColorParamFunc_getValue(PyObject* self, PyObject* args, PyO
     cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
     int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0};
+    PyObject* pyArgs[] = {0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
+    if (numArgs + numNamedArgs > 2) {
         PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.getValue(): too many arguments");
         return 0;
     }
 
-    if (!PyArg_ParseTuple(args, "|O:getValue", &(pyArgs[0])))
+    if (!PyArg_ParseTuple(args, "|OO:getValue", &(pyArgs[0]), &(pyArgs[1])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: getValue(int)const
+    // 0: getValue(int,QString)const
     if (numArgs == 0) {
-        overloadId = 0; // getValue(int)const
+        overloadId = 0; // getValue(int,QString)const
     } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
-        overloadId = 0; // getValue(int)const
+        if (numArgs == 1) {
+            overloadId = 0; // getValue(int,QString)const
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+            overloadId = 0; // getValue(int,QString)const
+        }
     }
 
     // Function signature not found.
@@ -523,13 +571,24 @@ static PyObject* Sbk_ColorParamFunc_getValue(PyObject* self, PyObject* args, PyO
                 if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0]))))
                     goto Sbk_ColorParamFunc_getValue_TypeError;
             }
+            value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.getValue(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
+                    goto Sbk_ColorParamFunc_getValue_TypeError;
+            }
         }
         int cppArg0 = 0;
         if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::QString cppArg1 = QLatin1String("Main");
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // getValue(int)const
-            double cppResult = const_cast<const ::ColorParamWrapper*>(cppSelf)->getValue(cppArg0);
+            // getValue(int,QString)const
+            double cppResult = const_cast<const ::ColorParamWrapper*>(cppSelf)->getValue(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
@@ -541,7 +600,7 @@ static PyObject* Sbk_ColorParamFunc_getValue(PyObject* self, PyObject* args, PyO
     return pyResult;
 
     Sbk_ColorParamFunc_getValue_TypeError:
-        const char* overloads[] = {"int = 0", 0};
+        const char* overloads[] = {"int = 0, unicode = QLatin1String(\"Main\")", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ColorParam.getValue", overloads);
         return 0;
 }
@@ -555,14 +614,14 @@ static PyObject* Sbk_ColorParamFunc_getValueAtTime(PyObject* self, PyObject* arg
     cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
     int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
+    PyObject* pyArgs[] = {0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
+    if (numArgs + numNamedArgs > 3) {
         PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.getValueAtTime(): too many arguments");
         return 0;
     } else if (numArgs < 1) {
@@ -570,17 +629,21 @@ static PyObject* Sbk_ColorParamFunc_getValueAtTime(PyObject* self, PyObject* arg
         return 0;
     }
 
-    if (!PyArg_ParseTuple(args, "|OO:getValueAtTime", &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_ParseTuple(args, "|OOO:getValueAtTime", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: getValueAtTime(double,int)const
+    // 0: getValueAtTime(double,int,QString)const
     if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // getValueAtTime(double,int)const
+            overloadId = 0; // getValueAtTime(double,int,QString)const
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-            overloadId = 0; // getValueAtTime(double,int)const
+            if (numArgs == 2) {
+                overloadId = 0; // getValueAtTime(double,int,QString)const
+            } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2])))) {
+                overloadId = 0; // getValueAtTime(double,int,QString)const
+            }
         }
     }
 
@@ -599,15 +662,26 @@ static PyObject* Sbk_ColorParamFunc_getValueAtTime(PyObject* self, PyObject* arg
                 if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
                     goto Sbk_ColorParamFunc_getValueAtTime_TypeError;
             }
+            value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[2]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.getValueAtTime(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[2] = value;
+                if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2]))))
+                    goto Sbk_ColorParamFunc_getValueAtTime_TypeError;
+            }
         }
         double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 0;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+        ::QString cppArg2 = QLatin1String("Main");
+        if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // getValueAtTime(double,int)const
-            double cppResult = const_cast<const ::ColorParamWrapper*>(cppSelf)->getValueAtTime(cppArg0, cppArg1);
+            // getValueAtTime(double,int,QString)const
+            double cppResult = const_cast<const ::ColorParamWrapper*>(cppSelf)->getValueAtTime(cppArg0, cppArg1, cppArg2);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
@@ -619,7 +693,7 @@ static PyObject* Sbk_ColorParamFunc_getValueAtTime(PyObject* self, PyObject* arg
     return pyResult;
 
     Sbk_ColorParamFunc_getValueAtTime_TypeError:
-        const char* overloads[] = {"float, int = 0", 0};
+        const char* overloads[] = {"float, int = 0, unicode = QLatin1String(\"Main\")", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ColorParam.getValueAtTime", overloads);
         return 0;
 }
@@ -632,28 +706,32 @@ static PyObject* Sbk_ColorParamFunc_restoreDefaultValue(PyObject* self, PyObject
         return 0;
     cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
     int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0};
+    PyObject* pyArgs[] = {0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
+    if (numArgs + numNamedArgs > 2) {
         PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.restoreDefaultValue(): too many arguments");
         return 0;
     }
 
-    if (!PyArg_ParseTuple(args, "|O:restoreDefaultValue", &(pyArgs[0])))
+    if (!PyArg_ParseTuple(args, "|OO:restoreDefaultValue", &(pyArgs[0]), &(pyArgs[1])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: restoreDefaultValue(int)
+    // 0: restoreDefaultValue(int,QString)
     if (numArgs == 0) {
-        overloadId = 0; // restoreDefaultValue(int)
+        overloadId = 0; // restoreDefaultValue(int,QString)
     } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
-        overloadId = 0; // restoreDefaultValue(int)
+        if (numArgs == 1) {
+            overloadId = 0; // restoreDefaultValue(int,QString)
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+            overloadId = 0; // restoreDefaultValue(int,QString)
+        }
     }
 
     // Function signature not found.
@@ -671,13 +749,24 @@ static PyObject* Sbk_ColorParamFunc_restoreDefaultValue(PyObject* self, PyObject
                 if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0]))))
                     goto Sbk_ColorParamFunc_restoreDefaultValue_TypeError;
             }
+            value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.restoreDefaultValue(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
+                    goto Sbk_ColorParamFunc_restoreDefaultValue_TypeError;
+            }
         }
-        int cppArg0 = 0;
+        int cppArg0 = -1;
         if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::QString cppArg1 = QLatin1String("All");
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // restoreDefaultValue(int)
-            cppSelf->restoreDefaultValue(cppArg0);
+            // restoreDefaultValue(int,QString)
+            cppSelf->restoreDefaultValue(cppArg0, cppArg1);
         }
     }
 
@@ -687,12 +776,12 @@ static PyObject* Sbk_ColorParamFunc_restoreDefaultValue(PyObject* self, PyObject
     Py_RETURN_NONE;
 
     Sbk_ColorParamFunc_restoreDefaultValue_TypeError:
-        const char* overloads[] = {"int = 0", 0};
+        const char* overloads[] = {"int = -1, unicode = QLatin1String(\"All\")", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ColorParam.restoreDefaultValue", overloads);
         return 0;
 }
 
-static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
+static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -700,31 +789,43 @@ static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
         return 0;
     cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0, 0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0, 0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 6) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.set(): too many arguments");
+        return 0;
+    } else if (numArgs < 4) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.set(): not enough arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "set", 4, 5, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4])))
+    if (!PyArg_ParseTuple(args, "|OOOOOO:set", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4]), &(pyArgs[5])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: set(double,double,double,double)
-    // 1: set(double,double,double,double,double)
+    // 0: set(double,double,double,double,QString)
+    // 1: set(double,double,double,double,double,QString)
     if (numArgs >= 4
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
         && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
         if (numArgs == 4) {
-            overloadId = 0; // set(double,double,double,double)
-        } else if (numArgs == 5
-            && (pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[4])))) {
-            overloadId = 1; // set(double,double,double,double,double)
+            overloadId = 0; // set(double,double,double,double,QString)
+        } else if ((pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[4])))) {
+            if (numArgs == 5) {
+                overloadId = 1; // set(double,double,double,double,double,QString)
+            } else if ((pythonToCpp[5] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[5])))) {
+                overloadId = 1; // set(double,double,double,double,double,QString)
+            }
+        } else if ((pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[4])))) {
+            overloadId = 0; // set(double,double,double,double,QString)
         }
     }
 
@@ -733,8 +834,19 @@ static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
 
     // Call function/method
     switch (overloadId) {
-        case 0: // set(double r, double g, double b, double a)
+        case 0: // set(double r, double g, double b, double a, const QString & view)
         {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "view");
+                if (value && pyArgs[4]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.set(): got multiple values for keyword argument 'view'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[4] = value;
+                    if (!(pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[4]))))
+                        goto Sbk_ColorParamFunc_set_TypeError;
+                }
+            }
             double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
             double cppArg1;
@@ -743,15 +855,28 @@ static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
             pythonToCpp[2](pyArgs[2], &cppArg2);
             double cppArg3;
             pythonToCpp[3](pyArgs[3], &cppArg3);
+            ::QString cppArg4 = QLatin1String("All");
+            if (pythonToCpp[4]) pythonToCpp[4](pyArgs[4], &cppArg4);
 
             if (!PyErr_Occurred()) {
-                // set(double,double,double,double)
-                cppSelf->set(cppArg0, cppArg1, cppArg2, cppArg3);
+                // set(double,double,double,double,QString)
+                cppSelf->set(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4);
             }
             break;
         }
-        case 1: // set(double r, double g, double b, double a, double frame)
+        case 1: // set(double r, double g, double b, double a, double frame, const QString & view)
         {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "view");
+                if (value && pyArgs[5]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.set(): got multiple values for keyword argument 'view'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[5] = value;
+                    if (!(pythonToCpp[5] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[5]))))
+                        goto Sbk_ColorParamFunc_set_TypeError;
+                }
+            }
             double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
             double cppArg1;
@@ -762,10 +887,12 @@ static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
             pythonToCpp[3](pyArgs[3], &cppArg3);
             double cppArg4;
             pythonToCpp[4](pyArgs[4], &cppArg4);
+            ::QString cppArg5 = QLatin1String("All");
+            if (pythonToCpp[5]) pythonToCpp[5](pyArgs[5], &cppArg5);
 
             if (!PyErr_Occurred()) {
-                // set(double,double,double,double,double)
-                cppSelf->set(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4);
+                // set(double,double,double,double,double,QString)
+                cppSelf->set(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5);
             }
             break;
         }
@@ -777,7 +904,7 @@ static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 
     Sbk_ColorParamFunc_set_TypeError:
-        const char* overloads[] = {"float, float, float, float", "float, float, float, float, float", 0};
+        const char* overloads[] = {"float, float, float, float, unicode = QLatin1String(\"All\")", "float, float, float, float, float, unicode = QLatin1String(\"All\")", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ColorParam.set", overloads);
         return 0;
 }
@@ -1165,14 +1292,14 @@ static PyObject* Sbk_ColorParamFunc_setValue(PyObject* self, PyObject* args, PyO
         return 0;
     cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
     int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
+    PyObject* pyArgs[] = {0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
+    if (numArgs + numNamedArgs > 3) {
         PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.setValue(): too many arguments");
         return 0;
     } else if (numArgs < 1) {
@@ -1180,17 +1307,21 @@ static PyObject* Sbk_ColorParamFunc_setValue(PyObject* self, PyObject* args, PyO
         return 0;
     }
 
-    if (!PyArg_ParseTuple(args, "|OO:setValue", &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_ParseTuple(args, "|OOO:setValue", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: setValue(double,int)
+    // 0: setValue(double,int,QString)
     if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // setValue(double,int)
+            overloadId = 0; // setValue(double,int,QString)
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-            overloadId = 0; // setValue(double,int)
+            if (numArgs == 2) {
+                overloadId = 0; // setValue(double,int,QString)
+            } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2])))) {
+                overloadId = 0; // setValue(double,int,QString)
+            }
         }
     }
 
@@ -1209,15 +1340,26 @@ static PyObject* Sbk_ColorParamFunc_setValue(PyObject* self, PyObject* args, PyO
                 if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
                     goto Sbk_ColorParamFunc_setValue_TypeError;
             }
+            value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[2]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.setValue(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[2] = value;
+                if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2]))))
+                    goto Sbk_ColorParamFunc_setValue_TypeError;
+            }
         }
         double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         int cppArg1 = 0;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+        ::QString cppArg2 = QLatin1String("All");
+        if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // setValue(double,int)
-            cppSelf->setValue(cppArg0, cppArg1);
+            // setValue(double,int,QString)
+            cppSelf->setValue(cppArg0, cppArg1, cppArg2);
         }
     }
 
@@ -1227,7 +1369,7 @@ static PyObject* Sbk_ColorParamFunc_setValue(PyObject* self, PyObject* args, PyO
     Py_RETURN_NONE;
 
     Sbk_ColorParamFunc_setValue_TypeError:
-        const char* overloads[] = {"float, int = 0", 0};
+        const char* overloads[] = {"float, int = 0, unicode = QLatin1String(\"All\")", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ColorParam.setValue", overloads);
         return 0;
 }
@@ -1240,14 +1382,14 @@ static PyObject* Sbk_ColorParamFunc_setValueAtTime(PyObject* self, PyObject* arg
         return 0;
     cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
     int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 3) {
+    if (numArgs + numNamedArgs > 4) {
         PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.setValueAtTime(): too many arguments");
         return 0;
     } else if (numArgs < 2) {
@@ -1255,19 +1397,23 @@ static PyObject* Sbk_ColorParamFunc_setValueAtTime(PyObject* self, PyObject* arg
         return 0;
     }
 
-    if (!PyArg_ParseTuple(args, "|OOO:setValueAtTime", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+    if (!PyArg_ParseTuple(args, "|OOOO:setValueAtTime", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: setValueAtTime(double,double,int)
+    // 0: setValueAtTime(double,double,int,QString)
     if (numArgs >= 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
         if (numArgs == 2) {
-            overloadId = 0; // setValueAtTime(double,double,int)
+            overloadId = 0; // setValueAtTime(double,double,int,QString)
         } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
-            overloadId = 0; // setValueAtTime(double,double,int)
+            if (numArgs == 3) {
+                overloadId = 0; // setValueAtTime(double,double,int,QString)
+            } else if ((pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[3])))) {
+                overloadId = 0; // setValueAtTime(double,double,int,QString)
+            }
         }
     }
 
@@ -1286,6 +1432,15 @@ static PyObject* Sbk_ColorParamFunc_setValueAtTime(PyObject* self, PyObject* arg
                 if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2]))))
                     goto Sbk_ColorParamFunc_setValueAtTime_TypeError;
             }
+            value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[3]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.ColorParam.setValueAtTime(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[3] = value;
+                if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[3]))))
+                    goto Sbk_ColorParamFunc_setValueAtTime_TypeError;
+            }
         }
         double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
@@ -1293,10 +1448,12 @@ static PyObject* Sbk_ColorParamFunc_setValueAtTime(PyObject* self, PyObject* arg
         pythonToCpp[1](pyArgs[1], &cppArg1);
         int cppArg2 = 0;
         if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
+        ::QString cppArg3 = QLatin1String("All");
+        if (pythonToCpp[3]) pythonToCpp[3](pyArgs[3], &cppArg3);
 
         if (!PyErr_Occurred()) {
-            // setValueAtTime(double,double,int)
-            cppSelf->setValueAtTime(cppArg0, cppArg1, cppArg2);
+            // setValueAtTime(double,double,int,QString)
+            cppSelf->setValueAtTime(cppArg0, cppArg1, cppArg2, cppArg3);
         }
     }
 
@@ -1306,14 +1463,14 @@ static PyObject* Sbk_ColorParamFunc_setValueAtTime(PyObject* self, PyObject* arg
     Py_RETURN_NONE;
 
     Sbk_ColorParamFunc_setValueAtTime_TypeError:
-        const char* overloads[] = {"float, float, int = 0", 0};
+        const char* overloads[] = {"float, float, int = 0, unicode = QLatin1String(\"All\")", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ColorParam.setValueAtTime", overloads);
         return 0;
 }
 
 static PyMethodDef Sbk_ColorParam_methods[] = {
     {"addAsDependencyOf", (PyCFunction)Sbk_ColorParamFunc_addAsDependencyOf, METH_VARARGS},
-    {"get", (PyCFunction)Sbk_ColorParamFunc_get, METH_VARARGS},
+    {"get", (PyCFunction)Sbk_ColorParamFunc_get, METH_VARARGS|METH_KEYWORDS},
     {"getDefaultValue", (PyCFunction)Sbk_ColorParamFunc_getDefaultValue, METH_VARARGS|METH_KEYWORDS},
     {"getDisplayMaximum", (PyCFunction)Sbk_ColorParamFunc_getDisplayMaximum, METH_O},
     {"getDisplayMinimum", (PyCFunction)Sbk_ColorParamFunc_getDisplayMinimum, METH_O},
@@ -1322,7 +1479,7 @@ static PyMethodDef Sbk_ColorParam_methods[] = {
     {"getValue", (PyCFunction)Sbk_ColorParamFunc_getValue, METH_VARARGS|METH_KEYWORDS},
     {"getValueAtTime", (PyCFunction)Sbk_ColorParamFunc_getValueAtTime, METH_VARARGS|METH_KEYWORDS},
     {"restoreDefaultValue", (PyCFunction)Sbk_ColorParamFunc_restoreDefaultValue, METH_VARARGS|METH_KEYWORDS},
-    {"set", (PyCFunction)Sbk_ColorParamFunc_set, METH_VARARGS},
+    {"set", (PyCFunction)Sbk_ColorParamFunc_set, METH_VARARGS|METH_KEYWORDS},
     {"setDefaultValue", (PyCFunction)Sbk_ColorParamFunc_setDefaultValue, METH_VARARGS|METH_KEYWORDS},
     {"setDisplayMaximum", (PyCFunction)Sbk_ColorParamFunc_setDisplayMaximum, METH_VARARGS|METH_KEYWORDS},
     {"setDisplayMinimum", (PyCFunction)Sbk_ColorParamFunc_setDisplayMinimum, METH_VARARGS|METH_KEYWORDS},

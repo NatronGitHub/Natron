@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,6 +31,9 @@
 
 NATRON_NAMESPACE_ENTER
 
+#define kNatronProjectSettingsPanelSerializationNameOld "Natron_Project_Settings_Panel"
+#define kNatronProjectSettingsPanelSerializationNameNew "ProjectSettings"
+
 /**
  * @brief Interface used by the Engine Knob class to interact with the gui for dynamic parmeter creation
  **/
@@ -53,9 +56,27 @@ public:
     virtual void refreshGuiForKnobsChanges(bool restorePageIndex) = 0;
 
     /**
+     * @brief Recreates all knobs in the Viewer UI if any
+     **/
+    virtual void recreateViewerUIKnobs() = 0;
+
+    /**
      * @brief Removes a specific knob from the gui
      **/
-    virtual void deleteKnobGui(const KnobPtr& knob) = 0;
+    virtual void deleteKnobGui(const KnobIPtr& knob) = 0;
+
+    /**
+     * @brief Must return the fully qualified script-name of the node holding this panel (e.g: "Group1/SubGroup1/Blur1").
+     * For the project settings panel, return kNatronProjectSettingsPanelSerializationName
+     **/
+    virtual std::string getHolderFullyQualifiedScriptName() const = 0;
+
+    /**
+     * @brief Push a new undo command to the undo/redo stack associated to this node.
+     * The stack takes ownership of the shared pointer, so you should not hold a strong reference to the passed pointer.
+     * If no undo/redo stack is present, the command will just be redone once then destroyed.
+     **/
+    virtual void pushUndoCommand(const UndoCommandPtr& command) = 0;
 };
 
 NATRON_NAMESPACE_EXIT

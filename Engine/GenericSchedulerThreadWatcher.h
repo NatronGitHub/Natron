@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,11 +30,12 @@
 #include <list>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
 
-#include <QThread>
+#include <QtCore/QThread>
 
 #include "Engine/EngineFwd.h"
 
@@ -87,13 +88,13 @@ public:
      * @params inArgs This can be derived from GenericWatcherCallerArgs to store any arguments relevant to the local function you were in when calling scheduleBlockingTask()
      * and that you want to retrieve when the taskFinished() signal is emitted.
      **/
-    void scheduleBlockingTask( int taskID, const WatcherCallerArgsPtr& inArgs = WatcherCallerArgsPtr() );
+    void scheduleBlockingTask( int taskID, const GenericWatcherCallerArgsPtr& inArgs = GenericWatcherCallerArgsPtr() );
 
     void stopWatching();
 
 Q_SIGNALS:
 
-    void taskFinished(int taskID, WatcherCallerArgsPtr args);
+    void taskFinished(int taskID, GenericWatcherCallerArgsPtr args);
 
 protected:
 

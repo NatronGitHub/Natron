@@ -1,0 +1,19 @@
+--- PKGBUILD.orig	2018-04-22 17:58:58.000000000 +0200
++++ PKGBUILD	2018-04-22 17:59:29.000000000 +0200
+@@ -4,7 +4,7 @@
+ pkgbase=mingw-w64-${_realname}
+ pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+ pkgver=1.7.0
+-pkgrel=1
++pkgrel=1.1
+ pkgdesc="The VP8 Codec SDK (mingw-w64)"
+ arch=('any')
+ license=('BSD')
+@@ -61,6 +61,7 @@
+     --target=${_targetarch} \
+     --enable-vp8 \
+     --enable-vp9 \
++    --enable-vp9-highbitdepth \
+     --enable-runtime-cpu-detect \
+     --enable-postproc \
+     --enable-pic \

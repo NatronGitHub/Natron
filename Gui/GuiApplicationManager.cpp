@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,6 +29,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QtCore/QDebug>
 #include <QtCore/QSettings>
 #include <QPixmapCache>
@@ -37,6 +38,10 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include "Engine/Settings.h"
 #include "Engine/EffectInstance.h" // PLUGINID_OFX_*
@@ -68,11 +73,7 @@ GuiApplicationManager::GuiApplicationManager()
 
 GuiApplicationManager::~GuiApplicationManager()
 {
-    for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
-        for (GroupShortcuts::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            delete it2->second;
-        }
-    }
+  
     _imp->previewRenderThread.quitThread(false);
 }
 
@@ -587,7 +588,30 @@ GuiApplicationManager::getIcon(PixmapEnum e,
         case NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT:
             path = NATRON_IMAGES_PATH "saveScript.png";
             break;
-
+        case NATRON_PIXMAP_CURVE_EDITOR:
+            path = NATRON_IMAGES_PATH "CurveEditorIcon.png";
+            break;
+        case NATRON_PIXMAP_PROGRESS_PANEL:
+            path = NATRON_IMAGES_PATH "ProgressPanelIcon.png";
+            break;
+        case NATRON_PIXMAP_SCRIPT_EDITOR:
+            path = NATRON_IMAGES_PATH "ScriptEditorIcon.png";
+            break;
+        case NATRON_PIXMAP_ANIMATION_MODULE:
+            path = NATRON_IMAGES_PATH "DS_CE_Icon.png";
+            break;
+        case NATRON_PIXMAP_VIEWER_PANEL:
+            path = NATRON_IMAGES_PATH "ViewerPanelIcon.png";
+            break;
+        case NATRON_PIXMAP_PROPERTIES_PANEL:
+            path = NATRON_IMAGES_PATH "PropertiesIcon.png";
+            break;
+        case NATRON_PIXMAP_DOPE_SHEET:
+            path = NATRON_IMAGES_PATH "DopeSheetIcon.png";
+            break;
+        case NATRON_PIXMAP_NODE_GRAPH:
+            path = NATRON_IMAGES_PATH "NodeGraphIcon.png";
+            break;
 
         case NATRON_PIXMAP_MERGE_ATOP:
             path = NATRON_IMAGES_PATH "merge_atop.png";
@@ -816,7 +840,7 @@ GuiApplicationManager::getIcon(PixmapEnum e,
     }
 }
 
-const std::list<boost::shared_ptr<PluginGroupNode> >&
+const std::list<PluginGroupNodePtr>&
 GuiApplicationManager::getTopLevelPluginsToolButtons() const
 {
     return _imp->_topLevelToolButtons;
@@ -843,7 +867,6 @@ GuiApplicationManager::getLinkToMultCursor() const
 bool
 GuiApplicationManager::initGui(const CLArgs& args)
 {
-    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
 #ifdef __NATRON_UNIX__
 #ifndef __NATRON_OSX__
@@ -865,21 +888,10 @@ GuiApplicationManager::initGui(const CLArgs& args)
 
         qDebug() << "fontID=" << fontID << "families=" << QFontDatabase::applicationFontFamilies(fontID);
     }
-    QString fontFamily = QString::fromUtf8(NATRON_FONT);
-    int fontSize = NATRON_FONT_SIZE_11;
+    QString fontFamily = QString::fromUtf8(getCurrentSettings()->getApplicationFontFamily().c_str());
+    int fontSize = getCurrentSettings()->getApplicationFontSize();
 
 
-    ///Do not load old font stored in the setting "systemFont" on Natron < 2 because it might contain a crappy font.
-    if ( settings.contains( QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName) ) && (settings.value( QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName) ).toInt() >= 2) ) {
-        if ( settings.contains( QString::fromUtf8("systemFont") ) ) {
-            fontFamily = settings.value( QString::fromUtf8("systemFont") ).toString();
-        }
-    }
-
-
-    if ( settings.contains( QString::fromUtf8("fontSize") ) ) {
-        fontSize = settings.value( QString::fromUtf8("fontSize") ).toInt();
-    }
     //fontFamily = "Courier"; fontSize = 24; // for debugging purposes
     qDebug() << "Setting application font to " << fontFamily << fontSize;
     {
@@ -910,12 +922,17 @@ GuiApplicationManager::initGui(const CLArgs& args)
     _imp->_fontSize = fontSize;
 
     /*Display a splashscreen while we wait for the engine to load*/
-    QString filename = QString::fromUtf8(NATRON_IMAGES_PATH "splashscreen.png");
+    QString filename = QString::fromUtf8(NATRON_IMAGES_PATH "splashscreen.jpg");
 
     _imp->_splashScreen = new SplashScreen(filename);
     _imp->_splashScreen->setAttribute(Qt::WA_DeleteOnClose, 0);
 
-    QCoreApplication::processEvents();
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        QCoreApplication::processEvents();
+    }
     QPixmap appIcPixmap;
     appPTR->getIcon(NATRON_PIXMAP_APP_ICON, &appIcPixmap);
     QIcon appIc(appIcPixmap);
@@ -927,7 +944,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
     for (int i = 0; i < families.size(); ++i) {
         systemFonts[i] = families[i].toStdString();
     }
-    getCurrentSettings()->populateSystemFonts(settings, systemFonts);
+    getCurrentSettings()->populateSystemFonts(systemFonts);
 
     _imp->createColorPickerCursor();
     _imp->createLinkToCursor();
@@ -978,92 +995,35 @@ GuiApplicationManager::onFontconfigTimerTriggered()
 }
 
 void
-GuiApplicationManager::onPluginLoaded(Plugin* plugin)
+GuiApplicationManager::onPluginLoaded(const PluginPtr& plugin)
 {
-    QString shortcutGrouping = QString::fromUtf8(kShortcutGroupNodes);
-    const QStringList & groups = plugin->getGrouping();
-    const QString & pluginID = plugin->getPluginID();
-    const QString pluginLabel = plugin->getLabelWithoutSuffix();
-    const QString & pluginIconPath = plugin->getIconFilePath();
-    const QStringList & groupIconPath = plugin->getGroupIconFilePath();
-    QStringList groupingWithID = groups;
+    AppManager::onPluginLoaded(plugin);
+    
+    // Ensure the toolbutton is created for this plug-in with its grouping hierarchy
+    PluginGroupNodePtr child = findPluginToolButtonOrCreate(plugin);
+    Q_UNUSED(child);
 
-    groupingWithID.push_back(pluginID);
-    boost::shared_ptr<PluginGroupNode> child = findPluginToolButtonOrCreate( groupingWithID,
-                                                                             pluginLabel,
-                                                                             groupIconPath,
-                                                                             pluginIconPath,
-                                                                             plugin->getMajorVersion(),
-                                                                             plugin->getMinorVersion(),
-                                                                             plugin->getIsUserCreatable() );
-    for (int i = 0; i < groups.size(); ++i) {
-        shortcutGrouping.push_back( QLatin1Char('/') );
-        shortcutGrouping.push_back(groups[i]);
-    }
-
-    Qt::Key symbol = (Qt::Key)0;
-    bool hasShortcut = true;
-
-    /*These are the plug-ins which have a default shortcut. Other plug-ins can have a user-assigned shortcut.*/
-    if ( pluginID == QString::fromUtf8(PLUGINID_OFX_TRANSFORM) ) {
-        symbol = Qt::Key_T;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_ROTO) ) {
-        symbol = Qt::Key_O;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_ROTOPAINT) ) {
-        symbol = Qt::Key_P;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_OFX_MERGE) ) {
-        symbol = Qt::Key_M;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_OFX_GRADE) ) {
-        symbol = Qt::Key_G;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_OFX_COLORCORRECT) ) {
-        symbol = Qt::Key_C;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_OFX_BLURCIMG) ) {
-        symbol = Qt::Key_B;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_DOT) ) {
-        symbol = Qt::Key_Period;
-    }
-#ifdef NATRON_ENABLE_IO_META_NODES
-    else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_READ) ) {
-        symbol = Qt::Key_R;
-    } else if ( pluginID == QString::fromUtf8(PLUGINID_NATRON_WRITE) ) {
-        symbol = Qt::Key_W;
-    }
-#endif
-    else {
-        hasShortcut = false;
-    }
-    plugin->setHasShortcut(hasShortcut);
-
-    if ( hasShortcut && plugin->getIsUserCreatable() ) {
-        _imp->addKeybind(shortcutGrouping.toStdString(), pluginID.toStdString(), pluginLabel.toStdString(), Qt::NoModifier, symbol, /*modifiersMask=*/Qt::ShiftModifier);
-    }
-
-    const std::list<PluginActionShortcut>& shortcuts =  plugin->getShortcuts();
-    std::string pluginShortcutGroup =  plugin->getPluginShortcutGroup().toStdString();
-    for (std::list<PluginActionShortcut>::const_iterator it = shortcuts.begin(); it != shortcuts.end(); ++it) {
-        _imp->addKeybind( pluginShortcutGroup, it->actionID, it->actionLabel, QtEnumConvert::toQtModifiers(it->modifiers), QtEnumConvert::toQtKey(it->key) );
-    }
 } // GuiApplicationManager::onPluginLoaded
 
-void
-GuiApplicationManager::ignorePlugin(Plugin* plugin)
-{
-    _imp->removePluginToolButton( plugin->getGrouping() );
-    _imp->removeKeybind( QString::fromUtf8(kShortcutGroupNodes), plugin->getPluginID() );
-}
 
-boost::shared_ptr<PluginGroupNode>
-GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping,
-                                                    const QString & name,
-                                                    const QStringList& groupIconPath,
-                                                    const QString & iconPath,
-                                                    int major,
-                                                    int minor,
-                                                    bool isUserCreatable)
-{
-    assert(grouping.size() > 0);
 
-    return _imp->findPluginToolButtonInternal(_imp->_topLevelToolButtons, boost::shared_ptr<PluginGroupNode>(), grouping, name, groupIconPath, iconPath, major, minor, isUserCreatable);
+PluginGroupNodePtr
+GuiApplicationManager::findPluginToolButtonOrCreate(const PluginPtr& plugin)
+{
+    std::vector<std::string> grouping = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
+    std::vector<std::string> iconGrouping = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGroupIconFilePath);
+    QStringList qGroup, qIconGrouping;
+    for (std::size_t i = 0; i < grouping.size(); ++i) {
+        qGroup.push_back(QString::fromUtf8(grouping[i].c_str()));
+    }
+    for (std::size_t i = 0; i < iconGrouping.size(); ++i) {
+        qIconGrouping.push_back(QString::fromUtf8(iconGrouping[i].c_str()));
+    }
+    return _imp->findPluginToolButtonOrCreateInternal(_imp->_topLevelToolButtons,
+                                                      PluginGroupNodePtr(),
+                                                      plugin,
+                                                      qGroup,
+                                                      qIconGrouping);
 }
 
 bool
@@ -1075,6 +1035,9 @@ GuiApplicationManager::isSplashcreenVisible() const
 void
 GuiApplicationManager::hideSplashScreen()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
     if (_imp->_splashScreen) {
         _imp->_splashScreen->close();
         delete _imp->_splashScreen;
@@ -1084,27 +1047,31 @@ GuiApplicationManager::hideSplashScreen()
 
 void
 GuiApplicationManager::setKnobClipBoard(KnobClipBoardType type,
-                                        const KnobPtr& serialization,
-                                        int dimension)
+                                        const KnobIPtr& serialization,
+                                        DimSpec dimension,
+                                        ViewSetSpec view)
 {
     _imp->_knobsClipBoard->serialization = serialization;
     _imp->_knobsClipBoard->type = type;
     _imp->_knobsClipBoard->dimension = dimension;
+    _imp->_knobsClipBoard->view = view;
 }
 
 void
 GuiApplicationManager::getKnobClipBoard(KnobClipBoardType *type,
-                                        KnobPtr *serialization,
-                                        int* dimension) const
+                                        KnobIPtr *serialization,
+                                        DimSpec* dimension,
+                                        ViewSetSpec *view) const
 {
     *serialization = _imp->_knobsClipBoard->serialization;
     *type = _imp->_knobsClipBoard->type;
     *dimension = _imp->_knobsClipBoard->dimension;
+    *view = _imp->_knobsClipBoard->view;
 }
 
 void
 GuiApplicationManager::appendTaskToPreviewThread(const NodeGuiPtr& node,
-                                                 double time)
+                                                 TimeValue time)
 {
     _imp->previewRenderThread.appendToQueue(node, time);
 }
@@ -1135,13 +1102,14 @@ GuiApplicationManager::setCurrentLogicalDPI(double dpiX,
     _imp->dpiY = dpiY;
 }
 
+
 void
 GuiApplicationManager::updateAboutWindowLibrariesVersion()
 {
     const AppInstanceVec& instances = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* isGuiInstance = dynamic_cast<GuiAppInstance*>( it->get() );
+        GuiAppInstancePtr isGuiInstance = toGuiAppInstance(*it);
         if (isGuiInstance) {
             Gui* gui = isGuiInstance->getGui();
             if (gui) {

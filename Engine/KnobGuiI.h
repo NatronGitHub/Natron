@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,14 +30,13 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
-#include "Engine/OverlaySupport.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
 
 class KnobGuiI
-    : public OverlaySupport
 {
 public:
 
@@ -45,54 +44,16 @@ public:
     {
     }
 
-    virtual void swapOpenGLBuffers() OVERRIDE = 0;
-    virtual void redraw() OVERRIDE = 0;
-    virtual void getViewportSize(double &width, double &height) const OVERRIDE = 0;
-    virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE = 0;
-#ifdef OFX_EXTENSIONS_NATRON
-    virtual double getScreenPixelRatio() const OVERRIDE = 0;
-#endif
-    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE = 0;
-    virtual void copyAnimationToClipboard(int /* dimension = -1*/) const {}
+    virtual ~KnobGuiI() {}
 
-    virtual void copyValuesToClipboard(int /*dimension = -1*/) const {}
+    virtual void copyAnimationToClipboard(DimSpec /* dimension */, ViewSetSpec) const {}
 
-    virtual void copyLinkToClipboard(int /*dimension = -1*/) const {}
+    virtual void copyValuesToClipboard(DimSpec /*dimension*/, ViewSetSpec) const {}
+
+    virtual void copyLinkToClipboard(DimSpec /*dimension */, ViewSetSpec) const {}
 
     virtual bool isGuiFrozenForPlayback() const = 0;
-    virtual void saveOpenGLContext() OVERRIDE = 0;
-    virtual void restoreOpenGLContext() OVERRIDE = 0;
-    virtual unsigned int getCurrentRenderScale() const OVERRIDE { return 0; }
 
-    virtual boost::shared_ptr<Curve> getCurve(ViewSpec view, int dimension) const = 0;
-    virtual bool getAllDimensionsVisible() const = 0;
-    virtual RectD getViewportRect() const OVERRIDE = 0;
-    virtual void getCursorPosition(double& x, double& y) const OVERRIDE = 0;
-
-    /**
-     * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
-     **/
-    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE = 0;
-
-    /**
-     * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
-     **/
-    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE = 0;
-
-    /**
-     * @brief Returns the font height, i.e: the height of the highest letter for this font
-     **/
-    virtual int getWidgetFontHeight() const OVERRIDE = 0;
-
-    /**
-     * @brief Returns for a string the estimated pixel size it would take on the widget
-     **/
-    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE = 0;
-
-protected:
-
-    ///Should set to the underlying knob the gui ptr
-    virtual void setKnobGuiPointer() = 0;
 };
 
 NATRON_NAMESPACE_EXIT

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -42,48 +42,28 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Engine/AppInstance.h"
+#include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/CoonsRegularization.h"
 #include "Engine/FeatherPoint.h"
 #include "Engine/Format.h"
 #include "Engine/Hash64.h"
 #include "Engine/Image.h"
-#include "Engine/ImageParams.h"
+#include "Engine/Node.h"
+#include "Engine/RotoPaint.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
-#include "Engine/RotoContextPrivate.h"
-#include "Engine/RotoItemSerialization.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/RotoPaint.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
 
-#define kMergeOFXParamOperation "operation"
-#define kBlurCImgParamSize "size"
-#define kTimeOffsetParamOffset "timeOffset"
-#define kFrameHoldParamFirstFrame "firstFrame"
 
-#define kTransformParamTranslate "translate"
-#define kTransformParamRotate "rotate"
-#define kTransformParamScale "scale"
-#define kTransformParamUniform "uniform"
-#define kTransformParamSkewX "skewX"
-#define kTransformParamSkewY "skewY"
-#define kTransformParamSkewOrder "skewOrder"
-#define kTransformParamCenter "center"
-#define kTransformParamFilter "filter"
-#define kTransformParamResetCenter "resetCenter"
-#define kTransformParamBlackOutside "black_outside"
 
-//This will enable correct evaluation of beziers
-//#define ROTO_USE_MESH_PATTERN_ONLY
-
-// The number of pressure levels is 256 on an old Wacom Graphire 4, and 512 on an entry-level Wacom Bamboo
-// 512 should be OK, see:
-// http://www.davidrevoy.com/article182/calibrating-wacom-stylus-pressure-on-krita
-#define ROTO_PRESSURE_LEVELS 512
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -110,191 +90,207 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 static RotoMetaTypesRegistration registration;
-RotoItem::RotoItem(const boost::shared_ptr<RotoContext>& context,
-                   const std::string & name,
-                   boost::shared_ptr<RotoLayer> parent)
-    : itemMutex()
-    , _imp( new RotoItemPrivate(context, name, parent) )
+
+struct RotoItemPrivate
 {
+    
+    
+    // This controls whether the item (and all its children if it is a layer)
+    // should be visible/rendered or not at any time.
+    // This is different from the "activated" knob for RotoDrawableItem's which in that
+    // case allows to define a life-time
+    KnobButtonWPtr activatedKnob;
+    
+    // A locked item should not be modifiable by the GUI
+    KnobButtonWPtr lockedKnob;
+
+    // Includes the current item in renders, ignoring layers without this switch set
+    KnobButtonWPtr soloKnob;
+    
+    RotoItemPrivate()
+    {
+    }
+
+};
+
+RotoItem::RotoItem(const KnobItemsTablePtr& model)
+    : KnobTableItem(model)
+    , _imp( new RotoItemPrivate() )
+{
+}
+
+RotoItem::RotoItem(const RotoItemPtr& other, const FrameViewRenderKey& key)
+: KnobTableItem(other, key)
+, _imp(new RotoItemPrivate())
+{
+
 }
 
 RotoItem::~RotoItem()
 {
 }
 
-void
-RotoItem::clone(const RotoItem*  other)
+bool
+RotoItem::getTransformAtTimeInternal(TimeValue /*time*/, ViewIdx /*view*/, Transform::Matrix3x3* /*matrix*/) const
 {
-    QMutexLocker l(&itemMutex);
-
-    _imp->parentLayer = other->_imp->parentLayer;
-    _imp->scriptName = other->_imp->scriptName;
-    _imp->label = other->_imp->label;
-    _imp->globallyActivated = other->_imp->globallyActivated;
-    _imp->locked = other->_imp->locked;
+    return false;
 }
 
 void
-RotoItem::setParentLayer(boost::shared_ptr<RotoLayer> layer)
+RotoItem::getTransformAtTime(TimeValue time, ViewIdx view, Transform::Matrix3x3* matrix) const
 {
-    ///called on the main-thread only
-    assert( QThread::currentThread() == qApp->thread() );
+    Transform::Matrix3x3 tmpMat;
+    if (getTransformAtTimeInternal(time, view, &tmpMat)) {
+        *matrix = tmpMat;
+    } else {
+        matrix->setIdentity();
+    }
+    // Get the transform recursively by concatenating transform matrices
+    // on parent groups
 
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
-    if (isStroke) {
-        if (!layer) {
-            isStroke->deactivateNodes();
-        } else {
-            isStroke->activateNodes();
+    KnobHolderPtr parentHolder = getParent();
+    RotoItemPtr parent = toRotoItem(parentHolder);
+    while (parent) {
+        Transform::Matrix3x3 tmpMat;
+        if (parent->getTransformAtTimeInternal(time, view, &tmpMat)) {
+            *matrix = Transform::matMul(*matrix, tmpMat);
         }
+        parentHolder = parent->getParent();
+        parent = toRotoItem(parentHolder);
     }
 
-    QMutexLocker l(&itemMutex);
-    _imp->parentLayer = layer;
-}
-
-boost::shared_ptr<RotoLayer>
-RotoItem::getParentLayer() const
-{
-    QMutexLocker l(&itemMutex);
-
-    return _imp->parentLayer.lock();
 }
 
 void
-RotoItem::setGloballyActivated_recursive(bool a)
+RotoItem::fetchRenderCloneKnobs()
+{
+    KnobTableItem::fetchRenderCloneKnobs();
+
+    _imp->activatedKnob = getKnobByNameAndType<KnobButton>(kParamRotoItemEnabled);
+    _imp->lockedKnob = getKnobByNameAndType<KnobButton>(kParamRotoItemLocked);
+    _imp->soloKnob = getKnobByNameAndType<KnobButton>(kParamRotoItemSolo);
+}
+
+void
+RotoItem::initializeKnobs()
 {
     {
-        QMutexLocker l(&itemMutex);
-        _imp->globallyActivated = a;
-        RotoLayer* layer = dynamic_cast<RotoLayer*>(this);
-        if (layer) {
-            const RotoItems & children = layer->getItems();
-            for (RotoItems::const_iterator it = children.begin(); it != children.end(); ++it) {
-                (*it)->setGloballyActivated_recursive(a);
-            }
-        }
+        KnobButtonPtr param = createKnob<KnobButton>(kParamRotoItemEnabled);
+        param->setLabel(tr(kParamRotoItemEnabledLabel));
+        param->setHintToolTip(tr(kParamRotoItemEnabledHint));
+        param->setIconLabel("Images/visible.png", true);
+        param->setIconLabel("Images/unvisible.png", false);
+        param->setCheckable(true);
+        param->setDefaultValue(true);
+        _imp->activatedKnob = param;
     }
+    RotoPaintPtr effect = toRotoPaint(getModel()->getNode()->getEffectInstance());
+    assert(effect);
+    RotoPaint::RotoPaintTypeEnum type = effect->getRotoPaintNodeType();
+
+    if (type == RotoPaint::eRotoPaintTypeRoto ||
+        type == RotoPaint::eRotoPaintTypeRotoPaint) {
+        KnobButtonPtr param = createKnob<KnobButton>(kParamRotoItemLocked);
+        param->setLabel(tr(kParamRotoItemLockedLabel));
+        param->setHintToolTip(tr(kParamRotoItemLockedHint));
+        param->setIconLabel("Images/locked.png", true);
+        param->setIconLabel("Images/unlocked.png", false);
+        param->setCheckable(true);
+        param->setDefaultValue(false);
+        _imp->lockedKnob = param;
+    }
+
+    if (type == RotoPaint::eRotoPaintTypeComp) {
+        KnobButtonPtr param = createKnob<KnobButton>(kParamRotoItemSolo);
+        param->setLabel(tr(kParamRotoItemSoloLabel));
+        param->setHintToolTip(tr(kParamRotoItemSoloHint));
+        param->setIconLabel("Images/soloOn.png", true);
+        param->setIconLabel("Images/soloOff.png", false);
+        param->setCheckable(true);
+        _imp->soloKnob = param;
+    }
+
+    addColumn(kKnobTableItemColumnLabel, DimIdx(0));
+    addColumn(kParamRotoItemEnabled, DimIdx(0));
+    if (type == RotoPaint::eRotoPaintTypeComp) {
+        addColumn(kParamRotoItemSolo, DimIdx(0));
+    }
+    if (type == RotoPaint::eRotoPaintTypeRoto ||
+        type == RotoPaint::eRotoPaintTypeRotoPaint) {
+        addColumn(kParamRotoItemLocked, DimIdx(0));
+    }
+
+    KnobTableItem::initializeKnobs();
+
 }
 
-void
-RotoItem::setGloballyActivated(bool a,
-                               bool setChildren)
-{
-    ///called on the main-thread only
-    assert( QThread::currentThread() == qApp->thread() );
-    if (setChildren) {
-        setGloballyActivated_recursive(a);
-    } else {
-        QMutexLocker l(&itemMutex);
-        _imp->globallyActivated = a;
-    }
-    boost::shared_ptr<RotoContext> c = _imp->context.lock();
-    if (c) {
-        RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>(this);
-        if (isDrawable) {
-            isDrawable->incrementNodesAge();
-        }
-        c->evaluateChange();
-    }
-}
 
 bool
 RotoItem::isGloballyActivated() const
 {
-    QMutexLocker l(&itemMutex);
-
-    return _imp->globallyActivated;
+    KnobButtonPtr knob = _imp->activatedKnob.lock();
+    if (knob) {
+        if (!knob->getValue()) {
+            return false;
+        }
+    }
+    RotoDrawableItemPtr isDrawable = boost::const_pointer_cast<RotoDrawableItem>(boost::dynamic_pointer_cast<const RotoDrawableItem>(shared_from_this()));
+    RotoPaintPtr rotoEffect = toRotoPaint(getModel()->getNode()->getEffectInstance());
+    if (isDrawable && rotoEffect) {
+        if (!rotoEffect->isAmongstSoloItems(isDrawable)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 static bool
-isDeactivated_imp(const boost::shared_ptr<RotoLayer>& item)
+isActivatedRecursive(const RotoItemPtr& item)
 {
     if ( !item->isGloballyActivated() ) {
-        return true;
-    } else {
-        boost::shared_ptr<RotoLayer> parent = item->getParentLayer();
-        if (parent) {
-            return isDeactivated_imp(parent);
-        }
+        return false;
     }
-
-    return false;
-}
-
-bool
-RotoItem::isDeactivatedRecursive() const
-{
-    boost::shared_ptr<RotoLayer> parent;
-    {
-        QMutexLocker l(&itemMutex);
-        if (!_imp->globallyActivated) {
-            return true;
-        }
-        parent = _imp->parentLayer.lock();
-    }
-
+    RotoLayerPtr parent = toRotoLayer(item->getParent());
     if (parent) {
-        return isDeactivated_imp(parent);
+        return isActivatedRecursive(parent);
     }
-
-    return false;
-}
-
-void
-RotoItem::setLocked_recursive(bool locked,
-                              RotoItem::SelectionReasonEnum reason)
-{
-    {
-        {
-            QMutexLocker m(&itemMutex);
-            _imp->locked = locked;
-        }
-        getContext()->onItemLockedChanged(shared_from_this(), reason);
-        RotoLayer* layer = dynamic_cast<RotoLayer*>(this);
-        if (layer) {
-            const RotoItems & children = layer->getItems();
-            for (RotoItems::const_iterator it = children.begin(); it != children.end(); ++it) {
-                (*it)->setLocked_recursive(locked, reason);
-            }
-        }
-    }
-}
-
-void
-RotoItem::setLocked(bool l,
-                    bool lockChildren,
-                    RotoItem::SelectionReasonEnum reason)
-{
-    ///called on the main-thread only
-    assert( QThread::currentThread() == qApp->thread() );
-    if (!lockChildren) {
-        {
-            QMutexLocker m(&itemMutex);
-            _imp->locked = l;
-        }
-        getContext()->onItemLockedChanged(shared_from_this(), reason);
-    } else {
-        setLocked_recursive(l, reason);
-    }
+    return true;
 }
 
 bool
-RotoItem::getLocked() const
+RotoItem::isGloballyActivatedRecursive() const
 {
-    QMutexLocker l(&itemMutex);
-
-    return _imp->locked;
+    RotoItemPtr thisShared = boost::const_pointer_cast<RotoItem>(toRotoItem(shared_from_this()));
+    return isActivatedRecursive(thisShared);
 }
+
+KnobButtonPtr
+RotoItem::getLockedKnob() const
+{
+    return _imp->lockedKnob.lock();
+}
+
+KnobButtonPtr
+RotoItem::getActivatedKnob() const
+{
+    return _imp->activatedKnob.lock();
+}
+
+KnobButtonPtr
+RotoItem::getSoloKnob() const
+{
+    return _imp->soloKnob.lock();
+}
+
 
 static
 bool
-isLocked_imp(const boost::shared_ptr<RotoLayer>& item)
+isLocked_imp(const RotoLayerPtr& item)
 {
-    if ( item->getLocked() ) {
+    if ( item->getLockedKnob()->getValue() ) {
         return true;
     } else {
-        boost::shared_ptr<RotoLayer> parent = item->getParentLayer();
+        RotoLayerPtr parent = toRotoLayer(item->getParent());
         if (parent) {
             return isLocked_imp(parent);
         }
@@ -306,15 +302,15 @@ isLocked_imp(const boost::shared_ptr<RotoLayer>& item)
 bool
 RotoItem::isLockedRecursive() const
 {
-    boost::shared_ptr<RotoLayer> parent;
-    {
-        QMutexLocker l(&itemMutex);
-        if (_imp->locked) {
-            return true;
-        }
-        parent = _imp->parentLayer.lock();
+    KnobButtonPtr lockedKnob = _imp->lockedKnob.lock();
+    if (!lockedKnob) {
+        return false;
     }
-
+    bool thisItemLocked = lockedKnob->getValue();
+    if (thisItemLocked) {
+        return true;
+    }
+    RotoLayerPtr parent = toRotoLayer(getParent());
     if (parent) {
         return isLocked_imp(parent);
     } else {
@@ -322,262 +318,52 @@ RotoItem::isLockedRecursive() const
     }
 }
 
-int
-RotoItem::getHierarchyLevel() const
-{
-    int ret = 0;
-    boost::shared_ptr<RotoLayer> parent;
-
-    {
-        QMutexLocker l(&itemMutex);
-        parent = _imp->parentLayer.lock();
-    }
-
-    while (parent) {
-        parent = parent->getParentLayer();
-        ++ret;
-    }
-
-    return ret;
-}
-
-boost::shared_ptr<RotoContext>
-RotoItem::getContext() const
-{
-    return _imp->context.lock();
-}
-
 bool
-RotoItem::setScriptName(const std::string & name)
+RotoItem::onKnobValueChanged(const KnobIPtr& knob,
+                             ValueChangedReasonEnum reason,
+                             TimeValue /*time*/,
+                             ViewSetSpec /*view*/)
 {
-    ///called on the main-thread only
-    assert( QThread::currentThread() == qApp->thread() );
+    if (knob == _imp->lockedKnob.lock()) {
 
-    if ( name.empty() ) {
-        return false;
-    }
-
-
-    std::string cpy = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(name);
-
-    if ( cpy.empty() ) {
-        return false;
-    }
-
-    boost::shared_ptr<RotoItem> existingItem = getContext()->getItemByName(name);
-    if ( existingItem && (existingItem.get() != this) ) {
-        return false;
-    }
-
-    std::string oldFullName = getFullyQualifiedName();
-    bool oldNameEmpty;
-    {
-        QMutexLocker l(&itemMutex);
-        oldNameEmpty = _imp->scriptName.empty();
-        _imp->scriptName = cpy;
-    }
-    std::string newFullName = getFullyQualifiedName();
-    boost::shared_ptr<RotoContext> c = _imp->context.lock();
-    if (c) {
-        if (!oldNameEmpty) {
-            RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
-            ///Strokes are unsupported in Python currently
-            if (!isStroke) {
-                c->changeItemScriptName(oldFullName, newFullName);
+        const KnobsVec& knobs = getKnobs();
+        for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+            if (*it != knob) {
+                (*it)->setEnabled(!_imp->lockedKnob.lock()->getValue());
             }
         }
-        c->onItemScriptNameChanged( shared_from_this() );
-    }
-
-    return true;
-}
-
-static void
-getScriptNameRecursive(RotoLayer* item,
-                       std::string* scriptName)
-{
-    scriptName->insert(0, ".");
-    scriptName->insert( 0, item->getScriptName() );
-    boost::shared_ptr<RotoLayer> parent = item->getParentLayer();
-    if (parent) {
-        getScriptNameRecursive(parent.get(), scriptName);
-    }
-}
-
-std::string
-RotoItem::getFullyQualifiedName() const
-{
-    std::string name = getScriptName();
-    boost::shared_ptr<RotoLayer> parent = getParentLayer();
-
-    if (parent) {
-        getScriptNameRecursive(parent.get(), &name);
-    }
-
-    return name;
-}
-
-std::string
-RotoItem::getScriptName() const
-{
-    QMutexLocker l(&itemMutex);
-
-    return _imp->scriptName;
-}
-
-std::string
-RotoItem::getLabel() const
-{
-    QMutexLocker l(&itemMutex);
-
-    return _imp->label;
-}
-
-void
-RotoItem::setLabel(const std::string& label)
-{
-    {
-        QMutexLocker l(&itemMutex);
-        _imp->label = label;
-    }
-    boost::shared_ptr<RotoContext> c = _imp->context.lock();
-
-    if (c) {
-        c->onItemLabelChanged( shared_from_this() );
-    }
-}
-
-void
-RotoItem::save(RotoItemSerialization *obj) const
-{
-    boost::shared_ptr<RotoLayer> parent;
-    {
-        QMutexLocker l(&itemMutex);
-        obj->activated = _imp->globallyActivated;
-        obj->name = _imp->scriptName;
-        obj->label = _imp->label;
-        obj->locked = _imp->locked;
-        parent = _imp->parentLayer.lock();
-    }
-
-    if (parent) {
-        obj->parentLayerName = parent->getScriptName();
-    }
-}
-
-void
-RotoItem::load(const RotoItemSerialization &obj)
-{
-    {
-        QMutexLocker l(&itemMutex);
-        _imp->globallyActivated = obj.activated;
-        _imp->locked = obj.locked;
-        _imp->scriptName = obj.name;
-        if ( !obj.label.empty() ) {
-            _imp->label = obj.label;
-        } else {
-            _imp->label = _imp->scriptName;
-        }
-        std::locale loc;
-        std::string cpy;
-        for (std::size_t i = 0; i < _imp->scriptName.size(); ++i) {
-            ///Ignore starting digits
-            if ( cpy.empty() && std::isdigit(_imp->scriptName[i], loc) ) {
-                continue;
-            }
-
-            ///Spaces becomes underscores
-            if ( std::isspace(_imp->scriptName[i], loc) ) {
-                cpy.push_back('_');
-            }
-            ///Non alpha-numeric characters are not allowed in python
-            else if ( (_imp->scriptName[i] == '_') || std::isalnum(_imp->scriptName[i], loc) ) {
-                cpy.push_back(_imp->scriptName[i]);
+        return true;
+    } else if (knob == _imp->activatedKnob.lock()) {
+        if (reason == eValueChangedReasonUserEdited) {
+            std::vector<KnobTableItemPtr> children = getChildren();
+            for (std::vector<KnobTableItemPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
+                KnobHolderPtr item = *it;
+                RotoItemPtr rotoItem = toRotoItem(item);
+                rotoItem->getActivatedKnob()->setValue(getActivatedKnob()->getValue());
             }
         }
-        if ( !cpy.empty() ) {
-            _imp->scriptName = cpy;
-        } else {
-            l.unlock();
-            std::string name = getContext()->generateUniqueName(kRotoBezierBaseName);
-            l.relock();
-            _imp->scriptName = name;
-        }
-    }
-    boost::shared_ptr<RotoLayer> parent = getContext()->getLayerByName(obj.parentLayerName);
-
-    {
-        QMutexLocker l(&itemMutex);
-        _imp->parentLayer = parent;
-    }
-}
-
-std::string
-RotoItem::getRotoNodeName() const
-{
-    return getContext()->getRotoNodeName();
-}
-
-static boost::shared_ptr<RotoItem>
-getPreviousInLayer(const boost::shared_ptr<RotoLayer>& layer,
-                   const boost::shared_ptr<const RotoItem>& item)
-{
-    RotoItems layerItems = layer->getItems_mt_safe();
-
-    if ( layerItems.empty() ) {
-        return boost::shared_ptr<RotoItem>();
-    }
-    RotoItems::iterator found = layerItems.end();
-    if (item) {
-        for (RotoItems::iterator it = layerItems.begin(); it != layerItems.end(); ++it) {
-            if (*it == item) {
-                found = it;
-                break;
+    } else if (knob == _imp->soloKnob.lock()) {
+        bool isSolo = getSoloKnob()->getValue();
+        RotoDrawableItemPtr isDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(shared_from_this());
+        if (isDrawable) {
+            RotoPaintPtr rotoEffect = toRotoPaint(getModel()->getNode()->getEffectInstance());
+            if (isSolo) {
+                rotoEffect->addSoloItem(isDrawable);
+            } else {
+                rotoEffect->removeSoloItem(isDrawable);
             }
         }
-        assert( found != layerItems.end() );
-    } else {
-        found = layerItems.end();
-    }
-
-    if ( found != layerItems.end() ) {
-        ++found;
-        if ( found != layerItems.end() ) {
-            return *found;
+        if (reason == eValueChangedReasonUserEdited) {
+            std::vector<KnobTableItemPtr> children = getChildren();
+            for (std::vector<KnobTableItemPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
+                KnobHolderPtr item = *it;
+                RotoItemPtr rotoItem = toRotoItem(item);
+                rotoItem->getSoloKnob()->setValue(isSolo);
+            }
         }
     }
-
-    //Item was still not found, find in great parent layer
-    boost::shared_ptr<RotoLayer> parentLayer = layer->getParentLayer();
-    if (!parentLayer) {
-        return boost::shared_ptr<RotoItem>();
-    }
-    RotoItems greatParentItems = parentLayer->getItems_mt_safe();
-
-    found = greatParentItems.end();
-    for (RotoItems::iterator it = greatParentItems.begin(); it != greatParentItems.end(); ++it) {
-        if (*it == layer) {
-            found = it;
-            break;
-        }
-    }
-    assert( found != greatParentItems.end() );
-    boost::shared_ptr<RotoItem> ret = getPreviousInLayer(parentLayer, layer);
-    assert(ret != item);
-
-    return ret;
+    return false;
 }
 
-boost::shared_ptr<RotoItem>
-RotoItem::getPreviousItemInLayer() const
-{
-    boost::shared_ptr<RotoLayer> layer = getParentLayer();
-
-    if (!layer) {
-        return boost::shared_ptr<RotoItem>();
-    }
-
-    return getPreviousInLayer( layer, shared_from_this() );
-}
 
 NATRON_NAMESPACE_EXIT

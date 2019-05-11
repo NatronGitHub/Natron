@@ -1,0 +1,132 @@
+--- qt-everywhere-opensource-src-4.8.7/src/gui/image/qmnghandler.cpp	2015-05-07 15:14:44.000000000 +0100
++++ qt4-4.8.7/src/gui/image/qmnghandler.cpp	2015-07-15 10:44:14.858545100 +0100
+@@ -45,7 +45,12 @@
+ #include "qvariant.h"
+ #include "qcolor.h"
+ 
+-#define MNG_USE_SO
++#if defined(Q_OS_WIN) && !defined(QT_STATIC)
++  #define MNG_USE_DLL
++#else
++  #define MNG_USE_SO
++#endif
++
+ #include <libmng.h>
+ 
+ QT_BEGIN_NAMESPACE
+@@ -82,7 +87,7 @@
+     QMngHandler *q_ptr;
+ };
+ 
+-static mng_bool myerror(mng_handle /*hMNG*/,
++static mng_bool MNG_DECL myerror(mng_handle /*hMNG*/,
+     mng_int32   iErrorcode,
+     mng_int8    /*iSeverity*/,
+     mng_chunkid iChunkname,
+@@ -101,7 +106,7 @@
+     return TRUE;
+ }
+ 
+-static mng_ptr myalloc(mng_size_t iSize)
++static mng_ptr MNG_DECL myalloc(mng_size_t iSize)
+ {
+ #if defined(Q_OS_WINCE)
+     mng_ptr ptr = malloc(iSize);
+@@ -112,24 +117,24 @@
+ #endif
+ }
+ 
+-static void myfree(mng_ptr pPtr, mng_size_t /*iSize*/)
++static void MNG_DECL myfree(mng_ptr pPtr, mng_size_t /*iSize*/)
+ {
+     free(pPtr);
+ }
+ 
+-static mng_bool myopenstream(mng_handle)
++static mng_bool MNG_DECL myopenstream(mng_handle)
+ {
+     return MNG_TRUE;
+ }
+ 
+-static mng_bool myclosestream(mng_handle hMNG)
++static mng_bool MNG_DECL myclosestream(mng_handle hMNG)
+ {
+     QMngHandlerPrivate *pMydata = reinterpret_cast<QMngHandlerPrivate *>(mng_get_userdata(hMNG));
+     pMydata->haveReadAll = true;
+     return MNG_TRUE;
+ }
+ 
+-static mng_bool myreaddata(mng_handle hMNG,
++static mng_bool MNG_DECL myreaddata(mng_handle hMNG,
+                     mng_ptr    pBuf,
+                     mng_uint32 iSize,
+                     mng_uint32p pRead)
+@@ -138,7 +143,7 @@
+     return pMydata->readData(pBuf, iSize, pRead);
+ }
+ 
+-static mng_bool mywritedata(mng_handle hMNG,
++static mng_bool MNG_DECL mywritedata(mng_handle hMNG,
+ 		     mng_ptr pBuf,
+ 		     mng_uint32 iSize,
+ 		     mng_uint32p pWritten)
+@@ -147,7 +152,7 @@
+     return pMydata->writeData(pBuf, iSize, pWritten);
+ }
+ 
+-static mng_bool myprocessheader(mng_handle hMNG,
++static mng_bool MNG_DECL myprocessheader(mng_handle hMNG,
+                                 mng_uint32 iWidth,
+                                 mng_uint32 iHeight)
+ {
+@@ -155,14 +160,14 @@
+     return pMydata->processHeader(iWidth, iHeight);
+ }
+ 
+-static mng_ptr mygetcanvasline(mng_handle hMNG,
++static mng_ptr MNG_DECL mygetcanvasline(mng_handle hMNG,
+ 			mng_uint32 iLinenr)
+ {
+     QMngHandlerPrivate *pMydata = reinterpret_cast<QMngHandlerPrivate *>(mng_get_userdata(hMNG));
+     return (mng_ptr)pMydata->image.scanLine(iLinenr);
+ }
+ 
+-static mng_bool myrefresh(mng_handle /*hMNG*/,
++static mng_bool MNG_DECL myrefresh(mng_handle /*hMNG*/,
+                           mng_uint32 /*iX*/,
+                           mng_uint32 /*iY*/,
+                           mng_uint32 /*iWidth*/,
+@@ -171,13 +176,13 @@
+     return MNG_TRUE;
+ }
+ 
+-static mng_uint32 mygettickcount(mng_handle hMNG)
++static mng_uint32 MNG_DECL mygettickcount(mng_handle hMNG)
+ {
+     QMngHandlerPrivate *pMydata = reinterpret_cast<QMngHandlerPrivate *>(mng_get_userdata(hMNG));
+     return pMydata->elapsed++;
+ }
+ 
+-static mng_bool mysettimer(mng_handle hMNG,
++static mng_bool MNG_DECL mysettimer(mng_handle hMNG,
+ 		    mng_uint32 iMsecs)
+ {
+     QMngHandlerPrivate *pMydata = reinterpret_cast<QMngHandlerPrivate *>(mng_get_userdata(hMNG));
+@@ -186,7 +191,7 @@
+     return MNG_TRUE;
+ }
+ 
+-static mng_bool myprocessterm(mng_handle hMNG,
++static mng_bool MNG_DECL myprocessterm(mng_handle hMNG,
+                         mng_uint8   iTermaction,
+                         mng_uint8   /*iIteraction*/,
+                         mng_uint32  /*iDelay*/,
+@@ -198,7 +203,7 @@
+     return MNG_TRUE;
+ }
+ 
+-static mng_bool mytrace(mng_handle,
++static mng_bool MNG_DECL mytrace(mng_handle,
+                         mng_int32   iFuncnr,
+                         mng_int32   iFuncseq,
+                         mng_pchar   zFuncname)

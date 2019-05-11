@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -48,8 +48,8 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Global/GlobalDefines.h"
-#include "Engine/EngineFwd.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -68,7 +68,7 @@ public:
 
     virtual ~OfxImageEffectInstance();
 
-    void setOfxEffectInstance(const boost::shared_ptr<OfxEffectInstance>& node)
+    void setOfxEffectInstance(const OfxEffectInstancePtr& node)
     {
         _ofxEffectInstance = node;
     }
@@ -160,7 +160,7 @@ public:
     /**
      * We add some output parameters to the function so that we can delay the actual setting of the clip preferences
      **/
-    StatusEnum getClipPreferences_safe(NodeMetadata& defaultPrefs);
+    ActionRetCodeEnum getClipPreferences_safe(NodeMetadata& defaultPrefs);
 
     virtual OfxStatus createInstanceAction() OVERRIDE FINAL;
 
@@ -231,7 +231,7 @@ public:
     //
     // END of OFX::Host::ImageEffect::Instance methods
     //
-    boost::shared_ptr<OfxEffectInstance> getOfxEffectInstance() const WARN_UNUSED_RETURN
+    OfxEffectInstancePtr getOfxEffectInstance() const WARN_UNUSED_RETURN
     {
         return _ofxEffectInstance.lock();
     }
@@ -248,13 +248,12 @@ public:
 #endif
 
 
-    bool getInputsHoldingTransform(std::list<int>* inputs) const;
-
     const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& getClips() const;
     static bool ofxCursorToNatronCursor(const std::string& ofxCursor, CursorEnum* cursor);
     static const OFX::Host::Property::PropSpec* getOfxParamOverlayInteractDescProps();
 
 private:
+
     boost::weak_ptr<OfxEffectInstance> _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                                                               Not easy since every Knob need a valid pointer to a node when
                                                               AppManager::createKnob() is called. That's why we need to pass a pointer

@@ -1,6 +1,6 @@
 --- libavcodec/audiotoolboxenc.c.orig	2016-05-18 05:07:43.000000000 -0700
 +++ libavcodec/audiotoolboxenc.c	2016-05-18 05:09:16.000000000 -0700
-@@ -64,8 +64,10 @@
+@@ -66,8 +66,10 @@
              return kAudioFormatMPEG4AAC_HE_V2;
          case FF_PROFILE_AAC_LD:
              return kAudioFormatMPEG4AAC_LD;

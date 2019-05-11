@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -75,11 +75,11 @@ public:
     };
 
     explicit DockablePanel(Gui* gui,
-                           KnobHolder* holder,
+                           const KnobHolderPtr& holder,
                            QVBoxLayout* container,
                            HeaderModeEnum headerMode,
                            bool useScrollAreasForTabs,
-                           const boost::shared_ptr<QUndoStack>& stack,
+                           const QUndoStackPtr& stack,
                            const QString & initialName = QString(),
                            const QString & helpToolTip = QString(),
                            QWidget *parent = 0);
@@ -115,52 +115,42 @@ public:
 
     void setOverlayColor(const QColor& c);
 
-    QColor getOverlayColor() const;
-
-    bool hasOverlayColor() const;
-
     void resetHostOverlayColor();
 
-    virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const
-    {
-        return boost::shared_ptr<MultiInstancePanel>();
-    }
-
-    KnobHolder* getHolder() const;
-    TrackerPanel* getTrackerPanel() const;
+    KnobHolderPtr getHolder() const;
 
     void onGuiClosing();
 
 
     virtual Gui* getGui() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-
     FloatingWidget* getFloatingWindow() const;
-public:
 
+    void floatPanelInWindow(FloatingWidget* window);
 
-    /**
-     * @brief When called, all knobs will go into the same page which will appear as a plain Widget and not as a tab
-     **/
-    void turnOffPages();
 
     void setPluginIcon(const QPixmap& pix);
 
     void setPluginIDAndVersion(const std::string& pluginLabel,
                                const std::string& pluginID,
                                const std::string& pluginDesc,
-                               unsigned int version);
+                               unsigned int majorVersion,
+                               unsigned int minorVersion);
 
+    virtual NodeGuiPtr getNodeGui() const OVERRIDE ;
     virtual void refreshTabWidgetMaxHeight() OVERRIDE FINAL;
-    virtual bool isPagingEnabled() const OVERRIDE FINAL;
     virtual bool useScrollAreaForTabs() const OVERRIDE FINAL;
     virtual void onKnobsInitialized() OVERRIDE FINAL;
-
+    virtual std::string getHolderFullyQualifiedScriptName() const OVERRIDE FINAL;
 private:
 
+    virtual void onPagingTurnedOff() OVERRIDE FINAL;
+    virtual KnobItemsTableGuiPtr createKnobItemsTable(const KnobItemsTablePtr& table, QWidget* parent) OVERRIDE FINAL;
     virtual void refreshUndoRedoButtonsEnabledNess(bool canUndo, bool canRedo) OVERRIDE FINAL;
     virtual QWidget* createKnobHorizontalFieldContainer(QWidget* parent) const OVERRIDE FINAL;
     virtual QWidget* getPagesContainer() const OVERRIDE FINAL;
+    virtual QWidget* getMainContainer() const OVERRIDE FINAL;
+    virtual QLayout* getMainContainerLayout() const OVERRIDE FINAL;
     virtual QWidget* createPageMainWidget(QWidget* parent) const OVERRIDE FINAL;
     virtual void addPageToPagesContainer(const KnobPageGuiPtr& page) OVERRIDE FINAL;
     virtual void removePageFromContainer(const KnobPageGuiPtr& page) OVERRIDE FINAL;
@@ -210,6 +200,8 @@ public Q_SLOTS:
 
     void onRightClickMenuRequested(const QPoint & pos);
 
+    void onPanelSelected(const QPoint& pos);
+
     void setKeyOnAllParameters();
     void removeAnimationOnAllParameters();
 
@@ -256,20 +248,6 @@ protected:
      * @brief Called when the "center on..." button is clicked
      **/
     virtual void centerOnItem() {}
-
-    virtual RotoPanel* initializeRotoPanel()
-    {
-        return NULL;
-    }
-
-    virtual TrackerPanel* initializeTrackerPanel()
-    {
-        return NULL;
-    }
-
-    virtual void initializeExtraGui(QVBoxLayout* /*layout*/)
-    {
-    }
 
 private:
 

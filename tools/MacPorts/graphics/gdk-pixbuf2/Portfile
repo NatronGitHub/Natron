@@ -6,7 +6,7 @@ PortGroup           gobject_introspection 1.0
 name                gdk-pixbuf2
 set my_name         gdk-pixbuf
 epoch               2
-version             2.36.10
+version             2.36.12
 license             LGPL
 set branch          [join [lrange [split ${version} .] 0 1] .]
 categories          graphics
@@ -22,8 +22,9 @@ long_description    ${description}
 
 master_sites        gnome:sources/${my_name}/${branch}/
 
-checksums           rmd160  58225e5de78bce771b304eb29d6a820e4f1f7a20 \
-                    sha256  f8f6fa896b89475c73b6e9e8d2a2b062fc359c4b4ccb8e96470d6ab5da949ace
+checksums           rmd160  283963dfc2e04e7f51a3b195afb514379ecfda7b \
+                    sha256  fff85cf48223ab60e3c3c8318e2087131b590fd6f1737e42cb3759a3b427a334 \
+                    size    5675768
 
 depends_build       port:pkgconfig
 
@@ -34,12 +35,9 @@ depends_lib         path:lib/pkgconfig/glib-2.0.pc:glib2 \
                     path:lib/libjpeg.dylib:jpeg \
                     port:tiff
 
-patchfiles          patch-tests-pixbuf-readonly-to-mutable.c.diff
-
 gobject_introspection yes
 
-use_autoreconf      yes
-autoreconf.args     -fvi
+license_noconflict  gobject-introspection
 
 configure.args      --with-libjasper \
                     --disable-silent-rules

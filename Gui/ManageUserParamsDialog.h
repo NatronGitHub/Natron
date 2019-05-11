@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -73,18 +73,23 @@ public Q_SLOTS:
 
     void onCloseClicked();
 
-    void onSelectionChanged();
+    void onKnobsTreeSelectionChanged();
+    void onViewerTreeSelectionChanged();
 
-    void onItemDoubleClicked(QTreeWidgetItem *item, int column);
+    void onKnobsTreeItemDoubleClicked(QTreeWidgetItem *item, int column);
+    void onViewerTreeItemDoubleClicked(QTreeWidgetItem *item, int column);
 
 private:
+
 
     // Prompts user to create a user page
     bool ensureHasUserPage();
 
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 
-    void onEditClickedInternal(const QList<QTreeWidgetItem*> &selection);
+    
+    void onKnobsEditClickedInternal(const QList<QTreeWidgetItem*> &selection);
+    void onViewerUIEditClickedInternal(const QList<QTreeWidgetItem*> &selection);
 
     boost::scoped_ptr<ManageUserParamsDialogPrivate> _imp;
 };

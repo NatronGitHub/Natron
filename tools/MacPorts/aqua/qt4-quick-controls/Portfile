@@ -4,6 +4,7 @@
 PortSystem       1.0
 PortGroup        qt4 1.0
 PortGroup        qmake 1.0
+PortGroup        github 1.0
 
 epoch        	 1
 
@@ -11,12 +12,19 @@ name             qt4-quick-controls
 version          0.1.20121231
 categories       aqua
 platforms        macosx
-license          GPL-3
+license          BSD
 maintainers      openmaintainer
 description      A Desktop Qt Quick Component
 long_description ${description}
-homepage         https://qt-project.org/wiki/QtDesktopComponents
+homepage         http://wiki.qt.io/QtDesktopComponents
 
-fetch.type       git
-git.url          git://gitorious.org/qt/qtquickcontrols.git
-git.branch       d41f99efdb99b337761f0575ad28434f6aaa07ba
+# TODO: really install stuff!
+# References:
+# - http://blog.qt.io/blog/2011/03/10/qml-components-for-desktop/
+# - http://blog.qt.io/blog/2011/05/26/table-view-with-qt-quick/
+# - http://blog.qt.io/blog/2011/08/26/toplevel-windows-and-menus-with-qt-quick/
+
+# commit d41f99efdb99b337761f0575ad28434f6aaa07ba is the HEAD of branch old/qt4
+github.setup qt qtquickcontrols d41f99efdb99b337761f0575ad28434f6aaa07ba
+checksums           rmd160  05e5a7846a50ef0ea69b3ff15b297bd3c3ddc794 \
+                    sha256  671fed06394df099bf322ea1bd18e15d0fd8a20919d506c9aa52266a600b501e

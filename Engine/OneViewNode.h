@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,7 +29,11 @@
 
 #include "Engine/EffectInstance.h"
 
+#include "Engine/EngineFwd.h"
+
+
 NATRON_NAMESPACE_ENTER
+
 
 struct OneViewNodePrivate;
 class OneViewNode
@@ -39,103 +43,52 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    OneViewNode(const NodePtr& n);
+    OneViewNode(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key);
 public:
-
-    static EffectInstance* BuildEffect(NodePtr n)
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
-        return new OneViewNode(n);
+        return EffectInstancePtr( new OneViewNode(node) );
     }
 
-    OneViewNode(NodePtr n);
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new OneViewNode(mainInstance, key) );
+    }
+
+    static PluginPtr createPlugin();
 
     virtual ~OneViewNode();
 
-    virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
-
-    virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 0;
-    }
-
-    virtual int getNInputs() const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
-
-    virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual std::string getPluginDescription() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
-    virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isInputMask(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual void addAcceptedComponents(int inputNb, std::list<ImagePlaneDesc>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-
-    ///Doesn't really matter here since it won't be used (this effect is always an identity)
-    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return eRenderSafetyFullySafeFrame;
-    }
-
-    virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
-    virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
-    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
-
-    virtual bool isHostChannelSelectorSupported(bool* /*defaultR*/,
-                                                bool* /*defaultG*/,
-                                                bool* /*defaultB*/,
-                                                bool* /*defaultA*/) const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
-    virtual ViewInvarianceLevel isViewInvariant() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return eViewInvarianceAllViewsVariant;
-    }
-
-public Q_SLOTS:
-
-    void onProjectViewsChanged();
-
 private:
 
+    virtual void fetchRenderCloneKnobs() OVERRIDE;
+
+    virtual void onMetadataChanged(const NodeMetadata& metadata) OVERRIDE FINAL;
+
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isIdentity(double time,
-                            const RenderScale & scale,
-                            const RectI & roi,
-                            ViewIdx view,
-                            double* inputTime,
-                            ViewIdx* inputView,
-                            int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view, FramesNeededMap* results) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum isIdentity(TimeValue time,
+                                         const RenderScale & scale,
+                                         const RectI & roi,
+                                         ViewIdx view,
+                                         const ImagePlaneDesc& plane,
+                                         TimeValue* inputTime,
+                                         ViewIdx* inputView,
+                                         int* inputNb,
+                                         ImagePlaneDesc* inputPlane) OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<OneViewNodePrivate> _imp;
 };
+
+
+inline OneViewNodePtr
+toOneViewNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<OneViewNode>(effect);
+}
+
 
 NATRON_NAMESPACE_EXIT
 

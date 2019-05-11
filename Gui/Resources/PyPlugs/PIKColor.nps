@@ -1,0 +1,459 @@
+# Natron Presets File
+PluginID: fr.inria.built-in.Group
+Params:
+  - Name: pyPlugPluginID
+    String: fr.inria.PIKColor
+  - Name: pyPlugPluginLabel
+    String: PIKColor
+  - Name: pyPlugPluginGrouping
+    String: Keyer
+  - Name: pyPlugPluginDescription
+    String: "This node provides the PIK per-pixel keyer a pseudo clean-plate to be used as color reference.\nThe idea is to remove the foreground image and only leave the shades and hues of the original blue/greenscreen.\nAttach the output of this node to the 'C' input of a PIK node. Attach the input of this node and the 'PFg' input of PIK to the original screen, or preferably the denoised screen.\nPick which color your screen type is in both nodes and then while viewing the alpha output from PIK lower the darks.b (if a bluescreen - adjust darks.g if a greenscreen) in this node until you see a change in the garbage area of the matte. Once you see a change then you have gone too far -back off a step. If you are still left with discolored edges you can use the other colors in the lights and darks to eliminate them. Remember the idea is to be left with the original shades of the screen and the foreground blacked out. While swapping between viewing the matte from the PIK and the rgb output of PIKColor adjust the other colors until you see a change in the garbage area of the matte. Simple rule of thumb - if you have a light red discolored area increase the lights.r - if you have a dark green discolored area increase darks.g. If your screen does not have a very saturated hue you may still be left with areas of discoloration after the above process. The 'erode' slider can help with this - while viewing the rgb output adjust the erode until those areas disappear.\nThe 'Patch Black' slider allows you to fill in the black areas with screen color. This is not always necessary but if you see blue squares in your composite increase this value and it'll fix it.\nThe optional 'InM' input can be used to provide an inside mask (a.k.a. core matte or holdout matte), which is excluded from the clean plate. If an inside mask is fed into the Keyer (PIK or another Keyer), the same inside mask should be fed inside PIKColor.\nThe above is the only real workflow for this node - working from the top parameter to the bottom parameter- going back to tweak darks/lights with 'erode' and 'patch black' activated is not really going to work."
+  - Name: pyPlugPluginVersion
+    Int: [1, 0]
+  - Name: pyPlugPluginIcon
+    String: PIKColor.png
+UserPages:
+  - TypeName: Page
+    Name: controls
+    Label: Controls
+    Params:
+      - Name: screenType
+        DefaultString: Blue
+        NDims: 1
+        TypeName: Choice
+        Label: Screen Type
+        Entries: [Green, Blue]
+      - Name: size
+        DefaultFloat: 10
+        NDims: 1
+        TypeName: Double
+        Label: Size
+        Hint: Size of color expansion.
+        Min: 0
+        DisplayMin: 0
+        DisplayMax: 100
+      - Name: off
+        DefaultFloat: [0, 0, 0]
+        NDims: 3
+        TypeName: Color
+        Label: Darks
+        Hint: "adjust the color values to get the best separation between black and the screen type color.\nYou want to be left with only shades of the screen color and black. \nIf a green screen is selected start by bringing down darks->green\nIf a blue screen is selected start by bringing down darks->blue"
+        DisplayMin: -1
+        DisplayMax: 1
+      - Name: mult
+        DefaultFloat: [1, 1, 1]
+        NDims: 3
+        TypeName: Color
+        Label: Lights
+        Hint: "adjust the color values to get the best separation between black and the screen type color.\nYou want to be left with only shades of the screen color and black. \nIf a green screen is selected start by bringing down darks->green\nIf a blue screen is selected start by bringing down darks->blue"
+        Min: 0
+        DisplayMin: 0
+        DisplayMax: 2
+      - Name: sep1
+        NDims: 1
+        TypeName: Separator
+        Label: ""
+        Props: [NoEval, Volatile]
+      - Name: erode
+        DefaultFloat: 0
+        NDims: 1
+        TypeName: Double
+        Label: Erode
+        Hint: increase this value if you still see traces of the foreground edge color in the output
+        Min: 0
+        DisplayMin: 0
+        DisplayMax: 5
+      - Name: sep2
+        NDims: 1
+        TypeName: Separator
+        Label: ""
+        Props: [NoEval, Volatile]
+      - Name: multi
+        DefaultFloat: 0
+        NDims: 1
+        TypeName: Double
+        Label: Patch Black
+        Hint: "Increase this to optionally remove the black from the output.\nThis should only be used once the the above darks/lights have been set."
+        Min: 0
+        DisplayMin: 0
+        DisplayMax: 5
+        Props: [NoNewLine]
+      - Name: filt
+        DefaultBool: true
+        NDims: 1
+        TypeName: Bool
+        Label: Filter
+        Props: [AnimatesChanged]
+      - Name: sep3
+        NDims: 1
+        TypeName: Separator
+        Label: ""
+        Props: [NoEval, Volatile]
+      - Name: level
+        DefaultFloat: 1
+        NDims: 1
+        TypeName: Double
+        Label: Level
+        Hint: multiply the rgb output. Helps remove noise from main key
+        DisplayMin: 0
+        DisplayMax: 1
+PagesOrder: [controls, nodePage, pyPlugPage]
+Children:
+  - PluginID: net.sf.openfx.GradePlugin
+    Name: Grade11
+    Version: [2, 0]
+    Inputs: Dot2
+    Params:
+      - Name: multiply
+        Float: [{pyExpr: thisGroup.mult.get().r}, {pyExpr: thisGroup.mult.get().g}, {pyExpr: thisGroup.mult.get().b}, 0]
+      - Name: offset
+        Float: [{pyExpr: thisGroup.off.get().r}, {pyExpr: thisGroup.off.get().g}, {pyExpr: thisGroup.off.get().b}, 0]
+      - Name: mix
+        Float: 0.326
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">*mult+off</font>
+    Pos: [14, -192]
+  - PluginID: net.sf.openfx.Clamp
+    Name: Clamp2
+    Version: [2, 0]
+    Inputs: Grade11
+    Params:
+      - Name: maximumEnable
+        Bool: false
+      - Name: premultChanged
+        Bool: true
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">>0 (rgb)</font>
+    Pos: [14, -118]
+  - PluginID: net.sf.openfx.Invert
+    Name: Invert1
+    Version: [2, 0]
+    Inputs: PIK2
+    Params:
+      - Name: NatronOfxParamProcessR
+        Bool: false
+      - Name: NatronOfxParamProcessG
+        Bool: false
+      - Name: NatronOfxParamProcessB
+        Bool: false
+      - Name: premultChanged
+        Bool: true
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(a)</font>
+    Pos: [126, -33]
+  - PluginID: eu.cimg.ErodeBlur
+    Name: Erode1
+    Version: [4, 0]
+    Inputs: Invert1
+    Params:
+      - Name: size
+        Float: {pyExpr: thisGroup.erode.get()}
+      - Name: premultChanged
+        Bool: true
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">erode (a)</font>
+    Pos: [138, 33]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot1
+    Inputs: Source
+    Pos: [187, -224]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot2
+    Inputs: Dot1
+    Pos: [59, -226]
+  - PluginID: net.sf.openfx.ShufflePlugin
+    Name: ShuffleCopy3
+    Version: [2, 0]
+    Inputs: {A: Erode1, B: Dot3}
+    Params:
+      - Name: outputR
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.R
+      - Name: outputG
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.G
+      - Name: outputB
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.B
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(A.a->B.a)</font>
+    Pos: [272, 35]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot3
+    Inputs: Dot1
+    Pos: [317, -224]
+  - PluginID: net.sf.openfx.Premult
+    Name: Premult3
+    Version: [2, 0]
+    Inputs: ShuffleCopy3
+    Pos: [272, 99]
+  - PluginID: net.sf.openfx.Unpremult
+    Name: Unpremult4
+    Version: [2, 0]
+    Inputs: Blur4
+    Pos: [272, 227]
+  - PluginID: net.sf.openfx.Clamp
+    Name: Clamp1
+    Version: [2, 0]
+    Inputs: Shuffle1
+    Params:
+      - Name: maximum
+        Float: 0
+      - Name: minClampToEnable
+        Bool: true
+      - Name: maxClampToEnable
+        Bool: true
+      - Name: premultChanged
+        Bool: true
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(a != 0 -> a)</font>
+    Pos: [700, 225]
+  - PluginID: net.sf.openfx.ShufflePlugin
+    Name: ChannelCopy1
+    Version: [2, 0]
+    Inputs: {A: Clamp1, B: Dot4}
+    Params:
+      - Name: outputR
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.R
+      - Name: outputG
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.G
+      - Name: outputB
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.B
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(A.a->B.a)</font>
+    Pos: [411, 292]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot4
+    Inputs: Unpremult4
+    Pos: [317, 299]
+  - PluginID: net.sf.openfx.ShufflePlugin
+    Name: ShuffleCopy2
+    Version: [2, 0]
+    Inputs: {A: Switch1, B: Unpremult1}
+    Params:
+      - Name: outputR
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.R
+      - Name: outputG
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.G
+      - Name: outputB
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.B
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(A.a->B.a)</font>
+    Pos: [413, 602]
+  - PluginID: net.sf.openfx.Unpremult
+    Name: Unpremult1
+    Version: [2, 0]
+    Inputs: Blur2
+    Pos: [413, 423]
+  - PluginID: net.sf.openfx.Invert
+    Name: Invert2
+    Version: [2, 0]
+    Inputs: Clamp1
+    Params:
+      - Name: NatronOfxParamProcessR
+        Bool: false
+      - Name: NatronOfxParamProcessG
+        Bool: false
+      - Name: NatronOfxParamProcessB
+        Bool: false
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(a)</font>
+    Pos: [700, 328]
+  - PluginID: net.sf.openfx.switchPlugin
+    Name: Switch1
+    Inputs: {0: BlurBox1, 1: BlurBox2}
+    Params:
+      - Name: which
+        Int: {pyExpr: 1-thisGroup.filt.get()}
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(filt)</font>
+    Pos: [690, 602]
+  - PluginID: net.sf.openfx.Premult
+    Name: Premult1
+    Version: [2, 0]
+    Inputs: ShuffleCopy2
+    Pos: [411, 727]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: Merge1
+    Inputs: {A: Premult1, B: Dot7}
+    Params:
+      - Name: userTextArea
+        String: <Natron>(over)</Natron>
+    Pos: [272, 717]
+  - PluginID: net.sf.openfx.ShufflePlugin
+    Name: ChannelCopy2
+    Version: [2, 0]
+    Inputs: {A: Dot6, B: Unpremult2}
+    Params:
+      - Name: outputR
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.R
+      - Name: outputG
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.G
+      - Name: outputB
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.B
+    Pos: [272, 886]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot6
+    Inputs: Erode1
+    Pos: [171, 894]
+  - PluginID: net.sf.openfx.GradePlugin
+    Name: Grade1
+    Version: [2, 0]
+    Inputs: ChannelCopy2
+    Params:
+      - Name: multiply
+        Float: {pyExpr: thisGroup.level.get()}
+    Pos: [272, 946]
+  - PluginID: fr.inria.built-in.Input
+    Name: Source
+    Pos: [145, -282]
+  - PluginID: fr.inria.built-in.Output
+    Name: Output
+    Inputs: Grade1
+    Pos: [272, 1014]
+  - PluginID: net.sf.openfx.PIK
+    Name: PIK2
+    Inputs: {C: Clamp2, Fg: Clamp2, PFg: Clamp2}
+    Masks: {InM: InM}
+    Params:
+      - Name: screenType
+        String: {pyExpr: thisGroup.screenType.getValue()}
+      - Name: redWeight
+        Float: 1
+      - Name: blueGreenWeight
+        Float: 1
+      - Name: luma
+        Float: 1
+      - Name: enableMask_InM
+        Bool: true
+    Pos: [26, -35]
+  - PluginID: net.sf.cimg.CImgBlur
+    Name: Blur2
+    Label: Blur1
+    Version: [4, 0]
+    Inputs: ChannelCopy1
+    Params:
+      - Name: size
+        Float: {pyExpr: thisGroup.size.get()*3*thisGroup.multi.get()}
+      - Name: filter
+        String: Quadratic
+      - Name: expandRoD
+        Bool: false
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">size*3*multi</font>
+    Pos: [411, 351]
+  - PluginID: net.sf.cimg.CImgBlur
+    Name: Blur4
+    Version: [4, 0]
+    Inputs: Premult3
+    Params:
+      - Name: size
+        Float: {pyExpr: thisGroup.size.get()}
+      - Name: filter
+        String: Quadratic
+      - Name: expandRoD
+        Bool: false
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">size</font>
+    Pos: [272, 159]
+  - PluginID: fr.inria.built-in.Input
+    Name: InM
+    Params:
+      - Name: optional
+        Bool: true
+      - Name: isMask
+        Bool: true
+    Pos: [-171, -35]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot7
+    Inputs: ChannelCopy1
+    Pos: [317, 370]
+  - PluginID: net.sf.cimg.CImgBlur
+    Name: BlurBox1
+    Version: [4, 0]
+    Inputs: DilateFast1
+    Params:
+      - Name: NatronOfxParamProcessR
+        Bool: false
+      - Name: NatronOfxParamProcessG
+        Bool: false
+      - Name: NatronOfxParamProcessB
+        Bool: false
+      - Name: size
+        Float: {pyExpr: (thisGroup.size.get()/5)*thisGroup.multi.get()*4}
+      - Name: expandRoD
+        Bool: false
+      - Name: cropToFormat
+        Bool: false
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(size/5)*multi*4</font>
+    Pos: [579, 509]
+  - PluginID: net.sf.cimg.CImgBlur
+    Name: BlurBox2
+    Version: [4, 0]
+    Inputs: DilateFast2
+    Params:
+      - Name: NatronOfxParamProcessR
+        Bool: false
+      - Name: NatronOfxParamProcessG
+        Bool: false
+      - Name: NatronOfxParamProcessB
+        Bool: false
+      - Name: size
+        Float: {pyExpr: (thisGroup.size.get()/5)*2}
+      - Name: filter
+        String: Box
+      - Name: expandRoD
+        Bool: false
+      - Name: cropToFormat
+        Bool: false
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(size/5)*2</font>
+    Pos: [803, 511]
+  - PluginID: net.sf.openfx.Unpremult
+    Name: Unpremult2
+    Version: [2, 0]
+    Inputs: Merge1
+    Pos: [272, 803]
+  - PluginID: net.sf.openfx.ShufflePlugin
+    Name: Shuffle1
+    Version: [2, 0]
+    Inputs: {A: Unpremult4}
+    Params:
+      - Name: outputComponents
+        String: Alpha
+      - Name: outputA
+        String: {pyExpr: thisGroup.screenType.get()+1}
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(g or b->a)</font>
+    Pos: [418, 225]
+  - PluginID: net.sf.cimg.CImgDilate
+    Name: DilateFast1
+    Version: [2, 1]
+    Inputs: Invert2
+    Params:
+      - Name: size
+        Int: {pyExpr: (thisGroup.size.get()/5)*thisGroup.multi.get()*2}
+      - Name: expandRoD
+        Bool: false
+      - Name: premult
+        Bool: true
+      - Name: premultChanged
+        Bool: true
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">(size/5)*multi*2</font>
+    Pos: [579, 428]
+  - PluginID: net.sf.cimg.CImgDilate
+    Name: DilateFast2
+    Version: [2, 1]
+    Inputs: Invert2
+    Params:
+      - Name: size
+        Int: {pyExpr: thisGroup.size.get()/5}
+      - Name: expandRoD
+        Bool: false
+      - Name: premult
+        Bool: true
+      - Name: premultChanged
+        Bool: true
+      - Name: userTextArea
+        String: <font size="6" color="#000000" face="Droid Sans">size/5</font>
+    Pos: [803, 431]

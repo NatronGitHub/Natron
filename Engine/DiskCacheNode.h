@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,8 +31,9 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
@@ -40,96 +41,32 @@ NATRON_NAMESPACE_ENTER
 struct DiskCacheNodePrivate;
 
 class DiskCacheNode
-    : public OutputEffectInstance
+    : public EffectInstance
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    DiskCacheNode(const NodePtr& node);
 
-    static EffectInstance* BuildEffect(NodePtr n)
+    DiskCacheNode(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key);
+
+public:
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
-        return new DiskCacheNode(n);
+        return EffectInstancePtr( new DiskCacheNode(node) );
     }
 
-    DiskCacheNode(NodePtr node);
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new DiskCacheNode(mainInstance, key) );
+    }
+
+    static PluginPtr createPlugin();
 
     virtual ~DiskCacheNode();
-
-    virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
-
-    virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 0;
-    }
-
-    virtual int getNInputs() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
-
-    virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
-
-    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return PLUGINID_NATRON_DISKCACHE;
-    }
-
-    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return "DiskCache";
-    }
-
-    virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return tr("This node caches all images of the connected input node onto the disk with full 32bit floating point raw data. "
-                  "When an image is found in the cache, %1 will then not request the input branch to render out that image. "
-                  "The DiskCache node only caches full images and does not split up the images in chunks.  "
-                  "The DiskCache node is useful if working with a large and complex node tree: this allows to break the tree into smaller "
-                  "branches and cache any branch that you're no longer working on. The cached images are saved by default in the same directory that is used "
-                  "for the viewer cache but you can set its location and size in the preferences. A solid state drive disk is recommended for efficiency of this node. "
-                  "By default all images that pass into the node are cached but they depend on the zoom-level of the viewer. For convenience you can cache "
-                  "a specific frame range at scale 100% much like a writer node would do.\n"
-                  "WARNING: The DiskCache node must be part of the tree when you want to read cached data from it.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString();
-    }
-
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL
-    {
-        grouping->push_back(PLUGIN_GROUP_OTHER);
-    }
-
-    virtual std::string getInputLabel (int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return "Source";
-    }
-
-    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual void addAcceptedComponents(int inputNb, std::list<ImagePlaneDesc>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-
-    ///Doesn't really matter here since it won't be used (this effect is always an identity)
-    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return eRenderSafetyFullySafeFrame;
-    }
-
-    virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
 
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -137,22 +74,30 @@ public:
     }
 
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void getFrameRange(double *first, double *last) OVERRIDE FINAL;
-    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+    virtual ActionRetCodeEnum getFrameRange(double *first, double *last) OVERRIDE FINAL;
 
-    virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 
 private:
 
-    virtual bool knobChanged(KnobI* k,
+    virtual void fetchRenderCloneKnobs() OVERRIDE FINAL;
+
+    virtual ActionRetCodeEnum render(const RenderActionArgs& args) OVERRIDE FINAL;
+
+    virtual bool knobChanged(const KnobIPtr&,
                              ValueChangedReasonEnum reason,
-                             ViewSpec view,
-                             double time,
-                             bool originatedFromMainThread) OVERRIDE FINAL;
-    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
-    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view, int visitsCount) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+                             ViewSetSpec view,
+                             TimeValue time) OVERRIDE FINAL;
+    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, int visitsCount) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<DiskCacheNodePrivate> _imp;
 };
+
+
+inline DiskCacheNodePtr
+toDiskCacheNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<DiskCacheNode>(effect);
+}
+
 
 NATRON_NAMESPACE_EXIT
 

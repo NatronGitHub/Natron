@@ -13,6 +13,8 @@
 			buildPhases = (
 			);
 			dependencies = (
+				1EDADF331D8B0C6500D47689 /* PBXTargetDependency */,
+				AC3FFDFE1D8835900049666E /* PBXTargetDependency */,
 				AC7762A51D1ACE550006A58E /* PBXTargetDependency */,
 				ACD67C001CEC9D1000DD2CFE /* PBXTargetDependency */,
 				1E15253A1CA9CD8D0056C506 /* PBXTargetDependency */,
@@ -35,9 +37,9 @@
 			);
 			dependencies = (
 				1E306DFF1C4949BA00BAC6E3 /* PBXTargetDependency */,
-				1EADE5FF18AA408B00EF3180 /* PBXTargetDependency */,
 				1E306E031C4949C900BAC6E3 /* PBXTargetDependency */,
-				1E7DE01F1FA1FCDB0060E9E7 /* PBXTargetDependency */,
+				1EADE5FF18AA408B00EF3180 /* PBXTargetDependency */,
+				1ED800511E198C6B0021BEC0 /* PBXTargetDependency */,
 				1E306E011C4949BE00BAC6E3 /* PBXTargetDependency */,
 			);
 			name = all;
@@ -60,9 +62,11 @@
 			isa = PBXAggregateTarget;
 			buildConfigurationList = AC4AA6341C480E7F00C92E12 /* Build configuration list for PBXAggregateTarget "Natron" */;
 			buildPhases = (
+				1E11781C1D8BD83E00024C91 /* CopyFiles */,
 			);
 			dependencies = (
 				AC4AA6381C480E8700C92E12 /* PBXTargetDependency */,
+				1E1178141D8BD50E00024C91 /* PBXTargetDependency */,
 				1E306E051C4949D700BAC6E3 /* PBXTargetDependency */,
 			);
 			name = Natron;
@@ -70,7 +74,18 @@
 		};
 /* End PBXAggregateTarget section */
 
+/* Begin PBXBuildFile section */
+		1E11781D1D8BD87100024C91 /* NatronProjectConverter in CopyFiles */ = {isa = PBXBuildFile; fileRef = AC07FAE21D6F65D100A5A9D8 /* NatronProjectConverter */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
+		1E1178131D8BD50E00024C91 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC07FADB1D6F65D100A5A9D8 /* NatronProjectConverter.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 923D21C3763E39C9804AEAFB;
+			remoteInfo = NatronProjectConverter;
+		};
 		1E12F4BA1CC6593300105A34 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E12F4B41CC6593300105A34 /* qhttpserver.xcodeproj */;
@@ -82,7 +97,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E12F4B41CC6593300105A34 /* qhttpserver.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 0F9BDEC3E33CD11210649D6C;
+			remoteGlobalIDString = 7B66319A2D661600E54F0DA9;
 			remoteInfo = qhttpserver;
 		};
 		1E15250D1CA9CCA70056C506 /* PBXContainerItemProxy */ = {
@@ -124,35 +139,35 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E1524F31CA9CCA60056C506 /* ceres.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 438AE7D5EB0BAE23E56F5352;
+			remoteGlobalIDString = F8CC1206D116CA04F4C59E76;
 			remoteInfo = ceres;
 		};
 		1E1525391CA9CD8D0056C506 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E1524F81CA9CCA60056C506 /* gflags.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = BC54BAD1526A66E5C2E2CC26;
+			remoteGlobalIDString = AE1AD09FA66E17B98A648194;
 			remoteInfo = gflags;
 		};
 		1E15253B1CA9CD8D0056C506 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E1524FD1CA9CCA60056C506 /* glog.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = B474DC8D26C74D855DEFCFA3;
+			remoteGlobalIDString = 7569DD78B40A8DF6A62CFA3E;
 			remoteInfo = glog;
 		};
 		1E15253D1CA9CD8D0056C506 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E1525021CA9CCA60056C506 /* LibMV.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 82C8679F5F666CD29BE21CEB;
+			remoteGlobalIDString = C7E53A7AD172AE9320949229;
 			remoteInfo = LibMV;
 		};
 		1E15253F1CA9CD8D0056C506 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E1525071CA9CCA60056C506 /* openMVG.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = CA4C1A52C5F8F90418016B00;
+			remoteGlobalIDString = 328590AF750A79D2CF9DFB9A;
 			remoteInfo = openMVG;
 		};
 		1E189EC31C49475E00F1FD20 /* PBXContainerItemProxy */ = {
@@ -173,7 +188,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C718AA403700EF3180 /* Tests.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 29AE491A198144318F969FC4;
+			remoteGlobalIDString = DC7FDCA340DAC7F023377B78;
 			remoteInfo = Tests;
 		};
 		1E306DFE1C4949BA00BAC6E3 /* PBXContainerItemProxy */ = {
@@ -194,28 +209,28 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 271E95BB20556AA57835B335;
+			remoteGlobalIDString = 32D9C4266EC8DC770A644D29;
 			remoteInfo = NatronRenderer;
 		};
 		1E306E041C4949D700BAC6E3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 742C05434B4A2CC61C665A03;
+			remoteGlobalIDString = 782793A212D0A946A2611559;
 			remoteInfo = Natron;
 		};
 		1E5F8F5718AA913D0045A477 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C118AA403700EF3180 /* Engine.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 36F88AFD17FF9BE554948F26;
+			remoteGlobalIDString = F82FF8B1AB092B635B8D3C44;
 			remoteInfo = Engine;
 		};
 		1E5F8F5918AA913D0045A477 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C418AA403700EF3180 /* Gui.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = D260AC99A6562230872D9443;
+			remoteGlobalIDString = 9B38B1D5C33AF4E4B0F859F7;
 			remoteInfo = Gui;
 		};
 		1E5F8F5B18AA91430045A477 /* PBXContainerItemProxy */ = {
@@ -260,11 +275,53 @@
 			remoteGlobalIDString = 1EADE5F818AA407D00EF3180;
 			remoteInfo = Tests;
 		};
-		1EE4395C1FA1FC690027344A /* PBXContainerItemProxy */ = {
+		1ED800501E198C6B0021BEC0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 1EE439561FA1FC690027344A /* natron-python.xcodeproj */;
+			containerPortal = AC07FADB1D6F65D100A5A9D8 /* NatronProjectConverter.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 923D21C3763E39C9804AEAFB;
+			remoteInfo = NatronProjectConverter;
+		};
+		1EDADF321D8B0C6500D47689 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1EDADF2A1D8B0C4D00D47689 /* yaml-cpp-natron.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = F1893DC41316C2EF4D083C17;
+			remoteInfo = "yaml-cpp-natron";
+		};
+		1EE90EF61DD79AB400FA7BFE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1EDADF2A1D8B0C4D00D47689 /* yaml-cpp-natron.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = 1EE439591FA1FC690027344A;
+			remoteGlobalIDString = 1EE90EEB1DD79A9400FA7BFE;
+			remoteInfo = "yaml-cpp-natron";
+		};
+		AC07FAD91D6F65BE00A5A9D8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC07FAD31D6F65BE00A5A9D8 /* Serialization.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = AC07FAD61D6F65BE00A5A9D8;
+			remoteInfo = Serialization;
+		};
+		AC07FAE11D6F65D100A5A9D8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC07FADB1D6F65D100A5A9D8 /* NatronProjectConverter.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = AC07FADE1D6F65D100A5A9D8;
+			remoteInfo = NatronProjectConverter;
+		};
+		AC3FFDFD1D8835900049666E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC07FAD31D6F65BE00A5A9D8 /* Serialization.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = F08B6EF92C65365D1012666D;
+			remoteInfo = Serialization;
+		};
+		AC4999B01E8021110012C02D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC4999AA1E8021110012C02D /* natron-python.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = AC4999AD1E8021110012C02D;
 			remoteInfo = "natron-python";
 		};
 		AC4AA6371C480E8700C92E12 /* PBXContainerItemProxy */ = {
@@ -285,7 +342,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = AC77629C1D1ACE460006A58E /* tess.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = BF41060267E60B08D8BB1293;
+			remoteGlobalIDString = 4CC5E6935FD17005E28F4818;
 			remoteInfo = tess;
 		};
 		ACD67BFD1CEC9D0900DD2CFE /* PBXContainerItemProxy */ = {
@@ -299,7 +356,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = ACD67BF71CEC9D0900DD2CFE /* hoedown.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = F7DDAAD3A20BB9EC180FE8E6;
+			remoteGlobalIDString = 547B056CEA92922A2FCFC8AF;
 			remoteInfo = hoedown;
 		};
 		D7A1964518B2242500F412DA /* PBXContainerItemProxy */ = {
@@ -313,10 +370,23 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = E28890CD257EF93705C36010;
+			remoteGlobalIDString = 0E116598542859DA9320C015;
 			remoteInfo = HostSupport;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		1E11781C1D8BD83E00024C91 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(SOURCE_ROOT)/App/build/$(CONFIGURATION)/Natron.app/Contents/MacOS";
+			dstSubfolderSpec = 0;
+			files = (
+				1E11781D1D8BD87100024C91 /* NatronProjectConverter in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		1E12F4B41CC6593300105A34 /* qhttpserver.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = qhttpserver.xcodeproj; path = libs/qhttpserver/src/qhttpserver.xcodeproj; sourceTree = "<group>"; };
@@ -326,21 +396,19 @@
 		1E1525021CA9CCA60056C506 /* LibMV.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = LibMV.xcodeproj; path = libs/libmv/LibMV.xcodeproj; sourceTree = "<group>"; };
 		1E1525071CA9CCA60056C506 /* openMVG.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = openMVG.xcodeproj; path = libs/openMVG/openMVG.xcodeproj; sourceTree = "<group>"; };
 		1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Natron.xcodeproj; path = App/Natron.xcodeproj; sourceTree = "<group>"; };
-		1E1FB6201DA7BBD1009F547D /* AngleBlur.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = AngleBlur.py; sourceTree = "<group>"; };
 		1E1FB6211DA7BBD1009F547D /* DropShadow.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = DropShadow.png; sourceTree = "<group>"; };
-		1E1FB6221DA7BBD1009F547D /* DropShadow.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = DropShadow.py; sourceTree = "<group>"; };
 		1E1FB6231DA7BBD1009F547D /* Fill.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Fill.png; sourceTree = "<group>"; };
-		1E1FB6241DA7BBD1009F547D /* Fill.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = Fill.py; sourceTree = "<group>"; };
 		1E1FB6251DA7BBD1009F547D /* Glow.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Glow.png; sourceTree = "<group>"; };
-		1E1FB6261DA7BBD1009F547D /* Glow.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = Glow.py; sourceTree = "<group>"; };
 		1E1FB6271DA7BBD2009F547D /* LightWrap.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = LightWrap.png; sourceTree = "<group>"; };
-		1E1FB6281DA7BBD2009F547D /* LightWrap.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = LightWrap.py; sourceTree = "<group>"; };
-		1E1FB6291DA7BBD2009F547D /* PIKColor.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = PIKColor.py; sourceTree = "<group>"; };
 		1E1FB62A1DA7BBD2009F547D /* SplitAndJoin.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = SplitAndJoin.py; sourceTree = "<group>"; };
-		1E1FB62B1DA7BBD2009F547D /* ZMask.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = ZMask.py; sourceTree = "<group>"; };
 		1E1FB62C1DA7BBD2009F547D /* ZRemap.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ZRemap.png; sourceTree = "<group>"; };
-		1E1FB62D1DA7BBD2009F547D /* ZRemap.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = ZRemap.py; sourceTree = "<group>"; };
 		1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronRenderer.xcodeproj; path = Renderer/NatronRenderer.xcodeproj; sourceTree = "<group>"; };
+		1E5EBABC1D4DF2640005A5A8 /* ofx_plugin_programming_guide.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; name = ofx_plugin_programming_guide.html; path = Documentation/ofx_plugin_programming_guide.html; sourceTree = "<group>"; };
+		1E5EBABD1D4DF2640005A5A8 /* ofxActionsSupported.rtf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.rtf; name = ofxActionsSupported.rtf; path = Documentation/ofxActionsSupported.rtf; sourceTree = "<group>"; };
+		1E5EBABE1D4DF2640005A5A8 /* ofxPropSupported.rtf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.rtf; name = ofxPropSupported.rtf; path = Documentation/ofxPropSupported.rtf; sourceTree = "<group>"; };
+		1E5EBABF1D4DF2640005A5A8 /* Presentation.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = Presentation.md; path = Documentation/Presentation.md; sourceTree = "<group>"; };
+		1E5EBAC01D4DF2640005A5A8 /* source */ = {isa = PBXFileReference; lastKnownFileType = folder; name = source; path = Documentation/source; sourceTree = "<group>"; };
+		1E5EBAC11D4DF2640005A5A8 /* TuttleOFX-README.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "TuttleOFX-README.txt"; path = "Documentation/TuttleOFX-README.txt"; sourceTree = "<group>"; };
 		1E5FBCF91DDCAD4800348B8B /* Natron.spec */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Natron.spec; sourceTree = "<group>"; };
 		1E70D14F1CF33A0C000D2932 /* BUGS.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = BUGS.md; sourceTree = "<group>"; };
 		1E70D1501CF33A0C000D2932 /* CHANGELOG.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
@@ -362,37 +430,45 @@
 		1E70D1611CF33A0C000D2932 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		1E7698DA1D951A0B00AF3860 /* LATEST_VERSION_README.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LATEST_VERSION_README.txt; sourceTree = "<group>"; };
 		1E769A631D95563500AF3860 /* I18N-HOWTO.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "I18N-HOWTO.txt"; path = "Documentation/I18N-HOWTO.txt"; sourceTree = "<group>"; };
+		1EA7E2EE1E93D013001E9FDA /* alg-outline */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "alg-outline"; sourceTree = "<group>"; };
+		1EA7E2EF1E93D013001E9FDA /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
+		1EA7E2F01E93D013001E9FDA /* README.natron.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.natron.md; sourceTree = "<group>"; };
+		1EA7E33E1E93D124001E9FDA /* apiChanges_1_2_Chapter.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = apiChanges_1_2_Chapter.xml; path = Documentation/apiChanges_1_2_Chapter.xml; sourceTree = "<group>"; };
+		1EA7E33F1E93D124001E9FDA /* clipPreferencesChapter.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = clipPreferencesChapter.xml; path = Documentation/clipPreferencesChapter.xml; sourceTree = "<group>"; };
+		1EA7E3401E93D124001E9FDA /* header.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = header.xml; path = Documentation/header.xml; sourceTree = "<group>"; };
+		1EA7E3411E93D124001E9FDA /* imageEffectActionsChapter.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = imageEffectActionsChapter.xml; path = Documentation/imageEffectActionsChapter.xml; sourceTree = "<group>"; };
+		1EA7E3421E93D124001E9FDA /* imageEffectsAPIChapter.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = imageEffectsAPIChapter.xml; path = Documentation/imageEffectsAPIChapter.xml; sourceTree = "<group>"; };
+		1EA7E3431E93D124001E9FDA /* interactActionsChapter.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = interactActionsChapter.xml; path = Documentation/interactActionsChapter.xml; sourceTree = "<group>"; };
+		1EA7E3441E93D124001E9FDA /* ofxHostStruct.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = ofxHostStruct.xml; path = Documentation/ofxHostStruct.xml; sourceTree = "<group>"; };
+		1EA7E3451E93D124001E9FDA /* ofxLoadingSequence.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = ofxLoadingSequence.xml; path = Documentation/ofxLoadingSequence.xml; sourceTree = "<group>"; };
+		1EA7E3461E93D124001E9FDA /* ofxPackaging.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = ofxPackaging.xml; path = Documentation/ofxPackaging.xml; sourceTree = "<group>"; };
+		1EA7E3471E93D124001E9FDA /* ofxParameterChapter.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = ofxParameterChapter.xml; path = Documentation/ofxParameterChapter.xml; sourceTree = "<group>"; };
+		1EA7E3481E93D124001E9FDA /* ofxPluginStruct.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = ofxPluginStruct.xml; path = Documentation/ofxPluginStruct.xml; sourceTree = "<group>"; };
+		1EA7E3491E93D124001E9FDA /* ofxProgrammingGuide.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = ofxProgrammingGuide.xml; path = Documentation/ofxProgrammingGuide.xml; sourceTree = "<group>"; };
+		1EA7E34A1E93D124001E9FDA /* ofxProgrammingReference.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = ofxProgrammingReference.xml; path = Documentation/ofxProgrammingReference.xml; sourceTree = "<group>"; };
+		1EA7E34B1E93D124001E9FDA /* ofxPropertiesByObject.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = ofxPropertiesByObject.xml; path = Documentation/ofxPropertiesByObject.xml; sourceTree = "<group>"; };
+		1EA7E34C1E93D124001E9FDA /* README.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.txt; path = Documentation/README.txt; sourceTree = "<group>"; };
+		1EA7E34D1E93D124001E9FDA /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; name = index.html; path = Documentation/sourceforge/index.html; sourceTree = "<group>"; };
+		1EA7E34E1E93D124001E9FDA /* statusCodesChapter.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = statusCodesChapter.xml; path = Documentation/statusCodesChapter.xml; sourceTree = "<group>"; };
+		1EA7E34F1E93D124001E9FDA /* readme-ofxa.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = "readme-ofxa.md"; sourceTree = "<group>"; };
+		1EA7E3501E93D124001E9FDA /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		1EA7E3511E93D124001E9FDA /* release-notes.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = "release-notes.md"; sourceTree = "<group>"; };
+		1EA7E3531E93D152001E9FDA /* readme.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = readme.txt; sourceTree = "<group>"; };
 		1EADE5C118AA403700EF3180 /* Engine.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Engine.xcodeproj; path = Engine/Engine.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C418AA403700EF3180 /* Gui.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Gui.xcodeproj; path = Gui/Gui.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C718AA403700EF3180 /* Tests.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Tests.xcodeproj; path = Tests/Tests.xcodeproj; sourceTree = "<group>"; };
-		1EB1215C1D87F6B5009646F7 /* ofx_plugin_programming_guide.html */ = {isa = PBXFileReference; lastKnownFileType = text.html.documentation; name = ofx_plugin_programming_guide.html; path = Documentation/ofx_plugin_programming_guide.html; sourceTree = "<group>"; };
-		1EB1215D1D87F6B5009646F7 /* ofxActionsSupported.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = ofxActionsSupported.rtf; path = Documentation/ofxActionsSupported.rtf; sourceTree = "<group>"; };
-		1EB1215E1D87F6B5009646F7 /* ofxPropSupported.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = ofxPropSupported.rtf; path = Documentation/ofxPropSupported.rtf; sourceTree = "<group>"; };
-		1EB1215F1D87F6B5009646F7 /* Presentation.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = Presentation.md; path = Documentation/Presentation.md; sourceTree = "<group>"; };
-		1EB121601D87F6B5009646F7 /* TuttleOFX-README.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = "TuttleOFX-README.txt"; path = "Documentation/TuttleOFX-README.txt"; sourceTree = "<group>"; };
-		1EB121621D87F6EE009646F7 /* _group.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _group.rst; sourceTree = "<group>"; };
-		1EB121631D87F6EE009646F7 /* _groupChannel.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupChannel.rst; sourceTree = "<group>"; };
-		1EB121641D87F6EE009646F7 /* _groupColor.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupColor.rst; sourceTree = "<group>"; };
-		1EB121651D87F6EE009646F7 /* _groupDraw.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupDraw.rst; sourceTree = "<group>"; };
-		1EB121661D87F6EE009646F7 /* _groupExtra.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupExtra.rst; sourceTree = "<group>"; };
-		1EB121671D87F6EE009646F7 /* _groupFilter.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupFilter.rst; sourceTree = "<group>"; };
-		1EB121681D87F6EE009646F7 /* _groupImage.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupImage.rst; sourceTree = "<group>"; };
-		1EB121691D87F6EE009646F7 /* _groupKeyer.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupKeyer.rst; sourceTree = "<group>"; };
-		1EB1216A1D87F6EE009646F7 /* _groupMerge.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupMerge.rst; sourceTree = "<group>"; };
-		1EB1216B1D87F6EE009646F7 /* _groupOther.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupOther.rst; sourceTree = "<group>"; };
-		1EB1216C1D87F6EE009646F7 /* _groupTime.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupTime.rst; sourceTree = "<group>"; };
-		1EB1216D1D87F6EE009646F7 /* _groupTransform.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupTransform.rst; sourceTree = "<group>"; };
-		1EB1216E1D87F6EE009646F7 /* _groupViews.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupViews.rst; sourceTree = "<group>"; };
-		1EB1216F1D87F6EE009646F7 /* _prefs.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _prefs.rst; sourceTree = "<group>"; };
-		1EB121701D87F6EE009646F7 /* _static */ = {isa = PBXFileReference; lastKnownFileType = folder; path = _static; sourceTree = "<group>"; };
-		1EB121711D87F6EE009646F7 /* _templates */ = {isa = PBXFileReference; lastKnownFileType = folder; path = _templates; sourceTree = "<group>"; };
-		1EB121721D87F6EE009646F7 /* conf.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = conf.py; sourceTree = "<group>"; };
-		1EB121731D87F6EE009646F7 /* devel */ = {isa = PBXFileReference; lastKnownFileType = folder; path = devel; sourceTree = "<group>"; };
-		1EB121741D87F6EE009646F7 /* guide */ = {isa = PBXFileReference; lastKnownFileType = folder; path = guide; sourceTree = "<group>"; };
-		1EB121751D87F6EE009646F7 /* index.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = index.rst; sourceTree = "<group>"; };
-		1EB121761D87F6EE009646F7 /* plugins */ = {isa = PBXFileReference; lastKnownFileType = folder; path = plugins; sourceTree = "<group>"; };
-		1EDF0E6F1E1FDCF900C12A4C /* README-Natron-documentation.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = "README-Natron-documentation.md"; path = "Documentation/README-Natron-documentation.md"; sourceTree = "<group>"; };
-		1EE439561FA1FC690027344A /* natron-python.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = "natron-python.xcodeproj"; path = "PythonBin/natron-python.xcodeproj"; sourceTree = "<group>"; };
+		1EDADF2A1D8B0C4D00D47689 /* yaml-cpp-natron.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = "yaml-cpp-natron.xcodeproj"; path = "libs/yaml-cpp/yaml-cpp-natron.xcodeproj"; sourceTree = "<group>"; };
+		1EDF0EA31E1FDF3E00C12A4C /* README-Natron-documentation.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = "README-Natron-documentation.md"; path = "Documentation/README-Natron-documentation.md"; sourceTree = "<group>"; };
+		1EE90EED1DD79AB400FA7BFE /* AngleBlur.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = AngleBlur.nps; sourceTree = "<group>"; };
+		1EE90EEE1DD79AB400FA7BFE /* DropShadow.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = DropShadow.nps; sourceTree = "<group>"; };
+		1EE90EEF1DD79AB400FA7BFE /* Fill.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Fill.nps; sourceTree = "<group>"; };
+		1EE90EF01DD79AB400FA7BFE /* Glow.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Glow.nps; sourceTree = "<group>"; };
+		1EE90EF11DD79AB400FA7BFE /* LightWrap.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LightWrap.nps; sourceTree = "<group>"; };
+		1EE90EF21DD79AB400FA7BFE /* PIKColor.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = PIKColor.nps; sourceTree = "<group>"; };
+		1EE90EF31DD79AB400FA7BFE /* ViewerOCIO.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ViewerOCIO.nps; sourceTree = "<group>"; };
+		1EE90EF41DD79AB400FA7BFE /* ZMask.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ZMask.nps; sourceTree = "<group>"; };
+		1EE90EF51DD79AB400FA7BFE /* ZRemap.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ZRemap.nps; sourceTree = "<group>"; };
+		1EE90F1C1DD79F0C00FA7BFE /* EdgeBlur.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = EdgeBlur.nps; sourceTree = "<group>"; };
 		1EEB0B5B1D1ADF4D00F0D43D /* LICENSE-AGPL-3.0.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-AGPL-3.0.txt"; sourceTree = "<group>"; };
 		1EEB0B5C1D1ADF4D00F0D43D /* LICENSE-Apache-2.0.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Apache-2.0.txt"; sourceTree = "<group>"; };
 		1EEB0B5D1D1ADF4D00F0D43D /* LICENSE-Boost.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Boost.txt"; sourceTree = "<group>"; };
@@ -450,9 +526,11 @@
 		1EEB0B911D1ADF4D00F0D43D /* LICENSE-webp.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-webp.txt"; sourceTree = "<group>"; };
 		1EEB0B921D1ADF4D00F0D43D /* LICENSE-zlib.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-zlib.txt"; sourceTree = "<group>"; };
 		1EEB0B931D1ADF4D00F0D43D /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		1EF958A81DD798AD00245C3F /* EdgeBlur.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = EdgeBlur.py; sourceTree = "<group>"; };
 		1EF958A91DD798AD00245C3F /* PIKColor.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = PIKColor.png; sourceTree = "<group>"; };
 		1EF958AA1DD798AD00245C3F /* PIKColor.svg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = PIKColor.svg; sourceTree = "<group>"; };
+		AC07FAD31D6F65BE00A5A9D8 /* Serialization.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Serialization.xcodeproj; path = Serialization/Serialization.xcodeproj; sourceTree = "<group>"; };
+		AC07FADB1D6F65D100A5A9D8 /* NatronProjectConverter.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronProjectConverter.xcodeproj; path = ProjectConverter/NatronProjectConverter.xcodeproj; sourceTree = "<group>"; };
+		AC4999AA1E8021110012C02D /* natron-python.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = "natron-python.xcodeproj"; path = "PythonBin/natron-python.xcodeproj"; sourceTree = "<group>"; };
 		AC77629C1D1ACE460006A58E /* tess.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = tess.xcodeproj; path = libs/libtess/tess.xcodeproj; sourceTree = "<group>"; };
 		ACD67BF71CEC9D0900DD2CFE /* hoedown.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = hoedown.xcodeproj; path = libs/hoedown/hoedown.xcodeproj; sourceTree = "<group>"; };
 		D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = HostSupport.xcodeproj; path = HostSupport/HostSupport.xcodeproj; sourceTree = "<group>"; };
@@ -518,23 +596,24 @@
 		1E1FB61F1DA7BB8B009F547D /* PyPlugs */ = {
 			isa = PBXGroup;
 			children = (
-				1E1FB6201DA7BBD1009F547D /* AngleBlur.py */,
+				1EE90EED1DD79AB400FA7BFE /* AngleBlur.nps */,
+				1EE90EEE1DD79AB400FA7BFE /* DropShadow.nps */,
 				1E1FB6211DA7BBD1009F547D /* DropShadow.png */,
-				1E1FB6221DA7BBD1009F547D /* DropShadow.py */,
-				1EF958A81DD798AD00245C3F /* EdgeBlur.py */,
+				1EE90F1C1DD79F0C00FA7BFE /* EdgeBlur.nps */,
+				1EE90EEF1DD79AB400FA7BFE /* Fill.nps */,
 				1E1FB6231DA7BBD1009F547D /* Fill.png */,
-				1E1FB6241DA7BBD1009F547D /* Fill.py */,
+				1EE90EF01DD79AB400FA7BFE /* Glow.nps */,
 				1E1FB6251DA7BBD1009F547D /* Glow.png */,
-				1E1FB6261DA7BBD1009F547D /* Glow.py */,
+				1EE90EF11DD79AB400FA7BFE /* LightWrap.nps */,
 				1E1FB6271DA7BBD2009F547D /* LightWrap.png */,
-				1E1FB6281DA7BBD2009F547D /* LightWrap.py */,
-				1E1FB6291DA7BBD2009F547D /* PIKColor.py */,
+				1EE90EF21DD79AB400FA7BFE /* PIKColor.nps */,
 				1EF958A91DD798AD00245C3F /* PIKColor.png */,
 				1EF958AA1DD798AD00245C3F /* PIKColor.svg */,
 				1E1FB62A1DA7BBD2009F547D /* SplitAndJoin.py */,
-				1E1FB62B1DA7BBD2009F547D /* ZMask.py */,
+				1EE90EF31DD79AB400FA7BFE /* ViewerOCIO.nps */,
+				1EE90EF41DD79AB400FA7BFE /* ZMask.nps */,
+				1EE90EF51DD79AB400FA7BFE /* ZRemap.nps */,
 				1E1FB62C1DA7BBD2009F547D /* ZRemap.png */,
-				1E1FB62D1DA7BBD2009F547D /* ZRemap.py */,
 			);
 			name = PyPlugs;
 			path = Gui/Resources/PyPlugs;
@@ -563,7 +642,7 @@
 		1E70D1631CF33B22000D2932 /* Documentation */ = {
 			isa = PBXGroup;
 			children = (
-				1EDF0E6F1E1FDCF900C12A4C /* README-Natron-documentation.md */,
+				1EDF0EA31E1FDF3E00C12A4C /* README-Natron-documentation.md */,
 				1E70D14F1CF33A0C000D2932 /* BUGS.md */,
 				1E70D1501CF33A0C000D2932 /* CHANGELOG.md */,
 				1E70D1521CF33A0C000D2932 /* CONTRIBUTING.md */,
@@ -579,16 +658,67 @@
 				1E70D15D1CF33A0C000D2932 /* Natron.rc */,
 				1E70D15E1CF33A0C000D2932 /* OpenColorIO-Configs-README.md */,
 				1E70D1611CF33A0C000D2932 /* README.md */,
-				1EB1215C1D87F6B5009646F7 /* ofx_plugin_programming_guide.html */,
-				1EB1215D1D87F6B5009646F7 /* ofxActionsSupported.rtf */,
-				1EB1215E1D87F6B5009646F7 /* ofxPropSupported.rtf */,
-				1EB1215F1D87F6B5009646F7 /* Presentation.md */,
-				1EB121601D87F6B5009646F7 /* TuttleOFX-README.txt */,
+				1E5EBABC1D4DF2640005A5A8 /* ofx_plugin_programming_guide.html */,
+				1E5EBABD1D4DF2640005A5A8 /* ofxActionsSupported.rtf */,
+				1E5EBABE1D4DF2640005A5A8 /* ofxPropSupported.rtf */,
+				1E5EBABF1D4DF2640005A5A8 /* Presentation.md */,
+				1E5EBAC11D4DF2640005A5A8 /* TuttleOFX-README.txt */,
 				1E5FBCF91DDCAD4800348B8B /* Natron.spec */,
-				1EB121611D87F6BF009646F7 /* source */,
+				1E5EBAC01D4DF2640005A5A8 /* source */,
+				1EA7E3271E93D093001E9FDA /* OpenFX */,
+				1EA7E3521E93D140001E9FDA /* exprtk */,
+				1EA7E2EC1E93CFE7001E9FDA /* libtess */,
 				1EEB0B211D1ADC9A00F0D43D /* components */,
 			);
 			name = Documentation;
+			sourceTree = "<group>";
+		};
+		1EA7E2EC1E93CFE7001E9FDA /* libtess */ = {
+			isa = PBXGroup;
+			children = (
+				1EA7E2EE1E93D013001E9FDA /* alg-outline */,
+				1EA7E2EF1E93D013001E9FDA /* README */,
+				1EA7E2F01E93D013001E9FDA /* README.natron.md */,
+			);
+			name = libtess;
+			path = libs/libtess;
+			sourceTree = "<group>";
+		};
+		1EA7E3271E93D093001E9FDA /* OpenFX */ = {
+			isa = PBXGroup;
+			children = (
+				1EA7E33E1E93D124001E9FDA /* apiChanges_1_2_Chapter.xml */,
+				1EA7E33F1E93D124001E9FDA /* clipPreferencesChapter.xml */,
+				1EA7E3401E93D124001E9FDA /* header.xml */,
+				1EA7E3411E93D124001E9FDA /* imageEffectActionsChapter.xml */,
+				1EA7E3421E93D124001E9FDA /* imageEffectsAPIChapter.xml */,
+				1EA7E3431E93D124001E9FDA /* interactActionsChapter.xml */,
+				1EA7E3441E93D124001E9FDA /* ofxHostStruct.xml */,
+				1EA7E3451E93D124001E9FDA /* ofxLoadingSequence.xml */,
+				1EA7E3461E93D124001E9FDA /* ofxPackaging.xml */,
+				1EA7E3471E93D124001E9FDA /* ofxParameterChapter.xml */,
+				1EA7E3481E93D124001E9FDA /* ofxPluginStruct.xml */,
+				1EA7E3491E93D124001E9FDA /* ofxProgrammingGuide.xml */,
+				1EA7E34A1E93D124001E9FDA /* ofxProgrammingReference.xml */,
+				1EA7E34B1E93D124001E9FDA /* ofxPropertiesByObject.xml */,
+				1EA7E34C1E93D124001E9FDA /* README.txt */,
+				1EA7E34D1E93D124001E9FDA /* index.html */,
+				1EA7E34E1E93D124001E9FDA /* statusCodesChapter.xml */,
+				1EA7E34F1E93D124001E9FDA /* readme-ofxa.md */,
+				1EA7E3501E93D124001E9FDA /* README.md */,
+				1EA7E3511E93D124001E9FDA /* release-notes.md */,
+			);
+			name = OpenFX;
+			path = libs/OpenFX;
+			sourceTree = "<group>";
+		};
+		1EA7E3521E93D140001E9FDA /* exprtk */ = {
+			isa = PBXGroup;
+			children = (
+				1EA7E3531E93D152001E9FDA /* readme.txt */,
+			);
+			name = exprtk;
+			path = libs/exprtk;
 			sourceTree = "<group>";
 		};
 		1EADE5B718AA400B00EF3180 = {
@@ -606,11 +736,15 @@
 				1E1525021CA9CCA60056C506 /* LibMV.xcodeproj */,
 				1E1525071CA9CCA60056C506 /* openMVG.xcodeproj */,
 				1E12F4B41CC6593300105A34 /* qhttpserver.xcodeproj */,
+				1EDADF2A1D8B0C4D00D47689 /* yaml-cpp-natron.xcodeproj */,
 				D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */,
+				AC4999AA1E8021110012C02D /* natron-python.xcodeproj */,
 				1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */,
+				AC07FADB1D6F65D100A5A9D8 /* NatronProjectConverter.xcodeproj */,
 				1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */,
 				1EADE5C118AA403700EF3180 /* Engine.xcodeproj */,
 				1EADE5C418AA403700EF3180 /* Gui.xcodeproj */,
+				AC07FAD31D6F65BE00A5A9D8 /* Serialization.xcodeproj */,
 				1EADE5C718AA403700EF3180 /* Tests.xcodeproj */,
 			);
 			sourceTree = "<group>";
@@ -639,33 +773,12 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		1EB121611D87F6BF009646F7 /* source */ = {
+		1EDADF2B1D8B0C4D00D47689 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1EB121721D87F6EE009646F7 /* conf.py */,
-				1EB121621D87F6EE009646F7 /* _group.rst */,
-				1EB121631D87F6EE009646F7 /* _groupChannel.rst */,
-				1EB121641D87F6EE009646F7 /* _groupColor.rst */,
-				1EB121651D87F6EE009646F7 /* _groupDraw.rst */,
-				1EB121661D87F6EE009646F7 /* _groupExtra.rst */,
-				1EB121671D87F6EE009646F7 /* _groupFilter.rst */,
-				1EB121681D87F6EE009646F7 /* _groupImage.rst */,
-				1EB121691D87F6EE009646F7 /* _groupKeyer.rst */,
-				1EB1216A1D87F6EE009646F7 /* _groupMerge.rst */,
-				1EB1216B1D87F6EE009646F7 /* _groupOther.rst */,
-				1EB1216C1D87F6EE009646F7 /* _groupTime.rst */,
-				1EB1216D1D87F6EE009646F7 /* _groupTransform.rst */,
-				1EB1216E1D87F6EE009646F7 /* _groupViews.rst */,
-				1EB1216F1D87F6EE009646F7 /* _prefs.rst */,
-				1EB121701D87F6EE009646F7 /* _static */,
-				1EB121711D87F6EE009646F7 /* _templates */,
-				1EB121731D87F6EE009646F7 /* devel */,
-				1EB121741D87F6EE009646F7 /* guide */,
-				1EB121751D87F6EE009646F7 /* index.rst */,
-				1EB121761D87F6EE009646F7 /* plugins */,
+				1EE90EF71DD79AB400FA7BFE /* libyaml-cpp-natron.a */,
 			);
-			name = source;
-			path = Documentation/source;
+			name = Products;
 			sourceTree = "<group>";
 		};
 		1EE439571FA1FC690027344A /* Products */ = {
@@ -739,6 +852,30 @@
 			);
 			name = components;
 			path = tools/license/components;
+			sourceTree = "<group>";
+		};
+		AC07FAD41D6F65BE00A5A9D8 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AC07FADA1D6F65BE00A5A9D8 /* libSerialization.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AC07FADC1D6F65D100A5A9D8 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AC07FAE21D6F65D100A5A9D8 /* NatronProjectConverter */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AC4999AB1E8021110012C02D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AC4999B11E8021110012C02D /* natron-python */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 		AC77629D1D1ACE460006A58E /* Products */ = {
@@ -821,12 +958,16 @@
 					ProjectRef = 1E1525021CA9CCA60056C506 /* LibMV.xcodeproj */;
 				},
 				{
-					ProductGroup = 1EE439571FA1FC690027344A /* Products */;
-					ProjectRef = 1EE439561FA1FC690027344A /* natron-python.xcodeproj */;
+					ProductGroup = AC4999AB1E8021110012C02D /* Products */;
+					ProjectRef = AC4999AA1E8021110012C02D /* natron-python.xcodeproj */;
 				},
 				{
 					ProductGroup = 1E189EC01C49475E00F1FD20 /* Products */;
 					ProjectRef = 1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */;
+				},
+				{
+					ProductGroup = AC07FADC1D6F65D100A5A9D8 /* Products */;
+					ProjectRef = AC07FADB1D6F65D100A5A9D8 /* NatronProjectConverter.xcodeproj */;
 				},
 				{
 					ProductGroup = 1E306DEE1C49497200BAC6E3 /* Products */;
@@ -841,12 +982,20 @@
 					ProjectRef = 1E12F4B41CC6593300105A34 /* qhttpserver.xcodeproj */;
 				},
 				{
+					ProductGroup = AC07FAD41D6F65BE00A5A9D8 /* Products */;
+					ProjectRef = AC07FAD31D6F65BE00A5A9D8 /* Serialization.xcodeproj */;
+				},
+				{
 					ProductGroup = AC77629D1D1ACE460006A58E /* Products */;
 					ProjectRef = AC77629C1D1ACE460006A58E /* tess.xcodeproj */;
 				},
 				{
 					ProductGroup = 1EADE5C818AA403700EF3180 /* Products */;
 					ProjectRef = 1EADE5C718AA403700EF3180 /* Tests.xcodeproj */;
+				},
+				{
+					ProductGroup = 1EDADF2B1D8B0C4D00D47689 /* Products */;
+					ProjectRef = 1EDADF2A1D8B0C4D00D47689 /* yaml-cpp-natron.xcodeproj */;
 				},
 			);
 			projectRoot = "";
@@ -937,11 +1086,32 @@
 			remoteRef = 1EADE5DA18AA403700EF3180 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		1EE4395D1FA1FC690027344A /* natron-python */ = {
+		1EE90EF71DD79AB400FA7BFE /* libyaml-cpp-natron.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = "libyaml-cpp-natron.a";
+			remoteRef = 1EE90EF61DD79AB400FA7BFE /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AC07FADA1D6F65BE00A5A9D8 /* libSerialization.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libSerialization.a;
+			remoteRef = AC07FAD91D6F65BE00A5A9D8 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AC07FAE21D6F65D100A5A9D8 /* NatronProjectConverter */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = NatronProjectConverter;
+			remoteRef = AC07FAE11D6F65D100A5A9D8 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AC4999B11E8021110012C02D /* natron-python */ = {
 			isa = PBXReferenceProxy;
 			fileType = "compiled.mach-o.executable";
 			path = "natron-python";
-			remoteRef = 1EE4395C1FA1FC690027344A /* PBXContainerItemProxy */;
+			remoteRef = AC4999B01E8021110012C02D /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		AC7762A31D1ACE460006A58E /* libtess.a */ = {
@@ -985,6 +1155,11 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		1E1178141D8BD50E00024C91 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = NatronProjectConverter;
+			targetProxy = 1E1178131D8BD50E00024C91 /* PBXContainerItemProxy */;
+		};
 		1E12F4BD1CC6594E00105A34 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = qhttpserver;
@@ -1064,6 +1239,21 @@
 			isa = PBXTargetDependency;
 			target = 1EADE5F818AA407D00EF3180 /* Tests */;
 			targetProxy = 1EADE5FE18AA408B00EF3180 /* PBXContainerItemProxy */;
+		};
+		1ED800511E198C6B0021BEC0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = NatronProjectConverter;
+			targetProxy = 1ED800501E198C6B0021BEC0 /* PBXContainerItemProxy */;
+		};
+		1EDADF331D8B0C6500D47689 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "yaml-cpp-natron";
+			targetProxy = 1EDADF321D8B0C6500D47689 /* PBXContainerItemProxy */;
+		};
+		AC3FFDFE1D8835900049666E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Serialization;
+			targetProxy = AC3FFDFD1D8835900049666E /* PBXContainerItemProxy */;
 		};
 		AC4AA6381C480E8700C92E12 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

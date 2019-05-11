@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,10 +25,14 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <QThread>
+#include "Global/Macros.h"
+
+#include <QtCore/QThread>
+
+#include "Engine/ThreadPool.h"
 
 #include "Engine/EngineFwd.h"
-#include "Engine/ThreadPool.h"
+
 
 NATRON_NAMESPACE_ENTER
 
@@ -38,11 +42,15 @@ class GenericThreadStartArgs
     // Used to wake-up the thread when calling abortThreadedTask
     bool _isNull;
 
+    // For schedulers with policy eTaskQueueBehaviorSkipToMostRecent, controls
+    // Whether this task can effectively be skipped
+    bool _canSkip;
 public:
 
 
     GenericThreadStartArgs(bool isNullTask = false)
         : _isNull(isNullTask)
+        , _canSkip(true)
     {
     }
 
@@ -51,6 +59,16 @@ public:
     bool isNull() const
     {
         return _isNull;
+    }
+
+    void setCanSkip(bool b)
+    {
+        _canSkip = b;
+    }
+
+    bool isSkippable() const
+    {
+        return _canSkip;
     }
 };
 
@@ -67,7 +85,7 @@ public:
     }
 };
 
-typedef boost::shared_ptr<GenericThreadStartArgs> ThreadStartArgsPtr;
+typedef boost::shared_ptr<GenericThreadStartArgs> GenericThreadStartArgsPtr;
 typedef boost::shared_ptr<GenericThreadExecOnMainThreadArgs> ExecOnMTArgsPtr;
 
 /**
@@ -152,7 +170,7 @@ public:
      * Note: this function is not blocking and the thread may still be running when returning this function,
      * @returns false if the thread was not running, true otherwise.
      **/
-    bool quitThread(bool allowRestarts);
+    bool quitThread(bool allowRestarts, bool abortTask = true);
 
     /**
      * @brief True if quitThread() was called and the thread did not finish yet
@@ -197,7 +215,7 @@ public:
      * The task is what will be passed to threadLoopOnce().
      * @returns true if the task could be enqueued, false otherwise.
      **/
-    bool startTask(const ThreadStartArgsPtr& inArgs);
+    bool startTask(const GenericThreadStartArgsPtr& inArgs);
 
     /**
      * @brief Blocks the calling thread until
@@ -235,7 +253,7 @@ Q_SIGNALS:
     void stateChanged(int state);
 
     // Emitted by requestExecutionOnMainThread
-    void executionOnMainThreadRequested(ExecOnMTArgsPtr args);
+    void executionOnMainThreadRequested(GenericThreadExecOnMainThreadArgsPtr args);
 
     void taskAborted();
 
@@ -256,7 +274,7 @@ public Q_SLOTS:
 
 private Q_SLOTS:
 
-    void onExecutionOnMainThreadReceived(const ExecOnMTArgsPtr& args);
+    void onExecutionOnMainThreadReceived(const GenericThreadExecOnMainThreadArgsPtr& args);
 
 protected:
 
@@ -290,12 +308,12 @@ protected:
      * @return The state of the thread. By default should be eThreadStateActive. If threadLoopOnce might be long, you can periodically check
      * resolveState() to figure out if the user aborted the computation or not, in which case you need to return the value it returned.
      **/
-    virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) = 0;
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) = 0;
 
     /**
      * @brief To be implemented if your implementation of threadLoopOnce() wants to use requestExecutionOnMainThread.
      **/
-    virtual void executeOnMainThread(const ExecOnMTArgsPtr& /*inArgs*/) {}
+    virtual void executeOnMainThread(const GenericThreadExecOnMainThreadArgsPtr& /*inArgs*/) {}
 
 
     /**
@@ -309,7 +327,7 @@ protected:
      * You may only call this function from this thread, i.e: the thread that is running the run() function.
      * You may only call this function whilst the thread state is eThreadStateActive
      **/
-    void requestExecutionOnMainThread(const ExecOnMTArgsPtr& inArgs);
+    void requestExecutionOnMainThread(const GenericThreadExecOnMainThreadArgsPtr& inArgs);
 
 private:
 

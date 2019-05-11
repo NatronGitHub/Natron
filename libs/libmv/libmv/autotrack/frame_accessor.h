@@ -24,6 +24,7 @@
 #define LIBMV_AUTOTRACK_FRAME_ACCESSOR_H_
 
 #include <stdint.h>
+#include <list>
 
 #include "libmv/image/image.h"
 
@@ -55,7 +56,27 @@ struct FrameAccessor {
     RGBA
   };
 
+  enum GetImageTypeEnum
+  {
+    eGetImageTypeSource,
+    eGetImageTypeMask
+  };
+
+
   typedef void* Key;
+
+  struct GetImageArgs
+  {
+      int clip;
+      int frame;
+      GetImageTypeEnum sourceType;
+      InputMode input_mode;
+      int downscale;               // Downscale by 2^downscale.
+      const Region* region;        // Get full image if NULL.
+      const Transform* transform;  // May be NULL.
+      FloatImage* destination;
+      Key destinationKey;
+  };
 
   // Get a possibly-filtered version of a frame of a video. Downscale will
   // cause the input image to get downscaled by 2^downscale for pyramid access.
@@ -64,36 +85,12 @@ struct FrameAccessor {
   // to the image before it is returned.
   //
   // When done with an image, you must call ReleaseImage with the returned key.
-  virtual Key GetImage(int clip,
-                       int frame,
-                       InputMode input_mode,
-                       int downscale,               // Downscale by 2^downscale.
-                       const Region* region,        // Get full image if NULL.
-                       const Transform* transform,  // May be NULL.
-                       FloatImage** destination) = 0;
+  virtual void GetImage(std::list<GetImageArgs>& imageRequests) = 0;
 
   // Releases an image from the frame accessor. Non-caching implementations may
   // free the image immediately; others may hold onto the image.
   virtual void ReleaseImage(Key) = 0;
 
-  // Get mask image for the given track.
-  //
-  // Implementation of this method should sample mask associated with the track
-  // within given region to the given destination.
-  //
-  // Result is supposed to be a single channel image.
-  //
-  // If region is NULL, it it assumed to be full-frame.
-  virtual Key GetMaskForTrack(int clip,
-                              int frame,
-                              int track,
-                              const Region* region,
-                              FloatImage* destination) = 0;
-
-  // Release a specified mask.
-  //
-  // Non-caching implementation may free used memory immediately.
-  virtual void ReleaseMask(Key key) = 0;
 
   virtual bool GetClipDimensions(int clip, int* width, int* height) = 0;
   virtual int NumClips() = 0;

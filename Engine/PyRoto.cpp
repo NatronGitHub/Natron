@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,150 +33,21 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/PyNode.h"
 #include "Engine/Node.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
+#include "Engine/RotoPaint.h"
+#include "Engine/RotoPaintPrivate.h"
+#include "Engine/AppInstance.h"
+#include "Engine/TimeLine.h"
+#include "Engine/Project.h"
+#include "Engine/RotoPoint.h"
 #include "Engine/RotoStrokeItem.h"
 
 NATRON_NAMESPACE_ENTER
 NATRON_PYTHON_NAMESPACE_ENTER
 
-ItemBase::ItemBase(const boost::shared_ptr<RotoItem>& item)
-    : _item(item)
-{
-}
-
-ItemBase::~ItemBase()
-{
-}
-
-void
-ItemBase::setLabel(const QString & name)
-{
-    _item->setLabel( name.toStdString() );
-}
-
-QString
-ItemBase::getLabel() const
-{
-    return QString::fromUtf8( _item->getLabel().c_str() );
-}
-
-bool
-ItemBase::setScriptName(const QString& name)
-{
-    return _item->setScriptName( name.toStdString() );
-}
-
-QString
-ItemBase::getScriptName() const
-{
-    return QString::fromUtf8( _item->getScriptName().c_str() );
-}
-
-void
-ItemBase::setLocked(bool locked)
-{
-    _item->setLocked(locked, true, RotoItem::eSelectionReasonOther);
-}
-
-bool
-ItemBase::getLocked() const
-{
-    return _item->getLocked();
-}
-
-bool
-ItemBase::getLockedRecursive() const
-{
-    return _item->isLockedRecursive();
-}
-
-void
-ItemBase::setVisible(bool activated)
-{
-    _item->setGloballyActivated(activated, true);
-}
-
-bool
-ItemBase::getVisible() const
-{
-    return _item->isGloballyActivated();
-}
-
-Layer*
-ItemBase::getParentLayer() const
-{
-    boost::shared_ptr<RotoLayer> layer =  _item->getParentLayer();
-
-    if (layer) {
-        return new Layer(layer);
-    } else {
-        return 0;
-    }
-}
-
-Param*
-ItemBase::getParam(const QString& name) const
-{
-    RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( _item.get() );
-
-    if (!drawable) {
-        return 0;
-    }
-    KnobPtr knob = drawable->getKnobByName( name.toStdString() );
-    if (!knob) {
-        return 0;
-    }
-    Param* ret = Effect::createParamWrapperForKnob(knob);
-
-    return ret;
-}
-
-Layer::Layer(const boost::shared_ptr<RotoItem>& item)
+BezierCurve::BezierCurve(const BezierPtr& item)
     : ItemBase(item)
-    , _layer( boost::dynamic_pointer_cast<RotoLayer>(item) )
-{
-}
-
-Layer::~Layer()
-{
-}
-
-void
-Layer::addItem(ItemBase* item)
-{
-    _layer->addItem( item->getInternalItem() );
-}
-
-void
-Layer::insertItem(int pos,
-                  ItemBase* item)
-{
-    _layer->insertItem(item->getInternalItem(), pos);
-}
-
-void
-Layer::removeItem(ItemBase* item)
-{
-    _layer->removeItem( item->getInternalItem() );
-}
-
-std::list<ItemBase*>
-Layer::getChildren() const
-{
-    std::list<ItemBase*> ret;
-    std::list<boost::shared_ptr<RotoItem> > items = _layer->getItems_mt_safe();
-
-    for (std::list<boost::shared_ptr<RotoItem> >::iterator it = items.begin(); it != items.end(); ++it) {
-        ret.push_back( new ItemBase(*it) );
-    }
-
-    return ret;
-}
-
-BezierCurve::BezierCurve(const boost::shared_ptr<RotoItem>& item)
-    : ItemBase(item)
-    , _bezier( boost::dynamic_pointer_cast<Bezier>(item) )
+    , _bezier(item)
 {
 }
 
@@ -185,81 +56,261 @@ BezierCurve::~BezierCurve()
 }
 
 void
-BezierCurve::setCurveFinished(bool finished)
+BezierCurve::splitView(const QString& viewName)
 {
-    _bezier->setCurveFinished(finished);
-    _bezier->getContext()->emitRefreshViewerOverlays();
-    _bezier->getContext()->evaluateChange();
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return;
+    }
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(viewName, &thisViewSpec)) {
+        PythonSetInvalidViewName(viewName);
+        return;
+    }
+    if (!item->canSplitViews()) {
+        PyErr_SetString(PyExc_ValueError, ItemBase::tr("splitView: Cannot split view for an item that cannot animate").toStdString().c_str());
+        return;
+    }
+    ignore_result(item->splitView(ViewIdx(thisViewSpec.value())));
+}
+
+void
+BezierCurve::unSplitView(const QString& viewName)
+{
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return;
+    }
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(viewName, &thisViewSpec)) {
+        PythonSetInvalidViewName(viewName);
+        return;
+    }
+    if (!item->canSplitViews()) {
+        PyErr_SetString(PyExc_ValueError, ItemBase::tr("splitView: Cannot split view for an item that cannot animate").toStdString().c_str());
+        return;
+    }
+    ignore_result(item->unSplitView(ViewIdx(thisViewSpec.value())));
+}
+
+
+QStringList
+BezierCurve::getViewsList() const
+{
+    QStringList ret;
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return ret;
+    }
+
+    AppInstancePtr app = item->getApp();
+    if (!app) {
+        return ret;
+    }
+    const std::vector<std::string>& projectViews = app->getProject()->getProjectViewNames();
+    std::list<ViewIdx> views = item->getViewsList();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (*it < 0 && *it >= (int)projectViews.size()) {
+            continue;
+        }
+        ret.push_back(QString::fromUtf8(projectViews[*it].c_str()));
+    }
+    return ret;
 }
 
 bool
-BezierCurve::isCurveFinished() const
+BezierCurve::isActivated(double frame, const QString& view) const
 {
-    return _bezier->isCurveFinished();
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return false;
+    }
+
+    ViewIdx viewSpec;
+    if (!getViewIdxFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return false;
+    }
+    return item->isActivated(TimeValue(frame), viewSpec);
+}
+
+void
+BezierCurve::setCurveFinished(bool finished, const QString& view)
+{
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return;
+    }
+
+    ViewSetSpec viewSpec;
+    if (!getViewSetSpecFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    item->setCurveFinished(finished, viewSpec);
+}
+
+bool
+BezierCurve::isCurveFinished(const QString& view) const
+{
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return false;
+    }
+
+    ViewIdx viewSpec;
+    if (!getViewIdxFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return false;
+    }
+
+    return item->isCurveFinished(viewSpec);
 }
 
 void
 BezierCurve::addControlPoint(double x,
-                             double y)
+                             double y, const QString& view)
 {
-    const std::list<boost::shared_ptr<BezierCP> >& cps = _bezier->getControlPoints();
-    double keyframeTime;
-
-    if ( !cps.empty() ) {
-        keyframeTime = cps.front()->getKeyframeTime(false, 0);
-    } else {
-        keyframeTime = _bezier->getContext()->getTimelineCurrentTime();
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return;
     }
-    _bezier->addControlPoint(x, y, keyframeTime);
+
+    ViewSetSpec viewSpec;
+    if (!getViewSetSpecFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+
+    KeyFrameSet keys = item->getKeyFrames(ViewIdx(0));
+    KeyFrame k;
+    if (!keys.empty()) {
+        k = *keys.begin();
+    }
+    item->addControlPoint(x, y, k.getTime(), viewSpec);
 }
 
 void
 BezierCurve::addControlPointOnSegment(int index,
-                                      double t)
+                                      double t, const QString& view)
 {
-    _bezier->addControlPointAfterIndex(index, t);
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return;
+    }
+
+    ViewSetSpec viewSpec;
+    if (!getViewSetSpecFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+
+    item->addControlPointAfterIndex(index, t, viewSpec);
 }
 
 void
-BezierCurve::removeControlPointByIndex(int index)
+BezierCurve::removeControlPointByIndex(int index, const QString& view)
 {
-    _bezier->removeControlPointByIndex(index);
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return;
+    }
+
+    ViewSetSpec viewSpec;
+    if (!getViewSetSpecFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    item->removeControlPointByIndex(index, viewSpec);
 }
 
 void
 BezierCurve::movePointByIndex(int index,
                               double time,
                               double dx,
-                              double dy)
+                              double dy, const QString& view)
 {
-    _bezier->movePointByIndex(index, time, dx, dy);
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return;
+    }
+
+    ViewSetSpec viewSpec;
+    if (!getViewSetSpecFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    item->movePointByIndex(index, TimeValue(time), viewSpec, dx, dy);
 }
 
 void
 BezierCurve::moveFeatherByIndex(int index,
                                 double time,
                                 double dx,
-                                double dy)
+                                double dy, const QString& view)
 {
-    _bezier->moveFeatherByIndex(index, time, dx, dy);
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return;
+    }
+
+    ViewSetSpec viewSpec;
+    if (!getViewSetSpecFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    item->moveFeatherByIndex(index, TimeValue(time), viewSpec, dx, dy);
 }
 
 void
 BezierCurve::moveLeftBezierPoint(int index,
                                  double time,
                                  double dx,
-                                 double dy)
+                                 double dy, const QString& view)
 {
-    _bezier->moveLeftBezierPoint(index, time, dx, dy);
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return;
+    }
+
+    ViewSetSpec viewSpec;
+    if (!getViewSetSpecFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    item->moveLeftBezierPoint(index, TimeValue(time), viewSpec, dx, dy);
 }
 
 void
 BezierCurve::moveRightBezierPoint(int index,
                                   double time,
                                   double dx,
-                                  double dy)
+                                  double dy, const QString& view)
 {
-    _bezier->moveRightBezierPoint(index, time, dx, dy);
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return;
+    }
+
+    ViewSetSpec viewSpec;
+    if (!getViewSetSpecFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    item->moveRightBezierPoint(index, TimeValue(time), viewSpec, dx, dy);
 }
 
 void
@@ -270,9 +321,20 @@ BezierCurve::setPointAtIndex(int index,
                              double lx,
                              double ly,
                              double rx,
-                             double ry)
+                             double ry, const QString& view)
 {
-    _bezier->setPointAtIndex(false, index, time, x, y, lx, ly, rx, ry);
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return;
+    }
+
+    ViewSetSpec viewSpec;
+    if (!getViewSetSpecFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    item->setPointAtIndex(false, index, TimeValue(time), viewSpec, x, y, lx, ly, rx, ry);
 }
 
 void
@@ -283,27 +345,39 @@ BezierCurve::setFeatherPointAtIndex(int index,
                                     double lx,
                                     double ly,
                                     double rx,
-                                    double ry)
+                                    double ry, const QString& view)
 {
-    _bezier->setPointAtIndex(true, index, time, x, y, lx, ly, rx, ry);
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return;
+    }
+
+    ViewSetSpec viewSpec;
+    if (!getViewSetSpecFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+    item->setPointAtIndex(true, index, TimeValue(time), viewSpec, x, y, lx, ly, rx, ry);
 }
 
 int
-BezierCurve::getNumControlPoints() const
+BezierCurve::getNumControlPoints(const QString& view) const
 {
-    return _bezier->getControlPointsCount();
-}
-
-void
-BezierCurve::getKeyframes(std::list<double>* keys) const
-{
-    std::set<double> keyframes;
-
-    _bezier->getKeyframeTimes(&keyframes);
-    for (std::set<double>::iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
-        keys->push_back(*it);
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return 0;
     }
+
+    ViewIdx viewSpec;
+    if (!getViewIdxFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return 0;
+    }
+    return item->getControlPointsCount(viewSpec);
 }
+
 
 void
 BezierCurve::getControlPointPosition(int index,
@@ -313,13 +387,28 @@ BezierCurve::getControlPointPosition(int index,
                                      double *lx,
                                      double *ly,
                                      double *rx,
-                                     double *ry) const
+                                     double *ry, const QString& view) const
 {
-    boost::shared_ptr<BezierCP> cp = _bezier->getControlPointAtIndex(index);
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return;
+    }
 
-    cp->getPositionAtTime(true, time, ViewIdx(0), x, y);
-    cp->getLeftBezierPointAtTime(true, time, ViewIdx(0), lx, ly);
-    cp->getRightBezierPointAtTime(true, time, ViewIdx(0), rx, ry);
+    ViewIdx viewSpec;
+    if (!getViewIdxFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
+    }
+
+    BezierCPPtr cp = item->getControlPointAtIndex(index, viewSpec);
+    if (!cp) {
+        PyErr_SetString(PyExc_ValueError, ItemBase::tr("Invalid control point index").toStdString().c_str());
+        return;
+    }
+    cp->getPositionAtTime(TimeValue(time), x, y);
+    cp->getLeftBezierPointAtTime(TimeValue(time), lx, ly);
+    cp->getRightBezierPointAtTime(TimeValue(time), rx, ry);
 }
 
 void
@@ -330,206 +419,138 @@ BezierCurve::getFeatherPointPosition(int index,
                                      double *lx,
                                      double *ly,
                                      double *rx,
-                                     double *ry) const
+                                     double *ry, const QString& view) const
 {
-    boost::shared_ptr<BezierCP> cp = _bezier->getFeatherPointAtIndex(index);
-
-    cp->getPositionAtTime(true, time, ViewIdx(0), x, y);
-    cp->getLeftBezierPointAtTime(true, time, ViewIdx(0), lx, ly);
-    cp->getRightBezierPointAtTime(true, time, ViewIdx(0), rx, ry);
-}
-
-void
-BezierCurve::setActivated(double time,
-                          bool activated)
-{
-    _bezier->setActivated(activated, time);
-}
-
-bool
-BezierCurve::getIsActivated(double time)
-{
-    return _bezier->isActivated(time);
-}
-
-void
-BezierCurve::setOpacity(double opacity,
-                        double time)
-{
-    _bezier->setOpacity(opacity, time);
-}
-
-double
-BezierCurve::getOpacity(double time) const
-{
-    return _bezier->getOpacity(time);
-}
-
-ColorTuple
-BezierCurve::getOverlayColor() const
-{
-    ColorTuple c;
-    double color[4];
-
-    _bezier->getOverlayColor(color);
-    c.r = color[0];
-    c.g = color[1];
-    c.b = color[2];
-    c.a = 1.;
-
-    return c;
-}
-
-void
-BezierCurve::setOverlayColor(double r,
-                             double g,
-                             double b)
-{
-    double color[4];
-
-    color[0] = r;
-    color[1] = g;
-    color[2] = b;
-    color[3] = 1.;
-    _bezier->setOverlayColor(color);
-}
-
-double
-BezierCurve::getFeatherDistance(double time) const
-{
-    return _bezier->getFeatherDistance(time);
-}
-
-void
-BezierCurve::setFeatherDistance(double dist,
-                                double time)
-{
-    _bezier->setFeatherDistance(dist, time);
-}
-
-double
-BezierCurve::getFeatherFallOff(double time) const
-{
-    return _bezier->getFeatherFallOff(time);
-}
-
-void
-BezierCurve::setFeatherFallOff(double falloff,
-                               double time)
-{
-    _bezier->setFeatherFallOff(falloff, time);
-}
-
-ColorTuple
-BezierCurve::getColor(double time)
-{
-    ColorTuple c;
-    double color[3];
-
-    _bezier->getColor(time, color);
-    c.r = color[0];
-    c.g = color[1];
-    c.b = color[2];
-    c.a = 1.;
-
-    return c;
-}
-
-void
-BezierCurve::setColor(double time,
-                      double r,
-                      double g,
-                      double b)
-{
-    _bezier->setColor(time, r, g, b);
-}
-
-void
-BezierCurve::setCompositingOperator(MergingFunctionEnum op)
-{
-    _bezier->setCompositingOperator( (int)op );
-}
-
-MergingFunctionEnum
-BezierCurve::getCompositingOperator() const
-{
-    return (MergingFunctionEnum)_bezier->getCompositingOperator();
-}
-
-BooleanParam*
-BezierCurve::getActivatedParam() const
-{
-    boost::shared_ptr<KnobBool> ret = _bezier->getActivatedKnob();
-
-    if (ret) {
-        return new BooleanParam(ret);
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return;
     }
 
-    return 0;
-}
-
-DoubleParam*
-BezierCurve::getOpacityParam() const
-{
-    boost::shared_ptr<KnobDouble> ret = _bezier->getOpacityKnob();
-
-    if (ret) {
-        return new DoubleParam(ret);
+    ViewIdx viewSpec;
+    if (!getViewIdxFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return;
     }
 
-    return 0;
+    BezierCPPtr cp = item->getFeatherPointAtIndex(index, viewSpec);
+    if (!cp) {
+        PyErr_SetString(PyExc_ValueError, ItemBase::tr("Invalid control point index").toStdString().c_str());
+        return;
+    }
+    cp->getPositionAtTime(TimeValue(time), x, y);
+    cp->getLeftBezierPointAtTime(TimeValue(time), lx, ly);
+    cp->getRightBezierPointAtTime(TimeValue(time), rx, ry);
+
 }
 
-DoubleParam*
-BezierCurve::getFeatherDistanceParam() const
+RectD
+BezierCurve::getBoundingBox(double time, const QString& view) const
 {
-    boost::shared_ptr<KnobDouble> ret = _bezier->getFeatherKnob();
-
-    if (ret) {
-        return new DoubleParam(ret);
+    BezierPtr item = _bezier.lock();
+    if (!item) {
+        PythonSetNullError();
+        return RectD();
     }
 
-    return 0;
+    ViewIdx viewSpec;
+    if (!getViewIdxFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return RectD();
+    }
+    return item->getBoundingBox(TimeValue(time), viewSpec);
+
 }
 
-DoubleParam*
-BezierCurve::getFeatherFallOffParam() const
+StrokeItem::StrokeItem(const RotoStrokeItemPtr& item)
+: ItemBase(item)
+, _stroke(item)
 {
-    boost::shared_ptr<KnobDouble> ret = _bezier->getFeatherFallOffKnob();
 
-    if (ret) {
-        return new DoubleParam(ret);
+}
+
+StrokeItem::~StrokeItem()
+{
+
+}
+
+RectD
+StrokeItem::getBoundingBox(double time, const QString& view) const
+{
+    RotoStrokeItemPtr item = _stroke.lock();
+    if (!item) {
+        PythonSetNullError();
+        return RectD();
     }
 
-    return 0;
-}
-
-ColorParam*
-BezierCurve::getColorParam() const
-{
-    boost::shared_ptr<KnobColor> ret = _bezier->getColorKnob();
-
-    if (ret) {
-        return new ColorParam(ret);
+    ViewIdx viewSpec;
+    if (!getViewIdxFromViewName(view, &viewSpec)) {
+        PythonSetInvalidViewName(view);
+        return RectD();
     }
-
-    return 0;
+    return item->getBoundingBox(TimeValue(time), viewSpec);
 }
 
-ChoiceParam*
-BezierCurve::getCompositingOperatorParam() const
+NATRON_NAMESPACE::RotoStrokeType
+StrokeItem::getBrushType() const
 {
-    boost::shared_ptr<KnobChoice> ret = _bezier->getOperatorKnob();
-
-    if (ret) {
-        return new ChoiceParam(ret);
+    RotoStrokeItemPtr item = _stroke.lock();
+    if (!item) {
+        PythonSetNullError();
+        return eRotoStrokeTypeSolid;
     }
-
-    return 0;
+    return item->getBrushType();
 }
 
-Roto::Roto(const boost::shared_ptr<RotoContext>& ctx)
-    : _ctx(ctx)
+std::list<std::list<StrokePoint> >
+StrokeItem::getPoints() const
+{
+    std::list<std::list<StrokePoint> > ret;
+    RotoStrokeItemPtr item = _stroke.lock();
+    if (!item) {
+        PythonSetNullError();
+        return ret;
+    }
+    std::list<std::list<std::pair<Point, double> > > strokes;
+    item->evaluateStroke(0, TimeValue(0), ViewIdx(0), &strokes);
+    for (std::list<std::list<std::pair<Point, double> > >::const_iterator it = strokes.begin(); it != strokes.end(); ++it) {
+        int i = 0;
+        std::list<StrokePoint> subStroke;
+        for (std::list<std::pair<Point, double> >::const_iterator it2 = it->begin(); it2 != it->end(); ++it2, ++i) {
+            StrokePoint p;
+            p.x = it2->first.x;
+            p.y = it2->first.y;
+            p.pressure = it2->second;
+            p.timestamp = i;
+            subStroke.push_back(p);
+        }
+        ret.push_back(subStroke);
+    }
+    return ret;
+}
+
+void
+StrokeItem::setPoints(const std::list<std::list<StrokePoint> >& strokes)
+{
+    RotoStrokeItemPtr item = _stroke.lock();
+    if (!item) {
+        PythonSetNullError();
+        return;
+    }
+    std::list<std::list<RotoPoint> > ret;
+    for (std::list<std::list<StrokePoint> >::const_iterator it = strokes.begin(); it!=strokes.end(); ++it) {
+        std::list<RotoPoint> subStroke;
+        for (std::list<StrokePoint>::const_iterator it2 = it->begin(); it2 != it->end(); ++it2) {
+            RotoPoint p(it2->x, it2->y, it2->pressure, TimeValue(it2->timestamp));
+            subStroke.push_back(p);
+        }
+        ret.push_back(subStroke);
+    }
+    item->setStrokes(ret);
+}
+
+Roto::Roto(const KnobItemsTablePtr& model)
+: ItemsTable(model)
 {
 }
 
@@ -537,49 +558,29 @@ Roto::~Roto()
 {
 }
 
-Layer*
-Roto::getBaseLayer() const
-{
-    const std::list<boost::shared_ptr<RotoLayer> >& layers = _ctx->getLayers();
-
-    if ( !layers.empty() ) {
-        return new Layer( layers.front() );
-    }
-
-    return 0;
-}
 
 ItemBase*
-Roto::getItemByName(const QString& name) const
-{
-    boost::shared_ptr<RotoItem> item =  _ctx->getItemByName( name.toStdString() );
-
-    if (!item) {
-        return 0;
-    }
-    RotoLayer* isLayer = dynamic_cast<RotoLayer*>( item.get() );
-    if (isLayer) {
-        return new Layer(item);
-    }
-    Bezier* isBezier = dynamic_cast<Bezier*>( item.get() );
-    if (isBezier) {
-        return new BezierCurve(item);
-    }
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( item.get() );
-    if (isStroke) {
-        return new ItemBase(item);
-    }
-
-    return 0;
-}
-
-Layer*
 Roto::createLayer()
 {
-    boost::shared_ptr<RotoLayer>  layer = _ctx->addLayer();
+    KnobItemsTablePtr model = getInternalModel();
+    if (!model) {
+        PythonSetNullError();
+        return 0;
+    }
+    NodePtr node = model->getNode();
+    if (!node) {
+        PythonSetNullError();
+        return 0;
+    }
+    RotoPaintPtr isRotoPaint = toRotoPaint(node->getEffectInstance());
+    if (!isRotoPaint) {
+        PythonSetNullError();
+        return 0;
+    }
+    RotoLayerPtr  layer = isRotoPaint->addLayer();
 
     if (layer) {
-        return new Layer(layer);
+        return createPyItemWrapper(layer);
     }
 
     return 0;
@@ -590,13 +591,29 @@ Roto::createBezier(double x,
                    double y,
                    double time)
 {
-    boost::shared_ptr<Bezier>  ret = _ctx->makeBezier(x, y, kRotoBezierBaseName, time, false);
+    KnobItemsTablePtr model = getInternalModel();
+    if (!model) {
+        PythonSetNullError();
+        return 0;
+    }
+    NodePtr node = model->getNode();
+    if (!node) {
+        PythonSetNullError();
+        return 0;
+    }
+    RotoPaintPtr isRotoPaint = toRotoPaint(node->getEffectInstance());
+    if (!isRotoPaint) {
+        PythonSetNullError();
+        return 0;
+    }
+    BezierPtr  bezier = isRotoPaint->makeBezier(x, y, kRotoBezierBaseName, TimeValue(time), false);
 
-    if (ret) {
-        return new BezierCurve(ret);
+    if (bezier) {
+        return (BezierCurve*)createPyItemWrapper(bezier);
     }
 
     return 0;
+
 }
 
 BezierCurve*
@@ -606,13 +623,30 @@ Roto::createEllipse(double x,
                     bool fromCenter,
                     double time)
 {
-    boost::shared_ptr<Bezier>  ret = _ctx->makeEllipse(x, y, diameter, fromCenter, time);
+    KnobItemsTablePtr model = getInternalModel();
+    if (!model) {
+        PythonSetNullError();
+        return 0;
+    }
+    NodePtr node = model->getNode();
+    if (!node) {
+        PythonSetNullError();
+        return 0;
+    }
+    RotoPaintPtr isRotoPaint = toRotoPaint(node->getEffectInstance());
+    if (!isRotoPaint) {
+        PythonSetNullError();
+        return 0;
+    }
+    BezierPtr  bezier = isRotoPaint->makeEllipse(x, y, diameter, fromCenter, TimeValue(time));
 
-    if (ret) {
-        return new BezierCurve(ret);
+    if (bezier) {
+        return (BezierCurve*)createPyItemWrapper(bezier);
     }
 
     return 0;
+
+
 }
 
 BezierCurve*
@@ -621,14 +655,58 @@ Roto::createRectangle(double x,
                       double size,
                       double time)
 {
-    boost::shared_ptr<Bezier>  ret = _ctx->makeSquare(x, y, size, time);
+    KnobItemsTablePtr model = getInternalModel();
+    if (!model) {
+        PythonSetNullError();
+        return 0;
+    }
+    NodePtr node = model->getNode();
+    if (!node) {
+        PythonSetNullError();
+        return 0;
+    }
+    RotoPaintPtr isRotoPaint = toRotoPaint(node->getEffectInstance());
+    if (!isRotoPaint) {
+        PythonSetNullError();
+        return 0;
+    }
+    BezierPtr  bezier = isRotoPaint->makeSquare(x, y, size, TimeValue(time));
 
-    if (ret) {
-        return new BezierCurve(ret);
+    if (bezier) {
+        return (BezierCurve*)createPyItemWrapper(bezier);
     }
 
     return 0;
 }
 
+
+ItemBase*
+Roto::createStroke(NATRON_NAMESPACE::RotoStrokeType type)
+{
+    KnobItemsTablePtr model = getInternalModel();
+    if (!model) {
+        PythonSetNullError();
+        return 0;
+    }
+    NodePtr node = model->getNode();
+    if (!node) {
+        PythonSetNullError();
+        return 0;
+    }
+    RotoPaintPtr isRotoPaint = toRotoPaint(node->getEffectInstance());
+    if (!isRotoPaint) {
+        PythonSetNullError();
+        return 0;
+    }
+    RotoLayerPtr baseLayer = isRotoPaint->getOrCreateBaseLayer();
+    RotoStrokeItemPtr stroke(new RotoStrokeItem(type, model));
+    model->insertItem(0, stroke, baseLayer, eTableChangeReasonInternal);
+    
+    return createPyItemWrapper(stroke);
+}
+
+
 NATRON_PYTHON_NAMESPACE_EXIT
+
+
 NATRON_NAMESPACE_EXIT

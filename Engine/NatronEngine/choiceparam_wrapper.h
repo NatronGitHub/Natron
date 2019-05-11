@@ -9,7 +9,7 @@ NATRON_NAMESPACE_ENTER NATRON_PYTHON_NAMESPACE_ENTER
 class ChoiceParamWrapper : public ChoiceParam
 {
 public:
-    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param, int thisDimension) { ChoiceParam::_addAsDependencyOf(fromExprDimension, param, thisDimension); }
+    inline void _addAsDependencyOf_protected(Param * param, int fromExprDimension, int thisDimension, const QString & fromExprView, const QString & thisView) { ChoiceParam::_addAsDependencyOf(param, fromExprDimension, thisDimension, fromExprView, thisView); }
     virtual ~ChoiceParamWrapper();
     static void pysideInitQtMetaTypes();
 };

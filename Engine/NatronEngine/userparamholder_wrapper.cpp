@@ -847,8 +847,8 @@ static PyObject* Sbk_UserParamHolderFunc_createOutputFileParam(PyObject* self, P
 
         if (!PyErr_Occurred()) {
             // createOutputFileParam(QString,QString)
-            OutputFileParam * cppResult = cppSelf->createOutputFileParam(cppArg0, cppArg1);
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX], cppResult);
+            FileParam * cppResult = cppSelf->createOutputFileParam(cppArg0, cppArg1);
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_FILEPARAM_IDX], cppResult);
 
             // Ownership transferences.
             Shiboken::Object::getOwnership(pyResult);

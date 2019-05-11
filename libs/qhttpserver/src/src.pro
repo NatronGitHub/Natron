@@ -13,6 +13,10 @@ include(../../../global.pri)
 include(../../../libs.pri)
 include(../../../config.pri)
 
+*clang* {
+QMAKE_CFLAGS_WARN_ON += -Wno-uninitialized
+}
+
 DEFINES += QHTTP_SERVER_STATIC
 DEFINES += QHTTPSERVER_EXPORT
 INCLUDEPATH += $$QHTTPSERVER_BASE/http-parser

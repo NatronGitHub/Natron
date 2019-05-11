@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -53,6 +53,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/KnobTypes.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EffectInstance.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
@@ -95,6 +96,7 @@ class OfxParamToKnob
     mutable QMutex dynamicPropModifiedMutex;
     int _dynamicPropModified;
     boost::weak_ptr<EffectInstance> _effect;
+    int _nRefreshAutoKeyingRequests;
 
 public:
 
@@ -103,6 +105,7 @@ public:
         : dynamicPropModifiedMutex()
         , _dynamicPropModified(0)
         , _effect(effect)
+        , _nRefreshAutoKeyingRequests(0)
     {
     }
 
@@ -113,7 +116,7 @@ public:
         GCC_DIAG_PEDANTIC_ON
     }
 
-    virtual KnobPtr getKnob() const = 0;
+    virtual KnobIPtr getKnob() const = 0;
     virtual OFX::Host::Param::Instance* getOfxParam() = 0;
     OFX::Host::Interact::Descriptor & getInteractDesc()
     {
@@ -146,48 +149,63 @@ public:
     }
 
     template <typename TYPE>
-    boost::shared_ptr<TYPE>checkIfKnobExistsWithNameOrCreate(const std::string& scriptName,
-                                                             OFX::Host::Param::Instance* param,
-                                                             int dimension)
+    boost::shared_ptr<TYPE>
+    getOrCreateKnob(const std::string& scriptName,
+                    OFX::Host::Param::Instance* param,
+                    int dimension)
     {
         EffectInstancePtr holder = getKnobHolder();
-
-        assert(holder);
-#ifdef NATRON_ENABLE_IO_META_NODES
-        boost::shared_ptr<TYPE> isType = holder->getKnobByNameAndType<TYPE>(scriptName);
-        if (isType) {
-            //Remove from the parent if it exists, because it will be added again afterwards
-            isType->resetParent();
-
-            return isType;
+        boost::shared_ptr<TYPE> ret = holder->getOrCreateKnob<TYPE>(scriptName, dimension);
+        if (!ret) {
+            return ret;
         }
-#else
-        Q_UNUSED(scriptName);
-#endif
-        boost::shared_ptr<TYPE> ret = AppManager::createKnob<TYPE>(holder.get(), getParamLabel(param), dimension);
-        ret->setName(scriptName);
 
+
+        /**
+         * For readers/writers embedded in a ReadNode or WriteNode, the holder will be the ReadNode and WriteNode
+         * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that
+         * interacting with the Reader or the container is actually the same.
+         **/
+        EffectInstancePtr thisEffect = _effect.lock();
+        if ( ret->getHolder() != thisEffect && !thisEffect->getKnobByName(scriptName) ) {
+            thisEffect->addKnob(ret);
+            ret->setActualCloneForHolder(thisEffect);
+        }
+
+        ret->setLabel(getParamLabel(param));
+        
         return ret;
     }
 
 public Q_SLOTS:
 
     /*
-       These are called when the properties are changed on the Natron side
+     These are called when the properties are changed on the Natron side
      */
     void onEvaluateOnChangeChanged(bool evaluate);
     void onSecretChanged();
     void onHintTooltipChanged();
     void onEnabledChanged();
     void onLabelChanged();
-    void onDisplayMinMaxChanged(double min, double max, int index);
-    void onMinMaxChanged(double min, double max, int index);
-    void onKnobAnimationLevelChanged(ViewSpec view, int dimension);
+    void onDisplayMinMaxChanged(DimSpec dimension);
+    void onMinMaxChanged(DimSpec dimension);
+    void onMustRefreshGuiTriggered(ViewSetSpec,DimSpec,ValueChangedReasonEnum);
     void onChoiceMenuReset();
     void onChoiceMenuPopulated();
     void onChoiceMenuEntryAppended();
     void onInViewportSecretChanged();
     void onInViewportLabelChanged();
+
+    void onMustRefreshAutoKeyingPropsLaterReceived();
+
+    void refreshAutoKeyingPropsLater();
+
+    void refreshAutoKeyingPropsNow();
+
+Q_SIGNALS:
+
+    void mustRefreshAnimationLevelLater();
+
 protected:
 
     void setDynamicPropertyModified(bool dynamicPropModified)
@@ -218,7 +236,7 @@ class OfxPushButtonInstance
     : public OfxParamToKnob, public OFX::Host::Param::PushbuttonInstance
 {
 public:
-    OfxPushButtonInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    OfxPushButtonInstance(const OfxEffectInstancePtr& node,
                           OFX::Host::Param::Descriptor & descriptor);
 
     // callback which should set enabled state as appropriate
@@ -236,11 +254,11 @@ public:
 
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 private:
-    boost::weak_ptr<KnobButton> _knob;
+    KnobButtonWPtr _knob;
 };
 
 
@@ -249,7 +267,7 @@ class OfxIntegerInstance
 {
 public:
 
-    OfxIntegerInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    OfxIntegerInstance(const OfxEffectInstancePtr& node,
                        OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(int &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, int &) OVERRIDE FINAL;
@@ -281,21 +299,21 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 private:
 
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
 
-    boost::weak_ptr<KnobInt> _knob;
+    KnobIntWPtr _knob;
 };
 
 class OfxDoubleInstance
     :   public OfxParamToKnob, public OFX::Host::Param::DoubleInstance
 {
 public:
-    OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    OfxDoubleInstance(const OfxEffectInstancePtr& node,
                       OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(double &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, double &) OVERRIDE FINAL;
@@ -330,21 +348,20 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-    bool isAnimated() const;
 
 private:
 
-    boost::weak_ptr<KnobDouble> _knob;
+    KnobDoubleWPtr _knob;
 };
 
 class OfxBooleanInstance
     :   public OfxParamToKnob, public OFX::Host::Param::BooleanInstance
 {
 public:
-    OfxBooleanInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    OfxBooleanInstance(const OfxEffectInstancePtr& node,
                        OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(bool &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, bool &) OVERRIDE FINAL;
@@ -374,21 +391,21 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 private:
 
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
 
-    boost::weak_ptr<KnobBool> _knob;
+    KnobBoolWPtr _knob;
 };
 
 class OfxChoiceInstance
     : public OfxParamToKnob, public OFX::Host::Param::ChoiceInstance
 {
 public:
-    OfxChoiceInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    OfxChoiceInstance(const OfxEffectInstancePtr& node,
                       OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(int &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, int &) OVERRIDE FINAL;
@@ -421,21 +438,21 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 private:
 
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
 
-    boost::weak_ptr<KnobChoice> _knob;
+    KnobChoiceWPtr _knob;
 };
 
 class OfxRGBAInstance
     :  public OfxParamToKnob, public OFX::Host::Param::RGBAInstance
 {
 public:
-    OfxRGBAInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    OfxRGBAInstance(const OfxEffectInstancePtr& node,
                     OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(double &, double &, double &, double &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, double &, double &, double &, double &) OVERRIDE FINAL;
@@ -468,14 +485,11 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-    bool isAnimated(int dimension) const;
-    bool isAnimated() const;
-
 private:
-    boost::weak_ptr<KnobColor> _knob;
+    KnobColorWPtr _knob;
 };
 
 
@@ -483,7 +497,7 @@ class OfxRGBInstance
     :  public OfxParamToKnob,  public OFX::Host::Param::RGBInstance
 {
 public:
-    OfxRGBInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    OfxRGBInstance(const OfxEffectInstancePtr& node,
                    OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(double &, double &, double &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, double &, double &, double &) OVERRIDE FINAL;
@@ -516,21 +530,19 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-    bool isAnimated(int dimension) const;
-    bool isAnimated() const;
 
 private:
-    boost::weak_ptr<KnobColor> _knob;
+    KnobColorWPtr _knob;
 };
 
 class OfxDouble2DInstance
     :  public OfxParamToKnob, public OFX::Host::Param::Double2DInstance
 {
 public:
-    OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    OfxDouble2DInstance(const OfxEffectInstancePtr& node,
                         OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(double &, double &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, double &, double &) OVERRIDE FINAL;
@@ -563,16 +575,14 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-    //bool isAnimated(int dimension) const;
-    bool isAnimated() const;
 
 private:
 
     int _startIndex;
-    boost::weak_ptr<KnobDouble> _knob;
+    KnobDoubleWPtr _knob;
 };
 
 
@@ -580,7 +590,7 @@ class OfxInteger2DInstance
     :  public OfxParamToKnob, public OFX::Host::Param::Integer2DInstance
 {
 public:
-    OfxInteger2DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    OfxInteger2DInstance(const OfxEffectInstancePtr& node,
                          OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(int &, int &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, int &, int &) OVERRIDE FINAL;
@@ -611,7 +621,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 private:
@@ -619,14 +629,14 @@ private:
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
 
     int _startIndex;
-    boost::weak_ptr<KnobInt> _knob;
+    KnobIntWPtr _knob;
 };
 
 class OfxDouble3DInstance
     :  public OfxParamToKnob, public OFX::Host::Param::Double3DInstance
 {
 public:
-    OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    OfxDouble3DInstance(const OfxEffectInstancePtr& node,
                         OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(double &, double &, double &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, double &, double &, double &) OVERRIDE FINAL;
@@ -659,23 +669,21 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-    bool isAnimated(int dimension) const;
-    bool isAnimated() const;
 
 private:
 
     int _startIndex;
-    boost::weak_ptr<KnobDouble> _knob;
+    KnobDoubleWPtr _knob;
 };
 
 class OfxInteger3DInstance
     :  public OfxParamToKnob, public OFX::Host::Param::Integer3DInstance
 {
 public:
-    OfxInteger3DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    OfxInteger3DInstance(const OfxEffectInstancePtr& node,
                          OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(int &, int &, int &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, int &, int &, int &) OVERRIDE FINAL;
@@ -707,14 +715,14 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 private:
 
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
 
-    boost::weak_ptr<KnobInt> _knob;
+    KnobIntWPtr _knob;
 };
 
 class OfxGroupInstance
@@ -722,12 +730,12 @@ class OfxGroupInstance
 {
 public:
 
-    OfxGroupInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    OfxGroupInstance(const OfxEffectInstancePtr& node,
                      OFX::Host::Param::Descriptor & descriptor);
 
-    void addKnob(KnobPtr k);
+    void addKnob(KnobIPtr k);
 
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
     virtual ~OfxGroupInstance()
@@ -748,7 +756,7 @@ public:
 
 
 private:
-    boost::weak_ptr<KnobGroup> _groupKnob;
+    KnobGroupWPtr _groupKnob;
 };
 
 class OfxPageInstance
@@ -757,7 +765,7 @@ class OfxPageInstance
 public:
 
 
-    OfxPageInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    OfxPageInstance(const OfxEffectInstancePtr& node,
                     OFX::Host::Param::Descriptor & descriptor);
 
     // callback which should set enabled state as appropriate
@@ -771,11 +779,11 @@ public:
 
     virtual void setInViewportLabel() OVERRIDE FINAL;
 
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 private:
-    boost::weak_ptr<KnobPage> _pageKnob;
+    KnobPageWPtr _pageKnob;
 };
 
 
@@ -784,7 +792,7 @@ class OfxStringInstance
     : public OfxParamToKnob, public OFX::Host::Param::StringInstance
 {
 public:
-    OfxStringInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    OfxStringInstance(const OfxEffectInstancePtr& node,
                       OFX::Host::Param::Descriptor & descriptor);
 
     virtual ~OfxStringInstance();
@@ -828,20 +836,10 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 private:
-
-    /**
-     * @brief Expand any project path contained in str
-     **/
-    void projectEnvVar_getProxy(std::string& str) const;
-
-    /**
-     * @brief Find any project path contained in str and replace it by the associated name
-     **/
-    void projectEnvVar_setProxy(std::string& str) const;
 
     boost::scoped_ptr<OfxStringInstancePrivate> _imp;
 };
@@ -851,7 +849,7 @@ class OfxCustomInstance
     : public OfxParamToKnob, public OFX::Host::Param::CustomInstance
 {
 public:
-    OfxCustomInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    OfxCustomInstance(const OfxEffectInstancePtr& node,
                       OFX::Host::Param::Descriptor & descriptor);
 
     virtual ~OfxCustomInstance();
@@ -887,7 +885,7 @@ public:
 
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
     ///keyframes support
@@ -920,7 +918,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    explicit OfxParametricInstance(const boost::shared_ptr<OfxEffectInstance>& node,
+    explicit OfxParametricInstance(const OfxEffectInstancePtr& node,
                                    OFX::Host::Param::Descriptor & descriptor);
 
     virtual ~OfxParametricInstance();
@@ -973,11 +971,11 @@ public:
     virtual OfxStatus  deleteControlPoint(int curveIndex, int nthCtl) OVERRIDE FINAL;
     virtual OfxStatus  deleteAllControlPoints(int curveIndex) OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 
-    boost::weak_ptr<KnobParametric> _knob;
+    KnobParametricWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

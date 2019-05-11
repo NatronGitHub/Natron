@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,7 +28,6 @@
 #include "Global/Macros.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
 
@@ -38,23 +37,19 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/ViewIdx.h"
 #include "Global/Macros.h"
 #include "Gui/Label.h"
-#include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER
 
 class ClickableLabel
     : public Label
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
+
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-    // properties
-    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
-    Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
-    Q_PROPERTY(bool readOnly READ isReadOnly WRITE setReadOnly)
-    Q_PROPERTY(bool sunkenStyle READ isSunken WRITE setSunken)
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -74,42 +69,9 @@ public:
         _toggled = b;
     }
 
-    void setDirty(bool b);
-
-    bool getDirty() const
-    {
-        return _dirty;
-    }
-
-    ///Updates the text as setText does but also keeps the current color info
-    void setText_overload(const QString & str);
-
-    int getAnimation() const
-    {
-        return _animation;
-    }
-
-    void setAnimation(int i);
-
-    bool isReadOnly() const
-    {
-        return _readOnly;
-    }
-
-    void setReadOnly(bool readOnly);
-
-    bool isSunken() const
-    {
-        return _sunkenStyle;
-    }
-
-    void setSunken(bool s);
-
-    void setBold(bool b);
-
-    virtual bool canAlter() const OVERRIDE FINAL;
 
 Q_SIGNALS:
+
     void clicked(bool);
 
 protected:
@@ -117,16 +79,7 @@ protected:
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
 
 private:
-
-    virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
-
-private:
     bool _toggled;
-    bool _bold;
-    bool _dirty;
-    bool _readOnly;
-    int _animation;
-    bool _sunkenStyle;
 };
 
 
@@ -137,10 +90,12 @@ public:
 
     KnobClickableLabel(const QPixmap& icon,
                        const KnobGuiPtr& knob,
+                       ViewSetSpec view,
                        QWidget* parent = 0);
 
     KnobClickableLabel(const QString& text,
                        const KnobGuiPtr& knob,
+                       ViewSetSpec view,
                        QWidget* parent = 0);
 
     virtual ~KnobClickableLabel();
@@ -159,7 +114,7 @@ private:
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-    boost::shared_ptr<KnobWidgetDnD> _dnd;
+    KnobWidgetDnDPtr _dnd;
 };
 
 NATRON_NAMESPACE_EXIT

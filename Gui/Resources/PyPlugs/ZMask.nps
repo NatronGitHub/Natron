@@ -1,0 +1,159 @@
+# Natron Presets File
+PluginID: fr.inria.built-in.Group
+Params:
+  - Name: pyPlugPluginID
+    String: fr.inria.ZMask
+  - Name: pyPlugPluginLabel
+    String: ZMask
+  - Name: pyPlugPluginGrouping
+    String: Filter
+  - Name: pyPlugPluginDescription
+    String: Creates a mask from a depth buffer by specifying the center value and the amplitude of the range around it with the tightness parameter
+  - Name: pyPlugPluginVersion
+    Int: [1, 0]
+UserPages:
+  - TypeName: Page
+    Name: controls
+    Label: Controls
+    Params:
+      - Name: zPicking
+        DefaultBool: false
+        NDims: 1
+        TypeName: Bool
+        Label: Z picking
+      - Name: centerValue
+        DefaultFloat: [1, 1, 1]
+        NDims: 3
+        TypeName: Color
+        Label: Center Value
+        DisplayMin: 0
+        DisplayMax: 200
+      - Name: tightness
+        DefaultFloat: [1, 1, 1, 1]
+        NDims: 4
+        TypeName: Color
+        Label: Tightness
+        Min: -1.79769e+308
+        Max: 1.79769e+308
+        DisplayMin: 0
+        DisplayMax: 100
+      - Name: contrast
+        DefaultFloat: [1, 1, 1, 1]
+        NDims: 4
+        TypeName: Color
+        Label: Contrast
+        Min: -1.79769e+308
+        Max: 1.79769e+308
+        DisplayMin: 0
+        DisplayMax: 100
+      - Name: offset
+        DefaultFloat: [0, 0, 0, 0]
+        NDims: 4
+        TypeName: Color
+        Label: Offset
+        Min: -1.79769e+308
+        Max: 1.79769e+308
+        DisplayMin: -200
+        DisplayMax: 200
+      - Name: gamma
+        DefaultFloat: [1, 1, 1, 1]
+        NDims: 4
+        TypeName: Color
+        Label: Gamma
+        Min: -1.79769e+308
+        Max: 1.79769e+308
+        DisplayMin: 0.2
+        DisplayMax: 5
+      - Name: invertGradient
+        DefaultBool: false
+        NDims: 1
+        TypeName: Bool
+        Label: Invert Gradient
+      - Name: Source_channels
+        DefaultString: uk.co.thefoundry.OfxImagePlaneColour
+        NDims: 1
+        TypeName: Choice
+        Label: Source Layer
+        Entries: [None, uk.co.thefoundry.OfxImagePlaneColour]
+      - Name: channels
+        DefaultString: uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft
+        NDims: 1
+        TypeName: Choice
+        Label: Output Layer
+        Entries: [uk.co.thefoundry.OfxImagePlaneColour, uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft, uk.co.thefoundry.OfxImagePlaneStereoDisparityRight, uk.co.thefoundry.OfxImagePlaneBackMotionVector, uk.co.thefoundry.OfxImagePlaneForwardMotionVector]
+PagesOrder: [controls, nodePage, pyPlugPage]
+Children:
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: Merge1
+    Inputs: {A: Solid1, B: InputSource}
+    Params:
+      - Name: operation
+        String: difference
+      - Name: userTextArea
+        String: <Natron>(difference)</Natron>
+      - Name: B_channels
+        String: {N: "@thisGroup", K: Source_channels}
+    Pos: [764, 248]
+  - PluginID: net.sf.openfx.Solid
+    Name: Solid1
+    Params:
+      - Name: NatronParamFormatChoice
+        String: PC_Video
+      - Name: size
+        Float: [1920, 1080]
+      - Name: color
+        Float: [{N: "@thisGroup", K: centerValue, D: r}, {N: "@thisGroup", K: centerValue, D: g}, {N: "@thisGroup", K: centerValue, D: b}]
+    Pos: [776, 134]
+  - PluginID: net.sf.openfx.Invert
+    Name: Invert1
+    Version: [2, 0]
+    Inputs: Clamp1
+    Params:
+      - Name: premultChanged
+        Bool: true
+      - Name: channels
+        String: {N: "@thisGroup", K: channels}
+      - Name: disableNode
+        Bool: {N: "@thisGroup", K: invertGradient}
+    Pos: [764, 546]
+  - PluginID: net.sf.openfx.Clamp
+    Name: Clamp1
+    Version: [2, 0]
+    Inputs: ColorCorrect1
+    Params:
+      - Name: premultChanged
+        Bool: true
+    Pos: [764, 455]
+  - PluginID: net.sf.openfx.ColorCorrectPlugin
+    Name: ColorCorrect1
+    Version: [2, 0]
+    Inputs: Merge1
+    Params:
+      - Name: MasterContrast
+        Float: [{N: "@thisGroup", K: contrast, D: r}, {N: "@thisGroup", K: contrast, D: g}, {N: "@thisGroup", K: contrast, D: b}, {N: "@thisGroup", K: contrast, D: a}]
+      - Name: MasterGamma
+        Float: [{N: "@thisGroup", K: gamma, D: r}, {N: "@thisGroup", K: gamma, D: g}, {N: "@thisGroup", K: gamma, D: b}, {N: "@thisGroup", K: gamma, D: a}]
+      - Name: MasterGain
+        Float: [{N: "@thisGroup", K: tightness, D: r}, {N: "@thisGroup", K: tightness, D: g}, {N: "@thisGroup", K: tightness, D: b}, {N: "@thisGroup", K: tightness, D: a}]
+      - Name: MasterOffset
+        Float: [{N: "@thisGroup", K: offset, D: r}, {N: "@thisGroup", K: offset, D: g}, {N: "@thisGroup", K: offset, D: b}, {N: "@thisGroup", K: offset, D: a}]
+      - Name: premultChanged
+        Bool: true
+    Pos: [764, 344]
+  - PluginID: fr.inria.built-in.Output
+    Name: Output
+    Label: Output1
+    Inputs: Switch1
+    Pos: [764, 774]
+  - PluginID: fr.inria.built-in.Input
+    Name: InputSource
+    Pos: [506, 255]
+  - PluginID: net.sf.openfx.switchPlugin
+    Name: Switch1
+    Inputs: {0: Invert1, 1: InputSource}
+    Params:
+      - Name: which
+        Int: {pyExpr: thisGroup.zPicking.get()}
+      - Name: p1_channels
+        String: {pyExpr: thisGroup.Source_channels.get()}
+    Pos: [764, 638]

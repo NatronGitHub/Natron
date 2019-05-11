@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_CURVEPRIVATE_H
-#define NATRON_ENGINE_CURVEPRIVATE_H
+#ifndef Engine_CurvePrivate_h
+#define Engine_CurvePrivate_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -34,57 +34,50 @@
 #include <QtCore/QMutex>
 
 #include "Engine/Variant.h"
+#include "Engine/Curve.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Engine/KeyFrameInterpolator.h"
+
+
 #include "Engine/EngineFwd.h"
 
-//#define NATRON_CURVE_USE_CACHE
 
 NATRON_NAMESPACE_ENTER
 
+
+
+
 struct CurvePrivate
 {
-    enum CurveTypeEnum
-    {
-        eCurveTypeDouble = 0, //< the values held by the keyframes can be any real
-        eCurveTypeInt, //< the values held by the keyframes can only be integers
-        eCurveTypeIntConstantInterp, //< same as eCurveTypeInt but interpolation is restricted to eKeyframeTypeConstant
-        eCurveTypeBool, //< the values held by the keyframes can be either 0 or 1
-        eCurveTypeString //< the values held by the keyframes can only be integers and keyframes are ordered by increasing values
-        // and times
-    };
-
     KeyFrameSet keyFrames;
 
-#ifdef NATRON_CURVE_USE_CACHE
-    std::map<double, double> resultCache; //< a cache for interpolations
-#endif
 
-    KnobI* owner;
-    int dimensionInOwner;
+    KeyFrameInterpolatorPtr interpolator;
+    std::list<CurveChangesListenerWPtr> listeners;
     CurveTypeEnum type;
     double xMin, xMax;
     double yMin, yMax;
+    double displayMin, displayMax;
     mutable QMutex _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
-    bool isParametric;
     bool isPeriodic;
+    bool clampKeyFramesTimeToIntegers;
 
     CurvePrivate()
-        : keyFrames()
-#ifdef NATRON_CURVE_USE_CACHE
-        , resultCache()
-#endif
-        , owner(NULL)
-        , dimensionInOwner(-1)
-        , type(eCurveTypeDouble)
-        , xMin(-std::numeric_limits<double>::infinity())
-        , xMax(std::numeric_limits<double>::infinity())
-        , yMin(-std::numeric_limits<double>::infinity())
-        , yMax(std::numeric_limits<double>::infinity())
-        , _lock(QMutex::Recursive)
-        , isParametric(false)
-        , isPeriodic(false)
+    : keyFrames()
+    , interpolator(new KeyFrameInterpolator)
+    , listeners()
+    , type(eCurveTypeDouble)
+    , xMin(-std::numeric_limits<double>::infinity())
+    , xMax(std::numeric_limits<double>::infinity())
+    , yMin(-std::numeric_limits<double>::infinity())
+    , yMax(std::numeric_limits<double>::infinity())
+    , displayMin(-std::numeric_limits<double>::infinity())
+    , displayMax(std::numeric_limits<double>::infinity())
+    , _lock(QMutex::Recursive)
+    , isPeriodic(false)
+    , clampKeyFramesTimeToIntegers(true)
     {
     }
 
@@ -96,21 +89,24 @@ struct CurvePrivate
 
     void operator=(const CurvePrivate & other)
     {
+        interpolator = other.interpolator->createCopy();
+        listeners = other.listeners;
         keyFrames = other.keyFrames;
-        owner = other.owner;
-        dimensionInOwner = other.dimensionInOwner;
-        isParametric = other.isParametric;
         type = other.type;
         xMin = other.xMin;
         xMax = other.xMax;
         yMin = other.yMin;
         yMax = other.yMax;
+        displayMin = other.displayMin;
+        displayMax = other.displayMax;
         isPeriodic = other.isPeriodic;
+        clampKeyFramesTimeToIntegers = other.clampKeyFramesTimeToIntegers;
     }
+
 
     
 };
 
 NATRON_NAMESPACE_EXIT
 
-#endif // NATRON_ENGINE_CURVEPRIVATE_H
+#endif // Engine_CurvePrivate_h

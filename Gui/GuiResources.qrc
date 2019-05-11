@@ -10,6 +10,7 @@
         <file alias="LICENSE-Boost.txt">../tools/license/components/LICENSE-Boost.txt</file>
         <file alias="LICENSE-CeCILL-C.txt">../tools/license/components/LICENSE-CeCILL-C.txt</file>
         <file alias="LICENSE-CeresSolver.txt">../tools/license/components/LICENSE-CeresSolver.txt</file>
+        <file alias="LICENSE-exprtk.txt">../tools/license/components/LICENSE-exprtk.txt</file>
         <file alias="LICENSE-Field3D.txt">../tools/license/components/LICENSE-Field3D.txt</file>
         <file alias="LICENSE-FreeType.txt">../tools/license/components/LICENSE-FreeType.txt</file>
         <file alias="LICENSE-GIFLIB.txt">../tools/license/components/LICENSE-GIFLIB.txt</file>
@@ -55,12 +56,14 @@
         <file alias="LICENSE-libvorbis.txt">../tools/license/components/LICENSE-libvorbis.txt</file>
         <file alias="LICENSE-libxml.txt">../tools/license/components/LICENSE-libxml.txt</file>
         <file alias="LICENSE-libxml2.txt">../tools/license/components/LICENSE-libxml2.txt</file>
+        <file alias="LICENSE-lodepng.txt">../tools/license/components/LICENSE-lodepng.txt</file>
         <file alias="LICENSE-openfx.txt">../tools/license/components/LICENSE-openfx.txt</file>
         <file alias="LICENSE-openh264.txt">../tools/license/components/LICENSE-openh264.txt</file>
         <file alias="LICENSE-openjpeg.txt">../tools/license/components/LICENSE-openjpeg.txt</file>
         <file alias="LICENSE-orc.txt">../tools/license/components/LICENSE-orc.txt</file>
         <file alias="LICENSE-qhttpserver.txt">../tools/license/components/LICENSE-qhttpserver.txt</file>
         <file alias="LICENSE-webp.txt">../tools/license/components/LICENSE-webp.txt</file>
+        <file alias="LICENSE-yamlcpp.txt">../tools/license/components/LICENSE-yamlcpp.txt</file>
         <file alias="LICENSE-zlib.txt">../tools/license/components/LICENSE-zlib.txt</file>
         <file alias="LICENSE-hoedown.txt">../tools/license/components/LICENSE-hoedown.txt</file>
         <file>Resources/Fonts/DroidSans-Bold.ttf</file>
@@ -121,7 +124,7 @@
         <file>Resources/Images/checkbox.png</file>
         <file>Resources/Images/checkbox_animation1_checked.png</file>
         <file>Resources/Images/checkbox_animation1_checked_hovered.png</file>
-        <file>Resources/Images/checkbox_animation1_unchecked.png</file>
+        <file>Resources/Images/checkbox_animation1_unchecked.png</file> 
         <file>Resources/Images/checkbox_animation1_unchecked_hovered.png</file>
         <file>Resources/Images/checkbox_animation2_checked.png</file>
         <file>Resources/Images/checkbox_animation2_checked_hovered.png</file>
@@ -139,7 +142,7 @@
         <file>Resources/Images/checkbox_hovered.png</file>
         <file>Resources/Images/checkbox_unchecked_readonly.png</file>
         <file>Resources/Images/checkerboard_off.png</file>
-        <file>Resources/Images/checkerboard_on.png</file>
+        <file>Resources/Images/checkerboard_on.png</file> 
         <file>Resources/Images/clearAnimation.png</file>
         <file>Resources/Images/clearAnimationBw.png</file>
         <file>Resources/Images/clearAnimationFw.png</file>
@@ -154,11 +157,15 @@
         <file>Resources/Images/colorwheel.png</file>
         <file>Resources/Images/colorwheel_overlay.png</file>
         <file>Resources/Images/combobox.png</file>
+        <file>Resources/Images/CornerPinIcon.png</file>
+        <file>Resources/Images/CurveEditorIcon.png</file>
         <file>Resources/Images/cursor.png</file>
         <file>Resources/Images/curve.png</file>
         <file>Resources/Images/cuspPoints.png</file>
         <file>Resources/Images/diskcache_icon.png</file>
         <file>Resources/Images/dot_icon.png</file>
+        <file>Resources/Images/DopeSheetIcon.png</file>
+        <file>Resources/Images/DS_CE_Icon.png</file>
         <file>Resources/Images/ellipse.png</file>
         <file>Resources/Images/enter_group.png</file>
         <file>Resources/Images/execScript.png</file>
@@ -187,6 +194,7 @@
         <file>Resources/Images/layer.png</file>
         <file>Resources/Images/layout.png</file>
         <file>Resources/Images/layout_anchor.png</file>
+        <file>Resources/Images/lifetime.png</file>
         <file>Resources/Images/linkCursor.png</file>
         <file>Resources/Images/linkMultCursor.png</file>
         <file>Resources/Images/loadAndExecScript.png</file>
@@ -194,13 +202,16 @@
         <file>Resources/Images/loadScript.png</file>
         <file>Resources/Images/locked.png</file>
         <file>Resources/Images/loopmode.png</file>
+        <file>Resources/Images/maskOff.png</file>
         <file>Resources/Images/maximize.png</file>
         <file>Resources/Images/minimize.png</file>
+        <file>Resources/Images/mix.png</file>
         <file>Resources/Images/natronIcon256_linux.png</file>
         <file>Resources/Images/natronProjectIcon_linux.png</file>
         <file>Resources/Images/nextIncr.png</file>
         <file>Resources/Images/nextKF.png</file>
         <file>Resources/Images/nextScript.png</file>
+        <file>Resources/Images/NodeGraphIcon.png</file>
         <file>Resources/Images/open-file.png</file>
         <file>Resources/Images/openCloseCurve.png</file>
         <file>Resources/Images/openeffects.png</file>
@@ -215,6 +226,8 @@
         <file>Resources/Images/prevKF.png</file>
         <file>Resources/Images/previousIncr.png</file>
         <file>Resources/Images/previousScript.png</file>
+        <file>Resources/Images/ProgressPanelIcon.png</file>
+        <file>Resources/Images/PropertiesIcon.png</file>
         <file>Resources/Images/readImage.png</file>
         <file>Resources/Images/rectangle.png</file>
         <file>Resources/Images/redo.png</file>
@@ -246,7 +259,11 @@
         <file>Resources/Images/rotopaint_sharpen.png</file>
         <file>Resources/Images/rotopaint_smear.png</file>
         <file>Resources/Images/rotopaint_solid.png</file>
+        <file>Resources/Images/rotoPaintAddGroupIcon.png</file>
+        <file>Resources/Images/rotoPaintAddLayerIcon.png</file>
+        <file>Resources/Images/rotoPaintRemoveItemIcon.png</file>
         <file>Resources/Images/saveScript.png</file>
+        <file>Resources/Images/ScriptEditorIcon.png</file>
         <file>Resources/Images/scrollbarButton_down.png</file>
         <file>Resources/Images/scrollbarButton_left.png</file>
         <file>Resources/Images/scrollbarButton_right.png</file>
@@ -258,7 +275,10 @@
         <file>Resources/Images/selectPoints.png</file>
         <file>Resources/Images/settings.png</file>
         <file>Resources/Images/smoothPoints.png</file>
-        <file>Resources/Images/splashscreen.png</file>
+        <file>Resources/Images/soloOff.png</file>
+        <file>Resources/Images/soloOn.png</file>
+        <file>Resources/Images/source.png</file>
+        <file>Resources/Images/splashscreen.jpg</file>
         <file>Resources/Images/splitHorizontally.png</file>
         <file>Resources/Images/splitVertically.png</file>
         <file>Resources/Images/stickySelectionDisabled.png</file>
@@ -272,6 +292,7 @@
         <file>Resources/Images/turbo_on.png</file>
         <file>Resources/Images/timelineIn.png</file>
         <file>Resources/Images/timelineOut.png</file>
+        <file>Resources/Images/timeOffset.png</file>
         <file>Resources/Images/undo.png</file>
         <file>Resources/Images/undo_grayscale.png</file>
         <file>Resources/Images/unhide_unmodified.png</file>
@@ -280,13 +301,14 @@
         <file>Resources/Images/unvisible.png</file>
         <file>Resources/Images/updateViewerDisabled.png</file>
         <file>Resources/Images/updateViewerEnabled.png</file>
+        <file>Resources/Images/ViewerPanelIcon.png</file>
         <file>Resources/Images/viewer_icon.png</file>
-        <file>Resources/Images/viewer_roiDisabled.png</file>
+        <file>Resources/Images/viewer_roiDisabled.png</file>  
         <file>Resources/Images/viewer_roiEnabled.png</file>
         <file>Resources/Images/visible.png</file>
-        <file>Resources/Images/writeImage.png</file>
-        <file>Resources/Images/zebra_off.png</file>
-        <file>Resources/Images/zebra_on.png</file>
+        <file>Resources/Images/writeImage.png</file> 
+        <file>Resources/Images/zebra_off.png</file> 
+        <file>Resources/Images/zebra_on.png</file> 
         <file>Resources/Stylesheets/mainstyle.qss</file>
         <file>Resources/Images/rotoNodeIcon.png</file>
         <file>Resources/Images/interp_constant.png</file>
@@ -294,7 +316,7 @@
         <file>Resources/Images/interp_constant_selected.png</file>
         <file>Resources/Images/interp_curve.png</file>
         <file>Resources/Images/interp_curve_selected.png</file>
-        <file>Resources/Images/interp_linear_selected.png</file>
+        <file>Resources/Images/interp_linear_selected.png</file> 
         <file>Resources/Images/keyframe_node_root.png</file>
         <file>Resources/Images/keyframe_node_root_selected.png</file>
         <file>Resources/Images/interp_break.png</file>
@@ -372,9 +394,10 @@
         <file>Resources/Images/prevUserKey.png</file>
         <file>Resources/Images/nextUserKey.png</file>
         <file>Resources/Images/motionTypeAffine.png</file>
+        <file>Resources/Images/motionTypePerspective.png</file>
         <file>Resources/Images/motionTypeRT.png</file>
         <file>Resources/Images/motionTypeRTS.png</file>
-        <file>Resources/Images/motionTypeS.png</file>
+        <file>Resources/Images/motionTypeTS.png</file>
         <file>Resources/Images/motionTypeT.png</file>
         <file>Resources/Images/patternSize.png</file>
         <file>Resources/Images/searchSize.png</file>

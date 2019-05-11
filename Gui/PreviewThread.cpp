@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -45,7 +45,7 @@ class ComputePreviewRequest
 {
 public:
 
-    double time;
+    TimeValue time;
     NodeGuiWPtr node;
 
     ComputePreviewRequest()
@@ -58,6 +58,8 @@ public:
     {
     }
 };
+
+typedef boost::shared_ptr<ComputePreviewRequest> ComputePreviewRequestPtr;
 
 struct PreviewThreadPrivate
 {
@@ -84,9 +86,9 @@ PreviewThread::~PreviewThread()
 
 void
 PreviewThread::appendToQueue(const NodeGuiPtr& node,
-                             double time)
+                             TimeValue time)
 {
-    boost::shared_ptr<ComputePreviewRequest> r( new ComputePreviewRequest() );
+    ComputePreviewRequestPtr r = boost::make_shared<ComputePreviewRequest>();
 
     r->node = node;
     r->time = time;
@@ -94,17 +96,15 @@ PreviewThread::appendToQueue(const NodeGuiPtr& node,
 }
 
 GenericSchedulerThread::ThreadStateEnum
-PreviewThread::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
+PreviewThread::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
 {
-    boost::shared_ptr<ComputePreviewRequest> args = boost::dynamic_pointer_cast<ComputePreviewRequest>(inArgs);
+    ComputePreviewRequestPtr args = boost::dynamic_pointer_cast<ComputePreviewRequest>(inArgs);
 
     assert(args);
 
 
     NodeGuiPtr node = args->node.lock();
     if (node) {
-        ///Mark this thread as running
-        appPTR->fetchAndAddNRunningThreads(1);
 
         //process the request if valid
         int w = NATRON_PREVIEW_WIDTH;
@@ -120,13 +120,11 @@ PreviewThread::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 #endif
         NodePtr internalNode = node->getNode();
         if (internalNode) {
-            bool ok = internalNode->makePreviewImage( args->time, &w, &h, &_imp->data.front() );
+            bool ok = internalNode->makePreviewImage( args->time, w, h, &_imp->data.front() );
             Q_UNUSED(ok);
             node->copyPreviewImageBuffer(_imp->data, w, h);
         }
 
-        ///Unmark this thread as running
-        appPTR->fetchAndAddNRunningThreads(-1);
     }
 
     return eThreadStateActive;

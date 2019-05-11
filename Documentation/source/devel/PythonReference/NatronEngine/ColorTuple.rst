@@ -13,11 +13,9 @@ Utility class used to return [R,G,B,[A]] values.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`__getitem__<NatronEngine.ColorTuple.__getitem__>` (arg__1)
-
+- def :meth:`__getitem__<NatronEngine.ColorTuple.__getitem__>` (arg__1)
 
 .. class:: ColorTuple()
-
 
 .. attribute:: NatronEngine.ColorTuple.g
 

@@ -1,7 +1,7 @@
 /* -*- mode: css -*- */
-/*%1 = selection-color  %2 = medium background  %3 = soft background %4 = strong background %5 = text colour*/
+/*%1 = selection-color  %2 = medium background (base) %3 = soft background (raised) %4 = strong background (sunken) %5 = text colour*/
 /*%6 = interpolated value color %7 = keyframe value color %8 = disabled editable text (black) %9 = expression value color*/
-/*%10 = altered text colour, %11 = mouse over selection color*/
+/*%10 = unmodified text colour, %11 = mouse over selection color*/
 /*You have to fill the arguments with  stylesheet-representable colours.*/
 
 QWidget {
@@ -18,15 +18,9 @@ QLabel {
     color: %5;
 }
 
-
-
-
-
-
-Label[altered="true"] { color: %10; }
-Label[altered="false"] { color: %5; }
-
-
+QLabel:!enabled {
+    color: %8;
+}
 
 NodeSettingsPanel[_selected="true"] {
     border:1px solid white;
@@ -90,11 +84,13 @@ QScrollBar::up-arrow:vertical {
     image : url(:/Resources/Images/scrollbarButton_up.png);
     width: 11px;
     height: 20px;
+    background-color: #373737;
 }
 QScrollBar::down-arrow:vertical {
     image : url(:/Resources/Images/scrollbarButton_down.png);
     width: 11px;
     height: 20px;
+    background-color: #373737;
 }
 QScrollBar::add-page:vertical,
 QScrollBar::sub-page:vertical {
@@ -189,78 +185,7 @@ QTreeWidget::branch:open:has-children:has-siblings  {
     image: url(:/Resources/Images/groupbox_unfolded.png);
 }
 
-QHeaderView:section {
-    color: %5;
-    background-color: %2;
-    selection-color: %1;
-    selection-background-color : %1; /* same as selection-color??? */
-}
-
-ComboBox {
-    border-radius : 2px;
-    border: 1px solid black;
-}
-
 /*See http://doc.qt.io/qt-5/stylesheet-syntax.html for classes in namespaces*/
-
-/*Basic background: No multiple selection, no animation, no sunken style*/
-ClickableLabel[dirty="false"][animation="0"][sunkenStyle="false"]{
-    background-color: %2;
-}
-
-/*Basic background: No multiple selection, no animation but sunken style*/
-ClickableLabel[dirty="false"][animation="0"][sunkenStyle="true"]{
-    background-color: %3;
-}
-
-/*Multiple selection always have a black background*/
-ClickableLabel[dirty="true"]{
-    background-color: black;
-}
-
-/*No multiple selection and interpolated*/
-ClickableLabel[dirty="false"][animation="1"]{
-    background-color: %6;
-}
-
-/*Multiple selection and interpolated: change text color instead*/
-ClickableLabel[dirty="true"][animation="1"] {
-    color: %6;
-}
-
-/*No multiple selection and keyframe*/
-ClickableLabel[dirty="false"][animation="2"]{
-    background-color: %7;
-}
-
-/*Multiple selection and keyframe: change text color instead*/
-ClickableLabel[dirty="true"][animation="2"] {
-    color: %7;
-}
-
-/*No multiple selection and expr. Change also text colour otherwise the default white is not perceptible*/
-ClickableLabel[dirty="false"][animation="3"] {
-    background-color: %7;
-    color: %9;
-}
-
-/*Multiple selection and expr: change text color instead*/
-ClickableLabel[dirty="true"][animation="3"] {
-    color: %9;
-}
-
-/*Disabled and no multiple selection: */
-ClickableLabel[readOnly="true"][dirty="false"] {
-    color : %8;
-}
-
-/*Disabled and multiple selection: */
-ClickableLabel[readOnly="true"][dirty="true"] {
-    background-color: black;
-    color : %8;
-}
-
-
 
 TabWidget{background-color: %4;}
 
@@ -268,18 +193,23 @@ NodeSettingsPanel{
     background-color : %2;
     color: %5;
 }
-QPushButton{
-    background-color: %3;
+QPushButton {
     color: %5;
-    border: 0.5px solid black;
-    border-radius : 3px;
-    padding : 3px;
+    background-color: %3;
+    border-width: 1px;
+    border-color: %4;
+    border-style: solid;
+    border-radius: 3px;
+    padding: 3px;
+    font-size:90%;
+    padding-left: 5px;
+    padding-right: 5px;
 }
-QPushButton:pressed{
-    background-color : %4;
+QPushButton:pressed {
+    background-color: %2;
 }
 QPushButton:hover {
-    border: 1px solid gray;
+    border: 1px solid %1;
 }
 QPushButton:focus {
     border: 2px solid %1;
@@ -379,23 +309,6 @@ QScrollArea {
     background-color: %2;
 }
 
-
-QComboBox {
-    color: %5;
-    background-color: %3;
-    selection-color: %1;
-    selection-background-color: %3;
-}
-QComboBox QAbstractItemView  {
-    border-radius:0px;
-    border:0px;
-    /*background: %3; ??? */ 
-    color: %5;
-    background-color: %3;
-    selection-color: %1;
-    selection-background-color: %3;
-}
-
 QDockWidget::title {
     /*background: %3; ????*/
 }
@@ -412,10 +325,10 @@ QTabWidget::pane {
 
 QLineEdit {
     border: 1px solid;
-    border-radius: 1px;
+    border-radius: 3px;
+    border-color: #1e1e1e;
     padding: 1px;
-    color: %5;
-    background-color : %3;
+    background-color: %3;
     selection-color: %8;
     selection-background-color: %1;
 }
@@ -426,11 +339,9 @@ QLineEdit:focus {
     /*padding: 2px 4px;*/
 }
 QLineEdit:!enabled {
-    color: %8;
     background-color : %3;
 }
 QLineEdit:read-only {
-    color: %8;
     background-color: %3;
 }
 
@@ -461,45 +372,44 @@ QTabBar::tab {
     border: 1px solid ;
     border-bottom-color: %2; /* color of the thin line put at the bottom of non-selected tabs */
     min-width: 8ex;
-    padding: 2px;
-    border-top-right-radius: 5px;
-    border-top-left-radius: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 3px;
+    padding-bottom: 2px;
+    border-bottom: 0;
 }
 
 QTabBar::tab#DockablePanelTabWidget {
     min-width: 5ex;
 }
 
-QTabBar::tab:hover {
-    background: %1;
-}
-QTabBar::tab:selected {
-    background: %2; /* the background of the selected tab */
-    border-bottom-style:none;
-    /*border-color: %1;*/
+QTabBar::tab:!selected:hover {
+    background-color: %3;
 }
 
+QTabBar::tab:selected {
+    background-color: %3;
+    min-height:+10;
+}
 
 QTabBar::tab:!selected {
-    color: %5;  color of the text on deselected tabs
-    margin-top: 2px; /* make non-selected tabs look smaller */
+    color: %5;  /* color of the text on deselected tabs */
 }
 
-/* make use of negative margins for overlapping tabs */
-QTabBar::tab:selected {
-    /* expand/overlap to the left and right by 4px */
-    margin-left: -2px;
-    margin-right: -2px;
+QTabBar::tab:first {
+    border-top-left-radius: 5px;
 }
-QTabBar::tab:first:selected {
-    margin-left: 0; /* the first selected tab has nothing to overlap with on the left */
+
+QTabBar::tab:last {
+    border-top-right-radius: 5px;
 }
-QTabBar::tab:last:selected {
-    margin-right: 0; /* the last selected tab has nothing to overlap with on the right */
-}
+
 QTabBar::tab:only-one {
     margin: 0; /* if there is only one tab, we don't want overlapping margins */
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
 }
+
 QTabBar::close-button {
     image: url(:/Resources/Images/closeTab.png);
     subcontrol-position:right;
@@ -546,50 +456,6 @@ QToolButton {
     color: %5;
 }
 
-SpinBox[animation="0"] {
-    background-color: %3;
-}
-SpinBox[animation="1"] {
-    background-color: %6;
-}
-SpinBox[animation="2"] {
-    background-color: %7;
-}
-
-SpinBox[animation="3"] {
-    background-color: %9;
-    color: black;
-}
-SpinBox[dirty="true"] {
-    background-color: black;
-    color: %5;
-}
-
-SpinBox[altered="true"][dirty="false"] {
-    color: %10;
-}
-
-
-
-LineEdit[animation="0"] {
-    background-color: %3;
-}
-LineEdit[animation="1"] {
-    background-color: %6;
-}
-LineEdit[animation="2"] {
-    background-color: %7;
-}
-LineEdit[animation="3"] {
-    background-color: %9;
-}
-LineEdit[dirty="true"] {
-    background-color: black;
-}
-
-LineEdit[altered="true"] {
-    color: %10;
-}
 
 QTextEdit{
     color: %5;
@@ -597,105 +463,16 @@ QTextEdit{
     selection-color: %8;
     selection-background-color: %1;
 }
-QTextEdit:!enabled{
-    color: %8;
-}
-QTextEdit:read-only{
-    color: %8;
-}
+
 QTextEdit:focus {
     border: 2px groove %1;
     border-radius: 4px;
     padding: 2px 4px;
 }
 
-AnimatingTextEdit[animation="0"] {
-    background-color: %3;
+LineEdit[borderDisabled="true"]{
+    border: none;
 }
-AnimatingTextEdit[animation="1"] {
-    background-color: %6;
-}
-AnimatingTextEdit[animation="2"] {
-    background-color: %7;
-}
-AnimatingTextEdit[animation="3"] {
-    background-color: %9;
-    color: black;
-}
-AnimatingTextEdit[readOnlyNatron="true"]{
-    color:%8;
-}
-
-AnimatingTextEdit[dirty="true"] {
-    background-color: black;
-}
-
-/*AnimatedCheckBox[animation="1"]::indicator:unchecked {
-    image: url(:/Resources/Images/checkbox_animation1_unchecked.png);
-}
-AnimatedCheckBox[animation="1"]::indicator:checked {
-    image: url(:/Resources/Images/checkbox_animation1_checked.png);
-}
-AnimatedCheckBox[animation="1"]::indicator:checked:hover {
-    image: url(:/Resources/Images/checkbox_animation1_checked_hovered.png);
-}
-AnimatedCheckBox[animation="1"]::indicator:checked:focus {
-    image: url(:/Resources/Images/checkbox_animation1_checked_hovered.png);
-}
-AnimatedCheckBox[animation="1"]::indicator:unchecked:hover {
-    image: url(:/Resources/Images/checkbox_animation1_unchecked_hovered.png);
-}
-AnimatedCheckBox[animation="1"]::indicator:unchecked:focus {
-    image: url(:/Resources/Images/checkbox_animation1_unchecked_hovered.png);
-}
-AnimatedCheckBox[animation="2"]::indicator:unchecked {
-    image: url(:/Resources/Images/checkbox_animation2_unchecked.png);
-}
-AnimatedCheckBox[animation="2"]::indicator:checked {
-    image: url(:/Resources/Images/checkbox_animation2_checked.png);
-}
-AnimatedCheckBox[animation="2"]::indicator:checked:hover {
-    image: url(:/Resources/Images/checkbox_animation2_checked_hovered.png);
-}
-AnimatedCheckBox[animation="2"]::indicator:checked:focus {
-    image: url(:/Resources/Images/checkbox_animation2_checked_hovered.png);
-}
-AnimatedCheckBox[animation="2"]::indicator:unchecked:hover{
-    image: url(:/Resources/Images/checkbox_animation2_unchecked_hovered.png);
-}
-AnimatedCheckBox[animation="2"]::indicator:unchecked:focus{
-    image: url(:/Resources/Images/checkbox_animation2_unchecked_hovered.png);
-}
-AnimatedCheckBox[animation="3"]::indicator:unchecked {
-    image: url(:/Resources/Images/checkbox_animation3_unchecked.png);
-}
-AnimatedCheckBox[animation="3"]::indicator:checked {
-    image: url(:/Resources/Images/checkbox_animation3_checked.png);
-}
-AnimatedCheckBox[animation="3"]::indicator:checked:hover {
-    image: url(:/Resources/Images/checkbox_animation3_checked_hovered.png);
-}
-AnimatedCheckBox[animation="3"]::indicator:checked:focus {
-    image: url(:/Resources/Images/checkbox_animation3_checked_hovered.png);
-}
-AnimatedCheckBox[animation="3"]::indicator:unchecked:hover{
-    image: url(:/Resources/Images/checkbox_animation3_unchecked_hovered.png);
-}
-AnimatedCheckBox[animation="3"]::indicator:unchecked:focus{
-    image: url(:/Resources/Images/checkbox_animation3_unchecked_hovered.png);
-}
-AnimatedCheckBox[readOnly="true"]::indicator:checked{
-    image: url(:/Resources/Images/checkbox_checked_readonly.png);
-}
-AnimatedCheckBox[readOnly="true"]::indicator:unchecked{
-    image: url(:/Resources/Images/checkbox_unchecked_readonly.png);
-}
-AnimatedCheckBox[dirty="true"]::indicator:checked{
-    image: url(:/Resources/Images/checkbox_dirty_checked.png);
-}
-AnimatedCheckBox[dirty="true"]::indicator:unchecked{
-    image: url(:/Resources/Images/checkbox_dirty_unchecked.png);
-}*/
 
 QMenuBar
 {
@@ -706,7 +483,7 @@ QMenuBar
 QMenuBar::item
 {
     color: %5;
-    background-color: %2;
+    background-color: transparent;
 }
 
 QMenuBar::item:selected
@@ -727,5 +504,24 @@ OutputScriptTextEdit {
     background-color: %2;
     selection-color: %8;
     selection-background-color: %1;
+}
+
+QAbstractItemView
+{
+    /*background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #4d4d4d, stop: 0.1 #646464, stop: 1 #5d5d5d);*/
+}
+
+QHeaderView::section
+{
+    background-color: %2;
+    border-style: none;
+    border: 1px solid %3;
+    padding: 4px;
+}
+
+QWidget:item:hover,
+QWidget:item:selected {
+    color: %4;
+    background-color: %1;
 }
 

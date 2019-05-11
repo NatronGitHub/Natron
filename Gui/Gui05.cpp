@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,21 +32,24 @@
 #include <QtCore/QTimer>
 
 #include <QHBoxLayout>
+#include <QMenuBar>
 #include <QGraphicsScene>
 #include <QUndoGroup>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
 #include "Engine/CreateNodeArgs.h"
 
 #include "Gui/AboutWindow.h"
+#include "Gui/AnimationModuleEditor.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/AutoHideToolBar.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/CurveEditor.h"
-#include "Gui/CurveWidget.h"
 #include "Gui/FloatingWidget.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiPrivate.h"
@@ -79,7 +82,6 @@ Gui::setupUi()
 
 
     _imp->_undoStacksGroup = new QUndoGroup;
-    QObject::connect( _imp->_undoStacksGroup, SIGNAL(activeStackChanged(QUndoStack*)), this, SLOT(onCurrentUndoStackChanged(QUndoStack*)) );
 
     createMenuActions();
 
@@ -91,10 +93,10 @@ Gui::setupUi()
     _imp->_mainLayout->setContentsMargins(0, 0, 0, 0);
     _imp->_centralWidget->setLayout(_imp->_mainLayout);
 
-    _imp->_leftRightSplitter = new Splitter(_imp->_centralWidget);
+    _imp->_leftRightSplitter = new Splitter(Qt::Horizontal, this, _imp->_centralWidget);
     _imp->_leftRightSplitter->setChildrenCollapsible(false);
     _imp->_leftRightSplitter->setObjectName( QString::fromUtf8(kMainSplitterObjectName) );
-    _imp->_splitters.push_back(_imp->_leftRightSplitter);
+    getApp()->registerSplitter(_imp->_leftRightSplitter);
     _imp->_leftRightSplitter->setOrientation(Qt::Horizontal);
     _imp->_leftRightSplitter->setContentsMargins(0, 0, 0, 0);
 
@@ -113,14 +115,13 @@ Gui::setupUi()
     _imp->_mainLayout->addWidget(_imp->_leftRightSplitter);
 
     _imp->createNodeGraphGui();
-    _imp->createCurveEditorGui();
-    _imp->createDopeSheetGui();
+    _imp->createAnimationModuleGui();
     _imp->createScriptEditorGui();
     _imp->createProgressPanelGui();
     ///Must be absolutely called once _nodeGraphArea has been initialized.
     _imp->createPropertiesBinGui();
 
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    ProjectPtr project = getApp()->getProject();
 
     _imp->_projectGui = new ProjectGui(this);
     _imp->_projectGui->create(project,
@@ -138,15 +139,15 @@ Gui::setupUi()
 
     setVisibleProjectSettingsPanel();
 
-    _imp->_aboutWindow = new AboutWindow(this);
+    _imp->_aboutWindow = new AboutWindow(this, this);
     _imp->_aboutWindow->hide();
 
 
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
 
     QObject::connect( project.get(), SIGNAL(projectNameChanged(QString,bool)), this, SLOT(onProjectNameChanged(QString,bool)) );
-    boost::shared_ptr<TimeLine> timeline = project->getTimeLine();
-    QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime,int)) );
+    TimeLinePtr timeline = project->getTimeLine();
+    QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimelineTimeChanged(SequenceTime,int)) );
     QObject::connect( timeline.get(), SIGNAL(frameAboutToChange()), this, SLOT(onTimelineTimeAboutToChange()) );
 
     /*Searches recursively for all child objects of the given object,
@@ -163,7 +164,12 @@ Gui::setupUi()
      */
     QMetaObject::connectSlotsByName(this);
 
-    appPTR->setOFXHostHandle( getApp()->getOfxHostOSHandle() );
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        appPTR->setOFXHostHandle( getApp()->getOfxHostOSHandle() );
+    }
 } // setupUi
 
 void
@@ -179,7 +185,7 @@ Gui::onPropertiesScrolled()
             (*it)->redrawGLWidgets();
         }
     }
-    _imp->_curveEditor->getCurveWidget()->update();
+    _imp->_animationModule->getView()->redraw();
 
     {
         QMutexLocker k (&_imp->_histogramsMutex);
@@ -202,10 +208,10 @@ void
 Gui::createGroupGui(const NodePtr & group,
                     const CreateNodeArgs& args)
 {
-    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getEffectInstance()->shared_from_this() );
+    NodeGroupPtr isGrp = toNodeGroup( group->getEffectInstance()->shared_from_this() );
 
     assert(isGrp);
-    boost::shared_ptr<NodeCollection> collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
+    NodeCollectionPtr collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
     assert(collection);
 
     TabWidget* where = 0;
@@ -214,21 +220,35 @@ Gui::createGroupGui(const NodePtr & group,
         if (isTab) {
             where = isTab;
         } else {
-            QMutexLocker k(&_imp->_panesMutex);
-            assert( !_imp->_panes.empty() );
-            where = _imp->_panes.front();
+            std::list<TabWidgetI*> panes = getApp()->getTabWidgetsSerialization();
+            assert( !panes.empty() );
+            where = dynamic_cast<TabWidget*>(panes.front());
         }
     }
 
     QGraphicsScene* scene = new QGraphicsScene(this);
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
-    NodeGraph* nodeGraph = new NodeGraph(this, collection, scene, this);
+
+    
+    std::string newName = isGrp->getNode()->getFullyQualifiedName();
+    for (std::size_t i = 0; i < newName.size(); ++i) {
+        if (newName[i] == '.') {
+            newName[i] = '_';
+        }
+    }
+    newName += "_NodeGraph";
+    std::string label = tr(" Node Graph").toStdString();
+    NodeGraph::makeFullyQualifiedLabel(group, &label);
+
+
+    NodeGraph* nodeGraph = new NodeGraph(this, collection, newName, scene, this);
+    nodeGraph->setLabel(label);
     nodeGraph->setObjectName( QString::fromUtf8( group->getLabel().c_str() ) );
     _imp->_groups.push_back(nodeGraph);
     
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
-
-    if ( where && !serialization && !getApp()->isCreatingPythonGroup() ) {
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
+    bool showSubGraph = args.getPropertyUnsafe<bool>(kCreateNodeArgsPropSubGraphOpened);
+    if ( showSubGraph && where && !serialization ) {
         where->appendTab(nodeGraph, nodeGraph);
         QTimer::singleShot( 25, nodeGraph, SLOT(centerOnAllNodes()) );
     } else {
@@ -306,7 +326,7 @@ Gui::getActiveViewer() const
     return _imp->_activeViewer;
 }
 
-boost::shared_ptr<NodeCollection>
+NodeCollectionPtr
 Gui::getLastSelectedNodeCollection() const
 {
     NodeGraph* graph = 0;
@@ -316,7 +336,7 @@ Gui::getLastSelectedNodeCollection() const
     } else {
         graph = _imp->_nodeGraphArea;
     }
-    boost::shared_ptr<NodeCollection> group = graph->getGroup();
+    NodeCollectionPtr group = graph->getGroup();
     assert(group);
 
     return group;
@@ -325,71 +345,74 @@ Gui::getLastSelectedNodeCollection() const
 void
 Gui::wipeLayout()
 {
-    std::list<TabWidget*> panesCpy;
-    {
-        QMutexLocker l(&_imp->_panesMutex);
-        panesCpy = _imp->_panes;
-        _imp->_panes.clear();
-    }
-    std::list<FloatingWidget*> floatingWidgets = getFloatingWindows();
+
+    std::list<TabWidgetI*> panesCpy = getApp()->getTabWidgetsSerialization();
+    getApp()->clearTabWidgets();
+    std::list<SerializableWindow*> floatingWidgets = getApp()->getFloatingWindowsSerialization();
 
     FloatingWidget* projectFW = _imp->_projectGui->getPanel()->getFloatingWindow();
-    for (std::list<FloatingWidget*>::const_iterator it = floatingWidgets.begin(); it != floatingWidgets.end(); ++it) {
+    for (std::list<SerializableWindow*>::const_iterator it = floatingWidgets.begin(); it != floatingWidgets.end(); ++it) {
         if (!projectFW || (*it) != projectFW) {
-            (*it)->deleteLater();
+            FloatingWidget* isFloating = dynamic_cast<FloatingWidget*>(*it);
+            if (isFloating) {
+                isFloating->deleteLater();
+            }
         }
     }
-    {
-        QMutexLocker k(&_imp->_floatingWindowMutex);
-        _imp->_floatingWindows.clear();
+    getApp()->clearFloatingWindows();
 
-        // Re-add the project window
-        if (projectFW) {
-            _imp->_floatingWindows.push_back(projectFW);
-        }
+    // Re-add the project window
+    if (projectFW) {
+        getApp()->registerFloatingWindow(projectFW);
     }
 
 
-    for (std::list<TabWidget*>::iterator it = panesCpy.begin(); it != panesCpy.end(); ++it) {
+
+    for (std::list<TabWidgetI*>::iterator it = panesCpy.begin(); it != panesCpy.end(); ++it) {
+        TabWidget* pane = dynamic_cast<TabWidget*>(*it);
+        if (!pane) {
+            continue;
+        }
         ///Conserve tabs by removing them from the tab widgets. This way they will not be deleted.
-        while ( (*it)->count() > 0 ) {
-            (*it)->removeTab(0, false);
+        while ( pane->count() > 0 ) {
+            pane->removeTab(0, false);
         }
         //(*it)->setParent(NULL);
-        (*it)->deleteLater();
+        pane->deleteLater();
     }
 
-    std::list<Splitter*> splittersCpy;
-    {
-        QMutexLocker l(&_imp->_splittersMutex);
-        splittersCpy = _imp->_splitters;
-        _imp->_splitters.clear();
-    }
-    for (std::list<Splitter*>::iterator it = splittersCpy.begin(); it != splittersCpy.end(); ++it) {
+    std::list<SplitterI*> splittersCpy = getApp()->getSplittersSerialization();
+    getApp()->clearSplitters();
+    for (std::list<SplitterI*>::iterator it = splittersCpy.begin(); it != splittersCpy.end(); ++it) {
         if (_imp->_leftRightSplitter != *it) {
-            while ( (*it)->count() > 0 ) {
-                (*it)->widget(0)->setParent(NULL);
+            Splitter* isSplitter = dynamic_cast<Splitter*>(*it);
+            if (!isSplitter) {
+                continue;
+            }
+            while ( isSplitter->count() > 0 ) {
+                isSplitter->widget(0)->setParent(NULL);
             }
             //(*it)->setParent(NULL);
-            (*it)->deleteLater();
+            isSplitter->deleteLater();
         }
     }
 
 
-    Splitter *newSplitter = new Splitter(_imp->_centralWidget);
+    Splitter *newSplitter = new Splitter(Qt::Horizontal,this, _imp->_centralWidget);
     newSplitter->addWidget(_imp->_toolBox);
     newSplitter->setObjectName_mt_safe( _imp->_leftRightSplitter->objectName_mt_safe() );
     _imp->_mainLayout->removeWidget(_imp->_leftRightSplitter);
-    unregisterSplitter(_imp->_leftRightSplitter);
+    getApp()->unregisterSplitter(_imp->_leftRightSplitter);
     _imp->_leftRightSplitter->deleteLater();
     _imp->_leftRightSplitter = newSplitter;
     _imp->_leftRightSplitter->setChildrenCollapsible(false);
     _imp->_mainLayout->addWidget(newSplitter);
 
-    {
-        QMutexLocker l(&_imp->_splittersMutex);
-        _imp->_splitters.push_back(newSplitter);
-    }
+    getApp()->registerSplitter(newSplitter);
+
+    // Re-create new menu actions
+    createMenuActions();
+ 
 } // Gui::wipeLayout
 
 NATRON_NAMESPACE_EXIT

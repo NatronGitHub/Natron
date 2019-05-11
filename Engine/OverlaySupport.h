@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,8 +33,10 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/EngineFwd.h"
 #include "Engine/RectD.h"
+#include "Global/GlobalDefines.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -66,6 +68,11 @@ public:
     virtual void redraw() = 0;
 
     /**
+     * @brief Returns infos about the OpenGL context used by this OverlaySupport
+     **/
+    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const = 0;
+
+    /**
      * @brief Returns the width and height of the viewport in window coordinates.
      **/
     virtual void getViewportSize(double &width, double &height) const = 0;
@@ -79,7 +86,7 @@ public:
     virtual double getScreenPixelRatio() const = 0;
 #endif
 
-    /**
+   /**
      * @brief Returns the colour of the background (i.e: clear color) of the viewport.
      **/
     virtual void getBackgroundColour(double &r, double &g, double &b) const = 0;
@@ -120,11 +127,17 @@ public:
     virtual void getCursorPosition(double& x, double& y) const = 0;
 
     /**
-     * @brief Returns for a viewer the internal viewer node
+     * @brief Returns the frame range of the viewer's timeline
      **/
-    virtual ViewerInstance* getInternalViewerNode() const
+    virtual RangeD getFrameRange() const
     {
-        return 0;
+        RangeD ret = {0., 0.};
+        return ret;
+    }
+
+    virtual ViewerNodePtr getViewerNode() const
+    {
+        return ViewerNodePtr();
     }
 
     /**
@@ -162,6 +175,7 @@ public:
                             double r,
                             double g,
                             double b,
+                            double a,
                             int flags = 0) //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
     {
         Q_UNUSED(x);
@@ -170,6 +184,7 @@ public:
         Q_UNUSED(r);
         Q_UNUSED(g);
         Q_UNUSED(b);
+        Q_UNUSED(a);
         Q_UNUSED(flags);
 
         return false;

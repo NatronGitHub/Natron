@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -264,7 +264,7 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
 #if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
     printf("Py_Initialize()\n");
 #endif
-    Py_Initialize();
+    Py_Initialize(); // calls setlocale()
     // pythonHome must be const, so that the c_str() pointer is never invalidated
 
     /////////////////////////////////////////

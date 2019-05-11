@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -42,6 +42,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <QMutex>
+
 #include "Global/GlobalDefines.h"
 #include "Global/StrUtils.h"
 
@@ -52,6 +54,7 @@ NATRON_NAMESPACE_ENTER
 struct MemoryFilePrivate
 {
     std::string path; //< filepath of the backing file
+
     char* data; //< pointer to the begining of the mapped file
     size_t size; //< the effective size of the file
 #if defined(__NATRON_UNIX__)
@@ -78,7 +81,7 @@ struct MemoryFilePrivate
 
     void openInternal(MemoryFile::FileOpenModeEnum open_mode);
 
-    void closeMapping(bool drop_pages);
+    void closeMapping();
 };
 
 MemoryFile::MemoryFile()
@@ -86,27 +89,11 @@ MemoryFile::MemoryFile()
 {
 }
 
-MemoryFile::MemoryFile(const std::string & filepath,
-                       FileOpenModeEnum open_mode)
-    : _imp( new MemoryFilePrivate(filepath) )
-{
-    _imp->openInternal(open_mode);
-}
-
-MemoryFile::MemoryFile(const std::string & filepath,
-                       size_t size,
-                       FileOpenModeEnum open_mode)
-    : _imp( new MemoryFilePrivate(filepath) )
-{
-    _imp->openInternal(open_mode);
-    resize(size);
-}
-
 void
 MemoryFile::open(const std::string & filepath,
                  FileOpenModeEnum open_mode)
 {
-    if (!_imp->path.empty() || _imp->data) {
+    if (_imp->data) {
         return;
     }
     _imp->path = filepath;
@@ -125,18 +112,18 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
      *********************************************************/
     int posix_open_mode = O_RDWR;
     switch (open_mode) {
-    case MemoryFile::eFileOpenModeEnumIfExistsFailElseCreate:
+    case MemoryFile::eFileOpenModeCreate:
         posix_open_mode |= O_EXCL | O_CREAT;
         break;
-    case MemoryFile::eFileOpenModeEnumIfExistsKeepElseFail:
+    case MemoryFile::eFileOpenModeOpen:
         break;
-    case MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate:
+    case MemoryFile::eFileOpenModeOpenOrCreate:
         posix_open_mode |= O_CREAT;
         break;
-    case MemoryFile::eFileOpenModeEnumIfExistsTruncateElseFail:
+    case MemoryFile::eFileOpenModeOpenTruncate:
         posix_open_mode |= O_TRUNC;
         break;
-    case MemoryFile::eFileOpenModeEnumIfExistsTruncateElseCreate:
+    case MemoryFile::eFileOpenModeOpenTruncateOrCreate:
         posix_open_mode |= O_TRUNC | O_CREAT;
         break;
     default:
@@ -201,19 +188,19 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
      *********************************************************/
     int windows_open_mode;
     switch (open_mode) {
-    case MemoryFile::eFileOpenModeEnumIfExistsFailElseCreate:
+    case MemoryFile::eFileOpenModeCreate:
         windows_open_mode = CREATE_NEW;
         break;
-    case MemoryFile::eFileOpenModeEnumIfExistsKeepElseFail:
+    case MemoryFile::eFileOpenModeOpen:
         windows_open_mode = OPEN_EXISTING;
         break;
-    case MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate:
+    case MemoryFile::eFileOpenModeOpenOrCreate:
         windows_open_mode = OPEN_ALWAYS;
         break;
-    case MemoryFile::eFileOpenModeEnumIfExistsTruncateElseFail:
+    case MemoryFile::eFileOpenModeOpenTruncate:
         windows_open_mode = TRUNCATE_EXISTING;
         break;
-    case MemoryFile::eFileOpenModeEnumIfExistsTruncateElseCreate:
+    case MemoryFile::eFileOpenModeOpenTruncateOrCreate:
         windows_open_mode = CREATE_ALWAYS;
         break;
     default:
@@ -223,7 +210,6 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
 
         return;
     }
-
     /*********************************************************
      ********************************************************
 
@@ -233,7 +219,7 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
      *********************************************************/
     std::wstring wpath = StrUtils::utf8_to_utf16(path);
     file_handle = ::CreateFileW(wpath.c_str(), GENERIC_READ | GENERIC_WRITE,
-                                0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
+                                FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
 
 
     if (file_handle == INVALID_HANDLE_VALUE) {
@@ -272,7 +258,7 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
 } // openInternal
 
 char*
-MemoryFile::data() const
+MemoryFile::getData() const
 {
     return _imp->data;
 }
@@ -290,8 +276,28 @@ MemoryFile::path() const
 }
 
 void
-MemoryFile::resize(size_t new_size)
+MemoryFile::remap()
 {
+    if (!_imp->data) {
+        return;
+    }
+    // Sync the content to the file
+    flush(eFlushTypeSync, NULL, 0);
+
+    // Close the mapping
+    _imp->closeMapping();
+
+    // re-open it
+    _imp->openInternal(eFileOpenModeOpen);
+}
+
+void
+MemoryFile::resize(size_t new_size, bool preserve)
+{
+    // Before unmapping, flush to avoid expensive copy if the user does not want to preserve the data
+    if (preserve) {
+        flush(eFlushTypeSync, _imp->data, _imp->size);
+    }
 #if defined(__NATRON_UNIX__)
     if (_imp->data) {
         if (::munmap(_imp->data, _imp->size) < 0) {
@@ -315,6 +321,7 @@ MemoryFile::resize(size_t new_size)
     }
 
 #elif defined(__NATRON_WIN32__)
+
     ::UnmapViewOfFile(_imp->data);
     ::CloseHandle(_imp->file_mapping_handle);
     _imp->file_mapping_handle = ::CreateFileMapping(
@@ -330,57 +337,41 @@ MemoryFile::resize(size_t new_size)
 }
 
 void
-MemoryFilePrivate::closeMapping(bool drop_pages)
+MemoryFilePrivate::closeMapping()
 {
 #if defined(__NATRON_UNIX__)
-    if (drop_pages) {
-        int rc;
-#ifdef MS_KILLPAGES
-        // Mac OS X always returns an error with MADV_FREE,
-        // so we'll use msync(MS_KILLPAGES) instead.
-        rc = msync(data, size, MS_KILLPAGES);
-        //if( rc ) return ERR_MEM_STR_NUM("drop_pages(MS_KILLPAGES) failed", rc);
-#else
-# ifdef MADV_FREE
-        rc = madvise(data, size, MADV_FREE);
-        //if( rc ) return ERR_MEM_STR_NUM("drop_pages(MADV_FREE) failed", rc);
-# else
-#  ifdef POSIX_MADV_DONTNEED
-        // we just hope that DONTNEED will actually free
-        // the pages...
-        rc = posix_madvise(data, size, POSIX_MADV_DONTNEED);
-        //if( rc ) return ERR_MEM_STR_NUM("drop_pages(POSIX_MADV_DONTNEED) failed", rc);
-#  else
-        rc = madvise(data, size, MADV_DONTNEED);
-        //if( rc ) return ERR_MEM_STR_NUM("drop_pages(MADV_DONTNEED) failed", rc);
-        // end if POSIX_MADV_DONTNEED
-#  endif
-        // end if MADV_FREE
-# endif
-        // end if MS_KILLPAGES
-#endif
-        Q_UNUSED(rc);
+    if (data) {
+        ::munmap(data, size);
     }
-    if (::munmap(data, size) != 0) {
-        std::stringstream ss;
-        ss << "MemoryFile EXC : Failed to unmap \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
-        throw std::runtime_error( ss.str() );
+    if (file_handle != -1) {
+        ::close(file_handle);
     }
-    ::close(file_handle);
+    file_handle = -1;
 #elif defined(__NATRON_WIN32__)
-    Q_UNUSED(drop_pages);
-    if (::UnmapViewOfFile(data) == 0) {
-        throw std::runtime_error("Failed to unmap the mapped file");
+    if (data) {
+        ::UnmapViewOfFile(data);
     }
-    ::CloseHandle(file_mapping_handle);
-    ::CloseHandle(file_handle);
+    if (file_mapping_handle != INVALID_HANDLE_VALUE) {
+        ::CloseHandle(file_mapping_handle);
+    }
+    if (file_handle != INVALID_HANDLE_VALUE) {
+        ::CloseHandle(file_handle);
+    }
+    file_handle = INVALID_HANDLE_VALUE;
+    file_mapping_handle = INVALID_HANDLE_VALUE;
 #endif
-}
+    data = 0;
+    size = 0;
+
+} // closeMapping
 
 bool
 MemoryFile::flush(FlushTypeEnum type, void* data, std::size_t size)
 {
     void* ptr = data ? data : _imp->data;
+    if (!ptr) {
+        return true;
+    }
     std::size_t n = data ? size : _imp->size;
 #if defined(__NATRON_UNIX__)
     switch (type) {
@@ -388,10 +379,39 @@ MemoryFile::flush(FlushTypeEnum type, void* data, std::size_t size)
             return ::msync(ptr, n, MS_ASYNC) == 0;
         case eFlushTypeSync:
             return ::msync(ptr, n, MS_SYNC) == 0;
-        case eFlushTypeInvalidate:
-            return ::msync(ptr, n, MS_INVALIDATE) == 0;
-        default:
-            break;
+        case eFlushTypeInvalidate: {
+            int rc;
+#ifdef MS_KILLPAGES
+            // Mac OS X always returns an error with MADV_FREE,
+            // so we'll use msync(MS_KILLPAGES) instead.
+            rc = msync(data, size, MS_KILLPAGES);
+            //if( rc ) return ERR_MEM_STR_NUM("drop_pages(MS_KILLPAGES) failed", rc);
+#else
+# ifdef MADV_FREE
+            rc = madvise(data, size, MADV_FREE);
+            //if( rc ) return ERR_MEM_STR_NUM("drop_pages(MADV_FREE) failed", rc);
+# else
+#  ifdef POSIX_MADV_DONTNEED
+            // we just hope that DONTNEED will actually free
+            // the pages...
+            rc = posix_madvise(data, size, POSIX_MADV_DONTNEED);
+            //if( rc ) return ERR_MEM_STR_NUM("drop_pages(POSIX_MADV_DONTNEED) failed", rc);
+#  else
+            rc = madvise(data, size, MADV_DONTNEED);
+            //if( rc ) return ERR_MEM_STR_NUM("drop_pages(MADV_DONTNEED) failed", rc);
+            // end if POSIX_MADV_DONTNEED
+#  endif
+            // end if MADV_FREE
+# endif
+            // end if MS_KILLPAGES
+#endif
+            Q_UNUSED(rc);
+
+        }
+        // MS_INVALIDATE of msync seems of no-use, see discussion here
+        // https://groups.google.com/forum/#!topic/comp.unix.programmer/reGmzSHKBHETE
+        //return ::msync(ptr, n, MS_INVALIDATE) == 0;
+        break;
     }
 #elif defined(__NATRON_WIN32__)
     switch (type) {
@@ -404,23 +424,24 @@ MemoryFile::flush(FlushTypeEnum type, void* data, std::size_t size)
         } break;
         case eFlushTypeAsync:
             return (bool)::FlushViewOfFile(ptr, n) != 0;
+            break;
         case eFlushTypeInvalidate:
-            return true;
             break;
     }
 #endif
     return false;
+} // flush
+
+void
+MemoryFile::close()
+{
+    _imp->closeMapping();
 }
 
 MemoryFile::~MemoryFile()
 {
     if (_imp->data) {
-        try {
-            flush(eFlushTypeInvalidate, NULL, 0);
-            _imp->closeMapping(false);
-        } catch (const std::exception & e) {
-            std::cerr << e.what() << std::endl;
-        }
+        close();
     }
     delete _imp;
 }
@@ -430,7 +451,9 @@ MemoryFile::remove()
 {
     if ( !_imp->path.empty() ) {
         if (_imp->data) {
-            _imp->closeMapping(true);
+            // Invalidate the whole memory portion
+            flush(eFlushTypeInvalidate, NULL, 0);
+            _imp->closeMapping();
         }
         int ok = ::remove( _imp->path.c_str() );
         Q_UNUSED(ok);

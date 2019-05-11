@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,7 +34,7 @@ NATRON_NAMESPACE_ENTER
 
 struct BackdropPrivate
 {
-    boost::weak_ptr<KnobString> knobLabel;
+    KnobStringWPtr knobLabel;
 
     BackdropPrivate()
         : knobLabel()
@@ -42,46 +42,75 @@ struct BackdropPrivate
     }
 };
 
-Backdrop::Backdrop(NodePtr node)
-    : NoOpBase(node)
-    , _imp( new BackdropPrivate() )
+PluginPtr
+Backdrop::createPlugin()
 {
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_OTHER);
+    PluginPtr ret = Plugin::create(Backdrop::create, Backdrop::createRenderClone, PLUGINID_NATRON_BACKDROP, "Backdrop", 1, 0, grouping);
+
+    QString desc =  tr("The Backdrop node is useful to group nodes and identify them in the node graph.\n"
+                       "You can also move all the nodes inside the backdrop.");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/backdrop_icon.png");
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
+
+    return ret;
+}
+
+
+Backdrop::Backdrop(const NodePtr& node)
+: NoOpBase(node)
+, _imp( new BackdropPrivate() )
+{
+}
+
+Backdrop::Backdrop(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+: NoOpBase(mainInstance, key)
+, _imp( new BackdropPrivate() )
+{
+
 }
 
 Backdrop::~Backdrop()
 {
 }
 
-std::string
-Backdrop::getPluginDescription() const
+KnobStringPtr
+Backdrop::getTextAreaKnob() const
 {
-    return tr("The Backdrop node is useful to group nodes and identify them in the node graph.\n"
-              "You can also move all the nodes inside the backdrop.").toStdString();
+    return _imp->knobLabel.lock();
 }
 
 void
 Backdrop::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Controls") );
-    boost::shared_ptr<KnobString> knobLabel = AppManager::createKnob<KnobString>( this, tr("Label") );
+    KnobPagePtr page = createKnob<KnobPage>("controlsPage");
+    page->setLabel(tr("Controls"));
+    {
+        KnobStringPtr knobLabel = createKnob<KnobString>("label");
+        knobLabel->setLabel(tr("Label"));
+        knobLabel->setAnimationEnabled(false);
+        knobLabel->setAsMultiLine();
+        knobLabel->setUsesRichText(true);
+        knobLabel->setHintToolTip( tr("Text to display on the backdrop.") );
+        knobLabel->setEvaluateOnChange(false);
+        page->addKnob(knobLabel);
 
-    knobLabel->setAnimationEnabled(false);
-    knobLabel->setAsMultiLine();
-    knobLabel->setUsesRichText(true);
-    knobLabel->setHintToolTip( tr("Text to display on the backdrop.") );
-    knobLabel->setEvaluateOnChange(false);
-    page->addKnob(knobLabel);
-    _imp->knobLabel = knobLabel;
+        _imp->knobLabel = knobLabel;
+    }
 }
 
 bool
-Backdrop::knobChanged(KnobI* k,
+Backdrop::knobChanged(const KnobIPtr& k,
                       ValueChangedReasonEnum /*reason*/,
-                      ViewSpec /*view*/,
-                      double /*time*/,
-                      bool /*originatedFromMainThread*/)
+                      ViewSetSpec /*view*/,
+                      TimeValue /*time*/)
 {
-    if ( k == _imp->knobLabel.lock().get() ) {
+    if ( k == _imp->knobLabel.lock() ) {
         QString text = QString::fromUtf8( _imp->knobLabel.lock()->getValue().c_str() );
         Q_EMIT labelChanged(text);
 

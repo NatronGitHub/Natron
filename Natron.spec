@@ -3,18 +3,18 @@ Name: Natron
 # The two actively maintained versions (that are merged into master)
 Version21: 2.1.10
 Version22: 2.2.10
-Version23: 2.3.10
+Version23: 2.3.15
 Version30: 3.0.0
 
 # The version for this branch of the sources
-Version: %{version23}
+Version: %{version30}
 
 # The release number (must be incremented whenever changes to this file generate different binaries)
 Release: 1%{?dist}
 License: GPLv2
 
 Group: System Environment/Base
-URL: http://natron.fr
+URL: https://natrongithub.github.io/
 
 # https://github.com/NatronGitHub/Natron/releases/download/%{version}/Natron-%{version}.tar.xz
 Source0: %{name}-%{version}.tar.xz
@@ -35,7 +35,8 @@ Open source compositing software. Node-graph based. Similar in functionalities t
 %build
 mv Natron-OpenColorIO-Configs-2.1.0 OpenColorIO-Configs
 cat << 'EOF' > config.pri
-boost: LIBS += -lboost_serialization
+boost-serialization-lib: LIBS += -lboost_serialization
+boost: LIBS += -lboost_thread -lboost_system
 PKGCONFIG += expat
 PKGCONFIG += fontconfig
 cairo {

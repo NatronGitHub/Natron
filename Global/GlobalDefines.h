@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -80,7 +80,7 @@ struct RenderScale
 {
     RenderScale() { x = y = 1.; }
 
-    RenderScale(double scale) { x = y = scale; }
+    RenderScale(double scale) { assert(scale != 0.); x = y = scale; }
 
     RenderScale(double scaleX,
                 double scaleY) { x = scaleX; y = scaleY; }
@@ -105,14 +105,8 @@ typedef OfxRangeD RangeD;
 
 #define kBgProcessServerCreatedShort "--bg_server_created"
 
-//Increment this to wipe all disk cache structure and ensure that the user has a clean cache when starting the next version of Natron
-#define NATRON_CACHE_VERSION 4
-#define kNatronCacheVersionSettingsKey "NatronCacheVersionSettingsKey"
-
-
 #define kNodeGraphObjectName "nodeGraph"
-#define kCurveEditorObjectName "curveEditor"
-#define kDopeSheetEditorObjectName "dopeSheetEditor"
+#define kAnimationModuleEditorObjectName "animationModule"
 
 #define kCurveEditorMoveMultipleKeysCommandCompressionID 2
 #define kKnobUndoChangeCommandCompressionID 3
@@ -130,28 +124,12 @@ typedef OfxRangeD RangeD;
 #define kNodeGraphResizeNodeBackdropCommandCompressionID 15
 #define kCurveEditorMoveTangentsCommandCompressionID 16
 #define kCurveEditorTransformKeysCommandCompressionID 17
-#define kDopeSheetEditorMoveKeysCommandCompressionID 18
-#define kDopeSheetEditorLeftTrimCommandCompressionID 19
-#define kDopeSheetEditorRightTrimCommandCompressionID 20
-#define kDopeSheetEditorTransformKeysCommandCompressionID 21
-#define kDopeSheetEditorSlipReaderCommandCompressionID 23
+#define kAnimationModuleEditorMoveKeysCommandCompressionID 18
+#define kAnimationModuleEditorLeftTrimCommandCompressionID 19
+#define kAnimationModuleEditorRightTrimCommandCompressionID 20
+#define kAnimationModuleEditorSlipReaderCommandCompressionID 23
 #define kNodeUndoChangeCommandCompressionID 24
 
-#define PY_VERSION_STRINGIZE_(major, minor) \
-    # major "." # minor
-
-#define PY_VERSION_STRINGIZE(major, minor) \
-    PY_VERSION_STRINGIZE_(major, minor)
-
-#define NATRON_PY_VERSION_STRING PY_VERSION_STRINGIZE(PY_MAJOR_VERSION, PY_MINOR_VERSION)
-
-#define PY_VERSION_STRINGIZE_NO_DOT_(major, minor) \
-    # major # minor
-
-#define PY_VERSION_STRINGIZE_NO_DOT(major, minor) \
-    PY_VERSION_STRINGIZE_NO_DOT_(major, minor)
-
-#define NATRON_PY_VERSION_STRING_NO_DOT PY_VERSION_STRINGIZE_NO_DOT(PY_MAJOR_VERSION, PY_MINOR_VERSION)
 
 NATRON_NAMESPACE_EXIT
 

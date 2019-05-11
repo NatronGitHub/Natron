@@ -1,0 +1,212 @@
+# Natron Presets File
+PluginID: fr.inria.built-in.Group
+Params:
+  - Name: pyPlugPluginID
+    String: fr.inria.EdgeBlur
+  - Name: pyPlugPluginLabel
+    String: EdgeBlur
+  - Name: pyPlugPluginGrouping
+    String: Filter
+  - Name: pyPlugPluginDescription
+    String: Blur the image where there are edges in the alpha/matte channel.
+  - Name: pyPlugPluginVersion
+    Int: [1, 0]
+UserPages:
+  - TypeName: Page
+    Name: controlsPage
+    Label: Controls
+    Params:
+      - Name: Blur1NatronOfxParamProcessR
+        DefaultBool: true
+        NDims: 1
+        TypeName: Bool
+        Label: R
+        Props: [NoNewLine]
+      - Name: Blur1NatronOfxParamProcessG
+        DefaultBool: true
+        NDims: 1
+        TypeName: Bool
+        Label: G
+        Props: [NoNewLine]
+      - Name: Blur1NatronOfxParamProcessB
+        DefaultBool: true
+        NDims: 1
+        TypeName: Bool
+        Label: B
+        Props: [NoNewLine]
+      - Name: Blur1NatronOfxParamProcessA
+        DefaultBool: true
+        NDims: 1
+        TypeName: Bool
+        Label: A
+      - Name: externalMatte
+        DefaultBool: false
+        NDims: 1
+        TypeName: Bool
+        Label: External Matte
+        Hint: Use the edges from the Matte input instead of the alpha channel of the source image.
+        Props: [AnimatesChanged]
+      - Name: size
+        DefaultFloat: 3
+        NDims: 1
+        TypeName: Double
+        Label: Size
+        Min: 0
+        DisplayMin: 0
+        DisplayMax: 100
+      - Name: filter
+        DefaultString: Gaussian
+        NDims: 1
+        TypeName: Choice
+        Label: Filter
+        Entries: [Simple, Sobel, Rotation Invariant, Quasi-Gaussian, Gaussian, Box, Triangle, Quadratic]
+        Hints: [Gradient is estimated by centered finite differences., Compute gradient using the Sobel 3x3 filter., Compute gradient using a 3x3 rotation-invariant filter., "Quasi-Gaussian filter (0-order recursive Deriche filter, faster) - IIR (infinite support / impulsional response).", "Gaussian filter (Van Vliet recursive Gaussian filter, more isotropic, slower) - IIR (infinite support / impulsional response).", Box filter - FIR (finite support / impulsional response)., Triangle/tent filter - FIR (finite support / impulsional response)., Quadratic filter - FIR (finite support / impulsional response).]
+        Props: [NoNewLine]
+      - Name: cropToFormat
+        DefaultBool: true
+        NDims: 1
+        TypeName: Bool
+        Label: Crop To Format
+      - Name: edgeMult
+        DefaultFloat: 2
+        NDims: 1
+        TypeName: Double
+        Label: Edge Mult
+        Hint: Sharpness of the borders of the blur area.
+        Min: 0
+        DisplayMin: 0.1
+        DisplayMax: 10
+      - Name: Merge1maskInvert
+        DefaultBool: false
+        NDims: 1
+        TypeName: Bool
+        Label: Invert Mask
+      - Name: Blur1mix
+        DefaultFloat: 1
+        NDims: 1
+        TypeName: Double
+        Label: Mix
+        Min: 0
+        Max: 1
+        DisplayMin: 0
+        DisplayMax: 1
+PagesOrder: [controlsPage, nodePage, pyPlugPage]
+Children:
+  - PluginID: eu.cimg.EdgeDetect
+    Name: EdgeDetect1
+    Version: [4, 0]
+    Inputs: Switch1
+    Params:
+      - Name: NatronOfxParamProcessR
+        Bool: false
+      - Name: NatronOfxParamProcessG
+        Bool: false
+      - Name: NatronOfxParamProcessB
+        Bool: false
+      - Name: NatronOfxParamProcessA
+        Bool: true
+      - Name: filter
+        String: {N: "@thisGroup", K: filter}
+      - Name: multiChannel
+        String: Separate
+      - Name: blurSize
+        Float: {N: "@thisGroup", K: size}
+    Pos: [908, 181]
+  - PluginID: net.sf.openfx.GammaPlugin
+    Name: Gamma1
+    Version: [2, 0]
+    Inputs: EdgeDetect1
+    Params:
+      - Name: NatronOfxParamProcessR
+        Bool: false
+      - Name: NatronOfxParamProcessG
+        Bool: false
+      - Name: NatronOfxParamProcessB
+        Bool: false
+      - Name: NatronOfxParamProcessA
+        Bool: true
+      - Name: value
+        Float: {pyExpr: thisGroup.edgeMult.get()}
+    Pos: [895, 285]
+  - PluginID: net.sf.cimg.CImgBlur
+    Name: Blur1
+    Version: [4, 0]
+    Inputs: Dot1
+    Masks: Merge1
+    Params:
+      - Name: NatronOfxParamProcessR
+        Bool: {N: "@thisGroup", K: Blur1NatronOfxParamProcessR}
+      - Name: NatronOfxParamProcessG
+        Bool: {N: "@thisGroup", K: Blur1NatronOfxParamProcessG}
+      - Name: NatronOfxParamProcessB
+        Bool: {N: "@thisGroup", K: Blur1NatronOfxParamProcessB}
+      - Name: NatronOfxParamProcessA
+        Bool: {N: "@thisGroup", K: Blur1NatronOfxParamProcessA}
+      - Name: size
+        Float: {N: "@thisGroup", K: size}
+      - Name: cropToFormat
+        Bool: {N: "@thisGroup", K: cropToFormat}
+      - Name: mix
+        Float: {N: "@thisGroup", K: Blur1mix}
+      - Name: enableMask_Mask
+        Bool: true
+    Pos: [676, 349]
+  - PluginID: net.sf.openfx.ShufflePlugin
+    Name: Shuffle1
+    Version: [2, 0]
+    Inputs: {A: Dot1}
+    Params:
+      - Name: outputComponents
+        String: Alpha
+    Pos: [768, 104]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot1
+    Inputs: Source
+    Pos: [721, 114]
+  - PluginID: fr.inria.built-in.Input
+    Name: Source
+    Pos: [676, 50]
+  - PluginID: fr.inria.built-in.Output
+    Name: Output
+    Label: Output1
+    Inputs: Blur1
+    Pos: [676, 430]
+  - PluginID: fr.inria.built-in.Input
+    Name: Mask
+    Params:
+      - Name: optional
+        Bool: true
+      - Name: isMask
+        Bool: true
+    Pos: [1084, 349]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: Merge1
+    Inputs: {A: Gamma1}
+    Masks: Mask
+    Params:
+      - Name: operation
+        String: copy
+      - Name: bbox
+        String: A
+      - Name: maskInvert
+        Bool: {N: "@thisGroup", K: Merge1maskInvert}
+      - Name: userTextArea
+        String: <Natron>(copy)</Natron>
+      - Name: enableMask_Mask
+        Bool: true
+    Pos: [895, 341]
+  - PluginID: net.sf.openfx.switchPlugin
+    Name: Switch1
+    Inputs: {0: Shuffle1, 1: Matte}
+    Params:
+      - Name: which
+        Int: {pyExpr: thisGroup.externalMatte.get()}
+    Pos: [896, 104]
+  - PluginID: fr.inria.built-in.Input
+    Name: Matte
+    Params:
+      - Name: optional
+        Bool: true
+      - Name: isMask
+        Bool: true
+    Pos: [896, 51]

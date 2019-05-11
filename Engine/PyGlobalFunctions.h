@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,19 +27,20 @@
 
 #include "Global/Macros.h"
 
-/**
- * @brief Used to wrap all global functions that are in the Natron namespace so shiboken
- * doesn't generate the Natron namespace
- **/
-
 #include "Engine/AppManager.h"
 #include "Engine/MemoryInfo.h" // isApplication32Bits
 #include "Engine/PyAppInstance.h"
+
 
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
+
+/**
+ * @brief Used to wrap all global functions that are in the Natron namespace so shiboken
+ * doesn't generate the Natron namespace
+ **/
 
 class PyCoreApplication
 {
@@ -191,24 +192,24 @@ public:
 
     inline App* getInstance(int idx) const
     {
-        AppInstPtr app = appPTR->getAppInstance(idx);
+        AppInstancePtr app = appPTR->getAppInstance(idx);
 
         if (!app) {
             return 0;
         }
 
-        return new App(app);
+        return App::createAppFromAppInstance(app);
     }
 
     inline App* getActiveInstance() const
     {
-        AppInstPtr app = appPTR->getTopLevelInstance();
+        AppInstancePtr app = appPTR->getTopLevelInstance();
 
         if (!app) {
             return 0;
         }
 
-        return new App(app);
+        return App::createAppFromAppInstance(app);
     }
 
     inline AppSettings* getSettings() const

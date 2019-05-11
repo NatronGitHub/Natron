@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -54,6 +54,14 @@ public:
 
     std::string getScriptName() const;
 
+protected:
+
+    void setScriptNameInternal(const std::string& name, bool callOnScriptNameChanged);
+
+    virtual void onScriptNameChanged() {}
+
+    virtual void onLabelChanged() {}
+    
 private:
 
     boost::scoped_ptr<ScriptObjectPrivate> _imp;

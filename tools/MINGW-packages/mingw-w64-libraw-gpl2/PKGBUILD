@@ -1,0 +1,62 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=LibRaw
+pkgbase=mingw-w64-libraw-gpl2
+pkgname="${MINGW_PACKAGE_PREFIX}-libraw-gpl2"
+provides=("${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
+replaces=("${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
+conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2")
+pkgver=0.18.9
+pkgrel=1
+pkgdesc="Library for reading RAW files obtained from digital photo cameras (mingw-w64)"
+arch=('any')
+url="https://www.libraw.org/"
+license=("LGPL")
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc" "${MINGW_PACKAGE_PREFIX}-pkg-config")
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
+         "${MINGW_PACKAGE_PREFIX}-lcms2"
+         "${MINGW_PACKAGE_PREFIX}-jasper")
+options=('staticlibs' 'strip')
+source=("https://www.libraw.org/data/${_realname}-${pkgver}.tar.gz"
+        "https://www.libraw.org/data/${_realname}-demosaic-pack-GPL2-0.18.8.tar.gz"
+        "https://www.libraw.org/data/${_realname}-demosaic-pack-GPL3-0.18.8.tar.gz"
+        "LibRaw_wsock32.patch"
+        "LibRaw_obsolete-macros.patch")
+sha256sums=('d2ef177032e6d804fc512b206d02c393fca26be43ecd136cc26926407273b24e'
+            '0b24bcf7bbb5d13fde58bb071f94dc9354be09bc44b2bba0698493065e99f8da'
+            'ffd6916cd66c8101e4e6b589799f256c897748d2fd2486aa34c3705146dbc701'
+            '4bd077917fb8f37fa736e3a8bf32fabe3df3ff5438b684acbb5adff8a6c2a73b'
+            '4a31c0ee066f43915beff6f7959b6b2cd246d390720df379bfc047d4cedb6a8f')
+
+prepare() {
+  mv "${srcdir}/${_realname}-demosaic-pack-GPL2-0.18.8" "${srcdir}/${_realname}-${pkgver}/"
+  mv "${srcdir}/${_realname}-demosaic-pack-GPL3-0.18.8" "${srcdir}/${_realname}-${pkgver}/"
+  cd "${srcdir}/${_realname}-${pkgver}"
+  patch -Np1 -i "${srcdir}/LibRaw_wsock32.patch"
+  patch -Np1 -i "${srcdir}/LibRaw_obsolete-macros.patch"
+
+  autoreconf -ifv
+}
+
+build() {
+  [[ -d "${srcdir}/build-${MINGW_CHOST}" ]] && rm -rf "${srcdir}/build-${MINGW_CHOST}"
+  mkdir -p "${srcdir}/build-${MINGW_CHOST}"
+  cd "${srcdir}/build-${MINGW_CHOST}"
+
+  CPPFLAGS+=" -DLIBRAW_BUILDLIB -D__STDC_LIMIT_MACROS"
+  ../${_realname}-${pkgver}/configure \
+      --prefix=${MINGW_PREFIX}/libraw-gpl2 \
+      --build=${MINGW_CHOST} \
+      --host=${MINGW_CHOST} \
+      --enable-jasper \
+      --enable-lcms \
+      --enable-demosaic-pack-gpl2 \
+      --disable-demosaic-pack-gpl3
+
+  make -j${MKJOBS}
+}
+
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make DESTDIR="${pkgdir}" install
+}

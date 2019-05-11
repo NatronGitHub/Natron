@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,6 +26,10 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#endif
 
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QProcess>
@@ -85,7 +89,7 @@ class ProcessHandler
     Q_OBJECT
 
     QProcess* _process; //< the process executing the render
-    OutputEffectInstance* _writer; //< pointer to the writer that will render in the bg process
+    NodePtr _writer; //< pointer to the writer that will render in the bg process
     QLocalServer* _ipcServer; //< the server for IPC with the background process
     QLocalSocket* _bgProcessOutputSocket; //< the socket where data is output by the process
 
@@ -104,12 +108,13 @@ public:
      * The process will render using the effect specified by writer.
      **/
     ProcessHandler(const QString & projectPath,
-                   OutputEffectInstance* writer);
+                   const NodePtr& writer);
 
     virtual ~ProcessHandler();
 
     const QString & getProcessLog() const;
-    OutputEffectInstance* getWriter() const
+    
+    NodePtr getWriter() const
     {
         return _writer;
     }
@@ -234,7 +239,7 @@ private:
     /**
      * @brief Runs the event loop the signal/slots are caught correctly.
      **/
-    virtual void run();
+    virtual void run() OVERRIDE FINAL;
 
     /**
      * @brief Called once the first time run is started.

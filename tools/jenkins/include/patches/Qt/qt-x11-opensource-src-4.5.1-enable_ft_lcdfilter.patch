@@ -1,0 +1,12 @@
+diff -up qt-x11-opensource-src-4.5.1/src/gui/text/qfontengine_ft.cpp.enable_ft_lcdfilter qt-x11-opensource-src-4.5.1/src/gui/text/qfontengine_ft.cpp
+--- qt-x11-opensource-src-4.5.1/src/gui/text/qfontengine_ft.cpp.enable_ft_lcdfilter	2009-04-21 18:57:41.000000000 -0500
++++ qt-x11-opensource-src-4.5.1/src/gui/text/qfontengine_ft.cpp	2009-04-24 11:17:49.562695405 -0500
+@@ -72,7 +72,7 @@
+ #include FT_CONFIG_OPTIONS_H
+ #endif
+ 
+-#if defined(FT_LCD_FILTER_H) && defined(FT_CONFIG_OPTION_SUBPIXEL_RENDERING)
++#if defined(FT_LCD_FILTER_H)
+ #define QT_USE_FREETYPE_LCDFILTER
+ #endif
+ 

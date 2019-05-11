@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <sstream>
 
 #include <QtCore/QDebug>
 #include <QtCore/QDir>
@@ -42,6 +43,9 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
+#include "Engine/Cache.h"
+#include "Global/FStreamsSupport.h"
+#include "Engine/KeybindShortcut.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
@@ -57,38 +61,327 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
+#include "Serialization/SettingsSerialization.h"
+#include "Serialization/SerializationIO.h"
+
 #include "Gui/GuiDefines.h"
 
-#include <SequenceParsing.h> // for removePath
+#include <SequenceParsing.h> // for SequenceParsing::removePath
 
 #ifdef WINDOWS
 #include <ofxhPluginCache.h>
 #endif
+
+#ifdef HAVE_OSMESA
+#include "Engine/OSGLFunctions_mesa.h"
+#endif
+
+#define NATRON_SETTINGS_FILENAME "settings." NATRON_SETTINGS_FILE_EXT
 
 #define NATRON_DEFAULT_OCIO_CONFIG_NAME "blender"
 
 
 #define NATRON_CUSTOM_OCIO_CONFIG_NAME "Custom config"
 
+// Increment this everytime a default value for a color in the Appearance tab is changed
+// If the user was running Natron is a default appearance of an older version, it will prompt
+// to update to the newer appearance.
 #define NATRON_DEFAULT_APPEARANCE_VERSION 1
 
 #define NATRON_CUSTOM_HOST_NAME_ENTRY "Custom..."
 
 NATRON_NAMESPACE_ENTER
 
-Settings::Settings()
-    : KnobHolder( AppInstPtr() ) // < Settings are process wide and do not belong to a single AppInstance
+enum CPUDriverEnum {
+    eCPUDriverSoftPipe = 0,
+    eCPUDriverLLVMPipe
+};
+
+static const CPUDriverEnum defaultMesaDriver = eCPUDriverLLVMPipe;
+
+
+
+struct SettingsPrivate
+{
+
+    Q_DECLARE_TR_FUNCTIONS(Settings)
+
+public:
+
+    // General
+    KnobPagePtr _generalTab;
+    KnobBoolPtr _checkForUpdates;
+#ifdef NATRON_USE_BREAKPAD
+    KnobBoolPtr _enableCrashReports;
+    KnobButtonPtr _testCrashReportButton;
+#endif
+    KnobBoolPtr _autoSaveUnSavedProjects;
+    KnobPathPtr _fileDialogSavedPaths;
+    KnobIntPtr _autoSaveDelay;
+    KnobBoolPtr _saveSafetyMode;
+    KnobChoicePtr _hostName;
+    KnobStringPtr _customHostName;
+
+    // General/Threading
+    KnobPagePtr _threadingPage;
+    KnobIntPtr _numberOfThreads;
+    KnobBoolPtr _renderInSeparateProcess;
+    KnobBoolPtr _queueRenders;
+
+    // General/Rendering
+    KnobPagePtr _renderingPage;
+    KnobBoolPtr _convertNaNValues;
+    KnobBoolPtr _activateRGBSupport;
+    KnobBoolPtr _activateTransformConcatenationSupport;
+
+    // General/GPU rendering
+    KnobPagePtr _gpuPage;
+    KnobStringPtr _openglRendererString;
+    KnobChoicePtr _availableOpenGLRenderers;
+    KnobChoicePtr _osmesaRenderers;
+    KnobIntPtr _nOpenGLContexts;
+    KnobChoicePtr _enableOpenGL;
+
+
+
+    // General/Projects setup
+    KnobPagePtr _projectsPage;
+    KnobBoolPtr _firstReadSetProjectFormat;
+    KnobBoolPtr _autoPreviewEnabledForNewProjects;
+    KnobBoolPtr _fixPathsOnProjectPathChanged;
+    KnobBoolPtr _enableMappingFromDriveLettersToUNCShareNames;
+
+    // General/Documentation
+    KnobPagePtr _documentationPage;
+    KnobIntPtr _wwwServerPort;
+#ifdef NATRON_DOCUMENTATION_ONLINE
+    KnobChoicePtr _documentationSource;
+#endif
+
+    // General/User Interface
+    KnobPagePtr _uiPage;
+    KnobBoolPtr _notifyOnFileChange;
+
+    KnobBoolPtr _filedialogForWriters;
+
+    KnobBoolPtr _renderOnEditingFinished;
+    KnobBoolPtr _linearPickers;
+    KnobIntPtr _maxPanelsOpened;
+    KnobBoolPtr _useCursorPositionIncrements;
+    KnobFilePtr _defaultLayoutFile;
+    KnobBoolPtr _loadProjectsWorkspace;
+
+    // Color-Management
+    KnobPagePtr _ocioTab;
+    KnobChoicePtr _ocioConfigKnob;
+    KnobBoolPtr _ocioStartupCheck;
+    KnobFilePtr _customOcioConfigFile;
+
+    // Caching
+    KnobPagePtr _cachingTab;
+    KnobBoolPtr _aggressiveCaching;
+
+    // The total disk space allowed for all Natron's caches
+    KnobIntPtr _maxDiskCacheSizeGb;
+    KnobPathPtr _diskCachePath;
+
+    // Viewer
+    KnobPagePtr _viewersTab;
+    KnobChoicePtr _texturesMode;
+    KnobIntPtr _checkerboardTileSize;
+    KnobColorPtr _checkerboardColor1;
+    KnobColorPtr _checkerboardColor2;
+    KnobBoolPtr _autoWipe;
+    KnobBoolPtr _autoProxyWhenScrubbingTimeline;
+    KnobChoicePtr _autoProxyLevel;
+    KnobIntPtr _maximumNodeViewerUIOpened;
+    KnobBoolPtr _viewerKeys;
+
+    // Nodegraph
+    KnobPagePtr _nodegraphTab;
+    KnobBoolPtr _autoScroll;
+    KnobBoolPtr _autoTurbo;
+    KnobBoolPtr _snapNodesToConnections;
+    KnobBoolPtr _useBWIcons;
+    KnobIntPtr _maxUndoRedoNodeGraph;
+    KnobIntPtr _disconnectedArrowLength;
+    KnobBoolPtr _hideOptionalInputsAutomatically;
+    KnobBoolPtr _useInputAForMergeAutoConnect;
+    KnobBoolPtr _usePluginIconsInNodeGraph;
+    KnobBoolPtr _useAntiAliasing;
+
+
+    // Plugins
+    KnobPagePtr _pluginsTab;
+    KnobPathPtr _extraPluginPaths;
+    KnobBoolPtr _useStdOFXPluginsLocation;
+    KnobPathPtr _templatesPluginPaths;
+    KnobBoolPtr _preferBundledPlugins;
+    KnobBoolPtr _loadBundledPlugins;
+
+    // Python
+    KnobPagePtr _pythonPage;
+    KnobStringPtr _onProjectCreated;
+    KnobStringPtr _defaultOnProjectLoaded;
+    KnobStringPtr _defaultOnProjectSave;
+    KnobStringPtr _defaultOnProjectClose;
+    KnobStringPtr _defaultOnNodeCreated;
+    KnobStringPtr _defaultOnNodeDelete;
+    KnobBoolPtr _echoVariableDeclarationToPython;
+
+    // Appearance
+    KnobPagePtr _appearanceTab;
+    KnobChoicePtr _systemFontChoice;
+    KnobIntPtr _fontSize;
+    KnobFilePtr _qssFile;
+    KnobIntPtr _defaultAppearanceVersion;
+
+    // Appearance/Main Window
+    KnobPagePtr _guiColorsTab;
+    KnobColorPtr _sunkenColor;
+    KnobColorPtr _baseColor;
+    KnobColorPtr _raisedColor;
+    KnobColorPtr _selectionColor;
+    KnobColorPtr _textColor;
+    KnobColorPtr _altTextColor;
+    KnobColorPtr _timelinePlayheadColor;
+    KnobColorPtr _timelineBGColor;
+    KnobColorPtr _timelineBoundsColor;
+    KnobColorPtr _interpolatedColor;
+    KnobColorPtr _keyframeColor;
+    KnobColorPtr _trackerKeyframeColor;
+    KnobColorPtr _exprColor;
+    KnobColorPtr _cachedFrameColor;
+    KnobColorPtr _sliderColor;
+
+    // Appearance/Dope Sheet
+    KnobPagePtr _animationColorsTab;
+    KnobColorPtr _animationViewBackgroundColor;
+    KnobColorPtr _dopesheetRootSectionBackgroundColor;
+    KnobColorPtr _dopesheetKnobSectionBackgroundColor;
+    KnobColorPtr _animationViewScaleColor;
+    KnobColorPtr _animationViewGridColor;
+
+    // Appearance/Script Editor
+    KnobPagePtr _scriptEditorColorsTab;
+    KnobColorPtr _curLineColor;
+    KnobColorPtr _keywordColor;
+    KnobColorPtr _operatorColor;
+    KnobColorPtr _braceColor;
+    KnobColorPtr _defClassColor;
+    KnobColorPtr _stringsColor;
+    KnobColorPtr _commentsColor;
+    KnobColorPtr _selfColor;
+    KnobColorPtr _numbersColor;
+    KnobChoicePtr _scriptEditorFontChoice;
+    KnobIntPtr _scriptEditorFontSize;
+
+    // Appearance/Node Graph
+    KnobPagePtr _nodegraphColorsTab;
+    KnobColorPtr _cloneColor;
+    KnobColorPtr _defaultNodeColor;
+    KnobColorPtr _defaultBackdropColor;
+    KnobColorPtr _defaultGeneratorColor;
+    KnobColorPtr _defaultReaderColor;
+    KnobColorPtr _defaultWriterColor;
+    KnobColorPtr _defaultColorGroupColor;
+    KnobColorPtr _defaultFilterGroupColor;
+    KnobColorPtr _defaultTransformGroupColor;
+    KnobColorPtr _defaultTimeGroupColor;
+    KnobColorPtr _defaultDrawGroupColor;
+    KnobColorPtr _defaultKeyerGroupColor;
+    KnobColorPtr _defaultChannelGroupColor;
+    KnobColorPtr _defaultMergeGroupColor;
+    KnobColorPtr _defaultViewsGroupColor;
+    KnobColorPtr _defaultDeepGroupColor;
+    std::vector<ChoiceOption> _knownHostNames;
+
+    Settings* _publicInterface;
+
+    std::set<KnobIWPtr> _knobsRequiringRestart;
+    std::set<KnobIWPtr> _knobsRequiringOFXCacheClear;
+
+    // Data for each plug-in, saved in the settings file
+    SERIALIZATION_NAMESPACE::SettingsSerialization::PluginDataMap pluginsData;
+
+    ApplicationShortcutsMap shortcuts;
+
+
+    // Count the number of stylesheet changes during restore defaults
+    // to avoid reloading it many times
+    int _nRedrawStyleSheetRequests;
+    bool _restoringSettings;
+    bool _defaultAppearanceOutdated;
+    bool saveSettings;
+
+
+
+    SettingsPrivate(Settings* publicInterface)
+    : _publicInterface(publicInterface)
+    , _knobsRequiringRestart()
+    , _knobsRequiringOFXCacheClear()
+    , _nRedrawStyleSheetRequests(0)
     , _restoringSettings(false)
-    , _ocioRestored(false)
-    , _settingsExisted(false)
     , _defaultAppearanceOutdated(false)
+    , saveSettings(true)
+    {
+        
+    }
+
+    void initializeKnobsGeneral();
+    void initializeKnobsThreading();
+    void initializeKnobsRendering();
+    void initializeKnobsGPU();
+    void initializeKnobsProjectSetup();
+    void initializeKnobsDocumentation();
+    void initializeKnobsUserInterface();
+    void initializeKnobsColorManagement();
+    void initializeKnobsCaching();
+    void initializeKnobsViewers();
+    void initializeKnobsNodeGraph();
+    void initializeKnobsPlugins();
+    void initializeKnobsPython();
+    void initializeKnobsAppearance();
+    void initializeKnobsGuiColors();
+    void initializeKnobsDopeSheetColors();
+    void initializeKnobsNodeGraphColors();
+    void initializeKnobsScriptEditorColors();
+
+    bool tryLoadOpenColorIOConfig();
+
+    std::string ensureUserDataDirectory();
+
+    std::string getSettingsAbsoluteFilepath(const std::string& userDataDirectoryPath);
+
+    void loadSettingsFromFileInternal(const SERIALIZATION_NAMESPACE::SettingsSerialization& serialization, int loadType);
+
+    void setOpenGLRenderersInfo();
+
+    void restoreNumThreads();
+
+    void refreshCacheSize();
+
+    void populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers);
+
+
+};
+
+
+Settings::Settings()
+: KnobHolder( AppInstancePtr() ) // < Settings are process wide and do not belong to a single AppInstance
+, _imp(new SettingsPrivate(this))
 {
 }
+
+Settings::~Settings()
+{
+}
+
 
 static QStringList
 getDefaultOcioConfigPaths()
 {
-    QString binaryPath = appPTR->getApplicationBinaryPath();
+    QString binaryPath = QString::fromUtf8(appPTR->getApplicationBinaryDirPath().c_str());
     StrUtils::ensureLastPathSeparator(binaryPath);
 
 #ifdef __NATRON_LINUX__
@@ -107,99 +400,455 @@ getDefaultOcioConfigPaths()
 #endif
 }
 
-void
-Settings::initializeKnobs()
+bool
+Settings::doesKnobChangeRequireRestart(const KnobIPtr& knob)
 {
-    initializeKnobsGeneral();
-    initializeKnobsThreading();
-    initializeKnobsRendering();
-    initializeKnobsGPU();
-    initializeKnobsProjectSetup();
-    initializeKnobsDocumentation();
-    initializeKnobsUserInterface();
-    initializeKnobsColorManagement();
-    initializeKnobsCaching();
-    initializeKnobsViewers();
-    initializeKnobsNodeGraph();
-    initializeKnobsPlugins();
-    initializeKnobsPython();
-    initializeKnobsAppearance();
-    initializeKnobsGuiColors();
-    initializeKnobsCurveEditorColors();
-    initializeKnobsDopeSheetColors();
-    initializeKnobsNodeGraphColors();
-    initializeKnobsScriptEditorColors();
+    std::set<KnobIWPtr>::iterator found = _imp->_knobsRequiringRestart.find(knob);
+    if (found == _imp->_knobsRequiringRestart.end()) {
+        return false;
+    }
+    return true;
+}
 
-    setDefaultValues();
+bool
+Settings::doesKnobChangeRequireOFXCacheClear(const KnobIPtr& knob)
+{
+    std::set<KnobIWPtr>::iterator found = _imp->_knobsRequiringOFXCacheClear.find(knob);
+    if (found == _imp->_knobsRequiringOFXCacheClear.end()) {
+        return false;
+    }
+    return true;
 }
 
 void
-Settings::initializeKnobsGeneral()
+Settings::addKeybind(const std::string & grouping,
+                     const std::string & id,
+                     const std::string& label,
+                     const std::string & description,
+                     const KeyboardModifiers & modifiers,
+                     Key symbol,
+                     const KeyboardModifiers & modifiersMask)
 {
-    _generalTab = AppManager::createKnob<KnobPage>( this, tr("General") );
+    GroupShortcutsMap& groupMap = _imp->shortcuts[grouping];
+    KeybindShortcut& kA = groupMap[id];
 
-    _natronSettingsExist = AppManager::createKnob<KnobBool>( this, tr("Existing settings") );
-    _natronSettingsExist->setName("existingSettings");
-    _natronSettingsExist->setSecretByDefault(true);
-    _generalTab->addKnob(_natronSettingsExist);
+    kA.actionID = id;
+    kA.actionLabel = label;
+    kA.grouping = grouping;
+    kA.description = description;
+    kA.defaultModifiers = modifiers;
+    kA.modifiers = modifiers;
+    kA.defaultShortcut = symbol;
+    kA.currentShortcut = symbol;
+    kA.ignoreMask = modifiersMask;
 
-    _saveSettings = AppManager::createKnob<KnobBool>( this, tr("Save settings on change") );
-    _saveSettings->setName("saveSettings");
-    _saveSettings->setDefaultValue(true);
-    _saveSettings->setSecretByDefault(true);
-    _generalTab->addKnob(_saveSettings);
+    Q_EMIT shortcutsChanged();
+    
+} // addKeybind
 
-    _checkForUpdates = AppManager::createKnob<KnobBool>( this, tr("Always check for updates on start-up") );
-    _checkForUpdates->setName("checkForUpdates");
-    _checkForUpdates->setHintToolTip( tr("When checked, %1 will check for new updates on start-up of the application.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+void
+Settings::removeKeybind(const std::string& grouping, const std::string& id)
+{
+    ApplicationShortcutsMap::iterator foundGroup = _imp->shortcuts.find(grouping);
+    if (foundGroup == _imp->shortcuts.end()) {
+        return;
+    }
+    GroupShortcutsMap::iterator foundShortcut = foundGroup->second.find(id);
+    if (foundShortcut != foundGroup->second.end()) {
+        foundGroup->second.erase(foundShortcut);
+    }
+}
+
+bool
+Settings::getShortcutKeybind(const std::string & grouping,
+                             const std::string & id,
+                             KeyboardModifiers* modifiers,
+                             Key* symbol) const
+{
+    ApplicationShortcutsMap::iterator foundGroup = _imp->shortcuts.find(grouping);
+    if (foundGroup == _imp->shortcuts.end()) {
+        return false;
+    }
+    GroupShortcutsMap::iterator foundShortcut = foundGroup->second.find(id);
+    if (foundShortcut == foundGroup->second.end()) {
+        return false;
+    }
+    *modifiers = foundShortcut->second.modifiers;
+    *symbol = foundShortcut->second.currentShortcut;
+    return true;
+}
+
+void
+Settings::setShortcutKeybind(const std::string & grouping,
+                             const std::string & id,
+                             const KeyboardModifiers & modifiers,
+                             Key symbol)
+{
+    ApplicationShortcutsMap::iterator foundGroup = _imp->shortcuts.find(grouping);
+    if (foundGroup == _imp->shortcuts.end()) {
+        return ;
+    }
+    GroupShortcutsMap::iterator foundShortcut = foundGroup->second.find(id);
+    if (foundShortcut == foundGroup->second.end()) {
+        return ;
+    }
+    foundShortcut->second.modifiers = modifiers;
+    foundShortcut->second.currentShortcut = symbol;
+    foundShortcut->second.updateActionsShortcut();
+
+    Q_EMIT shortcutsChanged();
+
+}
+
+void
+Settings::addShortcutAction(const std::string & grouping, const std::string & id, KeybindListenerI* action)
+{
+    ApplicationShortcutsMap::iterator foundGroup = _imp->shortcuts.find(grouping);
+    if (foundGroup == _imp->shortcuts.end()) {
+        return;
+    }
+    GroupShortcutsMap::iterator foundShortcut = foundGroup->second.find(id);
+    if (foundShortcut == foundGroup->second.end()) {
+        return;
+    }
+    foundShortcut->second.actions.push_back(action);
+}
+
+void
+Settings::removeShortcutAction(const std::string & grouping, const std::string & id, KeybindListenerI* action)
+{
+    ApplicationShortcutsMap::iterator foundGroup = _imp->shortcuts.find(grouping);
+    if (foundGroup == _imp->shortcuts.end()) {
+        return;
+    }
+    GroupShortcutsMap::iterator foundShortcut = foundGroup->second.find(id);
+    if (foundShortcut == foundGroup->second.end()) {
+        return;
+    }
+    std::list<KeybindListenerI*>::iterator found = std::find(foundShortcut->second.actions.begin(), foundShortcut->second.actions.end(), action);
+    if (found != foundShortcut->second.actions.end()) {
+        foundShortcut->second.actions.erase(found);
+    }
+}
+
+const ApplicationShortcutsMap&
+Settings::getAllShortcuts() const
+{
+    return _imp->shortcuts;
+}
+
+static bool
+matchesModifers(const KeyboardModifiers & lhs,
+                const KeyboardModifiers & rhs,
+                const KeyboardModifiers& ignoreMask)
+{
+    bool hasMask = ignoreMask != eKeyboardModifierNone;
+
+    return (!hasMask && lhs == rhs) ||
+    (hasMask && (lhs & ~ignoreMask) == rhs);
+}
+
+static bool
+matchesKey(Key lhs,
+           Key rhs)
+{
+    if (lhs == rhs) {
+        return true;
+    }
+    ///special case for the backspace and delete keys that mean the same thing generally
+    else if ( ( (lhs == Key_BackSpace) && (rhs == Key_Delete) ) ||
+             ( ( lhs == Key_Delete) && ( rhs == Key_BackSpace) ) ) {
+        return true;
+    }
+
+    return false;
+}
+
+
+bool
+Settings::matchesKeybind(const std::string & grouping,
+                         const std::string & id,
+                         const KeyboardModifiers & modifiers,
+                         Key symbol) const
+{
+    ApplicationShortcutsMap::iterator foundGroup = _imp->shortcuts.find(grouping);
+    if (foundGroup == _imp->shortcuts.end()) {
+        return false;
+    }
+    GroupShortcutsMap::iterator foundShortcut = foundGroup->second.find(id);
+    if (foundShortcut == foundGroup->second.end()) {
+        return false;
+    }
+
+
+    // the following macro only tests the Control, Alt, and Shift modifiers, and discards the others
+    KeyboardModifiers onlyCAS = modifiers & (eKeyboardModifierControl | eKeyboardModifierAlt | eKeyboardModifierShift);
+
+    if ( matchesModifers(onlyCAS, foundShortcut->second.modifiers, foundShortcut->second.ignoreMask) ) {
+        // modifiers are equal, now test symbol
+        return matchesKey(symbol, foundShortcut->second.currentShortcut );
+    }
+
+    return false;
+}
+
+void
+Settings::restoreDefaultShortcuts()
+{
+    for (ApplicationShortcutsMap::iterator it = _imp->shortcuts.begin(); it != _imp->shortcuts.end(); ++it) {
+        for (GroupShortcutsMap::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            it2->second.modifiers = it2->second.defaultModifiers;
+            it2->second.currentShortcut = it2->second.defaultShortcut;
+            it2->second.updateActionsShortcut();
+        }
+    }
+    Q_EMIT shortcutsChanged();
+}
+
+void
+Settings::populateShortcuts()
+{
+
+    // General
+    addKeybind(kShortcutGroupGlobal, kShortcutActionNewProject, kShortcutActionNewProjectLabel, kShortcutActionNewProjectHint, eKeyboardModifierControl, Key_N);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionOpenProject, kShortcutActionOpenProjectLabel, kShortcutActionOpenProjectHint, eKeyboardModifierControl, Key_O);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionSaveProject, kShortcutActionSaveProjectLabel, kShortcutActionSaveProjectHint, eKeyboardModifierControl, Key_S);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionSaveAsProject, kShortcutActionSaveAsProjectLabel, kShortcutActionSaveAsProjectHint, KeyboardModifiers(eKeyboardModifierControl | eKeyboardModifierShift), Key_S);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionCloseProject, kShortcutActionCloseProjectLabel, kShortcutActionCloseProjectHint, eKeyboardModifierControl, Key_W);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionPreferences, kShortcutActionPreferencesLabel, kShortcutActionPreferencesHint, eKeyboardModifierShift, Key_S);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionQuit, kShortcutActionQuitLabel, kShortcutActionQuitHint, eKeyboardModifierControl, Key_Q);
+
+    addKeybind(kShortcutGroupGlobal, kShortcutActionSaveAndIncrVersion, kShortcutActionSaveAndIncrVersionLabel, kShortcutActionSaveAndIncrVersionHint, KeyboardModifiers(eKeyboardModifierControl | eKeyboardModifierShift |
+                    eKeyboardModifierAlt), Key_S);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionReloadProject, kShortcutActionReloadProjectLabel, kShortcutActionReloadProjectHint, KeyboardModifiers(eKeyboardModifierControl | eKeyboardModifierShift), Key_R);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionShowAbout, kShortcutActionShowAboutLabel, kShortcutActionShowAboutHint, eKeyboardModifierNone, (Key)0);
+
+    addKeybind(kShortcutGroupGlobal, kShortcutActionImportLayout, kShortcutActionImportLayoutLabel, kShortcutActionImportLayoutHint, eKeyboardModifierNone, (Key)0);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionExportLayout, kShortcutActionExportLayoutLabel, kShortcutActionExportLayoutHint, eKeyboardModifierNone, (Key)0);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionDefaultLayout, kShortcutActionDefaultLayoutLabel, kShortcutActionDefaultLayoutHint, eKeyboardModifierNone, (Key)0);
+
+    addKeybind(kShortcutGroupGlobal, kShortcutActionProjectSettings, kShortcutActionProjectSettingsLabel, kShortcutActionProjectSettingsHint, eKeyboardModifierNone, Key_S);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionShowErrorLog, kShortcutActionShowErrorLogLabel, kShortcutActionShowErrorLogHint, eKeyboardModifierNone, (Key)0);
+
+    addKeybind(kShortcutGroupGlobal, kShortcutActionNewViewer, kShortcutActionNewViewerLabel, kShortcutActionNewViewerHint, eKeyboardModifierControl, Key_I);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionFullscreen, kShortcutActionFullscreenLabel, kShortcutActionFullscreenHint, eKeyboardModifierAlt, Key_S); // as in Nuke
+    //addKeybind(kShortcutGroupGlobal, kShortcutActionFullscreen, kShortcutActionFullscreen, eKeyboardModifierControl | eKeyboardModifierAlt, Key_F);
+
+    addKeybind(kShortcutGroupGlobal, kShortcutActionClearPluginsLoadCache, kShortcutActionClearPluginsLoadCacheLabel, kShortcutActionClearPluginsLoadCacheHint, eKeyboardModifierNone, (Key)0);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionClearCache, kShortcutActionClearCacheLabel, kShortcutActionClearCacheHint, KeyboardModifiers(eKeyboardModifierControl | eKeyboardModifierShift), Key_K);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionRenderSelected, kShortcutActionRenderSelectedLabel, kShortcutActionRenderSelectedHint, eKeyboardModifierNone, Key_F7);
+
+    addKeybind(kShortcutGroupGlobal, kShortcutActionRenderAll, kShortcutActionRenderAllLabel, kShortcutActionRenderAllHint, eKeyboardModifierNone, Key_F5);
+
+    addKeybind(kShortcutGroupGlobal, kShortcutActionEnableRenderStats, kShortcutActionEnableRenderStatsLabel, kShortcutActionEnableRenderStatsHint, eKeyboardModifierNone, Key_F2);
+
+    // Note: keys 0-1 are handled by Gui::handleNativeKeys(), and should thus work even on international keyboards
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput1, kShortcutActionConnectViewerToInput1Label, kShortcutActionConnectViewerToInput1Hint, eKeyboardModifierNone, Key_1);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput2, kShortcutActionConnectViewerToInput2Label, kShortcutActionConnectViewerToInput2Hint, eKeyboardModifierNone, Key_2);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput3, kShortcutActionConnectViewerToInput3Label, kShortcutActionConnectViewerToInput3Hint, eKeyboardModifierNone, Key_3);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput4, kShortcutActionConnectViewerToInput4Label, kShortcutActionConnectViewerToInput4Hint, eKeyboardModifierNone, Key_4);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput5, kShortcutActionConnectViewerToInput5Label, kShortcutActionConnectViewerToInput5Hint, eKeyboardModifierNone, Key_5);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput6, kShortcutActionConnectViewerToInput6Label, kShortcutActionConnectViewerToInput6Hint, eKeyboardModifierNone, Key_6);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput7, kShortcutActionConnectViewerToInput7Label, kShortcutActionConnectViewerToInput7Hint, eKeyboardModifierNone, Key_7);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput8, kShortcutActionConnectViewerToInput8Label, kShortcutActionConnectViewerToInput8Hint, eKeyboardModifierNone, Key_8);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput9, kShortcutActionConnectViewerToInput9Label, kShortcutActionConnectViewerToInput9Hint, eKeyboardModifierNone, Key_9);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput10, kShortcutActionConnectViewerToInput10Label, kShortcutActionConnectViewerToInput10Hint, eKeyboardModifierNone, Key_0);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput1, kShortcutActionConnectViewerBToInput1Label, kShortcutActionConnectViewerBToInput1Hint, eKeyboardModifierShift, Key_1);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput2, kShortcutActionConnectViewerBToInput2Label, kShortcutActionConnectViewerBToInput2Hint, eKeyboardModifierShift, Key_2);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput3, kShortcutActionConnectViewerBToInput3Label, kShortcutActionConnectViewerBToInput3Hint, eKeyboardModifierShift, Key_3);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput4, kShortcutActionConnectViewerBToInput4Label, kShortcutActionConnectViewerBToInput4Hint, eKeyboardModifierShift, Key_4);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput5, kShortcutActionConnectViewerBToInput5Label, kShortcutActionConnectViewerBToInput5Hint, eKeyboardModifierShift, Key_5);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput6, kShortcutActionConnectViewerBToInput6Label, kShortcutActionConnectViewerBToInput6Hint, eKeyboardModifierShift, Key_6);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput7, kShortcutActionConnectViewerBToInput7Label, kShortcutActionConnectViewerBToInput7Hint, eKeyboardModifierShift, Key_7);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput8, kShortcutActionConnectViewerBToInput8Label, kShortcutActionConnectViewerBToInput8Hint, eKeyboardModifierShift, Key_8);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput9, kShortcutActionConnectViewerBToInput9Label, kShortcutActionConnectViewerBToInput9Hint, eKeyboardModifierShift, Key_9);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput10, kShortcutActionConnectViewerBToInput10Label, kShortcutActionConnectViewerBToInput10Hint, eKeyboardModifierShift, Key_0);
+
+    addKeybind(kShortcutGroupGlobal, kShortcutActionShowPaneFullScreen, kShortcutActionShowPaneFullScreenLabel, kShortcutActionShowPaneFullScreenHint, eKeyboardModifierNone, Key_space);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionNextTab, kShortcutActionNextTabLabel, kShortcutActionNextTabHint, eKeyboardModifierControl, Key_T);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionPrevTab, kShortcutActionPrevTabLabel, kShortcutActionPrevTabHint, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierControl), Key_T);
+    addKeybind(kShortcutGroupGlobal, kShortcutActionCloseTab, kShortcutActionCloseTabLabel, kShortcutActionCloseTabHint, eKeyboardModifierShift, Key_Escape);
+
+
+    ///Nodegraph
+
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphRearrangeNodes, kShortcutActionGraphRearrangeNodesLabel, kShortcutActionGraphRearrangeNodesHint, eKeyboardModifierNone, Key_L);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphDisableNodes, kShortcutActionGraphDisableNodesLabel, kShortcutActionGraphDisableNodesHint, eKeyboardModifierNone, Key_D);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphRemoveNodes, kShortcutActionGraphRemoveNodesLabel, kShortcutActionGraphRemoveNodesHint, eKeyboardModifierNone, Key_BackSpace);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphShowExpressions, kShortcutActionGraphShowExpressionsLabel, kShortcutActionGraphShowExpressionsHint, eKeyboardModifierShift, Key_E);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphSelectUp, kShortcutActionGraphSelectUpLabel, kShortcutActionGraphSelectUpHint, eKeyboardModifierShift, Key_Up);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphSelectDown, kShortcutActionGraphSelectDownLabel, kShortcutActionGraphSelectDownHint, eKeyboardModifierShift, Key_Down);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphSelectAll, kShortcutActionGraphSelectAllLabel, kShortcutActionGraphSelectAllHint, eKeyboardModifierControl, Key_A);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphSelectAllVisible, kShortcutActionGraphSelectAllVisibleLabel, kShortcutActionGraphSelectAllVisibleHint, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierControl), Key_A);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphAutoHideInputs, kShortcutActionGraphAutoHideInputsLabel, kShortcutActionGraphAutoHideInputsHint, eKeyboardModifierNone, (Key)0);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphHideInputs, kShortcutActionGraphHideInputsLabel, kShortcutActionGraphHideInputsHint, eKeyboardModifierNone, (Key)0);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphSwitchInputs, kShortcutActionGraphSwitchInputsLabel, kShortcutActionGraphSwitchInputsHint, eKeyboardModifierShift, Key_X);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphCopy, kShortcutActionGraphCopyLabel, kShortcutActionGraphCopyHint, eKeyboardModifierControl, Key_C);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphPaste, kShortcutActionGraphPasteLabel, kShortcutActionGraphPasteHint, eKeyboardModifierControl, Key_V);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphCut, kShortcutActionGraphCutLabel, kShortcutActionGraphCutHint, eKeyboardModifierControl, Key_X);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphClone, kShortcutActionGraphCloneLabel, kShortcutActionGraphCloneHint, eKeyboardModifierAlt, Key_K);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphDeclone, kShortcutActionGraphDecloneLabel, kShortcutActionGraphDecloneHint, KeyboardModifiers(eKeyboardModifierAlt | eKeyboardModifierShift), Key_K);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphDuplicate, kShortcutActionGraphDuplicateLabel, kShortcutActionGraphDuplicateHint, eKeyboardModifierAlt, Key_C);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphForcePreview, kShortcutActionGraphForcePreviewLabel, kShortcutActionGraphForcePreviewHint, eKeyboardModifierShift, Key_P);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphTogglePreview, kShortcutActionGraphTogglePreviewLabel, kShortcutActionGraphToggleAutoPreviewHint, eKeyboardModifierAlt, Key_P);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphToggleAutoPreview, kShortcutActionGraphToggleAutoPreviewLabel, kShortcutActionGraphToggleAutoPreviewHint, eKeyboardModifierNone, (Key)0);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphToggleAutoTurbo, kShortcutActionGraphToggleAutoTurboLabel, kShortcutActionGraphToggleAutoTurboHint, eKeyboardModifierNone, (Key)0);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphFrameNodes, kShortcutActionGraphFrameNodesLabel, kShortcutActionGraphFrameNodesHint, eKeyboardModifierNone, Key_F);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphShowCacheSize, kShortcutActionGraphShowCacheSizeLabel, kShortcutActionGraphShowCacheSizeHint, eKeyboardModifierNone, (Key)0);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphFindNode, kShortcutActionGraphFindNodeLabel, kShortcutActionGraphFindNodeHint, eKeyboardModifierControl, Key_F);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphRenameNode, kShortcutActionGraphRenameNodeLabel, kShortcutActionGraphRenameNodeHint, eKeyboardModifierNone, Key_N);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphExtractNode, kShortcutActionGraphExtractNodeLabel, kShortcutActionGraphExtractNodeHint, KeyboardModifiers(eKeyboardModifierControl | eKeyboardModifierShift),
+                    Key_X);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphMakeGroup, kShortcutActionGraphMakeGroupLabel, kShortcutActionGraphMakeGroupHint, eKeyboardModifierControl,
+                    Key_G);
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphExpandGroup, kShortcutActionGraphExpandGroupLabel, kShortcutActionGraphExpandGroupHint, KeyboardModifiers(eKeyboardModifierControl | eKeyboardModifierAlt),
+                    Key_G);
+
+    addKeybind(kShortcutGroupNodegraph, kShortcutActionGraphOpenNodePanel, kShortcutActionGraphOpenNodePanelLabel, kShortcutActionGraphOpenNodePanelHint, eKeyboardModifierNone, Key_Return);
+
+
+    // Animation Module
+    addKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleRemoveKeys, kShortcutActionAnimationModuleRemoveKeysLabel, kShortcutActionAnimationModuleRemoveKeysHint, eKeyboardModifierNone, Key_BackSpace);
+    addKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleConstant, kShortcutActionAnimationModuleConstantLabel, kShortcutActionAnimationModuleConstantHint, eKeyboardModifierNone, Key_K);
+    addKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleSmooth, kShortcutActionAnimationModuleSmoothLabel, kShortcutActionAnimationModuleSmoothHint, eKeyboardModifierNone, Key_Z);
+    addKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleLinear, kShortcutActionAnimationModuleLinearLabel, kShortcutActionAnimationModuleLinearHint, eKeyboardModifierNone, Key_L);
+    addKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCatmullrom, kShortcutActionAnimationModuleCatmullromLabel, kShortcutActionAnimationModuleCatmullromHint, eKeyboardModifierNone, Key_R);
+    addKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCubic, kShortcutActionAnimationModuleCubicLabel, kShortcutActionAnimationModuleCubicHint, eKeyboardModifierNone, Key_C);
+    addKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleHorizontal, kShortcutActionAnimationModuleHorizontalLabel, kShortcutActionAnimationModuleHorizontalHint, eKeyboardModifierNone, Key_H);
+    addKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleBreak, kShortcutActionAnimationModuleBreakLabel, kShortcutActionAnimationModuleBreakHint, eKeyboardModifierNone, Key_X);
+    addKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleSelectAll, kShortcutActionAnimationModuleSelectAllLabel, kShortcutActionAnimationModuleSelectAllHint, eKeyboardModifierControl, Key_A);
+    addKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCenterAll, kShortcutActionAnimationModuleCenterAllLabel, kShortcutActionAnimationModuleCenterAllHint
+                    , eKeyboardModifierNone, Key_A);
+    addKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCenter, kShortcutActionAnimationModuleCenterLabel, kShortcutActionAnimationModuleCenterHint
+                    , eKeyboardModifierNone, Key_F);
+    addKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCopy, kShortcutActionAnimationModuleCopyLabel, kShortcutActionAnimationModuleCopyHint, eKeyboardModifierControl, Key_C);
+    addKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModulePasteKeyframes, kShortcutActionAnimationModulePasteKeyframesLabel, kShortcutActionAnimationModulePasteKeyframesHint, eKeyboardModifierControl, Key_V);
+    addKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModulePasteKeyframesAbsolute, kShortcutActionAnimationModulePasteKeyframesAbsoluteLabel, kShortcutActionAnimationModulePasteKeyframesAbsoluteHint, KeyboardModifiers(eKeyboardModifierControl | eKeyboardModifierShift), Key_V);
+
+    addKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleStackView, kShortcutActionAnimationModuleStackViewLabel, kShortcutActionAnimationModuleStackViewHint, eKeyboardModifierNone, Key_S);
+    addKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleShowOnlyAnimated, kShortcutActionAnimationModuleShowOnlyAnimatedLabel, kShortcutActionAnimationModuleShowOnlyAnimatedHint, eKeyboardModifierNone, (Key)0);
+
+    //Script editor
+    addKeybind(kShortcutGroupScriptEditor, kShortcutActionScriptEditorPrevScript, kShortcutActionScriptEditorPrevScriptLabel, kShortcutActionScriptEditorPrevScriptHint, eKeyboardModifierControl, Key_bracketleft, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierAlt));
+    addKeybind(kShortcutGroupScriptEditor, kShortcutActionScriptEditorNextScript, kShortcutActionScriptEditorNextScriptLabel, kShortcutActionScriptEditorNextScriptHint, eKeyboardModifierControl, Key_bracketright, KeyboardModifiers(eKeyboardModifierShift | eKeyboardModifierAlt));
+    addKeybind(kShortcutGroupScriptEditor, kShortcutActionScriptEditorClearHistory, kShortcutActionScriptEditorClearHistoryLabel, kShortcutActionScriptEditorClearHistoryHint, eKeyboardModifierNone, (Key)0);
+    addKeybind(kShortcutGroupScriptEditor, kShortcutActionScriptExecScript, kShortcutActionScriptExecScriptLabel, kShortcutActionScriptExecScriptHint, eKeyboardModifierControl, Key_Return);
+    addKeybind(kShortcutGroupScriptEditor, kShortcutActionScriptClearOutput, kShortcutActionScriptClearOutputLabel, kShortcutActionScriptClearOutputHint, eKeyboardModifierControl, Key_BackSpace);
+    addKeybind(kShortcutGroupScriptEditor, kShortcutActionScriptShowOutput, kShortcutActionScriptShowOutputLabel, kShortcutActionScriptShowOutputHint, eKeyboardModifierNone, (Key)0);
+} // populateShortcuts
+
+void
+Settings::initializeKnobs()
+{
+    _imp->initializeKnobsGeneral();
+    _imp->initializeKnobsThreading();
+    _imp->initializeKnobsRendering();
+    _imp->initializeKnobsGPU();
+    _imp->initializeKnobsProjectSetup();
+    _imp->initializeKnobsDocumentation();
+    _imp->initializeKnobsUserInterface();
+    _imp->initializeKnobsColorManagement();
+    _imp->initializeKnobsCaching();
+    _imp->initializeKnobsViewers();
+    _imp->initializeKnobsNodeGraph();
+    _imp->initializeKnobsPlugins();
+    _imp->initializeKnobsPython();
+    _imp->initializeKnobsAppearance();
+    _imp->initializeKnobsGuiColors();
+    _imp->initializeKnobsDopeSheetColors();
+    _imp->initializeKnobsNodeGraphColors();
+    _imp->initializeKnobsScriptEditorColors();
+
+    populateShortcuts();
+
+    const std::list<OpenGLRendererInfo>& renderers = appPTR->getOpenGLRenderers();
+    _imp->populateOpenGLRenderers(renderers);
+}
+
+void
+SettingsPrivate::initializeKnobsGeneral()
+{
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
+    _generalTab = _publicInterface->createKnob<KnobPage>("generalPage");
+    _generalTab->setLabel(tr("General"));
+
+    _checkForUpdates = _publicInterface->createKnob<KnobBool>("checkForUpdates");
+    _checkForUpdates->setLabel(tr("Always check for updates on start-up"));
+    _checkForUpdates->setHintToolTip( tr("When checked, %1 will check for new updates on start-up of the application.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) +
+                                      QLatin1Char('\n') +
+                                      tr("Changing this requires a restart of the application to take effect.") );
+    _knobsRequiringRestart.insert(_checkForUpdates);
     _generalTab->addKnob(_checkForUpdates);
 
-    _enableCrashReports = AppManager::createKnob<KnobBool>( this, tr("Enable crash reporting") );
-    _enableCrashReports->setName("enableCrashReports");
+#ifdef NATRON_USE_BREAKPAD
+    _enableCrashReports = _publicInterface->createKnob<KnobBool>("enableCrashReports");
+    _enableCrashReports->setLabel(tr("Enable crash reporting"));
     _enableCrashReports->setHintToolTip( tr("When checked, if %1 crashes a window will pop-up asking you "
                                             "whether you want to upload the crash dump to the developers or not. "
                                             "This can help them track down the bug.\n"
                                             "If you need to turn the crash reporting system off, uncheck this.\n"
                                             "Note that when using the application in command-line mode, if crash reports are "
-                                            "enabled, they will be automatically uploaded.\n"
-                                            "Changing this requires a restart of the application to take effect.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                                            "enabled, they will be automatically uploaded.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) +
+                                          QLatin1Char('\n') +
+                                          tr("Changing this requires a restart of the application to take effect.") );
+    _enableCrashReports->setDefaultValue(true);
     _enableCrashReports->setAddNewLine(false);
+    _knobsRequiringRestart.insert(_enableCrashReports);
     _generalTab->addKnob(_enableCrashReports);
 
-    _testCrashReportButton = AppManager::createKnob<KnobButton>( this, tr("Test Crash Reporting") );
-    _testCrashReportButton->setName("testCrashReporting");
+    _testCrashReportButton = _publicInterface->createKnob<KnobButton>("testCrashReporting");
+    _testCrashReportButton->setLabel(tr("Test Crash Reporting"));
     _testCrashReportButton->setHintToolTip( tr("This button is for developers only to test whether the crash reporting system "
                                                "works correctly. Do not use this.") );
     _generalTab->addKnob(_testCrashReportButton);
+#endif
 
-
-    _autoSaveDelay = AppManager::createKnob<KnobInt>( this, tr("Auto-save trigger delay") );
-    _autoSaveDelay->setName("autoSaveDelay");
+    _autoSaveDelay = _publicInterface->createKnob<KnobInt>("autoSaveDelay");
+    _autoSaveDelay->setLabel(tr("Auto-save trigger delay"));
     _autoSaveDelay->disableSlider();
-    _autoSaveDelay->setMinimum(0);
-    _autoSaveDelay->setMaximum(60);
+    _autoSaveDelay->setRange(0, 60);
     _autoSaveDelay->setHintToolTip( tr("The number of seconds after an event that %1 should wait before "
                                        " auto-saving. Note that if a render is in progress, %1 will "
                                        " wait until it is done to actually auto-save.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _generalTab->addKnob(_autoSaveDelay);
 
 
-    _autoSaveUnSavedProjects = AppManager::createKnob<KnobBool>( this, tr("Enable Auto-save for unsaved projects") );
-    _autoSaveUnSavedProjects->setName("autoSaveUnSavedProjects");
+    _autoSaveUnSavedProjects = _publicInterface->createKnob<KnobBool>("autoSaveUnSavedProjects");
+    _autoSaveUnSavedProjects->setLabel(tr("Enable Auto-save for unsaved projects"));
     _autoSaveUnSavedProjects->setHintToolTip( tr("When activated %1 will auto-save projects that have never been "
                                                  "saved and will prompt you on startup if an auto-save of that unsaved project was found. "
                                                  "Disabling this will no longer save un-saved project.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    _autoSaveUnSavedProjects->setDefaultValue(false);
     _generalTab->addKnob(_autoSaveUnSavedProjects);
 
+    _fileDialogSavedPaths = _publicInterface->createKnob<KnobPath>("fileDialogPaths");
+    _fileDialogSavedPaths->setLabel(tr("File Dialog Paths"));
+    _fileDialogSavedPaths->setHintToolTip(tr("These are the paths to directories visible in the favorite view of the file dialog"));
+    _fileDialogSavedPaths->setSecret(true);
+    _fileDialogSavedPaths->setAsStringList(true);
+    _generalTab->addKnob(_fileDialogSavedPaths);
 
-    _hostName = AppManager::createKnob<KnobChoice>( this, tr("Appear to plug-ins as") );
-    _hostName->setName("pluginHostName");
+
+    _saveSafetyMode = _publicInterface->createKnob<KnobBool>("fullRecoverySave");
+    _saveSafetyMode->setLabel(tr("Full Recovery Save"));
+    _saveSafetyMode->setHintToolTip(tr("The save safety is used when saving projects. When checked all default values of parameters will be saved in the project, even if they did not change. This is useful "
+                                       "in the case a default value in a plug-in was changed by its developers, to ensure that the value is still the same when loading a project."
+                                       "By default this should not be needed as default values change are very rare. In a scenario where a project cannot be recovered in a newer version because "
+                                       "the default values for a node have changed, just save your project in an older version of %1 with this parameter checked so that it reloads correctly in the newer version.\n"
+                                       "Note that checking this parameter can make project files significantly larger.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)));
+    _generalTab->addKnob(_saveSafetyMode);
+
+
+    _hostName = _publicInterface->createKnob<KnobChoice>("pluginHostName");
+    _hostName->setLabel(tr("Appear to plug-ins as"));
+    _knobsRequiringRestart.insert(_hostName);
+    _knobsRequiringOFXCacheClear.insert(_hostName);
     _hostName->setHintToolTip( tr("%1 will appear with the name of the selected application to the OpenFX plug-ins. "
                                   "Changing it to the name of another application can help loading plugins which "
                                   "restrict their usage to specific OpenFX host(s). "
-                                  "If a Host is not listed here, use the \"Custom\" entry to enter a custom host name. Changing this requires "
-                                  "a restart of the application and requires clearing "
-                                  "the OpenFX plugins cache from the Cache menu.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                                  "If a Host is not listed here, use the \"Custom\" entry to enter a custom host name.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) +
+                               QLatin1Char('\n') +
+                               tr("Changing this requires a restart of the application to take effect.")  );
     _knownHostNames.clear();
     std::vector<ChoiceOption> visibleHostEntries;
     assert(visibleHostEntries.size() == (int)eKnownHostNameNatron);
@@ -257,175 +906,170 @@ Settings::initializeKnobsGeneral()
     _hostName->setAddNewLine(false);
     _generalTab->addKnob(_hostName);
 
-    _customHostName = AppManager::createKnob<KnobString>( this, tr("Custom Host name") );
-    _customHostName->setName("customHostName");
+    _customHostName = _publicInterface->createKnob<KnobString>("customHostName");
+    _customHostName->setLabel(tr("Custom Host name"));
+    _knobsRequiringRestart.insert(_customHostName);
+    _knobsRequiringOFXCacheClear.insert(_customHostName);
     _customHostName->setHintToolTip( tr("This is the name of the OpenFX host (application) as it appears to the OpenFX plugins. "
                                         "Changing it to the name of another application can help loading some plugins which "
                                         "restrict their usage to specific OpenFX hosts. You shoud leave "
                                         "this to its default value, unless a specific plugin refuses to load or run. "
-                                        "Changing this takes effect upon the next application launch, and requires clearing "
-                                        "the OpenFX plugins cache from the Cache menu. "
-                                        "The default host name is: \n%1").arg( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME) ) );
-    _customHostName->setSecretByDefault(true);
+                                        "The default host name is: \n%1").arg( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME) ) +
+                                     QLatin1Char('\n') +
+                                     tr("Changing this requires a restart of the application to take effect.")  );
+    _customHostName->setSecret(true);
     _generalTab->addKnob(_customHostName);
 } // Settings::initializeKnobsGeneral
 
 void
-Settings::initializeKnobsThreading()
+SettingsPrivate::initializeKnobsThreading()
 {
-    _threadingPage = AppManager::createKnob<KnobPage>( this, tr("Threading") );
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
+    _threadingPage = _publicInterface->createKnob<KnobPage>("threadingPage");
+    _threadingPage->setLabel(tr("Threading"));
 
-    _numberOfThreads = AppManager::createKnob<KnobInt>( this, tr("Number of render threads (0=\"guess\")") );
-    _numberOfThreads->setName("noRenderThreads");
+    _numberOfThreads = _publicInterface->createKnob<KnobInt>("numRenderThreads");
+    _numberOfThreads->setLabel(tr("Number of render threads (0=\"guess\")"));
 
+    int hwThreadsCount = appPTR->getHardwareIdealThreadCount();
     QString numberOfThreadsToolTip = tr("Controls how many threads %1 should use to render. \n"
-                                        "-1: Disable multithreading totally (useful for debugging) \n"
-                                        "0: Guess the thread count from the number of cores. The ideal threads count for this hardware is %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QThread::idealThreadCount() );
+                                        "0: Guess the thread count from the number of cores. The ideal threads count for this hardware is %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( hwThreadsCount );
     _numberOfThreads->setHintToolTip( numberOfThreadsToolTip.toStdString() );
     _numberOfThreads->disableSlider();
-    _numberOfThreads->setMinimum(-1);
-    _numberOfThreads->setDisplayMinimum(-1);
+#ifdef DEBUG
+    // -1: Disable multithreading totally (useful for debugging)
+    _numberOfThreads->setRange(-1, hwThreadsCount);
+#else
+    _numberOfThreads->setRange(0, hwThreadsCount);
+#endif
+    _numberOfThreads->setDisplayRange(0, hwThreadsCount);
+    _numberOfThreads->setDefaultValue(0);
     _threadingPage->addKnob(_numberOfThreads);
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    _numberOfParallelRenders = AppManager::createKnob<KnobInt>( this, tr("Number of parallel renders (0=\"guess\")") );
-    _numberOfParallelRenders->setHintToolTip( tr("Controls the number of parallel frame that will be rendered at the same time by the renderer."
-                                                 "A value of 0 indicate that %1 should automatically determine "
-                                                 "the best number of parallel renders to launch given your CPU activity. "
-                                                 "Setting a value different than 0 should be done only if you know what you're doing and can lead "
-                                                 "in some situations to worse performances. Overall to get the best performances you should have your "
-                                                 "CPU at 100% activity without idle times.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _numberOfParallelRenders->setName("nParallelRenders");
-    _numberOfParallelRenders->setMinimum(0);
-    _numberOfParallelRenders->disableSlider();
-    _threadingPage->addKnob(_numberOfParallelRenders);
-#endif
 
-    _useThreadPool = AppManager::createKnob<KnobBool>( this, tr("Effects use the thread-pool") );
-    _useThreadPool->setName("useThreadPool");
-    _useThreadPool->setHintToolTip( tr("When checked, all effects will use a global thread-pool to do their processing instead of launching "
-                                       "their own threads. "
-                                       "This suppresses the overhead created by the operating system creating new threads on demand for "
-                                       "each rendering of a special effect. As a result of this, the rendering might be faster on systems "
-                                       "with a lot of cores (>= 8). \n"
-                                       "WARNING: This is known not to work when using The Foundry's Furnace plug-ins (and potentially "
-                                       "some other plug-ins that the dev team hasn't not tested against it). When using these plug-ins, "
-                                       "make sure to uncheck this option first otherwise it will crash %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _threadingPage->addKnob(_useThreadPool);
-
-    _nThreadsPerEffect = AppManager::createKnob<KnobInt>( this, tr("Max threads usable per effect (0=\"guess\")") );
-    _nThreadsPerEffect->setName("nThreadsPerEffect");
-    _nThreadsPerEffect->setHintToolTip( tr("Controls how many threads a specific effect can use at most to do its processing. "
-                                           "A high value will allow 1 effect to spawn lots of thread and might not be efficient because "
-                                           "the time spent to launch all the threads might exceed the time spent actually processing."
-                                           "By default (0) the renderer applies an heuristic to determine what's the best number of threads "
-                                           "for an effect.") );
-
-    _nThreadsPerEffect->setMinimum(0);
-    _nThreadsPerEffect->disableSlider();
-    _threadingPage->addKnob(_nThreadsPerEffect);
-
-    _renderInSeparateProcess = AppManager::createKnob<KnobBool>( this, tr("Render in a separate process") );
-    _renderInSeparateProcess->setName("renderNewProcess");
-    _renderInSeparateProcess->setHintToolTip( tr("If true, %1 will render frames to disk in "
+    _renderInSeparateProcess = _publicInterface->createKnob<KnobBool>("renderNewProcess");
+    _renderInSeparateProcess->setLabel(tr("Render in a separate process"));
+    _renderInSeparateProcess->setHintToolTip( tr("If checked, %1 will render frames to disk in "
                                                  "a separate process so that if the main application crashes, the render goes on.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _threadingPage->addKnob(_renderInSeparateProcess);
 
-    _queueRenders = AppManager::createKnob<KnobBool>( this, tr("Append new renders to queue") );
+    _queueRenders = _publicInterface->createKnob<KnobBool>("queueRenders");
+    _queueRenders->setLabel(tr("Append new renders to queue"));
     _queueRenders->setHintToolTip( tr("When checked, renders will be queued in the Progress Panel and will start only when all "
                                       "other prior tasks are done.") );
-    _queueRenders->setName("queueRenders");
     _threadingPage->addKnob(_queueRenders);
 } // Settings::initializeKnobsThreading
 
 void
-Settings::initializeKnobsRendering()
+SettingsPrivate::initializeKnobsRendering()
 {
-    _renderingPage = AppManager::createKnob<KnobPage>( this, tr("Rendering") );
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
+    _renderingPage = _publicInterface->createKnob<KnobPage>("renderingPage");
+    _renderingPage->setLabel(tr("Rendering"));
 
-    _convertNaNValues = AppManager::createKnob<KnobBool>( this, tr("Convert NaN values") );
-    _convertNaNValues->setName("convertNaNs");
+    _convertNaNValues = _publicInterface->createKnob<KnobBool>("convertNaNs");
+    _convertNaNValues->setLabel(tr("Convert NaN values"));
     _convertNaNValues->setHintToolTip( tr("When activated, any pixel that is a Not-a-Number will be converted to 1 to avoid potential crashes from "
                                           "downstream nodes. These values can be produced by faulty plug-ins when they use wrong arithmetic such as "
                                           "division by zero. Disabling this option will keep the NaN(s) in the buffers: this may lead to an "
                                           "undefined behavior.") );
+    _convertNaNValues->setDefaultValue(true);
     _renderingPage->addKnob(_convertNaNValues);
 
-    _pluginUseImageCopyForSource = AppManager::createKnob<KnobBool>( this, tr("Copy input image before rendering any plug-in") );
-    _pluginUseImageCopyForSource->setName("copyInputImage");
-    _pluginUseImageCopyForSource->setHintToolTip( tr("If checked, when before rendering any node, %1 will copy "
-                                                     "the input image to a local temporary image. This is to work-around some plug-ins "
-                                                     "that write to the source image, thus modifying the output of the node upstream in "
-                                                     "the cache. This is a known bug of an old version of RevisionFX REMap for instance. "
-                                                     "By default, this parameter should be leaved unchecked, as this will require an extra "
-                                                     "image allocation and copy before rendering any plug-in.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _renderingPage->addKnob(_pluginUseImageCopyForSource);
-
-    _activateRGBSupport = AppManager::createKnob<KnobBool>( this, tr("RGB components support") );
+    _activateRGBSupport = _publicInterface->createKnob<KnobBool>("rgbSupport");
+    _activateRGBSupport->setLabel(tr("RGB components support"));
     _activateRGBSupport->setHintToolTip( tr("When checked %1 is able to process images with only RGB components "
                                             "(support for images with RGBA and Alpha components is always enabled). "
                                             "Un-checking this option may prevent plugins that do not well support RGB components from crashing %1. "
                                             "Changing this option requires a restart of the application.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _activateRGBSupport->setName("rgbSupport");
+    _activateRGBSupport->setDefaultValue(true);
     _renderingPage->addKnob(_activateRGBSupport);
 
 
-    _activateTransformConcatenationSupport = AppManager::createKnob<KnobBool>( this, tr("Transforms concatenation support") );
+    _activateTransformConcatenationSupport = _publicInterface->createKnob<KnobBool>("transformCatSupport");
+    _activateTransformConcatenationSupport->setLabel(tr("Transforms concatenation support"));
     _activateTransformConcatenationSupport->setHintToolTip( tr("When checked %1 is able to concatenate transform effects "
                                                                "when they are chained in the compositing tree. This yields better results and faster "
                                                                "render times because the image is only filtered once instead of as many times as there are "
                                                                "transformations.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _activateTransformConcatenationSupport->setName("transformCatSupport");
+    _activateTransformConcatenationSupport->setDefaultValue(true);
     _renderingPage->addKnob(_activateTransformConcatenationSupport);
 }
 
 void
-Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers)
+SettingsPrivate::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers)
 {
     if ( renderers.empty() ) {
         _availableOpenGLRenderers->setSecret(true);
         _nOpenGLContexts->setSecret(true);
         _enableOpenGL->setSecret(true);
-        return;
+    } else {
+
+        _nOpenGLContexts->setSecret(false);
+        _enableOpenGL->setSecret(false);
+
+        std::vector<ChoiceOption> entries( renderers.size() );
+        int i = 0;
+        for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
+            std::string option = it->vendorName + ' ' + it->rendererName + ' ' + it->glVersionString;
+            entries[i].id = option;
+        }
+        _availableOpenGLRenderers->populateChoices(entries);
+        _availableOpenGLRenderers->setSecret(renderers.size() == 1);
     }
 
-    _nOpenGLContexts->setSecret(false);
-    _enableOpenGL->setSecret(false);
+#ifdef HAVE_OSMESA
+#ifdef OSMESA_GALLIUM_DRIVER
+    std::vector<ChoiceOption> mesaDrivers;
+    mesaDrivers.push_back(ChoiceOption("softpipe", "",""));
+    mesaDrivers.push_back(ChoiceOption("llvmpipe", "",""));
+    _osmesaRenderers->populateChoices(mesaDrivers);
+    _osmesaRenderers->setSecret(false);
+#else
+    _osmesaRenderers->setSecret(false);
+#endif
+#else
+    _osmesaRenderers->setSecret(true);
+#endif
+}
 
-    std::vector<ChoiceOption> entries( renderers.size() );
-    int i = 0;
-    for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
-        std::string option = it->vendorName + ' ' + it->rendererName + ' ' + it->glVersionString;
-        entries[i] = ChoiceOption(option);
+GLRendererID
+Settings::getOpenGLCPUDriver() const
+{
+    GLRendererID ret;
+    if (!_imp->_osmesaRenderers->getIsSecret()) {
+        ret.renderID =  _imp->_osmesaRenderers->getValue();
+    } else {
+        ret.renderID = 0;
+
     }
-    _availableOpenGLRenderers->populateChoices(entries);
-    _availableOpenGLRenderers->setSecret(renderers.size() == 1);
+    return ret;
 }
 
 bool
 Settings::isOpenGLRenderingEnabled() const
 {
-    if (_enableOpenGL->getIsSecret()) {
+    if (_imp->_enableOpenGL->getIsSecret()) {
         return false;
     }
-    EnableOpenGLEnum enableOpenGL = (EnableOpenGLEnum)_enableOpenGL->getValue();
+    EnableOpenGLEnum enableOpenGL = (EnableOpenGLEnum)_imp->_enableOpenGL->getValue();
     return enableOpenGL == eEnableOpenGLEnabled || (enableOpenGL == eEnableOpenGLDisabledIfBackground && !appPTR->isBackground());
 }
 
 int
 Settings::getMaxOpenGLContexts() const
 {
-    return _nOpenGLContexts->getValue();
+    return _imp->_nOpenGLContexts->getValue();
 }
 
 GLRendererID
 Settings::getActiveOpenGLRendererID() const
 {
-    if ( _availableOpenGLRenderers->getIsSecret() ) {
+    if ( _imp->_availableOpenGLRenderers->getIsSecret() ) {
         // We were not able to detect multiple renderers, use default
         return GLRendererID();
     }
-    int activeIndex = _availableOpenGLRenderers->getValue();
+    int activeIndex = _imp->_availableOpenGLRenderers->getValue();
     const std::list<OpenGLRendererInfo>& renderers = appPTR->getOpenGLRenderers();
     if ( (activeIndex < 0) || ( activeIndex >= (int)renderers.size() ) ) {
         // Invalid index
@@ -442,32 +1086,49 @@ Settings::getActiveOpenGLRendererID() const
 }
 
 void
-Settings::initializeKnobsGPU()
+SettingsPrivate::initializeKnobsGPU()
 {
-    _gpuPage = AppManager::createKnob<KnobPage>( this, tr("GPU Rendering") );
-    _openglRendererString = AppManager::createKnob<KnobString>( this, tr("Active OpenGL renderer") );
-    _openglRendererString->setName("activeOpenGLRenderer");
-    _openglRendererString->setHintToolTip( tr("The currently active OpenGL renderer.") );
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
+    _gpuPage = _publicInterface->createKnob<KnobPage>("gpuPage");
+    _gpuPage->setLabel(tr("GPU Rendering"));
+    _openglRendererString = _publicInterface->createKnob<KnobString>("activeOpenGLRenderer");
+
+    _openglRendererString->setLabel(tr("Active OpenGL renderer"));
+    _openglRendererString->setHintToolTip( tr("The currently active OpenGL renderer") );
     _openglRendererString->setAsLabel();
     _gpuPage->addKnob(_openglRendererString);
 
-    _availableOpenGLRenderers = AppManager::createKnob<KnobChoice>( this, tr("OpenGL renderer") );
-    _availableOpenGLRenderers->setName("chooseOpenGLRenderer");
-    _availableOpenGLRenderers->setHintToolTip( tr("The renderer used to perform OpenGL rendering. Changing the OpenGL renderer requires a restart of the application.") );
+    _availableOpenGLRenderers = _publicInterface->createKnob<KnobChoice>("chooseOpenGLRenderer");
+    _availableOpenGLRenderers->setLabel(tr("OpenGL renderer"));
+    _availableOpenGLRenderers->setHintToolTip( tr("The renderer used to perform OpenGL rendering.") +
+                                               QLatin1Char('\n') +
+                                               tr("Changing this requires a restart of the application to take effect.")  );
+    _knobsRequiringRestart.insert(_availableOpenGLRenderers);
     _gpuPage->addKnob(_availableOpenGLRenderers);
 
-    _nOpenGLContexts = AppManager::createKnob<KnobInt>( this, tr("No. of OpenGL Contexts") );
-    _nOpenGLContexts->setName("maxOpenGLContexts");
-    _nOpenGLContexts->setMinimum(1);
-    _nOpenGLContexts->setDisplayMinimum(1);
-    _nOpenGLContexts->setDisplayMaximum(8);
-    _nOpenGLContexts->setMaximum(8);
+    _osmesaRenderers = _publicInterface->createKnob<KnobChoice>("cpuOpenGLRenderer");
+    _osmesaRenderers->setLabel(tr("CPU OpenGL renderer"));
+    _knobsRequiringRestart.insert(_osmesaRenderers);
+    _osmesaRenderers->setHintToolTip( tr("Internally, %1 can render OpenGL plug-ins on the CPU by using the OSMesa open-source library. "
+                                         "You may select which driver OSMesa uses to perform it's CPU rendering. "
+                                         "llvm-pipe is more efficient but may contain some bugs.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)) +
+                                      QLatin1Char('\n') +
+                                      tr("Changing this requires a restart of the application to take effect.") );
+    _osmesaRenderers->setDefaultValue(defaultMesaDriver);
+    _gpuPage->addKnob(_osmesaRenderers);
+
+
+    _nOpenGLContexts = _publicInterface->createKnob<KnobInt>("maxOpenGLContexts");
+    _nOpenGLContexts->setLabel(tr("No. of OpenGL Contexts"));
+    _nOpenGLContexts->setRange(1, 8);
+    _nOpenGLContexts->setDisplayRange(1, 8);;
     _nOpenGLContexts->setHintToolTip( tr("The number of OpenGL contexts created to perform OpenGL rendering. Each OpenGL context can be attached to a CPU thread, allowing for more frames to be rendered simultaneously. Increasing this value may increase performances for graphs with mixed CPU/GPU nodes but can drastically reduce performances if too many OpenGL contexts are active at once.") );
+    _nOpenGLContexts->setDefaultValue(2);
     _gpuPage->addKnob(_nOpenGLContexts);
 
 
-    _enableOpenGL = AppManager::createKnob<KnobChoice>( this, tr("OpenGL Rendering") );
-    _enableOpenGL->setName("enableOpenGLRendering");
+    _enableOpenGL = _publicInterface->createKnob<KnobChoice>("enableOpenGLRendering");
+    _enableOpenGL->setLabel(tr("OpenGL Rendering"));
     {
         std::vector<ChoiceOption> entries;
         assert(entries.size() == (int)Settings::eEnableOpenGLEnabled);
@@ -485,50 +1146,70 @@ Settings::initializeKnobsGPU()
         _enableOpenGL->populateChoices(entries);
     }
     _enableOpenGL->setHintToolTip( tr("Select whether to activate OpenGL rendering or not. If disabled, even though a Project enable GPU rendering, it will not be activated.") );
+#if NATRON_VERSION_MAJOR < 2 || (NATRON_VERSION_MAJOR == 2 && NATRON_VERSION_MINOR < 2)
+    _enableOpenGL->setDefaultValue((int)eEnableOpenGLDisabled);
+#else
+#  if NATRON_VERSION_MAJOR >= 3
+    _enableOpenGL->setDefaultValue((int)Settings::eEnableOpenGLEnabled);
+#  else
+    _enableOpenGL->setDefaultValue((int)eEnableOpenGLDisabledIfBackground);
+#  endif
+#endif
     _gpuPage->addKnob(_enableOpenGL);
+
 }
 
 void
-Settings::initializeKnobsProjectSetup()
+SettingsPrivate::initializeKnobsProjectSetup()
 {
-    _projectsPage = AppManager::createKnob<KnobPage>( this, tr("Project Setup") );
 
-    _firstReadSetProjectFormat = AppManager::createKnob<KnobBool>( this, tr("First image read set project format") );
-    _firstReadSetProjectFormat->setName("autoProjectFormat");
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
+    _projectsPage = _publicInterface->createKnob<KnobPage>("projectSetupPage");
+    _projectsPage->setLabel(tr("Project Setup"));
+
+    _firstReadSetProjectFormat = _publicInterface->createKnob<KnobBool>("autoProjectFormat");
+    _firstReadSetProjectFormat->setLabel(tr("First image read set project format"));
     _firstReadSetProjectFormat->setHintToolTip( tr("If checked, the project size is set to this of the first image or video read within the project.") );
+    _firstReadSetProjectFormat->setDefaultValue(true);
+
     _projectsPage->addKnob(_firstReadSetProjectFormat);
 
 
-    _autoPreviewEnabledForNewProjects = AppManager::createKnob<KnobBool>( this, tr("Auto-preview enabled by default for new projects") );
-    _autoPreviewEnabledForNewProjects->setName("enableAutoPreviewNewProjects");
+    _autoPreviewEnabledForNewProjects = _publicInterface->createKnob<KnobBool>("enableAutoPreviewNewProjects");
+    _autoPreviewEnabledForNewProjects->setLabel(tr("Auto-preview enabled by default for new projects"));
     _autoPreviewEnabledForNewProjects->setHintToolTip( tr("If checked, then when creating a new project, the Auto-preview option"
                                                           " is enabled.") );
+    _autoPreviewEnabledForNewProjects->setDefaultValue(true);
+
     _projectsPage->addKnob(_autoPreviewEnabledForNewProjects);
 
 
-    _fixPathsOnProjectPathChanged = AppManager::createKnob<KnobBool>( this, tr("Auto fix relative file-paths") );
+    _fixPathsOnProjectPathChanged = _publicInterface->createKnob<KnobBool>("autoFixRelativePaths");
     _fixPathsOnProjectPathChanged->setHintToolTip( tr("If checked, when a project-path changes (either the name or the value pointed to), %1 checks all file-path parameters in the project and tries to fix them.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _fixPathsOnProjectPathChanged->setName("autoFixRelativePaths");
+    _fixPathsOnProjectPathChanged->setLabel(tr("Auto fix relative file-paths"));
+    _fixPathsOnProjectPathChanged->setDefaultValue(true);
 
     _projectsPage->addKnob(_fixPathsOnProjectPathChanged);
 
-    _enableMappingFromDriveLettersToUNCShareNames = AppManager::createKnob<KnobBool>( this, tr("Use drive letters instead of server names (Windows only)") );
+    _enableMappingFromDriveLettersToUNCShareNames = _publicInterface->createKnob<KnobBool>("useDriverLetters");
     _enableMappingFromDriveLettersToUNCShareNames->setHintToolTip( tr("This is only relevant for Windows: If checked, %1 will not convert a path starting with a drive letter from the file dialog to a network share name. You may use this if for example you want to share a same project with several users across facilities with different servers but where users have all the same drive attached to a server.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _enableMappingFromDriveLettersToUNCShareNames->setName("useDriveLetters");
+    _enableMappingFromDriveLettersToUNCShareNames->setLabel(tr("Use drive letters instead of server names (Windows only)"));
 #ifndef __NATRON_WIN32__
-    _enableMappingFromDriveLettersToUNCShareNames->setAllDimensionsEnabled(false);
+    _enableMappingFromDriveLettersToUNCShareNames->setEnabled(false);
 #endif
     _projectsPage->addKnob(_enableMappingFromDriveLettersToUNCShareNames);
 }
 
 void
-Settings::initializeKnobsDocumentation()
+SettingsPrivate::initializeKnobsDocumentation()
 {
-    _documentationPage = AppManager::createKnob<KnobPage>( this, tr("Documentation") );
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
+    _documentationPage = _publicInterface->createKnob<KnobPage>("documentationPage");
+    _documentationPage->setLabel(tr("Documentation"));
 
 #ifdef NATRON_DOCUMENTATION_ONLINE
-    _documentationSource = AppManager::createKnob<KnobChoice>( this, tr("Documentation Source") );
-    _documentationSource->setName("documentationSource");
+    _documentationSource = _publicInterface->createKnob<KnobChoice>("documentationSource");
+    _documentationSource->setLabel( tr("Documentation Source"));
     _documentationSource->setHintToolTip( tr("Documentation source.") );
     _documentationSource->appendChoice(ChoiceOption("local",
                                                     tr("Local").toStdString(),
@@ -539,91 +1220,98 @@ Settings::initializeKnobsDocumentation()
     _documentationSource->appendChoice(ChoiceOption("none",
                                                     tr("None").toStdString(),
                                                     tr("Disable documentation").toStdString()));
+    _documentationSource->setDefaultValue(0);
     _documentationPage->addKnob(_documentationSource);
 #endif
 
     /// used to store temp port for local webserver
-    _wwwServerPort = AppManager::createKnob<KnobInt>( this, tr("Documentation local port (0=auto)") );
-    _wwwServerPort->setName("webserverPort");
+    _wwwServerPort = _publicInterface->createKnob<KnobInt>("webserverPort");
+    _wwwServerPort->setLabel(tr("Documentation local port (0=auto)"));
     _wwwServerPort->setHintToolTip( tr("The port onto which the documentation server will listen to. A value of 0 indicate that the documentation should automatically find a port by itself.") );
+    _wwwServerPort->setDefaultValue(0);
     _documentationPage->addKnob(_wwwServerPort);
 }
 
 void
-Settings::initializeKnobsUserInterface()
+SettingsPrivate::initializeKnobsUserInterface()
 {
-    _uiPage = AppManager::createKnob<KnobPage>( this, tr("User Interface") );
-    _uiPage->setName("userInterfacePage");
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
+    _uiPage = _publicInterface->createKnob<KnobPage>("uiPage");
+    _uiPage->setLabel(tr("User Interface"));
 
-    _notifyOnFileChange = AppManager::createKnob<KnobBool>( this, tr("Warn when a file changes externally") );
-    _notifyOnFileChange->setName("warnOnExternalChange");
+    _notifyOnFileChange = _publicInterface->createKnob<KnobBool>("warnOnExternalChange");
+    _notifyOnFileChange->setLabel(tr("Warn when a file changes externally"));
     _notifyOnFileChange->setHintToolTip( tr("When checked, if a file read from a file parameter changes externally, a warning will be displayed "
                                             "on the viewer. Turning this off will suspend the notification system.") );
+    _notifyOnFileChange->setDefaultValue(true);
     _uiPage->addKnob(_notifyOnFileChange);
 
-#ifdef NATRON_ENABLE_IO_META_NODES
-    _filedialogForWriters = AppManager::createKnob<KnobBool>( this, tr("Prompt with file dialog when creating Write node") );
-    _filedialogForWriters->setName("writeUseDialog");
+    _filedialogForWriters = _publicInterface->createKnob<KnobBool>("writeUseDialog");
+    _filedialogForWriters->setLabel(tr("Prompt with file dialog when creating Write node"));
     _filedialogForWriters->setDefaultValue(true);
     _filedialogForWriters->setHintToolTip( tr("When checked, opens-up a file dialog when creating a Write node") );
     _uiPage->addKnob(_filedialogForWriters);
-#endif
 
 
-    _renderOnEditingFinished = AppManager::createKnob<KnobBool>( this, tr("Refresh viewer only when editing is finished") );
-    _renderOnEditingFinished->setName("renderOnEditingFinished");
+    _renderOnEditingFinished = _publicInterface->createKnob<KnobBool>("renderOnEditingFinished");
+    _renderOnEditingFinished->setLabel(tr("Refresh viewer only when editing is finished"));
     _renderOnEditingFinished->setHintToolTip( tr("When checked, the viewer triggers a new render only when mouse is released when editing parameters, curves "
                                                  " or the timeline. This setting doesn't apply to roto splines editing.") );
     _uiPage->addKnob(_renderOnEditingFinished);
 
 
-    _linearPickers = AppManager::createKnob<KnobBool>( this, tr("Linear color pickers") );
-    _linearPickers->setName("linearPickers");
+    _linearPickers = _publicInterface->createKnob<KnobBool>("linearPickers");
+    _linearPickers->setLabel(tr("Linear color pickers"));
     _linearPickers->setHintToolTip( tr("When activated, all colors picked from the color parameters are linearized "
                                        "before being fetched. Otherwise they are in the same colorspace "
                                        "as the viewer they were picked from.") );
+    _linearPickers->setDefaultValue(true);
     _uiPage->addKnob(_linearPickers);
 
-    _maxPanelsOpened = AppManager::createKnob<KnobInt>( this, tr("Maximum number of open settings panels (0=\"unlimited\")") );
-    _maxPanelsOpened->setName("maxPanels");
+    _maxPanelsOpened = _publicInterface->createKnob<KnobInt>("maxPanels");
+    _maxPanelsOpened->setLabel(tr("Maximum number of open settings panels (0=\"unlimited\")"));
     _maxPanelsOpened->setHintToolTip( tr("This property holds the maximum number of settings panels that can be "
                                          "held by the properties dock at the same time."
                                          "The special value of 0 indicates there can be an unlimited number of panels opened.") );
     _maxPanelsOpened->disableSlider();
-    _maxPanelsOpened->setMinimum(1);
-    _maxPanelsOpened->setMaximum(100);
+    _maxPanelsOpened->setRange(1, 100);
+    _maxPanelsOpened->setDefaultValue(10);
     _uiPage->addKnob(_maxPanelsOpened);
 
-    _useCursorPositionIncrements = AppManager::createKnob<KnobBool>( this, tr("Value increments based on cursor position") );
-    _useCursorPositionIncrements->setName("cursorPositionAwareFields");
+    _useCursorPositionIncrements = _publicInterface->createKnob<KnobBool>("cursorPositionAwareFields");
+    _useCursorPositionIncrements->setLabel(tr("Value increments based on cursor position"));
     _useCursorPositionIncrements->setHintToolTip( tr("When enabled, incrementing the value fields of parameters with the "
                                                      "mouse wheel or with arrow keys will increment the digits on the right "
                                                      "of the cursor. \n"
                                                      "When disabled, the value fields are incremented given what the plug-in "
                                                      "decided it should be. You can alter this increment by holding "
                                                      "Shift (x10) or Control (/10) while incrementing.") );
+    _useCursorPositionIncrements->setDefaultValue(true);
     _uiPage->addKnob(_useCursorPositionIncrements);
 
-    _defaultLayoutFile = AppManager::createKnob<KnobFile>( this, tr("Default layout file") );
-    _defaultLayoutFile->setName("defaultLayout");
+    _defaultLayoutFile = _publicInterface->createKnob<KnobFile>("defaultLayout");
+    _defaultLayoutFile->setLabel(tr("Default layout file"));
     _defaultLayoutFile->setHintToolTip( tr("When set, %1 uses the given layout file "
                                            "as default layout for new projects. You can export/import a layout to/from a file "
                                            "from the Layout menu. If empty, the default application layout is used.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _uiPage->addKnob(_defaultLayoutFile);
 
-    _loadProjectsWorkspace = AppManager::createKnob<KnobBool>( this, tr("Load workspace embedded within projects") );
-    _loadProjectsWorkspace->setName("loadProjectWorkspace");
+    _loadProjectsWorkspace = _publicInterface->createKnob<KnobBool>("loadProjectWorkspace");
+    _loadProjectsWorkspace->setLabel(tr("Load workspace embedded within projects"));
     _loadProjectsWorkspace->setHintToolTip( tr("When checked, when loading a project, the workspace (windows layout) will also be loaded, otherwise it "
                                                "will use your current layout.") );
     _uiPage->addKnob(_loadProjectsWorkspace);
 } // Settings::initializeKnobsUserInterface
 
 void
-Settings::initializeKnobsColorManagement()
+SettingsPrivate::initializeKnobsColorManagement()
 {
-    _ocioTab = AppManager::createKnob<KnobPage>( this, tr("Color Management") );
-    _ocioConfigKnob = AppManager::createKnob<KnobChoice>( this, tr("OpenColorIO configuration") );
-    _ocioConfigKnob->setName("ocioConfig");
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
+    _ocioTab = _publicInterface->createKnob<KnobPage>("ocioPage");
+    _ocioTab->setLabel(tr("Color Management"));
+    _ocioConfigKnob = _publicInterface->createKnob<KnobChoice>("ocioConfig");
+    _knobsRequiringRestart.insert(_ocioConfigKnob);
+    _ocioConfigKnob->setLabel(tr("OpenColorIO configuration"));
 
     std::vector<ChoiceOption> configs;
     int defaultIndex = 0;
@@ -637,406 +1325,659 @@ Settings::initializeKnobsColorManagement()
                 if ( entries[j] == QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ) {
                     defaultIndex = j;
                 }
-                configs.push_back(ChoiceOption( entries[j].toStdString() ));
+                configs.push_back(ChoiceOption( entries[j].toStdString(), "",""));
+
             }
 
             break; //if we found 1 OpenColorIO-Configs directory, skip the next
         }
     }
-    configs.push_back(ChoiceOption(NATRON_CUSTOM_OCIO_CONFIG_NAME));
+    configs.push_back(ChoiceOption(NATRON_CUSTOM_OCIO_CONFIG_NAME, "", ""));
+
     _ocioConfigKnob->populateChoices(configs);
-    _ocioConfigKnob->setDefaultValue(defaultIndex, 0);
+    _ocioConfigKnob->setDefaultValue(defaultIndex);
     _ocioConfigKnob->setHintToolTip( tr("Select the OpenColorIO configuration you would like to use globally for all "
                                         "operators and plugins that use OpenColorIO, by setting the \"OCIO\" "
                                         "environment variable. Only nodes created after changing this parameter will take "
-                                        "it into account, and it is better to restart the application after changing it. "
+                                        "it into account. "
                                         "When \"%1\" is selected, the "
-                                        "\"Custom OpenColorIO config file\" parameter is used.").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) );
+                                        "\"Custom OpenColorIO config file\" parameter is used.").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) +
+                                     QLatin1Char('\n') +
+                                     tr("Changing this requires a restart of the application to take effect.")  );
 
     _ocioTab->addKnob(_ocioConfigKnob);
 
-    _customOcioConfigFile = AppManager::createKnob<KnobFile>( this, tr("Custom OpenColorIO configuration file") );
-    _customOcioConfigFile->setName("ocioCustomConfigFile");
+    _customOcioConfigFile = _publicInterface->createKnob<KnobFile>("ocioCustomConfigFile");
+
+    _customOcioConfigFile->setLabel( tr("Custom OpenColorIO configuration file"));
+    _knobsRequiringRestart.insert(_customOcioConfigFile);
 
     if (_ocioConfigKnob->getNumEntries() == 1) {
-        _customOcioConfigFile->setDefaultAllDimensionsEnabled(true);
+        _customOcioConfigFile->setEnabled(true);
     } else {
-        _customOcioConfigFile->setDefaultAllDimensionsEnabled(false);
+        _customOcioConfigFile->setEnabled(false);
     }
 
-    _customOcioConfigFile->setHintToolTip( tr("OpenColorIO configuration file (*.ocio) to use when \"%1\" "
-                                              "is selected as the OpenColorIO config.").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) );
+    _customOcioConfigFile->setHintToolTip( tr("OpenColorIO configuration file (config.ocio) to use when \"%1\" "
+                                              "is selected as the OpenColorIO config.").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) +
+                                           QLatin1Char('\n') +
+                                           tr("Changing this requires a restart of the application to take effect.") );
     _ocioTab->addKnob(_customOcioConfigFile);
 
-    _warnOcioConfigKnobChanged = AppManager::createKnob<KnobBool>( this, tr("Warn on OpenColorIO config change") );
-    _warnOcioConfigKnobChanged->setName("warnOCIOChanged");
-    _warnOcioConfigKnobChanged->setHintToolTip( tr("Show a warning dialog when changing the OpenColorIO config to remember that a restart is required.") );
-    _ocioTab->addKnob(_warnOcioConfigKnobChanged);
 
-    _ocioStartupCheck = AppManager::createKnob<KnobBool>( this, tr("Warn on startup if OpenColorIO config is not the default") );
-    _ocioStartupCheck->setName("startupCheckOCIO");
+    _ocioStartupCheck = _publicInterface->createKnob<KnobBool>("sartupCheckOCIO");
+    _ocioStartupCheck->setLabel(tr("Warn on startup if OpenColorIO config is not the default"));
+    _ocioStartupCheck->setDefaultValue(true);
+
     _ocioTab->addKnob(_ocioStartupCheck);
 } // Settings::initializeKnobsColorManagement
 
 void
-Settings::initializeKnobsAppearance()
+SettingsPrivate::initializeKnobsAppearance()
 {
-    //////////////APPEARANCE TAB/////////////////
-    _appearanceTab = AppManager::createKnob<KnobPage>( this, tr("Appearance") );
 
-    _defaultAppearanceVersion = AppManager::createKnob<KnobInt>( this, tr("Appearance version") );
-    _defaultAppearanceVersion->setName("appearanceVersion");
-    _defaultAppearanceVersion->setSecretByDefault(true);
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
+    _appearanceTab = _publicInterface->createKnob<KnobPage>("appearancePage");
+    _appearanceTab->setLabel(tr("Appearance"));
+
+    _defaultAppearanceVersion = _publicInterface->createKnob<KnobInt>("appearanceVersion");
+    _defaultAppearanceVersion->setLabel(tr("Appearance version"));
+    _defaultAppearanceVersion->setDefaultValue(NATRON_DEFAULT_APPEARANCE_VERSION);
+    _defaultAppearanceVersion->setSecret(true);
     _appearanceTab->addKnob(_defaultAppearanceVersion);
 
-    _systemFontChoice = AppManager::createKnob<KnobChoice>( this, tr("Font") );
-    _systemFontChoice->setHintToolTip( tr("List of all fonts available on your system") );
-    _systemFontChoice->setName("systemFont");
+    _systemFontChoice = _publicInterface->createKnob<KnobChoice>("systemFont");
+    _systemFontChoice->setHintToolTip( tr("List of all fonts available on the system.") +
+                                      QLatin1Char('\n') +
+                                      tr("Changing this requires a restart of the application to take effect.")  );
+    _systemFontChoice->setLabel(tr("Font"));
     _systemFontChoice->setAddNewLine(false);
+    _systemFontChoice->setDefaultValueFromID(NATRON_FONT);
+    _knobsRequiringRestart.insert(_systemFontChoice);
     _appearanceTab->addKnob(_systemFontChoice);
 
-    _fontSize = AppManager::createKnob<KnobInt>( this, tr("Font size") );
-    _fontSize->setName("fontSize");
+    _fontSize = _publicInterface->createKnob<KnobInt>("fontSize");
+    _fontSize->setLabel(tr("Font size"));
+    _fontSize->setHintToolTip( tr("The application font size") +
+                               QLatin1Char('\n') +
+                              tr("Changing this requires a restart of the application to take effect.") );
+    _fontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
+    _knobsRequiringRestart.insert(_fontSize);
     _appearanceTab->addKnob(_fontSize);
 
-    _qssFile = AppManager::createKnob<KnobFile>( this, tr("Stylesheet file (.qss)") );
-    _qssFile->setName("stylesheetFile");
+    _qssFile = _publicInterface->createKnob<KnobFile>("stylesheetFile");
+    _qssFile->setLabel(tr("Stylesheet file (.qss)"));
+    _knobsRequiringRestart.insert(_qssFile);
     _qssFile->setHintToolTip( tr("When pointing to a valid .qss file, the stylesheet of the application will be set according to this file instead of the default "
-                                 "stylesheet. You can adapt the default stylesheet that can be found in your distribution of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                                 "stylesheet. You can adapt the default stylesheet that can be found in your distribution of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) +
+                              QLatin1Char('\n') +
+                              tr("Changing this requires a restart of the application to take effect.") );
     _appearanceTab->addKnob(_qssFile);
 } // Settings::initializeKnobsAppearance
 
 void
-Settings::initializeKnobsGuiColors()
+SettingsPrivate::initializeKnobsGuiColors()
 {
-    _guiColorsTab = AppManager::createKnob<KnobPage>( this, tr("Main Window") );
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
+    _guiColorsTab =_publicInterface-> createKnob<KnobPage>("mainWindowAppearancePage");
+    _guiColorsTab->setLabel(tr("Main Window"));
     _appearanceTab->addKnob(_guiColorsTab);
 
-    _useBWIcons = AppManager::createKnob<KnobBool>( this, tr("Use black & white toolbutton icons") );
-    _useBWIcons->setName("useBwIcons");
+    _useBWIcons = _publicInterface->createKnob<KnobBool>("useBwIcons");
+    _useBWIcons->setLabel(tr("Use black & white toolbutton icons"));
     _useBWIcons->setHintToolTip( tr("When checked, the tools icons in the left toolbar are greyscale. Changing this takes "
                                     "effect upon the next launch of the application.") );
+    _useBWIcons->setDefaultValue(false);
     _guiColorsTab->addKnob(_useBWIcons);
 
 
-    _sunkenColor =  AppManager::createKnob<KnobColor>(this, tr("Sunken"), 3);
-    _sunkenColor->setName("sunken");
+    _sunkenColor =  _publicInterface->createKnob<KnobColor>("sunken", 3);
+    _sunkenColor->setLabel(tr("Sunken"));
     _sunkenColor->setSimplified(true);
+    _sunkenColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _sunkenColor->setDefaultValue(0.12, DimIdx(0));
+    _sunkenColor->setDefaultValue(0.12, DimIdx(1));
+    _sunkenColor->setDefaultValue(0.12, DimIdx(2));
+
     _guiColorsTab->addKnob(_sunkenColor);
 
-    _baseColor =  AppManager::createKnob<KnobColor>(this, tr("Base"), 3);
-    _baseColor->setName("base");
+    _baseColor =  _publicInterface->createKnob<KnobColor>("base", 3);
+    _baseColor->setLabel(tr("Base"));
     _baseColor->setSimplified(true);
+    _baseColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _baseColor->setDefaultValue(0.19, DimIdx(0));
+    _baseColor->setDefaultValue(0.19, DimIdx(1));
+    _baseColor->setDefaultValue(0.19, DimIdx(2));
+
     _guiColorsTab->addKnob(_baseColor);
 
-    _raisedColor =  AppManager::createKnob<KnobColor>(this, tr("Raised"), 3);
-    _raisedColor->setName("raised");
+    _raisedColor =  _publicInterface->createKnob<KnobColor>("raised", 3);
+    _raisedColor->setLabel(tr("Raised"));
     _raisedColor->setSimplified(true);
+    _raisedColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _raisedColor->setDefaultValue(0.28, DimIdx(0));
+    _raisedColor->setDefaultValue(0.28, DimIdx(1));
+    _raisedColor->setDefaultValue(0.28, DimIdx(2));
+
     _guiColorsTab->addKnob(_raisedColor);
 
-    _selectionColor =  AppManager::createKnob<KnobColor>(this, tr("Selection"), 3);
-    _selectionColor->setName("selection");
+    _selectionColor =  _publicInterface->createKnob<KnobColor>("selection", 3);
+    _selectionColor->setLabel(tr("Selection"));
     _selectionColor->setSimplified(true);
+    _selectionColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _selectionColor->setDefaultValue(0.95, DimIdx(0));
+    _selectionColor->setDefaultValue(0.54, DimIdx(1));
+    _selectionColor->setDefaultValue(0., DimIdx(2));
+
     _guiColorsTab->addKnob(_selectionColor);
 
-    _textColor =  AppManager::createKnob<KnobColor>(this, tr("Text"), 3);
-    _textColor->setName("text");
+    _textColor =  _publicInterface->createKnob<KnobColor>("text", 3);
+    _textColor->setLabel(tr("Text"));
     _textColor->setSimplified(true);
+    _textColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _textColor->setDefaultValue(0.78, DimIdx(0));
+    _textColor->setDefaultValue(0.78, DimIdx(1));
+    _textColor->setDefaultValue(0.78, DimIdx(2));
+
     _guiColorsTab->addKnob(_textColor);
 
-    _altTextColor =  AppManager::createKnob<KnobColor>(this, tr("Unmodified text"), 3);
-    _altTextColor->setName("unmodifiedText");
+    _altTextColor =  _publicInterface->createKnob<KnobColor>("unmodifiedText", 3);
+    _altTextColor->setLabel(tr("Unmodified text"));
     _altTextColor->setSimplified(true);
+    _altTextColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _altTextColor->setDefaultValue(0.6, DimIdx(0));
+    _altTextColor->setDefaultValue(0.6, DimIdx(1));
+    _altTextColor->setDefaultValue(0.6, DimIdx(2));
+
     _guiColorsTab->addKnob(_altTextColor);
 
-    _timelinePlayheadColor =  AppManager::createKnob<KnobColor>(this, tr("Timeline playhead"), 3);
-    _timelinePlayheadColor->setName("timelinePlayhead");
+    _timelinePlayheadColor =  _publicInterface->createKnob<KnobColor>("timelinePlayhead", 3);
+    _timelinePlayheadColor->setLabel(tr("Timeline playhead"));
     _timelinePlayheadColor->setSimplified(true);
+    _timelinePlayheadColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _timelinePlayheadColor->setDefaultValue(0.95, DimIdx(0));
+    _timelinePlayheadColor->setDefaultValue(0.54, DimIdx(1));
+    _timelinePlayheadColor->setDefaultValue(0., DimIdx(2));
+
     _guiColorsTab->addKnob(_timelinePlayheadColor);
 
 
-    _timelineBGColor =  AppManager::createKnob<KnobColor>(this, tr("Timeline background"), 3);
-    _timelineBGColor->setName("timelineBG");
+    _timelineBGColor =  _publicInterface->createKnob<KnobColor>("timelineBG", 3);
+    _timelineBGColor->setLabel(tr("Timeline background"));
     _timelineBGColor->setSimplified(true);
+    _timelineBGColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _timelineBGColor->setDefaultValue(0, DimIdx(0));
+    _timelineBGColor->setDefaultValue(0, DimIdx(1));
+    _timelineBGColor->setDefaultValue(0., DimIdx(2));
+
     _guiColorsTab->addKnob(_timelineBGColor);
 
-    _timelineBoundsColor =  AppManager::createKnob<KnobColor>(this, tr("Timeline bounds"), 3);
-    _timelineBoundsColor->setName("timelineBound");
+    _timelineBoundsColor =  _publicInterface->createKnob<KnobColor>("timelineBound", 3);
+    _timelineBoundsColor->setLabel(tr("Timeline bounds"));
     _timelineBoundsColor->setSimplified(true);
+    _timelineBoundsColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _timelineBoundsColor->setDefaultValue(0.81, DimIdx(0));
+    _timelineBoundsColor->setDefaultValue(0.27, DimIdx(1));
+    _timelineBoundsColor->setDefaultValue(0.02, DimIdx(2));
+
     _guiColorsTab->addKnob(_timelineBoundsColor);
 
-    _cachedFrameColor =  AppManager::createKnob<KnobColor>(this, tr("Cached frame"), 3);
-    _cachedFrameColor->setName("cachedFrame");
+    _cachedFrameColor =  _publicInterface->createKnob<KnobColor>("cachedFrame", 3);
+    _cachedFrameColor->setLabel(tr("Cached frame"));
     _cachedFrameColor->setSimplified(true);
+    _cachedFrameColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _cachedFrameColor->setDefaultValue(0.56, DimIdx(0));
+    _cachedFrameColor->setDefaultValue(0.79, DimIdx(1));
+    _cachedFrameColor->setDefaultValue(0.4, DimIdx(2));
+
     _guiColorsTab->addKnob(_cachedFrameColor);
 
-    _diskCachedFrameColor =  AppManager::createKnob<KnobColor>(this, tr("Disk cached frame"), 3);
-    _diskCachedFrameColor->setName("diskCachedFrame");
-    _diskCachedFrameColor->setSimplified(true);
-    _guiColorsTab->addKnob(_diskCachedFrameColor);
 
-    _interpolatedColor =  AppManager::createKnob<KnobColor>(this, tr("Interpolated value"), 3);
-    _interpolatedColor->setName("interpValue");
+    _interpolatedColor =  _publicInterface->createKnob<KnobColor>("interpValue", 3);
+    _interpolatedColor->setLabel(tr("Interpolated value"));
     _interpolatedColor->setSimplified(true);
+    _interpolatedColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _interpolatedColor->setDefaultValue(0.34, DimIdx(0));
+    _interpolatedColor->setDefaultValue(0.46, DimIdx(1));
+    _interpolatedColor->setDefaultValue(0.6, DimIdx(2));
+
     _guiColorsTab->addKnob(_interpolatedColor);
 
-    _keyframeColor =  AppManager::createKnob<KnobColor>(this, tr("Keyframe"), 3);
-    _keyframeColor->setName("keyframe");
+    _keyframeColor =  _publicInterface->createKnob<KnobColor>("keyframe", 3);
+    _keyframeColor->setLabel(tr("Keyframe"));
     _keyframeColor->setSimplified(true);
+    _keyframeColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _keyframeColor->setDefaultValue(0.08, DimIdx(0));
+    _keyframeColor->setDefaultValue(0.38, DimIdx(1));
+    _keyframeColor->setDefaultValue(0.97, DimIdx(2));
+
     _guiColorsTab->addKnob(_keyframeColor);
 
-    _trackerKeyframeColor =  AppManager::createKnob<KnobColor>(this, tr("Track User Keyframes"), 3);
-    _trackerKeyframeColor->setName("trackUserKeyframe");
+    _trackerKeyframeColor =  _publicInterface->createKnob<KnobColor>("trackUserKeyframe", 3);
+    _trackerKeyframeColor->setLabel(tr("Track User Keyframes"));
     _trackerKeyframeColor->setSimplified(true);
+    _trackerKeyframeColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _trackerKeyframeColor->setDefaultValue(0.7, DimIdx(0));
+    _trackerKeyframeColor->setDefaultValue(0.78, DimIdx(1));
+    _trackerKeyframeColor->setDefaultValue(0.39, DimIdx(2));
+
     _guiColorsTab->addKnob(_trackerKeyframeColor);
 
-    _exprColor =  AppManager::createKnob<KnobColor>(this, tr("Expression"), 3);
-    _exprColor->setName("exprColor");
+    _exprColor =  _publicInterface->createKnob<KnobColor>("exprCoor", 3);
+    _exprColor->setLabel(tr("Expression"));
     _exprColor->setSimplified(true);
+    _exprColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _exprColor->setDefaultValue(0.7, DimIdx(0));
+    _exprColor->setDefaultValue(0.78, DimIdx(1));
+    _exprColor->setDefaultValue(0.39, DimIdx(2));
+
     _guiColorsTab->addKnob(_exprColor);
 
-    _sliderColor =  AppManager::createKnob<KnobColor>(this, tr("Slider"), 3);
-    _sliderColor->setName("slider");
+    _sliderColor =  _publicInterface->createKnob<KnobColor>("slider", 3);
+    _sliderColor->setLabel(tr("Slider"));
     _sliderColor->setSimplified(true);
+    _sliderColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _sliderColor->setDefaultValue(0.33, DimIdx(0));
+    _sliderColor->setDefaultValue(0.45, DimIdx(1));
+    _sliderColor->setDefaultValue(0.44, DimIdx(2));
+
     _guiColorsTab->addKnob(_sliderColor);
+
 } // Settings::initializeKnobsGuiColors
 
-void
-Settings::initializeKnobsCurveEditorColors()
-{
-    _curveEditorColorsTab = AppManager::createKnob<KnobPage>( this, tr("Curve Editor") );
-    _appearanceTab->addKnob(_curveEditorColorsTab);
-
-    _curveEditorBGColor =  AppManager::createKnob<KnobColor>(this, tr("Background color"), 3);
-    _curveEditorBGColor->setName("curveEditorBG");
-    _curveEditorBGColor->setSimplified(true);
-    _curveEditorColorsTab->addKnob(_curveEditorBGColor);
-
-    _gridColor =  AppManager::createKnob<KnobColor>(this, tr("Grid color"), 3);
-    _gridColor->setName("curveditorGrid");
-    _gridColor->setSimplified(true);
-    _curveEditorColorsTab->addKnob(_gridColor);
-
-    _curveEditorScaleColor =  AppManager::createKnob<KnobColor>(this, tr("Scale color"), 3);
-    _curveEditorScaleColor->setName("curveeditorScale");
-    _curveEditorScaleColor->setSimplified(true);
-    _curveEditorColorsTab->addKnob(_curveEditorScaleColor);
-}
 
 void
-Settings::initializeKnobsDopeSheetColors()
+SettingsPrivate::initializeKnobsDopeSheetColors()
 {
-    _dopeSheetEditorColorsTab = AppManager::createKnob<KnobPage>( this, tr("Dope Sheet") );
-    _appearanceTab->addKnob(_dopeSheetEditorColorsTab);
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
+    _animationColorsTab = _publicInterface->createKnob<KnobPage>("animationModuleColorPage");
+    _animationColorsTab->setLabel(tr("Animation Module"));
+    _appearanceTab->addKnob(_animationColorsTab);
 
-    _dopeSheetEditorBackgroundColor = AppManager::createKnob<KnobColor>(this, tr("Sheet background color"), 3);
-    _dopeSheetEditorBackgroundColor->setName("dopesheetBackground");
-    _dopeSheetEditorBackgroundColor->setSimplified(true);
-    _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorBackgroundColor);
+    _animationViewBackgroundColor = _publicInterface->createKnob<KnobColor>("animationViewBGColor", 3);
+    _animationViewBackgroundColor->setLabel(tr("Background Color"));
+    _animationViewBackgroundColor->setSimplified(true);
+    _animationViewBackgroundColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(0));
+    _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(1));
+    _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(2));
 
-    _dopeSheetEditorRootSectionBackgroundColor = AppManager::createKnob<KnobColor>(this, tr("Root section background color"), 4);
-    _dopeSheetEditorRootSectionBackgroundColor->setName("dopesheetRootSectionBackground");
-    _dopeSheetEditorRootSectionBackgroundColor->setSimplified(true);
-    _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorRootSectionBackgroundColor);
+    _animationColorsTab->addKnob(_animationViewBackgroundColor);
 
-    _dopeSheetEditorKnobSectionBackgroundColor = AppManager::createKnob<KnobColor>(this, tr("Knob section background color"), 4);
-    _dopeSheetEditorKnobSectionBackgroundColor->setName("dopesheetKnobSectionBackground");
-    _dopeSheetEditorKnobSectionBackgroundColor->setSimplified(true);
-    _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorKnobSectionBackgroundColor);
+    _dopesheetRootSectionBackgroundColor = _publicInterface->createKnob<KnobColor>("dopesheetRootSectionBackground", 4);
+    _dopesheetRootSectionBackgroundColor->setLabel(tr("Root section background color"));
+    _dopesheetRootSectionBackgroundColor->setSimplified(true);
+    _dopesheetRootSectionBackgroundColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(0));
+    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(1));
+    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(2));
+    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.2, DimIdx(3));
 
-    _dopeSheetEditorScaleColor = AppManager::createKnob<KnobColor>(this, tr("Sheet scale color"), 3);
-    _dopeSheetEditorScaleColor->setName("dopesheetScale");
-    _dopeSheetEditorScaleColor->setSimplified(true);
-    _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorScaleColor);
+    _animationColorsTab->addKnob(_dopesheetRootSectionBackgroundColor);
 
-    _dopeSheetEditorGridColor = AppManager::createKnob<KnobColor>(this, tr("Sheet grid color"), 3);
-    _dopeSheetEditorGridColor->setName("dopesheetGrid");
-    _dopeSheetEditorGridColor->setSimplified(true);
-    _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorGridColor);
-}
+    _dopesheetKnobSectionBackgroundColor = _publicInterface->createKnob<KnobColor>("dopesheetParamSectionBackground", 4);
+    _dopesheetKnobSectionBackgroundColor->setLabel(tr("Parameter background color"));
+    _dopesheetKnobSectionBackgroundColor->setSimplified(true);
+    _dopesheetKnobSectionBackgroundColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(0));
+    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(1));
+    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(2));
+    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.2, DimIdx(2));
+
+    _animationColorsTab->addKnob(_dopesheetKnobSectionBackgroundColor);
+
+    _animationViewScaleColor = _publicInterface->createKnob<KnobColor>("animationViewScaleColor", 3);
+    _animationViewScaleColor->setLabel(tr("Scale Text Color"));
+    _animationViewScaleColor->setSimplified(true);
+    _animationViewScaleColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _animationViewScaleColor->setDefaultValue(0.714, DimIdx(0));
+    _animationViewScaleColor->setDefaultValue(0.718, DimIdx(1));
+    _animationViewScaleColor->setDefaultValue(0.714, DimIdx(2));
+
+    _animationColorsTab->addKnob(_animationViewScaleColor);
+
+    _animationViewGridColor = _publicInterface->createKnob<KnobColor>("animationViewGridColor", 3);
+    _animationViewGridColor->setLabel(tr("Grid Color"));
+    _animationViewGridColor->setSimplified(true);
+    _animationViewGridColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _animationViewGridColor->setDefaultValue(0.35, DimIdx(0));
+    _animationViewGridColor->setDefaultValue(0.35, DimIdx(1));
+    _animationViewGridColor->setDefaultValue(0.35, DimIdx(2));
+    _animationColorsTab->addKnob(_animationViewGridColor);
+
+} // initializeKnobsDopeSheetColors
 
 void
-Settings::initializeKnobsNodeGraphColors()
+SettingsPrivate::initializeKnobsNodeGraphColors()
 {
-    _nodegraphColorsTab = AppManager::createKnob<KnobPage>( this, tr("Node Graph") );
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
+    _nodegraphColorsTab = _publicInterface->createKnob<KnobPage>("nodeGraphColorsPage");
+    _nodegraphColorsTab->setLabel(tr("Node Graph"));
     _appearanceTab->addKnob(_nodegraphColorsTab);
 
-    _usePluginIconsInNodeGraph = AppManager::createKnob<KnobBool>( this, tr("Display plug-in icon on node-graph") );
-    _usePluginIconsInNodeGraph->setName("usePluginIcons");
+    _usePluginIconsInNodeGraph = _publicInterface->createKnob<KnobBool>("usePluginIcons");
+    _usePluginIconsInNodeGraph->setLabel(tr("Display plug-in icon on node-graph"));
     _usePluginIconsInNodeGraph->setHintToolTip( tr("When checked, each node that has a plug-in icon will display it in the node-graph."
                                                    "Changing this option will not affect already existing nodes, unless a restart of Natron is made.") );
     _usePluginIconsInNodeGraph->setAddNewLine(false);
+    _usePluginIconsInNodeGraph->setDefaultValue(true);
+
     _nodegraphColorsTab->addKnob(_usePluginIconsInNodeGraph);
 
-    _useAntiAliasing = AppManager::createKnob<KnobBool>( this, tr("Anti-Aliasing") );
-    _useAntiAliasing->setName("antiAliasing");
+    _useAntiAliasing = _publicInterface->createKnob<KnobBool>("antiAliasing");
+    _useAntiAliasing->setLabel(tr("Anti-Aliasing"));
     _useAntiAliasing->setHintToolTip( tr("When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performances."
                                          " Changing this requires a restart of Natron") );
+    _useAntiAliasing->setDefaultValue(true);
+
     _nodegraphColorsTab->addKnob(_useAntiAliasing);
 
 
-    _defaultNodeColor = AppManager::createKnob<KnobColor>(this, tr("Default node color"), 3);
-    _defaultNodeColor->setName("defaultNodeColor");
+    _defaultNodeColor = _publicInterface->createKnob<KnobColor>("defaultNodeColor", 3);
+    _defaultNodeColor->setLabel(tr("Default node color"));
     _defaultNodeColor->setSimplified(true);
+    _defaultNodeColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultNodeColor->setHintToolTip( tr("The default color used for newly created nodes.") );
+    _defaultNodeColor->setDefaultValue(0.7, DimIdx(0));
+    _defaultNodeColor->setDefaultValue(0.7, DimIdx(1));
+    _defaultNodeColor->setDefaultValue(0.7, DimIdx(2));
 
     _nodegraphColorsTab->addKnob(_defaultNodeColor);
 
 
-    _defaultBackdropColor =  AppManager::createKnob<KnobColor>(this, tr("Default backdrop color"), 3);
-    _defaultBackdropColor->setName("backdropColor");
+    _cloneColor = _publicInterface->createKnob<KnobColor>("cloneColor", 3);
+    _cloneColor->setLabel(tr("Clone Color"));
+    _cloneColor->setSimplified(true);
+    _cloneColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _cloneColor->setHintToolTip( tr("The default color used for clone nodes.") );
+    _cloneColor->setDefaultValue(0.78, DimIdx(0));
+    _cloneColor->setDefaultValue(0.27, DimIdx(1));
+    _cloneColor->setDefaultValue(0.39, DimIdx(2));
+
+    _nodegraphColorsTab->addKnob(_cloneColor);
+
+
+
+    _defaultBackdropColor =  _publicInterface->createKnob<KnobColor>("backdropColor", 3);
+    _defaultBackdropColor->setLabel(tr("Default backdrop color"));
     _defaultBackdropColor->setSimplified(true);
+    _defaultBackdropColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultBackdropColor->setHintToolTip( tr("The default color used for newly created backdrop nodes.") );
+    _defaultBackdropColor->setDefaultValue(0.45, DimIdx(0));
+    _defaultBackdropColor->setDefaultValue(0.45, DimIdx(1));
+    _defaultBackdropColor->setDefaultValue(0.45, DimIdx(2));
+
     _nodegraphColorsTab->addKnob(_defaultBackdropColor);
 
-    _defaultReaderColor =  AppManager::createKnob<KnobColor>(this, tr(PLUGIN_GROUP_IMAGE_READERS), 3);
-    _defaultReaderColor->setName("readerColor");
+    _defaultReaderColor =  _publicInterface->createKnob<KnobColor>("readerColor", 3);
+    _defaultReaderColor->setLabel(tr(PLUGIN_GROUP_IMAGE_READERS));
     _defaultReaderColor->setSimplified(true);
+    _defaultReaderColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultReaderColor->setHintToolTip( tr("The color used for newly created Reader nodes.") );
+    _defaultReaderColor->setDefaultValue(0.7, DimIdx(0));
+    _defaultReaderColor->setDefaultValue(0.7, DimIdx(1));
+    _defaultReaderColor->setDefaultValue(0.7, DimIdx(2));
+
     _nodegraphColorsTab->addKnob(_defaultReaderColor);
 
-    _defaultWriterColor =  AppManager::createKnob<KnobColor>(this, tr(PLUGIN_GROUP_IMAGE_WRITERS), 3);
-    _defaultWriterColor->setName("writerColor");
+    _defaultWriterColor =  _publicInterface->createKnob<KnobColor>("writerColor", 3);
+    _defaultWriterColor->setLabel(tr(PLUGIN_GROUP_IMAGE_WRITERS));
     _defaultWriterColor->setSimplified(true);
+    _defaultWriterColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultWriterColor->setHintToolTip( tr("The color used for newly created Writer nodes.") );
+    _defaultWriterColor->setDefaultValue(0.75, DimIdx(0));
+    _defaultWriterColor->setDefaultValue(0.75, DimIdx(1));
+    _defaultWriterColor->setDefaultValue(0., DimIdx(2));
+
     _nodegraphColorsTab->addKnob(_defaultWriterColor);
 
-    _defaultGeneratorColor =  AppManager::createKnob<KnobColor>(this, tr("Generators"), 3);
-    _defaultGeneratorColor->setName("generatorColor");
+    _defaultGeneratorColor =  _publicInterface->createKnob<KnobColor>("generatorColor", 3);
+    _defaultGeneratorColor->setLabel(tr("Generators"));
     _defaultGeneratorColor->setSimplified(true);
+    _defaultGeneratorColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultGeneratorColor->setHintToolTip( tr("The color used for newly created Generator nodes.") );
+    _defaultGeneratorColor->setDefaultValue(0.3, DimIdx(0));
+    _defaultGeneratorColor->setDefaultValue(0.5, DimIdx(1));
+    _defaultGeneratorColor->setDefaultValue(0.2, DimIdx(2));
+
     _nodegraphColorsTab->addKnob(_defaultGeneratorColor);
 
-    _defaultColorGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Color group"), 3);
-    _defaultColorGroupColor->setName("colorNodesColor");
+    _defaultColorGroupColor =  _publicInterface->createKnob<KnobColor>("colorNodesColor", 3);
+    _defaultColorGroupColor->setLabel(tr("Color group"));
     _defaultColorGroupColor->setSimplified(true);
+    _defaultColorGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultColorGroupColor->setHintToolTip( tr("The color used for newly created Color nodes.") );
+    _defaultColorGroupColor->setDefaultValue(0.48, DimIdx(0));
+    _defaultColorGroupColor->setDefaultValue(0.66, DimIdx(1));
+    _defaultColorGroupColor->setDefaultValue(1., DimIdx(2));
+
     _nodegraphColorsTab->addKnob(_defaultColorGroupColor);
 
-    _defaultFilterGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Filter group"), 3);
-    _defaultFilterGroupColor->setName("filterNodesColor");
+    _defaultFilterGroupColor =  _publicInterface->createKnob<KnobColor>("filterNodesColor", 3);
+    _defaultFilterGroupColor->setLabel(tr("Filter group"));
     _defaultFilterGroupColor->setSimplified(true);
+    _defaultFilterGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultFilterGroupColor->setHintToolTip( tr("The color used for newly created Filter nodes.") );
+    _defaultFilterGroupColor->setDefaultValue(0.8, DimIdx(0));
+    _defaultFilterGroupColor->setDefaultValue(0.5, DimIdx(1));
+    _defaultFilterGroupColor->setDefaultValue(0.3, DimIdx(2));
+
     _nodegraphColorsTab->addKnob(_defaultFilterGroupColor);
 
-    _defaultTransformGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Transform group"), 3);
-    _defaultTransformGroupColor->setName("transformNodesColor");
+    _defaultTransformGroupColor =  _publicInterface->createKnob<KnobColor>("transformNodesColor", 3);
+    _defaultTransformGroupColor->setLabel(tr("Transform group"));
     _defaultTransformGroupColor->setSimplified(true);
+    _defaultTransformGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultTransformGroupColor->setHintToolTip( tr("The color used for newly created Transform nodes.") );
+    _defaultTransformGroupColor->setDefaultValue(0.7, DimIdx(0));
+    _defaultTransformGroupColor->setDefaultValue(0.3, DimIdx(1));
+    _defaultTransformGroupColor->setDefaultValue(0.1, DimIdx(2));
+
     _nodegraphColorsTab->addKnob(_defaultTransformGroupColor);
 
-    _defaultTimeGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Time group"), 3);
-    _defaultTimeGroupColor->setName("timeNodesColor");
+    _defaultTimeGroupColor =  _publicInterface->createKnob<KnobColor>("timeNodesColor", 3);
+    _defaultTimeGroupColor->setLabel(tr("Time group"));
     _defaultTimeGroupColor->setSimplified(true);
+    _defaultTimeGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultTimeGroupColor->setHintToolTip( tr("The color used for newly created Time nodes.") );
+    _defaultTimeGroupColor->setDefaultValue(0.7, DimIdx(0));
+    _defaultTimeGroupColor->setDefaultValue(0.65, DimIdx(1));
+    _defaultTimeGroupColor->setDefaultValue(0.35, DimIdx(2));
+
     _nodegraphColorsTab->addKnob(_defaultTimeGroupColor);
 
-    _defaultDrawGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Draw group"), 3);
-    _defaultDrawGroupColor->setName("drawNodesColor");
+    _defaultDrawGroupColor =  _publicInterface->createKnob<KnobColor>("drawNodesColor", 3);
+    _defaultDrawGroupColor->setLabel(tr("Draw group"));
     _defaultDrawGroupColor->setSimplified(true);
+    _defaultDrawGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultDrawGroupColor->setHintToolTip( tr("The color used for newly created Draw nodes.") );
+    _defaultDrawGroupColor->setDefaultValue(0.75, DimIdx(0));
+    _defaultDrawGroupColor->setDefaultValue(0.75, DimIdx(1));
+    _defaultDrawGroupColor->setDefaultValue(0.75, DimIdx(2));
+
     _nodegraphColorsTab->addKnob(_defaultDrawGroupColor);
 
-    _defaultKeyerGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Keyer group"), 3);
-    _defaultKeyerGroupColor->setName("keyerNodesColor");
+    _defaultKeyerGroupColor =  _publicInterface->createKnob<KnobColor>("keyerNodesColor", 3);
+    _defaultKeyerGroupColor->setLabel( tr("Keyer group"));
     _defaultKeyerGroupColor->setSimplified(true);
+    _defaultKeyerGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultKeyerGroupColor->setHintToolTip( tr("The color used for newly created Keyer nodes.") );
+    _defaultKeyerGroupColor->setDefaultValue(0., DimIdx(0));
+    _defaultKeyerGroupColor->setDefaultValue(1, DimIdx(1));
+    _defaultKeyerGroupColor->setDefaultValue(0., DimIdx(2));
+
     _nodegraphColorsTab->addKnob(_defaultKeyerGroupColor);
 
-    _defaultChannelGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Channel group"), 3);
-    _defaultChannelGroupColor->setName("channelNodesColor");
+    _defaultChannelGroupColor =  _publicInterface->createKnob<KnobColor>("channelNodesColor", 3);
+    _defaultChannelGroupColor->setLabel(tr("Channel group"));
     _defaultChannelGroupColor->setSimplified(true);
+    _defaultChannelGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultChannelGroupColor->setHintToolTip( tr("The color used for newly created Channel nodes.") );
+    _defaultChannelGroupColor->setDefaultValue(0.6, DimIdx(0));
+    _defaultChannelGroupColor->setDefaultValue(0.24, DimIdx(1));
+    _defaultChannelGroupColor->setDefaultValue(0.39, DimIdx(2));
+
     _nodegraphColorsTab->addKnob(_defaultChannelGroupColor);
 
-    _defaultMergeGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Merge group"), 3);
-    _defaultMergeGroupColor->setName("defaultMergeColor");
+    _defaultMergeGroupColor =  _publicInterface->createKnob<KnobColor>("defaultMergeColor", 3);
+    _defaultMergeGroupColor->setLabel(tr("Merge group"));
     _defaultMergeGroupColor->setSimplified(true);
+    _defaultMergeGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultMergeGroupColor->setHintToolTip( tr("The color used for newly created Merge nodes.") );
+    _defaultMergeGroupColor->setDefaultValue(0.3, DimIdx(0));
+    _defaultMergeGroupColor->setDefaultValue(0.37, DimIdx(1));
+    _defaultMergeGroupColor->setDefaultValue(0.776, DimIdx(2));
+
     _nodegraphColorsTab->addKnob(_defaultMergeGroupColor);
 
-    _defaultViewsGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Views group"), 3);
-    _defaultViewsGroupColor->setName("defaultViewsColor");
+    _defaultViewsGroupColor =  _publicInterface->createKnob<KnobColor>("defaultViewsColor", 3);
+    _defaultViewsGroupColor->setLabel(tr("Views group"));
     _defaultViewsGroupColor->setSimplified(true);
+    _defaultViewsGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultViewsGroupColor->setHintToolTip( tr("The color used for newly created Views nodes.") );
+    _defaultViewsGroupColor->setDefaultValue(0.5, DimIdx(0));
+    _defaultViewsGroupColor->setDefaultValue(0.9, DimIdx(1));
+    _defaultViewsGroupColor->setDefaultValue(0.7, DimIdx(2));
+
     _nodegraphColorsTab->addKnob(_defaultViewsGroupColor);
 
-    _defaultDeepGroupColor =  AppManager::createKnob<KnobColor>(this, tr("Deep group"), 3);
-    _defaultDeepGroupColor->setName("defaultDeepColor");
+    _defaultDeepGroupColor =  _publicInterface->createKnob<KnobColor>("defaultDeepColor", 3);
+    _defaultDeepGroupColor->setLabel(tr("Deep group"));
     _defaultDeepGroupColor->setSimplified(true);
+    _defaultDeepGroupColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
     _defaultDeepGroupColor->setHintToolTip( tr("The color used for newly created Deep nodes.") );
+    _defaultDeepGroupColor->setDefaultValue(0., DimIdx(0));
+    _defaultDeepGroupColor->setDefaultValue(0., DimIdx(1));
+    _defaultDeepGroupColor->setDefaultValue(0.38, DimIdx(2));
+
     _nodegraphColorsTab->addKnob(_defaultDeepGroupColor);
+
 } // Settings::initializeKnobsNodeGraphColors
 
 void
-Settings::initializeKnobsScriptEditorColors()
+SettingsPrivate::initializeKnobsScriptEditorColors()
 {
-    _scriptEditorColorsTab = AppManager::createKnob<KnobPage>( this, tr("Script Editor") );
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
+    _scriptEditorColorsTab = _publicInterface->createKnob<KnobPage>("scriptEditorAppearancePage");
+    _scriptEditorColorsTab->setLabel(tr("Script Editor"));
     _scriptEditorColorsTab->setParentKnob(_appearanceTab);
 
-    _scriptEditorFontChoice = AppManager::createKnob<KnobChoice>( this, tr("Font") );
-    _scriptEditorFontChoice->setHintToolTip( tr("List of all fonts available on your system") );
-    _scriptEditorFontChoice->setName("scriptEditorFont");
+    _scriptEditorFontChoice = _publicInterface->createKnob<KnobChoice>("scriptEditorFont");
+    _scriptEditorFontChoice->setHintToolTip( tr("List of all fonts available on the system") );
+    _scriptEditorFontChoice->setDefaultValueFromID(NATRON_SCRIPT_FONT);
+    _scriptEditorFontChoice->setLabel(tr("Font"));
+
     _scriptEditorColorsTab->addKnob(_scriptEditorFontChoice);
 
-    _scriptEditorFontSize = AppManager::createKnob<KnobInt>( this, tr("Font Size") );
+    _scriptEditorFontSize = _publicInterface->createKnob<KnobInt>("scriptEditorFontSize");
     _scriptEditorFontSize->setHintToolTip( tr("The font size") );
-    _scriptEditorFontSize->setName("scriptEditorFontSize");
+    _scriptEditorFontSize->setLabel(tr("Font Size"));
+    _scriptEditorFontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
+
     _scriptEditorColorsTab->addKnob(_scriptEditorFontSize);
 
-    _curLineColor = AppManager::createKnob<KnobColor>(this, tr("Current Line Color"), 3);
-    _curLineColor->setName("currentLineColor");
+    _curLineColor = _publicInterface->createKnob<KnobColor>("currentLineColor", 3);
+    _curLineColor->setLabel(tr("Current Line Color"));
     _curLineColor->setSimplified(true);
+    _curLineColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _curLineColor->setDefaultValue(0.35, DimIdx(0));
+    _curLineColor->setDefaultValue(0.35, DimIdx(1));
+    _curLineColor->setDefaultValue(0.35, DimIdx(2));
+
     _scriptEditorColorsTab->addKnob(_curLineColor);
 
-    _keywordColor = AppManager::createKnob<KnobColor>(this, tr("Keyword Color"), 3);
-    _keywordColor->setName("keywordColor");
+    _keywordColor = _publicInterface->createKnob<KnobColor>("keywordColor", 3);
+    _keywordColor->setLabel(tr("Keyword Color"));
     _keywordColor->setSimplified(true);
+    _keywordColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _keywordColor->setDefaultValue(0.7, DimIdx(0));
+    _keywordColor->setDefaultValue(0.7, DimIdx(1));
+    _keywordColor->setDefaultValue(0., DimIdx(2));
+
     _scriptEditorColorsTab->addKnob(_keywordColor);
 
-    _operatorColor = AppManager::createKnob<KnobColor>(this, tr("Operator Color"), 3);
-    _operatorColor->setName("operatorColor");
+    _operatorColor = _publicInterface->createKnob<KnobColor>("operatorColor", 3);
+    _operatorColor->setLabel(tr("Operator Color"));
     _operatorColor->setSimplified(true);
+    _operatorColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _operatorColor->setDefaultValue(0.78, DimIdx(0));
+    _operatorColor->setDefaultValue(0.78, DimIdx(1));
+    _operatorColor->setDefaultValue(0.78, DimIdx(2));
+
     _scriptEditorColorsTab->addKnob(_operatorColor);
 
-    _braceColor = AppManager::createKnob<KnobColor>(this, tr("Brace Color"), 3);
-    _braceColor->setName("braceColor");
+    _braceColor = _publicInterface->createKnob<KnobColor>("braceColor", 3);
+    _braceColor->setLabel(tr("Brace Color"));
     _braceColor->setSimplified(true);
+    _braceColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _braceColor->setDefaultValue(0.85, DimIdx(0));
+    _braceColor->setDefaultValue(0.85, DimIdx(1));
+    _braceColor->setDefaultValue(0.85, DimIdx(2));
+
     _scriptEditorColorsTab->addKnob(_braceColor);
 
-    _defClassColor = AppManager::createKnob<KnobColor>(this, tr("Class Def Color"), 3);
-    _defClassColor->setName("classDefColor");
+    _defClassColor = _publicInterface->createKnob<KnobColor>("classDefColor", 3);
+    _defClassColor->setLabel(tr("Class Def Color"));
     _defClassColor->setSimplified(true);
+    _defClassColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _defClassColor->setDefaultValue(0.7, DimIdx(0));
+    _defClassColor->setDefaultValue(0.7, DimIdx(1));
+    _defClassColor->setDefaultValue(0., DimIdx(2));
+
     _scriptEditorColorsTab->addKnob(_defClassColor);
 
-    _stringsColor = AppManager::createKnob<KnobColor>(this, tr("Strings Color"), 3);
-    _stringsColor->setName("stringsColor");
+    _stringsColor = _publicInterface->createKnob<KnobColor>("stringsColor", 3);
+    _stringsColor->setLabel( tr("Strings Color"));
     _stringsColor->setSimplified(true);
+    _stringsColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _stringsColor->setDefaultValue(0.8, DimIdx(0));
+    _stringsColor->setDefaultValue(0.2, DimIdx(1));
+    _stringsColor->setDefaultValue(0., DimIdx(2));
+
     _scriptEditorColorsTab->addKnob(_stringsColor);
 
-    _commentsColor = AppManager::createKnob<KnobColor>(this, tr("Comments Color"), 3);
-    _commentsColor->setName("commentsColor");
+    _commentsColor = _publicInterface->createKnob<KnobColor>("commentsColor", 3);
+    _commentsColor->setLabel(tr("Comments Color"));
     _commentsColor->setSimplified(true);
+    _commentsColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _commentsColor->setDefaultValue(0.25, DimIdx(0));
+    _commentsColor->setDefaultValue(0.6, DimIdx(1));
+    _commentsColor->setDefaultValue(0.25, DimIdx(2));
+
     _scriptEditorColorsTab->addKnob(_commentsColor);
 
-    _selfColor = AppManager::createKnob<KnobColor>(this, tr("Self Color"), 3);
-    _selfColor->setName("selfColor");
+    _selfColor = _publicInterface->createKnob<KnobColor>("selfColor", 3);
+    _selfColor->setLabel(tr("Self Color"));
     _selfColor->setSimplified(true);
+    _selfColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _selfColor->setDefaultValue(0.7, DimIdx(0));
+    _selfColor->setDefaultValue(0.7, DimIdx(1));
+    _selfColor->setDefaultValue(0., DimIdx(2));
+
     _scriptEditorColorsTab->addKnob(_selfColor);
 
-    _numbersColor = AppManager::createKnob<KnobColor>(this, tr("Numbers Color"), 3);
-    _numbersColor->setName("numbersColor");
+    _numbersColor = _publicInterface->createKnob<KnobColor>("numbersColor", 3);
+    _numbersColor->setLabel(tr("Numbers Color"));
     _numbersColor->setSimplified(true);
+    _numbersColor->setInternalColorspaceName(kColorKnobDefaultUIColorspaceName);
+    _numbersColor->setDefaultValue(0.25, DimIdx(0));
+    _numbersColor->setDefaultValue(0.8, DimIdx(1));
+    _numbersColor->setDefaultValue(0.9, DimIdx(2));
+
     _scriptEditorColorsTab->addKnob(_numbersColor);
+
+
 } // Settings::initializeKnobsScriptEditorColors
 
 void
-Settings::initializeKnobsViewers()
+SettingsPrivate::initializeKnobsViewers()
 {
-    _viewersTab = AppManager::createKnob<KnobPage>( this, tr("Viewer") );
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
+    _viewersTab = _publicInterface->createKnob<KnobPage>("viewerPage");
+    _viewersTab->setLabel(tr("Viewer"));
 
-    _texturesMode = AppManager::createKnob<KnobChoice>( this, tr("Viewer textures bit depth") );
-    _texturesMode->setName("texturesBitDepth");
+    _texturesMode = _publicInterface->createKnob<KnobChoice>("texturesBitDepth");
+    _texturesMode->setLabel(tr("Viewer textures bit depth"));
     std::vector<ChoiceOption> textureModes;
     textureModes.push_back(ChoiceOption("8u",
                                         tr("8-bit").toStdString(),
@@ -1050,58 +1991,59 @@ Settings::initializeKnobsViewers()
                                         tr("Post-processing done by the viewer (such as colorspace conversion) is done "
                                            "by the GPU, using GLSL. The size of cached textures is thus larger.").toStdString()));
     _texturesMode->populateChoices(textureModes);
-
-
     _texturesMode->setHintToolTip( tr("Bit depth of the viewer textures used for rendering."
                                       " Hover each option with the mouse for a detailed description.") );
+    _texturesMode->setDefaultValue(0);
     _viewersTab->addKnob(_texturesMode);
 
-    _powerOf2Tiling = AppManager::createKnob<KnobInt>( this, tr("Viewer tile size is 2 to the power of...") );
-    _powerOf2Tiling->setName("viewerTiling");
-    _powerOf2Tiling->setHintToolTip( tr("The dimension of the viewer tiles is 2^n by 2^n (i.e. 256 by 256 pixels for n=8). "
-                                        "A high value means that the viewer renders large tiles, so that "
-                                        "rendering is done less often, but on larger areas.") );
-    _powerOf2Tiling->disableSlider();
-    _powerOf2Tiling->setMinimum(4);
-    _powerOf2Tiling->setDisplayMinimum(4);
-    _powerOf2Tiling->setMaximum(9);
-    _powerOf2Tiling->setDisplayMaximum(9);
-
-    _viewersTab->addKnob(_powerOf2Tiling);
-
-    _checkerboardTileSize = AppManager::createKnob<KnobInt>( this, tr("Checkerboard tile size (pixels)") );
-    _checkerboardTileSize->setName("checkerboardTileSize");
-    _checkerboardTileSize->setMinimum(1);
+    _checkerboardTileSize = _publicInterface->createKnob<KnobInt>("checkerboardTileSize");
+    _checkerboardTileSize->setLabel(tr("Checkerboard tile size (pixels)"));
+    _checkerboardTileSize->setRange(1, INT_MAX);
     _checkerboardTileSize->setHintToolTip( tr("The size (in screen pixels) of one tile of the checkerboard.") );
+    _checkerboardTileSize->setDefaultValue(5);
     _viewersTab->addKnob(_checkerboardTileSize);
 
-    _checkerboardColor1 = AppManager::createKnob<KnobColor>(this, tr("Checkerboard color 1"), 4);
-    _checkerboardColor1->setName("checkerboardColor1");
+    _checkerboardColor1 = _publicInterface->createKnob<KnobColor>("checkerboardColor1", 4);
+    _checkerboardColor1->setLabel(tr("Checkerboard color 1"));
     _checkerboardColor1->setHintToolTip( tr("The first color used by the checkerboard.") );
+    _checkerboardColor1->setDefaultValue(0.5);
+    _checkerboardColor1->setDefaultValue(0.5, DimIdx(1));
+    _checkerboardColor1->setDefaultValue(0.5, DimIdx(2));
+    _checkerboardColor1->setDefaultValue(0.5, DimIdx(3));
+
     _viewersTab->addKnob(_checkerboardColor1);
 
-    _checkerboardColor2 = AppManager::createKnob<KnobColor>(this, tr("Checkerboard color 2"), 4);
-    _checkerboardColor2->setName("checkerboardColor2");
+    _checkerboardColor2 = _publicInterface->createKnob<KnobColor>("checkerboardColor2", 4);
+    _checkerboardColor2->setLabel(tr("Checkerboard color 2"));
     _checkerboardColor2->setHintToolTip( tr("The second color used by the checkerboard.") );
+    _checkerboardColor2->setDefaultValue(0.);
+    _checkerboardColor2->setDefaultValue(0., DimIdx(1));
+    _checkerboardColor2->setDefaultValue(0., DimIdx(2));
+    _checkerboardColor2->setDefaultValue(0., DimIdx(3));
+
     _viewersTab->addKnob(_checkerboardColor2);
 
-    _autoWipe = AppManager::createKnob<KnobBool>( this, tr("Automatically enable wipe") );
-    _autoWipe->setName("autoWipeForViewer");
+    _autoWipe = _publicInterface->createKnob<KnobBool>("autoWipeForViewer");
+    _autoWipe->setLabel(tr("Automatically enable wipe"));
     _autoWipe->setHintToolTip( tr("When checked, the wipe tool of the viewer will be automatically enabled "
                                   "when the mouse is hovering the viewer and changing an input of a viewer." ) );
+    _autoWipe->setDefaultValue(true);
+
     _viewersTab->addKnob(_autoWipe);
 
 
-    _autoProxyWhenScrubbingTimeline = AppManager::createKnob<KnobBool>( this, tr("Automatically enable proxy when scrubbing the timeline") );
-    _autoProxyWhenScrubbingTimeline->setName("autoProxyScrubbing");
+    _autoProxyWhenScrubbingTimeline = _publicInterface->createKnob<KnobBool>("autoProxyScrubbing");
+    _autoProxyWhenScrubbingTimeline->setLabel(tr("Automatically enable proxy when scrubbing the timeline"));
     _autoProxyWhenScrubbingTimeline->setHintToolTip( tr("When checked, the proxy mode will be at least at the level "
                                                         "indicated by the auto-proxy parameter.") );
     _autoProxyWhenScrubbingTimeline->setAddNewLine(false);
+    _autoProxyWhenScrubbingTimeline->setDefaultValue(true);
+
     _viewersTab->addKnob(_autoProxyWhenScrubbingTimeline);
 
 
-    _autoProxyLevel = AppManager::createKnob<KnobChoice>( this, tr("Auto-proxy level") );
-    _autoProxyLevel->setName("autoProxyLevel");
+    _autoProxyLevel = _publicInterface->createKnob<KnobChoice>("autoProxyLevel");
+    _autoProxyLevel->setLabel(tr("Auto-proxy level"));
     std::vector<ChoiceOption> autoProxyChoices;
     autoProxyChoices.push_back(ChoiceOption("2", "",""));
     autoProxyChoices.push_back(ChoiceOption("4", "",""));
@@ -1109,188 +2051,160 @@ Settings::initializeKnobsViewers()
     autoProxyChoices.push_back(ChoiceOption("16", "",""));
     autoProxyChoices.push_back(ChoiceOption("32", "",""));
     _autoProxyLevel->populateChoices(autoProxyChoices);
+    _autoProxyLevel->setDefaultValue(1);
 
     _viewersTab->addKnob(_autoProxyLevel);
 
-    _maximumNodeViewerUIOpened = AppManager::createKnob<KnobInt>( this, tr("Max. opened node viewer interface") );
-    _maximumNodeViewerUIOpened->setName("maxNodeUiOpened");
-    _maximumNodeViewerUIOpened->setMinimum(1);
+    _maximumNodeViewerUIOpened = _publicInterface->createKnob<KnobInt>("maxNodeUiOpened");
+    _maximumNodeViewerUIOpened->setLabel(tr("Max. opened node viewer interface"));
+    _maximumNodeViewerUIOpened->setRange(1, INT_MAX);
     _maximumNodeViewerUIOpened->disableSlider();
     _maximumNodeViewerUIOpened->setHintToolTip( tr("Controls the maximum amount of nodes that can have their interface showing up at the same time in the viewer") );
+    _maximumNodeViewerUIOpened->setDefaultValue(2);
     _viewersTab->addKnob(_maximumNodeViewerUIOpened);
 
-    _viewerKeys = AppManager::createKnob<KnobBool>( this, tr("Use number keys for the viewer") );
-    _viewerKeys->setName("viewerNumberKeys");
+    _viewerKeys = _publicInterface->createKnob<KnobBool>("viewerNumberKeys");
+    _viewerKeys->setLabel(tr("Use number keys for the viewer"));
     _viewerKeys->setHintToolTip( tr("When enabled, the row of number keys on the keyboard "
                                     "is used for switching input (<key> connects input to A side, "
                                     "<shift-key> connects input to B side), even if the corresponding "
                                     "character in the current keyboard layout is not a number.\n"
                                     "This may have to be disabled when using a remote display connection "
                                     "to Linux from a different OS.") );
+    _viewerKeys->setDefaultValue(true);
     _viewersTab->addKnob(_viewerKeys);
+
+
+
+
 } // Settings::initializeKnobsViewers
 
 void
-Settings::initializeKnobsNodeGraph()
+SettingsPrivate::initializeKnobsNodeGraph()
 {
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
     /////////// Nodegraph tab
-    _nodegraphTab = AppManager::createKnob<KnobPage>( this, tr("Nodegraph") );
+    _nodegraphTab = _publicInterface->createKnob<KnobPage>("nodegraphTab");
+    _nodegraphTab->setLabel(tr("Nodegraph"));
 
-    _autoScroll = AppManager::createKnob<KnobBool>( this, tr("Auto Scroll") );
-    _autoScroll->setName("autoScroll");
+    _autoScroll = _publicInterface->createKnob<KnobBool>("autoScroll");
+    _autoScroll->setLabel(tr("Auto Scroll"));
     _autoScroll->setHintToolTip( tr("When checked the node graph will auto scroll if you move a node outside the current graph view.") );
+    _autoScroll->setDefaultValue(false);
     _nodegraphTab->addKnob(_autoScroll);
 
-    _autoTurbo = AppManager::createKnob<KnobBool>( this, tr("Auto-turbo") );
-    _autoTurbo->setName("autoTurbo");
+    _autoTurbo = _publicInterface->createKnob<KnobBool>("autoTurbo");
+    _autoTurbo->setLabel( tr("Auto-turbo"));
     _autoTurbo->setHintToolTip( tr("When checked the Turbo-mode will be enabled automatically when playback is started and disabled "
                                    "when finished.") );
+    _autoTurbo->setDefaultValue(false);
     _nodegraphTab->addKnob(_autoTurbo);
 
-    _snapNodesToConnections = AppManager::createKnob<KnobBool>( this, tr("Snap to node") );
-    _snapNodesToConnections->setName("enableSnapToNode");
+    _snapNodesToConnections = _publicInterface->createKnob<KnobBool>("enableSnapToNode");
+    _snapNodesToConnections->setLabel(tr("Snap to node"));
     _snapNodesToConnections->setHintToolTip( tr("When moving nodes on the node graph, snap to positions where they are lined up "
                                                 "with the inputs and output nodes.") );
+    _snapNodesToConnections->setDefaultValue(true);
     _nodegraphTab->addKnob(_snapNodesToConnections);
 
 
-    _maxUndoRedoNodeGraph = AppManager::createKnob<KnobInt>( this, tr("Maximum undo/redo for the node graph") );
-    _maxUndoRedoNodeGraph->setName("maxUndoRedo");
+    _maxUndoRedoNodeGraph = _publicInterface->createKnob<KnobInt>("maxUndoRedo");
+    _maxUndoRedoNodeGraph->setLabel(tr("Maximum undo/redo for the node graph"));
     _maxUndoRedoNodeGraph->disableSlider();
-    _maxUndoRedoNodeGraph->setMinimum(0);
+    _maxUndoRedoNodeGraph->setRange(0, INT_MAX);
     _maxUndoRedoNodeGraph->setHintToolTip( tr("Set the maximum of events related to the node graph %1 "
                                               "remembers. Past this limit, older events will be deleted forever, "
                                               "allowing to re-use the RAM for other purposes. \n"
                                               "Changing this value will clear the undo/redo stack.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    _maxUndoRedoNodeGraph->setDefaultValue(20);
     _nodegraphTab->addKnob(_maxUndoRedoNodeGraph);
 
 
-    _disconnectedArrowLength = AppManager::createKnob<KnobInt>( this, tr("Disconnected arrow length") );
-    _disconnectedArrowLength->setName("disconnectedArrowLength");
+    _disconnectedArrowLength = _publicInterface->createKnob<KnobInt>("disconnectedArrowLength");
+    _disconnectedArrowLength->setLabel(tr("Disconnected arrow length"));
     _disconnectedArrowLength->setHintToolTip( tr("The size of a disconnected node input arrow in pixels.") );
     _disconnectedArrowLength->disableSlider();
+    _disconnectedArrowLength->setDefaultValue(30);
 
     _nodegraphTab->addKnob(_disconnectedArrowLength);
 
-    _hideOptionalInputsAutomatically = AppManager::createKnob<KnobBool>( this, tr("Auto hide masks inputs") );
-    _hideOptionalInputsAutomatically->setName("autoHideInputs");
+    _hideOptionalInputsAutomatically = _publicInterface->createKnob<KnobBool>("autoHideInputs");
+    _hideOptionalInputsAutomatically->setLabel(tr("Auto hide masks inputs"));
     _hideOptionalInputsAutomatically->setHintToolTip( tr("When checked, any diconnected mask input of a node in the nodegraph "
                                                          "will be visible only when the mouse is hovering the node or when it is "
                                                          "selected.") );
+    _hideOptionalInputsAutomatically->setDefaultValue(true);
     _nodegraphTab->addKnob(_hideOptionalInputsAutomatically);
 
-    _useInputAForMergeAutoConnect = AppManager::createKnob<KnobBool>( this, tr("Merge node connect to A input") );
-    _useInputAForMergeAutoConnect->setName("mergeConnectToA");
+    _useInputAForMergeAutoConnect = _publicInterface->createKnob<KnobBool>("mergeConnectToA");
+    _useInputAForMergeAutoConnect->setLabel(tr("Merge node connect to A input"));
     _useInputAForMergeAutoConnect->setHintToolTip( tr("If checked, upon creation of a new Merge node, or any other node with inputs named "
                                                       "A and B, input A is be preferred "
                                                       "for auto-connection. When the node is disabled, B is always output, whether this is checked or not.") );
+    _useInputAForMergeAutoConnect->setDefaultValue(true);
     _nodegraphTab->addKnob(_useInputAForMergeAutoConnect);
 } // Settings::initializeKnobsNodeGraph
 
 void
-Settings::initializeKnobsCaching()
+SettingsPrivate::initializeKnobsCaching()
 {
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
     /////////// Caching tab
-    _cachingTab = AppManager::createKnob<KnobPage>( this, tr("Caching") );
+    _cachingTab = _publicInterface->createKnob<KnobPage>("cachingPage");
+    _cachingTab->setLabel(tr("Caching"));
 
-    _aggressiveCaching = AppManager::createKnob<KnobBool>( this, tr("Aggressive caching") );
-    _aggressiveCaching->setName("aggressiveCaching");
+    _aggressiveCaching = _publicInterface->createKnob<KnobBool>("aggressiveCaching");
+    _aggressiveCaching->setLabel(tr("Aggressive Caching"));
     _aggressiveCaching->setHintToolTip( tr("When checked, %1 will cache the output of all images "
                                            "rendered by all nodes, regardless of their \"Force caching\" parameter. When enabling this option "
                                            "you need to have at least 8GiB of RAM, and 16GiB is recommended.\n"
-                                           "If not checked, %1 will only cache the  nodes "
-                                           "which have multiple outputs, or their parameter \"Force caching\" checked or if one of its "
-                                           "output has its settings panel opened.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                                           "If not checked, %1 will only cache the nodes when needed").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    _aggressiveCaching->setDefaultValue(false);
+
     _cachingTab->addKnob(_aggressiveCaching);
 
-    _maxRAMPercent = AppManager::createKnob<KnobInt>( this, tr("Maximum amount of RAM memory used for caching (% of total RAM)") );
-    _maxRAMPercent->setName("maxRAMPercent");
-    _maxRAMPercent->disableSlider();
-    _maxRAMPercent->setMinimum(0);
-    _maxRAMPercent->setMaximum(100);
-    QString ramHint( tr("This setting indicates the percentage of the total RAM which can be used by the memory caches. "
-                        "This system has %1 of RAM.").arg( printAsRAM( getSystemTotalRAM() ) ) );
-    if ( isApplication32Bits() && (getSystemTotalRAM() > 4ULL * 1024ULL * 1024ULL * 1024ULL) ) {
-        ramHint.append( QString::fromUtf8("\n") );
-        ramHint.append( tr("The version of %1 you are running is 32 bits, which means the available RAM "
-                           "is limited to 4GiB. The amount of RAM used for caching is 4GiB * MaxRamPercent.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    }
 
-    _maxRAMPercent->setHintToolTip(ramHint);
-    _maxRAMPercent->setAddNewLine(false);
-    _cachingTab->addKnob(_maxRAMPercent);
+    _maxDiskCacheSizeGb = _publicInterface->createKnob<KnobInt>("maxDiskCacheGb");
+    _maxDiskCacheSizeGb->setLabel(tr("Maximum Disk Cache Size (GiB)"));
+    _maxDiskCacheSizeGb->disableSlider();
 
-    _maxRAMLabel = AppManager::createKnob<KnobString>( this, std::string() );
-    _maxRAMLabel->setName("maxRamLabel");
-    _maxRAMLabel->setIsPersistent(false);
-    _maxRAMLabel->setAsLabel();
-    _cachingTab->addKnob(_maxRAMLabel);
+    // The disk should at least allow storage of 1000 tiles accross each bucket
+    std::size_t cacheMinSize = NATRON_TILE_SIZE_BYTES;
+    cacheMinSize = (cacheMinSize * 1024 * 256) / (1024 * 1024 * 1024);
+    _maxDiskCacheSizeGb->setRange(cacheMinSize, INT_MAX);
+    _maxDiskCacheSizeGb->setHintToolTip( tr("The maximum Disk size that may be used by the Cache (in GiB)") );
+    _maxDiskCacheSizeGb->setDefaultValue(8);
+
+    _cachingTab->addKnob(_maxDiskCacheSizeGb);
 
 
-    _unreachableRAMPercent = AppManager::createKnob<KnobInt>( this, tr("System RAM to keep free (% of total RAM)") );
-    _unreachableRAMPercent->setName("unreachableRAMPercent");
-    _unreachableRAMPercent->disableSlider();
-    _unreachableRAMPercent->setMinimum(0);
-    _unreachableRAMPercent->setMaximum(90);
-    _unreachableRAMPercent->setHintToolTip(tr("This determines how much RAM should be kept free for other applications "
-                                              "running on the same system. "
-                                              "When this limit is reached, the caches start recycling memory instead of growing. "
-                                              //"A reasonable value should be set for it allowing the caches to stay in physical RAM " // users don't understand what swap is
-                                              //"and avoid being swapped-out on disk. "
-                                              "This value should reflect the amount of memory "
-                                              "you want to keep available on your computer for other usage. "
-                                              "A low value may result in a massive slowdown and high disk usage.")
-                                           );
-    _unreachableRAMPercent->setAddNewLine(false);
-    _cachingTab->addKnob(_unreachableRAMPercent);
-    _unreachableRAMLabel = AppManager::createKnob<KnobString>( this, std::string() );
-    _unreachableRAMLabel->setName("unreachableRAMLabel");
-    _unreachableRAMLabel->setIsPersistent(false);
-    _unreachableRAMLabel->setAsLabel();
-    _cachingTab->addKnob(_unreachableRAMLabel);
-
-    _maxViewerDiskCacheGB = AppManager::createKnob<KnobInt>( this, tr("Maximum playback disk cache size (GiB)") );
-    _maxViewerDiskCacheGB->setName("maxViewerDiskCache");
-    _maxViewerDiskCacheGB->disableSlider();
-    _maxViewerDiskCacheGB->setMinimum(0);
-    _maxViewerDiskCacheGB->setMaximum(100);
-    _maxViewerDiskCacheGB->setHintToolTip( tr("The maximum size that may be used by the playback cache on disk (in GiB)") );
-    _cachingTab->addKnob(_maxViewerDiskCacheGB);
-
-    _maxDiskCacheNodeGB = AppManager::createKnob<KnobInt>( this, tr("Maximum DiskCache node disk usage (GiB)") );
-    _maxDiskCacheNodeGB->setName("maxDiskCacheNode");
-    _maxDiskCacheNodeGB->disableSlider();
-    _maxDiskCacheNodeGB->setMinimum(0);
-    _maxDiskCacheNodeGB->setMaximum(100);
-    _maxDiskCacheNodeGB->setHintToolTip( tr("The maximum size that may be used by the DiskCache node on disk (in GiB)") );
-    _cachingTab->addKnob(_maxDiskCacheNodeGB);
-
-
-    _diskCachePath = AppManager::createKnob<KnobPath>( this, tr("Disk cache path (empty = default)") );
-    _diskCachePath->setName("diskCachePath");
+    _diskCachePath = _publicInterface->createKnob<KnobPath>("diskCachePath");
+    _diskCachePath->setLabel(tr("Disk Cache Path (empty = default)"));
     _diskCachePath->setMultiPath(false);
 
     QString defaultLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
-    QString diskCacheTt( tr("WARNING: Changing this parameter requires a restart of the application. \n"
-                            "This is points to the location where %1 on-disk caches will be. "
-                            "This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, "
-                            "the default location will be used. The default location is: \n").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    QString diskCacheTt( tr("This is the location where the disk cache is. "
+                            "This variable should point to your fastest disk. "
+                            "You may override this setting by setting the NATRON_DISK_CACHE_PATH system environment variable when before launching Natron. "
+                            "If the location is not specified or does not exist on the filesystem, "
+                            "the default location will be used.\nThe default location is: %1\n").arg(defaultLocation) +
+                         QLatin1Char('\n') +
+                         tr("Changing this requires a restart of the application to take effect.") );
 
-    _diskCachePath->setHintToolTip( diskCacheTt + defaultLocation );
+    _diskCachePath->setHintToolTip(diskCacheTt);
+    _knobsRequiringRestart.insert(_diskCachePath);
+
     _cachingTab->addKnob(_diskCachePath);
 
-    _wipeDiskCache = AppManager::createKnob<KnobButton>( this, tr("Wipe Disk Cache") );
-    _wipeDiskCache->setHintToolTip( tr("Cleans-up all caches, deleting all folders that may contain cached data. "
-                                       "This is provided in case %1 lost track of cached images "
-                                       "for some reason.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _cachingTab->addKnob(_wipeDiskCache);
+
 } // Settings::initializeKnobsCaching
 
 void
-Settings::initializeKnobsPlugins()
+SettingsPrivate::initializeKnobsPlugins()
 {
-    _pluginsTab = AppManager::createKnob<KnobPage>( this, tr("Plug-ins") );
-    _pluginsTab->setName("plugins");
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
+    _pluginsTab = _publicInterface->createKnob<KnobPage>("pluginsPage");
+    _pluginsTab->setLabel(tr("Plug-ins"));
 
 #if defined(__linux__) || defined(__FreeBSD__)
     std::string searchPath("/usr/OFX/Plugins");
@@ -1304,27 +2218,45 @@ Settings::initializeKnobsPlugins()
 
 #endif
 
-    _loadBundledPlugins = AppManager::createKnob<KnobBool>( this, tr("Use bundled plug-ins") );
-    _loadBundledPlugins->setName("useBundledPlugins");
+    _loadBundledPlugins = _publicInterface->createKnob<KnobBool>("useBundledPlugins");
+    _knobsRequiringRestart.insert(_loadBundledPlugins);
+    _knobsRequiringOFXCacheClear.insert(_loadBundledPlugins);
+    _loadBundledPlugins->setLabel(tr("Use bundled plug-ins"));
     _loadBundledPlugins->setHintToolTip( tr("When checked, %1 also uses the plug-ins bundled "
                                             "with the binary distribution.\n"
                                             "When unchecked, only system-wide plug-ins found in are loaded (more information can be "
-                                            "found in the help for the \"Extra plug-ins search paths\" setting).").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                                            "found in the help for the \"Extra plug-ins search paths\" setting).").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) +
+                                         QLatin1Char('\n') +
+                                         tr("Changing this requires a restart of the application to take effect.") );
+    _loadBundledPlugins->setDefaultValue(true);
     _pluginsTab->addKnob(_loadBundledPlugins);
 
-    _preferBundledPlugins = AppManager::createKnob<KnobBool>( this, tr("Prefer bundled plug-ins over system-wide plug-ins") );
-    _preferBundledPlugins->setName("preferBundledPlugins");
-    _preferBundledPlugins->setHintToolTip( tr("When checked, and if \"Use bundled plug-ins\" is also checked, plug-ins bundled with the %1 binary distribution will take precedence over system-wide plug-ins "
-                                              "if they have the same internal ID.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    _preferBundledPlugins = _publicInterface->createKnob<KnobBool>("preferBundledPlugins");
+    _knobsRequiringRestart.insert(_preferBundledPlugins);
+    _knobsRequiringOFXCacheClear.insert(_preferBundledPlugins);
+    _preferBundledPlugins->setLabel(tr("Prefer bundled plug-ins over system-wide plug-ins"));
+    _preferBundledPlugins->setHintToolTip( tr("When checked, and if \"Use bundled plug-ins\" is also checked, plug-ins bundled with "
+                                              "the %1 binary distribution will take precedence over system-wide plug-ins "
+                                              "if they have the same internal ID.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) +
+                                           QLatin1Char('\n') +
+                                           tr("Changing this requires a restart of the application to take effect.") );
+    _preferBundledPlugins->setDefaultValue(true);
     _pluginsTab->addKnob(_preferBundledPlugins);
 
-    _useStdOFXPluginsLocation = AppManager::createKnob<KnobBool>( this, tr("Enable default OpenFX plugins location") );
-    _useStdOFXPluginsLocation->setName("useStdOFXPluginsLocation");
-    _useStdOFXPluginsLocation->setHintToolTip( tr("When checked, %1 also uses the OpenFX plug-ins found in the default location (%2).").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( searchPath.c_str() ) ) );
+    _useStdOFXPluginsLocation = _publicInterface->createKnob<KnobBool>("useStdOFXPluginsLocation");
+    _knobsRequiringRestart.insert(_useStdOFXPluginsLocation);
+    _knobsRequiringOFXCacheClear.insert(_useStdOFXPluginsLocation);
+    _useStdOFXPluginsLocation->setLabel(tr("Enable default OpenFX plugins location"));
+    _useStdOFXPluginsLocation->setHintToolTip( tr("When checked, %1 also uses the OpenFX plug-ins found in the default location (%2).").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( searchPath.c_str() ) ) +
+                                               QLatin1Char('\n') +
+                                               tr("Changing this requires a restart of the application to take effect.") );
+    _useStdOFXPluginsLocation->setDefaultValue(true);
     _pluginsTab->addKnob(_useStdOFXPluginsLocation);
 
-    _extraPluginPaths = AppManager::createKnob<KnobPath>( this, tr("OpenFX plug-ins search path") );
-    _extraPluginPaths->setName("extraPluginsSearchPaths");
+    _extraPluginPaths = _publicInterface->createKnob<KnobPath>("extraPluginsSearchPaths");
+    _knobsRequiringRestart.insert(_extraPluginPaths);
+    _knobsRequiringOFXCacheClear.insert(_extraPluginPaths);
+    _extraPluginPaths->setLabel(tr("OpenFX plug-ins search path"));
     _extraPluginPaths->setHintToolTip( tr("Extra search paths where %1 should scan for OpenFX plug-ins. "
                                           "Extra plug-ins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.\n"
                                           "The priority order for system-wide plug-ins, from high to low, is:\n"
@@ -1333,30 +2265,36 @@ Settings::initializeKnobsPlugins()
                                           "- plug-ins found in OFX_PLUGIN_PATH\n"
                                           "- plug-ins found in %2 (if \"Enable default OpenFX plug-ins location\" is checked)\n"
                                           "- plugins bundled with the binary distribution of %1 (if \"Prefer bundled plug-ins over "
-                                          "system-wide plug-ins\" is not checked)\n"
-                                          "Any change will take effect on the next launch of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( searchPath.c_str() ) ) );
+                                          "system-wide plug-ins\" is not checked)").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( searchPath.c_str() ) ) +
+                                       QLatin1Char('\n') +
+                                       tr("Changing this requires a restart of the application to take effect.") );
     _extraPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_extraPluginPaths);
 
-
-    _templatesPluginPaths = AppManager::createKnob<KnobPath>( this, tr("PyPlugs search path") );
-    _templatesPluginPaths->setName("groupPluginsSearchPath");
+    _templatesPluginPaths = _publicInterface->createKnob<KnobPath>("groupPluginsSearchPath");
+    _templatesPluginPaths->setLabel(tr("PyPlugs search path"));
+    _knobsRequiringRestart.insert(_templatesPluginPaths);
     _templatesPluginPaths->setHintToolTip( tr("Search path where %1 should scan for Python group scripts (PyPlugs). "
                                               "The search paths for groups can also be specified using the "
-                                              "NATRON_PLUGIN_PATH environment variable.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                                              "NATRON_PLUGIN_PATH environment variable.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) +
+                                           QLatin1Char('\n') +
+                                           tr("Changing this requires a restart of the application to take effect.") );
     _templatesPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_templatesPluginPaths);
+
 
 } // Settings::initializeKnobsPlugins
 
 void
-Settings::initializeKnobsPython()
+SettingsPrivate::initializeKnobsPython()
 {
-    _pythonPage = AppManager::createKnob<KnobPage>( this, tr("Python") );
+    KnobHolderPtr thisShared = _publicInterface->shared_from_this();
+    _pythonPage = _publicInterface->createKnob<KnobPage>("pythonPage");
+    _pythonPage->setLabel(tr("Python"));
 
 
-    _onProjectCreated = AppManager::createKnob<KnobString>( this, tr("After project created") );
-    _onProjectCreated->setName("afterProjectCreated");
+    _onProjectCreated = _publicInterface->createKnob<KnobString>("afterProjectCreated");
+    _onProjectCreated->setLabel(tr("After project created"));
     _onProjectCreated->setHintToolTip( tr("Callback called once a new project is created (this is never called "
                                           "when \"After project loaded\" is called.)\n"
                                           "The signature of the callback is : callback(app) where:\n"
@@ -1364,775 +2302,360 @@ Settings::initializeKnobsPython()
     _pythonPage->addKnob(_onProjectCreated);
 
 
-    _defaultOnProjectLoaded = AppManager::createKnob<KnobString>( this, tr("Default after project loaded") );
-    _defaultOnProjectLoaded->setName("defOnProjectLoaded");
+    _defaultOnProjectLoaded = _publicInterface->createKnob<KnobString>("defOnProjectLoaded");
+    _defaultOnProjectLoaded->setLabel(tr("Default after project loaded"));
     _defaultOnProjectLoaded->setHintToolTip( tr("The default afterProjectLoad callback that will be set for new projects.") );
     _pythonPage->addKnob(_defaultOnProjectLoaded);
 
-    _defaultOnProjectSave = AppManager::createKnob<KnobString>( this, tr("Default before project save") );
-    _defaultOnProjectSave->setName("defOnProjectSave");
+    _defaultOnProjectSave = _publicInterface->createKnob<KnobString>("defOnProjectSave");
+    _defaultOnProjectSave->setLabel(tr("Default before project save") );
     _defaultOnProjectSave->setHintToolTip( tr("The default beforeProjectSave callback that will be set for new projects.") );
     _pythonPage->addKnob(_defaultOnProjectSave);
 
 
-    _defaultOnProjectClose = AppManager::createKnob<KnobString>( this, tr("Default before project close") );
-    _defaultOnProjectClose->setName("defOnProjectClose");
+    _defaultOnProjectClose = _publicInterface->createKnob<KnobString>("defOnProjectClose" );
+    _defaultOnProjectClose->setLabel(tr("Default before project close"));
     _defaultOnProjectClose->setHintToolTip( tr("The default beforeProjectClose callback that will be set for new projects.") );
     _pythonPage->addKnob(_defaultOnProjectClose);
 
 
-    _defaultOnNodeCreated = AppManager::createKnob<KnobString>( this, tr("Default after node created") );
-    _defaultOnNodeCreated->setName("defOnNodeCreated");
+    _defaultOnNodeCreated = _publicInterface->createKnob<KnobString>("defOnNodeCreated");
+    _defaultOnNodeCreated->setLabel(tr("Default after node created"));
     _defaultOnNodeCreated->setHintToolTip( tr("The default afterNodeCreated callback that will be set for new projects.") );
     _pythonPage->addKnob(_defaultOnNodeCreated);
 
 
-    _defaultOnNodeDelete = AppManager::createKnob<KnobString>( this, tr("Default before node removal") );
-    _defaultOnNodeDelete->setName("defOnNodeDelete");
+    _defaultOnNodeDelete = _publicInterface->createKnob<KnobString>("defOnNodeDelete");
+    _defaultOnNodeDelete->setLabel(tr("Default before node removal"));
     _defaultOnNodeDelete->setHintToolTip( tr("The default beforeNodeRemoval callback that will be set for new projects.") );
     _pythonPage->addKnob(_defaultOnNodeDelete);
 
-    _loadPyPlugsFromPythonScript = AppManager::createKnob<KnobBool>( this, tr("Load PyPlugs in projects from .py if possible") );
-    _loadPyPlugsFromPythonScript->setName("loadFromPyFile");
-    _loadPyPlugsFromPythonScript->setHintToolTip( tr("When checked, if a project contains a PyPlug, it will try to first load the PyPlug "
-                                                     "from the .py file. If the version of the PyPlug has changed Natron will ask you "
-                                                     "whether you want to upgrade to the new version of the PyPlug in your project. "
-                                                     "If the .py file is not found, it will fallback to the same behavior "
-                                                     "as when this option is unchecked. When unchecked the PyPlug will load as a regular group "
-                                                     "with the informations embedded in the project file.") );
-    _loadPyPlugsFromPythonScript->setDefaultValue(true);
-    _pythonPage->addKnob(_loadPyPlugsFromPythonScript);
 
-    _echoVariableDeclarationToPython = AppManager::createKnob<KnobBool>( this, tr("Print auto-declared variables in the Script Editor") );
-    _echoVariableDeclarationToPython->setName("printAutoDeclaredVars");
+    _echoVariableDeclarationToPython = _publicInterface->createKnob<KnobBool>("printAutoDeclaredVars");
+    _echoVariableDeclarationToPython->setLabel(tr("Print auto-declared variables in the Script Editor"));
     _echoVariableDeclarationToPython->setHintToolTip( tr("When checked, %1 will print in the Script Editor all variables that are "
                                                          "automatically declared, such as the app variable or node attributes.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    _echoVariableDeclarationToPython->setDefaultValue(false);
     _pythonPage->addKnob(_echoVariableDeclarationToPython);
 } // initializeKnobs
 
-void
-Settings::setCachingLabels()
+std::string
+SettingsPrivate::getSettingsAbsoluteFilepath(const std::string& userDataDirectoryPath)
 {
-    int maxTotalRam = _maxRAMPercent->getValue();
-    U64 systemTotalRam = getSystemTotalRAM();
-    U64 maxRAM = (U64)( ( (double)maxTotalRam / 100. ) * systemTotalRam );
+    std::stringstream ss;
+    ss << userDataDirectoryPath << NATRON_SETTINGS_FILENAME;
+    return ss.str();
+}
 
-    _maxRAMLabel->setValue( printAsRAM(maxRAM).toStdString() );
-    _unreachableRAMLabel->setValue( printAsRAM( (double)systemTotalRam * ( (double)_unreachableRAMPercent->getValue() / 100. ) ).toStdString() );
+std::string
+Settings::getSettingsAbsoluteFilePath() const
+{
+    std::string userDataDirPath = _imp->ensureUserDataDirectory();
+    return _imp->getSettingsAbsoluteFilepath(userDataDirPath);
 }
 
 void
-Settings::setDefaultValues()
+Settings::setSaveSettings(bool enable)
 {
-    beginChanges();
-
-    _natronSettingsExist->setDefaultValue(false);
-
-    // General
-    _checkForUpdates->setDefaultValue(false);
-    _enableCrashReports->setDefaultValue(true);
-    _autoSaveUnSavedProjects->setDefaultValue(true);
-    _autoSaveDelay->setDefaultValue(5, 0);
-    _hostName->setDefaultValue(0);
-    _customHostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
-
-    // General/Threading
-    _numberOfThreads->setDefaultValue(0, 0);
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    _numberOfParallelRenders->setDefaultValue(0, 0);
-#endif
-    _useThreadPool->setDefaultValue(true);
-    _nThreadsPerEffect->setDefaultValue(0);
-    _renderInSeparateProcess->setDefaultValue(false, 0);
-    _queueRenders->setDefaultValue(false);
-
-    // General/Rendering
-    _convertNaNValues->setDefaultValue(true);
-    _pluginUseImageCopyForSource->setDefaultValue(false);
-    _activateRGBSupport->setDefaultValue(true);
-    _activateTransformConcatenationSupport->setDefaultValue(true);
-
-    // General/GPU rendering
-    //_openglRendererString
-    _nOpenGLContexts->setDefaultValue(2);
-#if NATRON_VERSION_MAJOR < 2 || (NATRON_VERSION_MAJOR == 2 && NATRON_VERSION_MINOR < 2)
-    _enableOpenGL->setDefaultValue((int)eEnableOpenGLDisabled);
-#else
-    _enableOpenGL->setDefaultValue((int)eEnableOpenGLDisabledIfBackground);
-#endif
-
-    // General/Projects setup
-    _firstReadSetProjectFormat->setDefaultValue(true);
-    _autoPreviewEnabledForNewProjects->setDefaultValue(true, 0);
-    _fixPathsOnProjectPathChanged->setDefaultValue(true);
-    //_enableMappingFromDriveLettersToUNCShareNames
-
-    // General/Documentation
-    _wwwServerPort->setDefaultValue(0);
-#ifdef NATRON_DOCUMENTATION_ONLINE
-    _documentationSource->setDefaultValue(0);
-#endif
-
-    // General/User Interface
-    _notifyOnFileChange->setDefaultValue(true);
-#ifdef NATRON_ENABLE_IO_META_NODES
-    //_filedialogForWriters
-#endif
-    _renderOnEditingFinished->setDefaultValue(false);
-    _linearPickers->setDefaultValue(true, 0);
-    _maxPanelsOpened->setDefaultValue(10, 0);
-    _useCursorPositionIncrements->setDefaultValue(true);
-    //_defaultLayoutFile
-    _loadProjectsWorkspace->setDefaultValue(false);
-
-    // Color-Management
-    //_ocioConfigKnob
-    _warnOcioConfigKnobChanged->setDefaultValue(true);
-    _ocioStartupCheck->setDefaultValue(true);
-    //_customOcioConfigFile
-
-    // Caching
-    _aggressiveCaching->setDefaultValue(false);
-    _maxRAMPercent->setDefaultValue(50, 0);
-    _unreachableRAMPercent->setDefaultValue(5);
-    _maxViewerDiskCacheGB->setDefaultValue(5, 0);
-    _maxDiskCacheNodeGB->setDefaultValue(10, 0);
-    //_diskCachePath
-    setCachingLabels();
-
-    // Viewer
-    _texturesMode->setDefaultValue(0, 0);
-    _powerOf2Tiling->setDefaultValue(8, 0);
-    _checkerboardTileSize->setDefaultValue(5);
-    _checkerboardColor1->setDefaultValue(0.5, 0);
-    _checkerboardColor1->setDefaultValue(0.5, 1);
-    _checkerboardColor1->setDefaultValue(0.5, 2);
-    _checkerboardColor1->setDefaultValue(0.5, 3);
-    _checkerboardColor2->setDefaultValue(0., 0);
-    _checkerboardColor2->setDefaultValue(0., 1);
-    _checkerboardColor2->setDefaultValue(0., 2);
-    _checkerboardColor2->setDefaultValue(0., 3);
-    _autoWipe->setDefaultValue(true);
-    _autoProxyWhenScrubbingTimeline->setDefaultValue(true);
-    _autoProxyLevel->setDefaultValue(1);
-    _maximumNodeViewerUIOpened->setDefaultValue(2);
-    _viewerKeys->setDefaultValue(true);
-
-    // Nodegraph
-    _autoScroll->setDefaultValue(false);
-    _autoTurbo->setDefaultValue(false);
-    _snapNodesToConnections->setDefaultValue(true);
-    _useBWIcons->setDefaultValue(false);
-    _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
-    _disconnectedArrowLength->setDefaultValue(30);
-    _hideOptionalInputsAutomatically->setDefaultValue(true);
-    _useInputAForMergeAutoConnect->setDefaultValue(true);
-    _usePluginIconsInNodeGraph->setDefaultValue(true);
-    _useAntiAliasing->setDefaultValue(true);
-
-    // Plugins
-    _extraPluginPaths->setDefaultValue("", 0);
-    _useStdOFXPluginsLocation->setDefaultValue(true);
-    //_templatesPluginPaths
-    _preferBundledPlugins->setDefaultValue(true);
-    _loadBundledPlugins->setDefaultValue(true);
-
-    // Python
-    //_onProjectCreated;
-    //_defaultOnProjectLoaded;
-    //_defaultOnProjectSave;
-    //_defaultOnProjectClose;
-    //_defaultOnNodeCreated;
-    //_defaultOnNodeDelete;
-    //_loadPyPlugsFromPythonScript;
-    _echoVariableDeclarationToPython->setDefaultValue(false);
-
-    // Appearance
-    _systemFontChoice->setDefaultValue(0);
-    _fontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
-    //_qssFile
-    //_defaultAppearanceVersion
-
-    // Appearance/Main Window
-    _sunkenColor->setDefaultValue(0.12, 0);
-    _sunkenColor->setDefaultValue(0.12, 1);
-    _sunkenColor->setDefaultValue(0.12, 2);
-    _baseColor->setDefaultValue(0.19, 0);
-    _baseColor->setDefaultValue(0.19, 1);
-    _baseColor->setDefaultValue(0.19, 2);
-    _raisedColor->setDefaultValue(0.28, 0);
-    _raisedColor->setDefaultValue(0.28, 1);
-    _raisedColor->setDefaultValue(0.28, 2);
-    _selectionColor->setDefaultValue(0.95, 0);
-    _selectionColor->setDefaultValue(0.54, 1);
-    _selectionColor->setDefaultValue(0., 2);
-    _textColor->setDefaultValue(0.78, 0);
-    _textColor->setDefaultValue(0.78, 1);
-    _textColor->setDefaultValue(0.78, 2);
-    _altTextColor->setDefaultValue(0.6, 0);
-    _altTextColor->setDefaultValue(0.6, 1);
-    _altTextColor->setDefaultValue(0.6, 2);
-    _timelinePlayheadColor->setDefaultValue(0.95, 0);
-    _timelinePlayheadColor->setDefaultValue(0.54, 1);
-    _timelinePlayheadColor->setDefaultValue(0., 2);
-    _timelineBGColor->setDefaultValue(0, 0);
-    _timelineBGColor->setDefaultValue(0, 1);
-    _timelineBGColor->setDefaultValue(0., 2);
-    _timelineBoundsColor->setDefaultValue(0.81, 0);
-    _timelineBoundsColor->setDefaultValue(0.27, 1);
-    _timelineBoundsColor->setDefaultValue(0.02, 2);
-    _interpolatedColor->setDefaultValue(0.34, 0);
-    _interpolatedColor->setDefaultValue(0.46, 1);
-    _interpolatedColor->setDefaultValue(0.6, 2);
-    _keyframeColor->setDefaultValue(0.08, 0);
-    _keyframeColor->setDefaultValue(0.38, 1);
-    _keyframeColor->setDefaultValue(0.97, 2);
-    _trackerKeyframeColor->setDefaultValue(0.7, 0);
-    _trackerKeyframeColor->setDefaultValue(0.78, 1);
-    _trackerKeyframeColor->setDefaultValue(0.39, 2);
-    _exprColor->setDefaultValue(0.7, 0);
-    _exprColor->setDefaultValue(0.78, 1);
-    _exprColor->setDefaultValue(0.39, 2);
-    _cachedFrameColor->setDefaultValue(0.56, 0);
-    _cachedFrameColor->setDefaultValue(0.79, 1);
-    _cachedFrameColor->setDefaultValue(0.4, 2);
-    _diskCachedFrameColor->setDefaultValue(0.27, 0);
-    _diskCachedFrameColor->setDefaultValue(0.38, 1);
-    _diskCachedFrameColor->setDefaultValue(0.25, 2);
-    _sliderColor->setDefaultValue(0.33, 0);
-    _sliderColor->setDefaultValue(0.45, 1);
-    _sliderColor->setDefaultValue(0.44, 2);
-
-    // Apprance/Curve Editor
-    _curveEditorBGColor->setDefaultValue(0., 0);
-    _curveEditorBGColor->setDefaultValue(0., 1);
-    _curveEditorBGColor->setDefaultValue(0., 2);
-    _gridColor->setDefaultValue(0.46, 0);
-    _gridColor->setDefaultValue(0.84, 1);
-    _gridColor->setDefaultValue(0.35, 2);
-    _curveEditorScaleColor->setDefaultValue(0.26, 0);
-    _curveEditorScaleColor->setDefaultValue(0.48, 1);
-    _curveEditorScaleColor->setDefaultValue(0.2, 2);
-
-    // Appearance/Dope Sheet
-    _dopeSheetEditorBackgroundColor->setDefaultValue(0.208, 0);
-    _dopeSheetEditorBackgroundColor->setDefaultValue(0.208, 1);
-    _dopeSheetEditorBackgroundColor->setDefaultValue(0.208, 2);
-    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.204, 0);
-    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.204, 1);
-    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.204, 2);
-    _dopeSheetEditorRootSectionBackgroundColor->setDefaultValue(0.2, 3);
-    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.443, 0);
-    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.443, 1);
-    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.443, 2);
-    _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.2, 3);
-    _dopeSheetEditorScaleColor->setDefaultValue(0.714, 0);
-    _dopeSheetEditorScaleColor->setDefaultValue(0.718, 1);
-    _dopeSheetEditorScaleColor->setDefaultValue(0.714, 2);
-    _dopeSheetEditorGridColor->setDefaultValue(0.714, 0);
-    _dopeSheetEditorGridColor->setDefaultValue(0.714, 1);
-    _dopeSheetEditorGridColor->setDefaultValue(0.714, 2);
-
-    // Appearance/Script Editor
-    _curLineColor->setDefaultValue(0.35, 0);
-    _curLineColor->setDefaultValue(0.35, 1);
-    _curLineColor->setDefaultValue(0.35, 2);
-    _keywordColor->setDefaultValue(0.7, 0);
-    _keywordColor->setDefaultValue(0.7, 1);
-    _keywordColor->setDefaultValue(0., 2);
-    _operatorColor->setDefaultValue(0.78, 0);
-    _operatorColor->setDefaultValue(0.78, 1);
-    _operatorColor->setDefaultValue(0.78, 2);
-    _braceColor->setDefaultValue(0.85, 0);
-    _braceColor->setDefaultValue(0.85, 1);
-    _braceColor->setDefaultValue(0.85, 2);
-    _defClassColor->setDefaultValue(0.7, 0);
-    _defClassColor->setDefaultValue(0.7, 1);
-    _defClassColor->setDefaultValue(0., 2);
-    _stringsColor->setDefaultValue(0.8, 0);
-    _stringsColor->setDefaultValue(0.2, 1);
-    _stringsColor->setDefaultValue(0., 2);
-    _commentsColor->setDefaultValue(0.25, 0);
-    _commentsColor->setDefaultValue(0.6, 1);
-    _commentsColor->setDefaultValue(0.25, 2);
-    _selfColor->setDefaultValue(0.7, 0);
-    _selfColor->setDefaultValue(0.7, 1);
-    _selfColor->setDefaultValue(0., 2);
-    _numbersColor->setDefaultValue(0.25, 0);
-    _numbersColor->setDefaultValue(0.8, 1);
-    _numbersColor->setDefaultValue(0.9, 2);
-    _scriptEditorFontChoice->setDefaultValue(0);
-    _scriptEditorFontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
-
-
-    // Appearance/Node Graph
-    _defaultNodeColor->setDefaultValue(0.7, 0);
-    _defaultNodeColor->setDefaultValue(0.7, 1);
-    _defaultNodeColor->setDefaultValue(0.7, 2);
-    _defaultBackdropColor->setDefaultValue(0.45, 0);
-    _defaultBackdropColor->setDefaultValue(0.45, 1);
-    _defaultBackdropColor->setDefaultValue(0.45, 2);
-    _defaultGeneratorColor->setDefaultValue(0.3, 0);
-    _defaultGeneratorColor->setDefaultValue(0.5, 1);
-    _defaultGeneratorColor->setDefaultValue(0.2, 2);
-    _defaultReaderColor->setDefaultValue(0.7, 0);
-    _defaultReaderColor->setDefaultValue(0.7, 1);
-    _defaultReaderColor->setDefaultValue(0.7, 2);
-    _defaultWriterColor->setDefaultValue(0.75, 0);
-    _defaultWriterColor->setDefaultValue(0.75, 1);
-    _defaultWriterColor->setDefaultValue(0., 2);
-    _defaultColorGroupColor->setDefaultValue(0.48, 0);
-    _defaultColorGroupColor->setDefaultValue(0.66, 1);
-    _defaultColorGroupColor->setDefaultValue(1., 2);
-    _defaultFilterGroupColor->setDefaultValue(0.8, 0);
-    _defaultFilterGroupColor->setDefaultValue(0.5, 1);
-    _defaultFilterGroupColor->setDefaultValue(0.3, 2);
-    _defaultTransformGroupColor->setDefaultValue(0.7, 0);
-    _defaultTransformGroupColor->setDefaultValue(0.3, 1);
-    _defaultTransformGroupColor->setDefaultValue(0.1, 2);
-    _defaultTimeGroupColor->setDefaultValue(0.7, 0);
-    _defaultTimeGroupColor->setDefaultValue(0.65, 1);
-    _defaultTimeGroupColor->setDefaultValue(0.35, 2);
-    _defaultDrawGroupColor->setDefaultValue(0.75, 0);
-    _defaultDrawGroupColor->setDefaultValue(0.75, 1);
-    _defaultDrawGroupColor->setDefaultValue(0.75, 2);
-    _defaultKeyerGroupColor->setDefaultValue(0., 0);
-    _defaultKeyerGroupColor->setDefaultValue(1, 1);
-    _defaultKeyerGroupColor->setDefaultValue(0., 2);
-    _defaultChannelGroupColor->setDefaultValue(0.6, 0);
-    _defaultChannelGroupColor->setDefaultValue(0.24, 1);
-    _defaultChannelGroupColor->setDefaultValue(0.39, 2);
-    _defaultMergeGroupColor->setDefaultValue(0.3, 0);
-    _defaultMergeGroupColor->setDefaultValue(0.37, 1);
-    _defaultMergeGroupColor->setDefaultValue(0.776, 2);
-    _defaultViewsGroupColor->setDefaultValue(0.5, 0);
-    _defaultViewsGroupColor->setDefaultValue(0.9, 1);
-    _defaultViewsGroupColor->setDefaultValue(0.7, 2);
-    _defaultDeepGroupColor->setDefaultValue(0., 0);
-    _defaultDeepGroupColor->setDefaultValue(0., 1);
-    _defaultDeepGroupColor->setDefaultValue(0.38, 2);
-
-
-    endChanges();
-} // setDefaultValues
-
-void
-Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
-{
-    bool didFontWarn = false;
-    bool didOCIOWarn = false;
-    bool didOFXCacheWarn = false;
-
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        if ( ( ( knobs[i] == _fontSize.get() ) ||
-               ( knobs[i] == _systemFontChoice.get() ) )
-             && !didFontWarn ) {
-            didFontWarn = true;
-            Dialogs::warningDialog( tr("Font change").toStdString(),
-                                    tr("Changing the font requires a restart of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
-        } else if ( ( ( knobs[i] == _ocioConfigKnob.get() ) ||
-                      ( knobs[i] == _customOcioConfigFile.get() ) )
-                    && !didOCIOWarn ) {
-            didOCIOWarn = true;
-            bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
-            if (warnOcioChanged) {
-                bool stopAsking = false;
-                Dialogs::warningDialog(tr("OCIO config changed").toStdString(),
-                                       tr("The OpenColorIO config change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), &stopAsking);
-                if (stopAsking) {
-                    _warnOcioConfigKnobChanged->setValue(false);
-                    saveSetting( _warnOcioConfigKnobChanged.get() );
-                }
-            }
-        } else if ( knobs[i] == _texturesMode.get() ) {
-            AppInstanceVec apps = appPTR->getAppInstances();
-            for (AppInstanceVec::iterator it = apps.begin(); it != apps.end(); ++it) {
-                std::list<ViewerInstance*> allViewers;
-                (*it)->getProject()->getViewers(&allViewers);
-                for (std::list<ViewerInstance*>::iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
-                    (*it)->renderCurrentFrame(true);
-                }
-            }
-        } else if ( ( ( knobs[i] == _loadBundledPlugins.get() ) ||
-                      ( knobs[i] == _preferBundledPlugins.get() ) ||
-                      ( knobs[i] == _useStdOFXPluginsLocation.get() ) ||
-                      ( knobs[i] == _extraPluginPaths.get() ) )
-                    && !didOFXCacheWarn ) {
-            didOFXCacheWarn = true;
-            appPTR->clearPluginsLoadedCache(); // clear the cache for next restart
-            Dialogs::warningDialog( tr("OpenFX plugins path changed").toStdString(),
-                                    tr("The OpenFX plugins path change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
-        }
-    }
-} // Settings::warnChangedKnobs
-
-void
-Settings::saveAllSettings()
-{
-    if ( !_saveSettings->getValue() ) {
-        return;
-    }
-    const KnobsVec &knobs = getKnobs();
-    std::vector<KnobI*> k( knobs.size() );
-
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        k[i] = knobs[i].get();
-    }
-    saveSettings(k, false, true);
-}
-
-void
-Settings::restorePluginSettings()
-{
-    const PluginsMap& plugins = appPTR->getPluginsList();
-    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
-
-    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
-        if ( it->first.empty() ) {
-            continue;
-        }
-        assert(it->second.size() > 0);
-
-        for (PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
-            Plugin* plugin  = *itver;
-            assert(plugin);
-
-            if ( plugin->getIsForInternalUseOnly() ) {
-                continue;
-            }
-
-
-            {
-                QString pluginIDKey = plugin->getPluginID() + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
-                QString enabledKey = pluginIDKey + QString::fromUtf8("_enabled");
-                if ( settings.contains(enabledKey) ) {
-                    bool enabled = settings.value(enabledKey).toBool();
-                    plugin->setActivated(enabled);
-                } else {
-                    settings.setValue( enabledKey, plugin->isActivated() );
-                }
-
-                QString rsKey = pluginIDKey + QString::fromUtf8("_rs");
-                if ( settings.contains(rsKey) ) {
-                    bool renderScaleEnabled = settings.value(rsKey).toBool();
-                    plugin->setRenderScaleEnabled(renderScaleEnabled);
-                } else {
-                    settings.setValue( rsKey, plugin->isRenderScaleEnabled() );
-                }
-
-                QString mtKey = pluginIDKey + QString::fromUtf8("_mt");
-                if ( settings.contains(mtKey) ) {
-                    bool multiThreadingEnabled = settings.value(mtKey).toBool();
-                    plugin->setMultiThreadingEnabled(multiThreadingEnabled);
-                } else {
-                    settings.setValue( mtKey, plugin->isMultiThreadingEnabled() );
-                }
-
-                QString glKey = pluginIDKey + QString::fromUtf8("_gl");
-                if (settings.contains(glKey)) {
-                    bool openglEnabled = settings.value(glKey).toBool();
-                    plugin->setOpenGLEnabled(openglEnabled);
-                } else {
-                    settings.setValue(glKey, plugin->isOpenGLEnabled());
-                }
-
-            }
-        }
-    }
-} // Settings::restorePluginSettings
-
-void
-Settings::savePluginsSettings()
-{
-    const PluginsMap& plugins = appPTR->getPluginsList();
-    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
-
-    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
-        assert(it->second.size() > 0);
-
-        for (PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
-            Plugin* plugin  = *itver;
-            assert(plugin);
-
-            QString pluginID = plugin->getPluginID() + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
-            QString enabledKey = pluginID + QString::fromUtf8("_enabled");
-            settings.setValue( enabledKey, plugin->isActivated() );
-
-            QString rsKey = pluginID + QString::fromUtf8("_rs");
-            settings.setValue( rsKey, plugin->isRenderScaleEnabled() );
-
-            QString mtKey = pluginID + QString::fromUtf8("_mt");
-            settings.setValue(mtKey, plugin->isMultiThreadingEnabled());
-
-            QString glKey = pluginID + QString::fromUtf8("_gl");
-            settings.setValue(glKey, plugin->isOpenGLEnabled());
-
-        }
-    }
-}
-
-void
-Settings::setSaveSettings(bool v)
-{
-    _saveSettings->setValue(v);
+    _imp->saveSettings = enable;
 }
 
 bool
 Settings::getSaveSettings() const
 {
-    return _saveSettings->getValue();
+    return _imp->saveSettings;
 }
 
 void
-Settings::saveSettings(const std::vector<KnobI*>& knobs,
-                       bool doWarnings,
-                       bool pluginSettings)
+Settings::saveSettingsToFile()
 {
-    if ( !_saveSettings->getValue() ) {
+    if (!_imp->saveSettings) {
         return;
     }
-    if (pluginSettings) {
-        savePluginsSettings();
+
+    std::string userDataDirPath = _imp->ensureUserDataDirectory();
+    std::string settingsFilePath = _imp->getSettingsAbsoluteFilepath(userDataDirPath);
+
+    FStreamsSupport::ofstream ofile;
+    FStreamsSupport::open(&ofile, settingsFilePath);
+
+    if (!ofile) {
+        std::string message = tr("Failed to save settings to %1").arg(QString::fromUtf8(settingsFilePath.c_str())).toStdString();
+        Dialogs::errorDialog(tr("Settings").toStdString(), message);
+        return;
     }
-    std::vector<KnobI*> changedKnobs;
-    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
-    settings.setValue(QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName), NATRON_VERSION_MAJOR);
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i]);
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>(knobs[i]);
-        KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knobs[i]);
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knobs[i]);
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knobs[i]);
+    bool hasWrittenSomething = false;
 
-        const std::string& name = knobs[i]->getName();
-        for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-            QString dimensionName;
-            if (knobs[i]->getDimension() > 1) {
-                dimensionName =  QString::fromUtf8( name.c_str() ) + QLatin1Char('.') + QString::fromUtf8( knobs[i]->getDimensionName(j).c_str() );
-            } else {
-                dimensionName = QString::fromUtf8( name.c_str() );
-            }
-            try {
-                if (isString) {
-                    QString old = settings.value(dimensionName).toString();
-                    QString newValue = QString::fromUtf8( isString->getValue(j).c_str() );
-                    if (old != newValue) {
-                        changedKnobs.push_back(knobs[i]);
-                    }
-                    settings.setValue( dimensionName, QVariant(newValue) );
-                } else if (isInt) {
-                    if (isChoice) {
-                        ///For choices,serialize the choice name instead
-                        int newIndex = isChoice->getValue(j);
-                        const std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
-                        if ( newIndex < (int)entries.size() ) {
-                            QString oldValue = settings.value(dimensionName).toString();
-                            QString newValue = QString::fromUtf8( entries[newIndex].id.c_str());
-                            if (oldValue != newValue) {
-                                changedKnobs.push_back(knobs[i]);
-                            }
-                            settings.setValue( dimensionName, QVariant(newValue) );
-                        }
-                    } else {
-                        int newValue = isInt->getValue(j);
-                        int oldValue = settings.value( dimensionName, QVariant(INT_MIN) ).toInt();
-                        if (newValue != oldValue) {
-                            changedKnobs.push_back(knobs[i]);
-                        }
-                        settings.setValue( dimensionName, QVariant(newValue) );
-                    }
-                } else if (isDouble) {
-                    double newValue = isDouble->getValue(j);
-                    double oldValue = settings.value( dimensionName, QVariant(INT_MIN) ).toDouble();
-                    if (newValue != oldValue) {
-                        changedKnobs.push_back(knobs[i]);
-                    }
-                    settings.setValue( dimensionName, QVariant(newValue) );
-                } else if (isBool) {
-                    bool newValue = isBool->getValue(j);
-                    bool oldValue = settings.value(dimensionName).toBool();
-                    if (newValue != oldValue) {
-                        changedKnobs.push_back(knobs[i]);
-                    }
-                    settings.setValue( dimensionName, QVariant(newValue) );
-                } else {
-                    assert(false);
-                }
-            } catch (std::logic_error) {
-                // ignore
-            }
-        } // for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-    } // for (U32 i = 0; i < knobs.size(); ++i) {
 
-    if (doWarnings) {
-        warnChangedKnobs(changedKnobs);
-    }
-} // saveSettings
+    SERIALIZATION_NAMESPACE::SettingsSerialization serialization;
+    serialization.pluginsData = _imp->pluginsData;
 
-void
-Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
-{
-    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    const KnobsVec& knobs = getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        if (!(*it)->getIsPersistent()) {
+            continue;
+        }
+        if (!(*it)->hasModifications()) {
+            continue;
+        }
+        SERIALIZATION_NAMESPACE::KnobSerializationPtr k(new SERIALIZATION_NAMESPACE::KnobSerialization);
+        (*it)->toSerialization(k.get());
+        if (!k->_mustSerialize) {
+            continue;
+        }
+        serialization.knobs.push_back(k);
+        hasWrittenSomething = true;
 
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i]);
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>(knobs[i]);
-        KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knobs[i]);
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knobs[i]);
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knobs[i]);
+    } // for all knobs
 
-        const std::string& name = knobs[i]->getName();
+    const PluginsMap& plugins = appPTR->getPluginsList();
+    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
+        assert(it->second.size() > 0);
 
-        for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-            std::string dimensionName = knobs[i]->getDimension() > 1 ? name + '.' + knobs[i]->getDimensionName(j) : name;
-            QString qDimName = QString::fromUtf8( dimensionName.c_str() );
+        for (PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
+            const PluginPtr& plugin = *itver;
 
-            if ( settings.contains(qDimName) ) {
-                if (isString) {
-                    isString->setValue(settings.value(qDimName).toString().toStdString(), ViewSpec::all(), j);
-                } else if (isInt) {
-                    if (isChoice) {
-                        ///For choices,serialize the choice name instead
-                        std::string value = settings.value(qDimName).toString().toStdString();
-                        const std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
-                        int found = -1;
+            SERIALIZATION_NAMESPACE::SettingsSerialization::PluginData data;
+            data.enabled = plugin->isEnabled();
+            data.renderScaleEnabled = plugin->isRenderScaleEnabled();
+            data.multiThreadingEnabled = plugin->isMultiThreadingEnabled();
+            data.openGLEnabled = plugin->isOpenGLEnabled();
 
-                        for (U32 k = 0; k < entries.size(); ++k) {
-                            if (entries[k].id == value) {
-                                found = (int)k;
-                                break;
-                            }
-                        }
-
-                        if (found >= 0) {
-                            isChoice->setValue(found, ViewSpec::all(), j);
-                        }
-                    } else {
-                        isInt->setValue(settings.value(qDimName).toInt(), ViewSpec::all(), j);
-                    }
-                } else if (isDouble) {
-                    isDouble->setValue(settings.value(qDimName).toDouble(), ViewSpec::all(), j);
-                } else if (isBool) {
-                    isBool->setValue(settings.value(qDimName).toBool(), ViewSpec::all(), j);
-                } else {
-                    assert(false);
-                }
+            if (!data.enabled || !data.renderScaleEnabled || !data.multiThreadingEnabled || !data.openGLEnabled) {
+                SERIALIZATION_NAMESPACE::SettingsSerialization::PluginID id;
+                id.identifier = plugin->getPluginID();
+                id.majorVersion = plugin->getMajorVersion();
+                id.minorVersion = plugin->getMinorVersion();
+                serialization.pluginsData[id] = data;
+                hasWrittenSomething = true;
             }
         }
     }
-} // Settings::restoreKnobsFromSettings
 
-void
-Settings::restoreKnobsFromSettings(const KnobsVec& knobs)
-{
-    std::vector<KnobI*> k( knobs.size() );
+    for (ApplicationShortcutsMap::const_iterator it = _imp->shortcuts.begin(); it != _imp->shortcuts.end(); ++it) {
+        for (GroupShortcutsMap::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
 
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        k[i] = knobs[i].get();
-    }
-    restoreKnobsFromSettings(k);
-}
 
-void
-Settings::restoreSettings(bool useDefault)
-{
-    _restoringSettings = true;
-
-    // call restoreKnobsFromSettings only if --no-settings is not part of the command-line arguments
-    if (!useDefault) {
-        const KnobsVec& knobs = getKnobs();
-        restoreKnobsFromSettings(knobs);
-    }
-
-    if (!_ocioRestored) {
-        ///Load even though there's no settings!
-        tryLoadOpenColorIOConfig();
-    }
-
-    // Restore opengl renderer
-    {
-        std::vector<ChoiceOption> availableRenderers = _availableOpenGLRenderers->getEntries_mt_safe();
-        QString missingGLError;
-        bool hasGL = appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, &missingGLError);
-
-        if ( availableRenderers.empty() || !hasGL) {
-            if (missingGLError.isEmpty()) {
-                _openglRendererString->setValue( tr("OpenGL rendering disabled: No device meeting %1 requirements could be found.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
-            } else {
-                _openglRendererString->setValue(missingGLError.toStdString());
+            if (it2->second.modifiers == it2->second.defaultModifiers && it2->second.currentShortcut == it2->second.defaultShortcut) {
+                continue;
             }
+            
+            SERIALIZATION_NAMESPACE::SettingsSerialization::KeybindShortcut shortcut;
+            SERIALIZATION_NAMESPACE::SettingsSerialization::KeybindShortcutKey key;
+            key.grouping = it->first;
+            key.actionID = it2->first;
+
+            shortcut.modifiers = KeybindShortcut::modifiersToStringList(it2->second.modifiers);
+            shortcut.symbol = KeybindShortcut::keySymbolToString(it2->second.currentShortcut);
+            hasWrittenSomething = true;
+
         }
-        int curIndex = _availableOpenGLRenderers->getValue();
-        if ( (curIndex >= 0) && ( curIndex < (int)availableRenderers.size() ) ) {
-            const std::list<OpenGLRendererInfo>& renderers = appPTR->getOpenGLRenderers();
-            int i = 0;
-            for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
-                if (i == curIndex) {
-                    QString maxMemoryString = it->maxMemBytes == 0 ? tr("Unknown") : printAsRAM(it->maxMemBytes);
-                    QString curRenderer = (QString::fromUtf8("<p><h2>") +
-                                           tr("OpenGL Renderer Infos:") +
-                                           QString::fromUtf8("</h2></p><p><b>") +
-                                           tr("Vendor:") +
-                                           QString::fromUtf8("</b> %1</p><p><b>").arg( QString::fromUtf8( it->vendorName.c_str() ) ) +
-                                           tr("Renderer:") +
-                                           QString::fromUtf8("</b> %1</p><p><b>").arg( QString::fromUtf8( it->rendererName.c_str() ) ) +
-                                           tr("OpenGL Version:") +
-                                           QString::fromUtf8("</b> %1</p><p><b>").arg( QString::fromUtf8( it->glVersionString.c_str() ) ) +
-                                           tr("GLSL Version:") +
-                                           QString::fromUtf8("</b> %1</p><p><b>").arg( QString::fromUtf8( it->glslVersionString.c_str() ) ) +
-                                           tr("Max. Memory:") +
-                                           QString::fromUtf8("</b> %1</p><p><b>").arg(maxMemoryString) +
-                                           tr("Max. Texture Size (px):") +
-                                           QString::fromUtf8("</b> %5</p<").arg(it->maxTextureSize));
-                    _openglRendererString->setValue( curRenderer.toStdString() );
+    }
+
+    if (!hasWrittenSomething) {
+        ofile.close();
+        QFile::remove(QString::fromUtf8(settingsFilePath.c_str()));
+    } else {
+        SERIALIZATION_NAMESPACE::write(ofile, serialization, NATRON_SETTINGS_FILE_HEADER);
+    }
+
+
+} // saveSettingsToFile
+
+
+void
+SettingsPrivate::loadSettingsFromFileInternal(const SERIALIZATION_NAMESPACE::SettingsSerialization& serialization, int loadType)
+{
+    // Restore all knobs with a serialization
+    const KnobsVec& knobs = _publicInterface->getKnobs();
+
+    if (loadType & Settings::eLoadSettingsTypeKnobs) {
+        for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serialization.knobs.begin(); it != serialization.knobs.end(); ++it) {
+            KnobIPtr knob;
+            for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+                if ((*it2)->getName() == (*it)->_scriptName) {
+                    knob = *it2;
                     break;
                 }
             }
+            if (!knob) {
+                continue;
+            }
+            knob->fromSerialization(**it);
+        } // for all serialized knobs
+    }
+
+    pluginsData = serialization.pluginsData;
+
+    if (loadType & Settings::eLoadSettingsTypePlugins) {
+        for (SERIALIZATION_NAMESPACE::SettingsSerialization::PluginDataMap::const_iterator it = pluginsData.begin(); it != pluginsData.end(); ++it) {
+
+            PluginPtr plugin;
+            try {
+                plugin = appPTR->getPluginBinary(QString::fromUtf8(it->first.identifier.c_str()), it->first.majorVersion, it->first.minorVersion);
+            } catch (...) {
+                continue;
+            }
+            if (!plugin) {
+                continue;
+            }
+
+            plugin->setEnabled(it->second.enabled);
+            plugin->setRenderScaleEnabled(it->second.renderScaleEnabled);
+            plugin->setMultiThreadingEnabled(it->second.multiThreadingEnabled);
+            plugin->setOpenGLEnabled(it->second.openGLEnabled);
+            
+            
+        } // for all plug-ins data
+    }
+
+    if (loadType & Settings::eLoadSettingsTypeShortcuts) {
+         for (SERIALIZATION_NAMESPACE::SettingsSerialization::KeybindsShortcutMap::const_iterator it = serialization.shortcuts.begin(); it != serialization.shortcuts.end(); ++it) {
+             KeyboardModifiers modifiers = KeybindShortcut::modifiersFromStringList(it->second.modifiers);
+             Key symbol = KeybindShortcut::keySymbolFromString(it->second.symbol);
+             _publicInterface->setShortcutKeybind(it->first.grouping, it->first.actionID, modifiers, symbol);
+         }
+    }
+} // loadSettingsFromFileInternal
+
+
+
+void
+Settings::loadSettingsFromFile(LoadSettingsType loadType)
+{
+    _imp->_restoringSettings = true;
+
+
+
+    std::string userDataDirPath = _imp->ensureUserDataDirectory();
+    std::string settingsFilePath = _imp->getSettingsAbsoluteFilepath(userDataDirPath);
+
+    if (QFile::exists(QString::fromUtf8(settingsFilePath.c_str()))) {
+        FStreamsSupport::ifstream ifile;
+        FStreamsSupport::open(&ifile, settingsFilePath);
+
+        SERIALIZATION_NAMESPACE::SettingsSerialization serialization;
+        try {
+            SERIALIZATION_NAMESPACE::read(NATRON_SETTINGS_FILE_HEADER, ifile, &serialization);
+        } catch (SERIALIZATION_NAMESPACE::InvalidSerializationFileException& e) {
+            Dialogs::errorDialog(tr("Settings").toStdString(), tr("Failed to open %1: This file does not appear to be a settings file").arg(QString::fromUtf8(settingsFilePath.c_str())).toStdString());
+            return;
+        } catch (...) {
+            Dialogs::errorDialog(tr("Settings").toStdString(), tr("Failed to open %1: File could not be decoded").arg(QString::fromUtf8(settingsFilePath.c_str())).toStdString());
+            return;
+        }
+        _imp->loadSettingsFromFileInternal(serialization, loadType);
+    } // file exists
+
+
+    if (loadType & Settings::eLoadSettingsTypeKnobs) {
+
+
+        // Restore number of threads
+        _imp->restoreNumThreads();
+
+
+        // If the appearance changed, flag it
+        try {
+            int appearanceVersion = _imp->_defaultAppearanceVersion->getValue();
+            if (appearanceVersion < NATRON_DEFAULT_APPEARANCE_VERSION) {
+                _imp->_defaultAppearanceOutdated = true;
+                _imp->_defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION);
+            }
+        } catch (std::logic_error) {
+            // ignore
+        }
+
+        // Ensure the texture mode of the Viewer cannot be selected if the user gfx card
+        // does not support 32 bit fp textures.
+        if (!appPTR->isTextureFloatSupported()) {
+            if (_imp->_texturesMode) {
+                _imp->_texturesMode->setSecret(true);
+            }
+        }
+
+    }
+
+    if ((loadType & Settings::eLoadSettingsTypeKnobs) || loadType == Settings::eLoadSettingsNone) {
+
+        // Load OCIO config even if there's no serialization
+        _imp->tryLoadOpenColorIOConfig();
+
+    }
+
+    _imp->_restoringSettings = false;
+
+
+} // loadSettingsFromFile
+
+void
+SettingsPrivate::setOpenGLRenderersInfo()
+{
+    std::vector<ChoiceOption> availableRenderers = _availableOpenGLRenderers->getEntries();
+    QString missingGLError;
+    bool hasGL = appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, &missingGLError);
+
+    if ( availableRenderers.empty() || !hasGL) {
+        if (missingGLError.isEmpty()) {
+            _openglRendererString->setValue( tr("OpenGL rendering disabled: No device meeting %1 requirements could be found.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+        } else {
+            _openglRendererString->setValue(missingGLError.toStdString());
+        }
+    }
+    int curIndex = _availableOpenGLRenderers->getValue();
+    if ( (curIndex < 0) || ( curIndex >= (int)availableRenderers.size() ) ) {
+        return;
+    }
+    const std::list<OpenGLRendererInfo>& renderers = appPTR->getOpenGLRenderers();
+    int i = 0;
+    for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
+        if (i == curIndex) {
+
+            QString maxMemoryString = it->maxMemBytes == 0 ? tr("Unknown") : printAsRAM(it->maxMemBytes);
+            QString curRenderer = (QString::fromUtf8("<p><h2>") +
+                                   tr("OpenGL Renderer Infos:") +
+                                   QString::fromUtf8("</h2></p><p><b>") +
+                                   tr("Vendor:") +
+                                   QString::fromUtf8("</b> %1</p><p><b>").arg( QString::fromUtf8( it->vendorName.c_str() ) ) +
+                                   tr("Renderer:") +
+                                   QString::fromUtf8("</b> %1</p><p><b>").arg( QString::fromUtf8( it->rendererName.c_str() ) ) +
+                                   tr("OpenGL Version:") +
+                                   QString::fromUtf8("</b> %1</p><p><b>").arg( QString::fromUtf8( it->glVersionString.c_str() ) ) +
+                                   tr("GLSL Version:") +
+                                   QString::fromUtf8("</b> %1</p><p><b>").arg( QString::fromUtf8( it->glslVersionString.c_str() ) ) +
+                                   tr("Max. Memory:") +
+                                   QString::fromUtf8("</b> %1</p><p><b>").arg(maxMemoryString) +
+                                   tr("Max. Texture Size (px):") +
+                                   QString::fromUtf8("</b> %5</p<").arg(it->maxTextureSize));
+            _openglRendererString->setValue( curRenderer.toStdString() );
+            break;
         }
     }
 
-    if (!appPTR->isTextureFloatSupported()) {
-        if (_texturesMode) {
-            _texturesMode->setSecret(true);
-        }
+} // setOpenGLRenderersInfo
+
+std::string
+SettingsPrivate::ensureUserDataDirectory()
+{
+    // Create the ~/NatronUserData directory if it doesn't exist.
+    QDir homeDir = QDir::home();
+    QString userDataDirPath = QString::fromUtf8("%1UserData").arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
+    if (!homeDir.exists(userDataDirPath)) {
+        homeDir.mkdir(userDataDirPath);
     }
-
-    _settingsExisted = false;
-    try {
-        _settingsExisted = _natronSettingsExist->getValue();
-
-        if (!_settingsExisted) {
-            _natronSettingsExist->setValue(true);
-            saveSetting( _natronSettingsExist.get() );
-        }
-
-        int appearanceVersion = _defaultAppearanceVersion->getValue();
-        if ( _settingsExisted && (appearanceVersion < NATRON_DEFAULT_APPEARANCE_VERSION) ) {
-            _defaultAppearanceOutdated = true;
-            _defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION);
-            saveSetting( _defaultAppearanceVersion.get() );
-        }
-
-        appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
-        appPTR->setNThreadsToRender( getNumberOfThreads() );
-        appPTR->setUseThreadPool( _useThreadPool->getValue() );
-        appPTR->setPluginsUseInputImageCopyToRender( _pluginUseImageCopyForSource->getValue() );
-    } catch (std::logic_error) {
-        // ignore
-    }
-
-    _restoringSettings = false;
-} // restoreSettings
+    QString sep = QString::fromUtf8("/");
+    return QString(homeDir.absolutePath() + sep + userDataDirPath + sep).toStdString();
+}
 
 bool
-Settings::tryLoadOpenColorIOConfig()
+SettingsPrivate::tryLoadOpenColorIOConfig()
 {
     // the default value is the environment variable "OCIO"
     QString configFile = QFile::decodeName( qgetenv(NATRON_OCIO_ENV_VAR_NAME) );
 
     // OCIO environment variable overrides everything, then try the custom config...
-    if ( configFile.isEmpty() && _customOcioConfigFile->isEnabled(0) ) {
+    if ( configFile.isEmpty() && _customOcioConfigFile->isEnabled() ) {
         ///try to load from the file
         std::string file;
         try {
@@ -2155,7 +2678,7 @@ Settings::tryLoadOpenColorIOConfig()
         // ... and finally try the setting from the choice menu.
         try {
             ///try to load from the combobox
-            QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntry().id.c_str() );
+            QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getCurrentEntry().id.c_str() );
             QString configFileName = QString( activeEntryText + QString::fromUtf8(".ocio") );
             QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
             Q_FOREACH(const QString &defaultConfigsDirStr, defaultConfigsPaths) {
@@ -2193,7 +2716,6 @@ Settings::tryLoadOpenColorIOConfig()
             return false;
         }
     }
-    _ocioRestored = true;
 #ifdef DEBUG
     qDebug() << "setting OCIO=" << configFile;
 #endif
@@ -2213,6 +2735,7 @@ Settings::tryLoadOpenColorIOConfig()
     return true;
 } // tryLoadOpenColorIOConfig
 
+#ifdef NATRON_USE_BREAKPAD
 inline
 void
 crash_application()
@@ -2223,159 +2746,151 @@ crash_application()
     // coverity[var_deref_op]
     *a = 1;
 }
+#endif
+
+void
+SettingsPrivate::restoreNumThreads()
+{
+    int nbThreads = _numberOfThreads->getValue();
+#ifdef DEBUG
+    if (nbThreads == -1) {
+        nbThreads = 1;
+    }
+#endif
+    assert(nbThreads >= 0);
+    if (nbThreads == 0) {
+        int idealCount = appPTR->getHardwareIdealThreadCount();
+        assert(idealCount > 0);
+        idealCount = std::max(idealCount, 1);
+        QThreadPool::globalInstance()->setMaxThreadCount(idealCount);
+    } else {
+        QThreadPool::globalInstance()->setMaxThreadCount(nbThreads);
+    }
+}
+
+void
+SettingsPrivate::refreshCacheSize()
+{
+    CacheBasePtr tileCache = appPTR->getTileCache();
+    if (tileCache) {
+        tileCache->setMaximumCacheSize(_publicInterface->getTileCacheSize());
+    }
+
+    CacheBasePtr cache = appPTR->getGeneralPurposeCache();
+    if (cache) {
+        cache->setMaximumCacheSize(_publicInterface->getGeneralPurposeCacheSize());
+    }
+}
+
+std::size_t
+Settings::getGeneralPurposeCacheSize() const
+{
+    std::size_t kb = 1024;
+    std::size_t mb = kb * kb;
+    std::size_t maxGeneralPurposeCache = 128 * mb;
+    return maxGeneralPurposeCache;
+}
+
+std::size_t
+Settings::getTileCacheSize() const
+{
+    std::size_t kb = 1024;
+    std::size_t mb = kb * kb;
+    std::size_t gb = mb * kb;
+    std::size_t maxDiskBytes = (std::size_t)_imp->_maxDiskCacheSizeGb->getValue() * gb;
+    return maxDiskBytes;
+}
 
 bool
-Settings::onKnobValueChanged(KnobI* k,
+Settings::onKnobValueChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
-                             double /*time*/,
-                             ViewSpec /*view*/,
-                             bool /*originatedFromMainThread*/)
+                             TimeValue /*time*/,
+                             ViewSetSpec /*view*/)
 {
-    Q_EMIT settingChanged(k);
+
+    Q_EMIT settingChanged(k, reason);
     bool ret = true;
 
-    if ( k == _maxViewerDiskCacheGB.get() ) {
-        if (!_restoringSettings) {
-            appPTR->setApplicationsCachesMaximumViewerDiskSpace( getMaximumViewerDiskCacheSize() );
-        }
-    } else if ( k == _maxDiskCacheNodeGB.get() ) {
-        if (!_restoringSettings) {
-            appPTR->setApplicationsCachesMaximumDiskSpace( getMaximumDiskCacheNodeSize() );
-        }
-    } else if ( k == _maxRAMPercent.get() ) {
-        if (!_restoringSettings) {
-            appPTR->setApplicationsCachesMaximumMemoryPercent( getRamMaximumPercent() );
-        }
-        setCachingLabels();
-    } else if ( k == _diskCachePath.get() ) {
-        QString path = QString::fromUtf8(_diskCachePath->getValue().c_str());
-        qputenv(NATRON_DISK_CACHE_PATH_ENV_VAR, path.toUtf8());
-        appPTR->refreshDiskCacheLocation();
-    } else if ( k == _wipeDiskCache.get() ) {
-        appPTR->wipeAndCreateDiskCacheStructure();
-    } else if ( k == _numberOfThreads.get() ) {
-        int nbThreads = getNumberOfThreads();
-        appPTR->setNThreadsToRender(nbThreads);
-        if (nbThreads == -1) {
-            QThreadPool::globalInstance()->setMaxThreadCount(1);
-            appPTR->abortAnyProcessing();
-        } else if (nbThreads == 0) {
-            QThreadPool::globalInstance()->setMaxThreadCount( QThread::idealThreadCount() );
+    if ( k == _imp->_maxDiskCacheSizeGb ) {
+        _imp->refreshCacheSize();
+    }  else if ( k == _imp->_numberOfThreads ) {
+        _imp->restoreNumThreads();
+    } else if ( k == _imp->_ocioConfigKnob ) {
+        if (_imp->_ocioConfigKnob->getCurrentEntry().id == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
+            _imp->_customOcioConfigFile->setEnabled(true);
         } else {
-            QThreadPool::globalInstance()->setMaxThreadCount(nbThreads);
+            _imp->_customOcioConfigFile->setEnabled(false);
         }
-    } else if ( k == _nThreadsPerEffect.get() ) {
-        appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
-    } else if ( k == _ocioConfigKnob.get() ) {
-        if (_ocioConfigKnob->getActiveEntry().id == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
-            _customOcioConfigFile->setAllDimensionsEnabled(true);
-        } else {
-            _customOcioConfigFile->setAllDimensionsEnabled(false);
+        _imp->tryLoadOpenColorIOConfig();
+    } else if ( k == _imp->_customOcioConfigFile ) {
+        if ( _imp->_customOcioConfigFile->isEnabled() ) {
+            _imp->tryLoadOpenColorIOConfig();
         }
-        tryLoadOpenColorIOConfig();
-    } else if ( k == _useThreadPool.get() ) {
-        bool useTP = _useThreadPool->getValue();
-        appPTR->setUseThreadPool(useTP);
-    } else if ( k == _customOcioConfigFile.get() ) {
-        if ( _customOcioConfigFile->isEnabled(0) ) {
-            tryLoadOpenColorIOConfig();
-            bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
-            if ( warnOcioChanged && appPTR->getTopLevelInstance() ) {
-                bool stopAsking = false;
-                Dialogs::warningDialog(tr("OCIO config changed").toStdString(),
-                                       tr("The OpenColorIO config change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), &stopAsking);
-                if (stopAsking) {
-                    _warnOcioConfigKnobChanged->setValue(false);
-                }
-            }
-        }
-    } else if ( k == _maxUndoRedoNodeGraph.get() ) {
-        appPTR->setUndoRedoStackLimit( _maxUndoRedoNodeGraph->getValue() );
-    } else if ( k == _maxPanelsOpened.get() ) {
-        appPTR->onMaxPanelsOpenedChanged( _maxPanelsOpened->getValue() );
-    } else if ( k == _queueRenders.get() ) {
-        appPTR->onQueueRendersChanged( _queueRenders->getValue() );
-    } else if ( ( k == _checkerboardTileSize.get() ) || ( k == _checkerboardColor1.get() ) || ( k == _checkerboardColor2.get() ) ) {
+    } else if ( k == _imp->_maxUndoRedoNodeGraph ) {
+        appPTR->setUndoRedoStackLimit( _imp->_maxUndoRedoNodeGraph->getValue() );
+    } else if ( k == _imp->_maxPanelsOpened ) {
+        appPTR->onMaxPanelsOpenedChanged( _imp->_maxPanelsOpened->getValue() );
+    } else if ( k == _imp->_queueRenders ) {
+        appPTR->onQueueRendersChanged( _imp->_queueRenders->getValue() );
+    } else if ( ( k == _imp->_checkerboardTileSize ) || ( k == _imp->_checkerboardColor1 ) || ( k == _imp->_checkerboardColor2 ) ) {
         appPTR->onCheckerboardSettingsChanged();
-    } else if ( k == _powerOf2Tiling.get() && !_restoringSettings) {
-        appPTR->onViewerTileCacheSizeChanged();
-    } else if ( k == _texturesMode.get() &&  !_restoringSettings) {
-         appPTR->onViewerTileCacheSizeChanged();
-    } else if ( ( k == _hideOptionalInputsAutomatically.get() ) && !_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( k == _imp->_texturesMode &&  !_imp->_restoringSettings) {
+        appPTR->clearAllCaches();
+    } else if ( ( k == _imp->_hideOptionalInputsAutomatically ) && !_imp->_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
         appPTR->toggleAutoHideGraphInputs();
-    } else if ( k == _autoProxyWhenScrubbingTimeline.get() ) {
-        _autoProxyLevel->setSecret( !_autoProxyWhenScrubbingTimeline->getValue() );
-    } else if ( !_restoringSettings &&
-                ( ( k == _sunkenColor.get() ) ||
-                  ( k == _baseColor.get() ) ||
-                  ( k == _raisedColor.get() ) ||
-                  ( k == _selectionColor.get() ) ||
-                  ( k == _textColor.get() ) ||
-                  ( k == _altTextColor.get() ) ||
-                  ( k == _timelinePlayheadColor.get() ) ||
-                  ( k == _timelineBoundsColor.get() ) ||
-                  ( k == _timelineBGColor.get() ) ||
-                  ( k == _interpolatedColor.get() ) ||
-                  ( k == _keyframeColor.get() ) ||
-                  ( k == _trackerKeyframeColor.get() ) ||
-                  ( k == _cachedFrameColor.get() ) ||
-                  ( k == _diskCachedFrameColor.get() ) ||
-                  ( k == _curveEditorBGColor.get() ) ||
-                  ( k == _gridColor.get() ) ||
-                  ( k == _curveEditorScaleColor.get() ) ||
-                  ( k == _dopeSheetEditorBackgroundColor.get() ) ||
-                  ( k == _dopeSheetEditorRootSectionBackgroundColor.get() ) ||
-                  ( k == _dopeSheetEditorKnobSectionBackgroundColor.get() ) ||
-                  ( k == _dopeSheetEditorScaleColor.get() ) ||
-                  ( k == _dopeSheetEditorGridColor.get() ) ||
-                  ( k == _keywordColor.get() ) ||
-                  ( k == _operatorColor.get() ) ||
-                  ( k == _curLineColor.get() ) ||
-                  ( k == _braceColor.get() ) ||
-                  ( k == _defClassColor.get() ) ||
-                  ( k == _stringsColor.get() ) ||
-                  ( k == _commentsColor.get() ) ||
-                  ( k == _selfColor.get() ) ||
-                  ( k == _sliderColor.get() ) ||
-                  ( k == _numbersColor.get() ) ) ) {
-        appPTR->reloadStylesheets();
-    } else if ( k == _qssFile.get() ) {
-        appPTR->reloadStylesheets();
-    } else if ( k == _hostName.get() ) {
-        std::string hostName = _hostName->getActiveEntry().id;
-        bool isCustom = hostName == NATRON_CUSTOM_HOST_NAME_ENTRY;
-        _customHostName->setSecret(!isCustom);
-    } else if ( ( k == _testCrashReportButton.get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( k == _imp->_autoProxyWhenScrubbingTimeline ) {
+        _imp->_autoProxyLevel->setSecret( !_imp->_autoProxyWhenScrubbingTimeline->getValue() );
+    }  else if ( k == _imp->_hostName ) {
+        ChoiceOption hostName = _imp->_hostName->getCurrentEntry();
+        bool isCustom = hostName.id == NATRON_CUSTOM_HOST_NAME_ENTRY;
+        _imp->_customHostName->setSecret(!isCustom);
+#ifdef NATRON_USE_BREAKPAD
+    } else if ( ( k == _imp->_testCrashReportButton ) && (reason == eValueChangedReasonUserEdited) ) {
         StandardButtonEnum reply = Dialogs::questionDialog( tr("Crash Test").toStdString(),
-                                                            tr("You are about to make %1 crash to test the reporting system.\n"
-                                                               "Do you really want to crash?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false,
-                                                            StandardButtons(eStandardButtonYes | eStandardButtonNo) );
+                                                           tr("You are about to make %1 crash to test the reporting system.\n"
+                                                              "Do you really want to crash?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false,
+                                                           StandardButtons(eStandardButtonYes | eStandardButtonNo) );
         if (reply == eStandardButtonYes) {
             crash_application();
         }
-    } else if ( ( k == _scriptEditorFontChoice.get() ) || ( k == _scriptEditorFontSize.get() ) ) {
+#endif
+    } else if ( ( k == _imp->_scriptEditorFontChoice ) || ( k == _imp->_scriptEditorFontSize ) ) {
         appPTR->reloadScriptEditorFonts();
-    } else if ( k == _pluginUseImageCopyForSource.get() ) {
-        appPTR->setPluginsUseInputImageCopyToRender( _pluginUseImageCopyForSource->getValue() );
-    } else if ( k == _enableOpenGL.get() ) {
+    } else if ( k == _imp->_enableOpenGL ) {
         appPTR->refreshOpenGLRenderingFlagOnAllInstances();
-        if (!_restoringSettings) {
+        if (!_imp->_restoringSettings) {
             appPTR->clearPluginsLoadedCache();
         }
     } else {
         ret = false;
     }
-    if (ret) {
-        if ( ( ( k == _hostName.get() ) || ( k == _customHostName.get() ) ) && !_restoringSettings ) {
-            Dialogs::warningDialog( tr("Host-name change").toStdString(), tr("Changing this requires a restart of %1 and clearing the OpenFX plug-ins load cache from the Cache menu.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+
+    // Check if the knob is part of the appearance tab. If so
+    // refresh stylesheet
+    KnobPagePtr isPage = toKnobPage(k);
+    if (!isPage) {
+        KnobIPtr parent = k->getParentKnob();
+        while (parent) {
+            if (parent == _imp->_appearanceTab) {
+                if (reason == eValueChangedReasonRestoreDefault) {
+                    ++_imp->_nRedrawStyleSheetRequests;
+                } else {
+                    appPTR->reloadStylesheets();
+                }
+            }
+            parent = parent->getParentKnob();
         }
     }
-
     return ret;
 } // onKnobValueChanged
 
 ////////////////////////////////////////////////////////
 // "Viewers" pane
+KnobChoicePtr
+Settings::getViewerBitDepthKnob() const
+{
+    return _imp->_texturesMode;
+}
 
 ImageBitDepthEnum
 Settings::getViewersBitDepth() const
@@ -2383,7 +2898,7 @@ Settings::getViewersBitDepth() const
     if (!appPTR->isTextureFloatSupported()) {
         return eImageBitDepthByte;
     }
-    int v = _texturesMode->getValue();
+    int v = _imp->_texturesMode->getValue();
 
     if (v == 0) {
         return eImageBitDepthByte;
@@ -2395,15 +2910,9 @@ Settings::getViewersBitDepth() const
 }
 
 int
-Settings::getViewerTilesPowerOf2() const
-{
-    return _powerOf2Tiling->getValue();
-}
-
-int
 Settings::getCheckerboardTileSize() const
 {
-    return _checkerboardTileSize->getValue();
+    return _imp->_checkerboardTileSize->getValue();
 }
 
 void
@@ -2412,10 +2921,10 @@ Settings::getCheckerboardColor1(double* r,
                                 double* b,
                                 double* a) const
 {
-    *r = _checkerboardColor1->getValue(0);
-    *g = _checkerboardColor1->getValue(1);
-    *b = _checkerboardColor1->getValue(2);
-    *a = _checkerboardColor1->getValue(3);
+    *r = _imp->_checkerboardColor1->getValue(DimIdx(0));
+    *g = _imp->_checkerboardColor1->getValue(DimIdx(1));
+    *b = _imp->_checkerboardColor1->getValue(DimIdx(2));
+    *a = _imp->_checkerboardColor1->getValue(DimIdx(3));
 }
 
 void
@@ -2424,131 +2933,105 @@ Settings::getCheckerboardColor2(double* r,
                                 double* b,
                                 double* a) const
 {
-    *r = _checkerboardColor2->getValue(0);
-    *g = _checkerboardColor2->getValue(1);
-    *b = _checkerboardColor2->getValue(2);
-    *a = _checkerboardColor2->getValue(3);
+    *r = _imp->_checkerboardColor2->getValue(DimIdx(0));
+    *g = _imp->_checkerboardColor2->getValue(DimIdx(1));
+    *b = _imp->_checkerboardColor2->getValue(DimIdx(2));
+    *a = _imp->_checkerboardColor2->getValue(DimIdx(3));
 }
 
 bool
 Settings::isAutoWipeEnabled() const
 {
-    return _autoWipe->getValue();
+    return _imp->_autoWipe->getValue();
 }
 
 bool
 Settings::isAutoProxyEnabled() const
 {
-    return _autoProxyWhenScrubbingTimeline->getValue();
+    return _imp->_autoProxyWhenScrubbingTimeline->getValue();
 }
 
 unsigned int
 Settings::getAutoProxyMipMapLevel() const
 {
-    return (unsigned int)_autoProxyLevel->getValue() + 1;
+    return (unsigned int)_imp->_autoProxyLevel->getValue() + 1;
 }
 
 int
 Settings::getMaxOpenedNodesViewerContext() const
 {
-    return _maximumNodeViewerUIOpened->getValue();
+    return _imp->_maximumNodeViewerUIOpened->getValue();
 }
 
 bool
 Settings::isViewerKeysEnabled() const
 {
-    return _viewerKeys->getValue();
+    return _imp->_viewerKeys->getValue();
 }
 
 ///////////////////////////////////////////////////////
 // "Caching" pane
 
+std::string
+Settings::getDiskCachePath() const
+{
+    return _imp->_diskCachePath->getValue();
+}
+
 bool
 Settings::isAggressiveCachingEnabled() const
 {
-    return _aggressiveCaching->getValue();
-}
-
-double
-Settings::getRamMaximumPercent() const
-{
-    return (double)_maxRAMPercent->getValue() / 100.;
-}
-
-U64
-Settings::getMaximumViewerDiskCacheSize() const
-{
-    return (U64)( _maxViewerDiskCacheGB->getValue() ) * std::pow(1024., 3.);
-}
-
-U64
-Settings::getMaximumDiskCacheNodeSize() const
-{
-    return (U64)( _maxDiskCacheNodeGB->getValue() ) * std::pow(1024., 3.);
-}
-
-///////////////////////////////////////////////////
-
-double
-Settings::getUnreachableRamPercent() const
-{
-    return (double)_unreachableRAMPercent->getValue() / 100.;
+    return _imp->_aggressiveCaching->getValue();
 }
 
 bool
 Settings::getColorPickerLinear() const
 {
-    return _linearPickers->getValue();
-}
-
-int
-Settings::getNumberOfThreadsPerEffect() const
-{
-    return _nThreadsPerEffect->getValue();
+    return _imp->_linearPickers->getValue();
 }
 
 int
 Settings::getNumberOfThreads() const
 {
-    return _numberOfThreads->getValue();
+    return _imp->_numberOfThreads->getValue();
 }
 
 void
 Settings::setNumberOfThreads(int threadsNb)
 {
-    _numberOfThreads->setValue(threadsNb);
+    _imp->_numberOfThreads->setValue(threadsNb);
 }
 
 bool
 Settings::isAutoPreviewOnForNewProjects() const
 {
-    return _autoPreviewEnabledForNewProjects->getValue();
+    return _imp->_autoPreviewEnabledForNewProjects->getValue();
 }
 
 #ifdef NATRON_DOCUMENTATION_ONLINE
 int
 Settings::getDocumentationSource() const
 {
-    return _documentationSource->getValue();
+    return _imp->_documentationSource->getValue();
 }
 #endif
 
 int
 Settings::getServerPort() const
 {
-    return _wwwServerPort->getValue();
+    return _imp->_wwwServerPort->getValue();
 }
 
 void
 Settings::setServerPort(int port) const
 {
-    _wwwServerPort->setValue(port);
+    _imp->_wwwServerPort->setValue(port);
 }
 
 bool
 Settings::isAutoScrollEnabled() const
 {
-    return _autoScroll->getValue();
+    return _imp->_autoScroll->getValue();
 }
 
 QString
@@ -2563,7 +3046,9 @@ Settings::makeHTMLDocumentation(bool genHTML) const
 
     const KnobsVec& knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ( (*it)->getDefaultIsSecret() ) {
+#pragma message WARN("TODO: restore getDefaultIsSecret from RB-2.2")
+        //if ( (*it)->getDefaultIsSecret() ) {
+        if ( (*it)->getIsSecret() ) {
             continue;
         }
         //QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
@@ -2648,49 +3133,14 @@ Settings::makeHTMLDocumentation(bool genHTML) const
 } // Settings::makeHTMLDocumentation
 
 void
-Settings::populateSystemFonts(const QSettings& settings,
-                              const std::vector<std::string>& fonts)
+Settings::populateSystemFonts(const std::vector<std::string>& fonts)
 {
     std::vector<ChoiceOption> options(fonts.size());
     for (std::size_t i = 0; i < fonts.size(); ++i) {
         options[i].id = fonts[i];
     }
-    _systemFontChoice->populateChoices(options);
-    _scriptEditorFontChoice->populateChoices(options);
-
-    for (U32 i = 0; i < fonts.size(); ++i) {
-        if (fonts[i] == NATRON_FONT) {
-            _systemFontChoice->setDefaultValue(i);
-        }
-        if (fonts[i] == NATRON_SCRIPT_FONT) {
-            _scriptEditorFontChoice->setDefaultValue(i);
-        }
-    }
-    ///Now restore properly the system font choice
-    {
-        QString name = QString::fromUtf8( _systemFontChoice->getName().c_str() );
-        if ( settings.contains(name) ) {
-            std::string value = settings.value(name).toString().toStdString();
-            for (U32 i = 0; i < fonts.size(); ++i) {
-                if (fonts[i] == value) {
-                    _systemFontChoice->setValue(i);
-                    break;
-                }
-            }
-        }
-    }
-    {
-        QString name = QString::fromUtf8( _scriptEditorFontChoice->getName().c_str() );
-        if ( settings.contains(name) ) {
-            std::string value = settings.value(name).toString().toStdString();
-            for (U32 i = 0; i < fonts.size(); ++i) {
-                if (fonts[i] == value) {
-                    _scriptEditorFontChoice->setValue(i);
-                    break;
-                }
-            }
-        }
-    }
+    _imp->_systemFontChoice->populateChoices(options);
+    _imp->_scriptEditorFontChoice->populateChoices(options);
 }
 
 void
@@ -2698,7 +3148,7 @@ Settings::getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const
 {
     assert(paths);
     try {
-        _extraPluginPaths->getPaths(paths);
+        _imp->_extraPluginPaths->getPaths(paths);
     } catch (std::logic_error) {
         paths->clear();
     }
@@ -2707,101 +3157,128 @@ Settings::getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const
 bool
 Settings::getUseStdOFXPluginsLocation() const
 {
-    return _useStdOFXPluginsLocation->getValue();
+    return _imp->_useStdOFXPluginsLocation->getValue();
 }
 
 void
-Settings::restoreDefault()
+Settings::restoreAllSettingsToDefaults()
 {
-    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
-
-    if ( !QFile::remove( settings.fileName() ) ) {
-        qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
+    restoreDefaultAppearance();
+    restoreDefaultShortcuts();
+    const KnobsVec& knobs = getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        KnobPagePtr isPage = toKnobPage(*it);
+        if (!isPage) {
+            continue;
+        }
+        restorePageToDefaults(isPage);
     }
+}
 
-    beginChanges();
-    const KnobsVec & knobs = getKnobs();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-            knobs[i]->resetToDefaultValue(j);
+void
+Settings::restorePageToDefaults(const KnobPagePtr& tab)
+{
+
+    _imp->_nRedrawStyleSheetRequests = 0;
+    {
+        ScopedChanges_RAII changes(this);
+        const KnobsVec & knobs = tab->getChildren();
+        for (U32 i = 0; i < knobs.size(); ++i) {
+            knobs[i]->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
         }
     }
-    setCachingLabels();
-    endChanges();
-}
+
+    if (tab == _imp->_pluginsTab) {
+        const PluginsMap& allPlugins = appPTR->getPluginsList();
+        for (PluginsMap::const_iterator it = allPlugins.begin(); it != allPlugins.end(); ++it) {
+            for (PluginVersionsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+                (*it2)->setEnabled(true);
+                (*it2)->setRenderScaleEnabled(true);
+                (*it2)->setMultiThreadingEnabled(true);
+                (*it2)->setOpenGLEnabled(true);
+            }
+        }
+        _imp->pluginsData.clear();
+    }
+
+    if (_imp->_nRedrawStyleSheetRequests > 0) {
+        appPTR->reloadStylesheets();
+        _imp->_nRedrawStyleSheetRequests = 0;
+    }
+} // restorePageToDefaults
 
 bool
 Settings::isRenderInSeparatedProcessEnabled() const
 {
-    return _renderInSeparateProcess->getValue();
+    return _imp->_renderInSeparateProcess->getValue();
 }
 
 int
 Settings::getMaximumUndoRedoNodeGraph() const
 {
-    return _maxUndoRedoNodeGraph->getValue();
+    return _imp->_maxUndoRedoNodeGraph->getValue();
 }
 
 int
 Settings::getAutoSaveDelayMS() const
 {
-    return _autoSaveDelay->getValue() * 1000;
+    return _imp->_autoSaveDelay->getValue() * 1000;
 }
 
 bool
 Settings::isAutoSaveEnabledForUnsavedProjects() const
 {
-    return _autoSaveUnSavedProjects->getValue();
+    return _imp->_autoSaveUnSavedProjects->getValue();
 }
 
 bool
 Settings::isSnapToNodeEnabled() const
 {
-    return _snapNodesToConnections->getValue();
+    return _imp->_snapNodesToConnections->getValue();
 }
 
 bool
 Settings::isCheckForUpdatesEnabled() const
 {
-    return _checkForUpdates->getValue();
+    return _imp->_checkForUpdates->getValue();
 }
 
 void
 Settings::setCheckUpdatesEnabled(bool enabled)
 {
-    _checkForUpdates->setValue(enabled);
-    saveSetting( _checkForUpdates.get() );
+    _imp->_checkForUpdates->setValue(enabled);
 }
 
+#ifdef NATRON_USE_BREAKPAD
 bool
 Settings::isCrashReportingEnabled() const
 {
-    return _enableCrashReports->getValue();
+    return _imp->_enableCrashReports->getValue();
 }
+#endif
 
 int
 Settings::getMaxPanelsOpened() const
 {
-    return _maxPanelsOpened->getValue();
+    return _imp->_maxPanelsOpened->getValue();
 }
 
 void
 Settings::setMaxPanelsOpened(int maxPanels)
 {
-    _maxPanelsOpened->setValue(maxPanels);
-    saveSetting( _maxPanelsOpened.get() );
+    _imp->_maxPanelsOpened->setValue(maxPanels);
 }
 
 bool
 Settings::loadBundledPlugins() const
 {
-    return _loadBundledPlugins->getValue();
+    return _imp->_loadBundledPlugins->getValue();
 }
 
 bool
 Settings::preferBundledPlugins() const
 {
-    return _preferBundledPlugins->getValue();
+    return _imp->_preferBundledPlugins->getValue();
 }
 
 void
@@ -2809,9 +3286,9 @@ Settings::getDefaultNodeColor(float *r,
                               float *g,
                               float *b) const
 {
-    *r = _defaultNodeColor->getValue(0);
-    *g = _defaultNodeColor->getValue(1);
-    *b = _defaultNodeColor->getValue(2);
+    *r = _imp->_defaultNodeColor->getValue(DimIdx(0));
+    *g = _imp->_defaultNodeColor->getValue(DimIdx(1));
+    *b = _imp->_defaultNodeColor->getValue(DimIdx(2));
 }
 
 void
@@ -2819,9 +3296,9 @@ Settings::getDefaultBackdropColor(float *r,
                                   float *g,
                                   float *b) const
 {
-    *r = _defaultBackdropColor->getValue(0);
-    *g = _defaultBackdropColor->getValue(1);
-    *b = _defaultBackdropColor->getValue(2);
+    *r = _imp->_defaultBackdropColor->getValue(DimIdx(0));
+    *g = _imp->_defaultBackdropColor->getValue(DimIdx(1));
+    *b = _imp->_defaultBackdropColor->getValue(DimIdx(2));
 }
 
 void
@@ -2829,9 +3306,9 @@ Settings::getGeneratorColor(float *r,
                             float *g,
                             float *b) const
 {
-    *r = _defaultGeneratorColor->getValue(0);
-    *g = _defaultGeneratorColor->getValue(1);
-    *b = _defaultGeneratorColor->getValue(2);
+    *r = _imp->_defaultGeneratorColor->getValue(DimIdx(0));
+    *g = _imp->_defaultGeneratorColor->getValue(DimIdx(1));
+    *b = _imp->_defaultGeneratorColor->getValue(DimIdx(2));
 }
 
 void
@@ -2839,9 +3316,9 @@ Settings::getReaderColor(float *r,
                          float *g,
                          float *b) const
 {
-    *r = _defaultReaderColor->getValue(0);
-    *g = _defaultReaderColor->getValue(1);
-    *b = _defaultReaderColor->getValue(2);
+    *r = _imp->_defaultReaderColor->getValue(DimIdx(0));
+    *g = _imp->_defaultReaderColor->getValue(DimIdx(1));
+    *b = _imp->_defaultReaderColor->getValue(DimIdx(2));
 }
 
 void
@@ -2849,9 +3326,9 @@ Settings::getWriterColor(float *r,
                          float *g,
                          float *b) const
 {
-    *r = _defaultWriterColor->getValue(0);
-    *g = _defaultWriterColor->getValue(1);
-    *b = _defaultWriterColor->getValue(2);
+    *r = _imp->_defaultWriterColor->getValue(DimIdx(0));
+    *g = _imp->_defaultWriterColor->getValue(DimIdx(1));
+    *b = _imp->_defaultWriterColor->getValue(DimIdx(2));
 }
 
 void
@@ -2859,9 +3336,9 @@ Settings::getColorGroupColor(float *r,
                              float *g,
                              float *b) const
 {
-    *r = _defaultColorGroupColor->getValue(0);
-    *g = _defaultColorGroupColor->getValue(1);
-    *b = _defaultColorGroupColor->getValue(2);
+    *r = _imp->_defaultColorGroupColor->getValue(DimIdx(0));
+    *g = _imp->_defaultColorGroupColor->getValue(DimIdx(1));
+    *b = _imp->_defaultColorGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2869,9 +3346,9 @@ Settings::getFilterGroupColor(float *r,
                               float *g,
                               float *b) const
 {
-    *r = _defaultFilterGroupColor->getValue(0);
-    *g = _defaultFilterGroupColor->getValue(1);
-    *b = _defaultFilterGroupColor->getValue(2);
+    *r = _imp->_defaultFilterGroupColor->getValue(DimIdx(0));
+    *g = _imp->_defaultFilterGroupColor->getValue(DimIdx(1));
+    *b = _imp->_defaultFilterGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2879,9 +3356,9 @@ Settings::getTransformGroupColor(float *r,
                                  float *g,
                                  float *b) const
 {
-    *r = _defaultTransformGroupColor->getValue(0);
-    *g = _defaultTransformGroupColor->getValue(1);
-    *b = _defaultTransformGroupColor->getValue(2);
+    *r = _imp->_defaultTransformGroupColor->getValue(DimIdx(0));
+    *g = _imp->_defaultTransformGroupColor->getValue(DimIdx(1));
+    *b = _imp->_defaultTransformGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2889,9 +3366,9 @@ Settings::getTimeGroupColor(float *r,
                             float *g,
                             float *b) const
 {
-    *r = _defaultTimeGroupColor->getValue(0);
-    *g = _defaultTimeGroupColor->getValue(1);
-    *b = _defaultTimeGroupColor->getValue(2);
+    *r = _imp->_defaultTimeGroupColor->getValue(DimIdx(0));
+    *g = _imp->_defaultTimeGroupColor->getValue(DimIdx(1));
+    *b = _imp->_defaultTimeGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2899,9 +3376,9 @@ Settings::getDrawGroupColor(float *r,
                             float *g,
                             float *b) const
 {
-    *r = _defaultDrawGroupColor->getValue(0);
-    *g = _defaultDrawGroupColor->getValue(1);
-    *b = _defaultDrawGroupColor->getValue(2);
+    *r = _imp->_defaultDrawGroupColor->getValue(DimIdx(0));
+    *g = _imp->_defaultDrawGroupColor->getValue(DimIdx(1));
+    *b = _imp->_defaultDrawGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2909,9 +3386,9 @@ Settings::getKeyerGroupColor(float *r,
                              float *g,
                              float *b) const
 {
-    *r = _defaultKeyerGroupColor->getValue(0);
-    *g = _defaultKeyerGroupColor->getValue(1);
-    *b = _defaultKeyerGroupColor->getValue(2);
+    *r = _imp->_defaultKeyerGroupColor->getValue(DimIdx(0));
+    *g = _imp->_defaultKeyerGroupColor->getValue(DimIdx(1));
+    *b = _imp->_defaultKeyerGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2919,9 +3396,9 @@ Settings::getChannelGroupColor(float *r,
                                float *g,
                                float *b) const
 {
-    *r = _defaultChannelGroupColor->getValue(0);
-    *g = _defaultChannelGroupColor->getValue(1);
-    *b = _defaultChannelGroupColor->getValue(2);
+    *r = _imp->_defaultChannelGroupColor->getValue(DimIdx(0));
+    *g = _imp->_defaultChannelGroupColor->getValue(DimIdx(1));
+    *b = _imp->_defaultChannelGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2929,9 +3406,9 @@ Settings::getMergeGroupColor(float *r,
                              float *g,
                              float *b) const
 {
-    *r = _defaultMergeGroupColor->getValue(0);
-    *g = _defaultMergeGroupColor->getValue(1);
-    *b = _defaultMergeGroupColor->getValue(2);
+    *r = _imp->_defaultMergeGroupColor->getValue(DimIdx(0));
+    *g = _imp->_defaultMergeGroupColor->getValue(DimIdx(1));
+    *b = _imp->_defaultMergeGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2939,9 +3416,9 @@ Settings::getViewsGroupColor(float *r,
                              float *g,
                              float *b) const
 {
-    *r = _defaultViewsGroupColor->getValue(0);
-    *g = _defaultViewsGroupColor->getValue(1);
-    *b = _defaultViewsGroupColor->getValue(2);
+    *r = _imp->_defaultViewsGroupColor->getValue(DimIdx(0));
+    *g = _imp->_defaultViewsGroupColor->getValue(DimIdx(1));
+    *b = _imp->_defaultViewsGroupColor->getValue(DimIdx(2));
 }
 
 void
@@ -2949,137 +3426,112 @@ Settings::getDeepGroupColor(float *r,
                             float *g,
                             float *b) const
 {
-    *r = _defaultDeepGroupColor->getValue(0);
-    *g = _defaultDeepGroupColor->getValue(1);
-    *b = _defaultDeepGroupColor->getValue(2);
+    *r = _imp->_defaultDeepGroupColor->getValue(DimIdx(0));
+    *g = _imp->_defaultDeepGroupColor->getValue(DimIdx(1));
+    *b = _imp->_defaultDeepGroupColor->getValue(DimIdx(2));
 }
 
 int
 Settings::getDisconnectedArrowLength() const
 {
-    return _disconnectedArrowLength->getValue();
+    return _imp->_disconnectedArrowLength->getValue();
 }
 
 std::string
 Settings::getHostName() const
 {
-    int entry_i =  _hostName->getValue();
-    std::vector<ChoiceOption> entries = _hostName->getEntries_mt_safe();
+    int entry_i =  _imp->_hostName->getValue();
+    std::vector<ChoiceOption> entries = _imp->_hostName->getEntries();
 
     if ( (entry_i >= 0) && ( entry_i < (int)entries.size() ) && (entries[entry_i].id == NATRON_CUSTOM_HOST_NAME_ENTRY) ) {
-        return _customHostName->getValue();
+        return _imp->_customHostName->getValue();
     } else {
-        if ( (entry_i >= 0) && ( entry_i < (int)_knownHostNames.size() ) ) {
-            return _knownHostNames[entry_i].id;
+        if ( (entry_i >= 0) && ( entry_i < (int)_imp->_knownHostNames.size() ) ) {
+            return _imp->_knownHostNames[entry_i].id;
+
         }
 
         return std::string();
     }
 }
 
+const std::string&
+Settings::getKnownHostName(KnownHostNameEnum e) const
+{
+    return _imp->_knownHostNames[(int)e].id;
+}
+
 bool
 Settings::getRenderOnEditingFinishedOnly() const
 {
-    return _renderOnEditingFinished->getValue();
+    return _imp->_renderOnEditingFinished->getValue();
 }
 
 void
 Settings::setRenderOnEditingFinishedOnly(bool render)
 {
-    _renderOnEditingFinished->setValue(render);
+    _imp->_renderOnEditingFinished->setValue(render);
 }
 
 bool
 Settings::getIconsBlackAndWhite() const
 {
-    return _useBWIcons->getValue();
+    return _imp->_useBWIcons->getValue();
 }
 
 std::string
 Settings::getDefaultLayoutFile() const
 {
-    return _defaultLayoutFile->getValue();
+    return _imp->_defaultLayoutFile->getValue();
 }
 
 bool
 Settings::getLoadProjectWorkspce() const
 {
-    return _loadProjectsWorkspace->getValue();
+    return _imp->_loadProjectsWorkspace->getValue();
 }
 
 bool
 Settings::useCursorPositionIncrements() const
 {
-    return _useCursorPositionIncrements->getValue();
+    return _imp->_useCursorPositionIncrements->getValue();
 }
 
 bool
 Settings::isAutoProjectFormatEnabled() const
 {
-    return _firstReadSetProjectFormat->getValue();
+    return _imp->_firstReadSetProjectFormat->getValue();
 }
 
 bool
 Settings::isAutoFixRelativeFilePathEnabled() const
 {
-    return _fixPathsOnProjectPathChanged->getValue();
-}
-
-int
-Settings::getNumberOfParallelRenders() const
-{
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-
-    return _numberOfParallelRenders->getValue();
-#else
-
-    return 1;
-#endif
-}
-
-void
-Settings::setNumberOfParallelRenders(int nb)
-{
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    _numberOfParallelRenders->setValue(nb);
-#endif
+    return _imp->_fixPathsOnProjectPathChanged->getValue();
 }
 
 bool
 Settings::areRGBPixelComponentsSupported() const
 {
-    return _activateRGBSupport->getValue();
+    return _imp->_activateRGBSupport->getValue();
 }
 
 bool
 Settings::isTransformConcatenationEnabled() const
 {
-    return _activateTransformConcatenationSupport->getValue();
-}
-
-bool
-Settings::useGlobalThreadPool() const
-{
-    return _useThreadPool->getValue();
-}
-
-void
-Settings::setUseGlobalThreadPool(bool use)
-{
-    _useThreadPool->setValue(use);
+    return _imp->_activateTransformConcatenationSupport->getValue();
 }
 
 bool
 Settings::useInputAForMergeAutoConnect() const
 {
-    return _useInputAForMergeAutoConnect->getValue();
+    return _imp->_useInputAForMergeAutoConnect->getValue();
 }
 
 void
 Settings::doOCIOStartupCheckIfNeeded()
 {
-    bool docheck = _ocioStartupCheck->getValue();
-    AppInstPtr mainInstance = appPTR->getTopLevelInstance();
+    bool docheck = _imp->_ocioStartupCheck->getValue();
+    AppInstancePtr mainInstance = appPTR->getTopLevelInstance();
 
     if (!mainInstance) {
         qDebug() << "WARNING: doOCIOStartupCheckIfNeeded() called without a AppInstance";
@@ -3088,8 +3540,8 @@ Settings::doOCIOStartupCheckIfNeeded()
     }
 
     if (docheck && mainInstance) {
-        int entry_i = _ocioConfigKnob->getValue();
-        std::vector<ChoiceOption> entries = _ocioConfigKnob->getEntries_mt_safe();
+        int entry_i = _imp->_ocioConfigKnob->getValue();
+        std::vector<ChoiceOption> entries = _imp->_ocioConfigKnob->getEntries();
         std::string warnText;
         if ( (entry_i < 0) || ( entry_i >= (int)entries.size() ) ) {
             warnText = tr("The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (%1)?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
@@ -3105,8 +3557,7 @@ Settings::doOCIOStartupCheckIfNeeded()
                                                                 eStandardButtonYes,
                                                                 &stopAsking);
         if (stopAsking != !docheck) {
-            _ocioStartupCheck->setValue(!stopAsking);
-            saveSetting( _ocioStartupCheck.get() );
+            _imp->_ocioStartupCheck->setValue(!stopAsking);
         }
 
         if (reply == eStandardButtonYes) {
@@ -3118,8 +3569,7 @@ Settings::doOCIOStartupCheckIfNeeded()
                 }
             }
             if (defaultIndex != -1) {
-                _ocioConfigKnob->setValue(defaultIndex);
-                saveSetting( _ocioConfigKnob.get() );
+                _imp->_ocioConfigKnob->setValue(defaultIndex);
             } else {
                 Dialogs::warningDialog( "OCIO config", tr("The %2 OCIO config could not be found.\n"
                                                           "This is probably because you're not using the OpenColorIO-Configs folder that should "
@@ -3130,120 +3580,107 @@ Settings::doOCIOStartupCheckIfNeeded()
 } // Settings::doOCIOStartupCheckIfNeeded
 
 bool
-Settings::didSettingsExistOnStartup() const
-{
-    return _settingsExisted;
-}
-
-bool
 Settings::notifyOnFileChange() const
 {
-    return _notifyOnFileChange->getValue();
+    return _imp->_notifyOnFileChange->getValue();
 }
 
 bool
 Settings::isAutoTurboEnabled() const
 {
-    return _autoTurbo->getValue();
+    return _imp->_autoTurbo->getValue();
 }
 
 void
 Settings::setAutoTurboModeEnabled(bool e)
 {
-    _autoTurbo->setValue(e);
+    _imp->_autoTurbo->setValue(e);
 }
 
 void
 Settings::setOptionalInputsAutoHidden(bool hidden)
 {
-    _hideOptionalInputsAutomatically->setValue(hidden);
+    _imp->_hideOptionalInputsAutomatically->setValue(hidden);
 }
 
 bool
 Settings::areOptionalInputsAutoHidden() const
 {
-    return _hideOptionalInputsAutomatically->getValue();
+    return _imp->_hideOptionalInputsAutomatically->getValue();
 }
 
 void
 Settings::getPythonGroupsSearchPaths(std::list<std::string>* templates) const
 {
-    _templatesPluginPaths->getPaths(templates);
+    _imp->_templatesPluginPaths->getPaths(templates);
 }
 
 void
 Settings::appendPythonGroupsPath(const std::string& path)
 {
-    _templatesPluginPaths->appendPath(path);
+    _imp->_templatesPluginPaths->appendPath(path);
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
-    settings.setValue( QString::fromUtf8( _templatesPluginPaths->getName().c_str() ), QVariant( QString::fromUtf8( _templatesPluginPaths->getValue(0).c_str() ) ) );
+    settings.setValue( QString::fromUtf8( _imp->_templatesPluginPaths->getName().c_str() ), QVariant( QString::fromUtf8( _imp->_templatesPluginPaths->getValue(DimIdx(0)).c_str() ) ) );
 }
 
 std::string
 Settings::getDefaultOnProjectLoadedCB()
 {
-    return _defaultOnProjectLoaded->getValue();
+    return _imp->_defaultOnProjectLoaded->getValue();
 }
 
 std::string
 Settings::getDefaultOnProjectSaveCB()
 {
-    return _defaultOnProjectSave->getValue();
+    return _imp->_defaultOnProjectSave->getValue();
 }
 
 std::string
 Settings::getDefaultOnProjectCloseCB()
 {
-    return _defaultOnProjectClose->getValue();
+    return _imp->_defaultOnProjectClose->getValue();
 }
 
 std::string
 Settings::getDefaultOnNodeCreatedCB()
 {
-    return _defaultOnNodeCreated->getValue();
+    return _imp->_defaultOnNodeCreated->getValue();
 }
 
 std::string
 Settings::getDefaultOnNodeDeleteCB()
 {
-    return _defaultOnNodeDelete->getValue();
+    return _imp->_defaultOnNodeDelete->getValue();
 }
 
 std::string
 Settings::getOnProjectCreatedCB()
 {
-    return _onProjectCreated->getValue();
-}
-
-bool
-Settings::isLoadFromPyPlugsEnabled() const
-{
-    return _loadPyPlugsFromPythonScript->getValue();
+    return _imp->_onProjectCreated->getValue();
 }
 
 bool
 Settings::isAutoDeclaredVariablePrintActivated() const
 {
-    return _echoVariableDeclarationToPython->getValue();
+    return _imp->_echoVariableDeclarationToPython->getValue();
 }
 
 void
 Settings::setAutoDeclaredVariablePrintEnabled(bool enabled)
 {
-    _echoVariableDeclarationToPython->setValue(enabled);
-    saveSetting( _echoVariableDeclarationToPython.get() );
+    _imp->_echoVariableDeclarationToPython->setValue(enabled);
 }
 
 bool
 Settings::isPluginIconActivatedOnNodeGraph() const
 {
-    return _usePluginIconsInNodeGraph->getValue();
+    return _imp->_usePluginIconsInNodeGraph->getValue();
 }
 
 bool
 Settings::isNodeGraphAntiAliasingEnabled() const
 {
-    return _useAntiAliasing->getValue();
+    return _imp->_useAntiAliasing->getValue();
 }
 
 void
@@ -3251,9 +3688,9 @@ Settings::getSunkenColor(double* r,
                          double* g,
                          double* b) const
 {
-    *r = _sunkenColor->getValue(0);
-    *g = _sunkenColor->getValue(1);
-    *b = _sunkenColor->getValue(2);
+    *r = _imp->_sunkenColor->getValue(DimIdx(0));
+    *g = _imp->_sunkenColor->getValue(DimIdx(1));
+    *b = _imp->_sunkenColor->getValue(DimIdx(2));
 }
 
 void
@@ -3261,9 +3698,9 @@ Settings::getBaseColor(double* r,
                        double* g,
                        double* b) const
 {
-    *r = _baseColor->getValue(0);
-    *g = _baseColor->getValue(1);
-    *b = _baseColor->getValue(2);
+    *r = _imp->_baseColor->getValue(DimIdx(0));
+    *g = _imp->_baseColor->getValue(DimIdx(1));
+    *b = _imp->_baseColor->getValue(DimIdx(2));
 }
 
 void
@@ -3271,9 +3708,9 @@ Settings::getRaisedColor(double* r,
                          double* g,
                          double* b) const
 {
-    *r = _raisedColor->getValue(0);
-    *g = _raisedColor->getValue(1);
-    *b = _raisedColor->getValue(2);
+    *r = _imp->_raisedColor->getValue(DimIdx(0));
+    *g = _imp->_raisedColor->getValue(DimIdx(1));
+    *b = _imp->_raisedColor->getValue(DimIdx(2));
 }
 
 void
@@ -3281,9 +3718,9 @@ Settings::getSelectionColor(double* r,
                             double* g,
                             double* b) const
 {
-    *r = _selectionColor->getValue(0);
-    *g = _selectionColor->getValue(1);
-    *b = _selectionColor->getValue(2);
+    *r = _imp->_selectionColor->getValue(DimIdx(0));
+    *g = _imp->_selectionColor->getValue(DimIdx(1));
+    *b = _imp->_selectionColor->getValue(DimIdx(2));
 }
 
 void
@@ -3291,9 +3728,9 @@ Settings::getInterpolatedColor(double* r,
                                double* g,
                                double* b) const
 {
-    *r = _interpolatedColor->getValue(0);
-    *g = _interpolatedColor->getValue(1);
-    *b = _interpolatedColor->getValue(2);
+    *r = _imp->_interpolatedColor->getValue(DimIdx(0));
+    *g = _imp->_interpolatedColor->getValue(DimIdx(1));
+    *b = _imp->_interpolatedColor->getValue(DimIdx(2));
 }
 
 void
@@ -3301,9 +3738,9 @@ Settings::getKeyframeColor(double* r,
                            double* g,
                            double* b) const
 {
-    *r = _keyframeColor->getValue(0);
-    *g = _keyframeColor->getValue(1);
-    *b = _keyframeColor->getValue(2);
+    *r = _imp->_keyframeColor->getValue(DimIdx(0));
+    *g = _imp->_keyframeColor->getValue(DimIdx(1));
+    *b = _imp->_keyframeColor->getValue(DimIdx(2));
 }
 
 void
@@ -3311,9 +3748,9 @@ Settings::getTrackerKeyframeColor(double* r,
                                   double* g,
                                   double* b) const
 {
-    *r = _trackerKeyframeColor->getValue(0);
-    *g = _trackerKeyframeColor->getValue(1);
-    *b = _trackerKeyframeColor->getValue(2);
+    *r = _imp->_trackerKeyframeColor->getValue(DimIdx(0));
+    *g = _imp->_trackerKeyframeColor->getValue(DimIdx(1));
+    *b = _imp->_trackerKeyframeColor->getValue(DimIdx(2));
 }
 
 void
@@ -3321,9 +3758,20 @@ Settings::getExprColor(double* r,
                        double* g,
                        double* b) const
 {
-    *r = _exprColor->getValue(0);
-    *g = _exprColor->getValue(1);
-    *b = _exprColor->getValue(2);
+    *r = _imp->_exprColor->getValue(DimIdx(0));
+    *g = _imp->_exprColor->getValue(DimIdx(1));
+    *b = _imp->_exprColor->getValue(DimIdx(2));
+}
+
+
+void
+Settings::getCloneColor(double* r,
+                       double* g,
+                       double* b) const
+{
+    *r = _imp->_cloneColor->getValue(DimIdx(0));
+    *g = _imp->_cloneColor->getValue(DimIdx(1));
+    *b = _imp->_cloneColor->getValue(DimIdx(2));
 }
 
 void
@@ -3331,9 +3779,9 @@ Settings::getTextColor(double* r,
                        double* g,
                        double* b) const
 {
-    *r = _textColor->getValue(0);
-    *g = _textColor->getValue(1);
-    *b = _textColor->getValue(2);
+    *r = _imp->_textColor->getValue(DimIdx(0));
+    *g = _imp->_textColor->getValue(DimIdx(1));
+    *b = _imp->_textColor->getValue(DimIdx(2));
 }
 
 void
@@ -3341,9 +3789,9 @@ Settings::getAltTextColor(double* r,
                           double* g,
                           double* b) const
 {
-    *r = _altTextColor->getValue(0);
-    *g = _altTextColor->getValue(1);
-    *b = _altTextColor->getValue(2);
+    *r = _imp->_altTextColor->getValue(DimIdx(0));
+    *g = _imp->_altTextColor->getValue(DimIdx(1));
+    *b = _imp->_altTextColor->getValue(DimIdx(2));
 }
 
 void
@@ -3351,9 +3799,9 @@ Settings::getTimelinePlayheadColor(double* r,
                                    double* g,
                                    double* b) const
 {
-    *r = _timelinePlayheadColor->getValue(0);
-    *g = _timelinePlayheadColor->getValue(1);
-    *b = _timelinePlayheadColor->getValue(2);
+    *r = _imp->_timelinePlayheadColor->getValue(DimIdx(0));
+    *g = _imp->_timelinePlayheadColor->getValue(DimIdx(1));
+    *b = _imp->_timelinePlayheadColor->getValue(DimIdx(2));
 }
 
 void
@@ -3361,9 +3809,9 @@ Settings::getTimelineBoundsColor(double* r,
                                  double* g,
                                  double* b) const
 {
-    *r = _timelineBoundsColor->getValue(0);
-    *g = _timelineBoundsColor->getValue(1);
-    *b = _timelineBoundsColor->getValue(2);
+    *r = _imp->_timelineBoundsColor->getValue(DimIdx(0));
+    *g = _imp->_timelineBoundsColor->getValue(DimIdx(1));
+    *b = _imp->_timelineBoundsColor->getValue(DimIdx(2));
 }
 
 void
@@ -3371,9 +3819,9 @@ Settings::getTimelineBGColor(double* r,
                              double* g,
                              double* b) const
 {
-    *r = _timelineBGColor->getValue(0);
-    *g = _timelineBGColor->getValue(1);
-    *b = _timelineBGColor->getValue(2);
+    *r = _imp->_timelineBGColor->getValue(DimIdx(0));
+    *g = _imp->_timelineBGColor->getValue(DimIdx(1));
+    *b = _imp->_timelineBGColor->getValue(DimIdx(2));
 }
 
 void
@@ -3381,103 +3829,64 @@ Settings::getCachedFrameColor(double* r,
                               double* g,
                               double* b) const
 {
-    *r = _cachedFrameColor->getValue(0);
-    *g = _cachedFrameColor->getValue(1);
-    *b = _cachedFrameColor->getValue(2);
+    *r = _imp->_cachedFrameColor->getValue(DimIdx(0));
+    *g = _imp->_cachedFrameColor->getValue(DimIdx(1));
+    *b = _imp->_cachedFrameColor->getValue(DimIdx(2));
 }
 
-void
-Settings::getDiskCachedColor(double* r,
-                             double* g,
-                             double* b) const
-{
-    *r = _diskCachedFrameColor->getValue(0);
-    *g = _diskCachedFrameColor->getValue(1);
-    *b = _diskCachedFrameColor->getValue(2);
-}
 
 void
-Settings::getCurveEditorBGColor(double* r,
-                                double* g,
-                                double* b) const
-{
-    *r = _curveEditorBGColor->getValue(0);
-    *g = _curveEditorBGColor->getValue(1);
-    *b = _curveEditorBGColor->getValue(2);
-}
-
-void
-Settings::getCurveEditorGridColor(double* r,
-                                  double* g,
-                                  double* b) const
-{
-    *r = _gridColor->getValue(0);
-    *g = _gridColor->getValue(1);
-    *b = _gridColor->getValue(2);
-}
-
-void
-Settings::getCurveEditorScaleColor(double* r,
-                                   double* g,
-                                   double* b) const
-{
-    *r = _curveEditorScaleColor->getValue(0);
-    *g = _curveEditorScaleColor->getValue(1);
-    *b = _curveEditorScaleColor->getValue(2);
-}
-
-void
-Settings::getDopeSheetEditorBackgroundColor(double *r,
+Settings::getAnimationModuleEditorBackgroundColor(double *r,
                                             double *g,
                                             double *b) const
 {
-    *r = _dopeSheetEditorBackgroundColor->getValue(0);
-    *g = _dopeSheetEditorBackgroundColor->getValue(1);
-    *b = _dopeSheetEditorBackgroundColor->getValue(2);
+    *r = _imp->_animationViewBackgroundColor->getValue(DimIdx(0));
+    *g = _imp->_animationViewBackgroundColor->getValue(DimIdx(1));
+    *b = _imp->_animationViewBackgroundColor->getValue(DimIdx(2));
 }
 
 void
-Settings::getDopeSheetEditorRootRowBackgroundColor(double *r,
+Settings::getAnimationModuleEditorRootRowBackgroundColor(double *r,
                                                    double *g,
                                                    double *b,
                                                    double *a) const
 {
-    *r = _dopeSheetEditorRootSectionBackgroundColor->getValue(0);
-    *g = _dopeSheetEditorRootSectionBackgroundColor->getValue(1);
-    *b = _dopeSheetEditorRootSectionBackgroundColor->getValue(2);
-    *a = _dopeSheetEditorRootSectionBackgroundColor->getValue(3);
+    *r = _imp->_dopesheetRootSectionBackgroundColor->getValue(DimIdx(0));
+    *g = _imp->_dopesheetRootSectionBackgroundColor->getValue(DimIdx(1));
+    *b = _imp->_dopesheetRootSectionBackgroundColor->getValue(DimIdx(2));
+    *a = _imp->_dopesheetRootSectionBackgroundColor->getValue(DimIdx(3));
 }
 
 void
-Settings::getDopeSheetEditorKnobRowBackgroundColor(double *r,
+Settings::getAnimationModuleEditorKnobRowBackgroundColor(double *r,
                                                    double *g,
                                                    double *b,
                                                    double *a) const
 {
-    *r = _dopeSheetEditorKnobSectionBackgroundColor->getValue(0);
-    *g = _dopeSheetEditorKnobSectionBackgroundColor->getValue(1);
-    *b = _dopeSheetEditorKnobSectionBackgroundColor->getValue(2);
-    *a = _dopeSheetEditorKnobSectionBackgroundColor->getValue(3);
+    *r = _imp->_dopesheetKnobSectionBackgroundColor->getValue(DimIdx(0));
+    *g = _imp->_dopesheetKnobSectionBackgroundColor->getValue(DimIdx(1));
+    *b = _imp->_dopesheetKnobSectionBackgroundColor->getValue(DimIdx(2));
+    *a = _imp->_dopesheetKnobSectionBackgroundColor->getValue(DimIdx(3));
 }
 
 void
-Settings::getDopeSheetEditorScaleColor(double *r,
+Settings::getAnimationModuleEditorScaleColor(double *r,
                                        double *g,
                                        double *b) const
 {
-    *r = _dopeSheetEditorScaleColor->getValue(0);
-    *g = _dopeSheetEditorScaleColor->getValue(1);
-    *b = _dopeSheetEditorScaleColor->getValue(2);
+    *r = _imp->_animationViewScaleColor->getValue(DimIdx(0));
+    *g = _imp->_animationViewScaleColor->getValue(DimIdx(1));
+    *b = _imp->_animationViewScaleColor->getValue(DimIdx(2));
 }
 
 void
-Settings::getDopeSheetEditorGridColor(double *r,
+Settings::getAnimationModuleEditorGridColor(double *r,
                                       double *g,
                                       double *b) const
 {
-    *r = _dopeSheetEditorGridColor->getValue(0);
-    *g = _dopeSheetEditorGridColor->getValue(1);
-    *b = _dopeSheetEditorGridColor->getValue(2);
+    *r = _imp->_animationViewGridColor->getValue(DimIdx(0));
+    *g = _imp->_animationViewGridColor->getValue(DimIdx(1));
+    *b = _imp->_animationViewGridColor->getValue(DimIdx(2));
 }
 
 void
@@ -3485,9 +3894,9 @@ Settings::getSEKeywordColor(double* r,
                             double* g,
                             double* b) const
 {
-    *r = _keywordColor->getValue(0);
-    *g = _keywordColor->getValue(1);
-    *b = _keywordColor->getValue(2);
+    *r = _imp->_keywordColor->getValue(DimIdx(0));
+    *g = _imp->_keywordColor->getValue(DimIdx(1));
+    *b = _imp->_keywordColor->getValue(DimIdx(2));
 }
 
 void
@@ -3495,9 +3904,9 @@ Settings::getSEOperatorColor(double* r,
                              double* g,
                              double* b) const
 {
-    *r = _operatorColor->getValue(0);
-    *g = _operatorColor->getValue(1);
-    *b = _operatorColor->getValue(2);
+    *r = _imp->_operatorColor->getValue(DimIdx(0));
+    *g = _imp->_operatorColor->getValue(DimIdx(1));
+    *b = _imp->_operatorColor->getValue(DimIdx(2));
 }
 
 void
@@ -3505,9 +3914,9 @@ Settings::getSEBraceColor(double* r,
                           double* g,
                           double* b) const
 {
-    *r = _braceColor->getValue(0);
-    *g = _braceColor->getValue(1);
-    *b = _braceColor->getValue(2);
+    *r = _imp->_braceColor->getValue(DimIdx(0));
+    *g = _imp->_braceColor->getValue(DimIdx(1));
+    *b = _imp->_braceColor->getValue(DimIdx(2));
 }
 
 void
@@ -3515,9 +3924,9 @@ Settings::getSEDefClassColor(double* r,
                              double* g,
                              double* b) const
 {
-    *r = _defClassColor->getValue(0);
-    *g = _defClassColor->getValue(1);
-    *b = _defClassColor->getValue(2);
+    *r = _imp->_defClassColor->getValue(DimIdx(0));
+    *g = _imp->_defClassColor->getValue(DimIdx(1));
+    *b = _imp->_defClassColor->getValue(DimIdx(2));
 }
 
 void
@@ -3525,9 +3934,9 @@ Settings::getSEStringsColor(double* r,
                             double* g,
                             double* b) const
 {
-    *r = _stringsColor->getValue(0);
-    *g = _stringsColor->getValue(1);
-    *b = _stringsColor->getValue(2);
+    *r = _imp->_stringsColor->getValue(DimIdx(0));
+    *g = _imp->_stringsColor->getValue(DimIdx(1));
+    *b = _imp->_stringsColor->getValue(DimIdx(2));
 }
 
 void
@@ -3535,9 +3944,9 @@ Settings::getSECommentsColor(double* r,
                              double* g,
                              double* b) const
 {
-    *r = _commentsColor->getValue(0);
-    *g = _commentsColor->getValue(1);
-    *b = _commentsColor->getValue(2);
+    *r = _imp->_commentsColor->getValue(DimIdx(0));
+    *g = _imp->_commentsColor->getValue(DimIdx(1));
+    *b = _imp->_commentsColor->getValue(DimIdx(2));
 }
 
 void
@@ -3545,9 +3954,9 @@ Settings::getSESelfColor(double* r,
                          double* g,
                          double* b) const
 {
-    *r = _selfColor->getValue(0);
-    *g = _selfColor->getValue(1);
-    *b = _selfColor->getValue(2);
+    *r = _imp->_selfColor->getValue(DimIdx(0));
+    *g = _imp->_selfColor->getValue(DimIdx(1));
+    *b = _imp->_selfColor->getValue(DimIdx(2));
 }
 
 void
@@ -3555,9 +3964,9 @@ Settings::getSENumbersColor(double* r,
                             double* g,
                             double* b) const
 {
-    *r = _numbersColor->getValue(0);
-    *g = _numbersColor->getValue(1);
-    *b = _numbersColor->getValue(2);
+    *r = _imp->_numbersColor->getValue(DimIdx(0));
+    *g = _imp->_numbersColor->getValue(DimIdx(1));
+    *b = _imp->_numbersColor->getValue(DimIdx(2));
 }
 
 void
@@ -3565,9 +3974,9 @@ Settings::getSECurLineColor(double* r,
                             double* g,
                             double* b) const
 {
-    *r = _curLineColor->getValue(0);
-    *g = _curLineColor->getValue(1);
-    *b = _curLineColor->getValue(2);
+    *r = _imp->_curLineColor->getValue(DimIdx(0));
+    *g = _imp->_curLineColor->getValue(DimIdx(1));
+    *b = _imp->_curLineColor->getValue(DimIdx(2));
 }
 
 void
@@ -3575,21 +3984,33 @@ Settings::getSliderColor(double* r,
                             double* g,
                             double* b) const
 {
-    *r = _sliderColor->getValue(0);
-    *g = _sliderColor->getValue(1);
-    *b = _sliderColor->getValue(2);
+    *r = _imp->_sliderColor->getValue(DimIdx(0));
+    *g = _imp->_sliderColor->getValue(DimIdx(1));
+    *b = _imp->_sliderColor->getValue(DimIdx(2));
 }
 
 int
 Settings::getSEFontSize() const
 {
-    return _scriptEditorFontSize->getValue();
+    return _imp->_scriptEditorFontSize->getValue();
 }
 
 std::string
 Settings::getSEFontFamily() const
 {
-    return _scriptEditorFontChoice->getActiveEntry().id;
+    return _imp->_scriptEditorFontChoice->getCurrentEntry().id;
+}
+
+std::string
+Settings::getApplicationFontFamily() const
+{
+    return _imp->_systemFontChoice->getCurrentEntry().id;
+}
+
+int
+Settings::getApplicationFontSize() const
+{
+    return _imp->_fontSize->getValue();
 }
 
 void
@@ -3602,99 +4023,82 @@ Settings::getPluginIconFrameColor(int *r,
     *b = 50;
 }
 
-int
-Settings::getDopeSheetEditorNodeSeparationWith() const
-{
-    return 4;
-}
-
 bool
 Settings::isNaNHandlingEnabled() const
 {
-    return _convertNaNValues->getValue();
-}
-
-bool
-Settings::isCopyInputImageForPluginRenderEnabled() const
-{
-    return _pluginUseImageCopyForSource->getValue();
+    return _imp->_convertNaNValues->getValue();
 }
 
 void
 Settings::setOnProjectCreatedCB(const std::string& func)
 {
-    _onProjectCreated->setValue(func);
+    _imp->_onProjectCreated->setValue(func);
 }
 
 void
 Settings::setOnProjectLoadedCB(const std::string& func)
 {
-    _defaultOnProjectLoaded->setValue(func);
+    _imp->_defaultOnProjectLoaded->setValue(func);
 }
 
 bool
 Settings::isDefaultAppearanceOutdated() const
 {
-    return _defaultAppearanceOutdated;
+    return _imp->_defaultAppearanceOutdated;
 }
 
 void
 Settings::restoreDefaultAppearance()
 {
-    std::vector< KnobPtr > children = _appearanceTab->getChildren();
-
-    for (std::size_t i = 0; i < children.size(); ++i) {
-        KnobColor* isColorKnob = dynamic_cast<KnobColor*>( children[i].get() );
-        if ( isColorKnob && isColorKnob->isSimplified() ) {
-            isColorKnob->blockValueChanges();
-            for (int j = 0; j < isColorKnob->getDimension(); ++j) {
-                isColorKnob->resetToDefaultValue(j);
-            }
-            isColorKnob->unblockValueChanges();
-        }
-    }
-    _defaultAppearanceOutdated = false;
-    appPTR->reloadStylesheets();
+    restorePageToDefaults(_imp->_appearanceTab);
 }
 
 std::string
 Settings::getUserStyleSheetFilePath() const
 {
-    return _qssFile->getValue();
+    return _imp->_qssFile->getValue();
 }
 
 void
 Settings::setRenderQueuingEnabled(bool enabled)
 {
-    _queueRenders->setValue(enabled);
-    saveSetting( _queueRenders.get() );
+    _imp->_queueRenders->setValue(enabled);
 }
 
 bool
 Settings::isRenderQueuingEnabled() const
 {
-    return _queueRenders->getValue();
+    return _imp->_queueRenders->getValue();
 }
 
 bool
 Settings::isFileDialogEnabledForNewWriters() const
 {
-#ifdef NATRON_ENABLE_IO_META_NODES
-
-    return _filedialogForWriters->getValue();
-#else
-
-    return true;
-#endif
+    return _imp->_filedialogForWriters->getValue();
 }
 
 bool
 Settings::isDriveLetterToUNCPathConversionEnabled() const
 {
-    return !_enableMappingFromDriveLettersToUNCShareNames->getValue();
+    return !_imp->_enableMappingFromDriveLettersToUNCShareNames->getValue();
 }
 
+
+bool
+Settings::getIsFullRecoverySaveModeEnabled() const
+{
+    return _imp->_saveSafetyMode->getValue();
+}
+
+KnobPathPtr
+Settings::getFileDialogFavoritePathsKnob() const
+{
+    return _imp->_fileDialogSavedPaths;
+}
+
+
 NATRON_NAMESPACE_EXIT
+
 
 NATRON_NAMESPACE_USING
 #include "moc_Settings.cpp"

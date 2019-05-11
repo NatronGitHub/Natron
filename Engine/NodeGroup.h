@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -41,15 +41,17 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
+
+
+NATRON_NAMESPACE_ENTER
 
 
 #define kNatronGroupInputIsMaskParamName "isMask"
 #define kNatronGroupInputIsOptionalParamName "optional"
-
-NATRON_NAMESPACE_ENTER
 
 
 struct NodeCollectionPrivate;
@@ -58,17 +60,23 @@ class NodeCollection
 {
     Q_DECLARE_TR_FUNCTIONS(NodeCollection)
 
+protected:
+
+    // You must inherit this class
+    NodeCollection(const AppInstancePtr& app);
+
 public:
-    NodeCollection(const AppInstPtr& app);
 
     virtual ~NodeCollection();
+
+    virtual NodeCollectionPtr getThisShared() = 0;
 
     void setNodeGraphPointer(NodeGraphI* graph);
 
     void discardNodeGraphPointer();
 
     NodeGraphI* getNodeGraph() const;
-    AppInstPtr getApplication() const;
+    AppInstancePtr getApplication() const;
 
     /**
      * @brief Returns a copy of the nodes within the collection. MT-safe.
@@ -78,7 +86,7 @@ public:
     /**
      * @brief Same as getNodes() except that this function recurse in sub-groups.
      **/
-    void getNodes_recursive(NodesList& nodes, bool onlyActive) const;
+    void getNodes_recursive(NodesList& nodes) const;
 
     /**
      * @brief Adds a node to the collection. MT-safe.
@@ -88,6 +96,7 @@ public:
     /**
      * @brief Removes a node from the collection. MT-safe.
      **/
+    void removeNode(const NodePtr& node);
     void removeNode(const Node* node);
 
     /**
@@ -103,14 +112,17 @@ public:
 
 private:
 
-    void clearNodesInternal(bool blocking);
+    void clearNodesInternal();
 
 public:
+
 
     /**
      * @brief Set the name of the node to be a unique node name within the collection. MT-safe.
      **/
-    void initNodeName(const std::string& pluginLabel, std::string* nodeName);
+    void initNodeName(const std::string& pluginID,
+                      const std::string& pluginLabel,
+                      std::string* nodeName);
 
     /**
      * @brief Given the baseName, set in nodeName a possible script-name for the node.
@@ -118,38 +130,12 @@ public:
      * @param errorIfExists If a node with the same script-name exists, error
      * This function throws a runtime exception with the error message in case of error.
      **/
-    void checkNodeName(const Node* node, const std::string& baseName, bool appendDigit, bool errorIfExists, std::string* nodeName);
+    void checkNodeName(const NodeConstPtr& node, const std::string& baseName, bool appendDigit, bool errorIfExists, std::string* nodeName);
 
     /**
      * @brief Returns true if there is one or more nodes in the collection.
      **/
     bool hasNodes() const;
-
-    /**
-     * @brief Returns true if a node is currently rendering in this collection. This is recursive and will look
-     * into all sub collections too
-     **/
-    bool hasNodeRendering() const;
-
-    /**
-     * @brief Connects the node 'input' to the node 'output' on the input number 'inputNumber'
-     * of the node 'output'. If 'force' is true, then it will disconnect any previous connection
-     * existing on 'inputNumber' and connect the previous input as input of the new 'input' node.
-     **/
-    static bool connectNodes(int inputNumber, const NodePtr& input, const NodePtr& output, bool force = false);
-
-    /**
-     * @brief Same as above where inputName is the name of the node input.
-     **/
-    bool connectNodes(int inputNumber, const std::string & inputName, const NodePtr& output);
-
-    /**
-     * @brief Disconnects the node 'input' and 'output' if any connection between them is existing.
-     * If autoReconnect is true, after disconnecting 'input' and 'output', if the 'input' had only
-     * 1 input, and it was connected, it will connect output to the input of  'input'.
-     **/
-    static bool disconnectNodes(const NodePtr& input, const NodePtr& output, bool autoReconnect = false);
-
 
     /**
      * @brief Attempts to connect automatically selected and created together, depending on their role (output / filter / input).
@@ -159,12 +145,12 @@ public:
     /**
      * @brief Returns true if a node has the give name n in the group. This is not called recursively on subgroups.
      **/
-    bool checkIfNodeNameExists(const std::string & n, const Node* caller) const;
+    bool checkIfNodeNameExists(const std::string & n, const NodeConstPtr& caller) const;
 
     /**
      * @brief Returns true if a node has the give label n in the group. This is not called recursively on subgroups.
      **/
-    bool checkIfNodeLabelExists(const std::string & n, const Node* caller) const;
+    bool checkIfNodeLabelExists(const std::string & n, const NodeConstPtr& caller) const;
 
     /**
      * @brief Returns a pointer to a node whose name is the same as the name given in parameter.
@@ -225,17 +211,168 @@ public:
     /**
      * @brief Get all viewers in the group and sub groups
      **/
-    void getViewers(std::list<ViewerInstance*>* viewers) const;
+    void getViewers(std::list<ViewerInstancePtr>* viewers) const;
 
     /**
      * @brief Get all Writers in the group and sub groups
      **/
-    void getWriters(std::list<OutputEffectInstance*>* writers) const;
+    void getWriters(std::list<EffectInstancePtr>* writers) const;
 
     /**
-     * @brief Checks if a node in the project already has this cacheID
+     * @brief Controls whether the user can ever edit this graph from the UI. 
      **/
-    bool isCacheIDAlreadyTaken(const std::string& name) const;
+    void setSubGraphEditable(bool editable);
+    bool isSubGraphEditable() const;
+
+    /**
+     * @brief Controls whether the sub-graph is assumed to be edited by the user
+     **/
+    void setSubGraphEditedByUser(bool edited);
+    bool isSubGraphEditedByUser() const;
+
+    /**
+     * @brief Refresh the meta-datas on all nodes in the group
+     **/
+    void refreshTimeInvariantMetadataOnAllNodes_recursive();
+
+    enum CreateNodesFromSerializationFlagsEnum
+    {
+        eCreateNodesFromSerializationFlagsNone = 0x0,
+
+        // When creating the node, its serialization contains a list of input nodes to connect to.
+        // This flag indicates whether we should attempt to connect to these nodes, even if they are
+        // not part of the serializedNodes list.
+        // For example, we might have a list of nodes that the user copied from the NodeGraph.
+        // We want to restore connections between nodes of that list so that the tree is preserved,
+        // however we do not want the input nodes of that tree to connect to their original input which may
+        // not be in this list. If this flag is passed, this will also attempt to restore inputs which are
+        // not in this list.
+        eCreateNodesFromSerializationFlagsConnectToExternalNodes = 0x1
+    };
+
+    /**
+     * @brief Create nodes within this NodeCollection from their serialization.
+     * This function is recursive because a serialized node may be a Group and contain serialization of nodes within itself.
+     * @param serializedNodes List of nodes serialization to be created
+     * @param createdNodes[out] For each serialization passed in input, a pointer to the created node, or NULL if the node could not be created.
+     * This parameter is optional and may be set to NULL.
+     * Note that this will return node pointers for the passed serializedNodes in the same order as they were
+     * given. This will not include children nodes in case of groups.
+     * @returns True if everything went fine, false otherwise
+     **/
+    bool createNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
+                                      CreateNodesFromSerializationFlagsEnum flags,
+                                      NodesList* createdNodes);
+
+    /**
+     * @brief Find a node by its script-name within the list of createdNodes. 
+     * If allowSearchInAllNodes, this will also look for it in allNodesInGroup if it could not be found in createdNodes.
+     * This function is useful when restoring serialized nodes, because when instanciated, their corresponding node may be attributed
+     * a different script-name from what's within the serialization. 
+     **/
+    static NodePtr findSerializedNodeWithScriptName(const std::string& nodeScriptName,
+                                                    const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& createdNodes,
+                                                    const NodesList& allNodesInGroup,
+                                                    bool allowSearchInAllNodes);
+
+
+    struct TopologicalSortNode;
+    typedef boost::shared_ptr<TopologicalSortNode> TopologicalSortNodePtr;
+    typedef boost::weak_ptr<TopologicalSortNode> TopologicalSortNodeWPtr;
+    struct TopologicalSortNode
+    {
+        // A strong ref to the node
+        NodePtr node;
+
+        // True if this node is part of the nodes list given to extractTopologicallySortedTreesFromNodes
+        // otherwise false.
+        // We still add this node to the topological sort, even if not part of the nodes list so that
+        // we can remember the outside context of the tree:
+        // This is needed for example for the Group/UnGroup undo/redo command when we want to re-insert the nodes in
+        // an existing tree.
+        // If False, the outputs and inputs list are not filled so no further recursion is required.
+        bool isPartOfGivenNodes;
+
+        // List of output nodes within the same tree
+        typedef std::map<TopologicalSortNodeWPtr, std::list<int> > InternalOutputsMap;
+
+        typedef std::map<TopologicalSortNodePtr, std::list<int> > ExternalOutputsMap;
+        InternalOutputsMap outputs;
+        ExternalOutputsMap externalOutputs;
+
+        // This list as the size of the number of inputs of the node: if an input is disconnected,
+        // the input node is NULL
+        typedef std::vector<TopologicalSortNodePtr> InputsVec;
+        InputsVec inputs;
+
+        TopologicalSortNode()
+        : node()
+        , isPartOfGivenNodes(false)
+        , outputs()
+        , externalOutputs()
+        , inputs()
+        {
+
+        }
+
+        /**
+         * @brief Returns true if this node is a tree input, i.e:
+         * if the node does not have any input, or all inputs are outside of the nodes list that
+         * was given to extractTopologicallySortedTreesFromNodes
+         **/
+        bool isTreeInput() const;
+
+        /**
+         * @brief Returns true if this node is a tree output, i.e:
+         * if the node does not have any output, or all outputs are outside of the nodes list that
+         * was given to extractTopologicallySortedTreesFromNodes
+         **/
+        bool isTreeOutput() const;
+
+    };
+
+    typedef std::list<TopologicalSortNodePtr> TopologicallySortedNodesList;
+
+    /**
+     * @brief Extracts from the given output nodes list, a list of topologically sorted nodes tree.
+     * For each tree stemming from an output node, the tree's input nodes and outputs also keep their link to nodes outside of the tree:
+     * Imagine that the user copy a sub portion of at tree in the NodeGraph, we can still build a tree from this selection,
+     * but we also remember the connections of the sub-tree to the actual tree it lives in.
+     *
+     * @param enterGroups If true, the topological sort will also cycle through recursively on any sub-node-graph
+     * @param outputNodesList List of nodes which are considered output (root) of a tree.
+     * @param allNodesList If non-null, any input or output of a node that is in not in this list is considered "out of the tree" and
+     * will not be added to the topological sort
+     * @param sortedNodes A list of nodes containing the topological ordering of the given nodes (from inputs to outputs)
+     * This parameter is optional and may be set to NULL
+     * @param outputNodes A list of the different outputs (tree roots) that were part of the nodes list. This parameter is optional
+     * and may be set to NULL
+     **/
+    static void extractTopologicallySortedTreesForOutputs(bool enterGroups,
+                                                          const NodesList& outputNodesList,
+                                                          const NodesList* allNodesList,
+                                                          NodeCollection::TopologicallySortedNodesList* sortedNodes,
+                                                          std::list<NodeCollection::TopologicalSortNodePtr>* outputNodes);
+
+
+    /**
+     * @brief Same as extractTopologicallySortedTreesForOutputs but the outputNodesList is extracted from the nodes list directly:
+     * any node within the list that doesn't have any output in the nodes list is marked as an output node.
+     **/
+    static void extractTopologicallySortedTreesFromNodes(bool enterGroups,
+                                                         const NodesList& nodes,
+                                                         TopologicallySortedNodesList* sortedNodes,
+                                                         std::list<TopologicalSortNodePtr>* outputNodes);
+
+    /**
+     * @brief Same as extractTopologicallySortedTreesForOutputs, but the output nodes list is built from the output
+     * nodes of this node graph.
+     **/
+    void extractTopologicallySortedTrees(bool enterGroups,
+                                        TopologicallySortedNodesList* sortedNodes,
+                                        std::list<TopologicalSortNodePtr>* outputNodes) const;
+
+
 
 public:
 
@@ -244,12 +381,6 @@ public:
      * @brief Computes the union of the frame range of all readers in the group and subgroups.
      **/
     void recomputeFrameRangeForAllReaders(int* firstFrame, int* lastFrame);
-
-
-    void getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >& argsMap) const;
-
-
-    void forceComputeInputDependentDataOnAllTrees();
 
     /**
      * @brief Callback called when a node of the collection is being deactivated
@@ -271,111 +402,95 @@ public:
      **/
     virtual void notifyInputMaskStateChanged(const NodePtr& /*node*/) {}
 
-
     /**
      * @brief Callback called when a node of the collection is being activated
      **/
-    virtual void notifyNodeNameChanged(const NodePtr& /*node*/) {}
+    virtual void notifyNodeLabelChanged(const NodePtr& /*node*/) {}
 
-    void exportGroupToPython(const QString& pluginID,
-                             const QString& pluginLabel,
-                             const QString& pluginDescription,
-                             const QString& pluginIconPath,
-                             const QString& pluginGrouping,
-                             int version,
-                             QString& output);
+
+protected:
+
+    virtual void onNodeRemoved(const Node* /*node*/) {}
+
+    virtual void onGraphEditableChanged(bool /*changed*/) {}
 
 private:
     void quitAnyProcessingInternal(bool blocking);
 
+    void recomputeFrameRangeForAllReadersInternal(int* firstFrame,
+                                                  int* lastFrame,
+                                                  bool setFrameRange);
+
+private:
     boost::scoped_ptr<NodeCollectionPrivate> _imp;
 };
 
 
 struct NodeGroupPrivate;
 class NodeGroup
-    : public OutputEffectInstance, public NodeCollection
+    : public EffectInstance
+    , public NodeCollection
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
+protected: // derives from EffectInstance, parent of TrackerNode and WriteNode
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    NodeGroup(const NodePtr &node);
 
-    static EffectInstance* BuildEffect(NodePtr n)
+    NodeGroup(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key);
+public:
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
-        return new NodeGroup(n);
+        return EffectInstancePtr( new NodeGroup(node) );
     }
 
-    NodeGroup(const NodePtr &node);
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new NodeGroup(mainInstance, key) );
+    }
+
+    virtual NodeCollectionPtr getThisShared() OVERRIDE FINAL
+    {
+        NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>(shared_from_this());
+        return boost::dynamic_pointer_cast<NodeCollection>(isGroup);
+    }
+
+    static PluginPtr createPlugin();
 
     virtual ~NodeGroup();
 
-    virtual int getMajorVersion() const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return 1;
-    }
-
-    virtual int getMinorVersion() const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return 0;
-    }
-
-    virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return PLUGINID_NATRON_GROUP;
-    }
-
-    virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return "Group";
-    }
-
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE
-    {
-        grouping->push_back(PLUGIN_GROUP_OTHER);
-    }
-
-    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return eRenderSafetyFullySafeFrame;
-    }
 
     virtual bool isOutput() const OVERRIDE WARN_UNUSED_RETURN
     {
         return false;
     }
 
-    virtual int getNInputs() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isInputOptional(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getPluginDescription() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual double getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual ViewIdx getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void addAcceptedComponents(int inputNb, std::list<ImagePlaneDesc>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    
+    virtual TimeValue getCurrentRenderTime() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentRenderView() const OVERRIDE WARN_UNUSED_RETURN;
+
     virtual void notifyNodeDeactivated(const NodePtr& node) OVERRIDE FINAL;
     virtual void notifyNodeActivated(const NodePtr& node) OVERRIDE FINAL;
     virtual void notifyInputOptionalStateChanged(const NodePtr& node) OVERRIDE FINAL;
     virtual void notifyInputMaskStateChanged(const NodePtr& node) OVERRIDE FINAL;
-    virtual void notifyNodeNameChanged(const NodePtr& node) OVERRIDE FINAL;
-    virtual bool getCreateChannelSelectorKnob() const OVERRIDE WARN_UNUSED_RETURN { return false; }
-
-    virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
+    virtual void notifyNodeLabelChanged(const NodePtr& node) OVERRIDE FINAL;
     virtual void purgeCaches() OVERRIDE FINAL;
+    virtual void clearLastRenderedImage() OVERRIDE ;
 
-    NodePtr getOutputNode(bool useGuiConnexions) const;
+    void refreshInputs();
 
-    NodePtr getOutputNodeInput(bool useGuiConnexions) const;
+    NodePtr getOutputNode() const;
 
-    NodePtr getRealInputForInput(bool useGuiConnexions, const NodePtr& input) const;
+    NodePtr getOutputNodeInput() const;
 
-    void getInputs(std::vector<NodePtr >* inputs, bool useGuiConnexions) const;
+    NodePtr getRealInputForInput(const NodePtr& input) const;
 
-    void getInputsOutputs(NodesList* nodes, bool useGuiConnexions) const;
+    void getInputs(std::vector<NodePtr>* inputs) const;
 
-    void dequeueConnexions();
+    void getInputsOutputs(NodesList* nodes) const;
+
 
     bool getIsDeactivatingGroup() const;
     void setIsDeactivatingGroup(bool b);
@@ -383,16 +498,32 @@ public:
     bool getIsActivatingGroup() const;
     void setIsActivatingGroup(bool b);
 
-    void setSubGraphEditable(bool editable);
-    bool isSubGraphEditable() const;
-
+    /**
+     * @brief For sub-classes override to choose whether to create a node graph that will ever be visible by the user or not.
+     **/
     virtual bool isSubGraphUserVisible() const
     {
         return true;
     }
 
-    boost::shared_ptr<KnobButton> getExportAsPyPlugButton() const;
-    boost::shared_ptr<KnobButton> getConvertToGroupButton() const;
+    /*
+     * If returning false, all nodes in the node-graph are expected to be non-persistent, i.e:
+     * when reloading the node, it should create the internal nodes again in setupInitialSubGraphState()
+     */
+    virtual bool isSubGraphPersistent() const
+    {
+        return true;
+    }
+
+
+    /**
+     * @brief Called when the Group is created or when the node is reset to default to re-initialize the node to its default state.
+     **/
+    virtual void setupInitialSubGraphState();
+
+    virtual void loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
+                              const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization);
+
 
 Q_SIGNALS:
 
@@ -400,13 +531,39 @@ Q_SIGNALS:
 
 private:
 
-    virtual void initializeKnobs() OVERRIDE;
-    virtual bool knobChanged(KnobI * k, ValueChangedReasonEnum reason,
-                             ViewSpec /*view*/,
-                             double /*time*/,
-                             bool /*originatedFromMainThread*/) OVERRIDE;
+    virtual bool isRenderCloneNeeded() const OVERRIDE FINAL;
+
+    virtual void onNodeRemoved(const Node* node) OVERRIDE FINAL;
+
+    // A group render function should never get called
+    virtual ActionRetCodeEnum render(const RenderActionArgs& /*args*/) OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        assert(false);
+        return eActionStatusFailed;
+    }
+
+    virtual void onGraphEditableChanged(bool changed) OVERRIDE FINAL
+    {
+        Q_EMIT graphEditableChanged(changed);
+    }
+
     boost::scoped_ptr<NodeGroupPrivate> _imp;
 };
+
+
+inline NodeGroupPtr
+toNodeGroup(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<NodeGroup>(effect);
+}
+
+
+inline NodeGroupPtr
+toNodeGroup(const NodeCollectionPtr& group)
+{
+    return boost::dynamic_pointer_cast<NodeGroup>(group);
+}
+
 
 NATRON_NAMESPACE_EXIT
 

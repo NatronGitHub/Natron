@@ -1,0 +1,12 @@
+diff -up qt-everywhere-opensource-src-4.8.7/config.tests/unix/alsa/alsatest.cpp.than qt-everywhere-opensource-src-4.8.7/config.tests/unix/alsa/alsatest.cpp
+--- qt-everywhere-opensource-src-4.8.7/config.tests/unix/alsa/alsatest.cpp.than	2016-02-10 16:31:02.450152334 +0100
++++ qt-everywhere-opensource-src-4.8.7/config.tests/unix/alsa/alsatest.cpp	2016-02-10 16:31:51.495307579 +0100
+@@ -40,7 +40,7 @@
+ ****************************************************************************/
+ 
+ #include <alsa/asoundlib.h>
+-#if(!(SND_LIB_MAJOR == 1 && SND_LIB_MINOR == 0 && SND_LIB_SUBMINOR >= 10))
++#if(!(SND_LIB_MAJOR == 1 && (SND_LIB_MINOR > 0 || SND_LIB_SUBMINOR >= 10)))
+ #error "Alsa version found too old, require >= 1.0.10"
+ #endif
+ 

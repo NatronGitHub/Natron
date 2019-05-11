@@ -1,9 +1,18 @@
-#ifndef SBK_TRACK_H
-#define SBK_TRACK_H
+#ifndef SBK_TRACKWRAPPER_H
+#define SBK_TRACKWRAPPER_H
 
 #include <shiboken.h>
 
 #include <PyTracker.h>
 
-#endif // SBK_TRACK_H
+NATRON_NAMESPACE_ENTER NATRON_PYTHON_NAMESPACE_ENTER
+class TrackWrapper : public Track
+{
+public:
+    ~TrackWrapper();
+    static void pysideInitQtMetaTypes();
+};
+NATRON_PYTHON_NAMESPACE_EXIT NATRON_NAMESPACE_EXIT
+
+#endif // SBK_TRACKWRAPPER_H
 

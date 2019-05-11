@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -42,7 +42,6 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/OutputSchedulerThread.h" // RenderEngine
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
@@ -58,10 +57,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGui.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
-#include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGui.h"
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerTab.h"
+
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/NodeClipBoard.h"
 
 #include "Global/QtCompat.h"
 
@@ -78,15 +79,13 @@ NodeGraph::toggleAutoHideInputs(bool setSettings)
     for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         (*it)->refreshEdgesVisility();
     }
-    for (NodesGuiList::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
-        (*it)->refreshEdgesVisility();
-    }
+ 
 }
 
 void
 NodeGraph::toggleHideInputs()
 {
-    const NodesGuiList& selectedNodes = getSelectedNodes();
+    NodesGuiList selectedNodes = getSelectedNodes();
 
     if ( selectedNodes.empty() ) {
         Dialogs::warningDialog( tr("Hide Inputs").toStdString(), tr("You must select a node first").toStdString() );
@@ -94,10 +93,10 @@ NodeGraph::toggleHideInputs()
         return;
     }
 
-    bool hidden = !selectedNodes.front()->getNode()->getHideInputsKnobValue();
+    bool hidden = !selectedNodes.front()->getNode()->getEffectInstance()->getHideInputsKnobValue();
 
     for (NodesGuiList::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
-        (*it)->getNode()->setHideInputsKnobValue(hidden);
+        (*it)->getNode()->getEffectInstance()->setHideInputsKnobValue(hidden);
         //(*it)->refreshEdgesVisility();
     }
 }
@@ -105,7 +104,7 @@ NodeGraph::toggleHideInputs()
 NodesGuiList
 NodeGraph::getNodesWithinBackdrop(const NodeGuiPtr& bd) const
 {
-    BackdropGui* isBd = dynamic_cast<BackdropGui*>( bd.get() );
+    BackdropGuiPtr isBd = boost::dynamic_pointer_cast<BackdropGui>( bd );
 
     if (!isBd) {
         return NodesGuiList();
@@ -127,7 +126,7 @@ NodeGraph::getNodesWithinBackdrop(const NodeGuiPtr& bd) const
 
 void
 NodeGraph::refreshNodesKnobsAtTime(bool onlyTimeEvaluationKnobs,
-                                   SequenceTime time)
+                                   TimeValue time)
 {
     ///Refresh all knobs at the current time
     for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
@@ -140,16 +139,13 @@ NodeGraph::refreshAllKnobsGui()
 {
     for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         if ( (*it)->isSettingsPanelVisible() ) {
-            const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > & knobs = (*it)->getKnobs();
+            const std::list<std::pair<KnobIWPtr, KnobGuiPtr> > & knobs = (*it)->getKnobs();
 
-            for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-                KnobPtr knob = it2->first.lock();
+            for (std::list<std::pair<KnobIWPtr, KnobGuiPtr> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+                KnobIPtr knob = it2->first.lock();
                 if ( !knob->getIsSecret() ) {
-                    for (int i = 0; i < knob->getDimension(); ++i) {
-                        if ( knob->isAnimated(i) ) {
-                            it2->second->onInternalValueChanged(ViewSpec::all(), i, eValueChangedReasonPluginEdited);
-                            it2->second->onAnimationLevelChanged(ViewSpec::all(), i);
-                        }
+                    if (knob->hasAnimation()) {
+                        knob->getSignalSlotHandler()->s_mustRefreshKnobGui(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
                     }
                 }
             }
@@ -215,17 +211,20 @@ NodeGraph::renameNode()
     NodeGuiPtr node;
 
     if (_imp->_selection.size() == 1) {
-        node = _imp->_selection.front();
+        node = _imp->_selection.front().lock();
     } else {
         Dialogs::errorDialog( tr("Rename node").toStdString(), tr("You must select exactly 1 node to rename.").toStdString() );
 
+        return;
+    }
+    if (!node) {
         return;
     }
 
     assert(node);
 
 
-    QPointF realPos = node->getPos_mt_safe();
+    QPointF realPos = node->pos();
     //qDebug() << "getPos" << realPos.x() << realPos.y();
     realPos = node->mapFromParent(realPos);
     //qDebug() << "fromParent" << realPos.x() << realPos.y();
@@ -404,7 +403,7 @@ FindNodeDialog::selectNextResult()
     std::advance(it, _imp->currentFindIndex);
 
     _imp->graph->selectNode(*it, false);
-    _imp->graph->centerOnItem( it->get() );
+    _imp->graph->centerOnItem((*it).get());
 
 
     QString text = QString::fromUtf8("Selecting result %1 of %2").arg(_imp->currentFindIndex + 1).arg( _imp->nodeResults.size() );
@@ -554,7 +553,7 @@ void
 NodeGraph::extractSelectedNode()
 {
     if ( !_imp->_selection.empty() ) {
-        pushUndoCommand( new ExtractNodeUndoRedoCommand(this, _imp->_selection) );
+        pushUndoCommand( new ExtractNodeUndoRedoCommand(this, getSelectedNodes()) );
     }
 }
 
@@ -562,37 +561,50 @@ void
 NodeGraph::createGroupFromSelection()
 {
     if ( !_imp->_selection.empty() ) {
-        pushUndoCommand( new GroupFromSelectionCommand(this, _imp->_selection) );
+        NodesList selection;
+        for (NodesGuiWList::const_iterator it = _imp->_selection.begin(); it!=_imp->_selection.end(); ++it) {
+            NodeGuiPtr n  = it->lock();
+            if (!n) {
+                continue;
+            }
+            selection.push_back(n->getNode());
+        }
+        pushUndoCommand( new GroupFromSelectionCommand(selection) );
     }
 }
 
 void
 NodeGraph::expandSelectedGroups()
 {
-    NodesGuiList nodes;
-
-    for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-        NodeGroup* isGroup = (*it)->getNode()->isEffectGroup();
-        if ( isGroup && (isGroup->getPluginID() == PLUGINID_NATRON_GROUP) ) {
-            nodes.push_back(*it);
+    NodesList nodes;
+    for (NodesGuiWList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+        NodeGuiPtr n = it->lock();
+        if (!n) {
+            continue;
+        }
+        NodeGroupPtr isGroup = n->getNode()->isEffectNodeGroup();
+        if ( isGroup && (isGroup->getNode()->getPluginID() == PLUGINID_NATRON_GROUP) ) {
+            nodes.push_back(n->getNode());
         }
     }
     if ( !nodes.empty() ) {
-        pushUndoCommand( new InlineGroupCommand(this, nodes) );
+        pushUndoCommand( new InlineGroupCommand(getGroup(), nodes) );
     } else {
         Dialogs::warningDialog( tr("Expand group").toStdString(), tr("You must select a group to expand first").toStdString() );
     }
 }
 
 void
-NodeGraph::onGroupNameChanged(const QString& /*name*/)
+NodeGraph::onGroupNameChanged(const QString& /*oldLabel*/, const QString& /*name*/)
 {
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>( getGroup().get() );
+    NodeGroupPtr isGrp = toNodeGroup( getGroup() );
 
     assert(isGrp);
     if (isGrp) {
         std::string label;
-        makeFullyQualifiedLabel(isGrp->getNode().get(), &label);
+        makeFullyQualifiedLabel(isGrp->getNode(), &label);
+        label += ' ';
+        label += tr("Node Graph").toStdString();
         setLabel(label);
         TabWidget* parent = dynamic_cast<TabWidget*>( parentWidget() );
         if (parent) {
@@ -606,11 +618,11 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
 {
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    boost::shared_ptr<NodeCollection> group = getGroup();
+    NodeCollectionPtr group = getGroup();
     if (!group) {
         return;
     }
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>( group.get() );
+    NodeGroupPtr isGrp = toNodeGroup( group );
     if (!isGrp) {
         return;
     }
@@ -620,68 +632,14 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
             newName[i] = '_';
         }
     }
-    std::string oldName = getScriptName();
-    for (std::size_t i = 0; i < oldName.size(); ++i) {
-        if (oldName[i] == '.') {
-            oldName[i] = '_';
-        }
-    }
-    getGui()->unregisterTab(this);
+    newName += "_NodeGraph";
+
     setScriptName(newName);
-    getGui()->registerTab(this, this);
-    TabWidget* parent = dynamic_cast<TabWidget*>( parentWidget() );
-    if (parent) {
-        parent->onTabScriptNameChanged(this, oldName, newName);
-    }
+
+  
 }
 
-void
-NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
-                                     const boost::shared_ptr<NodeCollection>& group,
-                                     std::list<std::pair<std::string, NodeGuiPtr > >& createdNodes)
-{
-    {
-        CreatingNodeTreeFlag_RAII createNodeTree( getGui()->getApp() );
-        NodeClipBoard clipboard;
-        _imp->copyNodesInternal(nodes, clipboard);
 
-        std::map<std::string, std::string> oldNewScriptNamesMapping;
-        std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
-        for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
-             it != clipboard.nodesUI.end(); ++it, ++itOther) {
-            NodeGuiPtr node = _imp->pasteNode( *itOther, *it, QPointF(0, 0), group, std::string(), false, &oldNewScriptNamesMapping);
-            assert(node);
-            if (node) {
-                oldNewScriptNamesMapping[(*itOther)->getNodeScriptName()] = node->getNode()->getScriptName();
-                createdNodes.push_back( std::make_pair( (*itOther)->getNodeScriptName(), node ) );
-            }
-        }
-        assert( clipboard.nodes.size() == createdNodes.size() );
-        if ( clipboard.nodes.size() != createdNodes.size() ) {
-            return;
-        }
-
-        ///Now that all nodes have been duplicated, try to restore nodes connections
-        _imp->restoreConnections(clipboard.nodes, createdNodes, oldNewScriptNamesMapping);
-
-        //Restore links once all children are created for alias knobs/expressions
-        NodesList allNodes;
-        group->getActiveNodes(&allNodes);
-        // If the group is a Group node, append to all nodes reachable through links
-        NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(group.get());
-        if (isGroupNode) {
-            allNodes.push_back(isGroupNode->getNode());
-        }
-
-        std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itSerialization = clipboard.nodes.begin();
-        for (std::list<std::pair<std::string, NodeGuiPtr > > ::iterator it = createdNodes.begin(); it != createdNodes.end(); ++it, ++itSerialization) {
-            it->second->getNode()->restoreKnobsLinks(**itSerialization, allNodes, oldNewScriptNamesMapping);
-        }
-
-    }
-
-    getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
-}
 
 QPointF
 NodeGraph::getRootPos() const

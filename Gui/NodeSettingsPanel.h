@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -50,7 +50,60 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DockablePanel.h"
 #include "Gui/GuiFwd.h"
 
+
 NATRON_NAMESPACE_ENTER
+
+
+class SavePresetsDialog : public QDialog
+{
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+    
+    Gui* _gui;
+    
+    QGridLayout* mainLayout;
+    
+    Label* presetNameLabel;
+    LineEdit* presetNameEdit;
+    
+    Label* presetIconLabel;
+    LineEdit* presetIconEdit;
+    
+    Label* presetShortcutKeyLabel;
+    KeybindRecorder* presetShortcutKeyEditor;
+    
+    Label* filePathLabel;
+    LineEdit* filePathEdit;
+    Button* filePathOpenButton;
+    
+    QDialogButtonBox* buttonBox;
+    
+    
+public:
+    
+    SavePresetsDialog(Gui* gui, QWidget* parent = 0);
+    
+    
+    virtual ~SavePresetsDialog()
+    {
+        
+    }
+    
+    QString getPresetName() const;
+    
+    QString getPresetIconFile() const;
+    
+    QString getPresetShortcut();
+    
+    QString getPresetPath() const;
+    
+public Q_SLOTS:
+    
+    void onOpenFileButtonClicked();
+    
+
+};
 
 class NodeSettingsPanel
     : public DockablePanel
@@ -61,16 +114,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     // properties
     Q_PROPERTY(bool _selected READ isSelected WRITE setSelected)
 
-    /*Pointer to the node GUI*/
-    boost::weak_ptr<NodeGui> _nodeGUI;
+    NodeGuiWPtr _nodeGUI;
     bool _selected;
     Button* _settingsButton;
-    boost::shared_ptr<MultiInstancePanel> _multiPanel;
 
 public:
 
-    explicit NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
-                               Gui* gui,
+    explicit NodeSettingsPanel(Gui* gui,
                                const NodeGuiPtr &NodeUi,
                                QVBoxLayout* container,
                                QWidget *parent = 0);
@@ -84,31 +134,21 @@ public:
         return _selected;
     }
 
-    NodeGuiPtr getNode() const
-    {
-        return _nodeGUI.lock();
-    }
-
-    virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const OVERRIDE
-    {
-        return _multiPanel;
-    }
+    virtual NodeGuiPtr getNodeGui() const OVERRIDE FINAL;
 
     virtual QColor getCurrentColor() const OVERRIDE FINAL;
 
 private:
 
-
-    virtual RotoPanel* initializeRotoPanel() OVERRIDE FINAL;
-    virtual TrackerPanel* initializeTrackerPanel() OVERRIDE;
-    virtual void initializeExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
     virtual void centerOnItem() OVERRIDE FINAL;
 
 public Q_SLOTS:
 
     void onSettingsButtonClicked();
 
-    void onImportPresetsActionTriggered();
+    void onImportPresetsFromFileActionTriggered();
+
+    void onLoadPresetsActionTriggered();
 
     void onExportPresetsActionTriggered();
 };

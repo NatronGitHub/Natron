@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,6 +34,8 @@
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/math/special_functions/fpclassify.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
@@ -56,35 +58,43 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <QtCore/QFileInfo>
 #include <QtCore/QDebug>
 #include <QtCore/QTextStream>
+#include <QtCore/QProcess>
 #include <QtNetwork/QHostInfo>
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
 #include <ofxhXml.h> // OFX::XML::escape
 
 #include "Global/StrUtils.h"
+#include "Global/GitVersion.h"
 #include "Global/FStreamsSupport.h"
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/BezierCPSerialization.h"
+#include "Engine/DockablePanelI.h"
 #include "Engine/EffectInstance.h"
-#include "Engine/FormatSerialization.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
+#include "Engine/MemoryInfo.h" // isApplication32Bits
 #include "Engine/Node.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ProjectPrivate.h"
-#include "Engine/ProjectSerialization.h"
-#include "Engine/RectDSerialization.h"
-#include "Engine/RectISerialization.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
+#include "Engine/StubNode.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewIdx.h"
 
+#include "Serialization/ProjectSerialization.h"
+#include "Serialization/SerializationIO.h"
+
+
 NATRON_NAMESPACE_ENTER
+
 
 using std::cout; using std::endl;
 using std::make_pair;
@@ -131,31 +141,13 @@ generateUserFriendlyNatronVersionName()
     return ret;
 }
 
-
-Project::Project(const AppInstPtr& appInstance)
+Project::Project(const AppInstancePtr& appInstance)
     : KnobHolder(appInstance)
     , NodeCollection(appInstance)
     , _imp( new ProjectPrivate(this) )
 {
     QObject::connect( _imp->autoSaveTimer.get(), SIGNAL(timeout()), this, SLOT(onAutoSaveTimerTriggered()) );
 }
-
-
-// make_shared enabler (because make_shared needs access to the private constructor)
-// see https://stackoverflow.com/a/20961251/2607517
-struct Project::MakeSharedEnabler: public Project
-{
-    MakeSharedEnabler(const AppInstPtr& appInstance) : Project(appInstance) {
-    }
-};
-
-
-boost::shared_ptr<Project>
-Project::create(const AppInstPtr& appInstance)
-{
-    return boost::make_shared<Project::MakeSharedEnabler>(appInstance);
-}
-
 
 Project::~Project()
 {
@@ -173,11 +165,11 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 class LoadProjectSplashScreen_RAII
 {
-    AppInstWPtr app;
+    AppInstanceWPtr app;
 
 public:
 
-    LoadProjectSplashScreen_RAII(const AppInstPtr& app,
+    LoadProjectSplashScreen_RAII(const AppInstancePtr& app,
                                  const QString& filename)
         : app(app)
     {
@@ -188,7 +180,7 @@ public:
 
     ~LoadProjectSplashScreen_RAII()
     {
-        AppInstPtr a = app.lock();
+        AppInstancePtr a = app.lock();
 
         if (a) {
             a->closeLoadPRojectSplashScreen();
@@ -238,29 +230,36 @@ Project::loadProject(const QString & path,
             }
         }
 
-        bool mustSave = false;
-        if ( !loadProjectInternal(realPath, realName, isAutoSave, isUntitledAutosave, &mustSave) ) {
+        if ( !loadProjectInternal(realPath, realName, isAutoSave, isUntitledAutosave) ) {
             appPTR->showErrorLog();
-        } else if (mustSave) {
-            saveProject(realPath, realName, 0);
-        }
+        } 
     } catch (const std::exception & e) {
         Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Error while loading project: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
         if ( !getApp()->isBackground() ) {
-            CreateNodeArgs args(PLUGINID_NATRON_VIEWER, shared_from_this() );
-            args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-            args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-            getApp()->createNode(args);
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_VIEWER_GROUP, shared_from_this() ));
+            args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+            args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
+            args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+            NodePtr viewerGroup = getApp()->createNode(args);
+            assert(viewerGroup);
+            if (!viewerGroup) {
+                throw std::runtime_error( tr("Cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_VIEWER_GROUP) ).toStdString() );
+            }
         }
 
         return false;
     } catch (...) {
         Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Unkown error while loading project.").toStdString() );
         if ( !getApp()->isBackground() ) {
-            CreateNodeArgs args(PLUGINID_NATRON_VIEWER, shared_from_this() );
-            args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-            args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-            getApp()->createNode(args);
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_VIEWER_GROUP, shared_from_this() ));
+            args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+            args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
+            args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+            NodePtr viewerGroup = getApp()->createNode(args);
+            assert(viewerGroup);
+            if (!viewerGroup) {
+                throw std::runtime_error( tr("Cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_VIEWER_GROUP) ).toStdString() );
+            }
         }
 
         return false;
@@ -272,67 +271,61 @@ Project::loadProject(const QString & path,
 } // loadProject
 
 bool
-Project::loadProjectInternal(const QString & path,
-                             const QString & name,
+Project::getProjectLoadedVersionInfo(SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo* info) const
+{
+    assert(info);
+    if (_imp->lastProjectLoaded) {
+        *info = _imp->lastProjectLoaded->_projectLoadedInfo;
+        return true;
+    }
+    return false;
+}
+
+bool
+Project::loadProjectInternal(const QString & pathIn,
+                             const QString & nameIn,
                              bool isAutoSave,
-                             bool isUntitledAutosave,
-                             bool* mustSave)
+                             bool isUntitledAutosave)
 {
     FlagSetter loadingProjectRAII(true, &_imp->isLoadingProject, &_imp->isLoadingProjectMutex);
-    QString filePath = path + name;
-    std::cout << tr("Loading project: %1").arg(filePath).toStdString() << std::endl;
+    QString filePathIn = pathIn + nameIn;
+    std::cout << tr("Loading project: %1").arg(filePathIn).toStdString() << std::endl;
 
-    if ( !QFile::exists(filePath) ) {
-        throw std::invalid_argument( QString( filePath + QString::fromUtf8(" : no such file.") ).toStdString() );
+    if ( !QFile::exists(filePathIn) ) {
+        throw std::invalid_argument( QString( filePathIn + QString::fromUtf8(" : no such file.") ).toStdString() );
     }
+
+    LoadProjectSplashScreen_RAII __raii_splashscreen__(getApp(), nameIn);
+
+
+    QString filePathOut;
+    bool hasConverted = appPTR->checkForOlderProjectFile(getApp(), filePathIn, &filePathOut);
+
 
     bool ret = false;
     FStreamsSupport::ifstream ifile;
-    FStreamsSupport::open( &ifile, filePath.toStdString() );
+    FStreamsSupport::open( &ifile, filePathOut.toStdString() );
     if (!ifile) {
-        throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
+        throw std::runtime_error( tr("Failed to open %1").arg(filePathOut).toStdString() );
     }
 
-    if ( (NATRON_VERSION_MAJOR == 1) && (NATRON_VERSION_MINOR == 0) && (NATRON_VERSION_REVISION == 0) ) {
-        ///Try to determine if the project was made during Natron v1.0.0 - RC2 or RC3 to detect a bug we introduced at that time
-        ///in the BezierCP class serialisation
-        bool foundV = false;
-        QFile f(filePath);
-        f.open(QIODevice::ReadOnly);
-        QTextStream fs(&f);
-        while ( !fs.atEnd() ) {
-            QString line = fs.readLine();
 
-            if ( (line.indexOf( QString::fromUtf8("Natron v1.0.0 RC2") ) != -1) || (line.indexOf( QString::fromUtf8("Natron v1.0.0 RC3") ) != -1) ) {
-                appPTR->setProjectCreatedDuringRC2Or3(true);
-                foundV = true;
-                break;
-            }
-        }
-        if (!foundV) {
-            appPTR->setProjectCreatedDuringRC2Or3(false);
-        }
-    }
-
-    LoadProjectSplashScreen_RAII __raii_splashscreen__(getApp(), name);
 
     try {
-        bool bgProject;
-        boost::archive::xml_iarchive iArchive(ifile);
+        // We must keep this boolean for bakcward compatilbility, versinioning cannot help us in that case...
+        _imp->lastProjectLoaded.reset(new SERIALIZATION_NAMESPACE::ProjectSerialization);
+        appPTR->loadProjectFromFileFunction(ifile, filePathOut.toStdString(), getApp(), _imp->lastProjectLoaded.get());
+
         {
             FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
+            ret = load(*_imp->lastProjectLoaded, nameIn, pathIn);
+        }
 
-            iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
-            ProjectSerialization projectSerializationObj( getApp() );
-            iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
-            ret = load(projectSerializationObj, name, path, mustSave);
-        } // __raii_loadingProjectInternal__
-
-        if (!bgProject) {
-            getApp()->loadProjectGui(isAutoSave, iArchive);
+        if (!getApp()->isBackground()) {
+            getApp()->loadProjectGui(isAutoSave, _imp->lastProjectLoaded);
         }
     } catch (...) {
-        const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
+        const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo& pInfo = _imp->lastProjectLoaded->_projectLoadedInfo;
         if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
             (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor > NATRON_VERSION_MINOR) ||
             (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor == NATRON_VERSION_MINOR && pInfo.vRev > NATRON_VERSION_REVISION)) {
@@ -346,7 +339,7 @@ Project::loadProjectInternal(const QString & path,
     getProjectDefaultFormat(&f);
     Q_EMIT formatChanged(f);
 
-    _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName() );
+    _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName());
     if (isAutoSave) {
         _imp->autoSetProjectFormat = false;
         if (!isUntitledAutosave) {
@@ -363,13 +356,14 @@ Project::loadProjectInternal(const QString & path,
         }
         _imp->lastAutoSave = QDateTime::currentDateTime();
         _imp->ageSinceLastSave = QDateTime();
-        _imp->lastAutoSaveFilePath = filePath;
+        _imp->lastAutoSaveFilePath = filePathOut;
 
         QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
         QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
         Q_EMIT projectNameChanged(projectPath + projectFilename, true);
     } else {
-        Q_EMIT projectNameChanged(path + name, false);
+        // Mark it modified if it was converted
+        Q_EMIT projectNameChanged(filePathIn, hasConverted);
     }
 
     ///Try to take the project lock by creating a lock file
@@ -384,7 +378,12 @@ Project::loadProjectInternal(const QString & path,
 
     ///Process all events before flagging that we're no longer loading the project
     ///to avoid multiple renders being called because of reshape events of viewers
-    QCoreApplication::processEvents();
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        QCoreApplication::processEvents();
+    }
 
     return ret;
 } // Project::loadProjectInternal
@@ -455,9 +454,6 @@ Project::saveProject_imp(const QString & path,
         _imp->isSavingProject = false;
     }
 
-    ///Save caches ToC
-    appPTR->saveCaches();
-
     if (newFilePath) {
         *newFilePath = ret;
     }
@@ -488,7 +484,6 @@ Project::saveProjectInternal(const QString & path,
                              bool autoSave,
                              bool updateProjectProperties)
 {
-    bool isRenderSave = name.contains( QString::fromUtf8("RENDER_SAVE") );
     QDateTime time = QDateTime::currentDateTime();
     QString timeStr = time.toString();
     QString filePath;
@@ -506,21 +501,19 @@ Project::saveProjectInternal(const QString & path,
         }
         filePath.append( QLatin1Char('/') );
         filePath.append(name);
-        if (!isRenderSave) {
-            filePath.append( QString::fromUtf8(".autosave") );
-        }
-        if (!isRenderSave) {
-            if (appendTimeHash) {
-                Hash64 timeHash;
+        filePath.append( QString::fromUtf8(".autosave") );
 
-                Q_FOREACH(QChar ch, timeStr) {
-                    timeHash.append<unsigned short>( ch.unicode() );
-                }
-                timeHash.computeHash();
-                QString timeHashStr = QString::number( timeHash.value() );
-                filePath.append(QLatin1Char('.') + timeHashStr);
+        if (appendTimeHash) {
+            Hash64 timeHash;
+
+            Q_FOREACH(QChar ch, timeStr) {
+                timeHash.append<unsigned short>( ch.unicode() );
             }
+            timeHash.computeHash();
+            QString timeHashStr = QString::number( timeHash.value() );
+            filePath.append(QLatin1Char('.') + timeHashStr);
         }
+
 
         if (updateProjectProperties) {
             QMutexLocker l(&_imp->projectLock);
@@ -550,24 +543,16 @@ Project::saveProjectInternal(const QString & path,
 
         if (!autoSave && updateProjectProperties) {
             _imp->autoSetProjectDirectory(path);
-            _imp->saveDate->setValue( timeStr.toStdString() );
-            _imp->lastAuthorName->setValue( generateGUIUserName() );
-            _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName() );
+            _imp->saveDate->setValue( timeStr.toStdString());
+            _imp->lastAuthorName->setValue( generateGUIUserName());
+            _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName());
         }
 
         try {
-            boost::archive::xml_oarchive oArchive(ofile);
-            bool bgProject = getApp()->isBackground();
-            oArchive << boost::serialization::make_nvp("Background_project", bgProject);
-            ProjectSerialization projectSerializationObj( getApp() );
-            save(&projectSerializationObj);
-            oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
-            if (!bgProject) {
-                AppInstPtr app = getApp();
-                if (app) {
-                    app->saveProjectGui(oArchive);
-                }
-            }
+            SERIALIZATION_NAMESPACE::ProjectSerialization projectSerializationObj;
+            toSerialization(&projectSerializationObj);
+            appPTR->aboutToSaveProject(&projectSerializationObj);
+            SERIALIZATION_NAMESPACE::write(ofile, projectSerializationObj, NATRON_PROJECT_FILE_HEADER);
         } catch (...) {
             if (!autoSave && updateProjectProperties) {
                 ///Reset the old project path in case of failure.
@@ -599,6 +584,7 @@ Project::saveProjectInternal(const QString & path,
             removeLockFile();
         }
         {
+
             _imp->setProjectFilename( name.toStdString() );
             _imp->setProjectPath( path.toStdString() );
             QMutexLocker l(&_imp->projectLock);
@@ -610,11 +596,10 @@ Project::saveProjectInternal(const QString & path,
         //Create the lock file corresponding to the project
         createLockFile();
     } else if (updateProjectProperties) {
-        if (!isRenderSave) {
-            QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
-            QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
-            Q_EMIT projectNameChanged(projectPath + projectFilename, true);
-        }
+        QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
+        QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
+        Q_EMIT projectNameChanged(projectPath + projectFilename, true);
+
     }
     if (updateProjectProperties) {
         _imp->lastAutoSave = time;
@@ -671,7 +656,8 @@ Project::onAutoSaveTimerTriggered()
 
     ///check that all schedulers are not working.
     ///If so launch an auto-save, otherwise, restart the timer.
-    bool canAutoSave = !hasNodeRendering() && !getApp()->isShowingDialog();
+    QThreadPool* tp = QThreadPool::globalInstance();
+    bool canAutoSave = tp->activeThreadCount() < tp->maxThreadCount() && !getApp()->isShowingDialog();
 
     if (canAutoSave) {
         boost::shared_ptr<QFutureWatcher<void> > watcher = boost::make_shared<QFutureWatcher<void> >();
@@ -716,7 +702,7 @@ Project::findAutoSaveForProject(const QString& projectPath,
         QString autosaveSuffix( QString::fromUtf8(".autosave") );
         searchStr.append(autosaveSuffix);
         int suffixPos = entry.indexOf(searchStr);
-        if ( (suffixPos == -1) || entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
+        if (suffixPos == -1) {
             continue;
         }
         QString filename = projectPath + entry.left( suffixPos + ntpExt.size() );
@@ -733,370 +719,432 @@ Project::findAutoSaveForProject(const QString& projectPath,
 void
 Project::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Settings") );
+    KnobPagePtr page = createKnob<KnobPage>("settingsPage");
+    page->setLabel(tr("Settings"));
 
-    _imp->envVars = AppManager::createKnob<KnobPath>( this, tr("Project Paths") );
-    _imp->envVars->setName("projectPaths");
-    _imp->envVars->setHintToolTip( tr("Specify here project paths. Any path can be used "
-                                      "in file paths and can be used between brackets, for example: \n"
-                                      "[%1]MyProject.ntp \n"
-                                      "You can add as many project paths as you want and can name them as you want. This way it "
-                                      "makes it easy to share your projects and move files around."
-                                      " You can chain up paths, like so:\n "
-                                      "[%1] = <PathToProject> \n"
-                                      "[Scene1] = [%1]/Rush/S_01 \n"
-                                      "[Shot1] = [Scene1]/Shot001 \n"
-                                      "By default if a file-path is NOT absolute (i.e: not starting with '/' "
-                                      " on Unix or a drive name on Windows) "
-                                      "then it will be expanded using the [%1] path. "
-                                      "Absolute paths are treated as normal."
-                                      " The [%1] path will be set automatically to "
-                                      " the location of the project file when saving and loading a project."
-                                      " The [%2] path will also be set automatically for better sharing of projects with reader nodes.").arg( QString::fromUtf8(NATRON_PROJECT_ENV_VAR_NAME) ).arg( QString::fromUtf8(NATRON_OCIO_ENV_VAR_NAME) ) );
-    _imp->envVars->setSecret(false);
-    _imp->envVars->setMultiPath(true);
+    {
+        KnobPathPtr param = createKnob<KnobPath>("projectPaths");
+        param->setLabel(tr("Project Paths"));
+        param->setHintToolTip( tr("Specify here project paths. Any path can be used "
+                                          "in file paths and can be used between brackets, for example: \n"
+                                          "[%1]MyProject.ntp \n"
+                                          "You can add as many project paths as you want and can name them as you want. This way it "
+                                          "makes it easy to share your projects and move files around."
+                                          " You can chain up paths, like so:\n "
+                                          "[%1] = <PathToProject> \n"
+                                          "[Scene1] = [%1]/Rush/S_01 \n"
+                                          "[Shot1] = [Scene1]/Shot001 \n"
+                                          "By default if a file-path is NOT absolute (i.e: not starting with '/' "
+                                          " on Unix or a drive name on Windows) "
+                                          "then it will be expanded using the [%1] path. "
+                                          "Absolute paths are treated as normal."
+                                          " The [%1] path will be set automatically to "
+                                          " the location of the project file when saving and loading a project."
+                                          " The [%2] path will also be set automatically for better sharing of projects with reader nodes.").arg( QString::fromUtf8(NATRON_PROJECT_ENV_VAR_NAME) ).arg( QString::fromUtf8(NATRON_OCIO_ENV_VAR_NAME) ) );
+        param->setSecret(false);
+        param->setMultiPath(true);
 
+        // The parameter is not part of the hash: all file knobs in the project have their value stored in the hash with all project variables
+        // expanded
+        param->setEvaluateOnChange(false);
+        page->addKnob(param);
+        _imp->envVars = param;
+    }
+    
 
     ///Initialize the OCIO Config
     onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
 
-    page->addKnob(_imp->envVars);
-
-    _imp->formatKnob = AppManager::createKnob<KnobChoice>( this, tr("Output Format") );
-    _imp->formatKnob->setHintToolTip( tr("The project output format is what is used as canvas on the viewers.") );
-    _imp->formatKnob->setName("outputFormat");
-
-    const std::vector<Format> & appFormats = appPTR->getFormats();
-    std::vector<ChoiceOption> entries;
-    for (U32 i = 0; i < appFormats.size(); ++i) {
-        const Format& f = appFormats[i];
-        QString formatStr = ProjectPrivate::generateStringFromFormat(f);
-        if ( (f.width() == 1920) && (f.height() == 1080) && (f.getPixelAspectRatio() == 1) ) {
-            _imp->formatKnob->setDefaultValue(i, 0);
-        }
-        if ( !f.getName().empty() ) {
-            entries.push_back( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
-        } else {
-            entries.push_back( ChoiceOption( formatStr.toStdString() ) );
-        }
-
-        _imp->builtinFormats.push_back(f);
-    }
-    _imp->formatKnob->setAddNewLine(false);
-
-    _imp->formatKnob->populateChoices(entries);
-    _imp->formatKnob->setAnimationEnabled(false);
-    page->addKnob(_imp->formatKnob);
-
-    QObject::connect( _imp->formatKnob.get(), SIGNAL(populated()), this, SLOT(onProjectFormatPopulated()) );
-
-    _imp->addFormatKnob = AppManager::createKnob<KnobButton>( this, tr("New Format...") );
-    _imp->addFormatKnob->setName("newFormat");
-    page->addKnob(_imp->addFormatKnob);
-
-    _imp->previewMode = AppManager::createKnob<KnobBool>( this, tr("Auto Previews") );
-    _imp->previewMode->setName("autoPreviews");
-    _imp->previewMode->setHintToolTip( tr("When checked, preview images on the node graph will be "
-                                          "refreshed automatically. You can uncheck this option to improve performances.") );
-    _imp->previewMode->setAnimationEnabled(false);
-    _imp->previewMode->setEvaluateOnChange(false);
-    page->addKnob(_imp->previewMode);
-    bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
-    _imp->previewMode->setDefaultValue(autoPreviewEnabled, 0);
-
-
-    _imp->frameRange = AppManager::createKnob<KnobInt>(this, tr("Frame Range"), 2);
-    _imp->frameRange->setDefaultValue(1, 0);
-    _imp->frameRange->setDefaultValue(250, 1);
-    _imp->frameRange->setDimensionName(0, "first");
-    _imp->frameRange->setDimensionName(1, "last");
-    _imp->frameRange->setEvaluateOnChange(false);
-    _imp->frameRange->setName("frameRange");
-    _imp->frameRange->setHintToolTip( tr("The frame range of the project as seen by the plug-ins. New viewers are created automatically "
-                                         "with this frame-range. By default when a new Reader node is created, its frame range "
-                                         "is unioned to this "
-                                         "frame-range, unless the Lock frame range parameter is checked.") );
-    _imp->frameRange->setAnimationEnabled(false);
-    _imp->frameRange->setAddNewLine(false);
-    page->addKnob(_imp->frameRange);
-
-    _imp->lockFrameRange = AppManager::createKnob<KnobBool>( this, tr("Lock Range") );
-    _imp->lockFrameRange->setName("lockRange");
-    _imp->lockFrameRange->setDefaultValue(false);
-    _imp->lockFrameRange->setAnimationEnabled(false);
-    _imp->lockFrameRange->setHintToolTip( tr("By default when a new Reader node is created, its frame range is unioned to the "
-                                             "project frame-range, unless this parameter is checked.") );
-    _imp->lockFrameRange->setEvaluateOnChange(false);
-    page->addKnob(_imp->lockFrameRange);
-
-    _imp->frameRate = AppManager::createKnob<KnobDouble>( this, tr("Frame Rate") );
-    _imp->frameRate->setName("frameRate");
-    _imp->frameRate->setHintToolTip( tr("The frame rate of the project. This will serve as a default value for all effects that don't produce "
-                                        "special frame rates.") );
-    _imp->frameRate->setAnimationEnabled(false);
-    _imp->frameRate->setDefaultValue(24);
-    _imp->frameRate->setDisplayMinimum(0.);
-    _imp->frameRate->setDisplayMaximum(50.);
-    page->addKnob(_imp->frameRate);
-
-    _imp->gpuSupport = AppManager::createKnob<KnobChoice>( this, tr("GPU Rendering") );
-    _imp->gpuSupport->setName("gpuRendering");
     {
-        std::vector<ChoiceOption> entries;
-        entries.push_back(ChoiceOption("Enabled","",tr("Enable GPU rendering if required resources are available and the plugin supports it.").toStdString()));
-        entries.push_back(ChoiceOption("Disabled", "", tr("Disable GPU rendering for all plug-ins.").toStdString()));
-        entries.push_back(ChoiceOption("Disabled if background","",tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString()));
-        _imp->gpuSupport->populateChoices(entries);
-    }
-    _imp->gpuSupport->setAnimationEnabled(false);
-    _imp->gpuSupport->setHintToolTip( tr("Select when to activate GPU rendering for plug-ins. Note that if the OpenGL Rendering parameter in the Preferences/GPU Rendering is set to disabled then GPU rendering will not be activated regardless of that value.") );
-    _imp->gpuSupport->setEvaluateOnChange(false);
-    if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
-        _imp->gpuSupport->setAllDimensionsEnabled(false);
-    }
-    page->addKnob(_imp->gpuSupport);
+        KnobChoicePtr param = createKnob<KnobChoice>("outputFormat");
+        param->setLabel(tr("Output Format"));
+        param->setHintToolTip( tr("The project output format is what is used as canvas on the viewers.") );
+        const std::vector<Format> & appFormats = appPTR->getFormats();
 
-    boost::shared_ptr<KnobPage> viewsPage = AppManager::createKnob<KnobPage>( this, tr("Views") );
-
-    _imp->viewsList = AppManager::createKnob<KnobPath>( this, tr("Views List") );
-    _imp->viewsList->setName("viewsList");
-    _imp->viewsList->setHintToolTip( tr("The list of the views in the project") );
-    _imp->viewsList->setAnimationEnabled(false);
-    _imp->viewsList->setEvaluateOnChange(false);
-    _imp->viewsList->setAsStringList(true);
-    std::list<std::string> defaultViews;
-    defaultViews.push_back("Main");
-    std::string encodedDefaultViews = _imp->viewsList->encodeToKnobTableFormatSingleCol(defaultViews);
-    _imp->viewsList->setDefaultValue(encodedDefaultViews);
-    viewsPage->addKnob(_imp->viewsList);
-
-    _imp->setupForStereoButton = AppManager::createKnob<KnobButton>( this, tr("Setup views for stereo") );
-    _imp->setupForStereoButton->setName("setupForStereo");
-    _imp->setupForStereoButton->setHintToolTip( tr("Quickly setup the views list for stereo") );
-    _imp->setupForStereoButton->setEvaluateOnChange(false);
-    viewsPage->addKnob(_imp->setupForStereoButton);
-
-
-    boost::shared_ptr<KnobPage> LayersPage = AppManager::createKnob<KnobPage>( this, tr("Layers") );
-
-    _imp->defaultLayersList = AppManager::createKnob<KnobLayers>( this, tr("Default Layers") );
-    _imp->defaultLayersList->setName("defaultLayers");
-    _imp->defaultLayersList->setHintToolTip( tr("The list of the default layers available in layers menus on nodes.") );
-    _imp->defaultLayersList->setAnimationEnabled(false);
-    _imp->defaultLayersList->setEvaluateOnChange(false);
-    std::list<std::vector<std::string> > defaultLayers;
-    {
-        std::vector<ImagePlaneDesc> defaultComponents;
-        defaultComponents.push_back(ImagePlaneDesc::getRGBAComponents());
-        defaultComponents.push_back(ImagePlaneDesc::getDisparityLeftComponents());
-        defaultComponents.push_back(ImagePlaneDesc::getDisparityRightComponents());
-        defaultComponents.push_back(ImagePlaneDesc::getBackwardMotionComponents());
-        defaultComponents.push_back(ImagePlaneDesc::getForwardMotionComponents());
-
-
-        for (std::size_t i = 0; i < defaultComponents.size(); ++i) {
-            const ImagePlaneDesc& comps = defaultComponents[i];
-            std::vector<std::string> row(3);
-            row[0] = comps.getPlaneLabel();
-            std::string channelsStr;
-            const std::vector<std::string>& channels = comps.getChannels();
-            for (std::size_t c = 0; c < channels.size(); ++c) {
-                if (c > 0) {
-                    channelsStr += ' ';
+        {
+            std::vector<ChoiceOption> entries;
+            for (U32 i = 0; i < appFormats.size(); ++i) {
+                const Format& f = appFormats[i];
+                QString formatStr = ProjectPrivate::generateStringFromFormat(f);
+                if ( (f.width() == 1920) && (f.height() == 1080) && (f.getPixelAspectRatio() == 1) ) {
+                    param->setDefaultValue(i);
                 }
-                channelsStr += channels[c];
+                if ( !f.getName().empty() ) {
+                    entries.push_back( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
+                } else {
+                    entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+                }
+                _imp->builtinFormats.push_back(f);
             }
-            row[1] = channelsStr;
-            row[2] = comps.getChannelsLabel();
-            defaultLayers.push_back(row);
-        }
-    }
-    std::string encodedDefaultLayers = _imp->defaultLayersList->encodeToKnobTableFormat(defaultLayers);
-    _imp->defaultLayersList->setDefaultValue(encodedDefaultLayers);
-    LayersPage->addKnob(_imp->defaultLayersList);
+            param->setAddNewLine(false);
 
-    boost::shared_ptr<KnobPage> lutPages = AppManager::createKnob<KnobPage>( this, tr("LUT") );
+            param->populateChoices(entries);
+        }
+        param->setAnimationEnabled(false);
+        param->setIsMetadataSlave(true);
+        page->addKnob(param);
+        _imp->formatKnob = param;
+        QObject::connect( param.get(), SIGNAL(populated()), this, SLOT(onProjectFormatPopulated()) );
+    }
+
+    {
+        KnobButtonPtr param = createKnob<KnobButton>("newFormat");
+        param->setLabel(tr("New Format..."));
+        page->addKnob(param);
+        _imp->addFormatKnob = param;
+    }
+    {
+        KnobBoolPtr param = createKnob<KnobBool>("autoPreviews");
+        param->setLabel(tr("Auto Previews"));
+        param->setHintToolTip( tr("When checked, preview images on the node graph will be "
+                                  "refreshed automatically. You can uncheck this option to improve performances.") );
+        param->setAnimationEnabled(false);
+        param->setEvaluateOnChange(false);
+        page->addKnob(param);
+        bool autoPreviewEnabled = appPTR->getCurrentSettings()->isAutoPreviewOnForNewProjects();
+        param->setDefaultValue(autoPreviewEnabled);
+        _imp->previewMode = param;
+    }
+    {
+        KnobIntPtr param = createKnob<KnobInt>("frameRange", 2);
+        std::vector<int> defFrameRange(2);
+        defFrameRange[0] = 1;
+        defFrameRange[1] = 250;
+        param->setDefaultValues(defFrameRange, DimIdx(0));
+        param->setDimensionName(DimIdx(0), "first");
+        param->setDimensionName(DimIdx(1), "last");
+        param->setIsMetadataSlave(true);
+        param->setLabel(tr("Frame Range"));
+        param->setHintToolTip( tr("The frame range of the project as seen by the plug-ins. New viewers are created automatically "
+                                             "with this frame-range. By default when a new Reader node is created, its frame range "
+                                             "is unioned to this "
+                                             "frame-range, unless the Lock frame range parameter is checked.") );
+        param->setAnimationEnabled(false);
+        param->setAddNewLine(false);
+        page->addKnob(param);
+        _imp->frameRange = param;
+    }
+    {
+        KnobBoolPtr param = createKnob<KnobBool>("lockRange");
+        param->setLabel(tr("Lock Range"));
+        param->setDefaultValue(false);
+        param->setAnimationEnabled(false);
+        param->setHintToolTip( tr("By default when a new Reader node is created, its frame range is unioned to the "
+                                  "project frame-range, unless this parameter is checked.") );
+        param->setEvaluateOnChange(false);
+        page->addKnob(param);
+        _imp->lockFrameRange = param;
+    }
+    {
+        KnobDoublePtr param = createKnob<KnobDouble>("frameRate");
+        param->setLabel(tr("Frame Rate"));
+        param->setHintToolTip( tr("The frame rate of the project. This will serve as a default value for all effects that don't produce "
+                                  "special frame rates.") );
+        param->setAnimationEnabled(false);
+        param->setDefaultValue(24);
+        param->setIsMetadataSlave(true);
+        param->setDisplayRange(0., 50.);
+        page->addKnob(param);
+        _imp->frameRate = param;
+    }
+    {
+        KnobChoicePtr param = createKnob<KnobChoice>("gpuRendering");
+        param->setLabel(tr("GPU Rendering"));
+        {
+            std::vector<ChoiceOption> entries;
+            entries.push_back(ChoiceOption("Enabled","",tr("Enable GPU rendering if required resources are available and the plugin supports it.").toStdString()));
+            entries.push_back(ChoiceOption("Disabled", "", tr("Disable GPU rendering for all plug-ins.").toStdString()));
+            entries.push_back(ChoiceOption("Disabled if background","",tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString()));
+            param->populateChoices(entries);
+
+        }
+        param->setAnimationEnabled(false);
+        param->setHintToolTip( tr("Select when to activate GPU rendering for plug-ins. Note that if the OpenGL Rendering parameter in the Preferences/GPU Rendering is set to disabled then GPU rendering will not be activated regardless of that value.") );
+        param->setEvaluateOnChange(false);
+        if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
+            param->setEnabled(false);
+        }
+        page->addKnob(param);
+        _imp->gpuSupport = param;
+    }
+
+    KnobPagePtr viewsPage = createKnob<KnobPage>("viewsPage");
+    viewsPage->setLabel(tr("Views"));
+
+    {
+        KnobPathPtr param = createKnob<KnobPath>("viewsList");
+        param->setLabel(tr("Views List"));
+        param->setHintToolTip( tr("The list of the views in the project") );
+        param->setAnimationEnabled(false);
+        param->setAsStringList(true);
+        std::list<std::string> defaultViews;
+        defaultViews.push_back("Main");
+        std::string encodedDefaultViews = param->encodeToKnobTableFormatSingleCol(defaultViews);
+        param->setDefaultValue(encodedDefaultViews);
+        param->setIsMetadataSlave(true);
+        viewsPage->addKnob(param);
+        _imp->viewsList = param;
+    }
+    {
+        KnobButtonPtr param = createKnob<KnobButton>("setupForStereo");
+        param->setLabel(tr("Setup views for stereo"));
+        param->setHintToolTip( tr("Quickly setup the views list for stereo") );
+        param->setEvaluateOnChange(false);
+        viewsPage->addKnob(param);
+        _imp->setupForStereoButton = param;
+    }
+
+    KnobPagePtr layersPage = createKnob<KnobPage>("planesPage");
+    layersPage->setLabel(tr("Planes"));
+    
+    {
+        KnobLayersPtr param = createKnob<KnobLayers>("defaultPlanes");
+        param->setLabel(tr("Default Planes"));
+        param->setHintToolTip( tr("The list of the planes available by default on a Node's plane selector") );
+        param->setAnimationEnabled(false);
+        param->setEvaluateOnChange(false);
+
+        std::list<ImagePlaneDesc> defaultComponents;
+        {
+            defaultComponents.push_back(ImagePlaneDesc::getRGBAComponents());
+            defaultComponents.push_back(ImagePlaneDesc::getDisparityLeftComponents());
+            defaultComponents.push_back(ImagePlaneDesc::getDisparityRightComponents());
+            defaultComponents.push_back(ImagePlaneDesc::getBackwardMotionComponents());
+            defaultComponents.push_back(ImagePlaneDesc::getForwardMotionComponents());
+        }
+        std::string encodedDefaultLayers = param->encodePlanesList(defaultComponents);
+        param->setDefaultValue(encodedDefaultLayers);
+        param->setIsMetadataSlave(true);
+        layersPage->addKnob(param);
+        _imp->defaultLayersList = param;
+    }
+
+    //KnobPagePtr lutPages = createKnob<KnobPage>("lutPage");
+    //lutPages->setLabel(tr("Lut"));
+
+
     std::vector<ChoiceOption> colorSpaces;
     // Keep it in sync with ViewerColorSpaceEnum
     colorSpaces.push_back(ChoiceOption("Linear","",""));
     colorSpaces.push_back(ChoiceOption("sRGB","",""));
     colorSpaces.push_back(ChoiceOption("Rec.709","",""));
 
-    _imp->colorSpace8u = AppManager::createKnob<KnobChoice>( this, tr("8-Bit LUT") );
-    _imp->colorSpace8u->setName("defaultColorSpace8u");
-    _imp->colorSpace8u->setHintToolTip( tr("Defines the 1D LUT used to convert to 8-bit image data if an effect cannot process floating-point images.") );
-    _imp->colorSpace8u->setAnimationEnabled(false);
-    _imp->colorSpace8u->populateChoices(colorSpaces);
-    _imp->colorSpace8u->setDefaultValue(1);
-    lutPages->addKnob(_imp->colorSpace8u);
+    {
+        KnobChoicePtr param = createKnob<KnobChoice>("defaultColorSpace8u");
+        param->setLabel(tr("8-Bit LUT"));
+        param->setHintToolTip( tr("Defines the 1D LUT used to convert to 8-bit image data if an effect cannot process floating-point images.") );
+        param->setAnimationEnabled(false);
+        param->populateChoices(colorSpaces);
+        param->setDefaultValue(1);
+        param->setSecret(true);
+        page->addKnob(param);
+        _imp->colorSpace8u = param;
+    }
 
-    _imp->colorSpace16u = AppManager::createKnob<KnobChoice>( this, tr("16-Bit LUT") );
-    _imp->colorSpace16u->setName("defaultColorSpace16u");
-    _imp->colorSpace16u->setHintToolTip( tr("Defines the 1D LUT used to convert to 16-bit image data if an effect cannot process floating-point images.") );
-    _imp->colorSpace16u->setAnimationEnabled(false);
-    _imp->colorSpace16u->populateChoices(colorSpaces);
-    _imp->colorSpace16u->setDefaultValue(2);
-    lutPages->addKnob(_imp->colorSpace16u);
+    {
+        KnobChoicePtr param = createKnob<KnobChoice>("defaultColorSpace16u");
+        param->setLabel(tr("16-Bit LUT"));
+        param->setHintToolTip( tr("Defines the 1D LUT used to convert to 16-bit image data if an effect cannot process floating-point images.") );
+        param->setAnimationEnabled(false);
+        param->populateChoices(colorSpaces);
+        param->setDefaultValue(2);
+        param->setSecret(true);
+        page->addKnob(param);
+        _imp->colorSpace16u = param;
+    }
 
-    _imp->colorSpace32f = AppManager::createKnob<KnobChoice>( this, tr("32-Bit Floating Point LUT ") );
-    _imp->colorSpace32f->setName("defaultColorSpace32f");
-    _imp->colorSpace32f->setHintToolTip( tr("Defines the 1D LUT used to convert from 32-bit floating-point image data if an effect cannot process floating-point images.") );
-    _imp->colorSpace32f->setAnimationEnabled(false);
-    _imp->colorSpace32f->populateChoices(colorSpaces);
-    _imp->colorSpace32f->setDefaultValue(0);
-    lutPages->addKnob(_imp->colorSpace32f);
+    {
+        KnobChoicePtr param = createKnob<KnobChoice>("defaultColorSpace32f");
+        param->setLabel(tr("32-Bit Floating Point LUT"));
+        param->setHintToolTip( tr("Defines the 1D LUT used to convert from 32-bit floating-point image data if an effect cannot process floating-point images.") );
+        param->setAnimationEnabled(false);
+        param->populateChoices(colorSpaces);
+        param->setDefaultValue(0);
+        param->setSecret(true);
+        page->addKnob(param);
+        _imp->colorSpace32f = param;
+    }
 
-    boost::shared_ptr<KnobPage> infoPage = AppManager::createKnob<KnobPage>( this, tr("Info").toStdString() );
 
-    _imp->projectName = AppManager::createKnob<KnobString>( this, tr("Project Name") );
-    _imp->projectName->setName("projectName");
-    _imp->projectName->setIsPersistent(false);
-//    _imp->projectName->setAsLabel();
-    _imp->projectName->setDefaultEnabled(0, false);
-    _imp->projectName->setAnimationEnabled(false);
-    _imp->projectName->setDefaultValue(NATRON_PROJECT_UNTITLED);
-    infoPage->addKnob(_imp->projectName);
+    KnobPagePtr infoPage = createKnob<KnobPage>("infoPage");
+    infoPage->setLabel(tr("Infos"));
 
-    _imp->projectPath = AppManager::createKnob<KnobString>( this, tr("Project path") );
-    _imp->projectPath->setName("projectPath");
-    _imp->projectPath->setIsPersistent(false);
-    _imp->projectPath->setAnimationEnabled(false);
-    _imp->projectPath->setDefaultEnabled(0, false);
-    // _imp->projectPath->setAsLabel();
-    infoPage->addKnob(_imp->projectPath);
+    {
+        KnobStringPtr param = createKnob<KnobString>("projectName");
+        param->setLabel(tr("Project Name"));
+        param->setIsPersistent(false);
+        param->setEnabled(false);
+        param->setEvaluateOnChange(false);
+        param->setAnimationEnabled(false);
+        param->setDefaultValue(NATRON_PROJECT_UNTITLED);
+        infoPage->addKnob(param);
+        _imp->projectName = param;
+    }
+    {
+        KnobStringPtr param = createKnob<KnobString>("projectPath");
+        param->setLabel(tr("Project path"));
+        param->setIsPersistent(false);
+        param->setAnimationEnabled(false);
+        param->setEvaluateOnChange(false);
+        param->setEnabled(false);
+        infoPage->addKnob(param);
+        _imp->projectPath = param;
+    }
+    {
+        KnobStringPtr param = createKnob<KnobString>("softwareVersion");
+        param->setLabel(tr("Saved With"));
+        param->setHintToolTip( tr("The version of %1 that saved this project for the last time.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+        param->setEnabled(false);
+        param->setEvaluateOnChange(false);
+        param->setAnimationEnabled(false);
 
-    _imp->natronVersion = AppManager::createKnob<KnobString>( this, tr("Saved With") );
-    _imp->natronVersion->setName("softwareVersion");
-    _imp->natronVersion->setHintToolTip( tr("The version of %1 that saved this project for the last time.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    // _imp->natronVersion->setAsLabel();
-    _imp->natronVersion->setDefaultEnabled(0, false);
-    _imp->natronVersion->setEvaluateOnChange(false);
-    _imp->natronVersion->setAnimationEnabled(false);
+        // No need to save it, just use it for Gui purpose, this is saved as a separate field anyway
+        param->setIsPersistent(false);
+        param->setDefaultValue( generateUserFriendlyNatronVersionName() );
+        infoPage->addKnob(param);
+	_imp->natronVersion = param;
+    }
 
-    _imp->natronVersion->setDefaultValue( generateUserFriendlyNatronVersionName() );
-    infoPage->addKnob(_imp->natronVersion);
-
-    _imp->originalAuthorName = AppManager::createKnob<KnobString>( this, tr("Original Author") );
-    _imp->originalAuthorName->setName("originalAuthor");
-    _imp->originalAuthorName->setHintToolTip( tr("The user name and host name of the original author of the project.") );
-    //_imp->originalAuthorName->setAsLabel();
-    _imp->originalAuthorName->setDefaultEnabled(0, false);
-    _imp->originalAuthorName->setEvaluateOnChange(false);
-    _imp->originalAuthorName->setAnimationEnabled(false);
     std::string authorName = generateGUIUserName();
-    _imp->originalAuthorName->setDefaultValue(authorName);
-    infoPage->addKnob(_imp->originalAuthorName);
-
-    _imp->lastAuthorName = AppManager::createKnob<KnobString>( this, tr("Last Author") );
-    _imp->lastAuthorName->setName("lastAuthor");
-    _imp->lastAuthorName->setHintToolTip( tr("The user name and host name of the last author of the project.") );
-    // _imp->lastAuthorName->setAsLabel();
-    _imp->lastAuthorName->setDefaultEnabled(0, false);
-    _imp->lastAuthorName->setEvaluateOnChange(false);
-    _imp->lastAuthorName->setAnimationEnabled(false);
-    _imp->lastAuthorName->setDefaultValue(authorName);
-    infoPage->addKnob(_imp->lastAuthorName);
-
-
-    _imp->projectCreationDate = AppManager::createKnob<KnobString>( this, tr("Created On") );
-    _imp->projectCreationDate->setName("creationDate");
-    _imp->projectCreationDate->setHintToolTip( tr("The creation date of the project.") );
-    //_imp->projectCreationDate->setAsLabel();
-    _imp->projectCreationDate->setDefaultEnabled(0, false);
-    _imp->projectCreationDate->setEvaluateOnChange(false);
-    _imp->projectCreationDate->setAnimationEnabled(false);
-    _imp->projectCreationDate->setDefaultValue( QDateTime::currentDateTime().toString().toStdString() );
-    infoPage->addKnob(_imp->projectCreationDate);
-
-    _imp->saveDate = AppManager::createKnob<KnobString>( this, tr("Last Saved On") );
-    _imp->saveDate->setName("lastSaveDate");
-    _imp->saveDate->setHintToolTip( tr("The date this project was last saved.") );
-    //_imp->saveDate->setAsLabel();
-    _imp->saveDate->setDefaultEnabled(0, false);
-    _imp->saveDate->setEvaluateOnChange(false);
-    _imp->saveDate->setAnimationEnabled(false);
-    infoPage->addKnob(_imp->saveDate);
-
-    boost::shared_ptr<KnobString> comments = AppManager::createKnob<KnobString>( this, tr("Comments") );
-    comments->setName("comments");
-    comments->setHintToolTip( tr("This area is a good place to write some informations about the project such as its authors, license "
-                                 "and anything worth mentionning about it.") );
-    comments->setAsMultiLine();
-    comments->setAnimationEnabled(false);
-    infoPage->addKnob(comments);
-
-    boost::shared_ptr<KnobPage> pythonPage = AppManager::createKnob<KnobPage>( this, tr("Python") );
-    _imp->onProjectLoadCB = AppManager::createKnob<KnobString>( this, tr("After Project Loaded") );
-    _imp->onProjectLoadCB->setName("afterProjectLoad");
-    _imp->onProjectLoadCB->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time this project "
-                                              "is loaded either from an auto-save or by a user action. It will be called immediately after all "
-                                              "nodes are re-created. This callback will not be called when creating new projects.\n "
-                                              "The signature of the callback is: callback(app) where:\n"
-                                              "- app: points to the current application instance.") );
-    _imp->onProjectLoadCB->setAnimationEnabled(false);
-    std::string onProjectLoad = appPTR->getCurrentSettings()->getDefaultOnProjectLoadedCB();
-    _imp->onProjectLoadCB->setDefaultValue(onProjectLoad);
-    pythonPage->addKnob(_imp->onProjectLoadCB);
-
-
-    _imp->onProjectSaveCB = AppManager::createKnob<KnobString>( this, tr("Before Project Save") );
-    _imp->onProjectSaveCB->setName("beforeProjectSave");
-    _imp->onProjectSaveCB->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time this project "
-                                              "is saved by the user. This will be called prior to actually saving the project and can be used "
-                                              "to change the filename of the file.\n"
-                                              "The signature of the callback is: callback(filename,app,autoSave) where:\n"
-                                              "- filename: points to the filename under which the project will be saved"
-                                              "- app: points to the current application instance\n"
-                                              "- autoSave: True if the save was called due to an auto-save, False otherwise\n"
-                                              "You should return the new filename under which the project should be saved.") );
-    _imp->onProjectSaveCB->setAnimationEnabled(false);
-    std::string onProjectSave = appPTR->getCurrentSettings()->getDefaultOnProjectSaveCB();
-    _imp->onProjectSaveCB->setDefaultValue(onProjectSave);
-    pythonPage->addKnob(_imp->onProjectSaveCB);
-
-    _imp->onProjectCloseCB = AppManager::createKnob<KnobString>( this, tr("Before Project Close") );
-    _imp->onProjectCloseCB->setName("beforeProjectClose");
-    _imp->onProjectCloseCB->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time this project "
-                                               "is closed or if the user closes the application while this project is opened. This is called "
-                                               "prior to removing anything from the project.\n"
-                                               "The signature of the callback is: callback(app) where:\n"
-                                               "- app: points to the current application instance.") );
-    _imp->onProjectCloseCB->setAnimationEnabled(false);
-    std::string onProjectClose = appPTR->getCurrentSettings()->getDefaultOnProjectCloseCB();
-    _imp->onProjectCloseCB->setValue(onProjectClose);
-    pythonPage->addKnob(_imp->onProjectCloseCB);
-
-    _imp->onNodeCreated = AppManager::createKnob<KnobString>( this, tr("After Node Created") );
-    _imp->onNodeCreated->setName("afterNodeCreated");
-    _imp->onNodeCreated->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time a node "
-                                            "is created. The boolean variable userEdited will be set to True if the node was created "
-                                            "by the user or False otherwise (such as when loading a project, or pasting a node).\n"
-                                            "The signature of the callback is: callback(thisNode, app, userEdited) where:\n"
-                                            "- thisNode: the node which has just been created\n"
-                                            "- userEdited: a boolean indicating whether the node was created by user interaction or from "
-                                            "a script/project load/copy-paste\n"
-                                            "- app: points to the current application instance.") );
-    _imp->onNodeCreated->setAnimationEnabled(false);
-    std::string onNodeCreated = appPTR->getCurrentSettings()->getDefaultOnNodeCreatedCB();
-    _imp->onNodeCreated->setDefaultValue(onNodeCreated);
-    pythonPage->addKnob(_imp->onNodeCreated);
-
-    _imp->onNodeDeleted = AppManager::createKnob<KnobString>( this, tr("Before Node Removal") );
-    _imp->onNodeDeleted->setName("beforeNodeRemoval");
-    _imp->onNodeDeleted->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time a node "
-                                            "is about to be deleted. This function will not be called when the project is closing.\n"
-                                            "The signature of the callback is: callback(thisNode, app) where:\n"
-                                            "- thisNode: the node about to be deleted\n"
-                                            "- app: points to the current application instance.") );
-    _imp->onNodeDeleted->setAnimationEnabled(false);
-    std::string onNodeDelete = appPTR->getCurrentSettings()->getDefaultOnNodeDeleteCB();
-    _imp->onNodeDeleted->setDefaultValue(onNodeDelete);
-    pythonPage->addKnob(_imp->onNodeDeleted);
-
-
-    comments->setAsMultiLine();
-    comments->setAnimationEnabled(false);
-    infoPage->addKnob(comments);
+    {
+        KnobStringPtr param = createKnob<KnobString>( "originalAuthor");
+        param->setLabel(tr("Original Author"));
+        param->setHintToolTip( tr("The user name and host name of the original author of the project.") );
+        param->setEnabled(false);
+        param->setEvaluateOnChange(false);
+        param->setAnimationEnabled(false);
+        param->setValue(authorName);
+        infoPage->addKnob(param);
+        _imp->originalAuthorName = param;
+    }
+    {
+        KnobStringPtr param = createKnob<KnobString>("lastAuthor");
+        param->setLabel(tr("Last Author"));
+        param->setHintToolTip( tr("The user name and host name of the last author of the project.") );
+        param->setEnabled(false);
+        param->setEvaluateOnChange(false);
+        param->setAnimationEnabled(false);
+        param->setValue(authorName);
+        infoPage->addKnob(param);
+	_imp->lastAuthorName = param;
+    }
+    {
+        KnobStringPtr param = createKnob<KnobString>("creationDate");
+        param->setLabel(tr("Created On"));
+        param->setHintToolTip( tr("The creation date of the project.") );
+        param->setEnabled(false);
+        param->setEvaluateOnChange(false);
+        param->setAnimationEnabled(false);
+        param->setValue( QDateTime::currentDateTime().toString().toStdString() );
+        infoPage->addKnob(param);
+        _imp->projectCreationDate = param;
+    }
+    {
+        KnobStringPtr param = createKnob<KnobString>("lastSaveDate");
+        param->setLabel(tr("Last Saved On") );
+        param->setHintToolTip( tr("The date this project was last saved.") );
+        param->setEnabled(false);
+        param->setEvaluateOnChange(false);
+        param->setAnimationEnabled(false);
+        infoPage->addKnob(param);
+        _imp->saveDate = param;
+    }
+    {
+        KnobStringPtr param = createKnob<KnobString>("comments");
+        param->setLabel(tr("Comments"));
+        param->setHintToolTip( tr("This area is a good place to write some informations about the project such as its authors, license "
+                                     "and anything worth mentionning about it.") );
+        param->setAsMultiLine();
+        param->setEvaluateOnChange(false);
+        param->setAnimationEnabled(false);
+        infoPage->addKnob(param);
+    }
+    KnobPagePtr pythonPage = createKnob<KnobPage>("pythonPage");
+    pythonPage->setLabel(tr("Python"));
+    {
+        KnobStringPtr param = createKnob<KnobString>("afterProjectLoad");
+        param->setLabel(tr("After Project Loaded"));
+        param->setName("afterProjectLoad");
+        param->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time this project "
+                                                  "is loaded either from an auto-save or by a user action. It will be called immediately after all "
+                                                  "nodes are re-created. This callback will not be called when creating new projects.\n "
+                                                  "The signature of the callback is: callback(app) where:\n"
+                                                  "- app: points to the current application instance.") );
+        param->setAnimationEnabled(false);
+        std::string onProjectLoad = appPTR->getCurrentSettings()->getDefaultOnProjectLoadedCB();
+        param->setDefaultValue(onProjectLoad);
+        param->setEvaluateOnChange(false);
+        pythonPage->addKnob(param);
+        _imp->onProjectLoadCB = param;
+    }
+    {
+        KnobStringPtr param = createKnob<KnobString>("beforeProjectSave");
+        param->setLabel(tr("Before Project Save"));
+        param->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time this project "
+                                                  "is saved by the user. This will be called prior to actually saving the project and can be used "
+                                                  "to change the filename of the file.\n"
+                                                  "The signature of the callback is: callback(filename,app,autoSave) where:\n"
+                                                  "- filename: points to the filename under which the project will be saved"
+                                                  "- app: points to the current application instance\n"
+                                                  "- autoSave: True if the save was called due to an auto-save, False otherwise\n"
+                                                  "You should return the new filename under which the project should be saved.") );
+        param->setAnimationEnabled(false);
+        std::string onProjectSave = appPTR->getCurrentSettings()->getDefaultOnProjectSaveCB();
+        param->setDefaultValue(onProjectSave);
+        param->setEvaluateOnChange(false);
+        pythonPage->addKnob(param);
+        _imp->onProjectSaveCB = param;
+    }
+    {
+        KnobStringPtr param = createKnob<KnobString>("beforeProjectClose");
+        param->setLabel(tr("Before Project Close"));
+        param->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time this project "
+                                                   "is closed or if the user closes the application while this project is opened. This is called "
+                                                   "prior to removing anything from the project.\n"
+                                                   "The signature of the callback is: callback(app) where:\n"
+                                                   "- app: points to the current application instance.") );
+        param->setAnimationEnabled(false);
+        std::string onProjectClose = appPTR->getCurrentSettings()->getDefaultOnProjectCloseCB();
+        param->setValue(onProjectClose);
+        param->setEvaluateOnChange(false);
+        pythonPage->addKnob(param);
+        _imp->onProjectCloseCB = param;
+    }
+    {
+        KnobStringPtr param = createKnob<KnobString>("afterNodeCreated");
+        param->setLabel(tr("After Node Created"));
+        param->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time a node "
+                                                "is created. The boolean variable userEdited will be set to True if the node was created "
+                                                "by the user or False otherwise (such as when loading a project, or pasting a node).\n"
+                                                "The signature of the callback is: callback(thisNode, app, userEdited) where:\n"
+                                                "- thisNode: the node which has just been created\n"
+                                                "- userEdited: a boolean indicating whether the node was created by user interaction or from "
+                                                "a script/project load/copy-paste\n"
+                                                "- app: points to the current application instance.") );
+        param->setAnimationEnabled(false);
+        std::string onNodeCreated = appPTR->getCurrentSettings()->getDefaultOnNodeCreatedCB();
+        param->setDefaultValue(onNodeCreated);
+        param->setEvaluateOnChange(false);
+        pythonPage->addKnob(param);
+        _imp->onNodeCreated = param;
+    }
+    {
+        KnobStringPtr param = createKnob<KnobString>("beforeNodeRemoval");
+        param->setLabel(tr("Before Node Removal"));
+        param->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time a node "
+                                                "is about to be deleted. This function will not be called when the project is closing.\n"
+                                                "The signature of the callback is: callback(thisNode, app) where:\n"
+                                                "- thisNode: the node about to be deleted\n"
+                                                "- app: points to the current application instance.") );
+        param->setAnimationEnabled(false);
+        std::string onNodeDelete = appPTR->getCurrentSettings()->getDefaultOnNodeDeleteCB();
+        param->setDefaultValue(onNodeDelete);
+        param->setEvaluateOnChange(false);
+        pythonPage->addKnob(param);
+        _imp->onNodeDeleted = param;
+    }
+    
+    
 
     Q_EMIT knobsInitialized();
 } // initializeKnobs
@@ -1107,7 +1155,7 @@ Project::getProjectDefaultFormat(Format *f) const
 {
     assert(f);
     QMutexLocker l(&_imp->formatMutex);
-    ChoiceOption formatSpec = _imp->formatKnob->getActiveEntry();
+    ChoiceOption formatSpec = _imp->formatKnob->getCurrentEntry();
     // use the label here, because the id does not contain the format specifications.
     // see ProjectPrivate::generateStringFromFormat()
 #pragma message WARN("TODO: can't we store the format somewhere instead of parsing the label???")
@@ -1145,7 +1193,7 @@ Project::currentFrame() const
 }
 
 int
-Project::tryAddProjectFormat(const Format & f, bool* existed)
+Project::tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat, bool* existed)
 {
     //assert( !_imp->formatMutex.tryLock() );
     if ( ( f.left() >= f.right() ) || ( f.bottom() >= f.top() ) ) {
@@ -1164,34 +1212,51 @@ Project::tryAddProjectFormat(const Format & f, bool* existed)
         }
     }
 
+    QString formatStr = ProjectPrivate::generateStringFromFormat(f);
+
+    int ret = -1;
     std::vector<ChoiceOption> entries;
     for (std::list<Format>::iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
-        const Format & f = *it;
-        QString formatStr = ProjectPrivate::generateStringFromFormat(f);
+        QString str = ProjectPrivate::generateStringFromFormat(*it);
+        if ( !it->getName().empty() ) {
+            entries.push_back( ChoiceOption(it->getName(), str.toStdString(), "") );
+        } else {
+            entries.push_back( ChoiceOption( str.toStdString() ) );
+        }
+    }
+    if (!addAsAdditionalFormat) {
         if ( !f.getName().empty() ) {
             entries.push_back( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
         } else {
             entries.push_back( ChoiceOption( formatStr.toStdString() ) );
         }
+        ret = (entries.size() - 1);
     }
     for (std::list<Format>::iterator it = _imp->additionalFormats.begin(); it != _imp->additionalFormats.end(); ++it) {
-        const Format & f = *it;
-        QString formatStr = ProjectPrivate::generateStringFromFormat(f);
+        QString str = ProjectPrivate::generateStringFromFormat(*it);
+        if ( !it->getName().empty() ) {
+            entries.push_back( ChoiceOption(it->getName(), str.toStdString(), "") );
+        } else {
+            entries.push_back( ChoiceOption( str.toStdString() ) );
+        }
+    }
+    if (addAsAdditionalFormat) {
         if ( !f.getName().empty() ) {
             entries.push_back( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
         } else {
             entries.push_back( ChoiceOption( formatStr.toStdString() ) );
         }
-    }
-    QString formatStr = ProjectPrivate::generateStringFromFormat(f);
-    _imp->additionalFormats.push_back(f);
-    if ( !f.getName().empty() ) {
-        _imp->formatKnob->appendChoice( ChoiceOption(f.getName(), formatStr.toStdString(), "") );
-    } else {
-        _imp->formatKnob->appendChoice( ChoiceOption( formatStr.toStdString() ) );
+        ret = (entries.size() - 1);
     }
 
-    return ( _imp->builtinFormats.size() + _imp->additionalFormats.size() ) - 1;
+    if (addAsAdditionalFormat) {
+        _imp->additionalFormats.push_back(f);
+    } else {
+        _imp->builtinFormats.push_back(f);
+    }
+    _imp->formatKnob->populateChoices(entries);
+
+    return ret;
 }
 
 void
@@ -1199,7 +1264,7 @@ Project::setProjectDefaultFormat(const Format & f)
 {
     //assert( !_imp->formatMutex.tryLock() );
     bool existed;
-    int index = tryAddProjectFormat(f, &existed);
+    int index = tryAddProjectFormat(f, true, &existed);
 
     _imp->formatKnob->setValue(index);
     ///if locked it will trigger a deadlock because some parameters
@@ -1210,7 +1275,8 @@ void
 Project::getProjectFormatEntries(std::vector<ChoiceOption>* formatStrings,
                                  int* currentValue) const
 {
-    *formatStrings = _imp->formatKnob->getEntries_mt_safe();
+    *formatStrings = _imp->formatKnob->getEntries();
+
     *currentValue = _imp->formatKnob->getValue();
 }
 
@@ -1280,57 +1346,7 @@ Project::isGPURenderingEnabledInProject() const
 std::list<ImagePlaneDesc>
 Project::getProjectDefaultLayers() const
 {
-    std::list<ImagePlaneDesc> ret;
-    std::list<std::vector<std::string> > table;
-
-    _imp->defaultLayersList->getTable(&table);
-    for (std::list<std::vector<std::string> >::iterator it = table.begin();
-         it != table.end(); ++it) {
-
-        const std::string& planeLabel = (*it)[0];
-        std::string planeID = planeLabel;
-        std::string componentsLabel;
-
-        // The layers knob only propose the user to display the label of the plane desc,
-        // but we need to recover the ID for the built-in planes to ensure compatibility
-        // with the old Nuke multi-plane suite.
-        if (planeID == kNatronColorPlaneLabel) {
-            planeID = kNatronColorPlaneID;
-        } else if (planeID == kNatronBackwardMotionVectorsPlaneLabel) {
-            planeID = kNatronBackwardMotionVectorsPlaneID;
-            componentsLabel = kNatronMotionComponentsLabel;
-        } else if (planeID == kNatronForwardMotionVectorsPlaneLabel) {
-            planeID = kNatronForwardMotionVectorsPlaneID;
-            componentsLabel = kNatronMotionComponentsLabel;
-        } else if (planeID == kNatronDisparityLeftPlaneLabel) {
-            planeID = kNatronDisparityLeftPlaneID;
-            componentsLabel = kNatronDisparityComponentsLabel;
-        } else if (planeID == kNatronDisparityRightPlaneLabel) {
-            planeID = kNatronDisparityRightPlaneID;
-            componentsLabel = kNatronDisparityComponentsLabel;
-        }
-
-        bool found = false;
-        for (std::list<ImagePlaneDesc>::const_iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
-            if (it2->getPlaneID() == planeID) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            std::vector<std::string> componentsName;
-            QString str = QString::fromUtf8( (*it)[1].c_str() );
-            QStringList channels = str.split( QLatin1Char(' ') );
-            componentsName.resize( channels.size() );
-            for (int i = 0; i < channels.size(); ++i) {
-                componentsName[i] = channels[i].toStdString();
-            }
-            ImagePlaneDesc c( planeID, planeLabel, componentsLabel, componentsName );
-            ret.push_back(c);
-        }
-    }
-
-    return ret;
+    return _imp->defaultLayersList->decodePlanesList();
 }
 
 void
@@ -1391,6 +1407,47 @@ Project::getProjectViewNames() const
     }
 
     return tls;
+}
+
+std::string
+Project::getViewName(ViewIdx view) const
+{
+    const std::vector<std::string>& viewNames = getProjectViewNames();
+    if (view < 0 || view >= (int)viewNames.size()) {
+        return std::string();
+    }
+    return viewNames[view];
+}
+
+bool
+Project::getViewIndex(const std::vector<std::string>& viewNames, const std::string& viewName, ViewIdx* view)
+{
+    *view = ViewIdx(0);
+    for (std::size_t i = 0; i < viewNames.size(); ++i) {
+        if (boost::iequals(viewNames[i], viewName)) {
+            *view = ViewIdx(i);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+Project::getViewIndex(const std::string& viewName, ViewIdx* view) const
+{
+    std::list<std::vector<std::string> > pairs;
+    _imp->viewsList->getTable(&pairs);
+    {
+        int i = 0;
+        for (std::list<std::vector<std::string> >::iterator it = pairs.begin();
+             it != pairs.end(); ++it) {
+            if (boost::iequals((*it)[0], viewName)) {
+                *view = ViewIdx(i);
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void
@@ -1501,10 +1558,10 @@ Project::isAutoPreviewEnabled() const
 void
 Project::toggleAutoPreview()
 {
-    _imp->previewMode->setValue( !_imp->previewMode->getValue() );
+    _imp->previewMode->setValue( !_imp->previewMode->getValue());
 }
 
-boost::shared_ptr<TimeLine> Project::getTimeLine() const
+TimeLinePtr Project::getTimeLine() const
 {
     return _imp->timeline;
 }
@@ -1525,98 +1582,89 @@ Project::isSaveUpToDate() const
     return _imp->ageSinceLastSave == _imp->lastAutoSave;
 }
 
-void
-Project::save(ProjectSerialization* serializationObject) const
-{
-    serializationObject->initialize(this);
-}
-
 bool
-Project::load(const ProjectSerialization & obj,
+Project::load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj,
               const QString& name,
-              const QString& path,
-              bool* mustSave)
+              const QString& path)
 {
-    return _imp->restoreFromSerialization(obj, name, path, mustSave);
-}
+    appPTR->clearErrorLog_mt_safe();
 
-void
-Project::beginKnobsValuesChanged(ValueChangedReasonEnum /*reason*/)
-{
-}
 
-void
-Project::endKnobsValuesChanged(ValueChangedReasonEnum /*reason*/)
-{
+    _imp->projectName->setValue( name.toStdString());
+    _imp->projectPath->setValue( path.toStdString());
+
+    if (NATRON_VERSION_ENCODE(obj._projectLoadedInfo.vMajor, obj._projectLoadedInfo.vMinor, obj._projectLoadedInfo.vRev) > NATRON_VERSION_ENCODED) {
+        appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), tr("The project %1 was saved on a more recent version of %2 (%3.%4.%5). This version of %2 may fail to recover it thoroughly.").arg(name).arg(QLatin1String(NATRON_APPLICATION_NAME)).arg(obj._projectLoadedInfo.vMajor).arg(obj._projectLoadedInfo.vMinor).arg(obj._projectLoadedInfo.vRev));;
+    }
+
+    fromSerialization(obj);
+
+    std::list<LogEntry> log;
+    appPTR->getErrorLog_mt_safe(&log);
+    if (!log.empty()) {
+        return false;
+    }
+    return true;
+
 }
 
 ///this function is only called on the main thread
 bool
-Project::onKnobValueChanged(KnobI* knob,
+Project::onKnobValueChanged(const KnobIPtr& knob,
                             ValueChangedReasonEnum reason,
-                            double /*time*/,
-                            ViewSpec /*view*/,
-                            bool /*originatedFromMainThread*/)
+                            TimeValue /*time*/,
+                            ViewSetSpec /*view*/)
 {
+    if (reason == eValueChangedReasonRestoreDefault) {
+        return false;
+    }
     bool ret = true;
 
-    if ( knob == _imp->viewsList.get() ) {
-        /**
-         * All cache entries are linked to a view index which may no longer be correct since the user changed the project settings.
-         * The only way to overcome this is to wipe the cache.
-         **/
-        appPTR->clearAllCaches();
+    if ( knob == _imp->viewsList ) {
 
         std::vector<std::string> viewNames = getProjectViewNames();
         getApp()->setupViewersForViews(viewNames);
         if (reason == eValueChangedReasonUserEdited) {
             ///views change, notify all OneView nodes via getClipPreferences
-            forceComputeInputDependentDataOnAllTrees();
+            refreshTimeInvariantMetadataOnAllNodes_recursive();
         }
         Q_EMIT projectViewsChanged();
-    } else if  ( knob == _imp->defaultLayersList.get() ) {
+    } else if  ( knob == _imp->defaultLayersList ) {
         if (reason == eValueChangedReasonUserEdited) {
             ///default layers change, notify all nodes so they rebuild their layers menus
-            forceComputeInputDependentDataOnAllTrees();
+            refreshTimeInvariantMetadataOnAllNodes_recursive();
         }
-    } else if ( knob == _imp->setupForStereoButton.get() ) {
+    } else if ( knob == _imp->setupForStereoButton ) {
         setupProjectForStereo();
-    } else if ( knob == _imp->formatKnob.get() ) {
+    } else if ( knob == _imp->formatKnob ) {
         int index = _imp->formatKnob->getValue();
         Format frmt;
         bool found = _imp->findFormat(index, &frmt);
         NodesList nodes;
-        getNodes_recursive(nodes, true);
+        getNodes_recursive(nodes);
 
         // Refresh nodes with a format parameter
-        std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries_mt_safe();
+        std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries();
+
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->refreshFormatParamChoice(entries, index, false);
+            (*it)->getEffectInstance()->refreshFormatParamChoice(entries, index, false);
         }
         if (found) {
-            if (reason == eValueChangedReasonUserEdited) {
-                ///Increase all nodes age in the project so all cache is invalidated: some effects images might rely on the project format
-                for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-                    (*it)->incrementKnobsAge();
-                }
-
-
-            }
-            ///Format change, hence probably the PAR so run getClipPreferences again
-            forceComputeInputDependentDataOnAllTrees();
+            // Format change, hence probably the PAR so run getClipPreferences again
+            refreshTimeInvariantMetadataOnAllNodes_recursive();
             Q_EMIT formatChanged(frmt);
         }
-    } else if ( knob == _imp->addFormatKnob.get() ) {
+    } else if ( knob == _imp->addFormatKnob && reason != eValueChangedReasonRestoreDefault) {
         Q_EMIT mustCreateFormat();
-    } else if ( knob == _imp->previewMode.get() ) {
+    } else if ( knob == _imp->previewMode ) {
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
-    }  else if ( knob == _imp->frameRate.get() ) {
-        forceComputeInputDependentDataOnAllTrees();
-    } else if ( knob == _imp->frameRange.get() ) {
-        int first = _imp->frameRange->getValue(0);
-        int last = _imp->frameRange->getValue(1);
+    }  else if ( knob == _imp->frameRate ) {
+        refreshTimeInvariantMetadataOnAllNodes_recursive();
+    } else if ( knob == _imp->frameRange ) {
+        int first = _imp->frameRange->getValue(DimIdx(0));
+        int last = _imp->frameRange->getValue(DimIdx(1));
         Q_EMIT frameRangeChanged(first, last);
-    } else if ( knob == _imp->gpuSupport.get() ) {
+    } else if ( knob == _imp->gpuSupport ) {
 
         refreshOpenGLRenderingFlagOnNodes();
     } else {
@@ -1626,21 +1674,39 @@ Project::onKnobValueChanged(KnobI* knob,
     return ret;
 } // Project::onKnobValueChanged
 
+bool
+Project::invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects)
+{
+    if (!HashableObject::invalidateHashCacheInternal(invalidatedObjects)) {
+        return false;
+    }
+
+    // Also invalidate the hash of all nodes
+
+    NodesList nodes;
+    getNodes_recursive(nodes);
+
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        (*it)->getEffectInstance()->invalidateHashCacheInternal(invalidatedObjects);
+    }
+    return true;
+}
+
 void
 Project::refreshOpenGLRenderingFlagOnNodes()
 {
     bool activated = appPTR->getCurrentSettings()->isOpenGLRenderingEnabled();
     if (!activated) {
-        _imp->gpuSupport->setAllDimensionsEnabled(false);
+        _imp->gpuSupport->setEnabled(false);
     } else {
-        _imp->gpuSupport->setAllDimensionsEnabled(true);
+        _imp->gpuSupport->setEnabled(true);
         int index =  _imp->gpuSupport->getValue();
         activated = index == 0 || (index == 2 && !getApp()->isBackground());
     }
     NodesList allNodes;
-    getNodes_recursive(allNodes, false);
+    getNodes_recursive(allNodes);
     for (NodesList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
-        (*it)->onOpenGLEnabledKnobChangedOnProject(activated);
+        (*it)->getEffectInstance()->refreshDynamicProperties();
     }
 }
 
@@ -1663,18 +1729,7 @@ Project::isLoadingProjectInternal() const
 bool
 Project::isGraphWorthLess() const
 {
-    /*
-       bool worthLess = true;
-       for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
-        if (!_imp->currentNodes[i]->isOutputNode() && _imp->currentNodes[i]->isActivated()) {
-            worthLess = false;
-            break;
-        }
-       }
-       return worthLess;
-     */
-
-    ///If it has never auto-saved, then the user didn't do anything, hence the project is worthless.
+    // If it has never auto-saved, then the user didn't do anything, hence the project is worthless.
     return ( !hasEverAutoSaved() && !hasProjectBeenSavedByUser() ) || !hasNodes();
 }
 
@@ -1803,11 +1858,6 @@ Project::clearAutoSavesDir()
     QStringList entries = savesDir.entryList();
 
     Q_FOREACH(const QString &entry, entries) {
-        ///Do not remove the RENDER_SAVE used by the background processes to render because otherwise they may fail to start rendering.
-        /// @see AppInstance::startWritersRendering
-        if ( entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
-            continue;
-        }
 
         QString searchStr( QLatin1Char('.') );
         searchStr.append( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) );
@@ -1862,6 +1912,8 @@ public:
     }
 };
 
+typedef boost::shared_ptr<ResetWatcherArgs> ResetWatcherArgsPtr;
+
 void
 Project::reset(bool aboutToQuit, bool blocking)
 {
@@ -1872,7 +1924,7 @@ Project::reset(bool aboutToQuit, bool blocking)
     }
 
     if (!blocking) {
-        boost::shared_ptr<ResetWatcherArgs> args( new ResetWatcherArgs() );
+        boost::shared_ptr<ResetWatcherArgs> args = boost::make_shared<ResetWatcherArgs>();
         args->aboutToQuit = aboutToQuit;
         if ( !quitAnyProcessingForAllNodes(this, args) ) {
             doResetEnd(aboutToQuit);
@@ -1880,7 +1932,7 @@ Project::reset(bool aboutToQuit, bool blocking)
     } else {
         {
             NodesList nodesToWatch;
-            getNodes_recursive(nodesToWatch, false);
+            getNodes_recursive(nodesToWatch);
             for (NodesList::const_iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
                 (*it)->quitAnyProcessing_blocking(false);
             }
@@ -1898,7 +1950,7 @@ Project::closeProject_blocking(bool aboutToQuit)
         _imp->projectClosing = true;
     }
     NodesList nodesToWatch;
-    getNodes_recursive(nodesToWatch, false);
+    getNodes_recursive(nodesToWatch);
     for (NodesList::iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
         (*it)->quitAnyProcessing_blocking(false);
     }
@@ -1927,7 +1979,6 @@ Project::doResetEnd(bool aboutToQuit)
         }
     }
 
-
     if (aboutToQuit) {
         clearNodesBlocking();
     } else {
@@ -1938,30 +1989,26 @@ Project::doResetEnd(bool aboutToQuit)
     if (!aboutToQuit) {
         {
             QMutexLocker l(&_imp->projectLock);
+            _imp->lastProjectLoaded.reset();
             _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
             _imp->hasProjectBeenSavedByUser = false;
-            _imp->projectCreationTime = QDateTime::currentDateTime();
             _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
             _imp->setProjectPath("");
             _imp->autoSaveTimer->stop();
             _imp->additionalFormats.clear();
         }
-        getApp()->removeAllKeyframesIndicators();
 
         Q_EMIT projectNameChanged(QString::fromUtf8(NATRON_PROJECT_UNTITLED), false);
         const KnobsVec & knobs = getKnobs();
 
-        beginChanges();
+        ScopedChanges_RAII changes(this);
         for (U32 i = 0; i < knobs.size(); ++i) {
-            for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-                knobs[i]->resetToDefaultValue(j);
-            }
+            knobs[i]->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
         }
 
 
         onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), true);
 
-        endChanges(true);
     }
 
     {
@@ -1972,16 +2019,16 @@ Project::doResetEnd(bool aboutToQuit)
 
 bool
 Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
-                                      const WatcherCallerArgsPtr& args)
+                                      const GenericWatcherCallerArgsPtr& args)
 {
     NodesList nodesToWatch;
 
-    getNodes_recursive(nodesToWatch, false);
+    getNodes_recursive(nodesToWatch);
     if ( nodesToWatch.empty() ) {
         return false;
     }
-    boost::shared_ptr<NodeRenderWatcher> renderWatcher( new NodeRenderWatcher(nodesToWatch) );
-    QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,WatcherCallerArgsPtr)), Qt::UniqueConnection);
+    NodeRenderWatcherPtr renderWatcher = boost::make_shared<NodeRenderWatcher>(nodesToWatch);
+    QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int,GenericWatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,GenericWatcherCallerArgsPtr)), Qt::UniqueConnection);
     ProjectPrivate::RenderWatcher p;
     p.receiver = receiver;
     p.watcher = renderWatcher;
@@ -1993,7 +2040,7 @@ Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
 
 void
 Project::onQuitAnyProcessingWatcherTaskFinished(int taskID,
-                                                const WatcherCallerArgsPtr& args)
+                                                const GenericWatcherCallerArgsPtr& args)
 {
     NodeRenderWatcher* watcher = dynamic_cast<NodeRenderWatcher*>( sender() );
 
@@ -2002,7 +2049,8 @@ Project::onQuitAnyProcessingWatcherTaskFinished(int taskID,
         return;
     }
     assert(taskID == (int)NodeRenderWatcher::eBlockingTaskQuitAnyProcessing);
-
+    Q_UNUSED(taskID);
+    
     std::list<ProjectPrivate::RenderWatcher>::iterator found = _imp->renderWatchers.end();
     for (std::list<ProjectPrivate::RenderWatcher>::iterator it = _imp->renderWatchers.begin(); it != _imp->renderWatchers.end(); ++it) {
         if (it->watcher.get() == watcher) {
@@ -2022,7 +2070,7 @@ Project::onQuitAnyProcessingWatcherTaskFinished(int taskID,
 }
 
 void
-Project::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
+Project::afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
 {
     ResetWatcherArgs* inArgs = dynamic_cast<ResetWatcherArgs*>( args.get() );
 
@@ -2074,7 +2122,7 @@ Project::setOrAddProjectFormat(const Format & frmt,
         } else if (!skipAdd) {
             dispW = frmt;
             bool existed;
-            tryAddProjectFormat(dispW, &existed);
+            tryAddProjectFormat(dispW, true, &existed);
             if (!existed) {
                 mustRefreshNodeFormats = true;
             }
@@ -2083,11 +2131,11 @@ Project::setOrAddProjectFormat(const Format & frmt,
     if (mustRefreshNodeFormats) {
         // Refresh nodes with a format parameter
         NodesList nodes;
-        getNodes_recursive(nodes, true);
+        getNodes_recursive(nodes);
         int index = _imp->formatKnob->getValue();
-        std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries_mt_safe();
+        std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->refreshFormatParamChoice(entries, index, false);
+            (*it)->getEffectInstance()->refreshFormatParamChoice(entries, index, false);
         }
 
     }
@@ -2106,13 +2154,6 @@ Project::unlock() const
     _imp->projectLock.unlock();
 }
 
-qint64
-Project::getProjectCreationTime() const
-{
-    QMutexLocker l(&_imp->projectLock);
-
-    return _imp->projectCreationTime.toMSecsSinceEpoch();
-}
 
 inline ViewerColorSpaceEnum colorspaceParamIndexToEnum(int index)
 {
@@ -2463,7 +2504,7 @@ void
 Project::onOCIOConfigPathChanged(const std::string& path,
                                  bool block)
 {
-    beginChanges();
+    ScopedChanges_RAII changes(this, block);
 
     try {
         std::string oldEnv;
@@ -2499,7 +2540,6 @@ Project::onOCIOConfigPathChanged(const std::string& path,
             }
             _imp->envVars->setValue(newEnv);
         }
-        endChanges(block);
     } catch (std::logic_error) {
         // ignore
     }
@@ -2511,7 +2551,7 @@ Project::getProjectFrameRate() const
     return _imp->frameRate->getValue();
 }
 
-boost::shared_ptr<KnobPath>
+KnobPathPtr
 Project::getEnvVarKnob() const
 {
     return _imp->envVars;
@@ -2562,41 +2602,47 @@ Project::isFrameRangeLocked() const
 }
 
 void
-Project::getFrameRange(double* first,
-                       double* last) const
+Project::getFrameRange(TimeValue* first,
+                       TimeValue* last) const
 {
-    *first = _imp->frameRange->getValue(0);
-    *last = _imp->frameRange->getValue(1);
+    *first = TimeValue(_imp->frameRange->getValue());
+    *last = TimeValue(_imp->frameRange->getValue(DimIdx(1)));
 }
 
 void
-Project::unionFrameRangeWith(int first,
-                             int last)
+Project::unionFrameRangeWith(TimeValue first,
+                             TimeValue last)
 {
     int curFirst, curLast;
     bool mustSet = !_imp->frameRange->hasModifications() && first != last;
 
-    curFirst = _imp->frameRange->getValue(0);
-    curLast = _imp->frameRange->getValue(1);
-    curFirst = !mustSet ? std::min(first, curFirst) : first;
-    curLast = !mustSet ? std::max(last, curLast) : last;
-    beginChanges();
-    _imp->frameRange->setValue(curFirst, ViewSpec::all(), 0);
-    _imp->frameRange->setValue(curLast, ViewSpec::all(), 1);
-    endChanges();
+    curFirst = _imp->frameRange->getValue(DimIdx(0));
+    curLast = _imp->frameRange->getValue(DimIdx(1));
+    curFirst = !mustSet ? std::min((double)first, (double)curFirst) : first;
+    curLast = !mustSet ? std::max((double)last, (double)curLast) : last;
+    ScopedChanges_RAII changes(this);
+    std::vector<int> dims(2);
+    dims[0] = curFirst;
+    dims[1] = curLast;
+    _imp->frameRange->setValueAcrossDimensions(dims);
+
 }
 
 void
 Project::recomputeFrameRangeFromReaders()
 {
-    int first = 1, last = 1;
+    int first = INT_MIN, last = INT_MAX;
 
     recomputeFrameRangeForAllReaders(&first, &last);
-
-    beginChanges();
-    _imp->frameRange->setValue(first, ViewSpec::all(), 0);
-    _imp->frameRange->setValue(last,  ViewSpec::all(), 1);
-    endChanges();
+    if (first == INT_MIN || last == INT_MAX) {
+        return;
+    }
+    ScopedChanges_RAII changes(this);
+    std::vector<int> dims(2);
+    dims[0] = first;
+    dims[1] = last;
+    _imp->frameRange->setValueAcrossDimensions(dims);
+    
 }
 
 void
@@ -2606,153 +2652,28 @@ Project::createViewer()
         return;
     }
 
-    CreateNodeArgs args( PLUGINID_NATRON_VIEWER, shared_from_this() );
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    getApp()->createNode(args);
-}
-
-static bool
-hasNodeOutputsInList(const NodesList& nodes,
-                     const NodePtr& node)
-{
-    const NodesWList& outputs = node->getGuiOutputs();
-    bool foundOutput = false;
-
-    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if (*it != node) {
-            for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
-                if (it2->lock() == *it) {
-                    foundOutput = true;
-                    break;
-                }
-            }
-            if (foundOutput) {
-                break;
-            }
-        }
-    }
-
-    return foundOutput;
-}
-
-static bool
-hasNodeInputsInList(const NodesList& nodes,
-                    const NodePtr& node)
-{
-    const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
-    bool foundInput = false;
-
-    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if (*it != node) {
-            for (std::size_t i = 0; i < inputs.size(); ++i) {
-                NodePtr input = inputs[i].lock();
-                if (input == *it) {
-                    foundInput = true;
-                    break;
-                }
-            }
-            if (foundInput) {
-                break;
-            }
-        }
-    }
-
-    return foundInput;
-}
-
-static void
-addTreeInputs(const NodesList& nodes,
-              const NodePtr& node,
-              Project::NodesTree& tree,
-              NodesList& markedNodes)
-{
-    if ( std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end() ) {
-        return;
-    }
-
-    if ( std::find(nodes.begin(), nodes.end(), node) == nodes.end() ) {
-        return;
-    }
-
-    if ( !hasNodeInputsInList(nodes, node) ) {
-        Project::TreeInput input;
-        input.node = node;
-        const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
-        input.inputs.resize( inputs.size() );
-        for (std::size_t i = 0; i < inputs.size(); ++i) {
-            input.inputs[i] = inputs[i].lock();
-        }
-        tree.inputs.push_back(input);
-        markedNodes.push_back(node);
-    } else {
-        tree.inbetweenNodes.push_back(node);
-        markedNodes.push_back(node);
-        const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
-        for (std::vector<NodeWPtr >::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
-            NodePtr input = it2->lock();
-            if (input) {
-                addTreeInputs(nodes, input, tree, markedNodes);
-            }
-        }
+    CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_NATRON_VIEWER_GROUP, shared_from_this() ));
+    args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
+    args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    NodePtr viewerGroup = getApp()->createNode(args);
+    assert(viewerGroup);
+    if (!viewerGroup) {
+        throw std::runtime_error( tr("Cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_VIEWER_GROUP) ).toStdString() );
     }
 }
 
-void
-Project::extractTreesFromNodes(const NodesList& nodes,
-                               std::list<Project::NodesTree>& trees)
-{
-    NodesList markedNodes;
-
-    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        bool isOutput = !hasNodeOutputsInList(nodes, *it);
-        if (isOutput) {
-            NodesTree tree;
-            tree.output.node = *it;
-            const NodesWList& outputs = (*it)->getGuiOutputs();
-            for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
-                NodePtr output = it2->lock();
-                if (!output) {
-                    continue;
-                }
-                int idx = output->inputIndex(*it);
-                tree.output.outputs.push_back( std::make_pair(idx, *it2) );
-            }
-
-            const std::vector<NodeWPtr >& inputs = (*it)->getGuiInputs();
-            for (U32 i = 0; i < inputs.size(); ++i) {
-                NodePtr input = inputs[i].lock();
-                if (input) {
-                    addTreeInputs(nodes, input, tree, markedNodes);
-                }
-            }
-
-            if ( tree.inputs.empty() ) {
-                TreeInput input;
-                input.node = *it;
-
-                const std::vector<NodeWPtr >& inputs = (*it)->getGuiInputs();
-                input.inputs.resize( inputs.size() );
-                for (std::size_t i = 0; i < inputs.size(); ++i) {
-                    input.inputs[i] = inputs[i].lock();
-                }
-                tree.inputs.push_back(input);
-            }
-
-            trees.push_back(tree);
-        }
-    }
-}
 
 bool
-Project::addFormat(const std::string& formatSpec)
+Project::addDefaultFormat(const std::string& formatSpec)
 {
     Format f;
 
     if ( ProjectPrivate::generateFormatFromString(QString::fromUtf8( formatSpec.c_str() ), &f) ) {
         QMutexLocker k(&_imp->formatMutex);
+
         bool existed;
-        tryAddProjectFormat(f, &existed);
+        tryAddProjectFormat(f, false, &existed);
 
         return true;
     } else {
@@ -2766,20 +2687,265 @@ Project::onProjectFormatPopulated()
     int index = _imp->formatKnob->getValue();
     NodesList nodes;
 
-    getNodes_recursive(nodes, true);
-    std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries_mt_safe();
+    getNodes_recursive(nodes);
+    std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries();
+
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->refreshFormatParamChoice(entries, index, false);
+        (*it)->getEffectInstance()->refreshFormatParamChoice(entries, index, false);
     }
 }
 
 void
-Project::setTimeLine(const boost::shared_ptr<TimeLine>& timeline)
+Project::setTimeLine(const TimeLinePtr& timeline)
 {
     _imp->timeline = timeline;
 }
 
+
+void
+Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase)
+{
+    // All the code in this function is MT-safe and run in the serialization thread
+    SERIALIZATION_NAMESPACE::ProjectSerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::ProjectSerialization*>(serializationBase);
+    assert(serialization);
+    if (!serialization) {
+        return;
+    }
+
+    // Serialize nodes
+    {
+        NodesList nodes;
+        getActiveNodes(&nodes);
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            if ( (*it)->isPersistent() ) {
+                
+                SERIALIZATION_NAMESPACE::NodeSerializationPtr state;
+                StubNodePtr isStub = toStubNode((*it)->getEffectInstance());
+                if (isStub) {
+                    state = isStub->getNodeSerialization();
+                    if (!state) {
+                        continue;
+                    }
+                } else {
+                    state = boost::make_shared<SERIALIZATION_NAMESPACE::NodeSerialization>();
+                    (*it)->toSerialization(state.get());
+                }
+                
+                serialization->_nodes.push_back(state);
+            }
+        }
+    }
+
+    // Get user additional formats
+    std::list<Format> formats;
+    getAdditionalFormats(&formats);
+    for (std::list<Format>::iterator it = formats.begin(); it!=formats.end(); ++it) {
+        SERIALIZATION_NAMESPACE::FormatSerialization s;
+        s.x1 = it->x1;
+        s.y1 = it->y1;
+        s.x2 = it->x2;
+        s.y2 = it->y2;
+        s.par = it->getPixelAspectRatio();
+        s.name = it->getName();
+        serialization->_additionalFormats.push_back(s);
+    }
+
+    // Serialize project settings
+    std::vector<KnobIPtr> knobs = getKnobs_mt_safe();
+
+    bool isFullSaveMode = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
+
+    for (U32 i = 0; i < knobs.size(); ++i) {
+
+        if (!knobs[i]->getIsPersistent()) {
+            continue;
+        }
+        KnobGroupPtr isGroup = toKnobGroup(knobs[i]);
+        KnobPagePtr isPage = toKnobPage(knobs[i]);
+        KnobButtonPtr isButton = toKnobButton(knobs[i]);
+        if (isGroup || isPage || (isButton && !isButton->getIsCheckable())) {
+            continue;
+        }
+
+        if (!isFullSaveMode && !knobs[i]->hasModifications()) {
+            continue;
+        }
+
+
+        SERIALIZATION_NAMESPACE::KnobSerializationPtr newKnobSer = boost::make_shared<SERIALIZATION_NAMESPACE::KnobSerialization>();
+        knobs[i]->toSerialization(newKnobSer.get());
+        if (newKnobSer->_mustSerialize) {
+
+            // do not serialize the project path itself and
+            // the OCIO path as they are useless
+            if (knobs[i] == _imp->envVars) {
+                std::list<std::vector<std::string> > projectPathsTable, newTable;
+                _imp->envVars->getTable(&projectPathsTable);
+                for (std::list<std::vector<std::string> >::iterator it = projectPathsTable.begin(); it!=projectPathsTable.end(); ++it) {
+                    if (it->size() > 0 &&
+                        (it->front() == NATRON_OCIO_ENV_VAR_NAME || it->front() == NATRON_PROJECT_ENV_VAR_NAME)) {
+                        continue;
+                    }
+                    newTable.push_back(*it);
+                }
+                SERIALIZATION_NAMESPACE::ValueSerialization& value = newKnobSer->_values.begin()->second[0];
+                value._value.isString = _imp->envVars->encodeToKnobTableFormat(projectPathsTable);
+                value._serializeValue = value._value.isString.empty();
+                if (!value._serializeValue) {
+                    value._mustSerialize = false;
+                    newKnobSer->_mustSerialize = false;
+                }
+            }
+            serialization->_projectKnobs.push_back(newKnobSer);
+        }
+
+    }
+
+
+    serialization->_projectLoadedInfo.bits = isApplication32Bits() ? 32 : 64;
+#ifdef __NATRON_WIN32__
+    serialization->_projectLoadedInfo.osStr = kOSTypeNameWindows;
+#elif defined(__NATRON_OSX__)
+    serialization->_projectLoadedInfo.osStr = kOSTypeNameMacOSX;
+#elif defined(__NATRON_LINUX__)
+    serialization->_projectLoadedInfo.osStr = kOSTypeNameLinux;
+#endif
+    serialization->_projectLoadedInfo.gitBranch = GIT_BRANCH;
+    serialization->_projectLoadedInfo.gitCommit = GIT_COMMIT;
+    serialization->_projectLoadedInfo.vMajor = NATRON_VERSION_MAJOR;
+    serialization->_projectLoadedInfo.vMinor = NATRON_VERSION_MINOR;
+    serialization->_projectLoadedInfo.vRev = NATRON_VERSION_REVISION;
+
+
+    // Timeline's current frame
+    serialization->_timelineCurrent = currentFrame();
+
+    if (getApp()->isBackground()) {
+        // Use the last project loaded serialization for the gui layout
+        if (_imp->lastProjectLoaded) {
+            serialization->_projectWorkspace = _imp->lastProjectLoaded->_projectWorkspace;
+            serialization->_openedPanelsOrdered = _imp->lastProjectLoaded->_openedPanelsOrdered;
+            serialization->_viewportsData = _imp->lastProjectLoaded->_viewportsData;
+        }
+    } else {
+        // Serialize workspace
+        serialization->_projectWorkspace.reset(new SERIALIZATION_NAMESPACE::WorkspaceSerialization);
+        getApp()->saveApplicationWorkspace(serialization->_projectWorkspace.get());
+
+        // Save opened panels
+        std::list<DockablePanelI*> openedPanels = getApp()->getOpenedSettingsPanels();
+        for (std::list<DockablePanelI*>::iterator it = openedPanels.begin(); it!=openedPanels.end(); ++it) {
+            serialization->_openedPanelsOrdered.push_back((*it)->getHolderFullyQualifiedScriptName());
+        }
+
+        // Save viewports
+        getApp()->getViewportsProjection(&serialization->_viewportsData);
+    }
+    
+} // Project::toSerialization
+
+
+
+void
+Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase)
+{
+
+    // All the code in this function is MT-safe and run in the serialization thread
+    const SERIALIZATION_NAMESPACE::ProjectSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::ProjectSerialization*>(&serializationBase);
+    assert(serialization);
+    if (!serialization) {
+        return;
+    }
+
+    // In Natron 1.0 we did not have a project frame range knob, hence we need to recompute it
+    bool foundFrameRangeKnob = false;
+
+
+    getApp()->updateProjectLoadStatus( tr("Restoring project settings...") );
+
+    // Restore project formats
+    // We must restore the entries in the combobox before restoring the value
+    std::vector<ChoiceOption> entries;
+    for (std::list<Format>::const_iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
+        QString str = ProjectPrivate::generateStringFromFormat(*it);
+        if ( !it->getName().empty() ) {
+            entries.push_back( ChoiceOption(it->getName(), str.toStdString(), "") );
+        } else {
+            entries.push_back( ChoiceOption( str.toStdString() ) );
+        }
+    }
+
+    {
+        _imp->additionalFormats.clear();
+        for (std::list<SERIALIZATION_NAMESPACE::FormatSerialization>::const_iterator it = serialization->_additionalFormats.begin(); it != serialization->_additionalFormats.end(); ++it) {
+            Format f;
+            f.setName(it->name);
+            f.setPixelAspectRatio(it->par);
+            f.x1 = it->x1;
+            f.y1 = it->y1;
+            f.x2 = it->x2;
+            f.y2 = it->y2;
+            _imp->additionalFormats.push_back(f);
+        }
+        for (std::list<Format>::const_iterator it = _imp->additionalFormats.begin(); it != _imp->additionalFormats.end(); ++it) {
+            QString str = ProjectPrivate::generateStringFromFormat(*it);
+            if ( !it->getName().empty() ) {
+                entries.push_back( ChoiceOption(it->getName(), str.toStdString(), "") );
+            } else {
+                entries.push_back( ChoiceOption( str.toStdString() ) );
+            }
+        }
+    }
+
+    _imp->formatKnob->populateChoices(entries);
+    _imp->autoSetProjectFormat = false;
+
+    // Restore project's knobs
+    for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serialization->_projectKnobs.begin(); it != serialization->_projectKnobs.end(); ++it) {
+        KnobIPtr foundKnob = getKnobByName((*it)->getName());
+        if (!foundKnob) {
+            continue;
+        }
+        foundKnob->fromSerialization(**it);
+        if (foundKnob == _imp->frameRange) {
+            foundFrameRangeKnob = true;
+        }
+    }
+
+    {
+        // Refresh OCIO path
+        onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
+
+        // Refresh project path
+        // For eAppTypeBackgroundAutoRunLaunchedFromGui don't change the project path since it is controlled
+        // by the main GUI process
+        if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
+            _imp->autoSetProjectDirectory(QString::fromUtf8(_imp->projectPath->getValue().c_str()));
+        }
+
+    }
+
+    // Restore the timeline
+    _imp->timeline->seekFrame(serialization->_timelineCurrent, false, EffectInstancePtr(), eTimelineChangeReasonOtherSeek);
+
+
+    // Restore the nodes
+    createNodesFromSerialization(serialization->_nodes, eCreateNodesFromSerializationFlagsNone, 0);
+
+    QDateTime time = QDateTime::currentDateTime();
+    _imp->hasProjectBeenSavedByUser = true;
+    _imp->ageSinceLastSave = time;
+    _imp->lastAutoSave = time;
+
+    if (!foundFrameRangeKnob) {
+        recomputeFrameRangeFromReaders();
+    }
+    
+} // Project::fromSerialization
+
+
 NATRON_NAMESPACE_EXIT
+
 
 NATRON_NAMESPACE_USING
 #include "moc_Project.cpp"

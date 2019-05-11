@@ -9,7 +9,7 @@ NATRON_NAMESPACE_ENTER NATRON_PYTHON_NAMESPACE_ENTER
 class ButtonParamWrapper : public ButtonParam
 {
 public:
-    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param, int thisDimension) { ButtonParam::_addAsDependencyOf(fromExprDimension, param, thisDimension); }
+    inline void _addAsDependencyOf_protected(Param * param, int fromExprDimension, int thisDimension, const QString & fromExprView, const QString & thisView) { ButtonParam::_addAsDependencyOf(param, fromExprDimension, thisDimension, fromExprView, thisView); }
     virtual ~ButtonParamWrapper();
     static void pysideInitQtMetaTypes();
 };

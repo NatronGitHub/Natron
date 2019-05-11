@@ -9,7 +9,7 @@ NATRON_NAMESPACE_ENTER NATRON_PYTHON_NAMESPACE_ENTER
 class PathParamWrapper : public PathParam
 {
 public:
-    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param, int thisDimension) { PathParam::_addAsDependencyOf(fromExprDimension, param, thisDimension); }
+    inline void _addAsDependencyOf_protected(Param * param, int fromExprDimension, int thisDimension, const QString & fromExprView, const QString & thisView) { PathParam::_addAsDependencyOf(param, fromExprDimension, thisDimension, fromExprView, thisView); }
     virtual ~PathParamWrapper();
     static void pysideInitQtMetaTypes();
 };

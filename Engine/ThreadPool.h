@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -52,26 +52,6 @@ public:
 
     virtual ~AbortableThread();
 
-    /**
-     * @brief Set the informations related to a specific render so we know if it was aborted or not in getAbortInfo()
-     **/
-    void setAbortInfo(bool isRenderResponseToUserInteraction,
-                      const AbortableRenderInfoPtr& abortInfo,
-                      const EffectInstancePtr& treeRoot);
-
-    /**
-     * @brief Clear any render-specific abort info held on this thread
-     **/
-    void clearAbortInfo();
-
-    /**
-     * @brief Returns the abort info related on the specific render ongoing on this thread.
-     * This is used in EffectInstance::aborted() to figure out if a render thread was aborted or not.
-     **/
-    bool getAbortInfo(bool* isRenderResponseToUserInteraction,
-                      AbortableRenderInfoPtr* abortInfo,
-                      EffectInstancePtr* treeRoot) const;
-
     // For debug purposes, so that the debugger can display the thread name
     void setThreadName(const std::string& threadName);
 
@@ -104,6 +84,27 @@ private:
 
     boost::scoped_ptr<AbortableThreadPrivate> _imp;
 };
+
+/**
+ * @brief Returns true if the current thread belongs to the global thread pool
+ **/
+inline bool isRunningInThreadPoolThread()
+{
+#ifdef QT_CUSTOM_THREADPOOL
+    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(QThread::currentThread());
+    if (!isAbortable || !isAbortable->isThreadPoolThread()) {
+        return false;
+    }
+    return true;
+#else
+    // If Qt is not patched, we cannot inherit AbortableThread, hence just attempt to check if the thread object name matches one
+    // of the thread pool thread
+    if (QThread::currentThread()->objectName().endsWith(QString::fromUtf8("(pooled)"))) {
+        return true;
+    }
+    return false;
+#endif
+}
 
 #define REPORT_CURRENT_THREAD_ACTION(actionName, node) \
     { \

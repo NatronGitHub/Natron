@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -39,6 +39,7 @@
 #include <QtCore/QThread>
 #include <QCheckBox>
 #include <QtCore/QTimer>
+#include <QWidgetAction>
 #include <QTextEdit>
 
 
@@ -64,8 +65,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QImage>
 #include <QProgressDialog>
 
-#include <cairo/cairo.h>
-
 #include <boost/version.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
@@ -79,7 +78,6 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -94,10 +92,8 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/AboutWindow.h"
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
-#include "Gui/CurveEditor.h"
-#include "Gui/CurveWidget.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/FloatingWidget.h"
 #include "Gui/QtEnumConvert.h"
 #include "Gui/Gui.h"
@@ -106,13 +102,11 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/Histogram.h"
 #include "Gui/Menu.h"
 #include "Gui/MessageBox.h"
-#include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/PreferencesPanel.h"
 #include "Gui/ProjectGui.h"
-#include "Gui/ProjectGuiSerialization.h"
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/ProgressPanel.h"
 #include "Gui/PythonPanels.h"
@@ -128,7 +122,9 @@ GCC_DIAG_ON(unused-parameter)
 
 
 NATRON_NAMESPACE_ENTER
-GuiPrivate::GuiPrivate(const GuiAppInstPtr& app,
+
+
+GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
                        Gui* gui)
     : _gui(gui)
     , _isInDraftModeMutex()
@@ -142,21 +138,17 @@ GuiPrivate::GuiPrivate(const GuiAppInstPtr& app,
     , _currentUndoAction(0)
     , _currentRedoAction(0)
     , _undoStacksGroup(0)
-    , _undoStacksActions()
-    , _splittersMutex()
-    , _splitters()
-    , _pyPanelsMutex()
-    , _userPanels()
     , _isTripleSyncEnabled(false)
     , areRenderStatsEnabledMutex()
     , areRenderStatsEnabled(false)
+    , isLastExpressionDialogLanguageValid(false)
+    , lastExpressionDialogLanguage(eExpressionLanguagePython)
     , actionNew_project(0)
     , actionOpen_project(0)
     , actionClose_project(0)
     , actionReload_project(0)
     , actionSave_project(0)
     , actionSaveAs_project(0)
-    , actionExportAsGroup(0)
     , actionSaveAndIncrementVersion(0)
     , actionPreferences(0)
     , actionExit(0)
@@ -167,11 +159,9 @@ GuiPrivate::GuiPrivate(const GuiAppInstPtr& app,
 #ifdef __NATRON_WIN32__
     , actionShowWindowsConsole(0)
 #endif
-    , actionClearDiskCache(0)
-    , actionClearPlayBackCache(0)
-    , actionClearNodeCache(0)
     , actionClearPluginsLoadingCache(0)
     , actionClearAllCaches(0)
+    , actionShowCacheReport(0)
     , actionShowAboutWindow(0)
     , actionsOpenRecentFile()
     , renderAllWriters(0)
@@ -199,17 +189,14 @@ GuiPrivate::GuiPrivate(const GuiAppInstPtr& app,
     , _leftRightSplitter(0)
     , _viewerTabsMutex(QMutex::Recursive) // Gui::createNodeViewerInterface() may cause a resizeEvent, which calls Gui:redrawAllViewers()
     , _viewerTabs()
-    , _masterSyncViewer(0)
     , _activeViewer(0)
     , _histogramsMutex()
     , _histograms()
-    , _nextHistogramIndex(1)
     , _nodeGraphArea(0)
     , _lastFocusedGraph(0)
     , _groups()
-    , _curveEditor(0)
     , _progressPanel(0)
-    , _dopeSheetEditor(0)
+    , _animationModule(0)
     , _toolBox(0)
     , _propertiesBin(0)
     , _propertiesScrollArea(0)
@@ -233,18 +220,12 @@ GuiPrivate::GuiPrivate(const GuiAppInstPtr& app,
     , viewersViewMenu(0)
     , cacheMenu(0)
     , menuHelp(0)
-    , _panesMutex()
-    , _panes()
-    , _floatingWindowMutex()
-    , _floatingWindows()
     , _settingsGui(0)
     , _projectGui(0)
     , _errorLog(0)
     , _currentlyDraggedPanel(0)
     , _currentlyDraggedPanelInitialSize()
     , _aboutWindow(0)
-    , openedPanelsMutex()
-    , openedPanels()
     , _toolButtonMenuOpened(NULL)
     , aboutToCloseMutex()
     , _aboutToClose(false)
@@ -254,6 +235,9 @@ GuiPrivate::GuiPrivate(const GuiAppInstPtr& app,
     , pythonCommands()
     , statsDialog(0)
     , currentPanelFocus(0)
+    , nKeysRefreshRequests(0)
+    , nKnobsRefreshAfterTimeChangeRequests(0)
+    , keyframesVisibleOnTimeline()
     , currentPanelFocusEventRecursion(0)
     , keyPressEventHasVisitedFocusWidget(false)
     , keyUpEventHasVisitedFocusWidget(false)
@@ -278,26 +262,26 @@ GuiPrivate::notifyGuiClosing()
 {
     ///This is to workaround an issue that when destroying a widget it calls the focusOut() handler hence can
     ///cause bad pointer dereference to the Gui object since we're destroying it.
-    std::list<TabWidget*> tabs;
-    {
-        QMutexLocker k(&_panesMutex);
-        tabs = _panes;
-    }
+    std::list<TabWidgetI*> tabs = _gui->getApp()->getTabWidgetsSerialization();
 
-    for (std::list<TabWidget*>::iterator it = tabs.begin(); it != tabs.end(); ++it) {
-        (*it)->discardGuiPointer();
-        for (int i = 0; i < (*it)->count(); ++i) {
-            (*it)->tabAt(i)->notifyGuiClosingPublic();
+    for (std::list<TabWidgetI*>::iterator it = tabs.begin(); it != tabs.end(); ++it) {
+        TabWidget* tab = dynamic_cast<TabWidget*>(*it);
+        if (!tab) {
+            continue;
+        }
+        tab->discardGuiPointer();
+        for (int i = 0; i < tab->count(); ++i) {
+            tab->tabAt(i)->notifyGuiClosingPublic();
         }
     }
 
     const NodesGuiList allNodes = _nodeGraphArea->getAllActiveNodes();
 
-    {
-        // we do not need this list anymore, avoid using it
-        QMutexLocker k(&this->openedPanelsMutex);
-        this->openedPanels.clear();
-    }
+
+    // we do not need this list anymore, avoid using it
+    _gui->getApp()->clearSettingsPanels();
+
+
 
     for (NodesGuiList::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
         DockablePanel* panel = (*it)->getSettingPanel();
@@ -311,8 +295,7 @@ GuiPrivate::notifyGuiClosing()
 void
 GuiPrivate::createPropertiesBinGui()
 {
-    _propertiesBin = new PropertiesBinWrapper(_gui);
-    _propertiesBin->setScriptName(kPropertiesBinName);
+    _propertiesBin = new PropertiesBinWrapper(kPropertiesBinName, _gui);
     _propertiesBin->setLabel( tr("Properties").toStdString() );
 
     QVBoxLayout* mainPropertiesLayout = new QVBoxLayout(_propertiesBin);
@@ -389,7 +372,6 @@ GuiPrivate::createPropertiesBinGui()
     mainPropertiesLayout->addWidget(_propertiesScrollArea);
 
     _propertiesBin->setVisible(false);
-    _gui->registerTab(_propertiesBin, _propertiesBin);
 } // createPropertiesBinGui
 
 void
@@ -398,66 +380,54 @@ GuiPrivate::createNodeGraphGui()
     QGraphicsScene* scene = new QGraphicsScene(_gui);
 
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
-    _nodeGraphArea = new NodeGraph(_gui, _appInstance.lock()->getProject(), scene, _gui);
-    _nodeGraphArea->setScriptName(kNodeGraphObjectName);
+    _nodeGraphArea = new NodeGraph(_gui, _appInstance.lock()->getProject(), kNodeGraphObjectName, scene, _gui);
     _nodeGraphArea->setLabel( tr("Node Graph").toStdString() );
     _nodeGraphArea->setVisible(false);
-    _gui->registerTab(_nodeGraphArea, _nodeGraphArea);
 }
 
-void
-GuiPrivate::createCurveEditorGui()
-{
-    _curveEditor = new CurveEditor(_gui, _appInstance.lock()->getTimeLine(), _gui);
-    _curveEditor->setScriptName(kCurveEditorObjectName);
-    _curveEditor->setLabel( tr("Curve Editor").toStdString() );
-    _curveEditor->setVisible(false);
-    _gui->registerTab(_curveEditor, _curveEditor);
-}
 
 void
-GuiPrivate::createDopeSheetGui()
+GuiPrivate::createAnimationModuleGui()
 {
-    _dopeSheetEditor = new DopeSheetEditor(_gui, _appInstance.lock()->getTimeLine(), _gui);
-    _dopeSheetEditor->setScriptName(kDopeSheetEditorObjectName);
-    _dopeSheetEditor->setLabel( tr("Dope Sheet").toStdString() );
-    _dopeSheetEditor->setVisible(false);
-    _gui->registerTab(_dopeSheetEditor, _dopeSheetEditor);
+    _animationModule = new AnimationModuleEditor(kAnimationModuleEditorObjectName, _gui, _appInstance.lock()->getTimeLine(), _gui);
+    _animationModule->setLabel( tr("Animation").toStdString() );
+    _animationModule->setVisible(false);
 }
 
 void
 GuiPrivate::createScriptEditorGui()
 {
-    _scriptEditor = new ScriptEditor(_gui);
-    _scriptEditor->setScriptName("scriptEditor");
+    _scriptEditor = new ScriptEditor("scriptEditor", _gui);
     _scriptEditor->setLabel( tr("Script Editor").toStdString() );
     _scriptEditor->setVisible(false);
-    _gui->registerTab(_scriptEditor, _scriptEditor);
 }
 
 void
 GuiPrivate::createProgressPanelGui()
 {
-    _progressPanel = new ProgressPanel(_gui);
-    _progressPanel->setScriptName("progress");
+    _progressPanel = new ProgressPanel("progress", _gui);
     _progressPanel->setLabel( tr("Progress").toStdString() );
     _progressPanel->setVisible(false);
-    _gui->registerTab(_progressPanel, _progressPanel);
 }
 
 TabWidget*
 GuiPrivate::getOnly1NonFloatingPane(int & count) const
 {
-    assert( !_panesMutex.tryLock() );
     count = 0;
-    if ( _panes.empty() ) {
+    std::list<TabWidgetI*> tabs = _gui->getApp()->getTabWidgetsSerialization();
+    if ( tabs.empty() ) {
         return NULL;
     }
     TabWidget* firstNonFloating = 0;
-    for (std::list<TabWidget*>::const_iterator it = _panes.begin(); it != _panes.end(); ++it) {
-        if ( !(*it)->isFloatingWindowChild() ) {
+    for (std::list<TabWidgetI*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
+        TabWidget* isWidget = dynamic_cast<TabWidget*>(*it);
+        assert(isWidget);
+        if (!isWidget) {
+            continue;
+        }
+        if ( !isWidget->isFloatingWindowChild() ) {
             if (!firstNonFloating) {
-                firstNonFloating = *it;
+                firstNonFloating = isWidget;
             }
             ++count;
         }
@@ -547,24 +517,58 @@ private:
     }
 };
 
+/**
+ * @brief From http://doc.qt.io/qt-4.8/qtoolbar.html
+ When a QToolBar is not a child of a QMainWindow, it loses the ability to populate the extension pop up with widgets added to the toolbar using addWidget(). 
+ Please use widget actions created by inheriting QWidgetAction and implementing QWidgetAction::createWidget() instead.
+ **/
+class AutoRaiseToolButtonAction : public QWidgetAction
+{
+    Gui* _gui;
+    ToolButton* _tool;
+public:
+
+    AutoRaiseToolButtonAction(Gui* gui, ToolButton* tool, QObject *parent)
+    : QWidgetAction(parent)
+    , _gui(gui)
+    , _tool(tool)
+    {
+
+    }
+
+    virtual ~AutoRaiseToolButtonAction()
+    {
+        
+    }
+
+private:
+
+    virtual QWidget *createWidget(QWidget *parent) OVERRIDE FINAL
+    {
+        QToolButton* button = new AutoRaiseToolButton(_gui, parent);
+
+        //button->setArrowType(Qt::NoArrow); // has no effect (arrow is still displayed)
+        //button->setToolButtonStyle(Qt::ToolButtonIconOnly); // has no effect (arrow is still displayed)
+        button->setIcon( _tool->getToolButtonIcon() );
+        button->setMenu( _tool->getMenu() );
+
+        const QSize toolButtonSize( TO_DPIX(NATRON_TOOL_BUTTON_SIZE), TO_DPIY(NATRON_TOOL_BUTTON_SIZE) );
+        button->setFixedSize(toolButtonSize);
+        button->setPopupMode(QToolButton::InstantPopup);
+        button->setToolTip( NATRON_NAMESPACE::convertFromPlainText(_tool->getLabel().trimmed(), NATRON_NAMESPACE::WhiteSpaceNormal) );
+        return button;
+    }
+
+};
+
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 void
 GuiPrivate::addToolButton(ToolButton* tool)
 {
-    QToolButton* button = new AutoRaiseToolButton(_gui, _toolBox);
-
-    //button->setArrowType(Qt::NoArrow); // has no effect (arrow is still displayed)
-    //button->setToolButtonStyle(Qt::ToolButtonIconOnly); // has no effect (arrow is still displayed)
-    button->setIcon( tool->getToolButtonIcon() );
-    button->setMenu( tool->getMenu() );
-
-    const QSize toolButtonSize( TO_DPIX(NATRON_TOOL_BUTTON_SIZE), TO_DPIY(NATRON_TOOL_BUTTON_SIZE) );
-    button->setFixedSize(toolButtonSize);
-    button->setPopupMode(QToolButton::InstantPopup);
-    button->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tool->getLabel().trimmed(), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    _toolBox->addWidget(button);
+    AutoRaiseToolButtonAction* action = new AutoRaiseToolButtonAction(_gui, tool, _toolBox);
+    _toolBox->addAction(action);
 }
 
 void
@@ -591,7 +595,7 @@ bool
 GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,
                                     const QString& projectName)
 {
-    boost::shared_ptr<Project> project = _appInstance.lock()->getProject();
+    ProjectPtr project = _appInstance.lock()->getProject();
     QString author;
     QString lockCreationDate;
     QString lockHost;
@@ -601,7 +605,7 @@ GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,
         qint64 curPid = (qint64)QCoreApplication::applicationPid();
         if (lockPID != curPid) {
             QString appFilePath = QCoreApplication::applicationFilePath();
-            if ( ProcInfo::checkIfProcessIsRunning(appFilePath.toStdString().c_str(), (Q_PID)lockPID) ) {
+            if ( ProcInfo::checkIfProcessIsRunning(appFilePath.toStdString().c_str(), lockPID) ) {
                 StandardButtonEnum rep = Dialogs::questionDialog( tr("Project").toStdString(),
                                                                   tr("This project may be open in another instance of Natron "
                                                                      "running on %1 as process ID %2, "

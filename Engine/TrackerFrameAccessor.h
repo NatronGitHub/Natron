@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,29 +29,84 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
-#include "Engine/EngineFwd.h"
-
+GCC_DIAG_OFF(unused-function)
+GCC_DIAG_OFF(unused-parameter)
+#include <libmv/image/array_nd.h>
 #include <libmv/autotrack/frame_accessor.h>
-
+GCC_DIAG_ON(unused-function)
+GCC_DIAG_ON(unused-parameter)
+#include "Engine/EngineFwd.h"
+#include "Global/GlobalDefines.h"
 
 NATRON_NAMESPACE_ENTER
 
-struct TrackerFrameAccessorPrivate;
-class TrackerFrameAccessor
-    : public mv::FrameAccessor
+
+class MvFloatImage
+: public libmv::Array3D<float>
 {
 public:
 
-    TrackerFrameAccessor(const TrackerContext* context,
+    MvFloatImage()
+    : libmv::Array3D<float>()
+    {
+    }
+
+    MvFloatImage(int height,
+                 int width)
+    : libmv::Array3D<float>(height, width)
+    {
+    }
+
+    MvFloatImage(float* data,
+                 int height,
+                 int width)
+    : libmv::Array3D<float>(data, height, width)
+    {
+    }
+
+    virtual ~MvFloatImage()
+    {
+    }
+};
+
+
+struct TrackerFrameAccessorPrivate;
+
+class TrackerFrameAccessor
+    : public mv::FrameAccessor
+    , public boost::enable_shared_from_this<TrackerFrameAccessor>
+{
+    struct MakeSharedEnabler;
+
+protected:
+    // used by boost::make_shared<TrackerFrameAccessor>
+    TrackerFrameAccessor(const NodePtr& sourceImageProvider,
+                         const NodePtr& maskImageProvider,
+                         const ImagePlaneDesc& maskImagePlane,
+                         int maskPlaneIndex,
                          bool enabledChannels[3],
                          int formatHeight);
+
+public:
+    static TrackerFrameAccessorPtr create(const NodePtr& sourceImageProvider,
+                                          const NodePtr& maskImageProvider,
+                                          const ImagePlaneDesc& maskImagePlane,
+                                          int maskPlaneIndex,
+                                          bool enabledChannels[3],
+                                          int formatHeight);
 
     virtual ~TrackerFrameAccessor();
 
 
     void getEnabledChannels(bool* r, bool* g, bool* b) const;
+
+
+   
+    void GetImageInternal(std::list<mv::FrameAccessor::GetImageArgs>& imageRequests);
 
 
     // Get a possibly-filtered version of a frame of a video. Downscale will
@@ -61,42 +116,26 @@ public:
     // to the image before it is returned.
     //
     // When done with an image, you must call ReleaseImage with the returned key.
-    virtual mv::FrameAccessor::Key GetImage(int clip,
-                                            int frame,
-                                            mv::FrameAccessor::InputMode input_mode,
-                                            int downscale,               // Downscale by 2^downscale.
-                                            const mv::Region* region,        // Get full image if NULL.
-                                            const mv::FrameAccessor::Transform* transform,  // May be NULL.
-                                            mv::FloatImage** destination) OVERRIDE FINAL;
+    virtual void GetImage(std::list<mv::FrameAccessor::GetImageArgs>& imageRequests) OVERRIDE FINAL;
 
     // Releases an image from the frame accessor. Non-caching implementations may
     // free the image immediately; others may hold onto the image.
     virtual void ReleaseImage(Key) OVERRIDE FINAL;
 
-    // Get mask image for the given track.
-    //
-    // Implementation of this method should sample mask associated with the track
-    // within given region to the given destination.
-    //
-    // Result is supposed to be a single channel image.
-    //
-    // If region is NULL, it it assumed to be full-frame.
-    virtual mv::FrameAccessor::Key GetMaskForTrack(int clip,
-                                                   int frame,
-                                                   int track,
-                                                   const mv::Region* region,
-                                                   mv::FloatImage* destination) OVERRIDE FINAL;
 
-    // Release a specified mask.
-    //
-    // Non-caching implementation may free used memory immediately.
-    virtual void ReleaseMask(mv::FrameAccessor::Key key) OVERRIDE FINAL;
 
     virtual bool GetClipDimensions(int clip, int* width, int* height) OVERRIDE FINAL;
     virtual int NumClips() OVERRIDE FINAL;
     virtual int NumFrames(int clip) OVERRIDE FINAL;
     static double invertYCoordinate(double yIn, double formatHeight);
     static void convertLibMVRegionToRectI(const mv::Region& region, int formatHeight, RectI* roi);
+
+    static ActionRetCodeEnum natronImageToLibMvFloatImage(bool enabledChannels[3],
+                                                          const Image& source,
+                                                          const RectI& roi,
+                                                          bool takeDstFromAlpha,
+                                                          MvFloatImage& mvImg);
+    
 
 private:
 

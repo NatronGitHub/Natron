@@ -92,7 +92,7 @@ for x in "$TMP_FOLDER"/plugins/*.png; do
     cp "$x" "$DOC_FOLDER/source/plugins" || exit 1
 done
 
-rm -rf "$TMP_FOLDER"
+echo rm -rf "$TMP_FOLDER"
 
 # Local Variables:
 # indent-tabs-mode: nil

@@ -25,6 +25,20 @@
 
 #include "libmv/image/array_nd.h"
 
+// Convenient macro to define pragma
+#ifdef _MSC_VER
+#define libmv_pragma(x) __pragma(x)
+#else
+#define libmv_pragma(x) _Pragma(#x)
+#endif
+#define libmv_omp_min_pixels 256
+#ifdef CERES_USE_OPENMP
+#include <omp.h>
+#define libmv_pragma_openmp(p) libmv_pragma(omp p)
+#else
+#define libmv_pragma_openmp(p)
+#endif
+
 namespace libmv {
 
 typedef Array3Du ByteImage;  // For backwards compatibility.

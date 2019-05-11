@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -36,39 +36,47 @@
 #else
 #include <QtGui/QStyle>
 #endif
+#include <QGridLayout>
+#include <QDialogButtonBox>
 
 #include "Global/FStreamsSupport.h"
 
 #include "Engine/EffectInstance.h"
 #include "Engine/Knob.h" // KnobHolder
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
+#include "Engine/Plugin.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
+#include "Global/StrUtils.h"
+
+#include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiDefines.h"
 #include "Gui/Menu.h"
-#include "Gui/MultiInstancePanel.h"
+#include "Gui/Label.h"
+#include "Gui/Button.h"
+#include "Gui/LineEdit.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
-#include "Gui/TrackerPanel.h"
-#include "Gui/RotoPanel.h"
+#include "Gui/QtEnumConvert.h"
+#include "Gui/PreferencesPanel.h"
+#include "Gui/SequenceFileDialog.h"
 
+#include "Serialization/NodeSerialization.h"
 
 using std::make_pair;
 NATRON_NAMESPACE_ENTER
 
 
-NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
-                                     Gui* gui,
+NodeSettingsPanel::NodeSettingsPanel(Gui* gui,
                                      const NodeGuiPtr &NodeUi,
                                      QVBoxLayout* container,
                                      QWidget *parent)
     : DockablePanel(gui,
-                    multiPanel.get() != NULL ? dynamic_cast<KnobHolder*>( multiPanel.get() ) : NodeUi->getNode()->getEffectInstance().get(),
+                    NodeUi->getNode()->getEffectInstance(),
                     container,
                     DockablePanel::eHeaderModeFullyFeatured,
                     false,
@@ -79,21 +87,17 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     , _nodeGUI(NodeUi)
     , _selected(false)
     , _settingsButton(0)
-    , _multiPanel(multiPanel)
 {
-    if (multiPanel) {
-        multiPanel->initializeKnobsPublic();
-    }
-
 
     QObject::connect( this, SIGNAL(closeChanged(bool)), NodeUi.get(), SLOT(onSettingsPanelClosedChanged(bool)) );
     const QSize mediumBSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
-    const QSize mediumIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
+    //const QSize mediumIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
+    const QSize smallIconSize( TO_DPIX(NATRON_SMALL_BUTTON_ICON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_ICON_SIZE) );
     QPixmap pixSettings;
     appPTR->getIcon(NATRON_PIXMAP_SETTINGS, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &pixSettings);
     _settingsButton = new Button( QIcon(pixSettings), QString(), getHeaderWidget() );
     _settingsButton->setFixedSize(mediumBSize);
-    _settingsButton->setIconSize(mediumIconSize);
+    _settingsButton->setIconSize(smallIconSize);
     _settingsButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Settings and presets."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _settingsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _settingsButton, SIGNAL(clicked()), this, SLOT(onSettingsButtonClicked()) );
@@ -102,7 +106,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
 
 NodeSettingsPanel::~NodeSettingsPanel()
 {
-    NodeGuiPtr node = getNode();
+    NodeGuiPtr node = getNodeGui();
 
     if (node) {
         node->removeSettingsPanel();
@@ -122,56 +126,111 @@ NodeSettingsPanel::setSelected(bool s)
 void
 NodeSettingsPanel::centerOnItem()
 {
-    getNode()->centerGraphOnIt();
+    getNodeGui()->centerGraphOnIt();
 }
 
-RotoPanel*
-NodeSettingsPanel::initializeRotoPanel()
-{
-    if ( getNode()->getNode()->isRotoPaintingNode() ) {
-        return new RotoPanel(_nodeGUI.lock(), this);
-    } else {
-        return NULL;
-    }
-}
 
-TrackerPanel*
-NodeSettingsPanel::initializeTrackerPanel()
-{
-    if ( getNode()->getNode()->getEffectInstance()->isBuiltinTrackerNode() ) {
-        return new TrackerPanel(_nodeGUI.lock(), this);
-    } else {
-        return NULL;
-    }
-}
 
 QColor
 NodeSettingsPanel::getCurrentColor() const
 {
-    return getNode()->getCurrentColor();
+    return getNodeGui()->getCurrentColor();
 }
 
-void
-NodeSettingsPanel::initializeExtraGui(QVBoxLayout* layout)
-{
-    if ( _multiPanel && !_multiPanel->isGuiCreated() ) {
-        _multiPanel->createMultiInstanceGui(layout);
-    }
-}
 
 void
 NodeSettingsPanel::onSettingsButtonClicked()
 {
-    Menu menu(this);
+
     //menu.setFont(QFont(appFont,appFontSize));
-    NodeGuiPtr node = getNode();
-    NodePtr master = node->getNode()->getMasterNode();
-    QAction* importPresets = new QAction(tr("Import presets"), &menu);
-    QObject::connect( importPresets, SIGNAL(triggered()), this, SLOT(onImportPresetsActionTriggered()) );
+    NodeGuiPtr node = getNodeGui();
+
+    if ( !node->getDagGui() || !node->getDagGui()->getGui() || node->getDagGui()->getGui()->isGUIFrozen() ) {
+        return;
+    }
+    
+    Menu menu(this);
+    Menu* loadPresetsMenu = new Menu(tr("Load presets"),&menu);
+
+    PluginPtr internalPlugin = node->getNode()->getPlugin();
+
+    QString resourcesPath = QString::fromUtf8(internalPlugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath).c_str());
+    StrUtils::ensureLastPathSeparator(resourcesPath);
+
+
+    QString shortcutGroup = QString::fromUtf8(kShortcutGroupNodes);
+    std::vector<std::string> groupingSplit = internalPlugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
+    for (std::size_t j = 0; j < groupingSplit.size(); ++j) {
+        shortcutGroup.push_back( QLatin1Char('/') );
+        shortcutGroup.push_back(QString::fromUtf8(groupingSplit[j].c_str()));
+    }
+
+    {
+        QKeySequence presetShortcut;
+        {
+            // If the preset has a shortcut get it
+
+            std::string shortcutKey = internalPlugin->getPluginID();
+            presetShortcut = getKeybind(shortcutGroup, QString::fromUtf8(shortcutKey.c_str()));
+        }
+
+        QAction* action = new QAction(loadPresetsMenu);
+        action->setText(tr("Default"));
+        std::string iconFilePath = internalPlugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath);
+        if (!iconFilePath.empty()) {
+
+            QString filePath = resourcesPath;
+            filePath += QString::fromUtf8(iconFilePath.c_str());
+
+            QPixmap presetPix(filePath);
+
+            int menuSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+            if ( (std::max( presetPix.width(), presetPix.height() ) != menuSize) && !presetPix.isNull() ) {
+                presetPix = presetPix.scaled(menuSize, menuSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            }
+            action->setIcon( presetPix );
+        }
+
+
+        action->setShortcut(presetShortcut);
+        action->setShortcutContext(Qt::WidgetShortcut);
+        QObject::connect( action, SIGNAL(triggered()), this, SLOT(onLoadPresetsActionTriggered()) );
+        loadPresetsMenu->addAction(action);
+    }
+
+    const std::vector<PluginPresetDescriptor>& presets = internalPlugin->getPresetFiles();
+    for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
+        QKeySequence presetShortcut;
+        {
+            // If the preset has a shortcut get it
+
+            std::string shortcutKey = internalPlugin->getPluginID();
+            shortcutKey += "_preset_";
+            shortcutKey += it->presetLabel.toStdString();
+
+            presetShortcut = getKeybind(shortcutGroup, QString::fromUtf8(shortcutKey.c_str()));
+        }
+
+        QAction* action = new QAction(it->presetLabel, loadPresetsMenu);
+        action->setData(it->presetLabel);
+        QPixmap presetPix;
+        if (Gui::getPresetIcon(it->presetFilePath, it->presetIconFile, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &presetPix)) {
+            action->setIcon( presetPix );
+        }
+        action->setShortcut(presetShortcut);
+        action->setShortcutContext(Qt::WidgetShortcut);
+        QObject::connect( action, SIGNAL(triggered()), this, SLOT(onLoadPresetsActionTriggered()) );
+        loadPresetsMenu->addAction(action);
+    }
+
+    QAction* importPresets = new QAction(tr("From file..."), loadPresetsMenu);
+    QObject::connect( importPresets, SIGNAL(triggered()), this, SLOT(onImportPresetsFromFileActionTriggered()) );
+    loadPresetsMenu->addAction(importPresets);
+
     QAction* exportAsPresets = new QAction(tr("Export as presets"), &menu);
     QObject::connect( exportAsPresets, SIGNAL(triggered()), this, SLOT(onExportPresetsActionTriggered()) );
 
-    menu.addAction(importPresets);
+    menu.addAction(loadPresetsMenu->menuAction());
     menu.addAction(exportAsPresets);
     menu.addSeparator();
 
@@ -189,18 +248,26 @@ NodeSettingsPanel::onSettingsButtonClicked()
     menu.addAction(setKeyOnAll);
     menu.addAction(removeAnimationOnAll);
 
-    if ( master || !node->getDagGui() || !node->getDagGui()->getGui() || node->getDagGui()->getGui()->isGUIFrozen() ) {
-        importPresets->setEnabled(false);
-        exportAsPresets->setEnabled(false);
-        setKeyOnAll->setEnabled(false);
-        removeAnimationOnAll->setEnabled(false);
-    }
-
     menu.exec( _settingsButton->mapToGlobal( _settingsButton->pos() ) );
 }
 
 void
-NodeSettingsPanel::onImportPresetsActionTriggered()
+NodeSettingsPanel::onLoadPresetsActionTriggered()
+{
+    QAction* action = qobject_cast<QAction*>(sender());
+    if (!action) {
+        return;
+    }
+    QString preset = action->data().toString();
+    try {
+        getNodeGui()->getNode()->loadPresets(preset.toStdString());
+    } catch (const std::exception &e) {
+        Dialogs::errorDialog( tr("Load Presets").toStdString(), e.what(), false );
+    }
+}
+
+void
+NodeSettingsPanel::onImportPresetsFromFileActionTriggered()
 {
     std::vector<std::string> filters;
 
@@ -209,95 +276,161 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
     if ( filename.empty() ) {
         return;
     }
-
-
-    FStreamsSupport::ifstream ifile;
-    FStreamsSupport::open(&ifile, filename);
-    if (!ifile) {
-        Dialogs::errorDialog( tr("Presets").toStdString(), tr("Failed to open file: ").toStdString() + filename, false );
-
-        return;
-    }
-
-    std::list<boost::shared_ptr<NodeSerialization> > nodeSerialization;
     try {
-        int nNodes;
-        boost::archive::xml_iarchive iArchive(ifile);
-        iArchive >> boost::serialization::make_nvp("NodesCount", nNodes);
-        for (int i = 0; i < nNodes; ++i) {
-            boost::shared_ptr<NodeSerialization> node( new NodeSerialization() );
-            iArchive >> boost::serialization::make_nvp("Node", *node);
-            nodeSerialization.push_back(node);
-        }
-    } catch (const std::exception & e) {
-        Dialogs::errorDialog( "Presets", e.what() );
-
-        return;
+        getNodeGui()->getNode()->loadPresetsFromFile(filename);
+    } catch (const std::exception &e) {
+        Dialogs::errorDialog( tr("Load Presets").toStdString(), e.what(), false );
     }
-
-    NodeGuiPtr node = getNode();
-    if ( nodeSerialization.front()->getPluginID() != node->getNode()->getPluginID() ) {
-        QString err = tr("You cannot load %1 which are presets for the plug-in %2 on the plug-in %3.")
-                      .arg( QString::fromUtf8( filename.c_str() ) )
-                      .arg( QString::fromUtf8( nodeSerialization.front()->getPluginID().c_str() ) )
-                      .arg( QString::fromUtf8( node->getNode()->getPluginID().c_str() ) );
-        Dialogs::errorDialog( tr("Presets").toStdString(), err.toStdString() );
-
-        return;
-    }
-
-    node->restoreInternal(node, nodeSerialization);
 }
 
-static bool
-endsWith(const std::string &str,
-         const std::string &suffix)
+
+SavePresetsDialog::SavePresetsDialog(Gui* gui, QWidget* parent)
+: QDialog(parent)
+, _gui(gui)
 {
-    return ( ( str.size() >= suffix.size() ) &&
-             (str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0) );
+    mainLayout = new QGridLayout(this);
+    
+    QWidget* row1 = new QWidget(this);
+    QHBoxLayout* row1Layout = new QHBoxLayout(row1);
+    row1Layout->setContentsMargins(0, 0, 0, 0);
+    QWidget* row2 = new QWidget(this);
+    QHBoxLayout* row2Layout = new QHBoxLayout(row2);
+    row2Layout->setContentsMargins(0, 0, 0, 0);
+    QWidget* row3 = new QWidget(this);
+    QHBoxLayout* row3Layout = new QHBoxLayout(row3);
+    row3Layout->setContentsMargins(0, 0, 0, 0);
+    QWidget* row4 = new QWidget(this);
+    QHBoxLayout* row4Layout = new QHBoxLayout(row4);
+    row4Layout->setContentsMargins(0, 0, 0, 0);
+    
+    presetNameLabel = new Label(tr("Preset Name:"), row1);
+    presetNameEdit = new LineEdit(row1);
+    row1Layout->addWidget(presetNameEdit);
+    
+    presetIconLabel = new Label(tr("Preset Icon File:"), row2);
+    presetIconEdit = new LineEdit(row2);
+    presetIconEdit->setPlaceholderText(tr("Icon file without path"));
+    row2Layout->addWidget(presetIconEdit);
+    
+    presetShortcutKeyLabel = new Label(tr("Shortcut:"), row3);
+    presetShortcutKeyEditor = new KeybindRecorder(row3);
+    row3Layout->addWidget(presetShortcutKeyEditor);
+    
+    filePathLabel = new Label(tr("Preset File:"), row4);
+    filePathEdit = new LineEdit(row4);
+    QPixmap openPix;
+    appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &openPix);
+    filePathOpenButton = new Button(QIcon(openPix), QString(), row4);
+    filePathOpenButton->setFixedSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
+    filePathOpenButton->setIconSize( QSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE)) );
+    QObject::connect( filePathOpenButton, SIGNAL(clicked(bool)), this, SLOT(onOpenFileButtonClicked()) );
+    row4Layout->addWidget(filePathEdit);
+    row4Layout->addWidget(filePathOpenButton);
+    
+    mainLayout->addWidget(presetNameLabel, 0, 0);
+    mainLayout->addWidget(row1, 0, 1);
+    
+    mainLayout->addWidget(presetIconLabel, 1, 0);
+    mainLayout->addWidget(row2, 1, 1);
+    
+    mainLayout->addWidget(presetShortcutKeyLabel, 2, 0);
+    mainLayout->addWidget(row3, 2, 1);
+    
+    mainLayout->addWidget(filePathLabel, 3, 0);
+    mainLayout->addWidget(row4, 3, 1);
+    
+    buttonBox = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
+                                     Qt::Horizontal, this);
+    QObject::connect( buttonBox, SIGNAL(accepted()), this, SLOT(accept()) );
+    QObject::connect( buttonBox, SIGNAL(rejected()), this, SLOT(reject()) );
+    
+    mainLayout->addWidget(buttonBox, 4, 0, 1, 2, Qt::AlignRight | Qt::AlignVCenter);
+}
+
+void
+SavePresetsDialog::onOpenFileButtonClicked()
+{
+    std::vector<std::string> filters;
+    filters.push_back(NATRON_PRESETS_FILE_EXT);
+    const QString& path = _gui->getLastPluginDirectory();
+    SequenceFileDialog dialog(this, filters, false, SequenceFileDialog::eFileDialogModeSave, path.toStdString(), _gui, false);
+    
+    if ( dialog.exec() ) {
+        std::string selection = dialog.selectedFiles();
+        filePathEdit->setText( QString::fromUtf8( selection.c_str() ) );
+        QDir d = dialog.currentDirectory();
+        _gui->updateLastPluginDirectory( d.absolutePath() );
+    }
+}
+
+QString
+SavePresetsDialog::getPresetName() const
+{
+    return presetNameEdit->text();
+}
+
+QString
+SavePresetsDialog::getPresetIconFile() const
+{
+    return presetIconEdit->text();
+}
+
+QString
+SavePresetsDialog::getPresetShortcut()
+{
+    return presetShortcutKeyEditor->text();
+}
+
+QString
+SavePresetsDialog::getPresetPath() const
+{
+    return filePathEdit->text();
+}
+
+NodeGuiPtr
+NodeSettingsPanel::getNodeGui() const
+{
+    return _nodeGUI.lock();
 }
 
 void
 NodeSettingsPanel::onExportPresetsActionTriggered()
 {
-    std::vector<std::string> filters;
-
-    filters.push_back(NATRON_PRESETS_FILE_EXT);
-    std::string filename = getGui()->popSaveFileDialog(false, filters, getGui()->getLastSaveProjectDirectory().toStdString(), false);
-    if ( filename.empty() ) {
+    
+    SavePresetsDialog dialog(getGui());
+    if (!dialog.exec()) {
         return;
     }
-
-    if ( !endsWith(filename, "." NATRON_PRESETS_FILE_EXT) ) {
-        filename.append("." NATRON_PRESETS_FILE_EXT);
+    
+    QString presetName = dialog.getPresetName();
+    QString presetIconFile = dialog.getPresetIconFile();
+    QString presetShortcut = dialog.getPresetShortcut();
+    QString presetPath = dialog.getPresetPath();
+    
+    QString presetFilePath = presetPath;
+    if (!presetFilePath.endsWith(QLatin1String("." NATRON_PRESETS_FILE_EXT))) {
+        presetFilePath += QLatin1String("." NATRON_PRESETS_FILE_EXT);
     }
-
-
-    FStreamsSupport::ofstream ofile;
-    FStreamsSupport::open(&ofile, filename);
-    if (!ofile) {
-        Dialogs::errorDialog( tr("Presets").toStdString(),
-                              tr("Failed to open file %1.").arg( QString::fromUtf8( filename.c_str() ) ).toStdString(), false );
-
-        return;
-    }
-
-    NodeGuiPtr node = getNode();
-    std::list<boost::shared_ptr<NodeSerialization> > nodeSerialization;
-    node->serializeInternal(nodeSerialization);
+    
+    Qt::KeyboardModifiers qtMods;
+    Qt::Key qtKey;
+    
+    QKeySequence keySeq(presetShortcut, QKeySequence::NativeText);
+    extractKeySequence(keySeq, qtMods, qtKey);
+    
     try {
-        int nNodes = nodeSerialization.size();
-        boost::archive::xml_oarchive oArchive(ofile);
-        oArchive << boost::serialization::make_nvp("NodesCount", nNodes);
-        for (std::list<boost::shared_ptr<NodeSerialization> >::iterator it = nodeSerialization.begin();
-             it != nodeSerialization.end(); ++it) {
-            oArchive << boost::serialization::make_nvp("Node", **it);
-        }
-    }  catch (const std::exception & e) {
-        Dialogs::errorDialog( "Presets", e.what() );
-
-        return;
+        getNodeGui()->getNode()->exportNodeToPresets(presetFilePath.toStdString(),
+                                                presetName.toStdString(),
+                                                presetIconFile.toStdString(),
+                                                QtEnumConvert::fromQtKey(qtKey),
+                                                QtEnumConvert::fromQtModifiers(qtMods));
+    } catch (const std::exception &e) {
+        Dialogs::errorDialog( tr("Export Presets").toStdString(), e.what(), false );
     }
+
+    
+    
+
 }
 
 NATRON_NAMESPACE_EXIT

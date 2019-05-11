@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -41,14 +41,17 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/ViewIdx.h"
+#include "Serialization/SerializationBase.h"
+#include "Engine/TimeValue.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
 
 /**
  * @class A Bezier is an animated control point of a Bezier. It is the starting point
- * and/or the ending point of a bezier segment. (It would correspond to P0/P3).
- * The left bezier point/right bezier point we refer to in the functions below
+ * and/or the ending point of a Bezier segment. (It would correspond to P0/P3).
+ * The left Bezier point/right Bezier point we refer to in the functions below
  * are respectively the P2 and P1 point.
  *
  * Note on multi-thread:
@@ -65,6 +68,7 @@ NATRON_NAMESPACE_ENTER
  **/
 struct BezierCPPrivate;
 class BezierCP
+: public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
     ///This is the unique class allowed to call the setters.
     friend class Bezier;
@@ -76,76 +80,80 @@ public:
 
     BezierCP(const BezierCP & other);
 
-    BezierCP(const boost::shared_ptr<Bezier>& curve);
+    BezierCP(const BezierPtr& curve);
 
     virtual ~BezierCP();
 
-    boost::shared_ptr<Curve> getXCurve() const;
-    boost::shared_ptr<Curve> getYCurve() const;
-    boost::shared_ptr<Curve> getLeftXCurve() const;
-    boost::shared_ptr<Curve> getLeftYCurve() const;
-    boost::shared_ptr<Curve> getRightXCurve() const;
-    boost::shared_ptr<Curve> getRightYCurve() const;
+    /**
+     * @brief Must be implemented by the derived class to save the state into
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)  OVERRIDE;
 
-    void clone(const BezierCP & other);
+    /**
+     * @brief Must be implemented by the derived class to load the state from
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE;
+    
 
-    void setPositionAtTime(bool useGuiCurves, double time, double x, double y);
 
-    void setLeftBezierPointAtTime(bool useGuiCurves, double time, double x, double y);
+    CurvePtr getXCurve() const;
+    CurvePtr getYCurve() const;
+    CurvePtr getLeftXCurve() const;
+    CurvePtr getLeftYCurve() const;
+    CurvePtr getRightXCurve() const;
+    CurvePtr getRightYCurve() const;
 
-    void setRightBezierPointAtTime(bool useGuiCurves, double time, double x, double y);
+    void copyControlPoint(const BezierCP & other, const RangeD* range = 0);
 
-    void setStaticPosition(bool useGuiCurves, double x, double y);
+    void setPositionAtTime(TimeValue time, double x, double y);
 
-    void setLeftBezierStaticPosition(bool useGuiCurves, double x, double y);
+    void setLeftBezierPointAtTime(TimeValue time, double x, double y);
 
-    void setRightBezierStaticPosition(bool useGuiCurves, double x, double y);
+    void setRightBezierPointAtTime(TimeValue time, double x, double y);
 
-    void removeKeyframe(bool useGuiCurves, double time);
+    void setStaticPosition(double x, double y);
 
-    void removeAnimation(bool useGuiCurves, double currentTime);
+    void setLeftBezierStaticPosition(double x, double y);
 
-    ///returns true if a keyframe was set
-    bool cuspPoint(bool useGuiCurves, double time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
-
-    ///returns true if a keyframe was set
-    bool smoothPoint(bool useGuiCurves, double time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
-
+    void setRightBezierStaticPosition(double x, double y);
 
     virtual bool isFeatherPoint() const
     {
         return false;
     }
 
-    bool equalsAtTime(bool useGuiCurves, double time, ViewIdx view, const BezierCP & other) const;
+    bool equalsAtTime(TimeValue time, const BezierCP & other) const;
 
-    bool getPositionAtTime(bool useGuiCurves, double time, ViewIdx view, double* x, double* y) const;
+    bool operator==(const BezierCP& other) const;
 
-    bool getLeftBezierPointAtTime(bool useGuiCurves, double time, ViewIdx view, double* x, double* y) const;
+    bool operator!=(const BezierCP& other) const
+    {
+        return !(*this == other);
+    }
 
-    bool getRightBezierPointAtTime(bool useGuiCurves, double time, ViewIdx view, double *x, double *y) const;
+    bool getPositionAtTime(TimeValue time, double* x, double* y) const;
 
-    bool hasKeyFrameAtTime(bool useGuiCurves, double time) const;
+    bool getLeftBezierPointAtTime(TimeValue time, double* x, double* y) const;
 
-    void getKeyframeTimes(bool useGuiCurves, std::set<double>* times) const;
+    bool getRightBezierPointAtTime(TimeValue time, double *x, double *y) const;
 
-    void getKeyFrames(bool useGuiCurves, std::list<std::pair<double, KeyframeTypeEnum> >* keys) const;
+    void removeKeyframe(TimeValue time);
 
-    int getKeyFrameIndex(bool useGuiCurves, double time) const;
+    void setKeyFrameInterpolation(KeyframeTypeEnum interp, int index);
 
-    void setKeyFrameInterpolation(bool useGuiCurves, KeyframeTypeEnum interp, int index);
+    int getControlPointsCount(ViewIdx view) const;
 
-    double getKeyframeTime(bool useGuiCurves, int index) const;
-
-    int getKeyframesCount(bool useGuiCurves) const;
-
-    int getControlPointsCount() const;
+    void getKeyframeTimes(std::set<double>* keys) const;
 
     /**
-     * @brief Pointer to the bezier holding this control point. This is not protected by a mutex
+     * @brief Pointer to the Bezier holding this control point. This is not protected by a mutex
      * since it never changes.
      **/
-    boost::shared_ptr<Bezier> getBezier() const;
+    BezierPtr getBezier() const;
 
     /**
      * @brief Returns whether a tangent handle is nearby the given coordinates.
@@ -155,7 +163,7 @@ public:
      * This function can also return the tangent of a feather point, to find out if the point is a feather point call
      * isFeatherPoint() on the returned control point.
      **/
-    int isNearbyTangent(bool useGuiCurves, double time, ViewIdx view, double x, double y, double acceptance) const;
+    int isNearbyTangent(TimeValue time, ViewIdx view, double x, double y, double acceptance) const;
 
     SequenceTime getOffsetTime() const;
 
@@ -177,7 +185,7 @@ private:
     boost::scoped_ptr<BezierCPPrivate> _imp;
 };
 
-typedef std::list< boost::shared_ptr<BezierCP> > BezierCPs;
+
 
 NATRON_NAMESPACE_EXIT
 

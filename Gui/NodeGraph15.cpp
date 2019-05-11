@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -138,7 +138,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         assert(nodeHoldingEdge);
 
 
-        NodeGui* nearbyNode;
+        NodeGuiPtr nearbyNode;
         Edge* nearbyEdge;
         NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
 
@@ -150,7 +150,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                     _imp->_arrowSelected->stackBefore( targetNode.get() );
                     if (ok) {
                         foundSrc = true;
-                        pushUndoCommand( new ConnectCommand(this, _imp->_arrowSelected, _imp->_arrowSelected->getSource(), targetNode) );
+                        pushUndoCommand( new ConnectCommand(this, _imp->_arrowSelected, _imp->_arrowSelected->getSource(), targetNode, -1) );
                     }
                 } else {
                     // Find the input edge of the node we just released the mouse over,
@@ -163,7 +163,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                             assert(foundInput);
                             foundSrc = true;
                             pushUndoCommand( new ConnectCommand( this, foundInput,
-                                                                 foundInput->getSource(), _imp->_arrowSelected->getSource() ) );
+                                                                 foundInput->getSource(), _imp->_arrowSelected->getSource(), -1 ) );
                         }
                     }
                 }
@@ -175,7 +175,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         // So the user understands some nodes can have output
         if ( !foundSrc && !_imp->_arrowSelected->isOutputEdge() && _imp->_arrowSelected->getSource() ) {
             pushUndoCommand( new ConnectCommand( this, _imp->_arrowSelected, _imp->_arrowSelected->getSource(),
-                                                 NodeGuiPtr() ) );
+                                                 NodeGuiPtr(), -1 ) );
         }
 
 
@@ -184,7 +184,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
     } else if (state == eEventStateDraggingNode) {
         if ( !_imp->_hasMovedOnce ) {
             if ( modCASIsControl(e) ) { // control-click is the same as double-click, see NodeGraph::mouseDoubleClickEvent
-                NodeGui* nearbyNode;
+                NodeGuiPtr nearbyNode;
                 Edge* nearbyEdge;
                 NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
 
@@ -194,12 +194,15 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
             }
         } else if ( !_imp->_selection.empty() ) {
             NodesGuiList nodesToMove;
-            for (NodesGuiList::iterator it = _imp->_selection.begin();
+            for (NodesGuiWList::iterator it = _imp->_selection.begin();
                  it != _imp->_selection.end(); ++it) {
-                const NodeGuiPtr& node = *it;
+                NodeGuiPtr node = it->lock();
+                if (!node) {
+                    continue;
+                }
                 nodesToMove.push_back(node);
 
-                std::map<NodeGuiPtr, NodesGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(*it);
+                std::map<NodeGuiPtr, NodesGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(node);
                 if ( !modCASIsControl(e) && ( foundBd != _imp->_nodesWithinBDAtPenDown.end() ) ) {
                     for (NodesGuiList::iterator it2 = foundBd->second.begin();
                          it2 != foundBd->second.end(); ++it2) {
@@ -226,32 +229,35 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
             if (_imp->_highLightedEdge) {
                 _imp->_highLightedEdge->setUseHighlight(false);
 
-                NodeGuiPtr selectedNode = _imp->_selection.front();
+                NodeGuiPtr selectedNode = _imp->_selection.front().lock();
 
-                _imp->_highLightedEdge->setUseHighlight(false);
-                if ( _imp->_highLightedEdge->isOutputEdge() ) {
-                    int prefInput = selectedNode->getNode()->getPreferredInputForConnection();
-                    if (prefInput != -1) {
-                        Edge* inputEdge = selectedNode->getInputArrow(prefInput);
-                        assert(inputEdge);
-                        pushUndoCommand( new ConnectCommand( this, inputEdge, inputEdge->getSource(),
-                                                             _imp->_highLightedEdge->getSource() ) );
-                    }
-                } else {
-                    pushUndoCommand( new InsertNodeCommand(this, _imp->_highLightedEdge, selectedNode) );
-                } // if ( _imp->_highLightedEdge->isOutputEdge() )
-
+                if (selectedNode) {
+                    _imp->_highLightedEdge->setUseHighlight(false);
+                    if ( _imp->_highLightedEdge->isOutputEdge() ) {
+                        int prefInput = selectedNode->getNode()->getPreferredInputForConnection();
+                        if (prefInput != -1) {
+                            Edge* inputEdge = selectedNode->getInputArrow(prefInput);
+                            assert(inputEdge);
+                            pushUndoCommand( new ConnectCommand( this, inputEdge, inputEdge->getSource(),
+                                                                _imp->_highLightedEdge->getSource(), -1 ) );
+                        }
+                    } else {
+                        pushUndoCommand( new InsertNodeCommand(this, _imp->_highLightedEdge, selectedNode) );
+                    } // if ( _imp->_highLightedEdge->isOutputEdge() )
+                }
                 _imp->_highLightedEdge = 0;
                 _imp->_hintInputEdge->hide();
                 _imp->_hintOutputEdge->hide();
-            } else if (_imp->_mergeHintNode) {
-                _imp->_mergeHintNode->setMergeHintActive(false);
-                NodeGuiPtr selectedNode = _imp->_selection.front();
-                selectedNode->setMergeHintActive(false);
+            } else if (_imp->_mergeHintNode.lock()) {
+                _imp->_mergeHintNode.lock()->setMergeHintActive(false);
+                NodeGuiPtr selectedNode = _imp->_selection.front().lock();
+                if (selectedNode) {
+                    selectedNode->setMergeHintActive(false);
+                }
 
-                if ( getGui() ) {
+                if ( getGui() && selectedNode) {
                     QRectF selectedNodeBbox = selectedNode->mapToScene( selectedNode->boundingRect() ).boundingRect();
-                    QRectF mergeHintNodeBbox = _imp->_mergeHintNode->mapToScene( _imp->_mergeHintNode->boundingRect() ).boundingRect();
+                    QRectF mergeHintNodeBbox = _imp->_mergeHintNode.lock()->mapToScene( _imp->_mergeHintNode.lock()->boundingRect() ).boundingRect();
                     QPointF mergeHintCenter = mergeHintNodeBbox.center();
 
                     ///Place the selected node on the right of the hint node
@@ -264,14 +270,14 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                     selectedNodeBbox = selectedNode->mapToScene( selectedNode->boundingRect() ).boundingRect();
 
                     QPointF selectedNodeCenter = selectedNodeBbox.center();
-                    CreateNodeArgs args( PLUGINID_OFX_MERGE, getGroup() );
-                    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-                    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+                    CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_OFX_MERGE, getGroup() ));
+                    args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+                    args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
                     
                     NodePtr mergeNode = getGui()->getApp()->createNode(args);
 
                     if (mergeNode) {
-                        boost::shared_ptr<NodeGuiI> nodeUI = mergeNode->getNodeGui();
+                        NodeGuiIPtr nodeUI = mergeNode->getNodeGui();
                         assert(nodeUI);
                         NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(nodeUI);
                         assert(nodeGui);
@@ -290,7 +296,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                         int bIndex = mergeNode->getInputNumberFromLabel("B");
                         assert(aIndex != -1 && bIndex != -1);
                         mergeNode->connectInput(selectedNode->getNode(), aIndex);
-                        mergeNode->connectInput(_imp->_mergeHintNode->getNode(), bIndex);
+                        mergeNode->connectInput(_imp->_mergeHintNode.lock()->getNode(), bIndex);
                     }
                 }
 

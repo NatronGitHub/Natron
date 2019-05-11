@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -40,6 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ScriptObject.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/Gui.h"
@@ -54,7 +55,7 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER
 NATRON_PYTHON_NAMESPACE_ENTER
 
-GuiApp::GuiApp(const GuiAppInstPtr& app)
+GuiApp::GuiApp(const GuiAppInstancePtr& app)
     : App(app)
     , _app(app)
 {
@@ -81,11 +82,14 @@ GuiApp::createModalDialog()
 PyTabWidget*
 GuiApp::getTabWidget(const QString& name) const
 {
-    const std::list<TabWidget*>& tabs = getInternalGuiApp()->getGui()->getPanes();
+    std::list<TabWidgetI*> tabs = getInternalGuiApp()->getTabWidgetsSerialization();
 
-    for (std::list<TabWidget*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
-        if ( (*it)->objectName_mt_safe() == name ) {
-            return new PyTabWidget(*it);
+    for (std::list<TabWidgetI*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
+        if ( (*it)->getScriptName() == name.toStdString() ) {
+            TabWidget* isTab = dynamic_cast<TabWidget*>(*it);
+            if (isTab) {
+                return new PyTabWidget(isTab);
+            }
         }
     }
 
@@ -116,20 +120,20 @@ GuiApp::moveTab(const QString& scriptName,
         return false;
     }
 
-    return TabWidget::moveTab( w, o, pane->getInternalTabWidget() );
+    return pane->getInternalTabWidget()->moveTab( w, o );
 }
 
 void
 GuiApp::registerPythonPanel(PyPanel* panel,
                             const QString& pythonFunction)
 {
-    getInternalGuiApp()->getGui()->registerPyPanel( panel, pythonFunction.toStdString() );
+    getInternalGuiApp()->registerPyPanel( panel, pythonFunction.toStdString() );
 }
 
 void
 GuiApp::unregisterPythonPanel(PyPanel* panel)
 {
-    getInternalGuiApp()->getGui()->unregisterPyPanel(panel);
+    getInternalGuiApp()->unregisterPyPanel(panel);
 }
 
 QString
@@ -287,7 +291,7 @@ GuiApp::getSelectedNodes(Group* group) const
     if (group) {
         Effect* isEffect = dynamic_cast<Effect*>(group);
         if (isEffect) {
-            NodeGroup* nodeGrp = isEffect->getInternalNode()->isEffectGroup();
+            NodeGroupPtr nodeGrp = isEffect->getInternalNode()->isEffectNodeGroup();
             if (nodeGrp) {
                 NodeGraphI* graph_i  = nodeGrp->getNodeGraph();
                 if (graph_i) {
@@ -309,12 +313,12 @@ GuiApp::getSelectedNodes(Group* group) const
     if (!graph) {
         throw std::logic_error("");
     }
-    const NodesGuiList& nodes = graph->getSelectedNodes();
+    NodesGuiList nodes = graph->getSelectedNodes();
     for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodePtr node = (*it)->getNode();
-        if ( node->isActivated() && !node->getParentMultiInstance() ) {
-            ret.push_back( new Effect(node) );
-        }
+        Effect* eff = App::createEffectFromNodeWrapper(node);
+        assert(eff);
+        ret.push_back(eff);
     }
 
     return ret;
@@ -327,7 +331,7 @@ GuiApp::selectNode(Effect* effect,
     if ( !effect || appPTR->isBackground() ) {
         return;
     }
-    boost::shared_ptr<NodeCollection> collection = effect->getInternalNode()->getGroup();
+    NodeCollectionPtr collection = effect->getInternalNode()->getGroup();
     if (!collection) {
         return;
     }
@@ -336,7 +340,7 @@ GuiApp::selectNode(Effect* effect,
     if (!nodeUi) {
         return;
     }
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+    NodeGroupPtr isGroup = toNodeGroup(collection);
     NodeGraph* graph = 0;
     if (isGroup) {
         graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
@@ -357,7 +361,7 @@ GuiApp::setSelection(const std::list<Effect*>& nodes)
         return;
     }
     NodesGuiList selection;
-    boost::shared_ptr<NodeCollection> collection;
+    NodeCollectionPtr collection;
     bool printWarn = false;
     for (std::list<Effect*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( (*it)->getInternalNode()->getNodeGui() );
@@ -378,7 +382,7 @@ GuiApp::setSelection(const std::list<Effect*>& nodes)
     if (printWarn) {
         getInternalGuiApp()->appendToScriptEditor( tr("Python: Invalid selection from setSelection(): Some nodes in the list do not belong to the same group.").toStdString() );
     } else {
-        NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+        NodeGroupPtr isGroup = toNodeGroup(collection);
         NodeGraph* graph = 0;
         if (isGroup) {
             graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
@@ -399,13 +403,13 @@ GuiApp::selectAllNodes(Group* group)
     if ( appPTR->isBackground() ) {
         return;
     }
-    NodeGraph* graph = 0;
-    boost::shared_ptr<NodeCollection> collection;
-    NodeGroup* isGroup = 0;
+    NodeGraph* graph = NULL;
+    NodeCollectionPtr collection;
+    NodeGroupPtr isGroup = NodeGroupPtr();
     if (group) {
         collection = group->getInternalCollection();
         if (collection) {
-            isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+            isGroup = toNodeGroup(collection);
             if (isGroup) {
                 graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
             }
@@ -430,7 +434,7 @@ GuiApp::deselectNode(Effect* effect)
         return;
     }
 
-    boost::shared_ptr<NodeCollection> collection = effect->getInternalNode()->getGroup();
+    NodeCollectionPtr collection = effect->getInternalNode()->getGroup();
     if (!collection) {
         return;
     }
@@ -439,7 +443,7 @@ GuiApp::deselectNode(Effect* effect)
     if (!nodeUi) {
         return;
     }
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+    NodeGroupPtr isGroup = toNodeGroup(collection);
     NodeGraph* graph = 0;
     if (isGroup) {
         graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
@@ -460,13 +464,13 @@ GuiApp::clearSelection(Group* group)
         return;
     }
 
-    NodeGraph* graph = 0;
-    boost::shared_ptr<NodeCollection> collection;
-    NodeGroup* isGroup = 0;
+    NodeGraph* graph = NULL;
+    NodeCollectionPtr collection;
+    NodeGroupPtr isGroup = NodeGroupPtr();
     if (group) {
         collection = group->getInternalCollection();
         if (collection) {
-            isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+            isGroup = toNodeGroup(collection);
             if (isGroup) {
                 graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
             }
@@ -484,24 +488,8 @@ GuiApp::clearSelection(Group* group)
     graph->clearSelection();
 }
 
-PyViewer*
-GuiApp::getViewer(const QString& scriptName) const
-{
-    NodePtr ptr = getInternalGuiApp()->getNodeByFullySpecifiedName( scriptName.toStdString() );
 
-    if ( !ptr || !ptr->isActivated() ) {
-        return 0;
-    }
-
-    ViewerInstance* viewer = ptr->isEffectViewer();
-    if (!viewer) {
-        return 0;
-    }
-
-    return new PyViewer(ptr);
-}
-
-PyViewer*
+Effect*
 GuiApp::getActiveViewer() const
 {
     ViewerTab* tab = getInternalGuiApp()->getGui()->getActiveViewer();
@@ -509,7 +497,7 @@ GuiApp::getActiveViewer() const
     if (!tab) {
         return 0;
     }
-    ViewerInstance* instance = tab->getInternalNode();
+    ViewerNodePtr instance = tab->getInternalNode();
     if (!instance) {
         return 0;
     }
@@ -518,7 +506,7 @@ GuiApp::getActiveViewer() const
         return 0;
     }
 
-    return new PyViewer(node);
+    return App::createEffectFromNodeWrapper(node);
 }
 
 PyPanel*
@@ -551,276 +539,6 @@ GuiApp::renderBlocking(const std::list<Effect*>& effects,
     renderInternal(true, effects, firstFrames, lastFrames, frameSteps);
 }
 
-PyViewer::PyViewer(const NodePtr& node)
-    : _node(node)
-{
-    ViewerInstance* viewer = node->isEffectViewer();
-
-    assert(viewer);
-    ViewerGL* viewerGL = dynamic_cast<ViewerGL*>( viewer->getUiContext() );
-    _viewer = viewerGL ? viewerGL->getViewerTab() : NULL;
-    assert(_viewer);
-}
-
-PyViewer::~PyViewer()
-{
-}
-
-void
-PyViewer::seek(int frame)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->seek(frame);
-}
-
-int
-PyViewer::getCurrentFrame()
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return 0;
-    }
-
-    return getInternalNode()->getApp()->getTimeLine()->currentFrame();
-}
-
-void
-PyViewer::startForward()
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->startPause(true);
-}
-
-void
-PyViewer::startBackward()
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->startBackward(true);
-}
-
-void
-PyViewer::pause()
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->abortRendering();
-}
-
-void
-PyViewer::redraw()
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->redrawGLWidgets();
-}
-
-void
-PyViewer::renderCurrentFrame(bool useCache)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    if (useCache) {
-        _viewer->getInternalNode()->renderCurrentFrame(false);
-    } else {
-        _viewer->refresh();
-    }
-}
-
-void
-PyViewer::setFrameRange(int firstFrame,
-                        int lastFrame)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->setFrameRange(firstFrame, lastFrame);
-}
-
-void
-PyViewer::getFrameRange(int* firstFrame,
-                        int* lastFrame) const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->getTimelineBounds(firstFrame, lastFrame);
-}
-
-void
-PyViewer::setPlaybackMode(PlaybackModeEnum mode)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->setPlaybackMode(mode);
-}
-
-PlaybackModeEnum
-PyViewer::getPlaybackMode() const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return ePlaybackModeLoop;
-    }
-
-    return _viewer->getPlaybackMode();
-}
-
-ViewerCompositingOperatorEnum
-PyViewer::getCompositingOperator() const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return eViewerCompositingOperatorNone;
-    }
-
-    return _viewer->getCompositingOperator();
-}
-
-void
-PyViewer::setCompositingOperator(ViewerCompositingOperatorEnum op)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->setCompositingOperator(op);
-}
-
-int
-PyViewer::getAInput() const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return -1;
-    }
-    int a, b;
-    _viewer->getInternalNode()->getActiveInputs(a, b);
-
-    return a;
-}
-
-void
-PyViewer::setAInput(int index)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    EffectInstancePtr input = _viewer->getInternalNode()->getInput(index);
-    if (!input) {
-        return;
-    }
-    _viewer->setInputA(index);
-}
-
-int
-PyViewer::getBInput() const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return -1;
-    }
-    int a, b;
-    _viewer->getInternalNode()->getActiveInputs(a, b);
-
-    return b;
-}
-
-void
-PyViewer::setBInput(int index)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    EffectInstancePtr input = _viewer->getInternalNode()->getInput(index);
-    if (!input) {
-        return;
-    }
-    _viewer->setInputB(index);
-}
-
-void
-PyViewer::setChannels(DisplayChannelsEnum channels)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    std::string c = ViewerTab::getChannelsString(channels);
-    _viewer->setChannels(c);
-}
-
-DisplayChannelsEnum
-PyViewer::getChannels() const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return eDisplayChannelsRGB;
-    }
-
-    return _viewer->getChannels();
-}
-
-void
-PyViewer::setProxyModeEnabled(bool enabled)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->setRenderScaleActivated(enabled);
-}
-
-bool
-PyViewer::isProxyModeEnabled() const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return false;
-    }
-
-    return _viewer->getRenderScaleActivated();
-}
-
-void
-PyViewer::setProxyIndex(int index)
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->setMipMapLevel(index + 1);
-}
-
-int
-PyViewer::getProxyIndex() const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return 0;
-    }
-
-    return _viewer->getMipMapLevel() - 1;
-}
-
-void
-PyViewer::setCurrentView(int index)
-{
-    if (index < 0) {
-        return;
-    }
-    if ( !getInternalNode()->isActivated() ) {
-        return;
-    }
-    _viewer->setCurrentView( ViewIdx(index) );
-}
-
-int
-PyViewer::getCurrentView() const
-{
-    if ( !getInternalNode()->isActivated() ) {
-        return 0;
-    }
-
-    return _viewer->getCurrentView().value();
-}
 
 NATRON_PYTHON_NAMESPACE_EXIT
 NATRON_NAMESPACE_EXIT

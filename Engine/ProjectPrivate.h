@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -46,10 +46,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobFile.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/TLSHolder.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/Project.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -58,47 +58,47 @@ struct ProjectPrivate
     Q_DECLARE_TR_FUNCTIONS(Project)
 
 public:
-    Project* _publicInterface;
+    Project* _publicInterface; // can not be a smart ptr
     mutable QMutex projectLock; //< protects the whole project
     QString lastAutoSaveFilePath; //< absolute file path of the last auto-save file
     bool hasProjectBeenSavedByUser; //< has this project ever been saved by the user?
     QDateTime ageSinceLastSave; //< the last time the user saved
     QDateTime lastAutoSave; //< the last time since autosave
-    QDateTime projectCreationTime; //< the project creation time
     std::list<Format> builtinFormats;
     std::list<Format> additionalFormats; //< added by the user
     mutable QMutex formatMutex; //< protects builtinFormats & additionalFormats
 
 
     ///Project parameters (settings)
-    boost::shared_ptr<KnobPath> envVars;
-    boost::shared_ptr<KnobString> projectName; //< name of the project, e.g: "Untitled.ntp"
-    boost::shared_ptr<KnobString> projectPath;  //< path of the project, e.g: /Users/Lala/Projects/
-    boost::shared_ptr<KnobChoice> formatKnob; //< built from builtinFormats & additionalFormats
-    boost::shared_ptr<KnobButton> addFormatKnob;
-    boost::shared_ptr<KnobPath> viewsList;
+    KnobPathPtr envVars;
+    KnobStringPtr projectName; //< name of the project, e.g: "Untitled.ntp"
+    KnobStringPtr projectPath;  //< path of the project, e.g: /Users/Lala/Projects/
+    KnobChoicePtr formatKnob; //< built from builtinFormats & additionalFormats
+    KnobButtonPtr addFormatKnob;
+    KnobPathPtr viewsList;
     boost::shared_ptr<KnobLayers> defaultLayersList;
-    boost::shared_ptr<KnobButton> setupForStereoButton;
-    boost::shared_ptr<KnobBool> previewMode; //< auto or manual
-    boost::shared_ptr<KnobChoice> colorSpace8u;
-    boost::shared_ptr<KnobChoice> colorSpace16u;
-    boost::shared_ptr<KnobChoice> colorSpace32f;
-    boost::shared_ptr<KnobDouble> frameRate;
-    boost::shared_ptr<KnobChoice> gpuSupport;
-    boost::shared_ptr<KnobInt> frameRange;
-    boost::shared_ptr<KnobBool> lockFrameRange;
-    boost::shared_ptr<KnobString> natronVersion;
-    boost::shared_ptr<KnobString> originalAuthorName, lastAuthorName;
-    boost::shared_ptr<KnobString> projectCreationDate;
-    boost::shared_ptr<KnobString> saveDate;
-    boost::shared_ptr<KnobString> onProjectLoadCB;
-    boost::shared_ptr<KnobString> onProjectSaveCB;
-    boost::shared_ptr<KnobString> onProjectCloseCB;
-    boost::shared_ptr<KnobString> onNodeCreated;
-    boost::shared_ptr<KnobString> onNodeDeleted;
-    boost::shared_ptr<TimeLine> timeline; // global timeline
+    KnobButtonPtr setupForStereoButton;
+    KnobBoolPtr previewMode; //< auto or manual
+    KnobChoicePtr colorSpace8u;
+    KnobChoicePtr colorSpace16u;
+    KnobChoicePtr colorSpace32f;
+    KnobDoublePtr frameRate;
+    KnobChoicePtr gpuSupport;
+    KnobIntPtr frameRange;
+    KnobBoolPtr lockFrameRange;
+    KnobStringPtr natronVersion;
+    KnobStringPtr originalAuthorName, lastAuthorName;
+    KnobStringPtr projectCreationDate;
+    KnobStringPtr saveDate;
+    KnobStringPtr onProjectLoadCB;
+    KnobStringPtr onProjectSaveCB;
+    KnobStringPtr onProjectCloseCB;
+    KnobStringPtr onNodeCreated;
+    KnobStringPtr onNodeDeleted;
+    TimeLinePtr timeline; // global timeline
     bool autoSetProjectFormat;
     mutable QMutex isLoadingProjectMutex;
+    SERIALIZATION_NAMESPACE::ProjectSerializationPtr lastProjectLoaded;
     bool isLoadingProject; //< true when the project is loading
     bool isLoadingProjectInternal; //< true when loading the internal project (not gui)
     mutable QMutex isSavingProjectMutex;
@@ -109,10 +109,11 @@ public:
     bool projectClosing;
     boost::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
 
+
     // only used on the main-thread
     struct RenderWatcher
     {
-        boost::shared_ptr<NodeRenderWatcher> watcher;
+        NodeRenderWatcherPtr watcher;
         AfterQuitProcessingI* receiver;
     };
 
@@ -120,8 +121,7 @@ public:
 
     ProjectPrivate(Project* project);
 
-    bool restoreFromSerialization(const ProjectSerialization & obj, const QString& name, const QString& path, bool* mustSave);
-
+        
     bool findFormat(int index, Format* format) const;
     bool findFormat(const std::string& formatSpec, Format* format) const;
     /**

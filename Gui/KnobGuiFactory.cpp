@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -50,6 +50,7 @@
 #include "Gui/KnobGuiBool.h"
 #include "Gui/KnobGuiParametric.h"
 #include "Gui/DockablePanel.h"
+#include "Gui/KnobGuiKeyFrameMarkers.h"
 
 NATRON_NAMESPACE_ENTER
 using std::make_pair;
@@ -59,9 +60,8 @@ using std::pair;
 /*Class inheriting KnobGui, must have a function named BuildKnobGui with the following signature.
    This function should in turn call a specific class-based static function with the appropriate param.*/
 typedef KnobHelper *(*KnobBuilder)(KnobHolder  *holder, const std::string &description, int dimension);
-typedef KnobGui *(*KnobGuiBuilder)(KnobPtr knob, KnobGuiContainerI* panel);
+typedef KnobGuiWidgets *(*KnobGuiBuilder)(const KnobGuiPtr& knob, ViewIdx view);
 
-/***********************************FACTORY******************************************/
 KnobGuiFactory::KnobGuiFactory()
 {
     loadBultinKnobs();
@@ -80,7 +80,7 @@ static std::pair<std::string, LibraryBinary *>
 knobGuiFactoryEntry()
 {
     std::string stub;
-    boost::scoped_ptr<KnobHelper> knob( K::BuildKnob(NULL, stub, 1) );
+    KnobHelperPtr knob( K::create(KnobHolderPtr(), stub, 1) );
     std::map<std::string, void (*)()> functions;
 
     functions.insert( make_pair("BuildKnobGui", ( void (*)() ) & KG::BuildKnobGui) );
@@ -97,7 +97,6 @@ KnobGuiFactory::loadBultinKnobs()
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobDouble, KnobGuiDouble>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobBool, KnobGuiBool>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobButton, KnobGuiButton>() );
-    _loadedKnobs.insert( knobGuiFactoryEntry<KnobOutputFile, KnobGuiOutputFile>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobChoice, KnobGuiChoice>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobSeparator, KnobGuiSeparator>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobGroup, KnobGuiGroup>() );
@@ -107,14 +106,14 @@ KnobGuiFactory::loadBultinKnobs()
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobParametric, KnobGuiParametric>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobPath, KnobGuiPath>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobLayers, KnobGuiLayers>() );
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobKeyFrameMarkers, KnobGuiKeyFrameMarkers>() );
 }
 
-KnobGui *
-KnobGuiFactory::createGuiForKnob(KnobPtr knob,
-                                 KnobGuiContainerI *container) const
+KnobGuiWidgets *
+KnobGuiFactory::createGuiForKnob(const KnobGuiPtr& knob, ViewIdx view) const
 {
     assert(knob);
-    std::map<std::string, LibraryBinary *>::const_iterator it = _loadedKnobs.find( knob->typeName() );
+    std::map<std::string, LibraryBinary *>::const_iterator it = _loadedKnobs.find( knob->getKnob()->typeName() );
     if ( it == _loadedKnobs.end() ) {
         return NULL;
     } else {
@@ -124,7 +123,7 @@ KnobGuiFactory::createGuiForKnob(KnobPtr knob,
         }
         KnobGuiBuilder guiBuilder = (KnobGuiBuilder)(guiBuilderFunc.second);
 
-        return guiBuilder(knob, container);
+        return guiBuilder(knob, view);
     }
 }
 

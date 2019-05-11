@@ -38,8 +38,8 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     #GCC_VERSION=4.9
     #GCC_VERSION=5
     #GCC_VERSION=6
-    GCC_VERSION=7
-    #GCC_VERSION=8
+    #GCC_VERSION=7
+    GCC_VERSION=8
     PKGS=
     # Natron requires boost >= 1.49 to compile in C++11 mode
     # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
@@ -57,7 +57,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         BOOSTVER=1.55
         sudo add-apt-repository -y ppa:kalakris-cmake
     fi
-    PKGS="$PKGS libboost${BOOSTVER}-dev libboost-math${BOOSTVER}-dev libboost-serialization${BOOSTVER}-dev"
+    PKGS="$PKGS libboost${BOOSTVER}-dev libboost-math${BOOSTVER}-dev libboost-serialization${BOOSTVER}-dev libboost-thread${BOOSTVER}-dev libboost-system${BOOSTVER}-dev"
 
     # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
     sudo add-apt-repository -y ppa:xorg-edgers/ppa
@@ -133,7 +133,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     sudo apt-get update -qq
     # -f, --fix-broken
     # -m, --ignore-missing, --fix-missing
-    sudo apt-get install -fm $PKGS
+    sudo apt-get install -y --allow-unauthenticated -fm $PKGS
 
 
     
@@ -217,7 +217,8 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 
     # config.pri
     # Ubuntu 12.04 precise doesn't have a pkg-config file for expat (expat.pc)
-    echo 'boost: LIBS += -lboost_serialization' > config.pri
+    echo 'boost: LIBS += -lboost_thread -lboost_system' > config.pri
+    echo 'boost-serialization-lib: LIBS += -lboost_serialization' >> config.pri
     echo 'expat: LIBS += -lexpat' >> config.pri
     echo 'expat: PKGCONFIG -= expat' >> config.pri
     # pyside and shiboken for python3 cannot be configured with pkg-config on Ubuntu 12.04LTS Precise
@@ -282,6 +283,15 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #echo "* Brew update"
     #brew update >/dev/null
     brew --config
+
+    # avoid error:
+    #Error: The `brew link` step did not complete successfully
+    #The formula built, but is not symlinked into /usr/local
+    #Could not symlink bin/f2py
+    # (see https://travis-ci.org/NatronGitHub/Natron/jobs/504468941)
+    brew install numpy || true
+    brew link --overwrite numpy || true
+    
     brew outdated xctool || brew upgrade xctool || true
     echo "* Adding brew taps"
     #brew tap homebrew/python # deprecated
@@ -325,8 +335,6 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # Natron's dependencies only
     # install qt-webkit@2.3 if needed
     brew install qt@4 expat cairo gnu-sed glew
-    brew install numpy || true
-    brew link --overwrite numpy || true
     brew install boost
     # pyside/shiboken with python3 support take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
     #brew install pyside --with-python3 --without-python &
@@ -355,7 +363,9 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
         fi
     fi
 
-    PATH=/usr/local/bin:"$PATH"
+    # ccache doesn't seem to speed up things that much
+    #brew install ccache
+    #PATH=/usr/local/opt/ccache/libexec:/usr/local/bin:"$PATH"
     echo "*** Path: $PATH"
     ls -l /usr/local/bin/python2
     echo "*** Python 2 version:"
@@ -392,7 +402,8 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     echo "End dependencies installation."
     # config.pri
     echo 'boost: INCLUDEPATH += /usr/local/include' > config.pri
-    echo 'boost: LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt' >> config.pri
+    echo 'boost: LIBS += -L/usr/local/lib -lboost_thread-mt -lboost_system-mt' >> config.pri
+    echo 'boost-serialization-lib: LIBS += -L/usr/local/lib -lboost_serialization-mt' >> config.pri
     echo 'expat: PKGCONFIG -= expat' >> config.pri
     echo 'expat: INCLUDEPATH += /usr/local/opt/expat/include' >> config.pri
     echo 'expat: LIBS += -L/usr/local/opt/expat/lib -lexpat' >> config.pri

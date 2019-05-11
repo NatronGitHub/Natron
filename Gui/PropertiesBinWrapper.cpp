@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,18 +27,23 @@
 #include <stdexcept>
 
 #include <QApplication>
+#include <QMouseEvent>
 
 #include "Gui/DockablePanel.h"
 #include "Gui/Gui.h"
 #include "Gui/KnobWidgetDnD.h"
 #include "Gui/RightClickableWidget.h"
+#include "Gui/GuiDefines.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/TabWidget.h"
 
 NATRON_NAMESPACE_ENTER
 
-PropertiesBinWrapper::PropertiesBinWrapper(Gui* parent)
+PropertiesBinWrapper::PropertiesBinWrapper(const std::string& scriptName, Gui* parent)
     : QWidget(parent)
-    , PanelWidget(this, parent)
+    , PanelWidget(scriptName, this, parent)
 {
+    setMouseTracking(true);
 }
 
 PropertiesBinWrapper::~PropertiesBinWrapper()
@@ -50,6 +55,20 @@ PropertiesBinWrapper::mousePressEvent(QMouseEvent* e)
 {
     takeClickFocus();
     QWidget::mousePressEvent(e);
+}
+
+void
+PropertiesBinWrapper::mouseMoveEvent(QMouseEvent* e)
+{
+    TabWidget* tab = getParentPane() ;
+    if (tab) {
+        // If the Viewer is in a tab, send the tab widget the event directly
+        qApp->sendEvent(tab, e);
+    } else {
+        QWidget::mouseMoveEvent(e);
+    }
+
+    
 }
 
 void
@@ -79,19 +98,30 @@ PropertiesBinWrapper::keyReleaseEvent(QKeyEvent* e)
     QWidget::keyReleaseEvent(e);
 }
 
-QUndoStack*
+boost::shared_ptr<QUndoStack>
 PropertiesBinWrapper::getUndoStack() const
 {
     QWidget* w = qApp->widgetAt( QCursor::pos() );
     RightClickableWidget* panel = RightClickableWidget::isParentSettingsPanelRecursive(w);
 
     if (panel) {
-        boost::shared_ptr<QUndoStack> stack = panel->getPanel()->getUndoStack();
+        QUndoStackPtr stack = panel->getPanel()->getUndoStack();
 
-        return stack.get();
+        return stack;
     }
 
-    return 0;
+    return boost::shared_ptr<QUndoStack>();
 }
+
+
+QIcon
+PropertiesBinWrapper::getIcon() const
+{
+    int iconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+    QPixmap p;
+    appPTR->getIcon(NATRON_PIXMAP_PROPERTIES_PANEL, iconSize, &p);
+    return QIcon(p);
+}
+
 
 NATRON_NAMESPACE_EXIT

@@ -1,0 +1,120 @@
+# Natron Presets File
+PluginID: fr.inria.built-in.Group
+Params:
+  - Name: pyPlugPluginID
+    String: fr.inria.ZRemap
+  - Name: pyPlugPluginLabel
+    String: ZRemap
+  - Name: pyPlugPluginGrouping
+    String: Filter
+  - Name: pyPlugPluginDescription
+    String: Remap Z-Depth pass according to a close limit value and a far limit
+  - Name: pyPlugPluginVersion
+    Int: [1, 0]
+  - Name: pyPlugPluginIcon
+    String: ZRemap.png
+UserPages:
+  - TypeName: Page
+    Name: controls
+    Label: Controls
+    Params:
+      - Name: zPicking
+        DefaultBool: false
+        NDims: 1
+        TypeName: Bool
+        Label: Z Picking mode
+      - Name: closeLimit
+        DefaultFloat: [0, 0, 0, 0]
+        NDims: 4
+        TypeName: Color
+        Label: Close Limit
+        Hint: Define the Z value remapped to white.
+        Min: -1.79769e+308
+        Max: 1.79769e+308
+        DisplayMin: 0
+        DisplayMax: 100
+      - Name: farLimit
+        DefaultFloat: [100, 100, 100, 100]
+        NDims: 4
+        TypeName: Color
+        Label: Far Limit
+        Hint: Define the Z value remapped to black.
+        Min: -1.79769e+308
+        Max: 1.79769e+308
+        DisplayMin: 0
+        DisplayMax: 100
+      - Name: gamma
+        DefaultFloat: [1, 1, 1, 1]
+        NDims: 4
+        TypeName: Color
+        Label: Gamma
+        Min: -1.79769e+308
+        Max: 1.79769e+308
+        DisplayMin: 0.2
+        DisplayMax: 5
+      - Name: invertGradient
+        DefaultBool: false
+        NDims: 1
+        TypeName: Bool
+        Label: Invert Gradient
+      - Name: Source_channels
+        DefaultString: uk.co.thefoundry.OfxImagePlaneColour
+        NDims: 1
+        TypeName: Choice
+        Label: Source Layer
+        Entries: [None, uk.co.thefoundry.OfxImagePlaneColour]
+      - Name: channels
+        DefaultString: uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft
+        NDims: 1
+        TypeName: Choice
+        Label: Output Layer
+        Entries: [uk.co.thefoundry.OfxImagePlaneColour, uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft, uk.co.thefoundry.OfxImagePlaneStereoDisparityRight, uk.co.thefoundry.OfxImagePlaneBackMotionVector, uk.co.thefoundry.OfxImagePlaneForwardMotionVector]
+PagesOrder: [controls, nodePage, pyPlugPage]
+Children:
+  - PluginID: net.sf.openfx.GradePlugin
+    Name: Grade1
+    Version: [2, 0]
+    Inputs: InputSource
+    Params:
+      - Name: blackPoint
+        Float: [{N: "@thisGroup", K: closeLimit, D: r}, {N: "@thisGroup", K: closeLimit, D: g}, {N: "@thisGroup", K: closeLimit, D: b}, {N: "@thisGroup", K: closeLimit, D: a}]
+      - Name: whitePoint
+        Float: [{N: "@thisGroup", K: farLimit, D: r}, {N: "@thisGroup", K: farLimit, D: g}, {N: "@thisGroup", K: farLimit, D: b}, {N: "@thisGroup", K: farLimit, D: a}]
+      - Name: gamma
+        Float: [{N: "@thisGroup", K: gamma, D: r}, {N: "@thisGroup", K: gamma, D: g}, {N: "@thisGroup", K: gamma, D: b}, {N: "@thisGroup", K: gamma, D: a}]
+      - Name: premultChanged
+        Bool: true
+      - Name: Source_channels
+        String: {N: "@thisGroup", K: Source_channels}
+      - Name: enableMask_Mask
+        Bool: true
+    Pos: [726, 92]
+  - PluginID: net.sf.openfx.Invert
+    Name: Invert1
+    Version: [2, 0]
+    Inputs: Grade1
+    Params:
+      - Name: premultChanged
+        Bool: true
+      - Name: channels
+        String: {N: "@thisGroup", K: channels}
+      - Name: disableNode
+        Bool: {N: "@thisGroup", K: invertGradient}
+    Pos: [726, 230]
+  - PluginID: fr.inria.built-in.Output
+    Name: Output
+    Label: Output1
+    Inputs: Switch1
+    Pos: [882, 496]
+  - PluginID: fr.inria.built-in.Input
+    Name: InputSource
+    Pos: [882, -40]
+  - PluginID: net.sf.openfx.switchPlugin
+    Name: Switch1
+    Inputs: {0: Invert1, 1: InputSource}
+    Params:
+      - Name: which
+        Int: {pyExpr: thisGroup.zPicking.get()}
+      - Name: p1_channels
+        String: {pyExpr: thisGroup.Source_channels.get()}
+    Pos: [882, 381]

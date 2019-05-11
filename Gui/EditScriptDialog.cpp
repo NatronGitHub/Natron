@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -55,7 +55,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/Curve.h"
 #include "Engine/KnobFile.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Node.h"
@@ -69,7 +68,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Gui/Button.h"
 #include "Gui/ComboBox.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveGui.h"
 #include "Gui/CustomParamInteract.h"
 #include "Gui/DialogButtonBox.h"
@@ -78,6 +76,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiGroup.h"
+#include "Gui/KnobGui.h"
+#include "Gui/KnobGuiContainerHelper.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Menu.h"
@@ -97,77 +97,130 @@ NATRON_NAMESPACE_ENTER
 
 struct EditScriptDialogPrivate
 {
+    EditScriptDialog* _publicInterface;
     Gui* gui;
+    KnobGuiWPtr knobExpressionReceiver;
+    DimSpec knobDimension;
+    ViewSetSpec knobView;
     QVBoxLayout* mainLayout;
     Label* expressionLabel;
     InputScriptTextEdit* expressionEdit;
     QWidget* midButtonsContainer;
     QHBoxLayout* midButtonsLayout;
+    Label* languageLabel;
+    ComboBox* expressionType;
     Button* useRetButton;
-    Button* helpButton;
     Label* resultLabel;
     OutputScriptTextEdit* resultEdit;
     DialogButtonBox* buttons;
 
-    EditScriptDialogPrivate(Gui* gui)
-        : gui(gui)
-        , mainLayout(0)
-        , expressionLabel(0)
-        , expressionEdit(0)
-        , midButtonsContainer(0)
-        , midButtonsLayout(0)
-        , useRetButton(0)
-        , helpButton(0)
-        , resultLabel(0)
-        , resultEdit(0)
-        , buttons(0)
+    EditScriptDialogPrivate(EditScriptDialog* publicInterface,
+                            Gui* gui,
+                            const KnobGuiPtr& knobExpressionReceiver,
+                            DimSpec knobDimension,
+                            ViewSetSpec knobView)
+    : _publicInterface(publicInterface)
+    , gui(gui)
+    , knobExpressionReceiver(knobExpressionReceiver)
+    , knobDimension(knobDimension)
+    , knobView(knobView)
+    , mainLayout(0)
+    , expressionLabel(0)
+    , expressionEdit(0)
+    , midButtonsContainer(0)
+    , midButtonsLayout(0)
+    , languageLabel(0)
+    , expressionType(0)
+    , useRetButton(0)
+    , resultLabel(0)
+    , resultEdit(0)
+    , buttons(0)
     {
     }
+
+    ExpressionLanguageEnum getSelectedLanguage() const
+    {
+        return expressionType->activeIndex() == 0 ? eExpressionLanguageExprTk : eExpressionLanguagePython;
+    }
+
+    void refreshHeaderLabel(ExpressionLanguageEnum language);
+
+    void refreshVisibility(ExpressionLanguageEnum language);
+
+    void refreshUIForLanguage();
 };
 
 EditScriptDialog::EditScriptDialog(Gui* gui,
+                                   const KnobGuiPtr& knobExpressionReceiver,
+                                   DimSpec knobDimension,
+                                   ViewSetSpec knobView,
                                    QWidget* parent)
     : QDialog(parent)
-    , _imp( new EditScriptDialogPrivate(gui) )
+    , _imp( new EditScriptDialogPrivate(this, gui, knobExpressionReceiver, knobDimension, knobView) )
 {
     setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
 }
 
 void
-EditScriptDialog::create(const QString& initialScript,
-                         bool makeUseRetButton)
+EditScriptDialogPrivate::refreshHeaderLabel(ExpressionLanguageEnum language)
+{
+
+
+
+    QString labelHtml;
+    switch (language) {
+        case eExpressionLanguagePython: {
+            labelHtml +=  EditScriptDialog::tr("%1 script:").arg( QString::fromUtf8("<b>Python</b>") ) + QString::fromUtf8("<br />");
+        }   break;
+        case eExpressionLanguageExprTk: {
+            labelHtml +=  EditScriptDialog::tr("%1 script:").arg( QString::fromUtf8("<b>ExprTk</b>") ) + QString::fromUtf8("<br />");
+        }   break;
+    }
+
+    labelHtml.append( QString::fromUtf8("<p>") +
+                      EditScriptDialog::tr("Read the <a href=\"%1\">documentation</a> for more information on how to write expressions.").arg( QString::fromUtf8("http://natron.readthedocs.io/en/master/guide/compositing-exprs.html") ) +
+                      QString::fromUtf8("</p>") );
+    QKeySequence s(Qt::CTRL);
+    labelHtml.append( QString::fromUtf8("<p>") +
+                      EditScriptDialog::tr("Note that parameters can be referenced by dragging and dropping while holding %1 on their widget").arg( s.toString(QKeySequence::NativeText) ) +
+                      QString::fromUtf8("</p>") );
+
+
+    expressionLabel->setText(labelHtml);
+}
+
+void
+EditScriptDialogPrivate::refreshUIForLanguage()
+{
+    ExpressionLanguageEnum language = getSelectedLanguage();
+    refreshHeaderLabel(language);
+    refreshVisibility(language);
+
+    knobExpressionReceiver.lock()->getContainer()->getGui()->setEditExpressionDialogLanguage(language);
+    knobExpressionReceiver.lock()->getContainer()->getGui()->setEditExpressionDialogLanguageValid(true);
+}
+
+void
+EditScriptDialogPrivate::refreshVisibility(ExpressionLanguageEnum language)
+{
+    useRetButton->setVisible(language == eExpressionLanguagePython);
+}
+
+void
+EditScriptDialog::create(ExpressionLanguageEnum language,
+                         const QString& initialScript)
 {
     setTitle();
 
     _imp->mainLayout = new QVBoxLayout(this);
 
-    QStringList modules;
-    getImportedModules(modules);
-    std::list<std::pair<QString, QString> > variables;
-    getDeclaredVariables(variables);
-    QString labelHtml( tr("%1 script:").arg( QString::fromUtf8("<b>Python</b>") ) + QString::fromUtf8("<br />") );
-    if ( !modules.empty() ) {
-        labelHtml.append( tr("For convenience, the following module(s) have been imported:") + QString::fromUtf8("<br />") );
-        for (int i = 0; i < modules.size(); ++i) {
-            QString toAppend = QString::fromUtf8("<i><font color=orange>from %1 import *</font></i><br />").arg(modules[i]);
-            labelHtml.append(toAppend);
-        }
-        labelHtml.append( QString::fromUtf8("<br />") );
-    }
-    if ( !variables.empty() ) {
-        labelHtml.append( tr("Also the following variables have been declared:") + QString::fromUtf8("<br />") );
-        for (std::list<std::pair<QString, QString> > ::iterator it = variables.begin(); it != variables.end(); ++it) {
-            QString toAppend = QString::fromUtf8("<b>%1</b>: %2<br />").arg(it->first).arg(it->second);
-            labelHtml.append(toAppend);
-        }
-        QKeySequence s(Qt::CTRL);
-        labelHtml.append( QString::fromUtf8("<p>") + tr("Note that parameters can be referenced by drag'n'dropping while holding %1 on their widget").arg( s.toString(QKeySequence::NativeText) ) + QString::fromUtf8("</p>") );
-    }
 
-    _imp->expressionLabel = new Label(labelHtml, this);
+
+    _imp->expressionLabel = new Label(QString(), this);
+    _imp->expressionLabel->setOpenExternalLinks(true);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
 
-    _imp->expressionEdit = new InputScriptTextEdit(_imp->gui, this);
+    _imp->expressionEdit = new InputScriptTextEdit(_imp->gui, _imp->knobExpressionReceiver.lock(), _imp->knobDimension, _imp->knobView, this);
     _imp->expressionEdit->setAcceptDrops(true);
     _imp->expressionEdit->setMouseTracking(true);
     _imp->mainLayout->addWidget(_imp->expressionEdit);
@@ -176,8 +229,22 @@ EditScriptDialog::create(const QString& initialScript,
     _imp->midButtonsContainer = new QWidget(this);
     _imp->midButtonsLayout = new QHBoxLayout(_imp->midButtonsContainer);
 
+    QString langTooltip = NATRON_NAMESPACE::convertFromPlainText(tr("Select the language used by this expression. ExprTk-based expressions are very simple and extremely fast expressions but a bit more constrained than "
+                                                                    "Python-based expressions which allow all the flexibility of the Python A.P.I to the expense of being a lot more expensive to evaluate."), NATRON_NAMESPACE::WhiteSpaceNormal);
 
-    if (makeUseRetButton) {
+    _imp->languageLabel = new Label(tr("Language:"), _imp->midButtonsContainer);
+    _imp->languageLabel->setToolTip(langTooltip);
+    _imp->midButtonsLayout->addWidget(_imp->languageLabel);
+
+    _imp->expressionType = new ComboBox(_imp->midButtonsContainer);
+    _imp->expressionType->addItem(tr("ExprTk"));
+    _imp->expressionType->addItem(tr("Python"));
+    connect(_imp->expressionType, SIGNAL(currentIndexChanged(int)), this, SLOT(onLanguageCurrentIndexChanged()));
+    _imp->expressionType->setCurrentIndex(language == eExpressionLanguagePython ? 1 : 0, false);
+    _imp->expressionType->setToolTip(langTooltip);
+    _imp->midButtonsLayout->addWidget(_imp->expressionType);
+
+    {
         bool retVariable = hasRetVariable();
         _imp->useRetButton = new Button(tr("Multi-line"), _imp->midButtonsContainer);
         _imp->useRetButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("When checked the Python expression will be interpreted "
@@ -192,13 +259,7 @@ EditScriptDialog::create(const QString& initialScript,
         QObject::connect( _imp->useRetButton, SIGNAL(clicked(bool)), this, SLOT(onUseRetButtonClicked(bool)) );
         _imp->midButtonsLayout->addWidget(_imp->useRetButton);
     }
-
-
-    _imp->helpButton = new Button(tr("Help"), _imp->midButtonsContainer);
-    QObject::connect( _imp->helpButton, SIGNAL(clicked(bool)), this, SLOT(onHelpRequested()) );
-    _imp->midButtonsLayout->addWidget(_imp->helpButton);
     _imp->midButtonsLayout->addStretch();
-
     _imp->mainLayout->addWidget(_imp->midButtonsContainer);
 
     _imp->resultLabel = new Label(tr("Result:"), this);
@@ -212,8 +273,8 @@ EditScriptDialog::create(const QString& initialScript,
 
     _imp->buttons = new DialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
     _imp->mainLayout->addWidget(_imp->buttons);
-    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
-    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
+    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(onAcceptedPressed()) );
+    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(onRejectedPressed()) );
 
     if ( !initialScript.isEmpty() ) {
         compileAndSetResult(initialScript);
@@ -230,95 +291,37 @@ EditScriptDialog::create(const QString& initialScript,
     }
     QFontMetrics fm = _imp->expressionEdit->fontMetrics();
     _imp->expressionEdit->setTabStopWidth( 4 * fm.width( QLatin1Char(' ') ) );
+
+    _imp->refreshUIForLanguage();
 } // EditScriptDialog::create
 
 void
 EditScriptDialog::compileAndSetResult(const QString& script)
 {
-    QString ret = compileExpression(script);
+    QString ret = compileExpression(script, getSelectedLanguage());
 
     _imp->resultEdit->setPlainText(ret);
 }
 
-QString
-EditScriptDialog::getHelpPart1()
-{
-    return tr("<p>Each node in the scope already has a variable declared with its name, e.g if you have a node named "
-              "<b>Transform1</b> in your project, then you can type <i>Transform1</i> to reference that node.<br />"
-              "Note that the scope includes all nodes within the same group as thisNode and the parent group node itself, "
-              "if the node belongs to a group. If the node itself is a group, then it can also have expressions depending "
-              "on parameters of its children.</p>"
-              "<p>Each node has all its parameters declared as fields and you can reference a specific parameter by typing it's <b>script name</b>, e.g:<br />"
-              "Transform1.rotate</p>"
-              "<p>The script-name of a parameter is the name in bold that is shown in the tooltip when hovering a parameter with the mouse, this is what "
-              "identifies a parameter internally.</p>");
-}
 
 QString
-EditScriptDialog::getHelpThisNodeVariable()
+EditScriptDialog::getScript() const
 {
-    return tr("<p>The current node which expression is being edited can be referenced by the variable <i>thisNode</i> for convenience.</p>");
-}
-
-QString
-EditScriptDialog::getHelpThisGroupVariable()
-{
-    return tr("<p>The parent group containing the thisNode can be referenced by the variable <i>thisGroup</i> for convenience, if and "
-              "only if thisNode belongs to a group.</p>");
-}
-
-QString
-EditScriptDialog::getHelpThisParamVariable()
-{
-    return tr("<p>The <i>thisParam</i> variable has been defined for convenience when editing an expression. It refers to the current parameter.</p>");
-}
-
-QString
-EditScriptDialog::getHelpDimensionVariable()
-{
-    return tr("<p>In the same way the <i>dimension</i> variable has been defined and references the current dimension of the parameter which expression is being set"
-              ".</p>"
-              "<p>The <i>dimension</i> is a 0-based index identifying a specific field of a parameter. For instance if we're editing the expression of the y "
-              "field of the translate parameter of Transform1, the <i>dimension</i> would be 1. </p>");
-}
-
-QString
-EditScriptDialog::getHelpPart2()
-{
-    return tr("<p>To access values of a parameter several functions are made accessible: </p>"
-              "<br />"
-              "<p>The <b>get()</b> function will return a Tuple containing all the values for each dimension of the parameter. For instance "
-              "let's say we have a node Transform1 in our comp, we could then reference the x value of the <i>center</i> parameter this way:</p>"
-              "<br />"
-              "<p>Transform1.center.get().x</p>"
-              "<br />"
-              "<p>The <b>get(</b><i>frame</i><b>)</b> works exactly like the <b>get()</b> function excepts that it takes an extra "
-              "<i>frame</i> parameter corresponding to the time at which we want to fetch the value. For parameters with an animation "
-              "it would then return their value at the corresponding timeline position. That value would then be either interpolated "
-              "with the current interpolation filter, or the exact keyframe at that time if one exists.</p>");
-}
-
-void
-EditScriptDialog::onHelpRequested()
-{
-    QString help = getCustomHelp();
-    Dialogs::informationDialog(tr("Help").toStdString(), help.toStdString(), true);
-}
-
-QString
-EditScriptDialog::getExpression(bool* hasRetVariable) const
-{
-    if (hasRetVariable) {
-        *hasRetVariable = _imp->useRetButton ? _imp->useRetButton->isChecked() : false;
-    }
-
     return _imp->expressionEdit->toPlainText();
+
 }
+
+ExpressionLanguageEnum
+EditScriptDialog::getSelectedLanguage() const
+{
+    return _imp->getSelectedLanguage();
+}
+
 
 bool
 EditScriptDialog::isUseRetButtonChecked() const
 {
-    return _imp->useRetButton->isChecked();
+    return _imp->useRetButton && _imp->useRetButton->isVisible() ? _imp->useRetButton->isChecked() : false;
 }
 
 void
@@ -336,21 +339,36 @@ EditScriptDialog::onUseRetButtonClicked(bool useRet)
 
 EditScriptDialog::~EditScriptDialog()
 {
+    KnobGuiPtr k = _imp->knobExpressionReceiver.lock();
+    if (k) {
+        k->getContainer()->getGui()->setEditExpressionDialogLanguageValid(false);
+    }
+
 }
 
 void
 EditScriptDialog::keyPressEvent(QKeyEvent* e)
 {
     if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
-        accept();
+        Q_EMIT dialogFinished(true);
     } else if (e->key() == Qt::Key_Escape) {
-        reject();
+        Q_EMIT dialogFinished(false);
     } else {
         QDialog::keyPressEvent(e);
     }
 }
 
+
+void
+EditScriptDialog::onLanguageCurrentIndexChanged()
+{
+    _imp->refreshUIForLanguage();
+    compileAndSetResult( _imp->expressionEdit->toPlainText() );
+}
+
+
 NATRON_NAMESPACE_EXIT
+
 
 NATRON_NAMESPACE_USING
 #include "moc_EditScriptDialog.cpp"

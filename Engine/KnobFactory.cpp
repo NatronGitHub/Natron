@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -42,11 +42,10 @@ NATRON_NAMESPACE_ENTER
 //using std::pair;
 
 
-/*Class inheriting Knob and KnobGui, must have a function named BuildKnob and BuildKnobGui with the following signature.
-   This function should in turn call a specific class-based static function with the appropriate param.*/
-typedef KnobHelper* (*KnobBuilder)(KnobHolder* holder, const std::string &label, int dimension, bool declaredByPlugin);
 
-/***********************************FACTORY******************************************/
+typedef KnobHelperPtr (*KnobBuilder)(const KnobHolderPtr& holder, const std::string &scriptName, int dimension);
+typedef KnobHelperPtr (*KnobRenderCloneBuilder)(const KnobHolderPtr& holder, const KnobIPtr& mainInstance);
+
 KnobFactory::KnobFactory()
 {
     loadBultinKnobs();
@@ -65,10 +64,10 @@ static std::pair<std::string, LibraryBinary *>
 knobFactoryEntry()
 {
     std::string stub;
-    //boost::shared_ptr<KnobHelper> knob( K::BuildKnob(NULL, stub, 1) );
+    //KnobHelperPtr knob( K::BuildKnob(NULL, stub, 1) );
     std::map<std::string, void (*)()> functions;
-
-    functions.insert( std::make_pair("BuildKnob", ( void (*)() ) & K::BuildKnob) );
+    functions.insert( std::make_pair("create", ( void (*)() ) (KnobBuilder)K::create) );
+    functions.insert( std::make_pair("createRenderClone", ( void (*)() )K::createRenderClone) );
     LibraryBinary *knobPlugin = new LibraryBinary(functions);
 
     return make_pair(K::typeNameStatic(), knobPlugin);
@@ -82,7 +81,6 @@ KnobFactory::loadBultinKnobs()
     _loadedKnobs.insert( knobFactoryEntry<KnobDouble>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobBool>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobButton>() );
-    _loadedKnobs.insert( knobFactoryEntry<KnobOutputFile>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobChoice>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobSeparator>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobGroup>() );
@@ -92,35 +90,87 @@ KnobFactory::loadBultinKnobs()
     _loadedKnobs.insert( knobFactoryEntry<KnobPath>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobPage>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobLayers>() );
+    _loadedKnobs.insert( knobFactoryEntry<KnobKeyFrameMarkers>() );
 }
 
-boost::shared_ptr<KnobHelper> KnobFactory::createKnob(const std::string &id,
-                                                      KnobHolder*  holder,
-                                                      const std::string &label,
-                                                      int dimension,
-                                                      bool declaredByPlugin) const
+KnobIPtr
+KnobFactory::getHolderKnob(const KnobHolderPtr& holder,
+                           const std::string& scriptName) const
+{
+    return holder->getKnobByName(scriptName);
+}
+
+KnobHelperPtr
+KnobFactory::createRenderCloneKnob(const KnobIPtr& mainInstanceKnob, const KnobHolderPtr& holder) const
+{
+    std::map<std::string, LibraryBinary *>::const_iterator it = _loadedKnobs.find(mainInstanceKnob->typeName());
+
+    if ( it == _loadedKnobs.end() ) {
+        return KnobHelperPtr();
+    }
+    std::pair<bool, KnobRenderCloneBuilder> builderFunc = it->second->findFunction<KnobRenderCloneBuilder>("createRenderClone");
+    if (!builderFunc.first) {
+        return KnobHelperPtr();
+    }
+
+
+    // If the knob does not evaluate on change, do not copy it anyway since the value is irrelevant to the render.
+    if (!mainInstanceKnob->getEvaluateOnChange()) {
+        KnobHelperPtr mainInstance = toKnobHelper(mainInstanceKnob);
+        mainInstance->setActualCloneForHolder(holder);
+        holder->addKnob(mainInstanceKnob);
+        return mainInstance;
+    }
+
+    KnobRenderCloneBuilder builder = (KnobRenderCloneBuilder)(builderFunc.second);
+    KnobHelperPtr knob = ( builder(holder, mainInstanceKnob) );
+    if (!knob) {
+        KnobHelperPtr();
+    }
+    knob->populate();
+
+
+    if (holder) {
+        holder->addKnob(knob);
+    }
+    return knob;
+
+} // createRenderCloneKnob
+
+KnobHelperPtr KnobFactory::createKnob(const std::string &id,
+                                      const KnobHolderPtr& holder,
+                                      const std::string &name,
+                                      int dimension) const
 {
     std::map<std::string, LibraryBinary *>::const_iterator it = _loadedKnobs.find(id);
 
     if ( it == _loadedKnobs.end() ) {
-        return boost::shared_ptr<KnobHelper>();
-    } else {
-        std::pair<bool, KnobBuilder> builderFunc = it->second->findFunction<KnobBuilder>("BuildKnob");
-        if (!builderFunc.first) {
-            return boost::shared_ptr<KnobHelper>();
-        }
-        KnobBuilder builder = (KnobBuilder)(builderFunc.second);
-        boost::shared_ptr<KnobHelper> knob( builder(holder, label, dimension, declaredByPlugin) );
-        if (!knob) {
-            boost::shared_ptr<KnobHelper>();
-        }
-        knob->populate();
-        if (holder) {
-            holder->addKnob(knob);
-        }
-
-        return knob;
+        return KnobHelperPtr();
     }
+
+    KnobHelperPtr knob;
+
+    std::pair<bool, KnobBuilder> builderFunc = it->second->findFunction<KnobBuilder>("create");
+    if (!builderFunc.first) {
+        return KnobHelperPtr();
+    }
+
+    KnobBuilder builder = (KnobBuilder)(builderFunc.second);
+    knob = ( builder(holder, name, dimension) );
+    if (!knob) {
+        KnobHelperPtr();
+    }
+    knob->setName(name);
+
+
+    knob->populate();
+
+
+    if (holder) {
+        holder->addKnob(knob);
+    }
+
+    return knob;
 }
 
 NATRON_NAMESPACE_EXIT

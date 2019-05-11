@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,111 +28,25 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Image.h"
+#include "Engine/ImageCacheKey.h"
+#include "Engine/ImageCacheEntryProcessing.h"
+#include "Engine/CacheEntryKeyBase.h"
 #include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_USING
 
-TEST(BitmapTest,
-     SimpleRect)
-{
-    RectI rod(0, 0, 100, 100);
-    Bitmap bm(rod);
-
-    ///assert that the union of all the non rendered rects is the rod
-    std::list<RectI> nonRenderedRects;
-
-    bm.minimalNonMarkedRects(rod, nonRenderedRects);
-    RectI nonRenderedRectsUnion;
-
-    for (std::list<RectI>::iterator it = nonRenderedRects.begin(); it != nonRenderedRects.end(); ++it) {
-        nonRenderedRectsUnion.merge(*it);
-    }
-
-    ASSERT_TRUE(rod == nonRenderedRectsUnion);
-
-    ///assert that the "underlying" bitmap is clean
-    const char* map = bm.getBitmap();
-    ASSERT_TRUE( !std::memchr( map, 1, rod.area() ) );
-    ASSERT_TRUE( bm.isNonMarked(rod) );
-
-    RectI halfRoD(0, 0, 100, 50);
-    bm.markForRendered(halfRoD);
-
-    ///assert that non of the rendered rects interesect the non rendered half
-    RectI nonRenderedHalf(0, 50, 100, 100);
-    nonRenderedRects.clear();
-    bm.minimalNonMarkedRects(rod, nonRenderedRects);
-    for (std::list<RectI>::iterator it = nonRenderedRects.begin(); it != nonRenderedRects.end(); ++it) {
-        ASSERT_TRUE( (*it).intersects(nonRenderedHalf) );
-    }
-
-
-    ///assert that the underlying bitmap is marked as expected
-    const char* start = map;
-
-    ///check that there are only ones in the rendered half
-    ASSERT_TRUE( !memchr( start, 0, halfRoD.area() ) );
-
-    ///check that there are only 0s in the non rendered half
-    start = map + halfRoD.area();
-    ASSERT_TRUE( !memchr( start, 1, halfRoD.area() ) );
-
-    ///mark for renderer the other half of the rod
-    bm.markForRendered(nonRenderedHalf);
-
-    ///assert that the bm is rendered totally
-    nonRenderedRects.clear();
-    bm.minimalNonMarkedRects(rod, nonRenderedRects);
-    ASSERT_TRUE( nonRenderedRects.empty() );
-    ASSERT_TRUE( !memchr( map, 0, rod.area() ) );
-
-    ///More complex example where A,B,C,D are not rendered check that both trimap & bitmap yield the same result
-    // BBBBBBBBBBBBBB
-    // BBBBBBBBBBBBBB
-    // CXXXXXXXXXXDDD
-    // CXXXXXXXXXXDDD
-    // CXXXXXXXXXXDDD
-    // CXXXXXXXXXXDDD
-    // AAAAAAAAAAAAAA
-    bm.clear(rod);
-
-    RectI xBox(20, 20, 80, 80);
-    bm.markForRendered(xBox);
-    nonRenderedRects.clear();
-    bm.minimalNonMarkedRects(rod, nonRenderedRects);
-    EXPECT_TRUE(nonRenderedRects.size() == 4);
-    nonRenderedRects.clear();
-    bool beingRenderedElseWhere = false;
-    bm.minimalNonMarkedRects_trimap(rod, nonRenderedRects, &beingRenderedElseWhere);
-    EXPECT_TRUE(nonRenderedRects.size() == 4);
-    ASSERT_TRUE(beingRenderedElseWhere == false);
-
-    nonRenderedRects.clear();
-    //Mark the A rectangle as being rendered
-    RectI aBox(0, 0, 20, 20);
-    bm.markForRendering(aBox);
-    bm.minimalNonMarkedRects_trimap(rod, nonRenderedRects, &beingRenderedElseWhere);
-    ASSERT_TRUE(beingRenderedElseWhere == true);
-    EXPECT_TRUE(nonRenderedRects.size() == 3);
-} // TEST
 
 TEST(ImageKeyTest, Equality) {
     srand(2000);
     // coverity[dont_call]
     int randomHashKey1 = rand();
-    SequenceTime time1 = 0;
-    ViewIdx view1(0);
-    double pa1 = 1.;
-    ImageKey key1(0, randomHashKey1, false, time1, view1, pa1, false, false);
+    ImageCacheKey key1(randomHashKey1, 0, RenderScale(1.), std::string());
     U64 keyHash1 = key1.getHash();
 
 
     ///make a second ImageKey equal to the first
     int randomHashKey2 = randomHashKey1;
-    SequenceTime time2 = time1;
-    ViewIdx view2(view1);
-    double pa2 = pa1;
-    ImageKey key2(0, randomHashKey2, false, time2, view2, pa2, false, false);
+    ImageCacheKey key2(randomHashKey2, 0, RenderScale(1.), std::string());
     U64 keyHash2 = key2.getHash();
     ASSERT_TRUE(keyHash1 == keyHash2);
 }
@@ -141,21 +55,259 @@ TEST(ImageKeyTest, Difference) {
     srand(2000);
     // coverity[dont_call]
     int randomHashKey1 = rand() % 100;
-    SequenceTime time1 = 0;
-    ViewIdx view1(0);
-    double pa1 = 1.;
-    ImageKey key1(0, randomHashKey1, false, time1, view1, pa1, false, false);
+    ImageCacheKey key1(randomHashKey1, 0, RenderScale(1.), std::string());
     U64 keyHash1 = key1.getHash();
 
 
     ///make a second ImageKey different to the first
     // coverity[dont_call]
     int randomHashKey2 = rand() % 1000  + 150;
-    SequenceTime time2 = time1;
-    ViewIdx view2(view1);
-    double pa2 = pa1;
-    ImageKey key2(0, randomHashKey2, false, time2, view2, pa2, false, false);
+    ImageCacheKey key2(randomHashKey2, 0, RenderScale(1.), std::string());
     U64 keyHash2 = key2.getHash();
+
     ASSERT_TRUE(keyHash1 != keyHash2);
 }
+
+#define getBufAt(x,y) (&buf[roundedBounds.width() * y + x])
+
+
+TEST(ImageCacheEntryProcessing, RepeatEdgesAbove) {
+    /*
+     0000
+     0000
+     1234
+     4567
+     */
+    RectI roundedBounds(0, 0, 4, 4);
+    RectI roi(0,0,4,2);
+    std::vector<char> buf(roundedBounds.area(), 0);
+
+    *getBufAt(0, 0) = 4; *getBufAt(1, 0) = 5; *getBufAt(2, 0) = 6; *getBufAt(3, 0) = 7;
+    *getBufAt(0, 1) = 1; *getBufAt(1, 1) = 2; *getBufAt(2, 1) = 3; *getBufAt(3, 1) = 4;
+
+    ImageCacheEntryProcessing::repeatEdgesForDepth<char>(&buf[0], roi, roundedBounds.width(), roundedBounds.height());
+
+    ASSERT_TRUE(*getBufAt(0,2) == 1); ASSERT_TRUE(*getBufAt(1,2) == 2); ASSERT_TRUE(*getBufAt(2,2) == 3); ASSERT_TRUE(*getBufAt(3,2) == 4);
+    ASSERT_TRUE(*getBufAt(0,3) == 1); ASSERT_TRUE(*getBufAt(1,3) == 2); ASSERT_TRUE(*getBufAt(2,3) == 3); ASSERT_TRUE(*getBufAt(3,3) == 4);
+}
+
+TEST(ImageCacheEntryProcessing, RepeatEdgesBottom) {
+    /*
+     1234
+     5678
+     0000
+     0000
+     */
+    RectI roundedBounds(0, 0, 4, 4);
+    RectI roi(0,2,4,4);
+    std::vector<char> buf(roundedBounds.area(), 0);
+
+    *getBufAt(0, 2) = 5; *getBufAt(1, 2) = 6; *getBufAt(2, 2) = 7; *getBufAt(3, 2) = 8;
+    *getBufAt(0, 3) = 1; *getBufAt(1, 3) = 2; *getBufAt(2, 3) = 3; *getBufAt(3, 3) = 4;
+
+    ImageCacheEntryProcessing::repeatEdgesForDepth<char>(&buf[0], roi, roundedBounds.width(), roundedBounds.height());
+
+    ASSERT_TRUE(*getBufAt(0,0) == 5); ASSERT_TRUE(*getBufAt(1,0) == 6); ASSERT_TRUE(*getBufAt(2,0) == 7); ASSERT_TRUE(*getBufAt(3,0) == 8);
+    ASSERT_TRUE(*getBufAt(0,1) == 5); ASSERT_TRUE(*getBufAt(1,1) == 6); ASSERT_TRUE(*getBufAt(2,1) == 7); ASSERT_TRUE(*getBufAt(3,1) == 8);
+}
+
+TEST(ImageCacheEntryProcessing, RepeatEdgesRight) {
+    /*
+     1200
+     3400
+     5600
+     7800
+     */
+    RectI roundedBounds(0, 0, 4, 4);
+    RectI roi(0,0,2,4);
+    std::vector<char> buf(roundedBounds.area(), 0);
+
+    *getBufAt(0, 0) = 7; *getBufAt(1, 0) = 8;
+    *getBufAt(0, 1) = 5; *getBufAt(1, 1) = 6;
+    *getBufAt(0, 2) = 3; *getBufAt(1, 2) = 4;
+    *getBufAt(0, 3) = 1; *getBufAt(1, 3) = 2;
+
+    ImageCacheEntryProcessing::repeatEdgesForDepth<char>(&buf[0], roi, roundedBounds.width(), roundedBounds.height());
+
+    ASSERT_TRUE(*getBufAt(2,0) == 8); ASSERT_TRUE(*getBufAt(3,0) == 8);
+    ASSERT_TRUE(*getBufAt(2,1) == 6); ASSERT_TRUE(*getBufAt(3,1) == 6);
+    ASSERT_TRUE(*getBufAt(2,2) == 4); ASSERT_TRUE(*getBufAt(3,2) == 4);
+    ASSERT_TRUE(*getBufAt(2,3) == 2); ASSERT_TRUE(*getBufAt(3,3) == 2);
+}
+
+TEST(ImageCacheEntryProcessing, RepeatEdgesLeft) {
+    /*
+     0012
+     0034
+     0056
+     0078
+     */
+    RectI roundedBounds(0, 0, 4, 4);
+    RectI roi(2,0,4,4);
+    std::vector<char> buf(roundedBounds.area(), 0);
+
+    *getBufAt(2, 0) = 7; *getBufAt(3, 0) = 8;
+    *getBufAt(2, 1) = 5; *getBufAt(3, 1) = 6;
+    *getBufAt(2, 2) = 3; *getBufAt(3, 2) = 4;
+    *getBufAt(2, 3) = 1; *getBufAt(3, 3) = 2;
+
+    ImageCacheEntryProcessing::repeatEdgesForDepth<char>(&buf[0], roi, roundedBounds.width(), roundedBounds.height());
+
+    ASSERT_TRUE(*getBufAt(0,0) == 7); ASSERT_TRUE(*getBufAt(1,0) == 7);
+    ASSERT_TRUE(*getBufAt(0,1) == 5); ASSERT_TRUE(*getBufAt(1,1) == 5);
+    ASSERT_TRUE(*getBufAt(0,2) == 3); ASSERT_TRUE(*getBufAt(1,2) == 3);
+    ASSERT_TRUE(*getBufAt(0,3) == 1); ASSERT_TRUE(*getBufAt(1,3) == 1);
+}
+
+TEST(ImageCacheEntryProcessing, RepeatEdgesBottomLeft) {
+    /*
+     0000
+     0000
+     3400
+     1200
+     */
+    RectI roundedBounds(0, 0, 4, 4);
+    RectI roi(0,0,2,2);
+    std::vector<char> buf(roundedBounds.area(), 0);
+
+    *getBufAt(0, 0) = 1; *getBufAt(1, 0) = 2;
+    *getBufAt(0, 1) = 3; *getBufAt(1, 1) = 4;
+
+    ImageCacheEntryProcessing::repeatEdgesForDepth<char>(&buf[0], roi, roundedBounds.width(), roundedBounds.height());
+
+    ASSERT_TRUE(*getBufAt(2,0) == 2); ASSERT_TRUE(*getBufAt(3,0) == 2);
+    ASSERT_TRUE(*getBufAt(2,1) == 4); ASSERT_TRUE(*getBufAt(3,1) == 4);
+
+    ASSERT_TRUE(*getBufAt(2,2) == 4); ASSERT_TRUE(*getBufAt(3,2) == 4);
+    ASSERT_TRUE(*getBufAt(2,3) == 4); ASSERT_TRUE(*getBufAt(3,3) == 4);
+
+    ASSERT_TRUE(*getBufAt(0,2) == 3); ASSERT_TRUE(*getBufAt(1,2) == 4);
+    ASSERT_TRUE(*getBufAt(0,3) == 3); ASSERT_TRUE(*getBufAt(1,3) == 4);
+}
+
+TEST(ImageCacheEntryProcessing, RepeatEdgesBottomRight) {
+    /*
+     0000
+     0000
+     0034
+     0012
+     */
+    RectI roundedBounds(0, 0, 4, 4);
+    RectI roi(2,0,4,2);
+    std::vector<char> buf(roundedBounds.area(), 0);
+
+    *getBufAt(2, 0) = 1; *getBufAt(3, 0) = 2;
+    *getBufAt(2, 1) = 3; *getBufAt(3, 1) = 4;
+
+    ImageCacheEntryProcessing::repeatEdgesForDepth<char>(&buf[0], roi, roundedBounds.width(), roundedBounds.height());
+
+    ASSERT_TRUE(*getBufAt(2,2) == 3); ASSERT_TRUE(*getBufAt(3,2) == 4);
+    ASSERT_TRUE(*getBufAt(2,3) == 3); ASSERT_TRUE(*getBufAt(3,3) == 4);
+
+    ASSERT_TRUE(*getBufAt(0,2) == 3); ASSERT_TRUE(*getBufAt(0,2) == 3);
+    ASSERT_TRUE(*getBufAt(0,3) == 3); ASSERT_TRUE(*getBufAt(0,3) == 3);
+
+    ASSERT_TRUE(*getBufAt(0,0) == 1); ASSERT_TRUE(*getBufAt(1,0) == 1);
+    ASSERT_TRUE(*getBufAt(0,1) == 3); ASSERT_TRUE(*getBufAt(1,1) == 3);
+}
+
+TEST(ImageCacheEntryProcessing, RepeatEdgesTopRight) {
+    /*
+     0034
+     0012
+     0000
+     0000
+     */
+    RectI roundedBounds(0, 0, 4, 4);
+    RectI roi(2,2,4,4);
+    std::vector<char> buf(roundedBounds.area(), 0);
+
+    *getBufAt(2, 2) = 1; *getBufAt(3, 2) = 2;
+    *getBufAt(2, 3) = 3; *getBufAt(3, 3) = 4;
+
+    ImageCacheEntryProcessing::repeatEdgesForDepth<char>(&buf[0], roi, roundedBounds.width(), roundedBounds.height());
+
+    ASSERT_TRUE(*getBufAt(2,0) == 1); ASSERT_TRUE(*getBufAt(3,0) == 2);
+    ASSERT_TRUE(*getBufAt(2,1) == 1); ASSERT_TRUE(*getBufAt(3,1) == 2);
+
+    ASSERT_TRUE(*getBufAt(0,0) == 1); ASSERT_TRUE(*getBufAt(0,1) == 1);
+    ASSERT_TRUE(*getBufAt(0,1) == 1); ASSERT_TRUE(*getBufAt(1,1) == 1);
+
+    ASSERT_TRUE(*getBufAt(2,0) == 1); ASSERT_TRUE(*getBufAt(3,0) == 2);
+    ASSERT_TRUE(*getBufAt(2,1) == 1); ASSERT_TRUE(*getBufAt(3,1) == 2);
+}
+
+TEST(ImageCacheEntryProcessing, RepeatEdgesTopLeft) {
+    /*
+     3400
+     1200
+     0000
+     0000
+     */
+    RectI roundedBounds(0, 0, 4, 4);
+    RectI roi(0,2,2,4);
+    std::vector<char> buf(roundedBounds.area(), 0);
+
+    *getBufAt(0, 2) = 1; *getBufAt(1, 2) = 2;
+    *getBufAt(0, 3) = 3; *getBufAt(1, 3) = 4;
+
+    ImageCacheEntryProcessing::repeatEdgesForDepth<char>(&buf[0], roi, roundedBounds.width(), roundedBounds.height());
+
+    ASSERT_TRUE(*getBufAt(2,2) == 2); ASSERT_TRUE(*getBufAt(3,2) == 2);
+    ASSERT_TRUE(*getBufAt(2,3) == 4); ASSERT_TRUE(*getBufAt(3,3) == 4);
+
+    ASSERT_TRUE(*getBufAt(2,0) == 2); ASSERT_TRUE(*getBufAt(3,0) == 2);
+    ASSERT_TRUE(*getBufAt(2,1) == 2); ASSERT_TRUE(*getBufAt(3,1) == 2);
+
+    ASSERT_TRUE(*getBufAt(0,0) == 1); ASSERT_TRUE(*getBufAt(1,0) == 2);
+    ASSERT_TRUE(*getBufAt(0,1) == 1); ASSERT_TRUE(*getBufAt(1,1) == 2);
+}
+
+TEST(ImageCacheEntryProcessing, RepeatEdgesGeneralCase) {
+    /*
+     Make such a rectangle
+     00000
+     01230
+     04560
+     07890
+     00000
+
+     fill the 0s by their corresponding numbers
+     */
+    RectI roundedBounds(0, 0, 5, 5);
+    RectI roi(1, 1, 4, 4);
+    std::vector<char> buf(roundedBounds.area(), 0);
+
+
+    *getBufAt(1, 3) = 1; *getBufAt(2, 3) = 2; *getBufAt(3, 3) = 3;
+    *getBufAt(1, 2) = 4; *getBufAt(2, 2) = 5; *getBufAt(3, 2) = 6;
+    *getBufAt(1, 1) = 7; *getBufAt(2, 1) = 8; *getBufAt(3, 1) = 9;
+
+    ImageCacheEntryProcessing::repeatEdgesForDepth<char>(&buf[0], roi, roundedBounds.width(), roundedBounds.height());
+
+    ASSERT_TRUE(*getBufAt(0,0) == 7);
+    ASSERT_TRUE(*getBufAt(1,0) == 7);
+    ASSERT_TRUE(*getBufAt(2,0) == 8);
+    ASSERT_TRUE(*getBufAt(3,0) == 9);
+    ASSERT_TRUE(*getBufAt(4,0) == 9);
+
+    ASSERT_TRUE(*getBufAt(0,1) == 7);
+    ASSERT_TRUE(*getBufAt(4,1) == 9);
+
+    ASSERT_TRUE(*getBufAt(0,2) == 4);
+    ASSERT_TRUE(*getBufAt(4,2) == 6);
+
+    ASSERT_TRUE(*getBufAt(0,3) == 1);
+    ASSERT_TRUE(*getBufAt(4,3) == 3);
+
+    ASSERT_TRUE(*getBufAt(0,4) == 1);
+    ASSERT_TRUE(*getBufAt(1,4) == 1);
+    ASSERT_TRUE(*getBufAt(2,4) == 2);
+    ASSERT_TRUE(*getBufAt(3,4) == 3);
+    ASSERT_TRUE(*getBufAt(4,4) == 3);
+}
+
+
+#undef getBufAt
+
 

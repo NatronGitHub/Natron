@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -36,6 +36,7 @@
 #endif
 
 #include "Engine/GenericSchedulerThread.h"
+#include "Engine/TimeValue.h"
 
 #include "Gui/GuiFwd.h"
 
@@ -50,7 +51,7 @@ public:
 
     virtual ~PreviewThread();
 
-    void appendToQueue(const NodeGuiPtr& node, double time);
+    void appendToQueue(const NodeGuiPtr& node, TimeValue time);
 
 private:
 
@@ -59,7 +60,7 @@ private:
         return eTaskQueueBehaviorProcessInOrder;
     }
 
-    virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<PreviewThreadPrivate> _imp;
 };
 

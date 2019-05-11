@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -44,64 +44,94 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/CLArgs.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/Project.h"
+#include "Engine/RenderQueue.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 
+#include "Serialization/KnobSerialization.h"
+
 
 NATRON_NAMESPACE_ENTER
+
+
+PluginPtr
+PrecompNode::createPlugin()
+{
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_OTHER);
+    PluginPtr ret = Plugin::create(PrecompNode::create, PrecompNode::createRenderClone, PLUGINID_NATRON_PRECOMP, "Precomp", 1, 0, grouping);
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
+
+
+    QString desc = tr( "The Precomp node is like a Group node, but references an external Natron project (.ntp) instead.\n"
+                      "This allows you to save a subset of the node tree as a separate project. A Precomp node can be useful in at least two ways:\n"
+                      "It can be used to reduce portions of the node tree to pre-rendered image inputs. "
+                      "This speeds up render time: Natron only has to process the single image input instead of all the nodes within the project. "
+                      "Since this is a separate project, you also maintain access to the internal tree and can edit it any time.\n\n"
+                      "It enables a collaborative project: while one user works on the main project, others can work on other parts referenced by the Precomp node.");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, NATRON_IMAGES_PATH "precompNodeIcon.png");
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
+  
+    return ret;
+}
+
 
 struct PrecompNodePrivate
 {
     Q_DECLARE_TR_FUNCTIONS(PrecompNode)
 
 public:
-    PrecompNode* _publicInterface;
-    AppInstWPtr app;
-    boost::weak_ptr<KnobFile> projectFileNameKnob;
-    //boost::weak_ptr<KnobButton> reloadProjectKnob;
-    boost::weak_ptr<KnobButton> editProjectKnob;
-    boost::weak_ptr<KnobBool> enablePreRenderKnob;
-    boost::weak_ptr<KnobGroup> preRenderGroupKnob;
-    boost::weak_ptr<KnobChoice> writeNodesKnob;
-    boost::weak_ptr<KnobButton> preRenderKnob;
-    boost::weak_ptr<KnobInt> firstFrameKnob, lastFrameKnob;
-    boost::weak_ptr<KnobString> outputNodeNameKnob;
-    boost::weak_ptr<KnobChoice> errorBehaviourKnbo;
-    //kNatronOfxParamStringSublabelName to display the project name
-    boost::weak_ptr<KnobString> subLabelKnob;
+    PrecompNode* _publicInterface; // can not be a smart ptr
+    AppInstanceWPtr app;
+    KnobFileWPtr projectFileNameKnob;
+    KnobButtonWPtr editProjectKnob;
+    KnobBoolWPtr enablePreRenderKnob;
+    KnobGroupWPtr preRenderGroupKnob;
+    KnobChoiceWPtr writeNodesKnob;
+    KnobButtonWPtr preRenderKnob;
+    KnobIntWPtr firstFrameKnob, lastFrameKnob;
+    KnobStringWPtr outputNodeNameKnob;
+    KnobChoiceWPtr errorBehaviourKnbo;
+    KnobStringWPtr subLabelKnob;
     QMutex dataMutex;
-    NodesWList precompInputs;
 
-    //To read-back the pre-comp image sequence/video
+    // To read-back the pre-comp image sequence/video
     NodePtr readNode;
-    NodePtr outputNode;
+    NodePtr subProjectOutputNode;
+
+    NodePtr groupOutputNode;
 
     PrecompNodePrivate(PrecompNode* publicInterface)
-        : _publicInterface(publicInterface)
-        , app()
-        , projectFileNameKnob()
-        //, reloadProjectKnob()
-        , editProjectKnob()
-        , enablePreRenderKnob()
-        , preRenderGroupKnob()
-        , writeNodesKnob()
-        , preRenderKnob()
-        , firstFrameKnob()
-        , lastFrameKnob()
-        , outputNodeNameKnob()
-        , errorBehaviourKnbo()
-        , subLabelKnob()
-        , dataMutex()
-        , precompInputs()
-        , readNode()
-        , outputNode()
+    : _publicInterface(publicInterface)
+    , app()
+    , projectFileNameKnob()
+    , editProjectKnob()
+    , enablePreRenderKnob()
+    , preRenderGroupKnob()
+    , writeNodesKnob()
+    , preRenderKnob()
+    , firstFrameKnob()
+    , lastFrameKnob()
+    , outputNodeNameKnob()
+    , errorBehaviourKnbo()
+    , subLabelKnob()
+    , dataMutex()
+    , readNode()
+    , subProjectOutputNode()
+    , groupOutputNode()
     {
     }
 
@@ -117,7 +147,7 @@ public:
 
     void refreshReadNodeInput();
 
-    void populateWriteNodesChoice(bool setPartOfPrecomp, bool setWriteNodeChoice);
+    void populateWriteNodesChoice(bool setWriteNodeChoice);
 
     NodePtr getWriteNodeFromPreComp() const;
 
@@ -126,16 +156,17 @@ public:
     void launchPreRender();
 };
 
-PrecompNode::PrecompNode(NodePtr n)
-    : EffectInstance(n)
+PrecompNode::PrecompNode(const NodePtr& n)
+    : NodeGroup(n)
     , _imp( new PrecompNodePrivate(this) )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
 }
+
+
 
 PrecompNode::~PrecompNode()
 {
-    AppInstPtr app = _imp->app.lock();
+    AppInstancePtr app = _imp->app.lock();
 
     if (app) {
         app->quit();
@@ -149,57 +180,32 @@ PrecompNode::getOutputNode() const
     QMutexLocker k(&_imp->dataMutex);
 
     if (!enablePrecomp) {
-        return _imp->outputNode;
+        return _imp->subProjectOutputNode;
     } else {
         return _imp->readNode;
     }
 }
 
-std::string
-PrecompNode::getPluginID() const
-{
-    return PLUGINID_NATRON_PRECOMP;
-}
 
-std::string
-PrecompNode::getPluginLabel() const
-{
-    return "Precomp";
-}
-
-std::string
-PrecompNode::getPluginDescription() const
-{
-    return "The Precomp node is like a Group node, but references an external Natron project (.ntp) instead.\n"
-           "This allows you to save a subset of the node tree as a separate project. A Precomp node can be useful in at least two ways:\n"
-           "It can be used to reduce portions of the node tree to pre-rendered image inputs. "
-           "This speeds up render time: Natron only has to process the single image input instead of all the nodes within the project. "
-           "Since this is a separate project, you also maintain access to the internal tree and can edit it any time.\n\n"
-           "It enables a collaborative project: while one user works on the main project, others can work on other parts referenced by the Precomp node.";
-}
 
 void
-PrecompNode::getPluginGrouping(std::list<std::string>* grouping) const
+PrecompNode::setupInitialSubGraphState()
 {
-    grouping->push_back(PLUGIN_GROUP_OTHER);
-}
+    NodeGroupPtr thisShared = toNodeGroup(EffectInstance::shared_from_this());
+    {
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, thisShared));
+        args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+        args->setProperty(kCreateNodeArgsPropVolatile, true);
+        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        NodePtr outputNode = getApp()->createNode(args);
+        assert(outputNode);
+        if (!outputNode) {
+            throw std::runtime_error( tr("NodeGroup cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_OUTPUT) ).toStdString() );
+        }
+        _imp->groupOutputNode = outputNode;
+    }
 
-void
-PrecompNode::addAcceptedComponents(int /*inputNb*/,
-                                   std::list<ImagePlaneDesc>* comps)
-{
-    comps->push_back( ImagePlaneDesc::getRGBAComponents() );
-    comps->push_back( ImagePlaneDesc::getRGBComponents() );
-    comps->push_back( ImagePlaneDesc::getAlphaComponents() );
-}
-
-void
-PrecompNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
-{
-    depths->push_back(eImageBitDepthByte);
-    depths->push_back(eImageBitDepthShort);
-    depths->push_back(eImageBitDepthFloat);
-}
+} // setupInitialSubGraphState
 
 void
 PrecompNode::initializeKnobs()
@@ -209,118 +215,125 @@ PrecompNode::initializeKnobs()
         _imp->app = appPTR->newBackgroundInstance(args, true);
     }
 
-    boost::shared_ptr<KnobPage> mainPage = AppManager::createKnob<KnobPage>( this, tr("Controls") );
-    boost::shared_ptr<KnobFile> filename = AppManager::createKnob<KnobFile>( this, tr("Project Filename (.%1)").arg( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) );
+    KnobPagePtr mainPage = createKnob<KnobPage>("controlsPage");
+    mainPage->setLabel(tr("Controls"));
 
-    filename->setName("projectFilename");
-    filename->setHintToolTip( tr("The absolute file path of the project to use as a pre-comp.").toStdString() );
-    filename->setAnimationEnabled(false);
-    filename->setAddNewLine(false);
-    mainPage->addKnob(filename);
-    _imp->projectFileNameKnob = filename;
+    {
+        KnobFilePtr param = createKnob<KnobFile>("projectFilename");
+        param->setLabel(tr("Project Filename (.%1)").arg( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ));
+        param->setHintToolTip( tr("The absolute file path of the project to use as a pre-comp.").toStdString() );
+        param->setAnimationEnabled(false);
+        param->setAddNewLine(false);
+        mainPage->addKnob(param);
+        _imp->projectFileNameKnob = param;
+    }
 
-    /*boost::shared_ptr<KnobButton> reload = AppManager::createKnob<KnobButton>(this, "Reload");
-       reload->setName("reload");
-       reload->setHintToolTip("Reload the pre-comp project from the file");
-       reload->setAddNewLine(false);
-       mainPage->addKnob(reload);
-       _imp->reloadProjectKnob = reload;*/
+    {
+        KnobButtonPtr param = createKnob<KnobButton>("editProject");
+        param->setLabel(tr("Edit Project..."));
+        param->setEvaluateOnChange(false);
+        param->setHintToolTip( tr("Opens the specified project in a new %1 instance").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+        mainPage->addKnob(param);
+        _imp->editProjectKnob = param;
+    }
 
-    boost::shared_ptr<KnobButton> edit = AppManager::createKnob<KnobButton>( this, tr("Edit Project...") );
-    edit->setName("editProject");
-    edit->setEvaluateOnChange(false);
-    edit->setHintToolTip( tr("Opens the specified project in a new %1 instance").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
-    mainPage->addKnob(edit);
-    _imp->editProjectKnob = edit;
+    {
+        KnobBoolPtr param = createKnob<KnobBool>("preRender");
+        param->setLabel(tr("Pre-Render"));
+        param->setAnimationEnabled(false);
+        param->setDefaultValue(true);
+        param->setHintToolTip( tr("When checked the output of this node will be the images read directly from what is rendered "
+                                            "by the node indicated by \"Write Node\". If no Write is selected, or if the rendered images do not exist "
+                                            "this node will have the behavior determined by the \"On Error\" parameter. "
+                                            "To pre-render images, select a write node, a frame-range and hit \"Render\".\n\n"
+                                  "When unchecked, this node will output the image rendered by the node indicated in the \"Output Node\" parameter "
+                                  "by rendering the full-tree of the sub-project. In that case no writing on disk will occur and the images will be "
+                                  "cached with the same policy as if the nodes were used in the active project in the first place.").toStdString() );
+        mainPage->addKnob(param);
+        _imp->enablePreRenderKnob = param;
+    }
 
-    boost::shared_ptr<KnobBool> enablePreRender = AppManager::createKnob<KnobBool>( this, tr("Pre-Render") );
-    enablePreRender->setName("preRender");
-    enablePreRender->setAnimationEnabled(false);
-    enablePreRender->setDefaultValue(true);
-    enablePreRender->setHintToolTip( tr("When checked the output of this node will be the images read directly from what is rendered "
-                                        "by the node indicated by \"Write Node\". If no Write is selected, or if the rendered images do not exist "
-                                        "this node will have the behavior determined by the \"On Error\" parameter. "
-                                        "To pre-render images, select a write node, a frame-range and hit \"Render\".\n\n"
-                                        "When unchecked, this node will output the image rendered by the node indicated in the \"Output Node\" parameter "
-                                        "by rendering the full-tree of the sub-project. In that case no writing on disk will occur and the images will be "
-                                        "cached with the same policy as if the nodes were used in the active project in the first place.").toStdString() );
-    mainPage->addKnob(enablePreRender);
-    _imp->enablePreRenderKnob = enablePreRender;
-
-    boost::shared_ptr<KnobGroup> renderGroup = AppManager::createKnob<KnobGroup>( this, tr("Pre-Render Settings") );
-    renderGroup->setName("preRenderSettings");
+    KnobGroupPtr renderGroup = createKnob<KnobGroup>("preRenderSettings");
+    renderGroup->setLabel(tr("Pre-Render Settings"));
     renderGroup->setDefaultValue(true);
     mainPage->addKnob(renderGroup);
     _imp->preRenderGroupKnob = renderGroup;
 
-    boost::shared_ptr<KnobChoice> writeChoice = AppManager::createKnob<KnobChoice>( this, tr("Write Node") );
-    writeChoice->setName("writeNode");
-    writeChoice->setHintToolTip( tr("Choose here the Write node in the pre-comp from which to render images then specify a frame-range and "
-                                    "hit the \"Render\" button.").toStdString() );
-    writeChoice->setAnimationEnabled(false);
     {
-        std::vector<ChoiceOption> choices;
-        choices.push_back(ChoiceOption("None"));
-        writeChoice->populateChoices(choices);
+        KnobChoicePtr param = createKnob<KnobChoice>("writeNode");
+        param->setLabel(tr("Write Node"));
+        param->setHintToolTip( tr("Choose here the Write node in the pre-comp from which to render images then specify a frame-range and "
+                                  "hit the \"Render\" button.").toStdString() );
+        param->setAnimationEnabled(false);
+        {
+            std::vector<ChoiceOption> choices;
+            choices.push_back(ChoiceOption("None", "", ""));
+            param->populateChoices(choices);
+        }
+        renderGroup->addKnob(param);
+        _imp->writeNodesKnob = param;
     }
-    renderGroup->addKnob(writeChoice);
-    _imp->writeNodesKnob = writeChoice;
 
-
-    boost::shared_ptr<KnobInt> first = AppManager::createKnob<KnobInt>( this, tr("First-Frame") );
-    first->setName("first");
-    first->setHintToolTip( tr("The first-frame to render") );
-    first->setAnimationEnabled(false);
-    first->setEvaluateOnChange(false);
-    first->setAddNewLine(false);
-    renderGroup->addKnob(first);
-    _imp->firstFrameKnob = first;
-
-    boost::shared_ptr<KnobInt> last = AppManager::createKnob<KnobInt>( this, tr("Last-Frame") );
-    last->setName("last");
-    last->setHintToolTip( tr("The last-frame to render") );
-    last->setAnimationEnabled(false);
-    last->setEvaluateOnChange(false);
-    last->setAddNewLine(false);
-    renderGroup->addKnob(last);
-    _imp->lastFrameKnob = last;
-
-    boost::shared_ptr<KnobChoice> error = AppManager::createKnob<KnobChoice>( this, tr("On Error") );
-    error->setName("onError");
-    error->setHintToolTip( tr("Indicates the behavior when an image is missing from the render of the pre-comp project").toStdString() );
-    error->setAnimationEnabled(false);
     {
-        std::vector<ChoiceOption> choices;
-        choices.push_back(ChoiceOption("Load previous", "", tr("Loads the previous frame in the sequence.").toStdString() ));
-        choices.push_back(ChoiceOption("Load next", "", tr("Loads the next frame in the sequence.").toStdString()));
-        choices.push_back(ChoiceOption("Load nearest", "", tr("Loads the nearest frame in the sequence.").toStdString()));
-        choices.push_back(ChoiceOption("Error", "", tr("Fails to render.").toStdString()));
-        choices.push_back(ChoiceOption("Black", "", tr("Black Image.").toStdString()));
-
-        error->populateChoices(choices);
+        KnobIntPtr param = createKnob<KnobInt>("first");
+        param->setLabel(tr("First-Frame"));
+        param->setHintToolTip( tr("The first-frame to render") );
+        param->setAnimationEnabled(false);
+        param->setEvaluateOnChange(false);
+        param->setAddNewLine(false);
+        renderGroup->addKnob(param);
+        _imp->firstFrameKnob = param;
     }
-    error->setDefaultValue(3);
-    renderGroup->addKnob(error);
-    _imp->errorBehaviourKnbo = error;
+    {
+        KnobIntPtr param = createKnob<KnobInt>("last");
+        param->setLabel(tr("Last-Frame"));
+        param->setHintToolTip( tr("The last-frame to render") );
+        param->setAnimationEnabled(false);
+        param->setEvaluateOnChange(false);
+        param->setAddNewLine(false);
+        renderGroup->addKnob(param);
+        _imp->lastFrameKnob = param;
+    }
+    {
+        KnobChoicePtr param = createKnob<KnobChoice>("onError");
+        param->setLabel(tr("On Error"));
+        param->setHintToolTip( tr("Indicates the behavior when an image is missing from the render of the pre-comp project").toStdString() );
+        param->setAnimationEnabled(false);
+        {
+            std::vector<ChoiceOption> choices;
+            choices.push_back(ChoiceOption("Load previous", "", tr("Loads the previous frame in the sequence.").toStdString() ));
+            choices.push_back(ChoiceOption("Load next", "", tr("Loads the next frame in the sequence.").toStdString()));
+            choices.push_back(ChoiceOption("Load nearest", "", tr("Loads the nearest frame in the sequence.").toStdString()));
+            choices.push_back(ChoiceOption("Error", "", tr("Fails to render.").toStdString()));
+            choices.push_back(ChoiceOption("Black", "", tr("Black Image.").toStdString()));
 
-    boost::shared_ptr<KnobButton> renderBtn = AppManager::createKnob<KnobButton>( this, tr("Render") );
-    renderBtn->setName("render");
-    renderGroup->addKnob(renderBtn);
-    _imp->preRenderKnob = renderBtn;
-
-    boost::shared_ptr<KnobString> outputNode = AppManager::createKnob<KnobString>( this, tr("Output Node") );
-    outputNode->setName("outputNode");
-    outputNode->setHintToolTip( tr("The script-name of the node to use as output node in the tree of the pre-comp. This can be any node.").toStdString() );
-    outputNode->setAnimationEnabled(false);
-    outputNode->setSecretByDefault(true);
-    mainPage->addKnob(outputNode);
-    _imp->outputNodeNameKnob = outputNode;
-
-    boost::shared_ptr<KnobString> sublabel = AppManager::createKnob<KnobString>( this, tr("SubLabel") );
-    sublabel->setName(kNatronOfxParamStringSublabelName);
-    sublabel->setSecretByDefault(true);
-    mainPage->addKnob(sublabel);
-    _imp->subLabelKnob = sublabel;
+            param->populateChoices(choices);
+        }
+        param->setDefaultValue(3);
+        renderGroup->addKnob(param);
+        _imp->errorBehaviourKnbo = param;
+    }
+    {
+        KnobButtonPtr param = createKnob<KnobButton>("render");
+        param->setLabel(tr("Render") );
+        renderGroup->addKnob(param);
+        _imp->preRenderKnob = param;
+    }
+    {
+        KnobStringPtr param = createKnob<KnobString>("outputNode");
+        param->setLabel(tr("Output Node"));
+        param->setHintToolTip( tr("The script-name of the node to use as output node in the tree of the pre-comp. This can be any node.").toStdString() );
+        param->setAnimationEnabled(false);
+        param->setSecret(true);
+        mainPage->addKnob(param);
+        _imp->outputNodeNameKnob = param;
+    }
+    {
+        KnobStringPtr sublabel = createKnob<KnobString>(kNatronOfxParamStringSublabelName);
+        sublabel->setSecret(true);
+        mainPage->addKnob(sublabel);
+        _imp->subLabelKnob = sublabel;
+    }
 } // PrecompNode::initializeKnobs
 
 void
@@ -331,30 +344,29 @@ PrecompNode::onKnobsLoaded()
 }
 
 bool
-PrecompNode::knobChanged(KnobI* k,
+PrecompNode::knobChanged(const KnobIPtr& k,
                          ValueChangedReasonEnum reason,
-                         ViewSpec /*view*/,
-                         double /*time*/,
-                         bool /*originatedFromMainThread*/)
+                         ViewSetSpec /*view*/,
+                         TimeValue /*time*/)
 {
     bool ret = true;
 
-    if ( (reason != eValueChangedReasonTimeChanged) && ( k == _imp->projectFileNameKnob.lock().get() ) ) {
+    if ( (reason != eValueChangedReasonTimeChanged) && ( k == _imp->projectFileNameKnob.lock() ) ) {
         _imp->reloadProject(true);
-    } else if ( k == _imp->editProjectKnob.lock().get() ) {
+    } else if ( k == _imp->editProjectKnob.lock() ) {
         std::string filename = _imp->projectFileNameKnob.lock()->getValue();
-        AppInstPtr appInstance = getApp()->loadProject(filename);
+        AppInstancePtr appInstance = getApp()->loadProject(filename);
         Q_UNUSED(appInstance);
-    } else if ( k == _imp->preRenderKnob.lock().get() ) {
+    } else if ( k == _imp->preRenderKnob.lock() ) {
         _imp->launchPreRender();
-    } else if ( k == _imp->outputNodeNameKnob.lock().get() ) {
+    } else if ( k == _imp->outputNodeNameKnob.lock() ) {
         _imp->refreshOutputNode();
-    } else if ( k == _imp->writeNodesKnob.lock().get() ) {
+    } else if ( k == _imp->writeNodesKnob.lock() ) {
         _imp->createReadNode();
         _imp->setFirstAndLastFrame();
-    } else if ( k == _imp->errorBehaviourKnbo.lock().get() ) {
+    } else if ( k == _imp->errorBehaviourKnbo.lock() ) {
         _imp->setReadNodeErrorChoice();
-    } else if ( k == _imp->enablePreRenderKnob.lock().get() ) {
+    } else if ( k == _imp->enablePreRenderKnob.lock() ) {
         _imp->refreshKnobsVisibility();
         _imp->refreshOutputNode();
     } else {
@@ -374,11 +386,11 @@ PrecompNodePrivate::setReadNodeErrorChoice()
     }
 
     if (read) {
-        KnobPtr knob = read->getKnobByName("onMissingFrame");
+        KnobIPtr knob = read->getKnobByName("onMissingFrame");
         if (knob) {
-            KnobChoice* choice = dynamic_cast<KnobChoice*>( knob.get() );
+            KnobChoicePtr choice = toKnobChoice(knob);
             if (choice) {
-                choice->setValue( errorBehaviourKnbo.lock()->getValue() );
+                choice->setValue( errorBehaviourKnbo.lock()->getValue());
             }
         }
     }
@@ -406,18 +418,16 @@ PrecompNodePrivate::reloadProject(bool setWriteNodeChoice)
     }
     QString fileUnPathed = file.fileName();
 
-    subLabelKnob.lock()->setValue( fileUnPathed.toStdString() );
+    subLabelKnob.lock()->setValue( fileUnPathed.toStdString());
 
     QString path = file.path() + QLatin1Char('/');
 
-    precompInputs.clear();
-
-    boost::shared_ptr<Project> project = app.lock()->getProject();
+    ProjectPtr project = app.lock()->getProject();
     project->resetProject();
     {
         //Set a temporary timeline that will be used while loading the project.
         //This is to avoid that the seekFrame call has an effect on this project since they share the same timeline
-        boost::shared_ptr<TimeLine> tmpTimeline( new TimeLine( project.get() ) );
+        TimeLinePtr tmpTimeline = boost::make_shared<TimeLine>( project.get() );
         project->setTimeLine(tmpTimeline);
     }
 
@@ -429,7 +439,7 @@ PrecompNodePrivate::reloadProject(bool setWriteNodeChoice)
     //Switch the timeline to this instance's timeline
     project->setTimeLine( _publicInterface->getApp()->getTimeLine() );
 
-    populateWriteNodesChoice(true, setWriteNodeChoice);
+    populateWriteNodesChoice(setWriteNodeChoice);
 
     if (ok) {
         createReadNode();
@@ -438,41 +448,24 @@ PrecompNodePrivate::reloadProject(bool setWriteNodeChoice)
 }
 
 void
-PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
-                                             bool setWriteNodeChoice)
+PrecompNodePrivate::populateWriteNodesChoice(bool setWriteNodeChoice)
 {
-    boost::shared_ptr<KnobChoice> param = writeNodesKnob.lock();
+    KnobChoicePtr param = writeNodesKnob.lock();
 
     if (!param) {
         return;
     }
     std::vector<ChoiceOption> choices;
-    choices.push_back(ChoiceOption("None"));
+    choices.push_back(ChoiceOption("None","",""));
 
     NodesList nodes;
-    app.lock()->getProject()->getNodes_recursive(nodes, true);
-    boost::shared_ptr<PrecompNode> precomp;
-    if (setPartOfPrecomp) {
-        precomp = boost::dynamic_pointer_cast<PrecompNode>( _publicInterface->shared_from_this() );
-        assert(precomp);
-
-        //extract all inputs of the tree
-        std::list<Project::NodesTree> trees;
-        Project::extractTreesFromNodes(nodes, trees);
-        for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
-            for (std::list<Project::TreeInput>::iterator it2 = it->inputs.begin(); it2 != it->inputs.end(); ++it2) {
-                precompInputs.push_back(it2->node);
-            }
-        }
-    }
+    app.lock()->getProject()->getNodes_recursive(nodes);
 
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if (setPartOfPrecomp) {
-            (*it)->setPrecompNode(precomp);
-        }
         if ( (*it)->getEffectInstance()->isWriter() ) {
-            choices.push_back( ChoiceOption((*it)->getFullyQualifiedName() ));
+            choices.push_back( ChoiceOption((*it)->getFullyQualifiedName(), "", "") );
+
         }
     }
 
@@ -488,7 +481,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
 NodePtr
 PrecompNodePrivate::getWriteNodeFromPreComp() const
 {
-    ChoiceOption userChoiceNodeName =  writeNodesKnob.lock()->getActiveEntry();
+    ChoiceOption userChoiceNodeName =  writeNodesKnob.lock()->getCurrentEntry();
 
     if (userChoiceNodeName.id == "None") {
         return NodePtr();
@@ -506,19 +499,6 @@ PrecompNodePrivate::getWriteNodeFromPreComp() const
     return writeNode;
 }
 
-void
-PrecompNode::getPrecompInputs(NodesList* nodes) const
-{
-    QMutexLocker k(&_imp->dataMutex);
-
-    for (NodesWList::const_iterator it = _imp->precompInputs.begin(); it != _imp->precompInputs.end(); ++it) {
-        NodePtr node = it->lock();
-        if (!node) {
-            continue;
-        }
-        nodes->push_back(node);
-    }
-}
 
 void
 PrecompNodePrivate::createReadNode()
@@ -531,7 +511,7 @@ PrecompNodePrivate::createReadNode()
 
     if (oldReadNode) {
         //Ensure it is no longer part of the tree
-        oldReadNode->destroyNode(false, false);
+        oldReadNode->destroyNode();
 
 
         //Reset the pointer
@@ -544,12 +524,12 @@ PrecompNodePrivate::createReadNode()
         return;
     }
 
-    KnobPtr fileNameKnob = writeNode->getKnobByName(kOfxImageEffectFileParamName);
+    KnobIPtr fileNameKnob = writeNode->getKnobByName(kOfxImageEffectFileParamName);
     if (!fileNameKnob) {
         return;
     }
 
-    KnobOutputFile* fileKnob = dynamic_cast<KnobOutputFile*>( fileNameKnob.get() );
+    KnobFilePtr fileKnob = toKnobFile(fileNameKnob);
     if (!fileKnob) {
         return;
     }
@@ -573,11 +553,11 @@ PrecompNodePrivate::createReadNode()
     fixedNamePrefix.append( QString::fromUtf8("readNode") );
     fixedNamePrefix.append( QLatin1Char('_') );
 
-    CreateNodeArgs args( readPluginID.toStdString(), app.lock()->getProject() );
-    args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
-    args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
-    args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, pattern);
+    CreateNodeArgsPtr args(CreateNodeArgs::create( readPluginID.toStdString(), app.lock()->getProject() ));
+    args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+    args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+    args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+    args->addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, pattern);
 
 
     NodePtr read = app.lock()->createNode(args);
@@ -585,9 +565,7 @@ PrecompNodePrivate::createReadNode()
         return;
     }
 
-    boost::shared_ptr<PrecompNode> precomp = boost::dynamic_pointer_cast<PrecompNode>( _publicInterface->shared_from_this() );
-    assert(precomp);
-    read->setPrecompNode(precomp);
+    groupOutputNode->swapInput(read, 0);
 
     QObject::connect( read.get(), SIGNAL(persistentMessageChanged()), _publicInterface, SLOT(onReadNodePersistentMessageChanged()) );
 
@@ -604,27 +582,35 @@ PrecompNodePrivate::refreshOutputNode()
     NodePtr outputnode;
 
     if (!usePreRender) {
-        boost::shared_ptr<KnobString> outputNodeKnob = outputNodeNameKnob.lock();
+        KnobStringPtr outputNodeKnob = outputNodeNameKnob.lock();
         std::string outputNodeName = outputNodeKnob->getValue();
 
         outputnode = app.lock()->getProject()->getNodeByFullySpecifiedName(outputNodeName);
+
+        groupOutputNode->swapInput(outputnode, 0);
+    } else {
+        groupOutputNode->swapInput(readNode, 0);
     }
 
     //Clear any persistent message set
-    _publicInterface->clearPersistentMessage(false);
+    _publicInterface->getNode()->clearAllPersistentMessages(false);
 
     {
         QMutexLocker k(&dataMutex);
-        outputNode = outputnode;
+        subProjectOutputNode = outputnode;
     }
 
     ///Notify outputs that the node has changed
-    std::map<NodePtr, int> outputs;
+    OutputNodesMap outputs;
     NodePtr thisNode = _publicInterface->getNode();
-    thisNode->getOutputsConnectedToThisNode(&outputs);
+    thisNode->getOutputs(outputs);
 
-    for (std::map<NodePtr, int>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        it->first->onInputChanged(it->second);
+    for (OutputNodesMap::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        const NodePtr& output = it->first;
+
+        for (std::list<int>::iterator it2 = it->second.begin(); it2 !=it->second.end(); ++it2) {
+            output->onInputChanged(*it2);
+        }
     }
 }
 
@@ -636,15 +622,15 @@ PrecompNodePrivate::setFirstAndLastFrame()
     if (!writeNode) {
         return;
     }
-    KnobPtr writefirstFrameKnob = writeNode->getKnobByName("firstFrame");
-    KnobPtr writelastFrameKnob = writeNode->getKnobByName("lastFrame");
-    KnobInt* firstFrame = dynamic_cast<KnobInt*>( writefirstFrameKnob.get() );
-    KnobInt* lastFrame = dynamic_cast<KnobInt*>( writelastFrameKnob.get() );
+    KnobIPtr writefirstFrameKnob = writeNode->getKnobByName("firstFrame");
+    KnobIPtr writelastFrameKnob = writeNode->getKnobByName("lastFrame");
+    KnobIntPtr firstFrame = toKnobInt(writefirstFrameKnob);
+    KnobIntPtr lastFrame = toKnobInt(writelastFrameKnob);
     if (firstFrame) {
-        firstFrameKnob.lock()->setValue( firstFrame->getValue() );
+        firstFrameKnob.lock()->setValue( firstFrame->getValue());
     }
     if (lastFrame) {
-        lastFrameKnob.lock()->setValue( lastFrame->getValue() );
+        lastFrameKnob.lock()->setValue( lastFrame->getValue());
     }
 }
 
@@ -652,17 +638,16 @@ void
 PrecompNodePrivate::refreshReadNodeInput()
 {
     assert(readNode);
-    KnobPtr fileNameKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
+    KnobIPtr fileNameKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
     if (!fileNameKnob) {
         return;
     }
     //Remove all images from the cache associated to the reader since we know they are no longer valid.
     //This is a blocking call so that we are sure there's no old image laying around in the cache after this call
-    readNode->removeAllImagesFromCache(true);
-    readNode->purgeAllInstancesCaches();
+    readNode->getEffectInstance()->purgeCaches_public();
 
     //Force the reader to reload the sequence/video
-    fileNameKnob->evaluateValueChange(0, _publicInterface->getApp()->getTimeLine()->currentFrame(), ViewIdx(0), eValueChangedReasonUserEdited);
+    fileNameKnob->evaluateValueChange(DimSpec::all(), TimeValue(_publicInterface->getApp()->getTimeLine()->currentFrame()), ViewSetSpec::all(), eValueChangedReasonUserEdited);
 }
 
 void
@@ -675,22 +660,24 @@ PrecompNodePrivate::launchPreRender()
 
         return;
     }
-    AppInstance::RenderWork w(dynamic_cast<OutputEffectInstance*>( output->getEffectInstance().get() ),
-                              firstFrameKnob.lock()->getValue(),
-                              lastFrameKnob.lock()->getValue(),
-                              1,
+    std::string workLabel = tr("Rendering %1").arg(QString::fromUtf8(projectFileNameKnob.lock()->getValue().c_str())).toStdString();
+    RenderQueue::RenderWork w(output,
+                              workLabel,
+                              TimeValue(firstFrameKnob.lock()->getValue()),
+                              TimeValue(lastFrameKnob.lock()->getValue()),
+                              TimeValue(1),
                               false);
 
-    if (w.writer) {
-        boost::shared_ptr<RenderEngine> engine = w.writer->getRenderEngine();
+    if (w.treeRoot) {
+        RenderEnginePtr engine = w.treeRoot->getRenderEngine();
         if (engine) {
             QObject::connect( engine.get(), SIGNAL(renderFinished(int)), _publicInterface, SLOT(onPreRenderFinished()) );
         }
     }
 
-    std::list<AppInstance::RenderWork> works;
+    std::list<RenderQueue::RenderWork> works;
     works.push_back(w);
-    _publicInterface->getApp()->startWritersRendering(false, works);
+    _publicInterface->getApp()->getRenderQueue()->renderNonBlocking(works);
 }
 
 void
@@ -701,10 +688,10 @@ PrecompNode::onPreRenderFinished()
     if (!output) {
         return;
     }
-    OutputEffectInstance* writer = dynamic_cast<OutputEffectInstance*>( output->getEffectInstance().get() );
+    EffectInstancePtr writer = output->getEffectInstance();
     assert(writer);
     if (writer) {
-        boost::shared_ptr<RenderEngine> engine = writer->getRenderEngine();
+        RenderEnginePtr engine = writer->getNode()->getRenderEngine();
         if (engine) {
             QObject::disconnect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onPreRenderFinished()) );
         }
@@ -721,18 +708,20 @@ PrecompNode::onReadNodePersistentMessageChanged()
         assert(_imp->readNode);
         node = _imp->readNode;
     }
-    QString message;
-    int type;
+    PersistentMessageMap messages;
 
-    node->getPersistentMessage(&message, &type, false);
-    if ( message.isEmpty() ) {
-        clearPersistentMessage(false);
+    node->getPersistentMessage(&messages, false);
+    if ( messages.empty() ) {
+        getNode()->clearAllPersistentMessages(false);
     } else {
-        setPersistentMessage( (MessageTypeEnum)type, message.toStdString() );
+        for (PersistentMessageMap::const_iterator it = messages.begin(); it != messages.end(); ++it) {
+            getNode()->setPersistentMessage( it->second.type, it->first, it->second.message);
+        }
+
     }
 }
 
-AppInstPtr
+AppInstancePtr
 PrecompNode::getPrecompApp() const
 {
     return _imp->app.lock();

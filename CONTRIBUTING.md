@@ -13,7 +13,7 @@ We use GitHub's issue tracking system for bugs and enhancements:
 https://github.com/NatronGitHub/Natron/issues
 
 **If you are merely asking a question ("how do I...")**, please do not file an
-issue, but instead ask the question on the [forum](http://forum.natron.fr).
+issue, but instead ask the question on the [forum](https://discuss.pixls.us/c/software/natron).
 
 If you are submitting a bug report, please be sure to note which version of
 Natron you are using, and on what platform (OS/version).
@@ -25,19 +25,6 @@ Please give an account of
 * what you expected to happen instead
 
 with enough detail that others can reproduce the problem.
-
-
-Contributor License Agreement (CLA) and Intellectual Property
--------------------------------------------------------------
-
-To protect the project -- and the contributors! -- we do require a
-Contributor License Agreement (CLA) for anybody submitting substantial
-changes. Trivial changes (such as an alteration to the Makefiles, a one-line
-bug fix, etc.) may be accepted without a CLA, at the sole discretion of the
-project leader, but anything complex needs a CLA. This is for your own
-safety.
-
-Read more on our [website](http://natron.fr/cla)
 
 
 Pull Requests and Code Review
@@ -58,7 +45,7 @@ All code must be formally reviewed before being merged into the official reposit
 
 5. If your patch will induce a major compatibility break, or has a design
 component that deserves extended discussion or debate among the wider Natron
-community, then it may be prudent to make a post on our [forum](http://forum.natron.fr) pointing everybody to
+community, then it may be prudent to make a post on our [forum](https://discuss.pixls.us/c/software/natron) pointing everybody to
 the pull request URL and discussing any issues you think are important.
 
 6. The reviewer will look over the code and critique on the "comments" area,

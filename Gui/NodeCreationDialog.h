@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,6 +30,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 
 CLANG_DIAG_OFF(deprecated)
@@ -54,8 +55,15 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    /// map<weight, pair<ID,Label> >
-    typedef std::multimap<int, std::pair<QString, QString> > PluginsNamesMap;
+    struct PluginDesc
+    {
+        PluginWPtr plugin;
+        QString comboLabel;
+        QString lineEditLabel;
+        QString presetName;
+    };
+    // Map each plug-in by a weight
+    typedef std::multimap<int, PluginDesc> PluginsNamesMap;
 
     CompleterLineEdit(const PluginsNamesMap& plugins,
                       bool quickExit,
@@ -68,6 +76,8 @@ public:
 
 
     virtual ~CompleterLineEdit();
+
+    const PluginsNamesMap& getPluginNamesMap() const;
 
     QListView* getView() const;
 
@@ -97,12 +107,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    explicit NodeCreationDialog(const QString& initialFilter,
+    explicit NodeCreationDialog(const QString& defaultPluginID,
                                 QWidget* parent);
 
     virtual ~NodeCreationDialog() OVERRIDE;
 
-    QString getNodeName(int *major) const;
+    PluginPtr getPlugin(QString* presetName) const;
 
     void finish(bool accepted);
 

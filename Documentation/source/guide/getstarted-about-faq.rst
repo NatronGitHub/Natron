@@ -27,14 +27,14 @@ Natron officially supports:
 Why did you make Natron free of charge?
 ***************************************
 
-Our original motives were to create a tool for people who needed it and that may felt left-aside by the software editors pricing plans, that is:
+Our original motives were to create a tool for people who needed it and that may felt left-aside by the software editor's pricing plans. These users include but are not limited to:
 
 * Students who want to learn compositing at home
 * Schools that may not be able to buy expensive software licenses
 
-Another reason why we develop Natron here at `INRIA <http://www.inria.fr/en>`_ is because a compositing software is a playground that enables scientists in computer vision/graphics to develop, test exchange and publish results easily  on such platform.
+Another reason why we develop Natron here at `INRIA <http://www.inria.fr/en>`_ is because a compositing software is a playground that enables scientists in computer vision/graphics to develop, test exchange and publish results easily.
 
-One great mission of a free open-source software is to aim to create common practises so everyone can benefit of it.
+One great mission of an free open-source software is to create common practices so everyone can benefit from it.
 
 On the other hand, being free of charge, Natron can be installed on large-scale render farms without wondering about licensing issues.
 
@@ -60,6 +60,7 @@ As of today several applications are compatible with this plug-in format: (meani
 * Natron
 * ButtleOFX
 * TuttleOFX
+
 
 Can I use commercial and proprietary plug-ins within Natron?
 ************************************************************
@@ -88,4 +89,9 @@ The following graphics cards are supported for hardware-accelerated rendering:
 
 Cards not listed here will probably not support hardware-accelerated rendering.
 
-On Windows and Linux you can enable software rendering. On Linux, enable the environment variable LIBGL_ALWAYS_SOFTWARE=1 before running Natron. On Windows, enable the legacy hardware package in the installer.
+It is possible to enable software rendering using the following techniques. 
+
+*On Linux, enable the environment variable LIBGL_ALWAYS_SOFTWARE=1 before running Natron. 
+
+*On Windows, enable the legacy hardware package in the Natron installer.
+

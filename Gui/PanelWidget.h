@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,8 +30,14 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
+#include <QIcon>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#endif
+
 
 #include "Engine/ScriptObject.h"
 
@@ -47,7 +53,8 @@ class PanelWidget
 
 public:
 
-    PanelWidget(QWidget* thisWidget,
+    PanelWidget(const std::string& scriptName,
+                QWidget* thisWidget,
                 Gui* gui);
 
     Gui* getGui() const;
@@ -82,14 +89,32 @@ public:
 
     virtual void pushUndoCommand(QUndoCommand* command);
 
+    void pushUndoCommand(const UndoCommandPtr& command);
+
+    // Takes ownership, command is deleted when returning call
+    void pushUndoCommand(UndoCommand* command);
+
     /*
      * @brief Called whenever this panel is made the current tab in the parent tab widget
      */
     virtual void onPanelMadeCurrent() {}
 
+    virtual bool saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data) { Q_UNUSED(data); return false; }
+
+    virtual bool loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data) { Q_UNUSED(data); return false; }
+
+    virtual QIcon getIcon() const
+    {
+        return QIcon();
+    }
+
 protected:
 
-    virtual QUndoStack* getUndoStack() const { return 0; }
+    virtual void onScriptNameChanged() OVERRIDE;
+
+    virtual void onLabelChanged() OVERRIDE;
+
+    virtual boost::shared_ptr<QUndoStack> getUndoStack() const { return boost::shared_ptr<QUndoStack>(); }
 
     virtual void notifyGuiClosing() {}
 

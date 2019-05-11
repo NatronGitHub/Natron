@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,14 +34,19 @@
 #include <ofxImageEffect.h>
 #include <ofxhMemory.h>
 
-#include "Engine/EngineFwd.h"
+#include <QMutex>
+
+#include "Engine/PluginMemory.h"
 
 NATRON_NAMESPACE_ENTER
 
 class OfxMemory
     : public OFX::Host::Memory::Instance
+    , public PluginMemory
 {
-    boost::shared_ptr<PluginMemory> _memory;
+    EffectInstanceWPtr _effect;
+    mutable QMutex _lock;
+    int _lockedCount;
 
 public:
 

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,13 +30,19 @@
 #include <cstring> // for std::memcpy
 #include <stdexcept>
 
-#include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
+#include <QThread>
 #include <QApplication> // qApp
+#include "Global/GLIncludes.h" //!<must be included before QGLWidget
+#include <QtOpenGL/QGLWidget>
 #include <QtOpenGL/QGLShaderProgram>
+#include "Global/GLObfuscate.h" //!<must be included after QGLWidget
 
 #include "Engine/Lut.h" // Color
+#include "Engine/OSGLFunctions.h"
 #include "Engine/Settings.h"
 #include "Engine/Texture.h"
+#include "Engine/ViewerNode.h"
+#include "Engine/ViewerInstance.h"
 
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h" // appFont
@@ -68,24 +74,18 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , iboTriangleStripId(0)
     , displayTextures()
     , partialUpdateTextures()
-    , shaderRGB()
-    , shaderBlack()
-    , shaderLoaded(false)
     , infoViewer()
     , viewerTab(parent)
     , zoomOrPannedSinceLastFit(false)
     , oldClick()
     , displayingImageLut(eViewerColorSpaceSRGB)
     , ms(eMouseStateUndefined)
-    , hs(eHoverStateNothing)
     , textRenderingColor(200, 200, 200, 255)
     , displayWindowOverlayColor(125, 125, 125, 255)
     , rodOverlayColor(100, 100, 100, 255)
     , textFont(appFont, appFontSize)
-    , overlay(true)
     , updatingTexture(false)
     , clearColor(0, 0, 0, 255)
-    , menu( new Menu(_this) )
     , persistentMessages()
     , persistentMessageType(0)
     , displayPersistentMessage(false)
@@ -98,23 +98,12 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , currentViewerInfo_resolutionOverlay()
     , pickerState(ePickerStateInactive)
     , lastPickerPos()
-    , userRoIEnabled(false)   // protected by mutex
-    , userRoI()   // protected by mutex
-    , buildUserRoIOnNextPress(false)
-    , draggedUserRoI()
     , zoomCtx()   // protected by mutex
-    , clipToDisplayWindow(true)   // protected by mutex
-    , wipeControlsMutex()
-    , mixAmount(1.)   // protected by mutex
-    , wipeAngle(M_PI_2)   // protected by mutex
-    , wipeCenter()
-    , wipeInitialized(false)
     , selectionRectangle()
     , checkerboardTextureID(0)
     , checkerboardTileSize(0)
     , savedTexture(0)
     , prevBoundTexture(0)
-    , lastRenderedImageMutex()
     , sizeH()
     , pointerTypeOnPress(ePenTypeLMB)
     , pressureOnPress(1.)
@@ -135,6 +124,8 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     //        sizeH = r.size();
     sizeH.setWidth(10000);
     sizeH.setHeight(10000);
+
+    glContextWrapper = boost::make_shared<GuiGLContext>(this_);
 }
 
 ViewerGL::Implementation::~Implementation()
@@ -143,30 +134,23 @@ ViewerGL::Implementation::~Implementation()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _this->makeCurrent();
 
-    if (shaderRGB) {
-        shaderRGB->removeAllShaders();
-        shaderRGB.reset();
-    }
-    if (shaderBlack) {
-        shaderBlack->removeAllShaders();
-        shaderBlack.reset();
-    }
+
     for (int i = 0; i < 2; ++i) {
         displayTextures[i].texture.reset();
     }
     partialUpdateTextures.clear();
 
     if ( appPTR && appPTR->isOpenGLLoaded() ) {
-        glCheckError();
+        glCheckError(GL_GPU);
         for (U32 i = 0; i < this->pboIds.size(); ++i) {
-            glDeleteBuffers(1, &this->pboIds[i]);
+            GL_GPU::DeleteBuffers(1, &this->pboIds[i]);
         }
-        glCheckError();
-        glDeleteBuffers(1, &this->vboVerticesId);
-        glDeleteBuffers(1, &this->vboTexturesId);
-        glDeleteBuffers(1, &this->iboTriangleStripId);
-        glCheckError();
-        glDeleteTextures(1, &this->checkerboardTextureID);
+        glCheckError(GL_GPU);
+        GL_GPU::DeleteBuffers(1, &this->vboVerticesId);
+        GL_GPU::DeleteBuffers(1, &this->vboTexturesId);
+        GL_GPU::DeleteBuffers(1, &this->iboTriangleStripId);
+        glCheckError(GL_GPU);
+        GL_GPU::DeleteTextures(1, &this->checkerboardTextureID);
     }
 }
 
@@ -227,31 +211,24 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _this->context() );
 
-    bool useShader = _this->getBitDepth() != eImageBitDepthByte;
-
 
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
     ///
-    const TextureRect &roiRounded = this->displayTextures[textureIndex].texture->getTextureRect();
-    const TextureRect& roiNotRounded = this->displayTextures[textureIndex].roiNotRoundedToTileSize;
+    const RectI &textureBounds = this->displayTextures[textureIndex].texture->getBounds();
 
     ///This is the coordinates in the image being rendered where datas are valid, this is in pixel coordinates
     ///at the time we initialize it but we will convert it later to canonical coordinates. See 1)
-    const double par = roiRounded.par;
-    RectD canonicalRoIRoundedToTileSize;
-    roiRounded.toCanonical_noClipping(mipMapLevel, par /*, rod*/, &canonicalRoIRoundedToTileSize);
+    const double par = this->displayTextures[textureIndex].pixelAspectRatio;
 
-    RectD canonicalRoINotRounded;
-    roiNotRounded.toCanonical_noClipping(mipMapLevel, par, &canonicalRoINotRounded);
+    RectD canonicalRoIRoundedToTileSize;
+    textureBounds.toCanonical_noClipping(mipMapLevel, par /*, rod*/, &canonicalRoIRoundedToTileSize);
 
     ///the RoD of the image in canonical coords.
     RectD rod = _this->getRoD(textureIndex);
 
-    bool clipToDisplayWindow;
-    {
-        QMutexLocker l(&this->clipToDisplayWindowMutex);
-        clipToDisplayWindow = this->clipToDisplayWindow;
-    }
+    ViewerNodePtr internalNode = _this->getViewerTab()->getInternalNode();
+    bool clipToDisplayWindow = internalNode->isClipToFormatEnabled();
+
     RectD rectClippedToRoI(canonicalRoIRoundedToTileSize);
     rectClippedToRoI.intersect(rod, &rectClippedToRoI);
 
@@ -265,11 +242,8 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
 
 
     //if user RoI is enabled, clip the rod to that roi
-    bool userRoiEnabled;
-    {
-        QMutexLocker l(&this->userRoIMutex);
-        userRoiEnabled = this->userRoIEnabled;
-    }
+    bool userRoiEnabled = internalNode->isUserRoIEnabled();
+
 
 
     ////The texture real size (r.w,r.h) might be slightly bigger than the actual
@@ -282,13 +256,12 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     ///doesn't need to be scaled.
 
     if (userRoiEnabled) {
-        {
-            QMutexLocker l(&this->userRoIMutex);
-            //if the userRoI isn't intersecting the rod, just don't render anything
-            if ( !rod.intersect(this->userRoI, &rod) ) {
-                return;
-            }
+        RectD userRoI = internalNode->getUserRoI();
+        //if the userRoI isn't intersecting the rod, just don't render anything
+        if ( !rod.intersect(userRoI, &rod) ) {
+            return;
         }
+
         rectClippedToRoI.intersect(rod, &rectClippedToRoI);
         //clipTexCoords<RectD>(canonicalTexRect,rectClippedToRoI,texBottom,texTop,texLeft,texRight);
     }
@@ -309,18 +282,22 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         } else if (polyType == Implementation::eWipePolygonPartial) {
             this->getPolygonTextureCoordinates(polygonPoints, canonicalRoIRoundedToTileSize, polygonTexCoords);
 
-            this->bindTextureAndActivateShader(textureIndex, useShader);
+            assert(displayTextures[textureIndex].texture);
+            GL_GPU::ActiveTexture(GL_TEXTURE0);
+            GL_GPU::GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&prevBoundTexture);
+            GL_GPU::BindTexture( GL_TEXTURE_2D, displayTextures[textureIndex].texture->getTexID() );
 
-            glBegin(GL_POLYGON);
+            GL_GPU::Begin(GL_POLYGON);
             for (int i = 0; i < polygonTexCoords.size(); ++i) {
                 const QPointF & tCoord = polygonTexCoords[i];
                 const QPointF & vCoord = polygonPoints[i];
-                glTexCoord2d( tCoord.x(), tCoord.y() );
-                glVertex2d( vCoord.x(), vCoord.y() );
+                GL_GPU::TexCoord2d( tCoord.x(), tCoord.y() );
+                GL_GPU::Vertex2d( vCoord.x(), vCoord.y() );
             }
-            glEnd();
+            GL_GPU::End();
 
-            this->unbindTextureAndReleaseShader(useShader);
+            GL_GPU::BindTexture( GL_TEXTURE_2D, prevBoundTexture);
+
         } else {
             ///draw the all polygon as usual
             polygonMode = eDrawPolygonModeWhole;
@@ -354,10 +331,7 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
             (GLfloat)rod.right(),                               (GLfloat)rod.bottom() //15
         };
 
-        //        GLfloat texBottom =  0;
-        //        GLfloat texTop =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h /** r.closestPo2*/);
-        //        GLfloat texLeft = 0;
-        //        GLfloat texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w /** r.closestPo2*/);
+
         GLfloat texBottom = (GLfloat)(rectClippedToRoI.y1 - canonicalRoIRoundedToTileSize.y1)  / canonicalRoIRoundedToTileSize.height();
         GLfloat texTop = (GLfloat)(rectClippedToRoI.y2 - canonicalRoIRoundedToTileSize.y1)  / canonicalRoIRoundedToTileSize.height();
         GLfloat texLeft = (GLfloat)(rectClippedToRoI.x1 - canonicalRoIRoundedToTileSize.x1)  / canonicalRoIRoundedToTileSize.width();
@@ -382,46 +356,48 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         };
 
 
-        if ( background && this->viewerTab->isCheckerboardEnabled() && (polygonMode != eDrawPolygonModeWipeRight) ) {
-            bool isblend = glIsEnabled(GL_BLEND);
+        if ( background && internalNode->isCheckerboardEnabled() && (polygonMode != eDrawPolygonModeWipeRight) ) {
+            bool isblend = GL_GPU::IsEnabled(GL_BLEND);
             if (isblend) {
-                glDisable(GL_BLEND);
+                GL_GPU::Disable(GL_BLEND);
             }
             this->drawCheckerboardTexture(rod);
             if (isblend) {
-                glEnable(GL_BLEND);
+                GL_GPU::Enable(GL_BLEND);
             }
         }
 
-        this->bindTextureAndActivateShader(textureIndex, useShader);
+        assert(displayTextures[textureIndex].texture);
+        GL_GPU::ActiveTexture(GL_TEXTURE0);
+        GL_GPU::GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&prevBoundTexture);
+        GL_GPU::BindTexture( GL_TEXTURE_2D, displayTextures[textureIndex].texture->getTexID() );
+        glCheckError(GL_GPU);
 
-        glCheckError();
+        GL_GPU::BindBuffer(GL_ARRAY_BUFFER, this->vboVerticesId);
+        GL_GPU::BufferSubData(GL_ARRAY_BUFFER, 0, 32 * sizeof(GLfloat), vertices);
+        GL_GPU::EnableClientState(GL_VERTEX_ARRAY);
+        GL_GPU::VertexPointer(2, GL_FLOAT, 0, 0);
 
-        glBindBuffer(GL_ARRAY_BUFFER, this->vboVerticesId);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, 32 * sizeof(GLfloat), vertices);
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glVertexPointer(2, GL_FLOAT, 0, 0);
+        GL_GPU::BindBuffer(GL_ARRAY_BUFFER, this->vboTexturesId);
+        GL_GPU::BufferSubData(GL_ARRAY_BUFFER, 0, 32 * sizeof(GLfloat), renderingTextureCoordinates);
+        GL_GPU::ClientActiveTexture(GL_TEXTURE0);
+        GL_GPU::EnableClientState(GL_TEXTURE_COORD_ARRAY);
+        GL_GPU::TexCoordPointer(2, GL_FLOAT, 0, 0);
 
-        glBindBuffer(GL_ARRAY_BUFFER, this->vboTexturesId);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, 32 * sizeof(GLfloat), renderingTextureCoordinates);
-        glClientActiveTexture(GL_TEXTURE0);
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        glTexCoordPointer(2, GL_FLOAT, 0, 0);
+        GL_GPU::DisableClientState(GL_COLOR_ARRAY);
 
-        glDisableClientState(GL_COLOR_ARRAY);
+        GL_GPU::BindBuffer(GL_ARRAY_BUFFER, 0);
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        GL_GPU::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->iboTriangleStripId);
+        GL_GPU::DrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0);
+        glCheckErrorIgnoreOSXBug(GL_GPU);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->iboTriangleStripId);
-        glDrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0);
-        glCheckErrorIgnoreOSXBug();
+        GL_GPU::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        GL_GPU::DisableClientState(GL_VERTEX_ARRAY);
+        GL_GPU::DisableClientState(GL_TEXTURE_COORD_ARRAY);
+        GL_GPU::BindTexture( GL_TEXTURE_2D, prevBoundTexture);
+        glCheckError(GL_GPU);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glDisableClientState(GL_VERTEX_ARRAY);
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        glCheckError();
-
-        this->unbindTextureAndReleaseShader(useShader);
     }
 } // drawRenderingVAO
 
@@ -435,33 +411,31 @@ ViewerGL::Implementation::initializeGL()
 
     int format, internalFormat, glType;
     Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-    displayTextures[0].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType) );
-    displayTextures[1].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType) );
+    displayTextures[0].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, eImageBitDepthByte, format, internalFormat, glType, true) );
+    displayTextures[1].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, eImageBitDepthByte, format, internalFormat, glType, true) );
 
 
-    // glGenVertexArrays(1, &_vaoId);
-    glGenBuffers(1, &this->vboVerticesId);
-    glGenBuffers(1, &this->vboTexturesId);
-    glGenBuffers(1, &this->iboTriangleStripId);
+    GL_GPU::GenBuffers(1, &this->vboVerticesId);
+    GL_GPU::GenBuffers(1, &this->vboTexturesId);
+    GL_GPU::GenBuffers(1, &this->iboTriangleStripId);
 
-    glBindBuffer(GL_ARRAY_BUFFER, this->vboTexturesId);
-    glBufferData(GL_ARRAY_BUFFER, 32 * sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
+    GL_GPU::BindBuffer(GL_ARRAY_BUFFER, this->vboTexturesId);
+    GL_GPU::BufferData(GL_ARRAY_BUFFER, 32 * sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
 
-    glBindBuffer(GL_ARRAY_BUFFER, this->vboVerticesId);
-    glBufferData(GL_ARRAY_BUFFER, 32 * sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    GL_GPU::BindBuffer(GL_ARRAY_BUFFER, this->vboVerticesId);
+    GL_GPU::BufferData(GL_ARRAY_BUFFER, 32 * sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
+    GL_GPU::BindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->iboTriangleStripId);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 28 * sizeof(GLubyte), triangleStrip, GL_STATIC_DRAW);
+    GL_GPU::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->iboTriangleStripId);
+    GL_GPU::BufferData(GL_ELEMENT_ARRAY_BUFFER, 28 * sizeof(GLubyte), triangleStrip, GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glCheckError();
+    GL_GPU::BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glCheckError(GL_GPU);
 
     initializeCheckerboardTexture(true);
 
-    _this->initShaderGLSL();
 
-    glCheckError();
+    glCheckError(GL_GPU);
 }
 
 bool
@@ -475,21 +449,6 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
     return true;
 }
 
-void
-ViewerGL::Implementation::getBaseTextureCoordinates(const RectI & r,
-                                                    int closestPo2,
-                                                    int texW,
-                                                    int texH,
-                                                    GLfloat & bottom,
-                                                    GLfloat & top,
-                                                    GLfloat & left,
-                                                    GLfloat & right)
-{
-    bottom =  0;
-    top =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(texH * closestPo2);
-    left = 0;
-    right = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(texW * closestPo2);
-}
 
 void
 ViewerGL::Implementation::getPolygonTextureCoordinates(const QPolygonF & polygonPoints,
@@ -513,13 +472,10 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
 {
     ///Compute a second point on the plane separator line
     ///we don't really care how far it is from the center point, it just has to be on the line
-    QPointF center;
-    double angle;
-    {
-        QMutexLocker l(&wipeControlsMutex);
-        center = wipeCenter;
-        angle = wipeAngle;
-    }
+    ViewerNodePtr node = _this->getViewerTab()->getInternalNode();
+    QPointF center = node->getWipeCenter();
+    double angle = node->getWipeAngle();
+
 
     ///extrapolate the line to the maximum size of the RoD so we're sure the line
     ///intersection algorithm works
@@ -617,14 +573,14 @@ public:
     {
         didBlend = premult != eImagePremultiplicationOpaque;
         if (didBlend) {
-            glEnable(GL_BLEND);
+            GL_GPU::Enable(GL_BLEND);
         }
         switch (premult) {
         case eImagePremultiplicationPremultiplied:
-            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+            GL_GPU::BlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
             break;
         case eImagePremultiplicationUnPremultiplied:
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             break;
         case eImagePremultiplicationOpaque:
             break;
@@ -634,98 +590,44 @@ public:
     ~BlendSetter()
     {
         if (didBlend) {
-            glDisable(GL_BLEND);
+            GL_GPU::Disable(GL_BLEND);
         }
     }
 };
 
 void
-ViewerGL::Implementation::drawArcOfCircle(const QPointF & center,
-                                          double radiusX,
-                                          double radiusY,
-                                          double startAngle,
-                                          double endAngle)
-{
-    double alpha = startAngle;
-    double x, y;
-
-    {
-        GLProtectAttrib a(GL_CURRENT_BIT);
-
-        if ( (hs == eHoverStateWipeMix) || (ms == eMouseStateDraggingWipeMixHandle) ) {
-            glColor3f(0, 1, 0);
-        }
-        glBegin(GL_POINTS);
-        while (alpha <= endAngle) {
-            x = center.x()  + radiusX * std::cos(alpha);
-            y = center.y()  + radiusY * std::sin(alpha);
-            glVertex2d(x, y);
-            alpha += 0.01;
-        }
-        glEnd();
-    } // GLProtectAttrib a(GL_CURRENT_BIT);
-}
-
-void
-ViewerGL::Implementation::bindTextureAndActivateShader(int i,
-                                                       bool useShader)
-{
-    assert(displayTextures[i].texture);
-    glActiveTexture(GL_TEXTURE0);
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&prevBoundTexture);
-    glBindTexture( GL_TEXTURE_2D, displayTextures[i].texture->getTexID() );
-    // debug (so the OpenGL debugger can make a breakpoint here)
-    //GLfloat d;
-    //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
-    if (useShader) {
-        activateShaderRGB(i);
-    }
-    glCheckError();
-}
-
-void
-ViewerGL::Implementation::unbindTextureAndReleaseShader(bool useShader)
-{
-    if (useShader) {
-        shaderRGB->release();
-    }
-    glCheckError();
-    glBindTexture(GL_TEXTURE_2D, prevBoundTexture);
-}
-
-void
 ViewerGL::Implementation::drawSelectionRectangle()
 {
     {
-        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_LINE_SMOOTH);
-        glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+        GL_GPU::Enable(GL_BLEND);
+        GL_GPU::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::Enable(GL_LINE_SMOOTH);
+        GL_GPU::Hint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
 
-        glColor4f(0.5, 0.8, 1., 0.4);
+        GL_GPU::Color4f(0.5, 0.8, 1., 0.4);
         QPointF btmRight = selectionRectangle.bottomRight();
         QPointF topLeft = selectionRectangle.topLeft();
 
-        glBegin(GL_POLYGON);
-        glVertex2f( topLeft.x(), btmRight.y() );
-        glVertex2f( topLeft.x(), topLeft.y() );
-        glVertex2f( btmRight.x(), topLeft.y() );
-        glVertex2f( btmRight.x(), btmRight.y() );
-        glEnd();
+        GL_GPU::Begin(GL_POLYGON);
+        GL_GPU::Vertex2f( topLeft.x(), btmRight.y() );
+        GL_GPU::Vertex2f( topLeft.x(), topLeft.y() );
+        GL_GPU::Vertex2f( btmRight.x(), topLeft.y() );
+        GL_GPU::Vertex2f( btmRight.x(), btmRight.y() );
+        GL_GPU::End();
 
 
-        glLineWidth(1.5);
+        GL_GPU::LineWidth(1.5);
 
-        glBegin(GL_LINE_LOOP);
-        glVertex2f( topLeft.x(), btmRight.y() );
-        glVertex2f( topLeft.x(), topLeft.y() );
-        glVertex2f( btmRight.x(), topLeft.y() );
-        glVertex2f( btmRight.x(), btmRight.y() );
-        glEnd();
+        GL_GPU::Begin(GL_LINE_LOOP);
+        GL_GPU::Vertex2f( topLeft.x(), btmRight.y() );
+        GL_GPU::Vertex2f( topLeft.x(), topLeft.y() );
+        GL_GPU::Vertex2f( btmRight.x(), topLeft.y() );
+        GL_GPU::Vertex2f( btmRight.x(), btmRight.y() );
+        GL_GPU::End();
 
-        glCheckError();
+        glCheckError(GL_GPU);
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 }
 
@@ -750,30 +652,30 @@ ViewerGL::Implementation::drawCheckerboardTexture(const RectD& rod)
     double yTilesCountF = screenH / (checkerboardTileSize * 4);
     GLuint savedTexture;
 
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+    GL_GPU::GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     {
-        GLProtectAttrib a(GL_SCISSOR_BIT | GL_ENABLE_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_SCISSOR_BIT | GL_ENABLE_BIT);
 
-        glEnable(GL_SCISSOR_TEST);
-        glScissor( rodBtmLeft.x(), screenH - rodBtmLeft.y(), rodTopRight.x() - rodBtmLeft.x(), rodBtmLeft.y() - rodTopRight.y() );
+        GL_GPU::Enable(GL_SCISSOR_TEST);
+        GL_GPU::Scissor( rodBtmLeft.x(), screenH - rodBtmLeft.y(), rodTopRight.x() - rodBtmLeft.x(), rodBtmLeft.y() - rodTopRight.y() );
 
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, checkerboardTextureID);
-        glBegin(GL_POLYGON);
-        glTexCoord2d(0., 0.);
-        glVertex2d( topLeft.x(), btmRight.y() );
-        glTexCoord2d(0., yTilesCountF);
-        glVertex2d( topLeft.x(), topLeft.y() );
-        glTexCoord2d(xTilesCountF, yTilesCountF);
-        glVertex2d( btmRight.x(), topLeft.y() );
-        glTexCoord2d(xTilesCountF, 0.);
-        glVertex2d( btmRight.x(), btmRight.y() );
-        glEnd();
+        GL_GPU::Enable(GL_TEXTURE_2D);
+        GL_GPU::BindTexture(GL_TEXTURE_2D, checkerboardTextureID);
+        GL_GPU::Begin(GL_POLYGON);
+        GL_GPU::TexCoord2d(0., 0.);
+        GL_GPU::Vertex2d( topLeft.x(), btmRight.y() );
+        GL_GPU::TexCoord2d(0., yTilesCountF);
+        GL_GPU::Vertex2d( topLeft.x(), topLeft.y() );
+        GL_GPU::TexCoord2d(xTilesCountF, yTilesCountF);
+        GL_GPU::Vertex2d( btmRight.x(), topLeft.y() );
+        GL_GPU::TexCoord2d(xTilesCountF, 0.);
+        GL_GPU::Vertex2d( btmRight.x(), btmRight.y() );
+        GL_GPU::End();
 
         //glDisable(GL_SCISSOR_TEST);
     } // GLProtectAttrib a(GL_SCISSOR_BIT | GL_ENABLE_BIT);
-    glBindTexture(GL_TEXTURE_2D, savedTexture);
-    glCheckError();
+    GL_GPU::BindTexture(GL_TEXTURE_2D, savedTexture);
+    glCheckError(GL_GPU);
 }
 
 void
@@ -793,48 +695,48 @@ ViewerGL::Implementation::drawCheckerboardTexture(const QPolygonF& polygon)
     double yTilesCountF = screenH / (checkerboardTileSize * 4);
     GLuint savedTexture;
 
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+    GL_GPU::GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     {
-        GLProtectAttrib a(GL_ENABLE_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_ENABLE_BIT);
 
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, checkerboardTextureID);
-        glBegin(GL_POLYGON);
+        GL_GPU::Enable(GL_TEXTURE_2D);
+        GL_GPU::BindTexture(GL_TEXTURE_2D, checkerboardTextureID);
+        GL_GPU::Begin(GL_POLYGON);
         for (QPolygonF::const_iterator it = polygon.begin();
              it != polygon.end();
              ++it) {
-            glTexCoord2d( xTilesCountF * ( it->x() - topLeft.x() )  / ( btmRight.x() - topLeft.x() ),
+            GL_GPU::TexCoord2d( xTilesCountF * ( it->x() - topLeft.x() )  / ( btmRight.x() - topLeft.x() ),
                           yTilesCountF * ( it->y() - btmRight.y() ) / ( topLeft.y() - btmRight.y() ) );
-            glVertex2d( it->x(), it->y() );
+            GL_GPU::Vertex2d( it->x(), it->y() );
         }
-        glEnd();
+        GL_GPU::End();
 
 
         //glDisable(GL_SCISSOR_TEST);
     } // GLProtectAttrib a(GL_SCISSOR_BIT | GL_ENABLE_BIT);
-    glBindTexture(GL_TEXTURE_2D, savedTexture);
-    glCheckError();
+    GL_GPU::BindTexture(GL_TEXTURE_2D, savedTexture);
+    glCheckError(GL_GPU);
 }
 
 void
 ViewerGL::Implementation::initializeCheckerboardTexture(bool mustCreateTexture)
 {
     if (mustCreateTexture) {
-        glGenTextures(1, &checkerboardTextureID);
+        GL_GPU::GenTextures(1, &checkerboardTextureID);
     }
     GLuint savedTexture;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+    GL_GPU::GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     {
-        GLProtectAttrib a(GL_ENABLE_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_ENABLE_BIT);
 
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture (GL_TEXTURE_2D, checkerboardTextureID);
+        GL_GPU::Enable(GL_TEXTURE_2D);
+        GL_GPU::BindTexture (GL_TEXTURE_2D, checkerboardTextureID);
 
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        GL_GPU::TexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        GL_GPU::TexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        GL_GPU::TexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        GL_GPU::TexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
         double color1[4];
         double color2[4];
@@ -851,135 +753,13 @@ ViewerGL::Implementation::initializeCheckerboardTexture(bool mustCreateTexture)
         std::memcpy(&checkerboardTexture[8], &checkerboardTexture[4], sizeof(unsigned char) * 4);
         std::memcpy(&checkerboardTexture[12], &checkerboardTexture[0], sizeof(unsigned char) * 4);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 2, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, (void*)checkerboardTexture);
+        GL_GPU::TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 2, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, (void*)checkerboardTexture);
     } // GLProtectAttrib a(GL_ENABLE_BIT);
-    glBindTexture(GL_TEXTURE_2D, savedTexture);
+    GL_GPU::BindTexture(GL_TEXTURE_2D, savedTexture);
 
     checkerboardTileSize = appPTR->getCurrentSettings()->getCheckerboardTileSize();
 }
 
-void
-ViewerGL::Implementation::activateShaderRGB(int texIndex)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    // we assume that:
-    // - 8-bits textures are stored non-linear and must be displayer as is
-    // - floating-point textures are linear and must be decompressed according to the given lut
-
-    if ( !shaderRGB->bind() ) {
-        qDebug() << "Error when binding shader" << qPrintable( shaderRGB->log() );
-    }
-
-    shaderRGB->setUniformValue("Tex", 0);
-    shaderRGB->setUniformValue("gain", (float)displayTextures[texIndex].gain);
-    shaderRGB->setUniformValue("offset", (float)displayTextures[texIndex].offset);
-    shaderRGB->setUniformValue("lut", (GLint)displayingImageLut);
-    float gamma = displayTextures[texIndex].gamma;
-    shaderRGB->setUniformValue("gamma", gamma);
-}
-
-bool
-ViewerGL::Implementation::isNearbyWipeCenter(const QPointF & pos,
-                                             double zoomScreenPixelWidth,
-                                             double zoomScreenPixelHeight) const
-{
-    double toleranceX = zoomScreenPixelWidth * 8.;
-    double toleranceY = zoomScreenPixelHeight * 8.;
-    QMutexLocker l(&wipeControlsMutex);
-
-    if ( ( pos.x() >= (wipeCenter.x() - toleranceX) ) && ( pos.x() <= (wipeCenter.x() + toleranceX) ) &&
-         ( pos.y() >= (wipeCenter.y() - toleranceY) ) && ( pos.y() <= (wipeCenter.y() + toleranceY) ) ) {
-        return true;
-    }
-
-    return false;
-}
-
-bool
-ViewerGL::Implementation::isNearbyWipeRotateBar(const QPointF & pos,
-                                                double zoomScreenPixelWidth,
-                                                double zoomScreenPixelHeight) const
-{
-    double toleranceX = zoomScreenPixelWidth * 8.;
-    double toleranceY = zoomScreenPixelHeight * 8.;
-    double rotateX, rotateY, rotateOffsetX, rotateOffsetY;
-
-    rotateX = WIPE_ROTATE_HANDLE_LENGTH * zoomScreenPixelWidth;
-    rotateY = WIPE_ROTATE_HANDLE_LENGTH * zoomScreenPixelHeight;
-    rotateOffsetX = WIPE_ROTATE_OFFSET * zoomScreenPixelWidth;
-    rotateOffsetY = WIPE_ROTATE_OFFSET * zoomScreenPixelHeight;
-
-    QMutexLocker l(&wipeControlsMutex);
-    QPointF outterPoint;
-
-    outterPoint.setX( wipeCenter.x() + std::cos(wipeAngle) * (rotateX - rotateOffsetX) );
-    outterPoint.setY( wipeCenter.y() + std::sin(wipeAngle) * (rotateY - rotateOffsetY) );
-    if ( ( ( ( pos.y() >= (wipeCenter.y() - toleranceY) ) && ( pos.y() <= (outterPoint.y() + toleranceY) ) ) ||
-           ( ( pos.y() >= (outterPoint.y() - toleranceY) ) && ( pos.y() <= (wipeCenter.y() + toleranceY) ) ) ) &&
-         ( ( ( pos.x() >= (wipeCenter.x() - toleranceX) ) && ( pos.x() <= (outterPoint.x() + toleranceX) ) ) ||
-           ( ( pos.x() >= (outterPoint.x() - toleranceX) ) && ( pos.x() <= (wipeCenter.x() + toleranceX) ) ) ) ) {
-        Point a;
-        a.x = ( outterPoint.x() - wipeCenter.x() );
-        a.y = ( outterPoint.y() - wipeCenter.y() );
-        double norm = sqrt(a.x * a.x + a.y * a.y);
-
-        ///The point is in the bounding box of the segment, if it is vertical it must be on the segment anyway
-        if (norm == 0) {
-            return false;
-        }
-
-        a.x /= norm;
-        a.y /= norm;
-        Point b;
-        b.x = ( pos.x() - wipeCenter.x() );
-        b.y = ( pos.y() - wipeCenter.y() );
-        norm = sqrt(b.x * b.x + b.y * b.y);
-
-        ///This vector is not vertical
-        if (norm != 0) {
-            b.x /= norm;
-            b.y /= norm;
-
-            double crossProduct = b.y * a.x - b.x * a.y;
-            if (std::abs(crossProduct) <  0.1) {
-                return true;
-            }
-        }
-    }
-
-    return false;
-} // ViewerGL::Implementation::isNearbyWipeRotateBar
-
-bool
-ViewerGL::Implementation::isNearbyWipeMixHandle(const QPointF & pos,
-                                                double zoomScreenPixelWidth,
-                                                double zoomScreenPixelHeight) const
-{
-    double toleranceX = zoomScreenPixelWidth * 8.;
-    double toleranceY = zoomScreenPixelHeight * 8.;
-    QMutexLocker l(&wipeControlsMutex);
-    ///mix 1 is at rotation bar + pi / 8
-    ///mix 0 is at rotation bar + 3pi / 8
-    double alphaMix1, alphaMix0, alphaCurMix;
-
-    alphaMix1 = wipeAngle + M_PI_4 / 2;
-    alphaMix0 = wipeAngle + 3 * M_PI_4 / 2;
-    alphaCurMix = mixAmount * (alphaMix1 - alphaMix0) + alphaMix0;
-    QPointF mixPos;
-    double mixX = WIPE_MIX_HANDLE_LENGTH * zoomScreenPixelWidth;
-    double mixY = WIPE_MIX_HANDLE_LENGTH * zoomScreenPixelHeight;
-
-    mixPos.setX(wipeCenter.x() + std::cos(alphaCurMix) * mixX);
-    mixPos.setY(wipeCenter.y() + std::sin(alphaCurMix) * mixY);
-    if ( ( pos.x() >= (mixPos.x() - toleranceX) ) && ( pos.x() <= (mixPos.x() + toleranceX) ) &&
-         ( pos.y() >= (mixPos.y() - toleranceY) ) && ( pos.y() <= (mixPos.y() + toleranceY) ) ) {
-        return true;
-    }
-
-    return false;
-}
 
 void
 ViewerGL::Implementation::refreshSelectionRectangle(const QPointF & pos)
@@ -991,5 +771,6 @@ ViewerGL::Implementation::refreshSelectionRectangle(const QPointF & pos)
 
     selectionRectangle.setRect(xmin, ymin, xmax - xmin, ymax - ymin);
 }
+
 
 NATRON_NAMESPACE_EXIT

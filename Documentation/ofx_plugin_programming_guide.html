@@ -70,7 +70,7 @@ programming guide (C/C++)</B></P>
 <P CLASS="p7" STYLE="margin-bottom: 0.5cm">This guide is intented for
 confirmed C++ developers who want to develop OpenFX plug-ins using
 the Natron fork of the OpenFX standard:
-<A HREF="https://github.com/devernay/openfx">https://github.com/devernay/openfx</A>.</P>
+<A HREF="https://github.com/NatronGitHub/openfx">https://github.com/NatronGitHub/openfx</A>.</P>
 <P CLASS="p7" STYLE="margin-bottom: 0.5cm">Note that the Natron fork
 is 100% compliant with the original repository and using this guide
 ensures that your plug-in(s) will work across all hosts. 
@@ -106,7 +106,7 @@ the C++ wrapper to develop plugin for Natron.</SPAN></P>
 the official guys from the OpenFX association have made a C++ wrapper
 around it so it is easier to use. The wrapper on the plug-in side is
 called the <B>Support</B> layer and the one on the Host side (the
-application, e.g: Natron) is called the <B>HostSupport</B> layer.</P>
+application, e.g. Natron) is called the <B>HostSupport</B> layer.</P>
 <P CLASS="p2" STYLE="margin-bottom: 0.5cm"><BR><BR>
 </P>
 <P CLASS="p7" STYLE="margin-bottom: 0.5cm">The official repository of
@@ -121,7 +121,7 @@ the OpenFX association can be found here:
 <A HREF="https://github.com/ofxa/openfx">https://github.com/ofxa/openfx</A></P>
 <P CLASS="p7" STYLE="margin-bottom: 0.5cm">The repository the Natron
 dev team maintains can be found here:
-<A HREF="https://github.com/devernay/openfx">https://github.com/devernay/openfx</A></P>
+<A HREF="https://github.com/NatronGitHub/openfx">https://github.com/NatronGitHub/openfx</A></P>
 <P CLASS="p2" STYLE="margin-bottom: 0.5cm"><BR><BR>
 </P>
 <P CLASS="p7" STYLE="margin-bottom: 0.5cm">On this repository you
@@ -143,12 +143,12 @@ separate repositories for its OpenFX plug-ins.</P>
 <P CLASS="p8" STYLE="margin-bottom: 0.5cm">One is to handle all
 plug-ins which do input/output operations and rely on external
 libraries (such as OpenImageIO, OpenColorIO,FFMPEG,OpenEXR, etc…)
-and can be found here: <A HREF="https://github.com/MrKepzie/openfx-io">https://github.com/MrKepzie/openfx-io</A></P>
+and can be found here: <A HREF="https://github.com/NatronGitHub/openfx-io">https://github.com/NatronGitHub/openfx-io</A></P>
 <P CLASS="p8" STYLE="margin-bottom: 0.5cm">The other one is for all
 other plug-ins which do image processing. They do not require linking
 to any other external library and are generally easier to compile and
 understand. The address of that repository is:
-<A HREF="https://github.com/devernay/openfx-misc">https://github.com/devernay/openfx-misc</A></P>
+<A HREF="https://github.com/NatronGitHub/openfx-misc">https://github.com/NatronGitHub/openfx-misc</A></P>
 <P CLASS="p2" STYLE="margin-bottom: 0.5cm"><BR><BR>
 </P>
 <P CLASS="p7" STYLE="margin-bottom: 0.5cm">Depending on what kind of
@@ -302,7 +302,7 @@ whether it supports interlaced images, whether it supports
 multi-threading…. etc</P>
 <P CLASS="p9" STYLE="margin-bottom: 0.5cm">See the invert plug-in
 describe function here
-<A HREF="https://github.com/devernay/openfx-misc/blob/master/Invert/Invert.cpp">https://github.com/devernay/openfx-misc/blob/master/Invert/Invert.cpp</A></P>
+<A HREF="https://github.com/NatronGitHub/openfx-misc/blob/master/Invert/Invert.cpp">https://github.com/NatronGitHub/openfx-misc/blob/master/Invert/Invert.cpp</A></P>
 <P CLASS="p7" STYLE="margin-bottom: 0.5cm">for an example of the
 function.</P>
 <P CLASS="p7" STYLE="margin-bottom: 0.5cm">All properties defined in
@@ -366,7 +366,7 @@ in the user interface, you need to set the
 <FONT COLOR="#c67c48"><FONT FACE="Menlo-Regular">kOfxImageEffectPluginPropGrouping</FONT></FONT><FONT COLOR="#c67c48">
 </FONT><FONT COLOR="#000000"><FONT FACE="Menlo-Regular">property that
 is a string containing the menu group under which you want your
-plug-in appear, e.g: “Transform” or “Color/Transform”</FONT></FONT></FONT></P>
+plug-in appear, e.g. “Transform” or “Color/Transform”</FONT></FONT></FONT></P>
 <P CLASS="p2" STYLE="margin-bottom: 0.5cm"><BR><BR>
 </P>
 <P CLASS="p6" STYLE="margin-bottom: 0.5cm"><B>The plug-in object</B></P>
@@ -484,7 +484,7 @@ to determine the size of the image (or region of definition) produced
 by this effect.</P>
 <P CLASS="p7" STYLE="margin-bottom: 0.5cm">If your plug-in doesn't
 apply any geometrical transformation to the image, then it is
-probably not modifying it's size (e.g: an Invert plug-in doesn't
+probably not modifying it's size (e.g. an Invert plug-in doesn't
 modify the image's region of definition.) In that case you do not
 need to implement this function, this is the default behaviour to
 return the region of definition of the source clip.</P>
@@ -619,7 +619,7 @@ void getFramesNeeded(const OFX::FramesNeededArguments &amp;args,
 OFX::FramesNeededSetter &amp;frames) OVERRIDE FINAL</FONT></FONT></FONT><FONT COLOR="#ffffff"><FONT FACE="Menlo-Regular"><FONT SIZE=2 STYLE="font-size: 11pt">;</FONT></FONT></FONT></P>
 <P CLASS="p2" STYLE="margin-bottom: 0.5cm"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">If
 you were to write a plug-in that needs images at different times to
-do its processing, e.g: a Retiming plug-in that would need the image
+do its processing, e.g. a Retiming plug-in that would need the image
 at T – 1 and T + 1 in order to produce the image at frame T, you
 need to implement this action.</FONT></FONT></FONT></P>
 <P CLASS="p2" STYLE="margin-bottom: 0.5cm"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">This
@@ -672,12 +672,12 @@ plug-in</B></P>
 <P CLASS="p2" STYLE="margin-bottom: 0.5cm"><BR><BR>
 </P>
 <P CLASS="p7" STYLE="margin-bottom: 0.5cm">In this part we will
-examine the source code of the <A HREF="https://github.com/devernay/openfx-misc/tree/master/Invert">Invert
+examine the source code of the <A HREF="https://github.com/NatronGitHub/openfx-misc/tree/master/Invert">Invert
 plug-in</A>&nbsp; and comment the relevant parts.</P>
 <P CLASS="p2" STYLE="margin-bottom: 0.5cm"><BR><BR>
 </P>
 <P CLASS="p7" STYLE="margin-bottom: 0.5cm">First, let's take a look
-at the <A HREF="https://github.com/devernay/openfx-misc/blob/master/Invert/PluginRegistration.cpp">PluginRegistration.cpp</A>
+at the <A HREF="https://github.com/NatronGitHub/openfx-misc/blob/master/Invert/PluginRegistration.cpp">PluginRegistration.cpp</A>
 file.</P>
 <P CLASS="p7" STYLE="margin-bottom: 0.5cm">Any plug-in must register
 in the following function a static factory of the plug-in:</P>
@@ -704,8 +704,8 @@ void getPluginIDs(OFX::PluginFactoryArray &amp;ids)</P>
 </P>
 <P CLASS="p7" STYLE="margin-bottom: 0.5cm">In the invert example, we
 made a function in the plug-in named getInvertPluginID, declared in
-<A HREF="https://github.com/devernay/openfx-misc/blob/master/Invert/Invert.h">Invert.h</A>
-, defined in <A HREF="https://github.com/devernay/openfx-misc/blob/master/Invert/Invert.cpp">Invert.cpp</A>
+<A HREF="https://github.com/NatronGitHub/openfx-misc/blob/master/Invert/Invert.h">Invert.h</A>
+, defined in <A HREF="https://github.com/NatronGitHub/openfx-misc/blob/master/Invert/Invert.cpp">Invert.cpp</A>
 and in that function we just instantiate our factory that we declared
 above:</P>
 <P CLASS="p2" STYLE="margin-bottom: 0.5cm"><BR><BR>
@@ -2056,7 +2056,7 @@ the user can have responsive interaction and image renders.</P>
 </P>
 <P CLASS="p7" STYLE="margin-bottom: 0.5cm">We then use the
 ofxsUnPremult and ofxsPremultMaskMixPix to actually do the
-processing. These are functions that we created in the <A HREF="https://github.com/devernay/openfx-supportext">SupportExt
+processing. These are functions that we created in the <A HREF="https://github.com/NatronGitHub/openfx-supportext">SupportExt
 repository</A>&nbsp; which helps us to write processors.&nbsp; We
 created them because most of the processors across different plug-ins
 share a good amount of code and factorizing that into unique

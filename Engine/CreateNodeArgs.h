@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -16,8 +16,9 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef CREATENODEARGS_H
-#define CREATENODEARGS_H
+#ifndef Engine_CreateNodeArgs_h
+#define Engine_CreateNodeArgs_h
+
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,16 +26,15 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <map>
-#include <vector>
-#include <stdexcept>
+#include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-#endif
+#include "Engine/PropertiesHolder.h"
+
 
 #include "Engine/EngineFwd.h"
+
+
+NATRON_NAMESPACE_ENTER
 
 /**
  * @brief x1 std::string property indicating the ID of the plug-in instance to create
@@ -81,7 +81,7 @@
 #define kCreateNodeArgsPropParamValue "CreateNodeArgsPropParamValue"
 
 /**
- * @brief optional x1 boost::shared_ptr<NodeSerialization> A pointer to a node serialization object.
+ * @brief optional x1 NodeSerializationPtr A pointer to a node serialization object.
  * Default value - NULL
  * If non null, Natron will load the node state from this object.
  **/
@@ -95,26 +95,35 @@
 #define kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes "CreateNodeArgsPropNodeGroupDisableCreateInitialNodes"
 
 /**
- * @brief optional x1 bool property
- * Default Value - false
- * If copy/pasting, we don't want to paste a PyPlug and create copy from the Python script,
- * we want it to copy the group directly and keep the modifications the user may have made.
- * This is only relevant and valid if the property kCreateNodeArgsPropNodeSerialization has been set.
+ * @brief optional x1 std::string property indicating the label of the presets to use to load the node.
+ * The preset label must correspond to a valid label of a a preset file (.nps) that was found by Natron.
+ * The preset label is NOT the filename of the preset file, but the string in the file found next to the key "Label"
+ * If the preset cannot be found, the presets will not be loaded
+ * Default value - Empty
  **/
-#define kCreateNodeArgsPropDoNotLoadPyPlugFromScript "CreateNodeArgsPropDoNotLoadPyPlugFromScript"
+#define kCreateNodeArgsPropPreset "CreateNodeArgsPropPreset"
+
+/**
+ * @brief optional x1 std::string property indicating the pyplug ID to use to load the node.
+ * This is only relevant to Group nodes.
+ * Default value - Empty
+ **/
+#define kCreateNodeArgsPropPyPlugID "CreateNodeArgsPropPyPlugID"
+
 
 /**
  * @brief optional x1 bool property
  * Default Value - false
- * When set the node will not be part of the project. The node can be used for internal used, e.g in a Python script.
+ * When set to true the node will not be visible and will not be serialized into the user project.
+ * The node can be used for internal use, e.g in a Python script.
  **/
-#define kCreateNodeArgsPropOutOfProject "CreateNodeArgsPropOutOfProject"
+#define kCreateNodeArgsPropVolatile "CreateNodeArgsPropVolatile"
 
 /**
  * @brief optional x1 bool property
  * Default Value - false
  * If true, the node will not have any GUI created.
- * By default Natron will always create the GUI for a node, except if the property kCreateNodeArgsPropOutOfProject is set to true
+ * By default Natron will always create the GUI for a node, except if the property kCreateNodeArgsPropVolatile is set to true
  **/
 #define kCreateNodeArgsPropNoNodeGUI "CreateNodeArgsPropNoNodeGUI"
 
@@ -129,6 +138,14 @@
 /**
  * @brief optional x1 bool property
  * Default Value - true
+ * If true, if the node is a group, its sub-graph panel will be visible when created. If the property kCreateNodeArgsPropNodeSerialization is set to a non null
+ * serialization, this property has no effect.
+ **/
+#define kCreateNodeArgsPropSubGraphOpened "CreateNodeArgsPropSubGraphOpened"
+
+/**
+ * @brief optional x1 bool property
+ * Default Value - true
  * If true, Natron will try to automatically connect the node to others depending on the user selection. If the property kCreateNodeArgsPropNodeSerialization is set, this has no effect.
  **/
 #define kCreateNodeArgsPropAutoConnect "CreateNodeArgsPropAutoConnect"
@@ -136,7 +153,7 @@
 /**
  * @brief optional x1 bool property
  * Default Value - true
- * If true, Natron will push a undo/redo command to the stack when creating this node. If the property kCreateNodeArgsPropNoNodeGUI is set to true or kCreateNodeArgsPropOutOfProject
+ * If true, Natron will push a undo/redo command to the stack when creating this node. If the property kCreateNodeArgsPropNoNodeGUI is set to true or kCreateNodeArgsPropVolatile
  * is set to true, this property has no effet
  **/
 #define kCreateNodeArgsPropAddUndoRedoCommand "CreateNodeArgsPropAddUndoRedoCommand"
@@ -156,227 +173,35 @@
  **/
 #define kCreateNodeArgsPropSilent "CreateNodeArgsPropSilent"
 
-/**
- * @brief optional x1 bool property
- * Default value - false
- * If true, Natron will not attempt to convert the plug-in ID to another known plug-in ID. For example if trying to create an instance of PLUGINID_OFX_ROTO, then Natron will stick to it.
- * If not set Natron will try to convert the plug-in ID to a known value, such as PLUGINID_NATRON_ROTO
- **/
-#define kCreateNodeArgsPropTrustPluginID "CreateNodeArgsPropTrustPluginID"
 
 /**
- * @brief optional x1 boost::shared_ptr<NodeCollection> A pointer to the group in which the node will be created. If not set, Natron
+ * @brief optional x1 NodeCollectionPtr A pointer to the group in which the node will be created. If not set, Natron
  * will create the node in the top-level node-graph of the project.
  **/
 #define kCreateNodeArgsPropGroupContainer "CreateNodeArgsPropGroupContainer"
 
 /**
- * @brief optional x1 boost::shared_ptr<Node> A Pointer to a node that contains this node. This is used internally by the Read and Write nodes
+ * @brief optional x1 NodePtr A Pointer to a node that contains this node. This is used internally by the Read and Write nodes
  * which are meta-bundles to the internal decoders/encoders.
  * Defalt value - null
  **/
 #define kCreateNodeArgsPropMetaNodeContainer "CreateNodeArgsPropMetaNodeContainer"
 
-/**
- * @brief [DEPRECATED] optional x1 std::string For the old Tracker_PM node, we used this to indicate when creating a track (which was represented by a node internally)
- * what was the script-name of the parent node.
- * This is meaningless in Natron >= 2.1
- * Default Value - Empty
- **/
-#define kCreateNodeArgsPropMultiInstanceParentName "CreateNodeArgsPropMultiInstanceParentName"
-
-NATRON_NAMESPACE_ENTER
 
 struct CreateNodeArgsPrivate;
-class CreateNodeArgs
+class CreateNodeArgs : public PropertiesHolder
 {
 
-    class PropertyBase
-    {
-    public:
-
-
-        PropertyBase()
-        {
-
-        }
-
-        virtual int getDimension() const = 0;
-
-        virtual ~PropertyBase()
-        {
-
-        }
-    };
-
-    template<typename T>
-    class Property : public PropertyBase
-    {
-    public:
-
-        std::vector<T> value;
-
-        Property()
-        : PropertyBase()
-        , value()
-        {}
-
-        virtual int getDimension() const OVERRIDE FINAL
-        {
-            return (int)value.size();
-        }
-
-        virtual ~Property() {
-
-        }
-    };
-    
-    template <typename T>
-    boost::shared_ptr<Property<T> > getProp(const std::string& name, bool throwOnFailure = true) const
-    {
-        const boost::shared_ptr<PropertyBase>* propPtr = 0;
-
-        std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties.find(name);
-        if (found == _properties.end()) {
-            if (throwOnFailure) {
-                throw std::invalid_argument("CreateNodeArgs::getProp(): Invalid property " + name);
-            }
-            return boost::shared_ptr<Property<T> >();
-        }
-        propPtr = &(found->second);
-        boost::shared_ptr<Property<T> > propTemplate;
-        propTemplate = boost::dynamic_pointer_cast<Property<T> >(*propPtr);
-        assert(propPtr);
-        if (!propTemplate) {
-            if (throwOnFailure) {
-                throw std::invalid_argument("CreateNodeArgs::getProp(): Invalid property type for " + name);
-            }
-            return boost::shared_ptr<Property<T> >();
-        }
-
-        assert(propTemplate);
-        return propTemplate;
-    }
-
-
-    template <typename T>
-    boost::shared_ptr<Property<T> > createPropertyInternal(const std::string& name)
-    {
-        boost::shared_ptr<PropertyBase>* propPtr = 0;
-        propPtr = &_properties[name];
-        
-        boost::shared_ptr<Property<T> > propTemplate;
-        if (!*propPtr) {
-            propTemplate = boost::make_shared<Property<T> >();
-            *propPtr = propTemplate;
-        } else {
-            propTemplate = boost::dynamic_pointer_cast<Property<T> >(*propPtr);
-        }
-        assert(propTemplate);
-        return propTemplate;
-    }
-
-    template <typename T>
-    boost::shared_ptr<Property<T> > createProperty(const std::string& name, const T& defaultValue)
-    {
-        boost::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
-        p->value.push_back(defaultValue);
-        return p;
-    }
-
-    template <typename T>
-    boost::shared_ptr<Property<T> > createProperty(const std::string& name, const T& defaultValue1, const T& defaultValue2)
-    {
-        boost::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
-        p->value.push_back(defaultValue1);
-        p->value.push_back(defaultValue2);
-        return p;
-    }
-
-    template <typename T>
-    boost::shared_ptr<Property<T> > createProperty(const std::string& name, const std::vector<T>& defaultValue)
-    {
-        boost::shared_ptr<Property<T> > p = createPropertyInternal<T>(name);
-        p->value = defaultValue;
-        return p;
-    }
-
-    void createProperties()
-    {
-        createProperty<std::string>(kCreateNodeArgsPropPluginID, std::string());
-        createProperty<int>(kCreateNodeArgsPropPluginVersion, -1, -1);
-        createProperty<double>(kCreateNodeArgsPropNodeInitialPosition, (double)INT_MIN, (double)INT_MIN);
-        createProperty<std::string>(kCreateNodeArgsPropNodeInitialName, std::string());
-        createProperty<std::string>(kCreateNodeArgsPropNodeInitialParamValues, std::vector<std::string>());
-        createProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, boost::shared_ptr<NodeSerialization>());
-        createProperty<bool>(kCreateNodeArgsPropDoNotLoadPyPlugFromScript, false);
-        createProperty<bool>(kCreateNodeArgsPropOutOfProject, false);
-        createProperty<bool>(kCreateNodeArgsPropNoNodeGUI, false);
-        createProperty<bool>(kCreateNodeArgsPropSettingsOpened, true);
-        createProperty<bool>(kCreateNodeArgsPropAutoConnect, true);
-        createProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, false);
-        createProperty<bool>(kCreateNodeArgsPropSilent, false);
-        createProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, false);
-        createProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, true);
-        createProperty<bool>(kCreateNodeArgsPropTrustPluginID, false);
-        createProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer, boost::shared_ptr<NodeCollection>());
-        createProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, NodePtr());
-        createProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, std::string());
-
-
-    }
 
 public:
 
+    static CreateNodeArgsPtr create(const std::string& pluginID, const NodeCollectionPtr& group = NodeCollectionPtr());
+
+
     CreateNodeArgs();
 
-    /**
-     * @brief The constructor, taking values for all non-optional properties and the group
-     **/
-    CreateNodeArgs(const std::string& pluginID,
-                   const boost::shared_ptr<NodeCollection>& group = boost::shared_ptr<NodeCollection>());
 
-    ~CreateNodeArgs();
-
-    template <typename T>
-    void setProperty(const std::string& name, const T& value, int index = 0, bool failIfNotExisting = true)
-    {
-        boost::shared_ptr<Property<T> > propTemplate;
-        propTemplate = getProp<T>(name, failIfNotExisting);
-        if (!propTemplate) {
-            propTemplate = createProperty<T>(name, value);
-        }
-        if (index >= (int)propTemplate->value.size()) {
-            propTemplate->value.resize(index + 1);
-        }
-        propTemplate->value[index] = value;
-
-    }
-
-    template <typename T>
-    void setPropertyN(const std::string& name, const std::vector<T>& values, bool failIfNotExisting = true)
-    {
-        boost::shared_ptr<Property<T> > propTemplate;
-        propTemplate = getProp<T>(name, failIfNotExisting);
-        if (!propTemplate) {
-            propTemplate = createProperty<T>(name, values);
-        }
-        propTemplate->value = values;
-    }
-
-    int getPropertyDimension(const std::string& name, bool throwIfFailed = true) const
-    {
-        std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties.find(name);
-        if (found == _properties.end()) {
-            if (throwIfFailed) {
-                throw std::invalid_argument("Invalid property " + name);
-            } else {
-                return 0;
-            }
-        }
-        return found->second->getDimension();
-    }
-
+    virtual ~CreateNodeArgs();
 
     template <typename T>
     void addParamDefaultValue(const std::string& paramName, const T& value)
@@ -401,30 +226,12 @@ public:
         setPropertyN(propertyName, values, false);
     }
 
-
-    template<typename T>
-    T getProperty(const std::string& name, int index = 0) const
-    {
-        boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name);
-        if (index < 0 || index >= (int)propTemplate->value.size()) {
-            throw std::invalid_argument("CreateNodeArgs::getProperty(): index out of range for " + name);
-        }
-        return propTemplate->value[index];
-
-    }
-
-    template<typename T>
-    std::vector<T> getPropertyN(const std::string& name) const
-    {
-        boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name);
-        return propTemplate->value;
-
-    }
 private:
 
-    std::map<std::string, boost::shared_ptr<PropertyBase> > _properties;
+
+    virtual void initializeProperties() const OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT
 
-#endif // CREATENODEARGS_H
+#endif // Engine_CreateNodeArgs_h

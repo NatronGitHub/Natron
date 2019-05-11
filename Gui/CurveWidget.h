@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -73,7 +73,7 @@ public:
     /*Pass a null timeline ptr if you don't want interaction with the global timeline. */
     CurveWidget(Gui* gui,
                 CurveSelection* selection,
-                boost::shared_ptr<TimeLine> timeline = boost::shared_ptr<TimeLine>(),
+                TimeLinePtr timeline = TimeLinePtr(),
                 QWidget* parent = NULL,
                 const QGLWidget* shareWidget = NULL);
 
@@ -84,19 +84,19 @@ public:
     void centerOn(double xmin, double xmax);
     void centerOn(double xmin, double xmax, double ymin, double ymax);
 
-    void addCurveAndSetColor(const boost::shared_ptr<CurveGui>& curve);
+    void addCurveAndSetColor(const CurveGuiPtr& curve);
 
     void removeCurve(CurveGui* curve);
 
-    void centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves, bool useDisplayRange);
+    void centerOn(const std::vector<CurveGuiPtr> & curves, bool useDisplayRange);
 
-    void showCurvesAndHideOthers(const std::vector<boost::shared_ptr<CurveGui> > & curves);
+    void showCurvesAndHideOthers(const std::vector<CurveGuiPtr> & curves);
 
-    void getVisibleCurves(std::vector<boost::shared_ptr<CurveGui> >* curves) const;
+    void getVisibleCurves(std::vector<CurveGuiPtr>* curves) const;
 
     void setSelectedKeys(const SelectedKeys & keys);
 
-    bool isSelectedKey(const boost::shared_ptr<CurveGui>& curve, double time) const;
+    bool isSelectedKey(const CurveGuiPtr& curve, double time) const;
 
     void refreshSelectedKeysAndUpdate();
 
@@ -126,9 +126,6 @@ public:
      **/
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
 
-#ifdef OFX_EXTENSIONS_NATRON
-    virtual double getScreenPixelRatio() const OVERRIDE FINAL;
-#endif
     /**
      * @brief Returns the colour of the background (i.e: clear color) of the viewport.
      **/
@@ -169,8 +166,8 @@ public:
     void pushUndoCommand(QUndoCommand* cmd);
 
     // The interact will be drawn after the background and before any curve
-    void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc);
-    boost::shared_ptr<OfxParamOverlayInteract> getCustomInteract() const;
+    void setCustomInteract(const OfxParamOverlayInteractPtr & interactDesc);
+    OfxParamOverlayInteractPtr getCustomInteract() const;
 
 public Q_SLOTS:
 
@@ -254,7 +251,7 @@ private:
     const QFont & getFont() const;
     const SelectedKeys & getSelectedKeyFrames() const;
 
-    void addKey(const boost::shared_ptr<CurveGui>& curve, double xCurve, double yCurve);
+    void addKey(const CurveGuiPtr& curve, double xCurve, double yCurve);
 
 private:
 

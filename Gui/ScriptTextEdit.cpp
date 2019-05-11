@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,6 +32,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QScrollBar>
 #include <QTextBlock>
 #include <QPainter>
+#include <QApplication>
 #include <QtCore/QRegExp>
 #include <QtCore/QMimeData>
 CLANG_DIAG_ON(deprecated)
@@ -40,12 +41,16 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/Image.h"
 #include "Engine/Settings.h"
+#include "Engine/Project.h"
+#include "Engine/KnobUndoCommand.h"
 #include "Engine/EffectInstance.h"
 
 #include "Gui/Gui.h"
+#include "Gui/KnobGui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobWidgetDnD.h" // KNOB_DND_MIME_DATA_KEY
+
 
 NATRON_NAMESPACE_ENTER
 
@@ -70,7 +75,7 @@ struct PyHighLightRule
 
 struct PySyntaxHighlighterPrivate
 {
-    PySyntaxHighlighter* publicInterface;
+    PySyntaxHighlighter* publicInterface; // can not be a smart ptr
     QStringList keywords;
     QStringList operators;
     QStringList braces;
@@ -303,10 +308,16 @@ PySyntaxHighlighterPrivate::reload()
 }
 
 InputScriptTextEdit::InputScriptTextEdit(Gui* gui,
+                                         const KnobGuiPtr& knobExpressionReceiver,
+                                         DimSpec dimension,
+                                         ViewSetSpec view,
                                          QWidget* parent)
     : QPlainTextEdit(parent)
     , _lineNumber( new LineNumberWidget(this) )
     , _gui(gui)
+    , _knobExpressionReceiver(knobExpressionReceiver)
+    , _knobTargetDimension(dimension)
+    , _knobTargetView(view)
 {
     QObject::connect( this, SIGNAL(blockCountChanged(int)), this, SLOT(updateLineNumberAreaWidth(int)) );
     QObject::connect( this, SIGNAL(updateRequest(QRect,int)), this, SLOT(updateLineNumberArea(QRect,int)) );
@@ -465,34 +476,43 @@ InputScriptTextEdit::dropEvent(QDropEvent* e)
         return;
     }
     QStringList formats = e->mimeData()->formats();
-    if ( formats.contains( QLatin1String(KNOB_DND_MIME_DATA_KEY) ) ) {
-        int cbDim;
-        KnobPtr fromKnob;
-        QDrag* drag;
-        _gui->getApp()->getKnobDnDData(&drag, &fromKnob, &cbDim);
-
-        if (fromKnob) {
-            EffectInstance* isEffect = dynamic_cast<EffectInstance*>( fromKnob->getHolder() );
-            if (isEffect) {
-                QString toAppend;
-                toAppend.append( QString::fromUtf8( isEffect->getNode()->getFullyQualifiedName().c_str() ) );
-                toAppend.append( QLatin1Char('.') );
-                toAppend.append( QString::fromUtf8( fromKnob->getName().c_str() ) );
-                toAppend.append( QString::fromUtf8(".get()") );
-                if (fromKnob->getDimension() > 1) {
-                    toAppend.append( QLatin1Char('[') );
-                    if ( (cbDim == -1) || ( (cbDim == 0) && !fromKnob->getAllDimensionVisible() ) ) {
-                        toAppend.append( QString::fromUtf8("dimension") );
-                    } else {
-                        toAppend.append( QString::number(cbDim) );
-                    }
-                    toAppend.append( QLatin1Char(']') );
-                }
-                appendPlainText(toAppend);
-                e->acceptProposedAction();
-            }
-        }
+    if ( !formats.contains( QLatin1String(KNOB_DND_MIME_DATA_KEY) ) ) {
+        return;
     }
+    DimSpec cbDim;
+    ViewSetSpec cbView;
+    KnobIPtr fromKnob;
+    QDrag* drag;
+    _gui->getApp()->getKnobDnDData(&drag, &fromKnob, &cbDim, &cbView);
+
+    if (!fromKnob) {
+        return;
+    }
+    EffectInstancePtr fromEffect = toEffectInstance( fromKnob->getHolder() );
+    if (!fromEffect) {
+        return;
+    }
+    KnobGuiPtr toKnob = _knobExpressionReceiver.lock();
+    if (!toKnob) {
+        return;
+    }
+
+    Qt::KeyboardModifiers mods = QApplication::keyboardModifiers();
+    KnobClipBoardType type = eKnobClipBoardTypeCopyExpressionLink;
+    if ( ( mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier) ) == (Qt::ControlModifier | Qt::ShiftModifier) ) {
+        type = eKnobClipBoardTypeCopyExpressionMultCurveLink;
+    }
+
+
+    const std::vector<std::string> &projectViewNames = fromEffect->getApp()->getProject()->getProjectViewNames();
+
+    std::string expression = PasteKnobClipBoardUndoCommand::makeLinkExpression(projectViewNames, toKnob->getKnob(), type == eKnobClipBoardTypeCopyExpressionMultCurveLink, _gui->getEditExpressionDialogLanguage(), fromKnob, cbDim, cbView, _knobTargetDimension, _knobTargetView);
+
+    appendPlainText(QString::fromUtf8(expression.c_str()));
+    e->acceptProposedAction();
+
+
+
 }
 
 void

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -22,279 +22,325 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Image.h"
-
-#include <cassert>
-#include <stdexcept>
-#include "Engine/GLShader.h"
-#include "Engine/OSGLContext.h"
+#include "ImagePrivate.h"
 
 NATRON_NAMESPACE_ENTER
 
 template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked, bool maskInvert>
-void
-Image::applyMaskMixForMaskInvert(const RectI& roi,
-                                 const Image* maskImg,
-                                 const Image* originalImg,
-                                 float mix)
+static ActionRetCodeEnum
+applyMaskMixForMaskInvert(const void* originalImgPtrs[4],
+                          const RectI& originalImgBounds,
+                          const void* maskImgPtrs[4],
+                          const RectI& maskImgBounds,
+                          void* dstImgPtrs[4],
+                          double mix,
+                          const RectI& bounds,
+                          const RectI& roi,
+                          const EffectInstancePtr& renderClone)
 {
-    PIX* dst_pixels = (PIX*)pixelAt(roi.x1, roi.y1);
-    unsigned int dstRowElements = _bounds.width() * getComponentsCount();
 
-    for ( int y = roi.y1; y < roi.y2; ++y,
-          dst_pixels += (dstRowElements - (roi.x2 - roi.x1) * dstNComps) ) { // 1 row stride minus what was done at previous iteration
-        for (int x = roi.x1; x < roi.x2; ++x,
-             dst_pixels += dstNComps) {
-            const PIX* src_pixels = originalImg ? (const PIX*)originalImg->pixelAt(x, y) : 0;
+    PIX* dstPixelPtrs[4] = {NULL, NULL, NULL, NULL};
+    int dstPixelStride;
+    Image::getChannelPointers<PIX, dstNComps>((const PIX**)dstImgPtrs, roi.x1, roi.y1, bounds, (PIX**)dstPixelPtrs, &dstPixelStride);
+
+    const std::size_t dstRowElements = (std::size_t)bounds.width() * dstPixelStride;
+
+    for ( int y = roi.y1; y < roi.y2; ++y) {
+
+        if (renderClone && renderClone->isRenderAborted()) {
+            return eActionStatusAborted;
+        }
+        for (int x = roi.x1; x < roi.x2; ++x) {
+
+            PIX* srcPixelPtrs[4] = {NULL, NULL, NULL, NULL};
+            int srcPixelStride = 0;
+            if (originalImgPtrs[0]) {
+                Image::getChannelPointers<PIX, srcNComps>((const PIX**)originalImgPtrs, x, y, originalImgBounds, (PIX**)srcPixelPtrs, &srcPixelStride);
+            }
+
             float maskScale = 1.f;
             if (!masked) {
                 // just mix
                 float alpha = mix;
-                if (src_pixels) {
-                    for (int c = 0; c < dstNComps; ++c) {
-                        if (c < srcNComps) {
-                            float v = float(dst_pixels[c]) * alpha + (1.f - alpha) * float(src_pixels[c]);
-                            dst_pixels[c] = clampIfInt<PIX>(v);
-                        }
+                for (int c = 0; c < dstNComps; ++c) {
+                    float dstF = Image::convertPixelDepth<PIX, float>(*dstPixelPtrs[c]);
+                    float srcF;
+                    if (*srcPixelPtrs[c]) {
+                        srcF = Image::convertPixelDepth<PIX, float>(*srcPixelPtrs[c]);
+                        srcPixelPtrs[c] += srcPixelStride;
+                    } else {
+                        srcF = 0.;
                     }
-                } else {
-                    for (int c = 0; c < dstNComps; ++c) {
-                        float v = float(dst_pixels[c]) * alpha;
-                        dst_pixels[c] = clampIfInt<PIX>(v);
-                    }
+                    float v = dstF * alpha + (1.f - alpha) * srcF;
+                    *dstPixelPtrs[c] = Image::convertPixelDepth<float, PIX>(v);
+
+                    dstPixelPtrs[c] += dstPixelStride;
                 }
             } else {
-                const PIX* maskPixels = maskImg ? (const PIX*)maskImg->pixelAt(x, y) : 0;
+
+                PIX* maskPixelPtrs[4] = {NULL, NULL, NULL, NULL};
+                int maskPixelStride;
+                Image::getChannelPointers<PIX, 1>((const PIX**)maskImgPtrs, x, y, maskImgBounds, (PIX**)maskPixelPtrs, &maskPixelStride);
+
                 // figure the scale factor from that pixel
-                if (maskPixels == 0) {
+                if (!maskPixelPtrs[0]) {
                     maskScale = maskInvert ? 1.f : 0.f;
                 } else {
-                    maskScale = *maskPixels * (1.f / maxValue);
+                    maskScale = *maskPixelPtrs[0] * (1.f / maxValue);
                     if (maskInvert) {
                         maskScale = 1.f - maskScale;
                     }
+                    maskPixelPtrs[0] += maskPixelStride;
+
                 }
                 float alpha = mix * maskScale;
-                if (src_pixels) {
-                    for (int c = 0; c < dstNComps; ++c) {
-                        if (c < srcNComps) {
-                            float v = float(dst_pixels[c]) * alpha + (1.f - alpha) * float(src_pixels[c]);
-                            dst_pixels[c] = clampIfInt<PIX>(v);
-                        }
+                for (int c = 0; c < dstNComps; ++c) {
+                    float dstF = Image::convertPixelDepth<PIX, float>(*dstPixelPtrs[c]);
+                    float srcF;
+                    if (*srcPixelPtrs[c]) {
+                        srcF = Image::convertPixelDepth<PIX, float>(*srcPixelPtrs[c]);
+                        srcPixelPtrs[c] += srcPixelStride;
+                    } else {
+                        srcF = 0.;
                     }
-                } else {
-                    for (int c = 0; c < dstNComps; ++c) {
-                        float v = float(dst_pixels[c]) * alpha;
-                        dst_pixels[c] = clampIfInt<PIX>(v);
-                    }
+                    float v = dstF * alpha + (1.f - alpha) * srcF;
+                    *dstPixelPtrs[c] = Image::convertPixelDepth<float, PIX>(v);
+                    dstPixelPtrs[c] += dstPixelStride;
                 }
             }
         }
+        for (int c = 0; c < dstNComps; ++c) {
+            dstPixelPtrs[c] += (dstRowElements - roi.width() * dstPixelStride);
+        }
     }
-} // Image::applyMaskMixForMaskInvert
+    return eActionStatusOK;
+} // applyMaskMixForMaskInvert
 
 template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked>
-void
-Image::applyMaskMixForMasked(const RectI& roi,
-                             const Image* maskImg,
-                             const Image* originalImg,
-                             bool maskInvert,
-                             float mix)
+static ActionRetCodeEnum
+applyMaskMixForMasked(const void* originalImgPtrs[4],
+                      const RectI& originalImgBounds,
+                      const void* maskImgPtrs[4],
+                      const RectI& maskImgBounds,
+                      void* dstImgPtrs[4],
+                      double mix,
+                      bool invertMask,
+                      const RectI& bounds,
+                      const RectI& roi,
+                      const EffectInstancePtr& renderClone)
 {
-    if (maskInvert) {
-        applyMaskMixForMaskInvert<srcNComps, dstNComps, PIX, maxValue, masked, true>(roi, maskImg, originalImg, mix);
+    if (invertMask) {
+        return applyMaskMixForMaskInvert<srcNComps, dstNComps, PIX, maxValue, masked, true>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, bounds, roi, renderClone);
     } else {
-        applyMaskMixForMaskInvert<srcNComps, dstNComps, PIX, maxValue, masked, false>(roi, maskImg, originalImg, mix);
+        return applyMaskMixForMaskInvert<srcNComps, dstNComps, PIX, maxValue, masked, false>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, bounds, roi, renderClone);
     }
 }
 
 template<int srcNComps, int dstNComps, typename PIX, int maxValue>
-void
-Image::applyMaskMixForDepth(const RectI& roi,
-                            const Image* maskImg,
-                            const Image* originalImg,
-                            bool masked,
-                            bool maskInvert,
-                            float mix)
+static ActionRetCodeEnum
+applyMaskMixForDepth(const void* originalImgPtrs[4],
+                     const RectI& originalImgBounds,
+                     const void* maskImgPtrs[4],
+                     const RectI& maskImgBounds,
+                     void* dstImgPtrs[4],
+                     double mix,
+                     bool invertMask,
+                     const RectI& bounds,
+                     const RectI& roi,
+                     const EffectInstancePtr& renderClone)
 {
-    if (masked) {
-        applyMaskMixForMasked<srcNComps, dstNComps, PIX, maxValue, true>(roi, maskImg, originalImg, maskInvert, mix);
+    if (maskImgPtrs[0]) {
+        return applyMaskMixForMasked<srcNComps, dstNComps, PIX, maxValue, true>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderClone);
     } else {
-        applyMaskMixForMasked<srcNComps, dstNComps, PIX, maxValue, false>(roi, maskImg, originalImg, maskInvert, mix);
+        return applyMaskMixForMasked<srcNComps, dstNComps, PIX, maxValue, false>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderClone);
     }
 }
 
-template<int srcNComps, int dstNComps>
-void
-Image::applyMaskMixForDstComponents(const RectI& roi,
-                                    const Image* maskImg,
-                                    const Image* originalImg,
-                                    bool masked,
-                                    bool maskInvert,
-                                    float mix)
+template <int srcNComps, int dstNComps>
+static ActionRetCodeEnum
+applyMaskMixForDstComponents(const void* originalImgPtrs[4],
+                             const RectI& originalImgBounds,
+                             const void* maskImgPtrs[4],
+                             const RectI& maskImgBounds,
+                             void* dstImgPtrs[4],
+                             ImageBitDepthEnum dstImgBitDepth,
+                             double mix,
+                             bool invertMask,
+                             const RectI& bounds,
+                             const RectI& roi,
+                             const EffectInstancePtr& renderClone)
 {
-    ImageBitDepthEnum depth = getBitDepth();
-
-    switch (depth) {
-    case eImageBitDepthByte:
-        applyMaskMixForDepth<srcNComps, dstNComps, unsigned char, 255>(roi, maskImg, originalImg, masked, maskInvert, mix);
-        break;
-    case eImageBitDepthShort:
-        applyMaskMixForDepth<srcNComps, dstNComps, unsigned short, 65535>(roi, maskImg, originalImg, masked, maskInvert, mix);
-        break;
-    case eImageBitDepthFloat:
-        applyMaskMixForDepth<srcNComps, dstNComps, float, 1>(roi, maskImg, originalImg, masked, maskInvert, mix);
-        break;
-    default:
-        assert(false);
-        break;
+    switch (dstImgBitDepth) {
+        case eImageBitDepthByte:
+            return applyMaskMixForDepth<srcNComps, dstNComps, unsigned char, 255>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderClone);
+        case eImageBitDepthShort:
+            return applyMaskMixForDepth<srcNComps, dstNComps, unsigned short, 65535>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderClone);
+        case eImageBitDepthFloat:
+            return applyMaskMixForDepth<srcNComps, dstNComps, float, 1>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderClone);
+        default:
+            assert(false);
+            return eActionStatusFailed;
     }
 }
 
 template<int srcNComps>
-void
-Image::applyMaskMixForSrcComponents(const RectI& roi,
-                                    const Image* maskImg,
-                                    const Image* originalImg,
-                                    bool masked,
-                                    bool maskInvert,
-                                    float mix)
+static ActionRetCodeEnum
+applyMaskMixForSrcComponents(const void* originalImgPtrs[4],
+                             const RectI& originalImgBounds,
+                             const void* maskImgPtrs[4],
+                             const RectI& maskImgBounds,
+                             void* dstImgPtrs[4],
+                             ImageBitDepthEnum dstImgBitDepth,
+                             int dstImgNComps,
+                             double mix,
+                             bool invertMask,
+                             const RectI& bounds,
+                             const RectI& roi,
+                             const EffectInstancePtr& renderClone)
 {
-    int dstNComps = getComponentsCount();
 
-    assert(0 < dstNComps && dstNComps <= 4);
-    switch (dstNComps) {
-    //case 0:
-    //    applyMaskMixForDstComponents<srcNComps,0>(roi, maskImg, originalImg, masked, maskInvert, mix);
-    //    break;
-    case 1:
-        applyMaskMixForDstComponents<srcNComps, 1>(roi, maskImg, originalImg, masked, maskInvert, mix);
-        break;
-    case 2:
-        applyMaskMixForDstComponents<srcNComps, 2>(roi, maskImg, originalImg, masked, maskInvert, mix);
-        break;
-    case 3:
-        applyMaskMixForDstComponents<srcNComps, 3>(roi, maskImg, originalImg, masked, maskInvert, mix);
-        break;
-    case 4:
-        applyMaskMixForDstComponents<srcNComps, 4>(roi, maskImg, originalImg, masked, maskInvert, mix);
-        break;
-    default:
-        break;
+    switch (dstImgNComps) {
+        case 1:
+            return applyMaskMixForDstComponents<srcNComps, 1>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi, renderClone);
+        case 2:
+            return applyMaskMixForDstComponents<srcNComps, 2>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi, renderClone);
+        case 3:
+            return applyMaskMixForDstComponents<srcNComps, 3>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi, renderClone);
+        case 4:
+            return applyMaskMixForDstComponents<srcNComps, 4>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi, renderClone);
+        default:
+            return eActionStatusFailed;
     }
 }
 
-void
-Image::applyMaskMix(const RectI& roi,
-                    const Image* maskImg,
-                    const Image* originalImg,
-                    bool masked,
-                    bool maskInvert,
-                    float mix,
-                    const OSGLContextPtr& glContext)
+ActionRetCodeEnum
+ImagePrivate::applyMaskMixCPU(const void* originalImgPtrs[4],
+                              const RectI& originalImgBounds,
+                              int originalImgNComps,
+                              const void* maskImgPtrs[4],
+                              const RectI& maskImgBounds,
+                              void* dstImgPtrs[4],
+                              ImageBitDepthEnum dstImgBitDepth,
+                              int dstImgNComps,
+                              double mix,
+                              bool invertMask,
+                              const RectI& bounds,
+                              const RectI& roi,
+                              const EffectInstancePtr& renderClone)
 {
-    ///!masked && mix == 1 has nothing to do
-    if ( !masked && (mix == 1) ) {
-        return;
+    switch (originalImgNComps) {
+        case 1:
+            return applyMaskMixForSrcComponents<1>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderClone);
+        case 2:
+            return applyMaskMixForSrcComponents<2>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderClone);
+        case 3:
+            return applyMaskMixForSrcComponents<3>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderClone);
+        case 4:
+            return applyMaskMixForSrcComponents<4>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderClone);
+        default:
+            return applyMaskMixForSrcComponents<0>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderClone);
     }
 
-    QWriteLocker k(&_entryLock);
-    boost::scoped_ptr<QReadLocker> originalLock;
-    boost::scoped_ptr<QReadLocker> maskLock;
-    if (originalImg) {
-        originalLock.reset( new QReadLocker(&originalImg->_entryLock) );
+}
+
+template <typename GL>
+void applyMaskMixGLInternal(const GLImageStoragePtr& originalTexture,
+                            const GLImageStoragePtr& maskTexture,
+                            const GLImageStoragePtr& dstTexture,
+                            double mix,
+                            bool maskInvert,
+                            const RectI& roi,
+                            const OSGLContextPtr& glContext)
+{
+    GLShaderBasePtr shader = glContext->getOrCreateMaskMixShader(maskTexture.get() != 0, maskInvert);
+    assert(shader);
+    GLuint fboID = glContext->getOrCreateFBOId();
+
+
+    int target = dstTexture->getGLTextureTarget();
+    int dstTexID = dstTexture->getGLTextureID();
+    int originalTexID = originalTexture ? originalTexture->getGLTextureID() : 0;
+    int maskTexID = maskTexture ? maskTexture->getGLTextureID() : 0;
+
+    GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
+    GL::Enable(target);
+    GL::ActiveTexture(GL_TEXTURE0);
+    GL::BindTexture( target, dstTexID );
+
+    GL::TexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::TexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GL::TexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::TexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstTexID, 0 /*LoD*/);
+    glCheckFramebufferError(GL);
+
+    GL::ActiveTexture(GL_TEXTURE1);
+    GL::BindTexture(target, originalTexID);
+
+    GL::TexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::TexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GL::TexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::TexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    GL::ActiveTexture(GL_TEXTURE2);
+    GL::BindTexture(target, maskTexID);
+
+    GL::TexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::TexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GL::TexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::TexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    const RectI& dstBounds = dstTexture->getBounds();
+    const RectI& srcBounds = originalTexture ? originalTexture->getBounds() : dstBounds;
+
+    shader->bind();
+    shader->setUniform("originalImageTex", 1);
+    shader->setUniform("maskImageTex", 2);
+    shader->setUniform("outputImageTex", 0);
+    shader->setUniform("mixValue", (float)mix);
+    shader->setUniform("maskEnabled", (maskTexture.get()) ? 1 : 0);
+    OSGLContext::applyTextureMapping<GL>(srcBounds, dstBounds, roi);
+    shader->unbind();
+
+
+    GL::BindTexture(target, 0);
+    GL::ActiveTexture(GL_TEXTURE1);
+    GL::BindTexture(target, 0);
+    GL::ActiveTexture(GL_TEXTURE0);
+    GL::BindTexture(target, 0);
+    glCheckError(GL);
+
+} // applyMaskMixGLInternal
+
+void
+ImagePrivate::applyMaskMixGL(const GLImageStoragePtr& originalTexture,
+                             const GLImageStoragePtr& maskTexture,
+                             const GLImageStoragePtr& dstTexture,
+                             double mix,
+                             bool invertMask,
+                             const RectI& roi)
+{
+    OSGLContextPtr context = dstTexture->getOpenGLContext();
+    assert(context);
+
+    // Save the current context
+    OSGLContextSaver saveCurrentContext;
+
+    {
+        // Ensure this context is attached
+        OSGLContextAttacherPtr contextAttacher = OSGLContextAttacher::create(context);
+        contextAttacher->attach();
+
+        if (context->isGPUContext()) {
+            applyMaskMixGLInternal<GL_GPU>(originalTexture, maskTexture, dstTexture, mix, invertMask, roi, context);
+        } else {
+            applyMaskMixGLInternal<GL_CPU>(originalTexture, maskTexture, dstTexture, mix, invertMask, roi, context);
+        }
     }
-    if (maskImg) {
-        maskLock.reset( new QReadLocker(&maskImg->_entryLock) );
-    }
-    RectI realRoI;
-    roi.intersect(_bounds, &realRoI);
-
-    assert( !originalImg || getBitDepth() == originalImg->getBitDepth() );
-    assert( !masked || !maskImg || maskImg->getComponents() == ImagePlaneDesc::getAlphaComponents() );
-
-    if (getStorageMode() == eStorageModeGLTex) {
-        assert(glContext);
-        assert(!originalImg || originalImg->getStorageMode() == eStorageModeGLTex);
-        boost::shared_ptr<GLShader> shader = glContext->getOrCreateMaskMixShader(maskImg != 0);
-        assert(shader);
-        GLuint fboID = glContext->getFBOId();
-
-        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        int target = getGLTextureTarget();
-        glEnable(target);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture( target, getGLTextureID() );
-
-        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
-        glCheckFramebufferError();
-
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(target, originalImg ? originalImg->getGLTextureID() : 0);
-
-        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(target, maskImg ? maskImg->getGLTextureID() : 0);
-
-        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-
-        shader->bind();
-        shader->setUniform("originalImageTex", 1);
-        shader->setUniform("maskImageTex", 2);
-        shader->setUniform("outputImageTex", 0);
-        shader->setUniform("mixValue", mix);
-        shader->setUniform("maskEnabled", maskImg ? 1 : 0);
-        applyTextureMapping(_bounds, realRoI);
-        shader->unbind();
-
-
-        glBindTexture(target, 0);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(target, 0);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(target, 0);
-        glCheckError();
-
-        return;
-    }
-
-    int srcNComps = originalImg ? (int)originalImg->getComponentsCount() : 0;
-    //assert(0 < srcNComps && srcNComps <= 4);
-    switch (srcNComps) {
-    //case 0:
-    //    applyMaskMixForSrcComponents<0>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
-    //    break;
-    case 1:
-        applyMaskMixForSrcComponents<1>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
-        break;
-    case 2:
-        applyMaskMixForSrcComponents<2>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
-        break;
-    case 3:
-        applyMaskMixForSrcComponents<3>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
-        break;
-    case 4:
-        applyMaskMixForSrcComponents<4>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
-        break;
-    default:
-        break;
-    }
-} // applyMaskMix
+}
 
 NATRON_NAMESPACE_EXIT

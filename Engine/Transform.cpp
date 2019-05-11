@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,7 +25,7 @@
 #include "Transform.h"
 
 /*
- * This file was taken from https://github.com/devernay/openfx-misc
+ * This file was taken from https://github.com/NatronGitHub/openfx-misc
  * Maybe we should make this a git submodule instead.
  */
 
@@ -134,26 +134,28 @@ Point4D::operator==(const Point4D & o)  const
 }
 
 Matrix3x3::Matrix3x3()
-    : a(1), b(0), c(0), d(0), e(1), f(0), g(0), h(0), i(1)
 {
+    std::fill(m, m + 3*3, 0.);
 }
 
-Matrix3x3::Matrix3x3(double a_,
-                     double b_,
-                     double c_,
-                     double d_,
-                     double e_,
-                     double f_,
-                     double g_,
-                     double h_,
-                     double i_)
-    : a(a_), b(b_), c(c_), d(d_), e(e_), f(f_), g(g_), h(h_), i(i_)
+Matrix3x3::Matrix3x3(double a,
+                     double b,
+                     double c,
+                     double d,
+                     double e,
+                     double f,
+                     double g,
+                     double h,
+                     double i)
 {
+    m[0] = a; m[1] = b; m[2] = c;
+    m[3] = d; m[4] = e; m[5] = f;
+    m[6] = g; m[7] = h; m[8] = i;
 }
 
 Matrix3x3::Matrix3x3(const Matrix3x3 & mat)
-    : a(mat.a), b(mat.b), c(mat.c), d(mat.d), e(mat.e), f(mat.f), g(mat.g), h(mat.h), i(mat.i)
 {
+    std::copy(mat.m, mat.m + 3*3, m);
 }
 
 bool
@@ -170,21 +172,19 @@ Matrix3x3::setHomographyFromFourPoints(const Point3D &p1,
     Matrix3x3 Hp( crossprod( crossprod(p1, p2), crossprod(p3, p4) ),
                   crossprod( crossprod(p1, p3), crossprod(p2, p4) ),
                   crossprod( crossprod(p1, p4), crossprod(p2, p3) ) );
-    double detHp = matDeterminant(Hp);
 
-    if (detHp == 0.) {
+    if ( !Hp.inverse(&invHp) ) {
         return false;
     }
+
     Matrix3x3 Hq( crossprod( crossprod(q1, q2), crossprod(q3, q4) ),
                   crossprod( crossprod(q1, q3), crossprod(q2, q4) ),
                   crossprod( crossprod(q1, q4), crossprod(q2, q3) ) );
-    double detHq = matDeterminant(Hq);
+    double detHq = Hq.determinant();
     if (detHq == 0.) {
         return false;
     }
-    invHp = matInverse(Hp, detHp);
-    *this = matMul(Hq, invHp);
-
+    *this = Hq * invHp;
     return true;
 }
 
@@ -198,18 +198,16 @@ Matrix3x3::setAffineFromThreePoints(const Point3D &p1,
 {
     Matrix3x3 invHp;
     Matrix3x3 Hp(p1, p2, p3);
-    double detHp = matDeterminant(Hp);
-
-    if (detHp == 0.) {
+    if ( !Hp.inverse(&invHp) ) {
         return false;
     }
+
     Matrix3x3 Hq(q1, q2, q3);
-    double detHq = matDeterminant(Hq);
+    double detHq = Hq.determinant();
     if (detHq == 0.) {
         return false;
     }
-    invHp = matInverse(Hp, detHp);
-    *this = matMul(Hq, invHp);
+    *this = Hq * invHp;
 
     return true;
 }
@@ -265,92 +263,143 @@ bool
 Matrix3x3::setTranslationFromOnePoint(const Point3D &p1,
                                       const Point3D &q1)
 {
-    a = 1.;
-    b = 0.;
-    c = q1.x - p1.x;
-    d = 0.;
-    e = 1.;
-    f = q1.y - p1.y;
-    g = 0.;
-    h = 0.;
-    i = 1.;
+    m[0] = 1.;
+    m[1] = 0.;
+    m[2] = q1.x - p1.x;
+    m[3] = 0.;
+    m[4] = 1.;
+    m[5] = q1.y - p1.y;
+    m[6] = 0.;
+    m[7] = 0.;
+    m[8] = 1.;
 
     return true;
 }
 
-Matrix3x3 &
-Matrix3x3::operator=(const Matrix3x3 & m)
+Matrix3x3::Matrix3x3(const Point3D &m0,
+              const Point3D &m1,
+              const Point3D &m2)
 {
-    a = m.a;
-    b = m.b;
-    c = m.c;
-    d = m.d;
-    e = m.e;
-    f = m.f;
-    g = m.g;
-    h = m.h;
-    i = m.i;
+    m[0] = m0.x; m[1] = m1.x; m[2] = m2.x;
+    m[3] = m0.y; m[4] = m1.y; m[5] = m2.y;
+    m[6] = m0.z; m[7] = m1.z; m[8] = m2.z;
+}
 
+Matrix3x3 &
+Matrix3x3::operator=(const Matrix3x3 & M)
+{
+    memcpy(m, M.m, sizeof(double) * 9);
     return *this;
 }
 
 bool
 Matrix3x3::isIdentity() const
 {
-    return a == 1 && b == 0 && c == 0 && d == 0 && e == 1 && f && 0 && g == 0 && h == 0 && i == 1;
+    return m[0] == 1 && m[1] == 0 && m[2] == 0 &&
+    m[3] == 0 && m[4] == 1 && m[5] == 0 &&
+    m[6] == 0 && m[7] == 0 && m[8] == 1;
 }
 
 void
 Matrix3x3::setIdentity()
 {
-    a = 1; b = 0; c = 0;
-    d = 0; e = 1; f = 0;
-    g = 0; h = 0; i = 1;
+    m[0] = 1; m[1] = 0; m[2] = 0;
+    m[3] = 0; m[4] = 1; m[5] = 0;
+    m[6] = 0; m[7] = 0; m[8] = 1;
+}
+
+
+Matrix3x3 Matrix3x3::operator*(const Matrix3x3 & m2) const
+{
+    return Matrix3x3(m[0] * m2.m[0] + m[1] * m2.m[3] + m[2] * m2.m[6],
+                     m[0] * m2.m[1] + m[1] * m2.m[4] + m[2] * m2.m[7],
+                     m[0] * m2.m[2] + m[1] * m2.m[5] + m[2] * m2.m[8],
+                     m[3] * m2.m[0] + m[4] * m2.m[3] + m[5] * m2.m[6],
+                     m[3] * m2.m[1] + m[4] * m2.m[4] + m[5] * m2.m[7],
+                     m[3] * m2.m[2] + m[4] * m2.m[5] + m[5] * m2.m[8],
+                     m[6] * m2.m[0] + m[7] * m2.m[3] + m[8] * m2.m[6],
+                     m[6] * m2.m[1] + m[7] * m2.m[4] + m[8] * m2.m[7],
+                     m[6] * m2.m[2] + m[7] * m2.m[5] + m[8] * m2.m[8]);
 }
 
 Matrix3x3
-matMul(const Matrix3x3 & m1,
-       const Matrix3x3 & m2)
+Matrix3x3::toCanonical(double sx, double sy, double par, bool fielded) const
 {
-    return Matrix3x3(m1.a * m2.a + m1.b * m2.d + m1.c * m2.g,
-                     m1.a * m2.b + m1.b * m2.e + m1.c * m2.h,
-                     m1.a * m2.c + m1.b * m2.f + m1.c * m2.i,
-                     m1.d * m2.a + m1.e * m2.d + m1.f * m2.g,
-                     m1.d * m2.b + m1.e * m2.e + m1.f * m2.h,
-                     m1.d * m2.c + m1.e * m2.f + m1.f * m2.i,
-                     m1.g * m2.a + m1.h * m2.d + m1.i * m2.g,
-                     m1.g * m2.b + m1.h * m2.e + m1.i * m2.h,
-                     m1.g * m2.c + m1.h * m2.f + m1.i * m2.i);
+    // FS = fielded ? 0.5 : 1.
+    // canonical to pixel:
+    // X' = (X * SX)/PAR -> multiply first column by SX/PAR
+    // Y' = Y * SY * FS -> multiply second column by SY*FS
+    // pixel to canonical:
+    // X' = (X * PAR)/SX -> divide first line by SX/PAR
+    // Y' = Y/(SY * FS) -> divide second line by SY*FS
+    double fx = sx / par;
+    double fy = sy * (fielded ? 0.5 : 1.);
+    Transform::Matrix3x3 transform = *this;
+    //transform(0,0) *= 1.;
+    transform(0,1) *= fy/fx;
+    transform(0,2) *= 1./fx;
+    transform(1,0) *= fx/fy;
+    //transform(1,1) *= 1.;
+    transform(1,2) *= 1./fy;
+    transform(2,0) *= fx;
+    transform(2,1) *= fy;
+    //transform(2,2) *= 1.;
+    return transform;
 }
 
-Point3D
-matApply(const Matrix3x3 & m,
-         const Point3D & p)
+Matrix3x3
+Matrix3x3::toPixel(double sx, double sy, double par, bool fielded) const
+{
+    // FS = fielded ? 0.5 : 1.
+    // canonical to pixel:
+    // X' = (X * SX)/PAR -> multiply first line by SX/PAR
+    // Y' = Y * SY * FS -> multiply second line by SY*FS
+    // pixel to canonical:
+    // X' = (X * PAR)/SX -> divide first column by SX/PAR
+    // Y' = Y/(SY * FS) -> divide second column by SY*FS
+    double fx = sx / par;
+    double fy = sy * (fielded ? 0.5 : 1.);
+    Transform::Matrix3x3 transform = *this;
+    //transform(0,0) *= 1.;
+    transform(0,1) *= fx/fy;
+    transform(0,2) *= fx;
+    transform(1,0) *= fy/fx;
+    //transform(1,1) *= 1.;
+    transform(1,2) *= fy;
+    transform(2,0) *= 1./fx;
+    transform(2,1) *= 1./fy;
+    //transform(2,2) *= 1.;
+    return transform;
+}
+
+Point3D Matrix3x3::operator*(const Point3D & p) const
 {
     Point3D ret;
 
-    ret.x = m.a * p.x + m.b * p.y + m.c * p.z;
-    ret.y = m.d * p.x + m.e * p.y + m.f * p.z;
-    ret.z = m.g * p.x + m.h * p.y + m.i * p.z;
+    ret.x = m[0] * p.x + m[1] * p.y + m[2] * p.z;
+    ret.y = m[3] * p.x + m[4] * p.y + m[5] * p.z;
+    ret.z = m[6] * p.x + m[7] * p.y + m[8] * p.z;
 
     return ret;
 }
 
-void
-matApply(const Matrix3x3 & m,
-         double* x,
-         double *y,
-         double *z)
+Matrix3x3 matMul(const Matrix3x3 & m1, const Matrix3x3 & m2)
 {
-    double tmpX, tmpY, tmpZ;
+    return m1 * m2;
+}
 
-    tmpX = m.a * *x + m.b * *y + m.c * *z;
-    tmpY = m.d * *x + m.e * *y + m.f * *z;
-    tmpZ = m.g * *x + m.h * *y + m.i * *z;
+Point3D matApply(const Matrix3x3 & m, const Point3D & p)
+{
+    return m * p;
+}
 
-    *x = tmpX;
-    *y = tmpY;
-    *z = tmpZ;
+
+double
+Matrix3x3::determinant() const
+{
+    return m[0] * (m[4] * m[8] - m[7] * m[5])
+    - m[1] * (m[3] * m[8] - m[6] * m[5])
+    + m[2] * (m[3] * m[7] - m[6] * m[4]);
 }
 
 Matrix4x4::Matrix4x4()
@@ -438,47 +487,60 @@ matApply(const Matrix4x4 & m,
 ////////////////////
 
 
-double
-matDeterminant(const Matrix3x3 & M)
-{
-    return M.a * (M.e * M.i - M.h * M.f)
-           - M.b * (M.d * M.i - M.g * M.f)
-           + M.c * (M.d * M.h - M.g * M.e);
-}
-
 Matrix3x3
-matScaleAdjoint(const Matrix3x3 & M,
+matScaleAdjoint(const Matrix3x3 & m,
                 double s)
 {
     Matrix3x3 ret;
 
-    ret.a = (s) * (M.e * M.i - M.h * M.f);
-    ret.d = (s) * (M.f * M.g - M.d * M.i);
-    ret.g = (s) * (M.d * M.h - M.e * M.g);
+    ret.m[0] = (s) * (m.m[4] * m.m[8] - m.m[7] * m.m[5]);
+    ret.m[3] = (s) * (m.m[5] * m.m[6] - m.m[3] * m.m[8]);
+    ret.m[6] = (s) * (m.m[3] * m.m[7] - m.m[4] * m.m[6]);
 
-    ret.b = (s) * (M.c * M.h - M.b * M.i);
-    ret.e = (s) * (M.a * M.i - M.c * M.g);
-    ret.h = (s) * (M.b * M.g - M.a * M.h);
+    ret.m[1] = (s) * (m.m[2] * m.m[7] - m.m[1] * m.m[8]);
+    ret.m[4] = (s) * (m.m[0] * m.m[8] - m.m[2] * m.m[6]);
+    ret.m[7] = (s) * (m.m[1] * m.m[6] - m.m[0] * m.m[7]);
 
-    ret.c = (s) * (M.b * M.f - M.c * M.e);
-    ret.f = (s) * (M.c * M.d - M.a * M.f);
-    ret.i = (s) * (M.a * M.e - M.b * M.d);
+    ret.m[2] = (s) * (m.m[1] * m.m[5] - m.m[2] * m.m[4]);
+    ret.m[5] = (s) * (m.m[2] * m.m[3] - m.m[0] * m.m[5]);
+    ret.m[8] = (s) * (m.m[0] * m.m[4] - m.m[1] * m.m[3]);
 
     return ret;
+
 }
 
-Matrix3x3
-matInverse(const Matrix3x3 & M)
+bool
+Matrix3x3::inverse(Matrix3x3* invOut) const
 {
-    return matScaleAdjoint( M, 1. / matDeterminant(M) );
+    double inv[9], det;
+    int i;
+
+    inv[0] = (m[4] * m[8] - m[7] * m[5]);
+    inv[3] = (m[5] * m[6] - m[3] * m[8]);
+    inv[6] = (m[3] * m[7] - m[4] * m[6]);
+
+    det = m[0] * inv[0] + m[1] * inv[3] + m[2] * inv[6];
+
+    if (det == 0) {
+        return false;
+    }
+
+    inv[1] = (m[2] * m[7] - m[1] * m[8]);
+    inv[4] = (m[0] * m[8] - m[2] * m[6]);
+    inv[7] = (m[1] * m[6] - m[0] * m[7]);
+
+    inv[2] = (m[1] * m[5] - m[2] * m[4]);
+    inv[5] = (m[2] * m[3] - m[0] * m[5]);
+    inv[8] = (m[0] * m[4] - m[1] * m[3]);
+
+    det = 1.0 / det;
+
+    for (i = 0; i < 9; ++i) {
+        invOut->m[i] = inv[i] * det;
+    }
+    return true;
 }
 
-Matrix3x3
-matInverse(const Matrix3x3 & M,
-           double det)
-{
-    return matScaleAdjoint(M, 1. / det);
-}
 
 Matrix3x3
 matRotation(double rads)
@@ -519,15 +581,12 @@ matScale(double x,
                      0., 0., 1.);
 }
 
-#if 0
-static
 Matrix3x3
 matScale(double s)
 {
     return matScale(s, s);
 }
 
-static
 Matrix3x3
 matScaleAroundPoint(double scaleX,
                     double scaleY,
@@ -537,7 +596,6 @@ matScaleAroundPoint(double scaleX,
     return matMul( matTranslation(px, py), matMul( matScale(scaleX, scaleY), matTranslation(-px, -py) ) );
 }
 
-#endif
 
 
 Matrix3x3

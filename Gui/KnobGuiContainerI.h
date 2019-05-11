@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,6 +29,7 @@
 
 #include "Gui/GuiFwd.h"
 
+
 NATRON_NAMESPACE_ENTER
 
 class KnobGuiContainerI
@@ -48,20 +49,24 @@ public:
     virtual Gui* getGui() const = 0;
     virtual const QUndoCommand* getLastUndoCommand() const = 0;
     virtual void pushUndoCommand(QUndoCommand* cmd) = 0;
-    virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const = 0;
+    virtual KnobGuiPtr getKnobGui(const KnobIPtr& knob) const = 0;
     virtual int getItemsSpacingOnSameLine() const = 0;
     virtual void refreshTabWidgetMaxHeight() {}
-
-
-    virtual bool isInViewerUIKnob() const
-    {
-        return false;
-    }
 
     QWidget* getContainerWidget() const
     {
         return _containerWidget;
     }
+
+    virtual NodeGuiPtr getNodeGui() const = 0;
+
+    /**
+     * @brief Refresh whether a page should be made visible or not. A page is considered to be visible
+     * when at least one of its children (recursively) is not secret.
+     **/
+    virtual void refreshPageVisibility(const KnobPagePtr& /*page*/) {}
+
+    virtual QWidget* createKnobHorizontalFieldContainer(QWidget* parent) const = 0;
 
 protected:
 

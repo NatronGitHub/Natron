@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -52,12 +52,8 @@ GuiApplicationManagerPrivate::GuiApplicationManagerPrivate(GuiApplicationManager
     , _linkToCursor()
     , _splashScreen(NULL)
     , _openFileRequest()
-    , _actionShortcuts()
-    , _shortcutsChangedVersion(false)
     , _fontFamily()
     , _fontSize(0)
-    , _nodeCB()
-    , pythonCommands()
     , startupArgs()
     , fontconfigUpdateWatcher()
     , updateSplashscreenTimer()
@@ -69,26 +65,26 @@ GuiApplicationManagerPrivate::GuiApplicationManagerPrivate(GuiApplicationManager
 }
 
 void
-GuiApplicationManagerPrivate::removePluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& n,
-                                                             const QStringList& grouping)
+GuiApplicationManagerPrivate::removePluginToolButtonInternal(const PluginGroupNodePtr& n,
+                                                             const std::vector<std::string>& grouping)
 {
     assert(grouping.size() > 0);
 
-    const std::list<boost::shared_ptr<PluginGroupNode> >& children = n->getChildren();
-    for (std::list<boost::shared_ptr<PluginGroupNode> >::const_iterator it = children.begin();
+    const std::list<PluginGroupNodePtr>& children = n->getChildren();
+    for (std::list<PluginGroupNodePtr>::const_iterator it = children.begin();
          it != children.end(); ++it) {
-        if ( (*it)->getID() == grouping[0] ) {
+        if ( (*it)->getTreeNodeID().toStdString() == grouping[0] ) {
             if (grouping.size() > 1) {
-                QStringList newGrouping;
-                for (int i = 1; i < grouping.size(); ++i) {
+                std::vector<std::string> newGrouping;
+                for (std::size_t i = 1; i < grouping.size(); ++i) {
                     newGrouping.push_back(grouping[i]);
                 }
                 removePluginToolButtonInternal(*it, newGrouping);
                 if ( (*it)->getChildren().empty() ) {
-                    n->tryRemoveChild( it->get() );
+                    n->tryRemoveChild(*it);
                 }
             } else {
-                n->tryRemoveChild( it->get() );
+                n->tryRemoveChild(*it);
             }
             break;
         }
@@ -96,16 +92,16 @@ GuiApplicationManagerPrivate::removePluginToolButtonInternal(const boost::shared
 }
 
 void
-GuiApplicationManagerPrivate::removePluginToolButton(const QStringList& grouping)
+GuiApplicationManagerPrivate::removePluginToolButton(const std::vector<std::string>& grouping)
 {
     assert(grouping.size() > 0);
 
-    for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _topLevelToolButtons.begin();
+    for (std::list<PluginGroupNodePtr>::iterator it = _topLevelToolButtons.begin();
          it != _topLevelToolButtons.end(); ++it) {
-        if ( (*it)->getID() == grouping[0] ) {
+        if ( (*it)->getTreeNodeID().toStdString() == grouping[0] ) {
             if (grouping.size() > 1) {
-                QStringList newGrouping;
-                for (int i = 1; i < grouping.size(); ++i) {
+                std::vector<std::string> newGrouping;
+                for (std::size_t i = 1; i < grouping.size(); ++i) {
                     newGrouping.push_back(grouping[i]);
                 }
                 removePluginToolButtonInternal(*it, newGrouping);
@@ -120,23 +116,39 @@ GuiApplicationManagerPrivate::removePluginToolButton(const QStringList& grouping
     }
 }
 
-boost::shared_ptr<PluginGroupNode>
-GuiApplicationManagerPrivate::findPluginToolButtonInternal(const std::list<boost::shared_ptr<PluginGroupNode> >& children,
-                                                           const boost::shared_ptr<PluginGroupNode>& parent,
-                                                           const QStringList & grouping,
-                                                           const QString & name,
-                                                           const QStringList & groupingIcon,
-                                                           const QString & iconPath,
-                                                           int major,
-                                                           int minor,
-                                                           bool isUserCreatable)
+PluginGroupNodePtr
+GuiApplicationManagerPrivate::findPluginToolButtonOrCreateInternal(const std::list<PluginGroupNodePtr>& children,
+                                                                   const PluginGroupNodePtr& parent,
+                                                                   const PluginPtr& plugin,
+                                                                   const QStringList& grouping,
+                                                                   const QStringList& groupingIcon)
 {
-    assert(grouping.size() > 0);
-    assert( groupingIcon.size() == grouping.size() - 1 || groupingIcon.isEmpty() );
+    assert(plugin);
+    assert(groupingIcon.size() <= grouping.size());
 
-    for (std::list<boost::shared_ptr<PluginGroupNode> >::const_iterator it = children.begin(); it != children.end(); ++it) {
-        if ( (*it)->getID() == grouping[0] ) {
-            if (grouping.size() > 1) {
+    // On first call of this function, children are top-level toolbuttons
+    // Otherwise this tree node has children
+    // We ensure that the path in the tree leading to the plugin in parameter is created by recursing on the children
+    // If there are no children that means we reached the wanted PluginGroupNode
+    QString nodeIDToFind;
+    if (grouping.empty()) {
+        // Look for plugin ID
+        nodeIDToFind = QString::fromUtf8(plugin->getPluginID().c_str());
+    } else {
+        // Look for grouping menu item
+        nodeIDToFind = grouping[0];
+    }
+
+    for (std::list<PluginGroupNodePtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
+
+        // If we find a node with the same ID, then we found it already.
+        if ( (*it)->getTreeNodeID() == nodeIDToFind ) {
+            if (grouping.empty()) {
+                // This is a leaf (plug-in), return it
+                return *it;
+            } else {
+
+                // This is an intermidiate menu item, recurse
                 QStringList newGrouping, newIconsGrouping;
                 for (int i = 1; i < grouping.size(); ++i) {
                     newGrouping.push_back(grouping[i]);
@@ -145,31 +157,35 @@ GuiApplicationManagerPrivate::findPluginToolButtonInternal(const std::list<boost
                     newIconsGrouping.push_back(groupingIcon[i]);
                 }
 
-                return findPluginToolButtonInternal( (*it)->getChildren(), *it, newGrouping, name, newIconsGrouping, iconPath, major, minor, isUserCreatable );
-            }
-            if ( major == (*it)->getMajorVersion() ) {
-                return *it;
-            } else {
-                (*it)->setNotHighestMajorVersion(true);
+                return findPluginToolButtonOrCreateInternal( (*it)->getChildren(), *it, plugin, newGrouping, newIconsGrouping);
             }
         }
     }
 
-    QString iconFilePath;
-    if (grouping.size() > 1) {
-        iconFilePath = groupingIcon.isEmpty() ? QString() : groupingIcon[0];
+    // Ok the PluginGroupNode does not exist yet, create it
+    QString treeNodeName, iconFilePath;
+    if (grouping.empty()) {
+        // This is a leaf (plug-in), take the plug-in label and icon
+        treeNodeName = QString::fromUtf8(plugin->getLabelWithoutSuffix().c_str());
+        iconFilePath = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str());
     } else {
-        iconFilePath = iconPath;
+        // For menu items, take from grouping
+        treeNodeName = grouping[0];
+        iconFilePath = groupingIcon.isEmpty() ? QString() : groupingIcon[0];
     }
-    boost::shared_ptr<PluginGroupNode> ret( new PluginGroupNode(grouping[0], grouping.size() == 1 ? name : grouping[0], iconFilePath, major, minor, isUserCreatable) );
+    PluginGroupNodePtr ret(new PluginGroupNode(grouping.empty() ? plugin : PluginPtr(), treeNodeName, iconFilePath));
+
+    // If there is a parent, add it as a child
     if (parent) {
         parent->tryAddChild(ret);
         ret->setParent(parent);
     } else {
+        // No parent, this is a top-level toolbutton
         _topLevelToolButtons.push_back(ret);
     }
 
-    if (grouping.size() > 1) {
+    // If we still did not reach the desired tree node, find it, advancing (removing the first item) in the grouping
+    if (!grouping.empty()) {
         QStringList newGrouping, newIconsGrouping;
         for (int i = 1; i < grouping.size(); ++i) {
             newGrouping.push_back(grouping[i]);
@@ -178,11 +194,11 @@ GuiApplicationManagerPrivate::findPluginToolButtonInternal(const std::list<boost
             newIconsGrouping.push_back(groupingIcon[i]);
         }
 
-        return findPluginToolButtonInternal(ret->getChildren(), ret, newGrouping, name, newIconsGrouping, iconPath, major, minor, isUserCreatable);
+        return findPluginToolButtonOrCreateInternal(ret->getChildren(), ret, plugin, newGrouping, newIconsGrouping);
     }
 
     return ret;
-} // GuiApplicationManagerPrivate::findPluginToolButtonInternal
+} // GuiApplicationManagerPrivate::findPluginToolButtonOrCreateInternal
 
 void
 GuiApplicationManagerPrivate::createColorPickerCursor()
@@ -221,218 +237,6 @@ GuiApplicationManagerPrivate::createLinkMultCursor()
 
     appPTR->getIcon(NATRON_PIXMAP_LINK_MULT_CURSOR, &p);
     _linkMultCursor = QCursor(p);
-}
-
-void
-GuiApplicationManagerPrivate::addKeybindInternal(const QString & grouping,
-                                                 const QString & id,
-                                                 const QString & description,
-                                                 const std::list<Qt::KeyboardModifiers>& modifiersList,
-                                                 const std::list<Qt::Key>& symbolsList,
-                                                 const Qt::KeyboardModifiers& modifiersMask)
-{
-    AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
-
-    if ( foundGroup != _actionShortcuts.end() ) {
-        GroupShortcuts::iterator foundAction = foundGroup->second.find(id);
-        if ( foundAction != foundGroup->second.end() ) {
-            return;
-        }
-    }
-    KeyBoundAction* kA = new KeyBoundAction;
-
-    kA->grouping = grouping;
-    kA->description = description;
-
-    assert( modifiersList.size() == symbolsList.size() );
-    std::list<Qt::KeyboardModifiers>::const_iterator mit = modifiersList.begin();
-    for (std::list<Qt::Key>::const_iterator it = symbolsList.begin(); it != symbolsList.end(); ++it, ++mit) {
-        if ( (*it) != (Qt::Key)0 ) {
-            kA->defaultModifiers.push_back(*mit);
-            kA->modifiers.push_back(*mit);
-            kA->defaultShortcut.push_back(*it);
-            kA->currentShortcut.push_back(*it);
-        }
-    }
-
-    kA->ignoreMask = modifiersMask;
-
-    kA->actionID = id;
-    if ( foundGroup != _actionShortcuts.end() ) {
-        foundGroup->second.insert( std::make_pair(id, kA) );
-    } else {
-        GroupShortcuts group;
-        group.insert( std::make_pair(id, kA) );
-        _actionShortcuts.insert( std::make_pair(grouping, group) );
-    }
-
-    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( _publicInterface->getTopLevelInstance().get() );
-    if (app) {
-        app->getGui()->addShortcut(kA);
-    }
-}
-
-void
-GuiApplicationManagerPrivate::addKeybind(const std::string & grouping,
-                                         const std::string & id,
-                                         const std::string & description,
-                                         const Qt::KeyboardModifiers & modifiers1,
-                                         Qt::Key symbol1,
-                                         const Qt::KeyboardModifiers & modifiers2,
-                                         Qt::Key symbol2)
-{
-    std::list<Qt::KeyboardModifiers> m;
-
-    m.push_back(modifiers1);
-    m.push_back(modifiers2);
-    std::list<Qt::Key> symbols;
-    symbols.push_back(symbol1);
-    symbols.push_back(symbol2);
-    addKeybindInternal(QString::fromUtf8( grouping.c_str() ), QString::fromUtf8( id.c_str() ), QString::fromUtf8( description.c_str() ), m, symbols, Qt::NoModifier);
-}
-
-void
-GuiApplicationManagerPrivate::addKeybind(const std::string & grouping,
-                                         const std::string & id,
-                                         const std::string & description,
-                                         const Qt::KeyboardModifiers & modifiers,
-                                         Qt::Key symbol,
-                                         const Qt::KeyboardModifiers & modifiersMask)
-{
-    std::list<Qt::KeyboardModifiers> m;
-
-    m.push_back(modifiers);
-    std::list<Qt::Key> symbols;
-    symbols.push_back(symbol);
-    addKeybindInternal(QString::fromUtf8( grouping.c_str() ), QString::fromUtf8( id.c_str() ), QString::fromUtf8( description.c_str() ), m, symbols, modifiersMask);
-}
-
-void
-GuiApplicationManagerPrivate::addKeybind(const std::string & grouping,
-                                         const std::string & id,
-                                         const std::string & description,
-                                         const Qt::KeyboardModifiers & modifiers,
-                                         Qt::Key symbol)
-{
-    std::list<Qt::KeyboardModifiers> m;
-
-    m.push_back(modifiers);
-    std::list<Qt::Key> symbols;
-    symbols.push_back(symbol);
-    addKeybindInternal(QString::fromUtf8( grouping.c_str() ), QString::fromUtf8( id.c_str() ), QString::fromUtf8( description.c_str() ), m, symbols, Qt::NoModifier);
-}
-
-void
-GuiApplicationManagerPrivate::removeKeybind(const QString& grouping,
-                                            const QString& id)
-{
-    AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
-
-    if ( foundGroup != _actionShortcuts.end() ) {
-        GroupShortcuts::iterator foundAction = foundGroup->second.find(id);
-        if ( foundAction != foundGroup->second.end() ) {
-            foundGroup->second.erase(foundAction);
-        }
-        if ( foundGroup->second.empty() ) {
-            _actionShortcuts.erase(foundGroup);
-        }
-    }
-}
-
-void
-GuiApplicationManagerPrivate::addMouseShortcut(const std::string & grouping,
-                                               const std::string & id,
-                                               const std::string & description,
-                                               const Qt::KeyboardModifiers & modifiers,
-                                               Qt::MouseButton button)
-{
-    QString groupingStr = QString::fromUtf8( grouping.c_str() );
-    QString idStr = QString::fromUtf8( id.c_str() );
-    AppShortcuts::iterator foundGroup = _actionShortcuts.find(groupingStr);
-
-    if ( foundGroup != _actionShortcuts.end() ) {
-        GroupShortcuts::iterator foundAction = foundGroup->second.find(idStr);
-        if ( foundAction != foundGroup->second.end() ) {
-            return;
-        }
-    }
-    MouseAction* mA = new MouseAction;
-
-    mA->grouping = groupingStr;
-    mA->description = QString::fromUtf8( description.c_str() );
-    mA->defaultModifiers.push_back(modifiers);
-    mA->actionID = idStr;
-    if ( modifiers & (Qt::AltModifier | Qt::MetaModifier) ) {
-        qDebug() << "Warning: mouse shortcut " << groupingStr << '/' << description.c_str() << '(' << idStr << ')' << " uses the Alt or Meta modifier, which is reserved for three-button mouse emulation. Fix this ASAP.";
-    }
-    mA->modifiers.push_back(modifiers);
-    mA->button = button;
-
-    ///Mouse shortcuts are not editable.
-    mA->editable = false;
-
-    if ( foundGroup != _actionShortcuts.end() ) {
-        foundGroup->second.insert( std::make_pair(idStr, mA) );
-    } else {
-        GroupShortcuts group;
-        group.insert( std::make_pair(idStr, mA) );
-        _actionShortcuts.insert( std::make_pair(groupingStr, group) );
-    }
-
-    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( _publicInterface->getTopLevelInstance().get() );
-    if (app) {
-        app->getGui()->addShortcut(mA);
-    }
-}
-
-void
-GuiApplicationManagerPrivate::addStandardKeybind(const std::string & grouping,
-                                                 const std::string & id,
-                                                 const std::string & description,
-                                                 QKeySequence::StandardKey key,
-                                                 const Qt::KeyboardModifiers & fallbackmodifiers,
-                                                 Qt::Key fallbacksymbol)
-{
-    QString groupingStr = QString::fromUtf8( grouping.c_str() );
-    QString idStr = QString::fromUtf8( id.c_str() );
-    AppShortcuts::iterator foundGroup = _actionShortcuts.find(groupingStr);
-
-    if ( foundGroup != _actionShortcuts.end() ) {
-        GroupShortcuts::iterator foundAction = foundGroup->second.find(idStr);
-        if ( foundAction != foundGroup->second.end() ) {
-            return;
-        }
-    }
-
-    Qt::KeyboardModifiers modifiers;
-    Qt::Key symbol;
-
-    extractKeySequence(QKeySequence(key), modifiers, symbol);
-
-    if (symbol == (Qt::Key)0) {
-        symbol = fallbacksymbol;
-        modifiers = fallbackmodifiers;
-    }
-
-    KeyBoundAction* kA = new KeyBoundAction;
-    kA->grouping = groupingStr;
-    kA->description = QString::fromUtf8( description.c_str() );
-    kA->defaultModifiers.push_back(modifiers);
-    kA->modifiers.push_back(modifiers);
-    kA->defaultShortcut.push_back(symbol);
-    kA->currentShortcut.push_back(symbol);
-    if ( foundGroup != _actionShortcuts.end() ) {
-        foundGroup->second.insert( std::make_pair(idStr, kA) );
-    } else {
-        GroupShortcuts group;
-        group.insert( std::make_pair(idStr, kA) );
-        _actionShortcuts.insert( std::make_pair(groupingStr, group) );
-    }
-
-    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( _publicInterface->getTopLevelInstance().get() );
-    if (app) {
-        app->getGui()->addShortcut(kA);
-    }
 }
 
 void

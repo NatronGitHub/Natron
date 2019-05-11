@@ -1,5 +1,5 @@
 # ***** BEGIN LICENSE BLOCK *****
-# This file is part of Natron <http://www.natron.fr/>,
+# This file is part of Natron <https://natrongithub.github.io/>,
 # Copyright (C) 2013-2018 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
@@ -78,6 +78,14 @@ run-without-python {
 }
 
 win32-g++ {
+
+    # KnobExpression.cpp includes exprtk and the assembler fails with the following:
+    # as.exe: release/KnobExpression.o: too many sections (68807)
+    # {standard input}: Assembler messages:
+    # {standard input}: Fatal error: can't write release/KnobExpression.o: File too big
+    # Commented out: If defined, ld on mingw never returns.
+    #QMAKE_CXXFLAGS += -Wa,-mbig-obj
+
     # on Mingw LD is extremely slow in  debug mode and can take hours. Optimizing the build seems to make it faster
     CONFIG(debug, debug|release){
         QMAKE_CXXFLAGS += -O -g
@@ -99,8 +107,17 @@ CONFIG(debug, debug|release){
     DEFINES *= NDEBUG
 }
 
-enable-breakpad {
+CONFIG(enable-breakpad) {
     include(breakpadclient.pri)
+}
+
+
+enable-cairo {
+    # In Natron 2.2 onwards, roto render code has moved to an OpenGL based implementation and does not require cairo anymore. The cairo-based implementation is still maintained and works.
+    # If disable-cairo is specified, the CPU render code-path will use OSMesa to do the roto render using the OpenGL implementation.
+    # If not specified, the CPU reder code-path will use the cairo-based implementation.
+    # Note that we should avoid mixing the cairo based version and the OpenGL version as the rendering results may slightly differ.
+    DEFINES += ROTO_SHAPE_RENDER_ENABLE_CAIRO
 }
 
 CONFIG(noassertions) {
@@ -144,6 +161,26 @@ isEmpty(BUILD_NUMBER) {
 	DEFINES += NATRON_BUILD_NUMBER=0
 } else {
 	DEFINES += NATRON_BUILD_NUMBER=$$BUILD_NUMBER
+}
+
+CONFIG(enable-osmesa) {
+    # The following variables must be defined: LLVM_PATH and OSMESA_PATH
+    isEmpty(LLVM_PATH) {
+        LLVM_PATH="/opt/llvm"
+    }
+    isEmpty(OSMESA_PATH) {
+        OSMESA_PATH="/opt/osmesa"
+    }
+    OSMESA_PKG_CONFIG_PATH=$$OSMESA_PATH/lib/pkgconfig:$$(PKG_CONFIG_PATH)
+    # When using static Mesa libraries, the LLVM libs (necessary for llvmpipe) are not included
+    OSMESA_LIBS=$$system(env PKG_CONFIG_PATH=$$OSMESA_PKG_CONFIG_PATH pkg-config --libs --static osmesa) $$system($$LLVM_PATH/bin/llvm-config --ldflags --system-libs --libs engine mcjit mcdisassembler 2>/dev/null || $$LLVM_PATH/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler)
+    OSMESA_INCLUDES=$$system(env PKG_CONFIG_PATH=$$OSMESA_PKG_CONFIG_PATH pkg-config --variable=includedir osmesa)
+
+    osmesa {
+        DEFINES += HAVE_OSMESA
+        INCLUDEPATH += $$OSMESA_INCLUDES
+        LIBS += $$OSMESA_LIBS
+    }
 }
 
 # https://qt.gitorious.org/qt-creator/qt-creator/commit/b48ba2c25da4d785160df4fd0d69420b99b85152
@@ -229,11 +266,11 @@ macx {
       # later OSX instances only run on x86_64, universal builds are useless
       # (unless a later OSX supports ARM)
     }
-  } 
+  }
 
   #link against the CoreFoundation framework for the StandardPaths functionnality
   LIBS += -framework CoreServices
-    
+
   #// Disable availability macros on macOS
   #// because we may be using libc++ on an older macOS,
   #// so that std::locale::numeric may be available
@@ -277,8 +314,8 @@ win32 {
   #DEFINES += _MBCS
   DEFINES += WINDOWS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
   DEFINES += _UNICODE UNICODE
- 
-  DEFINES += QHTTP_SERVER_STATIC 
+
+  DEFINES += QHTTP_SERVER_STATIC
 
   #System library is required on windows to map network share names from drive letters
   LIBS += -lmpr
@@ -286,7 +323,7 @@ win32 {
 
 
   # Natron requires a link to opengl32.dll and Gdi32 for offscreen rendering
-  LIBS += -lopengl32 -lGdi32
+  osmesa:   LIBS += -lopengl32 -lGdi32
 
 
 }
@@ -336,6 +373,7 @@ win32-g++ {
    # On MingW everything is defined with pkgconfig except boost
     QT_CONFIG -= no-pkg-config
     CONFIG += link_pkgconfig
+    PKGCONFIG += freetype2 fontconfig
 
     expat:     PKGCONFIG += expat
     cairo:     PKGCONFIG += cairo
@@ -351,9 +389,9 @@ win32-g++ {
         pyside:    INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtGui
     }
     python:    PKGCONFIG += python-2.7
-    boost:     LIBS += -lboost_serialization-mt
-    boost:     LIBS += -lboost_serialization-mt
-	
+    boost-serialization-lib: LIBS += -lboost_serialization-mt
+    boost:     LIBS += -lboost_thread-mt -lboost_system-mt
+
     #See http://stackoverflow.com/questions/16596876/object-file-has-too-many-sections
     Debug:	QMAKE_CXXFLAGS += -Wa,-mbig-obj
 }
@@ -362,21 +400,27 @@ unix {
      #  on Unix systems, only the "boost" option needs to be defined in config.pri
      QT_CONFIG -= no-pkg-config
      CONFIG += link_pkgconfig
-     expat:     PKGCONFIG += expat
+     expat:      PKGCONFIG += expat
 
-     # GLFW will require a link to X11 on linux and OpenGL framework on OS X
-     linux-* {
-          LIBS += -lGL -lX11
+
+     fontconfig: PKGCONFIG += freetype2 fontconfig
+
+     linux-* |freebsd-*{
+         osmesa:    LIBS += -lGL -lX11
          # link with static cairo on linux, to avoid linking to X11 libraries in NatronRenderer
          cairo {
-             PKGCONFIG += pixman-1 freetype2 fontconfig
+             PKGCONFIG += pixman-1
              LIBS +=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
          }
-         LIBS += -ldl
+         LIBS += -lrt
          QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/../lib\',-z,origin'
      } else {
-         LIBS += -framework OpenGL
+
+         osmesa:    LIBS += -framework OpenGL
          cairo:     PKGCONFIG += cairo
+     }
+     linux-* {
+         LIBS += -ldl
      }
 
      # User may specify an alternate python2-config from the command-line,
@@ -433,7 +477,7 @@ unix {
      }
 } #unix
 
-*-xcode {
+*xcode* {
   # redefine cxx flags as qmake tends to automatically add -O2 to xcode projects
   QMAKE_CFLAGS -= -O2
   QMAKE_CXXFLAGS -= -O2
@@ -458,22 +502,21 @@ unix {
 
 # see http://clang.llvm.org/docs/AddressSanitizer.html and http://blog.qt.digia.com/blog/2013/04/17/using-gccs-4-8-0-address-sanitizer-with-qt/
 addresssanitizer {
-  message("Compiling with AddressSanitizer (for gcc >= 4.8 and clang). Set the ASAN_SYMBOLIZER_PATH environment variable to point to the llvm-symbolizer binary, or make sure llvm-symbolizer in in your PATH.")
-  message("To compile with clang, use a clang-specific spec, such as unsupported/linux-clang, unsupported/macx-clang, linux-clang or macx-clang.")
-  message("For example, with Qt4 on OS X:")
-  message("  sudo port install clang-3.4")
-  message("  sudo port select clang mp-clang-3.4")
-  message("  export ASAN_SYMBOLIZER_PATH=/opt/local/bin/llvm-symbolizer-mp-3.4")
-  message("  qmake -spec unsupported/macx-clang CONFIG+=addresssanitizer ...")
-  message("see http://clang.llvm.org/docs/AddressSanitizer.html")
-  CONFIG += debug
-  QMAKE_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
-  QMAKE_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
-  QMAKE_LFLAGS += -fsanitize=address -g
+  *xcode* {
+    enable_cxx_container_overflow_check.name = CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW
+    enable_cxx_container_overflow_check.value = YES
+    QMAKE_MAC_XCODE_SETTINGS += enable_cxx_container_overflow_check
+  }
+  *g++* | *clang* {
+    CONFIG += debug
+    QMAKE_CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
+    QMAKE_CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O1
+    QMAKE_LFLAGS += -fsanitize=address -g
 
-#  QMAKE_LFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
-#  QMAKE_CLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
-#  QMAKE_CFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
+    #QMAKE_LFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
+    #QMAKE_CFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
+    #QMAKE_CXXFLAGS += -fsanitize-blacklist=../asan_blacklist.ignore
+  }
 }
 
 # see http://clang.llvm.org/docs/ThreadSanitizer.html
@@ -503,8 +546,17 @@ unix:!macx {
     target_mime.path = $${PREFIX}/share/mime/packages
     target_mime.files = $PWD/../Gui/Resources/Mime/x-natron.xml
     target_desktop.path = $${PREFIX}/share/applications
-    target_desktop.files = $PWD/../Gui/Resources/Applications/Natron.desktop
-    INSTALLS += target_icons target_mime target_desktop
+    target_desktop.files = $PWD/../Gui/Resources/Applications/fr.natron.Natron.desktop
+    target_appdata.path = $${PREFIX}/share/metainfo
+    target_appdata.files = $PWD/../Gui/Resources/Metainfo/fr.natron.Natron.appdata.xml
+    INSTALLS += target_icons target_mime target_desktop target_appdata
+}
+
+# GCC 8.1 gives a strange bug in the release builds, see https://github.com/NatronGitHub/Natron/issues/279
+# prevent building with GCC 8, unless configure with CONFIG+=enforce-gcc8
+
+enforce-gcc8 {
+  DEFINES += ENFORCE_GCC8
 }
 
 # and finally...

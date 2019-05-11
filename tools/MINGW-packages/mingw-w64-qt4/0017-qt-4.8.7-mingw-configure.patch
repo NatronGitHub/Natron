@@ -1,0 +1,280 @@
+--- qt-everywhere-opensource-src-4.8.7/configure.orig	2015-05-07 17:14:56.000000000 +0300
++++ qt-everywhere-opensource-src-4.8.7/configure	2015-06-03 15:18:52.103556600 +0300
+@@ -48,9 +48,19 @@
+ relconf=`basename $0`
+ # the directory of this script is the "source tree"
+ relpath=`dirname $0`
+-relpath=`(cd "$relpath"; /bin/pwd)`
++if [ -n "$MSYSTEM" ]; then
++  relpath=$(cygpath -ma "$relpath")
++  relpath=${relpath%/}
++else
++  relpath=`(cd "$relpath"; /bin/pwd)`
++fi
+ # the current directory is the "build tree" or "object tree"
+-outpath=`/bin/pwd`
++if [ -n "$MSYSTEM" ]; then
++  outpath=$(cygpath -ma $(/bin/pwd))
++  outpath=${outpath%/}
++else
++  outpath=`/bin/pwd`
++fi
+ 
+ #license file location
+ LICENSE_FILE="$QT_LICENSE_FILE"
+@@ -753,6 +763,7 @@
+ CFG_ZLIB=auto
+ CFG_SYMBIAN_DEFFILES=auto
+ CFG_S60=auto
++CFG_NATIVE_GESTURES=auto
+ CFG_SQLITE=qt
+ CFG_GIF=auto
+ CFG_TIFF=auto
+@@ -1144,7 +1155,7 @@
+         VAL=no
+         ;;
+     #Qt style yes options
+-    -incremental|-qvfb|-profile|-shared|-static|-sm|-xinerama|-xshape|-xsync|-xinput|-egl|-reduce-exports|-pch|-separate-debug-info|-stl|-freetype|-xcursor|-xfixes|-xrandr|-xrender|-mitshm|-fontconfig|-xkb|-nis|-qdbus|-dbus|-dbus-linked|-glib|-gstreamer|-gtkstyle|-cups|-iconv|-largefile|-h|-help|-v|-verbose|-debug|-release|-fast|-accessibility|-confirm-license|-gnumake|-framework|-qt3support|-debug-and-release|-exceptions|-cocoa|-carbon|-universal|-harfbuzz|-prefix-install|-silent|-armfpa|-optimized-qmake|-dwarf2|-reduce-relocations|-sse|-openssl|-openssl-linked|-ptmalloc|-xmlpatterns|-phonon|-phonon-backend|-multimedia|-audio-backend|-svg|-declarative|-declarative-debug|-javascript-jit|-script|-scripttools|-rpath|-force-pkg-config|-s60|-usedeffiles|-icu)
++    -incremental|-qvfb|-profile|-shared|-static|-sm|-xinerama|-xshape|-xsync|-xinput|-egl|-reduce-exports|-pch|-separate-debug-info|-stl|-freetype|-xcursor|-xfixes|-xrandr|-xrender|-mitshm|-fontconfig|-xkb|-nis|-qdbus|-dbus|-dbus-linked|-glib|-gstreamer|-gtkstyle|-cups|-iconv|-largefile|-h|-help|-v|-verbose|-debug|-release|-fast|-accessibility|-confirm-license|-gnumake|-framework|-qt3support|-debug-and-release|-exceptions|-cocoa|-carbon|-universal|-harfbuzz|-prefix-install|-silent|-armfpa|-optimized-qmake|-dwarf2|-reduce-relocations|-sse|-openssl|-openssl-linked|-ptmalloc|-xmlpatterns|-phonon|-phonon-backend|-multimedia|-audio-backend|-svg|-declarative|-declarative-debug|-javascript-jit|-script|-scripttools|-rpath|-force-pkg-config|-s60|-native-gestures|-usedeffiles|-icu)
+         VAR=`echo $1 | sed "s,^-\(.*\),\1,"`
+         VAL=yes
+         ;;
+@@ -1376,7 +1387,11 @@
+         CFG_PSQL_CONFIG="$VAL"
+         ;;
+     prefix)
+-        QT_INSTALL_PREFIX="$VAL"
++        if [ -n "$MSYSTEM" ]; then
++          QT_INSTALL_PREFIX=$(cygpath -ma "$VAL")
++        else
++          QT_INSTALL_PREFIX="$VAL"
++        fi
+         ;;
+     hostprefix)
+ 	QT_HOST_PREFIX="$VAL"
+@@ -1988,6 +2003,13 @@
+             UNKNOWN_OPT=yes
+         fi
+         ;;
++    native-gestures)
++        if [ "$VAL" = "yes" ] || [ "$VAL" = "no" ]; then
++            CFG_NATIVE_GESTURES="$VAL"
++        else
++            UNKNOWN_OPT=yes
++        fi
++        ;;
+     usedeffiles)
+         if [ "$VAL" = "yes" ] || [ "$VAL" = "no" ]; then
+             CFG_SYMBIAN_DEFFILES="$VAL"
+@@ -2966,6 +2988,12 @@
+             - Also available for Reliant UNIX: reliant-cds-64
+         "
+         ;;
++     MSYS*:* | MINGW*:*)
++        PLATFORM=win32-g++
++        if [ -z "$XPLATFORM" ]; then
++            XPLATFORM="win32-g++"
++        fi
++        ;;
+      CYGWIN*:*)
+         PLATFORM=cygwin-g++
+         ;;
+@@ -3139,6 +3167,13 @@
+ 
+ if [ -z "${CFG_HOST_ARCH}" ]; then
+     case "$UNAME_SYSTEM:$UNAME_RELEASE:$UNAME_MACHINE" in
++    MINGW*:*:*)
++        MACHINE_GCC=`(gcc -dumpmachine) 2>/dev/null`
++        CFG_HOST_ARCH=${MACHINE_GCC%%-*}
++        if [ "$OPT_VERBOSE" = "yes" ]; then
++            echo "    MINGW/MSYS ($CFG_HOST_ARCH)"
++        fi
++        ;;
+     GNU:*:*)
+         CFG_HOST_ARCH=`echo ${UNAME_MACHINE} | sed -e 's,[-/].*$,,'`
+         case "$CFG_HOST_ARCH" in
+@@ -3754,6 +3794,8 @@
+     if [ -z "$QT_INSTALL_SETTINGS" ]; then #default
+         if [ "$PLATFORM_MAC" = "yes" ]; then
+ 	    QT_INSTALL_SETTINGS=/Library/Preferences/Qt
++        elif [ "$XPLATFORM_MINGW" = "yes" ]; then
++	    QT_INSTALL_SETTINGS="$QT_INSTALL_PREFIX/etc"
+         else
+ 	    QT_INSTALL_SETTINGS=/etc/xdg
+         fi
+@@ -4545,6 +4587,15 @@
+ EOF
+ fi
+ 
++if [ "$XPLATFORM_MINGW" = "yes" ]; then
++    cat << EOF
++
++Qt for Windows only:
++    -no-native-gestures ............ Do not use native gestures on Windows 7.
++ +  -native-gestures ............... Use native gestures on Windows 7.
++EOF
++fi
++
+ if [ "$XPLATFORM_SYMBIAN" = "yes" ]; then
+     cat << EOF
+ 
+@@ -4943,7 +4994,15 @@
+ 
+     #mkspecs/default is used as a (gasp!) default mkspec so QMAKESPEC needn't be set once configured
+     rm -rf mkspecs/default
+-    ln -s `echo $XQMAKESPEC | sed "s,^${relpath}/mkspecs/,,"` mkspecs/default
++    if [ "$XPLATFORM_MINGW" = "yes" ]; then
++      mkdir -p mkspecs/default
++      _spec=$(echo $XQMAKESPEC | sed "s,^${relpath}/mkspecs/,,")
++      echo "QMAKESPEC_ORIGINAL=$XQMAKESPEC" > mkspecs/default/qmake.conf
++      echo "include(../${_spec}/qmake.conf)" >> mkspecs/default/qmake.conf
++      echo "#include \"../${_spec}/qplatformdefs.conf\"" > mkspecs/default/qplatformdefs.h
++    else
++      ln -s `echo $XQMAKESPEC | sed "s,^${relpath}/mkspecs/,,"` mkspecs/default
++    fi
+     # fix makefiles
+     for mkfile in GNUmakefile Makefile; do
+         EXTRA_LFLAGS=
+@@ -4953,7 +5012,11 @@
+ #           if which qmake >/dev/null 2>&1 && [ -f qmake/qmake.pro ]; then
+ #               (cd qmake && qmake) >/dev/null 2>&1 && continue
+ #           fi
+-            in_mkfile="${mkfile}.unix"
++            if [ "$PLATFORM" = "win32-g++" ]; then
++              in_mkfile="${mkfile}.win32-g++-sh"
++            else
++              in_mkfile="${mkfile}.unix"
++            fi
+         fi
+         in_mkfile="$relpath/qmake/$in_mkfile"
+         mkfile="$outpath/qmake/$mkfile"
+@@ -5362,7 +5425,7 @@
+ fi
+ 
+ # check IPC support
+-if [ "$XPLATFORM_SYMBIAN_SBSV2" = "no" ]; then
++if [ "$XPLATFORM_SYMBIAN_SBSV2" = "no" ] && [ "$XPLATFORM_MINGW" = "no" ]; then
+     # Raptor does not support configure tests.
+     if ! compileTest unix/ipc_sysv "ipc_sysv" ; then
+         # SYSV IPC is not supported - check POSIX IPC
+@@ -5415,6 +5478,13 @@
+     CFG_LARGEFILE=yes
+ fi
+ 
++if [ "$CFG_NATIVE_GESTURES" = auto ]; then
++    if [ "$XPLATFORM_MINGW" = "yes" ]; then
++        CFG_NATIVE_GESTURES=yes
++    else
++        CFG_NATIVE_GESTURES=no
++    fi
++fi
+ 
+ if [ "$CFG_S60" = "auto" ]; then
+     if [ "$XPLATFORM_SYMBIAN" = "yes" ]; then
+@@ -5579,7 +5649,7 @@
+             if [ "$CFG_SQL_psql" != "no" ]; then
+                 [ -z "$CFG_PSQL_CONFIG" ] && CFG_PSQL_CONFIG=`"$WHICH" pg_config`
+                 # Be careful not to use native pg_config when cross building.
+-                if [ "$XPLATFORM_MINGW" != "yes" ] && [ -x "$CFG_PSQL_CONFIG" ]; then
++                if [ -x "$CFG_PSQL_CONFIG" ] && [ "$QT_CROSS_COMPILE" = "no" ]; then
+                     QT_CFLAGS_PSQL=`$CFG_PSQL_CONFIG --includedir 2>/dev/null`
+                     QT_LFLAGS_PSQL=`$CFG_PSQL_CONFIG --libdir 2>/dev/null`
+                 fi
+@@ -6699,6 +6769,24 @@
+ 
+ fi # QWS
+ 
++if [ "$XPLATFORM_MINGW" = "yes" ] && [ "$QT_CROSS_COMPILE" = "no" ]; then
++    # auto-detect FontConfig support
++    if [ "$CFG_FONTCONFIG" != "no" ]; then
++        if [ -n "$PKG_CONFIG" ] && $PKG_CONFIG --exists fontconfig --exists freetype2 2>/dev/null; then
++            QT_CFLAGS_FONTCONFIG=`$PKG_CONFIG --cflags fontconfig --cflags freetype2 2>/dev/null`
++            QT_LIBS_FONTCONFIG=`$PKG_CONFIG --libs fontconfig --libs freetype2 2>/dev/null`
++        else
++            QT_CFLAGS_FONTCONFIG=
++            QT_LIBS_FONTCONFIG="-lfreetype -lfontconfig"
++        fi
++        if compileTest x11/fontconfig "FontConfig" $QT_CFLAGS_FONTCONFIG $QT_LIBS_FONTCONFIG; then
++                QT_CONFIG="$QT_CONFIG fontconfig"
++                QMakeVar set QMAKE_CFLAGS_FONTCONFIG "$QT_CFLAGS_FONTCONFIG"
++                QMakeVar set QMAKE_LIBS_FONTCONFIG "$QT_LIBS_FONTCONFIG"
++        fi
++    fi
++fi # MINGW
++
+ EGL_VARIANT=none
+ # EGL Support
+ if [ "$PLATFORM_X11" = "yes" -o "$PLATFORM_QWS" = "yes" ]; then
+@@ -7398,7 +7486,7 @@
+     QMakeVar set RCC_DIR ".rcc/$QMAKE_OUTDIR"
+     QMakeVar set UI_DIR ".uic/$QMAKE_OUTDIR"
+ fi
+-if [ "$CFG_LARGEFILE" = "yes" ] && [ "$XPLATFORM_MINGW" != "yes" ]; then
++if [ "$CFG_LARGEFILE" = "yes" ]; then
+     QMAKE_CONFIG="$QMAKE_CONFIG largefile"
+ fi
+ if [ "$CFG_STL" = "no" ]; then
+@@ -7669,6 +7757,10 @@
+     # Follow default behavior of configure.exe by overriding with "rtti"
+     # (also on Symbian).
+     QTCONFIG_CONFIG="$QTCONFIG_CONFIG rtti"
++    
++    if [ "$CFG_NATIVE_GESTURES" = "yes" ]; then
++        QTCONFIG_CONFIG="$QTCONFIG_CONFIG native-gestures"
++    fi
+ fi
+ 
+ if [ "$CFG_ALSA" = "yes" ]; then
+@@ -8263,6 +8355,15 @@
+     ;;
+ esac
+ 
++if [ "$XPLATFORM_MINGW" = "yes" ] && [ "$CFG_SHARED" = "yes" ]; then
++    cat >>"$outpath/src/corelib/global/qconfig.h.new" <<EOF
++
++#ifndef QT_DLL
++#define QT_DLL
++#endif
++EOF
++fi
++
+ cat >>"$outpath/src/corelib/global/qconfig.h.new" <<EOF
+ 
+ /* Qt Edition */
+@@ -8367,7 +8468,7 @@
+ echo '/* Compile time features */' >>"$outpath/src/corelib/global/qconfig.h.new"
+ [ '!' -z "$LicenseKeyExt" ] && echo "#define QT_PRODUCT_LICENSEKEY \"$LicenseKeyExt\"" >>"$outpath/src/corelib/global/qconfig.h.new"
+ 
+-if [ "$CFG_LARGEFILE" = "yes" ] && [ "$XPLATFORM_MINGW" != "yes" ]; then
++if [ "$CFG_LARGEFILE" = "yes" ]; then
+     echo "#define QT_LARGEFILE_SUPPORT 64" >>"$outpath/src/corelib/global/qconfig.h.new"
+ fi
+ 
+@@ -8508,7 +8609,7 @@
+ [ "$CFG_ICONV" = "no" ]      && QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_ICONV"
+ [ "$CFG_GLIB" != "yes" ]     && QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_GLIB"
+ [ "$CFG_QGTKSTYLE" != "yes" ] && QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_STYLE_GTK"
+-if [ "$XPLATFORM_SYMBIAN" = "no" ]; then
++if [ "$XPLATFORM_SYMBIAN" = "no" ] && [ "$XPLATFORM_MINGW" = "no" ]; then
+     # Do not apply following negative X11/Unix/Mac only flags on Symbian, so that
+     # configuration matches with the one generated by configure executable tool
+     [ "$CFG_CUPS" = "no" ]       && QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_CUPS"
+@@ -9010,6 +9111,7 @@
+ fi
+ echo "Support for S60 ........ $CFG_S60"
+ echo "Symbian DEF files ...... $CFG_SYMBIAN_DEFFILES"
++echo "Use native gestures .... $CFG_NATIVE_GESTURES"
+ echo "STL support ............ $CFG_STL"
+ echo "PCH support ............ $CFG_PRECOMPILE"
+ echo "MMX/3DNOW/SSE/SSE2/SSE3. ${CFG_MMX}/${CFG_3DNOW}/${CFG_SSE}/${CFG_SSE2}/${CFG_SSE3}"
+@@ -9058,6 +9160,10 @@
+ fi
+ echo "zlib support ........... $CFG_ZLIB"
+ echo "Session management ..... $CFG_SM"
++if [ "$XPLATFORM_MINGW" = "yes" ]; then
++    echo "Freetype2 support ...... $CFG_LIBFREETYPE"
++    echo "FontConfig support ..... $CFG_FONTCONFIG"
++fi
+ if [ "$PLATFORM_QWS" = "yes" ]; then
+     echo "Embedded support ....... $CFG_EMBEDDED"
+     if [ "$CFG_QWS_FREETYPE" = "auto" ]; then

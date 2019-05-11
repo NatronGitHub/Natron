@@ -1,0 +1,238 @@
+diff -up qt-everywhere-opensource-src-4.8.4/src/gui/painting/qcups.cpp.cupsEnumDests qt-everywhere-opensource-src-4.8.4/src/gui/painting/qcups.cpp
+--- qt-everywhere-opensource-src-4.8.4/src/gui/painting/qcups.cpp.cupsEnumDests	2012-11-23 10:09:53.000000000 +0000
++++ qt-everywhere-opensource-src-4.8.4/src/gui/painting/qcups.cpp	2013-07-03 15:30:06.232936976 +0100
+@@ -50,9 +50,19 @@
+ 
+ QT_BEGIN_NAMESPACE
+ 
++typedef int (*CupsEnumDests)(unsigned flags, int msec, int *cancel,
++			     cups_ptype_t type, cups_ptype_t mask,
++			     cups_dest_cb_t cb, void *user_data);
++typedef http_t * (*CupsConnectDest)(cups_dest_t *dest, unsigned flags,
++				    int msec, int *cancel,
++				    char *resource, size_t resourcesize,
++				    cups_dest_cb_t cb, void *user_data);
++typedef int (*CupsCopyDest)(cups_dest_t *dest, int num_dests,
++			    cups_dest_t **dests);
+ typedef int (*CupsGetDests)(cups_dest_t **dests);
+ typedef void (*CupsFreeDests)(int num_dests, cups_dest_t *dests);
+ typedef const char* (*CupsGetPPD)(const char *printer);
++typedef const char* (*CupsGetPPD2)(http_t *http, const char *printer);
+ typedef int (*CupsMarkOptions)(ppd_file_t *ppd, int num_options, cups_option_t *options);
+ typedef ppd_file_t* (*PPDOpenFile)(const char *filename);
+ typedef void (*PPDMarkDefaults)(ppd_file_t *ppd);
+@@ -66,12 +76,24 @@ typedef const char* (*CupsLangEncoding)(
+ typedef int (*CupsAddOption)(const char *name, const char *value, int num_options, cups_option_t **options);
+ typedef int (*CupsTempFd)(char *name, int len);
+ typedef int (*CupsPrintFile)(const char * name, const char * filename, const char * title, int num_options, cups_option_t * options);
++typedef int (*CupsPrintFile2)(http_t *http, const char *name, const char *filename, const char *title, int num_options, cups_option_t *options);
++
++typedef struct
++{
++    cups_dest_t *printers;
++    int num_printers;
++} EnumDestsContext;
+ 
+ static bool cupsLoaded = false;
+ static int qt_cups_num_printers = 0;
++static cups_dest_t *qt_cups_printers = 0;
++static CupsEnumDests _cupsEnumDests = 0;
++static CupsConnectDest _cupsConnectDest = 0;
++static CupsCopyDest _cupsCopyDest = 0;
+ static CupsGetDests _cupsGetDests = 0;
+ static CupsFreeDests _cupsFreeDests = 0;
+ static CupsGetPPD _cupsGetPPD = 0;
++static CupsGetPPD2 _cupsGetPPD2 = 0;
+ static PPDOpenFile _ppdOpenFile = 0;
+ static PPDMarkDefaults _ppdMarkDefaults = 0;
+ static PPDClose _ppdClose = 0;
+@@ -84,14 +106,35 @@ static CupsLangEncoding _cupsLangEncodin
+ static CupsAddOption _cupsAddOption = 0;
+ static CupsTempFd _cupsTempFd = 0;
+ static CupsPrintFile _cupsPrintFile = 0;
++static CupsPrintFile2 _cupsPrintFile2 = 0;
++
++static int enum_dest_cb (void *user_data, unsigned flags, cups_dest_t *dest)
++{
++    EnumDestsContext *context = (EnumDestsContext *) user_data;
++
++    if ((flags & (CUPS_DEST_FLAGS_UNCONNECTED |
++		  CUPS_DEST_FLAGS_REMOVED |
++		  CUPS_DEST_FLAGS_ERROR |
++		  CUPS_DEST_FLAGS_RESOLVING |
++		  CUPS_DEST_FLAGS_CONNECTING |
++		  CUPS_DEST_FLAGS_CANCELED)) == 0)
++	context->num_printers = _cupsCopyDest (dest, context->num_printers,
++					       &context->printers);
++
++    return 1;
++}
+ 
+ static void resolveCups()
+ {
+     QLibrary cupsLib(QLatin1String("cups"), 2);
+     if(cupsLib.load()) {
++        _cupsEnumDests = (CupsEnumDests) cupsLib.resolve("cupsEnumDests");
++	_cupsConnectDest = (CupsConnectDest) cupsLib.resolve("cupsConnectDest");
++	_cupsCopyDest = (CupsCopyDest) cupsLib.resolve("cupsCopyDest");
+         _cupsGetDests = (CupsGetDests) cupsLib.resolve("cupsGetDests");
+         _cupsFreeDests = (CupsFreeDests) cupsLib.resolve("cupsFreeDests");
+         _cupsGetPPD = (CupsGetPPD) cupsLib.resolve("cupsGetPPD");
++        _cupsGetPPD2 = (CupsGetPPD2) cupsLib.resolve("cupsGetPPD2");
+         _cupsLangGet = (CupsLangGet) cupsLib.resolve("cupsLangGet");
+         _cupsLangEncoding = (CupsLangEncoding) cupsLib.resolve("cupsLangEncoding");
+         _ppdOpenFile = (PPDOpenFile) cupsLib.resolve("ppdOpenFile");
+@@ -104,14 +147,27 @@ static void resolveCups()
+         _cupsAddOption = (CupsAddOption) cupsLib.resolve("cupsAddOption");
+         _cupsTempFd = (CupsTempFd) cupsLib.resolve("cupsTempFd");
+         _cupsPrintFile = (CupsPrintFile) cupsLib.resolve("cupsPrintFile");
++        _cupsPrintFile2 = (CupsPrintFile2) cupsLib.resolve("cupsPrintFile2");
+ 
+-        if (_cupsGetDests && _cupsFreeDests) {
+-            cups_dest_t *printers;
++	if (_cupsEnumDests && _cupsCopyDest &&
++	    _cupsConnectDest && _cupsGetPPD2 &&
++	    _cupsPrintFile2) {
++	    EnumDestsContext context;
++	    context.printers = 0;
++	    context.num_printers = 0;
++	    _cupsEnumDests(0, -1, 0, 0, 0,
++			   enum_dest_cb, &context);
++
++	    qt_cups_printers = context.printers;
++	    qt_cups_num_printers = context.num_printers;
++	} else if (_cupsGetDests && _cupsFreeDests) {
++	    cups_dest_t *printers;
+             int num_printers = _cupsGetDests(&printers);
+-            if (num_printers)
+-                _cupsFreeDests(num_printers, printers);
+-            qt_cups_num_printers = num_printers;
+-        }
++
++	    if (num_printers)
++		_cupsFreeDests(num_printers, printers);
++	    qt_cups_num_printers = num_printers;
++	}
+     }
+     cupsLoaded = true;
+ }
+@@ -134,7 +190,15 @@ QCUPSSupport::QCUPSSupport()
+         return;
+ 
+     // Update the available printer count
+-    qt_cups_num_printers = prnCount = _cupsGetDests(&printers);
++    if (qt_cups_printers && _cupsCopyDest) {
++      int i;
++      for (i = 0; i < qt_cups_num_printers; ++i) {
++	  prnCount = _cupsCopyDest (&qt_cups_printers[i],
++				    prnCount,
++				    &printers);
++      }
++    } else
++      qt_cups_num_printers = prnCount = _cupsGetDests(&printers);
+ 
+     for (int i = 0; i <  prnCount; ++i) {
+         if (printers[i].is_default) {
+@@ -188,7 +252,19 @@ const ppd_file_t* QCUPSSupport::setCurre
+     currPPD = 0;
+     page_sizes = 0;
+ 
+-    const char *ppdFile = _cupsGetPPD(printers[index].name);
++    const char *ppdFile = 0;
++    if (_cupsConnectDest && _cupsGetPPD2) {
++	char resource[HTTP_MAX_URI];
++	http_t *http = _cupsConnectDest (&printers[index], 0, -1, 0,
++					 resource, sizeof (resource),
++					 0, 0);
++	if (http) {
++	    char *name = strrchr (resource, '/');
++	    if (name)
++		ppdFile = _cupsGetPPD2 (http, ++name);
++	}
++    } else
++	ppdFile = _cupsGetPPD(printers[index].name);
+ 
+     if (!ppdFile)
+       return 0;
+@@ -343,7 +419,29 @@ bool QCUPSSupport::printerHasPPD(const c
+ {
+     if (!isAvailable())
+         return false;
+-    const char *ppdFile = _cupsGetPPD(printerName);
++
++    const char *ppdFile = 0;
++    if (_cupsConnectDest && _cupsGetPPD2) {
++	int i;
++	for (i = 0; i < prnCount; ++i)
++	    if (!strcmp (printers[i].name, printerName))
++		break;
++
++	if (i == prnCount)
++	    return false;
++
++	char resource[HTTP_MAX_URI];
++	http_t *http = _cupsConnectDest (&printers[i], 0, -1, 0,
++					 resource, sizeof (resource),
++					 0, 0);
++	if (http) {
++	    char *name = strrchr (resource, '/');
++	    if (name)
++		ppdFile = _cupsGetPPD2 (http, ++name);
++	}
++    } else
++	ppdFile = _cupsGetPPD(printerName);
++
+     if (ppdFile)
+         unlink(ppdFile);
+     return (ppdFile != 0);
+@@ -394,6 +492,26 @@ QPair<int, QString> QCUPSSupport::tempFd
+ int QCUPSSupport::printFile(const char * printerName, const char * filename, const char * title,
+                             int num_options, cups_option_t * options)
+ {
++    if (_cupsConnectDest && _cupsPrintFile2) {
++	int i;
++	for (i = 0; i < prnCount; ++i)
++	    if (!strcmp (printers[i].name, printerName))
++		break;
++
++	if (i != prnCount) {
++	    char resource[HTTP_MAX_URI];
++	    http_t *http = _cupsConnectDest (&printers[i], 0, -1, 0,
++					     resource, sizeof (resource),
++					     0, 0);
++	    if (http) {
++		char *name = strrchr (resource, '/');
++		if (name)
++		    return _cupsPrintFile2 (http, ++name, filename, title,
++					    num_options, options);
++	    }
++	}
++    }
++
+     return _cupsPrintFile(printerName, filename, title, num_options, options);
+ }
+ 
+diff -up qt-everywhere-opensource-src-4.8.4/src/gui/painting/qcups_p.h.cupsEnumDests qt-everywhere-opensource-src-4.8.4/src/gui/painting/qcups_p.h
+--- qt-everywhere-opensource-src-4.8.4/src/gui/painting/qcups_p.h.cupsEnumDests	2012-11-23 10:09:53.000000000 +0000
++++ qt-everywhere-opensource-src-4.8.4/src/gui/painting/qcups_p.h	2013-07-03 15:27:24.733343017 +0100
+@@ -92,7 +92,7 @@ public:
+ 
+     QStringList options() const;
+ 
+-    static bool printerHasPPD(const char *printerName);
++    bool printerHasPPD(const char *printerName);
+ 
+     QString unicodeString(const char *s);
+ 
+diff -up qt-everywhere-opensource-src-4.8.4/src/gui/painting/qprinter.cpp.cupsEnumDests qt-everywhere-opensource-src-4.8.4/src/gui/painting/qprinter.cpp
+--- qt-everywhere-opensource-src-4.8.4/src/gui/painting/qprinter.cpp.cupsEnumDests	2013-07-03 15:27:24.531342277 +0100
++++ qt-everywhere-opensource-src-4.8.4/src/gui/painting/qprinter.cpp	2013-07-03 15:27:24.733343017 +0100
+@@ -844,7 +844,7 @@ void QPrinter::setPrinterName(const QStr
+     if(d->use_default_engine
+         && d->outputFormat == QPrinter::NativeFormat) {
+         if (QCUPSSupport::cupsVersion() >= 10200
+-            && QCUPSSupport::printerHasPPD(name.toLocal8Bit().constData()))
++            && QCUPSSupport().printerHasPPD(name.toLocal8Bit().constData()))
+             setOutputFormat(QPrinter::PdfFormat);
+         else
+             setOutputFormat(QPrinter::PostScriptFormat);

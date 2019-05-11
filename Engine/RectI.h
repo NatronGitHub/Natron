@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -37,19 +37,24 @@
 
 #include "Global/GlobalDefines.h"
 
+#include "Serialization/SerializationBase.h"
+
 #include "Engine/EngineFwd.h"
+
+
+NATRON_NAMESPACE_ENTER;
+
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 //Shiboken fails if defined at the start of a header
 GCC_DIAG_OFF(strict-overflow)
 #endif
 
-NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief A rectangle where x1 < x2 and y1 < y2 such as width() == (x2 - x1) && height() == (y2 - y1)
  **/
-class RectI
+class RectI : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
 
@@ -171,8 +176,10 @@ public:
         return ret;
     }
 
+    void toCanonical(const RenderScale& thisScale, double par, const RectD & rod, RectD *rect) const;
     void toCanonical(unsigned int thisLevel, double par, const RectD & rod, RectD *rect) const;
     void toCanonical_noClipping(unsigned int thisLevel, double par, RectD *rect) const;
+    void toCanonical_noClipping(const RenderScale& thisScale, double par, RectD *rect) const;
 
     // the following should never be used: only canonical coordinates may be downscaled
     /**
@@ -431,6 +438,8 @@ public:
         y2 += dy;
     }
 
+    void roundToTileSize(int tileSizeX, int tileSizeY);
+
 #ifdef DEBUG
     void debug() const
     {
@@ -438,13 +447,17 @@ public:
     }
 
 #endif
-    std::vector<RectI> splitIntoSmallerRects(int splitsCount) const;
+    std::list<RectI> splitIntoSmallerRects(int splitsCount) const;
     static RectI fromOfxRectI(const OfxRectI & r)
     {
         RectI ret(r.x1, r.y1, r.x2, r.y2);
 
         return ret;
     }
+
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE;
+
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE;
 };
 
 GCC_DIAG_ON(strict-overflow)

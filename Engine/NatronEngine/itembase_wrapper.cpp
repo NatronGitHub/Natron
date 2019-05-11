@@ -19,8 +19,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
+#include <PyItemsTable.h>
 #include <PyParameter.h>
-#include <PyRoto.h>
+#include <list>
 
 
 // Native ---------------------------------------------------------
@@ -38,6 +39,98 @@ ItemBaseWrapper::~ItemBaseWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
+static PyObject* Sbk_ItemBaseFunc_getChildren(PyObject* self)
+{
+    ::ItemBase* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getChildren()const
+            // Begin code injection
+
+            std::list<ItemBase*> items = cppSelf->getChildren();
+            PyObject* ret = PyList_New((int) items.size());
+            int idx = 0;
+            for (std::list<ItemBase*>::iterator it = items.begin(); it!=items.end(); ++it,++idx) {
+            PyObject* item = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_ITEMBASE_IDX], *it);
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(item);
+            PyList_SET_ITEM(ret, idx, item);
+            }
+            return ret;
+
+            // End of code injection
+
+
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_ItemBaseFunc_getIconFilePath(PyObject* self)
+{
+    ::ItemBase* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getIconFilePath()const
+            QString cppResult = const_cast<const ::ItemBase*>(cppSelf)->getIconFilePath();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_ItemBaseFunc_getIndexInParent(PyObject* self)
+{
+    ::ItemBase* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getIndexInParent()const
+            int cppResult = const_cast<const ::ItemBase*>(cppSelf)->getIndexInParent();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_ItemBaseFunc_getLabel(PyObject* self)
 {
     ::ItemBase* cppSelf = 0;
@@ -54,58 +147,6 @@ static PyObject* Sbk_ItemBaseFunc_getLabel(PyObject* self)
             // getLabel()const
             QString cppResult = const_cast<const ::ItemBase*>(cppSelf)->getLabel();
             pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_ItemBaseFunc_getLocked(PyObject* self)
-{
-    ::ItemBase* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getLocked()const
-            bool cppResult = const_cast<const ::ItemBase*>(cppSelf)->getLocked();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_ItemBaseFunc_getLockedRecursive(PyObject* self)
-{
-    ::ItemBase* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getLockedRecursive()const
-            bool cppResult = const_cast<const ::ItemBase*>(cppSelf)->getLockedRecursive();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
 
@@ -146,6 +187,9 @@ static PyObject* Sbk_ItemBaseFunc_getParam(PyObject* self, PyObject* pyArg)
             // getParam(QString)const
             Param * cppResult = const_cast<const ::ItemBase*>(cppSelf)->getParam(cppArg0);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
         }
     }
 
@@ -161,7 +205,7 @@ static PyObject* Sbk_ItemBaseFunc_getParam(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
-static PyObject* Sbk_ItemBaseFunc_getParentLayer(PyObject* self)
+static PyObject* Sbk_ItemBaseFunc_getParams(PyObject* self)
 {
     ::ItemBase* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -174,9 +218,49 @@ static PyObject* Sbk_ItemBaseFunc_getParentLayer(PyObject* self)
     {
 
         if (!PyErr_Occurred()) {
-            // getParentLayer()const
-            Layer * cppResult = const_cast<const ::ItemBase*>(cppSelf)->getParentLayer();
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_LAYER_IDX], cppResult);
+            // getParams()const
+            // Begin code injection
+
+            std::list<Param*> params = cppSelf->getParams();
+            PyObject* ret = PyList_New((int) params.size());
+            int idx = 0;
+            for (std::list<Param*>::iterator it = params.begin(); it!=params.end(); ++it,++idx) {
+            PyObject* item = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], *it);
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(item);
+            PyList_SET_ITEM(ret, idx, item);
+            }
+            return ret;
+
+            // End of code injection
+
+
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_ItemBaseFunc_getParent(PyObject* self)
+{
+    ::ItemBase* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getParent()const
+            ItemBase * cppResult = const_cast<const ::ItemBase*>(cppSelf)->getParent();
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_ITEMBASE_IDX], cppResult);
 
             // Ownership transferences.
             Shiboken::Object::getOwnership(pyResult);
@@ -216,30 +300,46 @@ static PyObject* Sbk_ItemBaseFunc_getScriptName(PyObject* self)
     return pyResult;
 }
 
-static PyObject* Sbk_ItemBaseFunc_getVisible(PyObject* self)
+static PyObject* Sbk_ItemBaseFunc_setIconFilePath(PyObject* self, PyObject* pyArg)
 {
     ::ItemBase* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
     cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setIconFilePath(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // setIconFilePath(QString)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ItemBaseFunc_setIconFilePath_TypeError;
 
     // Call function/method
     {
+        ::QString cppArg0 = ::QString();
+        pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getVisible()const
-            bool cppResult = const_cast<const ::ItemBase*>(cppSelf)->getVisible();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+            // setIconFilePath(QString)
+            cppSelf->setIconFilePath(cppArg0);
         }
     }
 
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
+    if (PyErr_Occurred()) {
         return 0;
     }
-    return pyResult;
+    Py_RETURN_NONE;
+
+    Sbk_ItemBaseFunc_setIconFilePath_TypeError:
+        const char* overloads[] = {"unicode", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ItemBase.setIconFilePath", overloads);
+        return 0;
 }
 
 static PyObject* Sbk_ItemBaseFunc_setLabel(PyObject* self, PyObject* pyArg)
@@ -269,13 +369,7 @@ static PyObject* Sbk_ItemBaseFunc_setLabel(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // setLabel(QString)
-            // Begin code injection
-
             cppSelf->setLabel(cppArg0);
-
-            // End of code injection
-
-
         }
     }
 
@@ -290,153 +384,17 @@ static PyObject* Sbk_ItemBaseFunc_setLabel(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
-static PyObject* Sbk_ItemBaseFunc_setLocked(PyObject* self, PyObject* pyArg)
-{
-    ::ItemBase* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: setLocked(bool)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
-        overloadId = 0; // setLocked(bool)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_ItemBaseFunc_setLocked_TypeError;
-
-    // Call function/method
-    {
-        bool cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // setLocked(bool)
-            cppSelf->setLocked(cppArg0);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_ItemBaseFunc_setLocked_TypeError:
-        const char* overloads[] = {"bool", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ItemBase.setLocked", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_ItemBaseFunc_setScriptName(PyObject* self, PyObject* pyArg)
-{
-    ::ItemBase* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: setScriptName(QString)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
-        overloadId = 0; // setScriptName(QString)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_ItemBaseFunc_setScriptName_TypeError;
-
-    // Call function/method
-    {
-        ::QString cppArg0 = ::QString();
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // setScriptName(QString)
-            // Begin code injection
-
-            bool cppResult = cppSelf->setScriptName(cppArg0);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
-
-            // End of code injection
-
-
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-
-    Sbk_ItemBaseFunc_setScriptName_TypeError:
-        const char* overloads[] = {"unicode", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ItemBase.setScriptName", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_ItemBaseFunc_setVisible(PyObject* self, PyObject* pyArg)
-{
-    ::ItemBase* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: setVisible(bool)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
-        overloadId = 0; // setVisible(bool)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_ItemBaseFunc_setVisible_TypeError;
-
-    // Call function/method
-    {
-        bool cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // setVisible(bool)
-            cppSelf->setVisible(cppArg0);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_ItemBaseFunc_setVisible_TypeError:
-        const char* overloads[] = {"bool", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ItemBase.setVisible", overloads);
-        return 0;
-}
-
 static PyMethodDef Sbk_ItemBase_methods[] = {
+    {"getChildren", (PyCFunction)Sbk_ItemBaseFunc_getChildren, METH_NOARGS},
+    {"getIconFilePath", (PyCFunction)Sbk_ItemBaseFunc_getIconFilePath, METH_NOARGS},
+    {"getIndexInParent", (PyCFunction)Sbk_ItemBaseFunc_getIndexInParent, METH_NOARGS},
     {"getLabel", (PyCFunction)Sbk_ItemBaseFunc_getLabel, METH_NOARGS},
-    {"getLocked", (PyCFunction)Sbk_ItemBaseFunc_getLocked, METH_NOARGS},
-    {"getLockedRecursive", (PyCFunction)Sbk_ItemBaseFunc_getLockedRecursive, METH_NOARGS},
     {"getParam", (PyCFunction)Sbk_ItemBaseFunc_getParam, METH_O},
-    {"getParentLayer", (PyCFunction)Sbk_ItemBaseFunc_getParentLayer, METH_NOARGS},
+    {"getParams", (PyCFunction)Sbk_ItemBaseFunc_getParams, METH_NOARGS},
+    {"getParent", (PyCFunction)Sbk_ItemBaseFunc_getParent, METH_NOARGS},
     {"getScriptName", (PyCFunction)Sbk_ItemBaseFunc_getScriptName, METH_NOARGS},
-    {"getVisible", (PyCFunction)Sbk_ItemBaseFunc_getVisible, METH_NOARGS},
+    {"setIconFilePath", (PyCFunction)Sbk_ItemBaseFunc_setIconFilePath, METH_O},
     {"setLabel", (PyCFunction)Sbk_ItemBaseFunc_setLabel, METH_O},
-    {"setLocked", (PyCFunction)Sbk_ItemBaseFunc_setLocked, METH_O},
-    {"setScriptName", (PyCFunction)Sbk_ItemBaseFunc_setScriptName, METH_O},
-    {"setVisible", (PyCFunction)Sbk_ItemBaseFunc_setVisible, METH_O},
 
     {0} // Sentinel
 };

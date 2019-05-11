@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -48,13 +48,13 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Global/Enums.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/Plugin.h"
 
-
-//#define MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
+
+//#define MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
 
 struct OfxHostPrivate;
 class OfxHost
@@ -145,23 +145,15 @@ public:
 #endif
 
     virtual OFX::Host::Memory::Instance* newMemoryInstance(size_t nBytes) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    boost::shared_ptr<AbstractOfxEffectInstance> createOfxEffect(NodePtr node,
-                                                                 const CreateNodeArgs& args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                                                                 , bool allowFileDialogs,
-                                                                 bool *hasUsedFileDialog
-#endif
-                                                                 );
 
 
     /*Reads OFX plugin cache and scan plugins directories
        to load them all.*/
-    void loadOFXPlugins(IOPluginsMap* readersMap,
-                        IOPluginsMap* writersMap);
+    void loadOFXPlugins();
 
     void clearPluginsLoadedCache();
 
-    void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
+    void setOFXLastActionCaller_TLS(const OfxEffectInstancePtr& effect);
 
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                                     ContextEnum* ctx);
@@ -173,21 +165,17 @@ public:
      **/
     struct OfxHostTLSData
     {
-        OfxImageEffectInstance* lastEffectCallingMainEntry;
-
-        ///Stored as int, because we need -1; list because we need it recursive for the multiThread func
-        std::list<int> threadIndexes;
-
+        std::list<OfxEffectInstancePtr> effectActionsStack;
+        
         OfxHostTLSData()
-            : lastEffectCallingMainEntry(0)
-            , threadIndexes()
+        : effectActionsStack()
         {
         }
     };
 
     typedef boost::shared_ptr<OfxHostTLSData> OfxHostDataTLSPtr;
-
-    OfxHostDataTLSPtr getTLSData() const;
+    
+    OfxEffectInstancePtr getCurrentEffect_TLS() const;
 
 private:
 

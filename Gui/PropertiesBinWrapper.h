@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -37,17 +37,20 @@ class PropertiesBinWrapper
 {
 public:
 
-    PropertiesBinWrapper(Gui* parent);
+    PropertiesBinWrapper(const std::string& scriptName, Gui* parent);
 
     virtual ~PropertiesBinWrapper();
 
+    virtual QIcon getIcon() const OVERRIDE FINAL;
+
 private:
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
-    virtual QUndoStack* getUndoStack() const OVERRIDE FINAL;
+    virtual boost::shared_ptr<QUndoStack> getUndoStack() const OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT

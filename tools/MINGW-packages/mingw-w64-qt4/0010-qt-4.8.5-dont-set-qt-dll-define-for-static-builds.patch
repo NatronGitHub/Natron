@@ -1,0 +1,11 @@
+--- qt-everywhere-opensource-src-4.8.5/mkspecs/features/qt.prf.orig	2013-07-05 00:05:01.084522022 +0200
++++ qt-everywhere-opensource-src-4.8.5/mkspecs/features/qt.prf	2013-07-05 00:05:19.402521256 +0200
+@@ -7,7 +7,7 @@
+       QT_ENV_DLL = $$(QT_DLL)
+       QT_ENV_NO_DLL = $$(QT_NODLL)
+       isEmpty(QT_ENV_NO_DLL) {
+-          shared|!isEmpty(QT_ENV_DLL):DEFINES += QT_DLL
++          shared|!isEmpty(QT_ENV_DLL):!static:DEFINES += QT_DLL
+       }
+       contains(DEFINES, QT_MAKEDLL)|contains(DEFINES, QT_DLL):QMAKE_QT_DLL = 1
+    }

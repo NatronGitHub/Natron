@@ -1,11 +1,47 @@
---- Portfile.orig	2017-09-11 21:25:30.000000000 +0200
-+++ Portfile	2017-09-11 21:25:59.000000000 +0200
-@@ -33,7 +33,7 @@
- depends_build    port:pkgconfig
+--- Portfile.orig	2018-06-15 11:26:50.000000000 +0200
++++ Portfile	2018-06-15 11:28:11.000000000 +0200
+@@ -17,10 +17,6 @@
+ master_sites        ${homepage}/data/
+ distname            LibRaw-${version}
  
- depends_lib      port:jasper \
--                 port:jpeg   \
-+                 path:lib/libjpeg.dylib:jpeg   \
-                  port:lcms2
+-distfiles-append \
+-    LibRaw-demosaic-pack-GPL2-${demosaicversion}${extract.suffix} \
+-    LibRaw-demosaic-pack-GPL3-${demosaicversion}${extract.suffix}
+-
+ checksums \
+     LibRaw-${version}${extract.suffix} \
+         rmd160  b946c4dc480b166299137b82ec4b0a313a31038d \
+@@ -39,13 +35,32 @@
+ depends_build       port:pkgconfig
+ 
+ depends_lib         port:jasper \
+-                    port:jpeg \
++                    path:lib/libjpeg.dylib:jpeg \
+                     port:lcms2
  
  post-destroot {
+     set htmlDir ${destroot}${prefix}/share/doc/${name}/html
+     xinstall -d -m 0755 ${htmlDir}
+     xinstall -m 644 {*}[glob -directory ${worksrcpath}/doc/ *.html] ${htmlDir}
++    if {${configure.cxx_stdlib} eq "libc++"} {
++        # fix pkg-config files, which contains many references to libstdc++
++        reinplace -E {s|-lstdc|-lc|g} ${destroot}${prefix}/lib/pkgconfig/libraw.pc
++        reinplace -E {s|-lstdc|-lc|g} ${destroot}${prefix}/lib/pkgconfig/libraw_r.pc
++    }
++}
++
++variant gpl2 description {Enable GPL demosaic pack, license will be GPL-2+} {
++    distfiles-append \
++        LibRaw-demosaic-pack-GPL2-${demosaicversion}${extract.suffix} \
++
++    license                 GPL-2+
++}
++
++variant gpl3 requires gpl2 description {Enable GPL demosaic pack, license will be GPL-3+} {
++    distfiles-append \
++        LibRaw-demosaic-pack-GPL3-${demosaicversion}${extract.suffix}
++
++    license                 GPL-3+
+ }
+ 
+ livecheck.type      regex

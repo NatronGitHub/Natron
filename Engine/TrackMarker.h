@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -35,11 +35,18 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/make_shared.hpp>
 #endif
 
-#include "Engine/EngineFwd.h"
 #include "Engine/Knob.h"
+#include "Engine/KnobItemsTable.h"
+
+#include "Serialization/SerializationBase.h"
+
+#include "Engine/EngineFwd.h"
+
+
+NATRON_NAMESPACE_ENTER
+
 
 #define kTrackerParamSearchWndBtmLeft "searchWndBtmLeft"
 #define kTrackerParamSearchWndBtmLeftLabel "Search Window Bottom Left"
@@ -64,6 +71,11 @@
 #define kTrackerParamPatternBtmLeft "patternBtmLeft"
 #define kTrackerParamPatternBtmLeftLabel "Pattern Bottom Left"
 #define kTrackerParamPatternBtmLeftHint "The bottom left point of the quad defining the pattern to track"
+
+#define kTrackerParamManualKeyframes "manualKeyframes"
+#define kTrackerParamManualKeyframesLabel "Manual Keyframe(s)"
+#define kTrackerParamManualKeyframesHint "Navigate throughout the keyframes created manually on the track"
+
 
 #define kTrackerParamCenter "centerPoint"
 #define kTrackerParamCenterLabel "Center"
@@ -97,76 +109,70 @@
 #define kTrackerParamEnabledHint "When checked, this track data will be used to generate the resulting Transform/CornerPin out of the tracker. You can animate this parameter to control the lifetime of the track."
 //#define NATRON_TRACK_MARKER_USE_WEIGHT
 
-NATRON_NAMESPACE_ENTER
 
 struct TrackMarkerPrivate;
 class TrackMarker
-    : public NamedKnobHolder
-    , public boost::enable_shared_from_this<TrackMarker>
+: public KnobTableItem
+, public CurveChangesListener
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-protected:
-    struct MakeSharedEnabler;
 
+protected: // derives from KnobHolder
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    TrackMarker(const boost::shared_ptr<TrackerContext>& context);
+    TrackMarker(const KnobItemsTablePtr& context);
+
 
 public:
-    static boost::shared_ptr<TrackMarker> create(const boost::shared_ptr<TrackerContext>& context);
-    
+    static TrackMarkerPtr create(const KnobItemsTablePtr& model) WARN_UNUSED_RETURN
+    {
+        return TrackMarkerPtr( new TrackMarker(model) );
+    }
+
+    TrackMarkerPtr shared_from_this() {
+        return boost::dynamic_pointer_cast<TrackMarker>(KnobHolder::shared_from_this());
+    }
+
+    TrackMarkerConstPtr shared_from_this() const {
+        return boost::dynamic_pointer_cast<const TrackMarker>(KnobHolder::shared_from_this());
+    }
+
+
     virtual ~TrackMarker();
 
-    void clone(const TrackMarker& other);
+    virtual bool isItemContainer() const OVERRIDE FINAL
+    {
+        return false;
+    }
 
-    void load(const TrackSerialization& serialization);
 
-    void save(TrackSerialization* serialization) const;
-
-    boost::shared_ptr<TrackerContext> getContext() const;
-
-    bool setScriptName(const std::string& name);
-    virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-    void setLabel(const std::string& label);
-    std::string getLabel() const;
-    boost::shared_ptr<KnobDouble> getSearchWindowBottomLeftKnob() const;
-    boost::shared_ptr<KnobDouble> getSearchWindowTopRightKnob() const;
-    boost::shared_ptr<KnobDouble> getPatternTopLeftKnob() const;
-    boost::shared_ptr<KnobDouble> getPatternTopRightKnob() const;
-    boost::shared_ptr<KnobDouble> getPatternBtmRightKnob() const;
-    boost::shared_ptr<KnobDouble> getPatternBtmLeftKnob() const;
+    KnobDoublePtr getSearchWindowBottomLeftKnob() const;
+    KnobDoublePtr getSearchWindowTopRightKnob() const;
+    KnobDoublePtr getPatternTopLeftKnob() const;
+    KnobDoublePtr getPatternTopRightKnob() const;
+    KnobDoublePtr getPatternBtmRightKnob() const;
+    KnobDoublePtr getPatternBtmLeftKnob() const;
 #ifdef NATRON_TRACK_MARKER_USE_WEIGHT
-    boost::shared_ptr<KnobDouble> getWeightKnob() const;
+    KnobDoublePtr getWeightKnob() const;
 #endif
-    boost::shared_ptr<KnobDouble> getCenterKnob() const;
-    boost::shared_ptr<KnobDouble> getOffsetKnob() const;
-    boost::shared_ptr<KnobDouble> getErrorKnob() const;
-    boost::shared_ptr<KnobChoice> getMotionModelKnob() const;
-    boost::shared_ptr<KnobBool> getEnabledKnob() const;
+    KnobDoublePtr getCenterKnob() const;
+    KnobDoublePtr getOffsetKnob() const;
+    KnobDoublePtr getErrorKnob() const;
+    KnobChoicePtr getMotionModelKnob() const;
+    KnobBoolPtr getEnabledKnob() const;
 
-    int getReferenceFrame(int time, int frameStep) const;
-
-    bool isUserKeyframe(int time) const;
-
-    int getPreviousKeyframe(int time) const;
-
-    int getNextKeyframe( int time) const;
-
-    void getUserKeyframes(std::set<int>* keyframes) const;
+    int getReferenceFrame(TimeValue time, int frameStep) const;
 
     void getCenterKeyframes(std::set<double>* keyframes) const;
 
-    bool isEnabled(double time) const;
+    bool isEnabled(TimeValue time) const;
 
-    void setEnabledAtTime(double time, bool enabled);
+    void setEnabledAtTime(TimeValue time, bool enabled);
 
-    AnimationLevelEnum getEnabledNessAnimationLevel() const;
-
-    void setEnabledFromGui(double time, bool enabled);
+    void setEnabledFromGui(TimeValue time, bool enabled);
 
     void setMotionModelFromGui(int index);
 
@@ -176,65 +182,51 @@ public:
 
     void resetTrack();
 
-    void setKeyFrameOnCenterAndPatternAtTime(int time);
-
-    void setUserKeyframe(int time);
-
-    void removeUserKeyframe(int time);
-
+    void setKeyFrameOnCenterAndPatternAtTime(TimeValue time);
     /*
        Controls animation of the center & offset not the pattern
      */
     void clearAnimation();
-    void clearAnimationBeforeTime(int time);
-    void clearAnimationAfterTime(int time);
+    void clearAnimationBeforeTime(TimeValue time);
+    void clearAnimationAfterTime(TimeValue time);
 
-    void removeAllUserKeyframes();
 
-    std::pair<boost::shared_ptr<Image>, RectI> getMarkerImage(int time, const RectI& roi) const;
+    std::pair<ImagePtr, RectD> getMarkerImage(TimeValue time, const RectD& roi) ;
 
-    RectI getMarkerImageRoI(int time) const;
-
-    virtual void onKnobSlaved(const KnobPtr& slave, const KnobPtr& master,
-                              int dimension,
-                              bool isSlave) OVERRIDE FINAL;
+    RectD getMarkerImageRoI(TimeValue time) const;
 
     void notifyTrackingStarted();
     void notifyTrackingEnded();
 
+    virtual std::string getBaseItemName() const OVERRIDE;
+
+    virtual std::string getSerializationClassName() const OVERRIDE FINAL;
+
+    KeyFrameSet getKeyFrames() const;
+
+    void setKeyFrame(TimeValue time);
+
+    void removeKeyFrame(TimeValue time);
+
+    void removeAnimation();
+
+    bool hasKeyFrameAtTime(TimeValue time) const;
+
+    /// Overriden from CurveChangesListener
+    virtual void onKeyFrameRemoved(const Curve* curve, const KeyFrame& key) OVERRIDE;
+    virtual void onKeyFrameSet(const Curve* curve, const KeyFrame& key, bool added) OVERRIDE;
+    virtual void onKeyFrameMoved(const Curve* curve, const KeyFrame& from, const KeyFrame& to) OVERRIDE;
+
+Q_SIGNALS:
+
+    void keyframeRemoved(TimeValue time);
+    void keyframeAdded(TimeValue time);
+    void keyframeMoved(TimeValue from, TimeValue to);
 protected:
 
     virtual void initializeKnobs() OVERRIDE;
 
-public Q_SLOTS:
 
-    void onCenterKeyframeSet(double time, ViewSpec view, int dimension, int reason, bool added);
-    void onCenterKeyframeRemoved(double time, ViewSpec view, int dimension, int reason);
-    void onCenterMultipleKeysRemoved(const std::list<double>& times, ViewSpec view, int dimension, int reason);
-    void onCenterKeyframeMoved(ViewSpec view, int dimension, double oldTime, double newTime);
-    void onCenterKeyframesSet(const std::list<double>& keys, ViewSpec view, int dimension, int reason);
-    void onCenterAnimationRemoved(ViewSpec view, int dimension);
-
-    void onCenterKnobValueChanged(ViewSpec, int dimension, int reason);
-    void onOffsetKnobValueChanged(ViewSpec, int dimension, int reason);
-    void onErrorKnobValueChanged(ViewSpec, int dimension, int reason);
-    void onWeightKnobValueChanged(ViewSpec, int dimension, int reason);
-    void onMotionModelKnobValueChanged(ViewSpec, int dimension, int reason);
-
-    /*void onPatternTopLeftKnobValueChanged(int dimension,int reason);
-       void onPatternTopRightKnobValueChanged(int dimension,int reason);
-       void onPatternBtmRightKnobValueChanged(int dimension,int reason);
-       void onPatternBtmLeftKnobValueChanged(int dimension,int reason);*/
-    void onSearchBtmLeftKnobValueChanged(ViewSpec, int dimension, int reason);
-    void onSearchTopRightKnobValueChanged(ViewSpec, int dimension, int reason);
-
-public Q_SLOTS:
-
-    void onEnabledValueChanged(ViewSpec, int dimension, int reason);
-
-Q_SIGNALS:
-
-    void enabledChanged(int reason);
 
 private:
 
@@ -242,6 +234,11 @@ private:
     boost::scoped_ptr<TrackMarkerPrivate> _imp;
 };
 
+inline TrackMarkerPtr
+toTrackMarker(const KnobHolderPtr& holder)
+{
+    return boost::dynamic_pointer_cast<TrackMarker>(holder);
+}
 
 class TrackMarkerPM
     : public TrackMarker
@@ -253,23 +250,24 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     NodePtr trackerNode;
 
     // These are knobs that live in the trackerPM node, we control them directly
-    boost::weak_ptr<KnobButton> trackPrevButton, trackNextButton;
-    boost::weak_ptr<KnobDouble> centerKnob, offsetKnob;
-    boost::weak_ptr<KnobInt> refFrameKnob;
-    boost::weak_ptr<KnobChoice> scoreTypeKnob;
-    boost::weak_ptr<KnobDouble> correlationScoreKnob;
-    boost::weak_ptr<KnobDouble> patternBtmLeftKnob, patternTopRightKnob;
-    boost::weak_ptr<KnobDouble> searchWindowBtmLeftKnob, searchWindowTopRightKnob;
+    KnobButtonWPtr trackPrevButton, trackNextButton;
+    KnobDoubleWPtr centerKnob, offsetKnob;
+    KnobIntWPtr refFrameKnob;
+    KnobChoiceWPtr scoreTypeKnob;
+    KnobDoubleWPtr correlationScoreKnob;
+    KnobDoubleWPtr patternBtmLeftKnob, patternTopRightKnob;
+    KnobDoubleWPtr searchWindowBtmLeftKnob, searchWindowTopRightKnob;
 
 private:
-    struct MakeSharedEnabler;
-    
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    TrackMarkerPM(const boost::shared_ptr<TrackerContext>& context);
+    TrackMarkerPM(const KnobItemsTablePtr& context);
 
 public:
-    static boost::shared_ptr<TrackMarker> create(const boost::shared_ptr<TrackerContext>& context);
+    static TrackMarkerPtr create(const KnobItemsTablePtr& context) WARN_UNUSED_RETURN
+    {
+        return TrackMarkerPtr( new TrackMarkerPM(context) );
+    }
 
     virtual ~TrackMarkerPM();
 
@@ -284,7 +282,14 @@ private:
     virtual void initializeKnobs() OVERRIDE FINAL;
 };
 
-NATRON_NAMESPACE_EXIT
 
+inline TrackMarkerPMPtr
+toTrackMarkerPM(const KnobHolderPtr& holder)
+{
+    return boost::dynamic_pointer_cast<TrackMarkerPM>(holder);
+}
+
+
+NATRON_NAMESPACE_EXIT
 
 #endif // Engine_TrackMarker_h

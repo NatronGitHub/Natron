@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,9 +31,10 @@
 
 #include "Global/KeySymbols.h"
 #include "Global/Enums.h"
-#include "Engine/HostOverlaySupport.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/UndoCommand.h"
+#include "Engine/TimeValue.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -61,10 +62,6 @@ public:
      **/
     virtual bool isSettingsPanelMinimized() const = 0;
 
-    /**
-     * @brief If this is a parent multi-instance, returns whether the given node is selected by the user or not
-     **/
-    virtual bool isSelectedInParentMultiInstance(const Node* node) const = 0;
 
     /**
      * @brief Set the position of the node in the nodegraph.
@@ -72,92 +69,24 @@ public:
     virtual void setPosition(double x, double y) = 0;
 
     /**
-     * @brief Get the position of top left corner of the node in the nodegraph.
-     * To retrieve the position of the center, you must add w / 2 and h / 2 respectively
-     * to x and y. w and h can be retrieved with getSize()
-     **/
-    virtual void getPosition(double *x, double* y) const = 0;
-
-    /**
-     * @brief Get the size of the bounding box of the node in the nodegraph
-     **/
-    virtual void getSize(double* w, double* h) const = 0;
-
-    /**
      * @brief Set the size of the bounding box of the node in the nodegraph
      **/
     virtual void setSize(double w, double h) = 0;
-    virtual void exportGroupAsPythonScript() = 0;
-
-    /**
-     * @brief Get the colour of the node as it appears on the nodegraph.
-     **/
-    virtual void getColor(double* r, double *g, double* b) const = 0;
-
+    
     /**
      * @brief Set the colour of the node as it appears on the nodegraph.
      **/
     virtual void setColor(double r, double g, double b) = 0;
 
     /**
-     * @brief Get the suggested overlay colour
+     * @brief set the suggested overlay colour
      **/
-    virtual bool getOverlayColor(double* r, double* g, double* b) const = 0;
+    virtual void setOverlayColor(double r, double g, double b) = 0;
 
-    /**
-     * @brief Add a default viewer overlay
-     **/
-    virtual void addDefaultInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs) = 0;
-    virtual void drawHostOverlay(double time,
-                                 const RenderScale& renderScale,
-                                 ViewIdx view)  = 0;
-    virtual bool onOverlayPenDownDefault(double time,
-                                         const RenderScale& renderScale,
-                                         ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
-    virtual bool onOverlayPenDoubleClickedDefault(double time,
-                                                  const RenderScale& renderScale,
-                                                  ViewIdx view, const QPointF & viewportPos, const QPointF & pos)  = 0;
-    virtual bool onOverlayPenMotionDefault(double time,
-                                           const RenderScale& renderScale,
-                                           ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
-    virtual bool onOverlayPenUpDefault(double time,
-                                       const RenderScale& renderScale,
-                                       ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
-    virtual bool onOverlayKeyDownDefault(double time,
-                                         const RenderScale& renderScale,
-                                         ViewIdx view, Key key, KeyboardModifiers modifiers)  = 0;
-    virtual bool onOverlayKeyUpDefault(double time,
-                                       const RenderScale& renderScale,
-                                       ViewIdx view, Key key, KeyboardModifiers modifiers)  = 0;
-    virtual bool onOverlayKeyRepeatDefault(double time,
-                                           const RenderScale& renderScale,
-                                           ViewIdx view, Key key, KeyboardModifiers modifiers) = 0;
-    virtual bool onOverlayFocusGainedDefault(double time,
-                                             const RenderScale& renderScale,
-                                             ViewIdx view) = 0;
-    virtual bool onOverlayFocusLostDefault(double time,
-                                           const RenderScale& renderScale,
-                                           ViewIdx view) = 0;
-    virtual bool hasHostOverlay() const = 0;
-    virtual void setCurrentViewportForHostOverlays(OverlaySupport* viewPort) = 0;
-    virtual bool hasHostOverlayForParam(const KnobI* param) = 0;
-    virtual void removePositionHostOverlay(KnobI* knob) = 0;
-    virtual void setPluginIDAndVersion(const std::list<std::string>& grouping,
-                                       const std::string& pluginLabel,
-                                       const std::string& pluginID,
-                                       const std::string& pluginDesc,
-                                       const std::string& pluginIconFilePath,
-                                       unsigned int version) = 0;
+    virtual bool isOverlayLocked() const = 0;
+
     virtual bool isUserSelected() const = 0;
-    virtual void restoreStateAfterCreation() = 0;
     virtual void onIdentityStateChanged(int inputNb) = 0;
-
-    /**
-     * @brief Push a new undo command to the undo/redo stack associated to this node.
-     * The stack takes ownership of the shared pointer, so you should not hold a strong reference to the passed pointer.
-     * If no undo/redo stack is present, the command will just be redone once then destroyed.
-     **/
-    virtual void pushUndoCommand(const UndoCommandPtr& command) = 0;
 
     /**
      * @brief Set the cursor to be one of the default cursor.
@@ -170,7 +99,12 @@ public:
     /**
      * @brief Make up a dialog with the content of the group
      **/
-    virtual void showGroupKnobAsDialog(KnobGroup* group) = 0;
+    virtual void showGroupKnobAsDialog(const KnobGroupPtr& group) = 0;
+
+    /**
+     * @brief Show a dialog and ask the user to add a new ImagePlaneDesc to the effect
+     **/
+    virtual bool addComponentsWithDialog(const KnobChoicePtr& knob) = 0;
 };
 
 NATRON_NAMESPACE_EXIT

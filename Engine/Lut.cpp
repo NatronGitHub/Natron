@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -133,6 +133,18 @@ LutManager LutManager::m_instance = LutManager();
 LutManager::LutManager()
     : luts()
 {
+    // Create lut objects without initializing them
+    sRGBLut();
+    Rec709Lut();
+    CineonLut();
+    Gamma1_8Lut();
+    Gamma2_2Lut();
+    PanalogLut();
+    ViperLogLut();
+    REDLogLut();
+    AlexaV3LogCLut();
+    SLog1Lut();
+    SLog2Lut();
 }
 
 const Lut*
@@ -140,6 +152,7 @@ LutManager::getLut(const std::string & name,
                    fromColorSpaceFunctionV1 fromFunc,
                    toColorSpaceFunctionV1 toFunc)
 {
+    QMutexLocker k(&LutManager::m_instance.lutsMutex);
     LutsMap::iterator found = LutManager::m_instance.luts.find(name);
 
     if ( found != LutManager::m_instance.luts.end() ) {
@@ -153,6 +166,17 @@ LutManager::getLut(const std::string & name,
     }
 
     return NULL;
+}
+
+const Lut*
+LutManager::findLut(const std::string& name)
+{
+    LutsMap::const_iterator found = LutManager::m_instance.luts.find(name);
+    QMutexLocker k(&LutManager::m_instance.lutsMutex);
+    if ( found != LutManager::m_instance.luts.end() ) {
+        return found->second;
+    }
+    return 0;
 }
 
 LutManager::~LutManager()
@@ -1612,9 +1636,13 @@ LutManager::VLogLut()
     return LutManager::m_instance.getLut("V-Log", from_func_VLog, to_func_VLog);
 }
 
-// r,g,b values are from 0 to 1
+// r,g,b values are linear values from 0 to 1
 // h = [0,OFXS_HUE_CIRCLE], s = [0,1], v = [0,1]
 //		if s == 0, then h = 0 (undefined)
+// Reference:
+// "Color gamut transform pairs", Alvy Ray Smith, Proceeding SIGGRAPH '78
+// https://doi.org/10.1145/800248.807361
+// http://www.icst.pku.edu.cn/F/course/ImageProcessing/2018/resource/Color78.pdf
 void
 rgb_to_hsv( float r,
             float g,
@@ -1623,8 +1651,8 @@ rgb_to_hsv( float r,
             float *s,
             float *v )
 {
-    float min = std::min(std::min(r, g), b);
-    float max = std::max(std::max(r, g), b);
+    float min = (std::min)((std::min)(r, g), b);
+    float max = (std::max)((std::max)(r, g), b);
 
     *v = max;                               // v
 
@@ -1655,6 +1683,13 @@ rgb_to_hsv( float r,
     }
 }
 
+// r,g,b values are linear values from 0 to 1
+// h = [0,OFXS_HUE_CIRCLE], s = [0,1], v = [0,1]
+//		if s == 0, then h = 0 (undefined)
+// Reference:
+// "Color gamut transform pairs", Alvy Ray Smith, Proceeding SIGGRAPH '78
+// https://doi.org/10.1145/800248.807361
+// http://www.icst.pku.edu.cn/F/course/ImageProcessing/2018/resource/Color78.pdf
 void
 hsv_to_rgb(float h,
            float s,

@@ -1,7 +1,5 @@
-diff --git a/libs/libmv/libmv/autotrack/autotrack.cc b/libs/libmv/libmv/autotrack/autotrack.cc
-index 4c7bdf1..1ac73ac 100644
---- a/libs/libmv/libmv/autotrack/autotrack.cc
-+++ b/libs/libmv/libmv/autotrack/autotrack.cc
+--- libmv/autotrack/autotrack.cc
++++ libmv/autotrack/autotrack.cc
 @@ -92,7 +92,7 @@ void MarkerToArrays(const Marker& marker, double* x, double* y) {
  
  FrameAccessor::Key GetImageForMarker(const Marker& marker,
@@ -40,10 +38,8 @@ index 4c7bdf1..1ac73ac 100644
                x1, y1,
                local_track_region_options,
                x2, y2,
-diff --git a/libs/libmv/libmv/autotrack/frame_accessor.h b/libs/libmv/libmv/autotrack/frame_accessor.h
-index 8de5d86..5fcb5d2 100644
---- a/libs/libmv/libmv/autotrack/frame_accessor.h
-+++ b/libs/libmv/libmv/autotrack/frame_accessor.h
+--- libmv/autotrack/frame_accessor.h
++++ libmv/autotrack/frame_accessor.h
 @@ -70,7 +70,7 @@ struct FrameAccessor {
                         int downscale,               // Downscale by 2^downscale.
                         const Region* region,        // Get full image if NULL.

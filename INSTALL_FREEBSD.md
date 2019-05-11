@@ -38,7 +38,8 @@ INCLUDEPATH is the path to the include files
 LIBS is the path to the libs
 
 ```pri
-boost: LIBS += -lboost_serialization
+boost-serialization-lib: LIBS += -lboost_serialization
+boost: LIBS += -lboost_thread -lboost_system
 PKGCONFIG += expat
 PKGCONFIG += fontconfig
 cairo {
@@ -92,7 +93,7 @@ Natron's nodes are contained in separate repositories. To use the default nodes,
 You'll find installation instructions in the README of both these repositories. Both openfx-misc and openfx-io have submodules as well.
 
 Plugins must be installed in /usr/OFX/Plugins on FreeBSD
-Or in a directory named "Plugins" located in the parent directory where the binary lies, e.g:
+Or in a directory named "Plugins" located in the parent directory where the binary lies, e.g.:
 
     bin/
         Natron

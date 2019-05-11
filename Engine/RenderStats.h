@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -43,6 +43,8 @@
 
 #include "Engine/RectI.h"
 #include "Engine/RectD.h"
+#include "Engine/TimeValue.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
@@ -66,38 +68,6 @@ public:
     void addTimeSpentRendering(double time);
     double getTotalTimeSpentRendering() const;
 
-    const RectD& getRoD() const;
-    void setRoD(const RectD& rod);
-
-    void setInputImageIdentity(const NodePtr& identity);
-    NodePtr getInputImageIdentity() const;
-
-    void addRenderedRectangle(const RectI& rectangle);
-    const std::list<RectI>& getRenderedRectangles() const;
-
-    void addIdentityRectangle(const NodePtr& identity, const RectI& rectangle);
-    std::list<std::pair<RectI, NodePtr > > getIdentityRectangles() const;
-
-    void addMipMapLevelRendered(unsigned int level);
-    const std::set<unsigned int>& getMipMapLevelsRendered() const;
-
-    void addPlaneRendered(const std::string& plane);
-    const std::set<std::string>& getPlanesRendered() const;
-
-    void addCacheAccessInfo(bool isCacheMiss, bool hasDownscaled);
-    void getCacheAccessInfos(int* nbCacheMisses, int* nbCacheHits, int* nbCacheHitButDownscaledImages) const;
-
-    void setTilesSupported(bool tilesSupported);
-    bool isTilesSupportEnabled() const;
-
-    void setRenderScaleSupported(bool rsSupported);
-    bool isRenderScaleSupportEnabled() const;
-
-    void setChannelsRendered(std::bitset<4> channelsRendered);
-    std::bitset<4> getChannelsRendered() const;
-
-    void setOutputPremult(ImagePremultiplicationEnum premult);
-    ImagePremultiplicationEnum getOutputPremult() const;
 
 private:
 
@@ -122,25 +92,7 @@ public:
 
     bool isInDepthProfilingEnabled() const;
 
-    void setNodeIdentity(const NodePtr& node, const NodePtr& identity);
-
-    void setGlobalRenderInfosForNode(const NodePtr& node,
-                                     const RectD& rod,
-                                     ImagePremultiplicationEnum outputPremult,
-                                     std::bitset<4> channelsRendered,
-                                     bool tilesSupported,
-                                     bool renderScaleSupported,
-                                     unsigned int mipmapLevel);
-
-    void addCacheInfosForNode(const NodePtr& node,
-                              bool isCacheMiss,
-                              bool hasDownscaled);
-
-    void addRenderInfosForNode(const NodePtr& node,
-                               const NodePtr& identity,
-                               const std::string& plane,
-                               const RectI& rectangle,
-                               double timeSpent);
+    void addRenderInfosForNode(const NodePtr& node, double timeSpent);
 
     std::map<NodePtr, NodeRenderStats > getStats(double *totalTimeSpent) const;
 

@@ -51,9 +51,7 @@ all existing parameters:
 
     * :doc:`StringParam<PythonReference/NatronEngine/DoubleParam>` to store a 1-dimensional string
 
-    * :doc:`FileParam<PythonReference/NatronEngine/FileParam>` to specify an input-file
-
-    * :doc:`OutputFileParam<PythonReference/NatronEngine/OutputFileParam>` to specify an output-file param
+    * :doc:`FileParam<PythonReference/NatronEngine/FileParam>` to specify an input or output file
 
     * :doc:`PathParam<PythonReference/NatronEngine/PathParam>` to specify a path to a single or multiple directories
 
@@ -103,11 +101,41 @@ If you want to remove all the animation on the parameter at a given *dimension*,
     To set a value on **x** you would use *dimension = 0*, to set a value on **y** you would use *dimension = 1*.
 
 
+More information on parameter animation, multi-view and expressions can be found
+in the documentation of the :ref:`AnimatedParam<AnimatedParam>` class.
+
 Controlling other properties of parameters:
 -------------------------------------------
 
 See the documentation for the :doc:`Param<PythonReference/NatronEngine/Param>` class for a detailed
 explanation of other properties and how they affect the parameter.
+
+.. _multiViewParams:
+
+Multi-view parameters
+---------------------
+
+In a project setup to have multiple views (such as a stereo project), parameters may have
+different values and animation per view. Typically you may not want to apply the same
+strength of an effect on the left view and on the right view.
+
+By default a parameter is not multi-view and all its views have the same value and animation
+curve.
+
+You can split-off specific views by calling  :func:`splitView(view)<NatronEngine.AnimatedParam.splitView>`
+in which case the given view will be split from the other views and can be assigned different values.
+
+By default the main view controlling all views that are not split yet is called *Main*.
+Any function that return a value will by default return the value for the *Main* view.
+Any function that change the state of the parameter will by default be applied on all views
+, even those that are split-off should receive the change. This is done with the keyword *All*.
+
+Function that return values may not take the special *All* keyword and will error if
+an invalid parameter is supplied.
+
+To unsplit a given view and re-group it under the *Main* view you can call the
+:func:`unSplitView(view)<NatronEngine.AnimatedParam.unSplitView>` function.
+
 
 Creating new parameters:
 ------------------------

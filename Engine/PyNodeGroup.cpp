@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,9 +30,14 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/PyNode.h"
-#include "Engine/ReadNode.h"
+#include "Engine/PyAppInstance.h"
+
+
 NATRON_NAMESPACE_ENTER
+
+
 NATRON_PYTHON_NAMESPACE_ENTER
+
 
 Group::Group()
     : _collection()
@@ -40,7 +45,7 @@ Group::Group()
 }
 
 void
-Group::init(const boost::shared_ptr<NodeCollection>& collection)
+Group::init(const NodeCollectionPtr& collection)
 {
     _collection = collection;
 }
@@ -53,11 +58,12 @@ Effect*
 Group::getNode(const QString& fullySpecifiedName) const
 {
     if ( !_collection.lock() ) {
+        PythonSetNullError();
         return 0;
     }
     NodePtr node = _collection.lock()->getNodeByFullySpecifiedName( fullySpecifiedName.toStdString() );
-    if ( node && node->isActivated() ) {
-        return new Effect(node);
+    if (node) {
+        return App::createEffectFromNodeWrapper(node);
     } else {
         return NULL;
     }
@@ -69,25 +75,16 @@ Group::getChildren() const
     std::list<Effect*> ret;
 
     if ( !_collection.lock() ) {
+        PythonSetNullError();
         return ret;
     }
 
     NodesList nodes = _collection.lock()->getNodes();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isActivated() && (*it)->getParentMultiInstanceName().empty() ) {
-
-
-#if NATRON_VERSION_ENCODED < NATRON_VERSION_ENCODE(3,0,0)
-            // In Natron 2, the meta Read node is NOT a Group, hence the internal decoder node is not a child of the Read node.
-            // As a result of it, if the user deleted the meta Read node, the internal decoder is node destroyed
-            if ((*it)->getIOContainer()) {
-                continue;
-            }
-#endif
-
-            ret.push_back( new Effect(*it) );
-        }
+        Effect* effect = App::createEffectFromNodeWrapper(*it);
+        assert(effect);
+        ret.push_back(effect);
     }
 
     return ret;

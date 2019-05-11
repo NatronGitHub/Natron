@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,6 +31,7 @@
 #include <list>
 #include <set>
 #include <utility>
+#include <istream>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
@@ -49,6 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/NodeGraphI.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/TimeValue.h"
 
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
@@ -67,23 +69,30 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     explicit NodeGraph(Gui* gui,
-                       const boost::shared_ptr<NodeCollection>& group,
+                       const NodeCollectionPtr& group,
+                       const std::string& scriptName,
                        QGraphicsScene* scene = 0,
                        QWidget *parent = 0);
 
     virtual ~NodeGraph();
 
-    static void makeFullyQualifiedLabel(Node* node, std::string* ret);
-    boost::shared_ptr<NodeCollection> getGroup() const;
-    const std::list< NodeGuiPtr > & getSelectedNodes() const;
-    NodeGuiPtr createNodeGUI(const NodePtr & node,
-                             const CreateNodeArgs& args);
+    static void makeFullyQualifiedLabel(const NodePtr& node, std::string* ret);
+    NodeCollectionPtr getGroup() const;
+    NodesGuiList getSelectedNodes() const;
+
+    virtual void createNodeGui(const NodePtr& node, const CreateNodeArgs& args) OVERRIDE FINAL;
+
+    void onNodeAboutToBeCreated(const NodePtr& node, const CreateNodeArgsPtr& args) ;
+
+    void onNodeCreated(const NodePtr& node, const CreateNodeArgsPtr& args);
 
     void selectNode(const NodeGuiPtr & n, bool addToSelection);
 
     void deselectNode(const NodeGuiPtr& n);
 
     void setSelection(const NodesGuiList& nodes);
+
+    void setSelection(const NodesList& nodes);
 
     void clearSelection();
 
@@ -104,11 +113,6 @@ public:
 
     const NodesGuiList & getAllActiveNodes() const;
     NodesGuiList getAllActiveNodes_mt_safe() const;
-
-    void moveToTrash(NodeGui* node);
-
-    void restoreFromTrash(NodeGui* node);
-
     QGraphicsItem* getRootItem() const;
     virtual void notifyGuiClosing() OVERRIDE FINAL;
     void discardScenePointer();
@@ -136,13 +140,10 @@ public:
 
     bool areKnobLinksVisible() const;
 
-    void refreshNodesKnobsAtTime(bool onlyTimeEvaluationKnobs, SequenceTime time);
+    void refreshNodesKnobsAtTime(bool onlyTimeEvaluationKnobs, TimeValue time);
 
     bool areOptionalInputsAutoHidden() const;
 
-    void copyNodesAndCreateInGroup(const NodesGuiList& nodes,
-                                   const boost::shared_ptr<NodeCollection>& group,
-                                   std::list<std::pair<std::string, NodeGuiPtr > >& createdNodes);
 
     virtual void onNodesCleared() OVERRIDE FINAL;
 
@@ -150,30 +151,38 @@ public:
 
     ViewerTab* getLastSelectedViewer() const;
 
-    /**
-     * @brief Given the node, it tries to move it to the ideal position
-     * according to the position of the selected node and its inputs/outputs.
-     * This is used when creating a node to position it correctly.
-     * It will move the inputs / outputs slightly to fit this node into the nodegraph
-     * so they do not overlap.
-     **/
-    void moveNodesForIdealPosition(const NodeGuiPtr &n,
-                                   const NodeGuiPtr& selected,
-                                   bool autoConnect);
+    void moveNodeToCenterOfVisiblePortion(const NodeGuiPtr &n);
 
-    void copyNodes(const NodesGuiList& nodes, NodeClipBoard& clipboard);
+    void setNodeToDefaultPosition(const NodeGuiPtr& n, const NodesGuiList& selectedNodes, const CreateNodeArgs& args);
 
-    void pasteCliboard(const NodeClipBoard& clipboard, std::list<std::pair<std::string, NodeGuiPtr > >* newNodes);
+    void copyNodes(const NodesGuiList& nodes, SERIALIZATION_NAMESPACE::NodeClipBoard& clipboard);
 
     void duplicateSelectedNodes(const QPointF& pos);
-    bool pasteNodeClipBoards(const QPointF& pos);
     void cloneSelectedNodes(const QPointF& pos);
+    
+    bool tryReadClipboard(const QPointF& pos, std::istream& stream);
 
     QPointF getRootPos() const;
 
     bool isDoingNavigatorRender() const;
 
+    virtual QIcon getIcon() const OVERRIDE FINAL;
+
+    bool isNodeCloneLinked(const NodePtr& node);
+
+    void refreshNodeLinksNow();
+
+Q_SIGNALS:
+
+    void mustRefreshNodeLinksLater();
+
 public Q_SLOTS:
+
+    void onMustRefreshNodeLinksLaterReceived();
+
+    void refreshNodeLinksLater();
+    
+    bool pasteClipboard(const QPointF& pos = QPointF(INT_MIN, INT_MIN));
 
     void deleteSelection();
 
@@ -213,7 +222,6 @@ public Q_SLOTS:
     void copySelectedNodes();
 
     void cutSelectedNodes();
-    bool pasteNodeClipBoards();
     void duplicateSelectedNodes();
     void cloneSelectedNodes();
     void decloneSelectedNodes();
@@ -239,7 +247,7 @@ public Q_SLOTS:
 
     void toggleAutoTurbo();
 
-    void onGroupNameChanged(const QString& name);
+    void onGroupNameChanged(const QString& oldLabel, const QString& newLabel);
     void onGroupScriptNameChanged(const QString& name);
 
 
@@ -247,7 +255,7 @@ public Q_SLOTS:
 
 private:
 
-    void showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode);
+    void showNodePanel(bool casIsCtrl, bool casIsShift, const NodeGuiPtr& nearbyNode);
 
     void checkForHints(bool shiftdown, bool controlDown, const NodeGuiPtr& selectedNode, const QRectF& visibleSceneR);
 
@@ -273,7 +281,7 @@ private:
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-    virtual QUndoStack* getUndoStack() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual boost::shared_ptr<QUndoStack> getUndoStack() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 private:
 
@@ -287,10 +295,10 @@ private:
         eNearbyItemEdgeBendPoint,
     };
 
-    void getNodesWithinViewportRect(const QRect& rect, std::set<NodeGui*>* nodes) const;
+    void getNodesWithinViewportRect(const QRect& rect, std::set<NodeGuiPtr>* nodes) const;
 
     NearbyItemEnum hasItemNearbyMouse(const QPoint& mousePosViewport,
-                                      NodeGui** node,
+                                      NodeGuiPtr* node,
                                       Edge** edge);
 
     void moveRootInternal(double dx, double dy);

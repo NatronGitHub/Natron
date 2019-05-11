@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -44,13 +44,45 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Global/GlobalDefines.h"
 #include "Engine/FitCurve.h"
-#include "Engine/CacheEntryHolder.h"
 #include "Engine/RotoItem.h"
 #include "Engine/Knob.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
+
+#define kMergeParamOutputChannelsR      "OutputChannelsR"
+#define kMergeParamOutputChannelsG      "OutputChannelsG"
+#define kMergeParamOutputChannelsB      "OutputChannelsB"
+#define kMergeParamOutputChannelsA      "OutputChannelsA"
+
+#define kMergeOFXParamMix "mix"
+#define kMergeOFXParamOperation "operation"
+#define kMergeOFXParamInvertMask "maskInvert"
+#define kBlurCImgParamSize "size"
+#define kTimeOffsetParamOffset "timeOffset"
+#define kFrameHoldParamFirstFrame "firstFrame"
+
+#define kTransformParamTranslate "translate"
+#define kTransformParamRotate "rotate"
+#define kTransformParamScale "scale"
+#define kTransformParamUniform "uniform"
+#define kTransformParamSkewX "skewX"
+#define kTransformParamSkewY "skewY"
+#define kTransformParamSkewOrder "skewOrder"
+#define kTransformParamCenter "center"
+#define kTransformParamFilter "filter"
+#define kTransformParamResetCenter "resetCenter"
+#define kTransformParamBlackOutside "black_outside"
+
+#define kTimeBlurParamDivisions "division"
+#define kTimeBlurParamShutter "shutter"
+#define kTimeBlurParamShutterOffset "shutterOffset"
+#define kTimeBlurParamCustomOffset "shutterCustomOffset"
+
+#define kConstantParamColor "color"
+#define kConstantParamOutputComponents "outputComponents"
 
 /**
  * @class A base class for all items made by the roto context
@@ -62,7 +94,6 @@ NATRON_NAMESPACE_ENTER
 struct RotoDrawableItemPrivate;
 class RotoDrawableItem
     : public RotoItem
-      , public CacheEntryHolder
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -71,186 +102,189 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
 
-    RotoDrawableItem(const boost::shared_ptr<RotoContext>& context,
-                     const std::string & name,
-                     const boost::shared_ptr<RotoLayer>& parent,
-                     bool isStroke);
+    RotoDrawableItem(const KnobItemsTablePtr& model);
+
+    // The copy constructor makes a shallow copy and only copy knob pointers
+    RotoDrawableItem(const RotoDrawableItemPtr& other, const FrameViewRenderKey& key);
 
     virtual ~RotoDrawableItem();
 
+    /**
+     * @brief Returns the default overlay color
+     **/
+    static void getDefaultOverlayColor(double *r, double *g, double *b);
+
+    const NodesList& getItemNodes() const;
+
+    /**
+     * @brief Create internal nodes used by the item. Does nothing if nodes are already created
+     * @param connectNodes If true, this will also call refreshNodesConnections()
+     **/
     void createNodes(bool connectNodes = true);
 
+protected:
+    /**
+     * @brief Set the render thread safety to instance safe. This is called when user start drawing.
+     **/
     void setNodesThreadSafetyForRotopainting();
 
-    void incrementNodesAge();
-
-    void refreshNodesConnections();
-
-    virtual void clone(const RotoItem*  other) OVERRIDE;
+    /**
+     * @brief If setNodesThreadSafetyForRotopainting() was called, this will restore the thread safety of the internal 
+     * nodes to their default thread safety for rendering.
+     **/
+    void resetNodesThreadSafety();
+    
+public:
+    /**
+     * @brief Connects nodes used by this item in the rotopaint tree. createNodes() must have been called prior
+     * to calling this function.
+     **/
+    void refreshNodesConnections(const RotoDrawableItemPtr& previousItem);
 
     /**
-     * @brief Must be implemented by the derived class to save the state into
-     * the serialization object.
-     * Derived implementations must call the parent class implementation.
+     * @brief Refresh the internal tree of the item so that it's nodes are centered around the point at (x,y)
      **/
-    virtual void save(RotoItemSerialization* obj) const OVERRIDE;
+    void refreshNodesPositions(double x, double y);
+
 
     /**
-     * @brief Must be implemented by the derived class to load the state from
-     * the serialization object.
-     * Derived implementations must call the parent class implementation.
+     * @brief Deactivate all nodes used by this item
      **/
-    virtual void load(const RotoItemSerialization & obj) OVERRIDE;
+    void disconnectNodes();
 
     /**
      * @brief When deactivated the spline will not be taken into account when rendering, neither will it be visible on the viewer.
      * If isGloballyActivated() returns false, this function will return false aswell.
      **/
-    bool isActivated(double time) const;
-    void setActivated(bool a, double time);
+    bool isActivated(TimeValue time, ViewIdx view) const;
 
     /**
-     * @brief The opacity of the curve
+     * @brief Get the frame-range(s) through which the item is activated
      **/
-    double getOpacity(double time) const;
-    void setOpacity(double o, double time);
-
-    /**
-     * @brief The distance of the feather is the distance from the control point to the feather point plus
-     * the feather distance returned by this function.
-     **/
-    double getFeatherDistance(double time) const;
-    void setFeatherDistance(double d, double time);
-    int getNumKeyframesFeatherDistance() const;
-
-    /**
-     * @brief The fall-off rate: 0.5 means half color is faded at half distance.
-     **/
-    double getFeatherFallOff(double time) const;
-    void setFeatherFallOff(double f, double time);
-
-    /**
-     * @brief The color that the GUI should use to draw the overlay of the shape
-     **/
-    void getOverlayColor(double* color) const;
-    void setOverlayColor(const double* color);
-    bool getInverted(double time) const;
-    void getColor(double time, double* color) const;
-    void setColor(double time, double r, double g, double b);
-
-    int getCompositingOperator() const;
-
-    void setCompositingOperator(int op);
+    std::vector<RangeD> getActivatedRanges(ViewIdx view) const;
 
     std::string getCompositingOperatorToolTip() const;
-    boost::shared_ptr<KnobBool> getActivatedKnob() const;
-    boost::shared_ptr<KnobDouble> getFeatherKnob() const;
-    boost::shared_ptr<KnobDouble> getFeatherFallOffKnob() const;
-    boost::shared_ptr<KnobDouble> getOpacityKnob() const;
-    boost::shared_ptr<KnobBool> getInvertedKnob() const;
-    boost::shared_ptr<KnobChoice> getOperatorKnob() const;
-    boost::shared_ptr<KnobColor> getColorKnob() const;
-    boost::shared_ptr<KnobDouble> getCenterKnob() const;
-    boost::shared_ptr<KnobInt> getLifeTimeFrameKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushSizeKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushHardnessKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushSpacingKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushEffectKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushVisiblePortionKnob() const;
-    boost::shared_ptr<KnobBool> getPressureOpacityKnob() const;
-    boost::shared_ptr<KnobBool> getPressureSizeKnob() const;
-    boost::shared_ptr<KnobBool> getPressureHardnessKnob() const;
-    boost::shared_ptr<KnobBool> getBuildupKnob() const;
-    boost::shared_ptr<KnobInt> getTimeOffsetKnob() const;
-    boost::shared_ptr<KnobChoice> getTimeOffsetModeKnob() const;
-    boost::shared_ptr<KnobChoice> getBrushSourceTypeKnob() const;
-    boost::shared_ptr<KnobDouble> getBrushCloneTranslateKnob() const;
-    boost::shared_ptr<KnobDouble> getMotionBlurAmountKnob() const;
-    boost::shared_ptr<KnobDouble> getShutterOffsetKnob() const;
-    boost::shared_ptr<KnobDouble> getShutterKnob() const;
-    boost::shared_ptr<KnobChoice> getShutterTypeKnob() const;
 
-    void setKeyframeOnAllTransformParameters(double time);
+    KnobBoolPtr getCustomRangeKnob() const;
 
-    const std::list<KnobPtr >& getKnobs() const;
+    KnobDoublePtr getOpacityKnob() const;
+    KnobButtonPtr getInvertedKnob() const;
+    KnobChoicePtr getOperatorKnob() const;
+    KnobColorPtr getColorKnob() const;
+    KnobColorPtr getOverlayColorKnob() const;
+    KnobDoublePtr getCenterKnob() const;
+    KnobIntPtr getLifeTimeFrameKnob() const;
 
-    KnobPtr getKnobByName(const std::string& name) const;
+    KnobIntPtr getTimeOffsetKnob() const;
+    KnobChoicePtr getTimeOffsetModeKnob() const;
+    KnobChoicePtr getMergeInputAChoiceKnob() const;
+    KnobChoicePtr getMergeMaskChoiceKnob() const;
+    KnobDoublePtr getMixKnob() const;
 
-    virtual RectD getBoundingBox(double time) const = 0;
+    KnobDoublePtr getBrushSizeKnob() const;
+    KnobDoublePtr getBrushHardnessKnob() const;
+    KnobDoublePtr getBrushSpacingKnob() const;
+    KnobDoublePtr getBrushVisiblePortionKnob() const;
 
-    void getTransformAtTime(double time, Transform::Matrix3x3* matrix) const;
+    KnobChoicePtr getMotionBlurModeKnob() const;
+
+
+    void getMotionBlurSettings(const TimeValue time,
+                               ViewIdx view,
+                               RangeD* range,
+                               int* divisions) const;
+
+    void setKeyframeOnAllTransformParameters(TimeValue time);
+
+    virtual RectD getBoundingBox(TimeValue time, ViewIdx view) const = 0;
+
 
     /**
-     * @brief Set the transform at the given time
+     * @brief Return pointer to internal node
      **/
-    void setTransform(double time, double tx, double ty, double sx, double sy, double centerX, double centerY, double rot, double skewX, double skewY);
-
-    void setExtraMatrix(bool setKeyframe, double time, const Transform::Matrix3x3& mat);
-
     NodePtr getEffectNode() const;
     NodePtr getMergeNode() const;
     NodePtr getTimeOffsetNode() const;
+    NodePtr getMaskNode() const;
     NodePtr getFrameHoldNode() const;
-
-    void resetNodesThreadSafety();
-    void deactivateNodes();
-    void activateNodes();
-    void disconnectNodes();
-
-    virtual std::string getCacheID() const OVERRIDE FINAL;
+    NodePtr getBackgroundNode() const;
 
     void resetTransformCenter();
 
-    boost::shared_ptr<Image> renderMaskFromStroke(const ImagePlaneDesc& components,
-                                                  const double time,
-                                                  const ViewIdx view,
-                                                  const ImageBitDepthEnum depth,
-                                                  const unsigned int mipmapLevel,
-                                                  const RectD& rotoNodeSrcRod);
+    virtual void initializeKnobs() OVERRIDE;
 
-private:
+    virtual void fetchRenderCloneKnobs() OVERRIDE;
 
-    boost::shared_ptr<Image> renderMaskInternal(const RectI & roi,
-                                                const ImagePlaneDesc& components,
-                                                const double startTime,
-                                                const double endTime,
-                                                const double timeStep,
-                                                const double time,
-                                                const bool inverted,
-                                                const ImageBitDepthEnum depth,
-                                                const unsigned int mipmapLevel,
-                                                const std::list<std::list<std::pair<Point, double> > >& strokes,
-                                                const boost::shared_ptr<Image> &image);
+    virtual RotoStrokeType getBrushType() const = 0;
 
 Q_SIGNALS:
 
     void invertedStateChanged();
 
-    void overlayColorChanged();
-
     void shapeColorChanged();
 
-    void compositingOperatorChanged(ViewSpec, int, int);
-
-public Q_SLOTS:
+    void compositingOperatorChanged(ViewSetSpec, DimIdx, ValueChangedReasonEnum);
 
 
-    void onRotoKnobChanged(ViewSpec, int, int);
+    void onRotoKnobChanged(ViewSetSpec, DimIdx, ValueChangedReasonEnum);
 
 protected:
 
-    void rotoKnobChanged(const KnobPtr& knob, ValueChangedReasonEnum reason);
+    virtual bool getTransformAtTimeInternal(TimeValue time, ViewIdx view, Transform::Matrix3x3* matrix) const OVERRIDE ;
 
-    virtual void onTransformSet(double /*time*/) {}
+    virtual bool onKnobValueChanged(const KnobIPtr& k,
+                                    ValueChangedReasonEnum reason,
+                                    TimeValue time,
+                                    ViewSetSpec view) OVERRIDE;
 
-    void addKnob(const KnobPtr& knob);
+    virtual void refreshRightClickMenu(const KnobChoicePtr& refreshRightClickMenuInternal) OVERRIDE;
+
 
 private:
 
+    virtual void onItemRemovedFromModel() OVERRIDE FINAL;
 
-    RotoDrawableItem* findPreviousInHierarchy();
+    virtual void onItemInsertedInModel() OVERRIDE FINAL;
+
     boost::scoped_ptr<RotoDrawableItemPrivate> _imp;
 };
+
+
+class CompNodeItem : public RotoDrawableItem
+{
+public:
+
+    CompNodeItem(const KnobItemsTablePtr& model)
+    : RotoDrawableItem(model)
+    {
+
+    }
+
+
+    virtual ~CompNodeItem()
+    {
+
+    }
+
+    virtual RotoStrokeType getBrushType() const OVERRIDE FINAL
+    {
+        return eRotoStrokeTypeComp;
+    }
+
+    virtual RectD getBoundingBox(TimeValue time, ViewIdx view) const OVERRIDE FINAL;
+
+    virtual std::string getBaseItemName() const OVERRIDE FINAL;
+
+    virtual std::string getSerializationClassName() const OVERRIDE FINAL;
+};
+
+
+inline CompNodeItemPtr
+toCompNodeItem(const KnobHolderPtr& item)
+{
+    return boost::dynamic_pointer_cast<CompNodeItem>(item);
+}
+
 
 NATRON_NAMESPACE_EXIT
 

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+#include <set>
 
 #include <set>
 #include <list>
@@ -158,41 +159,41 @@ public:
 class NodeGraphPrivate
 {
 public:
-    NodeGraph* _publicInterface;
+    NodeGraph* _publicInterface; // can not be a smart ptr
     boost::weak_ptr<NodeCollection> group;
     QPoint _lastMousePos;
     QPointF _lastSelectionStartPointScene;
     EventStateEnum _evtState;
-    NodeGuiPtr _magnifiedNode;
+    NodeGuiWPtr _magnifiedNode;
     double _nodeSelectedScaleBeforeMagnif;
     bool _magnifOn;
     Edge* _arrowSelected;
     mutable QMutex _nodesMutex;
     NodesGuiList _nodes;
-    NodesGuiList _nodesTrash;
 
     ///Enables the "Tab" shortcut to popup the node creation dialog.
     ///This is set to true on enterEvent and set back to false on leaveEvent
     bool _nodeCreationShortcutEnabled;
-    QString _lastNodeCreatedName;
+    QString _lastPluginCreatedID;
     QGraphicsItem* _root; ///< this is the parent of all items in the graph
     QGraphicsItem* _nodeRoot; ///< this is the parent of all nodes
     QGraphicsSimpleTextItem* _cacheSizeText;
     bool cacheSizeHidden;
     QTimer _refreshCacheTextTimer;
     Navigator* _navigator;
-    QUndoStack* _undoStack;
+    boost::shared_ptr<QUndoStack> _undoStack;
     QMenu* _menu;
     QGraphicsItem *_tL, *_tR, *_bR, *_bL;
     bool _refreshOverlays;
     Edge* _highLightedEdge;
-    NodeGuiPtr _mergeHintNode;
+    NodeGuiWPtr _mergeHintNode;
 
     ///This is a hint edge we show when _highLightedEdge is not NULL to display a possible connection.
     Edge* _hintInputEdge;
     Edge* _hintOutputEdge;
-    NodeGuiPtr _backdropResized; //< the backdrop being resized
-    NodesGuiList _selection;
+    NodeGuiWPtr _backdropResized; //< the backdrop being resized
+    NodesGuiWList _selection;
+    NodesGuiWList _selectionBeforeNodeCreated;
 
     //To avoid calling unsetCursor too much
     bool cursorSet;
@@ -212,42 +213,90 @@ public:
     QTimer autoScrollTimer;
     QTimer refreshRenderStateTimer;
 
+    struct LinkedNodes
+    {
+        NodeWPtr nodes[2];
+        bool isCloneLink;
+        LinkArrow* arrow;
+
+        LinkedNodes()
+        : nodes()
+        , isCloneLink(false)
+        , arrow(0)
+        {
+
+        }
+    };
+
+    typedef std::list<LinkedNodes> LinkedNodesList;
+
+    LinkedNodesList linkedNodes;
+
+    // used to concatenate refreshing of links
+    int refreshNodesLinkRequest;
 
     NodeGraphPrivate(NodeGraph* p,
-                     const boost::shared_ptr<NodeCollection>& group);
+                     const NodeCollectionPtr& group);
 
     QPoint getPyPlugUnlockPos() const;
 
-    void resetAllClipboards();
-
     QRectF calcNodesBoundingRect();
 
-    void copyNodesInternal(const NodesGuiList& selection, NodeClipBoard & clipboard);
-    void pasteNodesInternal(const NodeClipBoard & clipboard, const QPointF& scenPos,
-                            bool useUndoCommand,
-                            std::list<std::pair<std::string, NodeGuiPtr > > *newNodes);
+    /**
+     * @brief Serialize the given node list 
+     **/
+    void copyNodesInternal(const NodesGuiList& selection, SERIALIZATION_NAMESPACE::NodeSerializationList* clipboard);
+    void copyNodesInternal(const NodesGuiList& selection, std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> >* clipboard);
+
+    enum PasteNodesFlagEnum
+    {
+        // Used to specify none of the operations below
+        ePasteNodesFlagNone = 0x0,
+
+        // The newly created nodes will be offset relative to their new centroid where the offset
+        // is computed from the old centroid of the node positions in the serialization
+        ePasteNodesFlagRelativeToCentroid = 0x1,
+
+        // If set this function will push and undo/redo command to create the nodes
+        ePasteNodesFlagUseUndoCommand = 0x2,
+
+        // If set each original node in the list must contain a pointer to the original node as well as its serialization:
+        // In this mode the newly created node is then linked to the original node.
+        // If not specified, the node pointer of the original is not necessary and can be left to NULL.
+        ePasteNodesFlagCloneNodes = 0x4
+    };
+
+    DECLARE_FLAGS(PasteNodesFlags, PasteNodesFlagEnum)
 
     /**
-     * @brief Create a new node given the serialization of another one
-     * @param offset[in] The offset applied to the new node position relative to the serialized node's position.
+     * @brief Paste the given nodes with flags. This will create new copies of the nodes
      **/
-    NodeGuiPtr pasteNode(const boost::shared_ptr<NodeSerialization> & internalSerialization,
-                         const boost::shared_ptr<NodeGuiSerialization> & guiSerialization,
-                         const QPointF & offset,
-                         const boost::shared_ptr<NodeCollection>& group,
-                         const std::string& parentName,
-                         bool clone,
-                         std::map<std::string, std::string>* oldNewScriptNameMapping);
+    void pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> >& originalNodes,
+                            const QPointF& newCentroidScenePos,
+                            PasteNodesFlags flags);
 
-
+    
+    
     /**
      * @brief This is called once all nodes of a clipboard have been pasted to try to restore connections between them
-     * WARNING: The 2 lists must be ordered the same: each item in serializations corresponds to the same item in the newNodes
-     * list. We're not using 2 lists to avoid a copy from the paste function.
+     * The new nodes are mapped against their old script-name
      **/
-    void restoreConnections(const std::list<boost::shared_ptr<NodeSerialization> > & serializations,
-                            const std::list<std::pair<std::string, NodeGuiPtr > > & newNodes,
-                            const std::map<std::string, std::string>& oldNewScriptNamesMap);
+    struct ConnectionToRestore
+    {
+        NodePtr newNode;
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr nodeSerialization;
+    };
+
+    NodesGuiWList::iterator findSelectedNode(const NodeGuiPtr& node)
+    {
+        for (NodesGuiWList::iterator it = _selection.begin(); it != _selection.end(); ++it) {
+            NodeGuiPtr n = it->lock();
+            if ( n == node ) {
+                return it;
+            }
+        }
+        return _selection.end();
+    }
 
     void editSelectionFromSelectionRectangle(bool addToSelection);
 
@@ -263,5 +312,8 @@ public:
 };
 
 NATRON_NAMESPACE_EXIT
+
+DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::NodeGraphPrivate::PasteNodesFlags);
+
 
 #endif // Gui_NodeGraphPrivate_h

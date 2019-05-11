@@ -1,5 +1,5 @@
 # ***** BEGIN LICENSE BLOCK *****
-# This file is part of Natron <http://www.natron.fr/>,
+# This file is part of Natron <https://natrongithub.github.io/>,
 # Copyright (C) 2013-2018 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 
 TEMPLATE = subdirs
 
-enable-breakpad {
+CONFIG(enable-breakpad) {
     include(breakpadpro.pri)
 }
 
@@ -32,10 +32,13 @@ SUBDIRS += \
     qhttpserver \
     hoedown \
     libtess \
+    yaml-cpp \
+    Serialization \
     Engine \
     Renderer \
     Gui \
     Tests \
+    ProjectConverter \
     PythonBin \
     App
 
@@ -48,17 +51,20 @@ openMVG.subdir     = libs/openMVG
 qhttpserver.subdir = libs/qhttpserver
 hoedown.subdir     = libs/hoedown
 libtess.subdir     = libs/libtess
+yaml-cpp.subdir     = libs/yaml-cpp
 
 # what subproject depends on others
 glog.depends = gflags
 ceres.depends = glog gflags
 libmv.depends = gflags ceres
 openMVG.depends = ceres
-Engine.depends = libmv openMVG HostSupport libtess ceres
+Serialization.depends = yaml-cpp
+Engine.depends = libmv openMVG HostSupport libtess ceres Serialization
 Renderer.depends = Engine
 Gui.depends = Engine qhttpserver
 Tests.depends = Gui Engine
 App.depends = Gui Engine
+ProjectConverter.depends = Gui Engine
 
 OTHER_FILES += \
     Global/Enums.h \
@@ -70,6 +76,15 @@ OTHER_FILES += \
     Global/QtCompat.h \
     global.pri \
     config.pri
+
+CONFIG(enable-osmesa) {
+    isEmpty(LLVM_PATH) {
+        message("enable-osmesa was passed to the config but you did not set LLVM_PATH, defaulting to /opt/llvm")
+    }
+    isEmpty(OSMESA_PATH) {
+        message("enable-osmesa was passed to the config but you did not set OSMESA_PATH, defaulting to /opt/osmesa")
+    }
+}
 
 include(global.pri)
 include(config.pri)
@@ -91,4 +106,20 @@ CONFIG(debug, debug|release){
     message("Compiling in DEBUG mode.")
 } else {
     message("Compiling in RELEASE mode.")
+}
+
+addresssanitizer {
+  *g++* | *clang* {
+    message("Compiling with AddressSanitizer (for gcc >= 4.8 and clang). Set the ASAN_SYMBOLIZER_PATH environment variable to point to the llvm-symbolizer binary, or make sure llvm-symbolizer in in your PATH.")
+    message("For example, with Qt4 on macOS:")
+    message("- with MacPorts:")
+    message("  sudo port install clang-5.0")
+    message("  export ASAN_SYMBOLIZER_PATH=/opt/local/bin/llvm-symbolizer-mp-5.0")
+    message("  qmake QMAKE_CC=clang-mp-5.0 QMAKE_CXX='clang++-mp-5.0 -stdlib=libc++' QMAKE_LINK='clang++-mp-5.0 -stdlib=libc++' QMAKE_OBJECTIVE_CC='clang-mp-5.0 -stdlib=libc++' QMAKE_OBJECTIVE_CXX='clang++-mp-5.0 -stdlib=libc++' CONFIG+=addresssanitizer ...")
+    message("- with homebrew:")
+    message("  brew install llvm")
+    message("  export ASAN_SYMBOLIZER_PATH=/usr/local/opt/llvm/bin/llvm-symbolizer")
+    message("  qmake QMAKE_CC=/usr/local/opt/llvm/bin/clang QMAKE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_LINK='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' QMAKE_OBJECTIVE_CC='/usr/local/opt/llvm/bin/clang -stdlib=libc++' QMAKE_OBJECTIVE_CXX='/usr/local/opt/llvm/bin/clang++ -stdlib=libc++' CONFIG+=addresssanitizer ...")
+    message("see http://clang.llvm.org/docs/AddressSanitizer.html")
+  }
 }

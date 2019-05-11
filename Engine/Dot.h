@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,6 +32,7 @@
 #endif
 
 #include "Engine/NoOpBase.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
@@ -39,36 +40,47 @@ NATRON_NAMESPACE_ENTER
 class Dot
     : public NoOpBase
 {
-public:
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-    static EffectInstance* BuildEffect(NodePtr n)
-    {
-        return new Dot(n);
-    }
-
-    Dot(NodePtr n)
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    Dot(const NodePtr& n)
         : NoOpBase(n)
     {
     }
 
+    Dot(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+    : NoOpBase(mainInstance, key)
+    {
+    }
+
+public:
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new Dot(node) );
+    }
+
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new Dot(mainInstance, key) );
+    }
+
+    static PluginPtr createPlugin();
+
     virtual bool getMakeSettingsPanel() const OVERRIDE FINAL { return false; }
 
-    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return PLUGINID_NATRON_DOT;
-    }
 
-    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return "Dot";
-    }
-
-    virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return "";
-    }
 };
+
+
+inline DotPtr
+toDot(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<Dot>(effect);
+}
+
 
 NATRON_NAMESPACE_EXIT
 

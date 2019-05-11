@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -40,7 +40,7 @@ TEST(KeyFrame,
 
     k.setValue(10.);
     EXPECT_EQ( 10., k.getValue() );
-    k.setTime(50.);
+    k.setTime(TimeValue(50.));
     EXPECT_EQ( 50., k.getTime() );
     k.setLeftDerivative(-1.);
     EXPECT_EQ( -1., k.getLeftDerivative() );
@@ -54,7 +54,7 @@ TEST(KeyFrame,
     EXPECT_TRUE( KeyFrame_compare_time() (k1, k) );
     EXPECT_TRUE( k1.getTime() < k.getTime() );
     k1.setValue(10.);
-    k1.setTime(50.);
+    k1.setTime(TimeValue(50.));
     k1.setLeftDerivative(-1.);
     k1.setRightDerivative(-2.);
     k1.setInterpolation(eKeyframeTypeCatmullRom);
@@ -69,31 +69,32 @@ TEST(Curve, Basic)
     EXPECT_FALSE( c.isAnimated() );
 
     // one keyframe
-    EXPECT_TRUE( c.addKeyFrame( KeyFrame(0., 5.) ) );
-    EXPECT_EQ( 5., c.getValueAt(0.) );
-    EXPECT_EQ( 5., c.getValueAt(10.) );
-    EXPECT_EQ( 5., c.getValueAt(-10.) );
+    EXPECT_TRUE( c.setOrAddKeyframe( KeyFrame(0., 5.) ) == eValueChangedReturnCodeKeyframeAdded);
+    EXPECT_EQ( 5., c.getValueAt(TimeValue(0.)).getValue() );
+    EXPECT_EQ( 5., c.getValueAt(TimeValue(10.)).getValue() );
+    EXPECT_EQ( 5., c.getValueAt(TimeValue(-10.)).getValue() );
     EXPECT_TRUE( c.isAnimated() );
 
     // two keyframes
-    EXPECT_FALSE( c.addKeyFrame( KeyFrame(0., 10.) ) ); // keyframe already exists, replacing it
-    EXPECT_TRUE( c.addKeyFrame( KeyFrame(1., 20.) ) );
-    EXPECT_EQ( 10., c.getValueAt(0.) );
-    EXPECT_EQ( 20., c.getValueAt(1.) );
-    EXPECT_EQ( 10., c.getValueAt(-10.) ); // before first keyframe
-    EXPECT_EQ( 20., c.getValueAt(10.) ); // after last keyframe
-    EXPECT_EQ( 15., c.getValueAt(0.5) ); // middle
+    EXPECT_TRUE( c.setOrAddKeyframe( KeyFrame(0., 10.) ) == eValueChangedReturnCodeKeyframeModified ); // keyframe already exists, replacing it
+    EXPECT_TRUE( c.setOrAddKeyframe( KeyFrame(0., 10.) ) == eValueChangedReturnCodeNothingChanged ); // keyframe already exists, replacing it
+    EXPECT_TRUE( c.setOrAddKeyframe( KeyFrame(1., 20.) ) == eValueChangedReturnCodeKeyframeAdded);
+    EXPECT_EQ( 10., c.getValueAt(TimeValue(0.)).getValue() );
+    EXPECT_EQ( 20., c.getValueAt(TimeValue(1.)).getValue() );
+    EXPECT_EQ( 10., c.getValueAt(TimeValue(-10.)).getValue() ); // before first keyframe
+    EXPECT_EQ( 20., c.getValueAt(TimeValue(10.)).getValue() ); // after last keyframe
+    EXPECT_EQ( 15., c.getValueAt(TimeValue(0.5)).getValue() ); // middle
     // derivative
-    EXPECT_EQ( 10., c.getDerivativeAt(0.) );
-    EXPECT_EQ( 10., c.getDerivativeAt(0.5) ); // middle
-    EXPECT_EQ( 10., c.getDerivativeAt(0.99) );
-    EXPECT_EQ( 0., c.getDerivativeAt(1.) ); // from last keyframe, it's constant
+    EXPECT_EQ( 10., c.getDerivativeAt(TimeValue(0.)) );
+    EXPECT_EQ( 10., c.getDerivativeAt(TimeValue(0.5)) ); // middle
+    EXPECT_EQ( 10., c.getDerivativeAt(TimeValue(0.99)) );
+    EXPECT_EQ( 0., c.getDerivativeAt(TimeValue(1.)) ); // from last keyframe, it's constant
 
     // integrate
-    EXPECT_EQ( 100., c.getIntegrateFromTo(-10., 0.) );
-    EXPECT_EQ( 15., c.getIntegrateFromTo(0., 1.) );
-    EXPECT_EQ( 200., c.getIntegrateFromTo(1., 11.) );
-    EXPECT_EQ( 315., c.getIntegrateFromTo(-10., 11.) );
+    EXPECT_EQ( 100., c.getIntegrateFromTo(TimeValue(-10.), TimeValue(0.)) );
+    EXPECT_EQ( 15., c.getIntegrateFromTo(TimeValue(0.), TimeValue(1.)) );
+    EXPECT_EQ( 200., c.getIntegrateFromTo(TimeValue(1.), TimeValue(11.)) );
+    EXPECT_EQ( 315., c.getIntegrateFromTo(TimeValue(-10.), TimeValue(11.)) );
 
     KeyFrameSet ks = c.getKeyFrames_mt_safe();
 
@@ -102,25 +103,24 @@ TEST(Curve, Basic)
     EXPECT_FALSE( c.isAnimated() );
 
     // two keyframes, constant interpolation
-    EXPECT_TRUE( c.addKeyFrame( KeyFrame(0., 10., 0., 0., eKeyframeTypeConstant) ) ); // keyframe already exists, replacing it
-    EXPECT_TRUE( c.addKeyFrame( KeyFrame(1., 20., 0., 0., eKeyframeTypeConstant) ) );
-    EXPECT_EQ( 10., c.getValueAt(0.) );
-    EXPECT_EQ( 20., c.getValueAt(1.) );
-    EXPECT_EQ( 10., c.getValueAt(-10.) ); // before first keyframe
-    EXPECT_EQ( 20., c.getValueAt(10.) ); // after last keyframe
-    EXPECT_EQ( 10., c.getValueAt(0.5) ); // middle
+    EXPECT_TRUE( c.setOrAddKeyframe( KeyFrame(0., 10., 0., 0., eKeyframeTypeConstant) ) == eValueChangedReturnCodeKeyframeAdded );
+    EXPECT_TRUE( c.setOrAddKeyframe( KeyFrame(1., 20., 0., 0., eKeyframeTypeConstant) )  == eValueChangedReturnCodeKeyframeAdded);
+    EXPECT_EQ( 10., c.getValueAt(TimeValue(0.)).getValue() );
+    EXPECT_EQ( 20., c.getValueAt(TimeValue(1.)).getValue() );
+    EXPECT_EQ( 10., c.getValueAt(TimeValue(-10.)).getValue() ); // before first keyframe
+    EXPECT_EQ( 20., c.getValueAt(TimeValue(10.)).getValue() ); // after last keyframe
+    EXPECT_EQ( 10., c.getValueAt(TimeValue(0.5)).getValue() ); // middle
     // derivative
-    EXPECT_EQ( 0., c.getDerivativeAt(0.) );
-    EXPECT_EQ( 0., c.getDerivativeAt(0.5) ); // middle
-    EXPECT_EQ( 0., c.getDerivativeAt(0.99) );
-    EXPECT_EQ( 0., c.getDerivativeAt(1.) ); // from last keyframe, it's constant
+    EXPECT_EQ( 0., c.getDerivativeAt(TimeValue(0.)) );
+    EXPECT_EQ( 0., c.getDerivativeAt(TimeValue(0.5)) ); // middle
+    EXPECT_EQ( 0., c.getDerivativeAt(TimeValue(0.99)) );
+    EXPECT_EQ( 0., c.getDerivativeAt(TimeValue(1.)) ); // from last keyframe, it's constant
     // integrate
-    EXPECT_EQ( 100., c.getIntegrateFromTo(-10., 0.) );
-    EXPECT_EQ( 10., c.getIntegrateFromTo(0., 1.) );
-    EXPECT_EQ( 200., c.getIntegrateFromTo(1., 11.) );
-    EXPECT_EQ( 310., c.getIntegrateFromTo(-10., 11.) );
+    EXPECT_EQ( 100., c.getIntegrateFromTo(TimeValue(-10.), TimeValue(0.)) );
+    EXPECT_EQ( 10., c.getIntegrateFromTo(TimeValue(0.), TimeValue(1.)) );
+    EXPECT_EQ( 200., c.getIntegrateFromTo(TimeValue(1.), TimeValue(11.)) );
+    EXPECT_EQ( 310., c.getIntegrateFromTo(TimeValue(-10.), TimeValue(11.)) );
 
-    KeyFrame k2(1., 20.);
 }
 
 

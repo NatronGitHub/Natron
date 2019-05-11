@@ -8,20 +8,6 @@ General
 
 When checked, Natron will check for new updates on start-up of the application.
 
-**Enable crash reporting**
-
-When checked, if Natron crashes a window will pop-up asking you whether you want to upload the crash dump to the developers or not. This can help them track down the bug.
-
-If you need to turn the crash reporting system off, uncheck this.
-
-Note that when using the application in command-line mode, if crash reports are enabled, they will be automatically uploaded.
-
-Changing this requires a restart of the application to take effect.
-
-**Test Crash Reporting**
-
-This button is for developers only to test whether the crash reporting system works correctly. Do not use this.
-
 **Auto-save trigger delay**
 
 The number of seconds after an event that Natron should wait before auto-saving. Note that if a render is in progress, Natron will wait until it is done to actually auto-save.
@@ -181,7 +167,7 @@ Select the OpenColorIO configuration you would like to use globally for all oper
 
 **Custom OpenColorIO configuration file**
 
-OpenColorIO configuration file (*.ocio) to use when “Custom config” is selected as the OpenColorIO config.
+OpenColorIO configuration file (config.ocio) to use when “Custom config” is selected as the OpenColorIO config.
 
 **Warn on OpenColorIO config change**
 
@@ -216,9 +202,7 @@ The maximum size that may be used by the DiskCache node on disk (in GiB)
 
 WARNING: Changing this parameter requires a restart of the application.
 
-This is points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, the default location will be used. The default location is:
-
-/Users/devernay/Library/Caches/INRIA/Natron
+This is points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, the default location will be used. 
 
 **Wipe Disk Cache**
 

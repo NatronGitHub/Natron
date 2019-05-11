@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -24,22 +24,23 @@
 
 #include "Splitter.h"
 
+#include "Serialization/WorkspaceSerialization.h"
+
+#include "Gui/GuiAppInstance.h"
+#include "Gui/TabWidget.h"
+#include "Gui/Gui.h"
 #include <cassert>
 #include <stdexcept>
 
 NATRON_NAMESPACE_ENTER
 
-Splitter::Splitter(QWidget* parent)
-    : QSplitter(parent)
-    , _lock()
-{
-    setMouseTracking(true);
-}
 
 Splitter::Splitter(Qt::Orientation orientation,
+                   Gui* gui,
                    QWidget * parent)
     : QSplitter(orientation, parent)
     , _lock()
+    , _gui(gui)
 {
     setMouseTracking(true);
 }
@@ -147,5 +148,128 @@ Splitter::event(QEvent* e)
 {
     return QSplitter::event(e);
 }
+
+
+OrientationEnum
+Splitter::getNatronOrientation() const
+{
+    Qt::Orientation qor = orientation();
+    switch (qor) {
+        case Qt::Horizontal:
+            return eOrientationHorizontal;
+            break;
+        case Qt::Vertical:
+            return eOrientationVertical;
+    }
+    return eOrientationVertical;
+}
+
+
+int
+Splitter::getLeftChildrenSize() const
+{
+    QList<int> list = sizes();
+    assert(list.size() == 2);
+    return list.front();
+}
+
+int
+Splitter::getRightChildrenSize() const
+{
+    QList<int> list = sizes();
+    assert(list.size() == 2);
+    return list.back();
+}
+
+SplitterI*
+Splitter::isLeftChildSplitter() const
+{
+    return dynamic_cast<Splitter*>(widget(0));
+}
+
+TabWidgetI*
+Splitter::isLeftChildTabWidget() const
+{
+    return dynamic_cast<TabWidget*>(widget(0));
+}
+
+SplitterI*
+Splitter::isRightChildSplitter() const
+{
+    return dynamic_cast<Splitter*>(widget(1));
+}
+
+TabWidgetI*
+Splitter::isRightChildTabWidget() const
+{
+    return dynamic_cast<TabWidget*>(widget(1));
+}
+
+void
+Splitter::setNatronOrientation(OrientationEnum orientation)
+{
+    switch (orientation) {
+        case eOrientationHorizontal:
+            setOrientation(Qt::Horizontal);
+            break;
+        case eOrientationVertical:
+            setOrientation(Qt::Vertical);
+            break;
+    }
+}
+
+void
+Splitter::setChildrenSize(int left, int right)
+{
+    QList<int> sizes;
+    sizes.push_back(left);
+    sizes.push_back(right);
+    setSizes_mt_safe(sizes);
+}
+
+void
+Splitter::restoreChildrenFromSerialization(const SERIALIZATION_NAMESPACE::WidgetSplitterSerialization& serialization)
+{
+    {
+        if (serialization.leftChild.type == kSplitterChildTypeSplitter) {
+            Qt::Orientation orientation = Qt::Horizontal;
+            if (serialization.leftChild.childIsSplitter->orientation == kSplitterOrientationHorizontal) {
+                orientation = Qt::Horizontal;
+            } else if (serialization.leftChild.childIsSplitter->orientation == kSplitterOrientationVertical) {
+                orientation = Qt::Vertical;
+            }
+
+            Splitter* splitter = new Splitter(orientation, _gui, this);
+            splitter->fromSerialization(*serialization.leftChild.childIsSplitter);
+            _gui->getApp()->registerSplitter(splitter);
+            addWidget_mt_safe(splitter);
+        } else if (serialization.leftChild.type == kSplitterChildTypeTabWidget) {
+            TabWidget* tab = new TabWidget(_gui, this);
+            tab->fromSerialization(*serialization.leftChild.childIsTabWidget);
+            _gui->getApp()->registerTabWidget(tab);
+            addWidget_mt_safe(tab);
+        }
+    }
+    {
+        if (serialization.rightChild.type == kSplitterChildTypeSplitter) {
+            Qt::Orientation orientation = Qt::Horizontal;
+            if (serialization.rightChild.childIsSplitter->orientation == kSplitterOrientationHorizontal) {
+                orientation = Qt::Horizontal;
+            } else if (serialization.rightChild.childIsSplitter->orientation == kSplitterOrientationVertical) {
+                orientation = Qt::Vertical;
+            }
+            Splitter* splitter = new Splitter(orientation, _gui, this);
+            splitter->fromSerialization(*serialization.rightChild.childIsSplitter);
+            _gui->getApp()->registerSplitter(splitter);
+            addWidget_mt_safe(splitter);
+        } else if (serialization.rightChild.type == kSplitterChildTypeTabWidget) {
+            TabWidget* tab = new TabWidget(_gui, this);
+            tab->fromSerialization(*serialization.rightChild.childIsTabWidget);
+            _gui->getApp()->registerTabWidget(tab);
+            addWidget_mt_safe(tab);
+        }
+    }
+}
+
 
 NATRON_NAMESPACE_EXIT

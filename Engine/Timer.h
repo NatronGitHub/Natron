@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,18 +27,19 @@
 
 #include "Global/Macros.h"
 
-//----------------------------------------------------------------------------
-//
-//	Timing control
-//
-//----------------------------------------------------------------------------
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#endif
 
 #if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
 #include <windows.h>
 #else
 #include <sys/time.h>
 #endif
-
+#ifdef HAVE_CXX11_CHRONO
+#include <chrono>
+#endif
 
 #include <QtCore/QString>
 #include <QtCore/QObject>
@@ -47,6 +48,12 @@
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
+
+//----------------------------------------------------------------------------
+//
+//	Timing control
+//
+//----------------------------------------------------------------------------
 
 #if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
 int gettimeofday (struct timeval *tv, void *tz);
@@ -57,6 +64,31 @@ enum PlayStateEnum
     ePlayStateRunning,
     ePlayStatePause,
 };
+
+
+
+#ifdef HAVE_CXX11_CHRONO
+typedef std::chrono::high_resolution_clock::time_point TimestampVal;
+#else
+typedef double TimestampVal;
+#endif // HAVE_CXX11_CHRONO
+
+
+/**
+ * @brief Return a timestamp. It can be compared with another timestamp returned by this function
+ **/
+TimestampVal getTimestampInSeconds();
+
+/**
+ * @brief On windows return the frequency of the values returned by getTimestampInSeconds().
+ * On unix the timestamp are always in seconds.
+ **/
+double getPerformanceFrequency();
+
+/**
+ * @brief Returns the number of seconds elapsed between start to end.
+ **/
+double getTimeElapsed(const TimestampVal& start, const TimestampVal& end, double frequency = 1.);
 
 class Timer
     : public QObject
@@ -110,22 +142,27 @@ Q_SIGNALS:
 
 private:
 
+    double _frequency;
     double _spf;                 // desired frame rate,
     // in seconds per frame
-    timeval _lastFrameTime;         // time when we displayed the
+    TimestampVal _lastFrameTime;         // time when we displayed the
     // last frame
     double _timingError;             // cumulative timing error
-    timeval _lastFpsFrameTime;      // state to keep track of the
+    TimestampVal _lastFpsFrameTime;      // state to keep track of the
     int _framesSinceLastFpsFrame;       // actual frame rate, averaged
     double _actualFrameRate;         // over several frames
     mutable QMutex _mutex; //< protects _spf and _actualFrameRate
 };
 
 
+
 class TimeLapse
 {
-    timeval prev;
-    timeval constructorTime;
+    
+    TimestampVal prev;
+    TimestampVal constructorTime;
+
+    double frequency;
 
 public:
 
@@ -153,7 +190,10 @@ public:
  **/
 class TimeLapseReporter
 {
-    timeval prev;
+    TimestampVal prev;
+
+    double frequency;
+
     std::string message;
 
 public:
@@ -162,6 +202,60 @@ public:
 
     ~TimeLapseReporter();
 };
+
+
+struct StackTraceRecorderPrivate;
+
+
+class StackTraceRecorder
+{
+
+    StackTraceRecorder(int maxDepth);
+
+public:
+
+    struct StackFrame
+    {
+        std::string functionSymbol;
+        std::string moduleName;
+        std::string offset;
+        std::string addr;
+        std::string encoded;
+
+    };
+
+    // For now only works on Linux and mac
+#ifdef __NATRON_UNIX__
+    static std::vector<StackTraceRecorder::StackFrame> getStackTrace(int maxDepth = 16);
+#endif
+
+    ~StackTraceRecorder();
+    
+private:
+
+    boost::scoped_ptr<StackTraceRecorderPrivate> _imp;
+};
+
+struct ProfilerPrivate;
+class Profiler
+{
+public:
+
+    Profiler();
+
+    ~Profiler();
+
+    void start(const std::string& functionName);
+    void stop();
+    std::string dumpLog() const;
+
+private:
+
+    boost::scoped_ptr<ProfilerPrivate> _imp;
+
+    
+};
+
 
 NATRON_NAMESPACE_EXIT
 

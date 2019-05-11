@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,7 +33,11 @@
 
 #include "Global/GlobalDefines.h"
 
+#include "Engine/EngineFwd.h"
+
+
 NATRON_NAMESPACE_ENTER
+
 
 // Memory utility functions ( info about RAM etc...)
 

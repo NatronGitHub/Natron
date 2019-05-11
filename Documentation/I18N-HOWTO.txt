@@ -1,8 +1,18 @@
 Here are notes about internationalization support in Natron.
+http://doc.qt.io/qt-4.8/linguist-manager.html
 
-To generate the translatable string files:
-lupdate -I. Engine -ts Engine/Engine.ts
-lupdate -I. Gui -ts Gui/Gui.ts
+- To generate the translatable string files:
+lupdate -I. Engine -ts Engine/Engine_fr.ts
+lupdate -I. Gui -ts Gui/Gui_fr.ts
+
+- Edit the tables with Qt Linguist
+
+- Add translations to the .pro file, as in:
+TRANSLATIONS = Gui_fr.ts
+
+- To update QM files after editing ts files with linguist:
+lrelease Engine/Engine_fr.ts
+lrelease Gui/Gui_fr.ts
 
 Any error signaled by lupdate must be fixed.
 Sometimes, especially in template member functions, lupdate cannot find the right context. In this case, it must be specified manually.

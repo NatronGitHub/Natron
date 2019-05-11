@@ -5,9 +5,9 @@ Natron in command-line
 
 Natron has 3 different execution modes:
 
-    * The execution of Natron projects (.ntp)
-    * The execution of Python scripts that contain commands for Natron
-    * An interpreter mode where commands can be given directly to the Python interpreter
+- The execution of Natron projects (.ntp)
+- The execution of Python scripts that contain commands for Natron
+- An interpreter mode where commands can be given directly to the Python interpreter
 
 General options:
 ----------------
@@ -24,6 +24,12 @@ An optional Python script filename can be specified to source a script before th
 Note that Natron will not start rendering any Write node of the sourced script, you must explicitly start it.
 *NatronRenderer* and *Natron* will do the same thing in this mode, only the *init.py* script will be loaded.
 
+**[--clear-cache]** will clear the image cache on startup
+
+**[--clear-plugins-cache]** will clear the plug-ins load cache on start-up, forcing them
+to reaload
+
+
 
 Options for the execution of Natron projects:
 ---------------------------------------------
@@ -32,12 +38,12 @@ Options for the execution of Natron projects:
 
     Natron <project file path>
 
-**[--writer]** or **[-w]** *<Writer node script name>* [optional] *<filename>* [optional] *<frameRange>* specifies a Write node to render.
+**``--writer``** or **``-w``** *<Writer node script name>* [optional] *<filename>* [optional] *<frameRange>* specifies a Write node to render.
 When in background mode, the renderer will only try to render with the node script name following this argument.
 If no such node exists in the project file, the process will abort.
 Note that if you don't pass the *--writer* argument, it will try to start rendering with all the writers in the project.
 
-After the writer node script name you can pass an optional output filename and pass an optional frame range in the format  firstFrame-lastFrame (e.g: 10-40).
+After the writer node script name you can pass an optional output filename and pass an optional frame range in the format  firstFrame-lastFrame (e.g. 10-40).
 
 
 .. warning::
@@ -51,13 +57,13 @@ After the writer node script name you can pass an optional output filename and p
         NatronRenderer -i MyReader /Users/me/Images/pictures.png -w MyWriter /Users/me/Images/rendered###.exr
 
 
-Note that several *-w* options can be set to specify multiple Write nodes to render.
+Note that several *``-w``* options can be set to specify multiple Write nodes to render.
 
 .. warning::
 
     Note that if specified, then the frame range will be the same for all Write nodes that will render.
 
-**[ --reader ]* or **[-i]** <reader node script name> <filename> :
+**``--reader``* or **``-i``** <reader node script name> <filename> :
 Specify the input file/sequence/video to load for the given Reader node.
 If the specified reader node cannot be found, the process will abort.
 
@@ -73,15 +79,15 @@ If the specified reader node cannot be found, the process will abort.
 
 
 
-**[--onload]** or **[-l]** *<python script file path>* specifies a Python script to be executed
+**``--onload``** or **``-l``** *<python script file path>* specifies a Python script to be executed
 after a project is created or loaded.
 Note that this will be executed in GUI mode or with NatronRenderer and it will be executed after any Python function
 set to the callback onProjectLoaded or onProjectCreated.
 The same rules apply to this script as the rules below on the execution of Python scripts.
 
-**[ --render-stats]** or **[-s]** Enables render statistics that will be produced for each frame in form of a file located
- next to the image produced by the Writer node, with the same name and a -stats.txt extension.
-The breakdown contains informations about each nodes, render times etc...
+**``--render-stats``** or **``-s``** Enables render statistics that will be produced for each frame in form of a file located
+next to the image produced by the Writer node, with the same name and a ``-stats.txt`` extension.
+The breakdown contains informations about each nodes, render times, etc.
 This option is useful for debugging purposes or to control that a render is working correctly.
 **Please note** that it does not work when writing video files.
 
@@ -128,14 +134,14 @@ If this function is found, the script will be imported as a module and it will b
 
 .. warning::
 
-    Note that when imported, the script will not have access to any external variable declared by Natron
-    except the variable passed to the createInstance function.
+   Note that when imported, the script will not have access to any external variable declared by Natron
+   except the variable passed to the createInstance function.
 
 If this function is not found the whole content of the script will be interpreted as though it were given to Python natively.
 
 .. note::
 
-    In this case the script **can** have access to the external variables declared by Natron.
+   In this case the script **can** have access to the external variables declared by Natron.
 
 Either cases, the \"app\" variable will always be defined and pointing to the correct application instance.
 Note that if you are using Natron in GUI mode, it will source the script before creating the graphical user interface and will not start rendering.
@@ -273,9 +279,9 @@ Since the fps cannot be specified from the command-line arguments, we could do i
 And change the value in the Python script for each call to the command-line, but that would
 require manual intervention.
 
-That's where another option from the command-line comes into play: the **-c** option
-(or --cmd): It allows to pass custom Python code in form of a string that will be
-executed before the actual script::
+That's where another option from the command-line comes into play: the **``-c``** option
+(or ``--cmd``): It allows to pass custom Python code in form of a string that will be
+executed before the actual script.
 
 To set the fps from the command-line we could do as such now::
 
@@ -298,7 +304,7 @@ And modify the Python script to take into account the new *readFileName* and *wr
     ...
 
 
-The **-c** option can be given multiple times to the command-line and each command passed will
+The **``-c``** option can be given multiple times to the command-line and each command passed will
 be executed once, in the order they were given.
 
 With a Natron project file:

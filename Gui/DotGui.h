@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -49,9 +49,17 @@ NATRON_NAMESPACE_ENTER
 class DotGui
     : public NodeGui
 {
-public:
+private: // derives from NodeGui
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     DotGui(QGraphicsItem *parent = 0);
+
+public:
+    static NodeGuiPtr create(QGraphicsItem *parent = 0) WARN_UNUSED_RETURN
+    {
+        return NodeGuiPtr( new DotGui(parent) );
+    }
 
 private:
 

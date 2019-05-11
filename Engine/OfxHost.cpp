@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -38,6 +38,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
+CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QDateTime>
 #include <QtCore/QDir>
 #include <QtCore/QMutex>
@@ -46,15 +47,19 @@ CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is depr
 #include <QtCore/QDebug>
 #include <QtCore/QTemporaryFile>
 CLANG_DIAG_ON(deprecated-register)
+CLANG_DIAG_ON(uninitialized)
+
 #ifdef OFX_SUPPORTS_MULTITHREAD
 #include <QtCore/QThread>
 #include <QtCore/QThreadStorage>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
+
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
+#endif // OFX_SUPPORTS_MULTITHREAD
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -87,15 +92,21 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Global/FStreamsSupport.h"
 #include "Global/QtCompat.h"
 #include "Global/KeySymbols.h"
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/OfxClipInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/EffectDescription.h"
+#include "Engine/InputDescription.h"
 #include "Engine/LibraryBinary.h"
+#include "Engine/MultiThread.h"
 #include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/Node.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
@@ -107,8 +118,8 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/TLSHolder.h"
 #include "Engine/ThreadPool.h"
 
-//An effect may not use more than this amount of threads
-#define NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU 4
+#include "Serialization/NodeSerialization.h"
+
 
 NATRON_NAMESPACE_ENTER
 // to disambiguate with the global-scope ::OfxHost
@@ -145,28 +156,21 @@ string_format(const std::string fmt,
 
 struct OfxHostPrivate
 {
-    boost::shared_ptr<OFX::Host::ImageEffect::PluginCache> imageEffectPluginCache;
+    OFX::Host::ImageEffect::PluginCachePtr imageEffectPluginCache;
     boost::shared_ptr<TLSHolder<OfxHost::OfxHostTLSData> > tlsData;
 
-#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-    std::list<QMutex*> pluginsMutexes;
-    QMutex* pluginsMutexesLock; //<protects _pluginsMutexes
-#endif
     std::string loadingPluginID; // ID of the plugin being loaded
     int loadingPluginVersionMajor;
     int loadingPluginVersionMinor;
 
     OfxHostPrivate()
         : imageEffectPluginCache()
-        , tlsData( new TLSHolder<OfxHost::OfxHostTLSData>() )
-#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-        , pluginsMutexes()
-        , pluginsMutexesLock(0)
-#endif
+        , tlsData()
         , loadingPluginID()
         , loadingPluginVersionMajor(0)
         , loadingPluginVersionMinor(0)
     {
+        tlsData = boost::make_shared<TLSHolder<OfxHost::OfxHostTLSData> >();
     }
 };
 
@@ -181,16 +185,8 @@ OfxHost::~OfxHost()
     //Clean up, to be polite.
     OFX::Host::PluginCache::clearPluginCache();
 
-#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-    delete _imp->pluginsMutexesLock;
-#endif
 }
 
-OfxHost::OfxHostDataTLSPtr
-OfxHost::getTLSData() const
-{
-    return _imp->tlsData->getOrCreateTLSData();
-}
 
 void
 OfxHost::setOfxHostOSHandle(void* handle)
@@ -325,6 +321,9 @@ OfxHost::setProperties()
     _properties.setIntProperty(kNatronOfxImageEffectPropHostMasking, 1);
     _properties.setIntProperty(kNatronOfxImageEffectPropHostMixing, 1);
 
+    // Natron distortion suite
+    _properties.setIntProperty(kOfxImageEffectPropCanDistort, 1);
+
     _properties.setIntProperty(kNatronOfxPropDescriptionIsMarkdown, 1);
 
     _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxArrowCursor, 0);
@@ -351,7 +350,7 @@ OfxHost::setProperties()
 } // OfxHost::setProperties
 
 static
-Settings::KnownHostNameEnum
+KnownHostNameEnum
 getHostNameProxy(const std::string& pluginID,
                  int pluginVersionMajor,
                  int pluginVersionMinor)
@@ -373,7 +372,7 @@ getHostNameProxy(const std::string& pluginID,
         // https://www.neatvideo.com/download.html
 
         // tested with neat video 4.0.9, maj=4,min=0
-        return Settings::eKnownHostNameNuke;
+        return eKnownHostNameNuke;
     } else if ( !pluginID.compare(0, hitfilm.size(), hitfilm) ) {
         // HitFilm plugins (work with Vegas, Resolve and TitlerPro,
         // Vegas and TitlerPro support more plugins than Resolve
@@ -383,19 +382,19 @@ getHostNameProxy(const std::string& pluginID,
         // tested with HitFilm Ignite 1.0.0118
         // Clone Stamp from HitFilm Ignite is officially only compatible with Nuke
         if ( pluginID == (hitfilm + ".CloneStamp") ) {
-            return Settings::eKnownHostNameNuke;
+            return eKnownHostNameNuke;
         }
 
-        return Settings::eKnownHostNameVegas;
+        return eKnownHostNameVegas;
     } else if ( !pluginID.compare(0, redgiant.size(), redgiant) ) {
         // Red Giant Universe plugins 1.5 work with Vegas and Resolve
-        return Settings::eKnownHostNameVegas;
+        return eKnownHostNameVegas;
     } else if ( !pluginID.compare(0, digitalfilmtools.size(), digitalfilmtools) ||
                 !pluginID.compare(0, tiffen.size(), tiffen) ) {
         // Digital film tools plug-ins work with Nuke, Vegas, Scratch and Resolve
 
         // http://www.digitalfilmtools.com/supported-hosts/ofx-host-plugins.php
-        return Settings::eKnownHostNameNuke;
+        return eKnownHostNameNuke;
         //} else if (!pluginID.compare(0, digitalanarchy.size(), digitalanarchy)) {
         //    // Digital Anarchy plug-ins work with Scratch, Resolve, and any OFX host, but they are tested with Scratch.
         //    // http://digitalanarchy.com/demos/psd_mac.html
@@ -403,7 +402,7 @@ getHostNameProxy(const std::string& pluginID,
     }
     //printf("%s v%d.%d\n", pluginID.c_str(), pluginVersionMajor, pluginVersionMinor);
 
-    return Settings::eKnownHostNameNone;
+    return eKnownHostNameNone;
 } // getHostNameProxy
 
 const std::string &
@@ -421,11 +420,12 @@ OfxHost::getStringProperty(const std::string &name,
             pluginVersionMajor = _imp->loadingPluginVersionMajor;
             pluginVersionMinor = _imp->loadingPluginVersionMinor;
         } else {
-            OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-            if (tls && tls->lastEffectCallingMainEntry) {
-                pluginID = tls->lastEffectCallingMainEntry->getPlugin()->getIdentifier();
-                pluginVersionMajor = tls->lastEffectCallingMainEntry->getPlugin()->getVersionMajor();
-                pluginVersionMinor = tls->lastEffectCallingMainEntry->getPlugin()->getVersionMinor();
+            OfxEffectInstancePtr effect = getCurrentEffect_TLS();
+            if (effect) {
+                OfxImageEffectInstance* ofxEffect = effect->effectInstance();
+                pluginID = ofxEffect->getPlugin()->getIdentifier();
+                pluginVersionMajor = ofxEffect->getPlugin()->getVersionMajor();
+                pluginVersionMinor = ofxEffect->getPlugin()->getVersionMinor();
             }
         }
 
@@ -433,8 +433,8 @@ OfxHost::getStringProperty(const std::string &name,
         if ( pluginID.empty() ) {
             qDebug() << "OfxHost::getStringProperty(" kOfxPropName "): Error: no plugin ID! (ignoring)";
         } else {
-            Settings::KnownHostNameEnum e = getHostNameProxy(pluginID, pluginVersionMajor, pluginVersionMinor);
-            if (e != Settings::eKnownHostNameNone) {
+            KnownHostNameEnum e = getHostNameProxy(pluginID, pluginVersionMajor, pluginVersionMinor);
+            if (e != eKnownHostNameNone) {
                 const std::string& ret = appPTR->getCurrentSettings()->getKnownHostName(e);
 
                 return ret;
@@ -674,23 +674,6 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
                                   .arg( QString::fromUtf8( context.c_str() ) ).toStdString() );
     }
 
-    //Create the mask clip if needed
-    if ( desc->isHostMaskingEnabled() ) {
-        const std::map<std::string, OFX::Host::ImageEffect::ClipDescriptor*>& clips = desc->getClips();
-        std::map<std::string, OFX::Host::ImageEffect::ClipDescriptor*>::const_iterator found = clips.find("Mask");
-        if ( found == clips.end() ) {
-            OFX::Host::ImageEffect::ClipDescriptor* clip = desc->defineClip("Mask");
-            OFX::Host::Property::Set& props = clip->getProps();
-            props.setIntProperty(kOfxImageClipPropIsMask, 1);
-            props.setStringProperty(kOfxImageEffectPropSupportedComponents, kOfxImageComponentAlpha, 0);
-            if (context == kOfxImageEffectContextGeneral) {
-                props.setIntProperty(kOfxImageClipPropOptional, 1);
-            }
-            props.setIntProperty(kOfxImageEffectPropSupportsTiles, desc->getProps().getIntProperty(kOfxImageEffectPropSupportsTiles) != 0);
-            props.setIntProperty(kOfxImageEffectPropTemporalClipAccess, 0);
-        }
-    }
-
 
     *ctx = OfxEffectInstance::mapToContextEnum(context);
     _imp->loadingPluginID.clear();
@@ -698,49 +681,12 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     return desc;
 } // OfxHost::getPluginContextAndDescribe
 
-boost::shared_ptr<AbstractOfxEffectInstance>
-OfxHost::createOfxEffect(NodePtr node,
-                         const CreateNodeArgs& args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                         ,
-                         bool allowFileDialogs,
-                         bool *hasUsedFileDialog
-#endif
-                         )
-{
-    assert(node);
-    const Plugin* natronPlugin = node->getPlugin();
-    assert(natronPlugin);
-    ContextEnum ctx;
-    OFX::Host::ImageEffect::Descriptor* desc = natronPlugin->getOfxDesc(&ctx);
-    OFX::Host::ImageEffect::ImageEffectPlugin* plugin = natronPlugin->getOfxPlugin();
-    assert(plugin && desc && ctx != eContextNone);
-
-
-    boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect( new OfxEffectInstance(node) );
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
-    std::string fixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
-
-    if ( node && !node->getEffectInstance() ) {
-        node->setEffect(hostSideEffect);
-        node->initNodeScriptName(serialization.get(), QString::fromUtf8(fixedName.c_str()));
-    }
-
-    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx, serialization.get(), args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                                                 , allowFileDialogs,
-                                                 hasUsedFileDialog
-#endif
-                                                 );
-
-    return hostSideEffect;
-}
 
 ///Return the xml cache file used before Natron 2 RC2
 static QString
 getOldCacheFilePath()
 {
-    QString cachePath = appPTR->getDiskCacheLocation() + QLatin1Char('/');
+    QString cachePath = QString::fromUtf8( appPTR->getCacheDirPath().c_str() ) + QLatin1Char('/');
     QString oldOfxCache = cachePath + QString::fromUtf8("OFXCache.xml");
 
     return oldOfxCache;
@@ -749,7 +695,7 @@ getOldCacheFilePath()
 static QString
 getOFXCacheDirPath()
 {
-    QString cachePath = appPTR->getDiskCacheLocation() + QLatin1Char('/');
+    QString cachePath = QString::fromUtf8( appPTR->getCacheDirPath().c_str() ) + QLatin1Char('/');
     QString ofxCachePath = cachePath + QString::fromUtf8("OFXLoadCache");
 
     return ofxCachePath;
@@ -831,12 +777,9 @@ getPluginShortcuts(const OFX::Host::ImageEffect::Descriptor& desc, std::list<Plu
         if (hasMeta) {
             eMods |= eKeyboardModifierMeta;
         }
-        if (hasKeypad) {
-            eMods |= eKeyboardModifierKeypad;
-        }
-        shortcuts->push_back(PluginActionShortcut(paramName, foundParamDesc->second->getLabel(), eSymbol, eMods));
+        shortcuts->push_back(PluginActionShortcut(paramName, foundParamDesc->second->getLabel(), foundParamDesc->second->getHint(), eSymbol, eMods));
     }
-}
+} // getPluginShortcuts
 
 static inline
 QDebug operator<<(QDebug dbg, const std::list<std::string> &l)
@@ -848,9 +791,9 @@ QDebug operator<<(QDebug dbg, const std::list<std::string> &l)
     return dbg.space();
 }
 
+
 void
-OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
-                        IOPluginsMap* writersMap)
+OfxHost::loadOFXPlugins()
 {
     qDebug() << "Load OFX Plugins...";
     SettingsPtr settings = appPTR->getCurrentSettings();
@@ -882,9 +825,9 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     }
 
     // if Natron is /usr/bin/Natron, /usr/bin/../OFX/Natron points to Natron-specific plugins
-    QDir dir( QCoreApplication::applicationDirPath() );
-    dir.cdUp();
-    std::string natronBundledPluginsPath = QString( dir.absolutePath() +  QString::fromUtf8("/Plugins/OFX/") + QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString();
+    QDir pluginsDir = appPTR->getBundledPluginDirectory();
+    pluginsDir.cd(QString::fromUtf8("OFX/" NATRON_APPLICATION_NAME));
+    std::string natronBundledPluginsPath = pluginsDir.absolutePath().toStdString();
     try {
         if ( settings->loadBundledPlugins() ) {
             if ( settings->preferBundledPlugins() ) {
@@ -955,100 +898,97 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
             continue;
         }
 
-        std::string openfxId = p->getIdentifier();
+        const std::string& openfxId = p->getIdentifier();
         const std::string & grouping = p->getDescriptor().getPluginGrouping();
         const std::string & bundlePath = p->getBinary()->getBundlePath();
         std::string pluginLabel = OfxEffectInstance::makePluginLabel( p->getDescriptor().getShortLabel(),
                                                                       p->getDescriptor().getLabel(),
                                                                       p->getDescriptor().getLongLabel() );
-        QStringList groups = OfxEffectInstance::makePluginGrouping(p->getIdentifier(),
+        std::vector<std::string> groups = OfxEffectInstance::makePluginGrouping(p->getIdentifier(),
                                                                    p->getVersionMajor(), p->getVersionMinor(),
                                                                    pluginLabel, grouping);
-        for (int i = 0; i < groups.size(); ++i) {
-            groups[i] = groups[i].trimmed();
-        }
+        const std::string resourcesPath(bundlePath + "/Contents/Resources/");
+        std::string iconFileName;
+        {
+            try {
+                // kOfxPropIcon is normally only defined for parameter desctriptors
+                // (see <http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParameterProperties>)
+                // but let's assume it may also be defained on the plugin descriptor.
+                iconFileName = p->getDescriptor().getProps().getStringProperty(kOfxPropIcon, 1); // dimension 1 is PNG icon
+            } catch (OFX::Host::Property::Exception) {
+            }
 
-        const std::string resourcesPathStr(bundlePath + "/Contents/Resources/");
-        QString resourcesPath = QString::fromUtf8( resourcesPathStr.c_str() );
-        QString iconFileName;
-        std::string pngIcon;
-        try {
-            // kOfxPropIcon is normally only defined for parameter desctriptors
-            // (see <http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParameterProperties>)
-            // but let's assume it may also be defained on the plugin descriptor.
-            pngIcon = p->getDescriptor().getProps().getStringProperty(kOfxPropIcon, 1); // dimension 1 is PNG icon
-        } catch (OFX::Host::Property::Exception) {
+            if ( iconFileName.empty() ) {
+                // no icon defined by kOfxPropIcon, use the plug-in id value
+                iconFileName = openfxId + ".png";
+            }
         }
-
-        if ( pngIcon.empty() ) {
-            // no icon defined by kOfxPropIcon, use the default value
-            pngIcon = openfxId + ".png";
-        }
-        iconFileName.append(resourcesPath);
-        iconFileName.append( QString::fromUtf8( pngIcon.c_str() ) );
-        QString groupIconFilename;
+        std::string groupIconFilename;
         if (groups.size() > 0) {
             groupIconFilename = resourcesPath;
             // the plugin grouping has no descriptor, just try the default filename.
             groupIconFilename.append(groups[0]);
-            groupIconFilename.append( QString::fromUtf8(".png") );
+            groupIconFilename.append(".png");
         } else {
             //Use default Misc group when the plug-in doesn't belong to a group
-            groups.push_back( QString::fromUtf8(PLUGIN_GROUP_DEFAULT) );
+            groups.push_back(PLUGIN_GROUP_DEFAULT);
         }
-        QStringList groupIcons;
-        groupIcons << groupIconFilename;
-        for (int i = 1; i < groups.size(); ++i) {
-            QString groupIconPath = resourcesPath;
-            for (int j = 0; j <= i; ++j) {
+        std::vector<std::string> groupIcons;
+        groupIcons.push_back(groupIconFilename);
+        for (std::size_t i = 1; i < groups.size(); ++i) {
+            std::string groupIconPath = resourcesPath;
+            for (std::size_t j = 0; j <= i; ++j) {
                 groupIconPath += groups[j];
                 if (j < i) {
-                    groupIconPath += QLatin1Char('/');
+                    groupIconPath += '/';
                 } else {
-                    groupIconPath.append( QString::fromUtf8(".png") );
+                    groupIconPath.append(".png");
                 }
             }
-            groupIcons << groupIconPath;
+            groupIcons.push_back(groupIconPath);
         }
 
-        const std::set<std::string> & contexts = p->getContexts();
-        std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
-        std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
         const bool isDeprecated = p->getDescriptor().isDeprecated();
-        Plugin* natronPlugin = appPTR->registerPlugin( resourcesPath,
-                                                       groups,
-                                                       QString::fromUtf8( openfxId.c_str() ),
-                                                       QString::fromUtf8( pluginLabel.c_str() ),
-                                                       iconFileName,
-                                                       groupIcons,
-                                                       foundReader != contexts.end(),
-                                                       foundWriter != contexts.end(),
-                                                       new LibraryBinary(LibraryBinary::eLibraryTypeBuiltin),
-                                                       p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
-                                                       p->getVersionMajor(), p->getVersionMinor(), isDeprecated );
-        bool isInternalOnly = openfxId == PLUGINID_OFX_ROTO;
-        if (isInternalOnly) {
-            natronPlugin->setForInternalUseOnly(true);
-        }
+        std::string description = p->getDescriptor().getProps().getStringProperty(kOfxPropPluginDescription);
 
-        PluginOpenGLRenderSupport glSupport = ePluginOpenGLRenderSupportNone;
-        {
-            const std::string& str = p->getDescriptor().getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
-            if (str == "false") {
-                glSupport = ePluginOpenGLRenderSupportNone;
-            } else if (str == "needed") {
-                glSupport = ePluginOpenGLRenderSupportNeeded;
-            } else if (str == "true") {
-                glSupport = ePluginOpenGLRenderSupportYes;
-            }
-        }
-        natronPlugin->setOpenGLRenderSupport(glSupport);
+        bool isDescMarkdown = (bool)p->getDescriptor().getProps().getIntProperty(kNatronOfxPropDescriptionIsMarkdown);
 
-        natronPlugin->setOfxPlugin(p);
+        PluginPtr natronPlugin = Plugin::create(OfxEffectInstance::create, OfxEffectInstance::createRenderClone, openfxId, pluginLabel, p->getVersionMajor(), p->getVersionMinor(), groups, groupIcons);
+        natronPlugin->setProperty<std::string>(kNatronPluginPropDescription, description);
+        natronPlugin->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, isDescMarkdown);
+        natronPlugin->setProperty<std::string>(kNatronPluginPropResourcesPath, resourcesPath);
+        natronPlugin->setProperty<std::string>(kNatronPluginPropIconFilePath, iconFileName);
+        natronPlugin->setProperty<bool>(kNatronPluginPropIsDeprecated, isDeprecated);
+        natronPlugin->setProperty<void*>(kNatronPluginPropOpenFXPluginPtr, (void*)p);
+
 
         std::list<PluginActionShortcut> shortcuts;
         getPluginShortcuts(p->getDescriptor(), &shortcuts);
-        natronPlugin->setShorcuts(shortcuts);
+        for (std::list<PluginActionShortcut>::iterator it = shortcuts.begin(); it!=shortcuts.end(); ++it) {
+            natronPlugin->addActionShortcut(*it);
+        }
+
+        Key symbol = (Key)0;
+        KeyboardModifiers mods = eKeyboardModifierNone;
+        if (openfxId == PLUGINID_OFX_TRANSFORM) {
+            symbol = Key_T;
+        } else if (openfxId == PLUGINID_OFX_MERGE) {
+            symbol = Key_M;
+        } else if (openfxId == PLUGINID_OFX_GRADE) {
+            symbol = Key_G;
+        } else if (openfxId == PLUGINID_OFX_COLORCORRECT) {
+            symbol = Key_C;
+        } else if (openfxId == PLUGINID_OFX_BLURCIMG) {
+            symbol = Key_B;
+        }
+
+        if (openfxId == PLUGINID_OFX_ROTOMERGE) {
+            // RotoMerge is to be used only be the RotoPaint tree
+            natronPlugin->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
+        }
+
+        natronPlugin->setProperty<int>(kNatronPluginPropShortcut, (int)symbol, 0);
+        natronPlugin->setProperty<int>(kNatronPluginPropShortcut, (int)mods, 1);
 
         ///if this plugin's descriptor has the kTuttleOfxImageEffectPropSupportedExtensions property,
         ///use it to fill the readersMap and writersMap
@@ -1059,22 +999,13 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
             std::transform(formats[k].begin(), formats[k].end(), formats[k].begin(), ::tolower);
         }
 
+        natronPlugin->setPropertyN<std::string>(kNatronPluginPropSupportedExtensions, formats);
+
         double evaluation = p->getDescriptor().getProps().getDoubleProperty(kTuttleOfxImageEffectPropEvaluation);
 
+        natronPlugin->setProperty<double>(kNatronPluginPropIOEvaluation, evaluation);
 
-        if (!isDeprecated && ( foundReader != contexts.end() ) && (formatsCount > 0) && readersMap) {
-            ///we're safe to assume that this plugin is a reader
-            for (std::size_t k = 0; k < formats.size(); ++k) {
-                IOPluginSetForFormat& evalForFormat = (*readersMap)[formats[k]];
-                evalForFormat.insert( IOPluginEvaluation(openfxId, evaluation) );
-            }
-        } else if (!isDeprecated && ( foundWriter != contexts.end() ) && (formatsCount > 0) && writersMap) {
-            ///we're safe to assume that this plugin is a writer.
-            for (std::size_t k = 0; k < formats.size(); ++k) {
-                IOPluginSetForFormat& evalForFormat = (*writersMap)[formats[k]];
-                evalForFormat.insert( IOPluginEvaluation(openfxId, evaluation) );
-            }
-        }
+        appPTR->registerPlugin(natronPlugin);
     }
     qDebug() << "Load OFX Plugins... done!";
 } // loadOFXPlugins
@@ -1165,7 +1096,7 @@ OfxHost::fetchSuite(const char *suiteName,
 OFX::Host::Memory::Instance*
 OfxHost::newMemoryInstance(size_t nBytes)
 {
-    OfxMemory* ret = new OfxMemory( boost::shared_ptr<OfxEffectInstance>() );
+    OfxMemory* ret = new OfxMemory(EffectInstancePtr());
     bool allocated = ret->alloc(nBytes);
 
     if ( ( (nBytes != 0) && !ret->getPtr() ) || !allocated ) {
@@ -1184,234 +1115,89 @@ OfxHost::newMemoryInstance(size_t nBytes)
 #ifdef OFX_SUPPORTS_MULTITHREAD
 
 void
-OfxHost::setThreadAsActionCaller(OfxImageEffectInstance* instance,
-                                 bool actionCaller)
+OfxHost::setOFXLastActionCaller_TLS(const OfxEffectInstancePtr& effect)
 {
     OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-
-    tls->lastEffectCallingMainEntry = instance;
-    if (actionCaller) {
-        tls->threadIndexes.push_back(-1);
+    if (effect) {
+        tls->effectActionsStack.push_back(effect);
     } else {
-        assert( !tls->threadIndexes.empty() );
-        tls->threadIndexes.pop_back();
+        assert(!tls->effectActionsStack.empty());
+        tls->effectActionsStack.pop_back();
     }
+
 }
 
-NATRON_NAMESPACE_ANONYMOUS_ENTER
-
-///Using QtConcurrent doesn't work with The Foundry Furnace plug-ins because they expect fresh threads
-///to be created. As QtConcurrent's thread-pool recycles thread, it seems to make Furnace crash.
-///We think this is because Furnace must keep an internal thread-local state that becomes then dirty
-///if we re-use the same thread.
-
-static OfxStatus
-threadFunctionWrapper(OfxThreadFunctionV1 func,
-                      unsigned int threadIndex,
-                      unsigned int threadMax,
-                      QThread* spawnerThread,
-                      void *customArg)
+OfxEffectInstancePtr
+OfxHost::getCurrentEffect_TLS() const
 {
-    assert(threadIndex < threadMax);
-    OfxHost::OfxHostDataTLSPtr tls = appPTR->getOFXHost()->getTLSData();
-    tls->threadIndexes.push_back( (int)threadIndex );
-
-    QThread* spawnedThread = QThread::currentThread();
-    if (spawnedThread != spawnerThread) {
-        appPTR->getAppTLS()->softCopy(spawnerThread, spawnedThread);
+    OfxHostDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls || tls->effectActionsStack.empty()) {
+        return OfxEffectInstancePtr();
     }
-
-    OfxStatus ret = kOfxStatOK;
-    try {
-        func(threadIndex, threadMax, customArg);
-    } catch (const std::bad_alloc & ba) {
-        ret =  kOfxStatErrMemory;
-    } catch (...) {
-        ret =  kOfxStatFailed;
-    }
-
-    ///reset back the index otherwise it could mess up the indexes if the same thread is re-used
-    tls->threadIndexes.pop_back();
-
-    if (spawnedThread != spawnerThread) {
-        appPTR->getAppTLS()->cleanupTLSForThread();
-    }
-
-    return ret;
+    return tls->effectActionsStack.back();
 }
 
-class OfxThread
-    : public QThread
-      , public AbortableThread
+struct OfxFunctorArgs
 {
-public:
-    OfxThread(OfxThreadFunctionV1 func,
-              unsigned int threadIndex,
-              unsigned int threadMax,
-              QThread* spawnerThread,
-              void *customArg,
-              OfxStatus *stat)
-        : QThread()
-        , AbortableThread(this)
-        , _func(func)
-        , _threadIndex(threadIndex)
-        , _threadMax(threadMax)
-        , _spawnerThread(spawnerThread)
-        , _customArg(customArg)
-        , _stat(stat)
-    {
-        setThreadName("Multi-thread suite");
-    }
-
-    void run() OVERRIDE
-    {
-        assert(_threadIndex < _threadMax);
-        OfxHost::OfxHostDataTLSPtr tls = appPTR->getOFXHost()->getTLSData();
-        tls->threadIndexes.push_back( (int)_threadIndex );
-
-        appPTR->getAppTLS()->softCopy(_spawnerThread, this);
-
-        assert(*_stat == kOfxStatFailed);
-        try {
-            _func(_threadIndex, _threadMax, _customArg);
-            *_stat = kOfxStatOK;
-        } catch (const std::bad_alloc & ba) {
-            *_stat = kOfxStatErrMemory;
-        } catch (...) {
-        }
-
-        ///reset back the index otherwise it could mess up the indexes if the same thread is re-used
-        tls->threadIndexes.pop_back();
-
-        appPTR->getAppTLS()->cleanupTLSForThread();
-    }
-
-private:
-    OfxThreadFunctionV1 *_func;
-    unsigned int _threadIndex;
-    unsigned int _threadMax;
-    QThread* _spawnerThread;
-    void *_customArg;
-    OfxStatus *_stat;
+    void* customArg;
+    OfxEffectInstancePtr effect;
+    OfxThreadFunctionV1* ofxFunc;
 };
 
-NATRON_NAMESPACE_ANONYMOUS_EXIT
+static ActionRetCodeEnum ofxMultiThreadFunctor(unsigned int threadIndex,
+                                               unsigned int threadMax,
+                                               void *customArg)
+{
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
+    OfxFunctorArgs* args = (OfxFunctorArgs*)customArg;
+    ThreadIsActionCaller_RAII actionCallerRaii(args->effect);
+    try {
+        args->ofxFunc(threadIndex, threadMax, args->customArg);
+        return eActionStatusOK;
+    } catch (...) {
+        return eActionStatusFailed;
+    }
 
+} // ofxMultiThreadFunctor
 
-// Function to spawn SMP threads
-//  This function will spawn nThreads separate threads of computation (typically one per CPU) to allow something to perform symmetric multi processing. Each thread will call 'func' passing in the index of the thread and the number of threads actually launched.
-// multiThread will not return until all the spawned threads have returned. It is up to the host how it waits for all the threads to return (busy wait, blocking, whatever).
-// nThreads can be more than the value returned by multiThreadNumCPUs, however the threads will be limitted to the number of CPUs returned by multiThreadNumCPUs.
-// This function cannot be called recursively.
-// Note that the thread indexes are from 0 to nThreads-1.
-// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThread
 
 OfxStatus
 OfxHost::multiThread(OfxThreadFunctionV1 func,
                      unsigned int nThreads,
                      void *customArg)
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     if (!func) {
         return kOfxStatFailed;
     }
+    
+    // Recover the effect calling multiThread using TLS
+    OfxEffectInstancePtr effect = getCurrentEffect_TLS();
 
-    unsigned int maxConcurrentThread;
-    OfxStatus st = multiThreadNumCPUS(&maxConcurrentThread);
-    if (st != kOfxStatOK) {
-        return st;
-    }
-
-    // from the documentation:
-    // "nThreads can be more than the value returned by multiThreadNumCPUs, however
-    // the threads will be limitted to the number of CPUs returned by multiThreadNumCPUs."
-
-    if ( (nThreads == 1) || (maxConcurrentThread <= 1) || (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) ) {
-        try {
-            for (unsigned int i = 0; i < nThreads; ++i) {
-                func(i, nThreads, customArg);
-            }
-
-            return kOfxStatOK;
-        } catch (...) {
-            return kOfxStatFailed;
-        }
-    }
-
-    QThread* spawnerThread = QThread::currentThread();
-    bool useThreadPool = appPTR->getUseThreadPool();
-
-    if (useThreadPool) {
-        std::vector<unsigned int> threadIndexes(nThreads);
-        for (unsigned int i = 0; i < nThreads; ++i) {
-            threadIndexes[i] = i;
-        }
-
-        /// DON'T set the maximum thread count, this is a global application setting, and see the documentation excerpt above
-        //QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
-        QFuture<OfxStatus> future = QtConcurrent::mapped( threadIndexes, boost::bind(threadFunctionWrapper, func, _1, nThreads, spawnerThread, customArg) );
-        future.waitForFinished();
-        ///DON'T reset back to the original value the maximum thread count
-        //QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
-
-        for (QFuture<OfxStatus>::const_iterator it = future.begin(); it != future.end(); ++it) {
-            OfxStatus stat = *it;
-            if (stat != kOfxStatOK) {
-                return stat;
-            }
-        }
+    OfxFunctorArgs args;
+    args.ofxFunc = func;
+    args.effect = effect;
+    args.customArg = customArg;
+    // OpenFX does not pass the image effect instance pointer back to us so we loose the context...
+    // The only way to recover it will be in the aborted() function entry point with help of thread local storage.
+    ActionRetCodeEnum stat = MultiThread::launchThreadsBlocking(ofxMultiThreadFunctor, nThreads, (void*)&args, effect);
+    if (stat == eActionStatusFailed) {
+        return kOfxStatFailed;
+    } else if (stat == eActionStatusOutOfMemory) {
+        return kOfxStatErrMemory;
     } else {
-        QVector<OfxStatus> status(nThreads); // vector for the return status of each thread
-        status.fill(kOfxStatFailed); // by default, a thread fails
-        {
-            // at most maxConcurrentThread should be running at the same time
-            QVector<OfxThread*> threads(nThreads);
-            for (unsigned int i = 0; i < nThreads; ++i) {
-                threads[i] = new OfxThread(func, i, nThreads, spawnerThread, customArg, &status[i]);
-            }
-            unsigned int i = 0; // index of next thread to launch
-            unsigned int running = 0; // number of running threads
-            unsigned int j = 0; // index of first running thread. all threads before this one are finished running
-            while (j < nThreads) {
-                // have no more than maxConcurrentThread threads launched at the same time
-                int threadsStarted = 0;
-                while (i < nThreads && running < maxConcurrentThread) {
-                    threads[i]->start();
-                    ++i;
-                    ++running;
-                    ++threadsStarted;
-                }
-
-                ///We just started threadsStarted threads
-                appPTR->fetchAndAddNRunningThreads(threadsStarted);
-
-                // now we've got at most maxConcurrentThread running. wait for each thread and launch a new one
-                threads[j]->wait();
-                assert( !threads[j]->isRunning() );
-                assert( threads[j]->isFinished() );
-                delete threads[j];
-                ++j;
-                --running;
-
-                ///We just stopped 1 thread
-                appPTR->fetchAndAddNRunningThreads(-1);
-            }
-            assert(running == 0);
-        }
-        // check the return status of each thread, return the first error found
-        for (QVector<OfxStatus>::const_iterator it = status.begin(); it != status.end(); ++it) {
-            OfxStatus stat = *it;
-            if (stat != kOfxStatOK) {
-                return stat;
-            }
-        }
-    } // useThreadPool
-
-    return kOfxStatOK;
+        return kOfxStatOK;
+    }
 } // multiThread
 
-// Function which indicates the number of CPUs available for SMP processing
-//  This value may be less than the actual number of CPUs on a machine, as the host may reserve other CPUs for itself.
-// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThreadNumCPUs
 OfxStatus
 OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
 {
@@ -1419,85 +1205,28 @@ OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
         return kOfxStatFailed;
     }
 
-    int nThreadsToRender, nThreadsPerEffect;
-    appPTR->getNThreadsSettings(&nThreadsToRender, &nThreadsPerEffect);
-
-    if (nThreadsToRender == -1) {
-        *nCPUs = 1;
-    } else {
-        // activeThreadCount may be negative (for example if releaseThread() is called)
-        int activeThreadsCount = QThreadPool::globalInstance()->activeThreadCount();
-
-        // Add the number of threads already running by the multiThreadSuite + parallel renders
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-        activeThreadsCount += appPTR->getNRunningThreads();
-#endif
-
-        // Clamp to 0
-        activeThreadsCount = std::max( 0, activeThreadsCount);
-
-        assert(activeThreadsCount >= 0);
-
-        // better than QThread::idealThreadCount();, because it can be set by a global preference:
-        int maxThreadsCount = QThreadPool::globalInstance()->maxThreadCount();
-        assert(maxThreadsCount >= 0);
-
-        if (nThreadsPerEffect == 0) {
-            ///Simple heuristic: limit 1 effect to start at most 8 threads because otherwise it might spend too much
-            ///time scheduling than just processing
-            int hwConcurrency = appPTR->getMaxThreadCount();
-
-            if (hwConcurrency <= 0) {
-                nThreadsPerEffect = 1;
-            } else {
-                nThreadsPerEffect = hwConcurrency;
-            }
-            /*else if (hwConcurrency <= NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU) {
-                nThreadsPerEffect = hwConcurrency;
-               } else {
-                nThreadsPerEffect = NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU;
-               }*/
-        }
-        ///+1 because the current thread is going to wait during the multiThread call so we're better off
-        ///not counting it.
-        *nCPUs = std::max( 1, std::min(maxThreadsCount - activeThreadsCount + 1, nThreadsPerEffect) );
-    }
-
+    // Always return the max num CPUs, let multiThread handle the actual threading
+    *nCPUs = appPTR->getMaxThreadCount();//MultiThread::getNCPUsAvailable(getCurrentEffect_TLS());
     return kOfxStatOK;
 }
 
-// Function which indicates the index of the current thread
-//  This function returns the thread index, which is the same as the threadIndex argument passed to the OfxThreadFunctionV1.
-// If there are no threads currently spawned, then this function will set threadIndex to 0
-// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThreadIndex
-// Note that the thread indexes are from 0 to nThreads-1, so a return value of 0 does not mean that it's not a spawned thread
-// (use multiThreadIsSpawnedThread() to check if it's a spawned thread)
 OfxStatus
 OfxHost::multiThreadIndex(unsigned int *threadIndex) const
 {
     if (!threadIndex) {
         return kOfxStatFailed;
     }
-    OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-
-    if ( !tls->threadIndexes.empty() && (tls->threadIndexes.back() != -1) ) {
-        *threadIndex = tls->threadIndexes.back();
-    } else {
-        *threadIndex = 0;
+    ActionRetCodeEnum stat = MultiThread::getCurrentThreadIndex(threadIndex);
+    if (stat == eActionStatusFailed) {
+        return kOfxStatFailed;
     }
-
-
     return kOfxStatOK;
 }
 
-// Function to enquire if the calling thread was spawned by multiThread
-// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThreadIsSpawnedThread
 int
 OfxHost::multiThreadIsSpawnedThread() const
 {
-    OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-
-    return !tls->threadIndexes.empty() && tls->threadIndexes.back() != -1;
+    return (int)MultiThread::isCurrentThreadSpawnedThread();
 }
 
 // Create a mutex
@@ -1686,7 +1415,9 @@ OfxHost::requestDialog(OfxImageEffectHandle instance,
     Q_UNUSED(inArgs);
     OFX::Host::ImageEffect::Base *effectBase = reinterpret_cast<OFX::Host::ImageEffect::Base*>(instance);
     OfxImageEffectInstance *effectInstance = dynamic_cast<OfxImageEffectInstance*>(effectBase);
-    appPTR->requestOFXDIalogOnMainThread(effectInstance, instanceData);
+    if (effectInstance) {
+        appPTR->requestOFXDIalogOnMainThread(appPTR->getOFXCurrentEffect_TLS(), instanceData);
+    }
 
     return kOfxStatOK;
 }

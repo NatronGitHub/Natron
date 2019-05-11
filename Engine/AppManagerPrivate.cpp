@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -24,6 +24,7 @@
 
 #include "AppManagerPrivate.h"
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #if defined(Q_OS_UNIX)
 #include <sys/time.h>     // for getrlimit on linux
 #include <sys/resource.h> // for getrlimit
@@ -36,13 +37,6 @@
 #include <cassert>
 #include <stdexcept>
 #include <sstream> // stringstream
-
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-#include <boost/serialization/export.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
 
 #include <QtCore/QDebug>
 #include <QtCore/QProcess>
@@ -58,28 +52,27 @@ GCC_DIAG_ON(unused-parameter)
 #include "Global/StrUtils.h"
 #include "Global/FStreamsSupport.h"
 
-#include "Engine/CacheSerialization.h"
 #include "Engine/CLArgs.h"
-#include "Engine/ExistenceCheckThread.h"
+#include "Engine/Cache.h"
 #include "Engine/Format.h"
-#include "Engine/FrameEntry.h"
+#include "Engine/MultiThread.h"
 #include "Engine/Image.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OSGLContext.h"
+#include "Engine/Settings.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
-#include "Engine/RectDSerialization.h"
-#include "Engine/RectISerialization.h"
 #include "Engine/StandardPaths.h"
 
+#include "Serialization/SerializationIO.h"
 
 // Don't forget to update glad.h and glad.c aswell when updating theses
 #define NATRON_OPENGL_VERSION_REQUIRED_MAJOR 2
 #define NATRON_OPENGL_VERSION_REQUIRED_MINOR 0
 
-BOOST_CLASS_EXPORT(NATRON_NAMESPACE::FrameParams)
-BOOST_CLASS_EXPORT(NATRON_NAMESPACE::ImageParams)
 
 NATRON_NAMESPACE_ENTER
+
+
 AppManagerPrivate::AppManagerPrivate()
     : globalTLS()
     , _appType(AppManager::eAppTypeBackground)
@@ -93,28 +86,18 @@ AppManagerPrivate::AppManagerPrivate()
     , readerPlugins()
     , writerPlugins()
     , ofxHost( new OfxHost() )
+    , pythonTLS()
+    , multiThreadSuite(new MultiThread())
     , _knobFactory( new KnobFactory() )
-    , _nodeCache()
-    , _diskCache()
-    , _viewerCache()
-    , diskCachesLocationMutex()
-    , diskCachesLocation()
+    , generalPurposeCache()
+    , tileCache()
     , _backgroundIPC()
     , _loaded(false)
-    , _binaryPath()
-    , _nodesGlobalMemoryUse(0)
+    , binaryPath()
     , errorLogMutex()
     , errorLog()
-    , maxCacheFiles(0)
-    , currentCacheFilesCount(0)
-    , currentCacheFilesCountMutex()
-    , idealThreadCount(0)
-    , nThreadsToRender(0)
-    , nThreadsPerEffect(0)
-    , useThreadPool(true)
-    , nThreadsMutex()
-    , runningThreadsCount()
-    , lastProjectLoadedCreatedDuringRC2Or3(false)
+    , hardwareThreadCount(0)
+    , physicalThreadCount(0)
     , commandLineArgsUtf8()
     , nArgs(0)
     , mainModule(0)
@@ -126,17 +109,20 @@ AppManagerPrivate::AppManagerPrivate()
     , breakpadAliveThread()
 #endif
     , natronPythonGIL(QMutex::Recursive)
-    , pluginsUseInputImageCopyToRender(false)
+    , pythonGILRCount(0)
     , glRequirements()
     , glHasTextureFloat(false)
     , hasInitializedOpenGLFunctions(false)
     , openGLFunctionsMutex()
+    , glVersionMajor(0)
+    , glVersionMinor(0)
     , renderingContextPool()
     , openGLRenderers()
+    , tasksQueueManager()
 {
+    pythonTLS = boost::make_shared<TLSHolder<AppManager::PythonTLSData> >();
     setMaxCacheFiles();
-
-    runningThreadsCount = 0;
+    tasksQueueManager = boost::make_shared<TreeRenderQueueManager>();
 }
 
 AppManagerPrivate::~AppManagerPrivate()
@@ -167,9 +153,9 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath,
        We check periodically that the crash reporter process is still alive. If the user killed it somehow, then we want
        the Natron process to terminate
      */
-    breakpadAliveThread.reset( new ExistenceCheckerThread(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
-                                                          QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK),
-                                                          breakpadComPipePath) );
+    breakpadAliveThread = boost::make_shared<ExistenceCheckerThread>(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
+                                                                     QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK),
+                                                                     breakpadComPipePath);
     QObject::connect( breakpadAliveThread.get(), SIGNAL(otherProcessUnreachable()), appPTR, SLOT(onCrashReporterNoLongerResponding()) );
     breakpadAliveThread->start();
 }
@@ -190,7 +176,7 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
                                                                                  (void*)NULL,
                                                                                  true,
                                                                                  breakpadPipePath.toStdString().c_str() );
-#elif defined(Q_OS_LINUX)
+#elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
         Q_UNUSED(breakpadPipePath);
         breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler>( google_breakpad::MinidumpDescriptor( dumpPath.toStdString() ),
                                                                                  google_breakpad::ExceptionHandler::FilterCallback(NULL),
@@ -222,6 +208,7 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
 void
 AppManagerPrivate::initProcessInputChannel(const QString & mainProcessServerName)
 {
+    // scoped_ptr
     _backgroundIPC.reset( new ProcessInputChannel(mainProcessServerName) );
 }
 
@@ -274,8 +261,8 @@ AppManagerPrivate::loadBuiltinFormats()
 // only used for Natron internal plugins (ViewerGroup, Dot, DiskCache, BackDrop, Roto)
 // see also AppManager::getPluginBinary(), OFX::Host::PluginCache::getPluginById()
 //
-Plugin*
-AppManagerPrivate::findPluginById(const QString& newId,
+PluginPtr
+AppManagerPrivate::findPluginById(const std::string& newId,
                                   int major,
                                   int minor) const
 {
@@ -284,14 +271,16 @@ AppManagerPrivate::findPluginById(const QString& newId,
              itver != it->second.rend();
              ++itver) {
             if ( ( (*itver)->getPluginID() == newId ) &&
-                 ( (*itver)->getMajorVersion() == major ) &&
-                 ( (*itver)->getMinorVersion() == minor ) ) {
+                   (major == -1 ||
+                    (*itver)->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0) == (unsigned int)major) &&
+                   (minor == -1 ||
+                    (*itver)->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 1) == (unsigned int)minor ) ) {
                 return (*itver);
             }
         }
     }
 
-    return 0;
+    return PluginPtr();
 }
 
 void
@@ -307,193 +296,12 @@ AppManagerPrivate::declareSettingsToPython()
     }
 }
 
-template <typename T>
-void
-saveCache(Cache<T>* cache)
-{
-    std::string cacheRestoreFilePath = cache->getRestoreFilePath();
-    FStreamsSupport::ofstream ofile;
-    FStreamsSupport::open(&ofile, cacheRestoreFilePath);
-
-    if (!ofile) {
-        std::cerr << "Failed to save cache to " << cacheRestoreFilePath.c_str() << std::endl;
-
-        return;
-    }
-
-
-    typename Cache<T>::CacheTOC toc;
-    cache->save(&toc);
-    unsigned int version = cache->cacheVersion();
-    try {
-        boost::archive::binary_oarchive oArchive(ofile);
-        oArchive << version;
-        oArchive << toc;
-    } catch (const std::exception & e) {
-        qDebug() << "Failed to serialize the cache table of contents:" << e.what();
-    }
-}
-
-void
-AppManagerPrivate::saveCaches()
-{
-    if (!appPTR->isBackground()) {
-        saveCache<FrameEntry>( _viewerCache.get() );
-    }
-    saveCache<Image>( _diskCache.get() );
-} // saveCaches
-
-template <typename T>
-void
-restoreCache(AppManagerPrivate* p,
-             Cache<T>* cache)
-{
-    if ( p->checkForCacheDiskStructure( cache->getCachePath(), cache->isTileCache() ) ) {
-        std::string settingsFilePath = cache->getRestoreFilePath();
-        FStreamsSupport::ifstream ifile;
-        FStreamsSupport::open(&ifile, settingsFilePath);
-        if (!ifile) {
-            std::cerr << "Failure to open cache restore file at: " << settingsFilePath << std::endl;
-
-            return;
-        }
-        typename Cache<T>::CacheTOC tableOfContents;
-        unsigned int cacheVersion = 0x1; //< default to 1 before NATRON_CACHE_VERSION was introduced
-        try {
-            boost::archive::binary_iarchive iArchive(ifile);
-            if (cache->cacheVersion() >= NATRON_CACHE_VERSION) {
-                iArchive >> cacheVersion;
-            }
-            //Only load caches with same version, otherwise wipe it!
-            if ( cacheVersion == cache->cacheVersion() ) {
-                iArchive >> tableOfContents;
-            } else {
-                p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
-            }
-        } catch (const std::exception & e) {
-            qDebug() << "Exception when reading disk cache TOC:" << e.what();
-            p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
-
-            return;
-        }
-
-        QFile restoreFile( QString::fromUtf8( settingsFilePath.c_str() ) );
-        restoreFile.remove();
-
-        cache->restore(tableOfContents);
-    }
-}
-
-void
-AppManagerPrivate::restoreCaches()
-{
-    restoreCache<FrameEntry>( this, _viewerCache.get() );
-    restoreCache<Image>( this, _diskCache.get() );
-} // restoreCaches
-
-bool
-AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath, bool isTiled)
-{
-    QString settingsFilePath = cachePath;
-
-    if ( !settingsFilePath.endsWith( QChar::fromLatin1('/') ) ) {
-        settingsFilePath += QChar::fromLatin1('/');
-    }
-    settingsFilePath += QString::fromUtf8("restoreFile." NATRON_CACHE_FILE_EXT);
-
-    if ( !QFile::exists(settingsFilePath) ) {
-        cleanUpCacheDiskStructure(cachePath, isTiled);
-
-        return false;
-    }
-
-    if (!isTiled) {
-        QDir directory(cachePath);
-        QStringList files = directory.entryList(QDir::AllDirs);
-
-
-        /*Now counting actual data files in the cache*/
-        /*check if there's 256 subfolders, otherwise reset cache.*/
-        int count = 0; // -1 because of the restoreFile
-        int subFolderCount = 0;
-        Q_FOREACH(const QString &file, files) {
-            QString subFolder(cachePath);
-
-            subFolder.append( QDir::separator() );
-            subFolder.append(file);
-            if ( ( subFolder.right(1) == QString::fromUtf8(".") ) || ( subFolder.right(2) == QString::fromUtf8("..") ) ) {
-                continue;
-            }
-            QDir d(subFolder);
-            if ( d.exists() ) {
-                ++subFolderCount;
-                QStringList items = d.entryList();
-                for (int j = 0; j < items.size(); ++j) {
-                    if ( ( items[j] != QString::fromUtf8(".") ) && ( items[j] != QString::fromUtf8("..") ) ) {
-                        ++count;
-                    }
-                }
-            }
-        }
-        if (subFolderCount < 256) {
-            qDebug() << cachePath << "doesn't contain sub-folders indexed from 00 to FF. Reseting.";
-            cleanUpCacheDiskStructure(cachePath, isTiled);
-            
-            return false;
-        }
-    }
-    return true;
-} // AppManagerPrivate::checkForCacheDiskStructure
-
-void
-AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath, bool isTiled)
-{
-    /*re-create cache*/
-
-    QDir cacheFolder(cachePath);
-
-#   if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    QtCompat::removeRecursively(cachePath);
-#   else
-    if ( cacheFolder.exists() ) {
-        cacheFolder.removeRecursively();
-    }
-#endif
-    if ( !cacheFolder.exists() ) {
-        bool success = cacheFolder.mkpath( QChar::fromLatin1('.') );
-        if (!success) {
-            qDebug() << "Warning: cache directory" << cachePath << "could not be created";
-        }
-    }
-
-    QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
-    // if not 256 subdirs, we re-create the cache
-    if (etr.size() < 256) {
-        Q_FOREACH (const QString &e, etr) {
-            cacheFolder.rmdir(e);
-        }
-    }
-    if (!isTiled) {
-        for (U32 i = 0x00; i <= 0xF; ++i) {
-            for (U32 j = 0x00; j <= 0xF; ++j) {
-                std::ostringstream oss;
-                oss << std::hex << i;
-                oss << std::hex << j;
-                std::string str = oss.str();
-                bool success = cacheFolder.mkdir( QString::fromUtf8( str.c_str() ) );
-                if (!success) {
-                    qDebug() << "Warning: cache directory" << (cachePath.toStdString() + '/' + str).c_str() << "could not be created";
-                }
-            }
-        }
-    }
-}
 
 void
 AppManagerPrivate::setMaxCacheFiles()
 {
     /*Default to something reasonnable if the code below would happen to not work for some reason*/
-    size_t hardMax = NATRON_MAX_CACHE_FILES_OPENED;
+    //size_t hardMax = NATRON_MAX_CACHE_FILES_OPENED;
 
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
     /*
@@ -517,12 +325,12 @@ AppManagerPrivate::setMaxCacheFiles()
                 // rlim_cur above OPEN_MAX even if rlim_max > OPEN_MAX.
                 if (rl.rlim_cur > OPEN_MAX) {
                     rl.rlim_cur = OPEN_MAX;
-                    hardMax = rl.rlim_cur;
+                    //hardMax = rl.rlim_cur;
                     setrlimit(RLIMIT_NOFILE, &rl);
                 }
 #             endif
             } else {
-                hardMax = rl.rlim_cur;
+                //hardMax = rl.rlim_cur;
             }
         }
     }
@@ -572,7 +380,7 @@ AppManagerPrivate::setMaxCacheFiles()
      */
 #endif
 
-    maxCacheFiles = hardMax * 0.9;
+    //maxCacheFiles = hardMax * 0.9;
 }
 
 #ifdef DEBUG
@@ -611,123 +419,19 @@ void
 AppManagerPrivate::initGLAPISpecific()
 {
 #ifdef Q_OS_WIN32
+    // scoped_ptr
     wglInfo.reset(new OSGLContext_wgl_data);
     OSGLContext_win::initWGLData( wglInfo.get() );
-#elif defined(Q_OS_LINUX)
+#elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
+    // scoped_ptr
     glxInfo.reset(new OSGLContext_glx_data);
     OSGLContext_x11::initGLXData( glxInfo.get() );
 
 #endif // Q_OS_WIN32
 }
 
-extern "C" {
-extern int GLAD_GL_ARB_vertex_buffer_object;
-extern int GLAD_GL_ARB_framebuffer_object;
-extern int GLAD_GL_ARB_pixel_buffer_object;
-extern int GLAD_GL_ARB_vertex_array_object;
-extern int GLAD_GL_ARB_texture_float;
-extern int GLAD_GL_EXT_framebuffer_object;
-extern int GLAD_GL_APPLE_vertex_array_object;
-
-typedef GLboolean (APIENTRYP PFNGLISRENDERBUFFEREXTPROC)(GLuint renderbuffer);
-extern PFNGLISRENDERBUFFEREXTPROC glad_glIsRenderbufferEXT;
-extern PFNGLISRENDERBUFFEREXTPROC glad_glIsRenderbuffer;
-
-typedef void (APIENTRYP PFNGLBINDRENDERBUFFEREXTPROC)(GLenum target, GLuint renderbuffer);
-extern PFNGLBINDRENDERBUFFEREXTPROC glad_glBindRenderbufferEXT;
-extern PFNGLBINDRENDERBUFFERPROC glad_glBindRenderbuffer;
-
-typedef void (APIENTRYP PFNGLDELETERENDERBUFFERSEXTPROC)(GLsizei n, const GLuint* renderbuffers);
-extern PFNGLDELETERENDERBUFFERSEXTPROC glad_glDeleteRenderbuffersEXT;
-extern PFNGLDELETERENDERBUFFERSEXTPROC glad_glDeleteRenderbuffers;
-
-
-typedef void (APIENTRYP PFNGLGENRENDERBUFFERSEXTPROC)(GLsizei n, GLuint* renderbuffers);
-extern PFNGLGENRENDERBUFFERSEXTPROC glad_glGenRenderbuffersEXT;
-extern PFNGLGENRENDERBUFFERSEXTPROC glad_glGenRenderbuffers;
-    
-typedef void (APIENTRYP PFNGLRENDERBUFFERSTORAGEEXTPROC)(GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
-extern PFNGLRENDERBUFFERSTORAGEEXTPROC glad_glRenderbufferStorageEXT;
-extern PFNGLRENDERBUFFERSTORAGEEXTPROC glad_glRenderbufferStorage;
-
-typedef void (APIENTRYP PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC)(GLenum target, GLenum pname, GLint* params);
-extern PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC glad_glGetRenderbufferParameterivEXT;
-extern PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC glad_glGetRenderbufferParameteriv;
-
-
-typedef void (APIENTRYP PFNGLBINDFRAMEBUFFEREXTPROC)(GLenum target, GLuint framebuffer);
-extern PFNGLBINDFRAMEBUFFEREXTPROC glad_glBindFramebufferEXT;
-extern PFNGLBINDFRAMEBUFFEREXTPROC glad_glBindFramebuffer;
-
-
-typedef GLboolean (APIENTRYP PFNGLISFRAMEBUFFEREXTPROC)(GLuint framebuffer);
-extern PFNGLISFRAMEBUFFEREXTPROC glad_glIsFramebufferEXT;
-extern PFNGLISFRAMEBUFFEREXTPROC glad_glIsFramebuffer;
-
-
-typedef void (APIENTRYP PFNGLDELETEFRAMEBUFFERSEXTPROC)(GLsizei n, const GLuint* framebuffers);
-extern PFNGLDELETEFRAMEBUFFERSEXTPROC glad_glDeleteFramebuffersEXT;
-extern PFNGLDELETEFRAMEBUFFERSEXTPROC glad_glDeleteFramebuffers;
-
-
-typedef void (APIENTRYP PFNGLGENFRAMEBUFFERSEXTPROC)(GLsizei n, GLuint* framebuffers);
-extern PFNGLGENFRAMEBUFFERSEXTPROC glad_glGenFramebuffersEXT;
-extern PFNGLGENFRAMEBUFFERSEXTPROC glad_glGenFramebuffers;
-
-
-typedef GLenum (APIENTRYP PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC)(GLenum target);
-extern PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glad_glCheckFramebufferStatusEXT;
-extern PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glad_glCheckFramebufferStatus;
-
-
-typedef void (APIENTRYP PFNGLFRAMEBUFFERTEXTURE1DEXTPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
-extern PFNGLFRAMEBUFFERTEXTURE1DEXTPROC glad_glFramebufferTexture1DEXT;
-extern PFNGLFRAMEBUFFERTEXTURE1DEXTPROC glad_glFramebufferTexture1D;
-
-
-typedef void (APIENTRYP PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
-extern PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glad_glFramebufferTexture2DEXT;
-extern PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glad_glFramebufferTexture2D;
-
-
-typedef void (APIENTRYP PFNGLFRAMEBUFFERTEXTURE3DEXTPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
-extern PFNGLFRAMEBUFFERTEXTURE3DEXTPROC glad_glFramebufferTexture3DEXT;
-extern PFNGLFRAMEBUFFERTEXTURE3DEXTPROC glad_glFramebufferTexture3D;
-
-
-typedef void (APIENTRYP PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC)(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
-extern PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glad_glFramebufferRenderbufferEXT;
-extern PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glad_glFramebufferRenderbuffer;
-
-
-typedef void (APIENTRYP PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC)(GLenum target, GLenum attachment, GLenum pname, GLint* params);
-extern PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC glad_glGetFramebufferAttachmentParameterivEXT;
-extern PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC glad_glGetFramebufferAttachmentParameteriv;
-
-typedef void (APIENTRYP PFNGLGENERATEMIPMAPEXTPROC)(GLenum target);
-extern PFNGLGENERATEMIPMAPEXTPROC glad_glGenerateMipmapEXT;
-extern PFNGLGENERATEMIPMAPEXTPROC glad_glGenerateMipmap;
-
-typedef void (APIENTRYP PFNGLBINDVERTEXARRAYAPPLEPROC)(GLuint array);
-extern PFNGLBINDVERTEXARRAYAPPLEPROC glad_glBindVertexArrayAPPLE;
-extern PFNGLBINDVERTEXARRAYAPPLEPROC glad_glBindVertexArray;
-
-typedef void (APIENTRYP PFNGLDELETEVERTEXARRAYSAPPLEPROC)(GLsizei n, const GLuint* arrays);
-extern PFNGLDELETEVERTEXARRAYSAPPLEPROC glad_glDeleteVertexArraysAPPLE;
-extern PFNGLDELETEVERTEXARRAYSAPPLEPROC glad_glDeleteVertexArrays;
-
-typedef void (APIENTRYP PFNGLGENVERTEXARRAYSAPPLEPROC)(GLsizei n, GLuint* arrays);
-extern PFNGLGENVERTEXARRAYSAPPLEPROC glad_glGenVertexArraysAPPLE;
-extern PFNGLGENVERTEXARRAYSAPPLEPROC glad_glGenVertexArrays;
-
-typedef GLboolean (APIENTRYP PFNGLISVERTEXARRAYAPPLEPROC)(GLuint array);
-extern PFNGLISVERTEXARRAYAPPLEPROC glad_glIsVertexArrayAPPLE;
-extern PFNGLISVERTEXARRAYAPPLEPROC glad_glIsVertexArray;
-
-}
-
 void
-AppManagerPrivate::addOpenGLRequirementsString(QString& str, OpenGLRequirementsTypeEnum type)
+AppManagerPrivate::addOpenGLRequirementsString(QString& str, OpenGLRequirementsTypeEnum type, bool displayRenderers)
 {
     switch (type) {
         case eOpenGLRequirementsTypeViewer: {
@@ -751,22 +455,24 @@ AppManagerPrivate::addOpenGLRequirementsString(QString& str, OpenGLRequirementsT
             break;
         }
     }
-    std::list<OpenGLRendererInfo> openGLRenderers;
-    OSGLContext::getGPUInfos(openGLRenderers);
-    if ( !openGLRenderers.empty() ) {
-        str += QLatin1Char('\n');
-        str += tr("Available OpenGL renderers:");
-        str += QLatin1Char('\n');
-        for (std::list<OpenGLRendererInfo>::iterator it = openGLRenderers.begin(); it != openGLRenderers.end(); ++it) {
-            str += (tr("Vendor:") + QString::fromUtf8(" ") + QString::fromUtf8( it->vendorName.c_str() ) +
-                    QLatin1Char('\n') +
-                    tr("Renderer:") + QString::fromUtf8(" ") + QString::fromUtf8( it->rendererName.c_str() ) +
-                    QLatin1Char('\n') +
-                    tr("OpenGL Version:") + QString::fromUtf8(" ") + QString::fromUtf8( it->glVersionString.c_str() ) +
-                    QLatin1Char('\n') +
-                    tr("GLSL Version:") + QString::fromUtf8(" ") + QString::fromUtf8( it->glslVersionString.c_str() ) );
+    if (displayRenderers) {
+        std::list<OpenGLRendererInfo> openGLRenderers;
+        OSGLContext::getGPUInfos(openGLRenderers);
+        if ( !openGLRenderers.empty() ) {
             str += QLatin1Char('\n');
+            str += tr("Available OpenGL renderers:");
             str += QLatin1Char('\n');
+            for (std::list<OpenGLRendererInfo>::iterator it = openGLRenderers.begin(); it != openGLRenderers.end(); ++it) {
+                str += (tr("Vendor:") + QString::fromUtf8(" ") + QString::fromUtf8( it->vendorName.c_str() ) +
+                        QLatin1Char('\n') +
+                        tr("Renderer:") + QString::fromUtf8(" ") + QString::fromUtf8( it->rendererName.c_str() ) +
+                        QLatin1Char('\n') +
+                        tr("OpenGL Version:") + QString::fromUtf8(" ") + QString::fromUtf8( it->glVersionString.c_str() ) +
+                        QLatin1Char('\n') +
+                        tr("GLSL Version:") + QString::fromUtf8(" ") + QString::fromUtf8( it->glslVersionString.c_str() ) );
+                str += QLatin1Char('\n');
+                str += QLatin1Char('\n');
+            }
         }
     }
 }
@@ -944,6 +650,8 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
         glHasTextureFloat = true;
     }
 
+    glVersionMajor = GLVersion.major;
+    glVersionMinor = GLVersion.minor;
 
     if ( !glLoaded ||
         GLVersion.major < NATRON_OPENGL_VERSION_REQUIRED_MAJOR ||
@@ -952,7 +660,7 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
         !GLAD_GL_ARB_vertex_buffer_object) {
 
         viewerReq.error = tr("Failed to load OpenGL.");
-        addOpenGLRequirementsString(viewerReq.error, eOpenGLRequirementsTypeViewer);
+        addOpenGLRequirementsString(viewerReq.error, eOpenGLRequirementsTypeViewer, true);
         viewerReq.hasRequirements = false;
         renderingReq.hasRequirements = false;
 #ifdef DEBUG
@@ -969,7 +677,7 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
         {
             renderingReq.error += QLatin1String("<p>");
             renderingReq.error += tr("Failed to load OpenGL.");
-            addOpenGLRequirementsString(renderingReq.error, eOpenGLRequirementsTypeRendering);
+            addOpenGLRequirementsString(renderingReq.error, eOpenGLRequirementsTypeRendering, true);
 
 
             renderingReq.hasRequirements = false;
@@ -990,7 +698,7 @@ AppManagerPrivate::tearDownGL()
     if (wglInfo) {
         OSGLContext_win::destroyWGLData( wglInfo.get() );
     }
-#elif defined(Q_OS_LINUX)
+#elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
     if (glxInfo) {
         OSGLContext_x11::destroyGLXData( glxInfo.get() );
     }
@@ -1029,7 +737,7 @@ AppManagerPrivate::handleCommandLineArgs(int argc, char** argv)
     // Ensure the arguments are Utf-8 encoded
     std::vector<std::string> utf8Args;
     if (argv) {
-        CLArgs::ensureCommandLineArgsUtf8(argc, argv, &utf8Args);
+        ProcInfo::ensureCommandLineArgsUtf8(argc, argv, &utf8Args);
     } else {
         // If the user didn't specify launch arguments (e.g unit testing),
         // At least append the binary path

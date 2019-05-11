@@ -560,6 +560,96 @@ static PyObject* Sbk_AppFunc_getProjectParam(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
+static PyObject* Sbk_AppFunc_getViewIndex(PyObject* self, PyObject* pyArg)
+{
+    AppWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getViewIndex(QString)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // getViewIndex(QString)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AppFunc_getViewIndex_TypeError;
+
+    // Call function/method
+    {
+        ::QString cppArg0 = ::QString();
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getViewIndex(QString)const
+            int cppResult = const_cast<const ::AppWrapper*>(cppSelf)->getViewIndex(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_AppFunc_getViewIndex_TypeError:
+        const char* overloads[] = {"unicode", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.getViewIndex", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_AppFunc_getViewName(PyObject* self, PyObject* pyArg)
+{
+    AppWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getViewName(int)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
+        overloadId = 0; // getViewName(int)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AppFunc_getViewName_TypeError;
+
+    // Call function/method
+    {
+        int cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getViewName(int)const
+            QString cppResult = const_cast<const ::AppWrapper*>(cppSelf)->getViewName(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_AppFunc_getViewName_TypeError:
+        const char* overloads[] = {"int", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.getViewName", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_AppFunc_getViewNames(PyObject* self)
 {
     AppWrapper* cppSelf = 0;
@@ -673,6 +763,127 @@ static PyObject* Sbk_AppFunc_newProject(PyObject* self)
         return 0;
     }
     return pyResult;
+}
+
+static PyObject* Sbk_AppFunc_redrawViewer(PyObject* self, PyObject* pyArg)
+{
+    AppWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: redrawViewer(Effect*)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], (pyArg)))) {
+        overloadId = 0; // redrawViewer(Effect*)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AppFunc_redrawViewer_TypeError;
+
+    // Call function/method
+    {
+        if (!Shiboken::Object::isValid(pyArg))
+            return 0;
+        ::Effect* cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // redrawViewer(Effect*)
+            cppSelf->redrawViewer(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_AppFunc_redrawViewer_TypeError:
+        const char* overloads[] = {"NatronEngine.Effect", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.redrawViewer", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_AppFunc_refreshViewer(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    AppWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.App.refreshViewer(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.App.refreshViewer(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OO:refreshViewer", &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: refreshViewer(Effect*,bool)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // refreshViewer(Effect*,bool)
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[1])))) {
+            overloadId = 0; // refreshViewer(Effect*,bool)
+        }
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AppFunc_refreshViewer_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "useCache");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.App.refreshViewer(): got multiple values for keyword argument 'useCache'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[1]))))
+                    goto Sbk_AppFunc_refreshViewer_TypeError;
+            }
+        }
+        if (!Shiboken::Object::isValid(pyArgs[0]))
+            return 0;
+        ::Effect* cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        bool cppArg1 = true;
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // refreshViewer(Effect*,bool)
+            cppSelf->refreshViewer(cppArg0, cppArg1);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_AppFunc_refreshViewer_TypeError:
+        const char* overloads[] = {"NatronEngine.Effect, bool = true", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.App.refreshViewer", overloads);
+        return 0;
 }
 
 static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* args, PyObject* kwds)
@@ -1065,6 +1276,48 @@ static PyObject* Sbk_AppFunc_timelineGetTime(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_AppFunc_timelineGoTo(PyObject* self, PyObject* pyArg)
+{
+    AppWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: timelineGoTo(int)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
+        overloadId = 0; // timelineGoTo(int)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AppFunc_timelineGoTo_TypeError;
+
+    // Call function/method
+    {
+        int cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // timelineGoTo(int)
+            cppSelf->timelineGoTo(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_AppFunc_timelineGoTo_TypeError:
+        const char* overloads[] = {"int", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.timelineGoTo", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_AppFunc_writeToScriptEditor(PyObject* self, PyObject* pyArg)
 {
     AppWrapper* cppSelf = 0;
@@ -1116,9 +1369,13 @@ static PyMethodDef Sbk_App_methods[] = {
     {"createWriter", (PyCFunction)Sbk_AppFunc_createWriter, METH_VARARGS|METH_KEYWORDS},
     {"getAppID", (PyCFunction)Sbk_AppFunc_getAppID, METH_NOARGS},
     {"getProjectParam", (PyCFunction)Sbk_AppFunc_getProjectParam, METH_O},
+    {"getViewIndex", (PyCFunction)Sbk_AppFunc_getViewIndex, METH_O},
+    {"getViewName", (PyCFunction)Sbk_AppFunc_getViewName, METH_O},
     {"getViewNames", (PyCFunction)Sbk_AppFunc_getViewNames, METH_NOARGS},
     {"loadProject", (PyCFunction)Sbk_AppFunc_loadProject, METH_O},
     {"newProject", (PyCFunction)Sbk_AppFunc_newProject, METH_NOARGS},
+    {"redrawViewer", (PyCFunction)Sbk_AppFunc_redrawViewer, METH_O},
+    {"refreshViewer", (PyCFunction)Sbk_AppFunc_refreshViewer, METH_VARARGS|METH_KEYWORDS},
     {"render", (PyCFunction)Sbk_AppFunc_render, METH_VARARGS|METH_KEYWORDS},
     {"resetProject", (PyCFunction)Sbk_AppFunc_resetProject, METH_NOARGS},
     {"saveProject", (PyCFunction)Sbk_AppFunc_saveProject, METH_O},
@@ -1127,6 +1384,7 @@ static PyMethodDef Sbk_App_methods[] = {
     {"timelineGetLeftBound", (PyCFunction)Sbk_AppFunc_timelineGetLeftBound, METH_NOARGS},
     {"timelineGetRightBound", (PyCFunction)Sbk_AppFunc_timelineGetRightBound, METH_NOARGS},
     {"timelineGetTime", (PyCFunction)Sbk_AppFunc_timelineGetTime, METH_NOARGS},
+    {"timelineGoTo", (PyCFunction)Sbk_AppFunc_timelineGoTo, METH_O},
     {"writeToScriptEditor", (PyCFunction)Sbk_AppFunc_writeToScriptEditor, METH_O},
 
     {0} // Sentinel

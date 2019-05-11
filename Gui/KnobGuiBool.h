@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -44,14 +44,12 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/Singleton.h"
 #include "Engine/Knob.h"
 #include "Engine/ImagePlaneDesc.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/AnimatedCheckBox.h"
-#include "Gui/CurveSelection.h"
-#include "Gui/KnobGui.h"
+#include "Gui/KnobGuiWidgets.h"
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
@@ -64,7 +62,8 @@ class Bool_CheckBox
 {
 public:
     Bool_CheckBox(const KnobGuiPtr& knob,
-                  int dimension,
+                  DimSpec dimension,
+                  ViewIdx view,
                   QWidget* parent = 0);
 
     virtual ~Bool_CheckBox();
@@ -96,11 +95,11 @@ private:
 private:
     bool useCustomColor;
     QColor customColor;
-    boost::shared_ptr<KnobWidgetDnD> _dnd;
+    KnobWidgetDnDPtr _dnd;
 };
 
 class KnobGuiBool
-    : public KnobGui
+    : public QObject, public KnobGuiWidgets
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -108,19 +107,17 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(KnobPtr knob,
-                                  KnobGuiContainerI *container)
+    static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knob, ViewIdx view)
     {
-        return new KnobGuiBool(knob, container);
+        return new KnobGuiBool(knob, view);
     }
 
-    KnobGuiBool(KnobPtr knob,
-                KnobGuiContainerI *container);
+    KnobGuiBool(const KnobGuiPtr& knob, ViewIdx view);
 
     virtual ~KnobGuiBool() OVERRIDE;
 
-    virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
+    virtual void reflectLinkedState(DimIdx dimension, bool linked) OVERRIDE;
+
 
 public Q_SLOTS:
 
@@ -131,21 +128,19 @@ private:
 
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
-    virtual void _show() OVERRIDE FINAL;
-    virtual void setEnabled() OVERRIDE FINAL;
-    virtual void setReadOnly(bool readOnly, int dimension) OVERRIDE FINAL;
-    virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension, AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
+    virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
+    virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE FINAL;
+    virtual void reflectMultipleSelection(bool dirty) OVERRIDE FINAL;
+    virtual void reflectSelectionState(bool selected) OVERRIDE FINAL;
+    virtual void updateGUI() OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(DimIdx dimension, AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
-    virtual void onLabelChangedInternal() OVERRIDE FINAL;
+    virtual void onLabelChanged() OVERRIDE FINAL;
 
 private:
 
     Bool_CheckBox *_checkBox;
-    boost::weak_ptr<KnobBool> _knob;
+    KnobBoolWPtr _knob;
 };
 
 NATRON_NAMESPACE_EXIT

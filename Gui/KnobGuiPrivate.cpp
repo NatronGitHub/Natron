@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,37 +30,41 @@
 NATRON_NAMESPACE_ENTER
 
 
-KnobGuiPrivate::KnobGuiPrivate(KnobGuiContainerI* container)
-    : triggerNewLine(true)
-    , spacingBetweenItems(0)
-    , widgetCreated(false)
-    , container(container)
-    , copyRightClickMenu( new MenuWithToolTips( container->getContainerWidget() ) )
-    , fieldLayout(NULL)
-    , knobsOnSameLine()
-    , field(NULL)
-    , labelContainer(NULL)
-    , descriptionLabel(NULL)
-    , warningIndicator(NULL)
-    , isOnNewLine(false)
-    , customInteract(NULL)
-    , guiCurves()
-    , guiRemoved(false)
-    , isInViewerUIKnob(dynamic_cast<NodeViewerContext*>(container) != 0)
+KnobGuiPrivate::KnobGuiPrivate(KnobGui* publicInterface, const KnobIPtr& knob, KnobGui::KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container)
+: _publicInterface(publicInterface)
+, knob(knob)
+, singleDimensionEnabled(false)
+, singleDimension(DimIdx(0))
+, isOnNewLine(false)
+, widgetCreated(false)
+, container(container)
+, copyRightClickMenu( new MenuWithToolTips( container->getContainerWidget() ) )
+, prevKnob()
+, views()
+, labelContainer(NULL)
+, viewUnfoldArrow(NULL)
+, viewsContainer(NULL)
+, viewsContainerLayout(NULL)
+, mainContainer(NULL)
+, mainLayout(NULL)
+, endOfLineSpacer(0)
+, spacerAdded(false)
+, mustAddSpacerByDefault(true)
+, firstKnobOnLine()
+, otherKnobsInMainLayout()
+, descriptionLabel(NULL)
+, warningIndicator(NULL)
+, customInteract(NULL)
+, guiRemoved(false)
+, tabGroup(0)
+, refreshGuiRequests(0)
+, refreshModifStateRequests(0)
+, refreshDimensionVisibilityRequests()
+, layoutType(layoutType)
 {
-    //copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
 }
 
-void
-KnobGuiPrivate::removeFromKnobsOnSameLineVector(const KnobPtr& knob)
-{
-    for (std::vector< boost::weak_ptr< KnobI > >::iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
-        if (it->lock() == knob) {
-            knobsOnSameLine.erase(it);
-            break;
-        }
-    }
-}
+
 
 NATRON_NAMESPACE_EXIT
 

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,7 +31,6 @@
 ///// This namespace is kept is synch with what can be found in openfx-io repository. It is used here in Natron for the viewer essentially.
 ///
 
-
 #include <cmath>
 #include <map>
 #include <string>
@@ -42,10 +41,14 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
+
+NATRON_NAMESPACE_ENTER
+
+
 #define NATRON_COLOR_HUE_CIRCLE 1. // if hue should be between 0 and 1
 //#define NATRON_COLOR_HUE_CIRCLE 360. // if hue should be in degrees
 
-NATRON_NAMESPACE_ENTER
+
 namespace Color {
 /// @enum An enum describing supported pixels packing formats
 enum PixelPackingEnum
@@ -85,6 +88,8 @@ public:
      **/
     static const Lut * getLut(const std::string & name, fromColorSpaceFunctionV1 fromFunc, toColorSpaceFunctionV1 toFunc);
 
+    static const Lut * findLut(const std::string& name);
+
     ///buit-ins color-spaces
     static const Lut* sRGBLut();
     static const Lut* Rec709Lut();
@@ -120,6 +125,7 @@ private:
     ~LutManager();
 
     //each lut with a ref count mapped against their name
+    mutable QMutex lutsMutex;
     typedef std::map<std::string, const Lut * > LutsMap;
     LutsMap luts;
 };

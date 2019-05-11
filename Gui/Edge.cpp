@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -65,14 +65,14 @@ NATRON_NAMESPACE_ENTER
 
 struct EdgePrivate
 {
-    Edge* _publicInterface;
+    Edge* _publicInterface; // can not be a smart ptr
     bool isOutputEdge;
     int inputNb;
     double angle;
     NodeGraphSimpleTextItem* label;
     QPolygonF arrowHead;
-    boost::weak_ptr<NodeGui> dest;
-    boost::weak_ptr<NodeGui> source;
+    NodeGuiWPtr dest;
+    NodeGuiWPtr source;
     QColor defaultColor;
     QColor renderingColor;
     bool useRenderingColor;
@@ -83,7 +83,6 @@ struct EdgePrivate
     bool paintBendPoint;
     bool bendPointHiddenAutomatically;
     bool enoughSpaceToShowLabel;
-    bool isRotoMask;
     bool isMask;
     QPointF middlePoint; //updated only when dest && source are valid
 
@@ -109,7 +108,6 @@ struct EdgePrivate
         , paintBendPoint(false)
         , bendPointHiddenAutomatically(false)
         , enoughSpaceToShowLabel(true)
-        , isRotoMask(false)
         , isMask(false)
         , middlePoint()
     {
@@ -264,11 +262,6 @@ Edge::isBendPointVisible() const
     return _imp->paintBendPoint;
 }
 
-bool
-Edge::isRotoEdge() const
-{
-    return _imp->isRotoMask;
-}
 
 bool
 Edge::isMask() const
@@ -321,33 +314,35 @@ Edge::computeVisibility(bool hovered) const
     }
 
     ///Determine whether the edge should be visible or not
-    bool hideInputsKnobValue = dst ? dst->getNode()->getHideInputsKnobValue() : false;
-    if ( (_imp->isRotoMask || hideInputsKnobValue) && !_imp->isOutputEdge ) {
+    bool hideInputsKnobValue = dst ? dst->getNode()->getEffectInstance()->getHideInputsKnobValue() : false;
+    if ( hideInputsKnobValue && !_imp->isOutputEdge ) {
+        return false;
+    }
+
+    if (_imp->isOutputEdge) {
+        return true;
+    }
+
+    NodeGuiPtr src = _imp->source.lock();
+
+    //The viewer does not hide its optional edges
+    bool isViewer = effect ? bool( boost::dynamic_pointer_cast<ViewerInstancePtr>(effect) ) : false;
+    bool isReader = effect ? effect->isReader() : false;
+    bool autoHide = areOptionalInputsAutoHidden();
+    bool isSelected = dst->getIsSelected();
+
+    /*
+     * Hide the inputs if it is NOT hovered and NOT selected and auto-hide is enabled and if the node is either
+     * a Reader OR the input is optional and it doesn't have an input node
+     */
+    if ( !hovered && !isSelected && autoHide  && !isViewer &&
+        ( (_imp->optional && !src) || isReader ) ) {
         return false;
     } else {
-        if (_imp->isOutputEdge) {
-            return true;
-        } else {
-            NodeGuiPtr src = _imp->source.lock();
-
-            //The viewer does not hide its optional edges
-            bool isViewer = effect ? dynamic_cast<ViewerInstance*>( effect.get() ) != 0 : false;
-            bool isReader = effect ? effect->isReader() : false;
-            bool autoHide = areOptionalInputsAutoHidden();
-            bool isSelected = dst->getIsSelected();
-
-            /*
-             * Hide the inputs if it is NOT hovered and NOT selected and auto-hide is enabled and if the node is either
-             * a Reader OR the input is optional and it doesn't have an input node
-             */
-            if ( !hovered && !isSelected && autoHide  && !isViewer &&
-                 ( (_imp->optional && !src) || isReader ) ) {
-                return false;
-            } else {
-                return true;
-            }
-        }
+        return true;
     }
+
+
 }
 
 void
@@ -358,9 +353,8 @@ Edge::refreshState(bool hovered)
 
     if (effect) {
         ///Refresh properties
-        _imp->isRotoMask = effect->isInputRotoBrush(_imp->inputNb);
-        _imp->isMask = effect->isInputMask(_imp->inputNb);
-        _imp->optional = _imp->isMask || effect->isInputOptional(_imp->inputNb);
+        _imp->isMask = effect->getNode()->isInputMask(_imp->inputNb);
+        _imp->optional = _imp->isMask || effect->getNode()->isInputOptional(_imp->inputNb);
         if (_imp->isMask) {
             _imp->paintWithDash = true;
         }
@@ -820,6 +814,7 @@ LinkArrow::LinkArrow(const NodeGuiPtr& master,
     , _renderColor(Qt::black)
     , _headColor(Qt::white)
     , _lineWidth(1)
+    , _arrowVisible(true)
 {
     assert(master && slave);
     QObject::connect( master.get(), SIGNAL(positionChanged(int,int)), this, SLOT(refreshPosition()) );
@@ -837,6 +832,12 @@ void
 LinkArrow::setColor(const QColor & color)
 {
     _renderColor = color;
+}
+
+void
+LinkArrow::setArrowHeadVisible(bool visible)
+{
+    _arrowVisible = visible;
 }
 
 void
@@ -862,7 +863,6 @@ LinkArrow::refreshPosition()
         bboxSlave = mapFromItem( slave.get(), slave->boundingRect() ).boundingRect();
     }
 
-    ///like the box master in kfc! was bound to name it so I'm hungry atm
     QRectF boxMaster;
     if (master) {
         boxMaster = mapFromItem( master.get(), master->boundingRect() ).boundingRect();
@@ -871,6 +871,10 @@ LinkArrow::refreshPosition()
     QPointF src = bboxSlave.center();
 
     setLine( QLineF(src, dst) );
+
+    if (!_arrowVisible) {
+        return;
+    }
 
     ///Get the intersections of the line with the nodes
     std::vector<QLineF> masterEdges;
@@ -922,6 +926,7 @@ LinkArrow::refreshPosition()
         a = 2 * M_PI - a;
     }
 
+
     qreal arrowSize = 10. * scale();
     QPointF arrowP1 = middle + QPointF(std::cos(a + ARROW_HEAD_ANGLE / 2) * arrowSize,
                                        std::sin(a + ARROW_HEAD_ANGLE / 2) * arrowSize);
@@ -930,6 +935,7 @@ LinkArrow::refreshPosition()
 
     _arrowHead.clear();
     _arrowHead << middle << arrowP1 << arrowP2;
+
 } // refreshPosition
 
 void
@@ -937,6 +943,18 @@ LinkArrow::paint(QPainter *painter,
                  const QStyleOptionGraphicsItem* /*options*/,
                  QWidget* /*parent*/)
 {
+    NodeGuiPtr slave  = _slave.lock();
+    NodeGuiPtr master  = _master.lock();
+    if (!slave || !slave->getNode()) {
+        return;
+    }
+    if (!master || !master->getNode()) {
+        return;
+    }
+    if (master->getDagGui() != slave->getDagGui()) {
+        return;
+    }
+
     bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
 
     if (!antialias) {
@@ -950,13 +968,15 @@ LinkArrow::paint(QPainter *painter,
     QLineF l = line();
     painter->drawLine(l);
 
-    myPen.setStyle(Qt::SolidLine);
-    painter->setPen(myPen);
+    if (_arrowVisible) {
+        myPen.setStyle(Qt::SolidLine);
+        painter->setPen(myPen);
 
-    QPainterPath headPath;
-    headPath.addPolygon(_arrowHead);
-    headPath.closeSubpath();
-    painter->fillPath(headPath, _headColor);
+        QPainterPath headPath;
+        headPath.addPolygon(_arrowHead);
+        headPath.closeSubpath();
+        painter->fillPath(headPath, _headColor);
+    }
 }
 
 NATRON_NAMESPACE_EXIT

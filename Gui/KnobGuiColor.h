@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -40,12 +40,10 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/Singleton.h"
 #include "Engine/Knob.h"
 #include "Engine/ImagePlaneDesc.h"
 #include "Engine/EngineFwd.h"
 
-#include "Gui/CurveSelection.h"
 #include "Gui/KnobGuiValue.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
@@ -65,7 +63,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    ColorPickerLabel(KnobGuiColor* knob,
+    ColorPickerLabel(bool simplified,
+                     KnobGui::KnobLayoutTypeEnum layout,
+                     KnobGuiColor* knob,
                      QWidget* parent = NULL);
 
     virtual ~ColorPickerLabel() OVERRIDE
@@ -94,12 +94,15 @@ Q_SIGNALS:
 
 private:
 
+
     virtual void enterEvent(QEvent*) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent*) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent*) OVERRIDE FINAL;
 
 private:
 
+    bool _simplified;
+    KnobGui::KnobLayoutTypeEnum _layout;
     bool _pickingEnabled;
     QColor _currentColor;
     KnobGuiColor* _knob;
@@ -115,14 +118,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(KnobPtr knob,
-                                  KnobGuiContainerI *container)
+    static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knobUI, ViewIdx view)
     {
-        return new KnobGuiColor(knob, container);
+        return new KnobGuiColor(knobUI, view);
     }
 
-    KnobGuiColor(KnobPtr knob,
-                 KnobGuiContainerI *container);
+    KnobGuiColor(const KnobGuiPtr& knobUI, ViewIdx view);
 
     virtual ~KnobGuiColor() {}
 
@@ -130,20 +131,17 @@ public Q_SLOTS:
 
     void showColorDialog();
 
-    void setPickingEnabled(bool enabled);
+    void onInternalKnobPickingEnabled(ViewSetSpec view, bool enabled);
 
-    void onPickingEnabled(bool enabled);
-
-    void onMustShowAllDimension();
+    void onColorLabelPickingEnabled(bool enabled);
 
     void onDialogCurrentColorChanged(const QColor & color);
 
-
-Q_SIGNALS:
-
-    void dimensionSwitchToggled(bool b);
+    virtual void setAllDimensionsVisible(bool visible) OVERRIDE FINAL;
 
 private:
+
+    void setPickingEnabledInternal(bool enabled);
 
     virtual bool isSpatialType() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -154,8 +152,6 @@ private:
     {
         return false;
     }
-
-    virtual bool isAutoFoldDimensionsEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool isRectangleType() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -174,20 +170,34 @@ private:
 
     void updateLabel(double r, double g, double b, double a);
 
-    virtual void _show() OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
+    virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabledExtraGui(bool enabled) OVERRIDE FINAL;
-    virtual void onDimensionsFolded() OVERRIDE FINAL;
-    virtual void onDimensionsExpanded() OVERRIDE FINAL;
+    virtual void onDimensionsMadeVisible(bool visible) OVERRIDE FINAL;
 
 private:
 
-    boost::weak_ptr<KnobColor> _knob;
+    void convertFromUIToInternalColorspace(double *r, double *g, double* b);
+    void convertFromInternalToUIColorspace(double *r, double *g, double* b);
+
+    void convertFromUIToInternalColorspace(double *value);
+    void convertFromInternalToUIColorspace(double *value);
+
+
+    KnobColorWPtr _knob;
     ColorPickerLabel *_colorLabel;
     Button *_colorDialogButton;
     std::vector<double> _lastColor;
     bool _useSimplifiedUI;
+    const Color::Lut* _uiColorspaceLut, *_internalColorspaceLut;
 };
+
+
+inline KnobGuiColorPtr
+toKnobGuiColor(const KnobGuiWidgetsPtr& knobGui)
+{
+    return boost::dynamic_pointer_cast<KnobGuiColor>(knobGui);
+}
+
 
 NATRON_NAMESPACE_EXIT
 

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -57,7 +57,7 @@ protected:
     virtual void SetUp();
     virtual void TearDown();
 
-    AppInstPtr getApp() const
+    AppInstancePtr getApp() const
     {
         return _app.lock();
     }
@@ -70,13 +70,13 @@ protected:
     ///output to the node input. expectedReturnValue is expected to have the same value as the return
     ///value of the underlying connect call. That means that if expectedReturnValue is true, the
     ///connection is expected to succeed, and vice versa.
-    void connectNodes(NodePtr input, NodePtr output,
+    void connectNodes(const NodePtr& input, const NodePtr& output,
                       int inputNumber, bool expectedReturnValue);
 
     ///Useful function to disconnect 2 nodes together. expectedReturnValue is expected to have the same value as the return
     ///value of the underlying disconnect call. That means that if expectedReturnValue is true, the
     ///disconnection is expected to succeed, and vice versa.
-    void disconnectNodes(NodePtr input, NodePtr output, bool expectedReturnvalue);
+    void disconnectNodes(const NodePtr& input, const NodePtr& output, bool expectedReturnvalue);
 
     void registerTestPlugins();
 
@@ -92,7 +92,7 @@ protected:
     QString _readOIIOPluginID;
     QString _writeOIIOPluginID;
     std::vector<QString> _allTestPluginIDs;
-    AppInstWPtr _app;
+    AppInstanceWPtr _app;
 };
 
 NATRON_NAMESPACE_EXIT

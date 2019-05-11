@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,14 +34,20 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Gui/GuiFwd.h"
+#include "Gui/StyledKnobWidgetBase.h"
 
 NATRON_NAMESPACE_ENTER
 
 class Label
     : public QLabel
+    , public StyledKnobWidgetBase
 {
-    Q_OBJECT Q_PROPERTY(bool altered READ getAltered WRITE setAltered)
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+    DEFINE_KNOB_GUI_STYLE_PROPERTIES
+
+    Q_PROPERTY(bool isBold READ getIsBold WRITE setIsBold)
 
 public:
 
@@ -52,23 +58,32 @@ public:
     Label(QWidget *parent = 0,
           Qt::WindowFlags f = 0);
 
-    bool getAltered() const;
-
-    void setAltered(bool a);
+    void setCustomTextColor(const QColor& color);
 
     virtual bool canAlter() const
     {
         return true;
     }
 
+    bool getIsBold() const;
+
+    void setIsBold(bool b);
+
+    virtual void setIsModified(bool b) OVERRIDE;
+
 protected:
 
-    void refreshStyle();
+    virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
+
+    virtual void refreshStylesheet() OVERRIDE FINAL;
 
 private:
 
-    //When altered, the label is displayed in grey instead of white
-    bool altered;
+    void init();
+
+    QColor _customColor;
+    bool _customColorSet;
+    bool isBold;
 };
 
 NATRON_NAMESPACE_EXIT

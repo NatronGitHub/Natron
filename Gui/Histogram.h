@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,12 +32,12 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
-#include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include "Global/GLIncludes.h" //!<must be included before QGLWidget
 #include <QtCore/QSize>
 #include <QtOpenGL/QGLWidget>
+#include "Global/GLObfuscate.h" //!<must be included after QGLWidget
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -70,7 +70,8 @@ public:
         eDisplayModeB
     };
 
-    Histogram(Gui* gui,
+    Histogram(const std::string& scriptName,
+              Gui* gui,
               const QGLWidget* shareWidget = NULL);
 
     virtual ~Histogram();
@@ -81,6 +82,10 @@ public:
     void hideViewerCursor();
 
     int getViewerTextureInputDisplayed() const;
+
+    virtual bool saveProjection(SERIALIZATION_NAMESPACE::ViewportData* data) OVERRIDE FINAL;
+
+    virtual bool loadProjection(const SERIALIZATION_NAMESPACE::ViewportData& data) OVERRIDE FINAL;
 
 public Q_SLOTS:
 
@@ -100,7 +105,7 @@ public Q_SLOTS:
 
     void onCurrentViewerChanged(QAction*);
 
-    void onViewerImageChanged(ViewerGL* viewer, int texIndex, bool hasImageBackend);
+    void onViewerImageChanged(ViewerGL* viewer, int texIndex);
 
 private:
 

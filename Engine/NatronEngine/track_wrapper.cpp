@@ -19,128 +19,26 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
+#include <PyItemsTable.h>
 #include <PyParameter.h>
 #include <list>
 
 
+// Native ---------------------------------------------------------
+
+void TrackWrapper::pysideInitQtMetaTypes()
+{
+}
+
+TrackWrapper::~TrackWrapper()
+{
+    SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
+    Shiboken::Object::destroy(wrapper, this);
+}
 
 // Target ---------------------------------------------------------
 
 extern "C" {
-static PyObject* Sbk_TrackFunc_getParam(PyObject* self, PyObject* pyArg)
-{
-    ::Track* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Track*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACK_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: getParam(QString)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
-        overloadId = 0; // getParam(QString)const
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_TrackFunc_getParam_TypeError;
-
-    // Call function/method
-    {
-        ::QString cppArg0 = ::QString();
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // getParam(QString)const
-            Param * cppResult = const_cast<const ::Track*>(cppSelf)->getParam(cppArg0);
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
-
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-
-    Sbk_TrackFunc_getParam_TypeError:
-        const char* overloads[] = {"unicode", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Track.getParam", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_TrackFunc_getParams(PyObject* self)
-{
-    ::Track* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Track*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACK_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getParams()const
-            // Begin code injection
-
-            std::list<Param*> params = cppSelf->getParams();
-            PyObject* ret = PyList_New((int) params.size());
-            int idx = 0;
-            for (std::list<Param*>::iterator it = params.begin(); it!=params.end(); ++it,++idx) {
-            PyObject* item = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], *it);
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(item);
-            PyList_SET_ITEM(ret, idx, item);
-            }
-            return ret;
-
-            // End of code injection
-
-
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_TrackFunc_getScriptName(PyObject* self)
-{
-    ::Track* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Track*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACK_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getScriptName()const
-            QString cppResult = const_cast<const ::Track*>(cppSelf)->getScriptName();
-            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
 static PyObject* Sbk_TrackFunc_reset(PyObject* self)
 {
     ::Track* cppSelf = 0;
@@ -164,54 +62,8 @@ static PyObject* Sbk_TrackFunc_reset(PyObject* self)
     Py_RETURN_NONE;
 }
 
-static PyObject* Sbk_TrackFunc_setScriptName(PyObject* self, PyObject* pyArg)
-{
-    ::Track* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Track*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACK_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: setScriptName(QString)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
-        overloadId = 0; // setScriptName(QString)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_TrackFunc_setScriptName_TypeError;
-
-    // Call function/method
-    {
-        ::QString cppArg0 = ::QString();
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // setScriptName(QString)
-            cppSelf->setScriptName(cppArg0);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_TrackFunc_setScriptName_TypeError:
-        const char* overloads[] = {"unicode", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Track.setScriptName", overloads);
-        return 0;
-}
-
 static PyMethodDef Sbk_Track_methods[] = {
-    {"getParam", (PyCFunction)Sbk_TrackFunc_getParam, METH_O},
-    {"getParams", (PyCFunction)Sbk_TrackFunc_getParams, METH_NOARGS},
-    {"getScriptName", (PyCFunction)Sbk_TrackFunc_getScriptName, METH_NOARGS},
     {"reset", (PyCFunction)Sbk_TrackFunc_reset, METH_NOARGS},
-    {"setScriptName", (PyCFunction)Sbk_TrackFunc_setScriptName, METH_O},
 
     {0} // Sentinel
 };
@@ -259,7 +111,7 @@ static SbkObjectType Sbk_Track_Type = { { {
     /*tp_methods*/          Sbk_Track_methods,
     /*tp_members*/          0,
     /*tp_getset*/           0,
-    /*tp_base*/             reinterpret_cast<PyTypeObject*>(&SbkObject_Type),
+    /*tp_base*/             0,
     /*tp_dict*/             0,
     /*tp_descr_get*/        0,
     /*tp_descr_set*/        0,
@@ -278,6 +130,13 @@ static SbkObjectType Sbk_Track_Type = { { {
     /*priv_data*/           0
 };
 } //extern
+
+static void* Sbk_Track_typeDiscovery(void* cptr, SbkObjectType* instanceType)
+{
+    if (instanceType == reinterpret_cast<SbkObjectType*>(Shiboken::SbkType< ::ItemBase >()))
+        return dynamic_cast< ::Track*>(reinterpret_cast< ::ItemBase*>(cptr));
+    return 0;
+}
 
 
 // Type conversion functions.
@@ -310,7 +169,7 @@ void init_Track(PyObject* module)
     SbkNatronEngineTypes[SBK_TRACK_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_Track_Type);
 
     if (!Shiboken::ObjectType::introduceWrapperType(module, "Track", "Track*",
-        &Sbk_Track_Type, &Shiboken::callCppDestructor< ::Track >)) {
+        &Sbk_Track_Type, &Shiboken::callCppDestructor< ::Track >, (SbkObjectType*)SbkNatronEngineTypes[SBK_ITEMBASE_IDX])) {
         return;
     }
 
@@ -324,7 +183,11 @@ void init_Track(PyObject* module)
     Shiboken::Conversions::registerConverterName(converter, "Track*");
     Shiboken::Conversions::registerConverterName(converter, "Track&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::Track).name());
+    Shiboken::Conversions::registerConverterName(converter, typeid(::TrackWrapper).name());
 
 
+    Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_Track_Type, &Sbk_Track_typeDiscovery);
 
+
+    TrackWrapper::pysideInitQtMetaTypes();
 }

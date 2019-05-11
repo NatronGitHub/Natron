@@ -66,29 +66,32 @@ void ComputeGaussianKernel(double sigma, Vec *kernel, Vec *derivative) {
 template <int size, bool vertical>
 void FastConvolve(const Vec &kernel, int width, int height,
                   const float* src, int src_stride, int src_line_stride,
-                  float* dst, int dst_stride) {
+                  float* dst, int dst_stride, int dst_line_stride) {
   double coefficients[2 * size + 1];
   for (int k = 0; k < 2 * size + 1; ++k) {
     coefficients[k] = kernel(2 * size - k);
   }
   // Fast path: if the kernel has a certain size, use the constant sized loops.
+  libmv_pragma_openmp(parallel if(height > 8))
   for (int y = 0; y < height; ++y) {
+    const float* src_pixels = src + y * src_line_stride;
+    float* dst_pixels = dst + y * dst_line_stride;
     for (int x = 0; x < width; ++x) {
       double sum = 0;
       for (int k = -size; k <= size; ++k) {
         if (vertical) {
           if (y + k >= 0 && y + k < height) {
-            sum += src[k * src_line_stride] * coefficients[k + size];
+            sum += src_pixels[k * src_line_stride] * coefficients[k + size];
           }
         } else {
           if (x + k >= 0 && x + k < width) {
-            sum += src[k * src_stride] * coefficients[k + size];
+            sum += src_pixels[k * src_stride] * coefficients[k + size];
           }
         }
       }
-      dst[0] = static_cast<float>(sum);
-      src += src_stride;
-      dst += dst_stride;
+      *dst_pixels = static_cast<float>(sum);
+      dst_pixels += dst_stride;
+      src_pixels += src_stride;
     }
   }
 }
@@ -112,6 +115,7 @@ void Convolve(const Array3Df &in,
   int src_line_stride = in.Stride(0);
   int src_stride = in.Stride(1);
   int dst_stride = out.Stride(1);
+  int dst_line_stride = out.Stride(0);
   const float* src = in.Data();
   float* dst = out.Data() + plane;
 
@@ -121,7 +125,7 @@ void Convolve(const Array3Df &in,
   switch (half_width) {
 #define static_convolution(size) case size: \
   FastConvolve<size, vertical>(kernel, width, height, src, src_stride, \
-                               src_line_stride, dst, dst_stride); break;
+                               src_line_stride, dst, dst_stride, dst_line_stride); break;
     static_convolution(1)
     static_convolution(2)
     static_convolution(3)
@@ -132,26 +136,29 @@ void Convolve(const Array3Df &in,
 #undef static_convolution
     default:
       int dynamic_size = kernel.size() / 2;
+      libmv_pragma_openmp(parallel if(height > 8))
       for (int y = 0; y < height; ++y) {
+        const float* src_pixels = src + y * src_line_stride;
+        float* dst_pixels = dst + y * dst_line_stride;
         for (int x = 0; x < width; ++x) {
           double sum = 0;
           // Slow path: this loop cannot be unrolled.
           for (int k = -dynamic_size; k <= dynamic_size; ++k) {
             if (vertical) {
               if (y + k >= 0 && y + k < height) {
-                sum += src[k * src_line_stride] *
+                sum += src_pixels[k * src_line_stride] *
                     kernel(2 * dynamic_size - (k + dynamic_size));
               }
             } else {
               if (x + k >= 0 && x + k < width) {
-                sum += src[k * src_stride] *
+                sum += src_pixels[k * src_stride] *
                     kernel(2 * dynamic_size - (k + dynamic_size));
               }
             }
           }
-          dst[0] = static_cast<float>(sum);
-          src += src_stride;
-          dst += dst_stride;
+          *dst_pixels = static_cast<float>(sum);
+          dst_pixels += dst_stride;
+          src_pixels += src_stride;
         }
       }
   }

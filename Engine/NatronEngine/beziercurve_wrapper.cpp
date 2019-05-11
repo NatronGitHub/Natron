@@ -19,8 +19,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
+#include <PyItemsTable.h>
 #include <PyParameter.h>
-#include <PyRoto.h>
+#include <RectD.h>
 #include <list>
 
 
@@ -39,7 +40,7 @@ BezierCurveWrapper::~BezierCurveWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
-static PyObject* Sbk_BezierCurveFunc_addControlPoint(PyObject* self, PyObject* args)
+static PyObject* Sbk_BezierCurveFunc_addControlPoint(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::BezierCurve* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -47,24 +48,35 @@ static PyObject* Sbk_BezierCurveFunc_addControlPoint(PyObject* self, PyObject* a
         return 0;
     cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
+    PyObject* pyArgs[] = {0, 0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 3) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.addControlPoint(): too many arguments");
+        return 0;
+    } else if (numArgs < 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.addControlPoint(): not enough arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "addControlPoint", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_ParseTuple(args, "|OOO:addControlPoint", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: addControlPoint(double,double)
-    if (numArgs == 2
+    // 0: addControlPoint(double,double,QString)
+    if (numArgs >= 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
-        overloadId = 0; // addControlPoint(double,double)
+        if (numArgs == 2) {
+            overloadId = 0; // addControlPoint(double,double,QString)
+        } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2])))) {
+            overloadId = 0; // addControlPoint(double,double,QString)
+        }
     }
 
     // Function signature not found.
@@ -72,14 +84,27 @@ static PyObject* Sbk_BezierCurveFunc_addControlPoint(PyObject* self, PyObject* a
 
     // Call function/method
     {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[2]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.addControlPoint(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[2] = value;
+                if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2]))))
+                    goto Sbk_BezierCurveFunc_addControlPoint_TypeError;
+            }
+        }
         double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
+        ::QString cppArg2 = QLatin1String(kPyParamViewSetSpecAll);
+        if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // addControlPoint(double,double)
-            cppSelf->addControlPoint(cppArg0, cppArg1);
+            // addControlPoint(double,double,QString)
+            cppSelf->addControlPoint(cppArg0, cppArg1, cppArg2);
         }
     }
 
@@ -89,12 +114,12 @@ static PyObject* Sbk_BezierCurveFunc_addControlPoint(PyObject* self, PyObject* a
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_addControlPoint_TypeError:
-        const char* overloads[] = {"float, float", 0};
+        const char* overloads[] = {"float, float, unicode = QLatin1String(kPyParamViewSetSpecAll)", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.addControlPoint", overloads);
         return 0;
 }
 
-static PyObject* Sbk_BezierCurveFunc_addControlPointOnSegment(PyObject* self, PyObject* args)
+static PyObject* Sbk_BezierCurveFunc_addControlPointOnSegment(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::BezierCurve* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -102,24 +127,35 @@ static PyObject* Sbk_BezierCurveFunc_addControlPointOnSegment(PyObject* self, Py
         return 0;
     cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
+    PyObject* pyArgs[] = {0, 0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 3) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.addControlPointOnSegment(): too many arguments");
+        return 0;
+    } else if (numArgs < 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.addControlPointOnSegment(): not enough arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "addControlPointOnSegment", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_ParseTuple(args, "|OOO:addControlPointOnSegment", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: addControlPointOnSegment(int,double)
-    if (numArgs == 2
+    // 0: addControlPointOnSegment(int,double,QString)
+    if (numArgs >= 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
-        overloadId = 0; // addControlPointOnSegment(int,double)
+        if (numArgs == 2) {
+            overloadId = 0; // addControlPointOnSegment(int,double,QString)
+        } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2])))) {
+            overloadId = 0; // addControlPointOnSegment(int,double,QString)
+        }
     }
 
     // Function signature not found.
@@ -127,14 +163,27 @@ static PyObject* Sbk_BezierCurveFunc_addControlPointOnSegment(PyObject* self, Py
 
     // Call function/method
     {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[2]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.addControlPointOnSegment(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[2] = value;
+                if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2]))))
+                    goto Sbk_BezierCurveFunc_addControlPointOnSegment_TypeError;
+            }
+        }
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
+        ::QString cppArg2 = QLatin1String(kPyParamViewSetSpecAll);
+        if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // addControlPointOnSegment(int,double)
-            cppSelf->addControlPointOnSegment(cppArg0, cppArg1);
+            // addControlPointOnSegment(int,double,QString)
+            cppSelf->addControlPointOnSegment(cppArg0, cppArg1, cppArg2);
         }
     }
 
@@ -144,170 +193,12 @@ static PyObject* Sbk_BezierCurveFunc_addControlPointOnSegment(PyObject* self, Py
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_addControlPointOnSegment_TypeError:
-        const char* overloads[] = {"int, float", 0};
+        const char* overloads[] = {"int, float, unicode = QLatin1String(kPyParamViewSetSpecAll)", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.addControlPointOnSegment", overloads);
         return 0;
 }
 
-static PyObject* Sbk_BezierCurveFunc_getActivatedParam(PyObject* self)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getActivatedParam()const
-            BooleanParam * cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getActivatedParam();
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], cppResult);
-
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_BezierCurveFunc_getColor(PyObject* self, PyObject* pyArg)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: getColor(double)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArg)))) {
-        overloadId = 0; // getColor(double)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_BezierCurveFunc_getColor_TypeError;
-
-    // Call function/method
-    {
-        double cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // getColor(double)
-            ColorTuple* cppResult = new ColorTuple(cppSelf->getColor(cppArg0));
-            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], cppResult, true, true);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-
-    Sbk_BezierCurveFunc_getColor_TypeError:
-        const char* overloads[] = {"float", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.getColor", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_BezierCurveFunc_getColorParam(PyObject* self)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getColorParam()const
-            ColorParam * cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getColorParam();
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORPARAM_IDX], cppResult);
-
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_BezierCurveFunc_getCompositingOperator(PyObject* self)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getCompositingOperator()const
-            NATRON_NAMESPACE::MergingFunctionEnum cppResult = NATRON_NAMESPACE::MergingFunctionEnum(const_cast<const ::BezierCurve*>(cppSelf)->getCompositingOperator());
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_MERGINGFUNCTIONENUM_IDX]), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_BezierCurveFunc_getCompositingOperatorParam(PyObject* self)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getCompositingOperatorParam()const
-            ChoiceParam * cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getCompositingOperatorParam();
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], cppResult);
-
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_BezierCurveFunc_getControlPointPosition(PyObject* self, PyObject* args)
+static PyObject* Sbk_BezierCurveFunc_getBoundingBox(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::BezierCurve* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -318,22 +209,111 @@ static PyObject* Sbk_BezierCurveFunc_getControlPointPosition(PyObject* self, PyO
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
     PyObject* pyArgs[] = {0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.getBoundingBox(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.getBoundingBox(): not enough arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "getControlPointPosition", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_ParseTuple(args, "|OO:getBoundingBox", &(pyArgs[0]), &(pyArgs[1])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: getControlPointPosition(int,double,double*,double*,double*,double*,double*,double*)const
-    if (numArgs == 2
+    // 0: getBoundingBox(double,QString)const
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // getBoundingBox(double,QString)const
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+            overloadId = 0; // getBoundingBox(double,QString)const
+        }
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_BezierCurveFunc_getBoundingBox_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.getBoundingBox(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
+                    goto Sbk_BezierCurveFunc_getBoundingBox_TypeError;
+            }
+        }
+        double cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::QString cppArg1 = QLatin1String(kPyParamViewIdxMain);
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // getBoundingBox(double,QString)const
+            RectD* cppResult = new RectD(const_cast<const ::BezierCurve*>(cppSelf)->getBoundingBox(cppArg0, cppArg1));
+            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_RECTD_IDX], cppResult, true, true);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_BezierCurveFunc_getBoundingBox_TypeError:
+        const char* overloads[] = {"float, unicode = QLatin1String(kPyParamViewIdxMain)", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.getBoundingBox", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_BezierCurveFunc_getControlPointPosition(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    ::BezierCurve* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 3) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.getControlPointPosition(): too many arguments");
+        return 0;
+    } else if (numArgs < 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.getControlPointPosition(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OOO:getControlPointPosition", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: getControlPointPosition(int,double,double*,double*,double*,double*,double*,double*,QString)const
+    if (numArgs >= 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
-        overloadId = 0; // getControlPointPosition(int,double,double*,double*,double*,double*,double*,double*)const
+        if (numArgs == 2) {
+            overloadId = 0; // getControlPointPosition(int,double,double*,double*,double*,double*,double*,double*,QString)const
+        } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2])))) {
+            overloadId = 0; // getControlPointPosition(int,double,double*,double*,double*,double*,double*,double*,QString)const
+        }
     }
 
     // Function signature not found.
@@ -341,17 +321,30 @@ static PyObject* Sbk_BezierCurveFunc_getControlPointPosition(PyObject* self, PyO
 
     // Call function/method
     {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[2]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.getControlPointPosition(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[2] = value;
+                if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2]))))
+                    goto Sbk_BezierCurveFunc_getControlPointPosition_TypeError;
+            }
+        }
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
+        ::QString cppArg2 = QLatin1String(kPyParamViewIdxMain);
+        if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // getControlPointPosition(int,double,double*,double*,double*,double*,double*,double*)const
+            // getControlPointPosition(int,double,double*,double*,double*,double*,double*,double*,QString)const
             // Begin code injection
 
             double x,y,rx,ry,lx,ly;
-            cppSelf->getControlPointPosition(cppArg0, cppArg1, &x,&y, &lx,&ly,&rx,&ry);
+            cppSelf->getControlPointPosition(cppArg0, cppArg1, &x,&y, &lx,&ly,&rx,&ry, cppArg2);
 
             PyObject* ret = PyTuple_New(6);
             PyTuple_SET_ITEM(ret, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &x));
@@ -377,12 +370,12 @@ static PyObject* Sbk_BezierCurveFunc_getControlPointPosition(PyObject* self, PyO
     return pyResult;
 
     Sbk_BezierCurveFunc_getControlPointPosition_TypeError:
-        const char* overloads[] = {"int, float, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double", 0};
+        const char* overloads[] = {"int, float, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, unicode = QLatin1String(kPyParamViewIdxMain)", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.getControlPointPosition", overloads);
         return 0;
 }
 
-static PyObject* Sbk_BezierCurveFunc_getFeatherDistance(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_BezierCurveFunc_getFeatherPointPosition(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::BezierCurve* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -391,172 +384,35 @@ static PyObject* Sbk_BezierCurveFunc_getFeatherDistance(PyObject* self, PyObject
     cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: getFeatherDistance(double)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArg)))) {
-        overloadId = 0; // getFeatherDistance(double)const
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_BezierCurveFunc_getFeatherDistance_TypeError;
-
-    // Call function/method
-    {
-        double cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // getFeatherDistance(double)const
-            double cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getFeatherDistance(cppArg0);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-
-    Sbk_BezierCurveFunc_getFeatherDistance_TypeError:
-        const char* overloads[] = {"float", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.getFeatherDistance", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_BezierCurveFunc_getFeatherDistanceParam(PyObject* self)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getFeatherDistanceParam()const
-            DoubleParam * cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getFeatherDistanceParam();
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], cppResult);
-
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_BezierCurveFunc_getFeatherFallOff(PyObject* self, PyObject* pyArg)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: getFeatherFallOff(double)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArg)))) {
-        overloadId = 0; // getFeatherFallOff(double)const
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_BezierCurveFunc_getFeatherFallOff_TypeError;
-
-    // Call function/method
-    {
-        double cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // getFeatherFallOff(double)const
-            double cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getFeatherFallOff(cppArg0);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-
-    Sbk_BezierCurveFunc_getFeatherFallOff_TypeError:
-        const char* overloads[] = {"float", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.getFeatherFallOff", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_BezierCurveFunc_getFeatherFallOffParam(PyObject* self)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getFeatherFallOffParam()const
-            DoubleParam * cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getFeatherFallOffParam();
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], cppResult);
-
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_BezierCurveFunc_getFeatherPointPosition(PyObject* self, PyObject* args)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
-    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
+    PyObject* pyArgs[] = {0, 0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 3) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.getFeatherPointPosition(): too many arguments");
+        return 0;
+    } else if (numArgs < 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.getFeatherPointPosition(): not enough arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "getFeatherPointPosition", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_ParseTuple(args, "|OOO:getFeatherPointPosition", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: getFeatherPointPosition(int,double,double*,double*,double*,double*,double*,double*)const
-    if (numArgs == 2
+    // 0: getFeatherPointPosition(int,double,double*,double*,double*,double*,double*,double*,QString)const
+    if (numArgs >= 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
-        overloadId = 0; // getFeatherPointPosition(int,double,double*,double*,double*,double*,double*,double*)const
+        if (numArgs == 2) {
+            overloadId = 0; // getFeatherPointPosition(int,double,double*,double*,double*,double*,double*,double*,QString)const
+        } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2])))) {
+            overloadId = 0; // getFeatherPointPosition(int,double,double*,double*,double*,double*,double*,double*,QString)const
+        }
     }
 
     // Function signature not found.
@@ -564,17 +420,30 @@ static PyObject* Sbk_BezierCurveFunc_getFeatherPointPosition(PyObject* self, PyO
 
     // Call function/method
     {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[2]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.getFeatherPointPosition(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[2] = value;
+                if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2]))))
+                    goto Sbk_BezierCurveFunc_getFeatherPointPosition_TypeError;
+            }
+        }
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
+        ::QString cppArg2 = QLatin1String(kPyParamViewIdxMain);
+        if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // getFeatherPointPosition(int,double,double*,double*,double*,double*,double*,double*)const
+            // getFeatherPointPosition(int,double,double*,double*,double*,double*,double*,double*,QString)const
             // Begin code injection
 
             double x,y,rx,ry,lx,ly;
-            cppSelf->getFeatherPointPosition(cppArg0, cppArg1, &x,&y, &lx,&ly,&rx,&ry);
+            cppSelf->getFeatherPointPosition(cppArg0, cppArg1, &x,&y, &lx,&ly,&rx,&ry,cppArg2);
 
             PyObject* ret = PyTuple_New(6);
             PyTuple_SET_ITEM(ret, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &x));
@@ -600,12 +469,12 @@ static PyObject* Sbk_BezierCurveFunc_getFeatherPointPosition(PyObject* self, PyO
     return pyResult;
 
     Sbk_BezierCurveFunc_getFeatherPointPosition_TypeError:
-        const char* overloads[] = {"int, float, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double", 0};
+        const char* overloads[] = {"int, float, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, unicode = QLatin1String(kPyParamViewIdxMain)", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.getFeatherPointPosition", overloads);
         return 0;
 }
 
-static PyObject* Sbk_BezierCurveFunc_getIsActivated(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_BezierCurveFunc_getNumControlPoints(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::BezierCurve* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -614,97 +483,52 @@ static PyObject* Sbk_BezierCurveFunc_getIsActivated(PyObject* self, PyObject* py
     cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
+    PythonToCppFunc pythonToCpp[] = { 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.getNumControlPoints(): too many arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|O:getNumControlPoints", &(pyArgs[0])))
+        return 0;
+
 
     // Overloaded function decisor
-    // 0: getIsActivated(double)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArg)))) {
-        overloadId = 0; // getIsActivated(double)
+    // 0: getNumControlPoints(QString)const
+    if (numArgs == 0) {
+        overloadId = 0; // getNumControlPoints(QString)const
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
+        overloadId = 0; // getNumControlPoints(QString)const
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_BezierCurveFunc_getIsActivated_TypeError;
+    if (overloadId == -1) goto Sbk_BezierCurveFunc_getNumControlPoints_TypeError;
 
     // Call function/method
     {
-        double cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // getIsActivated(double)
-            bool cppResult = cppSelf->getIsActivated(cppArg0);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-
-    Sbk_BezierCurveFunc_getIsActivated_TypeError:
-        const char* overloads[] = {"float", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.getIsActivated", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_BezierCurveFunc_getKeyframes(PyObject* self)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getKeyframes(std::list<double>*)const
-            // Begin code injection
-
-            std::list<double> keys;
-            cppSelf->getKeyframes(&keys);
-            PyObject* ret = PyList_New((int) keys.size());
-            int idx = 0;
-            for (std::list<double>::iterator it = keys.begin(); it!=keys.end(); ++it,++idx) {
-            PyList_SET_ITEM(ret, idx, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &*it));
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[0]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.getNumControlPoints(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[0] = value;
+                if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0]))))
+                    goto Sbk_BezierCurveFunc_getNumControlPoints_TypeError;
             }
-            return ret;
-
-            // End of code injection
-
-
-            pyResult = Py_None;
-            Py_INCREF(Py_None);
         }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_BezierCurveFunc_getNumControlPoints(PyObject* self)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
+        ::QString cppArg0 = QLatin1String(kPyParamViewIdxMain);
+        if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getNumControlPoints()const
-            int cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getNumControlPoints();
+            // getNumControlPoints(QString)const
+            int cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getNumControlPoints(cppArg0);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -714,9 +538,40 @@ static PyObject* Sbk_BezierCurveFunc_getNumControlPoints(PyObject* self)
         return 0;
     }
     return pyResult;
+
+    Sbk_BezierCurveFunc_getNumControlPoints_TypeError:
+        const char* overloads[] = {"unicode = QLatin1String(kPyParamViewIdxMain)", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.getNumControlPoints", overloads);
+        return 0;
 }
 
-static PyObject* Sbk_BezierCurveFunc_getOpacity(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_BezierCurveFunc_getViewsList(PyObject* self)
+{
+    ::BezierCurve* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getViewsList()const
+            QStringList cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getViewsList();
+            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRINGLIST_IDX], &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_BezierCurveFunc_isActivated(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::BezierCurve* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -725,112 +580,59 @@ static PyObject* Sbk_BezierCurveFunc_getOpacity(PyObject* self, PyObject* pyArg)
     cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.isActivated(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.isActivated(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OO:isActivated", &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
 
     // Overloaded function decisor
-    // 0: getOpacity(double)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArg)))) {
-        overloadId = 0; // getOpacity(double)const
+    // 0: isActivated(double,QString)const
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // isActivated(double,QString)const
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+            overloadId = 0; // isActivated(double,QString)const
+        }
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_BezierCurveFunc_getOpacity_TypeError;
+    if (overloadId == -1) goto Sbk_BezierCurveFunc_isActivated_TypeError;
 
     // Call function/method
     {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.isActivated(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
+                    goto Sbk_BezierCurveFunc_isActivated_TypeError;
+            }
+        }
         double cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::QString cppArg1 = QLatin1String(kPyParamViewIdxMain);
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // getOpacity(double)const
-            double cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getOpacity(cppArg0);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-
-    Sbk_BezierCurveFunc_getOpacity_TypeError:
-        const char* overloads[] = {"float", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.getOpacity", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_BezierCurveFunc_getOpacityParam(PyObject* self)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getOpacityParam()const
-            DoubleParam * cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getOpacityParam();
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], cppResult);
-
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_BezierCurveFunc_getOverlayColor(PyObject* self)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getOverlayColor()const
-            ColorTuple* cppResult = new ColorTuple(const_cast<const ::BezierCurve*>(cppSelf)->getOverlayColor());
-            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], cppResult, true, true);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_BezierCurveFunc_isCurveFinished(PyObject* self)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // isCurveFinished()const
-            bool cppResult = const_cast<const ::BezierCurve*>(cppSelf)->isCurveFinished();
+            // isActivated(double,QString)const
+            bool cppResult = const_cast<const ::BezierCurve*>(cppSelf)->isActivated(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -840,9 +642,85 @@ static PyObject* Sbk_BezierCurveFunc_isCurveFinished(PyObject* self)
         return 0;
     }
     return pyResult;
+
+    Sbk_BezierCurveFunc_isActivated_TypeError:
+        const char* overloads[] = {"float, unicode = QLatin1String(kPyParamViewIdxMain)", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.isActivated", overloads);
+        return 0;
 }
 
-static PyObject* Sbk_BezierCurveFunc_moveFeatherByIndex(PyObject* self, PyObject* args)
+static PyObject* Sbk_BezierCurveFunc_isCurveFinished(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    ::BezierCurve* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.isCurveFinished(): too many arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|O:isCurveFinished", &(pyArgs[0])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: isCurveFinished(QString)const
+    if (numArgs == 0) {
+        overloadId = 0; // isCurveFinished(QString)const
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
+        overloadId = 0; // isCurveFinished(QString)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_BezierCurveFunc_isCurveFinished_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[0]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.isCurveFinished(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[0] = value;
+                if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0]))))
+                    goto Sbk_BezierCurveFunc_isCurveFinished_TypeError;
+            }
+        }
+        ::QString cppArg0 = QLatin1String(kPyParamViewIdxMain);
+        if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // isCurveFinished(QString)const
+            bool cppResult = const_cast<const ::BezierCurve*>(cppSelf)->isCurveFinished(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_BezierCurveFunc_isCurveFinished_TypeError:
+        const char* overloads[] = {"unicode = QLatin1String(kPyParamViewIdxMain)", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.isCurveFinished", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_BezierCurveFunc_moveFeatherByIndex(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::BezierCurve* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -850,26 +728,37 @@ static PyObject* Sbk_BezierCurveFunc_moveFeatherByIndex(PyObject* self, PyObject
         return 0;
     cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 5) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.moveFeatherByIndex(): too many arguments");
+        return 0;
+    } else if (numArgs < 4) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.moveFeatherByIndex(): not enough arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "moveFeatherByIndex", 4, 4, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
+    if (!PyArg_ParseTuple(args, "|OOOOO:moveFeatherByIndex", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: moveFeatherByIndex(int,double,double,double)
-    if (numArgs == 4
+    // 0: moveFeatherByIndex(int,double,double,double,QString)
+    if (numArgs >= 4
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
         && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
-        overloadId = 0; // moveFeatherByIndex(int,double,double,double)
+        if (numArgs == 4) {
+            overloadId = 0; // moveFeatherByIndex(int,double,double,double,QString)
+        } else if ((pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[4])))) {
+            overloadId = 0; // moveFeatherByIndex(int,double,double,double,QString)
+        }
     }
 
     // Function signature not found.
@@ -877,6 +766,17 @@ static PyObject* Sbk_BezierCurveFunc_moveFeatherByIndex(PyObject* self, PyObject
 
     // Call function/method
     {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[4]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.moveFeatherByIndex(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[4] = value;
+                if (!(pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[4]))))
+                    goto Sbk_BezierCurveFunc_moveFeatherByIndex_TypeError;
+            }
+        }
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         double cppArg1;
@@ -885,10 +785,12 @@ static PyObject* Sbk_BezierCurveFunc_moveFeatherByIndex(PyObject* self, PyObject
         pythonToCpp[2](pyArgs[2], &cppArg2);
         double cppArg3;
         pythonToCpp[3](pyArgs[3], &cppArg3);
+        ::QString cppArg4 = QLatin1String(kPyParamViewSetSpecAll);
+        if (pythonToCpp[4]) pythonToCpp[4](pyArgs[4], &cppArg4);
 
         if (!PyErr_Occurred()) {
-            // moveFeatherByIndex(int,double,double,double)
-            cppSelf->moveFeatherByIndex(cppArg0, cppArg1, cppArg2, cppArg3);
+            // moveFeatherByIndex(int,double,double,double,QString)
+            cppSelf->moveFeatherByIndex(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4);
         }
     }
 
@@ -898,12 +800,12 @@ static PyObject* Sbk_BezierCurveFunc_moveFeatherByIndex(PyObject* self, PyObject
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_moveFeatherByIndex_TypeError:
-        const char* overloads[] = {"int, float, float, float", 0};
+        const char* overloads[] = {"int, float, float, float, unicode = QLatin1String(kPyParamViewSetSpecAll)", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.moveFeatherByIndex", overloads);
         return 0;
 }
 
-static PyObject* Sbk_BezierCurveFunc_moveLeftBezierPoint(PyObject* self, PyObject* args)
+static PyObject* Sbk_BezierCurveFunc_moveLeftBezierPoint(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::BezierCurve* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -911,26 +813,37 @@ static PyObject* Sbk_BezierCurveFunc_moveLeftBezierPoint(PyObject* self, PyObjec
         return 0;
     cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 5) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.moveLeftBezierPoint(): too many arguments");
+        return 0;
+    } else if (numArgs < 4) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.moveLeftBezierPoint(): not enough arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "moveLeftBezierPoint", 4, 4, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
+    if (!PyArg_ParseTuple(args, "|OOOOO:moveLeftBezierPoint", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: moveLeftBezierPoint(int,double,double,double)
-    if (numArgs == 4
+    // 0: moveLeftBezierPoint(int,double,double,double,QString)
+    if (numArgs >= 4
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
         && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
-        overloadId = 0; // moveLeftBezierPoint(int,double,double,double)
+        if (numArgs == 4) {
+            overloadId = 0; // moveLeftBezierPoint(int,double,double,double,QString)
+        } else if ((pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[4])))) {
+            overloadId = 0; // moveLeftBezierPoint(int,double,double,double,QString)
+        }
     }
 
     // Function signature not found.
@@ -938,6 +851,17 @@ static PyObject* Sbk_BezierCurveFunc_moveLeftBezierPoint(PyObject* self, PyObjec
 
     // Call function/method
     {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[4]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.moveLeftBezierPoint(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[4] = value;
+                if (!(pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[4]))))
+                    goto Sbk_BezierCurveFunc_moveLeftBezierPoint_TypeError;
+            }
+        }
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         double cppArg1;
@@ -946,10 +870,12 @@ static PyObject* Sbk_BezierCurveFunc_moveLeftBezierPoint(PyObject* self, PyObjec
         pythonToCpp[2](pyArgs[2], &cppArg2);
         double cppArg3;
         pythonToCpp[3](pyArgs[3], &cppArg3);
+        ::QString cppArg4 = QLatin1String(kPyParamViewSetSpecAll);
+        if (pythonToCpp[4]) pythonToCpp[4](pyArgs[4], &cppArg4);
 
         if (!PyErr_Occurred()) {
-            // moveLeftBezierPoint(int,double,double,double)
-            cppSelf->moveLeftBezierPoint(cppArg0, cppArg1, cppArg2, cppArg3);
+            // moveLeftBezierPoint(int,double,double,double,QString)
+            cppSelf->moveLeftBezierPoint(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4);
         }
     }
 
@@ -959,12 +885,12 @@ static PyObject* Sbk_BezierCurveFunc_moveLeftBezierPoint(PyObject* self, PyObjec
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_moveLeftBezierPoint_TypeError:
-        const char* overloads[] = {"int, float, float, float", 0};
+        const char* overloads[] = {"int, float, float, float, unicode = QLatin1String(kPyParamViewSetSpecAll)", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.moveLeftBezierPoint", overloads);
         return 0;
 }
 
-static PyObject* Sbk_BezierCurveFunc_movePointByIndex(PyObject* self, PyObject* args)
+static PyObject* Sbk_BezierCurveFunc_movePointByIndex(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::BezierCurve* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -972,26 +898,37 @@ static PyObject* Sbk_BezierCurveFunc_movePointByIndex(PyObject* self, PyObject* 
         return 0;
     cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 5) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.movePointByIndex(): too many arguments");
+        return 0;
+    } else if (numArgs < 4) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.movePointByIndex(): not enough arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "movePointByIndex", 4, 4, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
+    if (!PyArg_ParseTuple(args, "|OOOOO:movePointByIndex", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: movePointByIndex(int,double,double,double)
-    if (numArgs == 4
+    // 0: movePointByIndex(int,double,double,double,QString)
+    if (numArgs >= 4
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
         && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
-        overloadId = 0; // movePointByIndex(int,double,double,double)
+        if (numArgs == 4) {
+            overloadId = 0; // movePointByIndex(int,double,double,double,QString)
+        } else if ((pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[4])))) {
+            overloadId = 0; // movePointByIndex(int,double,double,double,QString)
+        }
     }
 
     // Function signature not found.
@@ -999,6 +936,17 @@ static PyObject* Sbk_BezierCurveFunc_movePointByIndex(PyObject* self, PyObject* 
 
     // Call function/method
     {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[4]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.movePointByIndex(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[4] = value;
+                if (!(pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[4]))))
+                    goto Sbk_BezierCurveFunc_movePointByIndex_TypeError;
+            }
+        }
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         double cppArg1;
@@ -1007,10 +955,12 @@ static PyObject* Sbk_BezierCurveFunc_movePointByIndex(PyObject* self, PyObject* 
         pythonToCpp[2](pyArgs[2], &cppArg2);
         double cppArg3;
         pythonToCpp[3](pyArgs[3], &cppArg3);
+        ::QString cppArg4 = QLatin1String(kPyParamViewSetSpecAll);
+        if (pythonToCpp[4]) pythonToCpp[4](pyArgs[4], &cppArg4);
 
         if (!PyErr_Occurred()) {
-            // movePointByIndex(int,double,double,double)
-            cppSelf->movePointByIndex(cppArg0, cppArg1, cppArg2, cppArg3);
+            // movePointByIndex(int,double,double,double,QString)
+            cppSelf->movePointByIndex(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4);
         }
     }
 
@@ -1020,12 +970,12 @@ static PyObject* Sbk_BezierCurveFunc_movePointByIndex(PyObject* self, PyObject* 
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_movePointByIndex_TypeError:
-        const char* overloads[] = {"int, float, float, float", 0};
+        const char* overloads[] = {"int, float, float, float, unicode = QLatin1String(kPyParamViewSetSpecAll)", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.movePointByIndex", overloads);
         return 0;
 }
 
-static PyObject* Sbk_BezierCurveFunc_moveRightBezierPoint(PyObject* self, PyObject* args)
+static PyObject* Sbk_BezierCurveFunc_moveRightBezierPoint(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::BezierCurve* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -1033,26 +983,37 @@ static PyObject* Sbk_BezierCurveFunc_moveRightBezierPoint(PyObject* self, PyObje
         return 0;
     cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 5) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.moveRightBezierPoint(): too many arguments");
+        return 0;
+    } else if (numArgs < 4) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.moveRightBezierPoint(): not enough arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "moveRightBezierPoint", 4, 4, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
+    if (!PyArg_ParseTuple(args, "|OOOOO:moveRightBezierPoint", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: moveRightBezierPoint(int,double,double,double)
-    if (numArgs == 4
+    // 0: moveRightBezierPoint(int,double,double,double,QString)
+    if (numArgs >= 4
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
         && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
-        overloadId = 0; // moveRightBezierPoint(int,double,double,double)
+        if (numArgs == 4) {
+            overloadId = 0; // moveRightBezierPoint(int,double,double,double,QString)
+        } else if ((pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[4])))) {
+            overloadId = 0; // moveRightBezierPoint(int,double,double,double,QString)
+        }
     }
 
     // Function signature not found.
@@ -1060,6 +1021,17 @@ static PyObject* Sbk_BezierCurveFunc_moveRightBezierPoint(PyObject* self, PyObje
 
     // Call function/method
     {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[4]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.moveRightBezierPoint(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[4] = value;
+                if (!(pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[4]))))
+                    goto Sbk_BezierCurveFunc_moveRightBezierPoint_TypeError;
+            }
+        }
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         double cppArg1;
@@ -1068,10 +1040,12 @@ static PyObject* Sbk_BezierCurveFunc_moveRightBezierPoint(PyObject* self, PyObje
         pythonToCpp[2](pyArgs[2], &cppArg2);
         double cppArg3;
         pythonToCpp[3](pyArgs[3], &cppArg3);
+        ::QString cppArg4 = QLatin1String(kPyParamViewSetSpecAll);
+        if (pythonToCpp[4]) pythonToCpp[4](pyArgs[4], &cppArg4);
 
         if (!PyErr_Occurred()) {
-            // moveRightBezierPoint(int,double,double,double)
-            cppSelf->moveRightBezierPoint(cppArg0, cppArg1, cppArg2, cppArg3);
+            // moveRightBezierPoint(int,double,double,double,QString)
+            cppSelf->moveRightBezierPoint(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4);
         }
     }
 
@@ -1081,12 +1055,12 @@ static PyObject* Sbk_BezierCurveFunc_moveRightBezierPoint(PyObject* self, PyObje
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_moveRightBezierPoint_TypeError:
-        const char* overloads[] = {"int, float, float, float", 0};
+        const char* overloads[] = {"int, float, float, float, unicode = QLatin1String(kPyParamViewSetSpecAll)", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.moveRightBezierPoint", overloads);
         return 0;
 }
 
-static PyObject* Sbk_BezierCurveFunc_removeControlPointByIndex(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_BezierCurveFunc_removeControlPointByIndex(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::BezierCurve* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -1094,13 +1068,33 @@ static PyObject* Sbk_BezierCurveFunc_removeControlPointByIndex(PyObject* self, P
         return 0;
     cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.removeControlPointByIndex(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.removeControlPointByIndex(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OO:removeControlPointByIndex", &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
 
     // Overloaded function decisor
-    // 0: removeControlPointByIndex(int)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // removeControlPointByIndex(int)
+    // 0: removeControlPointByIndex(int,QString)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // removeControlPointByIndex(int,QString)
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+            overloadId = 0; // removeControlPointByIndex(int,QString)
+        }
     }
 
     // Function signature not found.
@@ -1108,12 +1102,25 @@ static PyObject* Sbk_BezierCurveFunc_removeControlPointByIndex(PyObject* self, P
 
     // Call function/method
     {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.removeControlPointByIndex(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
+                    goto Sbk_BezierCurveFunc_removeControlPointByIndex_TypeError;
+            }
+        }
         int cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::QString cppArg1 = QLatin1String(kPyParamViewSetSpecAll);
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // removeControlPointByIndex(int)
-            cppSelf->removeControlPointByIndex(cppArg0);
+            // removeControlPointByIndex(int,QString)
+            cppSelf->removeControlPointByIndex(cppArg0, cppArg1);
         }
     }
 
@@ -1123,12 +1130,12 @@ static PyObject* Sbk_BezierCurveFunc_removeControlPointByIndex(PyObject* self, P
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_removeControlPointByIndex_TypeError:
-        const char* overloads[] = {"int", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.removeControlPointByIndex", overloads);
+        const char* overloads[] = {"int, unicode = QLatin1String(kPyParamViewSetSpecAll)", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.removeControlPointByIndex", overloads);
         return 0;
 }
 
-static PyObject* Sbk_BezierCurveFunc_setActivated(PyObject* self, PyObject* args)
+static PyObject* Sbk_BezierCurveFunc_setCurveFinished(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::BezierCurve* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -1138,169 +1145,31 @@ static PyObject* Sbk_BezierCurveFunc_setActivated(PyObject* self, PyObject* args
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
     PyObject* pyArgs[] = {0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.setCurveFinished(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.setCurveFinished(): not enough arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "setActivated", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_ParseTuple(args, "|OO:setCurveFinished", &(pyArgs[0]), &(pyArgs[1])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: setActivated(double,bool)
-    if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[1])))) {
-        overloadId = 0; // setActivated(double,bool)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_BezierCurveFunc_setActivated_TypeError;
-
-    // Call function/method
-    {
-        double cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        bool cppArg1;
-        pythonToCpp[1](pyArgs[1], &cppArg1);
-
-        if (!PyErr_Occurred()) {
-            // setActivated(double,bool)
-            cppSelf->setActivated(cppArg0, cppArg1);
+    // 0: setCurveFinished(bool,QString)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // setCurveFinished(bool,QString)
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+            overloadId = 0; // setCurveFinished(bool,QString)
         }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_BezierCurveFunc_setActivated_TypeError:
-        const char* overloads[] = {"float, bool", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.setActivated", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_BezierCurveFunc_setColor(PyObject* self, PyObject* args)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
-    SBK_UNUSED(pythonToCpp)
-    int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0, 0};
-
-    // invalid argument lengths
-
-
-    if (!PyArg_UnpackTuple(args, "setColor", 4, 4, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
-        return 0;
-
-
-    // Overloaded function decisor
-    // 0: setColor(double,double,double,double)
-    if (numArgs == 4
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
-        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
-        && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
-        overloadId = 0; // setColor(double,double,double,double)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_BezierCurveFunc_setColor_TypeError;
-
-    // Call function/method
-    {
-        double cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        double cppArg1;
-        pythonToCpp[1](pyArgs[1], &cppArg1);
-        double cppArg2;
-        pythonToCpp[2](pyArgs[2], &cppArg2);
-        double cppArg3;
-        pythonToCpp[3](pyArgs[3], &cppArg3);
-
-        if (!PyErr_Occurred()) {
-            // setColor(double,double,double,double)
-            cppSelf->setColor(cppArg0, cppArg1, cppArg2, cppArg3);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_BezierCurveFunc_setColor_TypeError:
-        const char* overloads[] = {"float, float, float, float", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.setColor", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_BezierCurveFunc_setCompositingOperator(PyObject* self, PyObject* pyArg)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: setCompositingOperator(NATRON_NAMESPACE::MergingFunctionEnum)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_MERGINGFUNCTIONENUM_IDX]), (pyArg)))) {
-        overloadId = 0; // setCompositingOperator(NATRON_NAMESPACE::MergingFunctionEnum)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_BezierCurveFunc_setCompositingOperator_TypeError;
-
-    // Call function/method
-    {
-        ::NATRON_NAMESPACE::MergingFunctionEnum cppArg0 = ((::NATRON_NAMESPACE::MergingFunctionEnum)0);
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // setCompositingOperator(NATRON_NAMESPACE::MergingFunctionEnum)
-            cppSelf->setCompositingOperator(cppArg0);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_BezierCurveFunc_setCompositingOperator_TypeError:
-        const char* overloads[] = {"NatronEngine.NATRON_NAMESPACE.MergingFunctionEnum", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.setCompositingOperator", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_BezierCurveFunc_setCurveFinished(PyObject* self, PyObject* pyArg)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: setCurveFinished(bool)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
-        overloadId = 0; // setCurveFinished(bool)
     }
 
     // Function signature not found.
@@ -1308,12 +1177,25 @@ static PyObject* Sbk_BezierCurveFunc_setCurveFinished(PyObject* self, PyObject* 
 
     // Call function/method
     {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.setCurveFinished(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
+                    goto Sbk_BezierCurveFunc_setCurveFinished_TypeError;
+            }
+        }
         bool cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::QString cppArg1 = QLatin1String(kPyParamViewSetSpecAll);
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // setCurveFinished(bool)
-            cppSelf->setCurveFinished(cppArg0);
+            // setCurveFinished(bool,QString)
+            cppSelf->setCurveFinished(cppArg0, cppArg1);
         }
     }
 
@@ -1323,12 +1205,12 @@ static PyObject* Sbk_BezierCurveFunc_setCurveFinished(PyObject* self, PyObject* 
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_setCurveFinished_TypeError:
-        const char* overloads[] = {"bool", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.setCurveFinished", overloads);
+        const char* overloads[] = {"bool, unicode = QLatin1String(kPyParamViewSetSpecAll)", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.setCurveFinished", overloads);
         return 0;
 }
 
-static PyObject* Sbk_BezierCurveFunc_setFeatherDistance(PyObject* self, PyObject* args)
+static PyObject* Sbk_BezierCurveFunc_setFeatherPointAtIndex(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::BezierCurve* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -1336,131 +1218,28 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherDistance(PyObject* self, PyObject
         return 0;
     cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 9) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.setFeatherPointAtIndex(): too many arguments");
+        return 0;
+    } else if (numArgs < 8) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.setFeatherPointAtIndex(): not enough arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "setFeatherDistance", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_ParseTuple(args, "|OOOOOOOOO:setFeatherPointAtIndex", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4]), &(pyArgs[5]), &(pyArgs[6]), &(pyArgs[7]), &(pyArgs[8])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: setFeatherDistance(double,double)
-    if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
-        overloadId = 0; // setFeatherDistance(double,double)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_BezierCurveFunc_setFeatherDistance_TypeError;
-
-    // Call function/method
-    {
-        double cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        double cppArg1;
-        pythonToCpp[1](pyArgs[1], &cppArg1);
-
-        if (!PyErr_Occurred()) {
-            // setFeatherDistance(double,double)
-            cppSelf->setFeatherDistance(cppArg0, cppArg1);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_BezierCurveFunc_setFeatherDistance_TypeError:
-        const char* overloads[] = {"float, float", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.setFeatherDistance", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_BezierCurveFunc_setFeatherFallOff(PyObject* self, PyObject* args)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
-    SBK_UNUSED(pythonToCpp)
-    int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
-
-    // invalid argument lengths
-
-
-    if (!PyArg_UnpackTuple(args, "setFeatherFallOff", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
-        return 0;
-
-
-    // Overloaded function decisor
-    // 0: setFeatherFallOff(double,double)
-    if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
-        overloadId = 0; // setFeatherFallOff(double,double)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_BezierCurveFunc_setFeatherFallOff_TypeError;
-
-    // Call function/method
-    {
-        double cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        double cppArg1;
-        pythonToCpp[1](pyArgs[1], &cppArg1);
-
-        if (!PyErr_Occurred()) {
-            // setFeatherFallOff(double,double)
-            cppSelf->setFeatherFallOff(cppArg0, cppArg1);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_BezierCurveFunc_setFeatherFallOff_TypeError:
-        const char* overloads[] = {"float, float", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.setFeatherFallOff", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_BezierCurveFunc_setFeatherPointAtIndex(PyObject* self, PyObject* args)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-    SBK_UNUSED(pythonToCpp)
-    int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0, 0, 0, 0, 0, 0};
-
-    // invalid argument lengths
-
-
-    if (!PyArg_UnpackTuple(args, "setFeatherPointAtIndex", 8, 8, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4]), &(pyArgs[5]), &(pyArgs[6]), &(pyArgs[7])))
-        return 0;
-
-
-    // Overloaded function decisor
-    // 0: setFeatherPointAtIndex(int,double,double,double,double,double,double,double)
-    if (numArgs == 8
+    // 0: setFeatherPointAtIndex(int,double,double,double,double,double,double,double,QString)
+    if (numArgs >= 8
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
@@ -1469,7 +1248,11 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherPointAtIndex(PyObject* self, PyOb
         && (pythonToCpp[5] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[5])))
         && (pythonToCpp[6] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[6])))
         && (pythonToCpp[7] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[7])))) {
-        overloadId = 0; // setFeatherPointAtIndex(int,double,double,double,double,double,double,double)
+        if (numArgs == 8) {
+            overloadId = 0; // setFeatherPointAtIndex(int,double,double,double,double,double,double,double,QString)
+        } else if ((pythonToCpp[8] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[8])))) {
+            overloadId = 0; // setFeatherPointAtIndex(int,double,double,double,double,double,double,double,QString)
+        }
     }
 
     // Function signature not found.
@@ -1477,6 +1260,17 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherPointAtIndex(PyObject* self, PyOb
 
     // Call function/method
     {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[8]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.setFeatherPointAtIndex(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[8] = value;
+                if (!(pythonToCpp[8] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[8]))))
+                    goto Sbk_BezierCurveFunc_setFeatherPointAtIndex_TypeError;
+            }
+        }
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         double cppArg1;
@@ -1493,10 +1287,12 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherPointAtIndex(PyObject* self, PyOb
         pythonToCpp[6](pyArgs[6], &cppArg6);
         double cppArg7;
         pythonToCpp[7](pyArgs[7], &cppArg7);
+        ::QString cppArg8 = QLatin1String(kPyParamViewSetSpecAll);
+        if (pythonToCpp[8]) pythonToCpp[8](pyArgs[8], &cppArg8);
 
         if (!PyErr_Occurred()) {
-            // setFeatherPointAtIndex(int,double,double,double,double,double,double,double)
-            cppSelf->setFeatherPointAtIndex(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5, cppArg6, cppArg7);
+            // setFeatherPointAtIndex(int,double,double,double,double,double,double,double,QString)
+            cppSelf->setFeatherPointAtIndex(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5, cppArg6, cppArg7, cppArg8);
         }
     }
 
@@ -1506,12 +1302,12 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherPointAtIndex(PyObject* self, PyOb
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_setFeatherPointAtIndex_TypeError:
-        const char* overloads[] = {"int, float, float, float, float, float, float, float", 0};
+        const char* overloads[] = {"int, float, float, float, float, float, float, float, unicode = QLatin1String(kPyParamViewSetSpecAll)", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.setFeatherPointAtIndex", overloads);
         return 0;
 }
 
-static PyObject* Sbk_BezierCurveFunc_setOpacity(PyObject* self, PyObject* args)
+static PyObject* Sbk_BezierCurveFunc_setPointAtIndex(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::BezierCurve* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -1519,134 +1315,28 @@ static PyObject* Sbk_BezierCurveFunc_setOpacity(PyObject* self, PyObject* args)
         return 0;
     cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 9) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.setPointAtIndex(): too many arguments");
+        return 0;
+    } else if (numArgs < 8) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.setPointAtIndex(): not enough arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "setOpacity", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_ParseTuple(args, "|OOOOOOOOO:setPointAtIndex", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4]), &(pyArgs[5]), &(pyArgs[6]), &(pyArgs[7]), &(pyArgs[8])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: setOpacity(double,double)
-    if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
-        overloadId = 0; // setOpacity(double,double)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_BezierCurveFunc_setOpacity_TypeError;
-
-    // Call function/method
-    {
-        double cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        double cppArg1;
-        pythonToCpp[1](pyArgs[1], &cppArg1);
-
-        if (!PyErr_Occurred()) {
-            // setOpacity(double,double)
-            cppSelf->setOpacity(cppArg0, cppArg1);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_BezierCurveFunc_setOpacity_TypeError:
-        const char* overloads[] = {"float, float", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.setOpacity", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_BezierCurveFunc_setOverlayColor(PyObject* self, PyObject* args)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
-    SBK_UNUSED(pythonToCpp)
-    int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0};
-
-    // invalid argument lengths
-
-
-    if (!PyArg_UnpackTuple(args, "setOverlayColor", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
-        return 0;
-
-
-    // Overloaded function decisor
-    // 0: setOverlayColor(double,double,double)
-    if (numArgs == 3
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
-        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))) {
-        overloadId = 0; // setOverlayColor(double,double,double)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_BezierCurveFunc_setOverlayColor_TypeError;
-
-    // Call function/method
-    {
-        double cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        double cppArg1;
-        pythonToCpp[1](pyArgs[1], &cppArg1);
-        double cppArg2;
-        pythonToCpp[2](pyArgs[2], &cppArg2);
-
-        if (!PyErr_Occurred()) {
-            // setOverlayColor(double,double,double)
-            cppSelf->setOverlayColor(cppArg0, cppArg1, cppArg2);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_BezierCurveFunc_setOverlayColor_TypeError:
-        const char* overloads[] = {"float, float, float", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.setOverlayColor", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_BezierCurveFunc_setPointAtIndex(PyObject* self, PyObject* args)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-    SBK_UNUSED(pythonToCpp)
-    int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0, 0, 0, 0, 0, 0};
-
-    // invalid argument lengths
-
-
-    if (!PyArg_UnpackTuple(args, "setPointAtIndex", 8, 8, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4]), &(pyArgs[5]), &(pyArgs[6]), &(pyArgs[7])))
-        return 0;
-
-
-    // Overloaded function decisor
-    // 0: setPointAtIndex(int,double,double,double,double,double,double,double)
-    if (numArgs == 8
+    // 0: setPointAtIndex(int,double,double,double,double,double,double,double,QString)
+    if (numArgs >= 8
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
@@ -1655,7 +1345,11 @@ static PyObject* Sbk_BezierCurveFunc_setPointAtIndex(PyObject* self, PyObject* a
         && (pythonToCpp[5] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[5])))
         && (pythonToCpp[6] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[6])))
         && (pythonToCpp[7] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[7])))) {
-        overloadId = 0; // setPointAtIndex(int,double,double,double,double,double,double,double)
+        if (numArgs == 8) {
+            overloadId = 0; // setPointAtIndex(int,double,double,double,double,double,double,double,QString)
+        } else if ((pythonToCpp[8] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[8])))) {
+            overloadId = 0; // setPointAtIndex(int,double,double,double,double,double,double,double,QString)
+        }
     }
 
     // Function signature not found.
@@ -1663,6 +1357,17 @@ static PyObject* Sbk_BezierCurveFunc_setPointAtIndex(PyObject* self, PyObject* a
 
     // Call function/method
     {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "view");
+            if (value && pyArgs[8]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.BezierCurve.setPointAtIndex(): got multiple values for keyword argument 'view'.");
+                return 0;
+            } else if (value) {
+                pyArgs[8] = value;
+                if (!(pythonToCpp[8] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[8]))))
+                    goto Sbk_BezierCurveFunc_setPointAtIndex_TypeError;
+            }
+        }
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         double cppArg1;
@@ -1679,10 +1384,12 @@ static PyObject* Sbk_BezierCurveFunc_setPointAtIndex(PyObject* self, PyObject* a
         pythonToCpp[6](pyArgs[6], &cppArg6);
         double cppArg7;
         pythonToCpp[7](pyArgs[7], &cppArg7);
+        ::QString cppArg8 = QLatin1String(kPyParamViewSetSpecAll);
+        if (pythonToCpp[8]) pythonToCpp[8](pyArgs[8], &cppArg8);
 
         if (!PyErr_Occurred()) {
-            // setPointAtIndex(int,double,double,double,double,double,double,double)
-            cppSelf->setPointAtIndex(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5, cppArg6, cppArg7);
+            // setPointAtIndex(int,double,double,double,double,double,double,double,QString)
+            cppSelf->setPointAtIndex(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5, cppArg6, cppArg7, cppArg8);
         }
     }
 
@@ -1692,47 +1399,115 @@ static PyObject* Sbk_BezierCurveFunc_setPointAtIndex(PyObject* self, PyObject* a
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_setPointAtIndex_TypeError:
-        const char* overloads[] = {"int, float, float, float, float, float, float, float", 0};
+        const char* overloads[] = {"int, float, float, float, float, float, float, float, unicode = QLatin1String(kPyParamViewSetSpecAll)", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.setPointAtIndex", overloads);
         return 0;
 }
 
+static PyObject* Sbk_BezierCurveFunc_splitView(PyObject* self, PyObject* pyArg)
+{
+    ::BezierCurve* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: splitView(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // splitView(QString)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_BezierCurveFunc_splitView_TypeError;
+
+    // Call function/method
+    {
+        ::QString cppArg0 = ::QString();
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // splitView(QString)
+            cppSelf->splitView(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_BezierCurveFunc_splitView_TypeError:
+        const char* overloads[] = {"unicode", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.splitView", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_BezierCurveFunc_unSplitView(PyObject* self, PyObject* pyArg)
+{
+    ::BezierCurve* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: unSplitView(QString)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
+        overloadId = 0; // unSplitView(QString)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_BezierCurveFunc_unSplitView_TypeError;
+
+    // Call function/method
+    {
+        ::QString cppArg0 = ::QString();
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // unSplitView(QString)
+            cppSelf->unSplitView(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_BezierCurveFunc_unSplitView_TypeError:
+        const char* overloads[] = {"unicode", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.unSplitView", overloads);
+        return 0;
+}
+
 static PyMethodDef Sbk_BezierCurve_methods[] = {
-    {"addControlPoint", (PyCFunction)Sbk_BezierCurveFunc_addControlPoint, METH_VARARGS},
-    {"addControlPointOnSegment", (PyCFunction)Sbk_BezierCurveFunc_addControlPointOnSegment, METH_VARARGS},
-    {"getActivatedParam", (PyCFunction)Sbk_BezierCurveFunc_getActivatedParam, METH_NOARGS},
-    {"getColor", (PyCFunction)Sbk_BezierCurveFunc_getColor, METH_O},
-    {"getColorParam", (PyCFunction)Sbk_BezierCurveFunc_getColorParam, METH_NOARGS},
-    {"getCompositingOperator", (PyCFunction)Sbk_BezierCurveFunc_getCompositingOperator, METH_NOARGS},
-    {"getCompositingOperatorParam", (PyCFunction)Sbk_BezierCurveFunc_getCompositingOperatorParam, METH_NOARGS},
-    {"getControlPointPosition", (PyCFunction)Sbk_BezierCurveFunc_getControlPointPosition, METH_VARARGS},
-    {"getFeatherDistance", (PyCFunction)Sbk_BezierCurveFunc_getFeatherDistance, METH_O},
-    {"getFeatherDistanceParam", (PyCFunction)Sbk_BezierCurveFunc_getFeatherDistanceParam, METH_NOARGS},
-    {"getFeatherFallOff", (PyCFunction)Sbk_BezierCurveFunc_getFeatherFallOff, METH_O},
-    {"getFeatherFallOffParam", (PyCFunction)Sbk_BezierCurveFunc_getFeatherFallOffParam, METH_NOARGS},
-    {"getFeatherPointPosition", (PyCFunction)Sbk_BezierCurveFunc_getFeatherPointPosition, METH_VARARGS},
-    {"getIsActivated", (PyCFunction)Sbk_BezierCurveFunc_getIsActivated, METH_O},
-    {"getKeyframes", (PyCFunction)Sbk_BezierCurveFunc_getKeyframes, METH_NOARGS},
-    {"getNumControlPoints", (PyCFunction)Sbk_BezierCurveFunc_getNumControlPoints, METH_NOARGS},
-    {"getOpacity", (PyCFunction)Sbk_BezierCurveFunc_getOpacity, METH_O},
-    {"getOpacityParam", (PyCFunction)Sbk_BezierCurveFunc_getOpacityParam, METH_NOARGS},
-    {"getOverlayColor", (PyCFunction)Sbk_BezierCurveFunc_getOverlayColor, METH_NOARGS},
-    {"isCurveFinished", (PyCFunction)Sbk_BezierCurveFunc_isCurveFinished, METH_NOARGS},
-    {"moveFeatherByIndex", (PyCFunction)Sbk_BezierCurveFunc_moveFeatherByIndex, METH_VARARGS},
-    {"moveLeftBezierPoint", (PyCFunction)Sbk_BezierCurveFunc_moveLeftBezierPoint, METH_VARARGS},
-    {"movePointByIndex", (PyCFunction)Sbk_BezierCurveFunc_movePointByIndex, METH_VARARGS},
-    {"moveRightBezierPoint", (PyCFunction)Sbk_BezierCurveFunc_moveRightBezierPoint, METH_VARARGS},
-    {"removeControlPointByIndex", (PyCFunction)Sbk_BezierCurveFunc_removeControlPointByIndex, METH_O},
-    {"setActivated", (PyCFunction)Sbk_BezierCurveFunc_setActivated, METH_VARARGS},
-    {"setColor", (PyCFunction)Sbk_BezierCurveFunc_setColor, METH_VARARGS},
-    {"setCompositingOperator", (PyCFunction)Sbk_BezierCurveFunc_setCompositingOperator, METH_O},
-    {"setCurveFinished", (PyCFunction)Sbk_BezierCurveFunc_setCurveFinished, METH_O},
-    {"setFeatherDistance", (PyCFunction)Sbk_BezierCurveFunc_setFeatherDistance, METH_VARARGS},
-    {"setFeatherFallOff", (PyCFunction)Sbk_BezierCurveFunc_setFeatherFallOff, METH_VARARGS},
-    {"setFeatherPointAtIndex", (PyCFunction)Sbk_BezierCurveFunc_setFeatherPointAtIndex, METH_VARARGS},
-    {"setOpacity", (PyCFunction)Sbk_BezierCurveFunc_setOpacity, METH_VARARGS},
-    {"setOverlayColor", (PyCFunction)Sbk_BezierCurveFunc_setOverlayColor, METH_VARARGS},
-    {"setPointAtIndex", (PyCFunction)Sbk_BezierCurveFunc_setPointAtIndex, METH_VARARGS},
+    {"addControlPoint", (PyCFunction)Sbk_BezierCurveFunc_addControlPoint, METH_VARARGS|METH_KEYWORDS},
+    {"addControlPointOnSegment", (PyCFunction)Sbk_BezierCurveFunc_addControlPointOnSegment, METH_VARARGS|METH_KEYWORDS},
+    {"getBoundingBox", (PyCFunction)Sbk_BezierCurveFunc_getBoundingBox, METH_VARARGS|METH_KEYWORDS},
+    {"getControlPointPosition", (PyCFunction)Sbk_BezierCurveFunc_getControlPointPosition, METH_VARARGS|METH_KEYWORDS},
+    {"getFeatherPointPosition", (PyCFunction)Sbk_BezierCurveFunc_getFeatherPointPosition, METH_VARARGS|METH_KEYWORDS},
+    {"getNumControlPoints", (PyCFunction)Sbk_BezierCurveFunc_getNumControlPoints, METH_VARARGS|METH_KEYWORDS},
+    {"getViewsList", (PyCFunction)Sbk_BezierCurveFunc_getViewsList, METH_NOARGS},
+    {"isActivated", (PyCFunction)Sbk_BezierCurveFunc_isActivated, METH_VARARGS|METH_KEYWORDS},
+    {"isCurveFinished", (PyCFunction)Sbk_BezierCurveFunc_isCurveFinished, METH_VARARGS|METH_KEYWORDS},
+    {"moveFeatherByIndex", (PyCFunction)Sbk_BezierCurveFunc_moveFeatherByIndex, METH_VARARGS|METH_KEYWORDS},
+    {"moveLeftBezierPoint", (PyCFunction)Sbk_BezierCurveFunc_moveLeftBezierPoint, METH_VARARGS|METH_KEYWORDS},
+    {"movePointByIndex", (PyCFunction)Sbk_BezierCurveFunc_movePointByIndex, METH_VARARGS|METH_KEYWORDS},
+    {"moveRightBezierPoint", (PyCFunction)Sbk_BezierCurveFunc_moveRightBezierPoint, METH_VARARGS|METH_KEYWORDS},
+    {"removeControlPointByIndex", (PyCFunction)Sbk_BezierCurveFunc_removeControlPointByIndex, METH_VARARGS|METH_KEYWORDS},
+    {"setCurveFinished", (PyCFunction)Sbk_BezierCurveFunc_setCurveFinished, METH_VARARGS|METH_KEYWORDS},
+    {"setFeatherPointAtIndex", (PyCFunction)Sbk_BezierCurveFunc_setFeatherPointAtIndex, METH_VARARGS|METH_KEYWORDS},
+    {"setPointAtIndex", (PyCFunction)Sbk_BezierCurveFunc_setPointAtIndex, METH_VARARGS|METH_KEYWORDS},
+    {"splitView", (PyCFunction)Sbk_BezierCurveFunc_splitView, METH_O},
+    {"unSplitView", (PyCFunction)Sbk_BezierCurveFunc_unSplitView, METH_O},
 
     {0} // Sentinel
 };

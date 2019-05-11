@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@
 
 #include <cfloat>
 #include <cmath>
+#include <set>
 #include <algorithm> // min, max
 #include <stdexcept>
 #include <limits>
@@ -58,7 +59,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 NATRON_NAMESPACE_ENTER
 
-
 struct SpinBoxPrivate
 {
     enum SpinBoxMouseState
@@ -83,8 +83,7 @@ struct SpinBoxPrivate
     bool hasChangedSinceLastValidation;
     double valueAfterLastValidation;
     bool valueInitialized; //< false when setValue has never been called yet.
-    bool useLineColor;
-    QColor lineColor;
+
     SpinBoxValidator* customValidator;
     QPoint lastMousePos;
 
@@ -103,8 +102,6 @@ struct SpinBoxPrivate
         , hasChangedSinceLastValidation(false)
         , valueAfterLastValidation(0)
         , valueInitialized(false)
-        , useLineColor(false)
-        , lineColor(Qt::black)
         , customValidator(0)
     {
     }
@@ -115,8 +112,6 @@ struct SpinBoxPrivate
 SpinBox::SpinBox(QWidget* parent,
                  SpinBoxTypeEnum type)
     : LineEdit(parent)
-    , animation(0)
-    , dirty(false)
     , ignoreWheelEvent(false)
     , _imp( new SpinBoxPrivate(type) )
 {
@@ -930,27 +925,6 @@ SpinBox::setIncrement(double d)
 #endif
 }
 
-void
-SpinBox::setAnimation(int i)
-{
-    if (animation != i) {
-        animation = i;
-        style()->unpolish(this);
-        style()->polish(this);
-        update();
-    }
-}
-
-void
-SpinBox::setDirty(bool d)
-{
-    if (dirty != d) {
-        dirty = d;
-        style()->unpolish(this);
-        style()->polish(this);
-        update();
-    }
-}
 
 QMenu*
 SpinBox::getRightClickMenu()
@@ -966,31 +940,20 @@ SpinBox::paintEvent(QPaintEvent* e)
 {
     LineEdit::paintEvent(e);
 
-    if (_imp->useLineColor) {
-        QPainter p(this);
-        p.setPen(_imp->lineColor);
-        int h = height() - 1;
-        p.drawLine(0, h - 1, width() - 1, h - 1);
-    }
 }
 
-void
-SpinBox::setUseLineColor(bool use,
-                         const QColor& color)
-{
-    _imp->useLineColor = use;
-    _imp->lineColor = color;
-    update();
-}
+
 
 KnobSpinBox::KnobSpinBox(QWidget* parent,
                          SpinBoxTypeEnum type,
                          const KnobGuiPtr& knob,
-                         int dimension)
+                         DimIdx dimension,
+                         ViewIdx view)
     : SpinBox(parent, type)
     , knob(knob)
     , dimension(dimension)
-    , _dnd( KnobWidgetDnD::create(knob, dimension, this) )
+    , view(view)
+    , _dnd( KnobWidgetDnD::create(knob, dimension, view, this) )
 {
 }
 
@@ -1100,11 +1063,11 @@ KnobSpinBox::focusInEvent(QFocusEvent* e)
     if (!k) {
         return;
     }
-    KnobPtr knob = k->getKnob();
+    KnobIPtr knob = k->getKnob();
     if (!knob) {
         return;
     }
-    std::string expr = knob->getExpression(dimension);
+    std::string expr = knob->getExpression(dimension, view);
     if ( expr.empty() ) {
         return;
     } else {

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -20,8 +20,13 @@
 #define KEYSYMBOLS_H
 
 #include <ofxKeySyms.h>
-#include <QtCore/QFlags>
+#include "Global/Enums.h"
+#include "Global/Macros.h"
+
+
 NATRON_NAMESPACE_ENTER
+
+
 enum Key
 {
     Key_Unknown =  kOfxKey_Unknown,
@@ -419,8 +424,12 @@ enum KeyboardModifierEnum
     eKeyboardModifierMask = 0xfe000000
 };
 
-typedef QFlags<KeyboardModifierEnum> KeyboardModifiers;
+DECLARE_FLAGS(KeyboardModifiers, KeyboardModifierEnum);
+
 
 NATRON_NAMESPACE_EXIT
+
+
+DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::KeyboardModifiers);
 
 #endif // KEYSYMBOLS_H

@@ -7,43 +7,7 @@ Instructions for installing Natron from sources on Microsoft Windows
 toolchain that can be used to build Windows applications. It provides
 most dependencies required by Natron.
 
-
-## Packaged dependencies
-
-Clone the [MINGW-packages](https://github.com/MrKepzie/MINGW-packages) repository:
-
-    cd tools/Windows
-    git clone https://github.com/MrKepzie/MINGW-packages
-
-Set the environment variable `MINGW_PACKAGES_PATH` to the location of
-the `MINGW-packages`directory.
-
-Using `pacman`, the MSYS2 package manager, install the following
-packages:
-
-toolchain yasm gsm gdbm db python2 boost libjpeg-turbo libpng
-libtiff giflib lcms2 openjpeg LibRaw pixman cairo
-openssl freetype fontconfig eigen3 pango librsvg libzip cmake
-
-wget tar diffutils file gawk gettext grep make patch patchutils
-pkg-config sed unzip git bison flex rsync zip
-
-## Dependencies to build manually
-
-### *FFmpeg 3.0.2*
-
-### *ImageMagick 6.3.9*
-
-### *OpenColorIO 1.0.9*
-
-### *OpenEXR 2.2*
-
-### *OpenImageIO 1.6.13*
-
-### *Qt 4.8.7*
-
-
-## Configuration
+Follow the [Windows Setup](tools/jenkins/README.md) instructions from the jenkins README to setup MSYS2 and install the required MSYS packages.
 
 ### OpenFX
 
@@ -58,7 +22,7 @@ git submodule update -i --recursive
 ### Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
+to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
 Place it at the root of Natron repository.
 
 ***note:*** *If it is name something like: `OpenColorIO-Configs-Natron-v2.0` rename it to `OpenColorIO-Configs`*
@@ -80,14 +44,17 @@ INCLUDEPATH is the path to the include files
 
 LIBS is the path to the libs
 
-    ----- copy and paste the following in a terminal -----
-    cat > config.pri << EOF
-    boost: LIBS += -lboost_serialization
-    expat: LIBS += -lexpat
-    expat: PKGCONFIG -= expat
-    cairo: PKGCONFIG -= cairo
-    EOF
-    ----- end -----
+```
+----- copy and paste the following in a terminal -----
+cat > config.pri << EOF
+boost-serialization-lib: LIBS += -lboost_serialization
+boost: LIBS += -lboost_thread -lboost_system
+expat: LIBS += -lexpat
+expat: PKGCONFIG -= expat
+cairo: PKGCONFIG -= cairo
+EOF
+----- end -----
+```
 
 ***note:*** *the last line for cairo is only necessary if the package for cairo in your distribution
 is lower than version 1.12 (as it is on Ubuntu 12.04 LTS for example).*
@@ -96,14 +63,14 @@ is lower than version 1.12 (as it is on Ubuntu 12.04 LTS for example).*
 
 Natron's nodes are contained in separate repositories. To use the default nodes, you must also build the following repositories:
 
-    https://github.com/devernay/openfx-misc
-    https://github.com/MrKepzie/openfx-io
+    https://github.com/NatronGitHub/openfx-misc
+    https://github.com/NatronGitHub/openfx-io
 
 
 You'll find installation instructions in the README of both these repositories. Both openfx-misc and openfx-io have submodules as well.
 
 Plugins must be installed in /usr/OFX/Plugins on Linux
-Or in a directory named "Plugins" located in the parent directory where the binary lies, e.g:
+Or in a directory named "Plugins" located in the parent directory where the binary lies, e.g.:
 
 
     bin/
@@ -200,7 +167,7 @@ This will work successfully.
 ### Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
+to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
 Place it at the root of Natron repository.
 
 
@@ -225,8 +192,8 @@ Here's an example of a config.pri file that supports both 32bit and 64bit builds
 
 boost {
         INCLUDEPATH +=  $$quote(C:\\boost)
-        CONFIG(release, debug|release): LIBS += -L$$quote(C:\\boost\\x64) -lboost_serialization-vc100-mt-1_57
-		CONFIG(debug, debug|release):  LIBS += -L$$quote(C:\\boost\\x64) -lboost_serialization-vc100-mt-gd-1_57
+        CONFIG(release, debug|release): LIBS += -L$$quote(C:\\boost\\x64) -lboost_serialization-vc100-mt-1_57 -lboost_thread-vc100-mt-1_57 -lboost_system-vc100-mt-1_57
+		CONFIG(debug, debug|release):  LIBS += -L$$quote(C:\\boost\\x64) -lboost_serialization-vc100-mt-gd-1_57 -lboost_thread-vc100-mt-gd-1_57 -lboost_system-vc100-mt-gd-1_57
 }
 
 expat{
@@ -265,8 +232,8 @@ shiboken {
 
 boost {
         INCLUDEPATH +=  $$quote(C:\\boost)
-        CONFIG(release, debug|release): LIBS += -L$$quote(C:\\boost\\win32) -lboost_serialization-vc100-mt-1_57
-		CONFIG(debug, debug|release): LIBS += -L$$quote(C:\\boost\\win32) -lboost_serialization-vc100-mt-gd-1_57
+        CONFIG(release, debug|release): LIBS += -L$$quote(C:\\boost\\win32) -lboost_serialization-vc100-mt-1_57 -lboost_thread-vc100-mt-1_57 -lboost_system-vc100-mt-1_57
+		CONFIG(debug, debug|release): LIBS += -L$$quote(C:\\boost\\win32) -lboost_serialization-vc100-mt-gd-1_57 -lboost_thread-vc100-mt-gd-1_57 -lboost_system-vc100-mt-gd-1_57
 }
 
 expat{

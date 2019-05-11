@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -52,6 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Lut.h"
+#include "Engine/KnobUndoCommand.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
@@ -66,8 +67,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
-#include "Gui/KnobUndoCommand.h"
 #include "Gui/Label.h"
+#include "Gui/KnobGui.h"
 #include "Gui/NewLayerDialog.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/ScaleSliderQWidget.h"
@@ -82,12 +83,11 @@ using std::make_pair;
 
 //=============================SEPARATOR_KNOB_GUI===================================
 
-KnobGuiSeparator::KnobGuiSeparator(KnobPtr knob,
-                                   KnobGuiContainerI *container)
-    : KnobGui(knob, container)
+KnobGuiSeparator::KnobGuiSeparator(const KnobGuiPtr& knob, ViewIdx view)
+    : KnobGuiWidgets(knob, view)
     , _line(0)
 {
-    _knob = boost::dynamic_pointer_cast<KnobSeparator>(knob);
+    _knob = toKnobSeparator(knob->getKnob());
 }
 
 void
@@ -121,28 +121,12 @@ KnobGuiSeparator::isLabelBold() const
     return true;
 }
 
-void
-KnobGuiSeparator::removeSpecificGui()
-{
-    _line->deleteLater();
-}
 
 void
-KnobGuiSeparator::_hide()
+KnobGuiSeparator::setWidgetsVisible(bool visible)
 {
-    _line->hide();
+    _line->setVisible(visible);
 }
 
-void
-KnobGuiSeparator::_show()
-{
-    _line->show();
-}
-
-KnobPtr
-KnobGuiSeparator::getKnob() const
-{
-    return _knob.lock();
-}
 
 NATRON_NAMESPACE_EXIT

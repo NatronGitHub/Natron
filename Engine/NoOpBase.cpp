@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,79 +32,32 @@
 
 NATRON_NAMESPACE_ENTER
 
-NoOpBase::NoOpBase(NodePtr n)
-    : OutputEffectInstance(n)
+NoOpBase::NoOpBase(const NodePtr& n)
+    : EffectInstance(n)
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
-void
-NoOpBase::addAcceptedComponents(int /*inputNb*/,
-                                std::list<ImagePlaneDesc>* comps)
+NoOpBase::NoOpBase(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+: EffectInstance(mainInstance, key)
 {
-    comps->push_back( ImagePlaneDesc::getRGBComponents() );
-    comps->push_back( ImagePlaneDesc::getRGBAComponents() );
-    comps->push_back( ImagePlaneDesc::getAlphaComponents() );
+
 }
 
-void
-NoOpBase::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
-{
-    depths->push_back(eImageBitDepthByte);
-    depths->push_back(eImageBitDepthShort);
-    depths->push_back(eImageBitDepthFloat);
-}
 
-bool
-NoOpBase::isIdentity(double time,
+ActionRetCodeEnum
+NoOpBase::isIdentity(TimeValue /*time*/,
                      const RenderScale & /*scale*/,
                      const RectI & /*roi*/,
-                     ViewIdx view,
-                     double* inputTime,
-                     ViewIdx* inputView,
-                     int* inputNb)
+                     ViewIdx /*view*/,
+                     const ImagePlaneDesc& /*plane*/,
+                     TimeValue* /*inputTime*/,
+                     ViewIdx* /*inputView*/,
+                     int* inputNb,
+                     ImagePlaneDesc* /*identityPlane*/)
 {
-    *inputTime = time;
     *inputNb = 0;
-    *inputView = view;
 
-    return true;
-}
-
-bool
-NoOpBase::isHostChannelSelectorSupported(bool* /*defaultR*/,
-                                         bool* /*defaultG*/,
-                                         bool* /*defaultB*/,
-                                         bool* /*defaultA*/) const
-{
-    return false;
-}
-
-StatusEnum
-NoOpBase::getTransform(double /*time*/,
-                       const RenderScale & /*renderScale*/,
-                       bool /*draftRender*/,
-                       ViewIdx /*view*/,
-                       EffectInstancePtr* inputToTransform,
-                       Transform::Matrix3x3* transform)
-{
-    *inputToTransform = getInput(0);
-    if (!*inputToTransform) {
-        return eStatusFailed;
-    }
-    transform->a = 1.; transform->b = 0.; transform->c = 0.;
-    transform->d = 0.; transform->e = 1.; transform->f = 0.;
-    transform->g = 0.; transform->h = 0.; transform->i = 1.;
-
-    return eStatusOK;
-}
-
-bool
-NoOpBase::getInputsHoldingTransform(std::list<int>* inputs) const
-{
-    inputs->push_back(0);
-
-    return true;
+    return eActionStatusOK;
 }
 
 NATRON_NAMESPACE_EXIT

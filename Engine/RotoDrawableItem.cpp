@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -42,160 +42,226 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
-#include "Engine/RotoContextPrivate.h"
-
 #include "Engine/AppInstance.h"
 #include "Engine/BezierCP.h"
+#include "Engine/Bezier.h"
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/CoonsRegularization.h"
 #include "Engine/FeatherPoint.h"
 #include "Engine/Format.h"
 #include "Engine/Hash64.h"
 #include "Engine/Image.h"
-#include "Engine/ImageParams.h"
+#include "Engine/Node.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/MergingEnum.h"
 #include "Engine/Interpolation.h"
 #include "Engine/Project.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/RenderStats.h"
-#include "Engine/RotoDrawableItemSerialization.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
-#include "Engine/RotoContext.h"
+#include "Engine/RotoPaint.h"
+#include "Engine/RotoPaintPrivate.h"
+#include "Engine/RotoShapeRenderNode.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
-#define kMergeOFXParamOperation "operation"
-#define kMergeOFXParamInvertMask "maskInvert"
-#define kBlurCImgParamSize "size"
-#define kTimeOffsetParamOffset "timeOffset"
-#define kFrameHoldParamFirstFrame "firstFrame"
+#include "Serialization/NodeSerialization.h"
 
-#define kTransformParamTranslate "translate"
-#define kTransformParamRotate "rotate"
-#define kTransformParamScale "scale"
-#define kTransformParamUniform "uniform"
-#define kTransformParamSkewX "skewX"
-#define kTransformParamSkewY "skewY"
-#define kTransformParamSkewOrder "skewOrder"
-#define kTransformParamCenter "center"
-#define kTransformParamFilter "filter"
-#define kTransformParamResetCenter "resetCenter"
-#define kTransformParamBlackOutside "black_outside"
 
-//This will enable correct evaluation of beziers
-//#define ROTO_USE_MESH_PATTERN_ONLY
-
-// The number of pressure levels is 256 on an old Wacom Graphire 4, and 512 on an entry-level Wacom Bamboo
-// 512 should be OK, see:
-// http://www.davidrevoy.com/article182/calibrating-wacom-stylus-pressure-on-krita
-#define ROTO_PRESSURE_LEVELS 512
-
+#define kRotoDrawableItemRightClickMenuPlanarTrackParam "planarTrack"
+#define kRotoDrawableItemRightClickMenuPlanarTrackParamLabel "Planar-Track"
 
 NATRON_NAMESPACE_ENTER
 
 
-////////////////////////////////////RotoDrawableItem////////////////////////////////////
-
-RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context,
-                                   const std::string & name,
-                                   const boost::shared_ptr<RotoLayer>& parent,
-                                   bool isStroke)
-    : RotoItem(context, name, parent)
-    , _imp( new RotoDrawableItemPrivate(isStroke) )
+struct RotoDrawableItemPrivate
 {
-#ifdef NATRON_ROTO_INVERTIBLE
-    QObject::connect( _imp->inverted->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SIGNAL(invertedStateChanged()) );
-#endif
-    QObject::connect( this, SIGNAL(overlayColorChanged()), context.get(), SIGNAL(refreshViewerOverlays()) );
-    QObject::connect( _imp->color->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SIGNAL(shapeColorChanged()) );
-    QObject::connect( _imp->compOperator->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this,
-                      SIGNAL(compositingOperatorChanged(ViewSpec,int,int)) );
-    std::vector<ChoiceOption> operators;
-    Merge::getOperatorStrings(&operators);
+    Q_DECLARE_TR_FUNCTIONS(RotoDrawableItem)
 
-    _imp->compOperator->populateChoices(operators);
-    _imp->compOperator->setDefaultValueFromID( Merge::getOperatorString(eMergeCopy) );
+public:
+
+
+    /*
+     * The effect node corresponds to the following given the selected tool:
+     * Stroke= RotoOFX
+     * Blur = BlurCImg
+     * Clone = TransformOFX
+     * Sharpen = SharpenCImg
+     * Smear = hand made tool
+     * Reveal = Merge(over) with A being color type and B the tree upstream
+     * Dodge/Burn = Merge(color-dodge/color-burn) with A being the tree upstream and B the color type
+     *
+     * Each effect is followed by a merge (except for the ones that use a merge) with the user given operator
+     * onto the previous tree upstream of the effectNode.
+     */
+    NodePtr constantNode;
+    NodePtr effectNode, maskNode;
+    NodePtr mergeNode;
+    NodePtr timeOffsetNode, frameHoldNode;
+
+    std::list<NodePtr> nodes;
+    KnobColorWPtr overlayColor; //< the color the shape overlay should be drawn with, defaults to smooth red
+    KnobDoubleWPtr opacity; //< opacity of the rendered shape between 0 and 1
+
+    KnobChoiceWPtr lifeTime;
+    KnobBoolWPtr customRange;
+    KnobIntWPtr lifeTimeFrame;
+    KnobButtonWPtr invertKnob; //< invert the rendering
+    KnobColorWPtr color;
+    KnobChoiceWPtr compOperator;
+
+    KnobDoubleWPtr brushSize;
+    KnobDoubleWPtr brushSpacing;
+    KnobDoubleWPtr brushHardness;
+    KnobDoubleWPtr visiblePortion; // [0,1] by default
+
+    // Transform
+    KnobDoubleWPtr translate;
+    KnobDoubleWPtr rotate;
+    KnobDoubleWPtr scale;
+    KnobBoolWPtr scaleUniform;
+    KnobDoubleWPtr skewX;
+    KnobDoubleWPtr skewY;
+    KnobChoiceWPtr skewOrder;
+    KnobDoubleWPtr center;
+    KnobDoubleWPtr extraMatrix;
+
+    // Motion blur
+    KnobChoiceWPtr motionBlurTypeKnob;
+    KnobIntWPtr motionBlurAmount;
+    KnobDoubleWPtr motionBlurShutter;
+    KnobChoiceWPtr motionBlurShutterType;
+    KnobDoubleWPtr motionBlurCustomShutter;
+
+    // used for reveal/clone/comp nitem to select the input node for the A input of the merge
+    KnobChoiceWPtr mergeAInputChoice;
+
+    // used by the comp item only to select the mask for the merge
+    KnobChoiceWPtr mergeMaskInputChoice;
+
+    KnobIntWPtr timeOffset;
+    KnobChoiceWPtr timeOffsetMode;
+    KnobDoubleWPtr mixKnob;
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
+    // Right click menu
+    KnobButtonWPtr createPlanarTrackButton;
+#endif
+    RotoDrawableItemPrivate()
+    {
+
+    }
+
+    RotoDrawableItemPrivate(const RotoDrawableItemPrivate& other)
+    : effectNode(other.effectNode)
+    , maskNode(other.maskNode)
+    , mergeNode(other.mergeNode)
+    , timeOffsetNode(other.timeOffsetNode)
+    , frameHoldNode(other.frameHoldNode)
+    , nodes(other.nodes)
+    {
+
+    }
+
+};
+
+RotoDrawableItem::RotoDrawableItem(const KnobItemsTablePtr& model)
+    : RotoItem(model)
+    , _imp( new RotoDrawableItemPrivate() )
+{
+}
+
+
+RotoDrawableItem::RotoDrawableItem(const RotoDrawableItemPtr& other, const FrameViewRenderKey& key)
+: RotoItem(other, key)
+, _imp(new RotoDrawableItemPrivate(*other->_imp))
+{
+
 }
 
 RotoDrawableItem::~RotoDrawableItem()
 {
 }
 
-void
-RotoDrawableItem::addKnob(const KnobPtr& knob)
+
+const NodesList&
+RotoDrawableItem::getItemNodes() const
 {
-    _imp->knobs.push_back(knob);
+    return _imp->nodes;
 }
+
 
 void
 RotoDrawableItem::setNodesThreadSafetyForRotopainting()
 {
-    assert( boost::dynamic_pointer_cast<RotoStrokeItem>( boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() ) ) );
+    assert( toRotoStrokeItem( boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() ) ) );
 
-    getContext()->getNode()->setRenderThreadSafety(eRenderSafetyInstanceSafe);
-    getContext()->setWhileCreatingPaintStrokeOnMergeNodes(true);
-    if (_imp->effectNode) {
-        _imp->effectNode->setWhileCreatingPaintStroke(true);
-        _imp->effectNode->setRenderThreadSafety(eRenderSafetyInstanceSafe);
+    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+        (*it)->getEffectInstance()->setPropertiesLocked(true);
+        (*it)->getEffectInstance()->setRenderThreadSafety(eRenderSafetyInstanceSafe);
     }
-    if (_imp->mergeNode) {
-        _imp->mergeNode->setWhileCreatingPaintStroke(true);
-        _imp->mergeNode->setRenderThreadSafety(eRenderSafetyInstanceSafe);
-    }
-    if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->setWhileCreatingPaintStroke(true);
-        _imp->timeOffsetNode->setRenderThreadSafety(eRenderSafetyInstanceSafe);
-    }
-    if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->setWhileCreatingPaintStroke(true);
-        _imp->frameHoldNode->setRenderThreadSafety(eRenderSafetyInstanceSafe);
+
+}
+
+static void attachStrokeToNode(const NodePtr& node, const NodePtr& rotopaintNode, const RotoDrawableItemPtr& item)
+{
+    assert(rotopaintNode);
+    assert(node);
+    assert(item);
+    node->getEffectInstance()->attachRotoItem(item);
+
+    // Link OpenGL enabled knob to the one on the Rotopaint so the user can control if GPU rendering is used in the roto internal node graph
+    KnobChoicePtr glRenderKnob = node->getEffectInstance()->getOrCreateOpenGLEnabledKnob();
+    if (glRenderKnob) {
+        KnobChoicePtr rotoPaintGLRenderKnob = rotopaintNode->getEffectInstance()->getOrCreateOpenGLEnabledKnob();
+        assert(rotoPaintGLRenderKnob);
+        ignore_result(glRenderKnob->linkTo(rotoPaintGLRenderKnob));
     }
 }
 
 void
 RotoDrawableItem::createNodes(bool connectNodes)
 {
-    const std::list<KnobPtr >& knobs = getKnobs();
 
-    for (std::list<KnobPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onRotoKnobChanged(ViewSpec,int,int)) );
+    KnobItemsTablePtr model = getModel();
+    if (!model) {
+        return;
+    }
+    NodePtr node = model->getNode();
+    if (!node) {
+        return;
     }
 
-    boost::shared_ptr<RotoContext> context = getContext();
-    NodePtr node = context->getNode();
-    AppInstPtr app = node->getApp();
-    QString fixedNamePrefix = QString::fromUtf8( node->getScriptName_mt_safe().c_str() );
+    RotoDrawableItemPtr thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() );
+    RotoPaintPtr rotoPaintEffect = toRotoPaint(node->getEffectInstance());
+    assert(rotoPaintEffect);
+    rotoPaintEffect->refreshSourceKnobs(thisShared);
+    
+    AppInstancePtr app = rotoPaintEffect->getApp();
+
+    QString fixedNamePrefix = QString::fromUtf8( rotoPaintEffect->getNode()->getScriptName_mt_safe().c_str() );
     fixedNamePrefix.append( QLatin1Char('_') );
-    fixedNamePrefix.append( QString::fromUtf8( getScriptName().c_str() ) );
-    fixedNamePrefix.append( QLatin1Char('_') );
-    fixedNamePrefix.append( QString::number( context->getAge() ) );
-    fixedNamePrefix.append( QLatin1Char('_') );
+    fixedNamePrefix.append( QString::fromUtf8( getScriptName_mt_safe().c_str() ) );
 
     QString pluginId;
-    RotoStrokeType type;
-    boost::shared_ptr<RotoDrawableItem> thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() );
+    RotoStrokeType type = getBrushType();
     assert(thisShared);
-    boost::shared_ptr<RotoStrokeItem> isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(thisShared);
+    RotoStrokeItemPtr isStroke = toRotoStrokeItem(thisShared);
 
-    if (isStroke) {
-        type = isStroke->getBrushType();
-    } else {
-        type = eRotoStrokeTypeSolid;
-    }
+    const QString maskPluginID = QString::fromUtf8(PLUGINID_NATRON_ROTOSHAPE);
 
     switch (type) {
     case eRotoStrokeTypeBlur:
         pluginId = QString::fromUtf8(PLUGINID_OFX_BLURCIMG);
         break;
+    case eRotoStrokeTypeSolid:
     case eRotoStrokeTypeEraser:
         pluginId = QString::fromUtf8(PLUGINID_OFX_CONSTANT);
         break;
-    case eRotoStrokeTypeSolid:
-        pluginId = QString::fromUtf8(PLUGINID_OFX_ROTO);
+    case eRotoStrokeTypeSmear:
+        pluginId = maskPluginID;
         break;
     case eRotoStrokeTypeClone:
     case eRotoStrokeTypeReveal:
@@ -206,10 +272,10 @@ RotoDrawableItem::createNodes(bool connectNodes)
         //uses merge
         break;
     case eRotoStrokeTypeSharpen:
-        //todo
+        pluginId = QString::fromUtf8(PLUGINID_OFX_SHARPENCIMG);
         break;
-    case eRotoStrokeTypeSmear:
-        pluginId = QString::fromUtf8(PLUGINID_NATRON_ROTOSMEAR);
+    case eRotoStrokeTypeComp:
+        // No node
         break;
     }
 
@@ -217,108 +283,270 @@ RotoDrawableItem::createNodes(bool connectNodes)
     if ( !pluginId.isEmpty() ) {
         fixedNamePrefix.append( QString::fromUtf8("Effect") );
 
-        CreateNodeArgs args( pluginId.toStdString(), boost::shared_ptr<NodeCollection>() );
-        args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
-        args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-        args.setProperty<bool>(kCreateNodeArgsPropTrustPluginID, true);
-        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
-        args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        CreateNodeArgsPtr args(CreateNodeArgs::create( pluginId.toStdString(), rotoPaintEffect ));
+        args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
+        args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
+        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
         _imp->effectNode = app->createNode(args);
         if (!_imp->effectNode) {
             throw std::runtime_error("Rotopaint requires the plug-in " + pluginId.toStdString() + " in order to work");
         }
+        _imp->nodes.push_back(_imp->effectNode);
         assert(_imp->effectNode);
+    }
 
-        if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
-            {
-                fixedNamePrefix = baseFixedName;
-                fixedNamePrefix.append( QString::fromUtf8("TimeOffset") );
-                CreateNodeArgs args(PLUGINID_OFX_TIMEOFFSET, boost::shared_ptr<NodeCollection>() );
-                args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
-                args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-                args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+    if (type == eRotoStrokeTypeBlur) {
+        assert(isStroke);
+        // Link effect knob to size
+        KnobIPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
+        for (int i = 0; i < 2; ++i) {
+            // The Effect Strength knob is 1 dimensional whereas the blur size is 2-dim
+            knob->linkTo(isStroke->getBrushEffectKnob(), DimIdx(i), DimIdx(0));
+        }
 
-                _imp->timeOffsetNode = app->createNode(args);
-                if (!_imp->timeOffsetNode) {
-                    throw std::runtime_error("Rotopaint requires the plug-in " PLUGINID_OFX_TIMEOFFSET " in order to work");
-                }
-                assert(_imp->timeOffsetNode);
+
+    } else if (type == eRotoStrokeTypeSolid) {
+        // Link the color parameter to the color of the constant node
+        KnobIPtr knob = _imp->effectNode->getKnobByName(kConstantParamColor);
+        knob->linkTo(getColorKnob());
+        
+    } else if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
+        // Link transform knobs
+        KnobIPtr translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
+        translateKnob->linkTo(isStroke->getBrushCloneTranslateKnob());
+
+        KnobIPtr rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
+        rotateKnob->linkTo(isStroke->getBrushCloneRotateKnob());
+
+        KnobIPtr scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
+        scaleKnob->linkTo(isStroke->getBrushCloneScaleKnob());
+
+        KnobIPtr uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
+        uniformKnob->linkTo(isStroke->getBrushCloneScaleUniformKnob());
+
+        KnobIPtr skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
+        skewxKnob->linkTo(isStroke->getBrushCloneSkewXKnob());
+
+        KnobIPtr skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
+        skewyKnob->linkTo(isStroke->getBrushCloneSkewYKnob());
+
+        KnobIPtr skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
+        skewOrderKnob->linkTo(isStroke->getBrushCloneSkewOrderKnob());
+
+        KnobIPtr centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
+        centerKnob->linkTo(isStroke->getBrushCloneCenterKnob());
+
+        KnobIPtr filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
+        filterKnob->linkTo(isStroke->getBrushCloneFilterKnob());
+
+        KnobIPtr boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
+        boKnob->linkTo(isStroke->getBrushCloneBlackOutsideKnob());
+    }
+
+    if (type == eRotoStrokeTypeSmear) {
+        // For smear setup the type parameter
+        KnobIPtr knob = _imp->effectNode->getKnobByName(kRotoShapeRenderNodeParamType);
+        assert(knob);
+        KnobChoicePtr typeChoice = toKnobChoice(knob);
+        assert(typeChoice);
+        typeChoice->setValue(1);
+    }
+
+    if (type == eRotoStrokeTypeEraser || type == eRotoStrokeTypeSolid) {
+        // For a constant, link the Output components knob of the constant node to the output components
+        // of the Roto node.
+        {
+            KnobChoicePtr outputComponentsnKnob = rotoPaintEffect->getOutputComponentsKnob();
+            KnobIPtr knob = _imp->effectNode->getKnobByName(kConstantParamOutputComponents);
+            knob->linkTo(outputComponentsnKnob);
+        }
+
+        // For the Constant node: we don't want it to request any image in input
+        KnobChoicePtr layerChoice = _imp->effectNode->getEffectInstance()->getLayerChoiceKnob(0);
+        // Request None plane
+        layerChoice->setValue(0);
+    }
+
+    if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) || (type == eRotoStrokeTypeComp) ) {
+        {
+            fixedNamePrefix = baseFixedName;
+            fixedNamePrefix.append( QString::fromUtf8("TimeOffset") );
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_TIMEOFFSET, rotoPaintEffect ));
+            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
+            args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+
+            _imp->timeOffsetNode = app->createNode(args);
+            assert(_imp->timeOffsetNode);
+            if (!_imp->timeOffsetNode) {
+                throw std::runtime_error(tr("Rotopaint requires the plug-in %1 in order to work").arg(QString::fromUtf8(PLUGINID_OFX_TIMEOFFSET)).toStdString());
             }
-            {
-                fixedNamePrefix = baseFixedName;
-                fixedNamePrefix.append( QString::fromUtf8("FrameHold") );
-                CreateNodeArgs args( PLUGINID_OFX_FRAMEHOLD, boost::shared_ptr<NodeCollection>() );
-                args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
-                args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-                args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
-                _imp->frameHoldNode = app->createNode(args);
-                if (!_imp->frameHoldNode) {
-                    throw std::runtime_error("Rotopaint requires the plug-in " PLUGINID_OFX_FRAMEHOLD " in order to work");
-                }
-                assert(_imp->frameHoldNode);
+            _imp->nodes.push_back(_imp->timeOffsetNode);
+            // Link time offset knob
+            KnobIPtr offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
+            offsetKnob->linkTo(_imp->timeOffset.lock());
+        }
+
+        // Do not create a framehold node for the comp item
+        if (type != eRotoStrokeTypeComp) {
+            fixedNamePrefix = baseFixedName;
+            fixedNamePrefix.append( QString::fromUtf8("FrameHold") );
+            CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_OFX_FRAMEHOLD, rotoPaintEffect ));
+            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
+            args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+            _imp->frameHoldNode = app->createNode(args);
+            assert(_imp->frameHoldNode);
+            if (!_imp->frameHoldNode) {
+                throw std::runtime_error(tr("Rotopaint requires the plug-in %1 in order to work").arg(QString::fromUtf8(PLUGINID_OFX_FRAMEHOLD)).toStdString());
             }
+            _imp->nodes.push_back(_imp->frameHoldNode);
+            // Link frame hold first frame knob
+            KnobIPtr offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
+            offsetKnob->linkTo(_imp->timeOffset.lock());
         }
     }
 
+
+
+    // Create the merge node used by any roto item
     fixedNamePrefix = baseFixedName;
     fixedNamePrefix.append( QString::fromUtf8("Merge") );
 
-    CreateNodeArgs args( PLUGINID_OFX_MERGE, boost::shared_ptr<NodeCollection>() );
-    args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
-    args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
-    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+    const std::string mergePluginID = type == eRotoStrokeTypeComp ? PLUGINID_OFX_MERGE : PLUGINID_OFX_ROTOMERGE;
+    CreateNodeArgsPtr args(CreateNodeArgs::create( mergePluginID, rotoPaintEffect ));
+    args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
+    args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
+    args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+    args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
 
     _imp->mergeNode = app->createNode(args);
-    if (!_imp->mergeNode) {
-        throw std::runtime_error("Rotopaint requires the plug-in " PLUGINID_OFX_MERGE " in order to work");
-    }
     assert(_imp->mergeNode);
+    if (!_imp->mergeNode) {
+        throw std::runtime_error(tr("Rotopaint requires the plug-in %1 in order to work").arg(QString::fromUtf8(mergePluginID.c_str())).toStdString());
+    }
+    _imp->nodes.push_back(_imp->mergeNode);
 
-    if ( (type != eRotoStrokeTypeSolid) && (type != eRotoStrokeTypeSmear) ) {
-        int maxInp = _imp->mergeNode->getNInputs();
-        for (int i = 0; i < maxInp; ++i) {
-            if ( _imp->mergeNode->getEffectInstance()->isInputMask(i) ) {
-                //Connect this rotopaint node as a mask
-                bool ok = _imp->mergeNode->connectInput(node, i);
-                assert(ok);
-                Q_UNUSED(ok);
-                break;
+    {
+        // Link the RGBA enabled checkbox of the Rotopaint to the merge output RGBA
+        KnobBoolPtr rotoPaintRGBA[4];
+        KnobBoolPtr mergeRGBA[4];
+        rotoPaintEffect->getEnabledChannelKnobs(&rotoPaintRGBA[0], &rotoPaintRGBA[1], &rotoPaintRGBA[2], &rotoPaintRGBA[3]);
+        mergeRGBA[0] = toKnobBool(_imp->mergeNode->getKnobByName(kMergeParamOutputChannelsR));
+        mergeRGBA[1] = toKnobBool(_imp->mergeNode->getKnobByName(kMergeParamOutputChannelsG));
+        mergeRGBA[2] = toKnobBool(_imp->mergeNode->getKnobByName(kMergeParamOutputChannelsB));
+        mergeRGBA[3] = toKnobBool(_imp->mergeNode->getKnobByName(kMergeParamOutputChannelsA));
+        for (int i = 0; i < 4; ++i) {
+            if (rotoPaintRGBA[i] && mergeRGBA[i]) {
+                ignore_result(mergeRGBA[i]->linkTo(rotoPaintRGBA[i]));
             }
+        }
+
+
+
+        // Link the compositing operator to this knob
+        KnobChoicePtr mergeOp = toKnobChoice(_imp->mergeNode->getKnobByName(kMergeOFXParamOperation));
+        assert(mergeOp);
+        KnobChoicePtr compOp = getOperatorKnob();
+        {
+            bool ok = mergeOp->linkTo(compOp);
+            assert(ok);
+            (void)ok;
+        }
+
+        MergingFunctionEnum op;
+        if ( (type == eRotoStrokeTypeDodge) || (type == eRotoStrokeTypeBurn) ) {
+            op = (type == eRotoStrokeTypeDodge ? eMergeColorDodge : eMergeColorBurn);
+        } else {
+            op = eMergeOver;
+        }
+        compOp->setDefaultValueFromID(Merge::getOperatorString(op));
+
+        // Make sure it is not serialized
+        compOp->setCurrentDefaultValueAsInitialValue();
+
+        KnobIPtr thisInvertKnob = _imp->invertKnob.lock();
+        if (thisInvertKnob) {
+            // Link mask invert knob
+            KnobIPtr mergeMaskInvertKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamInvertMask);
+            mergeMaskInvertKnob->linkTo(thisInvertKnob);
+        }
+
+        // Link mix
+        KnobIPtr rotoPaintMix;
+        if (rotoPaintEffect->getRotoPaintNodeType() == RotoPaint::eRotoPaintTypeComp) {
+            rotoPaintMix = _imp->mixKnob.lock();
+        } else {
+            rotoPaintMix = rotoPaintEffect->getOrCreateHostMixKnob(rotoPaintEffect->getOrCreateMainPage());
+        }
+        KnobIPtr mergeMix = _imp->mergeNode->getKnobByName(kMergeOFXParamMix);
+        mergeMix->linkTo(rotoPaintMix);
+
+    }
+
+    if (pluginId != maskPluginID && type != eRotoStrokeTypeComp) {
+        // Create the mask plug-in
+
+        {
+            fixedNamePrefix = baseFixedName;
+            fixedNamePrefix.append( QString::fromUtf8("Mask") );
+            CreateNodeArgsPtr args(CreateNodeArgs::create( maskPluginID.toStdString(), rotoPaintEffect ));
+            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
+            args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+            args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+            _imp->maskNode = app->createNode(args);
+            assert(_imp->maskNode);
+            if (!_imp->maskNode) {
+                throw std::runtime_error(tr("Rotopaint requires the plug-in %1 in order to work").arg(maskPluginID).toStdString());
+            }
+            _imp->nodes.push_back(_imp->maskNode);
+        }
+
+        {
+            bool ok = _imp->maskNode->getKnobByName(kRotoOutputRodType)->linkTo(rotoPaintEffect->getOutputRoDTypeKnob());
+            assert(ok);
+            ok = _imp->maskNode->getKnobByName(kRotoFormatParam)->linkTo(rotoPaintEffect->getOutputFormatKnob());
+            assert(ok);
+            ok = _imp->maskNode->getKnobByName(kRotoFormatSize)->linkTo(rotoPaintEffect->getOutputFormatSizeKnob());
+            assert(ok);
+            ok = _imp->maskNode->getKnobByName(kRotoFormatPar)->linkTo(rotoPaintEffect->getOutputFormatParKnob());
+            assert(ok);
+            ok = _imp->maskNode->getKnobByName(kRotoClipToFormatParam)->linkTo(rotoPaintEffect->getClipToFormatKnob());
+            assert(ok);
+
+            (void)ok;
+        }
+
+        // The mask uses the roto mask plane
+        if (type != eRotoStrokeTypeSolid && type != eRotoStrokeTypeEraser) {
+            KnobChoicePtr maskChannelKnob = _imp->mergeNode->getEffectInstance()->getMaskChannelKnob(2);
+            assert(maskChannelKnob);
+            maskChannelKnob->setActiveEntry(ChoiceOption("RotoMask.A"));
+
         }
     }
 
-    KnobPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-    assert(mergeOperatorKnob);
-    KnobChoice* mergeOp = dynamic_cast<KnobChoice*>( mergeOperatorKnob.get() );
-    assert(mergeOp);
-
-    boost::shared_ptr<KnobChoice> compOp = getOperatorKnob();
-    MergingFunctionEnum op;
-    if ( (type == eRotoStrokeTypeDodge) || (type == eRotoStrokeTypeBurn) ) {
-        op = (type == eRotoStrokeTypeDodge ? eMergeColorDodge : eMergeColorBurn);
-    } else if (type == eRotoStrokeTypeSolid) {
-        op = eMergeOver;
-    } else {
-        op = eMergeCopy;
-    }
-    if (mergeOp) {
-        mergeOp->setValueFromID(Merge::getOperatorString(op), 0);
-    }
-    compOp->setValueFromID(Merge::getOperatorString(op), 0);
+    // Whenever the hash of the item changes, invalidate the hash of the RotoPaint nodes and all nodes within it.
+    // This needs to be done because the hash needs to be recomputed if the Solo state changes for instance?
+    addHashListener(rotoPaintEffect);
+    rotoPaintEffect->addHashDependency(thisShared);
 
     if (isStroke) {
-        if (type == eRotoStrokeTypeBlur) {
-            double strength = isStroke->getBrushEffectKnob()->getValue();
-            KnobPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-            KnobDouble* isDbl = dynamic_cast<KnobDouble*>( knob.get() );
-            if (isDbl) {
-                isDbl->setValues(strength, strength, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
-            }
-        } else if (type == eRotoStrokeTypeSharpen) {
-            //todo
-        } else if (type == eRotoStrokeTypeSmear) {
-            boost::shared_ptr<KnobDouble> spacingKnob = isStroke->getBrushSpacingKnob();
+        if (type == eRotoStrokeTypeSmear) {
+            KnobDoublePtr spacingKnob = isStroke->getBrushSpacingKnob();
             assert(spacingKnob);
             spacingKnob->setValue(0.05);
         }
@@ -327,357 +555,107 @@ RotoDrawableItem::createNodes(bool connectNodes)
     }
 
     ///Attach this stroke to the underlying nodes used
-    if (_imp->effectNode) {
-        _imp->effectNode->attachRotoItem(thisShared);
-    }
-    if (_imp->mergeNode) {
-        _imp->mergeNode->attachRotoItem(thisShared);
-    }
-    if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->attachRotoItem(thisShared);
-    }
-    if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->attachRotoItem(thisShared);
-    }
+    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+        attachStrokeToNode(*it, rotoPaintEffect->getNode(), thisShared);
+        // Whenever the hash of the item changes, invalidate the hash of the RotoPaint nodes and all nodes within it.
+        // This needs to be done because the hash needs to be recomputed if the Solo state changes for instance?
+        addHashListener((*it)->getEffectInstance());
+        (*it)->getEffectInstance()->addHashDependency(thisShared);
 
+    }
 
     if (connectNodes) {
-        refreshNodesConnections();
+        refreshNodesConnections(RotoDrawableItemPtr());
     }
 } // RotoDrawableItem::createNodes
 
-std::string
-RotoDrawableItem::getCacheID() const
-{
-    assert(_imp->mergeNode);
-
-    //The cache iD is the one of the internal merge node + RotoDrawableItem
-    return _imp->mergeNode->getCacheID() + ".RotoDrawableItem";
-}
 
 void
 RotoDrawableItem::disconnectNodes()
 {
-    _imp->mergeNode->disconnectInput(0);
-    _imp->mergeNode->disconnectInput(1);
-    if (_imp->effectNode) {
-        _imp->effectNode->disconnectInput(0);
-    }
-    if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->disconnectInput(0);
-    }
-    if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->disconnectInput(0);
+    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+        int maxInputs = (*it)->getNInputs();
+        (*it)->beginInputEdition();
+        for (int i = 0; i < maxInputs; ++i) {
+            (*it)->disconnectInput(i);
+        }
+        (*it)->endInputEdition(true);
     }
 }
 
-void
-RotoDrawableItem::deactivateNodes()
+
+bool
+RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
+                        ValueChangedReasonEnum reason,
+                        TimeValue time,
+                        ViewSetSpec view)
 {
-    if (_imp->effectNode) {
-        _imp->effectNode->deactivate(std::list< NodePtr >(), true, false, false, false);
+    KnobItemsTablePtr model = getModel();
+    if (!model) {
+        return false;
     }
-    if (_imp->mergeNode) {
-        _imp->mergeNode->deactivate(std::list< NodePtr >(), true, false, false, false);
+    NodePtr node = model->getNode();
+    if (!node) {
+        return false;
     }
-    if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->deactivate(std::list< NodePtr >(), true, false, false, false);
-    }
-    if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->deactivate(std::list< NodePtr >(), true, false, false, false);
-    }
-}
+    RotoDrawableItemPtr thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>(shared_from_this());
 
-void
-RotoDrawableItem::activateNodes()
-{
-    if (_imp->effectNode) {
-        _imp->effectNode->activate(std::list< NodePtr >(), false, false);
-    }
-    _imp->mergeNode->activate(std::list< NodePtr >(), false, false);
-    if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->activate(std::list< NodePtr >(), false, false);
-    }
-    if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->activate(std::list< NodePtr >(), false, false);
-    }
-}
 
-static RotoDrawableItem*
-findPreviousOfItemInLayer(RotoLayer* layer,
-                          RotoItem* item)
-{
-    RotoItems layerItems = layer->getItems_mt_safe();
+    RotoPaintPtr rotoPaintEffect = toRotoPaint(node->getEffectInstance());
 
-    if ( layerItems.empty() ) {
-        return 0;
+    // Any knob except transform center should break the multi-stroke into a new stroke
+    if ( (reason == eValueChangedReasonUserEdited) && (knob->getName() != kRotoBrushCenterParam) && (knob->getName() != kRotoDrawableItemCenterParam)) {
+        rotoPaintEffect->onBreakMultiStrokeTriggered();
     }
-    RotoItems::iterator found = layerItems.end();
-    if (item) {
-        for (RotoItems::iterator it = layerItems.begin(); it != layerItems.end(); ++it) {
-            if (it->get() == item) {
-                found = it;
-                break;
-            }
+    if (knob == getActivatedKnob() || knob == getSoloKnob()) {
+        // When the item is activated we must refresh the tree
+        bool ret = RotoItem::onKnobValueChanged(knob, reason, time, view);
+        for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+            (*it)->refreshIdentityState();
         }
-        assert( found != layerItems.end() );
-    } else {
-        found = layerItems.end();
-    }
-
-    if ( found != layerItems.end() ) {
-        ++found;
-        for (; found != layerItems.end(); ++found) {
-            //We found another stroke below at the same level
-            RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>( found->get() );
-            if (isDrawable) {
-                assert(isDrawable != item);
-
-                return isDrawable;
-            }
-
-            //Cycle through a layer that is at the same level
-            RotoLayer* isLayer = dynamic_cast<RotoLayer*>( found->get() );
-            if (isLayer) {
-                RotoDrawableItem* si = findPreviousOfItemInLayer(isLayer, 0);
-                if (si) {
-                    assert(si != item);
-
-                    return si;
-                }
-            }
+        if (getIndexInParent() != -1) {
+            rotoPaintEffect->refreshRotoPaintTree();
         }
-    }
-
-    //Item was still not found, find in great parent layer
-    boost::shared_ptr<RotoLayer> parentLayer = layer->getParentLayer();
-    if (!parentLayer) {
-        return 0;
-    }
-    RotoItems greatParentItems = parentLayer->getItems_mt_safe();
-
-    found = greatParentItems.end();
-    for (RotoItems::iterator it = greatParentItems.begin(); it != greatParentItems.end(); ++it) {
-        if (it->get() == layer) {
-            found = it;
-            break;
+        return ret;
+    } else if (reason != eValueChangedReasonTimeChanged && (knob == _imp->compOperator.lock() || knob == _imp->mixKnob.lock() || knob == _imp->mergeAInputChoice.lock() || knob == _imp->mergeMaskInputChoice.lock() || knob == _imp->invertKnob.lock())) {
+        if (getIndexInParent() != -1) {
+            rotoPaintEffect->refreshRotoPaintTree();
         }
-    }
-    assert( found != greatParentItems.end() );
-    RotoDrawableItem* ret = findPreviousOfItemInLayer(parentLayer.get(), layer);
-    assert(ret != item);
-
-    return ret;
-} // findPreviousOfItemInLayer
-
-RotoDrawableItem*
-RotoDrawableItem::findPreviousInHierarchy()
-{
-    boost::shared_ptr<RotoLayer> layer = getParentLayer();
-
-    if (!layer) {
-        return 0;
-    }
-
-    return findPreviousOfItemInLayer(layer.get(), this);
-}
-
-void
-RotoDrawableItem::onRotoKnobChanged(ViewSpec /*view*/,
-                                    int /*dimension*/,
-                                    int reason)
-{
-    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
-
-    if (!handler) {
-        return;
-    }
-
-    KnobPtr triggerKnob = handler->getKnob();
-    assert(triggerKnob);
-    rotoKnobChanged(triggerKnob, (ValueChangedReasonEnum)reason);
-}
-
-void
-RotoDrawableItem::rotoKnobChanged(const KnobPtr& knob,
-                                  ValueChangedReasonEnum reason)
-{
-    boost::shared_ptr<KnobChoice> compKnob = getOperatorKnob();
-
-#ifdef NATRON_ROTO_INVERTIBLE
-    boost::shared_ptr<KnobBool> invertKnob = getInvertedKnob();
-#endif
-
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
-    RotoStrokeType type;
-
-    if (isStroke) {
-        type = isStroke->getBrushType();
-    } else {
-        type = eRotoStrokeTypeSolid;
-    }
-
-    if ( (reason == eValueChangedReasonSlaveRefresh) && (knob != _imp->center) && (knob != _imp->cloneCenter) ) {
-        getContext()->s_breakMultiStroke();
-    }
-
-    if (knob == compKnob) {
-        KnobPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-        KnobChoice* mergeOp = dynamic_cast<KnobChoice*>( mergeOperatorKnob.get() );
-        if (mergeOp) {
-            mergeOp->setValueFromID(compKnob->getEntry( compKnob->getValue() ).id, 0);
+    } else if ( (knob == _imp->timeOffsetMode.lock()) && _imp->timeOffsetNode ) {
+        // Get the items by render order. In the GUI they appear from bottom to top.
+        std::list<RotoDrawableItemPtr> rotoItems = rotoPaintEffect->getRotoPaintItemsByRenderOrder();
+        RotoDrawableItemPtr prev;
+        std::list<RotoDrawableItemPtr>::iterator found = std::find(rotoItems.begin(), rotoItems.end(), thisShared);
+        if (found != rotoItems.end() && found != rotoItems.begin()) {
+            --found;
+            prev = *found;
         }
-
-        ///Since the compositing operator might have changed, we may have to change the rotopaint tree layout
-        if (reason == eValueChangedReasonUserEdited) {
-            getContext()->refreshRotoPaintTree();
-        }
+        refreshNodesConnections(prev);
     }
-#ifdef NATRON_ROTO_INVERTIBLE
-    else if (knob == invertKnob) {
-        KnobPtr mergeMaskInvertKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamInvertMask);
-        KnobBool* mergeMaskInv = dynamic_cast<KnobBool*>( mergeMaskInvertKnob.get() );
-        if (mergeMaskInv) {
-            mergeMaskInv->setValue( invertKnob->getValue() );
-        }
-
-        ///Since the invert state might have changed, we may have to change the rotopaint tree layout
-        if (reason == eValueChangedReasonUserEdited) {
-            getContext()->refreshRotoPaintTree();
-        }
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
+    else if (knob == _imp->createPlanarTrackButton.lock()) {
+        rotoPaintEffect->createPlanarTrackForShape(thisShared);
     }
 #endif
-    else if (knob == _imp->sourceColor) {
-        refreshNodesConnections();
-    } else if (knob == _imp->effectStrength) {
-        double strength = _imp->effectStrength->getValue();
-        switch (type) {
-        case eRotoStrokeTypeBlur: {
-            KnobPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-            KnobDouble* isDbl = dynamic_cast<KnobDouble*>( knob.get() );
-            if (isDbl) {
-                isDbl->setValues(strength, strength, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-            }
-            break;
-        }
-        case eRotoStrokeTypeSharpen: {
-            //todo
-            break;
-        }
-        default:
-            //others don't have a control
-            break;
-        }
-    } else if ( (knob == _imp->timeOffset) && _imp->timeOffsetNode ) {
-        int offsetMode_i = _imp->timeOffsetMode->getValue();
-        KnobPtr offsetKnob;
-
-        if (offsetMode_i == 0) {
-            offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
-        } else {
-            offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
-        }
-        KnobInt* offset = dynamic_cast<KnobInt*>( offsetKnob.get() );
-        if (offset) {
-            double value = _imp->timeOffset->getValue();
-            offset->setValue(value);
-        }
-    } else if ( (knob == _imp->timeOffsetMode) && _imp->timeOffsetNode ) {
-        refreshNodesConnections();
+    else {
+        return RotoItem::onKnobValueChanged(knob, reason, time, view);
     }
 
-    if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
-        if (knob == _imp->cloneTranslate) {
-            KnobPtr translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
-            KnobDouble* translate = dynamic_cast<KnobDouble*>( translateKnob.get() );
-            if (translate) {
-                translate->clone( _imp->cloneTranslate.get() );
-            }
-        } else if (knob == _imp->cloneRotate) {
-            KnobPtr rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
-            KnobDouble* rotate = dynamic_cast<KnobDouble*>( rotateKnob.get() );
-            if (rotate) {
-                rotate->clone( _imp->cloneRotate.get() );
-            }
-        } else if (knob == _imp->cloneScale) {
-            KnobPtr scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
-            KnobDouble* scale = dynamic_cast<KnobDouble*>( scaleKnob.get() );
-            if (scale) {
-                scale->clone( _imp->cloneScale.get() );
-            }
-        } else if (knob == _imp->cloneScaleUniform) {
-            KnobPtr uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
-            KnobBool* uniform = dynamic_cast<KnobBool*>( uniformKnob.get() );
-            if (uniform) {
-                uniform->clone( _imp->cloneScaleUniform.get() );
-            }
-        } else if (knob == _imp->cloneSkewX) {
-            KnobPtr skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
-            KnobDouble* skewX = dynamic_cast<KnobDouble*>( skewxKnob.get() );
-            if (skewX) {
-                skewX->clone( _imp->cloneSkewX.get() );
-            }
-        } else if (knob == _imp->cloneSkewY) {
-            KnobPtr skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
-            KnobDouble* skewY = dynamic_cast<KnobDouble*>( skewyKnob.get() );
-            if (skewY) {
-                skewY->clone( _imp->cloneSkewY.get() );
-            }
-        } else if (knob == _imp->cloneSkewOrder) {
-            KnobPtr skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
-            KnobChoice* skewOrder = dynamic_cast<KnobChoice*>( skewOrderKnob.get() );
-            if (skewOrder) {
-                skewOrder->clone( _imp->cloneSkewOrder.get() );
-            }
-        } else if (knob == _imp->cloneCenter) {
-            KnobPtr centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
-            KnobDouble* center = dynamic_cast<KnobDouble*>( centerKnob.get() );
-            if (center) {
-                center->clone( _imp->cloneCenter.get() );
-            }
-        } else if (knob == _imp->cloneFilter) {
-            KnobPtr filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
-            KnobChoice* filter = dynamic_cast<KnobChoice*>( filterKnob.get() );
-            if (filter) {
-                filter->clone( _imp->cloneFilter.get() );
-            }
-        } else if (knob == _imp->cloneBlackOutside) {
-            KnobPtr boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
-            KnobBool* bo = dynamic_cast<KnobBool*>( boKnob.get() );
-            if (bo) {
-                bo->clone( _imp->cloneBlackOutside.get() );
-            }
-        }
-    }
+   
+    return true;
+} // RotoDrawableItem::onKnobValueChanged
 
-
-    incrementNodesAge();
-} // RotoDrawableItem::rotoKnobChanged
-
-void
-RotoDrawableItem::incrementNodesAge()
-{
-    if ( getContext()->getNode()->getApp()->getProject()->isLoadingProject() ) {
-        return;
-    }
-    if (_imp->effectNode) {
-        _imp->effectNode->incrementKnobsAge();
-    }
-    if (_imp->mergeNode) {
-        _imp->mergeNode->incrementKnobsAge();
-    }
-    if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->incrementKnobsAge();
-    }
-    if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->incrementKnobsAge();
-    }
-}
 
 NodePtr
 RotoDrawableItem::getEffectNode() const
 {
     return _imp->effectNode;
+}
+
+NodePtr
+RotoDrawableItem::getBackgroundNode() const
+{
+    return _imp->constantNode;
 }
 
 NodePtr
@@ -692,833 +670,1014 @@ RotoDrawableItem::getTimeOffsetNode() const
     return _imp->timeOffsetNode;
 }
 
+
+NodePtr
+RotoDrawableItem::getMaskNode() const
+{
+    return _imp->maskNode;
+}
+
+
 NodePtr
 RotoDrawableItem::getFrameHoldNode() const
 {
     return _imp->frameHoldNode;
 }
 
-void
-RotoDrawableItem::refreshNodesConnections()
-{
-    RotoDrawableItem* previous = findPreviousInHierarchy();
-    NodePtr rotoPaintInput =  getContext()->getNode()->getInput(0);
-    NodePtr upstreamNode = previous ? previous->getMergeNode() : rotoPaintInput;
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
-    RotoStrokeType type;
 
-    if (isStroke) {
-        type = isStroke->getBrushType();
-    } else {
-        type = eRotoStrokeTypeSolid;
+void
+RotoDrawableItem::refreshNodesPositions(double x, double y)
+{
+    _imp->mergeNode->setPosition(x, y);
+    if (_imp->maskNode) {
+        _imp->maskNode->setPosition(x - 100, y);
+    }
+    double yOffset = 100;
+
+    if (_imp->effectNode) {
+        _imp->effectNode->setPosition(x, y - yOffset);
+        yOffset += 100;
+    }
+    if (_imp->timeOffsetNode) {
+        if (_imp->frameHoldNode) {
+            _imp->timeOffsetNode->setPosition(x - 100, y - yOffset);
+            _imp->frameHoldNode->setPosition(x + 100, y - yOffset);
+        } else {
+            _imp->timeOffsetNode->setPosition(x, y - yOffset);
+        }
+        yOffset += 100;
+    }
+    if (_imp->constantNode) {
+        _imp->constantNode->setPosition(x, y - yOffset);
+    }
+}
+
+void
+RotoDrawableItem::refreshNodesConnections(const RotoDrawableItemPtr& previous)
+{
+    KnobItemsTablePtr model = getModel();
+    if (!model) {
+        return ;
+    }
+    NodePtr node = model->getNode();
+    if (!node) {
+        return;
     }
 
-    if ( _imp->effectNode &&
-         ( type != eRotoStrokeTypeEraser) ) {
-        /*
-           Tree for this effect goes like this:
-                  Effect - <Optional Time Node>------- Reveal input (Reveal/Clone) or Upstream Node otherwise
-                /
-           Merge
-           \--------------------------------------Upstream Node
+    RotoPaintPtr rotoPaintNode = toRotoPaint(node->getEffectInstance());
+    if (!rotoPaintNode) {
+        return;
+    }
 
-         */
-
-        NodePtr effectInput;
-        if (!_imp->timeOffsetNode) {
-            effectInput = _imp->effectNode;
-        } else {
-            double timeOffsetMode_i = _imp->timeOffsetMode->getValue();
-            if (timeOffsetMode_i == 0) {
-                //relative
-                effectInput = _imp->timeOffsetNode;
-            } else {
-                effectInput = _imp->frameHoldNode;
-            }
-            if (_imp->effectNode->getInput(0) != effectInput) {
-                _imp->effectNode->disconnectInput(0);
-                _imp->effectNode->connectInputBase(effectInput, 0);
-            }
-        }
-        /*
-         * This case handles: Stroke, Blur, Sharpen, Smear, Clone
-         */
-        if (_imp->mergeNode->getInput(1) != _imp->effectNode) {
-            _imp->mergeNode->disconnectInput(1);
-            _imp->mergeNode->connectInputBase(_imp->effectNode, 1); // A
-        }
-
-        if (_imp->mergeNode->getInput(0) != upstreamNode) {
-            _imp->mergeNode->disconnectInput(0);
-            if (upstreamNode) {
-                _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
-            }
-        }
-
-
-        int reveal_i = _imp->sourceColor->getValue();
-        NodePtr revealInput;
-        bool shouldUseUpstreamForReveal = true;
-        if ( ( (type == eRotoStrokeTypeReveal) ||
-               ( type == eRotoStrokeTypeClone) ) && ( reveal_i > 0) ) {
-            shouldUseUpstreamForReveal = false;
-            revealInput = getContext()->getNode()->getInput(reveal_i - 1);
-        }
-        if (!revealInput && shouldUseUpstreamForReveal) {
-            if (type != eRotoStrokeTypeSolid) {
-                revealInput = upstreamNode;
-            }
-        }
-
-        if (revealInput) {
-            if (effectInput->getInput(0) != revealInput) {
-                effectInput->disconnectInput(0);
-                effectInput->connectInputBase(revealInput, 0);
-            }
-        } else {
-            if ( effectInput->getInput(0) ) {
-                effectInput->disconnectInput(0);
-            }
-        }
+    // For a Roto or RotoPaint node, the background is provided by the user.
+    // For a LayeredComp node, the bg is a constant.
+    NodePtr bgNode;
+    if (rotoPaintNode->getRotoPaintNodeType() != RotoPaint::eRotoPaintTypeComp) {
+        bgNode = rotoPaintNode->getInternalInputNode(0);
     } else {
-        assert(type == eRotoStrokeTypeEraser ||
-               type == eRotoStrokeTypeDodge ||
-               type == eRotoStrokeTypeBurn);
 
+        if (!_imp->constantNode) {
+            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_OFX_TIMEOFFSET, rotoPaintNode ));
+            args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
+#ifndef ROTO_PAINT_NODE_GRAPH_VISIBLE
+            args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
+#endif
+            args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "background");
 
-        if (type == eRotoStrokeTypeEraser) {
-            /*
-               Tree for this effect goes like this:
-                    Constant or RotoPaint bg input
-                    /
-               Merge
-               \--------------------Upstream Node
-
-             */
-
-
-            NodePtr eraserInput = rotoPaintInput ? rotoPaintInput : _imp->effectNode;
-            if (_imp->mergeNode->getInput(1) != eraserInput) {
-                _imp->mergeNode->disconnectInput(1);
-                if (eraserInput) {
-                    _imp->mergeNode->connectInputBase(eraserInput, 1); // A
-                }
-            }
-
-
-            if (_imp->mergeNode->getInput(0) != upstreamNode) {
-                _imp->mergeNode->disconnectInput(0);
-                if (upstreamNode) {
-                    _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
-                }
-            }
-        }  else if ( (type == eRotoStrokeTypeDodge) || (type == eRotoStrokeTypeBurn) ) {
-            /*
-               Tree for this effect goes like this:
-                            Upstream Node
-                            /
-               Merge (Dodge/Burn)
-                            \Upstream Node
-
-             */
-
-
-            if (_imp->mergeNode->getInput(1) != upstreamNode) {
-                _imp->mergeNode->disconnectInput(1);
-                if (upstreamNode) {
-                    _imp->mergeNode->connectInputBase(upstreamNode, 1); // A
-                }
-            }
-
-
-            if (_imp->mergeNode->getInput(0) != upstreamNode) {
-                _imp->mergeNode->disconnectInput(0);
-                if (upstreamNode) {
-                    _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
-                }
-            }
-        } else {
-            //unhandled case
-            assert(false);
+            _imp->constantNode = getApp()->createNode(args);
+            assert(_imp->constantNode);
         }
-    } //if (_imp->effectNode &&  type != eRotoStrokeTypeEraser)
+        bgNode = _imp->constantNode;
+    }
+
+
+
+    // upstreamNode is the node that should be connected as the B input of the merge node of this item.
+    // If there is a previous item, this is the previous item's merge node, otherwise this is the RotoPaint node input 0
+    NodePtr upstreamNode = previous ? previous->getMergeNode() : bgNode;
+
+    RotoStrokeType type = getBrushType();
+
+    NodePtr mergeInputA, mergeInputB;
+
+    switch (type) {
+        case eRotoStrokeTypeComp: {
+            // For comp items, internal tree goes like this:
+            /*    (A) -- Time Offset ---- user selected merge A input (from the knob)
+             /
+             Merge
+             \
+             (B) --------------------- upstream node
+             */
+
+            assert(_imp->timeOffsetNode);
+            KnobChoicePtr mergeAKnob = _imp->mergeAInputChoice.lock();
+
+            int mergeAInputChoice_i = mergeAKnob->getValue();
+
+            NodePtr mergeInputAUpstreamNode;
+            if (mergeAInputChoice_i == 0) {
+                mergeInputAUpstreamNode = upstreamNode;
+            } else {
+                ChoiceOption inputAName = mergeAKnob->getCurrentEntry();
+                int inputNb = QString::fromUtf8(inputAName.id.c_str()).toInt();
+                mergeInputAUpstreamNode = rotoPaintNode->getInternalInputNode(inputNb);
+            }
+
+            mergeInputB = upstreamNode;
+
+            if (mergeInputAUpstreamNode) {
+                mergeInputA = _imp->timeOffsetNode;
+                _imp->timeOffsetNode->swapInput(mergeInputAUpstreamNode, 0);
+
+            } else {
+                // No node upstream, make the merge be a pass-through of input B (upstreamNode)
+                mergeInputA = upstreamNode;
+                _imp->timeOffsetNode->disconnectInput(0);
+                
+            }
+        }   break;
+        case eRotoStrokeTypeBurn:
+        case eRotoStrokeTypeDodge: {
+            assert(type == eRotoStrokeTypeDodge ||
+                   type == eRotoStrokeTypeBurn);
+
+            if ( (type == eRotoStrokeTypeDodge) || (type == eRotoStrokeTypeBurn) ) {
+                /*
+                 Tree for this effect goes like this:
+                 (A) Upstream Node
+                 /
+                 Merge (Dodge/Burn)
+                 \
+                 (B) Upstream Node
+
+                 */
+                mergeInputA = mergeInputB = upstreamNode;
+
+            } else {
+                //unhandled case
+                assert(false);
+            }
+
+        }   break;
+        case eRotoStrokeTypeSolid:
+        case eRotoStrokeTypeEraser:
+        {
+            _imp->effectNode->swapInput(_imp->maskNode, 0);
+            _imp->maskNode->swapInput(upstreamNode, 0);
+            mergeInputA = _imp->effectNode;
+            mergeInputB = upstreamNode;
+        }   break;
+        case eRotoStrokeTypeSmear:
+        case eRotoStrokeTypeBlur:
+        case eRotoStrokeTypeClone:
+        case eRotoStrokeTypeReveal:
+        case eRotoStrokeTypeSharpen: {
+            /*
+             internal node tree for this item  goes like this:
+             (A) - <Optional TimeBlur node> - <RotoMask> - Effect - <Optional Time Node>------- Reveal input (Reveal/Clone) or Upstream Node otherwise
+             /
+             Merge (alpha from RotoMask plane)
+             \
+             (B) ------------------------------------Upstream Node
+
+             */
+
+
+            // The input A of the merge is the effect node
+            // Connect the RotoShapeRender node to the input of the effect so that we can ouptut the RotoMask plane
+            // from the A input if requested
+            if (_imp->maskNode) {
+                _imp->maskNode->swapInput(_imp->effectNode, 0);
+                mergeInputA = _imp->maskNode;
+            } else {
+                mergeInputA = _imp->effectNode;
+            }
+            mergeInputB = upstreamNode;
+
+            // Determine what we should connect to upstream of the A input
+            NodePtr mergeAUpstreamInput;
+            mergeAUpstreamInput = upstreamNode;
+            if ((type == eRotoStrokeTypeReveal) || ( type == eRotoStrokeTypeClone)) {
+                KnobChoicePtr mergeAKnob = _imp->mergeAInputChoice.lock();
+                int reveal_i = mergeAKnob->getValue();
+                if (reveal_i == 0) {
+                    mergeAUpstreamInput = upstreamNode;
+                } else {
+                    // For reveal & clone, the user can select a RotoPaint node's input.
+                    // Find an input of the RotoPaint node with the given input label
+
+                    ChoiceOption inputAName = mergeAKnob->getCurrentEntry();
+                    int inputNb = QString::fromUtf8(inputAName.id.c_str()).toInt();
+                    mergeAUpstreamInput = rotoPaintNode->getInternalInputNode(inputNb);
+
+                }
+            }
+
+            // This is the node that we should connect to the A source upstream.
+            NodePtr effectInput;
+            if (!_imp->timeOffsetNode) {
+                effectInput = _imp->effectNode;
+            } else {
+
+                // If there's a time-offset, use it prior to the effect.
+                KnobChoicePtr timeOffsetModeKnob = _imp->timeOffsetMode.lock();
+                int timeOffsetMode_i = 0;
+                if (timeOffsetModeKnob) {
+                    timeOffsetMode_i = timeOffsetModeKnob->getValue();
+                }
+                if (timeOffsetMode_i == 0) {
+                    //relative
+                    effectInput = _imp->timeOffsetNode;
+                } else {
+                    effectInput = _imp->frameHoldNode;
+                }
+                _imp->effectNode->swapInput(effectInput, 0);
+
+            }
+
+            effectInput->swapInput(mergeAUpstreamInput, 0);
+
+        }   break;
+    }
+
+
+    _imp->mergeNode->swapInput(mergeInputA, 1); // A
+    _imp->mergeNode->swapInput(mergeInputB, 0); // B
+
+
+    // Connect to a mask if needed
+    if (_imp->maskNode) {
+        // Connect the merge mask input to the mask node, except when the input A is a solid/eraser
+        if (type != eRotoStrokeTypeSolid && type != eRotoStrokeTypeEraser) {
+            _imp->mergeNode->swapInput(_imp->maskNode, 2);
+        }
+
+    }
+
+
+    if (type == eRotoStrokeTypeComp) {
+        KnobChoicePtr knob = _imp->mergeMaskInputChoice.lock();
+        int maskInput_i = knob->getValue();
+        NodePtr maskInputNode;
+        if (maskInput_i > 0) {
+
+            ChoiceOption maskInputName = knob->getCurrentEntry();
+            int inputNb = QString::fromUtf8(maskInputName.id.c_str()).toInt();
+            maskInputNode = rotoPaintNode->getInternalInputNode(inputNb);
+        }
+        //Connect the merge node mask to the mask node
+        _imp->mergeNode->swapInput(maskInputNode, 2);
+
+    }
+    
 } // RotoDrawableItem::refreshNodesConnections
 
 void
 RotoDrawableItem::resetNodesThreadSafety()
 {
-    if (_imp->effectNode) {
-        _imp->effectNode->revertToPluginThreadSafety();
+    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+        (*it)->getEffectInstance()->setPropertiesLocked(false);
     }
-    _imp->mergeNode->revertToPluginThreadSafety();
-    if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->revertToPluginThreadSafety();
-    }
-    if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->revertToPluginThreadSafety();
-    }
-    getContext()->getNode()->revertToPluginThreadSafety();
-}
 
-void
-RotoDrawableItem::clone(const RotoItem* other)
-{
-    const RotoDrawableItem* otherDrawable = dynamic_cast<const RotoDrawableItem*>(other);
-
-    if (!otherDrawable) {
+    KnobItemsTablePtr model = getModel();
+    if (!model) {
+        return ;
+    }
+    NodePtr node = model->getNode();
+    if (!node) {
         return;
     }
-    const std::list<KnobPtr >& otherKnobs = otherDrawable->getKnobs();
-    assert( otherKnobs.size() == _imp->knobs.size() );
-    if ( otherKnobs.size() != _imp->knobs.size() ) {
+    RotoPaintPtr rotoPaintNode = toRotoPaint(node->getEffectInstance());
+    if (!rotoPaintNode) {
         return;
     }
-    std::list<KnobPtr >::iterator it = _imp->knobs.begin();
-    std::list<KnobPtr >::const_iterator otherIt = otherKnobs.begin();
-    for (; it != _imp->knobs.end(); ++it, ++otherIt) {
-        (*it)->clone(*otherIt);
-    }
-    {
-        QMutexLocker l(&itemMutex);
-        std::memcpy(_imp->overlayColor, otherDrawable->_imp->overlayColor, sizeof(double) * 4);
-    }
-    RotoItem::clone(other);
+    node->getEffectInstance()->setPropertiesLocked(false);
 }
 
-static void
-serializeRotoKnob(const KnobPtr & knob,
-                  KnobSerialization* serialization)
-{
-    std::pair<int, KnobPtr > master = knob->getMaster(0);
-
-    if (master.second) {
-        serialization->initialize(master.second);
-    } else {
-        serialization->initialize(knob);
-    }
-}
-
-void
-RotoDrawableItem::save(RotoItemSerialization *obj) const
-{
-    RotoDrawableItemSerialization* s = dynamic_cast<RotoDrawableItemSerialization*>(obj);
-
-    assert(s);
-    if (!s) {
-        throw std::logic_error("RotoDrawableItem::save()");
-    }
-    for (std::list<KnobPtr >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        boost::shared_ptr<KnobSerialization> k = boost::make_shared<KnobSerialization>(*it);
-        serializeRotoKnob( *it, k.get() );
-        s->_knobs.push_back(k);
-    }
-    {
-        QMutexLocker l(&itemMutex);
-        std::memcpy(s->_overlayColor, _imp->overlayColor, sizeof(double) * 4);
-    }
-    RotoItem::save(obj);
-}
-
-void
-RotoDrawableItem::load(const RotoItemSerialization &obj)
-{
-    RotoItem::load(obj);
-    const RotoDrawableItemSerialization & s = dynamic_cast<const RotoDrawableItemSerialization &>(obj);
-
-    for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = s._knobs.begin(); it != s._knobs.end(); ++it) {
-        for (std::list<KnobPtr >::const_iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
-            if ( (*it2)->getName() == (*it)->getName() ) {
-                boost::shared_ptr<KnobSignalSlotHandler> s = (*it2)->getSignalSlotHandler();
-                s->blockSignals(true);
-                (*it2)->clone( (*it)->getKnob().get() );
-                s->blockSignals(false);
-                break;
-            }
-        }
-    }
-    {
-        QMutexLocker l(&itemMutex);
-        std::memcpy(_imp->overlayColor, s._overlayColor, sizeof(double) * 4);
-    }
-
-    RotoStrokeType type;
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
-    if (isStroke) {
-        type = isStroke->getBrushType();
-    } else {
-        type = eRotoStrokeTypeSolid;
-    }
-
-    boost::shared_ptr<KnobChoice> compKnob = getOperatorKnob();
-    KnobPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
-    KnobChoice* mergeOp = dynamic_cast<KnobChoice*>( mergeOperatorKnob.get() );
-    if (mergeOp) {
-        mergeOp->setValueFromID(compKnob->getEntry( compKnob->getValue() ).id, 0);
-    }
-
-    if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
-        KnobPtr translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
-        KnobDouble* translate = dynamic_cast<KnobDouble*>( translateKnob.get() );
-        if (translate) {
-            translate->clone( _imp->cloneTranslate.get() );
-        }
-        KnobPtr rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
-        KnobDouble* rotate = dynamic_cast<KnobDouble*>( rotateKnob.get() );
-        if (rotate) {
-            rotate->clone( _imp->cloneRotate.get() );
-        }
-        KnobPtr scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
-        KnobDouble* scale = dynamic_cast<KnobDouble*>( scaleKnob.get() );
-        if (scale) {
-            scale->clone( _imp->cloneScale.get() );
-        }
-        KnobPtr uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
-        KnobBool* uniform = dynamic_cast<KnobBool*>( uniformKnob.get() );
-        if (uniform) {
-            uniform->clone( _imp->cloneScaleUniform.get() );
-        }
-        KnobPtr skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
-        KnobDouble* skewX = dynamic_cast<KnobDouble*>( skewxKnob.get() );
-        if (skewX) {
-            skewX->clone( _imp->cloneSkewX.get() );
-        }
-        KnobPtr skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
-        KnobDouble* skewY = dynamic_cast<KnobDouble*>( skewyKnob.get() );
-        if (skewY) {
-            skewY->clone( _imp->cloneSkewY.get() );
-        }
-        KnobPtr skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
-        KnobChoice* skewOrder = dynamic_cast<KnobChoice*>( skewOrderKnob.get() );
-        if (skewOrder) {
-            skewOrder->clone( _imp->cloneSkewOrder.get() );
-        }
-        KnobPtr centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
-        KnobDouble* center = dynamic_cast<KnobDouble*>( centerKnob.get() );
-        if (center) {
-            center->clone( _imp->cloneCenter.get() );
-        }
-        KnobPtr filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
-        KnobChoice* filter = dynamic_cast<KnobChoice*>( filterKnob.get() );
-        if (filter) {
-            filter->clone( _imp->cloneFilter.get() );
-        }
-        KnobPtr boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
-        KnobBool* bo = dynamic_cast<KnobBool*>( boKnob.get() );
-        if (bo) {
-            bo->clone( _imp->cloneBlackOutside.get() );
-        }
-
-        int offsetMode_i = _imp->timeOffsetMode->getValue();
-        KnobPtr offsetKnob;
-
-        if (offsetMode_i == 0) {
-            offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
-        } else {
-            offsetKnob = _imp->frameHoldNode->getKnobByName(kFrameHoldParamFirstFrame);
-        }
-        KnobInt* offset = dynamic_cast<KnobInt*>( offsetKnob.get() );
-        if (offset) {
-            offset->clone( _imp->timeOffset.get() );
-        }
-    } else if (type == eRotoStrokeTypeBlur) {
-        KnobPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
-        KnobDouble* isDbl = dynamic_cast<KnobDouble*>( knob.get() );
-        if (isDbl) {
-            isDbl->clone( _imp->effectStrength.get() );
-        }
-    }
-} // RotoDrawableItem::load
 
 bool
-RotoDrawableItem::isActivated(double time) const
+RotoDrawableItem::isActivated(TimeValue time, ViewIdx view) const
 {
-    if ( !isGloballyActivated() ) {
+    if ( !isGloballyActivatedRecursive() ) {
         return false;
     }
     try {
-        RotoPaintItemLifeTimeTypeEnum lifetime = (RotoPaintItemLifeTimeTypeEnum)_imp->lifeTime->getValue();
-        switch (lifetime) {
-        case eRotoPaintItemLifeTimeTypeAll: {
+        KnobChoicePtr lifeTimeKnob = _imp->lifeTime.lock();
+        if (!lifeTimeKnob) {
             return true;
         }
-        case eRotoPaintItemLifeTimeTypeSingle: {
-            return time == _imp->lifeTimeFrame->getValue();
+        RotoPaintItemLifeTimeTypeEnum lifetime = (RotoPaintItemLifeTimeTypeEnum)lifeTimeKnob->getValue();
+
+        // The time in parameter may be a float if e.g a TimeBlur node is in the graph. As a result of this
+        // the lifetime frame would not exactly match the given time. Instead round the time to the closest integer.
+        int roundedTime = std::floor(time + 0.5);
+        switch (lifetime) {
+            case eRotoPaintItemLifeTimeTypeAll:
+                return true;
+            case eRotoPaintItemLifeTimeTypeSingle:
+                return roundedTime == _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
+            case eRotoPaintItemLifeTimeTypeFromStart:
+                return roundedTime <= _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
+            case eRotoPaintItemLifeTimeTypeToEnd:
+                return roundedTime >= _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
+            case eRotoPaintItemLifeTimeTypeCustom:
+                return _imp->customRange.lock()->getValueAtTime(time, DimIdx(0), view);
         }
-        case eRotoPaintItemLifeTimeTypeFromStart: {
-            return time <= _imp->lifeTimeFrame->getValue();
-        }
-        case eRotoPaintItemLifeTimeTypeToEnd: {
-            return time >= _imp->lifeTimeFrame->getValue();
-        }
-        case eRotoPaintItemLifeTimeTypeCustom: {
-            return _imp->activated->getValueAtTime(time);
-        }
-        }
+
     } catch (std::runtime_error) {
     }
     return false;
 }
 
-void
-RotoDrawableItem::setActivated(bool a,
-                               double time)
+std::vector<RangeD>
+RotoDrawableItem::getActivatedRanges(ViewIdx view) const
 {
-    _imp->activated->setValueAtTime(time, a, ViewSpec::all(), 0);
-    getContext()->onItemKnobChanged();
-}
+    std::vector<RangeD> ret;
+    RotoPaintItemLifeTimeTypeEnum lifetime = (RotoPaintItemLifeTimeTypeEnum)_imp->lifeTime.lock()->getValue();
+    switch (lifetime) {
+        case eRotoPaintItemLifeTimeTypeAll: {
+            RangeD r = {INT_MIN, INT_MAX};
+            ret.push_back(r);
+            break;
+        }
+        case eRotoPaintItemLifeTimeTypeSingle: {
+            double frame = _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
+            RangeD r = {frame, frame};
+            ret.push_back(r);
+            break;
+        }
+        case eRotoPaintItemLifeTimeTypeFromStart: {
+            double frame = _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
+            RangeD r = {frame, INT_MAX};
+            ret.push_back(r);
+            break;
+        }
+        case eRotoPaintItemLifeTimeTypeToEnd: {
+            double frame = _imp->lifeTimeFrame.lock()->getValue(DimIdx(0),view);
+            RangeD r = {INT_MIN, frame};
+            ret.push_back(r);
+            break;
+        }
+        case eRotoPaintItemLifeTimeTypeCustom: {
+            KnobBoolPtr customRangeKnob = _imp->customRange.lock();
+            CurvePtr curve = customRangeKnob->getAnimationCurve(view, DimIdx(0));
+            if (curve->isAnimated()) {
+                assert(curve);
+                KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+                assert(!keys.empty());
+                bool rangeOpened = keys.begin()->getValue() > 0;
+                RangeD r = {INT_MIN, INT_MAX};
+                for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+                    if (it->getValue() > 0) {
+                        if (!rangeOpened) {
+                            r.min = it->getTime();
+                            rangeOpened = true;
+                        }
+                    } else {
+                        if (rangeOpened) {
+                            r.max = it->getTime();
+                            rangeOpened = false;
+                            ret.push_back(r);
+                        }
+                    }
+                }
+                if (rangeOpened) {
+                    r.max = INT_MAX;
+                    ret.push_back(r);
+                }
+            } else {
+                bool activated = customRangeKnob->getValue();
+                if (activated) {
+                    RangeD r = {INT_MIN, INT_MAX};
+                    ret.push_back(r);
+                }
+            }
+            break;
+        }
 
-double
-RotoDrawableItem::getOpacity(double time) const
-{
-    ///MT-safe thanks to Knob
-    return _imp->opacity->getValueAtTime(time);
-}
-
-void
-RotoDrawableItem::setOpacity(double o,
-                             double time)
-{
-    _imp->opacity->setValueAtTime(time, o, ViewSpec::all(), 0);
-    getContext()->onItemKnobChanged();
-}
-
-double
-RotoDrawableItem::getFeatherDistance(double time) const
-{
-    ///MT-safe thanks to Knob
-    return _imp->feather->getValueAtTime(time);
-}
-
-void
-RotoDrawableItem::setFeatherDistance(double d,
-                                     double time)
-{
-    _imp->feather->setValueAtTime(time, d, ViewSpec::all(), 0);
-    getContext()->onItemKnobChanged();
-}
-
-int
-RotoDrawableItem::getNumKeyframesFeatherDistance() const
-{
-    return _imp->feather->getKeyFramesCount(ViewSpec::current(), 0);
-}
-
-void
-RotoDrawableItem::setFeatherFallOff(double f,
-                                    double time)
-{
-    _imp->featherFallOff->setValueAtTime(time, f, ViewSpec::all(), 0);
-    getContext()->onItemKnobChanged();
-}
-
-double
-RotoDrawableItem::getFeatherFallOff(double time) const
-{
-    ///MT-safe thanks to Knob
-    return _imp->featherFallOff->getValueAtTime(time);
-}
-
-bool
-RotoDrawableItem::getInverted(double time) const
-{
-    ///MT-safe thanks to Knob
-#ifdef NATRON_ROTO_INVERTIBLE
-
-    return _imp->inverted->getValueAtTime(time);
-#else
-    Q_UNUSED(time);
-
-    return false;
-#endif
-}
-
-void
-RotoDrawableItem::getColor(double time,
-                           double* color) const
-{
-    color[0] = _imp->color->getValueAtTime(time, 0);
-    color[1] = _imp->color->getValueAtTime(time, 1);
-    color[2] = _imp->color->getValueAtTime(time, 2);
-}
-
-void
-RotoDrawableItem::setColor(double time,
-                           double r,
-                           double g,
-                           double b)
-{
-    _imp->color->setValueAtTime(time, r, ViewSpec::all(), 0);
-    _imp->color->setValueAtTime(time, g, ViewSpec::all(), 1);
-    _imp->color->setValueAtTime(time, b, ViewSpec::all(), 2);
-    getContext()->onItemKnobChanged();
-}
-
-int
-RotoDrawableItem::getCompositingOperator() const
-{
-    return _imp->compOperator->getValue();
-}
-
-void
-RotoDrawableItem::setCompositingOperator(int op)
-{
-    _imp->compOperator->setValue( op);
-}
-
-std::string
-RotoDrawableItem::getCompositingOperatorToolTip() const
-{
-    return _imp->compOperator->getHintToolTipFull();
-}
-
-void
-RotoDrawableItem::getOverlayColor(double* color) const
-{
-    QMutexLocker l(&itemMutex);
-    std::memcpy(color, _imp->overlayColor, sizeof(double) * 4);
-}
-
-void
-RotoDrawableItem::setOverlayColor(const double *color)
-{
-    ///MT-safe: only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    {
-        QMutexLocker l(&itemMutex);
-        std::memcpy(_imp->overlayColor, color, sizeof(double) * 4);
     }
-    Q_EMIT overlayColorChanged();
-}
+    return ret;
+} // getActivatedRanges
 
-boost::shared_ptr<KnobBool> RotoDrawableItem::getActivatedKnob() const
+void
+RotoDrawableItem::getDefaultOverlayColor(double *r, double *g, double *b)
 {
-    return _imp->activated;
+    *r = 0.7;
+    *g = 0.027;
+    *b = 0.027;
 }
 
-boost::shared_ptr<KnobDouble> RotoDrawableItem::getFeatherKnob() const
+KnobChoicePtr
+RotoDrawableItem::getMotionBlurModeKnob() const
 {
-    return _imp->feather;
+    return _imp->motionBlurTypeKnob.lock();
 }
 
-boost::shared_ptr<KnobDouble> RotoDrawableItem::getFeatherFallOffKnob() const
+KnobBoolPtr RotoDrawableItem::getCustomRangeKnob() const
 {
-    return _imp->featherFallOff;
+    return _imp->customRange.lock();
 }
 
-boost::shared_ptr<KnobDouble> RotoDrawableItem::getOpacityKnob() const
+KnobDoublePtr RotoDrawableItem::getOpacityKnob() const
 {
-    return _imp->opacity;
+    return _imp->opacity.lock();
 }
 
-boost::shared_ptr<KnobBool> RotoDrawableItem::getInvertedKnob() const
+KnobButtonPtr RotoDrawableItem::getInvertedKnob() const
 {
-#ifdef NATRON_ROTO_INVERTIBLE
-
-    return _imp->inverted;
-#else
-
-    return boost::shared_ptr<KnobBool>();
-#endif
+    return _imp->invertKnob.lock();
 }
 
-boost::shared_ptr<KnobChoice> RotoDrawableItem::getOperatorKnob() const
+KnobChoicePtr RotoDrawableItem::getOperatorKnob() const
 {
-    return _imp->compOperator;
+    return _imp->compOperator.lock();
 }
 
-boost::shared_ptr<KnobColor> RotoDrawableItem::getColorKnob() const
+KnobColorPtr RotoDrawableItem::getColorKnob() const
 {
-    return _imp->color;
+    return _imp->color.lock();
 }
 
-boost::shared_ptr<KnobDouble>
-RotoDrawableItem::getBrushSizeKnob() const
+KnobColorPtr
+RotoDrawableItem::getOverlayColorKnob() const
 {
-    return _imp->brushSize;
+    return _imp->overlayColor.lock();
 }
 
-boost::shared_ptr<KnobDouble>
-RotoDrawableItem::getBrushHardnessKnob() const
-{
-    return _imp->brushHardness;
-}
-
-boost::shared_ptr<KnobDouble>
-RotoDrawableItem::getBrushSpacingKnob() const
-{
-    return _imp->brushSpacing;
-}
-
-boost::shared_ptr<KnobDouble>
-RotoDrawableItem::getBrushEffectKnob() const
-{
-    return _imp->effectStrength;
-}
-
-boost::shared_ptr<KnobDouble>
-RotoDrawableItem::getBrushVisiblePortionKnob() const
-{
-    return _imp->visiblePortion;
-}
-
-boost::shared_ptr<KnobBool>
-RotoDrawableItem::getPressureOpacityKnob() const
-{
-    return _imp->pressureOpacity;
-}
-
-boost::shared_ptr<KnobBool>
-RotoDrawableItem::getPressureSizeKnob() const
-{
-    return _imp->pressureSize;
-}
-
-boost::shared_ptr<KnobBool>
-RotoDrawableItem::getPressureHardnessKnob() const
-{
-    return _imp->pressureHardness;
-}
-
-boost::shared_ptr<KnobBool>
-RotoDrawableItem::getBuildupKnob() const
-{
-    return _imp->buildUp;
-}
-
-boost::shared_ptr<KnobInt>
+KnobIntPtr
 RotoDrawableItem::getTimeOffsetKnob() const
 {
-    return _imp->timeOffset;
+    return _imp->timeOffset.lock();
 }
 
-boost::shared_ptr<KnobChoice>
+KnobChoicePtr
 RotoDrawableItem::getTimeOffsetModeKnob() const
 {
-    return _imp->timeOffsetMode;
+    return _imp->timeOffsetMode.lock();
 }
 
-boost::shared_ptr<KnobChoice>
-RotoDrawableItem::getBrushSourceTypeKnob() const
+KnobChoicePtr
+RotoDrawableItem::getMergeInputAChoiceKnob() const
 {
-    return _imp->sourceColor;
+    return _imp->mergeAInputChoice.lock();
 }
 
-boost::shared_ptr<KnobDouble>
-RotoDrawableItem::getBrushCloneTranslateKnob() const
+KnobChoicePtr
+RotoDrawableItem::getMergeMaskChoiceKnob() const
 {
-    return _imp->cloneTranslate;
+    return _imp->mergeMaskInputChoice.lock();
 }
 
-boost::shared_ptr<KnobDouble>
+KnobDoublePtr
+RotoDrawableItem::getMixKnob() const
+{
+    return _imp->mixKnob.lock();
+}
+
+KnobDoublePtr
 RotoDrawableItem::getCenterKnob() const
 {
-    return _imp->center;
+    return _imp->center.lock();
 }
 
-boost::shared_ptr<KnobInt>
+KnobIntPtr
 RotoDrawableItem::getLifeTimeFrameKnob() const
 {
-    return _imp->lifeTimeFrame;
+    return _imp->lifeTimeFrame.lock();
 }
 
-boost::shared_ptr<KnobDouble>
-RotoDrawableItem::getMotionBlurAmountKnob() const
+KnobDoublePtr
+RotoDrawableItem::getBrushSizeKnob() const
 {
-#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
-
-    return _imp->motionBlur;
-#else
-
-    return boost::shared_ptr<KnobDouble>();
-#endif
+    return _imp->brushSize.lock();
 }
 
-boost::shared_ptr<KnobDouble>
-RotoDrawableItem::getShutterOffsetKnob() const
+KnobDoublePtr
+RotoDrawableItem::getBrushHardnessKnob() const
 {
-#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
-
-    return _imp->customOffset;
-#else
-
-    return boost::shared_ptr<KnobDouble>();
-#endif
+    return _imp->brushHardness.lock();
 }
 
-boost::shared_ptr<KnobDouble>
-RotoDrawableItem::getShutterKnob() const
+KnobDoublePtr
+RotoDrawableItem::getBrushSpacingKnob() const
 {
-#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
-
-    return _imp->shutter;
-#else
-
-    return boost::shared_ptr<KnobDouble>();
-#endif
+    return _imp->brushSpacing.lock();
 }
 
-boost::shared_ptr<KnobChoice>
-RotoDrawableItem::getShutterTypeKnob() const
+KnobDoublePtr
+RotoDrawableItem::getBrushVisiblePortionKnob() const
 {
-#ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
-
-    return _imp->shutterType;
-#else
-
-    return boost::shared_ptr<KnobChoice>();
-#endif
+    return _imp->visiblePortion.lock();
 }
+
 
 void
-RotoDrawableItem::setKeyframeOnAllTransformParameters(double time)
+RotoDrawableItem::setKeyframeOnAllTransformParameters(TimeValue time)
 {
-    _imp->translate->setValueAtTime(time, _imp->translate->getValue(0), ViewSpec::all(), 0);
-    _imp->translate->setValueAtTime(time, _imp->translate->getValue(1), ViewSpec::all(), 1);
-
-    _imp->scale->setValueAtTime(time, _imp->scale->getValue(0), ViewSpec::all(), 0);
-    _imp->scale->setValueAtTime(time, _imp->scale->getValue(1), ViewSpec::all(), 1);
-
-    _imp->rotate->setValueAtTime(time, _imp->rotate->getValue(0), ViewSpec::all(), 0);
-
-    _imp->skewX->setValueAtTime(time, _imp->skewX->getValue(0), ViewSpec::all(), 0);
-    _imp->skewY->setValueAtTime(time, _imp->skewY->getValue(0), ViewSpec::all(), 0);
-}
-
-const std::list<KnobPtr >&
-RotoDrawableItem::getKnobs() const
-{
-    return _imp->knobs;
-}
-
-KnobPtr
-RotoDrawableItem::getKnobByName(const std::string& name) const
-{
-    for (std::list<KnobPtr >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        if ( (*it)->getName() == name ) {
-            return *it;
-        }
+    KnobDoublePtr translate = _imp->translate.lock();
+    if (translate) {
+        translate->setValueAtTime(time, translate->getValue(DimIdx(0)), ViewSetSpec::all(), DimIdx(0));
+        translate->setValueAtTime(time, translate->getValue(DimIdx(1)), ViewSetSpec::all(), DimIdx(1));
     }
 
-    return KnobPtr();
+    KnobDoublePtr scale = _imp->scale.lock();
+    if (scale) {
+        scale->setValueAtTime(time, scale->getValue(DimIdx(0)), ViewSetSpec::all(), DimIdx(0));
+        scale->setValueAtTime(time, scale->getValue(DimIdx(1)), ViewSetSpec::all(), DimIdx(1));
+    }
+
+    KnobDoublePtr rotate = _imp->rotate.lock();
+    if (rotate) {
+        rotate->setValueAtTime(time, rotate->getValue(DimIdx(0)), ViewSetSpec::all(), DimIdx(0));
+    }
+
+    KnobDoublePtr skewX = _imp->skewX.lock();
+    KnobDoublePtr skewY = _imp->skewY.lock();
+    if (skewX) {
+        skewX->setValueAtTime(time, skewX->getValue(DimIdx(0)), ViewSetSpec::all(), DimIdx(0));
+    }
+    if (skewY) {
+        skewY->setValueAtTime(time, skewY->getValue(DimIdx(0)), ViewSetSpec::all(), DimIdx(0));
+    }
 }
 
-void
-RotoDrawableItem::getTransformAtTime(double time,
+
+bool
+RotoDrawableItem::getTransformAtTimeInternal(TimeValue time,
+                                     ViewIdx view,
                                      Transform::Matrix3x3* matrix) const
 {
-    double tx = _imp->translate->getValueAtTime(time, 0);
-    double ty = _imp->translate->getValueAtTime(time, 1);
-    double sx = _imp->scale->getValueAtTime(time, 0);
-    double sy = _imp->scaleUniform->getValueAtTime(time) ? sx : _imp->scale->getValueAtTime(time, 1);
-    double skewX = _imp->skewX->getValueAtTime(time, 0);
-    double skewY = _imp->skewY->getValueAtTime(time, 0);
-    double rot = _imp->rotate->getValueAtTime(time, 0);
+    KnobDoublePtr translate = _imp->translate.lock();
+    if (!translate) {
+        return false;
+    }
+    KnobDoublePtr rotate = _imp->rotate.lock();
+    KnobBoolPtr scaleUniform = _imp->scaleUniform.lock();
+    KnobDoublePtr scale = _imp->scale.lock();
+    KnobDoublePtr skewXKnob = _imp->skewX.lock();
+    KnobDoublePtr skewYKnob = _imp->skewY.lock();
+    KnobDoublePtr centerKnob = _imp->center.lock();
+    KnobDoublePtr extraMatrix = _imp->extraMatrix.lock();
+    KnobChoicePtr skewOrder = _imp->skewOrder.lock();
+
+    double tx = translate->getValueAtTime(time, DimIdx(0), view);
+    double ty = translate->getValueAtTime(time, DimIdx(1), view);
+    double sx = scale->getValueAtTime(time, DimIdx(0), view);
+    double sy = scaleUniform->getValueAtTime(time) ? sx : scale->getValueAtTime(time, DimIdx(1), view);
+    double skewX = skewXKnob->getValueAtTime(time, DimIdx(0), view);
+    double skewY = skewYKnob->getValueAtTime(time, DimIdx(0), view);
+    double rot = rotate->getValueAtTime(time, DimIdx(0), view);
 
     rot = Transform::toRadians(rot);
-    double centerX = _imp->center->getValueAtTime(time, 0);
-    double centerY = _imp->center->getValueAtTime(time, 1);
-    bool skewOrderYX = _imp->skewOrder->getValueAtTime(time) == 1;
+    double centerX = centerKnob->getValueAtTime(time, DimIdx(0), view);
+    double centerY = centerKnob->getValueAtTime(time, DimIdx(1), view);
+    bool skewOrderYX = skewOrder->getValueAtTime(time) == 1;
     *matrix = Transform::matTransformCanonical(tx, ty, sx, sy, skewX, skewY, skewOrderYX, rot, centerX, centerY);
 
     Transform::Matrix3x3 extraMat;
-    extraMat.a = _imp->extraMatrix->getValueAtTime(time, 0); extraMat.b = _imp->extraMatrix->getValueAtTime(time, 1); extraMat.c = _imp->extraMatrix->getValueAtTime(time, 2);
-    extraMat.d = _imp->extraMatrix->getValueAtTime(time, 3); extraMat.e = _imp->extraMatrix->getValueAtTime(time, 4); extraMat.f = _imp->extraMatrix->getValueAtTime(time, 5);
-    extraMat.g = _imp->extraMatrix->getValueAtTime(time, 6); extraMat.h = _imp->extraMatrix->getValueAtTime(time, 7); extraMat.i = _imp->extraMatrix->getValueAtTime(time, 8);
+    for (int i = 0; i < 9; ++i) {
+        extraMat.m[i] =  extraMatrix->getValueAtTime(time, DimIdx(i), view);
+    }
     *matrix = Transform::matMul(*matrix, extraMat);
-}
+    return true;
+} // getTransformAtTimeInternal
 
-/**
- * @brief Set the transform at the given time
- **/
-void
-RotoDrawableItem::setTransform(double time,
-                               double tx,
-                               double ty,
-                               double sx,
-                               double sy,
-                               double centerX,
-                               double centerY,
-                               double rot,
-                               double skewX,
-                               double skewY)
-{
-    bool autoKeying = getContext()->isAutoKeyingEnabled();
 
-    if (autoKeying) {
-        _imp->translate->setValueAtTime(time, tx, ViewSpec::all(), 0);
-        _imp->translate->setValueAtTime(time, ty, ViewSpec::all(), 1);
-
-        _imp->scale->setValueAtTime(time, sx, ViewSpec::all(), 0);
-        _imp->scale->setValueAtTime(time, sy, ViewSpec::all(), 1);
-
-        _imp->center->setValueAtTime(time, centerX, ViewSpec::all(), 0);
-        _imp->center->setValueAtTime(time, centerY, ViewSpec::all(), 1);
-
-        _imp->rotate->setValueAtTime(time, rot, ViewSpec::all(), 0);
-
-        _imp->skewX->setValueAtTime(time, skewX, ViewSpec::all(), 0);
-        _imp->skewY->setValueAtTime(time, skewY, ViewSpec::all(), 0);
-    } else {
-        _imp->translate->setValue(tx, ViewSpec::all(), 0);
-        _imp->translate->setValue(ty, ViewSpec::all(), 1);
-
-        _imp->scale->setValue(sx, ViewSpec::all(), 0);
-        _imp->scale->setValue(sy, ViewSpec::all(), 1);
-
-        _imp->center->setValue(centerX, ViewSpec::all(), 0);
-        _imp->center->setValue(centerY, ViewSpec::all(), 1);
-
-        _imp->rotate->setValue(rot, ViewSpec::all(), 0);
-
-        _imp->skewX->setValue(skewX, ViewSpec::all(), 0);
-        _imp->skewY->setValue(skewY, ViewSpec::all(), 0);
-    }
-
-    onTransformSet(time);
-}
-
-void
-RotoDrawableItem::setExtraMatrix(bool setKeyframe,
-                                 double time,
-                                 const Transform::Matrix3x3& mat)
-{
-    _imp->extraMatrix->beginChanges();
-    if (setKeyframe) {
-        _imp->extraMatrix->setValueAtTime(time, mat.a, ViewSpec::all(), 0); _imp->extraMatrix->setValueAtTime(time, mat.b, ViewSpec::all(), 1); _imp->extraMatrix->setValueAtTime(time, mat.c, ViewSpec::all(), 2);
-        _imp->extraMatrix->setValueAtTime(time, mat.d, ViewSpec::all(), 3); _imp->extraMatrix->setValueAtTime(time, mat.e, ViewSpec::all(), 4); _imp->extraMatrix->setValueAtTime(time, mat.f, ViewSpec::all(), 5);
-        _imp->extraMatrix->setValueAtTime(time, mat.g, ViewSpec::all(), 6); _imp->extraMatrix->setValueAtTime(time, mat.h, ViewSpec::all(), 7); _imp->extraMatrix->setValueAtTime(time, mat.i, ViewSpec::all(), 8);
-    } else {
-        _imp->extraMatrix->setValue(mat.a, ViewSpec::all(), 0); _imp->extraMatrix->setValue(mat.b, ViewSpec::all(), 1); _imp->extraMatrix->setValue(mat.c, ViewSpec::all(), 2);
-        _imp->extraMatrix->setValue(mat.d, ViewSpec::all(), 3); _imp->extraMatrix->setValue(mat.e, ViewSpec::all(), 4); _imp->extraMatrix->setValue(mat.f, ViewSpec::all(), 5);
-        _imp->extraMatrix->setValue(mat.g, ViewSpec::all(), 6); _imp->extraMatrix->setValue(mat.h, ViewSpec::all(), 7); _imp->extraMatrix->setValue(mat.i, ViewSpec::all(), 8);
-    }
-    _imp->extraMatrix->endChanges();
-}
 
 void
 RotoDrawableItem::resetTransformCenter()
 {
-    double time = getContext()->getNode()->getApp()->getTimeLine()->currentFrame();
-    RectD bbox =  getBoundingBox(time);
-    boost::shared_ptr<KnobDouble> centerKnob = _imp->center;
+    KnobDoublePtr centerKnob = _imp->center.lock();
+    if (!centerKnob) {
+        return;
+    }
+    TimeValue time(getApp()->getTimeLine()->currentFrame());
+    RectD bbox =  getBoundingBox(time, ViewIdx(0));
 
-    centerKnob->beginChanges();
 
-    std::pair<int, KnobPtr> hasMaster = centerKnob->getMaster(0);
-    if (hasMaster.second) {
-        for (int i = 0; i < centerKnob->getDimension(); ++i) {
-            dynamic_cast<KnobI*>( centerKnob.get() )->unSlave(i, false);
+    ScopedChanges_RAII changes(centerKnob.get());
+
+    //centerKnob->unSlave(DimSpec::all(), ViewSetSpec::all(), false);
+    centerKnob->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
+    
+    std::vector<double> values(2);
+    values[0] = (bbox.x1 + bbox.x2) / 2.;
+    values[1] = (bbox.y1 + bbox.y2) / 2.;
+    centerKnob->setValueAcrossDimensions(values);
+}
+
+
+void
+RotoDrawableItem::onItemRemovedFromModel()
+{
+    // Disconnect this item nodes from the other nodes in the rotopaint tree
+    disconnectNodes();
+
+    KnobItemsTablePtr model = getModel();
+    if (!model) {
+        return;
+    }
+    NodePtr node = model->getNode();
+    if (!node) {
+        return;
+    }
+    RotoPaintPtr isRotopaint = toRotoPaint(node->getEffectInstance());
+    isRotopaint->refreshRotoPaintTree();
+}
+
+void
+RotoDrawableItem::onItemInsertedInModel()
+{
+    KnobItemsTablePtr model = getModel();
+    if (!model) {
+        return;
+    }
+    NodePtr node = model->getNode();
+    if (!node) {
+        return;
+    }
+    RotoPaintPtr isRotopaint = toRotoPaint(node->getEffectInstance());
+    isRotopaint->refreshRotoPaintTree();
+
+}
+
+void
+RotoDrawableItem::getMotionBlurSettings(const TimeValue time,
+                                        ViewIdx view,
+                                        RangeD* range,
+                                        int* divisions) const
+{
+    range->min = time;
+    range->max = time;
+    *divisions = 1;
+
+    RotoPaintPtr rotoPaintNode = toRotoPaint(getHolderEffect());
+    if (!rotoPaintNode) {
+        return;
+    }
+
+    KnobChoicePtr mbTypeKnob = _imp->motionBlurTypeKnob.lock();
+    if (!mbTypeKnob) {
+        return;
+    }
+
+    RotoMotionBlurModeEnum mbType = (RotoMotionBlurModeEnum)mbTypeKnob->getValue();
+    if (mbType != eRotoMotionBlurModePerShape) {
+        return;
+    }
+
+    KnobIntPtr motionBlurAmountKnob = _imp->motionBlurAmount.lock();
+    if (!motionBlurAmountKnob) {
+        return;
+    }
+
+    *divisions = motionBlurAmountKnob->getValueAtTime(time, DimIdx(0), view);
+
+    KnobDoublePtr shutterKnob = _imp->motionBlurShutter.lock();
+    assert(shutterKnob);
+    double shutterInterval = shutterKnob->getValueAtTime(time, DimIdx(0), view);
+
+    int shutterType_i = _imp->motionBlurShutterType.lock()->getValueAtTime(time, DimIdx(0), view);
+
+    switch (shutterType_i) {
+        case 0: // centered
+            range->min = time - shutterInterval / 2;
+            range->max = time + shutterInterval / 2;
+            break;
+        case 1: // start
+            range->min = time;
+            range->max = time + shutterInterval;
+            break;
+        case 2: // end
+            range->min = time - shutterInterval;
+            range->max = time;
+            break;
+        case 3: // custom
+        {
+            double shutterCustomOffset = _imp->motionBlurCustomShutter.lock()->getValueAtTime(time, DimIdx(0), view);
+            range->min = time + shutterCustomOffset;
+            range->max = time + shutterCustomOffset + shutterInterval;
+        }   break;
+        default:
+            assert(false);
+            range->min = time;
+            range->max = time;
+            break;
+    }
+
+}
+
+RectD
+CompNodeItem::getBoundingBox(TimeValue /*time*/, ViewIdx /*view*/) const
+{
+    // Not useful since we don't render any mask
+    return RectD();
+}
+
+std::string
+CompNodeItem::getBaseItemName() const
+{
+    return std::string(kRotoCompItemBaseName);
+}
+
+std::string
+CompNodeItem::getSerializationClassName() const
+{
+    return kSerializationCompLayerTag;
+}
+
+void
+RotoDrawableItem::fetchRenderCloneKnobs()
+{
+
+    RotoItem::fetchRenderCloneKnobs();
+
+    RotoStrokeType type = getBrushType();
+    if (type == eRotoStrokeTypeSolid) {
+        _imp->opacity = getKnobByNameAndType<KnobDouble>(kRotoOpacityParam);
+    }
+    _imp->lifeTime = getKnobByNameAndType<KnobChoice>(kRotoDrawableItemLifeTimeParam);
+    _imp->lifeTimeFrame = getKnobByNameAndType<KnobInt>(kRotoDrawableItemLifeTimeFrameParam);
+    _imp->customRange = getKnobByNameAndType<KnobBool>(kRotoLifeTimeCustomRangeParam);
+
+    if (type != eRotoStrokeTypeComp) {
+        _imp->overlayColor  = getKnobByNameAndType<KnobColor>(kRotoOverlayColor);
+    }
+
+    _imp->compOperator = getKnobByNameAndType<KnobChoice>(kRotoCompOperatorParam);
+
+    // Item types that output a mask may not have an invert parameter
+    if (type != eRotoStrokeTypeSolid &&
+        type != eRotoStrokeTypeSmear) {
+
+            _imp->invertKnob  = getKnobByNameAndType<KnobButton>(kRotoInvertedParam);
+    }
+    if (type == eRotoStrokeTypeSolid) {
+        _imp->color = getKnobByNameAndType<KnobColor>(kRotoColorParam);
+    }
+
+
+    // The comp item doesn't have a vector graphics mask hence cannot have a transform on it
+    if (type != eRotoStrokeTypeComp) {
+
+        // Brush: only for strokes or open Beziers
+        _imp->brushSize = getKnobByNameAndType<KnobDouble>(kRotoBrushSizeParam);
+        _imp->brushSpacing = getKnobByNameAndType<KnobDouble>(kRotoBrushSpacingParam);
+        _imp->brushHardness = getKnobByNameAndType<KnobDouble>(kRotoBrushHardnessParam);
+        _imp->visiblePortion = getKnobByNameAndType<KnobDouble>(kRotoBrushVisiblePortionParam);
+        
+
+        // Transform
+        _imp->translate = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemTranslateParam);
+        _imp->rotate = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemRotateParam);
+        _imp->scale = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemScaleParam);
+        _imp->scaleUniform = getKnobByNameAndType<KnobBool>(kRotoDrawableItemScaleUniformParam);
+        _imp->skewX = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemSkewXParam);
+        _imp->skewY = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemSkewYParam);
+        _imp->skewOrder = getKnobByNameAndType<KnobChoice>(kRotoDrawableItemSkewOrderParam);
+        _imp->center = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemCenterParam);
+        _imp->extraMatrix = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemExtraMatrixParam);
+    }
+
+    if (type == eRotoStrokeTypeReveal ||
+        type == eRotoStrokeTypeClone ||
+        type == eRotoStrokeTypeComp) {
+        _imp->mergeAInputChoice = getKnobByNameAndType<KnobChoice>(kRotoDrawableItemMergeAInputParam);
+        _imp->timeOffset = getKnobByNameAndType<KnobInt>(kRotoBrushTimeOffsetParam);
+
+        if (type != eRotoStrokeTypeComp) {
+            _imp->timeOffsetMode = getKnobByNameAndType<KnobChoice>(kRotoBrushTimeOffsetModeParam);
+        } else {
+            _imp->mergeMaskInputChoice = getKnobByNameAndType<KnobChoice>(kRotoDrawableItemMergeMaskParam);
         }
     }
-    dynamic_cast<KnobI*>( centerKnob.get() )->removeAnimation(ViewSpec::all(), 0);
-    dynamic_cast<KnobI*>( centerKnob.get() )->removeAnimation(ViewSpec::all(), 1);
-    centerKnob->setValues( (bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewSpec::all(), eValueChangedReasonNatronInternalEdited );
-    if (hasMaster.second) {
-        for (int i = 0; i < centerKnob->getDimension(); ++i) {
-            dynamic_cast<KnobI*>( centerKnob.get() )->slaveTo(i, hasMaster.second, i);
+
+    if (type == eRotoStrokeTypeComp) {
+        _imp->mixKnob = getKnobByNameAndType<KnobDouble>(kLayeredCompMixParam);
+    } else {
+        _imp->mixKnob = getKnobByNameAndType<KnobDouble>(kHostMixingKnobName);
+    }
+
+    if (type == eRotoStrokeTypeSolid) {
+        _imp->motionBlurTypeKnob = getKnobByNameAndType<KnobChoice>(kRotoMotionBlurModeParam);
+        _imp->motionBlurAmount = getKnobByNameAndType<KnobInt>(kRotoPerShapeMotionBlurParam);
+        _imp->motionBlurShutter = getKnobByNameAndType<KnobDouble>(kRotoPerShapeShutterParam);
+        _imp->motionBlurShutterType = getKnobByNameAndType<KnobChoice>(kRotoPerShapeShutterOffsetTypeParam);
+        _imp->motionBlurCustomShutter = getKnobByNameAndType<KnobDouble>(kRotoPerShapeShutterCustomOffsetParam);
+    }
+
+} // fetchRenderCloneKnobs
+
+void
+RotoDrawableItem::initializeKnobs()
+{
+
+    RotoItem::initializeKnobs();
+
+    KnobItemsTablePtr model = getModel();
+    if (!model) {
+        return;
+    }
+    NodePtr node = model->getNode();
+    if (!node) {
+        return;
+    }
+
+    RotoDrawableItemPtr thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() );
+    RotoPaintPtr rotoPaintEffect = toRotoPaint(node->getEffectInstance());
+    assert(rotoPaintEffect);
+    
+    Bezier* isBezier = dynamic_cast<Bezier*>(this);
+    RotoStrokeType type = getBrushType();
+
+    // Only solids may have an opacity
+    if (type != eRotoStrokeTypeEraser && type != eRotoStrokeTypeComp && type != eRotoStrokeTypeSmear) {
+        _imp->opacity = createDuplicateOfTableKnob<KnobDouble>(kRotoOpacityParam);
+    }
+
+    // All items have a lifetime
+    {
+        KnobChoicePtr lifeTimeKnob = createDuplicateOfTableKnob<KnobChoice>(kRotoDrawableItemLifeTimeParam);
+        _imp->lifeTime = lifeTimeKnob;
+        lifeTimeKnob->setIsMetadataSlave(true);
+        if (isBezier) {
+            lifeTimeKnob->setDefaultValue(eRotoPaintItemLifeTimeTypeAll);
         }
     }
-    centerKnob->endChanges();
+
+    _imp->lifeTimeFrame = createDuplicateOfTableKnob<KnobInt>(kRotoDrawableItemLifeTimeFrameParam);
+    _imp->customRange = createDuplicateOfTableKnob<KnobBool>(kRotoLifeTimeCustomRangeParam);
+
+    // All items that have an overlay need a color knob
+    if (type != eRotoStrokeTypeComp) {
+        KnobColorPtr param = createKnob<KnobColor>(kRotoOverlayColor , 4);
+        param->setLabel(tr(kRotoOverlayColorLabel));
+        param->setHintToolTip( tr(kRotoOverlayColorHint) );
+        param->setName(kRotoOverlayColor);
+        std::vector<double> def(4);
+        getDefaultOverlayColor(&def[0], &def[1], &def[2]);
+        def[3] = 1.;
+        param->setDefaultValues(def, DimIdx(0));
+        _imp->overlayColor = param;
+    }
+
+    // All items have a merge node
+    {
+        KnobChoicePtr param = createKnob<KnobChoice>(kRotoCompOperatorParam);
+        param->setLabel(tr(kRotoCompOperatorParamLabel));
+        param->setHintToolTip( tr(kRotoCompOperatorHint) );
+
+        std::vector<ChoiceOption> operators;
+        Merge::getOperatorStrings(&operators);
+        param->populateChoices(operators);
+        param->setDefaultValueFromID( Merge::getOperatorString(eMergeOver) );
+        _imp->compOperator = param;
+    }
+
+    // Item types that output a mask may not have an invert parameter
+    if (type != eRotoStrokeTypeSmear) {
+        {
+            KnobButtonPtr param = createKnob<KnobButton>(kRotoInvertedParam);
+            param->setHintToolTip( tr(kRotoInvertedHint) );
+            param->setLabel(tr(kRotoInvertedParamLabel));
+            param->setCheckable(true);
+            param->setDefaultValue(false);
+            param->setIconLabel("Images/inverted.png", true);
+            param->setIconLabel("Images/uninverted.png", false);
+            _imp->invertKnob = param;
+        }
+    }
+
+    // Color is only useful for solids
+    if (type == eRotoStrokeTypeSolid) {
+        _imp->color = createDuplicateOfTableKnob<KnobColor>(kRotoColorParam);
+    }
+
+  
+
+    // The comp item doesn't have a vector graphics mask hence cannot have a transform on it
+    if (type != eRotoStrokeTypeComp) {
+
+        // Brush: only for strokes or open Beziers
+        _imp->brushSize = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushSizeParam);
+        _imp->brushSpacing = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushSpacingParam);
+        _imp->brushHardness = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushHardnessParam);
+        _imp->visiblePortion = createDuplicateOfTableKnob<KnobDouble>(kRotoBrushVisiblePortionParam);
+
+
+        // Transform
+        _imp->translate = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemTranslateParam);
+        _imp->rotate = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemRotateParam);
+        _imp->scale = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemScaleParam);
+        _imp->scaleUniform = createDuplicateOfTableKnob<KnobBool>(kRotoDrawableItemScaleUniformParam);
+        _imp->skewX = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemSkewXParam);
+        _imp->skewY = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemSkewYParam);
+        _imp->skewOrder = createDuplicateOfTableKnob<KnobChoice>(kRotoDrawableItemSkewOrderParam);
+        _imp->center = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemCenterParam);
+        _imp->extraMatrix = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemExtraMatrixParam);
+    }
+
+
+    if (type == eRotoStrokeTypeReveal ||
+        type == eRotoStrokeTypeClone ||
+        type == eRotoStrokeTypeComp) {
+        // Source control
+
+        {
+            KnobChoicePtr param = createKnob<KnobChoice>(kRotoDrawableItemMergeAInputParam);
+            param->setLabel(tr(kRotoDrawableItemMergeAInputParamLabel));
+            param->setHintToolTip( tr(type == eRotoStrokeTypeComp ? kRotoDrawableItemMergeAInputParamHint_CompNode : kRotoDrawableItemMergeAInputParamHint_RotoPaint) );
+            param->setDefaultValue(0);
+            param->setAddNewLine(false);
+            _imp->mergeAInputChoice = param;
+        }
+
+        {
+            KnobIntPtr param = createKnob<KnobInt>(kRotoBrushTimeOffsetParam);
+            param->setLabel(tr(kRotoBrushTimeOffsetParamLabel));
+            param->setHintToolTip( tr(type == eRotoStrokeTypeComp ? kRotoBrushTimeOffsetParamHint_Comp : kRotoBrushTimeOffsetParamHint_Clone) );
+            _imp->timeOffset = param;
+        }
+        if (type != eRotoStrokeTypeComp) {
+            _imp->timeOffsetMode = createDuplicateOfTableKnob<KnobChoice>(kRotoBrushTimeOffsetModeParam);
+        } else {
+            {
+                KnobChoicePtr param = createKnob<KnobChoice>(kRotoDrawableItemMergeMaskParam);
+                param->setLabel(tr(kRotoDrawableItemMergeMaskParamLabel));
+                param->setHintToolTip( tr(kRotoDrawableItemMergeMaskParamHint) );
+                param->setDefaultValue(0);
+                param->setAddNewLine(false);
+                _imp->mergeMaskInputChoice = param;
+            }
+        }
+    }
+
+    if (type == eRotoStrokeTypeComp) {
+        _imp->mixKnob = createDuplicateOfTableKnob<KnobDouble>(kLayeredCompMixParam);
+    } else {
+        _imp->mixKnob = createDuplicateOfTableKnob<KnobDouble>(kHostMixingKnobName);
+    }
+
+    if (type == eRotoStrokeTypeSolid) {
+
+        {
+            KnobChoicePtr rotoMbKnob = rotoPaintEffect->getMotionBlurTypeKnob();
+            KnobChoicePtr mbTypeKnob = toKnobChoice(rotoMbKnob->createDuplicateOnHolder(thisShared, KnobPagePtr(), KnobGroupPtr(), -1 /*index in parent*/, KnobI::eDuplicateKnobTypeCopy /*dupType*/, kRotoMotionBlurModeParam, kRotoMotionBlurModeParamLabel, kRotoMotionBlurModeParamHint, false /*refreshParamsGui*/, KnobI::eKnobDeclarationTypePlugin));
+            _imp->motionBlurTypeKnob = mbTypeKnob;
+            mbTypeKnob->setIsPersistent(false);
+
+            BlockTreeRefreshRAII blocker(rotoPaintEffect);
+            bool ok = mbTypeKnob->linkTo(rotoMbKnob);
+            assert(ok);
+            (void)ok;
+        }
+
+        _imp->motionBlurAmount = createDuplicateOfTableKnob<KnobInt>(kRotoPerShapeMotionBlurParam);
+        _imp->motionBlurShutter = createDuplicateOfTableKnob<KnobDouble>(kRotoPerShapeShutterParam);
+        _imp->motionBlurShutterType = createDuplicateOfTableKnob<KnobChoice>(kRotoPerShapeShutterOffsetTypeParam);
+        _imp->motionBlurCustomShutter = createDuplicateOfTableKnob<KnobDouble>(kRotoPerShapeShutterCustomOffsetParam);
+    }
+
+
+    createNodes();
+
+    if (type == eRotoStrokeTypeComp) {
+        addColumn(kRotoCompOperatorParam, DimIdx(0));
+        addColumn(kLayeredCompMixParam, DimIdx(0));
+        addColumn(kRotoDrawableItemLifeTimeParam, DimIdx(0));
+        addColumn(kRotoBrushTimeOffsetParam, DimIdx(0));
+        addColumn(kRotoDrawableItemMergeAInputParam, DimIdx(0));
+        if (_imp->invertKnob.lock()) {
+            addColumn(kRotoInvertedParam, DimIdx(0));
+        }
+        addColumn(kRotoDrawableItemMergeMaskParam, DimIdx(0));
+
+    } else {
+        addColumn(kRotoCompOperatorParam, DimIdx(0));
+        addColumn(kRotoInvertedParam, DimIdx(0));
+        addColumn(kRotoOverlayColor, DimSpec::all());
+        addColumn(kRotoColorParam, DimSpec::all());
+    }
+#ifdef ROTOPAINT_ENABLE_PLANARTRACKER
+    {
+        KnobButtonPtr param = createKnob<KnobButton>(kRotoDrawableItemRightClickMenuPlanarTrackParam);
+        param->setSecret(true);
+        param->setLabel(tr(kRotoDrawableItemRightClickMenuPlanarTrackParamLabel));
+        _imp->createPlanarTrackButton = param;
+    }
+#endif
+} // initializeKnobs
+
+void
+RotoDrawableItem::refreshRightClickMenu(const KnobChoicePtr& refreshRightClickMenuInternal)
+{
+    if (getBrushType() == eRotoStrokeTypeComp) {
+        return;
+    }
+
+    refreshRightClickMenuInternal->appendChoice(ChoiceOption(kRotoDrawableItemRightClickMenuPlanarTrackParam));
+    
 }
 
 NATRON_NAMESPACE_EXIT

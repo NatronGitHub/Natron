@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -48,12 +48,14 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/AfterQuitProcessingI.h"
 #include "Engine/Knob.h"
+#include "Engine/ChoiceOption.h"
 #include "Engine/Format.h"
 #include "Engine/TimeLine.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/ViewIdx.h"
-#include "Engine/EngineFwd.h"
+#include "Serialization/SerializationBase.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -64,19 +66,31 @@ class Project
     , public NodeCollection
     , public AfterQuitProcessingI
     , public boost::noncopyable
-    , public boost::enable_shared_from_this<Project>
+    , public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-    struct MakeSharedEnabler;
-
+private: // derives from KnobHolder
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
-    Project(const AppInstPtr& appInstance);
+    Project(const AppInstancePtr& appInstance);
 
 public:
-    static boost::shared_ptr<Project> create(const AppInstPtr& appInstance);
+    static ProjectPtr create(const AppInstancePtr& appInstance) WARN_UNUSED_RETURN
+    {
+        return ProjectPtr( new Project(appInstance) );
+    }
+
+    ProjectPtr shared_from_this() {
+        return boost::dynamic_pointer_cast<Project>(KnobHolder::shared_from_this());
+    }
+
+    virtual NodeCollectionPtr getThisShared() OVERRIDE FINAL
+    {
+        return shared_from_this();
+    }
+
 
     virtual ~Project();
 
@@ -131,6 +145,8 @@ public:
 
     bool isLoadingProjectInternal() const;
 
+    bool getProjectLoadedVersionInfo(SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo* info) const;
+
     QString getProjectFilename() const WARN_UNUSED_RETURN;
 
     QString getLastAutoSaveFilePath() const;
@@ -142,10 +158,6 @@ public:
     bool hasProjectBeenSavedByUser() const WARN_UNUSED_RETURN;
 
     bool isSaveUpToDate() const WARN_UNUSED_RETURN;
-
-    //QDateTime getProjectAgeSinceLastSave() const WARN_UNUSED_RETURN ;
-
-    //QDateTime getProjectAgeSinceLastAutosave() const WARN_UNUSED_RETURN;
 
     void getProjectDefaultFormat(Format *f) const;
 
@@ -162,6 +174,11 @@ public:
     void createProjectViews(const std::vector<std::string>& views);
 
     const std::vector<std::string>& getProjectViewNames() const;
+
+    std::string getViewName(ViewIdx view) const;
+
+    static bool getViewIndex(const std::vector<std::string>& viewNames, const std::string& viewName, ViewIdx* view);
+    bool getViewIndex(const std::string& viewName, ViewIdx* view) const;
 
     int getProjectViewsCount() const;
 
@@ -182,7 +199,7 @@ public:
 
     void toggleAutoPreview();
 
-    boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN;
+    TimeLinePtr getTimeLine() const WARN_UNUSED_RETURN;
 
     int currentFrame() const WARN_UNUSED_RETURN;
 
@@ -196,8 +213,6 @@ public:
     bool tryLock() const;
 
     void unlock() const;
-
-    qint64 getProjectCreationTime() const;
 
 
     /**
@@ -277,7 +292,7 @@ public:
 
     double getProjectFrameRate() const;
 
-    boost::shared_ptr<KnobPath> getEnvVarKnob() const;
+    KnobPathPtr getEnvVarKnob() const;
     std::string getOnProjectLoadCB() const;
     std::string getOnProjectSaveCB() const;
     std::string getOnProjectCloseCB() const;
@@ -288,9 +303,9 @@ public:
 
     bool isFrameRangeLocked() const;
 
-    void getFrameRange(double* first, double* last) const;
+    void getFrameRange(TimeValue* first, TimeValue* last) const;
 
-    void unionFrameRangeWith(int first, int last);
+    void unionFrameRangeWith(TimeValue first, TimeValue last);
 
     void recomputeFrameRangeFromReaders();
 
@@ -304,44 +319,28 @@ public:
      * This is called only when calling AppManager::abortAnyProcessing()
      * @returns True if a node is in the project and a watcher was installed, false otherwise
      **/
-    bool quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const WatcherCallerArgsPtr& args);
+    bool quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const GenericWatcherCallerArgsPtr& args);
 
     bool isOpenGLRenderActivated() const;
 
     void refreshOpenGLRenderingFlagOnNodes();
 
+    virtual bool invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects) OVERRIDE ;
+
 private:
 
-    virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) OVERRIDE FINAL;
+    virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) OVERRIDE FINAL;
 
 public:
 
-    struct TreeOutput
-    {
-        NodePtr node;
-        std::list<std::pair<int, NodeWPtr > > outputs;
-    };
-
-    struct TreeInput
-    {
-        NodePtr node;
-        std::vector<NodePtr > inputs;
-    };
-
-    struct NodesTree
-    {
-        TreeOutput output;
-        std::list<TreeInput> inputs;
-        NodesList inbetweenNodes;
-    };
-
-    static void extractTreesFromNodes(const NodesList& nodes, std::list<Project::NodesTree>& trees);
-
     void closeProject_blocking(bool aboutToQuit);
 
-    bool addFormat(const std::string& formatSpec);
+    /**
+     * @brief Add a format to the default formats of the Project. This will not be seriliazed in the user project.
+     **/
+    bool addDefaultFormat(const std::string& formatSpec);
 
-    void setTimeLine(const boost::shared_ptr<TimeLine>& timeline);
+    void setTimeLine(const TimeLinePtr& timeline);
 
 
     /**
@@ -349,9 +348,16 @@ public:
      **/
     void reset(bool aboutToQuit, bool blocking);
 
+
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL;
+
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
+
+
+
 public Q_SLOTS:
 
-    void onQuitAnyProcessingWatcherTaskFinished(int taskID, const WatcherCallerArgsPtr& args);
+    void onQuitAnyProcessingWatcherTaskFinished(int taskID, const GenericWatcherCallerArgsPtr& args);
 
     void onAutoSaveTimerTriggered();
 
@@ -377,13 +383,14 @@ Q_SIGNALS:
 
 private:
 
+
     /*Returns the index of the format*/
-    int tryAddProjectFormat(const Format & f, bool* existed);
+    int tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat, bool* existed);
 
     void setProjectDefaultFormat(const Format & f);
 
-    bool loadProjectInternal(const QString & path, const QString & name, bool isAutoSave,
-                             bool isUntitledAutosave, bool* mustSave);
+
+    bool loadProjectInternal(const QString & path, const QString & name, bool isAutoSave, bool isUntitledAutosave);
 
     QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties);
 
@@ -398,37 +405,28 @@ private:
     virtual void initializeKnobs() OVERRIDE FINAL;
 
     /**
-     * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
-     * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
-     * but this can lead to worse performance. You can overload this to make all changes to params at once.
-     **/
-    virtual void beginKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE FINAL;
-
-    /**
-     * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
-     * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
-     * but this can lead to worse performance. You can overload this to make all changes to params at once.
-     **/
-    virtual void endKnobsValuesChanged(ValueChangedReasonEnum reason)  OVERRIDE FINAL;
-
-    /**
      * @brief Called whenever a param changes. It calls the virtual
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual bool onKnobValueChanged(KnobI* k,
+    virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
-                                    double time,
-                                    ViewSpec view,
-                                    bool originatedFromMainThread)  OVERRIDE FINAL;
+                                    TimeValue time,
+                                    ViewSetSpec view)  OVERRIDE FINAL;
 
-    void save(ProjectSerialization* serializationObject) const;
-
-    bool load(const ProjectSerialization & obj, const QString& name, const QString& path, bool* mustSave);
+    bool load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj, const QString& name, const QString& path);
 
 
     boost::scoped_ptr<ProjectPrivate> _imp;
 };
+
+
+inline ProjectPtr
+toProject(const KnobHolderPtr& holder)
+{
+    return boost::dynamic_pointer_cast<Project>(holder);
+}
+
 
 NATRON_NAMESPACE_EXIT
 

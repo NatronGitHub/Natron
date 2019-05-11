@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,108 +32,26 @@
 #include <boost/weak_ptr.hpp>
 #endif
 
-//========================================================================
-// GLFW 3.2 - www.glfw.org
-//------------------------------------------------------------------------
-// Copyright (c) 2002-2006 Marcus Geelnard
-// Copyright (c) 2006-2010 Camilla Berglund <elmindreda@elmindreda.org>
-//
-// This software is provided 'as-is', without any express or implied
-// warranty. In no event will the authors be held liable for any damages
-// arising from the use of this software.
-//
-// Permission is granted to anyone to use this software for any purpose,
-// including commercial applications, and to alter it and redistribute it
-// freely, subject to the following restrictions:
-//
-// 1. The origin of this software must not be misrepresented; you must not
-//    claim that you wrote the original software. If you use this software
-//    in a product, an acknowledgment in the product documentation would
-//    be appreciated but is not required.
-//
-// 2. Altered source versions must be plainly marked as such, and must not
-//    be misrepresented as being the original software.
-//
-// 3. This notice may not be removed or altered from any source
-//    distribution.
-//
-//========================================================================
-
 #include <cstddef>
 #include <string>
 #include <vector>
 #include <list>
 
-
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 
-#include "Engine/EngineFwd.h"
+#include "Engine/OSGLFramebufferConfig.h"
+#include "Engine/GLShader.h"
+#include "Engine/RectI.h"
 #include "Global/GLIncludes.h"
+
+#include "Engine/EngineFwd.h"
+
 
 NATRON_NAMESPACE_ENTER
 
-
-/* @brief Framebuffer configuration.
- *
- *  This describes buffers and their sizes.  It also contains
- *  a platform-specific ID used to map back to the backend API object.
- *
- *  It is used to pass framebuffer parameters from shared code to the platform
- *  API and also to enumerate and select available framebuffer configs.
- */
-class FramebufferConfig
-{
-public:
-
-    static const int ATTR_DONT_CARE = -1;
-    int redBits;
-    int greenBits;
-    int blueBits;
-    int alphaBits;
-    int depthBits;
-    int stencilBits;
-    int accumRedBits;
-    int accumGreenBits;
-    int accumBlueBits;
-    int accumAlphaBits;
-    int auxBuffers;
-    GLboolean stereo;
-    int samples;
-    GLboolean sRGB;
-    GLboolean doublebuffer;
-    uintptr_t handle;
-
-    FramebufferConfig();
-};
-
-struct GLRendererID
-{
-    int renderID;
-
-    // wgl NV extension use handles and not integers
-    void* rendererHandle;
-
-    GLRendererID()
-        : renderID(-1)
-        , rendererHandle(0) {}
-
-    explicit GLRendererID(int id) : renderID(id), rendererHandle(0) {}
-
-    explicit GLRendererID(void* handle) : renderID(0), rendererHandle(handle) {}
-};
-
-struct OpenGLRendererInfo
-{
-    std::size_t maxMemBytes;
-    std::string rendererName;
-    std::string vendorName;
-    std::string glVersionString;
-    std::string glslVersionString;
-    int maxTextureSize;
-    GLRendererID rendererID;
-};
 
 /**
  * @brief This class encapsulates a cross-platform OpenGL context used for offscreen rendering.
@@ -141,8 +59,9 @@ struct OpenGLRendererInfo
 struct OSGLContextPrivate;
 class OSGLContext
     : public boost::noncopyable
+    , public boost::enable_shared_from_this<OSGLContext>
 {
-public:
+private:
 
     /**
      * @brief Creates a new OpenGL context for offscreen rendering. The constructor may throw an exception if the context
@@ -151,10 +70,33 @@ public:
      **/
     explicit OSGLContext(const FramebufferConfig& pixelFormatAttrs,
                          const OSGLContext* shareContext,
-                         int major = GLVersion.major,
-                         int minor = GLVersion.minor,
+                         bool useGPUContext,
+                         int major = -1,
+                         int minor = -1,
                          const GLRendererID& rendererID = GLRendererID(),
                          bool coreProfile = false);
+
+protected:
+
+    /**
+     * @brief Convenience ctor for derived classes
+     **/
+    OSGLContext(bool useGPUContext);
+
+public:
+
+    static OSGLContextPtr create(const FramebufferConfig& pixelFormatAttrs,
+                          const OSGLContext* shareContext,
+                          bool useGPUContext,
+                          int major = -1,
+                          int minor = -1,
+                          const GLRendererID& rendererID = GLRendererID(),
+                          bool coreProfile = false)
+    {
+        OSGLContextPtr ret(new OSGLContext(pixelFormatAttrs, shareContext, useGPUContext, major, minor, rendererID, coreProfile));
+        return ret;
+    }
+
 
     virtual ~OSGLContext();
 
@@ -163,58 +105,128 @@ public:
      * it fails by throwing an exception with the required version.
      * Note: the context must be made current before calling this function
      **/
-    static void checkOpenGLVersion();
+    static void checkOpenGLVersion(bool gpuAPI);
+
+    /**
+     * @brief Returns whether this is a GPU or CPU OpenGL context
+     **/
+    bool isGPUContext() const;
+
+    /**
+     * @brief Returns minimum of GL_MAX_TEXTURE_SIZE (and  OSMESA_MAX_WIDTH/OSMESA_MAX_HEIGHT on OSMesa)
+     * Context needs to be bound.
+     **/
+    int getMaxOpenGLWidth();
+    int getMaxOpenGLHeight();
 
 
-    GLuint getPBOId() const;
+    unsigned int getOrCreatePBOId();
 
-    GLuint getFBOId() const;
+    unsigned int getOrCreateFBOId();
+
 
     // Helper functions used by platform dependent implementations
     static bool stringInExtensionString(const char* string, const char* extensions);
     static const FramebufferConfig& chooseFBConfig(const FramebufferConfig& desired, const std::vector<FramebufferConfig>& alternatives, int count);
 
+    GLShaderBasePtr getOrCreateCopyTexShader();
 
-    /**
-     * @brief Returns one of the built-in shaders, used in the Image class.
-     * Note: this context must be made current before calling this function
-     **/
-    boost::shared_ptr<GLShader> getOrCreateFillShader();
-    boost::shared_ptr<GLShader> getOrCreateMaskMixShader(bool maskEnabled);
-    boost::shared_ptr<GLShader> getOrCreateCopyUnprocessedChannelsShader(bool doR, bool doG, bool doB, bool doA);
+    GLShaderBasePtr getOrCreateFillShader();
 
-    /**
-     * @brief Same as setContextCurrent() except that it should be used to bind the context to perform NON-RENDER operations!
-     **/
-    void setContextCurrentNoRender();
-    static void unsetCurrentContextNoRender();
+    GLShaderBasePtr getOrCreateMaskMixShader(bool maskEnabled, bool maskInvert);
+
+    GLShaderBasePtr getOrCreateCopyUnprocessedChannelsShader(bool doR,
+                                                             bool doG,
+                                                             bool doB,
+                                                             bool doA);
+
+
+
+    static void unsetCurrentContextNoRenderInternal(bool useGPU, OSGLContext* context);
 
     /**
      * @brief Returns all renderers capable of rendering OpenGL
      **/
     static void getGPUInfos(std::list<OpenGLRendererInfo>& renderers);
 
+    QThread* getCurrentThread() const;
+
+    /**
+     * @brief Helper function to setup the OpenGL viewport when doing processing on a texture
+     **/
+    template <typename GL>
+    static void setupGLViewport(const RectI& bounds, const RectI& roi)
+    {
+        GL::Viewport( roi.x1 - bounds.x1, roi.y1 - bounds.y1, roi.width(), roi.height() );
+        glCheckError(GL);
+        GL::MatrixMode(GL_PROJECTION);
+        GL::LoadIdentity();
+        GL::Ortho( roi.x1, roi.x2,
+                  roi.y1, roi.y2,
+                  -10.0 * (roi.y2 - roi.y1), 10.0 * (roi.y2 - roi.y1) );
+        glCheckError(GL);
+        GL::MatrixMode(GL_MODELVIEW);
+        GL::LoadIdentity();
+    } // setupGLViewport
+
+    /**
+     * @brief Helper function to apply texture mapping assuming both in and out textures are bounded to the context.
+     **/
+    template <typename GL>
+    static void applyTextureMapping(const RectI& srcBounds, const RectI& dstBounds, const RectI& roi)
+    {
+        setupGLViewport<GL>(dstBounds, roi);
+
+        // Compute the texture coordinates to match the srcRoi
+        Point srcTexCoords[4], vertexCoords[4];
+        vertexCoords[0].x = roi.x1;
+        vertexCoords[0].y = roi.y1;
+        srcTexCoords[0].x = (roi.x1 - srcBounds.x1) / (double)srcBounds.width();
+        srcTexCoords[0].y = (roi.y1 - srcBounds.y1) / (double)srcBounds.height();
+
+        vertexCoords[1].x = roi.x2;
+        vertexCoords[1].y = roi.y1;
+        srcTexCoords[1].x = (roi.x2 - srcBounds.x1) / (double)srcBounds.width();
+        srcTexCoords[1].y = (roi.y1 - srcBounds.y1) / (double)srcBounds.height();
+
+        vertexCoords[2].x = roi.x2;
+        vertexCoords[2].y = roi.y2;
+        srcTexCoords[2].x = (roi.x2 - srcBounds.x1) / (double)srcBounds.width();
+        srcTexCoords[2].y = (roi.y2 - srcBounds.y1) / (double)srcBounds.height();
+
+        vertexCoords[3].x = roi.x1;
+        vertexCoords[3].y = roi.y2;
+        srcTexCoords[3].x = (roi.x1 - srcBounds.x1) / (double)srcBounds.width();
+        srcTexCoords[3].y = (roi.y2 - srcBounds.y1) / (double)srcBounds.height();
+
+        GL::Begin(GL_POLYGON);
+        for (int i = 0; i < 4; ++i) {
+            GL::TexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
+            GL::Vertex2d(vertexCoords[i].x, vertexCoords[i].y);
+        }
+        GL::End();
+        glCheckError(GL);
+    } // applyTextureMapping
+
+private:
+
+    void setContextCurrentInternal(int width, int height, int rowWidth, void* buffer);
+
+protected:
+
+    virtual void makeGPUContextCurrent();
+
+    virtual void unsetGPUContext();
+
 private:
 
 
-    /*  @brief Makes the context current for the calling
-     *  thread. A context can only be made current on
-     *  a single thread at a time and each thread can have only a single current
-     *  context at a time.
-     *
-     *  @thread_safety This function may be called from any thread.
-     */
-    void setContextCurrent(const AbortableRenderInfoPtr& render
-#ifdef DEBUG
-                           , double frameTime
-#endif
-                           );
-
     /**
      * @brief Releases the OpenGL context from this thread.
-     * @param unlockContext If true, the context will be made available for other renders as well
      **/
-    void unsetCurrentContext(const AbortableRenderInfoPtr& abortInfo);
+    void unsetCurrentContext();
+
+    bool hasCreatedContext() const;
 
 
     friend class OSGLContextAttacher;
@@ -223,61 +235,89 @@ private:
 
 
 /**
- * @brief RAII style class to safely call setContextCurrent() and unsetCurrentContext()
+ * @brief RAII style class to safely ensure a context is current to the calling thread.
+ * This can be created recursively on the same thread, however 2 threads cannot concurrently own the context.
  **/
-class OSGLContextAttacher
+class OSGLContextAttacher : public boost::enable_shared_from_this<OSGLContextAttacher>
 {
     OSGLContextPtr _c;
-    AbortableRenderInfoWPtr _a;
-#ifdef DEBUG
-    double _frameTime;
-#endif
-    bool _attached;
+
+    int _attached;
+    int _width;
+    int _height;
+    int _rowWidth;
+    void* _buffer;
+    bool _dettachOnDtor;
+
+    /**
+     * @brief Locks the given context to this thread.
+     **/
+    OSGLContextAttacher(const OSGLContextPtr& c);
+
+    /**
+     * @brief Locks the given context to this thread. The context MUST be a CPU OpenGL context.
+     **/
+    OSGLContextAttacher(const OSGLContextPtr& c, int width, int height, int rowWidth, void* buffer);
+
+
 public:
 
-    OSGLContextAttacher(const OSGLContextPtr& c,
-                        const AbortableRenderInfoPtr& render
-#ifdef DEBUG
-                        ,
-                        double frameTime
-#endif
-                        )
-    : _c(c)
-    , _a(render)
-#ifdef DEBUG
-    , _frameTime(frameTime)
-#endif
-    , _attached(false)
-    {
+    /**
+     * @brief Create an attacher object. If an attacher object already exists on this thread local storage it will
+     * be retrieved instead of creating a new one. 
+     * When leaving the ctor, the context is not necessarily attached, to ensure it is correctly attached, call attach().
+     **/
+    static OSGLContextAttacherPtr create(const OSGLContextPtr& c);
 
-    }
+    /**
+     * @brief Same as create(c) but also provides the default framebuffer for OSMesa contexts.
+     **/
+    static OSGLContextAttacherPtr create(const OSGLContextPtr& c, int width, int height, int rowWidth, void* buffer);
 
-    void attach()
-    {
-        if (!_attached) {
-            _c->setContextCurrent(_a.lock()
-#ifdef DEBUG
-                                 , _frameTime
-#endif
-                                 );
-            _attached = true;
-        }
-    }
+    /**
+     * @brief Ensures the dettach() function is called if isAttached() returns true
+     **/
+    ~OSGLContextAttacher();
 
-    void dettach()
-    {
+    OSGLContextPtr getContext() const;
 
-        if (_attached) {
-            _c->unsetCurrentContext( _a.lock() );
-            _attached = false;
-        }
-    }
+    /**
+     * @brief Attaches the context to the current thread. Does nothing if already attached. 
+     **/
+    void attach();
 
+    /**
+     * @brief Set whether to call dettach in dtor. By default its true
+     **/
+    void setDettachOnDtor(bool enabled);
 
-    ~OSGLContextAttacher()
-    {
-        dettach();
-    }
+    /**
+     * @brief Returns true if the context is attached
+     **/
+    bool isAttached() const;
+
+    /**
+     * @brief Dettaches the context from the current thread. Does nothing if already dettached.
+     * This is called from the dtor of this object and does not need to be called explicitly.
+     **/
+    void dettach();
+
+};
+
+/**
+ * @brief RAII style class to help switching temporarily context on a thread.
+ * The ctor will save the current context while the dtor will dettach whatever context
+ * was made current in-between and make the original context prior to the ctor current again.
+ **/
+class OSGLContextSaver
+{
+    OSGLContextAttacherPtr savedContext;
+
+public:
+
+    OSGLContextSaver();
+
+    ~OSGLContextSaver();
 };
 
 NATRON_NAMESPACE_EXIT

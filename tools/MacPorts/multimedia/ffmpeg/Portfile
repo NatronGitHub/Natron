@@ -8,8 +8,9 @@ PortGroup           active_variants 1.1
 
 name                ffmpeg
 conflicts           ffmpeg-devel
+# Please increase the revision of mpv whenever ffmpeg's version is updated.
 epoch               1
-version             3.3.4
+version             4.1.1
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -46,41 +47,36 @@ long_description    FFmpeg is a complete solution to record, convert and \
                     generators for all common audio/video formats.
 
 platforms           darwin
-homepage            http://www.ffmpeg.org/
-master_sites        http://www.ffmpeg.org/releases/
+homepage            https://ffmpeg.org/
+master_sites        ${homepage}releases/
 
 use_xz              yes
 
-checksums           rmd160  d206ec78c62f0d9377d3a2a36e6b576e4ab2a444 \
-                    sha256  98b97e1b908dfeb6aeb6d407e5a5eacdfc253a40c2d195f5867ed2d1d46ea957
-
-# root directory of extracted tarball is owned by root and has permissions 700
-# set to 755 to facilitate maintenance
-
-post-extract {
-    file attributes ${worksrcpath} -permissions 0755
-}
+checksums           rmd160  e16400cfaa2a975805f84730f8a8c5e255d2f92b \
+                    sha256  373749824dfd334d84e55dff406729edfd1606575ee44dd485d97d45ea4d2d86 \
+                    size    8893404
 
 depends_build       port:pkgconfig \
                     port:gmake \
                     port:texinfo
 
-# libvpx is static only so can be considered a build dependency (#47934)
-
-depends_build-append \
-                    port:libvpx
+# libvpx 1.7.0 now provides a shared library
+# move dependency from depends_build to depends_lib
 
 depends_lib         port:lame \
                     port:libiconv \
                     port:libvorbis \
                     port:libopus \
                     port:libogg \
+                    port:librsvg \
                     port:libtheora \
                     port:libmodplug \
-                    port:schroedinger \
                     port:libass \
                     port:libbluray \
+                    port:libvpx \
                     port:gnutls \
+                    port:openh264 \
+                    port:snappy \
                     port:openjpeg \
                     port:fontconfig \
                     port:freetype \
@@ -91,10 +87,7 @@ depends_lib         port:lame \
                     port:xz \
                     port:zlib
 
-patchfiles          patch-libavcodec-audiotoolboxenc.c.diff \
-                    patch-openjpeg-2.2.diff \
-                    patch-dnxhdenc.diff \
-                    patch-configure-no-static-libopenjpeg.diff
+patchfiles          patch-libavcodec-audiotoolboxenc.c.diff
 
 #
 # enable auto configure of asm optimizations
@@ -106,6 +99,14 @@ if {[lsearch [get_canonical_archs] i386] != -1} {
     # clang-3.1 hits https://trac.macports.org/ticket/30137 (<rdar://problem/11542429>)
     # clang-139 hits https://trac.macports.org/ticket/38141
     compiler.blacklist-append {clang < 422.1.7}
+}
+
+platform darwin powerpc {
+    # https://trac.macports.org/ticket/55124
+    # requires newer compiler than gcc4.2 to build
+    compiler.blacklist
+    compiler.whitelist    macports-gcc-6
+    universal_variant     no
 }
 
 # gcc > 4.2 is required, https://trac.ffmpeg.org/ticket/1464
@@ -124,9 +125,11 @@ configure.args      --enable-swscale \
                     --enable-libmp3lame \
                     --enable-libvorbis \
                     --enable-libopus \
+                    --enable-librsvg \
                     --enable-libtheora \
-                    --enable-libschroedinger \
                     --enable-libopenjpeg \
+                    --enable-libopenh264 \
+                    --enable-libsnappy \
                     --enable-libmodplug \
                     --enable-libvpx \
                     --enable-libsoxr \
@@ -138,16 +141,20 @@ configure.args      --enable-swscale \
                     --enable-fontconfig \
                     --enable-libfreetype \
                     --enable-libfribidi \
+                    --disable-libjack \
+                    --disable-libopencore-amrnb \
+                    --disable-libopencore-amrwb \
                     --disable-libxcb \
                     --disable-libxcb-shm \
                     --disable-libxcb-xfixes \
                     --disable-xlib \
                     --disable-indev=jack \
+                    --disable-opencl \
                     --disable-outdev=xv \
-                    --disable-vda \
                     --disable-audiotoolbox \
                     --disable-videotoolbox \
                     --disable-sdl2 \
+                    --disable-securetransport \
                     --mandir=${prefix}/share/man \
                     --enable-shared --enable-pthreads \
                     --cxx=${configure.cxx} \
@@ -159,16 +166,14 @@ platform darwin {
     # libblueray doesn't build on Tiger so disable for now (#39442)
     if {${os.major} < 9} {
         depends_lib-delete    port:libbluray
-        configure.args-delete --enable-libbluray
-        configure.args-append --disable-libbluray
+        configure.args-replace --enable-libbluray --disable-libbluray
         configure.args-append --disable-asm
     }
 
     # as of 1.6.0 libvpx only supports darwin 10 or later
     if {${os.major} < 10} {
-        depends_build-delete port:libvpx
-        configure.args-delete --enable-libvpx
-        configure.args-append --disable-libvpx
+        depends_lib-delete port:libvpx
+        configure.args-replace --enable-libvpx --disable-libvpx
     }
 
     # filters coreimage and coreimagesrc don't build on 10.6
@@ -178,28 +183,27 @@ platform darwin {
                               --disable-filter=coreimagesrc
     }
 
-    # VDA (video hardware acceleration, mostly H264) is only supported on 10.6.3+ up to (excluding) 10.11.
-    #if {(${os.major} > 10 || (${os.major} == 10 && ${os.minor} >= 3)) && (${os.major} < 15)}
-    # Due to a bug in ffmpeg(?), we have to enable VDA on 10.11 as well, even though it shouldn't be supported.
-    # More information: https://github.com/mpv-player/mpv/issues/2299
-    if {${os.major} > 10 || (${os.major} == 10 && ${os.minor} >= 3)} {
-        configure.args-delete --disable-vda
-        configure.args-append --enable-vda
-    }
-
-    # AudiotoolBox support requires CoreMedia Framework available on 10.7+
-    # libsdl2 requires minimum Xcode 10.7 SDK to build successfully
+    # AudioToolbox support requires CoreMedia Framework available on 10.7+
     if {${os.major} > 10} {
         configure.args-replace --disable-audiotoolbox --enable-audiotoolbox
+    }
+
+    # libsdl2 requires minimum Xcode 10.7 SDK to build successfully
+    # but builds on Snow Leopard
+    if {${os.major} > 9} {
         configure.args-replace --disable-sdl2 --enable-sdl2
         depends_lib-append     port:libsdl2
     }
 
-    # VideotoolBox, a new hardware acceleration framework, is supported on 10.8+ and "here to stay".
+    # VideoToolbox, a new hardware acceleration framework, is supported on 10.8+ and "here to stay".
     # It provides support for H264, H263, MPEG1, MPEG2 and MPEG4.
     if {${os.major} > 11} {
-        configure.args-delete --disable-videotoolbox
-        configure.args-append --enable-videotoolbox
+        configure.args-replace --disable-videotoolbox --enable-videotoolbox
+    }
+
+    # OpenCL support requires version 1.2 available 10.8+
+    if {${os.major} > 11} {
+        configure.args-replace --disable-opencl --enable-opencl
     }
 
     # Apple GCC has problems with SIMD intrinsics and -Werror=no-missing-prototypes.
@@ -207,8 +211,8 @@ platform darwin {
         patchfiles-append patch-configure-no-error-on-missing-prototypes.diff
     }
 
-    # kCVPixelFormatType_OneComponent8 used in avfoundation indev is only available on 10.8+
-    if {${os.major} < 12} {
+    # avfoundation is only available on 10.7+
+    if {${os.major} < 11} {
         configure.args-append --disable-indev=avfoundation
     }
 }
@@ -223,6 +227,13 @@ destroot.env-append V=1
 #
 # configure isn't autoconf and they do use a dep cache
 #
+
+post-extract {
+    if {${configure.cxx_stdlib} eq "libc++"} {
+        # fix configure, which contains many references to libstdc++
+        reinplace -E {s|-lstdc|-lc|g} ${worksrcpath}/configure
+    }
+}
 
 post-configure {
     if {[variant_isset universal]} {
@@ -274,16 +285,16 @@ if {[variant_isset universal]} {
         lappend merger_configure_env($arch)  ASFLAGS='-arch ${arch}'
     }
     if {[string match "*86*" ${configure.universal_archs}]} {
-        depends_build-append port:yasm
+        depends_build-append port:nasm
     }
-    lappend merger_configure_args(i386) --enable-yasm
-    lappend merger_configure_args(x86_64) --enable-yasm
+    lappend merger_configure_args(i386) --enable-x86asm
+    lappend merger_configure_args(x86_64) --enable-x86asm
 } else {
     configure.args-append --arch=${configure.build_arch}
     configure.env-append  ASFLAGS='[get_canonical_archflags]'
     if {${build_arch} eq "i386" || ${build_arch} eq "x86_64"} {
-        depends_build-append port:yasm
-        configure.args-append --enable-yasm
+        depends_build-append port:nasm
+        configure.args-append --enable-x86asm
     }
 }
 
@@ -304,7 +315,7 @@ variant x11 {
     configure.args-append   --enable-xlib
 }
 
-variant natron requires highbitdepth conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
+variant natronmini requires highbitdepth conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
 
     depends_lib-delete \
                     port:libiconv \
@@ -314,6 +325,7 @@ variant natron requires highbitdepth conflicts x11 description {Minimal FFmpeg f
                     port:fontconfig \
                     port:freetype \
                     port:fribidi \
+                    port:libsdl2
 
     configure.args-delete \
                     --enable-libass \
@@ -322,6 +334,7 @@ variant natron requires highbitdepth conflicts x11 description {Minimal FFmpeg f
                     --enable-fontconfig \
                     --enable-libfreetype \
                     --enable-libfribidi \
+                    --enable-sdl2 \
                     --cc=${configure.cc} \
                     --cxx=${configure.cxx}
 
@@ -332,7 +345,7 @@ variant natron requires highbitdepth conflicts x11 description {Minimal FFmpeg f
                     --disable-fontconfig \
                     --disable-libfreetype \
                     --disable-libfribidi \
-                    --disable-sdl \
+                    --disable-sdl2 \
                     --disable-securetransport \
                     --disable-iconv \
                     --cc=${configure.cc} \
@@ -373,12 +386,17 @@ platform darwin {
     }
 }
 
-variant high10 requires gpl2 description {Build using libx264 with 10-bit output} {}
+variant jack description {Enable jack library and indev support} {
+# jack will autoconfigure if not disabled
+    depends_lib-append      port:jack
+    configure.args-delete   --disable-libjack \
+                            --disable-indev=jack
+}
 
-if {[variant_isset high10]} {
-    require_active_variants x264 high10
-} else {
-    require_active_variants x264 "" high10
+variant darwinssl description {Enable https support using Apple built-in TLS library instead of GNU TLS} {
+    configure.args-delete   --disable-securetransport
+    configure.args-delete   --enable-gnutls
+    depends_lib-delete      port:gnutls
 }
 
 variant highbitdepth description {Build using libvpx with 10/12-bit output} {}
@@ -392,11 +410,9 @@ if {[variant_isset highbitdepth]} {
 variant gpl2 description {Enable GPL code, license will be GPL-2+} {
     configure.args-append   --enable-gpl \
                             --enable-postproc \
-                            --enable-libx265 \
                             --enable-libx264 \
                             --enable-libxvid
     depends_lib-append      port:XviD \
-                            port:x265 \
                             port:x264
 
     license                 GPL-2+
@@ -404,12 +420,9 @@ variant gpl2 description {Enable GPL code, license will be GPL-2+} {
 
 variant gpl3 requires gpl2 description {Enable GPL code, license will be GPL-3+} {
     configure.args-append   --enable-version3 \
-                            --enable-libopencore-amrnb \
-                            --enable-libopencore-amrwb \
                             --enable-libsmbclient
 
-    depends_lib-append      port:opencore-amr \
-                            port:samba3
+    depends_lib-append      port:samba3
 
     license                 GPL-3+
 
@@ -462,7 +475,6 @@ notes "
 *******      libx264
 *******      libx265
 *******      libxvid
-*******      opencore-amr
 *******
 ******* To include all nonfree, GPLed and LGPL code use variant +nonfree.
 ******* To remove nonfree and GPLed code leaving only LGPL code remove the

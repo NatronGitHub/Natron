@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,30 +34,40 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 
 #include "Engine/EngineFwd.h"
+#include "Engine/TreeRenderQueueProvider.h"
 
 NATRON_NAMESPACE_ENTER
 
 struct HistogramCPUPrivate;
-
-class HistogramCPU
-    : public QThread
+class HistogramCPUThread
+: public QThread
+, public boost::enable_shared_from_this<HistogramCPUThread>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+protected:
+
+    HistogramCPUThread();
+
 public:
 
-    HistogramCPU();
+    static HistogramCPUThreadPtr create()
+    {
+        return HistogramCPUThreadPtr(new HistogramCPUThread);
+    }
 
-    virtual ~HistogramCPU();
+    virtual ~HistogramCPUThread();
 
     void computeHistogram(int mode, //< corresponds to the enum Histogram::DisplayModeEnum
-                          const boost::shared_ptr<Image> & image,
-                          const RectI & rect,
+                          const ViewerNodePtr & viewer,
+                          int viewerInputNb,
+                          const RectD& roiParam,
                           int binsCount,
                           double vmin,
                           double vmax,

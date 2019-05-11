@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -88,7 +88,10 @@ struct CompleterLineEditPrivate
         assert( displayWords.size() == internalIds.size() );
 
         for (int i = 0; i < displayWords.size(); ++i) {
-            names.insert( std::make_pair( 0, std::make_pair(internalIds[i], displayWords[i]) ) );
+            CompleterLineEdit::PluginDesc desc;
+            desc.comboLabel = displayWords[i];
+            desc.lineEditLabel = internalIds[i];
+            names.insert(std::make_pair(0, desc));
         }
     }
 };
@@ -128,6 +131,12 @@ CompleterLineEdit::~CompleterLineEdit()
 {
 }
 
+const CompleterLineEdit::PluginsNamesMap&
+CompleterLineEdit::getPluginNamesMap() const
+{
+    return _imp->names;
+}
+
 QListView*
 CompleterLineEdit::getView() const
 {
@@ -141,7 +150,7 @@ CompleterLineEdit::filterText(const QString & txt)
 
     if ( txt.isEmpty() ) {
         for (PluginsNamesMap::iterator it = _imp->names.begin(); it != _imp->names.end(); ++it) {
-            sl.push_front(it->second.second);
+            sl.push_front(it->second.comboLabel);
         }
     } else {
         QString pattern;
@@ -155,9 +164,9 @@ CompleterLineEdit::filterText(const QString & txt)
 #ifdef NODE_TAB_DIALOG_USE_MATCHED_LENGTH
         std::map<int, QStringList> matchOrdered;
         for (PluginsNamesMap::iterator it = _imp->names.begin(); it != _imp->names.end(); ++it) {
-            if ( expr.exactMatch(it->second.first) ) {
+            if ( expr.exactMatch(it->second.lineEditLabel) ) {
                 QStringList& matchedForLength =  matchOrdered[expr.matchedLength()];
-                matchedForLength.push_front(it->second.second);
+                matchedForLength.push_front(it->second.comboLabel);
             }
         }
         for (std::map<int, QStringList>::iterator it = matchOrdered.begin(); it != matchOrdered.end(); ++it) {
@@ -166,8 +175,8 @@ CompleterLineEdit::filterText(const QString & txt)
 #else
 
         for (PluginsNamesMap::iterator it = _imp->names.begin(); it != _imp->names.end(); ++it) {
-            if ( it->second.first.contains(expr) ) {
-                sl.push_front(it->second.second);
+            if ( it->second.lineEditLabel.contains(expr) ) {
+                sl.push_front(it->second.comboLabel);
             }
         }
 #endif
@@ -181,14 +190,6 @@ CompleterLineEdit::filterText(const QString & txt)
     }
 
     QPoint p = mapToGlobal( QPoint( 0, height() ) );
-    //QDesktopWidget* desktop = QApplication::desktop();
-    //QRect screen = desktop->screenGeometry();
-    //double maxHeight = ( screen.height() - p.y() ) * 0.8;
-    //QFontMetrics fm = _imp->listView->fontMetrics();
-    //maxHeight = std::min( maxHeight, ( rowCount * fm.height() * 1.2 + fm.height() ) );
-
-    // Position the text edit
-    //   _imp->listView->setFixedSize(width(),maxHeight);
 
     _imp->listView->move(p);
     _imp->listView->show();
@@ -320,13 +321,11 @@ struct NodeCreationDialogPrivate
 {
     QVBoxLayout* layout;
     CompleterLineEdit* textEdit;
-    PluginsMap items;
     bool isFinished;
 
     NodeCreationDialogPrivate()
         : layout(NULL)
         , textEdit(NULL)
-        , items( appPTR->getPluginsList() )
         , isFinished(false)
     {
     }
@@ -334,10 +333,11 @@ struct NodeCreationDialogPrivate
 
 static int
 getPluginWeight(const QString& pluginID,
+                const QString& presetName,
                 int majVersion)
 {
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
-    QString propName( pluginID + QString::number(majVersion) + QString::fromUtf8("_tab_weight") );
+    QString propName( pluginID + QString::number(majVersion) + presetName +  QString::fromUtf8("_tab_weight") );
     int curValue = settings.value( propName, QVariant(0) ).toInt();
 
     return curValue;
@@ -345,17 +345,18 @@ getPluginWeight(const QString& pluginID,
 
 static void
 incrementPluginWeight(const QString& pluginID,
+                      const QString& presetName,
                       int majVersion)
 {
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
-    QString propName( pluginID + QString::number(majVersion) + QString::fromUtf8("_tab_weight") );
+    QString propName( pluginID + QString::number(majVersion) + presetName + QString::fromUtf8("_tab_weight") );
     int curValue = settings.value( propName, QVariant(0) ).toInt();
 
     ++curValue;
     settings.setValue( propName, QVariant(curValue) );
 }
 
-NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
+NodeCreationDialog::NodeCreationDialog(const QString& _defaultPluginID,
                                        QWidget* parent)
     : QDialog(parent)
     , _imp( new NodeCreationDialogPrivate() )
@@ -369,70 +370,63 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
 
 
     CompleterLineEdit::PluginsNamesMap pluginsMap;
-    QString initialFilterName;
-    std::string stdInitialFilter = initialFilter.toStdString();
-    int i = 0;
-    for (PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
-        if ( it->second.empty() ) {
-            continue;
-        }
+    QString initialFilter;
+    std::string defaultPluginID = _defaultPluginID.toStdString();
 
+    const PluginsMap& plugins = appPTR->getPluginsList();
 
-        if (it->second.size() == 1) {
-            std::pair<QString, QString> idNamePair;
-            Plugin* p = ( *it->second.begin() );
-            if ( !p->getIsUserCreatable() ) {
+    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
+
+        for (PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
+            if ( !(*itver)->getIsUserCreatable() ) {
                 continue;
             }
 
-            idNamePair.second = p->generateUserFriendlyPluginID();
 
-            int indexOfBracket = idNamePair.second.lastIndexOf( QString::fromUtf8("  [") );
-            if (indexOfBracket != -1) {
-                idNamePair.first = idNamePair.second.left(indexOfBracket);
-            }
+            CompleterLineEdit::PluginDesc desc;
+            QString pluginID = QString::fromUtf8((*itver)->getPluginID().c_str());
 
-            int weight = getPluginWeight( p->getPluginID(), p->getMajorVersion() );
-            pluginsMap.insert( std::make_pair(weight, idNamePair) );
+            {
+                desc.plugin = *itver;
 
-            if (it->first == stdInitialFilter) {
-                initialFilterName = idNamePair.first;
-            }
-            ++i;
-        } else {
-            QString bestMajorName;
-            for (PluginVersionsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
-                if ( !(*it2)->getIsUserCreatable() ) {
-                    continue;
-                }
-                std::pair<QString, QString> idNamePair;
-                if ( it2 == it->second.rbegin() ) {
-                    idNamePair.second = (*it2)->generateUserFriendlyPluginID();
-                    bestMajorName = idNamePair.second;
+                // This is the highest major version of the plug-in
+                if ( itver == it->second.rbegin() ) {
+                    desc.comboLabel = QString::fromUtf8((*itver)->generateUserFriendlyPluginID().c_str());
+                    desc.lineEditLabel = QString::fromUtf8((*itver)->getLabelWithoutSuffix().c_str());
+                    if (it->first == defaultPluginID) {
+                        initialFilter = desc.lineEditLabel;
+                    }
                 } else {
-                    idNamePair.second = (*it2)->generateUserFriendlyPluginIDMajorEncoded();
+                    desc.comboLabel = QString::fromUtf8((*itver)->generateUserFriendlyPluginIDMajorEncoded().c_str());
+                    desc.lineEditLabel = QString::fromUtf8((*itver)->getLabelVersionMajorEncoded().c_str());
+
                 }
 
-
-                int indexOfBracket = idNamePair.second.lastIndexOf( QString::fromUtf8("  [") );
-                if (indexOfBracket != -1) {
-                    idNamePair.first = idNamePair.second.left(indexOfBracket);
-                }
-
-                ++i;
-
-                int weight = getPluginWeight( (*it2)->getPluginID(), (*it2)->getMajorVersion() );
-                pluginsMap.insert( std::make_pair(weight, idNamePair) );
+                int weight = getPluginWeight(pluginID, QString(), (*itver)->getMajorVersion() );
+                pluginsMap.insert( std::make_pair(weight, desc) );
             }
-            if (it->first == stdInitialFilter) {
-                initialFilterName = bestMajorName;
+
+            // Add also an entry for each preset
+            const std::vector<PluginPresetDescriptor>& presets = (*itver)->getPresetFiles();
+            for (std::vector<PluginPresetDescriptor>::const_iterator it3 = presets.begin(); it3 != presets.end(); ++it3) {
+                CompleterLineEdit::PluginDesc presetDesc = desc;
+                presetDesc.presetName = it3->presetLabel;
+
+                QString presetSuffix = QLatin1String(" (") + presetDesc.presetName + QLatin1String(")");
+                presetDesc.comboLabel += presetSuffix;
+                presetDesc.lineEditLabel += presetSuffix;
+
+                int weight = getPluginWeight(pluginID, it3->presetLabel, (*itver)->getMajorVersion() );
+                pluginsMap.insert( std::make_pair(weight, presetDesc) );
             }
+
         }
+
     }
 
     _imp->textEdit = new CompleterLineEdit(pluginsMap, true, this);
-    if ( !initialFilterName.isEmpty() ) {
-        _imp->textEdit->setText(initialFilterName);
+    if ( !initialFilter.isEmpty() ) {
+        _imp->textEdit->setText(initialFilter);
     }
 
     QPoint global = QCursor::pos();
@@ -451,46 +445,28 @@ NodeCreationDialog::~NodeCreationDialog()
 {
 }
 
-QString
-NodeCreationDialog::getNodeName(int *major) const
+PluginPtr
+NodeCreationDialog::getPlugin(QString* presetName) const
 {
-    QString name = _imp->textEdit->text();
+    QString lineEditText = _imp->textEdit->text();
 
-
-    for (PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
-        if (it->second.size() == 1) {
-            if ( ( *it->second.begin() )->generateUserFriendlyPluginID() == name ) {
-                Plugin* p = ( *it->second.begin() );
-                *major = p->getMajorVersion();
-                const QString& ret = p->getPluginID();
-                incrementPluginWeight(ret, *major);
-
-                return ret;
+    const CompleterLineEdit::PluginsNamesMap& names = _imp->textEdit->getPluginNamesMap();
+    for (CompleterLineEdit::PluginsNamesMap::const_iterator it = names.begin(); it!=names.end(); ++it) {
+        if (it->second.comboLabel == lineEditText) {
+            if (presetName) {
+                *presetName = it->second.presetName;
             }
-        } else {
-            for (PluginVersionsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
-                if ( it2 == it->second.rbegin() ) {
-                    if ( (*it2)->generateUserFriendlyPluginID() == name ) {
-                        *major = (*it2)->getMajorVersion();
-                        const QString& ret = (*it2)->getPluginID();
-                        incrementPluginWeight(ret, *major);
-
-                        return ret;
-                    }
-                } else {
-                    if ( (*it2)->generateUserFriendlyPluginIDMajorEncoded() == name ) {
-                        *major = (*it2)->getMajorVersion();
-                        const QString& ret = (*it2)->getPluginID();
-                        incrementPluginWeight(ret, *major);
-
-                        return ret;
-                    }
-                }
+            PluginPtr ret = it->second.plugin.lock();
+            if (ret) {
+                incrementPluginWeight(QString::fromUtf8(ret->getPluginID().c_str()),
+                                      it->second.presetName,
+                                      ret->getMajorVersion());
             }
+            return ret;
         }
     }
 
-    return QString();
+    return PluginPtr();
 }
 
 void

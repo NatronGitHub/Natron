@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,12 +34,21 @@
 #include <QDesktopWidget>
 #include <QScrollArea>
 #include "Engine/Project.h"
+#include "Engine/Node.h"
 #include "Gui/Gui.h"
+#include "Gui/DockablePanel.h"
+#include "Gui/ProjectGui.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/NodeGui.h"
+#include "Gui/NodeSettingsPanel.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
 
+#include "Serialization/WorkspaceSerialization.h"
+
+
 NATRON_NAMESPACE_ENTER
+
 
 FloatingWidget::FloatingWidget(Gui* gui,
                                QWidget* parent)
@@ -52,7 +61,7 @@ FloatingWidget::FloatingWidget(Gui* gui,
 {
     setAttribute(Qt::WA_DeleteOnClose, true);
     if (gui) {
-        boost::shared_ptr<Project> project = gui->getApp()->getProject();
+        ProjectPtr project = gui->getApp()->getProject();
         QObject::connect( project.get(), SIGNAL(projectNameChanged(QString,bool)), this, SLOT(onProjectNameChanged(QString,bool)) );
         onProjectNameChanged(project->getProjectPath(), false);
     }
@@ -160,11 +169,85 @@ FloatingWidget::closeEvent(QCloseEvent* e)
 
     closeWidgetRecursively(_embeddedWidget);
     removeEmbeddedWidget();
-    _gui->unregisterFloatingWindow(this);
+    _gui->getApp()->unregisterFloatingWindow(this);
     QWidget::closeEvent(e);
 }
 
+
+TabWidgetI*
+FloatingWidget::isMainWidgetTab() const
+{
+    return dynamic_cast<TabWidget*>(_embeddedWidget);
+}
+
+SplitterI*
+FloatingWidget::isMainWidgetSplitter() const
+{
+    return dynamic_cast<Splitter*>(_embeddedWidget);
+}
+
+DockablePanelI*
+FloatingWidget::isMainWidgetPanel() const
+{
+    return dynamic_cast<DockablePanel*>(_embeddedWidget);
+}
+
+void
+FloatingWidget::restoreChildFromSerialization(const SERIALIZATION_NAMESPACE::WindowSerialization& serialization)
+{
+    if (serialization.childType == kSplitterChildTypeSplitter) {
+        assert(serialization.isChildSplitter);
+        Qt::Orientation orientation = Qt::Horizontal;
+        if (serialization.isChildSplitter->orientation == kSplitterOrientationHorizontal) {
+            orientation = Qt::Horizontal;
+        } else if (serialization.isChildSplitter->orientation == kSplitterOrientationVertical) {
+            orientation = Qt::Vertical;
+        }
+        Splitter* splitter = new Splitter(orientation, _gui, this);
+        setWidget(splitter);
+        _gui->getApp()->registerSplitter(splitter);
+        splitter->fromSerialization(*serialization.isChildSplitter);
+    } else if (serialization.childType == kSplitterChildTypeTabWidget) {
+        assert(serialization.isChildTabWidget);
+        TabWidget* tab = new TabWidget(_gui, this);
+        setWidget(tab);
+        _gui->getApp()->registerTabWidget(tab);
+        tab->fromSerialization(*serialization.isChildTabWidget);
+    } else if (serialization.childType == kSplitterChildTypeSettingsPanel) {
+        DockablePanel* panel = 0;
+        if ( serialization.isChildSettingsPanel == kNatronProjectSettingsPanelSerializationNameOld || serialization.isChildSettingsPanel == kNatronProjectSettingsPanelSerializationNameNew ) {
+            panel = _gui->getProjectGui()->getPanel();
+        } else {
+            // Find a node with the dockable panel name
+            NodesList nodes;
+            _gui->getApp()->getProject()->getNodes_recursive(nodes);
+            for (NodesList::const_iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
+                if ( (*it2)->getFullyQualifiedName() == serialization.isChildSettingsPanel ) {
+                    NodeGuiPtr nodeUI = boost::dynamic_pointer_cast<NodeGui>((*it2)->getNodeGui());
+                    if (nodeUI) {
+                        nodeUI->ensurePanelCreated();
+                        panel = nodeUI->getSettingPanel();
+                    }
+                    break;
+                }
+            }
+
+        }
+        if (panel) {
+            panel->floatPanelInWindow(this);
+        }
+
+    }
+
+    QDesktopWidget* desktop = QApplication::desktop();
+    QRect screen = desktop->screenGeometry(desktop->screenNumber(this));
+    move( QPoint( serialization.windowPosition[0], serialization.windowPosition[1] ) );
+    resize( std::min( serialization.windowSize[0], screen.width() ), std::min( serialization.windowSize[1], screen.height() ) );
+}
+
+
 NATRON_NAMESPACE_EXIT
+
 
 NATRON_NAMESPACE_USING
 #include "moc_FloatingWidget.cpp"

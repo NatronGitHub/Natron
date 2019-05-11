@@ -124,15 +124,15 @@ sudo port select python python27
 
 - checkout sources
 
-git clone https://github.com/devernay/openfx.git
-git clone https://github.com/devernay/openfx-yadif.git
-git clone https://github.com/devernay/openfx-opencv.git
-git clone https://github.com/MrKepzie/openfx-io.git
+git clone https://github.com/NatronGitHub/openfx.git
+git clone https://github.com/NatronGitHub/openfx-yadif.git
+git clone https://github.com/NatronGitHub/openfx-opencv.git
+git clone https://github.com/NatronGitHub/openfx-io.git
 #git clone https://github.com/tuttleofx/CTL.git
 #git clone https://github.com/wdas/SeExpr
-#git clone https://github.com/devernay/sconsProject.git
+#git clone https://github.com/NatronGitHub/sconsProject.git
 git clone https://github.com/tuttleofx/TuttleOFX.git
-git clone https://github.com/MrKepzie/Natron.git
+git clone https://github.com/NatronGitHub/Natron.git
 # grab the latest openfx source
 for i in openfx* openfx-io/IOSupport/SequenceParsing  Natron Natron/libs/SequenceParsing; do (echo $i;cd $i; git submodule update -i -r; git submodule foreach git pull origin master); done
 
@@ -294,9 +294,10 @@ launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sb
 (cd Natron;git checkout workshop;git submodule update -i; git submodule foreach git pull origin master)
 cd Natron
 cat > config.pri << EOF
+boost-serialization-lib: LIBS += -L/opt/local/lib -lboost_serialization-mt
 boost{
     INCLUDEPATH += /opt/local/include
-    LIBS += -L/opt/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
+    LIBS += -L/opt/local/lib -lboost_thread-mt -lboost_system-mt
 }
 EOF
 
@@ -425,15 +426,15 @@ pyside-tools python-pyside-devel shiboken-devel python3-devel
 
 - checkout sources
 
-git clone https://github.com/devernay/openfx.git
-git clone https://github.com/devernay/openfx-yadif.git
-git clone https://github.com/devernay/openfx-opencv.git
+git clone https://github.com/NatronGitHub/openfx.git
+git clone https://github.com/NatronGitHub/openfx-yadif.git
+git clone https://github.com/NatronGitHub/openfx-opencv.git
 git clone https://github.com/tuttleofx/CTL.git
 git clone https://github.com/wdas/SeExpr
-#git clone https://github.com/devernay/sconsProject.git
-#git clone https://github.com/devernay/TuttleOFX.git
+#git clone https://github.com/NatronGitHub/sconsProject.git
+#git clone https://github.com/NatronGitHub/TuttleOFX.git
 git clone https://github.com/tuttleofx/TuttleOFX.git
-git clone https://github.com/MrKepzie/Natron.git
+git clone https://github.com/NatronGitHub/Natron.git
 # grab the latest openfx source
 for i in openfx* Natron; do (echo $i;cd $i; git submodule foreach git pull origin master); done
 

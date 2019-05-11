@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,10 +27,14 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
+#include <QtCore/QDebug>
 #include <QtCore/QDir>
 #include <QSettings>
 #include <QtCore/QMutex>
-#include <QtCore/QCoreApplication>
+#include <QApplication>
+#ifdef Q_OS_MAC
+#include <QMacStyle>
+#endif
 
 #include "Engine/CLArgs.h"
 #include "Engine/Project.h"
@@ -39,14 +43,16 @@
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/Plugin.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/Settings.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/KnobFile.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Global/QtCompat.h"
@@ -58,57 +64,27 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/KnobGuiFile.h"
-#include "Gui/MultiInstancePanel.h"
+#include "Gui/KnobGui.h"
+#include "Gui/NodeSettingsPanel.h"
+#include "Gui/Histogram.h"
 #include "Gui/ProgressPanel.h"
+#include "Gui/RenderStatsDialog.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/SplashScreen.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/ViewerGL.h"
 
+#include "Serialization/WorkspaceSerialization.h"
+
+
 NATRON_NAMESPACE_ENTER
 
-struct RotoPaintData
-{
-    NodePtr rotoPaintNode;
-    boost::shared_ptr<RotoStrokeItem> stroke;
-    bool isPainting;
-    bool turboAlreadyActiveBeforePainting;
-
-    ///The last mouse event tick bounding box, to render the least possible
-    RectD lastStrokeMovementBbox;
-
-    ///The index of the points/stroke we have rendered
-    int lastStrokeIndex, multiStrokeIndex;
-
-    ///The last points of the mouse event
-    std::list<std::pair<Point, double> > lastStrokePoints;
-
-    ///Used for the rendering algorithm to know where we stopped along the path
-    double distToNextIn, distToNextOut;
-
-    //The image used to render the currently drawn stroke mask
-    boost::shared_ptr<Image> strokeImage;
-
-    RotoPaintData()
-        : rotoPaintNode()
-        , stroke()
-        , isPainting(false)
-        , turboAlreadyActiveBeforePainting(false)
-        , lastStrokeMovementBbox()
-        , lastStrokeIndex(-1)
-        , multiStrokeIndex(0)
-        , lastStrokePoints()
-        , distToNextIn(0)
-        , distToNextOut(0)
-        , strokeImage()
-    {
-    }
-};
 
 struct KnobDnDData
 {
-    boost::weak_ptr<KnobI> source;
-    int sourceDimension;
+    KnobIWPtr source;
+    DimSpec sourceDimension;
+    ViewSetSpec sourceView;
     QDrag* drag;
 };
 
@@ -127,16 +103,22 @@ struct GuiAppInstancePrivate
     ////as the main "action" thread.
     int _showingDialog;
     mutable QMutex _showingDialogMutex;
-    boost::shared_ptr<FileDialogPreviewProvider> _previewProvider;
+    FileDialogPreviewProviderPtr _previewProvider;
     mutable QMutex lastTimelineViewerMutex;
     NodePtr lastTimelineViewer;
     LoadProjectSplashScreen* loadProjectSplash;
     std::string declareAppAndParamsString;
-    int overlayRedrawRequests;
     mutable QMutex rotoDataMutex;
-    RotoPaintData rotoData;
-    std::list<SequenceTime> timelineKeyframes, timelineUserKeys;
+
+    // When drawing a stroke, this is a pointer to the stroke being painted.
+    RotoStrokeItemPtr strokeBeingPainted;
+
+    // We remember what was the last stroke drawn
+    RotoStrokeItemWPtr lastStrokeBeingPainted;
     KnobDnDData knobDnd;
+
+    // The viewer that's mastering others when all viewports are in sync
+    NodeWPtr masterSyncViewer;
 
     GuiAppInstancePrivate()
         : _gui(NULL)
@@ -148,18 +130,14 @@ struct GuiAppInstancePrivate
         , lastTimelineViewer()
         , loadProjectSplash(0)
         , declareAppAndParamsString()
-        , overlayRedrawRequests(0)
         , rotoDataMutex()
-        , rotoData()
-        , timelineKeyframes()
-        , timelineUserKeys()
+        , strokeBeingPainted()
         , knobDnd()
+        , masterSyncViewer()
     {
-        _previewProvider = boost::make_shared<FileDialogPreviewProvider>();
-        rotoData.turboAlreadyActiveBeforePainting = false;
     }
 
-    void findOrCreateToolButtonRecursive(const boost::shared_ptr<PluginGroupNode>& n);
+    void findOrCreateToolButtonRecursive(const PluginGroupNodePtr& n);
 };
 
 GuiAppInstance::GuiAppInstance(int appID)
@@ -167,6 +145,9 @@ GuiAppInstance::GuiAppInstance(int appID)
     , _imp(new GuiAppInstancePrivate)
 
 {
+#ifdef DEBUG
+    qDebug() << "GuiAppInstance()" << (void*)(this);
+#endif
 }
 
 void
@@ -185,23 +166,15 @@ GuiAppInstance::deletePreviewProvider()
     if (_imp->_previewProvider) {
         if (_imp->_previewProvider->viewerNode) {
             //_imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
-            _imp->_previewProvider->viewerNodeInternal->destroyNode(true, false);
+            _imp->_previewProvider->viewerNodeInternal->destroyNode();
             _imp->_previewProvider->viewerNodeInternal.reset();
         }
 
-#ifndef NATRON_ENABLE_IO_META_NODES
-        for (std::map<std::string, NodePtr>::iterator it =
-                 _imp->_previewProvider->readerNodes.begin();
-             it != _imp->_previewProvider->readerNodes.end(); ++it) {
-            it->second->destroyNode(true, false);
-        }
-        _imp->_previewProvider->readerNodes.clear();
-#else
+
         if (_imp->_previewProvider->readerNode) {
-            _imp->_previewProvider->readerNode->destroyNode(true, false);
+            _imp->_previewProvider->readerNode->destroyNode();
             _imp->_previewProvider->readerNode.reset();
         }
-#endif
 
         _imp->_previewProvider.reset();
     }
@@ -210,6 +183,9 @@ GuiAppInstance::deletePreviewProvider()
 void
 GuiAppInstance::aboutToQuit()
 {
+#ifdef DEBUG
+    qDebug() << "GuiAppInstance::aboutToQuit()" << (void*)(this);
+#endif
     deletePreviewProvider();
 
     if (_imp->_gui) {
@@ -238,6 +214,9 @@ GuiAppInstance::aboutToQuit()
 
 GuiAppInstance::~GuiAppInstance()
 {
+#ifdef DEBUG
+    qDebug() << "~GuiAppInstance()" << (void*)(this);
+#endif
 }
 
 bool
@@ -247,14 +226,75 @@ GuiAppInstance::isClosing() const
 }
 
 void
-GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const boost::shared_ptr<PluginGroupNode>& n)
+GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const PluginGroupNodePtr& n)
 {
     _gui->findOrCreateToolButton(n);
-    const std::list<boost::shared_ptr<PluginGroupNode> >& children = n->getChildren();
-    for (std::list<boost::shared_ptr<PluginGroupNode> >::const_iterator it = children.begin(); it != children.end(); ++it) {
+    const std::list<PluginGroupNodePtr>& children = n->getChildren();
+    for (std::list<PluginGroupNodePtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
         findOrCreateToolButtonRecursive(*it);
     }
 }
+
+void
+GuiAppInstance::createMainWindow()
+{
+    boost::shared_ptr<GuiAppInstance> thisShared = toGuiAppInstance( shared_from_this() );
+    assert(thisShared);
+    _imp->_gui = new Gui(thisShared);
+    _imp->_gui->createGui();
+    setMainWindowPointer(_imp->_gui);
+}
+
+#ifdef Q_OS_MAC
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+class Qt4RetinaFixStyle : public QMacStyle
+{
+public:
+
+    Qt4RetinaFixStyle()
+    : QMacStyle()
+    {
+
+    }
+
+    virtual ~Qt4RetinaFixStyle()
+    {
+
+    }
+
+    virtual int pixelMetric(PixelMetric metric, const QStyleOption *opt, const QWidget *widget) const OVERRIDE FINAL
+    {
+        if (metric == PM_SmallIconSize || metric == PM_ToolBarIconSize) {
+            int ret = QMacStyle::pixelMetric(metric, opt, widget);
+            Gui* gui = getGui();
+            if (gui) {
+                double scale = gui->getHighDPIScaleFactor();
+                if (scale > 1) {
+                    ret /= scale;
+                }
+            }
+            return ret;
+        } else {
+            return QMacStyle::pixelMetric(metric, opt, widget);
+        }
+    }
+
+private:
+
+    Gui* getGui() const
+    {
+        const AppInstanceVec& apps = appPTR->getAppInstances();
+        for (AppInstanceVec::const_iterator it = apps.begin(); it != apps.end(); ++it) {
+            GuiAppInstancePtr a = toGuiAppInstance(*it);
+            if (a) {
+                return a->getGui();
+            }
+        }
+        return 0;
+    }
+};
+#endif
+#endif
 
 void
 GuiAppInstance::loadInternal(const CLArgs& cl,
@@ -270,16 +310,25 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
         throw std::runtime_error( e.what() );
     }
 
-    boost::shared_ptr<GuiAppInstance> thisShared = boost::dynamic_pointer_cast<GuiAppInstance>( shared_from_this() );
-    assert(thisShared);
-    _imp->_gui = new Gui(thisShared);
-    _imp->_gui->createGui();
+    createMainWindow();
+
+#ifdef Q_OS_MAC
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+    // On Qt4 for Mac, Retina is not well supported, see:
+    // https://bugreports.qt.io/browse/QTBUG-23870
+    // Note that setting the application style will override any
+    // style set on the command line with the -style option.
+    if (getAppID() == 0) {
+        QApplication::setStyle(new Qt4RetinaFixStyle);
+    }
+#endif
+#endif
 
     printAutoDeclaredVariable(_imp->declareAppAndParamsString);
 
     ///if the app is interactive, build the plugins toolbuttons from the groups we extracted off the plugins.
-    const std::list<boost::shared_ptr<PluginGroupNode> > & _toolButtons = appPTR->getTopLevelPluginsToolButtons();
-    for (std::list<boost::shared_ptr<PluginGroupNode>  >::const_iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
+    const std::list<PluginGroupNodePtr> & _toolButtons = appPTR->getTopLevelPluginsToolButtons();
+    for (std::list<PluginGroupNodePtr  >::const_iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
         _imp->findOrCreateToolButtonRecursive(*it);
     }
     _imp->_gui->sortAllPluginsToolButtons();
@@ -293,21 +342,12 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     SettingsPtr nSettings = appPTR->getCurrentSettings();
     QObject::connect( getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(projectFormatChanged(Format)) );
 
-    {
-        QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
-        if ( !settings.contains( QString::fromUtf8("checkForUpdates") ) ) {
-            StandardButtonEnum reply = Dialogs::questionDialog(tr("Updates").toStdString(),
-                                                               tr("Do you want %1 to check for updates "
-                                                                  "on launch of the application?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false);
-            bool checkForUpdates = reply == eStandardButtonYes;
-            nSettings->setCheckUpdatesEnabled(checkForUpdates);
-        }
 
-        if ( nSettings->isCheckForUpdatesEnabled() ) {
-            appPTR->setLoadingStatus( tr("Checking if updates are available...") );
-            checkForNewVersion();
-        }
+    if ( nSettings->isCheckForUpdatesEnabled() ) {
+        appPTR->setLoadingStatus( tr("Checking if updates are available...") );
+        checkForNewVersion();
     }
+
 
     if ( nSettings->isDefaultAppearanceOutdated() ) {
         StandardButtonEnum reply = Dialogs::questionDialog(tr("Appearance").toStdString(),
@@ -330,20 +370,6 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
         }
 
         appPTR->getCurrentSettings()->doOCIOStartupCheckIfNeeded();
-
-        if ( !appPTR->isShorcutVersionUpToDate() ) {
-            StandardButtonEnum reply = questionDialog(tr("Shortcuts").toStdString(),
-                                                      tr("Default shortcuts for %1 have changed, "
-                                                         "would you like to set them to their defaults?\n"
-                                                         "Clicking no will keep the old shortcuts hence if a new shortcut has been "
-                                                         "set to something else than an empty shortcut you will not benefit of it.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(),
-                                                      false,
-                                                      StandardButtons(eStandardButtonYes | eStandardButtonNo),
-                                                      eStandardButtonNo);
-            if (reply == eStandardButtonYes) {
-                appPTR->restoreDefaultShortcuts();
-            }
-        }
     }
 
     if (makeEmptyInstance) {
@@ -419,7 +445,7 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
         searchStr.append( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) );
         searchStr.append( QString::fromUtf8(".autosave") );
         int suffixPos = entry.indexOf(searchStr);
-        if ( (suffixPos == -1) || entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
+        if (suffixPos == -1) {
             continue;
         }
 
@@ -453,7 +479,7 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
             }
         } else {
             CLArgs cl;
-            AppInstPtr newApp = appPTR->newAppInstance(cl, false);
+            AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
             if ( !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
                 return false;
             }
@@ -463,94 +489,7 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
     return true;
 } // findAndTryLoadAutoSave
 
-void
-GuiAppInstance::createNodeGui(const NodePtr &node,
-                              const NodePtr& parentMultiInstance,
-                              const CreateNodeArgs& args)
-{
-    boost::shared_ptr<NodeCollection> group = node->getGroup();
-    NodeGraph* graph;
 
-    if (group) {
-        NodeGraphI* graph_i = group->getNodeGraph();
-        assert(graph_i);
-        graph = dynamic_cast<NodeGraph*>(graph_i);
-        assert(graph);
-    } else {
-        graph = _imp->_gui->getNodeGraph();
-    }
-    if (!graph) {
-        throw std::logic_error("");
-    }
-
-    NodesGuiList selectedNodes = graph->getSelectedNodes();
-    NodeGuiPtr nodegui = _imp->_gui->createNodeGUI(node, args);
-    assert(nodegui);
-
-    if (parentMultiInstance && nodegui) {
-        nodegui->hideGui();
-
-
-        boost::shared_ptr<NodeGuiI> parentNodeGui_i = parentMultiInstance->getNodeGui();
-        assert(parentNodeGui_i);
-        nodegui->setParentMultiInstance( boost::dynamic_pointer_cast<NodeGui>(parentNodeGui_i) );
-    }
-
-    bool isViewer = node->isEffectViewer() != 0;
-    if (isViewer) {
-        _imp->_gui->createViewerGui(node);
-    }
-
-    // Must be done after the viewer gui has been created
-    _imp->_gui->createNodeViewerInterface(nodegui);
-
-
-    NodeGroup* isGroup = node->isEffectGroup();
-    if ( isGroup && isGroup->isSubGraphUserVisible() ) {
-        _imp->_gui->createGroupGui(node, args);
-    }
-
-    ///Don't initialize inputs if it is a multi-instance child since it is not part of  the graph
-    if (!parentMultiInstance) {
-        nodegui->initializeInputs();
-    }
-    
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
-    if ( !serialization && !isViewer ) {
-        ///we make sure we can have a clean preview.
-        node->computePreviewImage( getTimeLine()->currentFrame() );
-        triggerAutoSave();
-    }
-
-
-    ///only move main instances
-    if ( node->getParentMultiInstanceName().empty() && !serialization) {
-        bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
-
-        if ( selectedNodes.empty() || serialization) {
-            autoConnect = false;
-        }
-        double xPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
-        double yPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
-        if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && (!autoConnect) ) {
-            QPointF pos = nodegui->mapToParent( nodegui->mapFromScene( QPointF(xPosHint, yPosHint) ) );
-            nodegui->refreshPosition( pos.x(), pos.y(), true );
-        } else {
-            BackdropGui* isBd = dynamic_cast<BackdropGui*>( nodegui.get() );
-            if (!isBd) {
-                NodeGuiPtr selectedNode;
-                if ( !serialization && (selectedNodes.size() == 1) ) {
-                    selectedNode = selectedNodes.front();
-                    BackdropGui* isBackdropGui = dynamic_cast<BackdropGui*>( selectedNode.get() );
-                    if (isBackdropGui) {
-                        selectedNode.reset();
-                    }
-                }
-                nodegui->getDagGui()->moveNodesForIdealPosition(nodegui, selectedNode, autoConnect);
-            }
-        }
-    }
-} // createNodeGui
 
 std::string
 GuiAppInstance::openImageFileDialog()
@@ -793,23 +732,16 @@ GuiAppInstance::isShowingDialog() const
 }
 
 void
-GuiAppInstance::loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & archive) const
+GuiAppInstance::loadProjectGui(bool isAutosave, const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& serialization) const
 {
-    _imp->_gui->loadProjectGui(isAutosave, archive);
+    _imp->_gui->loadProjectGui(isAutosave, serialization);
 }
 
-void
-GuiAppInstance::saveProjectGui(boost::archive::xml_oarchive & archive)
-{
-    if (_imp->_gui) {
-        _imp->_gui->saveProjectGui(archive);
-    }
-}
 
 void
 GuiAppInstance::setupViewersForViews(const std::vector<std::string>& viewNames)
 {
-    _imp->_gui->updateViewersViewsMenu(viewNames);
+    _imp->_gui->updateViewsActions(viewNames.size());
 }
 
 void
@@ -820,19 +752,19 @@ GuiAppInstance::setViewersCurrentView(ViewIdx view)
 
 void
 GuiAppInstance::notifyRenderStarted(const QString & sequenceName,
-                                    int firstFrame,
-                                    int lastFrame,
-                                    int frameStep,
+                                    TimeValue firstFrame,
+                                    TimeValue lastFrame,
+                                    TimeValue frameStep,
                                     bool canPause,
-                                    OutputEffectInstance* writer,
-                                    const boost::shared_ptr<ProcessHandler> & process)
+                                    const NodePtr& writer,
+                                    const ProcessHandlerPtr & process)
 {
     _imp->_gui->onRenderStarted(sequenceName, firstFrame, lastFrame, frameStep, canPause, writer, process);
 }
 
 void
-GuiAppInstance::notifyRenderRestarted( OutputEffectInstance* writer,
-                                       const boost::shared_ptr<ProcessHandler> & process)
+GuiAppInstance::notifyRenderRestarted( const NodePtr& writer,
+                                       const ProcessHandlerPtr & process)
 {
     _imp->_gui->onRenderRestarted(writer, process);
 }
@@ -879,23 +811,8 @@ GuiAppInstance::onRenderQueuingChanged(bool queueingEnabled)
     _imp->_gui->getProgressPanel()->onRenderQueuingSettingChanged(queueingEnabled);
 }
 
-void
-GuiAppInstance::connectViewersToViewerCache()
-{
-    if (_imp->_gui) {
-        _imp->_gui->connectViewersToViewerCache();
-    }
-}
 
-void
-GuiAppInstance::disconnectViewersFromViewerCache()
-{
-    if (_imp->_gui) {
-        _imp->_gui->disconnectViewersFromViewerCache();
-    }
-}
-
-boost::shared_ptr<FileDialogPreviewProvider>
+FileDialogPreviewProviderPtr
 GuiAppInstance::getPreviewProvider() const
 {
     return _imp->_previewProvider;
@@ -905,7 +822,7 @@ void
 GuiAppInstance::projectFormatChanged(const Format& /*f*/)
 {
     if (_imp->_previewProvider && _imp->_previewProvider->viewerNode && _imp->_previewProvider->viewerUI) {
-        _imp->_previewProvider->viewerUI->getInternalNode()->renderCurrentFrame(true);
+        _imp->_previewProvider->viewerUI->getInternalNode()->getNode()->getRenderEngine()->renderCurrentFrame();
     }
 }
 
@@ -915,20 +832,17 @@ GuiAppInstance::isGuiFrozen() const
     return _imp->_gui ? _imp->_gui->isGUIFrozen() : false;
 }
 
-void
-GuiAppInstance::clearViewersLastRenderedTexture()
-{
-    std::list<ViewerTab*> tabs = _imp->_gui->getViewersList_mt_safe();
-
-    for (std::list<ViewerTab*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
-        (*it)->getViewer()->clearLastRenderedTexture();
-    }
-}
 
 void
 GuiAppInstance::redrawAllViewers()
 {
     _imp->_gui->redrawAllViewers();
+}
+
+void
+GuiAppInstance::redrawAllTimelines()
+{
+    _imp->_gui->redrawAllTimelines();
 }
 
 void
@@ -960,22 +874,22 @@ GuiAppInstance::setLastViewerUsingTimeline(const NodePtr& node)
 
         return;
     }
-    if ( node->isEffectViewer() ) {
+    if ( node->isEffectViewerNode() ) {
         QMutexLocker k(&_imp->lastTimelineViewerMutex);
         _imp->lastTimelineViewer = node;
     }
 }
 
-ViewerInstance*
+ViewerNodePtr
 GuiAppInstance::getLastViewerUsingTimeline() const
 {
     QMutexLocker k(&_imp->lastTimelineViewerMutex);
 
     if (!_imp->lastTimelineViewer) {
-        return 0;
+        return ViewerNodePtr();
     }
 
-    return _imp->lastTimelineViewer->isEffectViewer();
+    return _imp->lastTimelineViewer->isEffectViewerNode();
 }
 
 void
@@ -1007,6 +921,7 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     std::string script = ss.str();
     std::string err;
     _imp->declareAppAndParamsString = script;
+    assert(!PyErr_Occurred());
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
     if (!ok) {
         throw std::runtime_error("GuiAppInstance::declareCurrentAppVariable_Python() failed!");
@@ -1043,9 +958,18 @@ GuiAppInstance::closeLoadPRojectSplashScreen()
 }
 
 void
-GuiAppInstance::renderAllViewers(bool canAbort)
+GuiAppInstance::getAllViewers(std::list<ViewerNodePtr>* viewers) const
 {
-    _imp->_gui->renderAllViewers(canAbort);
+    std::list<ViewerTab*> viewerTabs = _imp->_gui->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
+        viewers->push_back((*it)->getInternalNode());
+    }
+}
+
+void
+GuiAppInstance::renderAllViewers()
+{
+    _imp->_gui->renderAllViewers();
 }
 
 void
@@ -1055,9 +979,18 @@ GuiAppInstance::refreshAllPreviews()
 }
 
 void
-GuiAppInstance::abortAllViewers()
+GuiAppInstance::abortAllViewers(bool autoRestartPlayback)
 {
-    _imp->_gui->abortAllViewers();
+    _imp->_gui->abortAllViewers(autoRestartPlayback);
+}
+
+void
+GuiAppInstance::getViewersOpenGLContextFormat(int* bitdepthPerComponent, bool *hasAlpha) const
+{
+    ViewerTab* viewer = _imp->_gui->getActiveViewer();
+    if (viewer) {
+        return viewer->getViewer()->getOpenGLContextFormat(bitdepthPerComponent, hasAlpha);
+    }
 }
 
 void
@@ -1069,68 +1002,11 @@ GuiAppInstance::reloadStylesheet()
 }
 
 void
-GuiAppInstance::queueRedrawForAllViewers()
+GuiAppInstance::createGroupGui(const NodePtr & group, const CreateNodeArgs& args)
 {
-    assert( QThread::currentThread() == qApp->thread() );
-    ++_imp->overlayRedrawRequests;
+    _imp->_gui->createGroupGui(group, args);
 }
 
-int
-GuiAppInstance::getOverlayRedrawRequestsCount() const
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->overlayRedrawRequests;
-}
-
-void
-GuiAppInstance::clearOverlayRedrawRequests()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->overlayRedrawRequests = 0;
-}
-
-void
-GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
-                                        const boost::shared_ptr<NodeSerialization>& serialization, bool autoConnect)
-{
-    boost::shared_ptr<NodeGuiI> node_gui_i = node->getNodeGui();
-    if (autoConnect && !serialization && node_gui_i) {
-        NodeGraph* graph = 0;
-        boost::shared_ptr<NodeCollection> collection = node->getGroup();
-        assert(collection);
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>( collection.get() );
-        if (isGrp) {
-            NodeGraphI* graph_i = isGrp->getNodeGraph();
-            assert(graph_i);
-            graph = dynamic_cast<NodeGraph*>(graph_i);
-        } else {
-            graph = _imp->_gui->getNodeGraph();
-        }
-        assert(graph);
-        if (!graph) {
-            throw std::logic_error("");
-        }
-        NodesGuiList selectedNodes = graph->getSelectedNodes();
-        NodeGuiPtr selectedNode;
-        if ( !selectedNodes.empty() ) {
-            selectedNode = selectedNodes.front();
-            if ( dynamic_cast<BackdropGui*>( selectedNode.get() ) ) {
-                selectedNode.reset();
-            }
-        }
-        NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
-        graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
-    }
- 
-    AppInstance::onGroupCreationFinished(node, serialization, autoConnect);
-
-    /*std::list<ViewerInstance* > viewers;
-       node->hasViewersConnected(&viewers);
-       for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
-        (*it2)->renderCurrentFrame(false);
-       }*/
-}
 
 bool
 GuiAppInstance::isDraftRenderEnabled() const
@@ -1146,47 +1022,7 @@ GuiAppInstance::setDraftRenderEnabled(bool b)
     }
 }
 
-void
-GuiAppInstance::setUserIsPainting(const NodePtr& rotopaintNode,
-                                  const boost::shared_ptr<RotoStrokeItem>& stroke,
-                                  bool isPainting)
-{
-    {
-        QMutexLocker k(&_imp->rotoDataMutex);
-        bool newStroke = stroke != _imp->rotoData.stroke;
-        if ( isPainting && ( (rotopaintNode != _imp->rotoData.rotoPaintNode) || newStroke ) ) {
-            _imp->rotoData.strokeImage.reset();
-        }
 
-        _imp->rotoData.isPainting = isPainting;
-        if (isPainting) {
-            _imp->rotoData.rotoPaintNode = rotopaintNode;
-            _imp->rotoData.stroke = stroke;
-        }
-
-        //Reset the index if the stroke is different
-        if (newStroke) {
-            _imp->rotoData.lastStrokeIndex = -1;
-            _imp->rotoData.multiStrokeIndex = 0;
-        }
-
-        if (rotopaintNode) {
-            _imp->rotoData.turboAlreadyActiveBeforePainting = _imp->_gui->isGUIFrozen();
-        }
-    }
-}
-
-void
-GuiAppInstance::getActiveRotoDrawingStroke(NodePtr* node,
-                                           boost::shared_ptr<RotoStrokeItem>* stroke,
-                                           bool *isPainting) const
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-
-    *node = _imp->rotoData.rotoPaintNode;
-    *stroke = _imp->rotoData.stroke;
-    *isPainting = _imp->rotoData.isPainting;
-}
 
 bool
 GuiAppInstance::isRenderStatsActionChecked() const
@@ -1198,7 +1034,7 @@ bool
 GuiAppInstance::save(const std::string& filename)
 {
     if ( filename.empty() ) {
-        boost::shared_ptr<Project> project = getProject();
+        ProjectPtr project = getProject();
         if ( project->hasProjectBeenSavedByUser() ) {
             return _imp->_gui->saveProject();
         } else {
@@ -1215,7 +1051,7 @@ GuiAppInstance::saveAs(const std::string& filename)
     return _imp->_gui->saveProjectAs(filename);
 }
 
-AppInstPtr
+AppInstancePtr
 GuiAppInstance::loadProject(const std::string& filename)
 {
     return _imp->_gui->openProject(filename);
@@ -1236,7 +1072,7 @@ GuiAppInstance::closeProject()
 }
 
 ///Opens a new window
-AppInstPtr
+AppInstancePtr
 GuiAppInstance::newProject()
 {
     return _imp->_gui->createNewProject();
@@ -1250,7 +1086,7 @@ GuiAppInstance::handleFileOpenEvent(const std::string &filename)
     fileCopy.replace( QLatin1Char('\\'), QLatin1Char('/') );
     QString ext = QtCompat::removeFileExtension(fileCopy);
     if ( ext == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) {
-        AppInstPtr app = getGui()->openProject(filename);
+        AppInstancePtr app = getGui()->openProject(filename);
         if (!app) {
             Dialogs::errorDialog(tr("Project").toStdString(), tr("Failed to open project").toStdString() + ' ' + filename);
         }
@@ -1271,319 +1107,48 @@ GuiAppInstance::getOfxHostOSHandle() const
 }
 
 void
-GuiAppInstance::updateLastPaintStrokeData(int newAge,
-                                          const std::list<std::pair<Point, double> >& points,
-                                          const RectD& lastPointsBbox,
-                                          int strokeIndex)
+GuiAppInstance::setUserIsPainting(const RotoStrokeItemPtr& stroke)
 {
+    RotoStrokeItemPtr lastStroke;
     {
         QMutexLocker k(&_imp->rotoDataMutex);
-        _imp->rotoData.lastStrokePoints = points;
-        _imp->rotoData.lastStrokeMovementBbox = lastPointsBbox;
-        _imp->rotoData.lastStrokeIndex = newAge;
-        _imp->rotoData.distToNextIn = _imp->rotoData.distToNextOut;
-        _imp->rotoData.multiStrokeIndex = strokeIndex;
-    }
-}
-
-void
-GuiAppInstance::getLastPaintStrokePoints(std::list<std::list<std::pair<Point, double> > >* strokes,
-                                         int* strokeIndex) const
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-
-    strokes->push_back(_imp->rotoData.lastStrokePoints);
-    *strokeIndex = _imp->rotoData.multiStrokeIndex;
-}
-
-int
-GuiAppInstance::getStrokeLastIndex() const
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-
-    return _imp->rotoData.lastStrokeIndex;
-}
-
-void
-GuiAppInstance::getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* stroke,
-                                             int* strokeIndex) const
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-
-    *stroke = _imp->rotoData.stroke;
-    *strokeIndex = _imp->rotoData.multiStrokeIndex;
-}
-
-void
-GuiAppInstance::getRenderStrokeData(RectD* lastStrokeMovementBbox,
-                                    std::list<std::pair<Point, double> >* lastStrokeMovementPoints,
-                                    double *distNextIn,
-                                    boost::shared_ptr<Image>* strokeImage) const
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-
-    *lastStrokeMovementBbox = _imp->rotoData.lastStrokeMovementBbox;
-    *lastStrokeMovementPoints = _imp->rotoData.lastStrokePoints;
-    *distNextIn = _imp->rotoData.distToNextIn;
-    *strokeImage = _imp->rotoData.strokeImage;
-}
-
-void
-GuiAppInstance::updateStrokeImage(const boost::shared_ptr<Image>& image,
-                                  double distNextOut,
-                                  bool setDistNextOut)
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-
-    _imp->rotoData.strokeImage = image;
-    if (setDistNextOut) {
-        _imp->rotoData.distToNextOut = distNextOut;
-    }
-}
-
-RectD
-GuiAppInstance::getLastPaintStrokeBbox() const
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-
-    return _imp->rotoData.lastStrokeMovementBbox;
-}
-
-RectD
-GuiAppInstance::getPaintStrokeWholeBbox() const
-{
-    QMutexLocker k(&_imp->rotoDataMutex);
-
-    if (!_imp->rotoData.stroke) {
-        return RectD();
-    }
-
-    return _imp->rotoData.stroke->getWholeStrokeRoDWhilePainting();
-}
-
-void
-GuiAppInstance::removeAllKeyframesIndicators()
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    bool wasEmpty = _imp->timelineKeyframes.empty();
-    _imp->timelineKeyframes.clear();
-    if (!wasEmpty) {
-        Q_EMIT keyframeIndicatorsChanged();
-    }
-}
-
-void
-GuiAppInstance::addKeyframeIndicator(SequenceTime time)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    _imp->timelineKeyframes.push_back(time);
-    Q_EMIT keyframeIndicatorsChanged();
-}
-
-void
-GuiAppInstance::addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & keys,
-                                                   bool emitSignal)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    _imp->timelineKeyframes.insert( _imp->timelineKeyframes.begin(), keys.begin(), keys.end() );
-    if (!keys.empty() && emitSignal) {
-        Q_EMIT keyframeIndicatorsChanged();
-    }
-}
-
-void
-GuiAppInstance::removeKeyFrameIndicator(SequenceTime time)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    std::list<SequenceTime>::iterator it = std::find(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), time);
-    if ( it != _imp->timelineKeyframes.end() ) {
-        _imp->timelineKeyframes.erase(it);
-        Q_EMIT keyframeIndicatorsChanged();
-    }
-}
-
-void
-GuiAppInstance::removeMultipleKeyframeIndicator(const std::list<SequenceTime> & keys,
-                                                bool emitSignal)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    for (std::list<SequenceTime>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        std::list<SequenceTime>::iterator it2 = std::find(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), *it);
-        if ( it2 != _imp->timelineKeyframes.end() ) {
-            _imp->timelineKeyframes.erase(it2);
+        _imp->strokeBeingPainted = stroke;
+        lastStroke = _imp->lastStrokeBeingPainted.lock();
+        if (stroke) {
+            _imp->lastStrokeBeingPainted = stroke;
         }
-    }
-    if (!keys.empty() && emitSignal) {
-        Q_EMIT keyframeIndicatorsChanged();
-    }
-}
 
-void
-GuiAppInstance::removeAllUserKeyframesIndicators()
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    bool wasEmpty = _imp->timelineUserKeys.empty();
-    _imp->timelineUserKeys.clear();
-    if (!wasEmpty) {
-        Q_EMIT keyframeIndicatorsChanged();
+    }
+    if (stroke && lastStroke != stroke) {
+        // We are starting a new stroke, we need to clear any preview data that is stored on effects in the tree.
+        clearAllLastRenderedImages();
     }
 }
 
-void
-GuiAppInstance::addUserKeyframeIndicator(SequenceTime time)
+RotoStrokeItemPtr
+GuiAppInstance::getActiveRotoDrawingStroke() const
 {
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    _imp->timelineUserKeys.push_back(time);
-    Q_EMIT keyframeIndicatorsChanged();
+    QMutexLocker k(&_imp->rotoDataMutex);
+    return _imp->strokeBeingPainted;
 }
 
-void
-GuiAppInstance::addUserMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & keys,
-                                                       bool emitSignal)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    _imp->timelineUserKeys.insert( _imp->timelineUserKeys.begin(), keys.begin(), keys.end() );
-    if (!keys.empty() && emitSignal) {
-        Q_EMIT keyframeIndicatorsChanged();
-    }
-}
-
-void
-GuiAppInstance::removeUserKeyFrameIndicator(SequenceTime time)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    std::list<SequenceTime>::iterator it = std::find(_imp->timelineUserKeys.begin(), _imp->timelineUserKeys.end(), time);
-    if ( it != _imp->timelineUserKeys.end() ) {
-        _imp->timelineUserKeys.erase(it);
-        Q_EMIT keyframeIndicatorsChanged();
-    }
-}
-
-void
-GuiAppInstance::removeUserMultipleKeyframeIndicator(const std::list<SequenceTime> & keys,
-                                                    bool emitSignal)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    for (std::list<SequenceTime>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-        std::list<SequenceTime>::iterator it2 = std::find(_imp->timelineUserKeys.begin(), _imp->timelineUserKeys.end(), *it);
-        if ( it2 != _imp->timelineUserKeys.end() ) {
-            _imp->timelineUserKeys.erase(it2);
-        }
-    }
-    if (!keys.empty() && emitSignal) {
-        Q_EMIT keyframeIndicatorsChanged();
-    }
-}
-
-void
-GuiAppInstance::getUserKeyframes(std::list<SequenceTime>* keys) const
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    *keys = _imp->timelineUserKeys;
-}
-
-void
-GuiAppInstance::addNodesKeyframesToTimeline(const std::list<Node*> & nodes)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    std::list<Node*>::const_iterator next = nodes.begin();
-    if ( next != nodes.end() ) {
-        ++next;
-    }
-    for (std::list<Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->showKeyframesOnTimeline( next == nodes.end() );
-
-        // increment for next iteration
-        if ( next != nodes.end() ) {
-            ++next;
-        }
-    } // for()
-}
-
-void
-GuiAppInstance::addNodeKeyframesToTimeline(Node* node)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    node->showKeyframesOnTimeline(true);
-}
-
-void
-GuiAppInstance::removeNodesKeyframesFromTimeline(const std::list<Node*> & nodes)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    std::list<Node*>::const_iterator next = nodes.begin();
-    if ( next != nodes.end() ) {
-        ++next;
-    }
-    for (std::list<Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->hideKeyframesFromTimeline( next == nodes.end() );
-
-        // increment for next iteration
-        if ( next != nodes.end() ) {
-            ++next;
-        }
-    } // for(it)
-}
-
-void
-GuiAppInstance::removeNodeKeyframesFromTimeline(Node* node)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    node->hideKeyframesFromTimeline(true);
-}
-
-void
-GuiAppInstance::getKeyframes(std::list<SequenceTime>* keys) const
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    *keys = _imp->timelineKeyframes;
-}
 
 void
 GuiAppInstance::goToPreviousKeyframe()
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-
-    _imp->timelineKeyframes.sort();
-    boost::shared_ptr<TimeLine> timeline = getProject()->getTimeLine();
-    SequenceTime currentFrame = timeline->currentFrame();
-    std::list<SequenceTime>::iterator lowerBound = std::lower_bound(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), currentFrame);
-    if ( lowerBound != _imp->timelineKeyframes.begin() ) {
-        --lowerBound;
-        timeline->seekFrame(*lowerBound, true, NULL, eTimelineChangeReasonPlaybackSeek);
+    TimeLinePtr timeline = getProject()->getTimeLine();
+    int currentFrame = timeline->currentFrame();
+    const TimeLineKeysSet& keys = _imp->_gui->getTimelineGuiKeyframes();
+    if (keys.size() == 0) {
+        return;
+    }
+    for (TimeLineKeysSet::const_reverse_iterator it = keys.rbegin(); it != keys.rend(); ++it) {
+        if (it->frame < currentFrame) {
+            timeline->seekFrame(it->frame, true, EffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
+            break;
+        }
     }
 }
 
@@ -1592,35 +1157,43 @@ GuiAppInstance::goToNextKeyframe()
 {
     ///runs only in the main thread
     assert( QThread::currentThread() == qApp->thread() );
-
-    _imp->timelineKeyframes.sort();
-    boost::shared_ptr<TimeLine> timeline = getProject()->getTimeLine();
-    SequenceTime currentFrame = timeline->currentFrame();
-    std::list<SequenceTime>::iterator upperBound = std::upper_bound(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), currentFrame);
-    if ( upperBound != _imp->timelineKeyframes.end() ) {
-        timeline->seekFrame(*upperBound, true, NULL, eTimelineChangeReasonPlaybackSeek);
+    TimeLinePtr timeline = getProject()->getTimeLine();
+    int currentFrame = timeline->currentFrame();
+    const TimeLineKeysSet& keys = _imp->_gui->getTimelineGuiKeyframes();
+    if (keys.size() == 0) {
+        return;
+    }
+    for (TimeLineKeysSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        if (it->frame > currentFrame) {
+            timeline->seekFrame(it->frame, true, EffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
+            break;
+        }
     }
 }
 
 void
 GuiAppInstance::setKnobDnDData(QDrag* drag,
-                               const KnobPtr& knob,
-                               int dimension)
+                               const KnobIPtr& knob,
+                               DimSpec dimension,
+                               ViewSetSpec view)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->knobDnd.source = knob;
     _imp->knobDnd.sourceDimension = dimension;
+    _imp->knobDnd.sourceView = view;
     _imp->knobDnd.drag = drag;
 }
 
 void
 GuiAppInstance::getKnobDnDData(QDrag** drag,
-                               KnobPtr* knob,
-                               int* dimension) const
+                               KnobIPtr* knob,
+                               DimSpec* dimension,
+                               ViewSetSpec* view) const
 {
     assert( QThread::currentThread() == qApp->thread() );
     *knob = _imp->knobDnd.source.lock();
     *dimension = _imp->knobDnd.sourceDimension;
+    *view = _imp->knobDnd.sourceView;
     *drag = _imp->knobDnd.drag;
 }
 
@@ -1628,33 +1201,129 @@ bool
 GuiAppInstance::checkAllReadersModificationDate(bool errorAndWarn)
 {
     NodesList allNodes;
-    SequenceTime time = getProject()->getCurrentTime();
+    TimeValue time = getProject()->getTimelineCurrentTime();
 
-    getProject()->getNodes_recursive(allNodes, true);
+    getProject()->getNodes_recursive(allNodes);
     bool changed =  false;
     for (NodesList::iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
-        if ( (*it)->getEffectInstance()->isReader() ) {
-            KnobPtr fileKnobI = (*it)->getKnobByName(kOfxImageEffectFileParamName);
-            if (!fileKnobI) {
-                continue;
-            }
-            boost::shared_ptr<KnobGuiI> knobUi_i = fileKnobI->getKnobGuiPointer();
-            KnobGuiFile* isFileKnob = dynamic_cast<KnobGuiFile*>( knobUi_i.get() );
-
-            if (!isFileKnob) {
-                continue;
-            }
-            changed |= isFileKnob->checkFileModificationAndWarn(time, errorAndWarn);
+        if ( !(*it)->getEffectInstance()->isReader() ) {
+            continue;
         }
+        KnobIPtr fileKnobI = (*it)->getKnobByName(kOfxImageEffectFileParamName);
+        if (!fileKnobI) {
+            continue;
+        }
+
+        NodeGuiPtr nodeUI = boost::dynamic_pointer_cast<NodeGui>((*it)->getNodeGui());
+        if (!nodeUI) {
+            continue;
+        }
+        NodeSettingsPanel* panel = nodeUI->getSettingPanel();
+        if (!panel) {
+            continue;
+        }
+        KnobGuiPtr knobUi_i = panel->getKnobGui(fileKnobI);
+
+        if (!knobUi_i) {
+            continue;
+        }
+        boost::shared_ptr<KnobGuiFile> isFileKnob = boost::dynamic_pointer_cast<KnobGuiFile>(knobUi_i->getWidgetsForView(ViewIdx(0)));
+
+        if (!isFileKnob) {
+            continue;
+        }
+        changed |= isFileKnob->checkFileModificationAndWarn(time, errorAndWarn);
+
     }
 
     return changed;
 }
 
 void
+GuiAppInstance::refreshAllTimeEvaluationParams(bool onlyTimeEvaluationKnobs)
+{
+    _imp->_gui->refreshAllTimeEvaluationParams(onlyTimeEvaluationKnobs);
+}
+
+void
 GuiAppInstance::reloadScriptEditorFonts()
 {
     _imp->_gui->getScriptEditor()->reloadFont();
+}
+
+void
+GuiAppInstance::setMasterSyncViewer(const NodePtr& viewerNode)
+{
+    _imp->masterSyncViewer = viewerNode;
+}
+
+NodePtr
+GuiAppInstance::getMasterSyncViewer() const
+{
+    return _imp->masterSyncViewer.lock();
+}
+
+void
+GuiAppInstance::showRenderStatsWindow()
+{
+    getGui()->getOrCreateRenderStatsDialog()->show();
+}
+
+void
+GuiAppInstance::setGuiFrozen(bool frozen)
+{
+    getGui()->onFreezeUIButtonClicked(frozen);
+}
+
+void
+GuiAppInstance::onTabWidgetRegistered(TabWidgetI* tabWidget)
+{
+    getGui()->onPaneRegistered(tabWidget);
+}
+
+void
+GuiAppInstance::onTabWidgetUnregistered(TabWidgetI* tabWidget)
+{
+    getGui()->onPaneUnRegistered(tabWidget);
+}
+
+void
+GuiAppInstance::getHistogramScriptNames(std::list<std::string>* histograms) const
+{
+    const std::list<Histogram*>& histos = getGui()->getHistograms();
+    for (std::list<Histogram*>::const_iterator it = histos.begin(); it!=histos.end(); ++it) {
+        histograms->push_back((*it)->getScriptName());
+    }
+}
+
+void
+GuiAppInstance::getViewportsProjection(std::map<std::string,SERIALIZATION_NAMESPACE::ViewportData>* projections) const
+{
+    RegisteredTabs tabs = getGui()->getRegisteredTabs();
+    for (RegisteredTabs::const_iterator it = tabs.begin(); it!=tabs.end(); ++it) {
+        SERIALIZATION_NAMESPACE::ViewportData data;
+        if (it->second.first->saveProjection(&data)) {
+            (*projections)[it->first] = data;
+        }
+    }
+}
+
+void
+GuiAppInstance::onNodeAboutToBeCreated(const NodePtr& node, const CreateNodeArgsPtr& args)
+{
+    NodeGraph* nodegraph = dynamic_cast<NodeGraph*>(node->getGroup()->getNodeGraph());
+    if (nodegraph) {
+        nodegraph->onNodeAboutToBeCreated(node, args);
+    }
+}
+
+void
+GuiAppInstance::onNodeCreated(const NodePtr& node, const CreateNodeArgsPtr& args)
+{
+    NodeGraph* nodegraph = dynamic_cast<NodeGraph*>(node->getGroup()->getNodeGraph());
+    if (nodegraph) {
+        nodegraph->onNodeCreated(node, args);
+    }
 }
 
 NATRON_NAMESPACE_EXIT

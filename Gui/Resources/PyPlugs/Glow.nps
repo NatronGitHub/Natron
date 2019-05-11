@@ -1,0 +1,580 @@
+# Natron Presets File
+PluginID: fr.inria.built-in.Group
+Params:
+  - Name: pyPlugPluginID
+    String: fr.inria.Glow
+  - Name: pyPlugPluginLabel
+    String: Glow
+  - Name: pyPlugPluginGrouping
+    String: Filter
+  - Name: pyPlugPluginDescription
+    String: "A glow effect based on the bloom filter node. The mask input limits the area where the glowing elements are. It does not cut off the shine produced by the glow. \n\nFor more interesting looks there are some additional features like stretch, rotation and postgrade.\nWritten by PostPollux"
+  - Name: pyPlugPluginVersion
+    Int: [1, 0]
+  - Name: pyPlugPluginIcon
+    String: Glow.png
+UserPages:
+  - TypeName: Page
+    Name: controls
+    Label: Controls
+    Params:
+      - TypeName: Group
+        Name: glowMap
+        Label: Glow Map
+        Params:
+          - Name: isolateHighlights
+            DefaultFloat: 0.25
+            NDims: 1
+            TypeName: Double
+            Label: Isolate Highlights
+            Hint: "\"Isolate Highlights\" controls on which parts of the image the glow is applied. \n\nhigh value -> only bright areas\n"
+            Min: 0
+            Max: 1
+            DisplayMin: 0
+            DisplayMax: 1
+          - Name: isolateHue
+            DefaultBool: false
+            NDims: 1
+            TypeName: Bool
+            Label: Isolate Hue
+            Hint: If checked, the picked hue will additionally limit the areas of the glow.
+            Props: [NoNewLine, AnimatesChanged]
+          - Name: HSVTool1srcColor
+            DefaultFloat: [0, 0, 0]
+            NDims: 3
+            TypeName: Color
+            Label: pick Hue
+            Hint: "Pick a color in the viewport to isolate it's hue.\n\nThe glow will only be applied to those areas, if 'Isolate Hue' is checked."
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0
+            DisplayMax: 1
+          - Name: preview
+            DefaultBool: false
+            NDims: 1
+            TypeName: Bool
+            Label: GlowMap Preview
+            Hint: When checked, the output will be the glowmap. Use this as a preview to adjust the highlight and hue isolation.
+            Props: [AnimatesChanged]
+          - Name: separator3
+            NDims: 1
+            TypeName: Separator
+            Label: ""
+            Props: [NoEval, Volatile]
+        Props:
+          - Opened
+      - TypeName: Group
+        Name: glowEffect
+        Label: Glow Effect
+        Params:
+          - Name: size
+            DefaultFloat: 3
+            NDims: 1
+            TypeName: Double
+            Label: Size
+            Hint: This will change the size of the glow.
+            Min: 0
+            DisplayMin: 0
+            DisplayMax: 10
+          - Name: BloombloomRatio
+            DefaultFloat: 2
+            NDims: 1
+            TypeName: Double
+            Label: Ratio
+            Min: 1
+            DisplayMin: 1
+            DisplayMax: 4
+          - Name: iterations
+            DefaultInt: 7
+            NDims: 1
+            TypeName: Int
+            Label: Iterations
+            Hint: Number of blur kernels of the bloom filter. The original implementation uses a value of 5. Higher values give a wider of heavier tail (the size of the largest blur kernel is 2**bloomCount*size). A count of 1 is just the original blur.
+            Min: 1
+            Max: 10
+            DisplayMin: 1
+            DisplayMax: 10
+          - Name: Bloomfilter
+            DefaultString: Quasi-Gaussian
+            NDims: 1
+            TypeName: Choice
+            Label: Filter
+            Hint: "Bluring filter. The quasi-Gaussian filter should be appropriate in most cases. The Gaussian filter is more isotropic (its impulse response has rotational symmetry), but slower.\nQuadratic might also look a bit better, but it is slower, too."
+            Entries: [Quasi-Gaussian, Gaussian, Box, Triangle, Quadratic]
+            Hints: ["Quasi-Gaussian filter (0-order recursive Deriche filter, faster) - IIR (infinite support / impulsional response).", "Gaussian filter (Van Vliet recursive Gaussian filter, more isotropic, slower) - IIR (infinite support / impulsional response).", Box filter - FIR (finite support / impulsional response)., Triangle/tent filter - FIR (finite support / impulsional response)., Quadratic filter - FIR (finite support / impulsional response).]
+          - Name: stretch
+            DefaultFloat: 0
+            NDims: 1
+            TypeName: Double
+            Label: Stretch
+            Hint: "Stretch the glow!\n\n0 -> uniform proportions\n1 -> blur only in one direction"
+            Min: 0
+            Max: 1
+            DisplayMin: 0
+            DisplayMax: 1
+          - Name: rotate
+            DefaultFloat: 0
+            NDims: 1
+            TypeName: Double
+            Label: Rotate
+            Hint: This will rotate your streched glow. If "Stretch" is 0 it won't have any effect.
+            DisplayMin: -360
+            DisplayMax: 360
+          - Name: separator1
+            NDims: 1
+            TypeName: Separator
+            Label: ""
+            Props: [NoEval, Volatile]
+          - Name: postgradeLabel
+            String: ""
+            DefaultString: Postgrade
+            NDims: 1
+            TypeName: String
+            Label: ""
+            Props: [NoEval, IsLabel]
+          - Name: PostGradeMasterGain
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Gain
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0
+            DisplayMax: 4
+          - Name: PostGradeMasterGamma
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Gamma
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0.2
+            DisplayMax: 5
+          - Name: PostGradeMasterSaturation
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Saturation
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0
+            DisplayMax: 4
+          - Name: separator2
+            NDims: 1
+            TypeName: Separator
+            Label: ""
+            Props: [NoEval, Volatile]
+        Props:
+          - Opened
+      - TypeName: Group
+        Name: options
+        Label: Options
+        Params:
+          - Name: screen
+            DefaultBool: false
+            NDims: 1
+            TypeName: Bool
+            Label: Screen
+            Hint: "If checked, the bloomed image will be screened on top of the input image. This helps to preserve the highlights in your image.\n\nBy default it is added on top of the imput image. (plus)"
+            Props: [AnimatesChanged]
+          - Name: addInput
+            DefaultBool: false
+            NDims: 1
+            TypeName: Bool
+            Label: Add Input
+            Hint: "Add the input image to the bloomed one.\n"
+            Props: [AnimatesChanged]
+          - Name: glowOnly
+            DefaultBool: false
+            NDims: 1
+            TypeName: Bool
+            Label: Glow Only
+            Hint: "The output will only be the glow effect itself.\n\nYou can add it on top of your source with a plus-merge or a screen-merge, later."
+            Props: [AnimatesChanged]
+          - Name: expRoD
+            DefaultBool: false
+            NDims: 1
+            TypeName: Bool
+            Label: expand RoD
+            Hint: "By default the Region of Definition (RoD) will be cropped to the input RoD.\nUse this option, if you want the glow effect to be available even outside your input format, and thus being not cropped.\nAs the blur sizes of the bloom node can get very big, this may lead to a very big RoD! Especially, if you use a lot of iterations."
+            Props: [AnimatesChanged]
+          - Name: alpha
+            DefaultBool: false
+            NDims: 1
+            TypeName: Bool
+            Label: "apply on alpha "
+            Hint: Controls if the glow is applied to the alpha channel, too.
+            Props: [AnimatesChanged]
+        Props:
+          - Opened
+PagesOrder: [controls, nodePage, pyPlugPage]
+Children:
+  - PluginID: fr.inria.built-in.Output
+    Name: Output
+    Label: Output1
+    Inputs: RoD_2
+    Pos: [1622, 1973]
+  - PluginID: fr.inria.built-in.Input
+    Name: Input1
+    Pos: [1440, -862]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: Merge1
+    Inputs: {A: Dot5, B: Dot1}
+    Params:
+      - Name: operation
+        String: plus
+      - Name: AChannelsA
+        Bool: {pyExpr: thisGroup.alpha.get()}
+      - Name: aChannelsChanged
+        Bool: true
+      - Name: userTextArea
+        String: <Natron>(plus)</Natron>
+    Pos: [1423, 1316]
+  - PluginID: net.sf.openfx.switchPlugin
+    Name: AddInput
+    Inputs: {0: Bloom, 1: Merge6}
+    Params:
+      - Name: which
+        Int: {pyExpr: thisGroup.addInput.get()}
+    Pos: [1141, 550]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: RoD
+    Inputs: {A: AddInput, B: Dot13}
+    Params:
+      - Name: operation
+        String: copy
+      - Name: bbox
+        String: {pyExpr: 3-thisGroup.expRoD.get()}
+      - Name: userTextArea
+        String: <Natron>(copy)</Natron>
+    Pos: [1141, 794]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot13
+    Inputs: Dot22
+    Pos: [1495, 820]
+  - PluginID: net.sf.openfx.switchPlugin
+    Name: Preview
+    Inputs: {0: Dot18, 1: RotateOutPrev}
+    Params:
+      - Name: which
+        Int: {pyExpr: thisGroup.preview.get()}
+    Pos: [1474, 1741]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot17
+    Inputs: Dot19
+    Pos: [1658, -735]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot18
+    Inputs: ClampAlpha
+    Pos: [1248, 1747]
+  - PluginID: net.sf.openfx.switchPlugin
+    Name: GlowOnly
+    Inputs: {0: screenSwitch, 1: Dot6}
+    Params:
+      - Name: which
+        Int: {pyExpr: thisGroup.glowOnly.get()}
+    Pos: [1203, 1571]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot7
+    Inputs: Dot15
+    Pos: [1667, 1221]
+  - PluginID: net.sf.openfx.TransformPlugin
+    Name: RotateIn
+    Inputs: Dot19
+    Params:
+      - Name: rotate
+        Float: {pyExpr: thisGroup.rotate.get()}
+      - Name: center
+        Float: [980, 540]
+      - Name: transformCenterChanged
+        Bool: true
+    Pos: [1440, -658]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot19
+    Inputs: Input1
+    Pos: [1485, -735]
+  - PluginID: net.sf.openfx.TransformPlugin
+    Name: RotateOut
+    Inputs: PostGrade
+    Params:
+      - Name: rotate
+        Float: {pyExpr: -thisGroup.rotate.get()}
+      - Name: center
+        Float: [{pyExpr: "thisGroup.RotateIn.center.get()[dimension]"}, {pyExpr: "thisGroup.RotateIn.center.get()[dimension]"}]
+      - Name: transformCenterChanged
+        Bool: true
+    Pos: [1141, 1252]
+  - PluginID: net.sf.openfx.TransformPlugin
+    Name: RotateOutPrev
+    Inputs: Dot13
+    Params:
+      - Name: rotate
+        Float: {pyExpr: -thisGroup.rotate.get()}
+      - Name: center
+        Float: [{pyExpr: "thisGroup.RotateIn.center.get()[dimension]"}, {pyExpr: "thisGroup.RotateIn.center.get()[dimension]"}]
+      - Name: transformCenterChanged
+        Bool: true
+    Pos: [1474, 1537]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: RoD_2_2
+    Inputs: {A: RotateIn, B: Dot15}
+    Params:
+      - Name: operation
+        String: copy
+      - Name: userTextArea
+        String: <Natron>(copy)</Natron>
+    Pos: [1441, -541]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: RoD_2
+    Inputs: {A: Preview, B: Dot7}
+    Params:
+      - Name: operation
+        String: copy
+      - Name: bbox
+        String: {pyExpr: 3-thisGroup.expRoD.get()}
+      - Name: userTextArea
+        String: <Natron>(copy)</Natron>
+    Pos: [1622, 1728]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot22
+    Inputs: Merge3
+    Pos: [1485, 190]
+  - PluginID: net.sf.openfx.SaturationPlugin
+    Name: Saturation2
+    Version: [2, 0]
+    Inputs: Dot20
+    Params:
+      - Name: saturation
+        Float: 0
+    Pos: [1132, -293]
+  - PluginID: net.sf.openfx.GradePlugin
+    Name: Tolerance
+    Version: [2, 0]
+    Inputs: Saturation2
+    Params:
+      - Name: blackPoint
+        Float: {pyExpr: thisGroup.isolateHighlights.get()}
+      - Name: clampWhite
+        Bool: true
+      - Name: premultChanged
+        Bool: true
+    Pos: [1132, -229]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: Merge3
+    Inputs: {A: Merge5, B: RoD_2_2}
+    Params:
+      - Name: operation
+        String: multiply
+      - Name: AChannelsA
+        Bool: false
+      - Name: OutputChannelsA
+        Bool: false
+      - Name: aChannelsChanged
+        Bool: true
+      - Name: userTextArea
+        String: <Natron>(multiply)</Natron>
+    Pos: [1440, -118]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: Merge4
+    Inputs: {A: Shuffle2, B: Tolerance}
+    Params:
+      - Name: operation
+        String: multiply
+      - Name: userTextArea
+        String: <Natron>(multiply)</Natron>
+    Pos: [1132, -125]
+  - PluginID: net.sf.openfx.ShufflePlugin
+    Name: Shuffle2
+    Version: [2, 0]
+    Inputs: {A: mask}
+    Params:
+      - Name: outputR
+        String: A.uk.co.thefoundry.OfxImagePlaneColour.A
+      - Name: outputG
+        String: A.uk.co.thefoundry.OfxImagePlaneColour.A
+      - Name: outputB
+        String: A.uk.co.thefoundry.OfxImagePlaneColour.A
+      - Name: outputA
+        String: 0
+    Pos: [957, -113]
+  - PluginID: fr.inria.built-in.Input
+    Name: mask
+    Params:
+      - Name: optional
+        Bool: true
+      - Name: isMask
+        Bool: true
+    Pos: [587, -106]
+  - PluginID: net.sf.openfx.ColorCorrectPlugin
+    Name: PostGrade
+    Version: [2, 0]
+    Inputs: RoD
+    Params:
+      - Name: NatronOfxParamProcessA
+        Bool: {pyExpr: thisGroup.alpha.get()}
+      - Name: MasterSaturation
+        Float: [{N: "@thisGroup", K: PostGradeMasterSaturation, D: r}, {N: "@thisGroup", K: PostGradeMasterSaturation, D: g}, {N: "@thisGroup", K: PostGradeMasterSaturation, D: b}, {N: "@thisGroup", K: PostGradeMasterSaturation, D: a}]
+      - Name: MasterGamma
+        Float: [{N: "@thisGroup", K: PostGradeMasterGamma, D: r}, {N: "@thisGroup", K: PostGradeMasterGamma, D: g}, {N: "@thisGroup", K: PostGradeMasterGamma, D: b}, {N: "@thisGroup", K: PostGradeMasterGamma, D: a}]
+      - Name: MasterGain
+        Float: [{N: "@thisGroup", K: PostGradeMasterGain, D: r}, {N: "@thisGroup", K: PostGradeMasterGain, D: g}, {N: "@thisGroup", K: PostGradeMasterGain, D: b}, {N: "@thisGroup", K: PostGradeMasterGain, D: a}]
+      - Name: premultChanged
+        Bool: true
+    Pos: [1141, 1073]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot15
+    Inputs: Dot17
+    Pos: [1658, -515]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot20
+    Inputs: Dot3
+    Pos: [1178, -515]
+  - PluginID: fr.inria.built-in.BackDrop
+    Name: Isolate_Highlights_and_mask
+    Pos: [566, -401]
+    Size: [1012, 385]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot3
+    Inputs: RoD_2_2
+    Pos: [1340, -515]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: Merge5
+    Inputs: {A: Shuffle1, B: Merge4}
+    Params:
+      - Name: operation
+        String: multiply
+      - Name: mix
+        Float: {pyExpr: thisGroup.isolateHue.get()}
+      - Name: userTextArea
+        String: <Natron>(multiply)</Natron>
+    Pos: [1292, -119]
+  - PluginID: net.sf.openfx.ShufflePlugin
+    Name: Shuffle1
+    Version: [2, 0]
+    Inputs: {A: HSVTool1}
+    Params:
+      - Name: outputR
+        String: A.uk.co.thefoundry.OfxImagePlaneColour.A
+      - Name: outputG
+        String: A.uk.co.thefoundry.OfxImagePlaneColour.A
+      - Name: outputB
+        String: A.uk.co.thefoundry.OfxImagePlaneColour.A
+    Pos: [1290, -206]
+  - PluginID: net.sf.openfx.HSVToolPlugin
+    Name: HSVTool1
+    Inputs: Dot3
+    Params:
+      - Name: bottomLeft
+        Float: [960, 540]
+      - Name: size
+        Float: [960, 540]
+      - Name: srcColor
+        Float: [{N: "@thisGroup", K: HSVTool1srcColor, D: r}, {N: "@thisGroup", K: HSVTool1srcColor, D: g}, {N: "@thisGroup", K: HSVTool1srcColor, D: b}]
+      - Name: hueRangeRolloff
+        Float: 50
+      - Name: saturationRangeRolloff
+        Float: 0.3
+      - Name: brightnessRangeRolloff
+        Float: 0.3
+      - Name: maskInvert
+        Bool: true
+    Pos: [1294, -302]
+  - PluginID: net.sf.cimg.CImgBloom
+    Name: Bloom
+    Version: [3, 0]
+    Inputs: Dot14
+    Params:
+      - Name: NatronOfxParamProcessA
+        Bool: {pyExpr: thisGroup.alpha.get()}
+      - Name: size
+        Float: [{pyExpr: thisGroup.size.get()}, {pyExpr: thisGroup.size.get()*(1-thisGroup.stretch.get())}]
+      - Name: bloomRatio
+        Float: {N: "@thisGroup", K: BloombloomRatio}
+      - Name: bloomCount
+        Int: {pyExpr: thisGroup.iterations.get()}
+      - Name: boundary
+        String: Black
+      - Name: filter
+        String: {N: "@thisGroup", K: Bloomfilter}
+      - Name: expandRoD
+        Bool: {pyExpr: thisGroup.expRoD.get()}
+      - Name: premultChanged
+        Bool: true
+    Pos: [975, 363]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: Merge6
+    Inputs: {A: Bloom, B: Dot16}
+    Params:
+      - Name: operation
+        String: plus
+      - Name: BChannelsA
+        Bool: false
+      - Name: bChannelsChanged
+        Bool: true
+      - Name: userTextArea
+        String: <Natron>(plus)</Natron>
+    Pos: [1141, 351]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot14
+    Inputs: Dot16
+    Pos: [1008, 190]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot16
+    Inputs: Dot22
+    Pos: [1186, 190]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: Merge2
+    Inputs: {A: Dot4, B: Dot2}
+    Params:
+      - Name: operation
+        String: screen
+      - Name: AChannelsA
+        Bool: {pyExpr: thisGroup.alpha.get()}
+      - Name: aChannelsChanged
+        Bool: true
+      - Name: userTextArea
+        String: <Natron>(screen)</Natron>
+    Pos: [1272, 1317]
+  - PluginID: net.sf.openfx.switchPlugin
+    Name: screenSwitch
+    Inputs: {0: Merge1, 1: Merge2}
+    Params:
+      - Name: which
+        Int: {pyExpr: thisGroup.screen.get()}
+    Pos: [1339, 1465]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot1
+    Inputs: Dot7
+    Pos: [1468, 1220]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot2
+    Inputs: Dot1
+    Pos: [1317, 1220]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot4
+    Inputs: RotateOut
+    Pos: [1286, 1261]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot5
+    Inputs: Dot4
+    Pos: [1398, 1261]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot6
+    Inputs: RotateOut
+    Pos: [1186, 1445]
+  - PluginID: net.sf.openfx.Clamp
+    Name: ClampAlpha
+    Version: [2, 0]
+    Inputs: GlowOnly
+    Params:
+      - Name: NatronOfxParamProcessR
+        Bool: false
+      - Name: NatronOfxParamProcessG
+        Bool: false
+      - Name: NatronOfxParamProcessB
+        Bool: false
+      - Name: NatronOfxParamProcessA
+        Bool: {pyExpr: thisGroup.alpha.get()}
+      - Name: premultChanged
+        Bool: true
+    Pos: [1203, 1685]

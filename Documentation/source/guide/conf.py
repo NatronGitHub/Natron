@@ -51,12 +51,12 @@ copyright = u'2013-2018 The Natron documentation authors, licensed under CC BY-S
 # the list of currently maintained versions (those that have to be merged into the master branch)
 version_21 = '2.1.10'
 version_22 = '2.2.10'
-version_23 = '2.3.10'
+version_23 = '2.3.15'
 version_30 = '3.0.0'
 
 # The version for this branch
 # The full version, including alpha/beta/rc tags.
-release = version_23
+release = version_30
 #
 # The short X.Y version.
 version = '.'.join(release.split('.')[0:2])
@@ -106,8 +106,8 @@ html_theme = 'default'
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-	"nosidebar": "true",
-	"footertextcolor": "#000000"
+    "nosidebar": "true",
+    "footertextcolor": "#000000"
 }
 
 # Add any paths that contain custom themes here, relative to this directory.

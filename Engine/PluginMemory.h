@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,43 +32,60 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+#include "Global/GlobalDefines.h"
+#include "Engine/ImageStorage.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
 
-class PluginMemory
+class PluginMemAllocateMemoryArgs : public AllocateMemoryArgs
 {
+public:
+
+    std::size_t _nBytes;
+
+    PluginMemAllocateMemoryArgs(std::size_t nBytes)
+    : AllocateMemoryArgs()
+    , _nBytes(nBytes)
+    {
+        bitDepth = eImageBitDepthByte;
+    }
+
+    virtual ~PluginMemAllocateMemoryArgs()
+    {
+
+    }
+};
+
+class PluginMemory : public ImageStorageBase
+{
+
 public:
 
     /**
      * @brief Constructs a new memory chunk that can be used freely and that will be registered and known
      * about by Natron.
-     * @param effect If not NULL, it will register the size allocated to the associated node so that Natron
-     * can clear this memory when in situation of low memory or when the node is no longer used.
-     * On the other hand if the parameter is set to NULL, the memory will not be registered and will live
-     * until the plug-in decides to free the memory.
      **/
-    PluginMemory(const EffectInstancePtr& effect);
+    PluginMemory();
 
-    ~PluginMemory();
+    virtual ~PluginMemory();
 
-    // If unregister is true, the destructor will attempt to remove this memory instance from the effect
-    void setUnregisterOnDestructor(bool unregister);
+    char* getData();
 
-    ///throws std::bad_alloc if the allocation failed. Returns false if the memory is already locked.
-    ///Returns true on success.
-    bool alloc(size_t nBytes);
+    virtual std::size_t getBufferSize() const OVERRIDE FINAL;
 
-    ///Frees the memory, it doesn't have to be unlocked.
-    void freeMem();
-
-    void* getPtr();
-
-    void lock();
-
-    void unlock();
+    virtual StorageModeEnum getStorageMode() const OVERRIDE FINAL
+    {
+        return eStorageModeRAM;
+    }
 
 private:
+
+    virtual void allocateMemoryImpl(const AllocateMemoryArgs& args) OVERRIDE FINAL;
+
+    virtual void deallocateMemoryImpl() OVERRIDE FINAL;
+
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; //!< PImpl
 };

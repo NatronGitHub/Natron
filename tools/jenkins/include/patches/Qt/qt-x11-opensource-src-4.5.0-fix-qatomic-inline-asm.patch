@@ -1,0 +1,50 @@
+diff -ur qt-x11-opensource-src-4.5.0/src/corelib/arch/qatomic_i386.h qt-x11-opensource-src-4.5.0-fix-qatomic-inline-asm/src/corelib/arch/qatomic_i386.h
+--- qt-x11-opensource-src-4.5.0/src/corelib/arch/qatomic_i386.h	2009-02-25 22:09:21.000000000 +0100
++++ qt-x11-opensource-src-4.5.0-fix-qatomic-inline-asm/src/corelib/arch/qatomic_i386.h	2009-04-01 17:54:21.000000000 +0200
+@@ -115,8 +115,8 @@
+     asm volatile("lock\n"
+                  "incl %0\n"
+                  "setne %1"
+-                 : "=m" (_q_value), "=qm" (ret)
+-                 : "m" (_q_value)
++                 : "+m" (_q_value), "=qm" (ret)
++                 :
+                  : "memory");
+     return ret != 0;
+ }
+@@ -127,8 +127,8 @@
+     asm volatile("lock\n"
+                  "decl %0\n"
+                  "setne %1"
+-                 : "=m" (_q_value), "=qm" (ret)
+-                 : "m" (_q_value)
++                 : "+m" (_q_value), "=qm" (ret)
++                 :
+                  : "memory");
+     return ret != 0;
+ }
+diff -ur qt-x11-opensource-src-4.5.0/src/corelib/arch/qatomic_x86_64.h qt-x11-opensource-src-4.5.0-fix-qatomic-inline-asm/src/corelib/arch/qatomic_x86_64.h
+--- qt-x11-opensource-src-4.5.0/src/corelib/arch/qatomic_x86_64.h	2009-02-25 22:09:21.000000000 +0100
++++ qt-x11-opensource-src-4.5.0-fix-qatomic-inline-asm/src/corelib/arch/qatomic_x86_64.h	2009-04-01 17:54:32.000000000 +0200
+@@ -116,8 +116,8 @@
+     asm volatile("lock\n"
+                  "incl %0\n"
+                  "setne %1"
+-                 : "=m" (_q_value), "=qm" (ret)
+-                 : "m" (_q_value)
++                 : "+m" (_q_value), "=qm" (ret)
++                 :
+                  : "memory");
+     return ret != 0;
+ }
+@@ -128,8 +128,8 @@
+     asm volatile("lock\n"
+                  "decl %0\n"
+                  "setne %1"
+-                 : "=m" (_q_value), "=qm" (ret)
+-                 : "m" (_q_value)
++                 : "+m" (_q_value), "=qm" (ret)
++                 :
+                  : "memory");
+     return ret != 0;
+ }

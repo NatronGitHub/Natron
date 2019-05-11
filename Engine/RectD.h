@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -37,16 +37,22 @@
 
 #include "Global/GlobalDefines.h"
 
+#include "Serialization/SerializationBase.h"
+
 #include "Engine/EngineFwd.h"
+
+
+NATRON_NAMESPACE_ENTER;
+
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 //Shiboken fails if defined at the start of a header
 GCC_DIAG_OFF(strict-overflow)
 #endif
 
-NATRON_NAMESPACE_ENTER;
 
-class RectD
+class RectD : public SERIALIZATION_NAMESPACE::SerializableObjectBase
+
 {
 public:
 
@@ -56,8 +62,7 @@ public:
     double y2; // top
 
     template<class Archive>
-    void serialize(Archive & ar,
-                   const unsigned int version);
+    void serialize(Archive & ar, const unsigned int version);
 
     RectD()
         : x1(0), y1(0), x2(0), y2(0)
@@ -151,6 +156,21 @@ public:
         x2 = -std::numeric_limits<double>::infinity();
         y1 = std::numeric_limits<double>::infinity();
         y2 = -std::numeric_limits<double>::infinity();
+    }
+
+    void addPadding(double x, double y)
+    {
+        x1 -= x;
+        x2 += x;
+        y1 -= y;
+        y2 += y;
+    }
+
+    void addPaddingPercentage(double xPercent, double yPercent)
+    {
+        double x = width() * xPercent;
+        double y = height() * yPercent;
+        addPadding(x, y);
     }
 
     void set(const RectD & b)
@@ -293,7 +313,8 @@ public:
     bool contains(double x,
                   double y) const
     {
-        return x >= x1 && x < x2 && y >= y1 && y < y2;
+        // Note that for a double rectangle, a point belongs to the rectangle even if it is on the right/top edge
+        return x >= x1 && x <= x2 && y >= y1 && y <= y2;
     }
 
 #ifdef DEBUG
@@ -320,6 +341,10 @@ public:
         ret->y1 = r.y1;
         ret->y2 = r.y2;
     }
+
+    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE;
+
+    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE;
 };
 
 /// equality of boxes

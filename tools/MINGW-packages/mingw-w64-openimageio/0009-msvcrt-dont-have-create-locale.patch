@@ -1,0 +1,20 @@
+--- oiio-Release-1.8.11/src/libutil/strutil.cpp.orig	2018-05-05 08:55:28.944608700 +0300
++++ oiio-Release-1.8.11/src/libutil/strutil.cpp	2018-05-05 08:56:03.223569300 +0300
+@@ -1131,7 +1131,7 @@
+ # else
+     return strtof_l (nptr, endptr, c_loc);
+ # endif
+-#elif defined (_WIN32)
++#elif defined (_MSC_VER)
+     // Windows has _strtod_l
+     static _locale_t c_loc = _create_locale(LC_ALL, "C");
+     return static_cast<float>(_strtod_l (nptr, endptr, c_loc));
+@@ -1167,7 +1167,7 @@
+     // static initialization inside function is thread-safe by C++11 rules!
+     static locale_t c_loc = newlocale(LC_ALL_MASK, "C", nullptr);
+     return strtod_l (nptr, endptr, c_loc);
+-#elif defined (_WIN32)
++#elif defined (_MSC_VER)
+     // Windows has _strtod_l
+     static _locale_t c_loc = _create_locale(LC_ALL, "C");
+     return _strtod_l (nptr, endptr, c_loc);

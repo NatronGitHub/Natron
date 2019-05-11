@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -374,7 +374,7 @@ generateBezier(const std::vector<Point>& points,
     double epsilon = 1.0e-6 * segLength;
     if ( (alpha_l < epsilon) || (alpha_r < epsilon) ) {
         // fall back on standard (probably inaccurate) formula, and subdivide further if needed.
-        double dist = segLength / 3.0;
+        double dist = segLength * (1./ 3);
         alpha_l = alpha_r = dist;
     }
 
@@ -416,12 +416,12 @@ fit_cubic_internal(const std::vector<Point>& points,
         SimpleBezierCP firstCp, lastCp;
         firstCp.p = first;
         firstCp.leftTan = first;
-        firstCp.rightTan.x = firstCp.p.x + tHat1.x * dist / 3.;
-        firstCp.rightTan.y = firstCp.p.y + tHat1.y * dist / 3.;
+        firstCp.rightTan.x = firstCp.p.x + tHat1.x * dist * (1./ 3);
+        firstCp.rightTan.y = firstCp.p.y + tHat1.y * dist * (1./ 3);
         lastCp.p = last;
         lastCp.rightTan = last;
-        lastCp.leftTan.x = lastCp.p.x + tHat2.x * dist / 3.;
-        lastCp.leftTan.y = lastCp.p.y + tHat2.y * dist / 3.;
+        lastCp.leftTan.x = lastCp.p.x + tHat2.x * dist * (1./ 3);
+        lastCp.leftTan.y = lastCp.p.y + tHat2.y * dist * (1./ 3);
         generatedBezier->push_back(firstCp);
         generatedBezier->push_back(lastCp);
 
@@ -576,7 +576,7 @@ FitCurve::fit_cubic(const std::vector<Point>& points,
                 }
                 newPoints.erase(newPoints.begin(), next);
 
-                //If only a single point remains, just add it to this bezier curve
+                //If only a single point remains, just add it to this Bezier curve
                 if (newPoints.size() == 1) {
                     subset.push_back( newPoints.front() );
                     newPoints.clear();

@@ -87,7 +87,6 @@ public:
     inline void resetInputContext_protected() { PyPanel::resetInputContext(); }
     inline void resizeEvent_protected(QResizeEvent * event) { PyPanel::resizeEvent(event); }
     virtual void resizeEvent(QResizeEvent * event);
-    virtual void restore(const QString & arg__1);
     inline QString save_protected() { return PyPanel::save(); }
     virtual QString save();
     inline QObject * sender_protected() const { return PyPanel::sender(); }

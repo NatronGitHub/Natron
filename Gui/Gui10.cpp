@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -37,26 +37,28 @@
 
 #include "Global/FStreamsSupport.h"
 
-#include "Engine/NodeSerialization.h"
 #include "Engine/RotoLayer.h"
 
-#include "Gui/CurveEditor.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/DopeSheetEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/FloatingWidget.h"
 #include "Gui/Histogram.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/ProjectGui.h"
-#include "Gui/ProjectGuiSerialization.h" // PaneLayout
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
+#include "Gui/PythonPanels.h"
 #include "Gui/ViewerTab.h"
 
 #include "Global/QtCompat.h" // removeFileExtension
+
+#include "Serialization/SerializationIO.h"
+#include "Serialization/WorkspaceSerialization.h"
 
 #ifdef __NATRON_WIN32__
 #if _WIN32_WINNT < 0x0500
@@ -71,12 +73,8 @@ Gui::createDefaultLayout1()
 {
     ///First tab widget must be created this way
     TabWidget* mainPane = new TabWidget(this, _imp->_leftRightSplitter);
-    {
-        QMutexLocker l(&_imp->_panesMutex);
-        _imp->_panes.push_back(mainPane);
-    }
-
-    mainPane->setObjectName_mt_safe( QString::fromUtf8("pane1") );
+    getApp()->registerTabWidget(mainPane);
+    mainPane->setScriptName("pane1");
     mainPane->setAsAnchor(true);
 
     _imp->_leftRightSplitter->addWidget(mainPane);
@@ -94,97 +92,33 @@ Gui::createDefaultLayout1()
     sizes << width() * 0.65 << width() * 0.35;
     propertiesSplitter->setSizes_mt_safe(sizes);
 
-    TabWidget::moveTab(_imp->_nodeGraphArea, _imp->_nodeGraphArea, workshopPane);
-    TabWidget::moveTab(_imp->_curveEditor, _imp->_curveEditor, workshopPane);
-    TabWidget::moveTab(_imp->_dopeSheetEditor, _imp->_dopeSheetEditor, workshopPane);
-    TabWidget::moveTab(_imp->_propertiesBin, _imp->_propertiesBin, propertiesPane);
+    workshopPane->moveTab(_imp->_nodeGraphArea, _imp->_nodeGraphArea);
+    workshopPane->moveTab(_imp->_animationModule, _imp->_animationModule);
+    propertiesPane->moveTab(_imp->_propertiesBin, _imp->_propertiesBin);
 
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
         for (std::list<ViewerTab*>::iterator it2 = _imp->_viewerTabs.begin(); it2 != _imp->_viewerTabs.end(); ++it2) {
-            TabWidget::moveTab(*it2, *it2, mainPane);
+            mainPane->moveTab(*it2, *it2);
         }
     }
     {
         QMutexLocker l(&_imp->_histogramsMutex);
         for (std::list<Histogram*>::iterator it2 = _imp->_histograms.begin(); it2 != _imp->_histograms.end(); ++it2) {
-            TabWidget::moveTab(*it2, *it2, mainPane);
+            mainPane->moveTab(*it2, *it2);
         }
     }
 
 
     ///Default to NodeGraph displayed
-    workshopPane->makeCurrentTab(0);
+    workshopPane->setCurrentIndex(0);
 }
 
-static void
-restoreTabWidget(TabWidget* pane,
-                 const PaneLayout & serialization)
-{
-    ///Find out if the name is already used
-    QString availableName = pane->getGui()->getAvailablePaneName( QString::fromUtf8( serialization.name.c_str() ) );
-
-    pane->setObjectName_mt_safe(availableName);
-    pane->setAsAnchor(serialization.isAnchor);
-    const RegisteredTabs & tabs = pane->getGui()->getRegisteredTabs();
-    for (std::list<std::string>::const_iterator it = serialization.tabs.begin(); it != serialization.tabs.end(); ++it) {
-        RegisteredTabs::const_iterator found = tabs.find(*it);
-
-        ///If the tab exists in the current project, move it
-        if ( found != tabs.end() ) {
-            TabWidget::moveTab(found->second.first, found->second.second, pane);
-        }
-    }
-    pane->makeCurrentTab(serialization.currentIndex);
-}
-
-static void
-restoreSplitterRecursive(Gui* gui,
-                         Splitter* splitter,
-                         const SplitterSerialization & serialization)
-{
-    Qt::Orientation qO;
-    OrientationEnum nO = (OrientationEnum)serialization.orientation;
-
-    switch (nO) {
-    case eOrientationHorizontal:
-        qO = Qt::Horizontal;
-        break;
-    case eOrientationVertical:
-        qO = Qt::Vertical;
-        break;
-    default:
-        throw std::runtime_error("Unrecognized splitter orientation");
-        break;
-    }
-    splitter->setOrientation(qO);
-
-    if (serialization.children.size() != 2) {
-        throw std::runtime_error("Splitter has a child count that is not 2");
-    }
-
-    for (std::vector<SplitterSerialization::Child*>::const_iterator it = serialization.children.begin();
-         it != serialization.children.end(); ++it) {
-        if ( (*it)->child_asSplitter ) {
-            Splitter* child = new Splitter(splitter);
-            splitter->addWidget_mt_safe(child);
-            restoreSplitterRecursive( gui, child, *( (*it)->child_asSplitter ) );
-        } else {
-            assert( (*it)->child_asPane );
-            TabWidget* pane = new TabWidget(gui, splitter);
-            gui->registerPane(pane);
-            splitter->addWidget_mt_safe(pane);
-            restoreTabWidget( pane, *( (*it)->child_asPane ) );
-        }
-    }
-
-    splitter->restoreNatron( QString::fromUtf8( serialization.sizes.c_str() ) );
-}
 
 void
 Gui::restoreLayout(bool wipePrevious,
                    bool enableOldProjectCompatibility,
-                   const GuiLayoutSerialization & layoutSerialization)
+                   const SERIALIZATION_NAMESPACE::WorkspaceSerialization& layoutSerialization)
 {
     ///Wipe the current layout
     if (wipePrevious) {
@@ -195,97 +129,94 @@ Gui::restoreLayout(bool wipePrevious,
     if (enableOldProjectCompatibility) {
         createDefaultLayout1();
     } else {
-        std::list<ApplicationWindowSerialization*> floatingDockablePanels;
-        QDesktopWidget* desktop = QApplication::desktop();
-        QRect screen = desktop->screenGeometry();
 
-        ///now restore the gui layout
-        for (std::list<ApplicationWindowSerialization*>::const_iterator it = layoutSerialization._windows.begin();
-             it != layoutSerialization._windows.end(); ++it) {
-            QWidget* mainWidget = 0;
-
-            ///The window contains only a pane (for the main window it also contains the toolbar)
-            if ( (*it)->child_asPane ) {
-                TabWidget* centralWidget = new TabWidget(this);
-                registerPane(centralWidget);
-                restoreTabWidget(centralWidget, *(*it)->child_asPane);
-                mainWidget = centralWidget;
-            }
-            ///The window contains a splitter as central widget
-            else if ( (*it)->child_asSplitter ) {
-                Splitter* centralWidget = new Splitter(this);
-                restoreSplitterRecursive(this, centralWidget, *(*it)->child_asSplitter);
-                mainWidget = centralWidget;
-            }
-            ///The child is a dockable panel, restore it later
-            else if ( !(*it)->child_asDockablePanel.empty() ) {
-                assert(!(*it)->isMainWindow);
-                floatingDockablePanels.push_back(*it);
-                continue;
-            }
-
-            assert(mainWidget);
-            if (!mainWidget) {
-                continue;
-            }
-            QWidget* window;
-            if ( (*it)->isMainWindow ) {
-                // mainWidget->setParent(_imp->_leftRightSplitter);
-                _imp->_leftRightSplitter->addWidget_mt_safe(mainWidget);
-                window = this;
-            } else {
-                FloatingWidget* floatingWindow = new FloatingWidget(this, this);
-                floatingWindow->setWidget(mainWidget);
-                registerFloatingWindow(floatingWindow);
-                window = floatingWindow;
-            }
-
-            ///Restore geometry
-            int w = std::min( (*it)->w, screen.width() );
-            int h = std::min( (*it)->h, screen.height() );
-            window->resize(w, h);
-            // If the screen size changed, make sure at least 50x50 pixels of the window are visible
-            int x = boost::algorithm::clamp( (*it)->x, screen.left(), screen.right() - 50 );
-            int y = boost::algorithm::clamp( (*it)->y, screen.top(), screen.bottom() - 50 );
-            window->move( QPoint(x, y) );
+        // Restore histograms
+        const std::list<std::string> & histograms = layoutSerialization._histograms;
+        for (std::list<std::string>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
+            Histogram* h = addNewHistogram();
+            h->setObjectName( QString::fromUtf8( (*it).c_str() ) );
+            //move it by default to the viewer pane, before restoring the layout anyway which
+            ///will relocate it correctly
+            appendTabToDefaultViewerPane(h, h);
         }
 
-        for (std::list<ApplicationWindowSerialization*>::iterator it = floatingDockablePanels.begin();
-             it != floatingDockablePanels.end(); ++it) {
-            ///Find the node associated to the floating panel if any and float it
-            assert( !(*it)->child_asDockablePanel.empty() );
-            FloatingWidget* fWindow = 0;
-            if ( (*it)->child_asDockablePanel == kNatronProjectSettingsPanelSerializationName ) {
-                fWindow = _imp->_projectGui->getPanel()->floatPanel();
+        // Restore user python panels
+        const std::list<SERIALIZATION_NAMESPACE::PythonPanelSerialization >& pythonPanels = layoutSerialization._pythonPanels;
+        if ( !pythonPanels.empty() ) {
+            std::string appID = getApp()->getAppIDString();
+            std::string err;
+            std::string script = "app = " + appID + '\n';
+            bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
+            (void)ok;
+        }
+        for (std::list<SERIALIZATION_NAMESPACE::PythonPanelSerialization >::const_iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
+            std::string script = it->pythonFunction + "()\n";
+            std::string err, output;
+            if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output) ) {
+                getApp()->appendToScriptEditor(err);
             } else {
-                ///Find a node with the dockable panel name
-                const NodesGuiList & nodes = getNodeGraph()->getAllActiveNodes();
-                DockablePanel* panel = 0;
-                for (NodesGuiList::const_iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
-                    if ( (*it2)->getNode()->getScriptName() == (*it)->child_asDockablePanel ) {
-                        (*it2)->ensurePanelCreated();
-                        NodeSettingsPanel* nodeSettings = (*it2)->getSettingPanel();
-                        if (nodeSettings) {
-                            nodeSettings->floatPanel();
-                            panel = nodeSettings;
-                        }
-                        break;
-                    }
+                if ( !output.empty() ) {
+                    getApp()->appendToScriptEditor(output);
                 }
+            }
+            const RegisteredTabs& registeredTabs = getRegisteredTabs();
+            RegisteredTabs::const_iterator found = registeredTabs.find(it->name );
+            if ( found != registeredTabs.end() ) {
+                NATRON_PYTHON_NAMESPACE::PyPanel* panel = dynamic_cast<NATRON_PYTHON_NAMESPACE::PyPanel*>(found->second.first);
                 if (panel) {
-                    QWidget* w = panel->parentWidget();
-                    while (!fWindow && w) {
-                        fWindow = dynamic_cast<FloatingWidget*>(w);
-                        w = w->parentWidget();
-                    }
+                    panel->fromSerialization(*it);
                 }
             }
-            assert(fWindow);
-            fWindow->move( QPoint( (*it)->x, (*it)->y ) );
-            fWindow->resize( std::min( (*it)->w, screen.width() ), std::min( (*it)->h, screen.height() ) );
         }
+
+        fromSerialization(*layoutSerialization._mainWindowSerialization);
+        for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::WindowSerialization> >::const_iterator it = layoutSerialization._floatingWindowsSerialization.begin(); it!= layoutSerialization._floatingWindowsSerialization.end(); ++it) {
+            FloatingWidget* window = new FloatingWidget(this);
+            getApp()->registerFloatingWindow(window);
+            window->fromSerialization(**it);
+        }
+
+
     }
 } // restoreLayout
+
+void
+Gui::restoreChildFromSerialization(const SERIALIZATION_NAMESPACE::WindowSerialization& serialization)
+{
+    QDesktopWidget* desktop = QApplication::desktop();
+    QRect screen = desktop->screenGeometry(desktop->screenNumber(this));
+    if (serialization.childType == kSplitterChildTypeSplitter) {
+        assert(serialization.isChildSplitter);
+        Qt::Orientation orientation = Qt::Horizontal;
+        if (serialization.isChildSplitter->orientation == kSplitterOrientationHorizontal) {
+            orientation = Qt::Horizontal;
+        } else if (serialization.isChildSplitter->orientation == kSplitterOrientationVertical) {
+            orientation = Qt::Vertical;
+        }
+        Splitter* splitter = new Splitter(orientation, this, this);
+        _imp->_leftRightSplitter->addWidget_mt_safe(splitter);
+        getApp()->registerSplitter(splitter);
+        splitter->fromSerialization(*serialization.isChildSplitter);
+    } else if (serialization.childType == kSplitterChildTypeTabWidget) {
+        assert(serialization.isChildTabWidget);
+        TabWidget* tab = new TabWidget(this, this);
+        _imp->_leftRightSplitter->addWidget_mt_safe(tab);
+        getApp()->registerTabWidget(tab);
+        tab->fromSerialization(*serialization.isChildTabWidget);
+    }
+
+
+    // Restore geometry
+    int w = std::min( serialization.windowSize[0], screen.width() );
+    int h = std::min( serialization.windowSize[1], screen.height() );
+    resize(w, h);
+
+    // If the screen size changed, make sure at least 50x50 pixels of the window are visible
+    int x = boost::algorithm::clamp( serialization.windowPosition[0], screen.left(), screen.right() );
+    int y = boost::algorithm::clamp( serialization.windowPosition[0], screen.top(), screen.bottom() );
+    move( QPoint(x, y) );
+
+}
 
 void
 Gui::exportLayout()
@@ -313,14 +244,13 @@ Gui::exportLayout()
         }
 
         try {
-            boost::archive::xml_oarchive oArchive(ofile);
-            GuiLayoutSerialization s;
-            s.initialize(this);
-            oArchive << boost::serialization::make_nvp("Layout", s);
-        }catch (...) {
+            SERIALIZATION_NAMESPACE::WorkspaceSerialization s;
+            getApp()->saveApplicationWorkspace(&s);
+            SERIALIZATION_NAMESPACE::write(ofile, s, NATRON_LAYOUT_FILE_HEADER);
+        } catch (...) {
             Dialogs::errorDialog( tr("Error").toStdString()
-                                  , tr("Failed to save the layout").toStdString(), false );
-
+                                 , tr("Failed to save workspace").toStdString(), false );
+            
             return;
         }
     }

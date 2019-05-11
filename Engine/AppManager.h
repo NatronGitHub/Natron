@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,13 +31,16 @@
 #include <string>
 
 #include "Global/GlobalDefines.h"
+#include "Global/KeySymbols.h"
 
 CLANG_DIAG_OFF(deprecated)
+#include <QtCore/QtGlobal> // for Q_OS_*
 // /usr/include/qt5/QtCore/qgenericatomic.h:177:13: warning: 'register' storage class specifier is deprecated [-Wdeprecated]
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
 #include <QtCore/QString>
+#include <QtCore/QDir>
 #include <QtCore/QProcess>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -49,9 +52,14 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/AfterQuitProcessingI.h"
 #include "Engine/Plugin.h"
 #include "Engine/KnobFactory.h"
-#include "Engine/ImageLocker.h"
 #include "Engine/LogEntry.h"
+#include "Engine/TimeValue.h"
+
 #include "Engine/EngineFwd.h"
+
+
+NATRON_NAMESPACE_ENTER
+
 
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
@@ -61,9 +69,6 @@ CLANG_DIAG_ON(deprecated)
 #define TO_DPIX(x) ( appPTR->adjustSizeToDPIX(x) )
 #define TO_DPIY(y) ( appPTR->adjustSizeToDPIY(y) )
 
-class QDir;
-
-NATRON_NAMESPACE_ENTER
 
 enum AppInstanceStatusEnum
 {
@@ -71,22 +76,17 @@ enum AppInstanceStatusEnum
     eAppInstanceStatusActive     //< the app is active and can be used
 };
 
-class GlobalOFXTLS
+
+struct PythonUserCommand
 {
-public:
-    OfxImageEffectInstance* lastEffectCallingMainEntry;
-
-    ///Stored as int, because we need -1; list because we need it recursive for the multiThread func
-    std::list<int> threadIndexes;
-
-    GlobalOFXTLS()
-        : lastEffectCallingMainEntry(0)
-        , threadIndexes()
-    {
-    }
+    QString grouping;
+    Key key;
+    KeyboardModifiers modifiers;
+    std::string pythonFunction;
 };
 
-typedef std::vector<AppInstPtr> AppInstanceVec;
+
+typedef std::vector<AppInstancePtr> AppInstanceVec;
 
 struct AppManagerPrivate;
 class AppManager
@@ -149,12 +149,12 @@ public:
 
     bool isLoaded() const;
 
-    AppInstPtr newAppInstance(const CLArgs& cl, bool makeEmptyInstance);
-    AppInstPtr newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance);
+    AppInstancePtr newAppInstance(const CLArgs& cl, bool makeEmptyInstance);
+    AppInstancePtr newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance);
 
 private:
 
-    AppInstPtr newAppInstanceInternal(const CLArgs& cl, bool alwaysBackground, bool makeEmptyInstance);
+    AppInstancePtr newAppInstanceInternal(const CLArgs& cl, bool alwaysBackground, bool makeEmptyInstance);
 
 public:
 
@@ -163,15 +163,8 @@ public:
     {
     }
 
-    EffectInstancePtr createOFXEffect(NodePtr node,
-                                  const CreateNodeArgs& args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                                  , bool allowFileDialogs,
-                                  bool *hasUsedFileDialog
-#endif
-                                  ) const;
 
-    AppInstPtr getAppInstance(int appID) const WARN_UNUSED_RETURN;
+    AppInstancePtr getAppInstance(int appID) const WARN_UNUSED_RETURN;
 
     int getNumInstances() const WARN_UNUSED_RETURN;
 
@@ -180,89 +173,34 @@ public:
     void setAsTopLevelInstance(int appID);
 
     const AppInstanceVec& getAppInstances() const WARN_UNUSED_RETURN;
-    AppInstPtr getTopLevelInstance () const WARN_UNUSED_RETURN;
+    AppInstancePtr getTopLevelInstance () const WARN_UNUSED_RETURN;
     const PluginsMap & getPluginsList() const WARN_UNUSED_RETURN;
-    Plugin* getPluginBinary(const QString & pluginId,
+    PluginPtr getPluginBinary(const QString & pluginId,
                             int majorVersion,
                             int minorVersion,
-                            bool convertToLowerCase) const WARN_UNUSED_RETURN;
-    Plugin* getPluginBinaryFromOldID(const QString & pluginId, int majorVersion, int minorVersion) const WARN_UNUSED_RETURN;
+                            bool caseSensitive = true) const WARN_UNUSED_RETURN;
+    PluginPtr getPluginBinaryFromOldID(const QString & pluginId, int majorVersion, int minorVersion, bool caseSensitive) const WARN_UNUSED_RETURN;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
     const std::vector<Format> & getFormats() const WARN_UNUSED_RETURN;
 
-    /**
-     * @brief Attempts to load an image from cache, returns true if it could find a matching image, false otherwise.
-     **/
-    bool getImage(const ImageKey & key, std::list<boost::shared_ptr<Image> >* returnValue) const;
+    CacheBasePtr getGeneralPurposeCache() const;
+
+    CacheBasePtr getTileCache() const;
+
+    void deleteCacheEntriesInSeparateThread(const std::list<ImageStorageBasePtr> & entriesToDelete);
 
     /**
-     * @brief Same as getImage, but if it couldn't find a matching image in the cache, it will create one with the given parameters.
+     * @brief Notifies the StorageDeleterThread that it should check cache memory. If full, it will evict
+     * (the least recent) entries from the cache until it falls under the max memory amount.
      **/
-    bool getImageOrCreate(const ImageKey & key, const boost::shared_ptr<ImageParams>& params,
-                          boost::shared_ptr<Image>* returnValue) const;
-
-    bool getImage_diskCache(const ImageKey & key, std::list<boost::shared_ptr<Image> >* returnValue) const;
-
-    bool getImageOrCreate_diskCache(const ImageKey & key, const boost::shared_ptr<ImageParams>& params,
-                                    boost::shared_ptr<Image>* returnValue) const;
-
-    bool getTexture(const FrameKey & key,
-                    std::list<FrameEntryPtr>* returnValue) const;
-
-    bool getTextureOrCreate(const FrameKey & key, const boost::shared_ptr<FrameParams>& params,
-                            FrameEntryLocker* locker,
-                            FrameEntryPtr* returnValue) const;
-
-
-    U64 getCachesTotalMemorySize() const;
-    U64 getCachesTotalDiskSize() const;
-    boost::shared_ptr<CacheSignalEmitter> getOrActivateViewerCacheSignalEmitter() const;
-
-    void setApplicationsCachesMaximumMemoryPercent(double p);
-
-    void setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size);
-
-    void setApplicationsCachesMaximumDiskSpace(unsigned long long size);
-
-    void removeFromNodeCache(const boost::shared_ptr<Image> & image);
-    void removeFromViewerCache(const FrameEntryPtr & texture);
-
-    void removeFromNodeCache(U64 hash);
-    void removeFromViewerCache(U64 hash);
-    /**
-     * @brief Given the following tree version, removes all images from the node cache with a matching
-     * tree version. This is useful to wipe the cache for one particular node.
-     **/
-    void  removeAllImagesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
-    void  removeAllImagesFromDiskCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
-    void  removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
-
-    void removeAllCacheEntriesForHolder(const CacheEntryHolder* holder, bool blocking);
+    void checkCachesMemory();
 
     SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;
 
-    template <class K>
-    static
-    boost::shared_ptr<K> createKnob(KnobHolder*  holder,
-                                    const std::string &label,
-                                    int dimension = 1,
-                                    bool declaredByPlugin = true)
-    {
-        return appPTR->getKnobFactory().createKnob<K>(holder, label, dimension, declaredByPlugin);
-    }
-
-    template <class K>
-    static
-    boost::shared_ptr<K> createKnob(KnobHolder*  holder,
-                                    const QString &label,
-                                    int dimension = 1,
-                                    bool declaredByPlugin = true)
-    {
-        return createKnob<K>(holder, label.toStdString(), dimension, declaredByPlugin);
-    }
+    std::string getCacheDirPath() const WARN_UNUSED_RETURN;
 
     /**
      * @brief If the current process is a background process, then it will right the output pipe the
@@ -278,7 +216,8 @@ public:
     void abortAnyProcessing();
 
     virtual void setLoadingStatus(const QString & str);
-    const QString & getApplicationBinaryPath() const;
+    std::string getApplicationBinaryFilePath() const;
+    std::string getApplicationBinaryDirPath() const;
     static bool parseCmdLineArgs(int argc, char* argv[],
                                  bool* isBackground,
                                  QString & projectFilename,
@@ -289,12 +228,12 @@ public:
     /**
      * @brief Called when the instance is exited
      **/
-    void quit(const AppInstPtr& instance);
+    void quit(const AppInstancePtr& instance);
 
     /**
      * @brief Same as quit except that it blocks until all processing is done instead of doing it in a separate thread.
      **/
-    void quitNow(const AppInstPtr& instance);
+    void quitNow(const AppInstancePtr& instance);
 
     /*
        @brief Calls quit() on all AppInstance's
@@ -319,36 +258,13 @@ public:
 
     virtual void showErrorLog();
 
-    virtual void debugImage(const Image* /*image*/,
+    virtual void debugImage(const ImagePtr& /*image*/,
                             const RectI& /*roi*/,
                             const QString & /*filename = QString()*/) const
     {
     }
 
-    Plugin* registerPlugin(const QString& resourcesPath,
-                           const QStringList & groups,
-                           const QString & pluginID,
-                           const QString & pluginLabel,
-                           const QString & pluginIconPath,
-                           const QStringList & groupIconPath,
-                           bool isReader,
-                           bool isWriter,
-                           LibraryBinary* binary,
-                           bool mustCreateMutex,
-                           int major,
-                           int minor,
-                           bool isDeprecated);
-
-    bool isNCacheFilesOpenedCapped() const;
-    size_t getNCacheFilesOpened() const;
-    void increaseNCacheFilesOpened();
-    void decreaseNCacheFilesOpened();
-
-    /**
-     * @brief Called by the caches to check that there's enough free memory on the computer to perform the allocation.
-     * WARNING: This functin may remove some entries from the caches.
-     **/
-    void checkCacheFreeMemoryIsGoodEnough();
+    void registerPlugin(const PluginPtr& plugin);
 
     void onCheckerboardSettingsChanged() { Q_EMIT checkerboardSettingsChanged(); }
 
@@ -358,43 +274,12 @@ public:
 
 
     int getHardwareIdealThreadCount();
+    int getPhysicalThreadCount();
     int getMaxThreadCount(); //!<  actual number of threads in the thread pool (depends on application settings)
 
-
-    /**
-     * @brief Toggle on/off multi-threading globally in Natron
-     **/
-    void setNumberOfThreads(int threadsNb);
-
-    /**
-     * @brief The value held by the Number of render threads settings.
-     * It is stored it for faster access (1 mutex instead of 3 read/write locks)
-     *
-     * WARNING: This has nothing to do with the setNumberOfThreads function!
-     * This function is just called by the Settings so that the getNThreadsSettings
-     * function is cheap (no need to pass by the Knob API), whereas the
-     * setNumberOfThreads function actually set the value of the Knob in the settings!
-     **/
-    void setNThreadsToRender(int nThreads);
-    void setNThreadsPerEffect(int nThreadsPerEffect);
-    void setUseThreadPool(bool useThreadPool);
-
-    void getNThreadsSettings(int* nThreadsToRender, int* nThreadsPerEffect) const;
-    bool getUseThreadPool() const;
-
-    /**
-     * @brief Updates the global runningThreadsCount maintained across the whole application
-     **/
-    void fetchAndAddNRunningThreads(int nThreads);
-
-    /**
-     * @brief Returns the number of threads that were launched by Natron for rendering.
-     * This sums up threads launched by the multi-thread suite and threads launched for
-     * parallel rendering.
-     **/
-    int getNRunningThreads() const;
-
-    void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
+    void setOFXLastActionCaller_TLS(const OfxEffectInstancePtr& effect);
+    
+    OfxEffectInstancePtr getOFXCurrentEffect_TLS() const;
 
     /**
      * @brief Returns a list of IDs of all the plug-ins currently loaded.
@@ -444,25 +329,16 @@ public:
         return y * getLogicalDPIYRATIO();
     }
 
-    void setProjectCreatedDuringRC2Or3(bool b);
-
-    //To by-pass a bug introduced in RC3 with the serialization of bezier curves
-    bool wasProjectCreatedDuringRC2Or3() const;
-
-    bool isNodeCacheAlmostFull() const;
 
     bool isAggressiveCachingEnabled() const;
-
-    void refreshDiskCacheLocation();
-    const QString& getDiskCacheLocation() const;
-
-    void saveCaches() const;
 
     PyObject* getMainModule();
 
     QStringList getAllNonOFXPluginsPaths() const;
 
-    QString getPyPlugsGlobalPath() const;
+    QDir getBundledPluginDirectory() const;
+
+    QString getSystemNatronPluginDirectory() const;
 
     void launchPythonInterpreter();
 
@@ -470,9 +346,14 @@ public:
 
     virtual void reloadStylesheets() {}
 
+private:
+    friend class PythonGILLocker;
     void takeNatronGIL();
 
     void releaseNatronGIL();
+public:
+
+    int getGILLockedCount() const;
 
 #ifdef __NATRON_WIN32__
     void registerUNCPath(const QString& path, const QChar& driveLetter);
@@ -483,9 +364,6 @@ public:
     static QString qt_tildeExpansion(const QString &path, bool *expanded = 0);
 #endif
 
-    void getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
-                                           std::size_t* ramOccupied,
-                                           std::size_t* diskOccupied) const;
 
     void setOFXHostHandle(void* handle);
 
@@ -494,6 +372,8 @@ public:
     AppTLS* getAppTLS() const;
     const OfxHost* getOFXHost() const;
     GPUContextPool* getGPUContextPool() const;
+
+    const MultiThread* getMultiThreadHandler() const;
 
 
     /**
@@ -512,16 +392,19 @@ public:
      **/
     void appendToNatronPath(const std::string& path);
 
-    virtual void addCommand(const QString& /*grouping*/,
-                            const std::string& /*pythonFunction*/,
-                            Qt::Key /*key*/,
-                            const Qt::KeyboardModifiers& /*modifiers*/) {}
+    void addMenuCommand(const std::string& grouping,
+                        const std::string& pythonFunction,
+                        const KeyboardModifiers& modifiers,
+                        Key key);
+
+    const std::list<PythonUserCommand>& getUserPythonCommands() const;
+
 
 
     void setOnProjectLoadedCallback(const std::string& pythonFunc);
     void setOnProjectCreatedCallback(const std::string& pythonFunc);
 
-    void requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance, void* instanceData);
+    void requestOFXDIalogOnMainThread(const OfxEffectInstancePtr& instance, void* instanceData);
 
 
     ///Closes the application not saving any projects.
@@ -530,9 +413,6 @@ public:
     bool isSpawnedFromCrashReporter() const;
 
     virtual void reloadScriptEditorFonts() {}
-
-    void setPluginsUseInputImageCopyToRender(bool b);
-    bool isCopyInputImageForPluginRenderEnabled() const;
 
     QString getBoostVersion() const;
 
@@ -549,6 +429,10 @@ public:
     QString getQHTTPServerVersion() const;
 
     QString getPySideVersion() const;
+
+    int getOpenGLVersionMajor() const;
+
+    int getOpenGLVersionMinor() const;
 
     bool initializeOpenGLFunctionsOnce(bool createOpenGLContext = false);
 
@@ -588,38 +472,52 @@ public:
     std::string getReaderPluginIDForFileType(const std::string & extension) const;
     std::string getWriterPluginIDForFileType(const std::string & extension) const;
 
+    virtual NodePtr createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const NodeCollectionPtr& group);
+
+    virtual void aboutToSaveProject(SERIALIZATION_NAMESPACE::ProjectSerialization* /*serialization*/) {}
+
     static void setApplicationLocale();
 
+    void setLastPythonAPICaller_TLS(const EffectInstancePtr& effect);
+
+    EffectInstancePtr getLastPythonAPICaller_TLS() const;
+
+
+    /**
+     * @brief A application-wide TLS struct containing all stuff needed to workaround Python expressions:
+     * There's a unique main module with attributes, hence we cannot isolate each render from one another
+     **/
+    struct PythonTLSData
+    {
+        std::list<EffectInstancePtr> pythonEffectStack;
+
+        PythonTLSData()
+        : pythonEffectStack()
+        {
+        }
+    };
+
+    typedef boost::shared_ptr<PythonTLSData> PythonTLSDataPtr;
+    
+
+    TreeRenderQueueManagerPtr getTasksQueueManager() const;
+
+
 public Q_SLOTS:
+
+    void printCacheMemoryStats() const;
 
     void exitAppWithSaveWarning()
     {
         exitApp(true);
     }
 
-    void onViewerTileCacheSizeChanged();
 
     void toggleAutoHideGraphInputs();
-
-    void clearPlaybackCache();
-
-    void clearViewerCache();
-
-    void clearDiskCache();
-
-    void clearNodeCache();
-
-    void clearExceedingEntriesFromNodeCache();
 
     void clearPluginsLoadedCache();
 
     void clearAllCaches();
-
-    void wipeAndCreateDiskCacheStructure();
-
-    void onNodeMemoryRegistered(qint64 mem);
-
-    qint64 getTotalNodesMemoryRegistered() const;
 
     void onMaxPanelsOpenedChanged(int maxPanels);
 
@@ -627,25 +525,20 @@ public Q_SLOTS:
 
     void onCrashReporterNoLongerResponding();
 
-    void onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance, void* instanceData);
+    void onOFXDialogOnMainThreadReceived(const OfxEffectInstancePtr& instance, void* instanceData);
 
 Q_SIGNALS:
 
 
     void checkerboardSettingsChanged();
 
-    void s_requestOFXDialogOnMainThread(OfxImageEffectInstance* instance, void* instanceData);
+    void s_requestOFXDialogOnMainThread(const OfxEffectInstancePtr& instance, void* instanceData);
 
 protected:
 
     virtual bool initGui(const CLArgs& cl);
-    virtual void loadBuiltinNodePlugins(IOPluginsMap* readersMap,
-                                        IOPluginsMap* writersMap);
-
-    template <typename PLUGIN>
-    void registerBuiltInPlugin(const QString& iconPath, bool isDeprecated, bool internalUseOnly);
-
-    virtual AppInstPtr makeNewInstance(int appID) const;
+    virtual void loadBuiltinNodePlugins();
+    virtual AppInstancePtr makeNewInstance(int appID) const;
     virtual void registerGuiMetaTypes() const
     {
     }
@@ -655,18 +548,24 @@ protected:
     {
     }
 
-    virtual void ignorePlugin(Plugin* /*plugin*/)
-    {
-    }
-
-    virtual void onPluginLoaded(Plugin* /*plugin*/) {}
+    virtual void onPluginLoaded(const PluginPtr& plugin);
 
     virtual void onAllPluginsLoaded();
-    virtual void clearLastRenderedTextures() {}
 
     virtual void initBuiltinPythonModules();
 
     bool loadInternalAfterInitGui(const CLArgs& cl);
+
+    /*
+     * @brief Derived by NatronProjectConverter to load using boost serialization instead
+     */
+    virtual void loadProjectFromFileFunction(std::istream& ifile, const std::string& filename, const AppInstancePtr& app, SERIALIZATION_NAMESPACE::ProjectSerialization* obj);
+
+    /**
+     * @brief Check if the project is an older project made prior Natron 2.2.
+     * If this is an older project, it converts the file to a new file.
+     **/
+    virtual bool checkForOlderProjectFile(const AppInstancePtr& app, const QString& filePathIn, QString* filePathOut);
 
 private:
 
@@ -675,16 +574,21 @@ private:
                             QStringList *foundInit,
                             QStringList *foundInitGui);
 
+    void findAllPresetsRecursive(const QDir& directory,
+                                 QStringList& presetFiles);
+
     bool findAndRunScriptFile(const QString& path,
                          const QStringList& files,
                          const QString& script);
 
 
-    virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) OVERRIDE FINAL;
+    virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) OVERRIDE FINAL;
 
     bool loadInternal(const CLArgs& cl);
 
     void loadPythonGroups();
+
+    void loadNodesPresets();
 
     void registerEngineMetaTypes() const;
 
@@ -694,6 +598,9 @@ private:
 
     void tearDownPython();
 
+    // To access loadProjectFromFileFunction
+    friend class Project;
+
     static AppManager *_instance;
     boost::scoped_ptr<AppManagerPrivate> _imp;
 };
@@ -702,8 +609,8 @@ private:
 
 namespace StrUtils {
 
-    // Ensure that path ends with a '/' character
-    void ensureLastPathSeparator(QString& path);
+// Ensure that path ends with a '/' character
+void ensureLastPathSeparator(QString& path);
 
 }
 
@@ -768,6 +675,12 @@ PyObject* getMainModule();
  **/
 bool interpretPythonScript(const std::string& script, std::string* error, std::string* output);
 
+// Clear Python error state and output
+void clearPythonStdErr();
+void clearPythonStdOut();
+
+std::string getPythonStdOut();
+std::string getPythonStdErr();
 
 //void compilePyScript(const std::string& script,PyObject** code);
 
@@ -775,13 +688,13 @@ std::string PyStringToStdString(PyObject* obj);
 std::string makeNameScriptFriendlyWithDots(const std::string& str);
 std::string makeNameScriptFriendly(const std::string& str);
 
-bool getGroupInfos(const std::string& modulePath,
-                   const std::string& pythonModule,
+bool getGroupInfos(const std::string& pythonModule,
                    std::string* pluginID,
                    std::string* pluginLabel,
                    std::string* iconFilePath,
                    std::string* grouping,
                    std::string* description,
+                   std::string* pythonScriptDirPath,
                    bool* isToolset,
                    unsigned int* version);
 

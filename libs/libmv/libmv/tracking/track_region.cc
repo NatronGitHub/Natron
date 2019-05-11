@@ -296,6 +296,9 @@ class PixelDifferenceCostFunctor {
   void ComputeCanonicalPatchAndNormalizer() {
     src_mean_ = 0.0;
     double num_samples = 0.0;
+
+    double src_mean_local = 0.0;
+    libmv_pragma_openmp(parallel for collapse(2) if(num_samples_y_ * num_samples_x_ > libmv_omp_min_pixels) reduction(+:num_samples,src_mean_local))
     for (int r = 0; r < num_samples_y_; ++r) {
       for (int c = 0; c < num_samples_x_; ++c) {
         // Compute the position; cache it.
@@ -319,10 +322,11 @@ class PixelDifferenceCostFunctor {
                        &pattern_mask_(r, c, 0));
           mask_value = pattern_mask_(r, c);
         }
-        src_mean_ += pattern_and_gradient_(r, c, 0) * mask_value;
+        src_mean_local += pattern_and_gradient_(r, c, 0) * mask_value;
         num_samples += mask_value;
       }
     }
+    src_mean_ = src_mean_local;
     src_mean_ /= num_samples;
   }
 
@@ -341,7 +345,8 @@ class PixelDifferenceCostFunctor {
                                     &dst_mean);
     }
 
-    int cursor = 0;
+
+    libmv_pragma_openmp(parallel for collapse(2) if(num_samples_y_ * num_samples_x_ > libmv_omp_min_pixels))
     for (int r = 0; r < num_samples_y_; ++r) {
       for (int c = 0; c < num_samples_x_; ++c) {
         // Use the pre-computed image1 position.
@@ -364,7 +369,7 @@ class PixelDifferenceCostFunctor {
         if (options_.image1_mask != NULL) {
           mask_value = pattern_mask_(r, c);
           if (mask_value == 0.0) {
-            residuals[cursor++] = T(0.0);
+            residuals[r * num_samples_x_ + c] = T(0.0);
             continue;
           }
         }
@@ -430,7 +435,7 @@ class PixelDifferenceCostFunctor {
         if (options_.image1_mask != NULL) {
           error *= T(mask_value);
         }
-        residuals[cursor++] = error;
+        residuals[r * num_samples_x_ + c] = error;
       }
     }
     return true;
@@ -441,7 +446,15 @@ class PixelDifferenceCostFunctor {
   void ComputeNormalizingCoefficient(const T *warp_parameters,
                                      T *dst_mean) const {
     *dst_mean = T(0.0);
+
+    // Accumulate for each thread separatly without synchronization, then do a final loop on the master thread
+#ifdef CERES_USE_OPENMP
+    int nThreads = omp_get_num_threads();
+    std::vector<T> perThreadResults(nThreads, T(0.0));
+#endif
+
     double num_samples = 0.0;
+    libmv_pragma_openmp(parallel for collapse(2) if(num_samples_y_ * num_samples_x_ > libmv_omp_min_pixels) reduction(+:num_samples))
     for (int r = 0; r < num_samples_y_; ++r) {
       for (int c = 0; c < num_samples_x_; ++c) {
         // Use the pre-computed image1 position.
@@ -479,11 +492,20 @@ class PixelDifferenceCostFunctor {
         if (options_.image1_mask != NULL) {
           dst_sample *= T(mask_value);
         }
-
+#ifdef CERES_USE_OPENMP
+        perThreadResults[omp_get_thread_num()] += dst_sample;
+#else
         *dst_mean += dst_sample;
+#endif
         num_samples += mask_value;
       }
     }
+#ifdef CERES_USE_OPENMP
+    // Accumulate each thread results
+      for (std::size_t i = 0; i < perThreadResults.size(); ++i) {
+          *dst_mean += perThreadResults[i];
+      }
+#endif
     *dst_mean /= T(num_samples);
     LG << "Normalization for dst:" << *dst_mean;
   }
@@ -504,6 +526,7 @@ class PixelDifferenceCostFunctor {
     // For example, samples with a 50% mask are counted as a half sample.
     double num_samples = 0;
 
+    libmv_pragma_openmp(parallel for collapse(2) if(num_samples_y_ * num_samples_x_ > libmv_omp_min_pixels) reduction(+:num_samples,sX,sY,sXX,sYY,sXY))
     for (int r = 0; r < num_samples_y_; ++r) {
       for (int c = 0; c < num_samples_x_; ++c) {
         // Use the pre-computed image1 position.
@@ -1149,6 +1172,7 @@ void CreateBrutePattern(const double *x1, const double *y1,
   Warp inverse_warp(x2, y2, x1, y1);
 
   // r,c are in the coordinate frame of image2.
+ libmv_pragma_openmp(parallel for collapse(2) if((max_y - min_y) * (max_x - min_x) > libmv_omp_min_pixels))
   for (int r = min_y; r < max_y; ++r) {
     for (int c = min_x; c < max_x; ++c) {
       // i and j are in the coordinate frame of the pattern in image2.
@@ -1243,8 +1267,11 @@ bool BruteTranslationOnlyInitialize(const FloatImage &image1,
   int best_c = -1;
   int w = pattern.cols();
   int h = pattern.rows();
-
+  libmv_pragma_openmp(for)
   for (int r = 0; r < (image2.Height() - h); ++r) {
+    int best_r_line = -1;
+    int best_c_line = -1;
+    double best_sad_line = std::numeric_limits<double>::max();
     for (int c = 0; c < (image2.Width() - w); ++c) {
       // Compute the weighted sum of absolute differences, Eigen style. Note
       // that the block from the search image is never stored in a variable, to
@@ -1261,12 +1288,21 @@ bool BruteTranslationOnlyInitialize(const FloatImage &image1,
       } else {
         sad = (mask * (pattern - search.block(r, c, h, w))).abs().sum();
       }
-      if (sad < best_sad) {
-        best_r = r;
-        best_c = c;
-        best_sad = sad;
+
+      if (sad < best_sad_line) {
+        best_r_line = r;
+        best_c_line = c;
+        best_sad_line = sad;
       }
     }
+      libmv_pragma_openmp(critical)
+      {
+          if (best_sad_line < best_sad) {
+              best_r = best_r_line;
+              best_c = best_c_line;
+              best_sad = best_sad_line;
+          }
+      }
   }
 
   // This mean the effective pattern area is zero. This check could go earlier,

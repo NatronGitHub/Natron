@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -54,15 +54,11 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    ScriptEditor(Gui* gui);
+    ScriptEditor(const std::string& scriptName, Gui* gui);
 
     virtual ~ScriptEditor();
 
     void setInputScript(const QString& script);
-
-    QString getInputScript() const;
-
-    QString getAutoSavedScript() const;
 
     void appendToScriptEditor(const QString& str);
 
@@ -73,6 +69,8 @@ public:
     void reloadFont();
 
     void sourceScript(const QString& filename);
+
+    virtual QIcon getIcon() const OVERRIDE FINAL;
 
 public Q_SLOTS:
 

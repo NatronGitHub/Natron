@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -54,10 +54,22 @@
 #define NATRON_NAMESPACE_EXIT }
 #define NATRON_NAMESPACE_USING using namespace NATRON_NAMESPACE;
 
+#define SERIALIZATION_NAMESPACE Serialization
+// Macros to use in each file to enter and exit the right name spaces.
+#define SERIALIZATION_NAMESPACE_ENTER namespace SERIALIZATION_NAMESPACE {
+#define SERIALIZATION_NAMESPACE_EXIT }
+#define SERIALIZATION_NAMESPACE_USING using namespace SERIALIZATION_NAMESPACE;
+
 #define NATRON_PYTHON_NAMESPACE Python
 #define NATRON_PYTHON_NAMESPACE_ENTER namespace NATRON_PYTHON_NAMESPACE {
 #define NATRON_PYTHON_NAMESPACE_EXIT }
 #define NATRON_PYTHON_NAMESPACE_USING using namespace NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE;
+
+#define EXPRTK_FUNCTIONS_NAMESPACE ExprTkFunctions
+// Macros to use in each file to enter and exit the right name spaces.
+#define EXPRTK_FUNCTIONS_NAMESPACE_ENTER namespace EXPRTK_FUNCTIONS_NAMESPACE {
+#define EXPRTK_FUNCTIONS_NAMESPACE_EXIT }
+#define EXPRTK_FUNCTIONS_NAMESPACE_USING using namespace NATRON_NAMESPACE::EXPRTK_FUNCTIONS_NAMESPACE;
 
 #ifdef __cplusplus
 // Establish the name space.
@@ -77,9 +89,9 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_ORGANIZATION_DOMAIN_SUB "inria"
 #define NATRON_ORGANIZATION_DOMAIN NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_ORGANIZATION_DOMAIN_TOPLEVEL
 #define NATRON_APPLICATION_NAME "Natron"
-#define NATRON_WEBSITE_URL "http://www.natron.fr"
-#define NATRON_FORUM_URL "https://forum.natron.fr"
-#define NATRON_ISSUE_TRACKER_URL "https://github.com/MrKepzie/Natron/issues"
+#define NATRON_WEBSITE_URL "https://natrongithub.github.io"
+#define NATRON_FORUM_URL "https://discuss.pixls.us/c/software/natron"
+#define NATRON_ISSUE_TRACKER_URL "https://github.com/NatronGitHub/Natron/issues"
 
 // The MIME types for Natron documents are:
 // *.ntp: application/vnd.natron.project
@@ -89,13 +101,20 @@ namespace NATRON_PYTHON_NAMESPACE { }
 // - NatronInfo.plist (for OSX)
 // - tools/linux/include/qs/natron.qs
 #define NATRON_PROJECT_FILE_EXT "ntp"
+#define NATRON_PROJECT_FILE_HEADER "# Natron Project File"
 #define NATRON_PROJECT_FILE_MIME_TYPE "application/vnd.natron.project"
 #define NATRON_PROJECT_UNTITLED "Untitled." NATRON_PROJECT_FILE_EXT
 #define NATRON_CACHE_FILE_EXT "ntc"
+#define NATRON_CACHE_FILE_HEADER "# Natron Cache File"
 #define NATRON_LAYOUT_FILE_EXT "nl"
+#define NATRON_LAYOUT_FILE_HEADER "# Natron Layout File"
 #define NATRON_LAYOUT_FILE_MIME_TYPE "application/vnd.natron.layout"
 #define NATRON_PRESETS_FILE_EXT "nps"
+#define NATRON_PRESETS_FILE_HEADER "# Natron Presets File"
 #define NATRON_PRESETS_FILE_MIME_TYPE "application/vnd.natron.nodepresets"
+#define NATRON_CLIPBOARD_HEADER "# Natron Clipboard Content"
+#define NATRON_SETTINGS_FILE_HEADER "# Natron Settings File"
+#define NATRON_SETTINGS_FILE_EXT "txt"
 #define NATRON_PROJECT_ENV_VAR_NAME "Project"
 #define NATRON_OCIO_ENV_VAR_NAME "OCIO"
 
@@ -104,7 +123,6 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_GUI_PYTHON_MODULE_NAME "NatronGui"
 
 #define NATRON_PROJECT_ENV_VAR_MAX_RECURSION 100
-#define NATRON_MAX_CACHE_FILES_OPENED 20000
 #define NATRON_CUSTOM_HTML_TAG_START "<" NATRON_APPLICATION_NAME ">"
 #define NATRON_CUSTOM_HTML_TAG_END "</" NATRON_APPLICATION_NAME ">"
 
@@ -120,10 +138,10 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_VERSION_MINOR_30 0
 #define NATRON_VERSION_REVISION_30 0
 
-// RB-2: 2.3.10
+// RB-2: 2.3.15
 #define NATRON_VERSION_MAJOR_23 2
 #define NATRON_VERSION_MINOR_23 3
-#define NATRON_VERSION_REVISION_23 10
+#define NATRON_VERSION_REVISION_23 15
 
 // RB-2.2: 2.2.10
 #define NATRON_VERSION_MAJOR_22 2
@@ -136,12 +154,12 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_VERSION_REVISION_21 10
 
 // The Natron version for this branch
-#define NATRON_VERSION_MAJOR NATRON_VERSION_MAJOR_23
-#define NATRON_VERSION_MINOR NATRON_VERSION_MINOR_23
-#define NATRON_VERSION_REVISION NATRON_VERSION_REVISION_23
+#define NATRON_VERSION_MAJOR NATRON_VERSION_MAJOR_30
+#define NATRON_VERSION_MINOR NATRON_VERSION_MINOR_30
+#define NATRON_VERSION_REVISION NATRON_VERSION_REVISION_30
 
 
-#define NATRON_LAST_VERSION_URL "http://downloads.natron.fr/LATEST_VERSION.txt"
+#define NATRON_LATEST_VERSION_URL "https://natrongithub.github.io/LATEST_VERSION.txt"
 #define NATRON_LAST_VERSION_FILE_VERSION 1
 
 // homemade builds should always show "Devel"
@@ -181,7 +199,7 @@ namespace NATRON_PYTHON_NAMESPACE { }
 //#elif (NATRON_VERSION_MAJOR == NATRON_VERSION_MAJOR_30) && (NATRON_VERSION_MINOR == NATRON_VERSION_MINOR_30)
 //#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io/en/rb-3.0"
 #else
-#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io/en/master"
+#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io"
 #endif
 
 #if defined(__NATRON_LINUX__) || defined(__NATRON_OSX__)
@@ -283,14 +301,28 @@ NATRON_VERSION_STRINGIZE__(major, minor)
 #define PLUGIN_GROUP_DEFAULT "Misc"
 #define PLUGIN_GROUP_OFX "OFX"
 
-//Use this to use trimap instead of bitmap to avoid several threads computing the same area of an image at the same time.
-//When enabled the value of 2 is a code for a pixel being rendered but not yet available.
-//In this context, the reader of the bitmap should then wait for the pixel to be available.
-#define NATRON_ENABLE_TRIMAP 1
 
-//Use this to have all readers inside the same Read meta-node and all the writers
-//into the same Write meta-node
-#define NATRON_ENABLE_IO_META_NODES 1
+#define PLUGIN_GROUP_IMAGE_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/image_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_3D_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/3D_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_CHANNEL_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/channel_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_MERGE_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/merge_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_COLOR_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/color_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_TRANSFORM_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/transform_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_DEEP_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/deep_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_FILTER_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/filter_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_VIEWS_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/multiview_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_MISC_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/misc_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_TOOLSETS_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/toolsets_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_KEYER_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/keyer_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_TIME_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/time_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_PAINT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/paint_grouping_" NATRON_ICON_SET_NUMBER ".png"
+#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/other_grouping_" NATRON_ICON_SET_NUMBER ".png"
+
+#define PLUGIN_DEFAULT_RESOURCES_PATH ":/Resources/"
+
+#define NATRON_FONT "Droid Sans"
+#define NATRON_FONT_ALT "Droid Sans"
+#define NATRON_SCRIPT_FONT "Courier New"
 
 // compiler_warning.h
 #define STRINGISE_IMPL(x) # x

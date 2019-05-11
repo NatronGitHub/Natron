@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -72,7 +72,7 @@ NodeGuiSerialization::initialize(const NodeGui*  n)
             if (!(*it)->isPartOfProject()) {
                 continue;
             }
-            boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
+            NodeGuiIPtr gui_i = (*it)->getNodeGui();
             if (!gui_i) {
                 continue;
             }
@@ -80,7 +80,7 @@ NodeGuiSerialization::initialize(const NodeGui*  n)
             if (!childGui) {
                 continue;
             }
-            boost::shared_ptr<NodeGuiSerialization> state( new NodeGuiSerialization() );
+            NodeGuiSerializationPtr state( new NodeGuiSerialization() );
             state->initialize(childGui);
             _children.push_back(state);
         }

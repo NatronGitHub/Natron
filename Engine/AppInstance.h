@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef APPINSTANCE_H
-#define APPINSTANCE_H
+#ifndef Engine_AppInstance_h
+#define Engine_AppInstance_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -29,6 +29,7 @@
 
 #include <vector>
 #include <list>
+#include <map>
 #include <climits>              // for INT_MAX, INT_MIN
 #include <cstddef>              // for NULL
 #include <QtCore/QtGlobal>      // for Q_UNUSED
@@ -44,7 +45,8 @@
 
 #include "Global/GlobalDefines.h"
 #include "Engine/RectD.h"
-#include "Engine/TimeLineKeyFrames.h"
+#include "Engine/TimeValue.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
@@ -84,24 +86,32 @@ public:
     ~FlagIncrementer();
 };
 
+class CreateNodeStackItem;
+typedef boost::shared_ptr<CreateNodeStackItem> CreateNodeStackItemPtr;
+typedef boost::weak_ptr<CreateNodeStackItem> CreateNodeStackItemWPtr;
+typedef std::list<CreateNodeStackItemPtr> CreateNodeStackItemPtrList;
+
+
 
 class AppInstance
     : public QObject
     , public boost::noncopyable
     , public boost::enable_shared_from_this<AppInstance>
-    , public TimeLineKeyFrames
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
-    // TODO: enable_shared_from_this
+protected: // parent of GuiAppInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     AppInstance(int appID);
 
 public:
+    static AppInstancePtr create(int appID) WARN_UNUSED_RETURN
+    {
+        return AppInstancePtr( new AppInstance(appID) );
+    }
 
     virtual ~AppInstance();
 
@@ -109,39 +119,7 @@ public:
     virtual bool isBackground() const { return true; }
 
 
-    struct RenderWork
-    {
-        OutputEffectInstance* writer;
-        int firstFrame;
-        int lastFrame;
-        int frameStep;
-        bool useRenderStats;
-        bool isRestart;
 
-        RenderWork()
-            : writer(0)
-            , firstFrame(0)
-            , lastFrame(0)
-            , frameStep(0)
-            , useRenderStats(false)
-            , isRestart(false)
-        {
-        }
-
-        RenderWork(OutputEffectInstance* writer,
-                   int firstFrame,
-                   int lastFrame,
-                   int frameStep,
-                   bool useRenderStats)
-            : writer(writer)
-            , firstFrame(firstFrame)
-            , lastFrame(lastFrame)
-            , frameStep(frameStep)
-            , useRenderStats(useRenderStats)
-            , isRestart(false)
-        {
-        }
-    };
 
     void load(const CLArgs& cl, bool makeEmptyInstance);
 
@@ -159,19 +137,21 @@ public:
 
     /** @brief Create a new node  in the node graph.
     **/
-    NodePtr createNode(CreateNodeArgs & args);
+    NodePtr createNode(const CreateNodeArgsPtr& args);
     NodePtr createReader(const std::string& filename,
-                         CreateNodeArgs& args);
+                         const CreateNodeArgsPtr& args);
 
 
     NodePtr createWriter(const std::string& filename,
-                         CreateNodeArgs& args,
+                         const CreateNodeArgsPtr& args,
                          int firstFrame = INT_MIN, int lastFrame = INT_MAX);
 
     NodePtr getNodeByFullySpecifiedName(const std::string & name) const;
 
-    boost::shared_ptr<Project> getProject() const;
-    boost::shared_ptr<TimeLine> getTimeLine() const;
+    ProjectPtr getProject() const;
+    TimeLinePtr getTimeLine() const;
+
+    RenderQueuePtr getRenderQueue() const;
 
     /*true if the user is NOT scrubbing the timeline*/
     virtual bool shouldRefreshPreview() const
@@ -179,13 +159,6 @@ public:
         return false;
     }
 
-    virtual void connectViewersToViewerCache()
-    {
-    }
-
-    virtual void disconnectViewersFromViewerCache()
-    {
-    }
 
     virtual void errorDialog(const std::string & title, const std::string & message, bool useHtml) const;
     virtual void errorDialog(const std::string & title, const std::string & message, bool* stopAsking, bool useHtml) const;
@@ -214,11 +187,7 @@ public:
         return eStandardButtonYes;
     }
 
-    virtual void loadProjectGui(bool /*isAutosave*/, boost::archive::xml_iarchive & /*archive*/) const
-    {
-    }
-
-    virtual void saveProjectGui(boost::archive::xml_oarchive & /*archive*/)
+    virtual void loadProjectGui(bool /*isAutosave*/, const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& /*serialization*/) const
     {
     }
 
@@ -227,17 +196,17 @@ public:
     }
 
     virtual void notifyRenderStarted(const QString & /*sequenceName*/,
-                                     int /*firstFrame*/,
-                                     int /*lastFrame*/,
-                                     int /*frameStep*/,
+                                     TimeValue /*firstFrame*/,
+                                     TimeValue /*lastFrame*/,
+                                     TimeValue /*frameStep*/,
                                      bool /*canPause*/,
-                                     OutputEffectInstance* /*writer*/,
-                                     const boost::shared_ptr<ProcessHandler> & /*process*/)
+                                     const NodePtr& /*writer*/,
+                                     const ProcessHandlerPtr & /*process*/)
     {
     }
 
-    virtual void notifyRenderRestarted( OutputEffectInstance* /*writer*/,
-                                        const boost::shared_ptr<ProcessHandler> & /*process*/)
+    virtual void notifyRenderRestarted( const NodePtr& /*writer*/,
+                                        const ProcessHandlerPtr & /*process*/)
     {
     }
 
@@ -246,7 +215,11 @@ public:
         return false;
     }
 
+    virtual void setGuiFrozen(bool frozen) { Q_UNUSED(frozen); }
+
     virtual bool isGuiFrozen() const { return false; }
+
+    virtual void refreshAllTimeEvaluationParams(bool /*onlyTimeEvaluationKnobs*/) {}
 
     virtual void progressStart(const NodePtr& node,
                                const std::string &message,
@@ -269,6 +242,8 @@ public:
         return true;
     }
 
+    virtual void showRenderStatsWindow() {}
+
     /**
      * @brief Checks for a new version of Natron
      **/
@@ -281,6 +256,17 @@ public:
     {
     }
 
+    virtual void goToPreviousKeyframe()
+    {
+    }
+    virtual void goToNextKeyframe()
+    {
+    }
+
+    virtual void setMasterSyncViewer(const NodePtr& viewerNode) { Q_UNUSED(viewerNode); }
+
+    virtual NodePtr getMasterSyncViewer() const { return NodePtr(); }
+
     ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const;
 
     double getProjectFrameRate() const;
@@ -289,61 +275,45 @@ public:
 
     virtual std::string saveImageFileDialog() { return std::string(); }
 
+    virtual bool checkAllReadersModificationDate(bool /*errorAndWarn*/) { return true; }
 
     void onOCIOConfigPathChanged(const std::string& path);
 
-
-    /**
-     * @brief Given writer names, start rendering the given RenderRequest. If empty all Writers in the project
-     * will be rendered using the frame ranges.
-     **/
-    void startWritersRenderingFromNames(bool enableRenderStats,
-                                        bool doBlockingRender,
-                                        const std::list<std::string>& writers,
-                                        const std::list<std::pair<int, std::pair<int, int> > >& frameRanges);
-    void startWritersRendering(bool doBlockingRender, const std::list<RenderWork>& writers);
-
 public:
 
-    void addInvalidExpressionKnob(const KnobPtr& knob);
-    void removeInvalidExpressionKnob(const KnobI* knob);
-    void recheckInvalidExpressions();
-
-    virtual void clearViewersLastRenderedTexture() {}
+    void addInvalidExpressionKnob(const KnobIPtr& knob);
+    void removeInvalidExpressionKnob(const KnobIConstPtr& knob);
+    void recheckInvalidLinks();
 
     virtual void toggleAutoHideGraphInputs() {}
 
+
     /**
-     * @brief In Natron v1.0.0 plug-in IDs were lower case only due to a bug in OpenFX host support.
-     * To be able to load projects created in Natron v1.0.0 we must identity that the project was created in this version
-     * and try to load plug-ins with their lower case ID instead.
+     * @brief Returns true if the project is currently in the process of creating a node
      **/
-    void setProjectWasCreatedWithLowerCaseIDs(bool b);
-    bool wasProjectCreatedWithLowerCaseIDs() const;
+    bool isCreatingNode() const;
 
-    bool isCreatingPythonGroup() const;
-
-    bool isCreatingNodeTree() const;
-
-    void setIsCreatingNodeTree(bool b);
 
     virtual void appendToScriptEditor(const std::string& str);
     virtual void printAutoDeclaredVariable(const std::string& str);
 
-    void getFrameRange(double* first, double* last) const;
-
     virtual void setLastViewerUsingTimeline(const NodePtr& /*node*/) {}
 
-    virtual ViewerInstance* getLastViewerUsingTimeline() const { return 0; }
+    virtual ViewerNodePtr getLastViewerUsingTimeline() const { return ViewerNodePtr(); }
 
     bool loadPythonScript(const QFileInfo& file);
-    virtual void queueRedrawForAllViewers() {}
 
-    virtual void renderAllViewers(bool /* canAbort*/) {}
+    bool loadPythonScriptAndReportToScriptEditor(const QString& script);
 
-    virtual void abortAllViewers() {}
+    virtual void getAllViewers(std::list<ViewerNodePtr>* viewers) const { Q_UNUSED(viewers); }
+
+    virtual void renderAllViewers() {}
+
+    virtual void abortAllViewers(bool /*autoRestartPlayback*/) {}
 
     virtual void refreshAllPreviews() {}
+
+    virtual void getViewersOpenGLContextFormat(int* bitdepthPerComponent, bool *hasAlpha) const { *bitdepthPerComponent = 0; *hasAlpha = false;}
 
     virtual void declareCurrentAppVariable_Python();
 
@@ -351,30 +321,32 @@ public:
 
     virtual void createLoadProjectSplashScreen(const QString& /*projectFile*/) {}
 
-    virtual void updateProjectLoadStatus(const QString& /*str*/) {}
+    virtual void updateProjectLoadStatus(const QString& str);
 
     virtual void closeLoadPRojectSplashScreen() {}
 
     std::string getAppIDString() const;
-    const std::list<NodePtr>& getNodesBeingCreated() const;
+
+    bool isTopLevelNodeBeingCreated(const NodePtr& node) const;
+
+    bool isDuringPythonPyPlugCreation() const;
+
+    bool isDuringPyPlugCreation() const;
+
     virtual bool isDraftRenderEnabled() const { return false; }
 
     virtual void setDraftRenderEnabled(bool /*b*/) {}
 
-    virtual void setUserIsPainting(const NodePtr& /*rotopaintNode*/,
-                                   const boost::shared_ptr<RotoStrokeItem>& /*stroke*/,
-                                   bool /*isPainting*/) {}
+    virtual void setUserIsPainting(const RotoStrokeItemPtr& /*stroke*/) {}
 
-    virtual void getActiveRotoDrawingStroke(NodePtr* /*node*/,
-                                            boost::shared_ptr<RotoStrokeItem>* /*stroke*/,
-                                            bool* /*isPainting*/) const { }
+    virtual RotoStrokeItemPtr getActiveRotoDrawingStroke() const { return RotoStrokeItemPtr(); }
 
     virtual bool isRenderStatsActionChecked() const { return false; }
 
     bool saveTemp(const std::string& filename);
     virtual bool save(const std::string& filename);
     virtual bool saveAs(const std::string& filename);
-    virtual AppInstPtr loadProject(const std::string& filename);
+    virtual AppInstancePtr loadProject(const std::string& filename);
 
     ///Close the current project but keep the window
     virtual bool resetProject();
@@ -383,40 +355,60 @@ public:
     virtual bool closeProject();
 
     ///Opens a new window
-    virtual AppInstPtr newProject();
+    virtual AppInstancePtr newProject();
     virtual void* getOfxHostOSHandle() const { return NULL; }
 
-    virtual void updateLastPaintStrokeData(int /*newAge*/,
-                                           const std::list<std::pair<Point, double> >& /*points*/,
-                                           const RectD& /*lastPointsBbox*/,
-                                           int /*strokeIndex*/) {}
+    virtual void createGroupGui(const NodePtr & /*group*/, const CreateNodeArgs& /*args*/) {}
 
-    virtual void getLastPaintStrokePoints(std::list<std::list<std::pair<Point, double> > >* /*strokes*/,
-                                          int* /*strokeIndex*/) const {}
 
-    virtual int getStrokeLastIndex() const { return -1; }
-
-    virtual void getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* /*stroke*/,
-                                              int* /*strokeIndex*/) const {}
-
-    virtual void getRenderStrokeData(RectD* /*lastStrokeMovementBbox*/,
-                                     std::list<std::pair<Point, double> >* /*lastStrokeMovementPoints*/,
-                                     double */*distNextIn*/,
-                                     boost::shared_ptr<Image>* /*strokeImage*/) const {}
-
-    virtual void updateStrokeImage(const boost::shared_ptr<Image>& /*image*/,
-                                   double /*distNextOut*/,
-                                   bool /*setDistNextOut*/) {}
-
-    virtual RectD getLastPaintStrokeBbox() const { return RectD(); }
-
-    virtual RectD getPaintStrokeWholeBbox() const { return RectD(); }
-
-    void removeRenderFromQueue(OutputEffectInstance* writer);
     virtual void reloadScriptEditorFonts() {}
 
-    const ProjectBeingLoadedInfo& getProjectBeingLoadedInfo() const;
-    void setProjectBeingLoadedInfo(const ProjectBeingLoadedInfo& info);
+    SerializableWindow* getMainWindowSerialization() const;
+
+    std::list<SerializableWindow*> getFloatingWindowsSerialization() const;
+
+    std::list<SplitterI*> getSplittersSerialization() const;
+
+    std::list<TabWidgetI*> getTabWidgetsSerialization() const;
+
+    std::list<PyPanelI*> getPyPanelsSerialization() const;
+
+    std::list<DockablePanelI*> getOpenedSettingsPanels() const;
+
+    void setOpenedSettingsPanelsInternal(const std::list<DockablePanelI*>& panels);
+
+    void registerFloatingWindow(SerializableWindow* window);
+    void unregisterFloatingWindow(SerializableWindow* window);
+    void clearFloatingWindows();
+
+
+    void registerSplitter(SplitterI* splitter);
+    void unregisterSplitter(SplitterI* splitter);
+    void clearSplitters();
+
+    void registerTabWidget(TabWidgetI* tabWidget);
+    void unregisterTabWidget(TabWidgetI* tabWidget);
+    void clearTabWidgets(); 
+
+    void registerPyPanel(PyPanelI* panel, const std::string& pythonFunction);
+    void unregisterPyPanel(PyPanelI* panel);
+
+    void registerSettingsPanel(DockablePanelI* panel, int index = -1);
+    void unregisterSettingsPanel(DockablePanelI* panel);
+    void clearSettingsPanels();
+
+    /**
+    * @brief If baseName is already used by another pane or it is empty,this function will return a new pane name that is not already
+    * used by another pane. Otherwise it will return baseName.
+    **/
+    QString getAvailablePaneName( const QString & baseName = QString() ) const;
+
+    virtual void getHistogramScriptNames(std::list<std::string>* /*histograms*/) const {}
+
+    virtual void getViewportsProjection(std::map<std::string,SERIALIZATION_NAMESPACE::ViewportData>* /*projections*/) const {}
+
+    void saveApplicationWorkspace(SERIALIZATION_NAMESPACE::WorkspaceSerialization* serialization);
+
 
 public Q_SLOTS:
 
@@ -425,6 +417,8 @@ public Q_SLOTS:
     void quitNow();
 
     virtual void redrawAllViewers() {}
+
+    virtual void redrawAllTimelines() {}
 
     void triggerAutoSave();
 
@@ -436,9 +430,8 @@ public Q_SLOTS:
 
     void newVersionCheckError();
 
-    void onBackgroundRenderProcessFinished();
 
-    void onQueuedRenderFinished(int retCode);
+
 
 Q_SIGNALS:
 
@@ -446,55 +439,48 @@ Q_SIGNALS:
 
 protected:
 
-    virtual void onGroupCreationFinished(const NodePtr& node, const boost::shared_ptr<NodeSerialization>& serialization, bool autoConnect);
-    virtual void createNodeGui(const NodePtr& /*node*/,
-                               const NodePtr& /*parentmultiinstance*/,
-                               const CreateNodeArgs& /*args*/)
-    {
-    }
+    virtual void onTabWidgetRegistered(TabWidgetI* tabWidget) { Q_UNUSED(tabWidget); }
+
+    virtual void onTabWidgetUnregistered(TabWidgetI* tabWidget) { Q_UNUSED(tabWidget); }
+
+    virtual void createMainWindow() { }
+
+    void setMainWindowPointer(SerializableWindow* window);
+
+    virtual void onNodeAboutToBeCreated(const NodePtr& node, const CreateNodeArgsPtr& args);
+
+    virtual void onNodeCreated(const NodePtr& node, const CreateNodeArgsPtr& args);
 
 private:
 
-    void startNextQueuedRender(OutputEffectInstance* finishedWriter);
 
 
-    void getWritersWorkForCL(const CLArgs& cl, std::list<AppInstance::RenderWork>& requests);
+    bool openFileDialogIfNeeded(const CreateNodeArgsPtr& args, bool openFile);
+
+    NodePtr createNodeInternal(const CreateNodeArgsPtr& args);
 
 
-    NodePtr createNodeInternal(CreateNodeArgs& args);
+    NodePtr createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsPtr& args);
 
-    void setGroupLabelIDAndVersion(const NodePtr& node,
-                                   const QString& pythonModulePath,
-                                   const QString &pythonModule);
-
-    NodePtr createNodeFromPythonModule(Plugin* plugin,
-                                       const CreateNodeArgs& args);
-
+    friend class AddCreateNode_RAII;
     boost::scoped_ptr<AppInstancePrivate> _imp;
 };
 
-class CreatingNodeTreeFlag_RAII
+class AddCreateNode_RAII
 {
-    AppInstWPtr _app;
+    AppInstancePrivate* _imp;
+    CreateNodeStackItemPtr _item;
 
 public:
 
-    CreatingNodeTreeFlag_RAII(const AppInstPtr& app)
-        : _app(app)
-    {
-        app->setIsCreatingNodeTree(true);
-    }
 
-    ~CreatingNodeTreeFlag_RAII()
-    {
-        AppInstPtr a = _app.lock();
+    AddCreateNode_RAII(const AppInstancePtr& app,
+                       const NodePtr& node,
+                       const CreateNodeArgsPtr& args);
 
-        if (a) {
-            a->setIsCreatingNodeTree(false);
-        }
-    }
+    ~AddCreateNode_RAII();
 };
 
 NATRON_NAMESPACE_EXIT
 
-#endif // APPINSTANCE_H
+#endif // Engine_AppInstance_h

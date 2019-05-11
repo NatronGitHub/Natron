@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -45,8 +45,14 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DockablePanel.h"
 #include "Gui/PyGuiApp.h"
 
+#include "Serialization/WorkspaceSerialization.h"
+
+
 NATRON_NAMESPACE_ENTER
+
+
 NATRON_PYTHON_NAMESPACE_ENTER
+
 
 struct DialogParamHolderPrivate
 {
@@ -66,7 +72,7 @@ struct DialogParamHolderPrivate
 };
 
 DialogParamHolder::DialogParamHolder(const QString& uniqueID,
-                                     const AppInstPtr& app,
+                                     const AppInstancePtr& app,
                                      UserParamHolder* widget)
     : NamedKnobHolder(app)
     , _imp( new DialogParamHolderPrivate(widget, uniqueID) )
@@ -92,20 +98,19 @@ DialogParamHolder::setParamChangedCallback(const QString& callback)
 }
 
 bool
-DialogParamHolder::onKnobValueChanged(KnobI* k,
+DialogParamHolder::onKnobValueChanged(const KnobIPtr& k,
                                       ValueChangedReasonEnum reason,
-                                      double time,
-                                      ViewSpec view,
-                                      bool originatedFromMainThread)
+                                      TimeValue time,
+                                      ViewSetSpec view)
 {
     std::string callback;
     {
-        QMutexLocker k(&_imp->paramChangedCBMutex);
+        QMutexLocker l(&_imp->paramChangedCBMutex);
         callback = _imp->paramChangedCB;
     }
 
     if ( !callback.empty() ) {
-        bool userEdited = reason == eValueChangedReasonNatronGuiEdited ||
+        bool userEdited = reason == eValueChangedReasonUserEdited ||
                           reason == eValueChangedReasonUserEdited;
         std::vector<std::string> args;
         std::string error;
@@ -161,7 +166,7 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
 
         return true;
     }
-    _imp->widget->onKnobValueChanged(k, reason, time, view, originatedFromMainThread);
+    _imp->widget->onKnobValueChanged(k, reason, time, view);
 
     return false;
 } // DialogParamHolder::onKnobValueChanged
@@ -169,7 +174,7 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
 struct PyModalDialogPrivate
 {
     Gui* gui;
-    DialogParamHolder* holder;
+    DialogParamHolderPtr holder;
     QVBoxLayout* mainLayout;
     DockablePanel* panel;
     QWidget* centerContainer;
@@ -178,7 +183,7 @@ struct PyModalDialogPrivate
 
     PyModalDialogPrivate(Gui* gui)
         : gui(gui)
-        , holder(0)
+        , holder()
         , mainLayout(0)
         , panel(0)
         , centerContainer(0)
@@ -194,7 +199,7 @@ PyModalDialog::PyModalDialog(Gui* gui,
     , UserParamHolder()
     , _imp( new PyModalDialogPrivate(gui) )
 {
-    _imp->holder = new DialogParamHolder( QString(), gui->getApp(), this );
+    _imp->holder = DialogParamHolder::create( QString(), gui->getApp(), this );
     setHolder(_imp->holder);
     _imp->holder->initializeKnobsPublic();
     _imp->mainLayout = new QVBoxLayout(this);
@@ -210,10 +215,11 @@ PyModalDialog::PyModalDialog(Gui* gui,
                                     _imp->mainLayout,
                                     DockablePanel::eHeaderModeNoHeader,
                                     false,
-                                    boost::shared_ptr<QUndoStack>(),
+                                    QUndoStackPtr(),
                                     QString(), QString(),
                                     _imp->centerContainer);
     _imp->panel->turnOffPages();
+    _imp->holder->setPanelPointer(_imp->panel);
     _imp->panel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     _imp->centerLayout->insertWidget(0, _imp->panel);
 
@@ -289,7 +295,7 @@ PyModalDialog::~PyModalDialog()
 {
 }
 
-DialogParamHolder*
+DialogParamHolderPtr
 PyModalDialog::getKnobsHolder() const
 {
     return _imp->holder;
@@ -317,7 +323,7 @@ PyModalDialog::setParamChangedCallback(const QString& callback)
 Param*
 PyModalDialog::getParam(const QString& scriptName) const
 {
-    KnobPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
+    KnobIPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
 
     if (!knob) {
         return 0;
@@ -328,23 +334,24 @@ PyModalDialog::getParam(const QString& scriptName) const
 
 struct PyPanelPrivate
 {
-    DialogParamHolder* holder;
+    DialogParamHolderPtr holder;
     QVBoxLayout* mainLayout;
     DockablePanel* panel;
     QWidget* centerContainer;
     QVBoxLayout* centerLayout;
     mutable QMutex serializationMutex;
     QString serialization;
-
+    QString pythonFunction;
 
     PyPanelPrivate()
-        : holder(0)
+        : holder()
         , mainLayout(0)
         , panel(0)
         , centerContainer(0)
         , centerLayout(0)
         , serializationMutex()
         , serialization()
+        , pythonFunction()
     {
     }
 };
@@ -355,7 +362,7 @@ PyPanel::PyPanel(const QString& scriptName,
                  GuiApp* app)
     : QWidget( app->getGui() )
     , UserParamHolder()
-    , PanelWidget( this, app->getGui() )
+    , PanelWidget(scriptName.toStdString(), this, app->getGui() )
     , _imp( new PyPanelPrivate() )
 {
     setLabel( label.toStdString() );
@@ -376,11 +383,10 @@ PyPanel::PyPanel(const QString& scriptName,
     }
 
     setScriptName(name);
-    getGui()->registerTab(this, this);
 
 
     if (useUserParameters) {
-        _imp->holder = new DialogParamHolder( QString::fromUtf8( name.c_str() ), getGui()->getApp(), this );
+        _imp->holder = DialogParamHolder::create( QString::fromUtf8( name.c_str() ), getGui()->getApp(), this );
         setHolder(_imp->holder);
         _imp->holder->initializeKnobsPublic();
         _imp->mainLayout = new QVBoxLayout(this);
@@ -395,9 +401,10 @@ PyPanel::PyPanel(const QString& scriptName,
                                         _imp->mainLayout,
                                         DockablePanel::eHeaderModeNoHeader,
                                         false,
-                                        boost::shared_ptr<QUndoStack>(),
+                                        QUndoStackPtr(),
                                         QString(), QString(),
                                         _imp->centerContainer);
+        _imp->holder->setPanelPointer(_imp->panel);
         _imp->panel->turnOffPages();
         _imp->centerLayout->insertWidget(0, _imp->panel);
 
@@ -408,7 +415,21 @@ PyPanel::PyPanel(const QString& scriptName,
 
 PyPanel::~PyPanel()
 {
-    getGui()->unregisterPyPanel(this);
+    getGui()->getApp()->unregisterPyPanel(this);
+}
+
+void
+PyPanel::setPythonFunction(const QString& function)
+{
+    QMutexLocker k(&_imp->serializationMutex);
+    _imp->pythonFunction = function;
+}
+
+QString
+PyPanel::getPythonFunction() const
+{
+    QMutexLocker k(&_imp->serializationMutex);
+    return _imp->pythonFunction;
 }
 
 QString
@@ -439,7 +460,7 @@ PyPanel::getParam(const QString& scriptName) const
     if (!_imp->holder) {
         return 0;
     }
-    KnobPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
+    KnobIPtr knob =  _imp->holder->getKnobByName( scriptName.toStdString() );
     if (!knob) {
         return 0;
     }
@@ -536,6 +557,13 @@ PyPanel::keyPressEvent(QKeyEvent* e)
     QWidget::keyPressEvent(e);
 }
 
+KnobsVec
+PyPanel::getKnobs() const
+{
+    return _imp->holder->getKnobs_mt_safe();
+}
+
+
 PyTabWidget::PyTabWidget(TabWidget* pane)
     : _tab(pane)
 {
@@ -555,7 +583,7 @@ void
 PyTabWidget::insertTab(int index,
                        PyPanel* tab)
 {
-    _tab->insertTab(index, QIcon(), tab, tab);
+    _tab->insertTab(index, tab, tab);
 }
 
 void
@@ -608,7 +636,7 @@ PyTabWidget::currentWidget()
 void
 PyTabWidget::setCurrentIndex(int index)
 {
-    _tab->makeCurrentTab(index);
+    _tab->setCurrentIndex(index);
 }
 
 int
@@ -644,7 +672,7 @@ PyTabWidget::splitVertically()
 void
 PyTabWidget::closePane()
 {
-    if (_tab->getGui()->getPanes().size() == 1) {
+    if (_tab->getGui()->getApp()->getTabWidgetsSerialization().size() == 1) {
         _tab->getGui()->getApp()->appendToScriptEditor( tr("Cannot close pane when this is the last one remaining.").toStdString() );
 
         return;
@@ -680,7 +708,7 @@ PyTabWidget::closeCurrentTab()
 QString
 PyTabWidget::getScriptName() const
 {
-    return _tab->objectName_mt_safe();
+    return QString::fromUtf8(_tab->getScriptName().c_str());
 }
 
 NATRON_PYTHON_NAMESPACE_EXIT

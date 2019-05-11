@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -48,6 +48,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Enums.h"
 
+#include "Engine/TimeLineKeys.h"
+
 #include "Gui/GuiDefines.h"
 #include "Gui/RegisteredTabs.h"
 #include "Gui/GuiFwd.h"
@@ -68,7 +70,7 @@ public:
     Gui* _gui; //< ptr to the public interface
     mutable QMutex _isInDraftModeMutex;
     bool _isInDraftMode; //< true if the user is actively moving the cursor on the timeline or a slider. False on mouse release.
-    boost::weak_ptr<GuiAppInstance> _appInstance; //< ptr to the appInstance
+    GuiAppInstanceWPtr _appInstance; //< ptr to the appInstance
 
     ///Dialogs handling members
     QWaitCondition _uiUsingMainThreadCond; //< used with _uiUsingMainThread
@@ -83,16 +85,18 @@ public:
 
     ///all the undo stacks of Natron are gathered here
     QUndoGroup* _undoStacksGroup;
-    std::map<QUndoStack*, std::pair<QAction*, QAction*> > _undoStacksActions;
 
     ///all the splitters used to separate the "panes" of the application
-    mutable QMutex _splittersMutex;
-    std::list<Splitter*> _splitters;
-    mutable QMutex _pyPanelsMutex;
     std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string> _userPanels;
     bool _isTripleSyncEnabled;
     mutable QMutex areRenderStatsEnabledMutex;
     bool areRenderStatsEnabled;
+
+    // True if isLastExpressionDialogLanguage is valid
+    bool isLastExpressionDialogLanguageValid;
+
+    // If an expression edit dialog is opened, this is the currently selected expression language
+    ExpressionLanguageEnum lastExpressionDialogLanguage;
 
     ///all the menu actions
     ActionWithShortcut *actionNew_project;
@@ -101,7 +105,6 @@ public:
     ActionWithShortcut *actionReload_project;
     ActionWithShortcut *actionSave_project;
     ActionWithShortcut *actionSaveAs_project;
-    ActionWithShortcut *actionExportAsGroup;
     ActionWithShortcut *actionSaveAndIncrementVersion;
     ActionWithShortcut *actionPreferences;
     ActionWithShortcut *actionExit;
@@ -112,11 +115,9 @@ public:
 #ifdef __NATRON_WIN32__
     ActionWithShortcut *actionShowWindowsConsole;
 #endif
-    ActionWithShortcut *actionClearDiskCache;
-    ActionWithShortcut *actionClearPlayBackCache;
-    ActionWithShortcut *actionClearNodeCache;
     ActionWithShortcut *actionClearPluginsLoadingCache;
     ActionWithShortcut *actionClearAllCaches;
+    ActionWithShortcut *actionShowCacheReport;
     ActionWithShortcut *actionShowAboutWindow;
     QAction *actionsOpenRecentFile[NATRON_MAX_RECENT_FILES];
     ActionWithShortcut *renderAllWriters;
@@ -159,25 +160,21 @@ public:
     std::list<ViewerTab*> _viewerTabs;
 
     ///Used when all viewers are synchronized to determine which one triggered the sync
-    ViewerTab* _masterSyncViewer;
     ViewerTab* _activeViewer;
 
     ///a list of ptrs to all histograms
     mutable QMutex _histogramsMutex;
     std::list<Histogram*> _histograms;
-    int _nextHistogramIndex; //< for giving a unique name to histogram tabs
 
     ///The node graph (i.e: the view of the scene)
     NodeGraph* _nodeGraphArea;
     NodeGraph* _lastFocusedGraph;
     std::list<NodeGraph*> _groups;
 
-    ///The curve editor.
-    CurveEditor *_curveEditor;
     ProgressPanel* _progressPanel;
 
     // The dope sheet
-    DopeSheetEditor *_dopeSheetEditor;
+    AnimationModuleEditor *_animationModule;
 
     ///the left toolbar
     QToolBar* _toolBox;
@@ -213,13 +210,6 @@ public:
     Menu *cacheMenu;
     Menu *menuHelp;
 
-
-    ///all TabWidget's : used to know what to hide/show for fullscreen mode
-    mutable QMutex _panesMutex;
-    std::list<TabWidget*> _panes;
-    mutable QMutex _floatingWindowMutex;
-    std::list<FloatingWidget*> _floatingWindows;
-
     ///All the tabs used in the TabWidgets (used for d&d purpose)
     RegisteredTabs _registeredTabs;
 
@@ -240,8 +230,6 @@ public:
     AboutWindow* _aboutWindow;
 
     ///list of the currently opened property panels
-    mutable QMutex openedPanelsMutex;
-    std::list<DockablePanel*> openedPanels;
     QToolButton* _toolButtonMenuOpened;
     QMutex aboutToCloseMutex;
     bool _aboutToClose;
@@ -254,13 +242,22 @@ public:
     RenderStatsDialog* statsDialog;
     PanelWidget* currentPanelFocus;
 
+    // Used to concatenate requests to refresh keyframes
+    int nKeysRefreshRequests;
+
+    // Used to concatenate frameChanged signal reception
+    int nKnobsRefreshAfterTimeChangeRequests;
+
+    // List of keyframes that should be visible on all timeline GUI
+    TimeLineKeysSet keyframesVisibleOnTimeline;
+
     //To prevent recursion when we forward an uncaught event to the click focus widget
     int currentPanelFocusEventRecursion;
     bool keyPressEventHasVisitedFocusWidget;
     bool keyUpEventHasVisitedFocusWidget;
     bool applicationConsoleVisible;
 
-    GuiPrivate(const GuiAppInstPtr& app,
+    GuiPrivate(const GuiAppInstancePtr& app,
                Gui* gui);
 
     void restoreGuiGeometry();
@@ -279,9 +276,7 @@ public:
     ///Must be called absolutely before createPropertiesBinGui
     void createNodeGraphGui();
 
-    void createCurveEditorGui();
-
-    void createDopeSheetGui();
+    void createAnimationModuleGui();
 
     void createScriptEditorGui();
 

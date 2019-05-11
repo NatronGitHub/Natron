@@ -1,6 +1,122 @@
---- include/ceres/internal/port.h.orig	2016-03-21 19:22:11.000000000 +0100
-+++ include/ceres/internal/port.h	2016-03-21 19:21:34.000000000 +0100
-@@ -42,12 +42,22 @@
+diff --git a/libs/ceres/ceres-Natron.patch b/libs/ceres/ceres-Natron.patch
+index 22c6d23..e69de29 100644
+--- a/libs/ceres/ceres-Natron.patch
++++ b/libs/ceres/ceres-Natron.patch
+@@ -1,109 +0,0 @@
+---- include/ceres/internal/port.h.orig	2016-03-21 19:22:11.000000000 +0100
+-+++ include/ceres/internal/port.h	2016-03-21 19:21:34.000000000 +0100
+-@@ -42,12 +42,22 @@
+- #include <memory>
+- #endif
+- 
+-+#if CERES_STD_SHARED_PTR
+-+# include <memory>
+-+#elif defined(CERES_BOOST_SHARED_PTR)
+-+# include <boost/shared_ptr.hpp>
+-+#elif defined(CERES_TR1_SHARED_PTR)
+-+# include <tr1/memory>
+-+#endif
+-+
+- namespace ceres {
+- 
+--#if defined(CERES_TR1_SHARED_PTR)
+--using std::tr1::shared_ptr;
+--#else
+-+#if CERES_STD_SHARED_PTR
+- using std::shared_ptr;
+-+#elif defined(CERES_BOOST_SHARED_PTR)
+-+using boost::shared_ptr;
+-+#elif defined(CERES_TR1_SHARED_PTR)
+-+using std::tr1::shared_ptr;
+- #endif
+- 
+- }  // namespace ceres
+---- internal/ceres/collections_port.h.orig	2016-03-21 19:13:29.000000000 +0100
+-+++ internal/ceres/collections_port.h	2016-03-21 19:16:50.000000000 +0100
+-@@ -61,10 +61,17 @@
+- #  define CERES_HASH_NAMESPACE_END } }
+- #endif
+- 
+-+#if defined(CERES_BOOST_UNORDERED_MAP)
+-+#  include <boost/unordered_map.hpp>
+-+#  include <boost/unordered_set.hpp>
+-+#  define CERES_HASH_NAMESPACE_START namespace boost {
+-+#  define CERES_HASH_NAMESPACE_END }
+-+#endif
+-+
+- #if !defined(CERES_NO_UNORDERED_MAP) && !defined(CERES_TR1_UNORDERED_MAP) && \
+--    !defined(CERES_STD_UNORDERED_MAP) && !defined(CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE)  // NOLINT
+-+    !defined(CERES_STD_UNORDERED_MAP) && !defined(CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE) && !defined(CERES_BOOST_UNORDERED_MAP)  // NOLINT
+- #  error One of: CERES_NO_UNORDERED_MAP, CERES_TR1_UNORDERED_MAP,\
+-- CERES_STD_UNORDERED_MAP, CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE must be defined!  // NOLINT
+-+ CERES_STD_UNORDERED_MAP, CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE, CERES_BOOST_ORDERED_MAP must be defined!  // NOLINT
+- #endif
+- 
+- #include <utility>
+-@@ -107,6 +114,13 @@
+- struct HashSet : std::unordered_set<K> {};
+- #endif
+- 
+-+#if defined(CERES_BOOST_UNORDERED_MAP)
+-+template<typename K, typename V>
+-+struct HashMap : boost::unordered_map<K, V> {};
+-+template<typename K>
+-+struct HashSet : boost::unordered_set<K> {};
+-+#endif
+-+    
+- #if defined(_WIN32) && !defined(__MINGW64__) && !defined(__MINGW32__)
+- #define GG_LONGLONG(x) x##I64
+- #define GG_ULONGLONG(x) x##UI64
+-@@ -172,8 +186,8 @@
+- 
+- // Hasher for STL pairs. Requires hashers for both members to be defined.
+- template<typename T>
+--struct hash<pair<T, T> > {
+--  size_t operator()(const pair<T, T>& p) const {
+-+struct hash<std::pair<T, T> > {
+-+  size_t operator()(const std::pair<T, T>& p) const {
+-     size_t h1 = hash<T>()(p.first);
+-     size_t h2 = hash<T>()(p.second);
+-     // The decision below is at compile time
+-@@ -182,8 +196,8 @@
+-             ceres::internal::Hash64NumWithSeed(h1, h2);
+-   }
+-   // Less than operator for MSVC.
+--  bool operator()(const pair<T, T>& a,
+--                  const pair<T, T>& b) const {
+-+  bool operator()(const std::pair<T, T>& a,
+-+                  const std::pair<T, T>& b) const {
+-     return a < b;
+-   }
+-   static const size_t bucket_size = 4;  // These are required by MSVC
+---- internal/ceres/incomplete_lq_factorization.h.orig	2016-03-21 19:33:21.000000000 +0100
+-+++ internal/ceres/incomplete_lq_factorization.h	2016-03-21 19:33:39.000000000 +0100
+-@@ -81,7 +81,7 @@
+-                           const int num_entries,
+-                           const int level_of_fill,
+-                           const double drop_tolerance,
+--                          vector<pair<int, double> >* scratch,
+-+                          std::vector<std::pair<int, double> >* scratch,
+-                           CompressedRowSparseMatrix* matrix);
+- 
+- }  // namespace internal
+---- internal/ceres/incomplete_lq_factorization.cc.orig	2016-03-21 19:35:25.000000000 +0100
+-+++ internal/ceres/incomplete_lq_factorization.cc	2016-03-21 19:35:39.000000000 +0100
+-@@ -38,6 +38,9 @@
+- #include "ceres/internal/port.h"
+- #include "glog/logging.h"
+- 
+-+using std::vector;
+-+using std::pair;
+-+
+- namespace ceres {
+- namespace internal {
+- 
+diff --git a/libs/ceres/include/ceres/internal/port.h b/libs/ceres/include/ceres/internal/port.h
+index f4dcaee..8c77c11 100644
+--- a/libs/ceres/include/ceres/internal/port.h
++++ b/libs/ceres/include/ceres/internal/port.h
+@@ -41,12 +41,22 @@
  #include <memory>
  #endif
  
@@ -17,17 +133,19 @@
 -#if defined(CERES_TR1_SHARED_PTR)
 -using std::tr1::shared_ptr;
 -#else
-+#if CERES_USE_STD_SHARED_PTR
++#if CERES_STD_SHARED_PTR
  using std::shared_ptr;
-+#elif defined(CERES_USE_BOOST_SHARED_PTR)
++#elif defined(CERES_BOOST_SHARED_PTR)
 +using boost::shared_ptr;
 +#elif defined(CERES_TR1_SHARED_PTR)
 +using std::tr1::shared_ptr;
  #endif
  
- }  // namespace ceres
---- internal/ceres/collections_port.h.orig	2016-03-21 19:13:29.000000000 +0100
-+++ internal/ceres/collections_port.h	2016-03-21 19:16:50.000000000 +0100
+ // We allocate some Eigen objects on the stack and other places they
+diff --git a/libs/ceres/internal/ceres/collections_port.h b/libs/ceres/internal/ceres/collections_port.h
+index e699a66..5fbf960 100644
+--- a/libs/ceres/internal/ceres/collections_port.h
++++ b/libs/ceres/internal/ceres/collections_port.h
 @@ -61,10 +61,17 @@
  #  define CERES_HASH_NAMESPACE_END } }
  #endif
@@ -41,14 +159,14 @@
 +
  #if !defined(CERES_NO_UNORDERED_MAP) && !defined(CERES_TR1_UNORDERED_MAP) && \
 -    !defined(CERES_STD_UNORDERED_MAP) && !defined(CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE)  // NOLINT
-+    !defined(CERES_STD_UNORDERED_MAP) && !defined(CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE) && !defined(CERES_USE_BOOST_UNORDERED_MAP)  // NOLINT
++    !defined(CERES_STD_UNORDERED_MAP) && !defined(CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE) && !defined(CERES_BOOST_UNORDERED_MAP)  // NOLINT
  #  error One of: CERES_NO_UNORDERED_MAP, CERES_TR1_UNORDERED_MAP,\
 - CERES_STD_UNORDERED_MAP, CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE must be defined!  // NOLINT
 + CERES_STD_UNORDERED_MAP, CERES_STD_UNORDERED_MAP_IN_TR1_NAMESPACE, CERES_BOOST_ORDERED_MAP must be defined!  // NOLINT
  #endif
  
  #include <utility>
-@@ -107,6 +114,13 @@
+@@ -107,6 +114,13 @@ template<typename K>
  struct HashSet : std::unordered_set<K> {};
  #endif
  
@@ -58,11 +176,11 @@
 +template<typename K>
 +struct HashSet : boost::unordered_set<K> {};
 +#endif
-+    
++
  #if defined(_WIN32) && !defined(__MINGW64__) && !defined(__MINGW32__)
  #define GG_LONGLONG(x) x##I64
  #define GG_ULONGLONG(x) x##UI64
-@@ -172,8 +186,8 @@
+@@ -172,8 +186,8 @@ CERES_HASH_NAMESPACE_START
  
  // Hasher for STL pairs. Requires hashers for both members to be defined.
  template<typename T>
@@ -73,7 +191,7 @@
      size_t h1 = hash<T>()(p.first);
      size_t h2 = hash<T>()(p.second);
      // The decision below is at compile time
-@@ -182,8 +196,8 @@
+@@ -182,8 +196,8 @@ struct hash<pair<T, T> > {
              ceres::internal::Hash64NumWithSeed(h1, h2);
    }
    // Less than operator for MSVC.
@@ -84,26 +202,3 @@
      return a < b;
    }
    static const size_t bucket_size = 4;  // These are required by MSVC
---- internal/ceres/incomplete_lq_factorization.h.orig	2016-03-21 19:33:21.000000000 +0100
-+++ internal/ceres/incomplete_lq_factorization.h	2016-03-21 19:33:39.000000000 +0100
-@@ -81,7 +81,7 @@
-                           const int num_entries,
-                           const int level_of_fill,
-                           const double drop_tolerance,
--                          vector<pair<int, double> >* scratch,
-+                          std::vector<std::pair<int, double> >* scratch,
-                           CompressedRowSparseMatrix* matrix);
- 
- }  // namespace internal
---- internal/ceres/incomplete_lq_factorization.cc.orig	2016-03-21 19:35:25.000000000 +0100
-+++ internal/ceres/incomplete_lq_factorization.cc	2016-03-21 19:35:39.000000000 +0100
-@@ -38,6 +38,9 @@
- #include "ceres/internal/port.h"
- #include "glog/logging.h"
- 
-+using std::vector;
-+using std::pair;
-+
- namespace ceres {
- namespace internal {
- 

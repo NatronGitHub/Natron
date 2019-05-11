@@ -49,10 +49,10 @@ addons:
     #- g++-5
     #- gcc-6
     #- g++-6
-    - gcc-7
-    - g++-7
-    #- gcc-8
-    #- g++-8
+    #- gcc-7
+    #- g++-7
+    - gcc-8
+    - g++-8
     - libqt4-dev
     - libqt4-opengl-dev
     - libglew-dev
@@ -131,10 +131,6 @@ matrix:
 #    - os: osx # if we exceed the time limit
   fast_finish: true
 
-cache:
-  apt: true
-#  directories:
-#  - /usr/local/Cellar
 
 # Travis CI has 1.5 cores per VM, take advantage of it
 before_install:
@@ -165,11 +161,15 @@ install:
 #> install_dependencies.log 2>&1
 
 cache:
+  pip: true
+  ccache: false
+  apt: true
   directories:
     - $HOME/openexr
     - $HOME/ocio
     - $HOME/oiio
     - $HOME/seexpr
+#    - /usr/local/Cellar
 
 script:
   - if [[ ${COVERITY_SCAN_BRANCH} == 1 ]];

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -43,9 +43,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/CurveWidget.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -67,13 +67,13 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     ViewerTab* lastUsedViewer =  getLastSelectedViewer();
 
     if (lastUsedViewer) {
-        boost::shared_ptr<NodeCollection> collection = lastUsedViewer->getInternalNode()->getNode()->getGroup();
+        NodeCollectionPtr collection = lastUsedViewer->getInternalNode()->getNode()->getGroup();
         if ( collection && (collection->getNodeGraph() != this) ) {
             //somehow the group doesn't belong to this nodegraph , pick another one
             const std::list<ViewerTab*>& tabs = getGui()->getViewersList();
             lastUsedViewer = 0;
             for (std::list<ViewerTab*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
-                boost::shared_ptr<NodeCollection> otherCollection = (*it)->getInternalNode()->getNode()->getGroup();
+                NodeCollectionPtr otherCollection = (*it)->getInternalNode()->getNode()->getGroup();
                 if ( otherCollection && (otherCollection->getNodeGraph() == this) ) {
                     lastUsedViewer = *it;
                     break;
@@ -83,45 +83,40 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     }
 
 
-    boost::shared_ptr<InspectorNode> v;
+    ViewerNodePtr viewerNode;
     if (lastUsedViewer) {
-        v = boost::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
-                                                        getInternalNode()->getNode() );
+        viewerNode = lastUsedViewer->getInternalNode();
     } else {
-        CreateNodeArgs args( PLUGINID_NATRON_VIEWER,
-                             getGroup() );
-        NodePtr viewerNode = getGui()->getApp()->createNode(args);
+        CreateNodeArgsPtr args(CreateNodeArgs::create( PLUGINID_NATRON_VIEWER_GROUP,
+                             getGroup() ));
+        args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
+        NodePtr node = getGui()->getApp()->createNode(args);
 
-        if (!viewerNode) {
+        if (!node) {
             return;
         }
-        v = boost::dynamic_pointer_cast<InspectorNode>(viewerNode);
+        viewerNode = node->isEffectViewerNode();
     }
 
-    if (!v) {
-        return;
-    }
-
-    ///if the node is no longer active (i.e: it was deleted by the user), don't do anything.
-    if ( !v->isActivated() ) {
+    if (!viewerNode) {
         return;
     }
 
     ///get a ptr to the NodeGui
-    boost::shared_ptr<NodeGuiI> gui_i = v->getNodeGui();
+    NodeGuiIPtr gui_i = viewerNode->getNode()->getNodeGui();
     NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
     ///if there's no selected node or the viewer is selected, then try refreshing that input nb if it is connected.
-    bool viewerAlreadySelected = std::find(_imp->_selection.begin(), _imp->_selection.end(), gui) != _imp->_selection.end();
+    bool viewerAlreadySelected = _imp->findSelectedNode(gui) != _imp->_selection.end();
     if (_imp->_selection.empty() || (_imp->_selection.size() > 1) || viewerAlreadySelected) {
-        v->setActiveInputAndRefresh(inputNB, isASide);
-        gui->refreshEdges();
-
+        viewerNode->connectInputToIndex(inputNB, isASide ? 0 : 1);
         return;
     }
 
-    NodeGuiPtr selected = _imp->_selection.front();
-
+    NodeGuiPtr selected = _imp->_selection.front().lock();
+    if (selected && !selected->getNode()) {
+        return;
+    }
 
     if ( !selected->getNode()->canOthersConnectToThisNode() ) {
         return;
@@ -133,7 +128,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     assert(foundInput);
 
     ///and push a connect command to the selected node.
-    pushUndoCommand( new ConnectCommand(this, foundInput, foundInput->getSource(), selected) );
+    pushUndoCommand( new ConnectCommand(this, foundInput, foundInput->getSource(), selected, isASide ? 0 : 1) );
 
 } // connectCurrentViewerToSelection
 
@@ -168,12 +163,12 @@ NodeGraph::wheelEventInternal(bool ctrlDown,
         return;
     }
 
-    if (ctrlDown && _imp->_magnifiedNode) {
+    if (ctrlDown && _imp->_magnifiedNode.lock()) {
         if (!_imp->_magnifOn) {
             _imp->_magnifOn = true;
-            _imp->_nodeSelectedScaleBeforeMagnif = _imp->_magnifiedNode->scale();
+            _imp->_nodeSelectedScaleBeforeMagnif = _imp->_magnifiedNode.lock()->scale();
         }
-        _imp->_magnifiedNode->setScale_natron(_imp->_magnifiedNode->scale() * scaleFactor);
+        _imp->_magnifiedNode.lock()->setScale_natron(_imp->_magnifiedNode.lock()->scale() * scaleFactor);
     } else {
         _imp->_accumDelta += delta;
         if (std::abs(_imp->_accumDelta) > 60) {
@@ -203,7 +198,7 @@ NodeGraph::keyReleaseEvent(QKeyEvent* e)
     if (e->key() == Qt::Key_Control) {
         if (_imp->_magnifOn) {
             _imp->_magnifOn = false;
-            _imp->_magnifiedNode->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
+            _imp->_magnifiedNode.lock()->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
         }
         if (_imp->_bendPointsVisible) {
             _imp->setNodesBendPointsVisible(false);
@@ -217,33 +212,37 @@ NodeGraph::keyReleaseEvent(QKeyEvent* e)
 void
 NodeGraph::removeNode(const NodeGuiPtr & node)
 {
-    NodeGroup* isGrp = node->getNode()->isEffectGroup();
+    if (node->getNode()->isEffectViewerInstance()) {
+        Dialogs::errorDialog( tr("Delete").toStdString(), tr("Removing the internal viewer process node is not a valid action").toStdString());
+        return;
+    }
+    NodeGroupPtr isGrp = node->getNode()->isEffectNodeGroup();
     const KnobsVec & knobs = node->getNode()->getKnobs();
 
 
     for (U32 i = 0; i < knobs.size(); ++i) {
-        KnobI::ListenerDimsMap listeners;
-        knobs[i]->getListeners(listeners);
+        KnobDimViewKeySet listeners;
+        knobs[i]->getListeners(listeners, KnobI::eListenersTypeExpression);
         ///For all listeners make sure they belong to a node
         std::string foundLinkedErrorMessage;
-        for (KnobI::ListenerDimsMap::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
-            KnobPtr listener = it2->first.lock();
+        for (KnobDimViewKeySet::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
+            KnobIPtr listener = it2->knob.lock();
             if (!listener) {
                 continue;
             }
-            EffectInstance* isEffect = dynamic_cast<EffectInstance*>( listener->getHolder() );
-            if (!isEffect) {
+            EffectInstancePtr isEffect = toEffectInstance( listener->getHolder() );
+            if (!isEffect || !isEffect->getNode()->getGroup() || !isEffect->getNode()->getNodeGui()) {
                 continue;
             }
-            if ( isGrp && (isEffect->getNode()->getGroup().get() == isGrp) ) {
+            if ( isGrp && (isEffect->getNode()->getGroup() == isGrp) ) {
                 continue;
             }
 
-            if ( isEffect && ( isEffect != node->getNode()->getEffectInstance().get() ) ) {
+            if ( isEffect && ( isEffect != node->getNode()->getEffectInstance() ) ) {
                 std::string masterNodeName = node->getNode()->getFullyQualifiedName();
                 std::string master = masterNodeName + "." + knobs[i]->getName();
                 std::string slave = isEffect->getNode()->getFullyQualifiedName() + "." + listener->getName();
-                foundLinkedErrorMessage = tr("%1 is linked to %2 through a link or expression. Deleting %3 may break this link.\nContinue anyway?").arg(QString::fromUtf8(slave.c_str())).arg(QString::fromUtf8(master.c_str())).arg(QString::fromUtf8(masterNodeName.c_str())).toStdString();
+                foundLinkedErrorMessage = tr("%1 is linked to %2 with an expression. Deleting %3 may break this link.\nContinue anyway?").arg(QString::fromUtf8(slave.c_str())).arg(QString::fromUtf8(master.c_str())).arg(QString::fromUtf8(masterNodeName.c_str())).toStdString();
                 break;
             }
 
@@ -270,12 +269,16 @@ void
 NodeGraph::deleteSelection()
 {
     if ( !_imp->_selection.empty() ) {
-        NodesGuiList nodesToRemove = _imp->_selection;
+        NodesGuiList nodesToRemove = getSelectedNodes();
 
 
         ///For all backdrops also move all the nodes contained within it
         for (NodesGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
-            NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
+            const NodeGuiPtr& node = *it;
+            if (!node) {
+                continue;
+            }
+            NodesGuiList nodesWithinBD = getNodesWithinBackdrop(node);
             for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
                 NodesGuiList::iterator found = std::find(nodesToRemove.begin(), nodesToRemove.end(), *it2);
                 if ( found == nodesToRemove.end() ) {
@@ -286,38 +289,39 @@ NodeGraph::deleteSelection()
 
 
         for (NodesGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
+
+            if ((*it)->getNode()->isEffectViewerInstance()) {
+                Dialogs::errorDialog( tr("Delete").toStdString(), tr("Removing the internal viewer process node is not a valid action").toStdString());
+                return;
+            }
             const KnobsVec & knobs = (*it)->getNode()->getKnobs();
             bool mustBreak = false;
-            NodeGroup* isGrp = (*it)->getNode()->isEffectGroup();
+            NodeGroupPtr isGrp = (*it)->getNode()->isEffectNodeGroup();
 
             for (U32 i = 0; i < knobs.size(); ++i) {
-                KnobI::ListenerDimsMap listeners;
-                knobs[i]->getListeners(listeners);
+                KnobDimViewKeySet listeners;
+                knobs[i]->getListeners(listeners, KnobI::eListenersTypeExpression);
 
                 ///For all listeners make sure they belong to a node
                 std::string foundLinkedErrorMessage;
-                for (KnobI::ListenerDimsMap::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
-                    KnobPtr listener = it2->first.lock();
+                for (KnobDimViewKeySet::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
+                    KnobIPtr listener = it2->knob.lock();
                     if (!listener) {
                         continue;
                     }
-                    EffectInstance* isEffect = dynamic_cast<EffectInstance*>( listener->getHolder() );
+                    EffectInstancePtr isEffect = toEffectInstance( listener->getHolder() );
 
-                    if (!isEffect) {
+                    if (!isEffect || !isEffect->getNode()->getGroup()  || !isEffect->getNode()->getNodeGui()) {
                         continue;
                     }
-                    if ( isGrp && (isEffect->getNode()->getGroup().get() == isGrp) ) {
-                        continue;
-                    }
-
-                    if ( !isEffect->getNode()->getGroup() ) {
+                    if ( isGrp && (isEffect->getNode()->getGroup() == isGrp) ) {
                         continue;
                     }
 
-                    if ( isEffect && ( isEffect != (*it)->getNode()->getEffectInstance().get() ) ) {
+                    if ( isEffect && ( isEffect != (*it)->getNode()->getEffectInstance() ) ) {
                         bool isInSelection = false;
                         for (NodesGuiList::iterator it3 = nodesToRemove.begin(); it3 != nodesToRemove.end(); ++it3) {
-                            if ((*it3)->getNode()->getEffectInstance().get() == isEffect) {
+                            if ((*it3)->getNode()->getEffectInstance() == isEffect) {
                                 isInSelection = true;
                                 break;
                             }
@@ -326,7 +330,7 @@ NodeGraph::deleteSelection()
                             std::string masterNodeName = (*it)->getNode()->getFullyQualifiedName();
                             std::string master = masterNodeName + "." + knobs[i]->getName();
                             std::string slave = isEffect->getNode()->getFullyQualifiedName() + "." + listener->getName();
-                            foundLinkedErrorMessage = tr("%1 is linked to %2 through a link or expression. Deleting %3 may break this link.\nContinue anyway?").arg(QString::fromUtf8(slave.c_str())).arg(QString::fromUtf8(master.c_str())).arg(QString::fromUtf8(masterNodeName.c_str())).toStdString();
+                            foundLinkedErrorMessage = tr("%1 is linked to %2 with an expression. Deleting %3 may break this link.\nContinue anyway?").arg(QString::fromUtf8(slave.c_str())).arg(QString::fromUtf8(master.c_str())).arg(QString::fromUtf8(masterNodeName.c_str())).toStdString();
                             break;
                         }
                     }
@@ -362,17 +366,19 @@ NodeGraph::deselectNode(const NodeGuiPtr& n)
 {
     {
         QMutexLocker k(&_imp->_nodesMutex);
-        NodesGuiList::iterator it = std::find(_imp->_selection.begin(), _imp->_selection.end(), n);
-        if ( it != _imp->_selection.end() ) {
-            _imp->_selection.erase(it);
+        for (NodesGuiWList::iterator it = _imp->_selection.begin(); it!= _imp->_selection.end(); ++it) {
+            if ( it->lock() == n) {
+                _imp->_selection.erase(it);
+                break;
+            }
         }
     }
     n->setUserSelected(false);
 
     //Stop magnification if active
-    if ( (_imp->_magnifiedNode == n) && _imp->_magnifOn ) {
+    if ( (_imp->_magnifiedNode.lock() == n) && _imp->_magnifOn ) {
         _imp->_magnifOn = false;
-        _imp->_magnifiedNode->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
+        _imp->_magnifiedNode.lock()->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
     }
 }
 
@@ -383,7 +389,7 @@ NodeGraph::selectNode(const NodeGuiPtr & n,
     if ( !n->isVisible() ) {
         return;
     }
-    bool alreadyInSelection = std::find(_imp->_selection.begin(), _imp->_selection.end(), n) != _imp->_selection.end();
+    bool alreadyInSelection = _imp->findSelectedNode(n) != _imp->_selection.end();
 
 
     assert(n);
@@ -396,7 +402,10 @@ NodeGraph::selectNode(const NodeGuiPtr & n,
 
     n->setUserSelected(true);
 
-    ViewerInstance* isViewer =  n->getNode()->isEffectViewer();
+    if (!n->getNode()) {
+        return;
+    }
+    ViewerNodePtr isViewer =  n->getNode()->isEffectViewerNode();
     if (isViewer) {
         OpenGLViewerI* viewer = isViewer->getUiContext();
         const std::list<ViewerTab*> & viewerTabs = getGui()->getViewersList();
@@ -408,13 +417,13 @@ NodeGraph::selectNode(const NodeGuiPtr & n,
     }
 
     bool magnifiedNodeSelected = false;
-    if (_imp->_magnifiedNode) {
-        magnifiedNodeSelected = std::find(_imp->_selection.begin(), _imp->_selection.end(), _imp->_magnifiedNode)
-                                != _imp->_selection.end();
+    if (_imp->_magnifiedNode.lock()) {
+        magnifiedNodeSelected = _imp->findSelectedNode(_imp->_magnifiedNode.lock()) != _imp->_selection.end();
+                                
     }
     if (magnifiedNodeSelected && _imp->_magnifOn) {
         _imp->_magnifOn = false;
-        _imp->_magnifiedNode->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
+        _imp->_magnifiedNode.lock()->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
     }
 }
 
@@ -440,12 +449,29 @@ NodeGraph::setSelection(const NodesGuiList& nodes)
 }
 
 void
+NodeGraph::setSelection(const NodesList& nodes)
+{
+    NodesGuiList nodeUIs;
+    for (NodesList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        NodeGuiPtr n = toNodeGui((*it)->getNodeGui());
+        if (!n || n->getDagGui() != this) {
+            continue;
+        }
+        nodeUIs.push_back(n);
+    }
+    setSelection(nodeUIs);
+}
+
+void
 NodeGraph::clearSelection()
 {
     {
         QMutexLocker l(&_imp->_nodesMutex);
-        for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-            (*it)->setUserSelected(false);
+        for (NodesGuiWList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+            NodeGuiPtr n = it->lock();
+            if (n) {
+                n->setUserSelected(false);
+            }
         }
     }
 

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -58,15 +58,15 @@ public:
 
     virtual ~TabGroup();
 
-    QGridLayout* addTab(const boost::shared_ptr<KnobGroup>& group, const QString &label);
+    QGridLayout* addTab(const KnobGroupPtr& group, const QString &label);
 
-    void removeTab(KnobGroup* group);
+    void removeTab(const KnobGroupPtr& group);
 
     bool isEmpty() const;
 
-    void refreshTabSecretNess(KnobGroup* group);
+    void refreshTabSecretNess(const KnobGroupPtr& group);
 
-    void refreshTabSecretNess(KnobGroup* group, bool secret);
+    void refreshTabSecretNess(const KnobGroupPtr& group, bool secret);
 
 public Q_SLOTS:
 

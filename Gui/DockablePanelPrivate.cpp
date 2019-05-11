@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -62,7 +62,7 @@ NATRON_NAMESPACE_ENTER
 
 DockablePanelPrivate::DockablePanelPrivate(DockablePanel* publicI,
                                            Gui* gui,
-                                           KnobHolder* holder,
+                                           const KnobHolderPtr& holder,
                                            QVBoxLayout* container,
                                            DockablePanel::HeaderModeEnum headerMode,
                                            bool useScrollAreasForTabs,
@@ -88,8 +88,6 @@ DockablePanelPrivate::DockablePanelPrivate(DockablePanel* publicI,
     , _hideUnmodifiedButton(NULL)
     , _floatButton(NULL)
     , _cross(NULL)
-    , _overlayColor()
-    , _hasOverlayColor(false)
     , _colorButton(NULL)
     , _overlayButton(NULL)
     , _undoButton(NULL)
@@ -108,8 +106,6 @@ DockablePanelPrivate::DockablePanelPrivate(DockablePanel* publicI,
     , _pluginID()
     , _pluginVersionMajor(0)
     , _pluginVersionMinor(0)
-    , _pagesEnabled(true)
-    , _trackerPanel(0)
     , _iconLabel(0)
 {
 }

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -48,6 +48,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/AppManager.h"
 #include "Engine/OSGLContext.h"
+#include "Engine/OSGLContext_osmesa.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
 #include "Gui/Button.h"
@@ -59,7 +60,7 @@ CLANG_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER
 
-AboutWindow::AboutWindow(QWidget* parent)
+AboutWindow::AboutWindow(Gui* gui, QWidget* parent)
     : QDialog(parent)
 {
     setWindowTitle( tr("About %1").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
@@ -138,7 +139,7 @@ AboutWindow::AboutWindow(QWidget* parent)
         aboutText.append(endAbout);
     }
     {
-        QString argStr = ( QString::fromUtf8("<a href=\"https://github.com/MrKepzie/Natron/tree/" GIT_COMMIT "\">")
+        QString argStr = ( QString::fromUtf8("<a href=\"https://github.com/NatronGitHub/Natron/tree/" GIT_COMMIT "\">")
                            + QString::fromUtf8(GIT_COMMIT).mid(0, 7)
                            + QString::fromUtf8("</a>") );
 #ifdef _OPENMP
@@ -465,12 +466,11 @@ AboutWindow::AboutWindow(QWidget* parent)
     thidPartyLayout->setContentsMargins(0, 0, 0, 0);
     QSplitter *splitter = new QSplitter();
 
-    _view = new TableView(thirdPartyContainer);
-    _model = new TableModel(0, 0, _view);
+    _view = new TableView(gui,thirdPartyContainer);
+    _model = TableModel::create(1, TableModel::eTableModelTypeTable);
     _view->setTableModel(_model);
 
     QItemSelectionModel *selectionModel = _view->selectionModel();
-    _view->setColumnCount(1);
 
     _view->setAttribute(Qt::WA_MacShowFocusRect, 0);
     _view->setUniformRowHeights(true);
@@ -507,17 +507,17 @@ AboutWindow::AboutWindow(QWidget* parent)
             }
         }
     }
-    _view->setRowCount( rowsTmp.size() );
+    _model->setRowCount( rowsTmp.size() );
 
-    TableItem* readmeIndex = 0;
+    TableItemPtr readmeIndex;
     for (int i = 0; i < rowsTmp.size(); ++i) {
         if ( !rowsTmp[i].startsWith( QString::fromUtf8("LICENSE-") ) ) {
             continue;
         }
-        TableItem* item = new TableItem;
-        item->setText( rowsTmp[i].remove( QString::fromUtf8("LICENSE-") ).remove( QString::fromUtf8(".txt") ).remove( QString::fromUtf8(".md") ) );
-        item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-        _view->setItem(i, 0, item);
+        TableItemPtr item = TableItem::create(_model);
+        item->setText(0, rowsTmp[i].remove( QString::fromUtf8("LICENSE-") ).remove( QString::fromUtf8(".txt") ).remove( QString::fromUtf8(".md") ) );
+        item->setFlags(0, Qt::ItemFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled));
+        _model->setRow(i, item);
         if ( rowsTmp[i] == QString::fromUtf8("README") ) {
             readmeIndex = item;
         }
@@ -526,7 +526,7 @@ AboutWindow::AboutWindow(QWidget* parent)
     QObject::connect( selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this,
                       SLOT(onSelectionChanged(QItemSelection,QItemSelection)) );
     if (readmeIndex) {
-        readmeIndex->setSelected(true);
+        _view->setItemSelected(readmeIndex, true);
     }
     _tabWidget->addTab( thirdPartyContainer, QString::fromUtf8("Third-Party components") );
 }
@@ -541,7 +541,7 @@ AboutWindow::onSelectionChanged(const QItemSelection & newSelection,
     if ( indexes.empty() ) {
         _thirdPartyBrowser->clear();
     } else {
-        TableItem* item = _view->item(indexes.front().row(), 0);
+        TableItemPtr item = _model->getItem(indexes.front().row());
         assert(item);
         if (!item) {
             return;
@@ -549,8 +549,9 @@ AboutWindow::onSelectionChanged(const QItemSelection & newSelection,
         QString fileName = QString::fromUtf8(THIRD_PARTY_LICENSE_DIR_PATH);
         fileName += QChar::fromLatin1('/');
         fileName += QString::fromUtf8("LICENSE-");
-        fileName += item->text();
-        fileName += ( item->text() == QString::fromUtf8("README") ) ? QString::fromUtf8(".md") : QString::fromUtf8(".txt");
+        QString itemText = item->getText(0);
+        fileName += itemText;
+        fileName += ( itemText == QString::fromUtf8("README") ) ? QString::fromUtf8(".md") : QString::fromUtf8(".txt");
         QFile file(fileName);
         if ( file.open(QIODevice::ReadOnly | QIODevice::Text) ) {
             QString content = QTextCodec::codecForName("UTF-8")->toUnicode( file.readAll() );
@@ -562,21 +563,19 @@ AboutWindow::onSelectionChanged(const QItemSelection & newSelection,
 void
 AboutWindow::updateLibrariesVersions()
 {
-    QString libsText = QString::fromUtf8("<p>Python %1</p>"
-                                         "<p>Qt %2</p>"
-                                         "<p>Boost %3</p>"
-                                         "<p>Cairo %4</p>"
-                                         "<p>Hoedown %5</p>"
-                                         "<p>Ceres %6</p>"
-                                         "<p>OpenMVG %7</p>"
-                                         )
-                       .arg( QString::fromUtf8(PY_VERSION) )
-                       .arg( appPTR->getQtVersion() )
-                       .arg( appPTR->getBoostVersion() )
-                       .arg( appPTR->getCairoVersion() )
-                       .arg( appPTR->getHoedownVersion() )
-                       .arg( appPTR->getCeresVersion() )
-                       .arg( appPTR->getOpenMVGVersion() );
+    QString libsText;
+    libsText += QString::fromUtf8("<p> Python %1 </p>").arg( QString::fromUtf8(PY_VERSION) );
+    libsText += QString::fromUtf8("<p> Qt %1 </p>").arg( appPTR->getQtVersion() );
+    libsText += QString::fromUtf8("<p> Boost %1 </p>").arg( appPTR->getBoostVersion() );
+
+    QString cairoVersionStr = appPTR->getCairoVersion();
+    if (!cairoVersionStr.isEmpty()) {
+        libsText += QString::fromUtf8("<p> Cairo %1 </p>").arg( QString::fromUtf8(PY_VERSION) );
+    }
+    libsText += QString::fromUtf8("<p> Hoedown %1 </p>").arg( appPTR->getHoedownVersion() );
+    libsText += QString::fromUtf8("<p> Ceres %1 </p>").arg( appPTR->getCeresVersion() );
+    libsText += QString::fromUtf8("<p> OpenMVG %1 </p>").arg( appPTR->getOpenMVGVersion() );
+
     std::list<OpenGLRendererInfo> openGLRenderers;
     OSGLContext::getGPUInfos(openGLRenderers);
     if ( !openGLRenderers.empty() ) {
@@ -586,7 +585,7 @@ AboutWindow::updateLibrariesVersions()
         for (std::list<OpenGLRendererInfo>::iterator it = openGLRenderers.begin(); it != openGLRenderers.end(); ++it) {
             libsText += (QLatin1String("<p>") +
                          tr("%1 from %2").arg( QString::fromUtf8( it->rendererName.c_str() ) )
-                                        .arg( QString::fromUtf8( it->vendorName.c_str() ) ) +
+                         .arg( QString::fromUtf8( it->vendorName.c_str() ) ) +
                          QLatin1String("<br />") +
                          tr("OpenGL version %1 with GLSL version %2")
                          .arg( QString::fromUtf8( it->glVersionString.c_str() ) )
@@ -594,6 +593,11 @@ AboutWindow::updateLibrariesVersions()
                          QLatin1String("</p>") );
         }
     }
+#ifdef HAVE_OSMESA
+    int mesaMajor, mesaMinor, mesaRev;
+    OSGLContext_osmesa::getOSMesaVersion(&mesaMajor, &mesaMinor, &mesaRev);
+    libsText += QString::fromUtf8("<p> OSMesa %1.%2.%3 </p>").arg(mesaMajor).arg(mesaMinor).arg(mesaRev);
+#endif
 
     _libsText->setText(libsText);
 }

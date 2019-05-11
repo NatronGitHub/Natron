@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,126 +33,96 @@
 
 NATRON_NAMESPACE_ENTER
 
-struct JoinViewsNodePrivate
+
+
+PluginPtr
+JoinViewsNode::createPlugin()
 {
-    QMutex inputsMutex;
-    std::vector<std::string> inputs;
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_MULTIVIEW);
+    PluginPtr ret = Plugin::create(JoinViewsNode::create, JoinViewsNode::createRenderClone, PLUGINID_NATRON_JOINVIEWS, "JoinViews", 1, 0, grouping);
 
-    JoinViewsNodePrivate()
-        : inputs()
-    {
-    }
-};
+    QString desc =  tr("Take in input separate views to make a multiple view stream output. "
+                       "The first view from each input is copied to one of the view of the output.");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
+    ret->setProperty<bool>(kNatronPluginPropViewAware, true);
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/joinViewsNode.png");
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
+    return ret;
+}
 
-JoinViewsNode::JoinViewsNode(NodePtr node)
+JoinViewsNode::JoinViewsNode(const NodePtr& node)
     : EffectInstance(node)
-    , _imp( new JoinViewsNodePrivate() )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
-    if (node) {
-        boost::shared_ptr<Project> project = node->getApp()->getProject();
-        QObject::connect( project.get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()) );
-    }
+
+}
+
+JoinViewsNode::JoinViewsNode(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+: EffectInstance(mainInstance, key)
+{
+
 }
 
 JoinViewsNode::~JoinViewsNode()
 {
 }
 
-int
-JoinViewsNode::getNInputs() const
-{
-    QMutexLocker k(&_imp->inputsMutex);
-
-    return (int)_imp->inputs.size();
-}
-
-std::string
-JoinViewsNode::getInputLabel (int inputNb) const
-{
-    QMutexLocker k(&_imp->inputsMutex);
-
-    assert( inputNb >= 0 && inputNb < (int)_imp->inputs.size() );
-
-    return _imp->inputs[inputNb];
-}
-
-void
-JoinViewsNode::addAcceptedComponents(int /*inputNb*/,
-                                     std::list<ImagePlaneDesc>* comps)
-{
-    comps->push_back( ImagePlaneDesc::getRGBAComponents() );
-    comps->push_back( ImagePlaneDesc::getRGBComponents() );
-    comps->push_back( ImagePlaneDesc::getAlphaComponents() );
-}
-
-void
-JoinViewsNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
-{
-    depths->push_back(eImageBitDepthFloat);
-    depths->push_back(eImageBitDepthShort);
-    depths->push_back(eImageBitDepthByte);
-}
-
 void
 JoinViewsNode::initializeKnobs()
 {
-    onProjectViewsChanged();
 }
 
-bool
-JoinViewsNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
-                                              bool* /*defaultG*/,
-                                              bool* /*defaultB*/,
-                                              bool* /*defaultA*/) const
-{
-    return false;
-}
 
-bool
-JoinViewsNode::isIdentity(double time,
+ActionRetCodeEnum
+JoinViewsNode::isIdentity(TimeValue /*time*/,
                           const RenderScale & /*scale*/,
                           const RectI & /*roi*/,
                           ViewIdx view,
-                          double* inputTime,
-                          ViewIdx* inputView,
-                          int* inputNb)
+                          const ImagePlaneDesc& /*plane*/,
+                          TimeValue* /*inputTime*/,
+                          ViewIdx* /*inputView*/,
+                          int* inputNb,
+                          ImagePlaneDesc* /*inputPlane*/)
 {
-    *inputTime = time;
     *inputNb = getNInputs() - 1 - view.value();
-    *inputView = view;
-
-    return true;
+    return eActionStatusOK;
 }
 
 void
-JoinViewsNode::onProjectViewsChanged()
+JoinViewsNode::onMetadataChanged(const NodeMetadata& metadata)
 {
-    std::size_t nInputs, oldNInputs;
-    {
-        QMutexLocker k(&_imp->inputsMutex);
-        const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
-
-        //Reverse names
-        oldNInputs = _imp->inputs.size();
-        nInputs = views.size();
-        _imp->inputs.resize(nInputs);
-        for (std::size_t i = 0; i < nInputs; ++i) {
-            _imp->inputs[i] = views[nInputs - 1 - i];
-        }
-    }
-    std::vector<NodePtr> inputs(oldNInputs);
     NodePtr node = getNode();
 
+    std::size_t nInputs, oldNInputs;
+
+    const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
+
+    //Reverse names
+    oldNInputs = getNInputs();
+    nInputs = views.size();
+    std::vector<NodePtr> inputs(oldNInputs);
     for (std::size_t i = 0; i < oldNInputs; ++i) {
         inputs[i] = node->getInput(i);
     }
-    node->initializeInputs();
+    node->beginInputEdition();
+    node->removeAllInputs();
+    for (std::size_t i = 0; i < nInputs; ++i) {
+        const std::string& inputName = views[nInputs - 1 - i];
+        InputDescriptionPtr desc = InputDescription::create(inputName, inputName, "", false, false, std::bitset<4>(std::string("1111")));
+        node->addInput(desc);
+    }
+
 
     //Reconnect the inputs
     int index = oldNInputs - 1;
     if (index >= 0) {
-        node->beginInputEdition();
+
 
         for (int i = (int)nInputs - 1; i  >= 0; --i, --index) {
             node->disconnectInput(i);
@@ -162,12 +132,12 @@ JoinViewsNode::onProjectViewsChanged()
                 }
             }
         }
-
-        node->endInputEdition(true);
     }
+    node->endInputEdition(true);
+
+    EffectInstance::onMetadataChanged(metadata);
 }
+
 
 NATRON_NAMESPACE_EXIT
 
-NATRON_NAMESPACE_USING
-#include "moc_JoinViewsNode.cpp"

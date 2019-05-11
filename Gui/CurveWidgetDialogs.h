@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -42,7 +42,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Gui/CurveEditorUndoRedo.h" // KeyPtr
+#include "Gui/AnimItemBase.h"
+
 #include "Gui/CurveGui.h" // CurveGui
 #include "Gui/GuiFwd.h"
 
@@ -56,7 +57,7 @@ class ImportExportCurveDialog
 public:
 
     ImportExportCurveDialog(bool isExportDialog,
-                            const std::vector<boost::shared_ptr<CurveGui> > & curves,
+                            const std::vector<CurveGuiPtr> & curves,
                             Gui* gui,
                             QWidget* parent = 0);
 
@@ -71,7 +72,7 @@ public:
 
     double getXEnd() const;
 
-    void getCurveColumns(std::map<int, boost::shared_ptr<CurveGui> >* columns) const;
+    void getCurveColumns(std::map<int, CurveGuiPtr>* columns) const;
 
 public Q_SLOTS:
 
@@ -116,14 +117,14 @@ private:
     /////Columns
     struct CurveColumn
     {
-        boost::shared_ptr<CurveGui> _curve;
+        CurveGuiPtr _curve;
         QWidget* _curveContainer;
         QHBoxLayout* _curveLayout;
         Label* _curveLabel;
         SpinBox* _curveSpinBox;
     };
 
-    std::vector< CurveColumn > _curveColumns;
+    std::vector<CurveColumn > _curveColumns;
 
     ////buttons
     DialogButtonBox* _buttonBox;
@@ -148,8 +149,8 @@ public:
     };
 
     EditKeyFrameDialog(EditModeEnum mode,
-                       CurveWidget* curveWidget,
-                       const KeyPtr& key,
+                       AnimationModuleView* curveWidget,
+                       const AnimItemDimViewKeyFrame& key,
                        QWidget* parent);
 
     virtual ~EditKeyFrameDialog();
@@ -158,6 +159,7 @@ Q_SIGNALS:
 
     void valueChanged(int dimension, double value);
 
+    void dialogFinished(bool accepted);
 public Q_SLOTS:
 
     void onXSpinBoxValueChanged(double d);
@@ -165,6 +167,8 @@ public Q_SLOTS:
     void onEditingFinished();
 
 private:
+
+    void refreshSelectedKey();
 
     void moveKeyTo(double newX, double newY);
     void moveDerivativeTo(double d);

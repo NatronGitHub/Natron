@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,6 +27,15 @@
 
 #include "Global/Macros.h"
 
+#include <list>
+#include <vector>
+
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QCoreApplication>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
 /**
  * @brief Simple wrap for the Knob class that is the API we want to expose to the Python
  * Engine module.
@@ -39,29 +48,74 @@
 
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
+/**
+ * @brief Specify that an action (a setter) must be applied on all split views in the parameter
+ **/
+#define kPyParamViewSetSpecAll "All"
+
+/**
+ * @brief Specify that an action (a setter) must be applied on the main view (all unsplit views) only
+ **/
+#define kPyParamViewIdxMain "Main"
+
+/**
+ * @brief Specify that an action (a setter) must be applied on all dimensions of a parameter
+ **/
+#define kPyParamDimSpecAll -1
+
+#define PythonSetNullError() (PyErr_SetString(PyExc_RuntimeError, Param::tr("Value is Null").toStdString().c_str()))
+#define PythonSetInvalidDimensionError(index) (PyErr_SetString(PyExc_IndexError, Param::tr("%1: Dimension out of range").arg(QString::number(index)).toStdString().c_str()))
+#define PythonSetNonUserKnobError() (PyErr_SetString(PyExc_ValueError, Param::tr("Cannot do this on a non-user parameter").toStdString().c_str()))
+#define PythonSetInvalidViewName(view) (PyErr_SetString(PyExc_ValueError, Param::tr("%1: Invalid view").arg(view).toStdString().c_str()))
+
+
 class Param
 {
+    Q_DECLARE_TR_FUNCTIONS(Param)
+    
 protected:
-    boost::weak_ptr<KnobI> _knob;
+    KnobIWPtr _knob;
 
 public:
 
-    Param(const KnobPtr& knob);
+    Param(const KnobIPtr& knob);
 
     virtual ~Param();
 
-    KnobPtr getInternalKnob() const { return _knob.lock(); }
+    KnobIPtr getInternalKnob() const { return _knob.lock(); }
 
     /**
      * @brief Returns the parent of this parameter if any. If the parameter has no parent it is assumed to be a top-level
      * param of the effect.
      **/
     Param* getParent() const;
+
+    /*
+     @brief If the holder of this parameter is an effect, this is a pointer to the effect.
+     If the holder of this parameter is a table item, this will return the effect holding the item
+     itself.
+     */
+    Effect* getParentEffect() const;
+
+    /*
+     @brief If the holder of this parameter is a table item, this is a pointer to the table item
+     */
+    ItemBase* getParentItemBase() const;
+
+    /*
+     @brief If the holder of this parameter is the app itself (so it is a project setting), this is a pointer
+     to the app. If the holder of this parameter is an effect, this is a pointer to the application containing
+     the effect. If the holder of this parameter is a table item, this will return the application
+     containing the effect holding the item itself.
+     */
+    App* getApp() const;
 
     /**
      * @brief Returns the number of dimensions that the parameter have.
@@ -79,12 +133,13 @@ public:
      * @brief Returns the label of the Param as shown on the GUI.
      **/
     QString getLabel() const;
+    void setLabel(const QString& label);
 
     /**
      * @brief Set the icon file-path that should be used for the button.
      * This can only be called right away after the parameter has been created.
      **/
-    void setIconFilePath(const QString& icon);
+    void setIconFilePath(const QString& icon, bool checked = false);
 
     /**
      * @brief Returns the type of the parameter. The list of known type is:
@@ -108,19 +163,15 @@ public:
      **/
     void setVisible(bool visible);
 
-    void setVisibleByDefault(bool visible);
-
     /**
      * @brief Returns whether the given dimension is enabled, i.e: whether the user can interact with it or not.
      **/
-    bool getIsEnabled(int dimension = 0) const;
+    bool getIsEnabled() const;
 
     /**
      * @brief Set the given dimension enabledness
      **/
-    void setEnabled(bool enabled, int dimension = 0);
-
-    void setEnabledByDefault(bool enabled = 0);
+    void setEnabled(bool enabled);
 
     /**
      * @brief Returns whether this parameter is persistent or not. A persistent parameter will be saved into the project.
@@ -131,6 +182,9 @@ public:
      * @brief Set the parameter persistency.
      **/
     void setPersistent(bool persistent);
+
+    void setExpressionCacheEnabled(bool enabled);
+    bool isExpressionCacheEnabled() const;
 
     /**
      * @brief Returns whether the parameter forces a new evaluation when its value changes. An evaluation is typically
@@ -163,34 +217,93 @@ public:
     void setAddNewLine(bool a);
 
     /**
+     * @brief Does this parameter have a viewer interface ?
+     **/
+    bool getHasViewerUI() const;
+
+    /**
+     * @brief Is this parameter visible in the Viewer UI? Only valid for parameters with a viewer ui
+     **/
+    void setViewerUIVisible(bool visible);
+    bool getViewerUIVisible() const;
+
+    /**
+     * @brief Controls the layout type of this parameter if it is present in the viewer interface of the Effect holding it
+     **/
+    void setViewerUILayoutType(NATRON_NAMESPACE::ViewerContextLayoutTypeEnum type);
+    NATRON_NAMESPACE::ViewerContextLayoutTypeEnum getViewerUILayoutType() const;
+
+    /**
+     * @brief Controls the item spacing after this parameter if it is present in the viewer interface of the Effect holding it
+     **/
+    void setViewerUIItemSpacing(int spacingPx);
+    int getViewerUIItemSpacing() const;
+
+    /**
+     * @brief Controls the label icon of this parameter in the viewer interface of the Effect holding it.
+     * For buttons, if checked it false, the icon will be used when the button is unchecked, if checked it will be used
+     * when the button is checked.
+     **/
+    void setViewerUIIconFilePath(const QString& icon, bool checked = false);
+    QString getViewerUIIconFilePath(bool checked = false) const;
+
+    /**
+     * @brief Controls the label of this parameter if it is present in the viewer interface of the Effect holding it
+     **/
+    void setViewerUILabel(const QString& label);
+    QString getViewerUILabel() const;
+
+    /**
      * @brief Copies all the content of the other param: animation, expression and value.
      * The parameters must be compatible types. E.g: you cannot copy
      * a StringParam to an IntParam but you can convert a Doubleparam to an IntParam.
      **/
-    bool copy(Param* other, int dimension = -1);
+    bool copy(Param* other,
+              int thisDimension = kPyParamDimSpecAll,
+              int otherDimension = kPyParamDimSpecAll,
+              const QString& thisView = QLatin1String(kPyParamViewSetSpecAll),
+              const QString& otherView = QLatin1String(kPyParamViewSetSpecAll));
 
-    bool slaveTo(Param* other, int thisDimension, int otherDimension);
+    bool linkTo(Param* other,
+                int thisDimension = kPyParamDimSpecAll,
+                int otherDimension = kPyParamDimSpecAll,
+                const QString& thisView = QLatin1String(kPyParamViewSetSpecAll),
+                const QString& otherView = QLatin1String(kPyParamViewSetSpecAll));
 
-    void unslave(int dimension);
+    bool slaveTo(Param* other,
+                int thisDimension = kPyParamDimSpecAll,
+                int otherDimension = kPyParamDimSpecAll,
+                const QString& thisView = QLatin1String(kPyParamViewSetSpecAll),
+                const QString& otherView = QLatin1String(kPyParamViewSetSpecAll));
+
+    void unlink(int dimension = kPyParamDimSpecAll, const QString& thisView = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Returns a pseudo-random number. This will always be the same for the same time on the timeline.
-     * The version with the seed can be used to retrieve the same value for 2 successive randoms
+     * The version with the seed can be used to retrieve the same value for 2 successive randoms, or at different time frames.
      **/
     double random(double min = 0., double max = 1.) const;
-    double random(unsigned int seed) const;
+    double random(double min, double max, double time, unsigned int seed = 0) const;
 
     int randomInt(int min, int max);
-    int randomInt(unsigned int seed) const;
+    int randomInt(int min, int max, double time, unsigned int seed = 0) const;
 
     /**
      * @brief Returns the raw value of the curve at the given dimension at the given time. Note that
      * if there's an expression this will not return the value of the expression but the value of the animation curve
      * if there is any.
      **/
-    double curve(double time, int dimension = 0) const;
+    double curve(double time, int dimension = 0, const QString& thisView = QLatin1String(kPyParamViewIdxMain)) const;
+    double curve(int time, int dimension = 0, const QString& thisView = QLatin1String(kPyParamViewIdxMain)) const
+    {
+        return curve((double)time, dimension, thisView);
+    }
 
     bool setAsAlias(Param* other);
+
+    void beginChanges();
+
+    void endChanges();
 
 protected:
 
@@ -199,7 +312,19 @@ protected:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    void _addAsDependencyOf(int fromExprDimension, Param* param, int thisDimension);
+    void _addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView);
+
+    bool getViewSetSpecFromViewName(const QString& viewName, ViewSetSpec* view) const;
+    bool getViewIdxFromViewName(const QString& viewName, ViewIdx* view) const;
+
+    KnobIPtr getRenderCloneKnobInternal() const;
+
+    template <typename T>
+    boost::shared_ptr<T> getRenderCloneKnob() const
+    {
+        return boost::dynamic_pointer_cast<T>(getRenderCloneKnobInternal());
+    }
+    
 };
 
 
@@ -208,7 +333,7 @@ class AnimatedParam
 {
 public:
 
-    AnimatedParam(const KnobPtr& knob);
+    AnimatedParam(const KnobIPtr& knob);
 
     virtual ~AnimatedParam();
 
@@ -216,59 +341,65 @@ public:
      * @brief Returns whether the given dimension has animation or not. A dimension is considered to have an animation when it has
      * at least 1 keyframe.
      **/
-    bool getIsAnimated(int dimension = 0) const;
+    bool getIsAnimated(int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Returns the number of keyframes for the given dimension.
      **/
-    int getNumKeys(int dimension = 0) const;
+    int getNumKeys(int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Returns the index of the keyframe at the given time for the given dimension.
      * Returns -1 if no keyframe could be found at the given time.
      **/
-    int getKeyIndex(double time, int dimension = 0) const;
+    int getKeyIndex(double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set in 'time' the time of the keyframe at the given index for the given dimension.
      * This function returns true if a keyframe was found at the given index, false otherwise.
      **/
-    bool getKeyTime(int index, int dimension, double* time) const;
+    bool getKeyTime(int index, int dimension, double* time, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Removes the keyframe at the given time and dimension if it matches any.
      **/
-    void deleteValueAtTime(double time, int dimension = 0);
+    void deleteValueAtTime(double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Removes all animation for the given dimension.
      **/
-    void removeAnimation(int dimension = 0);
+    void removeAnimation(int dimension = kPyParamDimSpecAll, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Compute the derivative at time as a double
      **/
-    double getDerivativeAtTime(double time, int dimension = 0) const;
+    double getDerivativeAtTime(double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Compute the integral of dimension from time1 to time2 as a double
      **/
-    double getIntegrateFromTimeToTime(double time1, double time2, int dimension = 0) const;
+    double getIntegrateFromTimeToTime(double time1, double time2, int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Get the current global time in the parameter context. Most generally this is the time on the timeline,
      * but when multiple frames are being rendered at different times, this is the time of the frame being rendered
      * by the caller thread.
      **/
-    int getCurrentTime() const;
+    double getCurrentTime() const;
 
     /**
      * @brief Set an expression on the Param. This is a Python script, see documentation for more infos.
      **/
-    bool setExpression(const QString& expr, bool hasRetVariable, int dimension = 0);
-    QString getExpression(int dimension, bool* hasRetVariable) const;
+    bool setExpression(const QString& expr, bool hasRetVariable, int dimension = kPyParamDimSpecAll, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    QString getExpression(int dimension, bool* hasRetVariable, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
-    bool setInterpolationAtTime(double time, NATRON_NAMESPACE::KeyframeTypeEnum interpolation, int dimension = 0);
+    bool setInterpolationAtTime(double time, NATRON_NAMESPACE::KeyframeTypeEnum interpolation, int dimension = -1, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+
+    void splitView(const QString& viewName);
+
+    void unSplitView(const QString& viewName);
+
+    QStringList getViewsList() const;
 };
 
 /**
@@ -304,49 +435,49 @@ class IntParam
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<KnobInt> _intKnob;
+    KnobIntWPtr _intKnob;
 
 public:
 
-    IntParam(const boost::shared_ptr<KnobInt>& knob);
+    IntParam(const KnobIntPtr& knob);
 
     virtual ~IntParam();
 
     /**
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
-    int get() const;
-    int get(double frame) const;
+    int get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    int get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Convenience functions for multi-dimensional setting of values
      **/
-    void set(int x);
-    void set(int x, double frame);
+    void set(int x, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(int x, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
      **/
-    int getValue(int dimension = 0) const;
+    int getValue(int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set the value held by the parameter. If it is animated
      * this function will either add a new keyframe or modify a keyframe already existing at the current time.
      **/
-    void setValue(int value, int dimension = 0);
+    void setValue(int value, int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    int getValueAtTime(double time, int dimension = 0) const;
+    int getValueAtTime(double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(int value, double time, int dimension = 0);
+    void setValueAtTime(int value, double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the default value for the given dimension
@@ -361,7 +492,7 @@ public:
     /**
      * @brief Restores the default value for the given dimension
      **/
-    void restoreDefaultValue(int dimension = 0);
+    void restoreDefaultValue(int dimension = -1, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the minimum possible value for the given dimension. The minimum will not limit the user on the GUI, i.e: he/she
@@ -412,7 +543,7 @@ public:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    int addAsDependencyOf(int fromExprDimension, Param* param, int thisDimension);
+    int addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView);
 };
 
 class Int2DParam
@@ -420,15 +551,15 @@ class Int2DParam
 {
 public:
 
-    Int2DParam(const boost::shared_ptr<KnobInt>& knob)
+    Int2DParam(const KnobIntPtr& knob)
         : IntParam(knob) {}
 
     virtual ~Int2DParam() {}
 
-    Int2DTuple get() const;
-    Int2DTuple get(double frame) const;
-    void set(int x, int y);
-    void set(int x, int y, double frame);
+    Int2DTuple get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    Int2DTuple get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    void set(int x, int y, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(int x, int y, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 };
 
 class Int3DParam
@@ -436,15 +567,15 @@ class Int3DParam
 {
 public:
 
-    Int3DParam(const boost::shared_ptr<KnobInt>& knob)
+    Int3DParam(const KnobIntPtr& knob)
         : Int2DParam(knob) {}
 
     virtual ~Int3DParam() {}
 
-    Int3DTuple get() const;
-    Int3DTuple get(double frame) const;
-    void set(int x, int y, int z);
-    void set(int x, int y, int z, double frame);
+    Int3DTuple get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    Int3DTuple get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    void set(int x, int y, int z, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(int x, int y, int z, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 };
 
 
@@ -452,49 +583,49 @@ class DoubleParam
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<KnobDouble> _doubleKnob;
+    KnobDoubleWPtr _doubleKnob;
 
 public:
 
-    DoubleParam(const boost::shared_ptr<KnobDouble>& knob);
+    DoubleParam(const KnobDoublePtr& knob);
 
     virtual ~DoubleParam();
 
     /**
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
-    double get() const;
-    double get(double frame) const;
+    double get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    double get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Convenience functions for multi-dimensional setting of values
      **/
-    void set(double x);
-    void set(double x, double frame);
+    void set(double x, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(double x, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
      **/
-    double getValue(int dimension = 0) const;
+    double getValue(int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set the value held by the parameter. If it is animated
      * this function will either add a new keyframe or modify a keyframe already existing at the current time.
      **/
-    void setValue(double value, int dimension = 0);
+    void setValue(double value, int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    double getValueAtTime(double time, int dimension = 0) const;
+    double getValueAtTime(double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(double value, double time, int dimension = 0);
+    void setValueAtTime(double value, double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the default value for the given dimension
@@ -509,7 +640,7 @@ public:
     /**
      * @brief Restores the default value for the given dimension
      **/
-    void restoreDefaultValue(int dimension = 0);
+    void restoreDefaultValue(int dimension = -1, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the minimum possible value for the given dimension. The minimum will not limit the user on the GUI, i.e: he/she
@@ -560,7 +691,7 @@ public:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    double addAsDependencyOf(int fromExprDimension, Param* param, int thisDimension);
+    double addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView);
 };
 
 class Double2DParam
@@ -568,17 +699,18 @@ class Double2DParam
 {
 public:
 
-    Double2DParam(const boost::shared_ptr<KnobDouble>& knob)
+    Double2DParam(const KnobDoublePtr& knob)
         : DoubleParam(knob) {}
 
     virtual ~Double2DParam() {}
 
-    Double2DTuple get() const;
-    Double2DTuple get(double frame) const;
-    void set(double x, double y);
-    void set(double x, double y, double frame);
+    Double2DTuple get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    Double2DTuple get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    void set(double x, double y, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(double x, double y, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     void setUsePointInteract(bool use);
+    void setCanAutoFoldDimensions(bool can);
 };
 
 class Double3DParam
@@ -586,15 +718,15 @@ class Double3DParam
 {
 public:
 
-    Double3DParam(const boost::shared_ptr<KnobDouble>& knob)
+    Double3DParam(const KnobDoublePtr& knob)
         : Double2DParam(knob) {}
 
     virtual ~Double3DParam() {}
 
-    Double3DTuple get() const;
-    Double3DTuple get(double frame) const;
-    void set(double x, double y, double z);
-    void set(double x, double y, double z, double frame);
+    Double3DTuple get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    Double3DTuple get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    void set(double x, double y, double z, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(double x, double y, double z, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 };
 
 
@@ -602,50 +734,50 @@ class ColorParam
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<KnobColor> _colorKnob;
+    KnobColorWPtr _colorKnob;
 
 public:
 
-    ColorParam(const boost::shared_ptr<KnobColor>& knob);
+    ColorParam(const KnobColorPtr& knob);
 
     virtual ~ColorParam();
 
     /**
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
-    ColorTuple get() const;
-    ColorTuple get(double frame) const;
+    ColorTuple get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    ColorTuple get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Convenience functions for multi-dimensional setting of values
      **/
-    void set(double r, double g, double b, double a);
-    void set(double r, double g, double b, double a, double frame);
+    void set(double r, double g, double b, double a, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(double r, double g, double b, double a, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
 
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
      **/
-    double getValue(int dimension = 0) const;
+    double getValue(int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set the value held by the parameter. If it is animated
      * this function will either add a new keyframe or modify a keyframe already existing at the current time.
      **/
-    void setValue(double value, int dimension = 0);
+    void setValue(double value, int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    double getValueAtTime(double time, int dimension = 0) const;
+    double getValueAtTime(double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(double value, double time, int dimension = 0);
+    void setValueAtTime(double value, double time, int dimension = 0, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the default value for the given dimension
@@ -660,7 +792,7 @@ public:
     /**
      * @brief Restores the default value for the given dimension
      **/
-    void restoreDefaultValue(int dimension = 0);
+    void restoreDefaultValue(int dimension = -1, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the minimum possible value for the given dimension. The minimum will not limit the user on the GUI, i.e: he/she
@@ -711,64 +843,64 @@ public:
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    double addAsDependencyOf(int fromExprDimension, Param* param, int thisDimension);
+    double addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView);
 };
 
 class ChoiceParam
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<KnobChoice> _choiceKnob;
+    KnobChoiceWPtr _choiceKnob;
 
 public:
 
-    ChoiceParam(const boost::shared_ptr<KnobChoice>& knob);
+    ChoiceParam(const KnobChoicePtr& knob);
 
     virtual ~ChoiceParam();
 
     /**
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
-    int get() const;
-    int get(double frame) const;
+    int get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    int get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Convenience functions for multi-dimensional setting of values
      **/
-    void set(int x);
-    void set(int x, double frame);
+    void set(int x, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(int x, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /*
      * @brief Set the value from label if it exists.
      * The label will be compared without case sensitivity to existing entries. If it's not found, nothing is done.
      */
-    void set(const QString& label);
+    void set(const QString& label, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
      **/
-    int getValue() const;
+    int getValue(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set the value held by the parameter. If it is animated
      * this function will either add a new keyframe or modify a keyframe already existing at the current time.
      **/
-    void setValue(int value);
+    void setValue(int value, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
-    void setValue(const QString& label);
+    void setValue(const QString& label,  const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    int getValueAtTime(double time) const;
+    int getValueAtTime(double time, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(int value, double time);
+    void setValueAtTime(int value, double time, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the default value for the given dimension
@@ -788,22 +920,32 @@ public:
     /**
      * @brief Restores the default value for the given dimension
      **/
-    void restoreDefaultValue();
+    void restoreDefaultValue(const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Add a new option to the drop-down menu
      **/
-    void addOption(const QString& option, const QString& help);
+    void addOption(const QString& optionID, const QString& optionLabel, const QString& optionHelp);
 
     /**
      * @brief Set all options at once
      **/
+    void setOptions(const std::list<QString>& optionIDs,
+                    const std::list<QString>& optionLabels,
+                    const std::list<QString>& optionHelps);
+
+    // Backward compatibility with Natron 2
     void setOptions(const std::list<std::pair<QString, QString> >& options);
 
     /**
      * @brief Returns the option at the given index
      **/
-    QString getOption(int index) const;
+    bool getOption(int index, QString* optionID, QString* optionLabel, QString* optionHelp) const;
+
+    /**
+     * @brief Returns the current option
+     **/
+    void getActiveOption(QString* optionID, QString* optionLabel, QString* optionHelp, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Returns the count of options
@@ -813,63 +955,65 @@ public:
     /**
      * @brief Returns all options
      **/
-    QStringList getOptions() const;
+    void getOptions(std::list<QString>* optionIDs,
+                    std::list<QString>* optionLabels,
+                    std::list<QString>* optionHelps) const;
 
     /**
      * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    int addAsDependencyOf(int fromExprDimension, Param* param, int thisDimension);
+    int addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView);
 };
 
 class BooleanParam
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<KnobBool> _boolKnob;
+    KnobBoolWPtr _boolKnob;
 
 public:
 
-    BooleanParam(const boost::shared_ptr<KnobBool>& knob);
+    BooleanParam(const KnobBoolPtr& knob);
 
     virtual ~BooleanParam();
 
     /**
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
-    bool get() const;
-    bool get(double frame) const;
+    bool get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    bool get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Convenience functions for multi-dimensional setting of values
      **/
-    void set(bool x);
-    void set(bool x, double frame);
+    void set(bool x, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(bool x, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
      **/
-    bool getValue() const;
+    bool getValue(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set the value held by the parameter. If it is animated
      * this function will either add a new keyframe or modify a keyframe already existing at the current time.
      **/
-    void setValue(bool value);
+    void setValue(bool value, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    bool getValueAtTime(double time) const;
+    bool getValueAtTime(double time, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(bool value, double time);
+    void setValueAtTime(bool value, double time, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the default value for the given dimension
@@ -884,14 +1028,14 @@ public:
     /**
      * @brief Restores the default value for the given dimension
      **/
-    void restoreDefaultValue();
+    void restoreDefaultValue(const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    bool addAsDependencyOf(int fromExprDimension, Param* param, int thisDimension);
+    bool addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView);
 };
 
 /////////////StringParam
@@ -900,49 +1044,49 @@ class StringParamBase
     : public AnimatedParam
 {
 protected:
-    boost::weak_ptr<Knob<std::string> > _stringKnob;
+    boost::weak_ptr<KnobStringBase> _stringKnob;
 
 public:
 
-    StringParamBase(const boost::shared_ptr<Knob<std::string> >& knob);
+    StringParamBase(const KnobStringBasePtr& knob);
 
     virtual ~StringParamBase();
 
     /**
      * @brief Convenience function that calls getValue() for all dimensions and store them in a tuple-like struct.
      **/
-    QString get() const;
-    QString get(double frame) const;
+    QString get(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    QString get(double frame, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Convenience functions for multi-dimensional setting of values
      **/
-    void set(const QString& x);
-    void set(const QString& x, double frame);
+    void set(const QString& x, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
+    void set(const QString& x, double frame, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
      **/
-    QString getValue() const;
+    QString getValue(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set the value held by the parameter. If it is animated
      * this function will either add a new keyframe or modify a keyframe already existing at the current time.
      **/
-    void setValue(const QString& value);
+    void setValue(const QString& value, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    QString getValueAtTime(double time) const;
+    QString getValueAtTime(double time, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(const QString& value, double time);
+    void setValueAtTime(const QString& value, double time, const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Set the default value for the given dimension
@@ -957,20 +1101,20 @@ public:
     /**
      * @brief Restores the default value for the given dimension
      **/
-    void restoreDefaultValue();
+    void restoreDefaultValue(const QString& view = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
      **/
-    QString addAsDependencyOf(int fromExprDimension, Param* param, int thisDimension);
+    QString addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView);
 };
 
 class StringParam
     : public StringParamBase
 {
-    boost::weak_ptr<KnobString> _sKnob;
+    KnobStringWPtr _sKnob;
 
 public:
 
@@ -983,7 +1127,7 @@ public:
         eStringTypeDefault, //< Same as custom except that it is editable
     };
 
-    StringParam(const boost::shared_ptr<KnobString>& knob);
+    StringParam(const KnobStringPtr& knob);
 
     virtual ~StringParam();
 
@@ -997,20 +1141,26 @@ public:
 class FileParam
     : public StringParamBase
 {
-    boost::weak_ptr<KnobFile> _sKnob;
+    KnobFileWPtr _sKnob;
 
 public:
 
 
-    FileParam(const boost::shared_ptr<KnobFile>& knob);
+    FileParam(const KnobFilePtr& knob);
 
     virtual ~FileParam();
 
     /**
-     * @brief If enabled is true then the dialog associated to this parameter will be able to display sequences.
+     * @brief DEPRECATED, use setDialogType instead.
+     * If enabled is true then the dialog associated to this parameter will be able to display sequences.
      * By default this is set to false. This property is not dynamic and should be set right away after parameter creation.
      **/
     void setSequenceEnabled(bool enabled);
+
+    /**
+     * @brief Set the type of dialog to use
+     **/
+    void setDialogType(bool fileExisting, bool useSequences, const std::vector<std::string>& filters);
 
     /**
      * @brief Forces the GUI to pop-up the dialog
@@ -1023,39 +1173,15 @@ public:
     void reloadFile();
 };
 
-class OutputFileParam
-    : public StringParamBase
-{
-    boost::weak_ptr<KnobOutputFile> _sKnob;
-
-public:
-
-
-    OutputFileParam(const boost::shared_ptr<KnobOutputFile>& knob);
-
-    virtual ~OutputFileParam();
-
-    /**
-     * @brief If enabled is true then the dialog associated to this parameter will be able to display sequences.
-     * By default this is set to false. This property is not dynamic and should be set right away after parameter creation.
-     **/
-    void setSequenceEnabled(bool enabled);
-
-    /**
-     * @brief Forces the GUI to pop-up the dialog
-     **/
-    void openFile();
-};
-
 class PathParam
     : public StringParamBase
 {
-    boost::weak_ptr<KnobPath> _sKnob;
+    KnobPathWPtr _sKnob;
 
 public:
 
 
-    PathParam(const boost::shared_ptr<KnobPath>& knob);
+    PathParam(const KnobPathPtr& knob);
 
     virtual ~PathParam();
 
@@ -1064,6 +1190,8 @@ public:
      * be a table much like the Project paths table of the Project settings. This cannot animate.
      **/
     void setAsMultiPathTable();
+
+    bool isMultiPathTable() const;
 
     void setTable(const std::list<std::vector<std::string> >& table);
 
@@ -1076,14 +1204,19 @@ class ButtonParam
     : public Param
 {
 protected:
-    boost::weak_ptr<KnobButton> _buttonKnob;
+    KnobButtonWPtr _buttonKnob;
 
 public:
 
-    ButtonParam(const boost::shared_ptr<KnobButton>& knob);
+    ButtonParam(const KnobButtonPtr& knob);
 
     virtual ~ButtonParam();
 
+    bool isCheckable() const;
+
+    void setDown(bool down);
+
+    bool isDown() const;
 
     void trigger();
 };
@@ -1093,11 +1226,11 @@ class SeparatorParam
     : public Param
 {
 protected:
-    boost::weak_ptr<KnobSeparator> _separatorKnob;
+    KnobSeparatorWPtr _separatorKnob;
 
 public:
 
-    SeparatorParam(const boost::shared_ptr<KnobSeparator>& knob);
+    SeparatorParam(const KnobSeparatorPtr& knob);
 
     virtual ~SeparatorParam();
 };
@@ -1106,11 +1239,11 @@ class GroupParam
     : public Param
 {
 protected:
-    boost::weak_ptr<KnobGroup> _groupKnob;
+    KnobGroupWPtr _groupKnob;
 
 public:
 
-    GroupParam(const boost::shared_ptr<KnobGroup>& knob);
+    GroupParam(const KnobGroupPtr& knob);
 
     virtual ~GroupParam();
 
@@ -1135,11 +1268,11 @@ class PageParam
     : public Param
 {
 protected:
-    boost::weak_ptr<KnobPage> _pageKnob;
+    KnobPageWPtr _pageKnob;
 
 public:
 
-    PageParam(const boost::shared_ptr<KnobPage>& knob);
+    PageParam(const KnobPagePtr& knob);
 
     virtual ~PageParam();
 
@@ -1153,11 +1286,11 @@ class ParametricParam
     : public Param
 {
 protected:
-    boost::weak_ptr<KnobParametric> _parametricKnob;
+    KnobParametricWPtr _parametricKnob;
 
 public:
 
-    ParametricParam(const boost::shared_ptr<KnobParametric>& knob);
+    ParametricParam(const KnobParametricPtr& knob);
 
     virtual ~ParametricParam();
 
@@ -1165,31 +1298,31 @@ public:
 
     void getCurveColor(int dimension, ColorTuple& ret) const;
 
-    NATRON_NAMESPACE::StatusEnum addControlPoint(int dimension, double key, double value, NATRON_NAMESPACE::KeyframeTypeEnum interpolation = eKeyframeTypeSmooth);
-    NATRON_NAMESPACE::StatusEnum addControlPoint(int dimension, double key, double value, double leftDerivative, double rightDerivative, NATRON_NAMESPACE::KeyframeTypeEnum interpolation = eKeyframeTypeSmooth);
+    bool addControlPoint(int dimension, double key, double value, NATRON_NAMESPACE::KeyframeTypeEnum interpolation = eKeyframeTypeSmooth);
+    bool addControlPoint(int dimension, double key, double value, double leftDerivative, double rightDerivative, NATRON_NAMESPACE::KeyframeTypeEnum interpolation = eKeyframeTypeSmooth);
 
     double getValue(int dimension, double parametricPosition) const;
 
     int getNControlPoints(int dimension) const;
 
     // NATRON_NAMESPACE is necessary for shiboken
-    NATRON_NAMESPACE::StatusEnum getNthControlPoint(int dimension,
-                                                    int nthCtl,
-                                                    double *key,
-                                                    double *value,
-                                                    double *leftDerivative,
-                                                    double *rightDerivative) const;
-    NATRON_NAMESPACE::StatusEnum setNthControlPoint(int dimension,
-                                                    int nthCtl,
-                                                    double key,
-                                                    double value,
-                                                    double leftDerivative,
-                                                    double rightDerivative);
-    NATRON_NAMESPACE::StatusEnum setNthControlPointInterpolation(int dimension,
-                                                                 int nThCtl,
-                                                                 KeyframeTypeEnum interpolation);
-    NATRON_NAMESPACE::StatusEnum deleteControlPoint(int dimension, int nthCtl);
-    NATRON_NAMESPACE::StatusEnum deleteAllControlPoints(int dimension);
+    bool getNthControlPoint(int dimension,
+                            int nthCtl,
+                            double *key,
+                            double *value,
+                            double *leftDerivative,
+                            double *rightDerivative) const;
+    bool setNthControlPoint(int dimension,
+                            int nthCtl,
+                            double key,
+                            double value,
+                            double leftDerivative,
+                            double rightDerivative);
+    bool setNthControlPointInterpolation(int dimension,
+                                         int nThCtl,
+                                         KeyframeTypeEnum interpolation);
+    bool deleteControlPoint(int dimension, int nthCtl);
+    bool deleteAllControlPoints(int dimension);
 
     void setDefaultCurvesFromCurrentCurves();
 };

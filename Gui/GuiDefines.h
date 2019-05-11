@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,9 +27,6 @@
 
 #include "Global/Macros.h"
 
-#include "Gui/GuiFwd.h"
-
-
 #define NATRON_BUTTON_BORDER 4
 #define NATRON_SMALL_BUTTON_SIZE 15
 #define NATRON_SMALL_BUTTON_ICON_SIZE (NATRON_SMALL_BUTTON_SIZE - NATRON_BUTTON_BORDER)
@@ -50,16 +47,19 @@
 #define NATRON_WHEEL_ZOOM_PER_DELTA 1.00152 // 120 wheel deltas (one click on a standard wheel mouse) is x1.2
 //#define NATRON_FONT "Helvetica"
 //#define NATRON_FONT_ALT "Times"
-#define NATRON_FONT "Droid Sans"
-#define NATRON_FONT_ALT "Droid Sans"
-#define NATRON_SCRIPT_FONT "Courier New"
+
 #define NATRON_FONT_SIZE_6 6
 #define NATRON_FONT_SIZE_8 8
+#define NATRON_FONT_SIZE_9 9
 #define NATRON_FONT_SIZE_10 10
 #define NATRON_FONT_SIZE_11 11
 #define NATRON_FONT_SIZE_12 12
 #define NATRON_FONT_SIZE_13 13
+#ifdef __APPLE__
 #define NATRON_FONT_SIZE_DEFAULT NATRON_FONT_SIZE_11 // the sliders font becomes undreadable below 11 on non-HiDPI mac displays
+#else
+#define NATRON_FONT_SIZE_DEFAULT NATRON_FONT_SIZE_10
+#endif
 
 #define NATRON_MAX_RECENT_FILES 10 // 10 is the default is most apps
 

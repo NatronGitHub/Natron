@@ -120,7 +120,7 @@ struct HashMap : boost::unordered_map<K, V> {};
 template<typename K>
 struct HashSet : boost::unordered_set<K> {};
 #endif
-    
+
 #if defined(_WIN32) && !defined(__MINGW64__) && !defined(__MINGW32__)
 #define GG_LONGLONG(x) x##I64
 #define GG_ULONGLONG(x) x##UI64

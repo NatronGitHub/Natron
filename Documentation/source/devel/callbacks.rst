@@ -35,32 +35,39 @@ The param changed callback
 This function is called every times the value of a :ref:`parameter<Param>` changes.
 This callback is available for all objects that can hold parameters,namely:
 
-    * :ref:`Effect<Effect>`
-    * :ref:`PyPanel<pypanel>`
-    * :ref:`PyModalDialog<pyModalDialog>`
+- :ref:`Effect<Effect>`
+- :ref:`PyPanel<pypanel>`
+- :ref:`PyModalDialog<pyModalDialog>`
 
 
 The signature of the callback used on the :ref:`Effect<Effect>` is::
 
     callback(thisParam, thisNode, thisGroup, app, userEdited)
 
-
 - **thisParam** : This is a :ref:`Param<Param>` pointing to the parameter which just had its value changed.
-
 - **thisNode** : This is a :ref:`Effect<Effect>` pointing to the effect holding **thisParam**
-
 - **thisGroup** : This is a :ref:`Effect<Effect>` pointing to the group  holding **thisNode** or **app** otherwise if the node is in the main node-graph.
-
 - **app** : This variable will be set so it points to the correct :ref:`application instance<App>`.
-
 - **userEdited** : This indicates whether or not the parameter change is due to user interaction (i.e: because the user changed
-the value by herself/himself) or due to another parameter changing the value of the parameter
-via a derivative of the :func:`setValue(value)<>` function.
+  the value by herself/himself) or due to another parameter changing the value of the parameter
+  via a derivative of the :func:`setValue(value)<>` function.
 
+To get the node object containing this parameter, use the :func:`getParentEffect()<NatronEngine.Param.getParenEffect>`
+function.
+
+If this is a parameter of a :ref:`table item<ItemBase>` (such as a Track in the tracker node
+or a Bezier in a Roto node), you may retrieve the :ref:`item<ItemBase>` itself using the
+:func:`getParentItemBase()<NatronEngine.Param.getParentItemBase>` function. In this case
+the :func:`getParentEffect()<NatronEngine.Param.getParenEffect>` function would return the effect
+containing the table item itself.
+
+To retrieve the :ref:`app<App>` instance into which the callback was called, you may call the
+:func:`getApp()<NatronEngine.Param.getApp>` function on the parameter.
 
 For the param changed callback of :ref:`PyPanel<pypanel>` and :ref:`PyModalDialog<pyModalDialog>`
 on the other hand, Natron will define a string variable **paramName** indicating the :ref:`script-name<autoVar>`
-of the parameter which just had its value changed. The signature of the callback is then::
+of the parameter which just had its value changed. The signature of the callback is then:
+
     callback(paramName, app, userEdited)
 
 
@@ -95,7 +102,7 @@ of the node, on which you can call :func:`setValue(value)<>` to set the name of 
 .. note::
 
     If the callback is defined in a separate python file, such as the python script of a
-    python group plug-in, then do not forget the module prefix, e.g::
+    python group plug-in, then do not forget the module prefix, e.g.:
 
         app.MyPlugin1.BlurCImg1.onParamChanged.set("MyPlugin.myBlurCallback")
 
@@ -163,7 +170,7 @@ the node is changed.  The signature is::
     This function will be called even when loading a project
 
 - **inputIndex** : This is the input which just got connected/disconnected.
-You can fetch the input at the given index with the :func:`getInput(index)<>` function of the :ref:`Effect<Effect>` class.
+  You can fetch the input at the given index with the :func:`getInput(index)<>` function of the :ref:`Effect<Effect>` class.
 
 - **thisNode** : This is a :ref:`Effect<Effect>` holding the input which just changed
 
@@ -360,9 +367,9 @@ This function is called after creating a node in Natron. The signature is::
 - **app** points to the correct :ref:`application instance<App>`.
 
 - **userEdited** will be *True* if the node was created
-by the user (or by a script using the :func:`createNode(pluginID,version,group)<>` function)
-or *False* if the node was created by actions such as pasting a node or when the project is
-loaded.
+  by the user (or by a script using the :func:`createNode(pluginID,version,group)<>` function)
+  or *False* if the node was created by actions such as pasting a node or when the project is
+  loaded.
 
 This is a good place to change default parameters values.
 
@@ -550,3 +557,33 @@ You can set the callback from the Write node settings panel in the "Python" tab.
     :align: center
 
 This function can be used to communicate with external programs for example.
+
+
+
+.. _afterItemsSelectionChanged:
+
+The After items selection changed:
+---------------------------------
+
+For nodes that have an items table, such as RotoPaint or Tracker,
+this function is called when the item selection changed.
+
+    callback(thisNode,app, deselected, selected, reason)
+
+- **thisNode**: the node holding the items table
+- **app**: points to the current application instance
+- **deselected**: a sequence of items that were removed from the selection
+- **selected**: a sequence of items that were added to the selection
+- **reason**: a value of type NatronEngine.Natron.TableChangeReasonEnum
+
+The variable *reason* will be set to a value of type **NatronEngine.Natron.TableChangeReasonEnum**
+depending on where the selection was made from.
+If reason is *NatronEngine.Natron.TableChangeReasonEnum.eTableChangeReasonViewer*
+then the selection was made from the viewer.
+If reason is NatronEngine.Natron.TableChangeReasonEnum.eTableChangeReasonPanel
+then the selection was made from the settings panel.
+Otherwise the selection was not changed by the user directly and results from an internal
+A.P.I call.
+
+
+You can set the callback from the settings panel in the **Node** tab.

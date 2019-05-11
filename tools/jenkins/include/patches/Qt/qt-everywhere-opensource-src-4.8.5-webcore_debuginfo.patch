@@ -1,0 +1,16 @@
+diff -up qt-everywhere-opensource-src-4.8.5/src/3rdparty/webkit/Source/WebCore/WebCore.pri.webkit_debuginfo qt-everywhere-opensource-src-4.8.5/src/3rdparty/webkit/Source/WebCore/WebCore.pri
+--- qt-everywhere-opensource-src-4.8.5/src/3rdparty/webkit/Source/WebCore/WebCore.pri.webkit_debuginfo	2013-06-07 00:16:55.000000000 -0500
++++ qt-everywhere-opensource-src-4.8.5/src/3rdparty/webkit/Source/WebCore/WebCore.pri	2013-07-11 14:04:19.937056249 -0500
+@@ -5,6 +5,12 @@ include(features.pri)
+ 
+ # Uncomment this to enable Texture Mapper.
+ # CONFIG += texmap
++#
++equals(QT_ARCH, s390)|equals(QT_ARCH, arm)|equals(QT_ARCH, mips)|equals(QT_ARCH, i386)|equals(QT_ARCH, i686)|equals(QT_ARCH, x86_64)|equals(QT_ARCH, powerpc64)|equals(QT_ARCH, powerpc) {
++    message("WebCore workaround for QtWebkit: do not build with -g, but with -g1")
++    QMAKE_CXXFLAGS_RELEASE -= -g
++    QMAKE_CXXFLAGS_RELEASE += -g1
++}
+ 
+ QT *= network
+ 

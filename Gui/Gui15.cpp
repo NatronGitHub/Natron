@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -43,13 +43,44 @@
 
 #include "Gui/DockablePanel.h"
 #include "Gui/Menu.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/ProjectGui.h"
-#include "Gui/ProjectGuiSerialization.h" // PaneLayout, GuiLayoutSerialization
 #include "Gui/SequenceFileDialog.h"
 
+#include "Serialization/WorkspaceSerialization.h"
+#include "Serialization/SerializationIO.h"
+SERIALIZATION_NAMESPACE_USING
 
 NATRON_NAMESPACE_ENTER
 
+void
+Gui::importLayoutInternal(const std::string& filename)
+{
+    FStreamsSupport::ifstream ifile;
+    FStreamsSupport::open(&ifile, filename);
+    if (!ifile) {
+        Dialogs::errorDialog( tr("Error").toStdString(), tr("Failed to open file: ").toStdString() + filename, false );
+
+        return;
+    }
+    
+    try {
+        WorkspaceSerialization s;
+        try {
+            SERIALIZATION_NAMESPACE::read(NATRON_LAYOUT_FILE_HEADER, ifile, &s);
+        } catch (SERIALIZATION_NAMESPACE::InvalidSerializationFileException& e) {
+            Dialogs::errorDialog( tr("Error").toStdString(), tr("Failed to open %1: this file does not appear to be a layout file").arg(QString::fromUtf8(filename.c_str())).toStdString());
+            return;
+        }
+        restoreLayout(true, false, s);
+
+    }  catch (const std::exception & e) {
+        QString err = QString::fromUtf8("Failed to open file %1: %2").arg( QString::fromUtf8( filename.c_str() ) ).arg( QString::fromUtf8( e.what() ) );
+        Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
+
+        return;
+    }
+}
 
 void
 Gui::importLayout()
@@ -60,30 +91,7 @@ Gui::importLayout()
     SequenceFileDialog dialog( this, filters, false, SequenceFileDialog::eFileDialogModeOpen, _imp->_lastLoadProjectOpenedDir.toStdString(), this, false );
     if ( dialog.exec() ) {
         std::string filename = dialog.selectedFiles();
-        FStreamsSupport::ifstream ifile;
-        FStreamsSupport::open(&ifile, filename);
-        if (!ifile) {
-            Dialogs::errorDialog( tr("Error").toStdString(), tr("Failed to open file: ").toStdString() + filename, false );
-
-            return;
-        }
-
-        try {
-            boost::archive::xml_iarchive iArchive(ifile);
-            GuiLayoutSerialization s;
-            iArchive >> boost::serialization::make_nvp("Layout", s);
-            restoreLayout(true, false, s);
-        } catch (const boost::archive::archive_exception & e) {
-            QString err = QString::fromUtf8("Exception occured when opening file %1: %2").arg( QString::fromUtf8( filename.c_str() ) ).arg( QString::fromUtf8( e.what() ) );
-            Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
-
-            return;
-        } catch (const std::exception & e) {
-            QString err = QString::fromUtf8("Exception occured when opening file %1: %2").arg( QString::fromUtf8( filename.c_str() ) ).arg( QString::fromUtf8( e.what() ) );
-            Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
-
-            return;
-        }
+        importLayoutInternal(filename);
     }
 }
 
@@ -96,32 +104,7 @@ Gui::createDefaultLayoutInternal(bool wipePrevious)
 
     std::string fileLayout = appPTR->getCurrentSettings()->getDefaultLayoutFile();
     if ( !fileLayout.empty() ) {
-        std::ifstream ifile;
-        ifile.open( fileLayout.c_str() );
-        if ( !ifile.is_open() ) {
-            createDefaultLayout1();
-        } else {
-            try {
-                boost::archive::xml_iarchive iArchive(ifile);
-                GuiLayoutSerialization s;
-                iArchive >> boost::serialization::make_nvp("Layout", s);
-                restoreLayout(false, false, s);
-            } catch (const boost::archive::archive_exception & e) {
-                ifile.close();
-                QString err = QString::fromUtf8("Exception occured when opening file %1: %2").arg( QString::fromUtf8( fileLayout.c_str() ) ).arg( QString::fromUtf8( e.what() ) );
-                Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
-
-                return;
-            } catch (const std::exception & e) {
-                ifile.close();
-                QString err = QString::fromUtf8("Exception occured when opening file %1: %2").arg( QString::fromUtf8( fileLayout.c_str() ) ).arg( QString::fromUtf8( e.what() ) );
-                Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
-
-                return;
-            }
-
-            ifile.close();
-        }
+        importLayoutInternal(fileLayout);
     } else {
         createDefaultLayout1();
     }
@@ -290,84 +273,96 @@ Gui::putSettingsPanelFirst(DockablePanel* panel)
     if (!panel) {
         return;
     }
-    {
-        QMutexLocker k(&_imp->openedPanelsMutex);
-        std::list<DockablePanel*>::iterator it = std::find(_imp->openedPanels.begin(), _imp->openedPanels.end(), panel);
-        if ( it != _imp->openedPanels.end() ) {
-            if ( !(*it)->isFloating() ) {
-                _imp->openedPanels.erase(it);
-                _imp->openedPanels.push_front(panel);
-
-                panel->setParent( _imp->_layoutPropertiesBin->parentWidget() );
-                _imp->_layoutPropertiesBin->removeWidget(panel);
-                _imp->_layoutPropertiesBin->insertWidget(0, panel);
-                _imp->_propertiesScrollArea->verticalScrollBar()->setValue(0);
-                if ( !panel->isVisible() ) {
-                    panel->setVisible(true);
-                }
-                buildTabFocusOrderPropertiesBin();
-            } else {
-                (*it)->activateWindow();
-            }
-        } else {
-            return;
-        }
+    std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
+    std::list<DockablePanelI*>::iterator it = std::find(panels.begin(), panels.end(), panel);
+    if ( it == panels.end() ) {
+        return;
     }
+    if (panel->isFloating()) {
+        panel->activateWindow();
+    } else {
+        panels.erase(it);
+        panels.push_front(panel);
+        getApp()->setOpenedSettingsPanelsInternal(panels);
+        panel->setParent( _imp->_layoutPropertiesBin->parentWidget() );
+        _imp->_layoutPropertiesBin->removeWidget(panel);
+        _imp->_layoutPropertiesBin->insertWidget(0, panel);
+        _imp->_propertiesScrollArea->verticalScrollBar()->setValue(0);
+        if ( !panel->isVisible() ) {
+            panel->setVisible(true);
+        }
+        buildTabFocusOrderPropertiesBin();
+    }
+
+    // Refresh timeline's keyframes
+    refreshTimelineGuiKeyframesLater();
+
+
 }
 
 void
 Gui::addVisibleDockablePanel(DockablePanel* panel)
 {
-    DockablePanel* found = 0;
+
+
     int nbDockedPanels = 0;
-    {
-        QMutexLocker k(&_imp->openedPanelsMutex);
-
-        for (std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin(); it != _imp->openedPanels.end(); ++it) {
-            if (*it == panel) {
-                found = *it;
-            }
-            if ( !(*it)->isFloating() ) {
-                ++nbDockedPanels;
-            }
-        }
-    }
-
+    DockablePanel* foundPanel = 0;
     assert(panel);
     int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
-    while ( (nbDockedPanels >= maxPanels) && (maxPanels != 0) ) {
+    do {
         DockablePanel* first = 0;
+
         {
-            QMutexLocker k(&_imp->openedPanelsMutex);
-            for (std::list<DockablePanel*>::reverse_iterator it = _imp->openedPanels.rbegin(); it != _imp->openedPanels.rend(); ++it) {
-                if ( !(*it)->isFloating() ) {
-                    if ( !first && (*it != panel) ) {
-                        first = *it;
-                        break;
-                    }
+            std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
+            for (std::list<DockablePanelI*>::iterator it = panels.begin(); it != panels.end(); ++it) {
+                DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it);
+                if (!isPanel) {
+                    continue;
                 }
-            }
-        }
-        if (first) {
-            first->closePanel();
-        } else {
-            break;
-        }
-
-        nbDockedPanels = 0;
-
-        {
-            QMutexLocker k(&_imp->openedPanelsMutex);
-            for (std::list<DockablePanel*>::reverse_iterator it = _imp->openedPanels.rbegin(); it != _imp->openedPanels.rend(); ++it) {
-                if ( !(*it)->isFloating() ) {
+                if ( !isPanel->isFloating() ) {
+                    if ( !first && (*it != panel) ) {
+                        first = isPanel;
+                    }
                     ++nbDockedPanels;
                 }
+                if (panel == isPanel) {
+                    foundPanel = isPanel;
+                }
             }
         }
+
+        // If the panel is already here, don't remove anything just put it first
+        if (foundPanel && (nbDockedPanels <= maxPanels || maxPanels == 0)) {
+            break;
+        }
+        if ((nbDockedPanels >= maxPanels) && (maxPanels != 0)) {
+            if (first) {
+                first->closePanel();
+            } else {
+                break;
+            }
+
+            nbDockedPanels = 0;
+
+            std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
+            for (std::list<DockablePanelI*>::iterator it = panels.begin(); it != panels.end(); ++it) {
+                DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it);
+                if (!isPanel) {
+                    continue;
+                }
+                if ( !isPanel->isFloating() ) {
+                    ++nbDockedPanels;
+                }
+                
+            }
+        }
+
     }
+    while ( (nbDockedPanels >= maxPanels) && (maxPanels != 0) );
 
 
-    if (found) {
+
+    if (foundPanel) {
         putSettingsPanelFirst(panel);
     } else {
         if (!panel->isFloating()) {
@@ -378,38 +373,25 @@ Gui::addVisibleDockablePanel(DockablePanel* panel)
         if ( !panel->isVisible() ) {
             panel->setVisible(true);
         }
+        getApp()->registerSettingsPanel(panel);
 
-        QMutexLocker k(&_imp->openedPanelsMutex);
-        _imp->openedPanels.push_front(panel);
+        // Refresh timeline's keyframes, this is also done in putSettingsPanelFirst
+        refreshTimelineGuiKeyframesLater();
     }
+
+
+
 } // Gui::addVisibleDockablePanel
 
 void
 Gui::removeVisibleDockablePanel(DockablePanel* panel)
 {
-    QMutexLocker k(&_imp->openedPanelsMutex);
-    std::list<DockablePanel*>::iterator it = std::find(_imp->openedPanels.begin(), _imp->openedPanels.end(), panel);
 
-    if ( it != _imp->openedPanels.end() ) {
-        _imp->openedPanels.erase(it);
-    }
+    getApp()->unregisterSettingsPanel(panel);
+    // Refresh timeline's keyframes
+    refreshTimelineGuiKeyframesLater();
 }
 
-const std::list<DockablePanel*>&
-Gui::getVisiblePanels() const
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->openedPanels;
-}
-
-std::list<DockablePanel*>
-Gui::getVisiblePanels_mt_safe() const
-{
-    QMutexLocker k(&_imp->openedPanelsMutex);
-
-    return _imp->openedPanels;
-}
 
 void
 Gui::buildTabFocusOrderPropertiesBin()

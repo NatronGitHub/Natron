@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <PyRoto.h>
+#include <PyItemsTable.h>
 
 NATRON_NAMESPACE_ENTER NATRON_PYTHON_NAMESPACE_ENTER
 class ItemBaseWrapper : public ItemBase

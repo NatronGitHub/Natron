@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -43,13 +43,17 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/AppInstance.h"
 #include "Engine/Node.h"
 #include "Engine/Timer.h"
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Image.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
@@ -82,7 +86,7 @@ struct ProgressPanelPrivate
     QHBoxLayout* headerLayout;
     QCheckBox* queueTasksCheckbox;
     QCheckBox* removeTasksAfterFinishCheckbox;
-    TableModel* model;
+    TableModelPtr model;
     TableView* view;
     mutable QMutex tasksMutex;
     TasksMap tasks;
@@ -98,7 +102,7 @@ struct ProgressPanelPrivate
         , headerLayout(0)
         , queueTasksCheckbox(0)
         , removeTasksAfterFinishCheckbox(0)
-        , model(0)
+        , model()
         , view(0)
         , tasksMutex()
         , tasks()
@@ -121,17 +125,13 @@ struct ProgressPanelPrivate
         return ProgressTaskInfoPtr();
     }
 
-    ProgressTaskInfoPtr findTask(const TableItem* item) const
+    ProgressTaskInfoPtr findTask(const TableItemConstPtr& item) const
     {
         assert( !tasksMutex.tryLock() );
 
         for (TasksMap::const_iterator it = tasks.begin(); it != tasks.end(); ++it) {
-            std::vector<TableItem*> items;
-            it->second->getTableItems(&items);
-            for (std::size_t i = 0; i < items.size(); ++i) {
-                if (items[i] == item) {
-                    return it->second;
-                }
+            if (it->second->getTableItem() == item) {
+                return it->second;
             }
         }
 
@@ -139,9 +139,9 @@ struct ProgressPanelPrivate
     }
 };
 
-ProgressPanel::ProgressPanel(Gui* gui)
+ProgressPanel::ProgressPanel(const std::string& scriptName, Gui* gui)
     : QWidget(gui)
-    , PanelWidget(this, gui)
+    , PanelWidget(scriptName, this, gui)
     , _imp( new ProgressPanelPrivate() )
 {
     _imp->mainLayout = new QVBoxLayout(this);
@@ -170,43 +170,48 @@ ProgressPanel::ProgressPanel(Gui* gui)
 
     _imp->headerLayout->addStretch();
 
+    std::vector<std::pair<QString, QIcon> > headerData;
+    headerData.push_back(std::make_pair(tr("Node"), QIcon()));
+    headerData.push_back(std::make_pair(tr("Progress"), QIcon()));
+    headerData.push_back(std::make_pair(tr("Status"), QIcon()));
+    headerData.push_back(std::make_pair(tr("Controls"), QIcon()));
+    headerData.push_back(std::make_pair(tr("Time remaining"), QIcon()));
+    headerData.push_back(std::make_pair(tr("Frame Range"), QIcon()));
+    headerData.push_back(std::make_pair(tr("Task"), QIcon()));
 
-    _imp->view = new TableView(this);
+
+    _imp->view = new TableView(getGui(), this);
     _imp->view->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-    _imp->model = new TableModel(0, 0, _imp->view);
+    _imp->model = TableModel::create(headerData.size(), TableModel::eTableModelTypeTable);
     _imp->view->setSortingEnabled(false);
     _imp->view->setTableModel(_imp->model);
 
     _imp->mainLayout->addWidget(_imp->view);
 
-    QObject::connect( _imp->view, SIGNAL(itemRightClicked(TableItem*)), this, SLOT(onItemRightClicked(TableItem*)) );
-    QStringList dimensionNames;
-    dimensionNames
-        << tr("Node")
-        << tr("Progress")
-        << tr("Status")
-        << tr("Controls")
-        << tr("Time remaining")
-        << tr("Frame Range")
-        << tr("Task");
+    QObject::connect( _imp->view, SIGNAL(itemRightClicked(QPoint, TableItemPtr)), this, SLOT(onItemRightClicked(QPoint, TableItemPtr)) );
+   
 
-    _imp->view->setColumnCount( dimensionNames.size() );
-    _imp->view->setHorizontalHeaderLabels(dimensionNames);
+    _imp->model->setHorizontalHeaderData(headerData);
     //_imp->view->header()->setResizeMode(QHeaderView::Fixed);
     _imp->view->header()->setStretchLastSection(true);
     _imp->view->header()->resizeSection( COL_TIME_REMAINING, TO_DPIX(150) );
 
     QItemSelectionModel* selModel = _imp->view->selectionModel();
     QObject::connect( selModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this, SLOT(onSelectionChanged(QItemSelection,QItemSelection)) );
-    QObject::connect( this, SIGNAL(s_doProgressStartOnMainThread(boost::shared_ptr<Node>,QString,QString,bool)), this, SLOT(doProgressStartOnMainThread(boost::shared_ptr<Node>,QString,QString,bool)) );
+    QObject::connect( this, SIGNAL(s_doProgressStartOnMainThread(NodePtr,QString,QString,bool)), this, SLOT(doProgressStartOnMainThread(NodePtr,QString,QString,bool)) );
     QObject::connect( this, SIGNAL(s_doProgressUpdateOnMainThread(ProgressTaskInfoPtr,double)), this, SLOT(doProgressOnMainThread(ProgressTaskInfoPtr,double)) );
-    QObject::connect( this, SIGNAL(s_doProgressEndOnMainThread(boost::shared_ptr<Node>)), this, SLOT(doProgressEndOnMainThread(boost::shared_ptr<Node>)) );
+    QObject::connect( this, SIGNAL(s_doProgressEndOnMainThread(NodePtr)), this, SLOT(doProgressEndOnMainThread(NodePtr)) );
 }
 
 ProgressPanel::~ProgressPanel()
 {
 }
 
+TableModelPtr
+ProgressPanel::getModel() const
+{
+    return _imp->model;
+}
 void
 ProgressPanel::onShowProgressPanelTimerTriggered()
 {
@@ -329,7 +334,7 @@ ProgressPanel::removeTaskFromTable(const ProgressTaskInfoPtr& task)
 void
 ProgressPanel::removeTasksFromTable(const std::list<ProgressTaskInfoPtr>& tasks)
 {
-    std::vector<TableItem*> table;
+    //std::vector<TableItemPtr> table;
     std::vector<ProgressTaskInfoPtr> newOrder;
 
     {
@@ -341,27 +346,27 @@ ProgressPanel::removeTasksFromTable(const std::list<ProgressTaskInfoPtr>& tasks)
                 _imp->tasks.erase(foundInMap);
             }
         }
-        int rc = _imp->view->rowCount();
-        int cc = _imp->view->columnCount();
-        assert( (int)_imp->tasksOrdered.size() == rc );
 
-        for (int i = 0; i < rc; ++i) {
-            std::list<ProgressTaskInfoPtr>::const_iterator foundSelected = std::find(tasks.begin(), tasks.end(), _imp->tasksOrdered[i]);
+        for (std::size_t i = 0; i < _imp->tasksOrdered.size(); ++i) {
             _imp->tasksOrdered[i]->removeCellWidgets(i, _imp->view);
+
+            std::list<ProgressTaskInfoPtr>::const_iterator foundSelected = std::find(tasks.begin(), tasks.end(), _imp->tasksOrdered[i]);
             if ( foundSelected != tasks.end() ) {
-                continue;
-            }
-            for (int j = 0; j < cc; ++j) {
-                table.push_back( _imp->view->takeItem(i, j) );
+                TableItemPtr item = _imp->model->getItem(i);
+                _imp->model->removeItem(item);
+            } else {
+                newOrder.push_back(_imp->tasksOrdered[i]);
             }
 
+           // table.push_back(item);
 
-            newOrder.push_back(_imp->tasksOrdered[i]);
+
+
         }
         _imp->tasksOrdered = newOrder;
     }
 
-    _imp->model->setTable(table);
+   // _imp->model->setTable(table);
 
     ///Refresh custom widgets
     for (std::size_t i = 0; i < newOrder.size(); ++i) {
@@ -382,7 +387,7 @@ connectProcessSlots(ProgressTaskInfo* task,
 
 void
 ProgressPanel::onTaskRestarted(const NodePtr& node,
-                               const boost::shared_ptr<ProcessHandler>& process)
+                               const ProcessHandlerPtr& process)
 {
     QMutexLocker k(&_imp->tasksMutex);
     ProgressTaskInfoPtr task;
@@ -404,7 +409,7 @@ ProgressPanel::doProgressStartOnMainThread(const NodePtr& node,
                                            const QString & /*messageid*/,
                                            bool canCancel)
 {
-    startTask(node, INT_MIN, INT_MAX, 1, false, canCancel, message);
+    startTask(node, TimeValue(INT_MIN), TimeValue(INT_MAX), TimeValue(1), false, canCancel, message);
 }
 
 void
@@ -426,13 +431,13 @@ ProgressPanel::progressStart(const NodePtr& node,
 
 void
 ProgressPanel::startTask(const NodePtr& node,
-                         const int firstFrame,
-                         const int lastFrame,
-                         const int frameStep,
+                         const TimeValue firstFrame,
+                         const TimeValue lastFrame,
+                         const TimeValue frameStep,
                          const bool canPause,
                          const bool canCancel,
                          const QString& message,
-                         const boost::shared_ptr<ProcessHandler>& process)
+                         const ProcessHandlerPtr& process)
 {
     assert( QThread::currentThread() == qApp->thread() );
     if (!node) {
@@ -473,19 +478,17 @@ ProgressPanel::startTask(const NodePtr& node,
     }
     if (!process) {
         if ( node->getEffectInstance()->isOutput() ) {
-            OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
-            if (isOutput) {
 
-                if ( getGui() && !getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
-                    getGui()->onFreezeUIButtonClicked(true);
-                }
-
-                boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
-                assert(engine);
-                QObject::connect( engine.get(), SIGNAL(frameRendered(int,double)), task.get(), SLOT(onRenderEngineFrameComputed(int,double)) );
-                QObject::connect( engine.get(), SIGNAL(renderFinished(int)), task.get(), SLOT(onRenderEngineStopped(int)) );
-                QObject::connect( task.get(), SIGNAL(taskCanceled()), engine.get(), SLOT(abortRendering_non_blocking()) );
+            if ( getGui() && !getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
+                getGui()->onFreezeUIButtonClicked(true);
             }
+
+            RenderEnginePtr engine = node->getRenderEngine();
+            assert(engine);
+            QObject::connect( engine.get(), SIGNAL(frameRendered(int,double)), task.get(), SLOT(onRenderEngineFrameComputed(int,double)) );
+            QObject::connect( engine.get(), SIGNAL(renderFinished(int)), task.get(), SLOT(onRenderEngineStopped(int)) );
+            QObject::connect( task.get(), SIGNAL(taskCanceled()), engine.get(), SLOT(abortRendering_non_blocking()) );
+
         }
     }
     _imp->tasks[node] = task;
@@ -503,16 +506,11 @@ void
 ProgressPanel::addTaskToTable(const ProgressTaskInfoPtr& task)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    int rc = _imp->view->rowCount();
-    _imp->view->setRowCount(rc + 1);
+    int rc = _imp->model->rowCount();
 
-    std::vector<TableItem*> items;
-    task->getTableItems(&items);
-    assert(items.size() == COL_LAST);
+    TableItemPtr item = task->getTableItem();
+    _imp->model->insertTopLevelItem(rc, item);
 
-    for (std::size_t i = 0; i < items.size(); ++i) {
-        _imp->view->setItem(rc, i, items[i]);
-    }
     task->setCellWidgets(rc, _imp->view);
 
     _imp->lastTaskAdded = task;
@@ -553,7 +551,12 @@ ProgressPanel::updateTask(const NodePtr& node,
     if (isMainThread) {
         if (_imp->processEventsRecursionCounter == 0) {
             ++_imp->processEventsRecursionCounter;
-            QCoreApplication::processEvents();
+            {
+#ifdef DEBUG
+                boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+                QCoreApplication::processEvents();
+            }
             --_imp->processEventsRecursionCounter;
         }
     }
@@ -614,7 +617,7 @@ ProgressPanel::onQueueRendersCheckboxChecked()
 }
 
 void
-ProgressPanel::onItemRightClicked(TableItem* item)
+ProgressPanel::onItemRightClicked(QPoint globalPos, const TableItemPtr& item)
 {
     ProgressTaskInfoPtr task;
     {
@@ -625,7 +628,7 @@ ProgressPanel::onItemRightClicked(TableItem* item)
     if (!task) {
         return;
     }
-    boost::shared_ptr<ProcessHandler> hasProcess = task->getProcess();
+    ProcessHandlerPtr hasProcess = task->getProcess();
     Menu m(this);
     QAction* showLogAction = 0;
     if (hasProcess) {
@@ -635,7 +638,7 @@ ProgressPanel::onItemRightClicked(TableItem* item)
 
     QAction* triggered = 0;
     if ( !m.isEmpty() ) {
-        triggered = m.exec( QCursor::pos() );
+        triggered = m.exec(globalPos);
     }
     if ( (triggered == showLogAction) && showLogAction ) {
         const QString& log = hasProcess->getProcessLog();
@@ -644,6 +647,17 @@ ProgressPanel::onItemRightClicked(TableItem* item)
         ignore_result(window.exec());
     }
 }
+
+
+QIcon
+ProgressPanel::getIcon() const
+{
+    int iconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+    QPixmap p;
+    appPTR->getIcon(NATRON_PIXMAP_PROGRESS_PANEL, iconSize, &p);
+    return QIcon(p);
+}
+
 
 NATRON_NAMESPACE_EXIT
 

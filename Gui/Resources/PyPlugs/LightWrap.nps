@@ -1,0 +1,628 @@
+# Natron Presets File
+PluginID: fr.inria.built-in.Group
+Params:
+  - Name: pyPlugPluginID
+    String: fr.inria.LightWrap
+  - Name: pyPlugPluginLabel
+    String: LightWrap
+  - Name: pyPlugPluginGrouping
+    String: Draw
+  - Name: pyPlugPluginDescription
+    String: "LightWrap helps composite objects onto a bright background by simulating reflections from the background light on the foreground, around its edges. Input A is the foreground image and its matte, and input B the the background to use for the wrapping effect.\n\nThe output of LightWrap should then be composited over the background to give the final composite."
+  - Name: pyPlugPluginVersion
+    Int: [1, 0]
+  - Name: pyPlugPluginIcon
+    String: LightWrap.png
+UserPages:
+  - TypeName: Page
+    Name: controlsPage
+    Label: Controls
+    Params:
+      - Name: diffuse
+        DefaultFloat: [15, 15]
+        NDims: 2
+        TypeName: Double
+        Label: Diffuse
+        Hint: Size of the reflections from the background to the foreground element (Intensity controls their intensity). Start by setting Diffuse to zero and adjust intensity to see what colors from the background are being reflected. Then adjust Diffuse, come back to Intensity if necessary, and balance both parameters until the result is satisfactory.
+        Min: 0
+        Max: 1000
+        DisplayMin: 0
+        DisplayMax: 100
+      - Name: intensity
+        DefaultFloat: 0
+        NDims: 1
+        TypeName: Double
+        Label: Intensity
+        Hint: Brightness of the reflections from the background to the foreground element (Diffuse controls their size). Start by setting Diffuse to zero and adjust intensity to see what colors from the background are being reflected. Then adjust Diffuse, come back to Intensity if necessary, and balance both parameters until the result is satisfactory.
+        Min: 0
+        Max: 100
+        DisplayMin: 0
+        DisplayMax: 100
+      - Name: onlyWrap
+        DefaultBool: false
+        NDims: 1
+        TypeName: Bool
+        Label: Generate Wrap Only
+        Hint: When checked, the LightWrap in generated but is not merged with the foreground object (disables the Highlight Merge).
+      - Name: disableLuma
+        DefaultBool: false
+        NDims: 1
+        TypeName: Bool
+        Label: Disable luminance-Based Wrap
+        Hint: When checked, the LightWrap effect is created uniformly around the edged, rather than being controled by the color of the background.
+      - Name: enableGlow
+        DefaultBool: false
+        NDims: 1
+        TypeName: Bool
+        Label: Enable Glow
+        Hint: When checked, the LightWrap is not masked by the foreground object, so that the objects seems to glow.
+      - Name: fgblur
+        DefaultFloat: [1, 1]
+        NDims: 2
+        TypeName: Double
+        Label: FGBlur
+        Hint: Size of the blur applied to the alpha channel of the foreground (i.e. the foreground matte). More blur causes more background to be added to the foreground.
+        Min: 0
+        Max: 1000
+        DisplayMin: 0
+        DisplayMax: 100
+      - Name: fgblurBoundary
+        DefaultString: Black
+        NDims: 1
+        TypeName: Choice
+        Label: FGBlur Border Conditions
+        Hint: Border conditions of the blur applied to the alpha channel of the foreground (i.e. the foreground matte). Use "Black" in most cases, and "Nearest" if the foreground matte should be extended beyond image borders when it touches them.
+        Entries: [Black, Nearest]
+        Hints: ["Dirichlet boundary condition: pixel values out of the image domain are zero.", "Neumann boundary condition: pixel values out of the image domain are those of the closest pixel location in the image domain."]
+      - Name: bgblur
+        DefaultFloat: [0, 0]
+        NDims: 2
+        TypeName: Double
+        Label: BGBlur
+        Hint: Size of the blur applied to the background before merging it with the foreground element and applying the Diffuse blur.
+        Min: 0
+        Max: 1000
+        DisplayMin: 0
+        DisplayMax: 100
+      - Name: saturation
+        DefaultFloat: 1
+        NDims: 1
+        TypeName: Double
+        Label: Saturation
+        Hint: Color saturation of the LightWrap effect. Advanced color correction parameters are available in the ColorCorrect tab.
+        Min: -1.79769e+308
+        Max: 1.79769e+308
+        DisplayMin: 0
+        DisplayMax: 4
+      - Name: lumaTolerance
+        DefaultFloat: 0
+        NDims: 1
+        TypeName: Double
+        Label: Luma Tolerance
+        Hint: Luminance threshold of the LightWrap effect. Luminance values below this do not generate a LightWrap.
+        Min: 0
+        Max: 1
+        DisplayMin: 0
+        DisplayMax: 1
+      - Name: highlightmerge
+        DefaultString: plus
+        NDims: 1
+        TypeName: Choice
+        Label: Highlight Merge
+        Hint: Merge operation bewteen the foreground object and the background. The default operation is "plus", which produces a glow effect.
+        Entries: [atop, average, color, color-burn, color-dodge, conjoint-over, copy, difference, disjoint-over, divide, exclusion, freeze, from, geometric, grain-extract, grain-merge, hard-light, hue, hypot, in, luminosity, mask, matte, max, min, minus, multiply, out, over, overlay, pinlight, plus, reflect, saturation, screen, soft-light, stencil, under, xor]
+        Hints: [Ab + B(1 - a) (a.k.a. src-atop), (A + B) / 2, "SetLum(A, Lum(B))", darken B towards A, brighten B towards A, "A + B(1-a)/b, A if a > b", A (a.k.a. src), abs(A-B) (a.k.a. absminus), "A+B(1-a)/b, A+B if a+b < 1", "A/B, 0 if A < 0 and B < 0", A+B-2AB, 1-sqrt(1-A)/B, B-A (a.k.a. subtract), 2AB/(A+B), B - A + 0.5, B + A - 0.5, "multiply if A < 0.5, screen if A > 0.5", "SetLum(SetSat(A, Sat(B)), Lum(B))", sqrt(A*A+B*B), Ab (a.k.a. src-in), "SetLum(B, Lum(A))", Ba (a.k.a dst-in), Aa + B(1-a) (unpremultiplied over), "max(A, B) (a.k.a. lighten only)", "min(A, B) (a.k.a. darken only)", A-B, "AB, 0 if A < 0 and B < 0", A(1-b) (a.k.a. src-out), A+B(1-a) (a.k.a. src-over), "multiply if B < 0.5, screen if B > 0.5", "if B >= 0.5 then max(A, 2*B - 1), min(A, B * 2.0 ) else", A+B (a.k.a. add), A*A / (1 - B), "SetLum(SetSat(B, Sat(A)), Lum(B))", "A+B-AB if A or B <= 1, otherwise max(A, B)", "burn-in if A < 0.5, lighten if A > 0.5", B(1-a) (a.k.a. dst-out), A(1-b)+B (a.k.a. dst-over), A(1-b)+B(1-a)]
+        Props: [AnimatesChanged]
+      - Name: useConstant
+        DefaultBool: false
+        NDims: 1
+        TypeName: Bool
+        Label: Use Constant Highlight
+        Hint: When checked, use a constant color (specified by the Constant parameter) instead of the background for the LightWrap effect.
+        Props: [AnimatesChanged]
+      - Name: constantcolor
+        DefaultFloat: [1, 1, 1, 1]
+        NDims: 4
+        TypeName: Color
+        Label: Constant
+        Hint: Color to use in the LightWrap effect when Use constant highlight is enabled.
+        DisplayMin: 0
+        DisplayMax: 1
+  - TypeName: Page
+    Name: colorCorrectPage
+    Label: ColorCorrect
+    Params:
+      - TypeName: Group
+        Name: masterGroup
+        Label: Master
+        Params:
+          - Name: ColorCorrect1MasterSaturation
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Saturation
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0
+            DisplayMax: 4
+          - Name: ColorCorrect1MasterContrast
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Contrast
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0
+            DisplayMax: 4
+          - Name: ColorCorrect1MasterGamma
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Gamma
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0.2
+            DisplayMax: 5
+          - Name: ColorCorrect1MasterGain
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Gain
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0
+            DisplayMax: 4
+          - Name: ColorCorrect1MasterOffset
+            DefaultFloat: [0, 0, 0, 0]
+            NDims: 4
+            TypeName: Color
+            Label: Offset
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: -1
+            DisplayMax: 1
+        Props:
+          - Opened
+      - TypeName: Group
+        Name: shadowsGroup
+        Label: Shadows
+        Params:
+          - Name: ColorCorrect1ShadowsEnable
+            DefaultBool: true
+            NDims: 1
+            TypeName: Bool
+            Label: Enable
+          - Name: ColorCorrect1ShadowsSaturation
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Saturation
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0
+            DisplayMax: 4
+          - Name: ColorCorrect1ShadowsContrast
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Contrast
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0
+            DisplayMax: 4
+          - Name: ColorCorrect1ShadowsGamma
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Gamma
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0.2
+            DisplayMax: 5
+          - Name: ColorCorrect1ShadowsGain
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Gain
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0
+            DisplayMax: 4
+          - Name: ColorCorrect1ShadowsOffset
+            DefaultFloat: [0, 0, 0, 0]
+            NDims: 4
+            TypeName: Color
+            Label: Offset
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: -1
+            DisplayMax: 1
+        Props:
+          - Opened
+      - TypeName: Group
+        Name: midtonesGroup
+        Label: Midtones
+        Params:
+          - Name: ColorCorrect1MidtonesEnable
+            DefaultBool: true
+            NDims: 1
+            TypeName: Bool
+            Label: Enable
+          - Name: ColorCorrect1MidtonesSaturation
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Saturation
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0
+            DisplayMax: 4
+          - Name: ColorCorrect1MidtonesContrast
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Contrast
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0
+            DisplayMax: 4
+          - Name: ColorCorrect1MidtonesGamma
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Gamma
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0.2
+            DisplayMax: 5
+          - Name: ColorCorrect1MidtonesGain
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Gain
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0
+            DisplayMax: 4
+          - Name: ColorCorrect1MidtonesOffset
+            DefaultFloat: [0, 0, 0, 0]
+            NDims: 4
+            TypeName: Color
+            Label: Offset
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: -1
+            DisplayMax: 1
+        Props:
+          - Opened
+      - TypeName: Group
+        Name: highlightsGroup
+        Label: Highlights
+        Params:
+          - Name: ColorCorrect1HighlightsEnable
+            DefaultBool: true
+            NDims: 1
+            TypeName: Bool
+            Label: Enable
+          - Name: ColorCorrect1HighlightsSaturation
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Saturation
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0
+            DisplayMax: 4
+          - Name: ColorCorrect1HighlightsContrast
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Contrast
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0
+            DisplayMax: 4
+          - Name: ColorCorrect1HighlightsGamma
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Gamma
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0.2
+            DisplayMax: 5
+          - Name: ColorCorrect1HighlightsGain
+            DefaultFloat: [1, 1, 1, 1]
+            NDims: 4
+            TypeName: Color
+            Label: Gain
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: 0
+            DisplayMax: 4
+          - Name: ColorCorrect1HighlightsOffset
+            DefaultFloat: [0, 0, 0, 0]
+            NDims: 4
+            TypeName: Color
+            Label: Offset
+            Min: -1.79769e+308
+            Max: 1.79769e+308
+            DisplayMin: -1
+            DisplayMax: 1
+        Props:
+          - Opened
+PagesOrder: [controlsPage, colorCorrectPage, nodePage, pyPlugPage]
+Children:
+  - PluginID: fr.inria.built-in.Output
+    Name: Output
+    Label: Output1
+    Inputs: Dot4
+    Pos: [761, 1308]
+  - PluginID: fr.inria.built-in.Input
+    Name: Input1
+    Label: A
+    Pos: [198, -35]
+  - PluginID: net.sf.openfx.KeyerPlugin
+    Name: Keyer1
+    Inputs: {Source: Dot1}
+    Params:
+      - Name: softnessLower
+        Float: {pyExpr: thisGroup.lumaTolerance.getValue() - 1}
+      - Name: softnessUpper
+        Float: 0
+      - Name: userTextArea
+        String: <Natron>(Luminance)</Natron>
+    Pos: [752, 164]
+  - PluginID: net.sf.openfx.Premult
+    Name: Premult1
+    Version: [2, 0]
+    Inputs: Keyer1
+    Pos: [752, 252]
+  - PluginID: net.sf.cimg.CImgBlur
+    Name: BGBlur
+    Version: [3, 0]
+    Inputs: Premult1
+    Params:
+      - Name: NatronOfxParamProcessA
+        Bool: true
+      - Name: size
+        Float: [{N: "@thisGroup", K: bgblur, D: x}, {N: "@thisGroup", K: bgblur, D: y}]
+      - Name: expandRoD
+        Bool: false
+    Pos: [752, 316]
+  - PluginID: net.sf.openfx.ConstantPlugin
+    Name: Constant1
+    Params:
+      - Name: NatronParamFormatChoice
+        String: PC_Video
+      - Name: size
+        Float: [960, 540]
+      - Name: color
+        Float: [{N: "@thisGroup", K: constantcolor, D: r}, {N: "@thisGroup", K: constantcolor, D: g}, {N: "@thisGroup", K: constantcolor, D: b}, {N: "@thisGroup", K: constantcolor, D: a}]
+      - Name: NatronOfxParamProcessA
+        Bool: false
+    Pos: [968, 185]
+  - PluginID: net.sf.openfx.ShufflePlugin
+    Name: Shufflecopy1
+    Version: [2, 0]
+    Inputs: {A: BGBlur, B: Constant1}
+    Params:
+      - Name: outputR
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.R
+      - Name: outputG
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.G
+      - Name: outputB
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.B
+    Pos: [968, 316]
+  - PluginID: net.sf.openfx.Premult
+    Name: Premult2
+    Version: [2, 0]
+    Inputs: Shufflecopy1
+    Pos: [970, 380]
+  - PluginID: net.sf.openfx.switchPlugin
+    Name: DisableLuma
+    Inputs: {0: Premult2, 1: Constant1}
+    Params:
+      - Name: which
+        Int: {pyExpr: thisGroup.disableLuma.getValue()}
+    Pos: [1172, 380]
+  - PluginID: net.sf.openfx.switchPlugin
+    Name: DisableLuma1
+    Inputs: {0: BGBlur, 1: Keyer1}
+    Params:
+      - Name: which
+        Int: {pyExpr: thisGroup.disableLuma.getValue()}
+    Pos: [579, 319]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot1
+    Inputs: Input2
+    Pos: [797, 21]
+  - PluginID: net.sf.openfx.switchPlugin
+    Name: ConstantColor
+    Inputs: {0: DisableLuma1, 1: DisableLuma}
+    Params:
+      - Name: which
+        Int: {pyExpr: thisGroup.useConstant.getValue()}
+    Pos: [758, 448]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot2
+    Inputs: Input1
+    Pos: [243, 443]
+  - PluginID: net.sf.cimg.CImgBlur
+    Name: FGBlur
+    Version: [3, 0]
+    Inputs: Dot2
+    Params:
+      - Name: NatronOfxParamProcessR
+        Bool: false
+      - Name: NatronOfxParamProcessG
+        Bool: false
+      - Name: NatronOfxParamProcessB
+        Bool: false
+      - Name: NatronOfxParamProcessA
+        Bool: true
+      - Name: size
+        Float: [{N: "@thisGroup", K: fgblur, D: x}, {N: "@thisGroup", K: fgblur, D: y}]
+      - Name: boundary
+        String: {N: "@thisGroup", K: fgblurBoundary}
+      - Name: expandRoD
+        Bool: false
+    Pos: [434, 433]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: EdgeMerge
+    Inputs: {A: Dot2, B: FGBlur}
+    Params:
+      - Name: operation
+        String: out
+      - Name: AChannelsR
+        Bool: false
+      - Name: AChannelsG
+        Bool: false
+      - Name: AChannelsB
+        Bool: false
+      - Name: OutputChannelsR
+        Bool: false
+      - Name: OutputChannelsG
+        Bool: false
+      - Name: OutputChannelsB
+        Bool: false
+      - Name: userTextArea
+        String: <Natron>(out)</Natron>
+    Pos: [434, 545]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: MaskMerge
+    Inputs: {A: ConstantColor, B: EdgeMerge}
+    Params:
+      - Name: operation
+        String: in
+      - Name: OutputChannelsA
+        Bool: false
+      - Name: userTextArea
+        String: <Natron>(in)</Natron>
+    Pos: [758, 545]
+  - PluginID: net.sf.cimg.CImgBlur
+    Name: Diffuse
+    Version: [3, 0]
+    Inputs: MaskMerge
+    Params:
+      - Name: NatronOfxParamProcessA
+        Bool: true
+      - Name: size
+        Float: [{N: "@thisGroup", K: diffuse, D: x}, {N: "@thisGroup", K: diffuse, D: y}]
+      - Name: expandRoD
+        Bool: false
+    Pos: [758, 633]
+  - PluginID: net.sf.openfx.MultiplyPlugin
+    Name: Intensity
+    Version: [2, 0]
+    Inputs: Diffuse
+    Params:
+      - Name: NatronOfxParamProcessA
+        Bool: true
+      - Name: value
+        Float: {pyExpr: thisGroup.intensity.getValue()}
+    Pos: [758, 697]
+  - PluginID: net.sf.openfx.SaturationPlugin
+    Name: Saturation1
+    Version: [2, 0]
+    Inputs: Intensity
+    Params:
+      - Name: saturation
+        Float: {N: "@thisGroup", K: saturation}
+      - Name: clampBlack
+        Bool: false
+    Pos: [758, 761]
+  - PluginID: net.sf.openfx.ColorCorrectPlugin
+    Name: ColorCorrect1
+    Version: [2, 0]
+    Inputs: Saturation1
+    Params:
+      - Name: NatronOfxParamProcessA
+        Bool: true
+      - Name: MasterSaturation
+        Float: [{N: "@thisGroup", K: ColorCorrect1MasterSaturation, D: r}, {N: "@thisGroup", K: ColorCorrect1MasterSaturation, D: g}, {N: "@thisGroup", K: ColorCorrect1MasterSaturation, D: b}, {N: "@thisGroup", K: ColorCorrect1MasterSaturation, D: a}]
+      - Name: MasterContrast
+        Float: [{N: "@thisGroup", K: ColorCorrect1MasterContrast, D: r}, {N: "@thisGroup", K: ColorCorrect1MasterContrast, D: g}, {N: "@thisGroup", K: ColorCorrect1MasterContrast, D: b}, {N: "@thisGroup", K: ColorCorrect1MasterContrast, D: a}]
+      - Name: MasterGamma
+        Float: [{N: "@thisGroup", K: ColorCorrect1MasterGamma, D: r}, {N: "@thisGroup", K: ColorCorrect1MasterGamma, D: g}, {N: "@thisGroup", K: ColorCorrect1MasterGamma, D: b}, {N: "@thisGroup", K: ColorCorrect1MasterGamma, D: a}]
+      - Name: MasterGain
+        Float: [{N: "@thisGroup", K: ColorCorrect1MasterGain, D: r}, {N: "@thisGroup", K: ColorCorrect1MasterGain, D: g}, {N: "@thisGroup", K: ColorCorrect1MasterGain, D: b}, {N: "@thisGroup", K: ColorCorrect1MasterGain, D: a}]
+      - Name: MasterOffset
+        Float: [{N: "@thisGroup", K: ColorCorrect1MasterOffset, D: r}, {N: "@thisGroup", K: ColorCorrect1MasterOffset, D: g}, {N: "@thisGroup", K: ColorCorrect1MasterOffset, D: b}, {N: "@thisGroup", K: ColorCorrect1MasterOffset, D: a}]
+      - Name: ShadowsEnable
+        Bool: {N: "@thisGroup", K: ColorCorrect1ShadowsEnable}
+      - Name: ShadowsSaturation
+        Float: [{N: "@thisGroup", K: ColorCorrect1ShadowsSaturation, D: r}, {N: "@thisGroup", K: ColorCorrect1ShadowsSaturation, D: g}, {N: "@thisGroup", K: ColorCorrect1ShadowsSaturation, D: b}, {N: "@thisGroup", K: ColorCorrect1ShadowsSaturation, D: a}]
+      - Name: ShadowsContrast
+        Float: [{N: "@thisGroup", K: ColorCorrect1ShadowsContrast, D: r}, {N: "@thisGroup", K: ColorCorrect1ShadowsContrast, D: g}, {N: "@thisGroup", K: ColorCorrect1ShadowsContrast, D: b}, {N: "@thisGroup", K: ColorCorrect1ShadowsContrast, D: a}]
+      - Name: ShadowsGamma
+        Float: [{N: "@thisGroup", K: ColorCorrect1ShadowsGamma, D: r}, {N: "@thisGroup", K: ColorCorrect1ShadowsGamma, D: g}, {N: "@thisGroup", K: ColorCorrect1ShadowsGamma, D: b}, {N: "@thisGroup", K: ColorCorrect1ShadowsGamma, D: a}]
+      - Name: ShadowsGain
+        Float: [{N: "@thisGroup", K: ColorCorrect1ShadowsGain, D: r}, {N: "@thisGroup", K: ColorCorrect1ShadowsGain, D: g}, {N: "@thisGroup", K: ColorCorrect1ShadowsGain, D: b}, {N: "@thisGroup", K: ColorCorrect1ShadowsGain, D: a}]
+      - Name: ShadowsOffset
+        Float: [{N: "@thisGroup", K: ColorCorrect1ShadowsOffset, D: r}, {N: "@thisGroup", K: ColorCorrect1ShadowsOffset, D: g}, {N: "@thisGroup", K: ColorCorrect1ShadowsOffset, D: b}, {N: "@thisGroup", K: ColorCorrect1ShadowsOffset, D: a}]
+      - Name: MidtonesEnable
+        Bool: {N: "@thisGroup", K: ColorCorrect1MidtonesEnable}
+      - Name: MidtonesSaturation
+        Float: [{N: "@thisGroup", K: ColorCorrect1MidtonesSaturation, D: r}, {N: "@thisGroup", K: ColorCorrect1MidtonesSaturation, D: g}, {N: "@thisGroup", K: ColorCorrect1MidtonesSaturation, D: b}, {N: "@thisGroup", K: ColorCorrect1MidtonesSaturation, D: a}]
+      - Name: MidtonesContrast
+        Float: [{N: "@thisGroup", K: ColorCorrect1MidtonesContrast, D: r}, {N: "@thisGroup", K: ColorCorrect1MidtonesContrast, D: g}, {N: "@thisGroup", K: ColorCorrect1MidtonesContrast, D: b}, {N: "@thisGroup", K: ColorCorrect1MidtonesContrast, D: a}]
+      - Name: MidtonesGamma
+        Float: [{N: "@thisGroup", K: ColorCorrect1MidtonesGamma, D: r}, {N: "@thisGroup", K: ColorCorrect1MidtonesGamma, D: g}, {N: "@thisGroup", K: ColorCorrect1MidtonesGamma, D: b}, {N: "@thisGroup", K: ColorCorrect1MidtonesGamma, D: a}]
+      - Name: MidtonesGain
+        Float: [{N: "@thisGroup", K: ColorCorrect1MidtonesGain, D: r}, {N: "@thisGroup", K: ColorCorrect1MidtonesGain, D: g}, {N: "@thisGroup", K: ColorCorrect1MidtonesGain, D: b}, {N: "@thisGroup", K: ColorCorrect1MidtonesGain, D: a}]
+      - Name: MidtonesOffset
+        Float: [{N: "@thisGroup", K: ColorCorrect1MidtonesOffset, D: r}, {N: "@thisGroup", K: ColorCorrect1MidtonesOffset, D: g}, {N: "@thisGroup", K: ColorCorrect1MidtonesOffset, D: b}, {N: "@thisGroup", K: ColorCorrect1MidtonesOffset, D: a}]
+      - Name: HighlightsEnable
+        Bool: {N: "@thisGroup", K: ColorCorrect1HighlightsEnable}
+      - Name: HighlightsSaturation
+        Float: [{N: "@thisGroup", K: ColorCorrect1HighlightsSaturation, D: r}, {N: "@thisGroup", K: ColorCorrect1HighlightsSaturation, D: g}, {N: "@thisGroup", K: ColorCorrect1HighlightsSaturation, D: b}, {N: "@thisGroup", K: ColorCorrect1HighlightsSaturation, D: a}]
+      - Name: HighlightsContrast
+        Float: [{N: "@thisGroup", K: ColorCorrect1HighlightsContrast, D: r}, {N: "@thisGroup", K: ColorCorrect1HighlightsContrast, D: g}, {N: "@thisGroup", K: ColorCorrect1HighlightsContrast, D: b}, {N: "@thisGroup", K: ColorCorrect1HighlightsContrast, D: a}]
+      - Name: HighlightsGamma
+        Float: [{N: "@thisGroup", K: ColorCorrect1HighlightsGamma, D: r}, {N: "@thisGroup", K: ColorCorrect1HighlightsGamma, D: g}, {N: "@thisGroup", K: ColorCorrect1HighlightsGamma, D: b}, {N: "@thisGroup", K: ColorCorrect1HighlightsGamma, D: a}]
+      - Name: HighlightsGain
+        Float: [{N: "@thisGroup", K: ColorCorrect1HighlightsGain, D: r}, {N: "@thisGroup", K: ColorCorrect1HighlightsGain, D: g}, {N: "@thisGroup", K: ColorCorrect1HighlightsGain, D: b}, {N: "@thisGroup", K: ColorCorrect1HighlightsGain, D: a}]
+      - Name: HighlightsOffset
+        Float: [{N: "@thisGroup", K: ColorCorrect1HighlightsOffset, D: r}, {N: "@thisGroup", K: ColorCorrect1HighlightsOffset, D: g}, {N: "@thisGroup", K: ColorCorrect1HighlightsOffset, D: b}, {N: "@thisGroup", K: ColorCorrect1HighlightsOffset, D: a}]
+      - Name: clampBlack
+        Bool: false
+    Pos: [758, 825]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: MaskMerge2
+    Inputs: {A: Dot2, B: ColorCorrect1}
+    Params:
+      - Name: operation
+        String: mask
+      - Name: userTextArea
+        String: <Natron>(mask)</Natron>
+      - Name: disableNode
+        Bool: {N: "@thisGroup", K: enableGlow}
+    Pos: [761, 909]
+  - PluginID: net.sf.openfx.ShufflePlugin
+    Name: Shuffle1
+    Version: [2, 0]
+    Inputs: {A: MaskMerge2}
+    Params:
+      - Name: outputA
+        String: 0
+    Pos: [761, 1026]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: HighlightMerge
+    Inputs: {A: Dot2, B: Shuffle1}
+    Params:
+      - Name: operation
+        String: {N: "@thisGroup", K: highlightmerge}
+      - Name: userTextArea
+        String: <Natron>(plus)</Natron>
+      - Name: disableNode
+        Bool: {N: "@thisGroup", K: onlyWrap}
+    Pos: [761, 1108]
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot4
+    Inputs: HighlightMerge
+    Pos: [806, 1218]
+  - PluginID: fr.inria.built-in.Input
+    Name: Input2
+    Label: B
+    Pos: [753, -43]

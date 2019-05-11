@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,38 +28,35 @@
 #include <sstream> // stringstream
 #include <stdexcept>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-// /usr/local/include/boost/serialization/shared_ptr.hpp:112:5: warning: unused typedef 'boost_static_assert_typedef_112' [-Wunused-local-typedef]
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/version.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-#endif
-
 #include <QApplication>
 #include <QClipboard>
+#include <QDebug>
+#include <QtCore/QThread>
+#include <QFile>
+#include <QUrl>
 #include <QtCore/QMimeData>
 
 #include "Engine/Node.h"
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/Image.h"
 #include "Engine/NodeGroup.h"
-#include "Engine/NodeSerialization.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/Settings.h"
 
 #include "Gui/BackdropGui.h"
-#include "Gui/CurveEditor.h"
+#include "Gui/Edge.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/ScriptEditor.h"
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGui.h"
-#include "Gui/NodeGuiSerialization.h"
+
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/NodeClipBoard.h"
+#include "Serialization/ProjectSerialization.h"
+#include "Serialization/SerializationIO.h"
 
 #include "Global/QtCompat.h"
 
@@ -71,10 +68,13 @@ NodeGraph::togglePreviewsForSelectedNodes()
     {
         QMutexLocker l(&_imp->_nodesMutex);
         empty = _imp->_selection.empty();
-        for (NodesGuiList::iterator it = _imp->_selection.begin();
+        for (NodesGuiWList::iterator it = _imp->_selection.begin();
              it != _imp->_selection.end();
              ++it) {
-            (*it)->togglePreview();
+            NodeGuiPtr n = it->lock();
+            if (n) {
+                n->togglePreview();
+            }
         }
     }
 
@@ -87,7 +87,7 @@ void
 NodeGraph::showSelectedNodeSettingsPanel()
 {
     if (_imp->_selection.size() == 1) {
-        showNodePanel(false, false, _imp->_selection.front().get());
+        showNodePanel(false, false, _imp->_selection.front().lock());
     }
 }
 
@@ -96,10 +96,13 @@ NodeGraph::switchInputs1and2ForSelectedNodes()
 {
     QMutexLocker l(&_imp->_nodesMutex);
 
-    for (NodesGuiList::iterator it = _imp->_selection.begin();
+    for (NodesGuiWList::iterator it = _imp->_selection.begin();
          it != _imp->_selection.end();
          ++it) {
-        (*it)->onSwitchInputActionTriggered();
+        NodeGuiPtr n = it->lock();
+        if (n) {
+            n->onSwitchInputActionTriggered();
+        }
     }
 }
 
@@ -112,9 +115,9 @@ NodeGraph::centerOnItem(QGraphicsItem* item)
 
 void
 NodeGraph::copyNodes(const NodesGuiList& nodes,
-                     NodeClipBoard& clipboard)
+                     SERIALIZATION_NAMESPACE::NodeClipBoard& clipboard)
 {
-    _imp->copyNodesInternal(nodes, clipboard);
+    _imp->copyNodesInternal(nodes, &clipboard.nodes);
 }
 
 void
@@ -126,13 +129,13 @@ NodeGraph::copySelectedNodes()
         return;
     }
 
-    NodeClipBoard& cb = appPTR->getNodeClipBoard();
-    _imp->copyNodesInternal(_imp->_selection, cb);
+    SERIALIZATION_NAMESPACE::NodeClipBoard cb;
+    _imp->copyNodesInternal(getSelectedNodes(), &cb.nodes);
 
     std::ostringstream ss;
+
     try {
-        boost::archive::xml_oarchive oArchive(ss);
-        oArchive << boost::serialization::make_nvp("Clipboard", cb);
+        SERIALIZATION_NAMESPACE::write(ss, cb, NATRON_CLIPBOARD_HEADER);
     } catch (...) {
         qDebug() << "Failed to copy selection to system clipboard";
     }
@@ -158,48 +161,79 @@ NodeGraph::cutSelectedNodes()
     deleteSelection();
 }
 
-void
-NodeGraph::pasteCliboard(const NodeClipBoard& clipboard,
-                         std::list<std::pair<std::string, NodeGuiPtr > >* newNodes)
-{
-    QPointF position = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( QCursor::pos() ) ) );
 
-    _imp->pasteNodesInternal(clipboard, position, false, newNodes);
+bool
+NodeGraph::tryReadClipboard(const QPointF& pos, std::istream& ss)
+{
+
+    
+    // Check if this is a regular clipboard
+    // This will also check if this is a single node
+    try {
+        SERIALIZATION_NAMESPACE::NodeClipBoard cb;
+        SERIALIZATION_NAMESPACE::read(std::string(), ss, &cb);
+
+        std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> > nodesToPaste;
+        for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = cb.nodes.begin(); it != cb.nodes.end(); ++it) {
+            nodesToPaste.push_back(std::make_pair(NodePtr(), *it));
+        }
+        _imp->pasteNodesInternal(nodesToPaste, pos, NodeGraphPrivate::PasteNodesFlags(NodeGraphPrivate::ePasteNodesFlagRelativeToCentroid | NodeGraphPrivate::ePasteNodesFlagUseUndoCommand));
+    } catch (...) {
+        
+        // Check if this was copy/pasted from a project directly
+        try {
+            ss.seekg(0);
+            SERIALIZATION_NAMESPACE::ProjectSerialization isProject;
+            SERIALIZATION_NAMESPACE::read(std::string(), ss, &isProject);
+
+            std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> > nodesToPaste;
+            for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = isProject._nodes.begin(); it != isProject._nodes.end(); ++it) {
+                nodesToPaste.push_back(std::make_pair(NodePtr(), *it));
+            }
+
+            _imp->pasteNodesInternal(nodesToPaste, pos, NodeGraphPrivate::PasteNodesFlags(NodeGraphPrivate::ePasteNodesFlagRelativeToCentroid | NodeGraphPrivate::ePasteNodesFlagUseUndoCommand));
+        } catch (...) {
+            
+            return false;
+        }
+    }
+    
+
+    return true;
+
 }
 
 bool
-NodeGraph::pasteNodeClipBoards(const QPointF& pos)
+NodeGraph::pasteClipboard(const QPointF& pos)
 {
+    QPointF position;
+    if (pos.x() == INT_MIN || pos.y() == INT_MIN) {
+        position =  mapToScene( mapFromGlobal( QCursor::pos() ) );
+    } else {
+        position = pos;
+    }
+    position = _imp->_root->mapFromScene(position);
+
     QClipboard* clipboard = QApplication::clipboard();
     const QMimeData* mimedata = clipboard->mimeData();
+
+    // If this is a list of files, try to open them
+    if ( mimedata->hasUrls() ) {
+        QList<QUrl> urls = mimedata->urls();
+        getGui()->handleOpenFilesFromUrls( urls, QCursor::pos() );
+        return true;
+    }
 
     if ( !mimedata->hasFormat( QLatin1String("text/plain") ) ) {
         return false;
     }
     QByteArray data = mimedata->data( QLatin1String("text/plain") );
-    std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
-    NodeClipBoard& cb = appPTR->getNodeClipBoard();
     std::string s = QString::fromUtf8(data).toStdString();
-    try {
-        std::stringstream ss(s);
-        boost::archive::xml_iarchive iArchive(ss);
-        iArchive >> boost::serialization::make_nvp("Clipboard", cb);
-    } catch (...) {
-        return false;
-    }
-
-    _imp->pasteNodesInternal(cb, pos, true, &newNodes);
-
-    return true;
+    std::istringstream ss(s);
+    return tryReadClipboard(position, ss);
+    
 }
 
-bool
-NodeGraph::pasteNodeClipBoards()
-{
-    QPointF position = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( QCursor::pos() ) ) );
-
-    return pasteNodeClipBoards(position);
-}
 
 void
 NodeGraph::duplicateSelectedNodes(const QPointF& pos)
@@ -210,133 +244,39 @@ NodeGraph::duplicateSelectedNodes(const QPointF& pos)
         return;
     }
 
-    ///Don't use the member clipboard as the user might have something copied
-    NodeClipBoard tmpClipboard;
-    _imp->copyNodesInternal(_imp->_selection, tmpClipboard);
-    std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
-    _imp->pasteNodesInternal(tmpClipboard, pos, true, &newNodes);
+    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> > nodesToPaste;
+    _imp->copyNodesInternal(getSelectedNodes(), &nodesToPaste);
+
+
+    _imp->pasteNodesInternal(nodesToPaste, pos, NodeGraphPrivate::PasteNodesFlags(NodeGraphPrivate::ePasteNodesFlagRelativeToCentroid | NodeGraphPrivate::ePasteNodesFlagUseUndoCommand));
 }
 
 void
 NodeGraph::duplicateSelectedNodes()
 {
-    QPointF scenePos = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( QCursor::pos() ) ) );
+    QPointF scenePos = mapToScene( mapFromGlobal( QCursor::pos() ) );
 
     duplicateSelectedNodes(scenePos);
 }
 
 void
-NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
+NodeGraph::cloneSelectedNodes(const QPointF& pos)
 {
     if ( _imp->_selection.empty() ) {
         Dialogs::warningDialog( tr("Clone").toStdString(), tr("You must select at least a node to clone first.").toStdString() );
 
         return;
     }
+    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> > nodesToPaste;
+    _imp->copyNodesInternal(getSelectedNodes(), &nodesToPaste);
 
-    double xmax = INT_MIN;
-    double xmin = INT_MAX;
-    double ymin = INT_MAX;
-    double ymax = INT_MIN;
-    NodesGuiList nodesToCopy = _imp->_selection;
-    for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-        if ( (*it)->getNode()->getMasterNode() ) {
-            Dialogs::errorDialog( tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString() );
-
-            return;
-        }
-        QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
-        if ( ( bbox.x() + bbox.width() ) > xmax ) {
-            xmax = ( bbox.x() + bbox.width() );
-        }
-        if (bbox.x() < xmin) {
-            xmin = bbox.x();
-        }
-
-        if ( ( bbox.y() + bbox.height() ) > ymax ) {
-            ymax = ( bbox.y() + bbox.height() );
-        }
-        if (bbox.y() < ymin) {
-            ymin = bbox.y();
-        }
-
-        ///Also copy all nodes within the backdrop
-        BackdropGui* isBd = dynamic_cast<BackdropGui*>( it->get() );
-        if (isBd) {
-            NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
-            for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
-                NodesGuiList::iterator found = std::find(nodesToCopy.begin(), nodesToCopy.end(), *it2);
-                if ( found == nodesToCopy.end() ) {
-                    nodesToCopy.push_back(*it2);
-                }
-            }
-        }
-    }
-
-    for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        if ( (*it)->getNode()->getEffectInstance()->isSlave() ) {
-            Dialogs::errorDialog( tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString() );
-
-            return;
-        }
-        ViewerInstance* isViewer = (*it)->getNode()->isEffectViewer();
-        if (isViewer) {
-            Dialogs::errorDialog( tr("Clone").toStdString(), tr("Cloning a viewer is not a valid operation.").toStdString() );
-
-            return;
-        }
-        if ( (*it)->getNode()->isMultiInstance() ) {
-            QString err = QString::fromUtf8("%1 cannot be cloned.").arg( QString::fromUtf8( (*it)->getNode()->getLabel().c_str() ) );
-            Dialogs::errorDialog( tr("Clone").toStdString(),
-                                  tr( err.toStdString().c_str() ).toStdString() );
-
-            return;
-        }
-    }
-
-    QPointF offset( scenePos.x() - ( (xmax + xmin) / 2. ), scenePos.y() -  ( (ymax + ymin) / 2. ) );
-    std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
-    std::list <boost::shared_ptr<NodeSerialization> > serializations;
-    std::list <NodeGuiPtr > newNodesList;
-    std::map<std::string, std::string> oldNewScriptNameMapping;
-    for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        boost::shared_ptr<NodeSerialization>  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
-        boost::shared_ptr<NodeGuiSerialization> guiSerialization = boost::make_shared<NodeGuiSerialization>();
-        (*it)->serialize( guiSerialization.get() );
-        NodeGuiPtr clone = _imp->pasteNode(internalSerialization, guiSerialization, offset,
-                                           _imp->group.lock(), std::string(), true, &oldNewScriptNameMapping );
-
-        newNodes.push_back( std::make_pair(internalSerialization->getNodeScriptName(), clone) );
-        newNodesList.push_back(clone);
-        serializations.push_back(internalSerialization);
-
-        oldNewScriptNameMapping[internalSerialization->getNodeScriptName()] = clone->getNode()->getScriptName();
-    }
-
-
-    assert( serializations.size() == newNodes.size() );
-    ///restore connections
-    _imp->restoreConnections(serializations, newNodes, oldNewScriptNameMapping);
-
-
-    NodesList allNodes;
-    getGui()->getApp()->getProject()->getActiveNodes(&allNodes);
-
-
-    //Restore links once all children are created for alias knobs/expressions
-    std::list <boost::shared_ptr<NodeSerialization> >::iterator itS = serializations.begin();
-    for (std::list <NodeGuiPtr > ::iterator it = newNodesList.begin(); it != newNodesList.end(); ++it, ++itS) {
-        (*it)->getNode()->restoreKnobsLinks(**itS, allNodes, oldNewScriptNameMapping);
-    }
-
-
-    pushUndoCommand( new AddMultipleNodesCommand(this, newNodesList) );
+    _imp->pasteNodesInternal(nodesToPaste, pos, NodeGraphPrivate::PasteNodesFlags(NodeGraphPrivate::ePasteNodesFlagCloneNodes | NodeGraphPrivate::ePasteNodesFlagRelativeToCentroid | NodeGraphPrivate::ePasteNodesFlagUseUndoCommand));
 } // NodeGraph::cloneSelectedNodes
 
 void
 NodeGraph::cloneSelectedNodes()
 {
-    QPointF scenePos = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( QCursor::pos() ) ) );
+    QPointF scenePos = mapToScene( mapFromGlobal( QCursor::pos() ) );
 
     cloneSelectedNodes(scenePos);
 } // cloneSelectedNodes
@@ -349,23 +289,34 @@ NodeGraph::decloneSelectedNodes()
 
         return;
     }
-    NodesGuiList nodesToDeclone;
+    std::map<NodeGuiPtr, NodePtr> nodesToDeclone;
 
 
-    for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-        BackdropGui* isBd = dynamic_cast<BackdropGui*>( it->get() );
+    for (NodesGuiWList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+        NodeGuiPtr n = it->lock();
+        if (!n) {
+            continue;
+        }
+        BackdropGuiPtr isBd = toBackdropGui(n);
         if (isBd) {
-            ///Also copy all nodes within the backdrop
-            NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
+            // Also clone all nodes within the backdrop
+            NodesGuiList nodesWithinBD = getNodesWithinBackdrop(n);
             for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
-                NodesGuiList::iterator found = std::find(nodesToDeclone.begin(), nodesToDeclone.end(), *it2);
+                std::map<NodeGuiPtr, NodePtr>::iterator found = nodesToDeclone.find(*it2);
                 if ( found == nodesToDeclone.end() ) {
-                    nodesToDeclone.push_back(*it2);
+                    std::list<NodePtr> linkedNodes;
+                    (*it2)->getNode()->getCloneLinkedNodes(&linkedNodes);
+                    if (!linkedNodes.empty()) {
+                        nodesToDeclone[*it2] = linkedNodes.front();
+                    }
+
                 }
             }
         }
-        if ( (*it)->getNode()->getEffectInstance()->isSlave() ) {
-            nodesToDeclone.push_back(*it);
+        std::list<NodePtr> linkedNodes;
+        n->getNode()->getCloneLinkedNodes(&linkedNodes);
+        if (!linkedNodes.empty()) {
+            nodesToDeclone[n] = linkedNodes.front();
         }
     }
 
@@ -383,12 +334,7 @@ void
 NodeGraph::deleteNodePermanantly(const NodeGuiPtr& n)
 {
     assert(n);
-    NodesGuiList::iterator it = std::find(_imp->_nodesTrash.begin(), _imp->_nodesTrash.end(), n);
-
-    if ( it != _imp->_nodesTrash.end() ) {
-        _imp->_nodesTrash.erase(it);
-    }
-
+   
     {
         QMutexLocker l(&_imp->_nodesMutex);
         NodesGuiList::iterator it = std::find(_imp->_nodes.begin(), _imp->_nodes.end(), n);
@@ -397,7 +343,7 @@ NodeGraph::deleteNodePermanantly(const NodeGuiPtr& n)
         }
     }
 
-    NodesGuiList::iterator found = std::find(_imp->_selection.begin(), _imp->_selection.end(), n);
+    NodesGuiWList::iterator found = _imp->findSelectedNode(n);
     if ( found != _imp->_selection.end() ) {
         n->setUserSelected(false);
         _imp->_selection.erase(found);
@@ -410,15 +356,10 @@ NodeGraph::invalidateAllNodesParenting()
     for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         (*it)->setParentItem(NULL);
         if ( (*it)->scene() ) {
-            (*it)->scene()->removeItem( it->get() );
+            (*it)->scene()->removeItem((*it).get());
         }
     }
-    for (NodesGuiList::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
-        (*it)->setParentItem(NULL);
-        if ( (*it)->scene() ) {
-            (*it)->scene()->removeItem( it->get() );
-        }
-    }
+
 }
 
 void
@@ -437,7 +378,7 @@ NodeGraph::centerOnAllNodes()
         for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             if ( /*(*it)->isActive() &&*/ (*it)->isVisible() ) {
                 QSize size = (*it)->getSize();
-                QPointF pos = (*it)->mapToScene( (*it)->mapFromParent( (*it)->getPos_mt_safe() ) );
+                QPointF pos = (*it)->mapToScene( (*it)->mapFromParent( (*it)->pos() ) );
                 xmin = std::min( xmin, pos.x() );
                 xmax = std::max( xmax, pos.x() + size.width() );
                 ymin = std::min( ymin, pos.y() );
@@ -445,10 +386,11 @@ NodeGraph::centerOnAllNodes()
             }
         }
     } else {
-        for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-            if ( /*(*it)->isActive() && */ (*it)->isVisible() ) {
-                QSize size = (*it)->getSize();
-                QPointF pos = (*it)->mapToScene( (*it)->mapFromParent( (*it)->getPos_mt_safe() ) );
+        for (NodesGuiWList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+            NodeGuiPtr n =it->lock();
+            if ( n && n->isVisible() ) {
+                QSize size = n->getSize();
+                QPointF pos = n->mapToScene( n->mapFromParent( n->pos() ) );
                 xmin = std::min( xmin, pos.x() );
                 xmax = std::max( xmax, pos.x() + size.width() );
                 ymin = std::min( ymin, pos.y() );
@@ -472,5 +414,128 @@ NodeGraph::centerOnAllNodes()
     _imp->_refreshOverlays = true;
     update();
 } // NodeGraph::centerOnAllNodes
+
+
+void
+NodeGraph::onMustRefreshNodeLinksLaterReceived()
+{
+    if (_imp->refreshNodesLinkRequest == 0) {
+        return;
+    }
+    _imp->refreshNodesLinkRequest = 0;
+    refreshNodeLinksNow();
+}
+
+void
+NodeGraph::refreshNodeLinksLater()
+{
+    ++_imp->refreshNodesLinkRequest;
+    Q_EMIT mustRefreshNodeLinksLater();
+}
+
+bool
+NodeGraph::isNodeCloneLinked(const NodePtr& node)
+{
+    for (NodeGraphPrivate::LinkedNodesList::const_iterator it = _imp->linkedNodes.begin(); it!=_imp->linkedNodes.end(); ++it) {
+        if (it->isCloneLink && (it->nodes[0].lock() == node || it->nodes[1].lock() == node)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void
+NodeGraph::refreshNodeLinksNow()
+{
+    // First clear all previous links
+    for (NodeGraphPrivate::LinkedNodesList::const_iterator it = _imp->linkedNodes.begin(); it != _imp->linkedNodes.end(); ++it) {
+        delete it->arrow;
+    }
+    _imp->linkedNodes.clear();
+
+    if (!_imp->_knobLinksVisible) {
+        return;
+    }
+
+    NodesGuiList nodes;
+    {
+        QMutexLocker k(&_imp->_nodesMutex);
+        nodes = _imp->_nodes;
+    }
+
+    QColor simpleLinkColor, cloneLinkColor;
+    {
+        double exprColor[3], cloneColor[3];
+        appPTR->getCurrentSettings()->getExprColor(&exprColor[0], &exprColor[1], &exprColor[2]);
+        appPTR->getCurrentSettings()->getCloneColor(&cloneColor[0], &cloneColor[1], &cloneColor[2]);
+        simpleLinkColor.setRgbF(Image::clamp(exprColor[0], 0., 1.),
+                                Image::clamp(exprColor[1], 0., 1.),
+                                Image::clamp(exprColor[2], 0., 1.));
+        cloneLinkColor.setRgbF(Image::clamp(cloneColor[0], 0., 1.),
+                                Image::clamp(cloneColor[1], 0., 1.),
+                                Image::clamp(cloneColor[2], 0., 1.));
+    }
+    
+    
+    for (NodesGuiList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        NodePtr thisNode = (*it)->getNode();
+
+        std::list<std::pair<NodePtr, bool> > linkedNodes;
+        thisNode->getLinkedNodes(&linkedNodes);
+
+        for (std::list<std::pair<NodePtr, bool> >::const_iterator it2 = linkedNodes.begin(); it2 != linkedNodes.end(); ++it2) {
+
+            // If the linked node doesn't have a gui or it is not part of this nodegraph don't create a link at all
+            NodeGuiPtr otherNodeGui = toNodeGui(it2->first->getNodeGui());
+            if (!otherNodeGui || otherNodeGui->getDagGui() != this) {
+                continue;
+            }
+
+            // Try to find an existing link
+            NodeGraphPrivate::LinkedNodes link;
+            link.nodes[0] = thisNode;
+            link.nodes[1] = it2->first;
+            link.isCloneLink = it2->second;
+
+            NodeGraphPrivate::LinkedNodesList::iterator foundExistingLink = _imp->linkedNodes.end();
+            {
+                for (NodeGraphPrivate::LinkedNodesList::iterator it = _imp->linkedNodes.begin(); it != _imp->linkedNodes.end(); ++it) {
+                    NodePtr a1 = it->nodes[0].lock();
+                    NodePtr a2 = it->nodes[1].lock();
+                    NodePtr b1 = link.nodes[0].lock();
+                    NodePtr b2 = link.nodes[1].lock();
+                    if ((a1 == b1 || a1 == b2) &&
+                        (a2 == b1 || a2 == b2)) {
+                        foundExistingLink = it;
+                        break;
+                    }
+                }
+            }
+
+            if (foundExistingLink == _imp->linkedNodes.end()) {
+                // A link did not exist, create it
+                link.arrow = new LinkArrow( otherNodeGui, *it, (*it)->parentItem() );
+                link.arrow->setWidth(2);
+                link.arrow->setArrowHeadVisible(false);
+                if (link.isCloneLink) {
+                    link.arrow->setColor(cloneLinkColor);
+                } else {
+                    link.arrow->setColor(simpleLinkColor);
+                }
+                _imp->linkedNodes.push_back(link);
+            } else {
+                // A link existed, if this is a clone link and it was not before, upgrade it
+                if (!foundExistingLink->isCloneLink && link.isCloneLink) {
+                    foundExistingLink->arrow->setColor(cloneLinkColor);
+                }
+            }
+
+        }
+
+        (*it)->refreshLinkIndicators(linkedNodes);
+    }
+
+} // refreshNodeLinksNow
+
 
 NATRON_NAMESPACE_EXIT

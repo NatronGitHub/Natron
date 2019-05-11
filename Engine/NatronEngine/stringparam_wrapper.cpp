@@ -19,6 +19,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
+#include <PyAppInstance.h>
+#include <PyItemsTable.h>
+#include <PyNode.h>
 #include <PyParameter.h>
 
 

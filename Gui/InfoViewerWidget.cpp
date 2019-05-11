@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -326,8 +326,9 @@ InfoViewerWidget::setColor(float r,
     rgbaValues->setText(values);
     rgbaValues->update();
     float h, s, v, l;
-    // Nuke's HSV display is based on sRGB, an L is Rec.709.
-    // see http://forums.thefoundry.co.uk/phpBB2/viewtopic.php?t=2283
+    // Nuke's HSV display is based on sRGB until Nuke 8, an L is Rec.709.
+    // see https://community.foundry.com/discuss/topic/100271
+    // This was changed in Nuke 9 to use linear values.
     double srgb_r = Color::to_func_srgb(r);
     double srgb_g = Color::to_func_srgb(g);
     double srgb_b = Color::to_func_srgb(b);
@@ -339,7 +340,18 @@ InfoViewerWidget::setColor(float r,
     color->update();
 
     const QFont &hsvFont = hvl_lastOption->font();
-    Color::rgb_to_hsv(srgb_r, srgb_g, srgb_b, &h, &s, &v);
+    // Nuke 5-8 version used sRGB colors to compute HSV
+    //Color::rgb_to_hsv(srgb_r, srgb_g, srgb_b, &h, &s, &v);
+
+    // However, as Alvin Ray Smith said in his paper,
+    // "We shall assume that an RGB monitor is a linear device"
+    // We thus use linear values (same as Nuke 9 and later).
+    // Fixes https://github.com/NatronGitHub/Natron/issues/286
+    // Reference:
+    // "Color gamut transform pairs", Alvy Ray Smith, Proceeding SIGGRAPH '78
+    // https://doi.org/10.1145/800248.807361
+    // http://www.icst.pku.edu.cn/F/course/ImageProcessing/2018/resource/Color78.pdf
+    Color::rgb_to_hsv(r, g, b, &h, &s, &v);
     l = 0.2125 * r + 0.7154 * g + 0.0721 * b; // L according to Rec.709
 
     QString lS = _colorValid ? QString::number(l, 'f', 5) : QString::fromUtf8("?");

@@ -1,0 +1,94 @@
+diff --git a/src/exp.h b/src/exp.h
+index ba82874e..50b0220b 100644
+--- a/src/exp.h
++++ b/src/exp.h
+@@ -20,6 +20,10 @@ namespace YAML {
+ 
+ namespace Exp {
+ // misc
++inline const RegEx& Empty() {
++  static const RegEx e;
++  return e;
++}
+ inline const RegEx& Space() {
+   static const RegEx e = RegEx(' ');
+   return e;
+diff --git a/src/scanscalar.cpp b/src/scanscalar.cpp
+index 8253b8d1..62ac8757 100644
+--- a/src/scanscalar.cpp
++++ b/src/scanscalar.cpp
+@@ -28,13 +28,17 @@ std::string ScanScalar(Stream& INPUT, ScanScalarParams& params) {
+   std::string scalar;
+   params.leadingSpaces = false;
+ 
++  if (!params.end) {
++    params.end = &Exp::Empty();
++  }
++
+   while (INPUT) {
+     // ********************************
+     // Phase #1: scan until line ending
+ 
+     std::size_t lastNonWhitespaceChar = scalar.size();
+     bool escapedNewline = false;
+-    while (!params.end.Matches(INPUT) && !Exp::Break().Matches(INPUT)) {
++    while (!params.end->Matches(INPUT) && !Exp::Break().Matches(INPUT)) {
+       if (!INPUT)
+         break;
+ 
+@@ -87,7 +91,7 @@ std::string ScanScalar(Stream& INPUT, ScanScalarParams& params) {
+       break;
+ 
+     // are we done via character match?
+-    int n = params.end.Match(INPUT);
++    int n = params.end->Match(INPUT);
+     if (n >= 0) {
+       if (params.eatEnd)
+         INPUT.eat(n);
+diff --git a/src/scanscalar.h b/src/scanscalar.h
+index 62da13c3..c3a574ad 100644
+--- a/src/scanscalar.h
++++ b/src/scanscalar.h
+@@ -19,7 +19,8 @@ enum FOLD { DONT_FOLD, FOLD_BLOCK, FOLD_FLOW };
+ 
+ struct ScanScalarParams {
+   ScanScalarParams()
+-      : eatEnd(false),
++      : end(nullptr),
++        eatEnd(false),
+         indent(0),
+         detectIndent(false),
+         eatLeadingWhitespace(0),
+@@ -32,7 +33,8 @@ struct ScanScalarParams {
+         leadingSpaces(false) {}
+ 
+   // input:
+-  RegEx end;          // what condition ends this scalar?
++  const RegEx* end;   // what condition ends this scalar?
++                      // unowned.
+   bool eatEnd;        // should we eat that condition when we see it?
+   int indent;         // what level of indentation should be eaten and ignored?
+   bool detectIndent;  // should we try to autodetect the indent?
+diff --git a/src/scantoken.cpp b/src/scantoken.cpp
+index 79e7682b..fd8758d7 100644
+--- a/src/scantoken.cpp
++++ b/src/scantoken.cpp
+@@ -298,7 +298,7 @@ void Scanner::ScanPlainScalar() {
+   // set up the scanning parameters
+   ScanScalarParams params;
+   params.end =
+-      (InFlowContext() ? Exp::ScanScalarEndInFlow() : Exp::ScanScalarEnd());
++      (InFlowContext() ? &Exp::ScanScalarEndInFlow() : &Exp::ScanScalarEnd());
+   params.eatEnd = false;
+   params.indent = (InFlowContext() ? 0 : GetTopIndent() + 1);
+   params.fold = FOLD_FLOW;
+@@ -338,7 +338,8 @@ void Scanner::ScanQuotedScalar() {
+ 
+   // setup the scanning parameters
+   ScanScalarParams params;
+-  params.end = (single ? RegEx(quote) && !Exp::EscSingleQuote() : RegEx(quote));
++  RegEx end = (single ? RegEx(quote) && !Exp::EscSingleQuote() : RegEx(quote));
++  params.end = &end;
+   params.eatEnd = true;
+   params.escape = (single ? '\'' : '\\');
+   params.indent = 0;

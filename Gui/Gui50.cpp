@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -38,6 +38,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QtCore/QDebug>
 #include <QtCore/QThread>
 #include <QtCore/QTimer>
@@ -53,7 +54,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QClipboard>
 #include <QVBoxLayout>
 #include <QTreeWidget>
-#include <QThread>
+#include <QtCore/QThread>
 #include <QTabBar>
 #include <QTextEdit>
 #include <QLineEdit>
@@ -65,22 +66,23 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/GroupOutput.h"
+#include "Engine/KnobTypes.h"
+#include "Global/FStreamsSupport.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodesList, NodeCollection
 #include "Engine/Project.h"
-#include "Engine/KnobSerialization.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/FileSystemModel.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/ActionShortcuts.h"
-#include "Gui/CurveEditor.h"
-#include "Gui/CurveWidget.h"
 #include "Gui/ComboBox.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/DopeSheetEditor.h"
-#include "Gui/ExportGroupTemplateDialog.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
@@ -101,6 +103,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/Histogram.h"
+
+#include <SequenceParsing.h>
+
 
 NATRON_NAMESPACE_ENTER
 
@@ -138,6 +143,22 @@ Gui::showErrorLog()
     }
 }
 
+NodeGuiPtr
+Gui::getCurrentNodeViewerInterface(const PluginPtr& plugin) const
+{
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker l(&_imp->_viewerTabsMutex);
+        viewers = _imp->_viewerTabs;
+    }
+    if (viewers.empty()) {
+        return NodeGuiPtr();
+    }
+    ViewerTab* viewer = viewers.front();
+    
+    return viewer->getCurrentNodeViewerInterface(plugin);
+}
+
 void
 Gui::createNodeViewerInterface(const NodeGuiPtr& n)
 {
@@ -156,6 +177,17 @@ Gui::removeNodeViewerInterface(const NodeGuiPtr& n,
 
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         (*it)->removeNodeViewerInterface(n, permanently, false /*setNewInterface*/);
+    }
+}
+
+void
+Gui::removeViewerInterface(const NodeGuiPtr& n,
+                           bool permanently)
+{
+    QMutexLocker l(&_imp->_viewerTabsMutex);
+
+    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+        (*it)->removeViewerInterface(n, permanently);
     }
 }
 
@@ -198,9 +230,16 @@ Gui::onMaxVisibleDockablePanelChanged(int maxPanels)
     if (maxPanels == 0) {
         return;
     }
-    while ( (int)_imp->openedPanels.size() > maxPanels ) {
-        std::list<DockablePanel*>::reverse_iterator it = _imp->openedPanels.rbegin();
-        (*it)->closePanel();
+
+    std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
+    while ( (int)panels.size() > maxPanels ) {
+        std::list<DockablePanelI*>::reverse_iterator it = panels.rbegin();
+        DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it);
+        if (!isPanel) {
+            return;
+        }
+        isPanel->closePanel();
+        panels = getApp()->getOpenedSettingsPanels();
     }
     _imp->_maxPanelsOpenedSpinBox->setValue(maxPanels);
 }
@@ -214,14 +253,19 @@ Gui::onMaxPanelsSpinBoxValueChanged(double val)
 void
 Gui::clearAllVisiblePanels()
 {
+  std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
     // close panels one by one, since closing a panel updates the openedPanels list.
-    while ( !_imp->openedPanels.empty() ) {
+    while ( !panels.empty() ) {
         bool foundNonFloating = false;
 
         // close one panel at a time - this changes the openedPanel list, so we must break the loop
-        for (std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin(); it != _imp->openedPanels.end(); ++it) {
-            if ( !(*it)->isFloating() ) {
-                (*it)->setClosed(true);
+        for (std::list<DockablePanelI*>::iterator it = panels.begin(); it != panels.end(); ++it) {
+            DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it);
+            if (!isPanel) {
+                continue;
+            }
+            if ( !isPanel->isFloating() ) {
+                isPanel->setClosed(true);
                 foundNonFloating = true;
                 break;
             }
@@ -231,6 +275,8 @@ Gui::clearAllVisiblePanels()
         if (!foundNonFloating) {
             break;
         }
+        // prepare for next iteration, update the panels list
+        panels = getApp()->getOpenedSettingsPanels();
     }
     getApp()->redrawAllViewers();
 }
@@ -238,39 +284,26 @@ Gui::clearAllVisiblePanels()
 void
 Gui::minimizeMaximizeAllPanels(bool clicked)
 {
-    for (std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin(); it != _imp->openedPanels.end(); ++it) {
+    std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
+    for (std::list<DockablePanelI*>::iterator it = panels.begin(); it != panels.end(); ++it) {
+        DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it);
+        if (!isPanel) {
+            continue;
+        }
         if (clicked) {
-            if ( !(*it)->isMinimized() ) {
-                (*it)->minimizeOrMaximize(true);
+            if ( !isPanel->isMinimized() ) {
+                isPanel->minimizeOrMaximize(true);
             }
         } else {
-            if ( (*it)->isMinimized() ) {
-                (*it)->minimizeOrMaximize(false);
+            if ( isPanel->isMinimized() ) {
+                isPanel->minimizeOrMaximize(false);
             }
         }
     }
     getApp()->redrawAllViewers();
 }
 
-void
-Gui::connectViewersToViewerCache()
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
 
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->connectToViewerCache();
-    }
-}
-
-void
-Gui::disconnectViewersFromViewerCache()
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
-
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->disconnectFromViewerCache();
-    }
-}
 
 void
 Gui::moveEvent(QMoveEvent* e)
@@ -514,115 +547,72 @@ Gui::keyPressEvent(QKeyEvent* e)
             }
         }
     } else if ( (key == Qt::Key_V) && modCASIsControl(e) ) {
-        // CTRL +V should have been caught by the Nodegraph if it contained a valid Natron graph.
-        // We still try to check if it is a readable Python script
-        QClipboard* clipboard = QApplication::clipboard();
-        const QMimeData* mimedata = clipboard->mimeData();
-        if ( mimedata->hasFormat( QLatin1String("text/plain") ) ) {
-            QByteArray data = mimedata->data( QLatin1String("text/plain") );
-            QString str = QString::fromUtf8(data);
-            if ( QFile::exists(str) ) {
-                QList<QUrl> urls;
-                urls.push_back( QUrl::fromLocalFile(str) );
-                handleOpenFilesFromUrls( urls, QCursor::pos() );
-            } else {
-                std::string error, output;
-                if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(str.toStdString(), &error, &output) ) {
-                    _imp->_scriptEditor->appendToScriptEditor( QString::fromUtf8( error.c_str() ) );
-                    ensureScriptEditorVisible();
-                } else if ( !output.empty() ) {
-                    _imp->_scriptEditor->appendToScriptEditor( QString::fromUtf8( output.c_str() ) );
-                }
-            }
-        } else if ( mimedata->hasUrls() ) {
-            QList<QUrl> urls = mimedata->urls();
-            handleOpenFilesFromUrls( urls, QCursor::pos() );
+        
+        NodeGraph* lastUsedGraph = getLastSelectedGraph();
+        if (!lastUsedGraph) {
+            lastUsedGraph = _imp->_nodeGraphArea;
         }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->previousFrame();
+        assert(lastUsedGraph);
+        if (lastUsedGraph) {
+            // Try to paste on the most recently used nodegraph. If we are lucky this is a
+            // valid serialization
+            (void)lastUsedGraph->pasteClipboard();
         }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerForward, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->toggleStartForward();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerBackward, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->toggleStartBackward();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerStop, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->abortRendering();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->nextFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->firstFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->lastFrame();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->previousIncrement();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, modifiers, key) ) {
-        if ( getNodeGraph()->getLastSelectedViewer() ) {
-            getNodeGraph()->getLastSelectedViewer()->nextIncrement();
-        }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
-        getApp()->goToPreviousKeyframe();
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
-        getApp()->goToNextKeyframe();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionProjectSettings, modifiers, key)) {
+        setVisibleProjectSettingsPanel();
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphDisableNodes, modifiers, key) ) {
         _imp->_nodeGraphArea->toggleSelectedNodesEnabled();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphFindNode, modifiers, key) ) {
         _imp->_nodeGraphArea->popFindDialog();
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput1, modifiers, key) ) {
         connectAInput(0);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput2, modifiers, key) ) {
         connectAInput(1);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput3, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput3, modifiers, key) ) {
         connectAInput(2);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput4, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput4, modifiers, key) ) {
         connectAInput(3);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput5, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput5, modifiers, key) ) {
         connectAInput(4);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput6, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput6, modifiers, key) ) {
         connectAInput(5);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput7, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput7, modifiers, key) ) {
         connectAInput(6);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput8, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput8, modifiers, key) ) {
         connectAInput(7);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput9, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput9, modifiers, key) ) {
         connectAInput(8);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput10, modifiers, key) ) {
         connectAInput(9);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput1, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput1, modifiers, key) ) {
         connectBInput(0);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput2, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput2, modifiers, key) ) {
         connectBInput(1);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput3, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput3, modifiers, key) ) {
         connectBInput(2);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput4, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput4, modifiers, key) ) {
         connectBInput(3);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput5, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput5, modifiers, key) ) {
         connectBInput(4);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput6, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput6, modifiers, key) ) {
         connectBInput(5);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput7, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput7, modifiers, key) ) {
         connectBInput(6);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput8, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput8, modifiers, key) ) {
         connectBInput(7);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput9, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput9, modifiers, key) ) {
         connectBInput(8);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput10, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput10, modifiers, key) ) {
         connectBInput(9);
     } else {
+
+        // The player controls shortcuts are global to the application, so check them
+        ViewerTab* activeViewer = getActiveViewer();
+        if (activeViewer) {
+            if (activeViewer->checkForTimelinePlayerGlobalShortcut(key, modifiers)) {
+                return;
+            }
+        }
         /*
          * Modifiers are always uncaught by child implementations so that we can forward them to 1 ViewerTab so that
          * plug-ins overlay interacts always get the keyDown/keyUp events to track modifiers state.
@@ -712,14 +702,20 @@ Gui::keyReleaseEvent(QKeyEvent* e)
     }
 }
 
+void
+Gui::mouseMoveEvent(QMouseEvent* e)
+{
+    QMainWindow::mouseMoveEvent(e);
+}
+
 TabWidget*
 Gui::getAnchor() const
 {
-    QMutexLocker l(&_imp->_panesMutex);
+    std::list<TabWidgetI*> tabs = getApp()->getTabWidgetsSerialization();
 
-    for (std::list<TabWidget*>::const_iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
+    for (std::list<TabWidgetI*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
         if ( (*it)->isAnchor() ) {
-            return *it;
+            return dynamic_cast<TabWidget*>(*it);
         }
     }
 
@@ -737,7 +733,7 @@ Gui::isGUIFrozen() const
 void
 Gui::refreshAllTimeEvaluationParams(bool onlyTimeEvaluationKnobs)
 {
-    int time = getApp()->getProject()->getCurrentTime();
+    TimeValue time = getApp()->getProject()->getTimelineCurrentTime();
 
     for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
         (*it)->refreshNodesKnobsAtTime(true, time);
@@ -755,19 +751,26 @@ Gui::onFreezeUIButtonClicked(bool clicked)
         }
         _imp->_isGUIFrozen = clicked;
     }
+    std::list<ViewerTab*> allViewers;
     {
         QMutexLocker k(&_imp->_viewerTabsMutex);
-        for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-            (*it)->setTurboButtonDown(clicked);
-            if (!clicked) {
-                (*it)->getViewer()->redraw(); //< overlays were disabled while frozen, redraw to make them re-appear
-            }
+        allViewers = _imp->_viewerTabs;
+    }
+    for (std::list<ViewerTab*>::iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
+        ViewerNodePtr viewer = (*it)->getInternalNode();
+        if (!viewer) {
+            continue;
+        }
+        viewer->getTurboModeButtonKnob()->setValue(clicked);
+        if (!clicked) {
+            (*it)->getViewer()->redraw(); //< overlays were disabled while frozen, redraw to make them re-appear
         }
     }
+
     _imp->_propertiesBin->setEnabled(!clicked);
 
     if (!clicked) {
-        int time = getApp()->getProject()->getCurrentTime();
+        TimeValue time(getApp()->getProject()->getTimelineCurrentTime());
         for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
             (*it)->refreshNodesKnobsAtTime(false, time);
         }
@@ -775,45 +778,17 @@ Gui::onFreezeUIButtonClicked(bool clicked)
     }
 }
 
-void
-Gui::addShortcut(BoundAction* action)
-{
-    if (_imp->_settingsGui) {
-        _imp->_settingsGui->addShortcut(action);
-    }
-}
-
-void
-Gui::getNodesEntitledForOverlays(NodesList & nodes) const
-{
-    std::list<DockablePanel*> panels;
-    {
-        QMutexLocker k(&_imp->openedPanelsMutex);
-        panels = _imp->openedPanels;
-    }
-
-    for (std::list<DockablePanel*>::const_iterator it = panels.begin();
-         it != panels.end(); ++it) {
-        NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(*it);
-        if (!panel) {
-            continue;
-        }
-        NodeGuiPtr node = panel->getNode();
-        NodePtr internalNode = node->getNode();
-        if (node && internalNode) {
-            if ( internalNode->shouldDrawOverlay() ) {
-                nodes.push_back( node->getNode() );
-            }
-        }
-    }
-}
 
 void
 Gui::redrawAllViewers()
 {
-    QMutexLocker k(&_imp->_viewerTabsMutex);
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker k(&_imp->_viewerTabsMutex);
+        viewers = _imp->_viewerTabs;
+    }
 
-    for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         if ( (*it)->isVisible() ) {
             (*it)->getViewer()->redraw();
         }
@@ -821,26 +796,57 @@ Gui::redrawAllViewers()
 }
 
 void
-Gui::renderAllViewers(bool canAbort)
+Gui::redrawAllTimelines()
 {
-    assert( QThread::currentThread() == qApp->thread() );
-    for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker k(&_imp->_viewerTabsMutex);
+        viewers = _imp->_viewerTabs;
+    }
+
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->renderCurrentFrame(canAbort);
+            (*it)->redrawTimeline();
         }
     }
 }
 
 void
-Gui::abortAllViewers()
+Gui::renderAllViewers()
 {
     assert( QThread::currentThread() == qApp->thread() );
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->getNode()->abortAnyProcessing_non_blocking();
+            (*it)->getInternalNode()->getNode()->getRenderEngine()->renderCurrentFrame();
         }
     }
 }
+
+void
+Gui::abortAllViewers(bool autoRestartPlayback)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+        if ( !(*it)->isVisible() ) {
+            continue;
+        }
+        ViewerNodePtr viewerGroup = (*it)->getInternalNode();
+        if (!viewerGroup) {
+            continue;
+        }
+
+        RenderEnginePtr engine = viewerGroup->getNode()->getRenderEngine();
+        if (!engine) {
+            continue;
+        }
+
+        if (autoRestartPlayback) {
+            engine->abortRenderingAutoRestart();
+        } else {
+            engine->abortRenderingNoRestart();
+        }
+    }
+} // abortAllViewers
 
 void
 Gui::toggleAutoHideGraphInputs()
@@ -924,33 +930,6 @@ Gui::printAutoDeclaredVariable(const std::string & str)
     _imp->_scriptEditor->printAutoDeclaredVariable( QString::fromUtf8( str.c_str() ) );
 }
 
-void
-Gui::exportGroupAsPythonScript(NodeCollection* collection)
-{
-    assert(collection);
-    NodesList nodes = collection->getNodes();
-    bool hasOutput = false;
-    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isActivated() && dynamic_cast<GroupOutput*>( (*it)->getEffectInstance().get() ) ) {
-            hasOutput = true;
-            break;
-        }
-    }
-
-    if (!hasOutput) {
-        Dialogs::errorDialog( tr("Export").toStdString(), tr("To export as group, at least one Ouptut node must exist.").toStdString() );
-
-        return;
-    }
-    ExportGroupTemplateDialog dialog(collection, this, this);
-    ignore_result( dialog.exec() );
-}
-
-void
-Gui::exportProjectAsGroup()
-{
-    exportGroupAsPythonScript( getApp()->getProject().get() );
-}
 
 void
 Gui::onUserCommandTriggered()
@@ -1007,17 +986,6 @@ Gui::addMenuEntry(const QString & menuGrouping,
     }
 }
 
-void
-Gui::setDopeSheetTreeWidth(int width)
-{
-    _imp->_dopeSheetEditor->setTreeWidgetWidth(width);
-}
-
-void
-Gui::setCurveEditorTreeWidth(int width)
-{
-    _imp->_curveEditor->setTreeWidgetWidth(width);
-}
 
 void
 Gui::setTripleSyncEnabled(bool enabled)
@@ -1115,7 +1083,7 @@ Gui::onFocusChanged(QWidget* /*old*/,
 
 void
 Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
-                           std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences)
+                           std::vector<SequenceParsing::SequenceFromFilesPtr>* sequences)
 {
 
     QStringList filesList;
@@ -1147,6 +1115,7 @@ Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
     QStringList supportedExtensions;
     supportedExtensions.push_back( QString::fromLatin1(NATRON_PROJECT_FILE_EXT) );
     supportedExtensions.push_back( QString::fromLatin1("py") );
+    supportedExtensions.push_back( QString::fromLatin1(NATRON_PRESETS_FILE_EXT) );
 
     std::vector<std::string> readersFormat;
     appPTR->getSupportedReaderFileFormats(&readersFormat);
@@ -1176,7 +1145,6 @@ Gui::dragMoveEvent(QDragMoveEvent* e)
     if ( !e->mimeData()->hasUrls() ) {
         return;
     }
-
 
     e->accept();
 
@@ -1209,8 +1177,7 @@ void
 Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
                              const QPoint& globalPos)
 {
-    std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> > sequences;
-
+    std::vector<SequenceParsing::SequenceFromFilesPtr> sequences;
 
     fileSequencesFromUrls(urls, &sequences);
     QWidget* widgetUnderMouse = QApplication::widgetAt(globalPos);
@@ -1228,7 +1195,7 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
     QPointF graphScenePos = graph->mapToScene( graph->mapFromGlobal(globalPos) );
     std::locale local;
     for (U32 i = 0; i < sequences.size(); ++i) {
-        boost::shared_ptr<SequenceParsing::SequenceFromFiles> & sequence = sequences[i];
+        SequenceParsing::SequenceFromFilesPtr & sequence = sequences[i];
         if (sequence->count() < 1) {
             continue;
         }
@@ -1240,8 +1207,20 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
         if (extLower == NATRON_PROJECT_FILE_EXT) {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
             assert( !content.empty() );
-            AppInstPtr appInstance = openProject( content.begin()->second.absoluteFileName() );
+            AppInstancePtr appInstance = openProject( content.begin()->second.absoluteFileName() );
             Q_UNUSED(appInstance);
+        } else if (extLower == NATRON_PRESETS_FILE_EXT) {
+            const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
+            assert( !content.empty() );
+
+            FStreamsSupport::ifstream ifile;
+            std::string filePath = content.begin()->second.absoluteFileName();
+            FStreamsSupport::open(&ifile, filePath);
+            if (!ifile.is_open()) {
+                Dialogs::errorDialog(tr("Loader").toStdString(), tr("Cannot open file %1").arg(QString::fromUtf8(filePath.c_str())).toStdString());
+            } else {
+                graph->tryReadClipboard(graphScenePos, ifile);
+            }
         } else if (extLower == "py") {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
             assert( !content.empty() );
@@ -1250,15 +1229,16 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
         } else {
             std::string readerPluginID = appPTR->getReaderPluginIDForFileType(extLower);
             if ( readerPluginID.empty() ) {
-                Dialogs::errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
+                Dialogs::errorDialog(tr("Reader").toStdString(), tr("No plugin capable of decoding %1 was found.").arg(QString::fromUtf8(extLower.c_str())).toStdString());
             } else {
 
 
                 std::string pattern = sequence->generateValidSequencePattern();
-                CreateNodeArgs args(readerPluginID, graph->getGroup() );
-                args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.x(), 0);
-                args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.y(), 1);
-                args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, pattern);
+
+                CreateNodeArgsPtr args(CreateNodeArgs::create(readerPluginID, graph->getGroup() ));
+                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.x(), 0);
+                args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.y(), 1);
+                args->addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, pattern);
 
 
                 NodePtr n = getApp()->createNode(args);

@@ -19,6 +19,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
+#include <PyAppInstance.h>
+#include <PyItemsTable.h>
+#include <PyNode.h>
 #include <PyParameter.h>
 
 
@@ -37,6 +40,100 @@ ButtonParamWrapper::~ButtonParamWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
+static PyObject* Sbk_ButtonParamFunc_isCheckable(PyObject* self)
+{
+    ButtonParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ButtonParamWrapper*)((::ButtonParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BUTTONPARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // isCheckable()const
+            bool cppResult = const_cast<const ::ButtonParamWrapper*>(cppSelf)->isCheckable();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_ButtonParamFunc_isDown(PyObject* self)
+{
+    ButtonParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ButtonParamWrapper*)((::ButtonParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BUTTONPARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // isDown()const
+            bool cppResult = const_cast<const ::ButtonParamWrapper*>(cppSelf)->isDown();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_ButtonParamFunc_setDown(PyObject* self, PyObject* pyArg)
+{
+    ButtonParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ButtonParamWrapper*)((::ButtonParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BUTTONPARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setDown(bool)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
+        overloadId = 0; // setDown(bool)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ButtonParamFunc_setDown_TypeError;
+
+    // Call function/method
+    {
+        bool cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setDown(bool)
+            cppSelf->setDown(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ButtonParamFunc_setDown_TypeError:
+        const char* overloads[] = {"bool", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ButtonParam.setDown", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_ButtonParamFunc_trigger(PyObject* self)
 {
     ButtonParamWrapper* cppSelf = 0;
@@ -61,6 +158,9 @@ static PyObject* Sbk_ButtonParamFunc_trigger(PyObject* self)
 }
 
 static PyMethodDef Sbk_ButtonParam_methods[] = {
+    {"isCheckable", (PyCFunction)Sbk_ButtonParamFunc_isCheckable, METH_NOARGS},
+    {"isDown", (PyCFunction)Sbk_ButtonParamFunc_isDown, METH_NOARGS},
+    {"setDown", (PyCFunction)Sbk_ButtonParamFunc_setDown, METH_O},
     {"trigger", (PyCFunction)Sbk_ButtonParamFunc_trigger, METH_NOARGS},
 
     {0} // Sentinel

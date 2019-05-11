@@ -19,6 +19,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
+#include <PyAppInstance.h>
+#include <PyItemsTable.h>
+#include <PyNode.h>
 #include <PyParameter.h>
 
 
@@ -37,7 +40,7 @@ Double3DParamWrapper::~Double3DParamWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
-static PyObject* Sbk_Double3DParamFunc_get(PyObject* self, PyObject* args)
+static PyObject* Sbk_Double3DParamFunc_get(PyObject* self, PyObject* args, PyObject* kwds)
 {
     Double3DParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -46,26 +49,35 @@ static PyObject* Sbk_Double3DParamFunc_get(PyObject* self, PyObject* args)
     cppSelf = (Double3DParamWrapper*)((::Double3DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE3DPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0};
+    PyObject* pyArgs[] = {0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Double3DParam.get(): too many arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "get", 0, 1, &(pyArgs[0])))
+    if (!PyArg_ParseTuple(args, "|OO:get", &(pyArgs[0]), &(pyArgs[1])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: get()const
-    // 1: get(double)const
+    // 0: get(QString)const
+    // 1: get(double,QString)const
     if (numArgs == 0) {
-        overloadId = 0; // get()const
-    } else if (numArgs == 1
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
-        overloadId = 1; // get(double)const
+        overloadId = 0; // get(QString)const
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 1; // get(double,QString)const
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+            overloadId = 1; // get(double,QString)const
+        }
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
+        overloadId = 0; // get(QString)const
     }
 
     // Function signature not found.
@@ -73,24 +85,50 @@ static PyObject* Sbk_Double3DParamFunc_get(PyObject* self, PyObject* args)
 
     // Call function/method
     switch (overloadId) {
-        case 0: // get() const
+        case 0: // get(const QString & view) const
         {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "view");
+                if (value && pyArgs[0]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Double3DParam.get(): got multiple values for keyword argument 'view'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[0] = value;
+                    if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0]))))
+                        goto Sbk_Double3DParamFunc_get_TypeError;
+                }
+            }
+            ::QString cppArg0 = QLatin1String("Main");
+            if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
 
             if (!PyErr_Occurred()) {
-                // get()const
-                Double3DTuple* cppResult = new Double3DTuple(const_cast<const ::Double3DParamWrapper*>(cppSelf)->get());
+                // get(QString)const
+                Double3DTuple* cppResult = new Double3DTuple(const_cast<const ::Double3DParamWrapper*>(cppSelf)->get(cppArg0));
                 pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], cppResult, true, true);
             }
             break;
         }
-        case 1: // get(double frame) const
+        case 1: // get(double frame, const QString & view) const
         {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "view");
+                if (value && pyArgs[1]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Double3DParam.get(): got multiple values for keyword argument 'view'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[1] = value;
+                    if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
+                        goto Sbk_Double3DParamFunc_get_TypeError;
+                }
+            }
             double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
+            ::QString cppArg1 = QLatin1String("Main");
+            if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
             if (!PyErr_Occurred()) {
-                // get(double)const
-                Double3DTuple* cppResult = new Double3DTuple(const_cast<const ::Double3DParamWrapper*>(cppSelf)->get(cppArg0));
+                // get(double,QString)const
+                Double3DTuple* cppResult = new Double3DTuple(const_cast<const ::Double3DParamWrapper*>(cppSelf)->get(cppArg0, cppArg1));
                 pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], cppResult, true, true);
             }
             break;
@@ -104,12 +142,12 @@ static PyObject* Sbk_Double3DParamFunc_get(PyObject* self, PyObject* args)
     return pyResult;
 
     Sbk_Double3DParamFunc_get_TypeError:
-        const char* overloads[] = {"", "float", 0};
+        const char* overloads[] = {"unicode = QLatin1String(\"Main\")", "float, unicode = QLatin1String(\"Main\")", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Double3DParam.get", overloads);
         return 0;
 }
 
-static PyObject* Sbk_Double3DParamFunc_set(PyObject* self, PyObject* args)
+static PyObject* Sbk_Double3DParamFunc_set(PyObject* self, PyObject* args, PyObject* kwds)
 {
     Double3DParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -117,30 +155,42 @@ static PyObject* Sbk_Double3DParamFunc_set(PyObject* self, PyObject* args)
         return 0;
     cppSelf = (Double3DParamWrapper*)((::Double3DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE3DPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 5) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Double3DParam.set(): too many arguments");
+        return 0;
+    } else if (numArgs < 3) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Double3DParam.set(): not enough arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "set", 3, 4, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
+    if (!PyArg_ParseTuple(args, "|OOOOO:set", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: set(double,double,double)
-    // 1: set(double,double,double,double)
+    // 0: set(double,double,double,QString)
+    // 1: set(double,double,double,double,QString)
     if (numArgs >= 3
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))) {
         if (numArgs == 3) {
-            overloadId = 0; // set(double,double,double)
-        } else if (numArgs == 4
-            && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
-            overloadId = 1; // set(double,double,double,double)
+            overloadId = 0; // set(double,double,double,QString)
+        } else if ((pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
+            if (numArgs == 4) {
+                overloadId = 1; // set(double,double,double,double,QString)
+            } else if ((pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[4])))) {
+                overloadId = 1; // set(double,double,double,double,QString)
+            }
+        } else if ((pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[3])))) {
+            overloadId = 0; // set(double,double,double,QString)
         }
     }
 
@@ -149,8 +199,19 @@ static PyObject* Sbk_Double3DParamFunc_set(PyObject* self, PyObject* args)
 
     // Call function/method
     switch (overloadId) {
-        case 0: // set(double x, double y, double z)
+        case 0: // set(double x, double y, double z, const QString & view)
         {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "view");
+                if (value && pyArgs[3]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Double3DParam.set(): got multiple values for keyword argument 'view'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[3] = value;
+                    if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[3]))))
+                        goto Sbk_Double3DParamFunc_set_TypeError;
+                }
+            }
             double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
             double cppArg1;
@@ -159,7 +220,7 @@ static PyObject* Sbk_Double3DParamFunc_set(PyObject* self, PyObject* args)
             pythonToCpp[2](pyArgs[2], &cppArg2);
 
             if (!PyErr_Occurred()) {
-                // set(double,double,double)
+                // set(double,double,double,QString)
                 // Begin code injection
 
                 cppSelf->set(cppArg0,cppArg1,cppArg2);
@@ -170,8 +231,19 @@ static PyObject* Sbk_Double3DParamFunc_set(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // set(double x, double y, double z, double frame)
+        case 1: // set(double x, double y, double z, double frame, const QString & view)
         {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "view");
+                if (value && pyArgs[4]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Double3DParam.set(): got multiple values for keyword argument 'view'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[4] = value;
+                    if (!(pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[4]))))
+                        goto Sbk_Double3DParamFunc_set_TypeError;
+                }
+            }
             double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
             double cppArg1;
@@ -182,7 +254,7 @@ static PyObject* Sbk_Double3DParamFunc_set(PyObject* self, PyObject* args)
             pythonToCpp[3](pyArgs[3], &cppArg3);
 
             if (!PyErr_Occurred()) {
-                // set(double,double,double,double)
+                // set(double,double,double,double,QString)
                 // Begin code injection
 
                 cppSelf->set(cppArg0,cppArg1,cppArg2,cppArg3);
@@ -201,14 +273,14 @@ static PyObject* Sbk_Double3DParamFunc_set(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 
     Sbk_Double3DParamFunc_set_TypeError:
-        const char* overloads[] = {"float, float, float", "float, float, float, float", 0};
+        const char* overloads[] = {"float, float, float, unicode = QLatin1String(\"All\")", "float, float, float, float, unicode = QLatin1String(\"All\")", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Double3DParam.set", overloads);
         return 0;
 }
 
 static PyMethodDef Sbk_Double3DParam_methods[] = {
-    {"get", (PyCFunction)Sbk_Double3DParamFunc_get, METH_VARARGS},
-    {"set", (PyCFunction)Sbk_Double3DParamFunc_set, METH_VARARGS},
+    {"get", (PyCFunction)Sbk_Double3DParamFunc_get, METH_VARARGS|METH_KEYWORDS},
+    {"set", (PyCFunction)Sbk_Double3DParamFunc_set, METH_VARARGS|METH_KEYWORDS},
 
     {0} // Sentinel
 };

@@ -11,57 +11,58 @@ Synopsis
 
 See :doc:`IntParam` for more details.
 
-
 Functions
 ^^^^^^^^^
 
-*    def :meth:`set<NatronEngine.Int3DParam.get>` ()
-*    def :meth:`set<NatronEngine.Int3DParam.get>` (frame)
-*    def :meth:`set<NatronEngine.Int3DParam.set>` (x, y, z)
-*    def :meth:`set<NatronEngine.Int3DParam.set>` (x, y, z, frame)
-
+- def :meth:`set<NatronEngine.Int3DParam.get>` ([view="Main"])
+- def :meth:`set<NatronEngine.Int3DParam.get>` (frame[,view="Main"])
+- def :meth:`set<NatronEngine.Int3DParam.set>` (x, y, z[,view="All"])
+- def :meth:`set<NatronEngine.Int3DParam.set>` (x, y, z, frame[,view="All"])
 
 Detailed Description
 --------------------
 
-.. method:: NatronEngine.Int3DParam.get()
+.. method:: NatronEngine.Int3DParam.get([view="Main"])
 
-
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`<Int3DTuple>`
-    
+
 Returns a :doc:`Int3DTuple` containing the [x,y,z] value of this parameter at the timeline's
-current time.
+current time for the given *view*.
 
 
-.. method:: NatronEngine.Int3DParam.get(frame)
-	
-	:param frame: :class:`float<PySide.QtCore.float>`
+.. method:: NatronEngine.Int3DParam.get(frame[,view="Main"])
+
+    :param frame: :class:`float<PySide.QtCore.float>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`<Int3DTuple>`
-    
-    
-Returns a :doc:`Int3DTuple` containing the [x,y,z] value of this parameter at the given *frame*
 
-.. method:: NatronEngine.Int3DParam.set(x, y, z)
+
+Returns a :doc:`Int3DTuple` containing the [x,y,z] value of this parameter at the given *frame*
+and *view*.
+
+.. method:: NatronEngine.Int3DParam.set(x, y, z[,view="All"])
 
 
     :param x: :class:`int<PySide.QtCore.int>`
     :param y: :class:`int<PySide.QtCore.int>`
     :param z: :class:`int<PySide.QtCore.int>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
-Same as :func:`set(x)<NatronEngine.IntParam.set>` but for 3-dimensional integers.
+Same as :func:`set(x, view)<NatronEngine.IntParam.set>` but for 3-dimensional integers.
 
 
 
-.. method:: NatronEngine.Int3DParam.set(x, y, z, frame)
+.. method:: NatronEngine.Int3DParam.set(x, y, z, frame[,view="All"])
 
 
     :param x: :class:`int<PySide.QtCore.int>`
     :param y: :class:`int<PySide.QtCore.int>`
     :param z: :class:`int<PySide.QtCore.int>`
     :param frame: :class:`float<PySide.QtCore.float>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
-
-Same as :func:`set(x,frame)<NatronEngine.DoubleParam.set>` but for 3-dimensional integers.
+Same as :func:`set(x,frame, view)<NatronEngine.DoubleParam.set>` but for 3-dimensional integers.
 
 
 

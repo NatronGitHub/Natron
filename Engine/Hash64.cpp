@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,20 +34,25 @@
 #include <QtCore/QString>
 
 #include "Engine/Node.h"
+#include "Engine/Curve.h"
 
 NATRON_NAMESPACE_ENTER
 
 void
 Hash64::computeHash()
 {
+    if (hashValid) {
+        return;
+    }
     if ( node_values.empty() ) {
         return;
     }
 
     const unsigned char* data = reinterpret_cast<const unsigned char*>( &node_values.front() );
     boost::crc_optimal<64, 0x42F0E1EBA9EA3693ULL, 0, 0, false, false> crc_64;
-    crc_64 = std::for_each( data, data + node_values.size() * sizeof(node_values[0]), crc_64 );
-    hash = crc_64();
+    crc_64.process_bytes(data, node_values.size() * sizeof(node_values[0]));
+    hash = crc_64.checksum();
+    hashValid = true;
 }
 
 void
@@ -55,15 +60,45 @@ Hash64::reset()
 {
     node_values.clear();
     hash = 0;
+    hashValid = false;
 }
 
 void
-Hash64_appendQString(Hash64* hash,
-                     const QString & str)
+Hash64::appendQString(const QString & str, Hash64* hash)
 {
-    Q_FOREACH (QChar ch, str) {
-        hash->append<unsigned short>( ch.unicode() );
+    std::size_t curSize = hash->node_values.size();
+    hash->node_values.resize(curSize + str.size());
+
+    int c = (int)curSize;
+    for (QString::const_iterator it = str.begin(); it != str.end(); ++it, ++c) {
+        hash->node_values[c] = toU64<unsigned short>(it->unicode());
     }
 }
+
+void
+Hash64::appendCurve(const CurvePtr& curve, Hash64* hash)
+{
+    KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+
+    std::size_t curSize = hash->node_values.size();
+    hash->node_values.resize(curSize + 4 * keys.size());
+
+
+    int c = curSize;
+    for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it, c += 4) {
+        hash->node_values[c] = toU64((double)it->getTime());
+        if (it->hasProperty(kKeyFramePropString)) {
+            std::string value;
+            it->getPropertySafe(kKeyFramePropString, 0, &value);
+            appendQString(QString::fromUtf8(value.c_str()), hash);
+        } else {
+            hash->node_values[c + 1] = toU64(it->getValue());
+            hash->node_values[c + 2] = toU64(it->getLeftDerivative());
+            hash->node_values[c + 3] = toU64(it->getRightDerivative());
+        }
+
+    }
+}
+
 
 NATRON_NAMESPACE_EXIT

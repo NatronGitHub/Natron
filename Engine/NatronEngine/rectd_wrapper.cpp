@@ -149,6 +149,116 @@ Sbk_RectD_Init(PyObject* self, PyObject* args, PyObject* kwds)
         return -1;
 }
 
+static PyObject* Sbk_RectDFunc_addPadding(PyObject* self, PyObject* args)
+{
+    ::RectD* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::RectD*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTD_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "addPadding", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: addPadding(double,double)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
+        overloadId = 0; // addPadding(double,double)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_RectDFunc_addPadding_TypeError;
+
+    // Call function/method
+    {
+        double cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        double cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // addPadding(double,double)
+            cppSelf->addPadding(cppArg0, cppArg1);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_RectDFunc_addPadding_TypeError:
+        const char* overloads[] = {"float, float", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.RectD.addPadding", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_RectDFunc_addPaddingPercentage(PyObject* self, PyObject* args)
+{
+    ::RectD* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::RectD*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_RECTD_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "addPaddingPercentage", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: addPaddingPercentage(double,double)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
+        overloadId = 0; // addPaddingPercentage(double,double)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_RectDFunc_addPaddingPercentage_TypeError;
+
+    // Call function/method
+    {
+        double cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        double cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // addPaddingPercentage(double,double)
+            cppSelf->addPaddingPercentage(cppArg0, cppArg1);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_RectDFunc_addPaddingPercentage_TypeError:
+        const char* overloads[] = {"float, float", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.RectD.addPaddingPercentage", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_RectDFunc_area(PyObject* self)
 {
     ::RectD* cppSelf = 0;
@@ -1089,6 +1199,8 @@ static PyObject* Sbk_RectDFunc_width(PyObject* self)
 }
 
 static PyMethodDef Sbk_RectD_methods[] = {
+    {"addPadding", (PyCFunction)Sbk_RectDFunc_addPadding, METH_VARARGS},
+    {"addPaddingPercentage", (PyCFunction)Sbk_RectDFunc_addPaddingPercentage, METH_VARARGS},
     {"area", (PyCFunction)Sbk_RectDFunc_area, METH_NOARGS},
     {"bottom", (PyCFunction)Sbk_RectDFunc_bottom, METH_NOARGS},
     {"clear", (PyCFunction)Sbk_RectDFunc_clear, METH_NOARGS},

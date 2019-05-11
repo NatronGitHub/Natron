@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -35,8 +35,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QToolButton>
 
-#include "Gui/CurveWidget.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/AnimationModuleView.h"
 #include "Gui/Histogram.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/ViewerGL.h"
@@ -50,6 +50,12 @@ RightClickableWidget::mousePressEvent(QMouseEvent* e)
         QWidget* underMouse = qApp->widgetAt( e->globalPos() );
         if (underMouse == this) {
             Q_EMIT rightClicked( e->pos() );
+            e->accept();
+        }
+    } else if ( buttonDownIsLeft(e) ) {
+        QWidget* underMouse = qApp->widgetAt( e->globalPos() );
+        if (underMouse == this) {
+            Q_EMIT clicked( e->pos() );
             e->accept();
         }
     } else {
@@ -75,7 +81,7 @@ RightClickableWidget::enterEvent(QEvent* e)
     QWidget* currentFocus = qApp->focusWidget();
     bool canSetFocus = !currentFocus ||
                        dynamic_cast<ViewerGL*>(currentFocus) ||
-                       dynamic_cast<CurveWidget*>(currentFocus) ||
+                       dynamic_cast<AnimationModuleView*>(currentFocus) ||
                        dynamic_cast<Histogram*>(currentFocus) ||
                        dynamic_cast<NodeGraph*>(currentFocus) ||
                        dynamic_cast<QToolButton*>(currentFocus) ||

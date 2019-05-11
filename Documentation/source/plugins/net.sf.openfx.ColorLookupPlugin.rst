@@ -5,12 +5,12 @@ ColorLookup node
 
 |pluginIcon| 
 
-*This documentation is for version 1.1 of ColorLookup.*
+*This documentation is for version 1.0 of ColorLookup.*
 
 Description
 -----------
 
-Apply a parametric lookup curve with the possibility to adjust each channel separately.
+Apply a parametric lookup curve to each channel separately.
 
 The master curve is combined with the red, green and blue curves, but not with the alpha curve.
 
@@ -23,8 +23,6 @@ Note that you can easily do color remapping by setting Source and Target colors 
 This will add control points on the curve to match the target from the source. You can add as many point as you like.
 
 This is very useful for matching color of one shot to another, or adding custom colors to a black and white ramp.
-
-Optionally, the RGB histogram or a color ramp can be displayed in the background of the lookup curves.
 
 See also: http://opticalenquiry.com/nuke/index.php?title=ColorLookup
 

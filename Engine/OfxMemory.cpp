@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,17 +32,17 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EffectInstance.h"
-#include "Engine/PluginMemory.h"
 
 NATRON_NAMESPACE_ENTER
 
 OfxMemory::OfxMemory(const EffectInstancePtr& effect)
     : OFX::Host::Memory::Instance()
-    , _memory( new PluginMemory(effect) )
+    , PluginMemory()
+    , _effect(effect)
+    , _lock()
+    , _lockedCount(0)
 {
-    if (effect) {
-        effect->addPluginMemoryPointer(_memory);
-    }
+    
 }
 
 OfxMemory::~OfxMemory()
@@ -52,41 +52,65 @@ OfxMemory::~OfxMemory()
 void*
 OfxMemory::getPtr()
 {
-    return _memory->getPtr();
+    return (void*)getData();
 }
 
 bool
 OfxMemory::alloc(size_t nBytes)
 {
-    bool ret = false;
 
-    freeMem(); // ignore return value
+    QMutexLocker l(&_lock);
+
+    if (_lockedCount) {
+        return false;
+    }
+    deallocateMemory();
+
+    PluginMemAllocateMemoryArgs args(nBytes);
     try {
-        ret = _memory->alloc(nBytes);
+        allocateMemory(args);
     } catch (const std::bad_alloc &) {
         return false;
     }
 
-    return ret;
+    return true;
 }
 
 bool
 OfxMemory::freeMem()
 {
-    _memory->freeMem();
-    return true;
+    // A plug-in is calling freeMem, either this memory is held on the effect itself, in which case
+    // calling releasePluginMemory will decrease the reference count and delete it.
+    // If not held by an effect delete the memory because it's not held by a plug-in.
+    deallocateMemory();
+    EffectInstancePtr effect = _effect.lock();
+    if (effect) {
+        effect->releasePluginMemory(this);
+        return false; // the call to releasePluginMemory is in charge of deleting this
+    } else {
+        return true; // object can be deleted
+    }
 }
 
 void
 OfxMemory::lock()
 {
-    _memory->lock();
+    QMutexLocker l(&_lock);
+
+    ++_lockedCount;
 }
 
 void
 OfxMemory::unlock()
 {
-    _memory->unlock();
+    QMutexLocker l(&_lock);
+
+    // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxImageEffectSuiteV1_imageMemoryUnlock
+    // "Also note, if you unlock a completely unlocked handle, it has no effect (ie: the lock count can't be negative)."
+    if (_lockedCount > 0) {
+        --_lockedCount;
+    }
+
 }
 
 NATRON_NAMESPACE_EXIT

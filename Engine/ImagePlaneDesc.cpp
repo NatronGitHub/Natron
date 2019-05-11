@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,9 +27,16 @@
 #include <ofxNatron.h>
 
 #include <cassert>
-#include <stdexcept>
-#include <cstring>
 #include <sstream>
+#include <stdexcept>
+
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
+#include "Serialization/NodeSerialization.h"
+
 
 NATRON_NAMESPACE_ENTER
 
@@ -42,11 +49,12 @@ static const char* xyComps[2] = {"X", "Y"};
 
 
 ImagePlaneDesc::ImagePlaneDesc()
-: _planeID("none")
+    : _planeID("none")
 
-, _planeLabel("none")
-, _channels()
-, _channelsLabel("none")
+    , _planeLabel("none")
+    , _channels()
+    , _channelsLabel("none")
+
 {
 }
 
@@ -249,6 +257,34 @@ ImagePlaneDesc::getDisparityRightComponents()
 }
 
 
+
+void
+ImagePlaneDesc::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
+{
+    SERIALIZATION_NAMESPACE::ImagePlaneDescSerialization* s = dynamic_cast<SERIALIZATION_NAMESPACE::ImagePlaneDescSerialization*>(obj);
+    if (!s) {
+        return;
+    }
+    s->planeID = _planeID;
+    s->planeLabel = _planeLabel;
+    s->channelsLabel = _channelsLabel;
+    s->channelNames = _channels;
+}
+
+void
+ImagePlaneDesc::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj)
+{
+    const SERIALIZATION_NAMESPACE::ImagePlaneDescSerialization* s = dynamic_cast<const SERIALIZATION_NAMESPACE::ImagePlaneDescSerialization*>(&obj);
+    if (!s) {
+        return;
+    }
+    _planeID = s->planeID;
+    _planeLabel = s->planeLabel;
+    _channelsLabel = s->channelsLabel;
+    _channels = s->channelNames;
+
+}
+
 ChoiceOption
 ImagePlaneDesc::getChannelOption(int channelIndex) const
 {
@@ -412,7 +448,6 @@ ofxCustomCompToNatronComp(const std::string& comp)
     if (!extractOFXEncodedCustomPlane(comp, &planeID, &planeLabel, &channelsLabel, &channels)) {
         return ImagePlaneDesc::getNoneComponents();
     }
-
     return ImagePlaneDesc(planeID, planeLabel, channelsLabel, channels);
 }
 
@@ -524,5 +559,6 @@ ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(const ImagePlaneDesc& plane)
         return natronCustomCompToOfxComp(plane);
     }
 }
-NATRON_NAMESPACE_EXIT
 
+
+NATRON_NAMESPACE_EXIT

@@ -5,3 +5,4 @@ Git HEAD version=aaec4ed07dd15a6174f2f46c10b3e592e9e5d578 (2017-07-07)
 Local modifications:
 * patches/libmv-frame_accessor_no_image_copy.patch
 * patches/libmv-predict-Natron.patch
+* patches/libmv-sincos-mingw32.patch

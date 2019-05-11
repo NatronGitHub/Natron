@@ -1,0 +1,56 @@
+--- a/cmake/install_layout.cmake	2012-12-05 07:50:37.000000000 -0800
++++ b/cmake/install_layout.cmake	2012-12-05 07:48:31.000000000 -0800
+@@ -71,7 +71,7 @@
+ ENDIF()
+ 
+ SET(INSTALL_LAYOUT "${INSTALL_LAYOUT}"
+-CACHE STRING "Installation directory layout. Options are: STANDALONE (as in zip or tar.gz installer) RPM DEB SVR4")
++CACHE STRING "Installation directory layout. Options are: STANDALONE (as in zip or tar.gz installer) RPM DEB SVR4 MACPORTS")
+ 
+ IF(UNIX)
+   IF(INSTALL_LAYOUT MATCHES "RPM")
+@@ -87,7 +87,7 @@
+     SET(CMAKE_INSTALL_PREFIX ${default_prefix}
+       CACHE PATH "install prefix" FORCE)
+   ENDIF()
+-  SET(VALID_INSTALL_LAYOUTS "RPM" "STANDALONE" "DEB" "SVR4")
++  SET(VALID_INSTALL_LAYOUTS "RPM" "STANDALONE" "DEB" "SVR4" "MACPORTS")
+   LIST(FIND VALID_INSTALL_LAYOUTS "${INSTALL_LAYOUT}" ind)
+   IF(ind EQUAL -1)
+     MESSAGE(FATAL_ERROR "Invalid INSTALL_LAYOUT parameter:${INSTALL_LAYOUT}."
+@@ -217,6 +217,35 @@
+ SET(INSTALL_PLUGINTESTDIR_SVR4          ${plugin_tests})
+ 
+ SET(INSTALL_UNIX_ADDRDIR_SVR            "/tmp/mysql.sock")
++#
++# MACPORTS layout
++#
++SET(INSTALL_BINDIR_MACPORTS             "lib/@NAME@/bin")
++SET(INSTALL_SBINDIR_MACPORTS            "lib/@NAME@/bin")
++SET(INSTALL_SCRIPTDIR_MACPORTS          "lib/@NAME@/bin")
++#
++SET(INSTALL_LIBDIR_MACPORTS             "lib/@NAME@/mysql")
++SET(INSTALL_PLUGINDIR_MACPORTS          "lib/@NAME@/plugin")
++#
++SET(INSTALL_INCLUDEDIR_MACPORTS         "include/@NAME@/mysql")
++#
++SET(INSTALL_DOCDIR_MACPORTS             "share/doc/@NAME@")
++SET(INSTALL_DOCREADMEDIR_MACPORTS       "share/doc/@NAME@")
++SET(INSTALL_MANDIR_MACPORTS             "share/man/@NAME@")
++SET(INSTALL_INFODIR_MACPORTS            "share/doc/@NAME@")
++#
++SET(INSTALL_SHAREDIR_MACPORTS           "share/@NAME@")
++SET(INSTALL_MYSQLSHAREDIR_MACPORTS      "share/@NAME@")
++SET(INSTALL_MYSQLTESTDIR_MACPORTS       "share/@NAME@/mysql-test")
++SET(INSTALL_SQLBENCHDIR_MACPORTS        "share/@NAME@")
++SET(INSTALL_SUPPORTFILESDIR_MACPORTS    "share/@NAME@/support-files")
++#
++SET(INSTALL_MYSQLDATADIR_MACPORTS       "var/db/@NAME@")
++SET(INSTALL_PLUGINTESTDIR_MACPORTS      ${plugin_tests})
++#
++# SUID /bin/ps is not in MacPorts sandbox causing scripts/CMakeLists.txt tests to fail so we set FIND_PROC here.
++#
++SET(FIND_PROC "ps -ef | grep -v mysqld_safe | grep -- $MYSQLD | grep $PID > /dev/null")
+ 
+ # Clear cached variables if install layout was changed
+ IF(OLD_INSTALL_LAYOUT)

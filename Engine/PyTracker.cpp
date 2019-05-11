@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,14 +26,15 @@
 
 #include "Engine/PyNode.h"
 #include "Engine/TrackMarker.h"
-#include "Engine/TrackerContext.h"
-
+#include "Engine/TrackerHelper.h"
+#include "Engine/TrackerParamsProvider.h"
 
 NATRON_NAMESPACE_ENTER
 NATRON_PYTHON_NAMESPACE_ENTER
 
-Track::Track(const boost::shared_ptr<TrackMarker>& marker)
-    : _marker(marker)
+Track::Track(const TrackMarkerPtr& marker)
+: ItemBase(marker)
+, _marker(marker)
 {
 }
 
@@ -42,96 +43,24 @@ Track::~Track()
 }
 
 void
-Track::setScriptName(const QString& scriptName)
-{
-    TrackMarkerPtr marker = getInternalMarker();
-    if (!marker) {
-        return;
-    }
-    marker->setScriptName( scriptName.toStdString() );
-}
-
-QString
-Track::getScriptName() const
-{
-    TrackMarkerPtr marker = getInternalMarker();
-    if (!marker) {
-        return QString();
-    }
-    return QString::fromUtf8( marker->getScriptName_mt_safe().c_str() );
-}
-
-Param*
-Track::getParam(const QString& scriptName) const
-{
-    TrackMarkerPtr marker = getInternalMarker();
-    if (!marker) {
-        return 0;
-    }
-    KnobPtr knob = marker->getKnobByName( scriptName.toStdString() );
-
-    if (!knob) {
-        return 0;
-    }
-    Param* ret = Effect::createParamWrapperForKnob(knob);
-
-    return ret;
-}
-
-std::list<Param*>
-Track::getParams() const
-{
-    
-    std::list<Param*> ret;
-    TrackMarkerPtr marker = getInternalMarker();
-    if (!marker) {
-        return ret;
-    }
-    const KnobsVec& knobs = marker->getKnobs();
-
-    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        Param* p = Effect::createParamWrapperForKnob(*it);
-        if (p) {
-            ret.push_back(p);
-        }
-    }
-
-    return ret;
-}
-
-void
 Track::reset()
 {
     TrackMarkerPtr marker = getInternalMarker();
     if (!marker) {
+        PythonSetNullError();
         return;
     }
     marker->resetTrack();
 }
 
-Tracker::Tracker(const boost::shared_ptr<TrackerContext>& ctx)
-    : _ctx(ctx)
+Tracker::Tracker(const KnobItemsTablePtr& ctx, const TrackerHelperPtr& tracker)
+: ItemsTable(ctx)
+, _tracker(tracker)
 {
 }
 
 Tracker::~Tracker()
 {
-}
-
-Track*
-Tracker::getTrackByName(const QString& name) const
-{
-    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
-    if (!ctx) {
-        return 0;
-    }
-    TrackMarkerPtr t = ctx->getMarkerByName( name.toStdString() );
-
-    if (t) {
-        return new Track(t);
-    } else {
-        return 0;
-    }
 }
 
 void
@@ -140,71 +69,49 @@ Tracker::startTracking(const std::list<Track*>& marks,
                        int end,
                        bool forward)
 {
-    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
-    if (!ctx) {
+    TrackerHelperPtr tracker = _tracker.lock();
+    if (!tracker) {
+        PythonSetNullError();
         return;
     }
-    std::list<TrackMarkerPtr> markers;
 
+    std::list<TrackMarkerPtr> markers;
     for (std::list<Track*>::const_iterator it = marks.begin(); it != marks.end(); ++it) {
         markers.push_back( (*it)->getInternalMarker() );
     }
-    ctx->trackMarkers(markers, start, end, forward, 0);
+
+    tracker->trackMarkers(markers, TimeValue(start), TimeValue(end), TimeValue(forward), ViewerNodePtr());
 }
 
 void
 Tracker::stopTracking()
 {
-    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
-    if (!ctx) {
+    TrackerHelperPtr tracker = _tracker.lock();
+    if (!tracker) {
+        PythonSetNullError();
         return;
     }
-    ctx->abortTracking();
-}
-
-void
-Tracker::getAllTracks(std::list<Track*>* tracks) const
-{
-    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
-    if (!ctx) {
-        return;
-    }
-    std::vector<TrackMarkerPtr> markers;
-
-    ctx->getAllMarkers(&markers);
-    for (std::vector<TrackMarkerPtr>::const_iterator it = markers.begin(); it != markers.end(); ++it) {
-        tracks->push_back( new Track(*it) );
-    }
-}
-
-void
-Tracker::getSelectedTracks(std::list<Track*>* tracks) const
-{
-    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
-    if (!ctx) {
-        return;
-    }
-    std::list<TrackMarkerPtr> markers;
-
-    ctx->getSelectedMarkers(&markers);
-    for (std::list<TrackMarkerPtr>::const_iterator it = markers.begin(); it != markers.end(); ++it) {
-        tracks->push_back( new Track(*it) );
-    }
+    tracker->abortTracking();
 }
 
 Track*
 Tracker::createTrack()
 {
-    boost::shared_ptr<TrackerContext> ctx = getInternalContext();
-    if (!ctx) {
+    KnobItemsTablePtr model = getInternalModel();
+    if (!model) {
+        PythonSetNullError();
         return 0;
     }
-    TrackMarkerPtr track = ctx->createMarker();
-    if (!track) {
-        return 0;
-    }
-    return new Track(track);
+    TrackMarkerPtr track = TrackMarker::create(model);
+    track->resetCenter();
+    model->addItem(track, KnobTableItemPtr(), eTableChangeReasonInternal);
+    Track* ret = dynamic_cast<Track*>( ItemsTable::createPyItemWrapper(track) );
+    assert(ret);
+    return ret;
 }
 
+
 NATRON_PYTHON_NAMESPACE_EXIT
+
+
 NATRON_NAMESPACE_EXIT

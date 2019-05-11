@@ -57,11 +57,11 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     export PKG_CONFIG_PATH=$HOME/ocio/lib/pkgconfig:$HOME/oiio/lib/pkgconfig:$HOME/openexr/lib/pkgconfig:$HOME/seexpr/lib/pkgconfig
     export LD_LIBRARY_PATH=$HOME/ocio/lib:$HOME/oiio/lib:$HOME/openexr/lib:$HOME/seexpr/lib
     if [ "${COVERITY_SCAN_BRANCH}" == 1 ]; then
-        qmake -r CONFIG+="$BREAKPAD $SILENT precompile_header";
+        qmake -r CONFIG+="$BREAKPAD $SILENT enable-cairo precompile_header";
     elif [ "$CC" = "gcc" ]; then
-        qmake -r CONFIG+="nopch coverage c++11 debug $BREAKPAD $SILENT"; # pch config disables precompiled headers
+        qmake -r CONFIG+="enforce-gcc8 nopch coverage c++11 debug $BREAKPAD $SILENT enable-cairo"; # pch config disables precompiled headers
     else
-        qmake -r -spec unsupported/linux-clang CONFIG+="nopch c++11 debug $BREAKPAD $SILENT";
+        qmake -r -spec unsupported/linux-clang CONFIG+="nopch c++11 debug $BREAKPAD $SILENT enable-cairo";
     fi
     export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
     make $J -C libs/gflags
@@ -72,6 +72,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     make $J -C libs/qhttpserver
     make $J -C libs/hoedown
     make $J -C libs/libtess
+    make $J -C libs/yaml-cpp
     make $J -C HostSupport;
     # don't build parallel on the coverity_scan branch, because we reach the 3GB memory limit
     if [[ ${COVERITY_SCAN_BRANCH} == 1 ]]; then
@@ -80,6 +81,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     fi
     export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
     make $J -C Engine;
+    make $J -C Serialization;
     make $J -C Renderer;
     make $J -C Gui;
     make $J -C App; # linking Natron may break the 3Gb limit
@@ -110,8 +112,10 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     make $J -C libs/qhttpserver
     make $J -C libs/hoedown
     make $J -C libs/libtess
+    make $J -C libs/yaml-cpp
     make $J -C HostSupport;
     make $J -C Engine;
+    make $J -C Serialization;
     make $J -C Renderer;
     make $J -C Gui;
     make -C App; # linking Natron may break the 3Gb limit

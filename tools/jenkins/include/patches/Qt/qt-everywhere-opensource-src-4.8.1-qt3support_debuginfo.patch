@@ -1,0 +1,10 @@
+diff -up qt-everywhere-opensource-src-4.8.1/src/qt3support/qt3support.pro.debuginfo qt-everywhere-opensource-src-4.8.1/src/qt3support/qt3support.pro
+--- qt-everywhere-opensource-src-4.8.1/src/qt3support/qt3support.pro.debuginfo	2012-03-14 09:01:17.000000000 -0500
++++ qt-everywhere-opensource-src-4.8.1/src/qt3support/qt3support.pro	2012-05-11 11:55:37.780070386 -0500
+@@ -34,6 +34,3 @@ MOCDIR = .moc
+ 
+ *-g++*: QMAKE_CXXFLAGS += -fno-strict-aliasing
+ 
+-CONFIG -= separate_debug_info
+-CONFIG += no_debug_info
+-

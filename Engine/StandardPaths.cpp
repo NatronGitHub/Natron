@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -36,6 +36,7 @@
 
 #include "Global/GlobalDefines.h"
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #if defined(Q_OS_WIN)
 #include <windows.h>
 #include <IntShCut.h>
@@ -46,7 +47,7 @@
 #endif
 #include <QtCore/QFileInfo>
 
-#elif defined(Q_OS_LINUX)
+#elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
 #include <cerrno>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -182,7 +183,7 @@ convertCharArray(const wchar_t *path)
     return QDir::fromNativeSeparators( QString::fromWCharArray(path) );
 }
 
-#elif defined(Q_OS_LINUX)
+#elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
 //static
 QString
 resolveUserName(uint userId)
@@ -335,7 +336,7 @@ StandardPaths::writableLocation(StandardLocationEnum type)
             
             return macLocation(type, kOnAppropriateDisk);
     }
-#elif defined(Q_OS_LINUX)
+#elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
     switch (type) {
     case eStandardLocationHome:
 

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,6 +27,8 @@
 
 #include "Global/Macros.h"
 
+#include <set>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
@@ -35,6 +37,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QMainWindow>
 #include <QtCore/QUrl>
 CLANG_DIAG_ON(deprecated)
@@ -44,19 +47,23 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/ScriptObject.h"
 #include "Engine/ViewIdx.h"
-#include "Engine/EngineFwd.h"
+#include "Engine/SerializableWindow.h"
+#include "Engine/TimeLineKeys.h"
+#include "Engine/TimeValue.h"
 
-#include "Gui/SerializableWindow.h"
 #ifdef __NATRON_WIN32__
 #include "Gui/FileTypeMainWindow_win.h"
 #endif
 #include "Gui/RegisteredTabs.h"
+
 #include "Gui/GuiFwd.h"
+
+
+NATRON_NAMESPACE_ENTER
 
 
 #define kMainSplitterObjectName "ToolbarSplitter"
 
-NATRON_NAMESPACE_ENTER
 
 struct GuiPrivate;
 
@@ -77,7 +84,7 @@ public:
 
     friend class PanelWidget;
 
-    explicit Gui(const GuiAppInstPtr& app,
+    explicit Gui(const GuiAppInstancePtr& app,
                  QWidget* parent = 0);
 
     virtual ~Gui() OVERRIDE;
@@ -87,19 +94,11 @@ public:
      **/
     void createGui();
 
-    NodeGuiPtr createNodeGUI(NodePtr node,
-                             const CreateNodeArgs& args);
 
-    void addNodeGuiToCurveEditor(const NodeGuiPtr &node);
+    void addNodeGuiToAnimationModuleEditor(const NodeGuiPtr &node);
+    void removeNodeGuiFromAnimationModuleEditor(const NodeGuiPtr& node);
 
-    void removeNodeGuiFromCurveEditor(const NodeGuiPtr& node);
-
-    void addNodeGuiToDopeSheetEditor(const NodeGuiPtr &node);
-    void removeNodeGuiFromDopeSheetEditor(const NodeGuiPtr& node);
-
-    const NodesGuiList & getSelectedNodes() const;
-
-    void createViewerGui(NodePtr viewer);
+    void createViewerGui(const NodeGuiPtr& viewer);
 
     void createGroupGui(const NodePtr& group, const CreateNodeArgs& args);
 
@@ -114,7 +113,7 @@ public:
 
     void setActiveViewer(ViewerTab* viewer);
     ViewerTab* getActiveViewer() const;
-    boost::shared_ptr<NodeCollection> getLastSelectedNodeCollection() const;
+    NodeCollectionPtr getLastSelectedNodeCollection() const;
 
     /**
      * @brief Calling this will force the next viewer to be created in the given pane.
@@ -129,7 +128,7 @@ public:
 
     /*Called internally by the viewer node. It adds
        a new Viewer tab GUI and returns a pointer to it.*/
-    ViewerTab* addNewViewerTab(ViewerInstance* node, TabWidget* where);
+    ViewerTab* addNewViewerTab(const NodeGuiPtr& node, TabWidget* where);
 
     void addViewerTab(ViewerTab* tab, TabWidget* where);
 
@@ -154,15 +153,15 @@ public:
 
     static void loadStyleSheet();
     ToolButton* findExistingToolButton(const QString & name) const;
-    ToolButton* findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode>& plugin);
+    ToolButton* findOrCreateToolButton(const PluginGroupNodePtr& treeNode);
 
     void sortAllPluginsToolButtons();
 
     const std::vector<ToolButton*> & getToolButtons() const;
 
-    void registerNewUndoStack(QUndoStack* stack);
+    void registerNewUndoStack(const boost::shared_ptr<QUndoStack>& stack);
 
-    void removeUndoStack(QUndoStack* stack);
+    void removeUndoStack(const boost::shared_ptr<QUndoStack>& stack);
 
     /**
      * @brief An error dialog with title and text customizable
@@ -208,14 +207,14 @@ public:
      **/
     void selectNode(const NodeGuiPtr& node);
 
-    GuiAppInstPtr getApp() const;
+    GuiAppInstancePtr getApp() const;
 
     void updateViewsActions(int viewsCount);
 
     static QKeySequence keySequenceForView(ViewIdx v);
 
     /*set the curve editor as the active widget of its pane*/
-    void setCurveEditorOnTop();
+    void setAnimationEditorOnTop();
 
     ///Make the layout of the application as it is the first time Natron is opened
     void createDefaultLayout1();
@@ -223,43 +222,14 @@ public:
     ///Make the layout according to the serialization.
     ///@param enableOldProjectCompatibility When true, the default Gui layout will be created
     ///prior to restoring. This is because older projects didn't have as much info to recreate the entire layout.
-    void restoreLayout(bool wipePrevious, bool enableOldProjectCompatibility,
-                       const GuiLayoutSerialization & layoutSerialization);
+    void restoreLayout(bool wipePrevious, bool enableOldProjectCompatibility, const SERIALIZATION_NAMESPACE::WorkspaceSerialization& layoutSerialization);
 
-    const std::list<TabWidget*> & getPanes() const;
-    std::list<TabWidget*> getPanes_mt_safe() const;
 
-    int getPanesCount() const;
-
-    /**
-     * @brief If baseName is already used by another pane or it is empty,this function will return a new pane name that is not already
-     * used by another pane. Otherwise it will return baseName.
-     **/
-    QString getAvailablePaneName( const QString & baseName = QString() ) const;
-
-    void registerPane(TabWidget* pane);
-    void unregisterPane(TabWidget* pane);
+    void onPaneRegistered(TabWidgetI* pane);
+    void onPaneUnRegistered(TabWidgetI* pane);
 
     void registerTab(PanelWidget* tab, ScriptObject* obj);
     void unregisterTab(PanelWidget* tab);
-
-    void registerFloatingWindow(FloatingWidget* window);
-    void unregisterFloatingWindow(FloatingWidget* window);
-
-
-    void registerSplitter(Splitter* s);
-    void unregisterSplitter(Splitter* s);
-
-    void registerPyPanel(NATRON_PYTHON_NAMESPACE::PyPanel* panel, const std::string& pythonFunction);
-    void unregisterPyPanel(NATRON_PYTHON_NAMESPACE::PyPanel* panel);
-
-    std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string> getPythonPanels() const;
-
-
-    /**
-     * @brief MT-Safe
-     **/
-    std::list<FloatingWidget*> getFloatingWindows() const;
 
 
     /*Returns a valid tab if a tab with a matching name has been
@@ -305,15 +275,17 @@ public:
 
     static QPixmap screenShot(QWidget* w);
 
-    void loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & obj) const;
+    ProjectGui* getProjectGui() const;
+
+    void loadProjectGui(bool isAutosave, const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& serialization) const;
 
     void saveProjectGui(boost::archive::xml_oarchive & archive);
 
-    void setColorPickersColor(double r, double g, double b, double a);
+    void setColorPickersColor(ViewIdx view, double r, double g, double b, double a);
 
-    void registerNewColorPicker(boost::shared_ptr<KnobColor> knob);
+    void registerNewColorPicker(KnobColorPtr knob, ViewIdx view);
 
-    void removeColorPicker(boost::shared_ptr<KnobColor> knob);
+    void removeColorPicker(KnobColorPtr knob, ViewIdx view);
 
     void clearColorPickers();
 
@@ -321,38 +293,32 @@ public:
 
     void initProjectGuiKnobs();
 
-    void updateViewersViewsMenu(const std::vector<std::string>& viewNames);
-
     void setViewersCurrentView(ViewIdx view);
 
     const std::list<ViewerTab*> & getViewersList() const;
     std::list<ViewerTab*> getViewersList_mt_safe() const;
 
-    void setMasterSyncViewer(ViewerTab* master);
-    ViewerTab* getMasterSyncViewer() const;
+    void activateViewerTab(const ViewerNodePtr& viewer);
 
-    void activateViewerTab(ViewerInstance* viewer);
+    void deactivateViewerTab(const ViewerNodePtr& viewer);
 
-    void deactivateViewerTab(ViewerInstance* viewer);
-
-    ViewerTab* getViewerTabForInstance(ViewerInstance* node) const;
+    ViewerTab* getViewerTabForInstance(const ViewerNodePtr& node) const;
     const NodesGuiList & getVisibleNodes() const;
     NodesGuiList getVisibleNodes_mt_safe() const;
 
     void deselectAllNodes() const;
 
     void onRenderStarted(const QString & sequenceName,
-                         int firstFrame, int lastFrame, int frameStep,
+                         TimeValue firstFrame, TimeValue lastFrame, TimeValue frameStep,
                          bool canPause,
-                         OutputEffectInstance* writer,
-                         const boost::shared_ptr<ProcessHandler> & process);
+                         const NodePtr& writer,
+                         const ProcessHandlerPtr & process);
 
-    void onRenderRestarted(OutputEffectInstance* writer,
-                           const boost::shared_ptr<ProcessHandler> & process);
+    void onRenderRestarted(const NodePtr& writer,
+                           const ProcessHandlerPtr & process);
 
     NodeGraph* getNodeGraph() const;
-    CurveEditor* getCurveEditor() const;
-    DopeSheetEditor * getDopeSheetEditor() const;
+    AnimationModuleEditor * getAnimationModuleEditor() const;
     ScriptEditor* getScriptEditor() const;
     ProgressPanel* getProgressPanel() const;
     QVBoxLayout* getPropertiesLayout() const;
@@ -368,6 +334,8 @@ public:
     void updateLastOpenedProjectPath(const QString& project);
 
     void setUndoRedoStackLimit(int limit);
+
+    NodeGuiPtr getCurrentNodeViewerInterface(const PluginPtr& plugin) const;
 
     /**
      * @brief Make a new viewer interface for the given node.
@@ -386,6 +354,12 @@ public:
      **/
     void removeNodeViewerInterface(const NodeGuiPtr& n, bool permanently);
 
+    /**
+     * @brief Same as removeNodeViewerInterface but for the Viewer node UI only
+     **/
+    void removeViewerInterface(const NodeGuiPtr& n,
+                               bool permanently);
+
     void progressStart(const NodePtr& node, const std::string &message, const std::string &messageid, bool canCancel = true);
 
     void progressEnd(const NodePtr& node);
@@ -397,29 +371,23 @@ public:
 
     /*Useful function that saves on disk the image in png format.
        The name of the image will be the hash key of the image.*/
-    static void debugImage( const Image* image, const RectI& roi, const QString & filename = QString() );
+    static void debugImage( const ImagePtr& image, const RectI& roi, const QString & filename = QString() );
 
     void addVisibleDockablePanel(DockablePanel* panel);
     void removeVisibleDockablePanel(DockablePanel* panel);
 
-    const std::list<DockablePanel*>& getVisiblePanels() const;
-    std::list<DockablePanel*> getVisiblePanels_mt_safe() const;
     std::list<ToolButton*> getToolButtonsOrdered() const;
 
     void setToolButtonMenuOpened(QToolButton* button);
     QToolButton* getToolButtonMenuOpened() const;
 
-    void connectViewersToViewerCache();
-
-    void disconnectViewersFromViewerCache();
+    static bool getPresetIcon(const QString& presetFilePath, const QString& presetIconFile, int pixSize, QPixmap* pixmap);
 
     void checkNumberOfNonFloatingPanes();
 
-    AppInstPtr openProject(const std::string& filename) WARN_UNUSED_RETURN;
+    AppInstancePtr openProject(const std::string& filename) WARN_UNUSED_RETURN;
 
     bool isGUIFrozen() const;
-
-    void addShortcut(BoundAction* action);
 
     const QString& getLastLoadProjectDirectory() const;
     const QString& getLastSaveProjectDirectory() const;
@@ -428,10 +396,6 @@ public:
     void updateLastPluginDirectory(const QString& str);
 
 
-    /**
-     * @brief Returns in nodes all the nodes that can draw an overlay in their order of appearance in the properties bin.
-     **/
-    void getNodesEntitledForOverlays(NodesList& nodes) const;
 
     bool isLeftToolBarDisplayedOnMouseHoverOnly() const;
 
@@ -443,9 +407,11 @@ public:
 
     void redrawAllViewers();
 
-    void renderAllViewers(bool canAbort);
+    void redrawAllTimelines();
 
-    void abortAllViewers();
+    void renderAllViewers();
+
+    void abortAllViewers(bool autoRestartPlayback);
 
     void toggleAutoHideGraphInputs();
 
@@ -459,16 +425,10 @@ public:
 
     void printAutoDeclaredVariable(const std::string& str);
 
-    void exportGroupAsPythonScript(NodeCollection* collection);
-
     void addMenuEntry(const QString& menuGrouping, const std::string& pythonFunction, Qt::Key key, const Qt::KeyboardModifiers& modifiers);
 
     void setTripleSyncEnabled(bool enabled);
     bool isTripleSyncEnabled() const;
-
-    void setDopeSheetTreeWidth(int width);
-    void setCurveEditorTreeWidth(int width);
-
 
     void centerOpenedViewersOn(SequenceTime left, SequenceTime right);
 
@@ -491,14 +451,21 @@ public:
      * @brief Returns true on OS X if on a High DPI (Retina) Display.
      **/
 #ifndef Q_OS_MAC
-    bool isHighDPI() const { return false; }
+    double getHighDPIScaleFactor() const { return 1.; }
 
 #else
-    bool isHighDPI() const { return QtMac::isHighDPIInternal(this); }
-
+    double getHighDPIScaleFactor() const { return QtMac::getHighDPIScaleFactorInternal(this); }
 #endif
 
-    AppInstPtr createNewProject();
+    /**
+     * @brief Fix a bug where icons are wrongly scaled on Qt 4 in QTabBar:
+     * https://bugreports.qt.io/browse/QTBUG-23870
+     **/
+    void scalePixmapToAdjustDPI(QPixmap* pix);
+    void scaleImageToAdjustDPI(QImage* pix);
+
+
+    AppInstancePtr createNewProject();
 
     /**
      * @brief Close project right away, without any user interaction.
@@ -528,7 +495,7 @@ public:
 
     bool saveProjectAs(const std::string& filename);
 
-    static void fileSequencesFromUrls(const QList<QUrl>& urls, std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >* sequences);
+    static void fileSequencesFromUrls(const QList<QUrl>& urls, std::vector<SequenceParsing::SequenceFromFilesPtr>* sequences);
 
     void handleOpenFilesFromUrls(const QList<QUrl>& urls, const QPoint& globalPos);
 
@@ -536,7 +503,28 @@ public:
 
     void updateAboutWindowLibrariesVersion();
 
+    virtual TabWidgetI* isMainWidgetTab() const OVERRIDE FINAL;
+
+    virtual SplitterI* isMainWidgetSplitter() const OVERRIDE FINAL;
+
+    virtual DockablePanelI* isMainWidgetPanel() const OVERRIDE FINAL;
+
+    void refreshTimelineGuiKeyframesLater();
+
+    void refreshTimelineGuiKeyframesNow();
+
+    const TimeLineKeysSet& getTimelineGuiKeyframes() const;
+
+    void setEditExpressionDialogLanguage(ExpressionLanguageEnum lang);
+
+    void setEditExpressionDialogLanguageValid(bool valid);
+
+    ExpressionLanguageEnum getEditExpressionDialogLanguage() const;
+
 protected:
+
+    virtual void restoreChildFromSerialization(const SERIALIZATION_NAMESPACE::WindowSerialization& serialization) OVERRIDE FINAL;
+    
     // Reimplemented Protected Functions
 
     //bool event(QEvent* event) OVERRIDE;
@@ -545,6 +533,7 @@ protected:
 
 Q_SIGNALS:
 
+    void mustRefreshTimelineGuiKeyframesLater();
 
     void doDialog(int type, const QString & title, const QString & content, bool useHtml, StandardButtons buttons, int defaultB);
 
@@ -553,20 +542,26 @@ Q_SIGNALS:
     ///emitted when a viewer changes its name or is deleted/added
     void viewersChanged();
 
-    void s_doProgressStartOnMainThread(KnobHolder* effect, const QString &message, const QString &messageid, bool canCancel);
+    void s_doProgressStartOnMainThread(const KnobHolderPtr& effect, const QString &message, const QString &messageid, bool canCancel);
 
-    void s_doProgressEndOnMainThread(KnobHolder* effect);
+    void s_doProgressEndOnMainThread(const KnobHolderPtr& effect);
 
-    void s_doProgressUpdateOnMainThread(KnobHolder* effect, double t);
+    void s_doProgressUpdateOnMainThread(const KnobHolderPtr& effect, double t);
 
     void s_showLogOnMainThread();
 
+    void mustRefreshViewersAndKnobsLater();
+
 public Q_SLOTS:
+
+    void onMustRefreshViewersAndKnobsLaterReceived();
+
+    void onMustRefreshTimelineGuiKeyframesLaterReceived();
 
     void onShowLogOnMainThreadReceived();
 
     ///Called whenever the time changes on the timeline
-    void renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time, int reason);
+    void onTimelineTimeChanged(SequenceTime time, int reason);
 
     void onTimelineTimeAboutToChange();
 
@@ -583,7 +578,6 @@ public Q_SLOTS:
     void openProject();
     bool saveProject();
     bool saveProjectAs();
-    void exportProjectAsGroup();
     void saveAndIncrVersion();
 
     void autoSave();
@@ -628,8 +622,6 @@ public Q_SLOTS:
 
     void addToolButttonsToToolBar();
 
-    void onCurrentUndoStackChanged(QUndoStack* stack);
-
     void showSettings();
 
     void showAbout();
@@ -640,9 +632,9 @@ public Q_SLOTS:
 
     void onProjectNameChanged(const QString & filePath, bool modified);
 
-    void onNodeNameChanged(const QString & name);
+    void onNodeNameChanged(const QString& oldLabel, const QString & newLabel);
 
-    void onViewerImageChanged(int texIndex, bool hasImageBackend);
+    void onViewerImageChanged(int texIndex);
 
     NodePtr createReader();
     NodePtr createWriter();
@@ -696,9 +688,11 @@ public Q_SLOTS:
     
 private:
 
+    void importLayoutInternal(const std::string& filename);
+
     void setCurrentPanelFocus(PanelWidget* widget);
 
-    AppInstPtr openProjectInternal(const std::string & absoluteFileName, bool attemptToLoadAutosave) WARN_UNUSED_RETURN;
+    AppInstancePtr openProjectInternal(const std::string & absoluteFileName, bool attemptToLoadAutosave) WARN_UNUSED_RETURN;
 
     void setupUi();
 
@@ -711,6 +705,7 @@ private:
     virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
     //virtual bool event(QEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;

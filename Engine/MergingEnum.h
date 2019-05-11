@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,6 +29,7 @@
 
 #include <string>
 #include <vector>
+
 #include "Global/Enums.h"
 #include "Engine/ChoiceOption.h"
 #include "Engine/EngineFwd.h"

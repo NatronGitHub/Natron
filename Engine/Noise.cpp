@@ -26,7 +26,9 @@
 #include <cmath>
 
 #ifndef  SEEXPR_USE_SSE
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/round.hpp> // std::round appeared in C++11
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/cstdint.hpp>

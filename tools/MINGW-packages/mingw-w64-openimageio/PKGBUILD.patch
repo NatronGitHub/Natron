@@ -1,0 +1,91 @@
+--- PKGBUILD.orig	2019-03-10 16:47:51.000000000 -0700
++++ PKGBUILD	2019-03-10 16:51:54.000000000 -0700
+@@ -4,28 +4,24 @@
+ pkgbase=mingw-w64-${_realname}
+ pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+ pkgver=1.8.17
+-pkgrel=1
++pkgrel=1.1
+ pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
+ arch=('any')
+ url="http://www.openimageio.org/"
+ license=("custom")
+ depends=("${MINGW_PACKAGE_PREFIX}-boost"
+-         "${MINGW_PACKAGE_PREFIX}-field3d"
+          "${MINGW_PACKAGE_PREFIX}-freetype"
+          "${MINGW_PACKAGE_PREFIX}-jasper"
+          "${MINGW_PACKAGE_PREFIX}-giflib"
+          "${MINGW_PACKAGE_PREFIX}-glew"
+-         "${MINGW_PACKAGE_PREFIX}-hdf5"
+          "${MINGW_PACKAGE_PREFIX}-libjpeg"
+          "${MINGW_PACKAGE_PREFIX}-libpng"
+-         "${MINGW_PACKAGE_PREFIX}-LibRaw"
++         "${MINGW_PACKAGE_PREFIX}-LibRaw-gpl2"
+          "${MINGW_PACKAGE_PREFIX}-libwebp"
+          "${MINGW_PACKAGE_PREFIX}-libtiff"
+          "${MINGW_PACKAGE_PREFIX}-opencolorio"
+-         "${MINGW_PACKAGE_PREFIX}-opencv"
+          "${MINGW_PACKAGE_PREFIX}-openexr"
+          "${MINGW_PACKAGE_PREFIX}-openjpeg"
+-         "${MINGW_PACKAGE_PREFIX}-openssl"
+          "${MINGW_PACKAGE_PREFIX}-ptex"
+          "${MINGW_PACKAGE_PREFIX}-pugixml"
+          "${MINGW_PACKAGE_PREFIX}-zlib")
+@@ -50,7 +46,9 @@
+         0009-msvcrt-dont-have-create-locale.patch
+         0010-boost-python-find-harder.patch
+         0011-fix-casting.patch
+-        0012-maybe-uninitialized-errors.patch)
++        0012-maybe-uninitialized-errors.patch
++        0200-find-libraw.patch
++        oiio-1.5.23-invalidatespec.patch)
+ sha256sums=('a019086c05a6150d445a2240bab1723dff540dde5f5c327c36a97f0b5ae0e157'
+             'SKIP'
+             '4787e771dbb9b794d47672a08fad3dbb0e36ac30e5c1058684437323b8238b37'
+@@ -64,7 +62,9 @@
+             'd765b49b3671e9354776e33d68fc53e88c15b2c430e592a5aeae066d02a5b0da'
+             '215e80d109ce37f60d52bd157213e3557879a8b0bc1ff6d70f435bc11b8a60a7'
+             '07a11a18356aebc314843c39bd61fc830d88f3a5cc47670dca5e6de920ca5dea'
+-            '11475c00245a31bdd299bed9a5bcd4051edcd6d149fd833b6067965f20cf3312')
++            '11475c00245a31bdd299bed9a5bcd4051edcd6d149fd833b6067965f20cf3312'
++	    'skip'
++	    'skip')
+ 
+ prepare() {
+   cd ${srcdir}/oiio-Release-${pkgver}
+@@ -80,6 +80,8 @@
+   patch -p1 -i ${srcdir}/0010-boost-python-find-harder.patch
+   patch -p1 -i ${srcdir}/0011-fix-casting.patch
+   patch -p1 -i ${srcdir}/0012-maybe-uninitialized-errors.patch
++  patch -p1 -i ${srcdir}/0200-find-libraw.patch
++  patch -p1 -i ${srcdir}/oiio-1.5.23-invalidatespec.patch
+ }
+ 
+ build() {
+@@ -99,10 +101,23 @@
+   ${MINGW_PREFIX}/bin/cmake.exe \
+     -G"MSYS Makefiles" \
+     -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
++    -DUSE_FFMPEG=OFF \
++    -DUSE_OPENJPEG=ON \
+     -DUSE_FREETYPE=ON \
+-    -DUSE_OPENCV=ON \
+-    -DUSE_FIELD3D=ON \
+-    -DUSE_OPENSSL=ON \
++    -DUSE_OPENCV=OFF \
++    -DUSE_FIELD3D=OFF \
++    -DUSE_OPENSSL=OFF \
++    -DUSE_GIF=ON \
++    -DUSE_LIBRAW=ON \
++    -DUSE_NUKE=OFF \
++    -DSTOP_ON_WARNING=OFF \
++    -DOPENEXR_HOME=${MINGW_PREFIX} \
++    -DILMBASE_HOME=${MINGW_PREFIX} \
++    -DBOOST_ROOT=${MINGW_PREFIX} \
++    -DTHIRD_PARTY_TOOLS_HOME=${MINGW_PREFIX} \
++    -DOPENJPEG_HOME=${MINGW_PREFIX} \
++    -DOPENJPEG_INCLUDE_DIR=`pkg-config --variable=includedir libopenjp2` \
++    -DLIBRAW_PATH=${MINGW_PREFIX}/libraw-gpl2 \
+     -DUSE_QT=OFF \
+     -DPYTHON_VERSION=${_pyver} \
+     -DUSE_EXTERNAL_PUGIXML=ON \

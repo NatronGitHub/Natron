@@ -5,7 +5,12 @@ PortGroup           xcodeversion 1.0
 PortGroup           muniversal 1.0
 
 name                tiff
-version             4.0.8
+version             4.0.10
+revision            1
+checksums           rmd160  b25cc4002f2493e71763d0a465a50e9d6ee2aff0 \
+                    sha256  2c52d11ccaf767457db0c46795d9c7d1a8d8f76f68b0b800a3dfe45786b996e4 \
+                    size    2402867
+
 categories          graphics
 platforms           darwin
 maintainers         {ryandesign @ryandesign} openmaintainer
@@ -30,12 +35,10 @@ homepage            http://simplesystems.org/libtiff/
 master_sites        http://download.osgeo.org/libtiff/ \
                     freebsd
 
-checksums           rmd160  0d8bc26c98035810c73b8f876f76dc48efba7da8 \
-                    sha256  59d7a5a8ccd92059913f246877db95a2918e6c04fb9d43fd74e5c3390dac2910
-
 depends_lib         path:lib/libjpeg.dylib:jpeg \
                     port:xz \
-                    port:zlib
+                    port:zlib \
+                    port:zstd
 
 test.run            yes
 test.target         check
@@ -50,8 +53,8 @@ autoreconf.args     -fvi
 patchfiles          patch-configure.ac.diff \
                     patch-acinclude.m4.diff
 
-
 configure.args      --disable-jbig \
+                    --disable-webp \
                     --with-x=no \
                     --with-docdir=${prefix}/share/doc/${name} \
                     --with-jpeg-include-dir=${prefix}/include \
@@ -59,7 +62,9 @@ configure.args      --disable-jbig \
                     --with-lzma-include-dir=${prefix}/include \
                     --with-lzma-lib-dir=${prefix}/lib \
                     --with-zlib-include-dir=${prefix}/include \
-                    --with-zlib-lib-dir=${prefix}/lib
+                    --with-zlib-lib-dir=${prefix}/lib \
+                    --with-zstd-include-dir=${prefix}/include \
+                    --with-zstd-lib-dir=${prefix}/lib
 
 use_parallel_build  yes
 
@@ -75,6 +80,8 @@ set merger_dont_diff ${prefix}/include/tiffconf.h
 variant jbig description {Enable JBIG support} {
     depends_lib-append      port:jbigkit
     configure.args-replace  --disable-jbig --enable-jbig
+    configure.args-append   --with-jbig-include-dir=${prefix}/include \
+                            --with-jbig-lib-dir=${prefix}/lib
 }
 
 livecheck.type  regex

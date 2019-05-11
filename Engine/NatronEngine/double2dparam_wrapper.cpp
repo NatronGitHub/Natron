@@ -19,6 +19,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
+#include <PyAppInstance.h>
+#include <PyItemsTable.h>
+#include <PyNode.h>
 #include <PyParameter.h>
 
 
@@ -37,7 +40,7 @@ Double2DParamWrapper::~Double2DParamWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
-static PyObject* Sbk_Double2DParamFunc_get(PyObject* self, PyObject* args)
+static PyObject* Sbk_Double2DParamFunc_get(PyObject* self, PyObject* args, PyObject* kwds)
 {
     Double2DParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -46,26 +49,35 @@ static PyObject* Sbk_Double2DParamFunc_get(PyObject* self, PyObject* args)
     cppSelf = (Double2DParamWrapper*)((::Double2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0};
+    PyObject* pyArgs[] = {0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Double2DParam.get(): too many arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "get", 0, 1, &(pyArgs[0])))
+    if (!PyArg_ParseTuple(args, "|OO:get", &(pyArgs[0]), &(pyArgs[1])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: get()const
-    // 1: get(double)const
+    // 0: get(QString)const
+    // 1: get(double,QString)const
     if (numArgs == 0) {
-        overloadId = 0; // get()const
-    } else if (numArgs == 1
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
-        overloadId = 1; // get(double)const
+        overloadId = 0; // get(QString)const
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 1; // get(double,QString)const
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
+            overloadId = 1; // get(double,QString)const
+        }
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
+        overloadId = 0; // get(QString)const
     }
 
     // Function signature not found.
@@ -73,24 +85,50 @@ static PyObject* Sbk_Double2DParamFunc_get(PyObject* self, PyObject* args)
 
     // Call function/method
     switch (overloadId) {
-        case 0: // get() const
+        case 0: // get(const QString & view) const
         {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "view");
+                if (value && pyArgs[0]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Double2DParam.get(): got multiple values for keyword argument 'view'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[0] = value;
+                    if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0]))))
+                        goto Sbk_Double2DParamFunc_get_TypeError;
+                }
+            }
+            ::QString cppArg0 = QLatin1String("Main");
+            if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
 
             if (!PyErr_Occurred()) {
-                // get()const
-                Double2DTuple* cppResult = new Double2DTuple(const_cast<const ::Double2DParamWrapper*>(cppSelf)->get());
+                // get(QString)const
+                Double2DTuple* cppResult = new Double2DTuple(const_cast<const ::Double2DParamWrapper*>(cppSelf)->get(cppArg0));
                 pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DTUPLE_IDX], cppResult, true, true);
             }
             break;
         }
-        case 1: // get(double frame) const
+        case 1: // get(double frame, const QString & view) const
         {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "view");
+                if (value && pyArgs[1]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Double2DParam.get(): got multiple values for keyword argument 'view'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[1] = value;
+                    if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1]))))
+                        goto Sbk_Double2DParamFunc_get_TypeError;
+                }
+            }
             double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
+            ::QString cppArg1 = QLatin1String("Main");
+            if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
             if (!PyErr_Occurred()) {
-                // get(double)const
-                Double2DTuple* cppResult = new Double2DTuple(const_cast<const ::Double2DParamWrapper*>(cppSelf)->get(cppArg0));
+                // get(double,QString)const
+                Double2DTuple* cppResult = new Double2DTuple(const_cast<const ::Double2DParamWrapper*>(cppSelf)->get(cppArg0, cppArg1));
                 pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DTUPLE_IDX], cppResult, true, true);
             }
             break;
@@ -104,12 +142,12 @@ static PyObject* Sbk_Double2DParamFunc_get(PyObject* self, PyObject* args)
     return pyResult;
 
     Sbk_Double2DParamFunc_get_TypeError:
-        const char* overloads[] = {"", "float", 0};
+        const char* overloads[] = {"unicode = QLatin1String(\"Main\")", "float, unicode = QLatin1String(\"Main\")", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Double2DParam.get", overloads);
         return 0;
 }
 
-static PyObject* Sbk_Double2DParamFunc_set(PyObject* self, PyObject* args)
+static PyObject* Sbk_Double2DParamFunc_set(PyObject* self, PyObject* args, PyObject* kwds)
 {
     Double2DParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -117,29 +155,41 @@ static PyObject* Sbk_Double2DParamFunc_set(PyObject* self, PyObject* args)
         return 0;
     cppSelf = (Double2DParamWrapper*)((::Double2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
+    if (numArgs + numNamedArgs > 4) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Double2DParam.set(): too many arguments");
+        return 0;
+    } else if (numArgs < 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Double2DParam.set(): not enough arguments");
+        return 0;
+    }
 
-
-    if (!PyArg_UnpackTuple(args, "set", 2, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+    if (!PyArg_ParseTuple(args, "|OOOO:set", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: set(double,double)
-    // 1: set(double,double,double)
+    // 0: set(double,double,QString)
+    // 1: set(double,double,double,QString)
     if (numArgs >= 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
         if (numArgs == 2) {
-            overloadId = 0; // set(double,double)
-        } else if (numArgs == 3
-            && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))) {
-            overloadId = 1; // set(double,double,double)
+            overloadId = 0; // set(double,double,QString)
+        } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))) {
+            if (numArgs == 3) {
+                overloadId = 1; // set(double,double,double,QString)
+            } else if ((pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[3])))) {
+                overloadId = 1; // set(double,double,double,QString)
+            }
+        } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2])))) {
+            overloadId = 0; // set(double,double,QString)
         }
     }
 
@@ -148,31 +198,57 @@ static PyObject* Sbk_Double2DParamFunc_set(PyObject* self, PyObject* args)
 
     // Call function/method
     switch (overloadId) {
-        case 0: // set(double x, double y)
+        case 0: // set(double x, double y, const QString & view)
         {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "view");
+                if (value && pyArgs[2]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Double2DParam.set(): got multiple values for keyword argument 'view'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[2] = value;
+                    if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2]))))
+                        goto Sbk_Double2DParamFunc_set_TypeError;
+                }
+            }
             double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
             double cppArg1;
             pythonToCpp[1](pyArgs[1], &cppArg1);
+            ::QString cppArg2 = QLatin1String("All");
+            if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
 
             if (!PyErr_Occurred()) {
-                // set(double,double)
-                cppSelf->set(cppArg0, cppArg1);
+                // set(double,double,QString)
+                cppSelf->set(cppArg0, cppArg1, cppArg2);
             }
             break;
         }
-        case 1: // set(double x, double y, double frame)
+        case 1: // set(double x, double y, double frame, const QString & view)
         {
+            if (kwds) {
+                PyObject* value = PyDict_GetItemString(kwds, "view");
+                if (value && pyArgs[3]) {
+                    PyErr_SetString(PyExc_TypeError, "NatronEngine.Double2DParam.set(): got multiple values for keyword argument 'view'.");
+                    return 0;
+                } else if (value) {
+                    pyArgs[3] = value;
+                    if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[3]))))
+                        goto Sbk_Double2DParamFunc_set_TypeError;
+                }
+            }
             double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
             double cppArg1;
             pythonToCpp[1](pyArgs[1], &cppArg1);
             double cppArg2;
             pythonToCpp[2](pyArgs[2], &cppArg2);
+            ::QString cppArg3 = QLatin1String("All");
+            if (pythonToCpp[3]) pythonToCpp[3](pyArgs[3], &cppArg3);
 
             if (!PyErr_Occurred()) {
-                // set(double,double,double)
-                cppSelf->set(cppArg0, cppArg1, cppArg2);
+                // set(double,double,double,QString)
+                cppSelf->set(cppArg0, cppArg1, cppArg2, cppArg3);
             }
             break;
         }
@@ -184,8 +260,50 @@ static PyObject* Sbk_Double2DParamFunc_set(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 
     Sbk_Double2DParamFunc_set_TypeError:
-        const char* overloads[] = {"float, float", "float, float, float", 0};
+        const char* overloads[] = {"float, float, unicode = QLatin1String(\"All\")", "float, float, float, unicode = QLatin1String(\"All\")", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Double2DParam.set", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_Double2DParamFunc_setCanAutoFoldDimensions(PyObject* self, PyObject* pyArg)
+{
+    Double2DParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (Double2DParamWrapper*)((::Double2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setCanAutoFoldDimensions(bool)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
+        overloadId = 0; // setCanAutoFoldDimensions(bool)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_Double2DParamFunc_setCanAutoFoldDimensions_TypeError;
+
+    // Call function/method
+    {
+        bool cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setCanAutoFoldDimensions(bool)
+            cppSelf->setCanAutoFoldDimensions(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_Double2DParamFunc_setCanAutoFoldDimensions_TypeError:
+        const char* overloads[] = {"bool", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Double2DParam.setCanAutoFoldDimensions", overloads);
         return 0;
 }
 
@@ -232,8 +350,9 @@ static PyObject* Sbk_Double2DParamFunc_setUsePointInteract(PyObject* self, PyObj
 }
 
 static PyMethodDef Sbk_Double2DParam_methods[] = {
-    {"get", (PyCFunction)Sbk_Double2DParamFunc_get, METH_VARARGS},
-    {"set", (PyCFunction)Sbk_Double2DParamFunc_set, METH_VARARGS},
+    {"get", (PyCFunction)Sbk_Double2DParamFunc_get, METH_VARARGS|METH_KEYWORDS},
+    {"set", (PyCFunction)Sbk_Double2DParamFunc_set, METH_VARARGS|METH_KEYWORDS},
+    {"setCanAutoFoldDimensions", (PyCFunction)Sbk_Double2DParamFunc_setCanAutoFoldDimensions, METH_O},
     {"setUsePointInteract", (PyCFunction)Sbk_Double2DParamFunc_setUsePointInteract, METH_O},
 
     {0} // Sentinel

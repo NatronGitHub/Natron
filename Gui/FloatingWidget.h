@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -37,8 +37,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/ScriptObject.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/SerializableWindow.h"
 
-#include "Gui/SerializableWindow.h"
 #include "Gui/GuiFwd.h"
 
 
@@ -73,6 +73,13 @@ public:
         return _embeddedWidget;
     }
 
+    virtual TabWidgetI* isMainWidgetTab() const OVERRIDE FINAL;
+
+    virtual SplitterI* isMainWidgetSplitter() const OVERRIDE FINAL;
+
+    virtual DockablePanelI* isMainWidgetPanel() const OVERRIDE FINAL;
+
+
 public Q_SLOTS:
 
     void onProjectNameChanged(const QString& filePath, bool modified);
@@ -82,6 +89,8 @@ Q_SIGNALS:
     void closed();
 
 private:
+
+    virtual void restoreChildFromSerialization(const SERIALIZATION_NAMESPACE::WindowSerialization& serialization) OVERRIDE FINAL;
 
     virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;

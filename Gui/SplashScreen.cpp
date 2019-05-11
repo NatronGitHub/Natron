@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,6 +33,10 @@ CLANG_DIAG_OFF(deprecated)
 #include <QApplication>
 #include <QDesktopWidget>
 CLANG_DIAG_ON(deprecated)
+
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 NATRON_NAMESPACE_ENTER
 
@@ -82,8 +86,13 @@ void
 SplashScreen::updateText(const QString & text)
 {
     _text = text;
-    update();
-    QCoreApplication::processEvents();
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        update();
+        QCoreApplication::processEvents();
+    }
 }
 
 void
@@ -126,7 +135,12 @@ LoadProjectSplashScreen::updateText(const QString & text)
 {
     _text = text;
     update();
-    QCoreApplication::processEvents();
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        QCoreApplication::processEvents();
+    }
 }
 
 void

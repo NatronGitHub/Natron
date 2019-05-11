@@ -15,32 +15,32 @@ See :ref:`detailed<color.details>` description...
 Functions
 ^^^^^^^^^
 
-*    def :meth:`get<NatronEngine.ColorParam.get>` ()
-*    def :meth:`get<NatronEngine.ColorParam.get>` (frame)
-*    def :meth:`getDefaultValue<NatronEngine.ColorParam.getDefaultValue>` ([dimension=0])
-*    def :meth:`getDisplayMaximum<NatronEngine.ColorParam.getDisplayMaximum>` (dimension)
-*    def :meth:`getDisplayMinimum<NatronEngine.ColorParam.getDisplayMinimum>` (dimension)
-*    def :meth:`getMaximum<NatronEngine.ColorParam.getMaximum>` ([dimension=0])
-*    def :meth:`getMinimum<NatronEngine.ColorParam.getMinimum>` ([dimension=0])
-*    def :meth:`getValue<NatronEngine.ColorParam.getValue>` ([dimension=0])
-*    def :meth:`getValueAtTime<NatronEngine.ColorParam.getValueAtTime>` (time[, dimension=0])
-*    def :meth:`restoreDefaultValue<NatronEngine.ColorParam.restoreDefaultValue>` ([dimension=0])
-*    def :meth:`set<NatronEngine.ColorParam.set>` (r, g, b, a)
-*    def :meth:`set<NatronEngine.ColorParam.set>` (r, g, b, a, frame)
-*    def :meth:`setDefaultValue<NatronEngine.ColorParam.setDefaultValue>` (value[, dimension=0])
-*    def :meth:`setDisplayMaximum<NatronEngine.ColorParam.setDisplayMaximum>` (maximum[, dimension=0])
-*    def :meth:`setDisplayMinimum<NatronEngine.ColorParam.setDisplayMinimum>` (minimum[, dimension=0])
-*    def :meth:`setMaximum<NatronEngine.ColorParam.setMaximum>` (maximum[, dimension=0])
-*    def :meth:`setMinimum<NatronEngine.ColorParam.setMinimum>` (minimum[, dimension=0])
-*    def :meth:`setValue<NatronEngine.ColorParam.setValue>` (value[, dimension=0])
-*    def :meth:`setValueAtTime<NatronEngine.ColorParam.setValueAtTime>` (value, time[, dimension=0])
+- def :meth:`get<NatronEngine.ColorParam.get>` ([view="Main"])
+- def :meth:`get<NatronEngine.ColorParam.get>` (frame[,view="Main"])
+- def :meth:`getDefaultValue<NatronEngine.ColorParam.getDefaultValue>` ([dimension=0])
+- def :meth:`getDisplayMaximum<NatronEngine.ColorParam.getDisplayMaximum>` (dimension)
+- def :meth:`getDisplayMinimum<NatronEngine.ColorParam.getDisplayMinimum>` (dimension)
+- def :meth:`getMaximum<NatronEngine.ColorParam.getMaximum>` ([dimension=0])
+- def :meth:`getMinimum<NatronEngine.ColorParam.getMinimum>` ([dimension=0])
+- def :meth:`getValue<NatronEngine.ColorParam.getValue>` ([dimension=0,view="Main"])
+- def :meth:`getValueAtTime<NatronEngine.ColorParam.getValueAtTime>` (time[, dimension=0,view="Main"])
+- def :meth:`restoreDefaultValue<NatronEngine.ColorParam.restoreDefaultValue>` ([dimension=-1,view="All"])
+- def :meth:`set<NatronEngine.ColorParam.set>` (r, g, b, a[,view="All"])
+- def :meth:`set<NatronEngine.ColorParam.set>` (r, g, b, a, frame[,view="All"])
+- def :meth:`setDefaultValue<NatronEngine.ColorParam.setDefaultValue>` (value[, dimension=0])
+- def :meth:`setDisplayMaximum<NatronEngine.ColorParam.setDisplayMaximum>` (maximum[, dimension=0])
+- def :meth:`setDisplayMinimum<NatronEngine.ColorParam.setDisplayMinimum>` (minimum[, dimension=0])
+- def :meth:`setMaximum<NatronEngine.ColorParam.setMaximum>` (maximum[, dimension=0])
+- def :meth:`setMinimum<NatronEngine.ColorParam.setMinimum>` (minimum[, dimension=0])
+- def :meth:`setValue<NatronEngine.ColorParam.setValue>` (value[, dimension=0,view="All"])
+- def :meth:`setValueAtTime<NatronEngine.ColorParam.setValueAtTime>` (value, time[, dimension=0,view="All"])
 
 .. _color.details:
 
 Detailed Description
 --------------------
 
-A color parameter can either be of dimension 3 (RGB) or dimension 4 (RGBA). 
+A color parameter can either be of dimension 3 (RGB) or dimension 4 (RGBA).
 The user interface for this parameter looks like this:
 
 .. figure:: colorParam.png
@@ -52,24 +52,25 @@ Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. method:: NatronEngine.ColorParam.get(frame)
+.. method:: NatronEngine.ColorParam.get(frame[,view="Main"])
 
 
     :param frame: :class:`float<PySide.QtCore.float>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`ColorTuple<NatronEngine.ColorTuple>`
 
-Returns a :doc:`ColorTuple` of the color held by the parameter at the given *frame*.
+Returns a :doc:`ColorTuple` of the color held by the parameter at the given *frame* and *view*.
 
 
 
 
-.. method:: NatronEngine.ColorParam.get()
+.. method:: NatronEngine.ColorParam.get([view="Main"])
 
-
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`ColorTuple<NatronEngine.ColorTuple>`
 
-Returns a :doc:`ColorTuple` of the color held by the parameter at the current timeline's time.
-
+Returns a :doc:`ColorTuple` of the color held by the parameter at the current timeline's time
+for the given *view*.
 
 
 
@@ -102,7 +103,7 @@ can exceed this range.
 
     :param dimension: :class:`int<PySide.QtCore.int>`
     :rtype: :class:`float<PySide.QtCore.double>`
-    
+
 Returns the display minimum for this parameter at the given *dimension*.
 The display minimum is the minimum value visible on the slider, internally the value
 can exceed this range.
@@ -135,40 +136,43 @@ The minimum value cannot be exceeded and any lower value will be clamped to this
 
 
 
-.. method:: NatronEngine.ColorParam.getValue([dimension=0])
+.. method:: NatronEngine.ColorParam.getValue([dimension=0,view="Main"])
 
 
     :param dimension: :class:`int<PySide.QtCore.int>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`float<PySide.QtCore.double>`
 
-Returns the value of this parameter at the given *dimension* at the current timeline's time.
+Returns the value of this parameter at the given *dimension* and *view* at the current timeline's time.
 
 
 
-.. method:: NatronEngine.ColorParam.getValueAtTime(time[, dimension=0])
+.. method:: NatronEngine.ColorParam.getValueAtTime(time[, dimension=0, view="Main"])
 
 
     :param time: :class:`float<PySide.QtCore.float>`
     :param dimension: :class:`int<PySide.QtCore.int>`
+    :param view: :class:`str<PySide.QtCore.QString>`
     :rtype: :class:`float<PySide.QtCore.double>`
 
 
-Returns the value of this parameter at the given *dimension* at the given *time*.
+Returns the value of this parameter at the given *dimension* and *view* at the given *time*.
 
 
 
-.. method:: NatronEngine.ColorParam.restoreDefaultValue([dimension=0])
+.. method:: NatronEngine.ColorParam.restoreDefaultValue([dimension=-1,view="All"])
 
 
     :param dimension: :class:`int<PySide.QtCore.int>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
-Removes all animation and expression set on this parameter and set the value
+Removes all animation and expression set on this parameter on the given *view* and set the value
 to be the default value.
 
 
 
 
-.. method:: NatronEngine.ColorParam.set(r, g, b, a, frame)
+.. method:: NatronEngine.ColorParam.set(r, g, b, a, frame [, view="All"])
 
 
     :param r: :class:`float<PySide.QtCore.double>`
@@ -176,22 +180,24 @@ to be the default value.
     :param b: :class:`float<PySide.QtCore.double>`
     :param a: :class:`float<PySide.QtCore.double>`
     :param frame: :class:`float<PySide.QtCore.float>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
-Set a keyframe on each of the 4 animations curves at [r,g,b,a] for the given *frame*.
+Set a keyframe on each of the 4 animations curves at [r,g,b,a] for the given *frame*
+and *view*.
 If this parameter is 3-dimensional, the *a* value is ignored.
 
 
-.. method:: NatronEngine.ColorParam.set(r, g, b, a)
+.. method:: NatronEngine.ColorParam.set(r, g, b, a [, view="All"])
 
 
     :param r: :class:`float<PySide.QtCore.double>`
     :param g: :class:`float<PySide.QtCore.double>`
     :param b: :class:`float<PySide.QtCore.double>`
     :param a: :class:`float<PySide.QtCore.double>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
-
-Set the value of this parameter to be [*r*,*g*,*b*,*a*].
-If this parameter is animated (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>`
+Set the value of this parameter to be [*r*,*g*,*b*,*a*] for the given *view*.
+If this parameter is animated (see :func:`getIsAnimated(dimension,view)<NatronEngine.AnimatedParam.getIsAnimated>`
 then this function will automatically add a keyframe at the timeline's current time.
 
 
@@ -256,27 +262,29 @@ See :func:`getMinimum<Natron.ColorParam.getMinimum>`
 
 
 
-.. method:: NatronEngine.ColorParam.setValue(value[, dimension=0])
+.. method:: NatronEngine.ColorParam.setValue(value[, dimension=0, view="All"])
 
 
     :param value: :class:`float<PySide.QtCore.double>`
     :param dimension: :class:`int<PySide.QtCore.int>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
-Set the value of this parameter at the given *dimension* to be *value*.
-If this parameter is animated (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>`
+Set the value of this parameter at the given *dimension* and *view* to be *value*.
+If this parameter is animated (see :func:`getIsAnimated(dimension,view)<NatronEngine.AnimatedParam.getIsAnimated>`
 then this function will automatically add a keyframe at the timeline's current time.
 
 
 
-.. method:: NatronEngine.ColorParam.setValueAtTime(value, time[, dimension=0])
+.. method:: NatronEngine.ColorParam.setValueAtTime(value, time[, dimension=0, view="All"])
 
 
     :param value: :class:`float<PySide.QtCore.double>`
     :param time: :class:`int<PySide.QtCore.int>`
     :param dimension: :class:`int<PySide.QtCore.int>`
+    :param view: :class:`str<PySide.QtCore.QString>`
 
 
-Set a keyframe on each of the animation curve at the given *dimension*. The keyframe will
+Set a keyframe on each of the animation curve at the given *dimension* and *view*. The keyframe will
 be at the given *time* with the given *value*.
 
 

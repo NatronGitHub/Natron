@@ -19,10 +19,22 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
+#include <PyItemsTable.h>
 #include <PyTracker.h>
 #include <list>
 
 
+// Native ---------------------------------------------------------
+
+void TrackerWrapper::pysideInitQtMetaTypes()
+{
+}
+
+TrackerWrapper::~TrackerWrapper()
+{
+    SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
+    Shiboken::Object::destroy(wrapper, this);
+}
 
 // Target ---------------------------------------------------------
 
@@ -54,140 +66,6 @@ static PyObject* Sbk_TrackerFunc_createTrack(PyObject* self)
         return 0;
     }
     return pyResult;
-}
-
-static PyObject* Sbk_TrackerFunc_getAllTracks(PyObject* self)
-{
-    ::Tracker* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Tracker*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACKER_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getAllTracks(std::list<Track*>*)const
-            // Begin code injection
-
-            std::list<Track*> tracks;
-            cppSelf->getAllTracks(&tracks);
-            PyObject* ret = PyList_New((int) tracks.size());
-            int idx = 0;
-            for (std::list<Track*>::iterator it = tracks.begin(); it!=tracks.end(); ++it,++idx) {
-            PyObject* item = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_TRACK_IDX], *it);
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(item);
-            PyList_SET_ITEM(ret, idx, item);
-            }
-            return ret;
-
-            // End of code injection
-
-
-            pyResult = Py_None;
-            Py_INCREF(Py_None);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_TrackerFunc_getSelectedTracks(PyObject* self)
-{
-    ::Tracker* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Tracker*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACKER_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getSelectedTracks(std::list<Track*>*)const
-            // Begin code injection
-
-            std::list<Track*> tracks;
-            cppSelf->getSelectedTracks(&tracks);
-            PyObject* ret = PyList_New((int) tracks.size());
-            int idx = 0;
-            for (std::list<Track*>::iterator it = tracks.begin(); it!=tracks.end(); ++it,++idx) {
-            PyObject* item = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_TRACK_IDX], *it);
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(item);
-            PyList_SET_ITEM(ret, idx, item);
-            }
-            return ret;
-
-            // End of code injection
-
-
-            pyResult = Py_None;
-            Py_INCREF(Py_None);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_TrackerFunc_getTrackByName(PyObject* self, PyObject* pyArg)
-{
-    ::Tracker* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Tracker*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_TRACKER_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: getTrackByName(QString)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArg)))) {
-        overloadId = 0; // getTrackByName(QString)const
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_TrackerFunc_getTrackByName_TypeError;
-
-    // Call function/method
-    {
-        ::QString cppArg0 = ::QString();
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // getTrackByName(QString)const
-            Track * cppResult = const_cast<const ::Tracker*>(cppSelf)->getTrackByName(cppArg0);
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_TRACK_IDX], cppResult);
-
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-
-    Sbk_TrackerFunc_getTrackByName_TypeError:
-        const char* overloads[] = {"unicode", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Tracker.getTrackByName", overloads);
-        return 0;
 }
 
 static PyObject* Sbk_TrackerFunc_startTracking(PyObject* self, PyObject* args)
@@ -276,9 +154,6 @@ static PyObject* Sbk_TrackerFunc_stopTracking(PyObject* self)
 
 static PyMethodDef Sbk_Tracker_methods[] = {
     {"createTrack", (PyCFunction)Sbk_TrackerFunc_createTrack, METH_NOARGS},
-    {"getAllTracks", (PyCFunction)Sbk_TrackerFunc_getAllTracks, METH_NOARGS},
-    {"getSelectedTracks", (PyCFunction)Sbk_TrackerFunc_getSelectedTracks, METH_NOARGS},
-    {"getTrackByName", (PyCFunction)Sbk_TrackerFunc_getTrackByName, METH_O},
     {"startTracking", (PyCFunction)Sbk_TrackerFunc_startTracking, METH_VARARGS},
     {"stopTracking", (PyCFunction)Sbk_TrackerFunc_stopTracking, METH_NOARGS},
 
@@ -328,7 +203,7 @@ static SbkObjectType Sbk_Tracker_Type = { { {
     /*tp_methods*/          Sbk_Tracker_methods,
     /*tp_members*/          0,
     /*tp_getset*/           0,
-    /*tp_base*/             reinterpret_cast<PyTypeObject*>(&SbkObject_Type),
+    /*tp_base*/             0,
     /*tp_dict*/             0,
     /*tp_descr_get*/        0,
     /*tp_descr_set*/        0,
@@ -347,6 +222,13 @@ static SbkObjectType Sbk_Tracker_Type = { { {
     /*priv_data*/           0
 };
 } //extern
+
+static void* Sbk_Tracker_typeDiscovery(void* cptr, SbkObjectType* instanceType)
+{
+    if (instanceType == reinterpret_cast<SbkObjectType*>(Shiboken::SbkType< ::ItemsTable >()))
+        return dynamic_cast< ::Tracker*>(reinterpret_cast< ::ItemsTable*>(cptr));
+    return 0;
+}
 
 
 // Type conversion functions.
@@ -379,7 +261,7 @@ void init_Tracker(PyObject* module)
     SbkNatronEngineTypes[SBK_TRACKER_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_Tracker_Type);
 
     if (!Shiboken::ObjectType::introduceWrapperType(module, "Tracker", "Tracker*",
-        &Sbk_Tracker_Type, &Shiboken::callCppDestructor< ::Tracker >)) {
+        &Sbk_Tracker_Type, &Shiboken::callCppDestructor< ::Tracker >, (SbkObjectType*)SbkNatronEngineTypes[SBK_ITEMSTABLE_IDX])) {
         return;
     }
 
@@ -393,7 +275,11 @@ void init_Tracker(PyObject* module)
     Shiboken::Conversions::registerConverterName(converter, "Tracker*");
     Shiboken::Conversions::registerConverterName(converter, "Tracker&");
     Shiboken::Conversions::registerConverterName(converter, typeid(::Tracker).name());
+    Shiboken::Conversions::registerConverterName(converter, typeid(::TrackerWrapper).name());
 
 
+    Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_Tracker_Type, &Sbk_Tracker_typeDiscovery);
 
+
+    TrackerWrapper::pysideInitQtMetaTypes();
 }

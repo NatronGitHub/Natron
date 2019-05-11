@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -46,7 +46,7 @@
 #include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
 
-#include "Gui/CurveEditor.h"
+#include "Gui/AnimationModuleEditor.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
@@ -336,53 +336,61 @@ Gui::onDoDialog(int type,
     }
 
     QString msg = useHtml ? content : NATRON_NAMESPACE::convertFromPlainText(content.trimmed(), NATRON_NAMESPACE::WhiteSpaceNormal);
+    QMessageBox::Icon msgBoxType;
+    QMessageBox::StandardButtons msgBoxButtons = QMessageBox::NoButton;
+    QMessageBox::StandardButton defMsgBoxButton = QMessageBox::NoButton;
+    switch (type) {
+        case 0:
+            msgBoxType = QMessageBox::Critical;
+            break;
+        case 1:
+            msgBoxType = QMessageBox::Warning;
+            break;
+        case 2:
+            msgBoxType = QMessageBox::Information;
+            break;
+        case 3:
+            msgBoxType = QMessageBox::Question;
+            msgBoxButtons = QtEnumConvert::toQtStandarButtons(buttons);
+            defMsgBoxButton = QtEnumConvert::toQtStandardButton( (StandardButtonEnum)defaultB );
+            break;
+        default:
+            msgBoxType = QMessageBox::Information;
+            break;
+    }
 
-    if (type == 0) { // error dialog
-        QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
-        setQMessageBoxAppropriateFont(&critical);
-        critical.setWindowFlags(critical.windowFlags() | Qt::WindowStaysOnTopHint);
-        critical.setTextFormat(Qt::RichText);   //this is what makes the links clickable
-        ignore_result( critical.exec() );
-    } else if (type == 1) { // warning dialog
-        QMessageBox warning(QMessageBox::Warning, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
-        setQMessageBoxAppropriateFont(&warning);
-        warning.setTextFormat(Qt::RichText);
-        warning.setWindowFlags(warning.windowFlags() | Qt::WindowStaysOnTopHint);
-        ignore_result( warning.exec() );
-    } else if (type == 2) { // information dialog
-        if (msg.count() < 1000) {
-            QMessageBox info(QMessageBox::Information, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
-            setQMessageBoxAppropriateFont(&info);
-            info.setTextFormat(Qt::RichText);
-            info.setWindowFlags(info.windowFlags() | Qt::WindowStaysOnTopHint);
-            ignore_result( info.exec() );
-        } else {
-            // text may be very long: use resizable QMessageBox
-            ResizableMessageBox info(QMessageBox::Information, title, msg.left(1000), QMessageBox::NoButton, this, Qt::Dialog | Qt::WindowStaysOnTopHint);
-            info.setTextFormat(Qt::RichText);
-            info.setWindowFlags(info.windowFlags() | Qt::WindowStaysOnTopHint);
-            QGridLayout *layout = qobject_cast<QGridLayout *>( info.layout() );
-            if (layout) {
-                QTextEdit *edit = new QTextEdit;
-                edit->setFocusPolicy(Qt::NoFocus);
-                edit->setReadOnly(true);
-                edit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
-                edit->setAcceptRichText(true);
-                edit->setHtml(msg);
-                layout->setRowStretch(1, 0);
-                layout->addWidget(edit, 0, 1);
+    if (msg.count() < 1000) {
+        QMessageBox dialog(msgBoxType, title, msg, msgBoxButtons, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        setQMessageBoxAppropriateFont(&dialog);
+        dialog.setTextFormat(Qt::RichText);
+        dialog.setWindowFlags(dialog.windowFlags() | Qt::WindowStaysOnTopHint);
+        dialog.setDefaultButton(defMsgBoxButton);
+        if ( dialog.exec() ) {
+            if (msgBoxType == QMessageBox::Question) {
+                _imp->_lastQuestionDialogAnswer = QtEnumConvert::fromQtStandardButton( dialog.standardButton( dialog.clickedButton() ) );
             }
-            ignore_result( info.exec() );
         }
-    } else { // question dialog
-        assert(type == 3);
-        QMessageBox ques(QMessageBox::Question, title, msg, QtEnumConvert::toQtStandarButtons(buttons),
-                         this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
-        setQMessageBoxAppropriateFont(&ques);
-        ques.setDefaultButton( QtEnumConvert::toQtStandardButton( (StandardButtonEnum)defaultB ) );
-        ques.setWindowFlags(ques.windowFlags() | Qt::WindowStaysOnTopHint);
-        if ( ques.exec() ) {
-            _imp->_lastQuestionDialogAnswer = QtEnumConvert::fromQtStandardButton( ques.standardButton( ques.clickedButton() ) );
+    } else {
+        // text may be very long: use resizable QMessageBox
+        ResizableMessageBox dialog(msgBoxType, title, msg.left(1000), msgBoxButtons, this, Qt::Dialog | Qt::WindowStaysOnTopHint);
+        dialog.setTextFormat(Qt::RichText);
+        dialog.setWindowFlags(dialog.windowFlags() | Qt::WindowStaysOnTopHint);
+        dialog.setDefaultButton(defMsgBoxButton);
+        QGridLayout *layout = qobject_cast<QGridLayout *>( dialog.layout() );
+        if (layout) {
+            QTextEdit *edit = new QTextEdit;
+            edit->setFocusPolicy(Qt::NoFocus);
+            edit->setReadOnly(true);
+            edit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+            edit->setAcceptRichText(true);
+            edit->setHtml(msg);
+            layout->setRowStretch(1, 0);
+            layout->addWidget(edit, 0, 1);
+        }
+        if ( dialog.exec() ) {
+            if (msgBoxType == QMessageBox::Question) {
+                _imp->_lastQuestionDialogAnswer = QtEnumConvert::fromQtStandardButton( dialog.standardButton( dialog.clickedButton() ) );
+            }
         }
     }
 
@@ -627,16 +635,18 @@ Gui::showView9()
 }
 
 void
-Gui::setCurveEditorOnTop()
+Gui::setAnimationEditorOnTop()
 {
-    QMutexLocker l(&_imp->_panesMutex);
-
-    for (std::list<TabWidget*>::iterator it = _imp->_panes.begin(); it != _imp->_panes.end(); ++it) {
-        TabWidget* cur = (*it);
+    std::list<TabWidgetI*> tabs = getApp()->getTabWidgetsSerialization();
+    for (std::list<TabWidgetI*>::iterator it = tabs.begin(); it != tabs.end(); ++it) {
+        TabWidget* cur = dynamic_cast<TabWidget*>(*it);
         assert(cur);
+        if (!cur) {
+            continue;
+        }
         for (int i = 0; i < cur->count(); ++i) {
-            if (cur->tabAt(i) == _imp->_curveEditor) {
-                cur->makeCurrentTab(i);
+            if (cur->tabAt(i) == _imp->_animationModule) {
+                cur->setCurrentIndex(i);
                 break;
             }
         }
@@ -656,44 +666,16 @@ Gui::showSettings()
 }
 
 void
-Gui::registerNewUndoStack(QUndoStack* stack)
+Gui::registerNewUndoStack(const boost::shared_ptr<QUndoStack>& stack)
 {
-    _imp->_undoStacksGroup->addStack(stack);
-    QAction* undo = stack->createUndoAction(stack);
-    undo->setShortcut(QKeySequence::Undo);
-    QAction* redo = stack->createRedoAction(stack);
-    redo->setShortcut(QKeySequence::Redo);
-    _imp->_undoStacksActions.insert( std::make_pair( stack, std::make_pair(undo, redo) ) );
+    _imp->_undoStacksGroup->addStack(stack.get());
 }
 
 void
-Gui::removeUndoStack(QUndoStack* stack)
+Gui::removeUndoStack(const boost::shared_ptr<QUndoStack>& stack)
 {
-    std::map<QUndoStack*, std::pair<QAction*, QAction*> >::iterator it = _imp->_undoStacksActions.find(stack);
-
-    if ( it == _imp->_undoStacksActions.end() ) {
-        return;
-    }
-    if (_imp->_currentUndoAction == it->second.first) {
-        _imp->menuEdit->removeAction(_imp->_currentUndoAction);
-    }
-    if (_imp->_currentRedoAction == it->second.second) {
-        _imp->menuEdit->removeAction(_imp->_currentRedoAction);
-    }
-    if ( it != _imp->_undoStacksActions.end() ) {
-        _imp->_undoStacksActions.erase(it);
-    }
+    _imp->_undoStacksGroup->removeStack(stack.get());
 }
 
-void
-Gui::onCurrentUndoStackChanged(QUndoStack* stack)
-{
-    std::map<QUndoStack*, std::pair<QAction*, QAction*> >::iterator it = _imp->_undoStacksActions.find(stack);
-
-    //the stack must have been registered first with registerNewUndoStack()
-    if ( it != _imp->_undoStacksActions.end() ) {
-        _imp->setUndoRedoActions(it->second.first, it->second.second);
-    }
-}
 
 NATRON_NAMESPACE_EXIT

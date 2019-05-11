@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -36,13 +36,15 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
+#include "Global/GLIncludes.h" //!<must be included before QGLWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
+#include "Global/GLObfuscate.h" //!<must be included after QGLWidget
 #include <QtCore/QList>
 #include <QtCore/QPointF>
 #include <QtCore/QSize>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+#include "Engine/OverlaySupport.h"
 
 #include "Global/GlobalDefines.h"
 
@@ -54,14 +56,15 @@ struct TimelineGuiPrivate;
 
 class TimeLineGui
     : public QGLWidget
+    , public OverlaySupport
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    explicit TimeLineGui(ViewerInstance* viewer,
-                         boost::shared_ptr<TimeLine> timeLine,
+    explicit TimeLineGui(const ViewerNodePtr& viewer,
+                         const TimeLinePtr& timeLine,
                          Gui* gui,
                          ViewerTab* viewerTab);
 
@@ -69,8 +72,8 @@ public:
 
     void discardGuiPointer();
 
-    void setTimeline(const boost::shared_ptr<TimeLine>& timeline);
-    boost::shared_ptr<TimeLine> getTimeline() const;
+    void setTimeline(const TimeLinePtr& timeline);
+    TimeLinePtr getTimeline() const;
 
     /*initialises the boundaries on the timeline*/
     void setBoundaries(SequenceTime first, SequenceTime last);
@@ -118,12 +121,6 @@ public:
      **/
     void connectSlotsToViewerCache();
 
-    /**
-     * @brief Since the ViewerCache is global to the application, we don't want
-     * a main window (an AppInstance) draw some cached line because another instance is running some playback or rendering something.
-     **/
-    void disconnectSlotsFromViewerCache();
-
     bool isFrameRangeEdited() const;
 
     void setFrameRangeEdited(bool edited);
@@ -134,7 +131,40 @@ public:
 
     void getVisibleRange(SequenceTime* left, SequenceTime* right) const;
 
+
+    // Overriden from OverlaySupport
+    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL;
+    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL;
+    virtual int getWidgetFontHeight() const OVERRIDE FINAL;
+    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL;
+    virtual RectD getViewportRect() const OVERRIDE FINAL;
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
+    virtual RangeD getFrameRange() const OVERRIDE FINAL;
+    virtual bool renderText(double x,
+                            double y,
+                            const std::string &string,
+                            double r,
+                            double g,
+                            double b,
+                            double a,
+                            int flags = 0) OVERRIDE FINAL;
+    virtual void swapOpenGLBuffers() OVERRIDE FINAL;
+    virtual void redraw() OVERRIDE FINAL;
+    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE FINAL;
+    virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
+    virtual void getPixelScale(double & xScale, double & yScale) const  OVERRIDE FINAL;
+#ifdef OFX_EXTENSIONS_NATRON
+    virtual double getScreenPixelRatio() const OVERRIDE FINAL;
+#endif
+   virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
+    virtual void saveOpenGLContext() OVERRIDE FINAL;
+    virtual void restoreOpenGLContext() OVERRIDE FINAL;
+    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
+
+    ////
+
 public Q_SLOTS:
+
 
     void recenterOnBounds();
 
@@ -142,21 +172,10 @@ public Q_SLOTS:
 
     void onFrameChanged(SequenceTime, int);
 
-    void onCachedFrameAdded(SequenceTime time);
-    void onCachedFrameRemoved(SequenceTime time, int storage);
-    void onCachedFrameStorageChanged(SequenceTime time, int oldStorage, int newStorage);
-    void onMemoryCacheCleared();
-    void onDiskCacheCleared();
-
-    void clearCachedFrames();
-
-    void onKeyframesIndicatorsChanged();
-
     void onProjectFrameRangeChanged(int, int);
 
     void onTimeFormatChanged(int);
 
-    void onKeyframeChangesUpdateTimerTimeout();
 
 private:
 
@@ -171,10 +190,15 @@ private:
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
 
 Q_SIGNALS:
 
+    
     void boundariesChanged(SequenceTime, SequenceTime);
 
 private:

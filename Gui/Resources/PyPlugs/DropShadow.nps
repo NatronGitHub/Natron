@@ -1,0 +1,160 @@
+# Natron Presets File
+PluginID: fr.inria.built-in.Group
+Params:
+  - Name: pyPlugPluginID
+    String: fr.inria.DropShadow
+  - Name: pyPlugPluginLabel
+    String: DropShadow
+  - Name: pyPlugPluginGrouping
+    String: Filter
+  - Name: pyPlugPluginDescription
+    String: Creates a drop shadow on the source image using its alpha channel.
+  - Name: pyPlugPluginVersion
+    Int: [1, 0]
+  - Name: pyPlugPluginIcon
+    String: DropShadow.png
+UserPages:
+  - TypeName: Page
+    Name: controls
+    Label: Controls
+    Params:
+      - Name: shadowAngle
+        DefaultFloat: -45
+        NDims: 1
+        TypeName: Double
+        Label: Angle
+        DisplayMin: -360
+        DisplayMax: 360
+      - Name: shadowDist
+        DefaultFloat: 20
+        NDims: 1
+        TypeName: Double
+        Label: Distance
+        DisplayMin: 0
+        DisplayMax: 2000
+      - Name: shadowBlur
+        DefaultFloat: [0, 0]
+        NDims: 2
+        TypeName: Double
+        Label: Bluriness
+        Min: 0
+        Max: 1000
+        DisplayMin: 0
+        DisplayMax: 100
+      - Name: shadowOpacity
+        DefaultFloat: [0.5, 0.5, 0.5, 0.5]
+        NDims: 4
+        TypeName: Color
+        Label: Opacity
+        Min: -1.79769e+308
+        Max: 1.79769e+308
+        DisplayMin: 0
+        DisplayMax: 1
+      - Name: shadowColor
+        DefaultFloat: [0, 0, 0]
+        NDims: 3
+        TypeName: Color
+        Label: Color
+        DisplayMin: 0
+        DisplayMax: 1
+      - Name: shadowCFS
+        DefaultBool: false
+        NDims: 1
+        TypeName: Bool
+        Label: Color from source
+      - Name: shadowOnly
+        DefaultBool: false
+        NDims: 1
+        TypeName: Bool
+        Label: Shadow only
+PagesOrder: [controls, nodePage, pyPlugPage]
+Children:
+  - PluginID: net.sf.openfx.ShufflePlugin
+    Name: Shuffle1
+    Version: [2, 0]
+    Inputs: {A: Multiply1, B: Solid1}
+    Params:
+      - Name: outputR
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.R
+      - Name: outputG
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.G
+      - Name: outputB
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.B
+      - Name: disableNode
+        Bool: {N: "@thisGroup", K: shadowCFS}
+    Pos: [759, 87]
+  - PluginID: net.sf.openfx.TransformPlugin
+    Name: Transform2
+    Inputs: Shuffle1
+    Params:
+      - Name: translate
+        Float: [{pyExpr: cos(radians(thisGroup.shadowAngle.get()))*thisGroup.shadowDist.get()}, {pyExpr: sin(radians(thisGroup.shadowAngle.get()))*thisGroup.shadowDist.get()}]
+      - Name: center
+        Float: [480, 270]
+      - Name: transformCenterChanged
+        Bool: true
+    Pos: [759, 167]
+  - PluginID: net.sf.openfx.Premult
+    Name: Premult1
+    Version: [2, 0]
+    Inputs: Blur1
+    Pos: [759, 341]
+  - PluginID: net.sf.openfx.MultiplyPlugin
+    Name: Multiply1
+    Version: [2, 0]
+    Inputs: InputSource
+    Params:
+      - Name: NatronOfxParamProcessR
+        Bool: false
+      - Name: NatronOfxParamProcessG
+        Bool: false
+      - Name: NatronOfxParamProcessB
+        Bool: false
+      - Name: NatronOfxParamProcessA
+        Bool: true
+      - Name: value
+        Float: [{N: "@thisGroup", K: shadowOpacity, D: r}, {N: "@thisGroup", K: shadowOpacity, D: g}, {N: "@thisGroup", K: shadowOpacity, D: b}, {N: "@thisGroup", K: shadowOpacity, D: a}]
+      - Name: premult
+        Bool: true
+      - Name: premultChanged
+        Bool: true
+    Pos: [759, -23]
+  - PluginID: net.sf.openfx.Solid
+    Name: Solid1
+    Params:
+      - Name: NatronParamFormatChoice
+        String: PC_Video
+      - Name: size
+        Float: [960, 540]
+      - Name: color
+        Float: [{N: "@thisGroup", K: shadowColor, D: r}, {N: "@thisGroup", K: shadowColor, D: g}, {N: "@thisGroup", K: shadowColor, D: b}]
+    Pos: [584, 87]
+  - PluginID: fr.inria.built-in.Input
+    Name: InputSource
+    Pos: [759, -112]
+  - PluginID: fr.inria.built-in.Output
+    Name: Output
+    Label: Output1
+    Inputs: Merge1
+    Pos: [1000, 497]
+  - PluginID: net.sf.cimg.CImgBlur
+    Name: Blur1
+    Version: [3, 0]
+    Inputs: Transform2
+    Params:
+      - Name: NatronOfxParamProcessA
+        Bool: true
+      - Name: size
+        Float: [{N: "@thisGroup", K: shadowBlur, D: x}, {N: "@thisGroup", K: shadowBlur, D: y}]
+    Pos: [759, 260]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: Merge1
+    Inputs: {A: InputSource, B: Premult1}
+    Params:
+      - Name: maskInvert
+        Bool: true
+      - Name: userTextArea
+        String: <Natron>(over)</Natron>
+      - Name: disableNode
+        Bool: {N: "@thisGroup", K: shadowOnly}
+    Pos: [1000, 329]

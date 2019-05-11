@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -37,68 +37,47 @@
 #include <QtCore/QReadWriteLock>
 
 #include "Engine/Curve.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
 
 struct BezierCPPrivate
 {
-    boost::weak_ptr<Bezier> holder;
+    BezierWPtr holder;
 
     ///the animation curves for the position in the 2D plane
-    boost::shared_ptr<Curve> curveX, curveY;
-    boost::shared_ptr<Curve> guiCurveX, guiCurveY;
+    CurvePtr curveX, curveY;
     double x, y; //< used when there is no keyframe
-    double guiX, guiY;
 
     ///the animation curves for the derivatives
     ///They do not need to be protected as Curve is a thread-safe class.
-    boost::shared_ptr<Curve> curveLeftBezierX, curveRightBezierX, curveLeftBezierY, curveRightBezierY;
-    boost::shared_ptr<Curve> guiCurveLeftBezierX, guiCurveRightBezierX, guiCurveLeftBezierY, guiCurveRightBezierY;
-    mutable QMutex staticPositionMutex; //< protects the  leftX,rightX,leftY,rightY
+    CurvePtr curveLeftBezierX, curveRightBezierX, curveLeftBezierY, curveRightBezierY;
+    mutable QMutex lock; //< protects all data
     double leftX, rightX, leftY, rightY; //< used when there is no keyframe
-    double guiLeftX, guiRightX, guiLeftY, guiRightY; //< used when there is no keyframe
 
-    BezierCPPrivate(const boost::shared_ptr<Bezier>& curve)
+    BezierCPPrivate(const BezierPtr& curve)
         : holder(curve)
         , curveX()
         , curveY()
-        , guiCurveX()
-        , guiCurveY()
         , x(0)
         , y(0)
-        , guiX(0)
-        , guiY(0)
         , curveLeftBezierX()
         , curveRightBezierX()
         , curveLeftBezierY()
         , curveRightBezierY()
-        , guiCurveLeftBezierX()
-        , guiCurveRightBezierX()
-        , guiCurveLeftBezierY()
-        , guiCurveRightBezierY()
-        , staticPositionMutex()
+        , lock()
         , leftX(0)
         , rightX(0)
         , leftY(0)
         , rightY(0)
-        , guiLeftX(0)
-        , guiRightX(0)
-        , guiLeftY(0)
-        , guiRightY(0)
     {
         curveX= boost::make_shared<Curve>();
         curveY= boost::make_shared<Curve>();
-        guiCurveX= boost::make_shared<Curve>();
-        guiCurveY= boost::make_shared<Curve>();
         curveLeftBezierX= boost::make_shared<Curve>();
         curveRightBezierX= boost::make_shared<Curve>();
         curveLeftBezierY= boost::make_shared<Curve>();
         curveRightBezierY= boost::make_shared<Curve>();
-        guiCurveLeftBezierX= boost::make_shared<Curve>();
-        guiCurveRightBezierX= boost::make_shared<Curve>();
-        guiCurveLeftBezierY= boost::make_shared<Curve>();
-        guiCurveRightBezierY= boost::make_shared<Curve>();
     }
 };
 

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -43,7 +43,8 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/EngineFwd.h"
-
+#include "Engine/RectD.h"
+#include "Engine/NodeGroup.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER
@@ -73,7 +74,7 @@ private:
     void move(double dx, double dy);
 
     bool _firstRedoCalled;
-    NodesGuiList _nodes;
+    std::list<NodeGuiWPtr> _nodes;
     double _dx, _dy;
 };
 
@@ -92,11 +93,11 @@ class AddMultipleNodesCommand
 public:
 
     AddMultipleNodesCommand(NodeGraph* graph,
-                            const NodesGuiList & nodes,
+                            const NodesList & nodes,
                             QUndoCommand *parent = 0);
 
     AddMultipleNodesCommand(NodeGraph* graph,
-                            const NodeGuiPtr & node,
+                            const NodePtr & node,
                             QUndoCommand* parent = 0);
 
 
@@ -107,7 +108,14 @@ public:
 
 private:
 
-    std::list<boost::weak_ptr<NodeGui> > _nodes;
+    struct NodeToAdd
+    {
+
+        NodeWPtr node;
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization;
+    };
+
+    std::list<NodeToAdd> _nodes;
     NodeGraph* _graph;
     bool _firstRedoCalled;
     bool _isUndone;
@@ -133,11 +141,9 @@ public:
 private:
     struct NodeToRemove
     {
-        ///This contains the output nodes whose input should be reconnected to this node afterwards.
-        ///This list contains only nodes that are not part of the selection: we restore only the
-        ///inputs of the outputs nodes of the graph that were not removed
-        NodesWList outputsToRestore;
-        boost::weak_ptr<NodeGui> node;
+
+        NodeWPtr node;
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization;
     };
 
     std::list<NodeToRemove> _nodes;
@@ -155,6 +161,7 @@ public:
                    Edge* edge,
                    const NodeGuiPtr &oldSrc,
                    const NodeGuiPtr & newSrc,
+                   int viewerInternalIndex,
                    QUndoCommand *parent = 0);
 
     virtual void undo();
@@ -165,11 +172,13 @@ protected:
     static void doConnect(const NodeGuiPtr &oldSrc,
                           const NodeGuiPtr & newSrc,
                           const NodeGuiPtr& dst,
-                          int inputNb);
+                          int inputNb,
+                          int viewerInternalIndex);
     boost::weak_ptr<NodeGui> _oldSrc, _newSrc;
     boost::weak_ptr<NodeGui> _dst;
     NodeGraph* _graph;
     int _inputNb;
+    int _viewerInternalIndex;
 };
 
 /*
@@ -220,7 +229,7 @@ public:
 
 private:
 
-    NodeGuiPtr _bd;
+    NodeGuiWPtr _bd;
     int _w, _h;
     int _oldW, _oldH;
 };
@@ -234,7 +243,7 @@ class DecloneMultipleNodesCommand
 public:
 
     DecloneMultipleNodesCommand(NodeGraph* graph,
-                                const NodesGuiList & nodes,
+                                const  std::map<NodeGuiPtr, NodePtr> & nodes,
                                 QUndoCommand *parent = 0);
 
 
@@ -247,7 +256,7 @@ private:
 
     struct NodeToDeclone
     {
-        boost::weak_ptr<NodeGui> node;
+        NodeGuiWPtr node;
         NodeWPtr master;
     };
 
@@ -265,7 +274,7 @@ public:
 
     struct NodeToRearrange
     {
-        NodeGuiPtr node;
+        NodeGuiWPtr node;
         QPointF oldPos, newPos;
     };
 
@@ -293,7 +302,7 @@ public:
 
 private:
 
-    std::list<boost::weak_ptr<NodeGui> >_nodes;
+    std::list<NodeGuiWPtr>_nodes;
 };
 
 class EnableNodesCommand
@@ -310,36 +319,10 @@ public:
 
 private:
 
-    std::list<boost::weak_ptr<NodeGui> >_nodes;
+    std::list<NodeGuiWPtr>_nodes;
 };
 
 
-class LoadNodePresetsCommand
-    : public QUndoCommand
-{
-    Q_DECLARE_TR_FUNCTIONS(LoadNodePresetsCommand)
-
-public:
-
-    LoadNodePresetsCommand(const NodeGuiPtr & node,
-                           const std::list<boost::shared_ptr<NodeSerialization> >& serialization,
-                           QUndoCommand *parent = 0);
-
-    virtual ~LoadNodePresetsCommand();
-    virtual void undo();
-    virtual void redo();
-
-private:
-
-    void getListAsShared(const std::list< NodeWPtr >& original,
-                         std::list< NodePtr >& shared) const;
-
-    bool _firstRedoCalled;
-    bool _isUndone;
-    boost::weak_ptr<NodeGui> _node;
-    std::list< NodeWPtr > _oldChildren, _newChildren; //< children if multi-instance
-    std::list<boost::shared_ptr<NodeSerialization> > _newSerializations, _oldSerialization;
-};
 
 class RenameNodeUndoRedoCommand
     : public QUndoCommand
@@ -358,27 +341,8 @@ public:
 
 private:
 
-    boost::weak_ptr<NodeGui> _node;
+    NodeGuiWPtr _node;
     QString _oldName, _newName;
-};
-
-struct ExtractedOutput
-{
-    boost::weak_ptr<NodeGui> node;
-    std::list<std::pair<int, NodeWPtr > > outputs;
-};
-
-struct ExtractedInput
-{
-    boost::weak_ptr<NodeGui> node;
-    std::vector<NodeWPtr > inputs;
-};
-
-struct ExtractedTree
-{
-    ExtractedOutput output;
-    std::list<ExtractedInput> inputs;
-    std::list<boost::weak_ptr<NodeGui> > inbetweenNodes;
 };
 
 
@@ -400,7 +364,7 @@ private:
 
 
     NodeGraph* _graph;
-    std::list<ExtractedTree> _trees;
+    NodeCollection::TopologicallySortedNodesList _sortedNodes;
 };
 
 class GroupFromSelectionCommand
@@ -410,8 +374,7 @@ class GroupFromSelectionCommand
 
 public:
 
-    GroupFromSelectionCommand(NodeGraph* graph,
-                              const NodesGuiList & nodes);
+    GroupFromSelectionCommand(const NodesList & nodes);
 
     virtual ~GroupFromSelectionCommand();
 
@@ -420,18 +383,16 @@ public:
 
 private:
 
-    NodeGraph* _graph;
-    std::list<boost::weak_ptr<NodeGui> > _originalNodes;
-    struct OutputLink
-    {
-        int inputIdx;
-        NodeWPtr inputNode;
-    };
-    typedef std::map<NodeWPtr, OutputLink> OutputLinksMap;
-    OutputLinksMap _outputLinks;
-    boost::weak_ptr<NodeGui> _group;
-    bool _firstRedoCalled;
-    bool _isRedone;
+    NodesWList _originalNodes;
+
+
+    // save for each node the inputs that it was connected to
+    typedef std::map<NodeWPtr, std::vector<NodeWPtr> > LinksMap;
+    LinksMap _savedLinks;
+
+    NodeCollectionWPtr _oldGroup;
+    NodeCollection::TopologicallySortedNodesList _sortedNodes;
+    NodeWPtr _newGroup;
 };
 
 class InlineGroupCommand
@@ -441,8 +402,7 @@ class InlineGroupCommand
 
 public:
 
-    InlineGroupCommand(NodeGraph* graph,
-                       const NodesGuiList & nodes);
+    InlineGroupCommand(const NodeCollectionPtr& newGroup, const NodesList & groupNodes);
 
     virtual ~InlineGroupCommand();
 
@@ -451,22 +411,88 @@ public:
 
 private:
 
-    struct NodeToConnect
-    {
-        boost::weak_ptr<NodeGui> input;
-        std::map<boost::weak_ptr<NodeGui>, int> outputs;
-    };
-
     struct InlinedGroup
     {
-        boost::weak_ptr<NodeGui> group;
-        std::list<boost::weak_ptr<NodeGui> > inlinedNodes;
-        std::map<int, NodeToConnect> connections;
+        boost::weak_ptr<NodeGroup> oldGroupNode;
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr groupNodeSerialization;
+
+        // For each output of the GroupInput node, the inputs vector
+        struct InputOutput
+        {
+            // The GroupInput index
+            int inputIndex;
+
+            // The input index connceting output to the GroupInput node
+            int outputInputIndex;
+
+            // output node of the input node
+            NodeWPtr output;
+
+            // The inputs of the output node
+            std::vector<NodeWPtr> inputNodes;
+        };
+        std::vector<InputOutput> inputsMap;
+
+        // A vector of the nodes the Group node is linked to in input (not the GroupInput nodes but
+        // the actual nodes upstream)
+        std::vector<NodeWPtr> groupInputs;
+
+        // Each node connected to the group node itself along with it's inputs.
+        struct GroupNodeOutput
+        {
+            NodeWPtr output;
+            int inputIndex;
+        };
+        std::list<GroupNodeOutput> groupOutputs;
+
+        // The actual nodes that were inlined along with their old position
+        struct MovedNode
+        {
+            NodeWPtr node;
+            double position[2];
+        };
+        std::list<MovedNode> movedNodes;
+
+        RectD movedNodesBbox;
+
+        double groupNodePos[2];
+
+        // The GroupOutput node input
+        NodeWPtr outputNodeInput;
     };
 
-    NodeGraph* _graph;
-    std::list<InlinedGroup> _groupNodes;
-    bool _firstRedoCalled;
+
+
+
+    
+    NodeCollectionWPtr _newGroup;
+    std::list<InlinedGroup> _oldGroups;
+};
+
+class RestoreNodeToDefaultCommand
+: public QUndoCommand
+{
+    Q_DECLARE_TR_FUNCTIONS(RestoreNodeToDefaultCommand)
+    
+public:
+    
+    RestoreNodeToDefaultCommand(const NodesGuiList & nodes);
+    
+    virtual ~RestoreNodeToDefaultCommand();
+    
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    struct NodeDefaults
+    {
+        NodeGuiWPtr node;
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization;
+    };
+    
+    std::list<NodeDefaults> _nodes;
+    
 };
 
 

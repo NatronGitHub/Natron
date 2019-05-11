@@ -1,0 +1,139 @@
+# Natron Presets File
+PluginID: fr.inria.built-in.Group
+Params:
+  - Name: pyPlugPluginID
+    String: fr.inria.Fill
+  - Name: pyPlugPluginLabel
+    String: Fill
+  - Name: pyPlugPluginGrouping
+    String: Filter
+  - Name: pyPlugPluginDescription
+    String: Add a constant color on the source image where the alpha channel not 0. You can control the blending between the original image and the constant color with the operator and the mix factor.
+  - Name: pyPlugPluginVersion
+    Int: [1, 0]
+  - Name: pyPlugPluginIcon
+    String: Fill.png
+UserPages:
+  - TypeName: Page
+    Name: controls
+    Label: Controls
+    Params:
+      - Name: Solid1color
+        DefaultFloat: [0, 0, 0]
+        NDims: 3
+        TypeName: Color
+        Label: Color
+        DisplayMin: 0
+        DisplayMax: 1
+      - Name: Merge1operation
+        DefaultString: over
+        NDims: 1
+        TypeName: Choice
+        Label: Operation
+        Entries: [atop, average, color, color-burn, color-dodge, conjoint-over, copy, difference, disjoint-over, divide, exclusion, freeze, from, geometric, grain-extract, grain-merge, hard-light, hue, hypot, in, luminosity, mask, matte, max, min, minus, multiply, out, over, overlay, pinlight, plus, reflect, saturation, screen, soft-light, stencil, under, xor]
+        Hints: [Ab + B(1 - a) (a.k.a. src-atop), (A + B) / 2, "SetLum(A, Lum(B))", darken B towards A, brighten B towards A, "A + B(1-a)/b, A if a > b", A (a.k.a. src), abs(A-B) (a.k.a. absminus), "A+B(1-a)/b, A+B if a+b < 1", "A/B, 0 if A < 0 and B < 0", A+B-2AB, 1-sqrt(1-A)/B, B-A (a.k.a. subtract), 2AB/(A+B), B - A + 0.5, B + A - 0.5, "multiply if A < 0.5, screen if A > 0.5", "SetLum(SetSat(A, Sat(B)), Lum(B))", sqrt(A*A+B*B), Ab (a.k.a. src-in), "SetLum(B, Lum(A))", Ba (a.k.a dst-in), Aa + B(1-a) (unpremultiplied over), "max(A, B) (a.k.a. lighten only)", "min(A, B) (a.k.a. darken only)", A-B, "AB, 0 if A < 0 and B < 0", A(1-b) (a.k.a. src-out), A+B(1-a) (a.k.a. src-over), "multiply if B < 0.5, screen if B > 0.5", "if B >= 0.5 then max(A, 2*B - 1), min(A, B * 2.0 ) else", A+B (a.k.a. add), A*A / (1 - B), "SetLum(SetSat(B, Sat(A)), Lum(B))", "A+B-AB if A or B <= 1, otherwise max(A, B)", "burn-in if A < 0.5, lighten if A > 0.5", B(1-a) (a.k.a. dst-out), A(1-b)+B (a.k.a. dst-over), A(1-b)+B(1-a)]
+        Props: [NoNewLine, AnimatesChanged]
+      - Name: Merge1enableMask_Mask
+        Bool: true
+        DefaultBool: false
+        NDims: 1
+        TypeName: Bool
+        Label: Mask
+        Props: [NoNewLine]
+      - Name: Merge1maskChannel_Mask
+        DefaultString: uk.co.thefoundry.OfxImagePlaneColour.A
+        NDims: 1
+        TypeName: Choice
+        Label: ""
+        Entries: [None, uk.co.thefoundry.OfxImagePlaneColour.R, uk.co.thefoundry.OfxImagePlaneColour.G, uk.co.thefoundry.OfxImagePlaneColour.B, uk.co.thefoundry.OfxImagePlaneColour.A]
+      - Name: Merge1maskInvert
+        DefaultBool: false
+        NDims: 1
+        TypeName: Bool
+        Label: Invert Mask
+        Props: [NoNewLine]
+      - Name: Merge1mix
+        DefaultFloat: 1
+        NDims: 1
+        TypeName: Double
+        Label: Mix
+        Min: 0
+        Max: 1
+        DisplayMin: 0
+        DisplayMax: 1
+PagesOrder: [controls, nodePage, pyPlugPage]
+Children:
+  - PluginID: fr.inria.built-in.Dot
+    Name: Dot1
+    Inputs: Input1
+    Pos: [809, 199]
+  - PluginID: net.sf.openfx.Unpremult
+    Name: Unpremult1
+    Version: [2, 0]
+    Inputs: Dot1
+    Params:
+      - Name: NatronOfxParamProcessA
+        Bool: true
+    Pos: [1036, 185]
+  - PluginID: net.sf.openfx.MergePlugin
+    Name: Merge1
+    Inputs: {A: Solid1, B: Unpremult1}
+    Masks: Input2
+    Params:
+      - Name: operation
+        String: {N: "@thisGroup", K: Merge1operation}
+      - Name: maskInvert
+        Bool: {N: "@thisGroup", K: Merge1maskInvert}
+      - Name: mix
+        Float: {N: "@thisGroup", K: Merge1mix}
+      - Name: userTextArea
+        String: <Natron>(over)</Natron>
+      - Name: enableMask_Mask
+        Bool: {N: "@thisGroup", K: Merge1enableMask_Mask}
+      - Name: maskChannel_Mask
+        String: {N: "@thisGroup", K: Merge1maskChannel_Mask}
+    Pos: [1036, 302]
+  - PluginID: net.sf.openfx.Solid
+    Name: Solid1
+    Params:
+      - Name: NatronParamFormatChoice
+        String: PC_Video
+      - Name: size
+        Float: [1920, 1080]
+      - Name: color
+        Float: [{N: "@thisGroup", K: Solid1color, D: r}, {N: "@thisGroup", K: Solid1color, D: g}, {N: "@thisGroup", K: Solid1color, D: b}]
+    Pos: [1261, 187]
+  - PluginID: net.sf.openfx.ShufflePlugin
+    Name: Shuffle1
+    Version: [2, 0]
+    Inputs: {A: Merge1, B: Dot1}
+    Params:
+      - Name: outputA
+        String: B.uk.co.thefoundry.OfxImagePlaneColour.A
+    Pos: [764, 314]
+  - PluginID: net.sf.openfx.Premult
+    Name: Premult1
+    Version: [2, 0]
+    Inputs: Shuffle1
+    Params:
+      - Name: NatronOfxParamProcessA
+        Bool: true
+    Pos: [584, 314]
+  - PluginID: fr.inria.built-in.Input
+    Name: Input1
+    Label: Source
+    Pos: [764, 73]
+  - PluginID: fr.inria.built-in.Output
+    Name: Output
+    Label: Output1
+    Inputs: Premult1
+    Pos: [584, 442]
+  - PluginID: fr.inria.built-in.Input
+    Name: Input2
+    Label: Mask
+    Params:
+      - Name: optional
+        Bool: true
+      - Name: isMask
+        Bool: true
+    Pos: [1227, 314]

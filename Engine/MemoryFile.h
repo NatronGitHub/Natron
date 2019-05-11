@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,6 +31,7 @@
 
 #include "Global/GlobalDefines.h"
 #include "Global/Enums.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
@@ -47,15 +48,15 @@ public:
 
     enum FileOpenModeEnum
     {
-        eFileOpenModeEnumIfExistsFailElseCreate = 0,
+        eFileOpenModeCreate = 0,
 
-        eFileOpenModeEnumIfExistsKeepElseFail,
+        eFileOpenModeOpen,
 
-        eFileOpenModeEnumIfExistsKeepElseCreate,
+        eFileOpenModeOpenOrCreate,
 
-        eFileOpenModeEnumIfExistsTruncateElseFail,
+        eFileOpenModeOpenTruncate,
 
-        eFileOpenModeEnumIfExistsTruncateElseCreate
+        eFileOpenModeOpenTruncateOrCreate
     };
 
     /**
@@ -65,42 +66,14 @@ public:
     MemoryFile();
 
     /**
-     * @brief The constructor attemps to create the file if the file
-     * doesn't exist already. If the file is empty, this function doesn't create the mapping
-     * (i.e: data() will return NULL).
-     * To open the file mapping if the file didn't exist already, call resize() or call the other constructor.
-     * The constructor might throw an exception upon failure to open the file.
-     *
-     * Note: if a constructor finishes by throwing an exception,
-     * the memory associated with the object itself is cleaned up — there is no memory leak.
-     * http://www.parashift.com/c++-faq-lite/ctors-can-throw.html
-     **/
-    MemoryFile(const std::string & filepath,
-               FileOpenModeEnum open_mode);
-
-    /**
-     * @brief The constructor attemps to create the file if the file
-     * doesn't exist already and creates the file mapping to the memory. The file size will be
-     * resized to 'size' bytes.
-     * This is equivalent to calling the other constructor and then calling resize(size)
-     * The constructor might throw an exception upon failure to open the file.
-     *
-     * Note: if a constructor finishes by throwing an exception,
-     * the memory associated with the object itself is cleaned up — there is no memory leak.
-     * http://www.parashift.com/c++-faq-lite/ctors-can-throw.html
-     **/
-    MemoryFile(const std::string & filepath,
-               size_t size,
-               FileOpenModeEnum open_mode);
-
-    /**
-     * @brief The destructor closes the mapping, effectively removing the RAM portion but not the file.
+     * @brief The destructor closes the mapping, removing the RAM portion but not the file.
+     * The data are not guaranteed to be flushed to the disk.
      **/
     ~MemoryFile();
 
     /**
      * @brief Attemps to create the file if the file didn't exist already.
-     * If the file did exist, this function will also map the file to memory and the data
+     * If the file exists already, this function will also map the file to memory and the data
      * can be read using the pointer returned by data(). Otherwise data() returns NULL and you
      * explicitly need to call resize(...) to create the file mapping.
      *
@@ -113,7 +86,7 @@ public:
      * @brief Returns a pointer to the beginning of the file,
      * if the file has been successfully opened, otherwise it returns 0.
      **/
-    char* data() const;
+    char* getData() const;
 
     /**
      * @brief Changes the number of bytes of the significant
@@ -125,7 +98,20 @@ public:
      *
      * This function might throw an exception upon failure to map the file or truncate the file.
      **/
-    void resize(size_t new_size);
+    void resize(size_t new_size, bool preserve);
+
+    /**
+     * @brief Close any mapping opened. Data will be not be flushed, make sure to call
+     * flush first.
+     **/
+    void close();
+
+    /**
+     * @brief Closes the mapping if it was opened and re-open it.
+     * If the mapping was not opened this function does nothing.
+     * This is the same as flush + close + open
+     **/
+    void remap();
 
     /**
      * @brief Returns the size of the file in bytes.

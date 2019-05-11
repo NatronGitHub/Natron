@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,6 +30,12 @@
 #include <vector> // KnobGuiInt
 #include <list>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
+#endif
+
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
@@ -40,100 +46,77 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/Singleton.h"
 #include "Engine/Knob.h"
 #include "Engine/ImagePlaneDesc.h"
 #include "Engine/EngineFwd.h"
 
-#include "Gui/CurveSelection.h"
-#include "Gui/KnobGui.h"
+#include "Gui/AnimationModuleSelectionModel.h"
+#include "Gui/KnobGuiWidgets.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER
 
+struct KnobGuiParametricPrivate;
 class KnobGuiParametric
-    : public KnobGui
-      , public CurveSelection
+    : public QObject, public KnobGuiWidgets
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    static KnobGui * BuildKnobGui(KnobPtr knob,
-                                  KnobGuiContainerI *container)
+    static KnobGuiWidgets * BuildKnobGui(const KnobGuiPtr& knob, ViewIdx view)
     {
-        return new KnobGuiParametric(knob, container);
+        return new KnobGuiParametric(knob, view);
     }
 
-    KnobGuiParametric(KnobPtr knob,
-                      KnobGuiContainerI *container);
-    virtual void removeSpecificGui() OVERRIDE FINAL;
-    virtual bool shouldCreateLabel() const OVERRIDE
+    KnobGuiParametric(const KnobGuiPtr& knob, ViewIdx view);
+    virtual bool mustCreateLabelWidget() const OVERRIDE
     {
         return false;
     }
 
     virtual ~KnobGuiParametric() OVERRIDE;
-    virtual KnobPtr getKnob() const OVERRIDE FINAL;
-    virtual void getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* selection) OVERRIDE FINAL;
-    virtual void swapOpenGLBuffers() OVERRIDE FINAL;
-    virtual void redraw() OVERRIDE FINAL;
-    virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
-    virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
-#ifdef OFX_EXTENSIONS_NATRON
-    virtual double getScreenPixelRatio() const OVERRIDE FINAL;
-#endif
-    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
-    virtual void saveOpenGLContext() OVERRIDE FINAL;
-    virtual void restoreOpenGLContext() OVERRIDE FINAL;
+
+Q_SIGNALS:
+
+    void mustUpdateCurveWidgetLater();
 
 public Q_SLOTS:
 
+    void onUpdateCurveWidgetLaterReceived();
 
-    void onCurveChanged(int dimension);
+    void onCurveChanged(DimSpec dimension);
 
     void onItemsSelectionChanged();
 
     void resetSelectedCurves();
 
-    void onColorChanged(int dimension);
+    void onColorChanged(DimSpec dimension);
 
 private:
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
-    virtual void _hide() OVERRIDE FINAL;
-    virtual void _show() OVERRIDE FINAL;
-    virtual void setEnabled() OVERRIDE FINAL;
-    virtual void updateGUI(int dimension) OVERRIDE FINAL;
-    virtual void setDirty(bool /*dirty*/) OVERRIDE FINAL
+    virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
+    virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE FINAL;
+    virtual void updateGUI() OVERRIDE FINAL;
+    virtual void reflectMultipleSelection(bool /*dirty*/) OVERRIDE FINAL
     {
     }
-
-    virtual void setReadOnly(bool /*readOnly*/,
-                             int /*dimension*/) OVERRIDE FINAL
+    virtual void reflectSelectionState(bool /*selected*/) OVERRIDE FINAL
     {
+
     }
 
-    virtual void refreshDimensionName(int dim) OVERRIDE FINAL;
+
+    virtual void refreshDimensionName(DimIdx dim) OVERRIDE FINAL;
 
 private:
-    // TODO: PIMPL
-    QWidget* treeColumn;
-    CurveWidget* _curveWidget;
-    QTreeWidget* _tree;
-    Button* _resetButton;
-    struct CurveDescriptor
-    {
-        boost::shared_ptr<KnobCurveGui> curve;
-        QTreeWidgetItem* treeItem;
-    };
 
-    typedef std::vector<CurveDescriptor> CurveGuis;
-    CurveGuis _curves;
-    boost::weak_ptr<KnobParametric> _knob;
+    boost::scoped_ptr<KnobGuiParametricPrivate> _imp;
+
 };
 
 NATRON_NAMESPACE_EXIT

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -36,6 +36,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/SplitterI.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER
@@ -45,13 +46,13 @@ NATRON_NAMESPACE_ENTER
  **/
 class Splitter
     : public QSplitter
+    , public SplitterI
 {
 public:
 
-    Splitter(QWidget* parent = 0);
-
     Splitter(Qt::Orientation orientation,
-             QWidget * parent = 0);
+             Gui* gui, 
+             QWidget * parent);
 
     virtual ~Splitter()
     {
@@ -77,10 +78,31 @@ public:
 
     void getChildren_mt_safe(std::list<QWidget*> & children) const;
 
+    virtual OrientationEnum getNatronOrientation() const OVERRIDE FINAL;
+
+    virtual int getLeftChildrenSize() const OVERRIDE FINAL;
+
+    virtual int getRightChildrenSize() const OVERRIDE FINAL;
+
+    virtual SplitterI* isLeftChildSplitter() const OVERRIDE FINAL;
+
+    virtual TabWidgetI* isLeftChildTabWidget() const OVERRIDE FINAL;
+
+    virtual SplitterI* isRightChildSplitter() const OVERRIDE FINAL;
+
+    virtual TabWidgetI* isRightChildTabWidget() const OVERRIDE FINAL;
+
+    virtual void setNatronOrientation(OrientationEnum orientation) OVERRIDE FINAL;
+
+    virtual void setChildrenSize(int left, int right) OVERRIDE FINAL;
+
 private:
+
+    virtual void restoreChildrenFromSerialization(const SERIALIZATION_NAMESPACE::WidgetSplitterSerialization& serialization) OVERRIDE FINAL;
 
     virtual bool event(QEvent* e) OVERRIDE FINAL;
     mutable QMutex _lock;
+    Gui* _gui;
 };
 
 NATRON_NAMESPACE_EXIT

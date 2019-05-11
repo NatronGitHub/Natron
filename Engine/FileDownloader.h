@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __NATRON_FILEDOWNLOADER_H
-#define __NATRON_FILEDOWNLOADER_H
+#ifndef Engine_FileDownloader_h
+#define Engine_FileDownloader_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -27,7 +27,9 @@
 
 #include "Global/Macros.h"
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
+#endif
 
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QtCore/QObject>

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,62 +33,61 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Gui/GuiFwd.h"
+#include "Gui/StyledKnobWidgetBase.h"
+
 
 NATRON_NAMESPACE_ENTER
 
 class LineEdit
     : public QLineEdit
+    , public StyledKnobWidgetBase
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-    // properties
-    Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
-    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
-    Q_PROPERTY(bool altered READ getAltered WRITE setAltered)
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+    DEFINE_KNOB_GUI_STYLE_PROPERTIES
+    Q_PROPERTY(bool borderDisabled READ getBorderDisabled WRITE setBorderDisabled)
+    Q_PROPERTY(bool isBold READ getIsBold WRITE setIsBold)
 
 public:
     explicit LineEdit(QWidget* parent = 0);
+
     virtual ~LineEdit() OVERRIDE;
 
-    int getAnimation() const
-    {
-        return animation;
-    }
-
-    void setAnimation(int v);
-
-    bool getDirty() const
-    {
-        return dirty;
-    }
-
-    void setDirty(bool b);
-
-    void setAltered(bool b);
-    bool getAltered() const
-    {
-        return altered;
-    }
-
     void setReadOnly_NoFocusRect(bool readOnly);
+    void setBorderDisabled(bool disabled);
 
     void setReadOnly(bool ro);
 
+    bool getBorderDisabled() const;
+
+    bool getIsBold() const;
+
+    void setIsBold(bool b);
+
+    void setCustomTextColor(const QColor& color);
+
+
+
+    enum AdditionalDecorationType
+    {
+        eAdditionalDecorationColoredFrame = 0x1,
+        eAdditionalDecorationColoredUnderlinedText = 0x2
+    };
+
+    void setAdditionalDecorationTypeEnabled(AdditionalDecorationType type, bool enabled, const QColor& color = Qt::black);
+
+    void disableAllDecorations();
+    
 Q_SIGNALS:
 
     void textDropped();
 
     void textPasted();
 
-public Q_SLOTS:
-
-    void onEditingFinished();
-
 protected:
 
-
+    virtual void refreshStylesheet() OVERRIDE;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
     virtual void dropEvent(QDropEvent* e) OVERRIDE;
@@ -97,11 +96,22 @@ protected:
     virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE;
 
 private:
+    
+    QColor _customColor;
+    bool _customColorSet;
+    bool isBold;
+    bool borderDisabled;
 
 
-    int animation;
-    bool dirty;
-    bool altered;
+    struct AdditionalDecoration
+    {
+        bool enabled;
+        QColor color;
+    };
+    typedef std::map<AdditionalDecorationType, AdditionalDecoration> AdditionalDecorationsMap;
+
+
+    AdditionalDecorationsMap decorationType;
 };
 
 NATRON_NAMESPACE_EXIT

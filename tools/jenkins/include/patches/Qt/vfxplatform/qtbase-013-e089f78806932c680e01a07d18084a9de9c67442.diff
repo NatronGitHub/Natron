@@ -1,0 +1,163 @@
+diff --git a/src/widgets/widgets/qmenu.cpp b/src/widgets/widgets/qmenu.cpp
+index 744fecb..7a07851 100644
+--- a/src/widgets/widgets/qmenu.cpp
++++ b/src/widgets/widgets/qmenu.cpp
+@@ -1939,7 +1939,7 @@ bool QMenu::isTearOffEnabled() const
+   contents in a new window. When the menu is in this mode and the menu
+   is visible returns \c true; otherwise false.
+ 
+-  \sa hideTearOffMenu(), isTearOffEnabled()
++  \sa showTearOffMenu(), hideTearOffMenu(), isTearOffEnabled()
+ */
+ bool QMenu::isTearOffMenuVisible() const
+ {
+@@ -1949,15 +1949,54 @@ bool QMenu::isTearOffMenuVisible() const
+ }
+ 
+ /*!
++   \since 5.7
++
++   This function will forcibly show the torn off menu making it
++   appear on the user's desktop at the specified \e global position \a pos.
++
++   \sa hideTearOffMenu(), isTearOffMenuVisible(), isTearOffEnabled()
++*/
++void QMenu::showTearOffMenu(const QPoint &pos)
++{
++    Q_D(QMenu);
++    if (!d->tornPopup)
++        d->tornPopup = new QTornOffMenu(this);
++    const QSize &s = sizeHint();
++    d->tornPopup->setGeometry(pos.x(), pos.y(), s.width(), s.height());
++    d->tornPopup->show();
++}
++
++/*!
++   \overload
++   \since 5.7
++
++   This function will forcibly show the torn off menu making it
++   appear on the user's desktop under the mouse currsor.
++
++   \sa hideTearOffMenu(), isTearOffMenuVisible(), isTearOffEnabled()
++*/
++void QMenu::showTearOffMenu()
++{
++    showTearOffMenu(QCursor::pos());
++}
++
++/*!
+    This function will forcibly hide the torn off menu making it
+-   disappear from the users desktop.
++   disappear from the user's desktop.
+ 
+-   \sa isTearOffMenuVisible(), isTearOffEnabled()
++   \sa showTearOffMenu(), isTearOffMenuVisible(), isTearOffEnabled()
+ */
+ void QMenu::hideTearOffMenu()
+ {
+-    if (QWidget *w = d_func()->tornPopup)
+-        w->close();
++    Q_D(QMenu);
++    if (d->tornPopup) {
++        d->tornPopup->close();
++        // QTornOffMenu sets WA_DeleteOnClose, so we
++        // should consider the torn-off menu deleted.
++        // This way showTearOffMenu() will not try to
++        // reuse the dying torn-off menu.
++        d->tornPopup = Q_NULLPTR;
++    }
+ }
+ 
+ 
+diff --git a/src/widgets/widgets/qmenu.h b/src/widgets/widgets/qmenu.h
+index 6bbe541..f63cb31 100644
+--- a/src/widgets/widgets/qmenu.h
++++ b/src/widgets/widgets/qmenu.h
+@@ -165,6 +165,8 @@ class Q_WIDGETS_EXPORT QMenu : public QWidget
+     bool isTearOffEnabled() const;
+ 
+     bool isTearOffMenuVisible() const;
++    void showTearOffMenu();
++    void showTearOffMenu(const QPoint &pos);
+     void hideTearOffMenu();
+ 
+     void setDefaultAction(QAction *);
+diff --git a/tests/auto/widgets/widgets/qmenu/tst_qmenu.cpp b/tests/auto/widgets/widgets/qmenu/tst_qmenu.cpp
+index 20f17f6..224093b 100644
+--- a/tests/auto/widgets/widgets/qmenu/tst_qmenu.cpp
++++ b/tests/auto/widgets/widgets/qmenu/tst_qmenu.cpp
+@@ -595,10 +595,19 @@ void tst_QMenu::widgetActionFocus()
+     QCOMPARE(m.activeAction(), (QAction *)wa);
+ }
+ 
++static QMenu *getTornOffMenu()
++{
++    foreach (QWidget *w, QApplication::allWidgets()) {
++        if (w->isVisible() && w->inherits("QTornOffMenu"))
++            return static_cast<QMenu *>(w);
++    }
++    return Q_NULLPTR;
++}
++
+ void tst_QMenu::tearOff()
+ {
+     QWidget widget;
+-    QMenu *menu = new QMenu(&widget);
++    QScopedPointer<QMenu> menu(new QMenu(&widget));
+     QVERIFY(!menu->isTearOffEnabled()); //default value
+     menu->setTearOffEnabled(true);
+     menu->addAction("aaa");
+@@ -611,24 +620,43 @@ void tst_QMenu::tearOff()
+     widget.activateWindow();
+     QVERIFY(QTest::qWaitForWindowActive(&widget));
+     menu->popup(widget.geometry().topRight() + QPoint(50, 0));
+-    QVERIFY(QTest::qWaitForWindowActive(menu));
++    QVERIFY(QTest::qWaitForWindowActive(menu.data()));
+     QVERIFY(!menu->isTearOffMenuVisible());
+ 
+-    QTest::mouseClick(menu, Qt::LeftButton, 0, QPoint(3, 3), 10);
++    QTest::mouseClick(menu.data(), Qt::LeftButton, 0, QPoint(3, 3), 10);
+     QTRY_VERIFY(menu->isTearOffMenuVisible());
+-    QPointer<QMenu> torn = 0;
+-    foreach (QWidget *w, QApplication::allWidgets()) {
+-        if (w->inherits("QTornOffMenu")) {
+-            torn = static_cast<QMenu *>(w);
+-            break;
+-        }
+-    }
++    QPointer<QMenu> torn = getTornOffMenu();
++    QVERIFY(torn);
++    QVERIFY(torn->isVisible());
++
++    menu->hideTearOffMenu();
++    QVERIFY(!menu->isTearOffMenuVisible());
++    QVERIFY(!torn->isVisible());
++
++#ifndef QT_NO_CURSOR
++    // Test under-mouse positioning
++    menu->showTearOffMenu();
++    torn = getTornOffMenu();
+     QVERIFY(torn);
+     QVERIFY(torn->isVisible());
++    QVERIFY(menu->isTearOffMenuVisible());
++    // Some platforms include the window title bar in its geometry.
++    QTRY_COMPARE(torn->windowHandle()->position(), QCursor::pos());
+ 
+     menu->hideTearOffMenu();
+     QVERIFY(!menu->isTearOffMenuVisible());
+     QVERIFY(!torn->isVisible());
++
++    // Test custom positioning
++    const QPoint &pos = QCursor::pos() / 2 + QPoint(10, 10);
++    menu->showTearOffMenu(pos);
++    torn = getTornOffMenu();
++    QVERIFY(torn);
++    QVERIFY(torn->isVisible());
++    QVERIFY(menu->isTearOffMenuVisible());
++    // Some platforms include the window title bar in its geometry.
++    QTRY_COMPARE(torn->windowHandle()->position(), pos);
++#endif // QT_NO_CURSOR
+ }
+ 
+ void tst_QMenu::layoutDirection()

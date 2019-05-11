@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,12 +32,14 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
-#include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include "Global/GlobalDefines.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QGLWidget>
+#include "Global/GLIncludes.h" //!<must be included before QGLWidget
+#include <QtOpenGL/QGLWidget>
+#include "Global/GLObfuscate.h" //!<must be included after QGLWidget
+#include "Global/GLIncludes.h" //!<must be included after QGLWidget (which includes GL/gl.h)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -53,8 +55,7 @@ class CustomParamInteract
 {
 public:
     CustomParamInteract(const KnobGuiPtr& knob,
-                        void* ofxParamHandle,
-                        const boost::shared_ptr<OfxParamOverlayInteract> & entryPoint,
+                        const OverlayInteractBasePtr & interact,
                         QWidget* parent = 0);
 
     virtual ~CustomParamInteract();
@@ -69,6 +70,8 @@ public:
      **/
     virtual void redraw() OVERRIDE FINAL;
 
+    virtual void getOpenGLContextFormat(int* depthPerComponents, bool* hasAlpha) const OVERRIDE FINAL;
+
     /**
      * @brief Returns the width and height of the viewport in window coordinates.
      **/
@@ -82,6 +85,7 @@ public:
 #ifdef OFX_EXTENSIONS_NATRON
     virtual double getScreenPixelRatio() const OVERRIDE FINAL;
 #endif
+
     /**
      * @brief Returns the colour of the background (i.e: clear color) of the viewport.
      **/

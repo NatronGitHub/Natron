@@ -1,0 +1,58 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=ilmbase
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=2.2.1
+pkgrel=1.1
+pkgdesc="Base libraries from ILM for OpenEXR (mingw-w64)"
+arch=('any')
+url="http://www.openexr.com/"
+license=("custom")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cmake" "${MINGW_PACKAGE_PREFIX}-gcc" "${MINGW_PACKAGE_PREFIX}-pkg-config")
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
+options=('staticlibs' 'strip')
+source=("https://download.savannah.nongnu.org/releases/openexr/${_realname}-${pkgver}.tar.gz"
+        0001-cmake-install-binaries.patch
+        0002-cmake-soversion.patch
+        0003-pull93.patch
+        0004-ilmthread-mingw-pthreads.patch
+        0005-mingw-gcc6-bug.patch
+	ilmbase-2.2.0-threadpool_release_lock_single_thread.patch)
+sha256sums=('cac206e63be68136ef556c2b555df659f45098c159ce24804e9d5e9e0286609e'
+            '570a45e1be480e7bcda9cc888c5f5c19bbbebc7d0448cb955621abe8a7e27b6d'
+            '431a832cc59373875ab844cbbff390eab4b0a28358546c84abf1636d93113a76'
+            '1f8b860329c8563533da1ed6e374c1821da689b05eb8d1ef50ca3b3289bd770c'
+            'f281401f925c6a543b0f17e79e8d8a39727b428c1d56d7876fa2a026143d4be3'
+            'e62987a5afa87cb1d58cd3d35989d7e274b194549f982c178cda962cc7ceb36c'
+	    'skip')
+prepare(){
+  cd "${srcdir}/${_realname}-${pkgver}"
+  patch -p1 -i ${srcdir}/0001-cmake-install-binaries.patch
+  patch -p1 -i ${srcdir}/0002-cmake-soversion.patch
+  patch -p2 -i ${srcdir}/0003-pull93.patch
+  patch -p1 -i ${srcdir}/0004-ilmthread-mingw-pthreads.patch
+  patch -p1 -i ${srcdir}/0005-mingw-gcc6-bug.patch
+  patch -p2 -i ${srcdir}/ilmbase-2.2.0-threadpool_release_lock_single_thread.patch
+}
+
+build() {
+  [[ -d "build-${MINGW_CHOST}" ]] && rm -rf "build-${MINGW_CHOST}"
+  mkdir -p "${srcdir}/build-${MINGW_CHOST}"
+  cd "${srcdir}/build-${MINGW_CHOST}"
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MINGW_PREFIX}/bin/cmake \
+    -G"MSYS Makefiles" \
+    -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+    -DBUILD_SHARED_LIBS=ON \
+    -DNAMESPACE_VERSIONING=ON \
+    ../${_realname}-${pkgver}
+
+  make -j${MKJOBS}
+}
+
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make DESTDIR=${pkgdir} install
+}

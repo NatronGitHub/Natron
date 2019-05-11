@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,15 +25,18 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <vector>
-
 #include "Global/Macros.h"
+
+#include <vector>
 
 #include "Engine/PyParameter.h"
 
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
+#include "Engine/EngineFwd.h"
 
+
+NATRON_NAMESPACE_ENTER;
+
+NATRON_PYTHON_NAMESPACE_ENTER;
 
 class ExprUtils
 {

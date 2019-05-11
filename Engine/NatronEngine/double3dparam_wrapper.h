@@ -9,7 +9,7 @@ NATRON_NAMESPACE_ENTER NATRON_PYTHON_NAMESPACE_ENTER
 class Double3DParamWrapper : public Double3DParam
 {
 public:
-    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param, int thisDimension) { Double3DParam::_addAsDependencyOf(fromExprDimension, param, thisDimension); }
+    inline void _addAsDependencyOf_protected(Param * param, int fromExprDimension, int thisDimension, const QString & fromExprView, const QString & thisView) { Double3DParam::_addAsDependencyOf(param, fromExprDimension, thisDimension, fromExprView, thisView); }
     virtual ~Double3DParamWrapper();
     static void pysideInitQtMetaTypes();
 };

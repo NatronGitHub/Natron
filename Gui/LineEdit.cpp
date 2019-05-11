@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -36,6 +36,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QDragLeaveEvent>
 #include <QDragMoveEvent>
 #include <QDropEvent>
+#include <QPainter>
 #include <QKeySequence>
 #include <QtCore/QUrl>
 #include <QtCore/QMimeData>
@@ -45,6 +46,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
+#include "Engine/Image.h"
+#include "Engine/Settings.h"
+
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
 
@@ -52,29 +56,18 @@ NATRON_NAMESPACE_ENTER
 
 LineEdit::LineEdit(QWidget* parent)
     : QLineEdit(parent)
-    , animation(0)
-    , dirty(false)
-    , altered(false)
+    , StyledKnobWidgetBase()
+    , _customColor()
+    , _customColorSet(false)
+    , isBold(false)
+    , borderDisabled(false)
 {
     setAttribute(Qt::WA_MacShowFocusRect, 0);
-    connect( this, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()) );
     setFixedHeight( TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
 }
 
 LineEdit::~LineEdit()
 {
-}
-
-void
-LineEdit::paintEvent(QPaintEvent* e)
-{
-    /*QPalette p = this->palette();
-       QColor c(200,200,200,255);
-
-       p.setColor( QPalette::Highlight, c );
-       p.setColor( QPalette::HighlightedText, c );
-       this->setPalette( p );*/
-    QLineEdit::paintEvent(e);
 }
 
 void
@@ -95,11 +88,6 @@ LineEdit::dropEvent(QDropEvent* e)
     }
 }
 
-void
-LineEdit::onEditingFinished()
-{
-    //clearFocus();
-}
 
 void
 LineEdit::dragEnterEvent(QDragEnterEvent* e)
@@ -119,47 +107,122 @@ LineEdit::dragLeaveEvent(QDragLeaveEvent* e)
     e->accept();
 }
 
-void
-LineEdit::setAnimation(int v)
+bool
+LineEdit::getIsBold() const
 {
-    if (v != animation) {
-        animation = v;
-        style()->unpolish(this);
-        style()->polish(this);
-        update();
+    return isBold;
+}
+
+void
+LineEdit::setIsBold(bool b)
+{
+    isBold = b;
+    refreshStylesheet();
+}
+
+void
+LineEdit::refreshStylesheet()
+{
+    double bgColor[3];
+    bool bgColorSet = false;
+
+    if (multipleSelection) {
+        bgColor[0] = bgColor[1] = bgColor[2] = 0;
+        bgColorSet = true;
     }
-}
-
-void
-LineEdit::setDirty(bool b)
-{
-    if (dirty != b) {
-        dirty = b;
-        style()->unpolish(this);
-        style()->polish(this);
-        update();
+    if (!bgColorSet && !borderDisabled) {
+        // If border is not disabled, draw the background with
+        // a color reflecting the animation level
+        switch ((AnimationLevelEnum)animation) {
+            case eAnimationLevelExpression:
+                appPTR->getCurrentSettings()->getExprColor(&bgColor[0], &bgColor[1], &bgColor[2]);
+                bgColorSet = true;
+                break;
+            case eAnimationLevelInterpolatedValue:
+                appPTR->getCurrentSettings()->getInterpolatedColor(&bgColor[0], &bgColor[1], &bgColor[2]);
+                bgColorSet = true;
+                break;
+            case eAnimationLevelOnKeyframe:
+                appPTR->getCurrentSettings()->getKeyframeColor(&bgColor[0], &bgColor[1], &bgColor[2]);
+                bgColorSet = true;
+                break;
+            case eAnimationLevelNone:
+                break;
+        }
     }
-}
-
-void
-LineEdit::setAltered(bool b)
-{
-    if (altered != b) {
-        altered = b;
-        style()->unpolish(this);
-        style()->polish(this);
-        update();
+    
+    double fgColor[3];
+    bool fgColorSet = false;
+    if (!isEnabled() || isReadOnly() || (AnimationLevelEnum)animation == eAnimationLevelExpression) {
+        fgColor[0] = fgColor[1] = fgColor[2] = 0.;
+        fgColorSet = true;
     }
+    if (!fgColorSet) {
+        if (_customColorSet) {
+            fgColor[0] = _customColor.redF();
+            fgColor[1] = _customColor.greenF();
+            fgColor[2] = _customColor.blueF();
+            fgColorSet = true;
+        }
+    }
+    if (!fgColorSet) {
+        if (selected) {
+            appPTR->getCurrentSettings()->getSelectionColor(&fgColor[0], &fgColor[1], &fgColor[2]);
+            fgColorSet = true;
+        }
+    }
+    if (!fgColorSet && borderDisabled) {
+        // When border is disabled, reflect the animation level on the text color instead of the
+        // background
+        switch ((AnimationLevelEnum)animation) {
+            case eAnimationLevelExpression:
+                appPTR->getCurrentSettings()->getExprColor(&bgColor[0], &fgColor[1], &fgColor[2]);
+                fgColorSet = true;
+                break;
+            case eAnimationLevelInterpolatedValue:
+                appPTR->getCurrentSettings()->getInterpolatedColor(&fgColor[0], &fgColor[1], &fgColor[2]);
+                fgColorSet = true;
+                break;
+            case eAnimationLevelOnKeyframe:
+                appPTR->getCurrentSettings()->getKeyframeColor(&fgColor[0], &fgColor[1], &fgColor[2]);
+                fgColorSet = true;
+                break;
+            case eAnimationLevelNone:
+                break;
+        }
+
+    }
+    if (!fgColorSet) {
+        if (!getIsModified()) {
+            appPTR->getCurrentSettings()->getAltTextColor(&fgColor[0], &fgColor[1], &fgColor[2]);
+        } else {
+            appPTR->getCurrentSettings()->getTextColor(&fgColor[0], &fgColor[1], &fgColor[2]);
+        }
+    }
+    QColor fgCol;
+    fgCol.setRgbF(Image::clamp(fgColor[0], 0., 1.), Image::clamp(fgColor[1], 0., 1.), Image::clamp(fgColor[2], 0., 1.));
+
+    QString bgColorStyleSheetStr;
+    if (bgColorSet) {
+        QColor bgCol;
+        bgCol.setRgbF(Image::clamp(bgColor[0], 0., 1.), Image::clamp(bgColor[1], 0., 1.), Image::clamp(bgColor[2], 0., 1.));
+        bgColorStyleSheetStr = QString::fromUtf8("background-color: rgb(%1, %2, %3);").arg(bgCol.red()).arg(bgCol.green()).arg(bgCol.blue())
+;
+    }
+    setStyleSheet(QString::fromUtf8("QLineEdit {\n"
+                                    "color: rgb(%1, %2, %3);\n"
+                                    "%4\n"
+                                    "%5\n"
+                                    "}\n").arg(fgCol.red()).arg(fgCol.green()).arg(fgCol.blue())
+                  .arg(bgColorStyleSheetStr)
+                  .arg(isBold ? QString::fromUtf8("font-weight: bold;") : QString()));
+
+
+    style()->unpolish(this);
+    style()->polish(this);
+    update();
 }
 
-void
-LineEdit::setReadOnly_NoFocusRect(bool readOnly)
-{
-    QLineEdit::setReadOnly(readOnly);
-
-    //setReadonly set the flag but we don't want it
-    setAttribute(Qt::WA_MacShowFocusRect, 0);
-}
 
 void
 LineEdit::setReadOnly(bool ro)
@@ -168,6 +231,85 @@ LineEdit::setReadOnly(bool ro)
     // makes the application UI redraw all its widgets for any change.
     assert(false);
     QLineEdit::setReadOnly(ro);
+}
+
+void
+LineEdit::setReadOnly_NoFocusRect(bool readOnly)
+{
+    QLineEdit::setReadOnly(readOnly);
+
+    // setReadonly set the flag but on mac a bug makes
+    // it redraw the whole UI and slow down the software
+    setAttribute(Qt::WA_MacShowFocusRect, 0);
+    refreshStylesheet();
+}
+
+void
+LineEdit::setCustomTextColor(const QColor& color)
+{
+    _customColorSet = true;
+    if (color != _customColor) {
+        _customColor = color;
+        refreshStylesheet();
+    }
+}
+
+
+void
+LineEdit::disableAllDecorations()
+{
+    decorationType.clear();
+    update();
+}
+
+void
+LineEdit::setAdditionalDecorationTypeEnabled(AdditionalDecorationType type, bool enabled, const QColor& color) {
+    AdditionalDecoration& deco = decorationType[type];
+    deco.enabled = enabled;
+    deco.color = color;
+    update();
+}
+
+void
+LineEdit::setBorderDisabled(bool disabled)
+{
+    borderDisabled = disabled;
+    refreshStylesheet();
+}
+
+bool
+LineEdit::getBorderDisabled() const
+{
+    return borderDisabled;
+}
+
+void
+LineEdit::paintEvent(QPaintEvent *e)
+{
+    QLineEdit::paintEvent(e);
+
+    for (AdditionalDecorationsMap::iterator it = decorationType.begin(); it!=decorationType.end(); ++it) {
+        if (!it->second.enabled) {
+            continue;
+        }
+        switch (it->first) {
+            case eAdditionalDecorationColoredFrame:
+            {
+                QPainter p(this);
+                p.setPen(it->second.color);
+                QRect bRect = rect();
+                bRect.adjust(0, 0, -1, -1);
+                p.drawRect(bRect);
+            }   break;
+            case eAdditionalDecorationColoredUnderlinedText:
+            {
+                QPainter p(this);
+                p.setPen(it->second.color);
+                int h = height() - 1;
+                p.drawLine(0, h - 1, width() - 1, h - 1);
+            }   break;
+        }
+    }
 }
 
 void

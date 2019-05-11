@@ -51,12 +51,13 @@ If compiling on Mac OS X 10.6 with Xcode 4 (using GCC 4.2.1 and libstdc++), you 
     default_compilers gcc-4.2 clang llvm-gcc-4.2 macports-clang-3.4 macports-clang-3.3 macports-llvm-gcc-4.2 apple-gcc-4.2 gcc-4.0
 
 Now, if you want to use turbojpeg instead of jpeg:
+
     sudo port -f uninstall jpeg
     sudo port -v install libjpeg-turbo
     
 And finally install the required packages:
 
-    sudo port -v -N install qt4-mac boost cairo expat gsed py27-pyside py27-sphinx
+    sudo port -v -N install qt4-mac qt4-mac-mariadb-plugin qt4-mac-sqlite3-plugin boost cairo expat gsed py27-pyside py27-sphinx
     sudo ln -s python2.7-config /opt/local/bin/python2-config
 
 Create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
@@ -82,11 +83,11 @@ EOF
 
 If you intend to build the [openfx-io](https://github.com/NatronGitHub/openfx-io) plugins too, you will need these additional packages:
 
-    yes | sudo port -v install x264 libvpx +highbitdepth libraw +gpl2 openexr ffmpeg +gpl2 +highbitdepth opencolorio openimageio +natron seexpr
+    sudo port -v -N install x264 libvpx +highbitdepth libraw +gpl2 openexr ffmpeg +gpl2 +highbitdepth opencolorio openimageio +natron seexpr
 
 and for [openfx-arena](https://github.com/NatronGitHub/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
-    yes | sudo port -v install librsvg ImageMagick +natron poppler librevenge libcdr-0.1 libzip
+    sudo port -v -N install librsvg ImageMagick +natron poppler librevenge libcdr-0.1 libzip
 
 and for [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic):
 
@@ -129,8 +130,7 @@ On macOS Sierra, install the sierra-compatible recipe (to be used only in Sierra
 
 Then install pyside (the boneyard tap is for pyside, which does not yet build with Qt5 and was thus removed from the homebrew core):
 
-    brew tap homebrew/boneyard
-    brew install pyside sphinx-doc
+    brew install pyside@1.2 pyside-tools@1.2
 
 The last command above will take a while, since it builds from sources, and should finally tell you do do the following if the `homebrew.pth` file does not exist:
 
@@ -155,7 +155,7 @@ To install the [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic) set of
 also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):
 
-    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig
+    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig
 
 ### Installing manually (outside of MacPorts or homebrew) a patched Qt to avoid stack overflows
 
@@ -192,10 +192,10 @@ And install (after making sure `/opt/qt4` is user-writable) using:
 ### Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
+to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz).
 Place it at the root of Natron source tree:
 
-    curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz | tar zxf -
+    curl -k -L https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz | tar zxf -
     mv OpenColorIO-Configs-Natron-v2.1 OpenColorIO-Configs
 
 
@@ -222,18 +222,25 @@ config.pri:
  # copy and paste the following in a terminal
 cat > config.pri << EOF
 boost: INCLUDEPATH += /opt/local/include
-boost: LIBS += -L/opt/local/lib -lboost_serialization-mt
+boost-serialization-lib: LIBS += -lboost_serialization-mt
+boost: LIBS += -L/opt/local/lib -lboost_thread-mt -lboost_system-mt
 macx:openmp {
-  QMAKE_CC=/opt/local/bin/clang-mp-5.0
-  QMAKE_CXX=/opt/local/bin/clang++-mp-5.0
+  QMAKE_CC=/opt/local/bin/clang-mp-7.0
+  QMAKE_CXX=/opt/local/bin/clang++-mp-7.0
+  QMAKE_OBJECTIVE_CC=$$QMAKE_CC -stdlib=libc++
+  QMAKE_LINK=$$QMAKE_CXX
   
   INCLUDEPATH += /opt/local/include/libomp
   LIBS += -L/opt/local/lib/libomp -liomp5
   cc_setting.name = CC
-  cc_setting.value = /opt/local/bin/clang-mp-5.0
+  cc_setting.value = /opt/local/bin/clang-mp-7.0
   cxx_setting.name = CXX
-  cxx_setting.value = /opt/local/bin/clang++-mp-5.0
-  QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting
+  cxx_setting.value = /opt/local/bin/clang++-mp-7.0
+  ld_setting.name = LD
+  ld_setting.value = /opt/local/bin/clang-mp-7.0
+  ldplusplus_setting.name = LDPLUSPLUS
+  ldplusplus_setting.value = /opt/local/bin/clang++-mp-7.0
+  QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting ld_setting ldplusplus_setting
   QMAKE_FLAGS = "-B /usr/bin"
 
   # clang (as of 5.0) does not yet support index-while-building functionality
@@ -252,20 +259,27 @@ config.pri:
  # copy and paste the following in a terminal
 cat > config.pri << EOF
 boost: INCLUDEPATH += /usr/local/include
-boost: LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
+boost-serialization-lib: LIBS += -lboost_serialization-mt
+boost: LIBS += -L/usr/local/lib -lboost_thread-mt -lboost_system-mt
 expat: PKGCONFIG -= expat
 expat: INCLUDEPATH += /usr/local/opt/expat/include
 expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
 macx:openmp {
   QMAKE_CC=/usr/local/opt/llvm/bin/clang
   QMAKE_CXX=/usr/local/opt/llvm/bin/clang++
-
+  QMAKE_OBJECTIVE_CC=$$QMAKE_CC -stdlib=libc++
+  QMAKE_LINK=$$QMAKE_CXX
+  
   LIBS += -L/usr/local/opt/llvm/lib -liomp5
   cc_setting.name = CC
   cc_setting.value = /usr/local/opt/llvm/bin/clang
   cxx_setting.name = CXX
   cxx_setting.value = /usr/local/opt/llvm/bin/clang++
-  QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting
+  ld_setting.name = LD
+  ld_setting.value = /usr/local/opt/llvm/bin/clang
+  ldplusplus_setting.name = LDPLUSPLUS
+  ldplusplus_setting.value = /usr/local/opt/llvm/bin/clang++
+  QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting ld_setting ldplusplus_setting
   QMAKE_FLAGS = "-B /usr/bin"
 
   # clang (as of 5.0) does not yet support index-while-building functionality
@@ -301,33 +315,36 @@ If you want to build in DEBUG mode change the qmake call to this line:
 ### Building with OpenMP support using clang
 
 It is possible to build Natron using clang (version 3.8 is required,
-version 4.0 is recommended) with OpenMP support on
+version 6.0 is recommended) with OpenMP support on
 MacPorts (or homebrew for OS X 10.9 or later).  OpenMP brings speed improvements in the
 tracker and in CImg-based plugins.
 
-However, the unit tests don't pass yet with clang/libomp 4.0 on OS X 10.6, so be sure tu run the unit tests from https://github.com/NatronGitHub/Natron-Tests to validate any clang/macOS combination.
+First, install clang 6.0. On OS X 10.9 and later with MacPorts, simply execute:
 
-First, install clang 5.0. On OS X 10.9 and later, simply execute:
+    sudo port -v install clang-6.0
 
-    sudo port -v install clang-5.0
+Or with homebrew:
 
-On older systems, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)", and install and set clang-4.0 as the default compiler in the end. Note that we noticed clang 3.9.1 generates wrong code with `-Os` when compiling openexr (clang 4.0 was not checked), so it is safer to also change `default configure.optflags      {-Os}` to `default configure.optflags      {-O2}` in `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` (type `sudo nano /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` to edit it).
+    brew install llvm
 
-On older systems, if you also want to install clang-4.0, check that bug [https://trac.macports.org/ticket/54135](macports#54135) is fixed, or fix it yourself by editing `/opt/local-libc++/libexec/llvm-4.0/lib/clang/4.0.0/include/float.h`. The libtool that comes with OS X 10.6 does not work well with clang-generated binaries, and you may have to `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
+On older systems, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)", and install and set clang-6.0 as the default compiler in the end. Note that we noticed clang 3.9.1 generates wrong code with `-Os` when compiling openexr (later clang versions were not checked), so it is safer to also change `default configure.optflags      {-Os}` to `default configure.optflags      {-O2}` in `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` (type `sudo nano /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` to edit it).
+
+The libtool that comes with OS X 10.6 does not work well with clang-generated binaries, and you may have to `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
 
 Then, configure using the following qmake command:
 
-    /opt/local/libexec/qt4/bin/qmake -spec unsupported/macx-clang-libc++ QMAKE_CXX=clang++-mp-5.0 QMAKE_CXX=clang++-mp-5.0 QMAKE_CC=clang-mp-5.0 QMAKE_OBJECTIVE_CXX=clang++-mp-5.0 QMAKE_OBJECTIVE_CC=clang-mp-5.0 QMAKE_LD=clang++-mp-5.0 -r CONFIG+=openmp
+    /opt/local/libexec/qt4/bin/qmake QMAKE_CXX='clang++-mp-6.0 -stdlib=libc++' QMAKE_CC=clang-mp-6.0 QMAKE_OBJECTIVE_CXX='clang++-mp-6.0 -stdlib=libc++' QMAKE_OBJECTIVE_CC='clang-mp-6.0 -stdlib=libc++' QMAKE_LD='clang++-mp-5.0 -stdlib=libc++' -r CONFIG+=openmp CONFIG+=enable-osmesa CONFIG+=enable-cairo
 
 To build the plugins, use the following command-line:
 
-    make CXX=clang++-mp-5.0 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp"
+    make CXX='clang++-mp-5.0 -stdlib=libc++' OPENMP=1
 
 Or, if you have MangledOSMesa32 installed in `OSMESA_PATH` and LLVM installed in `LLVM_PATH` (MangledOSMesa32 and LLVM build script is available from [https://github.com/devernay/osmesa-install](github:devernay/osmesa-install) :
 
     OSMESA_PATH=/opt/osmesa
     LLVM_PATH=/opt/llvm
-    make CXX=clang++-mp-5.0 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp" CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
+    make CXX='clang++-mp-5.0 -stdlib=libc++' OPENMP=1 CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
+
 
 ## Build on Xcode
 

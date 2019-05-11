@@ -9,7 +9,7 @@ Natron binaries include components from the following libraries:
 * Boost (Boost Software License) http://www.boost.org/users/license.html
 * Cairo (LGPL 2.1) http://cairographics.org/
 * GLAD (MIT) http://glad.dav1d.de/
-* GLFW (libpng/zlib license) http://www.glfw.org/
+* ExprTk (MIT) http://www.partow.net/programming/exprtk/
 * openfx (Modified BSD) https://github.com/ofxa/openfx
 * openfx-io (GPLv2) https://github.com/NatronGitHub/openfx-io
 * openfx-misc (GPLv2) https://github.com/NatronGitHub/openfx-misc
@@ -24,6 +24,7 @@ Natron binaries include components from the following libraries:
 * qhttpserver (BSD) https://github.com/nikhilm/qhttpserver
 * hoedown (BSD) https://github.com/hoedown/hoedown
 * libtess (SGI Free Software License B, X11-like) ftp://ftp.freedesktop.org/pub/mesa/glu/
+* yaml-cpp (MIT) https://github.com/jbeder/yaml-cpp
 
 # Additional dependencies
 
@@ -78,6 +79,7 @@ Natron binaries include components from the following libraries:
 * Little CMS (MIT) http://www.littlecms.com/
 * librsvg (LGPL 2.1) http://live.gnome.org/LibRsvg
 * libzip (BSD) http://www.nih.at/libzip/
+* lodepng (zlib) http://lodev.org/lodepng/
 * Cairo (LGPL 2.1) http://cairographics.org/
 * librevenge (MPL 2.0) https://sourceforge.net/p/libwpd/librevenge/
 * libcdr (MPL 2.0) https://github.com/LibreOffice/libcdr

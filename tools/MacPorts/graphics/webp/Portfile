@@ -3,10 +3,15 @@
 PortSystem              1.0
 
 name                    webp
-version                 0.6.0
+version                 1.0.2
+revision                0
+checksums               rmd160  71858bc4e858917f84278be9ab8b9808f0aca9cc \
+                        sha256  3d47b48c40ed6476e8047b2ddb81d93835e0ca1b8d3e8c679afbb3004dd564b1 \
+                        size    4036397
+
 categories              graphics science devel
 platforms               darwin
-maintainers             ryandesign openmaintainer
+maintainers             {ryandesign @ryandesign} openmaintainer
 license                 BSD
 
 description             image format library providing lossy compression \
@@ -27,9 +32,6 @@ long_description        WebP is a new image format that provides lossy \
 homepage                https://developers.google.com/speed/webp/
 master_sites            http://downloads.webmproject.org/releases/webp/
 
-checksums               rmd160  82c3c6d5031de162b5282be49619ac1c343598b2 \
-                        sha256  c928119229d4f8f35e20113ffb61f281eda267634a8dc2285af4b0ee27cf2b40
-
 depends_lib             port:giflib \
                         path:lib/libjpeg.dylib:jpeg \
                         port:libpng \
@@ -39,12 +41,19 @@ distname                libwebp-${version}
 
 patchfiles              configure.patch
 
-configure.args-append       \
-    --enable-libwebpmux     \
-    --enable-libwebpdemux   \
-    --enable-libwebpdecoder \
-    --enable-libwebpextras \
-    --disable-silent-rules
+configure.args-append   --disable-silent-rules \
+                        --disable-wic \
+                        --enable-gif \
+                        --enable-jpeg \
+                        --enable-libwebpdecoder \
+                        --enable-libwebpdemux \
+                        --enable-libwebpextras \
+                        --enable-libwebpmux \
+                        --enable-png \
+                        --enable-tiff
+
+# https://bugs.chromium.org/p/webp/issues/detail?id=366
+configure.args-append   --disable-sdl
 
 post-destroot {
     set docdir ${destroot}${prefix}/share/doc/${name}

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -39,6 +39,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QAction>
 #include <QTreeWidgetItem>
 #include <QMenu>
+#include <QPainter>
 #include <QHeaderView>
 #include <QApplication>
 #include <QScrollArea>
@@ -53,24 +54,29 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/KnobUndoCommand.h"
 #include "Engine/Lut.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Plugin.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
+#include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/ComboBox.h"
 #include "Gui/CurveGui.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/GroupBoxLabel.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
-#include "Gui/KnobUndoCommand.h"
+#include "Gui/KnobGui.h"
 #include "Gui/KnobWidgetDnD.h"
 #include "Gui/Label.h"
 #include "Gui/NewLayerDialog.h"
@@ -86,12 +92,14 @@ NATRON_NAMESPACE_ENTER
 using std::make_pair;
 
 
-//=============================CHOICE_KNOB_GUI===================================
 KnobComboBox::KnobComboBox(const KnobGuiPtr& knob,
-                           int dimension,
+                           DimSpec dimension,
+                           ViewIdx view,
                            QWidget* parent)
     : ComboBox(parent)
-    , _dnd( KnobWidgetDnD::create(knob, dimension, this) )
+    , _knob(toKnobChoice(knob->getKnob()))
+    , _dnd( KnobWidgetDnD::create(knob, dimension, view, this) )
+    , _drawLinkedFrame(false)
 {
 }
 
@@ -203,12 +211,58 @@ KnobComboBox::focusOutEvent(QFocusEvent* e)
     ComboBox::focusOutEvent(e);
 }
 
-KnobGuiChoice::KnobGuiChoice(KnobPtr knob,
-                             KnobGuiContainerI *container)
-    : KnobGui(knob, container)
+void
+KnobComboBox::setLinkedFrameEnabled(bool enabled)
+{
+    _drawLinkedFrame = enabled;
+    update();
+}
+
+void
+KnobComboBox::paintEvent(QPaintEvent* event)
+{
+    ComboBox::paintEvent(event);
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+
+    RGBAColourD color;
+    if (_drawLinkedFrame) {
+        appPTR->getCurrentSettings()->getExprColor(&color.r, &color.g, &color.b);
+        color.a = 1.;
+    } else {
+        int idx = activeIndex();
+        if (!knob->getColorForIndex(idx, &color)) {
+            return;
+        }
+    }
+
+    QPainter p(this);
+    QPen pen;
+    QColor c;
+    c.setRgbF(Image::clamp(color.r,0.,1.),
+              Image::clamp(color.g,0.,1.),
+              Image::clamp(color.b,0.,1.));
+    c.setAlphaF(Image::clamp(color.a,0.,1.));
+
+    pen.setColor(c);
+    p.setPen(pen);
+
+    QRectF bRect = rect();
+    QRectF roundedRect = bRect.adjusted(1., 1., -2., -2.);
+    double roundPixels = 3;
+    QPainterPath path;
+    path.addRoundedRect(roundedRect, roundPixels, roundPixels);
+    p.drawPath(path);
+    
+} // paintEvent
+
+KnobGuiChoice::KnobGuiChoice(const KnobGuiPtr& knob, ViewIdx view)
+    : KnobGuiWidgets(knob, view)
     , _comboBox(0)
 {
-    boost::shared_ptr<KnobChoice> k = boost::dynamic_pointer_cast<KnobChoice>(knob);
+    KnobChoicePtr k = toKnobChoice(knob->getKnob());
     QObject::connect( k.get(), SIGNAL(populated()), this, SLOT(onEntriesPopulated()) );
     QObject::connect( k.get(), SIGNAL(entryAppended()), this, SLOT(onEntryAppended()) );
     QObject::connect( k.get(), SIGNAL(entriesReset()), this, SLOT(onEntriesReset()) );
@@ -220,27 +274,30 @@ KnobGuiChoice::~KnobGuiChoice()
 {
 }
 
-void
-KnobGuiChoice::removeSpecificGui()
-{
-    _comboBox->deleteLater();
-}
 
 void
 KnobGuiChoice::createWidget(QHBoxLayout* layout)
 {
-    _comboBox = new KnobComboBox( shared_from_this(), 0, layout->parentWidget() );
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
+    KnobGuiPtr knobUI = getKnobGui();
+    _comboBox = new KnobComboBox( knobUI, DimIdx(0), getView(), layout->parentWidget() );
     _comboBox->setCascading( knob->isCascading() );
     onEntriesPopulated();
+
+    std::string textToFitHorizontally = knob->getTextToFitHorizontally();
+    if (!textToFitHorizontally.empty()) {
+        QFontMetrics fm = _comboBox->fontMetrics();
+        _comboBox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+        _comboBox->setFixedWidth(fm.width(QString::fromUtf8(textToFitHorizontally.c_str())) + 3 * TO_DPIX(DROP_DOWN_ICON_SIZE));
+    }
 
     QObject::connect( _comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)) );
     QObject::connect( _comboBox, SIGNAL(itemNewSelected()), this, SLOT(onItemNewSelected()) );
     ///set the copy/link actions in the right click menu
-    enableRightClickMenu(_comboBox, 0);
+    KnobGuiWidgets::enableRightClickMenu(knobUI, _comboBox, DimIdx(0), getView());
 
     layout->addWidget(_comboBox);
 }
@@ -248,26 +305,28 @@ KnobGuiChoice::createWidget(QHBoxLayout* layout)
 void
 KnobGuiChoice::onCurrentIndexChanged(int i)
 {
-    setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobGuiPtr knobUI = getKnobGui();
+    knobUI->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
+    KnobChoicePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
-    pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), knob->getValue(0), i, 0, false, 0) );
+    knobUI->pushUndoCommand( new KnobUndoCommand<int>(knob, knob->getValue(DimIdx(0), getView()), i, DimIdx(0), getView()));
 }
 
 void
 KnobGuiChoice::onEntryAppended()
 {
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
 
-    std::vector<ChoiceOption> options = knob->getEntries_mt_safe();
+
+    std::vector<ChoiceOption> options = knob->getEntries();
 
     for (int i = _comboBox->count(); i < (int)options.size(); ++i) {
-        if ( knob->getHostCanAddOptions()) {
+        if ( knob->getNewOptionCallback()) {
             _comboBox->insertItem(_comboBox->count() - 1, QString::fromUtf8(options[i].label.c_str()), QIcon(), QKeySequence(), QString::fromUtf8(options[i].tooltip.c_str()));
         } else {
             _comboBox->addItem(QString::fromUtf8(options[i].label.c_str()), QIcon(), QKeySequence(), QString::fromUtf8(options[i].tooltip.c_str()));
@@ -275,7 +334,8 @@ KnobGuiChoice::onEntryAppended()
 
     }
 
-    updateGUI(0);
+    updateGUI();
+
 }
 
 void
@@ -284,78 +344,143 @@ KnobGuiChoice::onEntriesReset()
     onEntriesPopulated();
 }
 
+QString
+KnobGuiChoice::getPixmapPathFromFilePath(const KnobHolderPtr& holder, const QString& filePath)
+{
+    if ( QFile::exists(filePath) ) {
+        return filePath;
+    }
+
+    QString customFilePath = filePath;
+
+    EffectInstancePtr instance = toEffectInstance(holder);
+    if (instance) {
+        QString resourcesPath = QString::fromUtf8( instance->getNode()->getPluginResourcesPath().c_str() );
+        if ( !resourcesPath.endsWith( QLatin1Char('/') ) ) {
+            resourcesPath += QLatin1Char('/');
+        }
+        customFilePath.prepend(resourcesPath);
+    }
+
+    return customFilePath;
+}
+
+ComboBox*
+KnobGuiChoice::getCombobox() const
+{
+    return _comboBox;
+}
+
+
+QString
+KnobGuiChoice::getPixmapPathFromFilePath(const QString &filePath) const
+{
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return QString();
+    }
+    return getPixmapPathFromFilePath(knob->getHolder(),filePath);
+}
 
 void
 KnobGuiChoice::onEntriesPopulated()
 {
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
 
     _comboBox->clear();
-    std::vector<ChoiceOption> entries = knob->getEntries_mt_safe();
+    std::vector<ChoiceOption> entries = knob->getEntries();
+
+    std::string pluginShortcutGroup;
+    EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
+    if (isEffect) {
+        PluginPtr plugin = isEffect->getNode()->getOriginalPlugin();
+        if (plugin) {
+            pluginShortcutGroup = plugin->getPluginShortcutGroup();
+        }
+    }
 
 
+    const std::map<int, std::string>& shortcutsMap = knob->getShortcuts();
+    const std::map<int, std::string>& iconsMap = knob->getIcons();
 
     for (U32 i = 0; i < entries.size(); ++i) {
-        _comboBox->addItem( QString::fromUtf8( entries[i].label.c_str() ), QIcon(), QKeySequence(), QString::fromUtf8( entries[i].tooltip.c_str() ) );
+
+        std::string shortcutID;
+        std::string iconFilePath;
+        if (!pluginShortcutGroup.empty()) {
+            std::map<int, std::string>::const_iterator foundShortcut = shortcutsMap.find(i);
+            if (foundShortcut != shortcutsMap.end()) {
+                shortcutID = foundShortcut->second;
+            }
+        }
+
+        std::map<int, std::string>::const_iterator foundIcon = iconsMap.find(i);
+        if (foundIcon != iconsMap.end()) {
+            iconFilePath = foundIcon->second;
+        }
+
+        
+        QIcon icon;
+        if (!iconFilePath.empty()) {
+            QPixmap pix( getPixmapPathFromFilePath( QString::fromUtf8( iconFilePath.c_str() ) ) );
+            if (!pix.isNull()) {
+                pix = pix.scaled(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
+                icon.addPixmap(pix);
+            }
+        }
+
+        if (!shortcutID.empty() && !pluginShortcutGroup.empty() && !_comboBox->isCascading()) {
+            QAction* action = new ActionWithShortcut(pluginShortcutGroup,
+                                                     shortcutID,
+                                                     entries[i].label,
+                                                     _comboBox);
+            if (!icon.isNull()) {
+                action->setIcon(icon);
+            }
+            _comboBox->addAction(action);
+
+        } else {
+            _comboBox->addItem( QString::fromUtf8( entries[i].label.c_str() ), icon, QKeySequence(), QString::fromUtf8( entries[i].tooltip.c_str() ) );
+            
+        }
     } // for all entries
 
+    const std::vector<int>& separators = knob->getSeparators();
+    for (std::size_t i = 0; i < separators.size(); ++i) {
+        _comboBox->insertSeparator(separators[i]);
+    }
+
     // the "New" menu is only added to known parameters (e.g. the choice of output channels)
-    if (knob->getHostCanAddOptions()) {
+    if (knob->getNewOptionCallback()) {
         _comboBox->addItemNew();
     }
-    
-    updateGUI(0);
-}
+
+    updateGUI();
+
+} // onEntriesPopulated
 
 void
 KnobGuiChoice::onItemNewSelected()
 {
-    NewLayerDialog dialog( ImagePlaneDesc::getNoneComponents(), getGui() );
-
-    if ( dialog.exec() ) {
-        ImagePlaneDesc comps = dialog.getComponents();
-        if ( comps == ImagePlaneDesc::getNoneComponents() ) {
-            Dialogs::errorDialog( tr("Layer").toStdString(), tr("A layer must contain at least 1 channel and channel names must be "
-                                                                "Python compliant.").toStdString() );
-
-            return;
-        }
-        boost::shared_ptr<KnobChoice> knob = _knob.lock();
-        if (!knob) {
-            return;
-        }
-        KnobHolder* holder = knob->getHolder();
-        assert(holder);
-        EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
-        assert(effect);
-        if (effect) {
-            assert( effect->getNode() );
-            if ( !effect->getNode()->addUserComponents(comps) ) {
-                Dialogs::errorDialog( tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString() );
-            }
-        }
-    }
-}
-
-void
-KnobGuiChoice::reflectExpressionState(int /*dimension*/,
-                                      bool hasExpr)
-{
-    _comboBox->setAnimation(3);
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
-    bool isEnabled = knob->isEnabled(0);
-    _comboBox->setEnabled_natron(!hasExpr && isEnabled);
+    ChoiceKnobDimView::KnobChoiceNewItemCallback callback = knob->getNewOptionCallback();
+    if (!callback) {
+        return;
+    }
+    callback(knob);
 }
 
 void
 KnobGuiChoice::updateToolTip()
 {
-    QString tt = toolTip();
+    getKnobGui()->toolTip(_comboBox, getView());
 
-    _comboBox->setToolTip( tt );
 }
 
 // The project only saves the choice ID that was selected and not the associated label.
@@ -380,14 +505,18 @@ static void ensureUnknownChocieIsNotInternalPlaneID(QString& label)
 }
 
 void
-KnobGuiChoice::updateGUI(int /*dimension*/)
+KnobGuiChoice::updateGUI()
 {
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
     ///change the internal value of the knob again...
     ///The slot connected to onCurrentIndexChanged is reserved to catch user interaction with the combobox.
     ///This function is called in response to an internal change.
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
-    ChoiceOption activeEntry = knob->getActiveEntry();
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+
+    ChoiceOption activeEntry = knob->getCurrentEntry();
 
     QString activeEntryLabel;
     if (!activeEntry.label.empty()) {
@@ -396,97 +525,79 @@ KnobGuiChoice::updateGUI(int /*dimension*/)
         activeEntryLabel = QString::fromUtf8(activeEntry.id.c_str());
     }
     if ( !activeEntry.id.empty() ) {
-        bool activeIndexPresent = knob->isActiveEntryPresentInEntries();
+        bool activeIndexPresent = knob->isActiveEntryPresentInEntries(getView());
         if (!activeIndexPresent) {
-            QString error = tr("The value %1 no longer exist in the menu.").arg(activeEntryLabel);
-            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
+            QString error = tr("The value %1 no longer exists in the menu").arg(activeEntryLabel);
+            getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
-            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
+            getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
         }
     }
     if ( _comboBox->isCascading() || activeEntry.id.empty() ) {
-        _comboBox->setCurrentIndex_no_emit( knob->getValue() );
+        _comboBox->setCurrentIndex( knob->getValue(), false );
     } else {
         ensureUnknownChocieIsNotInternalPlaneID(activeEntryLabel);
-        _comboBox->setCurrentText_no_emit( activeEntryLabel );
+        _comboBox->setCurrentIndexFromLabel( activeEntryLabel, false /*emitSignal*/ );
     }
 }
 
 void
-KnobGuiChoice::reflectAnimationLevel(int /*dimension*/,
+KnobGuiChoice::reflectAnimationLevel(DimIdx /*dimension*/,
                                      AnimationLevelEnum level)
 {
-    int value;
-
-    switch (level) {
-    case eAnimationLevelNone:
-        value = 0;
-        break;
-    case eAnimationLevelInterpolatedValue:
-        value = 1;
-        break;
-    case eAnimationLevelOnKeyframe:
-        value = 2;
-        break;
-    default:
-        value = 0;
-        break;
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
     }
-    if ( value != _comboBox->getAnimation() ) {
-        _comboBox->setAnimation(value);
+    bool isEnabled = knob->isEnabled();
+    _comboBox->setEnabled_natron(level != eAnimationLevelExpression && isEnabled);
+
+    if ( level != (AnimationLevelEnum)_comboBox->getAnimation() ) {
+        _comboBox->setAnimation((int)level);
     }
 }
 
 void
-KnobGuiChoice::_hide()
+KnobGuiChoice::setWidgetsVisible(bool visible)
 {
-    _comboBox->hide();
+    _comboBox->setVisible(visible);
 }
 
 void
-KnobGuiChoice::_show()
+KnobGuiChoice::setEnabled(const std::vector<bool>& perDimEnabled)
 {
-    _comboBox->show();
+    _comboBox->setEnabled_natron(perDimEnabled[0]);
 }
 
 void
-KnobGuiChoice::setEnabled()
+KnobGuiChoice::reflectMultipleSelection(bool dirty)
 {
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
-    bool b = knob->isEnabled(0) && knob->getExpression(0).empty();
+    _comboBox->setIsSelectedMultipleTimes(dirty);
+}
 
-    _comboBox->setEnabled_natron(b);
+
+void
+KnobGuiChoice::reflectSelectionState(bool selected)
+{
+    _comboBox->setIsSelected(selected);
 }
 
 void
-KnobGuiChoice::setReadOnly(bool readOnly,
-                           int /*dimension*/)
+KnobGuiChoice::reflectLinkedState(DimIdx /*dimension*/, bool linked)
 {
-    _comboBox->setEnabled_natron(!readOnly);
-}
-
-void
-KnobGuiChoice::setDirty(bool dirty)
-{
-    _comboBox->setDirty(dirty);
-}
-
-KnobPtr
-KnobGuiChoice::getKnob() const
-{
-    return _knob.lock();
+    _comboBox->setLinkedFrameEnabled(linked);
 }
 
 void
 KnobGuiChoice::reflectModificationsState()
 {
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
+    KnobChoicePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
     bool hasModif = knob->hasModifications();
 
-    _comboBox->setAltered(!hasModif);
+    _comboBox->setIsModified(hasModif);
 }
 
 NATRON_NAMESPACE_EXIT

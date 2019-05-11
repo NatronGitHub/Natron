@@ -1,0 +1,44 @@
+--- PKGBUILD.orig	2019-03-10 16:53:05.000000000 -0700
++++ PKGBUILD	2019-03-10 16:55:47.000000000 -0700
+@@ -4,7 +4,7 @@
+ pkgbase=mingw-w64-${_realname}
+ pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+ pkgver=0.74.0
+-pkgrel=1
++pkgrel=1.1
+ pkgdesc="PDF rendering library based on xpdf 3.0 (mingw-w64)"
+ arch=('any')
+ url="https://poppler.freedesktop.org/"
+@@ -14,17 +14,14 @@
+              "${MINGW_PACKAGE_PREFIX}-glib2"
+              "${MINGW_PACKAGE_PREFIX}-gobject-introspection"
+              "${MINGW_PACKAGE_PREFIX}-pkg-config"
+-             "${MINGW_PACKAGE_PREFIX}-qt5"
+              'git')
+ depends=("${MINGW_PACKAGE_PREFIX}-cairo"
+-         "${MINGW_PACKAGE_PREFIX}-curl"
+          "${MINGW_PACKAGE_PREFIX}-freetype"
+          "${MINGW_PACKAGE_PREFIX}-icu"
+          "${MINGW_PACKAGE_PREFIX}-lcms2"
+          "${MINGW_PACKAGE_PREFIX}-libjpeg"
+          "${MINGW_PACKAGE_PREFIX}-libpng"
+          "${MINGW_PACKAGE_PREFIX}-libtiff"
+-         "${MINGW_PACKAGE_PREFIX}-nss"
+          "${MINGW_PACKAGE_PREFIX}-openjpeg2"
+          "${MINGW_PACKAGE_PREFIX}-poppler-data"
+          "${MINGW_PACKAGE_PREFIX}-zlib")
+@@ -56,9 +53,12 @@
+     -DENABLE_DCTDECODER=libjpeg \
+     -DENABLE_LIBOPENJPEG=openjpeg2 \
+     -DENABLE_CMS=lcms2 \
+-    -DENABLE_NSS3=ON \
++    -DWITH_NSS3=OFF \
++    -DNSS3_FOUND=OFF \
++    -DENABLE_NSS3=OFF \
++    -DENABLE_QT5=OFF \
+     -DENABLE_UTILS=ON \
+-    -DENABLE_LIBCURL=ON \
++    -DENABLE_LIBCURL=OFF \
+     -DENABLE_ZLIB=ON \
+     -DENABLE_ZLIB_UNCOMPRESS=OFF \
+     -DENABLE_GTK_DOC=OFF \

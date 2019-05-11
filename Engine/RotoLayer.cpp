@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -24,342 +24,330 @@
 
 #include "RotoLayer.h"
 
-#include <algorithm> // min, max
-#include <sstream>
-#include <locale>
-#include <limits>
-#include <cassert>
-#include <stdexcept>
-
-#include <QtCore/QLineF>
-#include <QtCore/QDebug>
-
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
-#include "Engine/AppInstance.h"
-#include "Engine/Bezier.h"
-#include "Engine/BezierSerialization.h"
-#include "Engine/BezierCP.h"
-#include "Engine/CoonsRegularization.h"
-#include "Engine/FeatherPoint.h"
-#include "Engine/Format.h"
-#include "Engine/Hash64.h"
-#include "Engine/Image.h"
-#include "Engine/ImageParams.h"
-#include "Engine/Interpolation.h"
-#include "Engine/RenderStats.h"
-#include "Engine/RotoContextPrivate.h"
-#include "Engine/RotoLayerSerialization.h"
-#include "Engine/RotoStrokeItem.h"
-#include "Engine/Settings.h"
-#include "Engine/TimeLine.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/RotoPaint.h"
+#include "Engine/RotoPaintPrivate.h"
 #include "Engine/Transform.h"
-#include "Engine/ViewerInstance.h"
-
-#define kMergeOFXParamOperation "operation"
-#define kBlurCImgParamSize "size"
-#define kTimeOffsetParamOffset "timeOffset"
-#define kFrameHoldParamFirstFrame "firstFrame"
-
-#define kTransformParamTranslate "translate"
-#define kTransformParamRotate "rotate"
-#define kTransformParamScale "scale"
-#define kTransformParamUniform "uniform"
-#define kTransformParamSkewX "skewX"
-#define kTransformParamSkewY "skewY"
-#define kTransformParamSkewOrder "skewOrder"
-#define kTransformParamCenter "center"
-#define kTransformParamFilter "filter"
-#define kTransformParamResetCenter "resetCenter"
-#define kTransformParamBlackOutside "black_outside"
-
-//This will enable correct evaluation of beziers
-//#define ROTO_USE_MESH_PATTERN_ONLY
-
-// The number of pressure levels is 256 on an old Wacom Graphire 4, and 512 on an entry-level Wacom Bamboo
-// 512 should be OK, see:
-// http://www.davidrevoy.com/article182/calibrating-wacom-stylus-pressure-on-krita
-#define ROTO_PRESSURE_LEVELS 512
-
-#ifndef M_PI
-#define M_PI        3.14159265358979323846264338327950288   /* pi             */
-#endif
+#include "Engine/TrackMarker.h"
+#include "Serialization/KnobTableItemSerialization.h"
 
 NATRON_NAMESPACE_ENTER
 
-////////////////////////////////////Layer////////////////////////////////////
 
-RotoLayer::RotoLayer(const boost::shared_ptr<RotoContext>& context,
-                     const std::string & n,
-                     const boost::shared_ptr<RotoLayer>& parent)
-    : RotoItem(context, n, parent)
-    , _imp( new RotoLayerPrivate() )
+RotoLayer::RotoLayer(const KnobItemsTablePtr& model)
+    : RotoItem(model)
 {
 }
 
-RotoLayer::RotoLayer(const RotoLayer & other)
-    : RotoItem( other.getContext(), other.getScriptName(), other.getParentLayer() )
-    , _imp( new RotoLayerPrivate() )
-{
-    clone(&other);
-}
 
 RotoLayer::~RotoLayer()
 {
 }
 
-void
-RotoLayer::clone(const RotoItem* other)
+RotoLayer::RotoLayer(const RotoLayerPtr& other, const FrameViewRenderKey& key)
+: RotoItem(other, key)
 {
-    RotoItem::clone(other);
-    const RotoLayer* isOtherLayer = dynamic_cast<const RotoLayer*>(other);
 
-    if (!isOtherLayer) {
+}
+
+bool
+RotoLayer::isItemContainer() const
+{
+    return true;
+}
+
+std::string
+RotoLayer::getBaseItemName() const
+{
+    return tr(kRotoLayerBaseName).toStdString();
+}
+
+std::string
+RotoLayer::getSerializationClassName() const
+{
+    return kSerializationRotoGroupTag;
+}
+
+struct PlanarTrackLayerPrivate
+{
+
+    // Transform
+    KnobDoubleWPtr translate;
+    KnobDoubleWPtr rotate;
+    KnobDoubleWPtr scale;
+    KnobBoolWPtr scaleUniform;
+    KnobDoubleWPtr skewX;
+    KnobDoubleWPtr skewY;
+    KnobChoiceWPtr skewOrder;
+    KnobDoubleWPtr center;
+    KnobDoubleWPtr extraMatrix;
+
+    KnobIntWPtr referenceFrame;
+    KnobChoiceWPtr motionModel;
+    KnobDoubleWPtr offsetPoints[4], toPoints[4];
+
+    PlanarTrackLayerPrivate()
+    {
+
+    }
+};
+
+PlanarTrackLayer::PlanarTrackLayer(const KnobItemsTablePtr& model)
+: RotoLayer(model)
+, _imp(new PlanarTrackLayerPrivate())
+{
+
+}
+
+PlanarTrackLayer::PlanarTrackLayer(const PlanarTrackLayerPtr& other, const FrameViewRenderKey& key)
+: RotoLayer(other, key)
+{
+
+}
+
+PlanarTrackLayer::~PlanarTrackLayer()
+{
+
+}
+
+std::string
+PlanarTrackLayer::getBaseItemName() const
+{
+    return kPlanarTrackLayerBaseName;
+}
+
+std::string
+PlanarTrackLayer::getSerializationClassName() const
+{
+    return kSerializationRotoPlanarTrackGroupTag;
+}
+
+TimeValue
+PlanarTrackLayer::getReferenceFrame() const
+{
+    return TimeValue(_imp->referenceFrame.lock()->getValue());
+}
+
+KnobDoublePtr
+PlanarTrackLayer::getCornerPinPointKnob(int index) const
+{
+    return _imp->toPoints[index].lock();
+}
+
+KnobDoublePtr
+PlanarTrackLayer::getCornerPinPointOffsetKnob(int index) const
+{
+    return _imp->offsetPoints[index].lock();
+}
+
+KnobChoicePtr
+PlanarTrackLayer::getMotionModelKnob() const
+{
+    return _imp->motionModel.lock();
+}
+
+void
+PlanarTrackLayer::initializeKnobs()
+{
+    // Transform
+    _imp->translate = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemTranslateParam);
+    _imp->rotate = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemRotateParam);
+    _imp->scale = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemScaleParam);
+    _imp->scaleUniform = createDuplicateOfTableKnob<KnobBool>(kRotoDrawableItemScaleUniformParam);
+    _imp->skewX = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemSkewXParam);
+    _imp->skewY = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemSkewYParam);
+    _imp->skewOrder = createDuplicateOfTableKnob<KnobChoice>(kRotoDrawableItemSkewOrderParam);
+    _imp->center = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemCenterParam);
+    _imp->extraMatrix = createDuplicateOfTableKnob<KnobDouble>(kRotoDrawableItemExtraMatrixParam);
+    _imp->referenceFrame = createDuplicateOfTableKnob<KnobInt>(kRotoTrackingParamReferenceFrame);
+
+    const char* offsetPointNames[4] = {kRotoTrackingParamOffsetPoint1, kRotoTrackingParamOffsetPoint2, kRotoTrackingParamOffsetPoint3, kRotoTrackingParamOffsetPoint4};
+    const char* toPointNames[4] = {kRotoTrackingParamCornerPinPoint1, kRotoTrackingParamCornerPinPoint2, kRotoTrackingParamCornerPinPoint3, kRotoTrackingParamCornerPinPoint4};
+    for (int i = 0;i < 4; ++i) {
+        _imp->toPoints[i] = createDuplicateOfTableKnob<KnobDouble>(toPointNames[i]);
+        _imp->offsetPoints[i] = createDuplicateOfTableKnob<KnobDouble>(offsetPointNames[i]);
+    }
+
+    _imp->motionModel = createDuplicateOfTableKnob<KnobChoice>(kTrackerParamMotionModel);
+
+
+    RotoLayer::initializeKnobs();
+
+} // initializeKnobs
+
+void
+PlanarTrackLayer::fetchRenderCloneKnobs()
+{
+    // Transform
+    _imp->translate = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemTranslateParam);
+    _imp->rotate = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemRotateParam);
+    _imp->scale = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemScaleParam);
+    _imp->scaleUniform = getKnobByNameAndType<KnobBool>(kRotoDrawableItemScaleUniformParam);
+    _imp->skewX = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemSkewXParam);
+    _imp->skewY = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemSkewYParam);
+    _imp->skewOrder = getKnobByNameAndType<KnobChoice>(kRotoDrawableItemSkewOrderParam);
+    _imp->center = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemCenterParam);
+    _imp->extraMatrix = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemExtraMatrixParam);
+
+    _imp->referenceFrame = getKnobByNameAndType<KnobInt>(kRotoTrackingParamReferenceFrame);
+
+    const char* offsetPointNames[4] = {kRotoTrackingParamOffsetPoint1, kRotoTrackingParamOffsetPoint2, kRotoTrackingParamOffsetPoint3, kRotoTrackingParamOffsetPoint4};
+    const char* toPointNames[4] = {kRotoTrackingParamCornerPinPoint1, kRotoTrackingParamCornerPinPoint2, kRotoTrackingParamCornerPinPoint3, kRotoTrackingParamCornerPinPoint4};
+    for (int i = 0;i < 4; ++i) {
+        _imp->toPoints[i] = getKnobByNameAndType<KnobDouble>(toPointNames[i]);
+        _imp->offsetPoints[i] = getKnobByNameAndType<KnobDouble>(offsetPointNames[i]);
+    }
+    _imp->motionModel = getKnobByNameAndType<KnobChoice>(kTrackerParamMotionModel);
+
+    RotoLayer::fetchRenderCloneKnobs();
+
+} // fetchRenderCloneKnobs
+
+bool
+PlanarTrackLayer::getTransformAtTimeInternal(TimeValue time, ViewIdx view, Transform::Matrix3x3* matrix) const
+{
+    KnobDoublePtr translate = _imp->translate.lock();
+    if (!translate) {
+        return false;
+    }
+    KnobDoublePtr rotate = _imp->rotate.lock();
+    KnobBoolPtr scaleUniform = _imp->scaleUniform.lock();
+    KnobDoublePtr scale = _imp->scale.lock();
+    KnobDoublePtr skewXKnob = _imp->skewX.lock();
+    KnobDoublePtr skewYKnob = _imp->skewY.lock();
+    KnobDoublePtr centerKnob = _imp->center.lock();
+    KnobDoublePtr extraMatrix = _imp->extraMatrix.lock();
+    KnobChoicePtr skewOrder = _imp->skewOrder.lock();
+
+    double tx = translate->getValueAtTime(time, DimIdx(0), view);
+    double ty = translate->getValueAtTime(time, DimIdx(1), view);
+    double sx = scale->getValueAtTime(time, DimIdx(0), view);
+    double sy = scaleUniform->getValueAtTime(time) ? sx : scale->getValueAtTime(time, DimIdx(1), view);
+    double skewX = skewXKnob->getValueAtTime(time, DimIdx(0), view);
+    double skewY = skewYKnob->getValueAtTime(time, DimIdx(0), view);
+    double rot = rotate->getValueAtTime(time, DimIdx(0), view);
+
+    rot = Transform::toRadians(rot);
+    double centerX = centerKnob->getValueAtTime(time, DimIdx(0), view);
+    double centerY = centerKnob->getValueAtTime(time, DimIdx(1), view);
+    bool skewOrderYX = skewOrder->getValueAtTime(time) == 1;
+    *matrix = Transform::matTransformCanonical(tx, ty, sx, sy, skewX, skewY, skewOrderYX, rot, centerX, centerY);
+
+    Transform::Matrix3x3 extraMat;
+    for (int i = 0; i < 9; ++i) {
+        extraMat.m[i] =  extraMatrix->getValueAtTime(time, DimIdx(i), view);
+    }
+    *matrix = Transform::matMul(*matrix, extraMat);
+    return true;
+}
+
+KnobHolderPtr
+PlanarTrackLayer::createRenderCopy(const FrameViewRenderKey& render) const
+{
+    PlanarTrackLayerPtr mainInstance = toPlanarTrackLayer(getMainInstance());
+    if (!mainInstance) {
+        mainInstance = toPlanarTrackLayer(boost::const_pointer_cast<KnobHolder>(shared_from_this()));
+    }
+    PlanarTrackLayerPtr ret(new PlanarTrackLayer(mainInstance, render));
+    return ret;
+} // createRenderCopy
+
+
+void
+PlanarTrackLayer::setExtraMatrix(bool setKeyframe,
+                                 TimeValue time,
+                                 ViewSetSpec view,
+                                 const Transform::Matrix3x3& mat)
+{
+    KnobDoublePtr extraMatrix = _imp->extraMatrix.lock();
+    if (!extraMatrix) {
         return;
     }
-    boost::shared_ptr<RotoLayer> this_shared = boost::dynamic_pointer_cast<RotoLayer>( shared_from_this() );
-    assert(this_shared);
 
-    QMutexLocker l(&itemMutex);
-
-    _imp->items.clear();
-    for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = isOtherLayer->_imp->items.begin();
-         it != isOtherLayer->_imp->items.end(); ++it) {
-        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
-        boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
-        boost::shared_ptr<RotoStrokeItem> isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(*it);
-        if (isBezier) {
-            boost::shared_ptr<Bezier> copy( new Bezier(*isBezier, this_shared) );
-            copy->createNodes();
-            _imp->items.push_back(copy);
-        } else if (isStroke) {
-            boost::shared_ptr<RotoStrokeItem> copy( new RotoStrokeItem( isStroke->getBrushType(),
-                                                                        isStroke->getContext(),
-                                                                        isStroke->getScriptName() + "copy",
-                                                                        boost::shared_ptr<RotoLayer>() ) );
-            copy->createNodes();
-            _imp->items.push_back(copy);
-            copy->setParentLayer(this_shared);
-        } else {
-            assert(isLayer);
-            if (isLayer) {
-                boost::shared_ptr<RotoLayer> copy( new RotoLayer(*isLayer) );
-                copy->setParentLayer(this_shared);
-                _imp->items.push_back(copy);
-                getContext()->addLayer(copy);
-            }
-        }
+    std::vector<double> matValues(9);
+    memcpy(&matValues[0], mat.m, 9 * sizeof(double));
+    if (setKeyframe) {
+        extraMatrix->setValueAtTimeAcrossDimensions(time, matValues, DimIdx(0), view);
+    } else {
+        extraMatrix->setValueAcrossDimensions(matValues, DimIdx(0), view);
     }
 }
 
 void
-RotoLayer::save(RotoItemSerialization *obj) const
+PlanarTrackLayer::getExtraMatrixAtTime(TimeValue time, ViewIdx view, Transform::Matrix3x3* m) const
 {
-    RotoLayerSerialization* s = dynamic_cast<RotoLayerSerialization*>(obj);
-
-    assert(s);
-    if (!s) {
-        throw std::logic_error("RotoLayer::save");
-    }
-    RotoItems items;
-    {
-        QMutexLocker l(&itemMutex);
-        items = _imp->items;
-    }
-
-    for (RotoItems::const_iterator it = items.begin(); it != items.end(); ++it) {
-        boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
-        boost::shared_ptr<RotoStrokeItem> isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(*it);
-        boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(*it);
-        boost::shared_ptr<RotoItemSerialization> childSerialization;
-        if (isBezier && !isStroke) {
-            childSerialization = boost::make_shared<BezierSerialization>();
-            isBezier->save( childSerialization.get() );
-        } else if (isStroke) {
-            childSerialization = boost::make_shared<RotoStrokeItemSerialization>();
-            isStroke->save( childSerialization.get() );
-        } else {
-            assert(layer);
-            if (layer) {
-                childSerialization = boost::make_shared<RotoLayerSerialization>();
-                layer->save( childSerialization.get() );
-            }
-        }
-        assert(childSerialization);
-        s->children.push_back(childSerialization);
-    }
-
-
-    RotoItem::save(obj);
-}
-
-void
-RotoLayer::load(const RotoItemSerialization &obj)
-{
-    const RotoLayerSerialization & s = dynamic_cast<const RotoLayerSerialization &>(obj);
-    boost::shared_ptr<RotoLayer> this_layer = boost::dynamic_pointer_cast<RotoLayer>( shared_from_this() );
-
-    assert(this_layer);
-    RotoItem::load(obj);
-    {
-        for (std::list<boost::shared_ptr<RotoItemSerialization> >::const_iterator it = s.children.begin(); it != s.children.end(); ++it) {
-            boost::shared_ptr<BezierSerialization> b = boost::dynamic_pointer_cast<BezierSerialization>(*it);
-            boost::shared_ptr<RotoStrokeItemSerialization> s = boost::dynamic_pointer_cast<RotoStrokeItemSerialization>(*it);
-            boost::shared_ptr<RotoLayerSerialization> l = boost::dynamic_pointer_cast<RotoLayerSerialization>(*it);
-            if (b && !s) {
-                boost::shared_ptr<Bezier> bezier( new Bezier(getContext(), kRotoBezierBaseName, boost::shared_ptr<RotoLayer>(), false) );
-                bezier->createNodes(false);
-                bezier->load(*b);
-                if ( !bezier->getParentLayer() ) {
-                    bezier->setParentLayer(this_layer);
-                }
-                QMutexLocker l(&itemMutex);
-                _imp->items.push_back(bezier);
-            } else if (s) {
-                boost::shared_ptr<RotoStrokeItem> stroke( new RotoStrokeItem( (RotoStrokeType)s->getType(), getContext(), kRotoPaintBrushBaseName, boost::shared_ptr<RotoLayer>() ) );
-                stroke->createNodes(false);
-                stroke->load(*s);
-                if ( !stroke->getParentLayer() ) {
-                    stroke->setParentLayer(this_layer);
-                }
-
-
-                QMutexLocker l(&itemMutex);
-                _imp->items.push_back(stroke);
-            } else if (l) {
-                boost::shared_ptr<RotoLayer> layer( new RotoLayer(getContext(), kRotoLayerBaseName, this_layer) );
-                _imp->items.push_back(layer);
-                getContext()->addLayer(layer);
-                layer->load(*l);
-                if ( !layer->getParentLayer() ) {
-                    layer->setParentLayer(this_layer);
-                }
-            }
-            //Rotopaint tree nodes use the roto context age for their script-name, make sure they have a different one
-            getContext()->incrementAge();
-        }
+    KnobDoublePtr extraMatrix = _imp->extraMatrix.lock();
+    for (int i = 0; i < 9; ++i) {
+        m->m[i] =  extraMatrix->getValueAtTime(time, DimIdx(i), view);
     }
 }
 
 void
-RotoLayer::addItem(const boost::shared_ptr<RotoItem> & item,
-                   bool declareToPython )
+PlanarTrackLayer::getTransformKeyframes(std::list<double>* keys) const
 {
-    ///only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    boost::shared_ptr<RotoLayer> parentLayer = item->getParentLayer();
-    if (parentLayer) {
-        parentLayer->removeItem(item);
-    }
+    KnobDoublePtr extraMatrix = _imp->extraMatrix.lock();
 
-    item->setParentLayer( boost::dynamic_pointer_cast<RotoLayer>( shared_from_this() ) );
-    {
-        QMutexLocker l(&itemMutex);
-        _imp->items.push_back(item);
+    KeyFrameSet keysSet = extraMatrix->getAnimationCurve(ViewIdx(0), DimIdx(0))->getKeyFrames_mt_safe();
+    for (KeyFrameSet::iterator it = keysSet.begin(); it != keysSet.end(); ++it) {
+        keys->push_back(it->getTime());
     }
-    if (declareToPython) {
-        getContext()->declareItemAsPythonField(item);
+}
+
+
+void
+PlanarTrackLayer::clearTransformAnimation()
+{
+
+    KnobDoublePtr extraMatrix = _imp->extraMatrix.lock();
+    extraMatrix->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
+
+    if (!extraMatrix->hasAnimation()) {
+        Transform::Matrix3x3 identity;
+        identity.setIdentity();
+        setExtraMatrix(false, TimeValue(0.), ViewIdx(0), identity);
     }
-    getContext()->refreshRotoPaintTree();
 }
 
 void
-RotoLayer::insertItem(const boost::shared_ptr<RotoItem> & item,
-                      int index)
+PlanarTrackLayer::clearTransformAnimationBeforeTime(TimeValue time)
 {
-    ///only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    assert(index >= 0);
+    KnobDoublePtr extraMatrix = _imp->extraMatrix.lock();
+    extraMatrix->deleteValuesBeforeTime(std::set<double>(), time, ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
 
-    boost::shared_ptr<RotoLayer> parentLayer = item->getParentLayer();
-    if ( parentLayer && (parentLayer.get() != this) ) {
-        parentLayer->removeItem(item);
+    if (!extraMatrix->hasAnimation()) {
+        Transform::Matrix3x3 identity;
+        identity.setIdentity();
+        setExtraMatrix(false, TimeValue(0.), ViewIdx(0), identity);
     }
 
-
-    {
-        QMutexLocker l(&itemMutex);
-        if (parentLayer.get() != this) {
-            item->setParentLayer( boost::dynamic_pointer_cast<RotoLayer>( shared_from_this() ) );
-        } else {
-            RotoItems::iterator found = std::find(_imp->items.begin(), _imp->items.end(), item);
-            if ( found != _imp->items.end() ) {
-                _imp->items.erase(found);
-            }
-        }
-        RotoItems::iterator it = _imp->items.begin();
-        if ( index >= (int)_imp->items.size() ) {
-            it = _imp->items.end();
-        } else {
-            std::advance(it, index);
-        }
-        ///insert before the iterator
-        _imp->items.insert(it, item);
-    }
-    getContext()->declareItemAsPythonField(item);
-    getContext()->refreshRotoPaintTree();
 }
 
 void
-RotoLayer::removeItem(const boost::shared_ptr<RotoItem>& item)
+PlanarTrackLayer::deleteTransformKeyframe(TimeValue time)
 {
-    ///only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    {
-        QMutexLocker l(&itemMutex);
-        for (RotoItems::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
-            if (*it == item) {
-                l.unlock();
-                getContext()->removeItemAsPythonField(item);
-                l.relock();
-                _imp->items.erase(it);
-                break;
-            }
-        }
-    }
-    item->setParentLayer( boost::shared_ptr<RotoLayer>() );
-    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( item.get() );
-    if (isStroke) {
-        isStroke->disconnectNodes();
-    }
-    getContext()->refreshRotoPaintTree();
-}
+    KnobDoublePtr extraMatrix = _imp->extraMatrix.lock();
+    extraMatrix->deleteValueAtTime(time, ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
 
-int
-RotoLayer::getChildIndex(const boost::shared_ptr<RotoItem> & item) const
-{
-    QMutexLocker l(&itemMutex);
-    int i = 0;
-
-    for (RotoItems::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it, ++i) {
-        if (*it == item) {
-            return i;
-        }
+    if (!extraMatrix->hasAnimation()) {
+        Transform::Matrix3x3 identity;
+        identity.setIdentity();
+        setExtraMatrix(false, TimeValue(0.), ViewIdx(0), identity);
     }
 
-    return -1;
 }
 
-const RotoItems &
-RotoLayer::getItems() const
+void
+PlanarTrackLayer::clearTransformAnimationAfterTime(TimeValue time)
 {
-    ///only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
+    KnobDoublePtr extraMatrix = _imp->extraMatrix.lock();
+    extraMatrix->deleteValuesAfterTime(std::set<double>(), time, ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
 
-    return _imp->items;
-}
+    if (!extraMatrix->hasAnimation()) {
+        Transform::Matrix3x3 identity;
+        identity.setIdentity();
+        setExtraMatrix(false, TimeValue(0.), ViewIdx(0), identity);
+    }
 
-RotoItems
-RotoLayer::getItems_mt_safe() const
-{
-    QMutexLocker l(&itemMutex);
-
-    return _imp->items;
 }
 
 NATRON_NAMESPACE_EXIT

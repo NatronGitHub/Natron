@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -36,7 +36,9 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
 
+#include "Engine/DimensionIdx.h"
 #include "Engine/ViewIdx.h"
+#include "Global/GlobalDefines.h"
 
 #include "Gui/GuiFwd.h"
 #include "Gui/KnobGuiContainerI.h"
@@ -62,14 +64,19 @@ private:
 
 public:
     static boost::shared_ptr<NodeViewerContext> create(const NodeGuiPtr& node,
-                                                       ViewerTab* viewer)
+                                                       ViewerTab* viewer) WARN_UNUSED_RETURN
     {
-        return boost::shared_ptr<NodeViewerContext>( new NodeViewerContext(node, viewer) );
+        return NodeViewerContextPtr( new NodeViewerContext(node, viewer) );
     }
 
     void createGui();
 
     virtual ~NodeViewerContext();
+
+    /**
+    * @brief If this as a player toolbar (only the viewer) this will return it
+    **/
+    QWidget* getPlayerToolbar() const;
 
     /**
      * @brief If this node's viewer context has a toolbar, this will return it
@@ -88,17 +95,14 @@ public:
     virtual Gui* getGui() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const QUndoCommand* getLastUndoCommand() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void pushUndoCommand(QUndoCommand* cmd) OVERRIDE FINAL;
-    virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual KnobGuiPtr getKnobGui(const KnobIPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getItemsSpacingOnSameLine() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual QWidget* createKnobHorizontalFieldContainer(QWidget* parent) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual NodeGuiPtr getNodeGui() const OVERRIDE FINAL;
 
     void setCurrentTool(const QString& toolID, bool notifyNode);
 
     void notifyGuiClosing();
-
-    virtual bool isInViewerUIKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
 
     void onToolButtonShortcutPressed(const QString& roleID);
 
@@ -111,29 +115,17 @@ Q_SIGNALS:
 
 public Q_SLOTS:
 
+    void onNodeLabelChanged(const QString& oldLabel, const QString& newLabel);
+
     void onNodeColorChanged(const QColor& color);
-
-    /**
-     * @brief Received when the selection rectangle has changed on the viewer.
-     * @param onRelease When true, this signal is emitted on the mouse release event
-     * which means this is the last selection desired by the user.
-     * Receivers can either update the selection always or just on mouse release.
-     **/
-    void updateSelectionFromViewerSelectionRectangle(bool onRelease);
-
-    void onViewerSelectionCleared();
 
     void onToolActionTriggered();
 
     void onToolActionTriggered(QAction* act);
 
-    void onToolGroupValueChanged(ViewSpec view,
-                                 int dimension,
-                                 int reason);
+    void onToolGroupValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum);
 
-    void onToolActionValueChanged(ViewSpec view,
-                                  int dimension,
-                                  int reason);
+    void onToolActionValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum);
 
     void onNodeSettingsPanelClosed(bool closed);
 

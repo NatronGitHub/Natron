@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,6 +27,12 @@
 
 #include "Global/Macros.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QCoreApplication>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
 #include <list>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -40,17 +46,19 @@ NATRON_PYTHON_NAMESPACE_ENTER;
 
 class Group
 {
-    boost::weak_ptr<NodeCollection> _collection;
+    Q_DECLARE_TR_FUNCTIONS(Group)
+    
+    NodeCollectionWPtr _collection;
 
 public:
 
     Group();
 
-    void init(const boost::shared_ptr<NodeCollection>& collection);
+    void init(const NodeCollectionPtr& collection);
 
     virtual ~Group();
 
-    boost::shared_ptr<NodeCollection> getInternalCollection() const
+    NodeCollectionPtr getInternalCollection() const
     {
         return _collection.lock();
     }

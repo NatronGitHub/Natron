@@ -1,6 +1,3 @@
-[submodule "libs/OpenFX"]
-	path = libs/OpenFX
-	url = https://github.com/NatronGitHub/openfx.git
 [submodule "Tests/google-test"]
 	path = Tests/google-test
 	url = https://github.com/NatronGitHub/google-test.git
@@ -10,3 +7,9 @@
 [submodule "libs/SequenceParsing"]
 	path = libs/SequenceParsing
 	url = https://github.com/NatronGitHub/SequenceParsing
+[submodule "libs/OpenFX"]
+	path = libs/OpenFX
+   	url = https://github.com/NatronGitHub/openfx
+[submodule "libs/google-breakpad"]
+	path = libs/google-breakpad
+	url = https://github.com/NatronGitHub/google-breakpad.git

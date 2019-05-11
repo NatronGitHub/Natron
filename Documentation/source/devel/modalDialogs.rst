@@ -66,10 +66,10 @@ To create dialogs that may request some informations such as colors, frame range
 or text input, you can create :ref:`modal dialogs<pyModalDialog>`.
 
 Basically you can add :ref:`user parameters<Param>`, and retrieve their value afterwards
-when the user pressed **OK*.
+when the user pressed **OK**.
 
 You can start adding user parameters using all the :func:`createXParam<>` functions inherited from the :doc:`UserParamHolder` class.
-See the documentation of the :ref:`PyModalDialog<pyModalDialog>`for more informations::
+See the documentation of the :ref:`PyModalDialog<pyModalDialog>` for more information:
 
     dialog = app.createModalDialog()
     myInteger = dialog.createIntParam("myInt","This is an integer very important")

@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef TLSHOLDER_H
-#define TLSHOLDER_H
+#ifndef NATRON_ENGINE_TLSHOLDER_H
+#define NATRON_ENGINE_TLSHOLDER_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -33,6 +33,7 @@
 #include <string>
 #include <set>
 
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -42,11 +43,17 @@
 #endif
 
 #include <QtCore/QReadWriteLock>
+#include <QMutex>
 #include <QtCore/QThread>
 
 #include "Engine/EngineFwd.h"
 
+
+#define NATRON_TLS_DISABLE_COPY
+
+
 NATRON_NAMESPACE_ENTER
+
 
 ///This must be stored as a shared_ptr
 class TLSHolderBase
@@ -79,10 +86,12 @@ protected:
      **/
     virtual bool cleanupPerThreadData(const QThread* curThread) const = 0;
 
+#ifndef NATRON_TLS_DISABLE_COPY
     /**
      * @brief Copy all the TLS from fromThread to toThread
      **/
     virtual void copyTLS(const QThread* fromThread, const QThread* toThread) const = 0;
+#endif
 };
 
 
@@ -94,7 +103,7 @@ class AppTLS
 {
     //This is the object in the QThreadStorage, it is duplicated on every thread
 
-    typedef std::set<boost::weak_ptr<const TLSHolderBase> > TLSObjects;
+    typedef std::set<TLSHolderBaseConstWPtr> TLSObjects;
     struct GLobalTLSObject
     {
         TLSObjects objects;
@@ -114,8 +123,9 @@ public:
     /**
      * @brief Registers the holder as using TLS.
      **/
-    void registerTLSHolder(const boost::shared_ptr<const TLSHolderBase>& holder);
+    void registerTLSHolder(const TLSHolderBaseConstPtr& holder);
 
+#ifndef NATRON_TLS_DISABLE_COPY
 
     /**
      * @brief Copy all the TLS from fromThread to toThread
@@ -143,7 +153,7 @@ public:
     boost::shared_ptr<T> copyTLSFromSpawnerThread(const TLSHolderBase* holder,
                                                   const QThread* curThread);
 
-
+#endif
     /**
      * @brief Should be called by any thread using TLS when done to cleanup its TLS
      **/
@@ -161,23 +171,22 @@ private:
     mutable QReadWriteLock _objectMutex;
     GLobalTLSObjectPtr _object;
 
+#ifndef NATRON_TLS_DISABLE_COPY
     //if a thread is a spawned thread, then copy the tls from the spawner thread instead
     //of creating a new object and no longer mark it as spawned
     mutable QReadWriteLock _spawnsMutex;
     ThreadSpawnMap _spawns;
+#endif
 };
 
 
 /**
  * @brief Use this class if you need to hold TLS data on an object.
  * @param T is the data type held in the thread local storage.
- * @param multipleInstance If true, then the TLS object will be mapped against this object
- * so that there can be multiple instance of it in the global TLS. Otherwise only
- * a single instance of the TLS object will be present.
  **/
 template <typename T>
 class TLSHolder
-    : public TLSHolderBase
+: public TLSHolderBase
 {
     friend class AppTLS;
 
@@ -191,19 +200,28 @@ class TLSHolder
 public:
 
     TLSHolder()
-        : TLSHolderBase() {}
+    : TLSHolderBase() {}
 
     virtual ~TLSHolder() {}
 
+    // Returns tls data for the current thread
     boost::shared_ptr<T> getTLSData() const;
+
+    // Warning this does not hold any promise on the thread safety of the returned object
+    // if the thread in parameter is different than the current thread.
+    boost::shared_ptr<T> getTLSDataForThread(QThread* thread) const;
+
+    // Get or create tls data for the current thread
     boost::shared_ptr<T> getOrCreateTLSData() const;
 
 private:
 
     virtual bool canCleanupPerThreadData(const QThread* curThread) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool cleanupPerThreadData(const QThread* curThread) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+#ifndef NATRON_TLS_DISABLE_COPY
     virtual void copyTLS(const QThread* fromThread, const QThread* toThread) const OVERRIDE FINAL;
     boost::shared_ptr<T> copyAndReturnNewTLS(const QThread* fromThread, const QThread* toThread) const WARN_UNUSED_RETURN;
+#endif
 
     //Store a cache on the object to be faster than using the getOrCreate... function from AppTLS
     mutable QReadWriteLock perThreadDataMutex;
@@ -212,4 +230,4 @@ private:
 
 NATRON_NAMESPACE_EXIT
 
-#endif // TLSHOLDER_H
+#endif // NATRON_ENGINE_TLSHOLDER_H

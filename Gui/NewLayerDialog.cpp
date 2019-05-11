@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -54,8 +54,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
+#include "Engine/KnobUndoCommand.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Utils.h"
 
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
@@ -67,7 +69,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
-#include "Gui/KnobUndoCommand.h"
 #include "Gui/Label.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/ScaleSliderQWidget.h"
@@ -96,25 +97,29 @@ struct NewLayerDialogPrivate
     LineEdit* bEdit;
     Label* aLabel;
     LineEdit* aEdit;
+    Label* componentsTypeNameLabel;
+    LineEdit* componentsTypeNameEdit;
     Button* setRgbaButton;
     DialogButtonBox* buttons;
 
     NewLayerDialogPrivate()
-        : mainLayout(0)
-        , layerLabel(0)
-        , layerEdit(0)
-        , numCompsLabel(0)
-        , numCompsBox(0)
-        , rLabel(0)
-        , rEdit(0)
-        , gLabel(0)
-        , gEdit(0)
-        , bLabel(0)
-        , bEdit(0)
-        , aLabel(0)
-        , aEdit(0)
-        , setRgbaButton(0)
-        , buttons(0)
+    : mainLayout(0)
+    , layerLabel(0)
+    , layerEdit(0)
+    , numCompsLabel(0)
+    , numCompsBox(0)
+    , rLabel(0)
+    , rEdit(0)
+    , gLabel(0)
+    , gEdit(0)
+    , bLabel(0)
+    , bEdit(0)
+    , aLabel(0)
+    , aEdit(0)
+    , componentsTypeNameLabel(0)
+    , componentsTypeNameEdit(0)
+    , setRgbaButton(0)
+    , buttons(0)
     {
     }
 };
@@ -144,6 +149,11 @@ NewLayerDialog::NewLayerDialog(const ImagePlaneDesc& original,
     _imp->aLabel = new Label(tr("4th Channel"), this);
     _imp->aEdit = new LineEdit(this);
 
+    _imp->componentsTypeNameLabel = new Label(tr("Components Type Name"), this);
+    _imp->componentsTypeNameLabel->setToolTip(convertFromPlainText(tr("If set this will replace the channel names in the selectors by this label instead."
+                                                                      "For instance, for the Disparity layer, instead of having DisparityLeft.XY displayed the components type name is DisparityLeft.Disparity"), WhiteSpaceNormal));
+    _imp->componentsTypeNameEdit = new LineEdit(this);
+
     _imp->setRgbaButton = new Button(this);
     _imp->setRgbaButton->setText( tr("Set RGBA") );
     QObject::connect( _imp->setRgbaButton, SIGNAL(clicked(bool)), this, SLOT(onRGBAButtonClicked()) );
@@ -168,17 +178,20 @@ NewLayerDialog::NewLayerDialog(const ImagePlaneDesc& original,
     _imp->mainLayout->addWidget(_imp->bLabel, 4, 0, 1, 1);
     _imp->mainLayout->addWidget(_imp->bEdit, 4, 1, 1, 1);
 
-
     _imp->mainLayout->addWidget(_imp->aLabel, 5, 0, 1, 1);
     _imp->mainLayout->addWidget(_imp->aEdit, 5, 1, 1, 1);
 
-    _imp->mainLayout->addWidget(_imp->setRgbaButton, 6, 0, 1, 2);
+    _imp->mainLayout->addWidget(_imp->componentsTypeNameLabel, 6, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->componentsTypeNameEdit, 6, 1, 1, 1);
 
-    _imp->mainLayout->addWidget(_imp->buttons, 7, 0, 1, 2);
+    _imp->mainLayout->addWidget(_imp->setRgbaButton, 7, 0, 1, 2);
+
+    _imp->mainLayout->addWidget(_imp->buttons, 8, 0, 1, 2);
 
     if (original.getNumComponents() != 0) {
         _imp->layerEdit->setText( QString::fromUtf8( original.getPlaneLabel().c_str() ) );
 
+        _imp->componentsTypeNameEdit->setText(QString::fromUtf8( original.getChannelsLabel().c_str() ) );
         LineEdit* edits[4] = {_imp->rEdit, _imp->gEdit, _imp->bEdit, _imp->aEdit};
         Label* labels[4] = {_imp->rLabel, _imp->gLabel, _imp->bLabel, _imp->aLabel};
         const std::vector<std::string>& channels = original.getChannels();
@@ -259,58 +272,48 @@ NewLayerDialog::getComponents() const
         return ImagePlaneDesc::getNoneComponents();
     }
 
+    std::string globalComponentsName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendlyWithDots(_imp->componentsTypeNameEdit->text().toStdString());
+
     if (nComps == 1) {
         if ( a.isEmpty() ) {
             return ImagePlaneDesc::getNoneComponents();
         }
         std::vector<std::string> comps;
-        std::string compsGlobal;
         comps.push_back(aFixed);
-        compsGlobal.append(aFixed);
 
-        return ImagePlaneDesc(layerFixed, layerFixed, compsGlobal, comps);
+        return ImagePlaneDesc(layerFixed, "", globalComponentsName, comps);
+
     } else if (nComps == 2) {
         if ( rFixed.empty() || gFixed.empty() ) {
             return ImagePlaneDesc::getNoneComponents();
         }
         std::vector<std::string> comps;
-        std::string compsGlobal;
         comps.push_back(rFixed);
-        compsGlobal.append(rFixed);
         comps.push_back(gFixed);
-        compsGlobal.append(gFixed);
+        return ImagePlaneDesc(layerFixed, "", globalComponentsName, comps);
 
-        return ImagePlaneDesc(layerFixed, layerFixed, compsGlobal, comps);
     } else if (nComps == 3) {
         if ( rFixed.empty() || gFixed.empty() || bFixed.empty() ) {
             return ImagePlaneDesc::getNoneComponents();
         }
         std::vector<std::string> comps;
-        std::string compsGlobal;
         comps.push_back(rFixed);
-        compsGlobal.append(rFixed);
         comps.push_back(gFixed);
-        compsGlobal.append(gFixed);
         comps.push_back(bFixed);
-        compsGlobal.append(bFixed);
 
-        return ImagePlaneDesc(layerFixed, layerFixed, compsGlobal, comps);
+        return ImagePlaneDesc(layerFixed, "", globalComponentsName, comps);
+
     } else if (nComps == 4) {
         if ( rFixed.empty() || gFixed.empty() || bFixed.empty() || aFixed.empty() ) {
             return ImagePlaneDesc::getNoneComponents();
         }
         std::vector<std::string> comps;
-        std::string compsGlobal;
         comps.push_back(rFixed);
-        compsGlobal.append(rFixed);
         comps.push_back(gFixed);
-        compsGlobal.append(gFixed);
         comps.push_back(bFixed);
-        compsGlobal.append(bFixed);
         comps.push_back(aFixed);
-        compsGlobal.append(aFixed);
 
-        return ImagePlaneDesc(layerFixed, layerFixed, compsGlobal, comps);
+        return ImagePlaneDesc(layerFixed, "", globalComponentsName, comps);
     }
 
     return ImagePlaneDesc::getNoneComponents();

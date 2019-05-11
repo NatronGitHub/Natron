@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -50,10 +50,11 @@
 #include <cstddef>
 #include <cassert>
 #include <stdexcept>
-#include <cstring> // for std::memcpy
+#include <cstring> // for std::memcpy, strlen
 #include <sstream> // stringstream
 #include <locale>
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #if defined(Q_OS_LINUX)
 #include <sys/signal.h>
 #ifndef __USE_GNU
@@ -76,8 +77,12 @@
 #include <shlobj.h>
 #endif
 
-#include <cairo/cairo.h>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/algorithm/string.hpp>
 #include <boost/version.hpp>
+#include <boost/thread/thread.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include <libs/hoedown/src/version.h>
 #include <ceres/version.h>
 #include <openMVG/version.hpp>
@@ -97,19 +102,31 @@
 
 #include "Global/ProcInfo.h"
 #include "Global/GLIncludes.h"
+#include "Global/PythonUtils.h"
+#include "Global/QtCompat.h"
 #include "Global/StrUtils.h"
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
+#include "Engine/AddPlaneNode.h"
 #include "Engine/AppInstance.h"
 #include "Engine/Backdrop.h"
 #include "Engine/CLArgs.h"
+#include "Engine/Cache.h"
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/StorageDeleterThread.h"
 #include "Engine/DiskCacheNode.h"
+#include "Engine/DimensionIdx.h"
 #include "Engine/Dot.h"
 #include "Engine/ExistenceCheckThread.h"
-#include "Engine/FileSystemModel.h"
+#include "Engine/FileSystemModel.h" // FileSystemModel::initDriveLettersToNetworkShareNamesMapping
+#include "Global/FStreamsSupport.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/JoinViewsNode.h"
 #include "Engine/LibraryBinary.h"
+#include "Engine/KeybindShortcut.h"
 #include "Engine/Log.h"
 #include "Engine/MemoryInfo.h" // getSystemTotalRAM, printAsRAM
 #include "Engine/Node.h"
@@ -117,19 +134,28 @@
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OSGLContext.h"
+#include "Engine/OSGLFunctions.h"
 #include "Engine/OneViewNode.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/Project.h"
 #include "Engine/PrecompNode.h"
 #include "Engine/ReadNode.h"
+#include "Engine/RemovePlaneNode.h"
 #include "Engine/RotoPaint.h"
-#include "Engine/RotoSmear.h"
+#include "Engine/RotoShapeRenderNode.h"
+#include "Engine/RotoShapeRenderCairo.h"
 #include "Engine/StandardPaths.h"
+#include "Engine/StubNode.h"
+#include "Engine/Settings.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/ThreadPool.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h" // RenderStatsMap
+#include "Engine/ViewerNode.h"
 #include "Engine/WriteNode.h"
+
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/SerializationIO.h"
 
 #include "sbkversion.h" // shiboken/pyside version
 
@@ -259,7 +285,7 @@ char2wchar(char* arg)
      * mbstowcs which does not count the characters that
      * would result from conversion.  Use an upper bound.
      */
-    size_t argsize = strlen(arg);
+    size_t argsize = std::strlen(arg);
 #else
     size_t argsize = mbstowcs(NULL, arg, 0);
 #endif
@@ -294,7 +320,7 @@ char2wchar(char* arg)
     /* Try conversion with mbrtwoc (C99), and escape non-decodable bytes. */
     /* Overallocate; as multi-byte characters are in the argument, the
      actual output could use less memory. */
-    argsize = strlen(arg) + 1;
+    argsize = std::strlen(arg) + 1;
     res = (wchar_t*)malloc( argsize * sizeof(wchar_t) );
     if (!res) {
         goto oom;
@@ -373,16 +399,17 @@ oom:
 
 //} // anon namespace
 
-void
-AppManager::saveCaches() const
-{
-    _imp->saveCaches();
-}
 
 int
 AppManager::getHardwareIdealThreadCount()
 {
-    return _imp->idealThreadCount;
+    return _imp->hardwareThreadCount;
+}
+
+int
+AppManager::getPhysicalThreadCount()
+{
+    return _imp->physicalThreadCount;
 }
 
 int
@@ -398,7 +425,7 @@ AppManager::AppManager()
     assert(!_instance);
     _instance = this;
 
-    QObject::connect( this, SIGNAL(s_requestOFXDialogOnMainThread(OfxImageEffectInstance*,void*)), this, SLOT(onOFXDialogOnMainThreadReceived(OfxImageEffectInstance*,void*)) );
+    QObject::connect( this, SIGNAL(s_requestOFXDialogOnMainThread(OfxEffectInstancePtr,void*)), this, SLOT(onOFXDialogOnMainThreadReceived(OfxEffectInstancePtr,void*)) );
 
 #ifdef __NATRON_WIN32__
     FileSystemModel::initDriveLettersToNetworkShareNamesMapping();
@@ -409,12 +436,39 @@ void
 AppManager::takeNatronGIL()
 {
     _imp->natronPythonGIL.lock();
+    ++_imp->pythonGILRCount;
 }
 
 void
 AppManager::releaseNatronGIL()
 {
+    assert(_imp->pythonGILRCount > 0);
+    --_imp->pythonGILRCount;
+    if (_imp->pythonGILRCount == 0) {
+        NATRON_PYTHON_NAMESPACE::clearPythonStdErr();
+        NATRON_PYTHON_NAMESPACE::clearPythonStdOut();
+    }
     _imp->natronPythonGIL.unlock();
+
+}
+
+int
+AppManager::getGILLockedCount() const
+{
+    // Must be within takeNatronGIL() and releaseNatronGIL()
+    assert(_imp->pythonGILRCount > 0);
+    return _imp->pythonGILRCount;
+}
+
+void
+AppManager::loadProjectFromFileFunction(std::istream& ifile, const std::string& filename, const AppInstancePtr& /*app*/, SERIALIZATION_NAMESPACE::ProjectSerialization* obj)
+{
+    try {
+        SERIALIZATION_NAMESPACE::read(NATRON_PROJECT_FILE_HEADER,  ifile, obj);
+    } catch (SERIALIZATION_NAMESPACE::InvalidSerializationFileException& e) {
+        throw std::runtime_error(tr("Failed to open %1: This file does not appear to be a %2 project file").arg(QString::fromUtf8(filename.c_str())).arg(QString::fromUtf8(NATRON_APPLICATION_NAME)).toStdString());
+    }
+
 }
 
 void
@@ -429,14 +483,73 @@ StrUtils::ensureLastPathSeparator(QString& path)
 
 
 bool
+AppManager::checkForOlderProjectFile(const AppInstancePtr& app, const QString& filePathIn, QString* filePathOut)
+{
+    *filePathOut = filePathIn;
+
+    FStreamsSupport::ifstream ifile;
+    FStreamsSupport::open( &ifile, filePathIn.toStdString() );
+    if (!ifile) {
+        throw std::runtime_error( tr("Failed to open %1").arg(filePathIn).toStdString() );
+    }
+
+    {
+        // Try to determine if this is a project made with Natron > 2.2 or an older project
+        std::string firstLine;
+        std::getline(ifile, firstLine);
+        if (firstLine.find("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>") != std::string::npos) {
+            // This is an old boost serialization file, convert the project first
+            QString path = QString::fromUtf8(appPTR->getApplicationBinaryDirPath().c_str());
+            StrUtils::ensureLastPathSeparator(path);
+            path += QString::fromUtf8("NatronProjectConverter");
+
+#ifdef __NATRON_WIN32__
+            path += QString::fromUtf8(".exe");
+#endif
+
+            if (!QFile::exists(path)) {
+                throw std::runtime_error( tr("Could not find executable %1").arg(path).toStdString() );
+            }
+
+            app->updateProjectLoadStatus(tr("Converting project to newer format"));
+
+            QString baseNameIn;
+            {
+                int foundLastDot = filePathIn.lastIndexOf(QLatin1Char('/'));
+                if (foundLastDot != -1) {
+                    baseNameIn = filePathIn.mid(foundLastDot + 1);
+                }
+            }
+
+            filePathOut->clear();
+            filePathOut->append(StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp));
+            StrUtils::ensureLastPathSeparator(*filePathOut);
+            filePathOut->append( QString::number( QDateTime::currentDateTime().toMSecsSinceEpoch() ) );
+            filePathOut->append(baseNameIn);
+
+            QProcess proc;
+
+            QStringList args;
+            args << QString::fromUtf8("-i") << filePathIn << QString::fromUtf8("-o") << *filePathOut;
+            proc.start(path, args);
+            if (!proc.waitForFinished(120000)) {
+                throw std::runtime_error(tr("Failed to convert the project: timeout").toStdString());
+            }
+            if (proc.exitCode() == 0 && proc.exitStatus() == QProcess::NormalExit) {
+                return true;
+            } else {
+                QString error = QString::fromUtf8(proc.readAllStandardError().data());
+                throw std::runtime_error(tr("Failed to convert the project:\n%1").arg(error).toStdString());
+            }
+        }
+    }
+    return false;
+}
+
+bool
 AppManager::loadFromArgs(const CLArgs& cl)
 {
 
-#ifdef DEBUG
-    for (std::size_t i = 0; i < _imp->commandLineArgsUtf8.size(); ++i) {
-        std::cout << "argv[" << i << "] = " << _imp->commandLineArgsUtf8[i] << std::endl;
-    }
-#endif
 
     // Ensure Qt knows C-strings are UTF-8 before creating the QApplication for argv
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
@@ -453,16 +566,17 @@ AppManager::loadFromArgs(const CLArgs& cl)
     _imp->renderingContextPool.reset( new GPUContextPool() );
     initializeOpenGLFunctionsOnce(true);
 
+
     //  QCoreApplication will hold a reference to that appManagerArgc integer until it dies.
     //  Thus ensure that the QCoreApplication is destroyed when returning this function.
-    initializeQApp(_imp->nArgs, &_imp->commandLineArgsUtf8.front());
+    initializeQApp(_imp->nArgs, &_imp->commandLineArgsUtf8.front()); // calls QCoreApplication::QCoreApplication(), which calls setlocale()
     // see C++ standard 23.2.4.2 vector capacity [lib.vector.capacity]
     // resizing to a smaller size doesn't free/move memory, so the data pointer remains valid
     assert(_imp->nArgs <= (int)_imp->commandLineArgsUtf8.size());
     _imp->commandLineArgsUtf8.resize(_imp->nArgs); // Qt may have reduced the numlber of args
 
 #ifdef QT_CUSTOM_THREADPOOL
-    // Set the global thread pool
+    // Set the global thread pool (pointed is owned and deleted by QThreadPool at exit)
     QThreadPool::setGlobalInstance(new ThreadPool);
 #endif
 
@@ -489,14 +603,21 @@ AppManager::loadFromArgs(const CLArgs& cl)
     }
 
     try {
-        initPython();
+        initPython(); // calls Py_InitializeEx(), which calls setlocale()
     } catch (const std::runtime_error& e) {
         std::cerr << e.what() << std::endl;
 
         return false;
     }
 
-    _imp->idealThreadCount = QThread::idealThreadCount();
+
+
+    _imp->hardwareThreadCount = boost::thread::hardware_concurrency();
+#if BOOST_VERSION >= 105600
+    _imp->physicalThreadCount = boost::thread::physical_concurrency();
+#else
+    _imp->physicalThreadCount = _imp->hardwareThreadCount;
+#endif
 
 
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
@@ -524,7 +645,6 @@ AppManager::load(int argc,
     // Warning: Qt resets it in the QCoreApplication constructor
     // see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
     setApplicationLocale();
-    setApplicationLocale();
     _imp->handleCommandLineArgs(argc, argv);
     return loadFromArgs(cl);
 }
@@ -550,13 +670,21 @@ AppManager::~AppManager()
     }
 #endif
 
+    if (_imp->mappedProcessWatcher) {
+        _imp->mappedProcessWatcher->quitThread();
+    }
+
+    if (_imp->tasksQueueManager) {
+        _imp->tasksQueueManager->quitThread();
+    }
+
     bool appsEmpty;
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
         appsEmpty = _imp->_appInstances.empty();
     }
     while (!appsEmpty) {
-        AppInstPtr front;
+        AppInstancePtr front;
         {
             QMutexLocker k(&_imp->_appInstancesMutex);
             front = _imp->_appInstances.front();
@@ -570,30 +698,13 @@ AppManager::~AppManager()
         }
     }
 
-    for (PluginsMap::iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
-        for (PluginVersionsOrdered::reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
-            delete *itver;
-        }
-    }
-
     _imp->_backgroundIPC.reset();
 
-    try {
-        _imp->saveCaches();
-    } catch (std::runtime_error) {
-        // ignore errors
-    }
+    _imp->storageDeleteThread->quitThread();
+
 
     ///Caches may have launched some threads to delete images, wait for them to be done
     QThreadPool::globalInstance()->waitForDone();
-
-    ///Kill caches now because decreaseNCacheFilesOpened can be called
-    _imp->_nodeCache->waitForDeleterThread();
-    _imp->_diskCache->waitForDeleterThread();
-    _imp->_viewerCache->waitForDeleterThread();
-    _imp->_nodeCache.reset();
-    _imp->_viewerCache.reset();
-    _imp->_diskCache.reset();
 
     tearDownPython();
     _imp->tearDownGL();
@@ -609,7 +720,7 @@ class QuitInstanceArgs
 {
 public:
 
-    AppInstWPtr instance;
+    AppInstanceWPtr instance;
 
     QuitInstanceArgs()
         : GenericWatcherCallerArgs()
@@ -620,8 +731,10 @@ public:
     virtual ~QuitInstanceArgs() {}
 };
 
+typedef boost::shared_ptr<QuitInstanceArgs> QuitInstanceArgsPtr;
+
 void
-AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
+AppManager::afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
 {
     QuitInstanceArgs* inArgs = dynamic_cast<QuitInstanceArgs*>( args.get() );
 
@@ -629,7 +742,7 @@ AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
         return;
     }
 
-    AppInstPtr instance = inArgs->instance.lock();
+    AppInstancePtr instance = inArgs->instance.lock();
 
     instance->aboutToQuit();
 
@@ -648,25 +761,25 @@ AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
 }
 
 void
-AppManager::quitNow(const AppInstPtr& instance)
+AppManager::quitNow(const AppInstancePtr& instance)
 {
     NodesList nodesToWatch;
 
-    instance->getProject()->getNodes_recursive(nodesToWatch, false);
+    instance->getProject()->getNodes_recursive(nodesToWatch);
     if ( !nodesToWatch.empty() ) {
         for (NodesList::iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
             (*it)->quitAnyProcessing_blocking(false);
         }
     }
-    boost::shared_ptr<QuitInstanceArgs> args = boost::make_shared<QuitInstanceArgs>();
+    QuitInstanceArgsPtr args = boost::make_shared<QuitInstanceArgs>();
     args->instance = instance;
     afterQuitProcessingCallback(args);
 }
 
 void
-AppManager::quit(const AppInstPtr& instance)
+AppManager::quit(const AppInstancePtr& instance)
 {
-    boost::shared_ptr<QuitInstanceArgs> args = boost::make_shared<QuitInstanceArgs>();
+    QuitInstanceArgsPtr args = boost::make_shared<QuitInstanceArgs>();
 
     args->instance = instance;
     if ( !instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {
@@ -684,7 +797,7 @@ AppManager::quitApplication()
     }
 
     while (!appsEmpty) {
-        AppInstPtr app;
+        AppInstancePtr app;
         {
             QMutexLocker k(&_imp->_appInstancesMutex);
             app = _imp->_appInstances.front();
@@ -705,7 +818,6 @@ AppManager::initializeQApp(int &argc,
                            char **argv)
 {
     assert(!_imp->_qApp);
-    // scoped_ptr
     _imp->_qApp.reset( new QCoreApplication(argc, argv) );
 }
 
@@ -732,8 +844,9 @@ AppManager::setApplicationLocale()
     // see http://en.cppreference.com/w/cpp/locale/locale/global
     // Maybe this can also workaround the OSX crash in loadlocale():
     // https://discussions.apple.com/thread/3479591
-    // https://github.com/cth103/dcpomatic/blob/master/src/lib/safe_stringstream.h
-    // stringstreams don't seem to be thread-safe on OSX because the change the locale.
+    // https://github.com/cth103/dcpomatic1/blob/master/src/lib/safe_stringstream.h
+    // https://github.com/cth103/dcpomatic/commit/b1dc9c3a2f7e55c9afc5bf2d5b465371b048e14f
+    // stringstreams don't seem to be thread-safe on OSX because they change the locale.
 
     // We also set explicitely the LC_NUMERIC locale to "C" to avoid juggling
     // between locales when using stringstreams.
@@ -793,8 +906,8 @@ AppManager::loadInternal(const CLArgs& cl)
 {
     assert(!_imp->_loaded);
 
-    _imp->_binaryPath = QCoreApplication::applicationDirPath();
-    assert(StrUtils::is_utf8(_imp->_binaryPath.toStdString().c_str()));
+    _imp->binaryPath = QCoreApplication::applicationFilePath().toStdString();
+    assert(StrUtils::is_utf8(_imp->binaryPath.c_str()));
 
     registerEngineMetaTypes();
     registerGuiMetaTypes();
@@ -803,10 +916,8 @@ AppManager::loadInternal(const CLArgs& cl)
     qApp->setOrganizationDomain( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN) );
     qApp->setApplicationName( QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
-    //Set it once setApplicationName is set since it relies on it
-    refreshDiskCacheLocation();
 
-    // Set the locale AGAIN, because Qt resets it in the QCoreApplication constructor
+    // Set the locale AGAIN, because Qt resets it in the QCoreApplication constructor and in Py_InitializeEx
     // see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
     setApplicationLocale();
     
@@ -817,7 +928,7 @@ AppManager::loadInternal(const CLArgs& cl)
     const QString& breakpadProcessExec = cl.getBreakpadProcessExecutableFilePath();
     if ( !breakpadProcessExec.isEmpty() && QFile::exists(breakpadProcessExec) ) {
         _imp->breakpadProcessExecutableFilePath = breakpadProcessExec;
-        _imp->breakpadProcessPID = (Q_PID)cl.getBreakpadProcessPID();
+        _imp->breakpadProcessPID = cl.getBreakpadProcessPID();
         const QString& breakpadPipePath = cl.getBreakpadPipeFilePath();
         const QString& breakpadComPipePath = cl.getBreakpadComPipeFilePath();
         int breakpad_client_fd = cl.getBreakpadClientFD();
@@ -840,29 +951,47 @@ AppManager::loadInternal(const CLArgs& cl)
     Q_UNUSED(mustSetSignalsHandlers);
 # endif
 
-
-    _imp->_settings = boost::make_shared<Settings>();
+    // Settings: we must load these and set the custom settings (using python) ASAP, before creating the OFX Plugin Cache
+    
+    _imp->_settings = Settings::create();
     _imp->_settings->initializeKnobsPublic();
 
-    bool hasGLForRendering = hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, 0);
-    if (_imp->hasInitializedOpenGLFunctions && hasGLForRendering) {
-        OSGLContext::getGPUInfos(_imp->openGLRenderers);
-        for (std::list<OpenGLRendererInfo>::iterator it = _imp->openGLRenderers.begin(); it != _imp->openGLRenderers.end(); ++it) {
-            qDebug() << "Found OpenGL Renderer:" << it->rendererName.c_str() << ", Vendor:" << it->vendorName.c_str()
-                     << ", OpenGL Version:" << it->glVersionString.c_str() << ", Max. Texture Size" << it->maxTextureSize <<
-                ",Max GPU Memory:" << printAsRAM(it->maxMemBytes);;
-        }
-    }
-    _imp->_settings->populateOpenGLRenderers(_imp->openGLRenderers);
-
-
-    // Settings: we must load these and set the custom settings (using python) ASAP, before creating the OFX Plugin Cache
-    // Settings: always call restoreSettings, but call restoreKnobsFromSettings conditionally
-    // Call restore after initializing knobs
-    _imp->_settings->restoreSettings( cl.isLoadedUsingDefaultSettings() );
+    Settings::LoadSettingsType settingsLoadType;
     if (cl.isLoadedUsingDefaultSettings()) {
+        settingsLoadType = Settings::eLoadSettingsNone;
+        ///Call restore after initializing knobs
         _imp->_settings->setSaveSettings(false);
+    } else {
+        settingsLoadType = Settings::eLoadSettingsTypeKnobs;
     }
+    _imp->_settings->loadSettingsFromFile(settingsLoadType);
+    
+
+    if (cl.isCacheClearRequestedOnLaunch()) {
+        // Clear the cache before attempting to load any data.
+        // It is important to call it AFTER _settings->loadSettingsFromFile() because the settings hold the cache
+        // location given by the user in the Preferences.
+        Cache<true>::clearDiskCache();
+    }
+
+    // Create cache once we loaded the cache directory path wanted by the user
+    _imp->generalPurposeCache = Cache<false>::create(false /*enableTileStorage*/);
+    try {
+
+        // If the cache is busy because another process is using it and we are not compiled
+        // with NATRON_CACHE_INTERPROCESS_ROBUST, just create a process local cache instead.
+        _imp->tileCache = Cache<true>::create(true /*enableTileStorage*/);
+        _imp->mappedProcessWatcher.reset(new MappedProcessWatcherThread);
+        _imp->mappedProcessWatcher->startWatching();
+    } catch (const BusyCacheException&) {
+        _imp->tileCache = Cache<false>::create(true /*enableTileStorage*/);
+    }
+
+
+    _imp->tileCache->setMaximumCacheSize(_imp->_settings->getTileCacheSize());
+    _imp->generalPurposeCache->setMaximumCacheSize(_imp->_settings->getGeneralPurposeCacheSize());
+
+    _imp->storageDeleteThread.reset(new StorageDeleterThread);
 
     _imp->declareSettingsToPython();
 
@@ -913,17 +1042,6 @@ AppManager::isSpawnedFromCrashReporter() const
 #endif
 }
 
-void
-AppManager::setPluginsUseInputImageCopyToRender(bool b)
-{
-    _imp->pluginsUseInputImageCopyToRender = b;
-}
-
-bool
-AppManager::isCopyInputImageForPluginRenderEnabled() const
-{
-    return _imp->pluginsUseInputImageCopyToRender;
-}
 
 bool
 AppManager::isOpenGLLoaded() const
@@ -958,76 +1076,96 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
 {
     QMutexLocker k(&_imp->openGLFunctionsMutex);
 
-    if (!_imp->hasInitializedOpenGLFunctions) {
-        OSGLContextPtr glContext;
-        bool checkRenderingReq = true;
-        if (createOpenGLContext) {
-            try {
-                _imp->initGLAPISpecific();
+    if (_imp->hasInitializedOpenGLFunctions) {
+        return false;
+    }
+    OSGLContextPtr glContext;
+    bool checkRenderingReq = true;
+    boost::shared_ptr<OSGLContextAttacher> attacher;
+    if (createOpenGLContext) {
+        try {
+            _imp->initGLAPISpecific();
 
-                glContext = _imp->renderingContextPool->attachGLContextToRender(false /*checkIfGLLoaded*/);
-                if (glContext) {
-                    // Make the context current and check its version
-                    glContext->setContextCurrentNoRender();
-                } else {
-                    AppManagerPrivate::OpenGLRequirementsData& vdata = _imp->glRequirements[eOpenGLRequirementsTypeViewer];
-                    AppManagerPrivate::OpenGLRequirementsData& rdata = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
-                    rdata.error = tr("Error creating OpenGL context.");
-                    vdata.error = rdata.error;
-                    rdata.hasRequirements = false;
-                    vdata.hasRequirements = false;
-                    AppManagerPrivate::addOpenGLRequirementsString(rdata.error, eOpenGLRequirementsTypeRendering);
-                    AppManagerPrivate::addOpenGLRequirementsString(vdata.error, eOpenGLRequirementsTypeViewer);
-                }
+            glContext = _imp->renderingContextPool->getOrCreateOpenGLContext(false, false /*checkIfGLLoaded*/);
+            assert(glContext);
+            // Make the context current and check its version
+            attacher = OSGLContextAttacher::create(glContext);
+            attacher->attach();
 
-
-            } catch (const std::exception& e) {
-                std::cerr << "Error while loading OpenGL: " << e.what() << std::endl;
-                std::cerr << "OpenGL rendering is disabled. " << std::endl;
-                AppManagerPrivate::OpenGLRequirementsData& vdata = _imp->glRequirements[eOpenGLRequirementsTypeViewer];
-                AppManagerPrivate::OpenGLRequirementsData& rdata = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
-                rdata.hasRequirements = false;
-                vdata.hasRequirements = false;
-                vdata.error = tr("Error while creating OpenGL context: %1").arg(QString::fromUtf8(e.what()));
-                rdata.error = tr("Error while creating OpenGL context: %1").arg(QString::fromUtf8(e.what()));
-                AppManagerPrivate::addOpenGLRequirementsString(rdata.error, eOpenGLRequirementsTypeRendering);
-                AppManagerPrivate::addOpenGLRequirementsString(vdata.error, eOpenGLRequirementsTypeViewer);
-                checkRenderingReq = false;
-            }
-            if (!glContext) {
-                return false;
-            }
+        } catch (const std::exception& e) {
+            std::string errorMessage = e.what();
+            std::cerr << "Error while loading OpenGL: " << errorMessage << std::endl;
+            std::cerr << "OpenGL rendering is disabled. " << std::endl;
+            AppManagerPrivate::OpenGLRequirementsData& vdata = _imp->glRequirements[eOpenGLRequirementsTypeViewer];
+            AppManagerPrivate::OpenGLRequirementsData& rdata = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
+            rdata.hasRequirements = false;
+            vdata.hasRequirements = false;
+            vdata.error = tr("Error while creating OpenGL context: %1").arg(QString::fromUtf8(errorMessage.c_str()));
+            rdata.error = tr("Error while creating OpenGL context: %1").arg(QString::fromUtf8(errorMessage.c_str()));
+            AppManagerPrivate::addOpenGLRequirementsString(rdata.error, eOpenGLRequirementsTypeRendering, false);
+            AppManagerPrivate::addOpenGLRequirementsString(vdata.error, eOpenGLRequirementsTypeViewer, false);
+            checkRenderingReq = false;
         }
-
-        // The following requires a valid OpenGL context to be created
-        _imp->initGl(checkRenderingReq);
-        if (createOpenGLContext) {
-            if (hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering)) {
-                try {
-                    OSGLContext::checkOpenGLVersion();
-                } catch (const std::exception& e) {
-                    AppManagerPrivate::OpenGLRequirementsData& data = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
-                    data.hasRequirements = false;
-                    if ( !data.error.isEmpty() ) {
-                        data.error = QString::fromUtf8( e.what() );
-                    }
-                }
-            }
-            
-            _imp->renderingContextPool->releaseGLContextFromRender(glContext);
-            glContext->unsetCurrentContextNoRender();
-
-            // Clear created contexts because this context was created with the "default" OpenGL renderer and it might be different from the one
-            // selected by the user in the settings (which are not created yet).
-            _imp->renderingContextPool->clear();
-        } else {
-            updateAboutWindowLibrariesVersion();
+        if (!glContext) {
+            return false;
         }
-
-        return true;
     }
 
-    return false;
+    // The following requires a valid OpenGL context to be created
+    _imp->initGl(checkRenderingReq);
+
+    // Load our OpenGL functions both in OSMesa and GL (from glad)
+    GL_GPU::load();
+    GL_CPU::load();
+
+
+    if (createOpenGLContext) {
+        if (hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering)) {
+            try {
+                OSGLContext::checkOpenGLVersion(true);
+            } catch (const std::exception& e) {
+                AppManagerPrivate::OpenGLRequirementsData& data = _imp->glRequirements[eOpenGLRequirementsTypeRendering];
+                data.hasRequirements = false;
+                if ( !data.error.isEmpty() ) {
+                    data.error = QString::fromUtf8( e.what() );
+                }
+            }
+        }
+
+
+        // Deattach the context
+        if (attacher) {
+            attacher.reset();
+        }
+
+        // Clear created contexts because this context was created with the "default" OpenGL renderer and it might be different from the one
+        // selected by the user in the settings (which are not created yet).
+        _imp->renderingContextPool->clear();
+    } else {
+        updateAboutWindowLibrariesVersion();
+    }
+    if (_imp->hasInitializedOpenGLFunctions && hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, 0)) {
+        OSGLContext::getGPUInfos(_imp->openGLRenderers);
+        for (std::list<OpenGLRendererInfo>::iterator it = _imp->openGLRenderers.begin(); it != _imp->openGLRenderers.end(); ++it) {
+            qDebug() << "Found OpenGL Renderer:" << it->rendererName.c_str() << ", Vendor:" << it->vendorName.c_str()
+            << ", OpenGL Version:" << it->glVersionString.c_str() << ", Max. Texture Size" << it->maxTextureSize <<
+            ",Max GPU Memory:" << printAsRAM(it->maxMemBytes);;
+        }
+    }
+
+    return true;
+} // initializeOpenGLFunctionsOnce
+
+int
+AppManager::getOpenGLVersionMajor() const
+{
+    return _imp->glVersionMajor;
+}
+
+int
+AppManager::getOpenGLVersionMinor() const
+{
+    return _imp->glVersionMinor;
 }
 
 #ifdef __NATRON_WIN32__
@@ -1058,45 +1196,17 @@ AppManager::initGui(const CLArgs& cl)
 bool
 AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 {
-    try {
-        size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM();
-        U64 viewerCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
-        U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
-
-        _imp->_nodeCache = boost::make_shared<Cache<Image> >("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.);
-        _imp->_diskCache = boost::make_shared<Cache<Image> >("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.);
-        _imp->_viewerCache = boost::make_shared<Cache<FrameEntry> >("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.);
-        _imp->setViewerCacheTileSize();
-    } catch (std::logic_error) {
-        // ignore
-    }
-
-    int oldCacheVersion = 0;
-    {
-        QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
-
-        if ( settings.contains( QString::fromUtf8(kNatronCacheVersionSettingsKey) ) ) {
-            oldCacheVersion = settings.value( QString::fromUtf8(kNatronCacheVersionSettingsKey) ).toInt();
-        }
-        settings.setValue(QString::fromUtf8(kNatronCacheVersionSettingsKey), NATRON_CACHE_VERSION);
-    }
-
-    if (oldCacheVersion != NATRON_CACHE_VERSION || cl.isCacheClearRequestedOnLaunch()) {
-        setLoadingStatus( tr("Clearing the image cache...") );
-        wipeAndCreateDiskCacheStructure();
-    } else {
-        setLoadingStatus( tr("Restoring the image cache...") );
-        _imp->restoreCaches();
-    }
-
-    setLoadingStatus( tr("Loading plugin cache...") );
-
+    setLoadingStatus( tr("Loading Plug-in Cache...") );
 
     ///Set host properties after restoring settings since it depends on the host name.
     try {
         _imp->ofxHost->setProperties();
     } catch (std::logic_error) {
         // ignore
+    }
+
+    if (cl.isPluginLoadCacheClearRequestedOnLaunch()) {
+        clearPluginsLoadedCache();
     }
 
     /*loading all plugins*/
@@ -1137,7 +1247,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         args = cl;
     }
 
-    AppInstPtr mainInstance = newAppInstance(args, false);
+    AppInstancePtr mainInstance = newAppInstance(args, false);
 
     hideSplashScreen();
 
@@ -1178,50 +1288,18 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     }
 } // AppManager::loadInternalAfterInitGui
 
-void
-AppManager::onViewerTileCacheSizeChanged()
-{
-    if (_imp->_viewerCache) {
-        _imp->_viewerCache->clear();
-        _imp->setViewerCacheTileSize();
-    }
-}
 
-void
-AppManagerPrivate::setViewerCacheTileSize()
-{
-    if (!_viewerCache) {
-        return;
-    }
-    std::size_t tileSize =  (std::size_t)std::pow( 2., (double)_settings->getViewerTilesPowerOf2() );
-
-    // Viewer tiles are always RGBA
-    tileSize = tileSize * tileSize * 4;
-
-
-    ImageBitDepthEnum viewerDepth = _settings->getViewersBitDepth();
-    switch (viewerDepth) {
-        case eImageBitDepthFloat:
-        case eImageBitDepthHalf:
-            tileSize *= sizeof(float);
-            break;
-        default:
-            break;
-    }
-    _viewerCache->setTiled(true, tileSize);
-}
-
-AppInstPtr
+AppInstancePtr
 AppManager::newAppInstanceInternal(const CLArgs& cl,
                                    bool alwaysBackground,
                                    bool makeEmptyInstance)
 {
-    AppInstPtr instance;
+    AppInstancePtr instance;
 
     if (!alwaysBackground) {
         instance = makeNewInstance(_imp->_availableID);
     } else {
-        instance = boost::make_shared<AppInstance>(_imp->_availableID);
+        instance = AppInstance::create(_imp->_availableID);
     }
 
     {
@@ -1257,21 +1335,21 @@ AppManager::newAppInstanceInternal(const CLArgs& cl,
     return instance;
 }
 
-AppInstPtr
+AppInstancePtr
 AppManager::newBackgroundInstance(const CLArgs& cl,
                                   bool makeEmptyInstance)
 {
     return newAppInstanceInternal(cl, true, makeEmptyInstance);
 }
 
-AppInstPtr
+AppInstancePtr
 AppManager::newAppInstance(const CLArgs& cl,
                            bool makeEmptyInstance)
 {
     return newAppInstanceInternal(cl, false, makeEmptyInstance);
 }
 
-AppInstPtr
+AppInstancePtr
 AppManager::getAppInstance(int appID) const
 {
     QMutexLocker k(&_imp->_appInstancesMutex);
@@ -1282,7 +1360,7 @@ AppManager::getAppInstance(int appID) const
         }
     }
 
-    return AppInstPtr();
+    return AppInstancePtr();
 }
 
 int
@@ -1330,52 +1408,6 @@ AppManager::getAppType() const
     return _imp->_appType;
 }
 
-void
-AppManager::clearPlaybackCache()
-{
-    if (!_imp->_viewerCache) {
-        return;
-    }
-    _imp->_viewerCache->clearInMemoryPortion();
-    clearLastRenderedTextures();
-}
-
-void
-AppManager::clearViewerCache()
-{
-    if (!_imp->_viewerCache) {
-        return;
-    }
-
-    _imp->_viewerCache->clear();
-}
-
-void
-AppManager::clearDiskCache()
-{
-    if (!_imp->_viewerCache) {
-        return;
-    }
-
-    clearLastRenderedTextures();
-    _imp->_viewerCache->clear();
-    _imp->_diskCache->clear();
-}
-
-void
-AppManager::clearNodeCache()
-{
-    AppInstanceVec copy;
-    {
-        QMutexLocker k(&_imp->_appInstancesMutex);
-        copy = _imp->_appInstances;
-    }
-
-    for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
-        (*it)->clearAllLastRenderedImages();
-    }
-    _imp->_nodeCache->clear();
-}
 
 void
 AppManager::clearPluginsLoadedCache()
@@ -1393,42 +1425,26 @@ AppManager::clearAllCaches()
     }
 
     for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
-        (*it)->abortAllViewers();
+        (*it)->abortAllViewers(true);
     }
 
-    clearDiskCache();
-    clearNodeCache();
-
-
+    _imp->generalPurposeCache->clear();
+    _imp->tileCache->clear();
+    
     ///for each app instance clear all its nodes cache
     for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
         (*it)->clearOpenFXPluginsCaches();
     }
 
     for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
-        (*it)->renderAllViewers(true);
+        (*it)->renderAllViewers();
     }
 
     Project::clearAutoSavesDir();
 }
 
-void
-AppManager::wipeAndCreateDiskCacheStructure()
-{
-    //Should be called on the main-thread because potentially can interact with rendering
-    assert( QThread::currentThread() == qApp->thread() );
 
-    abortAnyProcessing();
-
-    clearAllCaches();
-
-    assert(_imp->_diskCache);
-    _imp->cleanUpCacheDiskStructure( _imp->_diskCache->getCachePath(), false );
-    assert(_imp->_viewerCache);
-    _imp->cleanUpCacheDiskStructure( _imp->_viewerCache->getCachePath() , true);
-}
-
-AppInstPtr
+AppInstancePtr
 AppManager::getTopLevelInstance () const
 {
     QMutexLocker k(&_imp->_appInstancesMutex);
@@ -1439,7 +1455,7 @@ AppManager::getTopLevelInstance () const
         }
     }
 
-    return AppInstPtr();
+    return AppInstancePtr();
 }
 
 bool
@@ -1481,26 +1497,6 @@ AppManager::writeToOutputPipe(const QString & longMessage,
     return true;
 }
 
-void
-AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
-{
-    size_t maxCacheRAM = p * getSystemTotalRAM_conditionnally();
-
-    _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM);
-    _imp->_nodeCache->setMaximumInMemorySize(1);
-}
-
-void
-AppManager::setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size)
-{
-    _imp->_viewerCache->setMaximumCacheSize(size);
-}
-
-void
-AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size)
-{
-    _imp->_diskCache->setMaximumCacheSize(size);
-}
 
 void
 AppManager::loadAllPlugins()
@@ -1509,16 +1505,19 @@ AppManager::loadAllPlugins()
     assert( _imp->_formats.empty() );
 
     // Load plug-ins bundled into Natron
-    loadBuiltinNodePlugins(&_imp->readerPlugins, &_imp->writerPlugins);
+    loadBuiltinNodePlugins();
 
     // Load OpenFX plug-ins
-    _imp->ofxHost->loadOFXPlugins( &_imp->readerPlugins, &_imp->writerPlugins);
+    _imp->ofxHost->loadOFXPlugins();
 
     // Load PyPlugs and init.py & initGui.py scripts
     // Should be done after settings are declared
     loadPythonGroups();
 
-    _imp->_settings->restorePluginSettings();
+    // Load presets after all plug-ins are loaded
+    loadNodesPresets();
+
+    _imp->_settings->loadSettingsFromFile(Settings::eLoadSettingsTypePlugins);
 
 
     onAllPluginsLoaded();
@@ -1545,27 +1544,33 @@ AppManager::onAllPluginsLoaded()
         if (it->second.empty()) {
             continue;
         }
+
         PluginVersionsOrdered::reverse_iterator first = it->second.rbegin();
+
+        // If at least one version of the plug-in can be created, consider it creatable
         bool isUserCreatable = false;
-        for (PluginVersionsOrdered::reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
+        for (PluginVersionsOrdered::reverse_iterator itver = it->second.rbegin();
+             itver != it->second.rend();
+             ++itver) {
             if ( (*itver)->getIsUserCreatable() ) {
                 isUserCreatable = true;
             } else {
-                (*itver)->setLabelWithoutSuffix( (*itver)->getPluginLabel() );
+                (*itver)->setLabelWithoutSuffix((*itver)->getPluginLabel());
             }
         }
         if (!isUserCreatable) {
             continue;
         }
 
-        QString labelWithoutSuffix = Plugin::makeLabelWithoutSuffix( (*first)->getPluginLabel() );
+        std::string labelWithoutSuffix = Plugin::makeLabelWithoutSuffix( (*first)->getPluginLabel() );
 
-        //Find a duplicate
-        for (PluginsMap::const_iterator it2 = plugins.begin(); it2 != plugins.end(); ++it2) {
+        // Find a duplicate
+        for (PluginsMap::const_iterator it2 = plugins.begin();
+             it2 != plugins.end();
+             ++it2) {
             if (it->first == it2->first) {
                 continue;
             }
-
 
             PluginVersionsOrdered::reverse_iterator other = it2->second.rbegin();
             bool isOtherUserCreatable = false;
@@ -1580,12 +1585,24 @@ AppManager::onAllPluginsLoaded()
                 continue;
             }
 
-            QString otherLabelWithoutSuffix = Plugin::makeLabelWithoutSuffix( (*other)->getPluginLabel() );
+            // If we find another plug-in (with a different ID) but with the same label without suffix and same grouping
+            // then keep the original label
+            std::string otherLabelWithoutSuffix = Plugin::makeLabelWithoutSuffix( (*other)->getPluginLabel() );
             if (otherLabelWithoutSuffix == labelWithoutSuffix) {
-                QString otherGrouping = (*other)->getGrouping().join( QChar::fromLatin1('/') );
-                const QStringList& thisGroupingSplit = (*first)->getGrouping();
-                QString thisGrouping = thisGroupingSplit.join( QChar::fromLatin1('/') );
-                if (otherGrouping == thisGrouping) {
+
+                std::vector<std::string> otherGrouping = (*other)->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
+                std::vector<std::string> thisGrouping = (*first)->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
+                bool allEqual = false;
+                if (otherGrouping.size() == thisGrouping.size()) {
+                    allEqual = true;
+                    for (std::size_t i = 0; i < thisGrouping.size(); ++i) {
+                        if (otherGrouping[i] != thisGrouping[i]) {
+                            allEqual = false;
+                            break;
+                        }
+                    }
+                }
+                if (allEqual) {
                     labelWithoutSuffix = (*first)->getPluginLabel();
                 }
                 break;
@@ -1593,78 +1610,118 @@ AppManager::onAllPluginsLoaded()
         }
 
 
-        for (PluginVersionsOrdered::reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
+        for (PluginVersionsOrdered::reverse_iterator itver = it->second.rbegin();
+             itver != it->second.rend();
+             ++itver) {
+            if (itver == it->second.rbegin()) {
+                // This is the highest major version loaded for that plug-in
+                (*itver)->setIsHighestMajorVersion(true);
+            }
             if ( (*itver)->getIsUserCreatable() ) {
                 (*itver)->setLabelWithoutSuffix(labelWithoutSuffix);
                 onPluginLoaded(*itver);
             }
         }
-    }
+    } // for all plugins
+
+    // Now that we know all plug-ins, restore shortcuts.
+    getCurrentSettings()->loadSettingsFromFile(Settings::eLoadSettingsTypeShortcuts);
+
 } // AppManager::onAllPluginsLoaded
 
-template <typename PLUGIN>
 void
-AppManager::registerBuiltInPlugin(const QString& iconPath,
-                                  bool isDeprecated,
-                                  bool internalUseOnly)
+AppManager::onPluginLoaded(const PluginPtr& plugin)
 {
-    EffectInstancePtr node( PLUGIN::BuildEffect( NodePtr() ) );
-    std::map<std::string, void (*)()> functions;
+    std::string shortcutGrouping(kShortcutGroupNodes);
+    std::vector<std::string> groups = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
+    std::string pluginID = plugin->getPluginID();
+    std::string pluginLabel = plugin->getLabelWithoutSuffix();
 
-    functions.insert( std::make_pair("BuildEffect", ( void (*)() ) & PLUGIN::BuildEffect) );
-    LibraryBinary *binary = new LibraryBinary(functions);
-    assert(binary);
-
-    std::list<std::string> grouping;
-    node->getPluginGrouping(&grouping);
-    QStringList qgrouping;
-
-    for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-        qgrouping.push_back( QString::fromUtf8( it->c_str() ) );
+    for (std::size_t i = 0; i < groups.size(); ++i) {
+        shortcutGrouping.append("/");
+        shortcutGrouping.append(groups[i]);
     }
 
-    // Empty since statically bundled
-    QString resourcesPath = QString();
-    Plugin* p = registerPlugin(resourcesPath, qgrouping, QString::fromUtf8( node->getPluginID().c_str() ), QString::fromUtf8( node->getPluginLabel().c_str() ),
-                               iconPath, QStringList(), node->isReader(), node->isWriter(), binary, node->renderThreadSafety() == eRenderSafetyUnsafe, node->getMajorVersion(), node->getMinorVersion(), isDeprecated);
-    std::list<PluginActionShortcut> shortcuts;
-    node->getPluginShortcuts(&shortcuts);
-    p->setShorcuts(shortcuts);
-
-    PluginOpenGLRenderSupport glSupport = node->supportsOpenGLRender();
-    p->setOpenGLRenderSupport(glSupport);
-
-    if (internalUseOnly) {
-        p->setForInternalUseOnly(true);
+    KeyboardModifiers modifiers(eKeyboardModifierNone);
+    Key symbol = (Key)0;
+    {
+        int symbol_i = plugin->getPropertyUnsafe<int>(kNatronPluginPropShortcut, 0);
+        int mods_i = plugin->getPropertyUnsafe<int>(kNatronPluginPropShortcut, 1);
+        if (symbol_i != 0) {
+            symbol = (Key)symbol_i;
+        }
+        if (mods_i != 0) {
+            modifiers = (KeyboardModifiers)mods_i;
+        }
     }
+
+    if ( plugin->getIsUserCreatable() ) {
+        std::string hint = tr("Create an instance of %1").arg(QString::fromUtf8(pluginID.c_str())).toStdString();
+        // Keybinds to create nodes are not sensible to the shift modifier, due to
+        // different keyboard layouts (eg "." is shifted on French keyboard, not on QWERTY).
+        getCurrentSettings()->addKeybind(shortcutGrouping, pluginID, pluginLabel, hint, modifiers, symbol, eKeyboardModifierShift);
+    }
+
+    // If this plug-in has presets, add shortcuts as well
+    plugin->sortPresetsByLabel();
+    const std::vector<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
+    for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
+        std::string shortcutKey = pluginID;
+        shortcutKey += "_preset_";
+        shortcutKey += it->presetLabel.toStdString();
+
+        std::string shortcutLabel = pluginLabel;
+        shortcutLabel += " (";
+        shortcutLabel += it->presetLabel.toStdString();
+        shortcutLabel += ")";
+
+        std::string hint = tr("Create an instance of %1 with %2 preset").arg(QString::fromUtf8(pluginID.c_str())).arg(it->presetLabel).toStdString();
+        getCurrentSettings()->addKeybind(shortcutGrouping, shortcutKey, shortcutLabel, hint, it->modifiers, it->symbol);
+    }
+
+    const std::list<PluginActionShortcut>& shortcuts =  plugin->getShortcuts();
+    std::string pluginShortcutGroup =  plugin->getPluginShortcutGroup();
+    for (std::list<PluginActionShortcut>::const_iterator it = shortcuts.begin(); it != shortcuts.end(); ++it) {
+        getCurrentSettings()->addKeybind( pluginShortcutGroup, it->actionID, it->actionLabel, it->actionHint, it->modifiers, it->key );
+    }
+} // onPluginLoaded
+
+#define ADD_PLUGIN_SAFE(CLASS) \
+{ \
+    try { \
+        registerPlugin(CLASS::createPlugin()); \
+    } catch (const std::exception& e) { \
+        std::cerr << tr("Plug-in loader: %2").arg(QString::fromUtf8(e.what())).toStdString() << std::endl; \
+    }   \
 }
 
 void
-AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
-                                   IOPluginsMap* /*writersMap*/)
+AppManager::loadBuiltinNodePlugins()
 {
-    registerBuiltInPlugin<Backdrop>(QString::fromUtf8(NATRON_IMAGES_PATH "backdrop_icon.png"), false, false);
-    registerBuiltInPlugin<GroupOutput>(QString::fromUtf8(NATRON_IMAGES_PATH "output_icon.png"), false, false);
-    registerBuiltInPlugin<GroupInput>(QString::fromUtf8(NATRON_IMAGES_PATH "input_icon.png"), false, false);
-    registerBuiltInPlugin<NodeGroup>(QString::fromUtf8(NATRON_IMAGES_PATH "group_icon.png"), false, false);
-    registerBuiltInPlugin<Dot>(QString::fromUtf8(NATRON_IMAGES_PATH "dot_icon.png"), false, false);
-    registerBuiltInPlugin<DiskCacheNode>(QString::fromUtf8(NATRON_IMAGES_PATH "diskcache_icon.png"), false, false);
-    registerBuiltInPlugin<RotoPaint>(QString::fromUtf8(NATRON_IMAGES_PATH "GroupingIcons/Set2/paint_grouping_2.png"), false, false);
-    registerBuiltInPlugin<RotoNode>(QString::fromUtf8(NATRON_IMAGES_PATH "rotoNodeIcon.png"), false, false);
-    registerBuiltInPlugin<RotoSmear>(QString::fromUtf8(""), false, true);
-    registerBuiltInPlugin<PrecompNode>(QString::fromUtf8(NATRON_IMAGES_PATH "precompNodeIcon.png"), false, false);
-    registerBuiltInPlugin<TrackerNode>(QString::fromUtf8(NATRON_IMAGES_PATH "trackerNodeIcon.png"), false, false);
-    registerBuiltInPlugin<JoinViewsNode>(QString::fromUtf8(NATRON_IMAGES_PATH "joinViewsNode.png"), false, false);
-    registerBuiltInPlugin<OneViewNode>(QString::fromUtf8(NATRON_IMAGES_PATH "oneViewNode.png"), false, false);
-#ifdef NATRON_ENABLE_IO_META_NODES
-    registerBuiltInPlugin<ReadNode>(QString::fromUtf8(NATRON_IMAGES_PATH "readImage.png"), false, false);
-    registerBuiltInPlugin<WriteNode>(QString::fromUtf8(NATRON_IMAGES_PATH "writeImage.png"), false, false);
-#endif
-
-    if ( !isBackground() ) {
-        registerBuiltInPlugin<ViewerInstance>(QString::fromUtf8(NATRON_IMAGES_PATH "viewer_icon.png"), false, false);
-    }
+    ADD_PLUGIN_SAFE(AddPlaneNode);
+    ADD_PLUGIN_SAFE(Backdrop);
+    ADD_PLUGIN_SAFE(GroupOutput);
+    ADD_PLUGIN_SAFE(GroupInput);
+    ADD_PLUGIN_SAFE(NodeGroup);
+    ADD_PLUGIN_SAFE(Dot);
+    ADD_PLUGIN_SAFE(DiskCacheNode);
+    ADD_PLUGIN_SAFE(RotoPaint);
+    ADD_PLUGIN_SAFE(RotoNode);
+    ADD_PLUGIN_SAFE(LayeredCompNode);
+    ADD_PLUGIN_SAFE(RotoShapeRenderNode);
+    ADD_PLUGIN_SAFE(PrecompNode);
+    ADD_PLUGIN_SAFE(TrackerNode);
+    ADD_PLUGIN_SAFE(JoinViewsNode);
+    ADD_PLUGIN_SAFE(OneViewNode);
+    ADD_PLUGIN_SAFE(ReadNode);
+    ADD_PLUGIN_SAFE(RemovePlaneNode);
+    ADD_PLUGIN_SAFE(StubNode);
+    ADD_PLUGIN_SAFE(WriteNode);
+    ADD_PLUGIN_SAFE(ViewerNode);
+    ADD_PLUGIN_SAFE(ViewerInstance);
 }
+
+#undef ADD_PLUGIN_SAFE
 
 bool
 AppManager::findAndRunScriptFile(const QString& path,
@@ -1686,44 +1743,11 @@ AppManager::findAndRunScriptFile(const QString& path,
 
 
                 PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
-                std::string error, output;
+                std::string error = NATRON_PYTHON_NAMESPACE::getPythonStdErr();
+                std::string output = NATRON_PYTHON_NAMESPACE::getPythonStdOut();
 
-                ///Gui session, do stdout, stderr redirection
-                PyObject *errCatcher = 0;
-                PyObject *outCatcher = 0;
-
-                if ( PyObject_HasAttrString(mainModule, "catchErr") ) {
-                    errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
-                }
-
-                if ( PyObject_HasAttrString(mainModule, "catchOut") ) {
-                    outCatcher = PyObject_GetAttrString(mainModule, "catchOut"); //get our catchOutErr created above, new ref
-                }
-
-                PyErr_Print(); //make python print any errors
-
-                PyObject *errorObj = 0;
-                if (errCatcher) {
-                    errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
-                    assert(errorObj);
-
-                    error = NATRON_PYTHON_NAMESPACE::PyStringToStdString(errorObj);
-                    PyObject* unicode = PyUnicode_FromString("");
-                    PyObject_SetAttrString(errCatcher, "value", unicode);
-                    Py_DECREF(errorObj);
-                    Py_DECREF(errCatcher);
-                }
-                PyObject *outObj = 0;
-                if (outCatcher) {
-                    outObj = PyObject_GetAttrString(outCatcher, "value"); //get the stdout from our catchOut object, new ref
-                    assert(outObj);
-                    output = NATRON_PYTHON_NAMESPACE::PyStringToStdString(outObj);
-                    PyObject* unicode = PyUnicode_FromString("");
-                    PyObject_SetAttrString(outCatcher, "value", unicode);
-                    Py_DECREF(outObj);
-                    Py_DECREF(outCatcher);
-                }
-
+                NATRON_PYTHON_NAMESPACE::clearPythonStdErr();
+                NATRON_PYTHON_NAMESPACE::clearPythonStdOut();
 
                 if ( !error.empty() ) {
                     QString message(tr("Failed to load %1: %2").arg(absolutePath).arg(QString::fromUtf8( error.c_str() )) );
@@ -1757,17 +1781,10 @@ AppManager::getAllNonOFXPluginsPaths() const
 {
     QStringList templatesSearchPath;
 
-    //add ~/.Natron
-    QString dataLocation = QDir::homePath();
-    QString mainPath = dataLocation + QString::fromUtf8("/.") + QString::fromUtf8(NATRON_APPLICATION_NAME);
-    QDir mainPathDir(mainPath);
+    //add ~/NatronUserData
 
-    if ( !mainPathDir.exists() ) {
-        QDir dataDir(dataLocation);
-        if ( dataDir.exists() ) {
-            dataDir.mkdir( QChar::fromLatin1('.') + QString( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-        }
-    }
+    QString mainPath = QString::fromUtf8(getCurrentSettings()->getSettingsAbsoluteFilePath().c_str());
+
 
     QString envvar( QString::fromUtf8( qgetenv(NATRON_PATH_ENV_VAR) ) );
 # ifdef __NATRON_WIN32__
@@ -1781,9 +1798,9 @@ AppManager::getAllNonOFXPluginsPaths() const
 
 
     //This is the bundled location for PyPlugs
-    QDir cwd( QCoreApplication::applicationDirPath() );
-    cwd.cdUp();
-    QString natronBundledPluginsPath = QString( cwd.absolutePath() +  QString::fromUtf8("/Plugins/PyPlugs") );
+    QDir pluginsDir = getBundledPluginDirectory();
+    pluginsDir.cd(QString::fromUtf8("PyPlugs"));
+    QString natronBundledPluginsPath = pluginsDir.absolutePath();
     bool preferBundleOverSystemWide = _imp->_settings->preferBundledPlugins();
     bool useBundledPlugins = _imp->_settings->loadBundledPlugins();
     if (preferBundleOverSystemWide && useBundledPlugins) {
@@ -1795,7 +1812,7 @@ AppManager::getAllNonOFXPluginsPaths() const
     templatesSearchPath.push_back(mainPath);
 
     ///look-in the global system wide plugin path
-    templatesSearchPath.push_back( getPyPlugsGlobalPath() );
+    templatesSearchPath.push_back( getSystemNatronPluginDirectory() );
 
     ///look-in the locations indicated by NATRON_PLUGIN_PATH
     Q_FOREACH(const QString &splitDir, splitDirs) {
@@ -1819,8 +1836,17 @@ AppManager::getAllNonOFXPluginsPaths() const
     return templatesSearchPath;
 } // AppManager::getAllNonOFXPluginsPaths
 
+QDir
+AppManager::getBundledPluginDirectory() const
+{
+    QDir cwd( QCoreApplication::applicationDirPath() );
+    cwd.cdUp();
+    cwd.cd(QString::fromUtf8("Plugins"));
+    return cwd;
+} // getBundledPluginDirectory
+
 QString
-AppManager::getPyPlugsGlobalPath() const
+AppManager::getSystemNatronPluginDirectory() const
 {
     QString path;
 
@@ -1875,7 +1901,7 @@ addToPythonPathFunctor(const QDir& directory)
     if (!ok) {
         std::string message = QCoreApplication::translate("AppManager", "Could not add %1 to python path:").arg( directory.absolutePath() ).toStdString() + ' ' + err;
         std::cerr << message << std::endl;
-        AppInstPtr topLevel = appPTR->getTopLevelInstance();
+        AppInstancePtr topLevel = appPTR->getTopLevelInstance();
         if (topLevel) {
             topLevel->appendToScriptEditor( message.c_str() );
         }
@@ -1919,6 +1945,154 @@ AppManager::findAllScriptsRecursive(const QDir& directory,
         findAllScriptsRecursive(d, allPlugins, foundInit, foundInitGui);
     }
 }
+
+
+void
+AppManager::findAllPresetsRecursive(const QDir& directory,
+                             QStringList& presetFiles)
+{
+    if ( !directory.exists() ) {
+        return;
+    }
+
+    QStringList filters;
+    filters << QString::fromUtf8("*." NATRON_PRESETS_FILE_EXT);
+    QStringList files = directory.entryList(filters, QDir::Files | QDir::NoDotAndDotDot);
+
+    for (QStringList::iterator it = files.begin(); it != files.end(); ++it) {
+        if ( it->endsWith( QString::fromUtf8("." NATRON_PRESETS_FILE_EXT) )) {
+            presetFiles.push_back(directory.absolutePath() + QChar::fromLatin1('/') + *it);
+        }
+    }
+}
+
+void
+AppManager::loadNodesPresets()
+{
+    QStringList presetFiles;
+
+    QStringList templatesSearchPath = getAllNonOFXPluginsPaths();
+    Q_FOREACH(const QString &templatesSearchDir, templatesSearchPath) {
+        QDir d(templatesSearchDir);
+        findAllPresetsRecursive(d, presetFiles);
+    }
+
+    Q_FOREACH(const QString &presetFile, presetFiles) {
+
+        FStreamsSupport::ifstream ifile;
+        FStreamsSupport::open(&ifile, presetFile.toStdString());
+        if (!ifile) {
+            continue;
+        }
+        SERIALIZATION_NAMESPACE::NodeSerialization obj;
+        try {
+            SERIALIZATION_NAMESPACE::read(NATRON_PRESETS_FILE_HEADER, ifile, &obj);
+        } catch (...) {
+            continue;
+        }
+
+        if (!obj._presetsIdentifierLabel.empty()) {
+            // If the preset label is set, append as a preset of an existing plug-in
+            PluginPtr foundPlugin;
+            try {
+                foundPlugin = getPluginBinary(QString::fromUtf8(obj._pluginID.c_str()), obj._pluginMajorVersion, obj._pluginMinorVersion, false);
+            } catch (...) {
+                continue;
+            }
+            if (!foundPlugin) {
+                continue;
+            }
+            PluginPresetDescriptor preset;
+            preset.presetFilePath = presetFile;
+            preset.presetLabel = QString::fromUtf8(obj._presetsIdentifierLabel.c_str());
+            preset.presetIconFile = QString::fromUtf8(obj._presetsIconFilePath.c_str());
+            preset.symbol = (Key)obj._presetShortcutSymbol;
+            preset.modifiers = KeyboardModifiers(obj._presetShortcutPresetModifiers);
+            foundPlugin->addPresetFile(preset);
+        } else {
+            // Try to find a pyplug
+            std::string pyPlugID, pyPlugLabel, pyPlugDescription, pyPlugIconFilePath, pyPlugGrouping, pyPlugExtCallbacks;
+            bool pyPlugDescIsMarkdown = false;
+            int pyPlugShortcutSymbol = 0;
+            int pyPlugShortcutModifiers = 0;
+            int pyPlugVersionMajor = 0,pyPlugVersionMinor = 0;
+            for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = obj._knobsValues.begin(); it != obj._knobsValues.end(); ++it) {
+                if ((*it)->_values.empty()) {
+                    continue;
+                }
+                const SERIALIZATION_NAMESPACE::KnobSerialization::PerDimensionValueSerializationVec& dimVec = (*it)->_values.begin()->second;
+                const SERIALIZATION_NAMESPACE::SerializationValueVariant& value0 = dimVec[0]._value;
+                if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginID) {
+                    pyPlugID = value0.isString;
+                } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginLabel) {
+                    pyPlugLabel = value0.isString;
+                } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginDescription) {
+                    pyPlugDescription = value0.isString;
+                } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginDescriptionIsMarkdown) {
+                    pyPlugDescIsMarkdown = value0.isBool;
+                } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginGrouping) {
+                    pyPlugGrouping = value0.isString;
+                } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginIconFile) {
+                    pyPlugIconFilePath = value0.isString;
+                } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginCallbacksPythonScript) {
+                    pyPlugExtCallbacks = value0.isString;
+                } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginShortcut) {
+                    pyPlugShortcutSymbol = value0.isInt;
+                    if (dimVec.size() > 1) {
+                        pyPlugShortcutModifiers = dimVec[1]._value.isInt;
+                    }
+                } else if ((*it)->_scriptName == kNatronNodeKnobPyPlugPluginVersion) {
+                    pyPlugVersionMajor = value0.isInt;
+                    if (dimVec.size() > 1) {
+                        pyPlugVersionMinor = dimVec[1]._value.isInt;
+                    }
+                    
+                }
+            }
+
+            if (!pyPlugID.empty()) {
+                // If the pyPlugID is set, make a new plug-in
+                // Use grouping if set, otherwise make a "PyPlug" group as a fallback
+                std::vector<std::string> grouping;
+                if (!pyPlugGrouping.empty()) {
+                    boost::split(grouping, pyPlugGrouping, boost::is_any_of("/"));
+                } else {
+                    grouping.push_back("PyPlugs");
+                }
+
+
+                PluginPtr p = Plugin::create(NodeGroup::create, NodeGroup::createRenderClone, pyPlugID, pyPlugLabel, pyPlugVersionMajor, pyPlugVersionMinor, grouping);
+                if (!obj._pluginID.empty()) {
+                    p->setProperty<std::string>(kNatronPluginPropPyPlugContainerID, obj._pluginID);
+                }
+                p->setProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath, presetFile.toStdString());
+
+
+                QString presetDirectory;
+                {
+                    int foundSlash = presetFile.lastIndexOf(QLatin1Char('/'));
+                    if (foundSlash != -1) {
+                        presetDirectory = presetFile.mid(0, foundSlash);
+                    }
+                }
+                p->setProperty<std::string>(kNatronPluginPropResourcesPath, presetDirectory.toStdString());
+                p->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, pyPlugDescIsMarkdown);
+                p->setProperty<std::string>(kNatronPluginPropDescription, pyPlugDescription);
+                p->setProperty<std::string>(kNatronPluginPropIconFilePath, pyPlugIconFilePath);
+                p->setProperty<int>(kNatronPluginPropShortcut, pyPlugShortcutSymbol, 0);
+                p->setProperty<int>(kNatronPluginPropShortcut, pyPlugShortcutModifiers, 1);
+                p->setProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile, pyPlugExtCallbacks);
+                p->setProperty<unsigned int>(kNatronPluginPropVersion, (unsigned int)pyPlugVersionMajor, 0);
+                p->setProperty<unsigned int>(kNatronPluginPropVersion, (unsigned int)pyPlugVersionMinor, 1);
+                p->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+                p->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
+                registerPlugin(p);
+                
+                
+            }
+        }
+    }
+} // loadNodesPresets
 
 void
 AppManager::loadPythonGroups()
@@ -2020,7 +2194,7 @@ AppManager::loadPythonGroups()
         }
     }
 
-    // Now that init.py and InitGui.py have run, we need to set the search path again for the PyPlug
+    // Now that init.py and initGui.py have run, we need to set the search path again for the PyPlug
     // as the user might have called appendToNatronPath
 
     QStringList newTemplatesSearchPath = getAllNonOFXPluginsPaths();
@@ -2040,8 +2214,7 @@ AppManager::loadPythonGroups()
         }
     }
 
-    appPTR->setLoadingStatus( tr("Loading PyPlugs...") );
-
+    // Load deprecated PyPlugs encoded using Python scripts
     Q_FOREACH(const QString &plugin, allPlugins) {
         QString moduleName = plugin;
         QString modulePath;
@@ -2056,6 +2229,7 @@ AppManager::loadPythonGroups()
             moduleName = moduleName.remove(0, lastSlash + 1);
         }
 
+        std::string pluginLabel, pluginID, pluginGrouping, iconFilePath, pluginDescription, pluginPath;
 
         {
             // Open the file and check for a line that imports NatronGui, if so do not attempt to load the script.
@@ -2065,84 +2239,99 @@ AppManager::loadPythonGroups()
             }
             QTextStream ts(&file);
             bool gotNatronGuiImport = false;
-            bool isPyPlug = false;
+            //bool isPyPlug = false;
             while (!ts.atEnd()) {
                 QString line = ts.readLine();
                 if (line.startsWith(QString::fromUtf8("import %1").arg(QLatin1String(NATRON_GUI_PYTHON_MODULE_NAME))) ||
                     line.startsWith(QString::fromUtf8("from %1 import").arg(QLatin1String(NATRON_GUI_PYTHON_MODULE_NAME)))) {
                     gotNatronGuiImport = true;
                 }
-                if (line.startsWith(QString::fromUtf8("# This file was automatically generated by Natron PyPlug exporter"))) {
+                /*if (line.startsWith(QString::fromUtf8("# This file was automatically generated by Natron PyPlug exporter"))) {
                     isPyPlug = true;
-                }
+                }*/
 
             }
             if (appPTR->isBackground() && gotNatronGuiImport) {
                 continue;
             }
-            if (!isPyPlug) {
+           /* if (!isPyPlug) {
                 continue;
-            }
+            }*/
         }
 
-        std::string pluginLabel, pluginID, pluginGrouping, iconFilePath, pluginDescription;
         unsigned int version;
         bool isToolset;
-        bool gotInfos = NATRON_PYTHON_NAMESPACE::getGroupInfos(modulePath.toStdString(), moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &isToolset, &version);
+        bool gotInfos = NATRON_PYTHON_NAMESPACE::getGroupInfos(moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &pluginPath, &isToolset, &version);
 
 
-        if (gotInfos) {
-            qDebug() << "Loading " << moduleName;
-            QStringList grouping = QString::fromUtf8( pluginGrouping.c_str() ).split( QChar::fromLatin1('/') );
-            Plugin* p = registerPlugin(modulePath, grouping, QString::fromUtf8( pluginID.c_str() ), QString::fromUtf8( pluginLabel.c_str() ), QString::fromUtf8( iconFilePath.c_str() ), QStringList(), false, false, 0, false, version, 0, false);
-
-            p->setPythonModule(modulePath + moduleName);
-            p->setToolsetScript(isToolset);
+        if (!gotInfos) {
+            continue;
         }
+
+
+        std::vector<std::string> grouping;
+        boost::split(grouping, pluginGrouping, boost::is_any_of("/"));
+
+        PluginPtr p = Plugin::create(NodeGroup::create, NodeGroup::createRenderClone, pluginID, pluginLabel, version, 0, grouping);
+        p->setProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath, plugin.toStdString());
+        p->setProperty<bool>(kNatronPluginPropPyPlugIsToolset, isToolset);
+        p->setProperty<std::string>(kNatronPluginPropDescription, pluginDescription);
+        p->setProperty<std::string>(kNatronPluginPropIconFilePath, iconFilePath);
+        p->setProperty<bool>(kNatronPluginPropPyPlugIsPythonScript, true);
+        p->setProperty<std::string>(kNatronPluginPropResourcesPath, modulePath.toStdString());
+
+        p->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+        p->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
+        //p->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, false);
+        //p->setProperty<int>(kNatronPluginPropShortcut, obj.presetSymbol, 0);
+        //p->setProperty<int>(kNatronPluginPropShortcut, obj.presetModifiers, 1);
+        registerPlugin(p);
+
     }
 } // AppManager::loadPythonGroups
 
-Plugin*
-AppManager::registerPlugin(const QString& resourcesPath,
-                           const QStringList & groups,
-                           const QString & pluginID,
-                           const QString & pluginLabel,
-                           const QString & pluginIconPath,
-                           const QStringList & groupIconPath,
-                           bool isReader,
-                           bool isWriter,
-                           LibraryBinary* binary,
-                           bool mustCreateMutex,
-                           int major,
-                           int minor,
-                           bool isDeprecated)
+void
+AppManager::registerPlugin(const PluginPtr& plugin)
 {
-    QMutex* pluginMutex = 0;
 
-    if (mustCreateMutex) {
-        pluginMutex = new QMutex(QMutex::Recursive);
+    std::string pluginID = plugin->getPluginID();
+    const bool isReader = ReadNode::isBundledReader( pluginID );
+    const bool isWriter = WriteNode::isBundledWriter( pluginID );
+    if (isReader || isWriter) {
+        plugin->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
+
+        const std::vector<std::string>& supportedExtensions = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropSupportedExtensions);
+        const bool isDeprecated = plugin->getPropertyUnsafe<bool>(kNatronPluginPropIsDeprecated);
+
+        if (!isDeprecated && !supportedExtensions.empty()) {
+            const double ioEvaluation = plugin->getPropertyUnsafe<double>(kNatronPluginPropIOEvaluation);
+
+            IOPluginsMap* ioMap = 0;
+            if (isReader) {
+                ioMap = &_imp->readerPlugins;
+            } else {
+                ioMap = &_imp->writerPlugins;
+            }
+            for (std::size_t k = 0; k < supportedExtensions.size(); ++k) {
+                IOPluginSetForFormat& evalForFormat = (*ioMap)[supportedExtensions[k]];
+                evalForFormat.insert( IOPluginEvaluation(plugin->getPluginID(), ioEvaluation) );
+            }
+        }
     }
-    Plugin* plugin = new Plugin(binary, resourcesPath, pluginID, pluginLabel, pluginIconPath, groupIconPath, groups, pluginMutex, major, minor,
-                                isReader, isWriter, isDeprecated);
-    std::string stdID = pluginID.toStdString();
-
-#ifdef NATRON_ENABLE_IO_META_NODES
-    if ( ReadNode::isBundledReader( stdID, false ) ||
-         WriteNode::isBundledWriter( stdID, false ) ) {
-        plugin->setForInternalUseOnly(true);
+    if (isReader) {
+        plugin->getEffectDescriptor()->setProperty<bool>(kEffectPropSupportsRenderScale, false);
     }
-#endif
 
-    PluginsMap::iterator found = _imp->_plugins.find(stdID);
+
+
+    PluginsMap::iterator found = _imp->_plugins.find(pluginID);
     if ( found != _imp->_plugins.end() ) {
         found->second.insert(plugin);
     } else {
-        PluginVersionsOrdered set;
+        PluginVersionsOrdered &set = _imp->_plugins[pluginID];
         set.insert(plugin);
-        _imp->_plugins.insert( std::make_pair(stdID, set) );
     }
 
-    return plugin;
 }
 
 Format
@@ -2172,13 +2361,8 @@ AppManager::setAsTopLevelInstance(int appID)
     for (AppInstanceVec::iterator it = _imp->_appInstances.begin();
          it != _imp->_appInstances.end();
          ++it) {
-        if ( (*it)->getAppID() != _imp->_topLevelInstanceID ) {
+        if ( (*it)->getAppID() == _imp->_topLevelInstanceID ) {
             if ( !isBackground() ) {
-                (*it)->disconnectViewersFromViewerCache();
-            }
-        } else {
-            if ( !isBackground() ) {
-                (*it)->connectViewersToViewerCache();
                 setOFXHostHandle( (*it)->getOfxHostOSHandle() );
             }
         }
@@ -2191,11 +2375,6 @@ AppManager::setOFXHostHandle(void* handle)
     _imp->ofxHost->setOfxHostOSHandle(handle);
 }
 
-void
-AppManager::clearExceedingEntriesFromNodeCache()
-{
-    _imp->_nodeCache->clearExceedingEntries();
-}
 
 const PluginsMap&
 AppManager::getPluginsList() const
@@ -2216,45 +2395,44 @@ AppManager::getKnobFactory() const
     return *(_imp->_knobFactory);
 }
 
-Plugin*
+PluginPtr
 AppManager::getPluginBinaryFromOldID(const QString & pluginId,
                                      int majorVersion,
-                                     int minorVersion) const
+                                     int minorVersion,
+                                     bool caseSensitive) const
 {
-    std::map<int, Plugin*> matches;
+    std::map<int, PluginPtr> matches;
 
     if ( pluginId == QString::fromUtf8("Viewer") ) {
-        return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_VIEWER), majorVersion, minorVersion);
+        return _imp->findPluginById(PLUGINID_NATRON_VIEWER_GROUP, majorVersion, minorVersion);
     } else if ( pluginId == QString::fromUtf8("Dot") ) {
-        return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_DOT), majorVersion, minorVersion );
+        return _imp->findPluginById(PLUGINID_NATRON_DOT, majorVersion, minorVersion );
     } else if ( pluginId == QString::fromUtf8("DiskCache") ) {
-        return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_DISKCACHE), majorVersion, minorVersion);
+        return _imp->findPluginById(PLUGINID_NATRON_DISKCACHE, majorVersion, minorVersion);
     } else if ( pluginId == QString::fromUtf8("Backdrop") ) { // DO NOT change the capitalization, even if it's wrong
-        return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_BACKDROP), majorVersion, minorVersion);
+        return _imp->findPluginById(PLUGINID_NATRON_BACKDROP, majorVersion, minorVersion);
     } else if ( pluginId == QString::fromUtf8("RotoOFX  [Draw]") ) {
-        return _imp->findPluginById(QString::fromUtf8(PLUGINID_NATRON_ROTO), majorVersion, minorVersion);
+        return _imp->findPluginById(PLUGINID_NATRON_ROTO, majorVersion, minorVersion);
+    } else if ( ( caseSensitive && ( pluginId == QString::fromUtf8(PLUGINID_OFX_ROTO) ) ) || ( !caseSensitive && ( pluginId == QString::fromUtf8(PLUGINID_OFX_ROTO).toLower() ) ) )  {
+        return _imp->findPluginById(PLUGINID_NATRON_ROTO, majorVersion, minorVersion);
     }
 
     ///Try remapping these ids to old ids we had in Natron < 1.0 for backward-compat
     for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
         assert( !it->second.empty() );
         PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin();
-        QString friendlyLabel = (*itver)->getPluginLabel();
-        const QStringList& s = (*itver)->getGrouping();
-        QString grouping;
-        if (s.size() > 0) {
-            grouping = s[0];
-        }
-        friendlyLabel += QString::fromUtf8("  [") + grouping + QChar::fromLatin1(']');
+        std::string friendlyLabel = (*itver)->getPluginLabel();
+        std::string grouping0 = (*itver)->getPropertyUnsafe<std::string>(kNatronPluginPropGrouping, 0);
+        friendlyLabel.append("  [" + grouping0 + "]");
 
-        if (friendlyLabel == pluginId) {
+        if (friendlyLabel == pluginId.toStdString()) {
             if (majorVersion == -1) {
                 // -1 means we want to load the highest version existing
                 return *( it->second.rbegin() );
             }
 
             PluginsMap::const_iterator foundID = it;
-            
+
             // see also OFX::Host::PluginCache::getPluginById()
             // see also AppManager::getPluginBinary()
 
@@ -2272,7 +2450,7 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,
 
             // Try to find the exact major version, with the highest minor
             // (thus the reverse iterator)
-            Plugin* nextPlugin = *(foundID->second.rbegin());
+            PluginPtr nextPlugin = *(foundID->second.rbegin());
             int nextVersion = nextPlugin->getMajorVersion();
             for (PluginVersionsOrdered::const_reverse_iterator itver = foundID->second.rbegin(); itver != foundID->second.rend(); ++itver) {
                 int thisMajorVersion = (*itver)->getMajorVersion();
@@ -2295,19 +2473,19 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,
         }
     }
 
-    return 0;
+    return PluginPtr();
 }
 
-Plugin*
+PluginPtr
 AppManager::getPluginBinary(const QString & pluginId,
                             int majorVersion,
                             int minorVersion,
-                            bool convertToLowerCase) const
+                            bool caseSensitivePluginSearch) const
 {
     Q_UNUSED(minorVersion);
     
     PluginsMap::const_iterator foundID = _imp->_plugins.find( pluginId.toStdString() );
-    if ( convertToLowerCase && foundID == _imp->_plugins.end() ) {
+    if ( !caseSensitivePluginSearch && foundID == _imp->_plugins.end() ) {
         foundID = _imp->_plugins.end();
         for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
             QString pID = QString::fromUtf8( it->first.c_str() );
@@ -2346,10 +2524,12 @@ AppManager::getPluginBinary(const QString & pluginId,
 
         // Try to find the exact major version, with the highest minor
         // (thus the reverse iterator)
-        Plugin* nextPlugin = *(foundID->second.rbegin());
-        int nextVersion = nextPlugin->getMajorVersion();
-        for (PluginVersionsOrdered::const_reverse_iterator itver = foundID->second.rbegin(); itver != foundID->second.rend(); ++itver) {
-            int thisMajorVersion = (*itver)->getMajorVersion();
+        PluginPtr nextPlugin = *(foundID->second.rbegin());
+        int nextVersion = (int)nextPlugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0);
+        for (PluginVersionsOrdered::const_reverse_iterator itver = foundID->second.rbegin();
+             itver != foundID->second.rend();
+             ++itver) {
+            int thisMajorVersion = (int)(*itver)->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0);
             if (thisMajorVersion == majorVersion) {
                 return *itver;
             } else if (thisMajorVersion > majorVersion &&
@@ -2372,175 +2552,143 @@ AppManager::getPluginBinary(const QString & pluginId,
                   .arg(majorVersion);
 
     throw std::invalid_argument( exc.toStdString() );
-
-    return 0;
+    //return PluginPtr();
 }
 
-EffectInstancePtr
-AppManager::createOFXEffect(NodePtr node,
-                            const CreateNodeArgs& args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                            ,
-                            bool allowFileDialogs,
-                            bool *hasUsedFileDialog
-#endif
-                            ) const
+
+NodePtr
+AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSerializationPtr& serialization, const NodeCollectionPtr& group)
 {
-    return _imp->ofxHost->createOfxEffect(node, args
-#ifndef NATRON_ENABLE_IO_META_NODES
-                                          , allowFileDialogs,
-                                          hasUsedFileDialog
-#endif
-                                          );
-}
 
-void
-AppManager::removeFromNodeCache(const boost::shared_ptr<Image> & image)
-{
-    _imp->_nodeCache->removeEntry(image);
-}
+    NodePtr retNode = group->getNodeByName(serialization->_nodeScriptName);
 
-void
-AppManager::removeFromViewerCache(const FrameEntryPtr & texture)
-{
-    _imp->_viewerCache->removeEntry(texture);
-}
 
-void
-AppManager::removeFromNodeCache(U64 hash)
-{
-    _imp->_nodeCache->removeEntry(hash);
-}
+    {
+        CreateNodeArgsPtr args(CreateNodeArgs::create(serialization->_pluginID, group));
+        args->setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMajorVersion, 0);
+        args->setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMinorVersion, 1);
+        args->setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization, serialization);
+        args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
+        args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true); // also load deprecated plugins
+        retNode =  group->getApplication()->createNode(args);
+    }
+    if (retNode) {
+        return retNode;
+    }
+    
+    // If the node could not be created, make a Stub node
+    {
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_STUB, group));
 
-void
-AppManager::removeFromViewerCache(U64 hash)
-{
-    _imp->_viewerCache->removeEntry(hash);
-}
-
-void
-AppManager::getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
-                                              std::size_t* ramOccupied,
-                                              std::size_t* diskOccupied) const
-{
-    assert(holder);
-
-    *ramOccupied = 0;
-    *diskOccupied = 0;
-
-    std::size_t viewerCacheMem = 0;
-    std::size_t viewerCacheDisk = 0;
-    std::size_t diskCacheMem = 0;
-    std::size_t diskCacheDisk = 0;
-    std::size_t nodeCacheMem = 0;
-    std::size_t nodeCacheDisk = 0;
-    const Node* isNode = dynamic_cast<const Node*>(holder);
-    if (isNode) {
-        ViewerInstance* isViewer = isNode->isEffectViewer();
-        if (isViewer) {
-            _imp->_viewerCache->getMemoryStatsForCacheEntryHolder(holder, &viewerCacheMem, &viewerCacheDisk);
+        std::stringstream ss;
+        try {
+            SERIALIZATION_NAMESPACE::write(ss, *serialization, std::string());
+        } catch (...) {
+            return retNode;
         }
+        
+        args->addParamDefaultValue<std::string>(kStubNodeParamSerialization, ss.str());
+        args->setProperty<bool>(kCreateNodeArgsPropSilent, true); // also load deprecated plugins
+        args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, serialization->_nodeScriptName);
+        retNode = group->getApplication()->createNode(args);
+
     }
-    _imp->_diskCache->getMemoryStatsForCacheEntryHolder(holder, &diskCacheMem, &diskCacheDisk);
-    _imp->_nodeCache->getMemoryStatsForCacheEntryHolder(holder, &nodeCacheMem, &nodeCacheDisk);
+    return retNode;
+}
 
-    *ramOccupied = diskCacheMem + viewerCacheMem + nodeCacheMem;
-    *diskOccupied = diskCacheDisk + viewerCacheDisk + nodeCacheDisk;
+CacheBasePtr
+AppManager::getGeneralPurposeCache() const
+{
+    return _imp->generalPurposeCache;
+}
+
+CacheBasePtr
+AppManager::getTileCache() const
+{
+    return _imp->tileCache;
 }
 
 void
-AppManager::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder,
-                                                                  U64 treeVersion)
+AppManager::deleteCacheEntriesInSeparateThread(const std::list<ImageStorageBasePtr> & entriesToDelete)
 {
-    _imp->_nodeCache->removeAllEntriesWithDifferentNodeHashForHolderPublic(holder, treeVersion);
+    _imp->storageDeleteThread->appendToQueue(entriesToDelete);
 }
 
 void
-AppManager::removeAllImagesFromDiskCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder,
-                                                                      U64 treeVersion)
+AppManager::checkCachesMemory()
 {
-    _imp->_diskCache->removeAllEntriesWithDifferentNodeHashForHolderPublic(holder, treeVersion);
+    _imp->storageDeleteThread->checkCachesMemory();
 }
 
 void
-AppManager::removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder,
-                                                                    U64 treeVersion)
+AppManager::printCacheMemoryStats() const
 {
-    _imp->_viewerCache->removeAllEntriesWithDifferentNodeHashForHolderPublic(holder, treeVersion);
-}
+    appPTR->clearErrorLog_mt_safe();
+    std::map<std::string, CacheReportInfo> infos;
+    _imp->tileCache->getMemoryStats(&infos);
 
-void
-AppManager::removeAllCacheEntriesForHolder(const CacheEntryHolder* holder,
-                                           bool blocking)
-{
-    _imp->_nodeCache->removeAllEntriesForHolderPublic(holder, blocking);
-    _imp->_diskCache->removeAllEntriesForHolderPublic(holder, blocking);
-    _imp->_viewerCache->removeAllEntriesForHolderPublic(holder, blocking);
-}
 
-const QString &
-AppManager::getApplicationBinaryPath() const
-{
-    return _imp->_binaryPath;
-}
+    QString reportStr;
+    std::size_t totalBytes = 0;
+    int totalNEntries = 0;
+    reportStr += QLatin1String("\n");
+    if (!infos.empty()) {
+        for (std::map<std::string, CacheReportInfo>::iterator it = infos.begin(); it!= infos.end(); ++it) {
+            if (it->second.nBytes == 0) {
+                continue;
+            }
+            totalBytes += it->second.nBytes;
+            totalNEntries += it->second.nEntries;
+            
+            reportStr += QString::fromUtf8(it->first.c_str());
+            reportStr += QLatin1String("--> ");
+            if (it->second.nBytes > 0) {
+                reportStr += printAsRAM(it->second.nBytes);
+            }
 
-void
-AppManager::setNumberOfThreads(int threadsNb)
-{
-    if (_imp->_settings) {
-        _imp->_settings->setNumberOfThreads(threadsNb);
+            if (it->second.nEntries > 0) {
+                reportStr += tr(" taken by %1 entries").arg(QString::number(it->second.nEntries));
+            }
+            reportStr += QLatin1String("\n");
+        }
+        reportStr += QLatin1String("-------------------------------\n");
     }
+    reportStr += tr("Total");
+    reportStr += QLatin1String("--> ");
+    reportStr += printAsRAM(totalBytes);
+    reportStr += tr(" taken by %1 cache entries.").arg(QString::number(totalNEntries));
+
+    appPTR->writeToErrorLog_mt_safe(tr("Cache Report"), QDateTime::currentDateTime(), reportStr);
+
+    appPTR->showErrorLog();
+} // printCacheMemoryStats
+
+
+
+std::string
+AppManager::getApplicationBinaryFilePath() const
+{
+    return _imp->binaryPath;
 }
 
-bool
-AppManager::getImage(const ImageKey & key,
-                     std::list<boost::shared_ptr<Image> >* returnValue) const
+std::string
+AppManager::getApplicationBinaryDirPath() const
 {
-    return _imp->_nodeCache->get(key, returnValue);
+    std::size_t foundSlash = _imp->binaryPath.find_last_of('/');
+    if (foundSlash == std::string::npos) {
+        return std::string();
+    }
+    return _imp->binaryPath.substr(0, foundSlash);
 }
 
-bool
-AppManager::getImageOrCreate(const ImageKey & key,
-                             const boost::shared_ptr<ImageParams>& params,
-                             boost::shared_ptr<Image>* returnValue) const
+
+TreeRenderQueueManagerPtr
+AppManager::getTasksQueueManager() const
 {
-    return _imp->_nodeCache->getOrCreate(key, params, 0, returnValue);
-}
-
-bool
-AppManager::getImage_diskCache(const ImageKey & key,
-                               std::list<boost::shared_ptr<Image> >* returnValue) const
-{
-    return _imp->_diskCache->get(key, returnValue);
-}
-
-bool
-AppManager::getImageOrCreate_diskCache(const ImageKey & key,
-                                       const boost::shared_ptr<ImageParams>& params,
-                                       boost::shared_ptr<Image>* returnValue) const
-{
-    return _imp->_diskCache->getOrCreate(key, params, 0, returnValue);
-}
-
-bool
-AppManager::getTexture(const FrameKey & key,
-                       std::list<FrameEntryPtr>* returnValue) const
-{
-    std::list<FrameEntryPtr > retList;
-    bool ret =  _imp->_viewerCache->get(key, &retList);
-
-    *returnValue = retList;
-
-    return ret;
-}
-
-bool
-AppManager::getTextureOrCreate(const FrameKey & key,
-                               const boost::shared_ptr<FrameParams>& params,
-                               FrameEntryLocker* locker,
-                               FrameEntryPtr* returnValue) const
-{
-    return _imp->_viewerCache->getOrCreate(key, params, locker, returnValue);
+    return _imp->tasksQueueManager;
 }
 
 bool
@@ -2549,28 +2697,42 @@ AppManager::isAggressiveCachingEnabled() const
     return _imp->_settings->isAggressiveCachingEnabled();
 }
 
-U64
-AppManager::getCachesTotalMemorySize() const
-{
-    return  _imp->_nodeCache->getMemoryCacheSize();
-}
 
-U64
-AppManager::getCachesTotalDiskSize() const
-{
-    return  _imp->_diskCache->getDiskCacheSize() + _imp->_viewerCache->getDiskCacheSize();
-}
-
-boost::shared_ptr<CacheSignalEmitter>
-AppManager::getOrActivateViewerCacheSignalEmitter() const
-{
-    return _imp->_viewerCache->activateSignalEmitter();
-}
 
 SettingsPtr AppManager::getCurrentSettings() const
 {
     return _imp->_settings;
 }
+
+
+std::string
+AppManager::getCacheDirPath() const
+{
+    // Use the environment variable if set
+    QString cachePathEnVar = QString::fromUtf8(qgetenv(NATRON_DISK_CACHE_PATH_ENV_VAR));
+    QString cachePath;
+    if (cachePathEnVar.isEmpty()) {
+        // Otherwise fallback on the setting
+        cachePath = QString::fromUtf8(appPTR->getCurrentSettings()->getDiskCachePath().c_str());
+    } else {
+        cachePath = cachePathEnVar;
+    }
+    // Check that the user provided path exists otherwise fallback on default.
+    bool userDirExists;
+    if (cachePath.isEmpty()) {
+        userDirExists = false;
+    } else {
+        QDir d(cachePath);
+        userDirExists = d.exists();
+    }
+    if (userDirExists) {
+        return cachePath.toStdString();
+    } else {
+        // Fallback on default
+        return StandardPaths::writableLocation(StandardPaths::eStandardLocationCache).toStdString();
+    }
+}
+
 
 void
 AppManager::setLoadingStatus(const QString & str)
@@ -2581,10 +2743,10 @@ AppManager::setLoadingStatus(const QString & str)
     std::cout << str.toStdString() << std::endl;
 }
 
-AppInstPtr
+AppInstancePtr
 AppManager::makeNewInstance(int appID) const
 {
-    return boost::make_shared<AppInstance>(appID);
+    return AppInstance::create(appID);
 }
 
 void
@@ -2592,6 +2754,7 @@ AppManager::registerEngineMetaTypes() const
 {
     qRegisterMetaType<Variant>("Variant");
     qRegisterMetaType<Format>("Format");
+    qRegisterMetaType<U64>("U64");
     qRegisterMetaType<SequenceTime>("SequenceTime");
     qRegisterMetaType<StandardButtons>("StandardButtons");
     qRegisterMetaType<RectI>("RectI");
@@ -2599,78 +2762,19 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<RenderStatsPtr>("RenderStatsPtr");
     qRegisterMetaType<RenderStatsMap>("RenderStatsMap");
     qRegisterMetaType<ViewIdx>("ViewIdx");
-    qRegisterMetaType<ViewSpec>("ViewSpec");
-    qRegisterMetaType<boost::shared_ptr<Node> >("boost::shared_ptr<Node>");
+    qRegisterMetaType<ViewSetSpec>("ViewSetSpec");
+    qRegisterMetaType<NodePtr>("NodePtr");
+    qRegisterMetaType<ViewerInstancePtr>("ViewerInstancePtr");
     qRegisterMetaType<std::list<double> >("std::list<double>");
+    qRegisterMetaType<DimIdx>("DimIdx");
+    qRegisterMetaType<DimSpec>("DimSpec");
+    qRegisterMetaType<ViewerNodePtr>("ViewerNodePtr");
+    qRegisterMetaType<ValueChangedReturnCodeEnum>("ValueChangedReturnCodeEnum");
+    qRegisterMetaType<ValueChangedReasonEnum>("ValueChangedReasonEnum");
+    qRegisterMetaType<DimensionViewPair>("DimensionViewPair");
+    qRegisterMetaType<PerDimViewKeyFramesMap>("PerDimViewKeyFramesMap");
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
-#endif
-}
-
-void
-AppManager::refreshDiskCacheLocation()
-{
-    QMutexLocker k(&_imp->diskCachesLocationMutex);
-    QString path = QString::fromUtf8(qgetenv(NATRON_DISK_CACHE_PATH_ENV_VAR));
-    if ( !path.isEmpty() ) {
-        QDir d(path);
-        // create the full path if the directory does not exist
-        if ( d.exists() || d.mkpath(path) ) {
-            _imp->diskCachesLocation = path;
-            return;
-        }
-    }
-    _imp->diskCachesLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
-}
-
-const QString&
-AppManager::getDiskCacheLocation() const
-{
-    QMutexLocker k(&_imp->diskCachesLocationMutex);
-
-    return _imp->diskCachesLocation;
-}
-
-bool
-AppManager::isNCacheFilesOpenedCapped() const
-{
-    QMutexLocker l(&_imp->currentCacheFilesCountMutex);
-
-    return _imp->currentCacheFilesCount >= _imp->maxCacheFiles;
-}
-
-size_t
-AppManager::getNCacheFilesOpened() const
-{
-    QMutexLocker l(&_imp->currentCacheFilesCountMutex);
-
-    return _imp->currentCacheFilesCount;
-}
-
-void
-AppManager::increaseNCacheFilesOpened()
-{
-    QMutexLocker l(&_imp->currentCacheFilesCountMutex);
-
-    ++_imp->currentCacheFilesCount;
-#ifdef DEBUG
-    if (_imp->currentCacheFilesCount > _imp->maxCacheFiles) {
-        qDebug() << "Cache has more files opened than the limit allowed:" << _imp->currentCacheFilesCount << '/' << _imp->maxCacheFiles;
-    }
-#endif
-#ifdef NATRON_DEBUG_CACHE
-    qDebug() << "N Cache Files Opened:" << _imp->currentCacheFilesCount;
-#endif
-}
-
-void
-AppManager::decreaseNCacheFilesOpened()
-{
-    QMutexLocker l(&_imp->currentCacheFilesCountMutex);
-
-    --_imp->currentCacheFilesCount;
-#ifdef NATRON_DEBUG_CACHE
-    qDebug() << "NFiles Opened:" << _imp->currentCacheFilesCount;
 #endif
 }
 
@@ -2705,32 +2809,13 @@ AppManager::onQueueRendersChanged(bool queuingEnabled)
 int
 AppManager::exec()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
     return qApp->exec();
 }
 
-void
-AppManager::onNodeMemoryRegistered(qint64 mem)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
 
-    if ( ( (qint64)_imp->_nodesGlobalMemoryUse + mem ) < 0 ) {
-        qDebug() << "Memory underflow...a node is trying to release more memory than it registered.";
-        _imp->_nodesGlobalMemoryUse = 0;
-
-        return;
-    }
-
-    _imp->_nodesGlobalMemoryUse += mem;
-}
-
-qint64
-AppManager::getTotalNodesMemoryRegistered() const
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->_nodesGlobalMemoryUse;
-}
 
 void
 AppManager::getErrorLog_mt_safe(std::list<LogEntry>* entries) const
@@ -2839,43 +2924,6 @@ AppManager::qt_tildeExpansion(const QString &path,
 
 #endif
 
-bool
-AppManager::isNodeCacheAlmostFull() const
-{
-    std::size_t nodeCacheSize = _imp->_nodeCache->getMemoryCacheSize();
-    std::size_t nodeMaxCacheSize = _imp->_nodeCache->getMaximumMemorySize();
-
-    if (nodeMaxCacheSize == 0) {
-        return true;
-    }
-
-    if ( (double)nodeCacheSize / nodeMaxCacheSize >= NATRON_CACHE_LIMIT_PERCENT ) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-void
-AppManager::checkCacheFreeMemoryIsGoodEnough()
-{
-    ///Before allocating the memory check that there's enough space to fit in memory
-    size_t systemRAMToKeepFree = getSystemTotalRAM() * appPTR->getCurrentSettings()->getUnreachableRamPercent();
-    size_t totalFreeRAM = getAmountFreePhysicalRAM();
-
-    while (totalFreeRAM <= systemRAMToKeepFree) {
-#ifdef NATRON_DEBUG_CACHE
-        qDebug() << "Total system free RAM is below the threshold:" << printAsRAM(totalFreeRAM)
-        << ", clearing least recently used NodeCache image...";
-#endif
-        if ( !_imp->_nodeCache->evictLRUInMemoryEntry() ) {
-            break;
-        }
-
-
-        totalFreeRAM = getAmountFreePhysicalRAM();
-    }
-}
 
 void
 AppManager::onOCIOConfigPathChanged(const std::string& path)
@@ -2900,68 +2948,72 @@ AppManager::getOCIOConfigPath() const
 }
 
 void
-AppManager::setNThreadsToRender(int nThreads)
+AppManager::setOFXLastActionCaller_TLS(const OfxEffectInstancePtr& effect)
 {
-    QMutexLocker l(&_imp->nThreadsMutex);
+    _imp->ofxHost->setOFXLastActionCaller_TLS(effect);
+}
 
-    _imp->nThreadsToRender = nThreads;
+OfxEffectInstancePtr
+AppManager::getOFXCurrentEffect_TLS() const
+{
+    return _imp->ofxHost->getCurrentEffect_TLS();
 }
 
 void
-AppManager::getNThreadsSettings(int* nThreadsToRender,
-                                int* nThreadsPerEffect) const
+AppManager::setLastPythonAPICaller_TLS(const EffectInstancePtr& effect)
 {
-    QMutexLocker l(&_imp->nThreadsMutex);
+    PythonTLSDataPtr tls = _imp->pythonTLS->getOrCreateTLSData();
+    tls->pythonEffectStack.push_back(effect);
+}
 
-    *nThreadsToRender = _imp->nThreadsToRender;
-    *nThreadsPerEffect = _imp->nThreadsPerEffect;
+
+EffectInstancePtr
+AppManager::getLastPythonAPICaller_TLS() const
+{
+    PythonTLSDataPtr tls = _imp->pythonTLS->getTLSData();
+    if (!tls) {
+        return EffectInstancePtr();
+    }
+    if (tls->pythonEffectStack.empty()) {
+        return EffectInstancePtr();
+    }
+    return tls->pythonEffectStack.back();
 }
 
 void
-AppManager::setNThreadsPerEffect(int nThreadsPerEffect)
+AppManager::addMenuCommand(const std::string& grouping,
+                    const std::string& pythonFunction,
+                    const KeyboardModifiers& modifiers,
+                    Key key)
 {
-    QMutexLocker l(&_imp->nThreadsMutex);
+    QStringList split = QString::fromUtf8(grouping.c_str()).split( QLatin1Char('/') );
 
-    _imp->nThreadsPerEffect = nThreadsPerEffect;
+    if ( grouping.empty() || split.isEmpty() ) {
+        return;
+    }
+    PythonUserCommand c;
+    c.grouping = QString::fromUtf8(grouping.c_str());
+    c.pythonFunction = pythonFunction;
+    c.key = key;
+    c.modifiers = modifiers;
+    _imp->pythonCommands.push_back(c);
+
+
+    std::string actionID = split[split.size() - 1].toStdString();
+    getCurrentSettings()->addKeybind(kShortcutGroupGlobal, actionID, actionID, "", modifiers, key);
+
 }
+
+
+const std::list<PythonUserCommand>&
+AppManager::getUserPythonCommands() const
+{
+    return _imp->pythonCommands;
+}
+
 
 void
-AppManager::setUseThreadPool(bool useThreadPool)
-{
-    QMutexLocker l(&_imp->nThreadsMutex);
-
-    _imp->useThreadPool = useThreadPool;
-}
-
-bool
-AppManager::getUseThreadPool() const
-{
-    QMutexLocker l(&_imp->nThreadsMutex);
-
-    return _imp->useThreadPool;
-}
-
-void
-AppManager::fetchAndAddNRunningThreads(int nThreads)
-{
-    _imp->runningThreadsCount.fetchAndAddRelaxed(nThreads);
-}
-
-int
-AppManager::getNRunningThreads() const
-{
-    return (int)_imp->runningThreadsCount;
-}
-
-void
-AppManager::setThreadAsActionCaller(OfxImageEffectInstance* instance,
-                                    bool actionCaller)
-{
-    _imp->ofxHost->setThreadAsActionCaller(instance, actionCaller);
-}
-
-void
-AppManager::requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance,
+AppManager::requestOFXDIalogOnMainThread(const OfxEffectInstancePtr& instance,
                                          void* instanceData)
 {
     if ( QThread::currentThread() == qApp->thread() ) {
@@ -2972,23 +3024,23 @@ AppManager::requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance,
 }
 
 void
-AppManager::onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance,
+AppManager::onOFXDialogOnMainThreadReceived(const OfxEffectInstancePtr& instanceParam,
                                             void* instanceData)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (instance == NULL) {
+
+    OfxEffectInstancePtr instance;
+    if (!instanceParam) {
         // instance may be NULL if using OfxDialogSuiteV1
-        OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
-        instance = tls->lastEffectCallingMainEntry;
+        instance = _imp->ofxHost->getCurrentEffect_TLS();
     } else {
 #ifdef DEBUG
-        OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
-        assert(instance == tls->lastEffectCallingMainEntry);
+        assert(instanceParam == _imp->ofxHost->getCurrentEffect_TLS());
 #endif
     }
 #ifdef OFX_SUPPORTS_DIALOG
     if (instance) {
-        instance->dialog(instanceData);
+        instance->effectInstance()->dialog(instanceData);
     }
 #else
     Q_UNUSED(instanceData);
@@ -3065,261 +3117,27 @@ AppManager::initPython()
 
     return;
 #endif
-    //Disable user sites as they could conflict with Natron bundled packages.
-    //If this is set, Python won’t add the user site-packages directory to sys.path.
-    //See https://www.python.org/dev/peps/pep-0370/
-    qputenv("PYTHONNOUSERSITE", "1");
-    ++Py_NoUserSiteDirectory;
 
-    //
-    // set up paths, clear those that don't exist or are not valid
-    //
-    QString binPath = QCoreApplication::applicationDirPath();
-    binPath = QDir::toNativeSeparators(binPath);
-#ifdef __NATRON_WIN32__
-    static std::string pythonHome = binPath.toStdString() + "\\.."; // must use static storage
-    QString pyPathZip = QString::fromUtf8( (pythonHome + "\\lib\\python" NATRON_PY_VERSION_STRING_NO_DOT ".zip").c_str() );
-    QString pyPath = QString::fromUtf8( (pythonHome +  "\\lib\\python" NATRON_PY_VERSION_STRING).c_str() );
-    QString pluginPath = binPath + QString::fromUtf8("\\..\\Plugins");
-#else
-#  if defined(__NATRON_LINUX__)
-    static std::string pythonHome = binPath.toStdString() + "/.."; // must use static storage
-#  elif defined(__NATRON_OSX__)
-    static std::string pythonHome = binPath.toStdString() + "/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING; // must use static storage
-#  else
-#    error "unsupported platform"
-#  endif
-    QString pyPathZip = QString::fromUtf8( (pythonHome + "/lib/python" NATRON_PY_VERSION_STRING_NO_DOT ".zip").c_str() );
-    QString pyPath = QString::fromUtf8( (pythonHome + "/lib/python" NATRON_PY_VERSION_STRING).c_str() );
-    QString pluginPath = binPath + QString::fromUtf8("/../Plugins");
-#endif
-    if ( !QFile( QDir::fromNativeSeparators(pyPathZip) ).exists() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pyPathZip.toStdString().c_str() );
-#     endif
-        pyPathZip.clear();
-    }
-    if ( !QDir( QDir::fromNativeSeparators(pyPath) ).exists() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pyPath.toStdString().c_str() );
-#     endif
-        pyPath.clear();
-    }
-    if ( !QDir( QDir::fromNativeSeparators(pluginPath) ).exists() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pluginPath.toStdString().c_str() );
-#     endif
-        pluginPath.clear();
-    }
-    // PYTHONHOME is really useful if there's a python inside it
-    if ( pyPathZip.isEmpty() && pyPath.isEmpty() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "dir \"%s\" does not exist or does not contain lib/python*, not setting PYTHONHOME\n", pythonHome.c_str() );
-#     endif
-        pythonHome.clear();
-    }
-    /////////////////////////////////////////
-    // Py_SetPythonHome
-    /////////////////////////////////////////
-    //
-    // Must be done before Py_Initialize (see doc of Py_Initialize)
-    //
-    // The argument should point to a zero-terminated character string in static storage whose contents will not change for the duration of the program’s execution
+    NATRON_PYTHON_NAMESPACE::setupPythonEnv(_imp->commandLineArgsUtf8[0]);
 
-    if ( !pythonHome.empty() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "Py_SetPythonHome(\"%s\")\n", pythonHome.c_str() );
-#     endif
-#     if PY_MAJOR_VERSION >= 3
-        // Python 3
-        static const std::wstring pythonHomeW = StrUtils::utf8_to_utf16(pythonHome); // must use static storage
-        Py_SetPythonHome( const_cast<wchar_t*>( pythonHomeW.c_str() ) );
-#     else
-        // Python 2
-        Py_SetPythonHome( const_cast<char*>( pythonHome.c_str() ) );
-#     endif
-    }
-
-    /////////////////////////////////////////
-    // PYTHONPATH and Py_SetPath
-    /////////////////////////////////////////
-    //
-    // note: to check the python path of a python install, execute:
-    // python -c 'import sys,pprint; pprint.pprint( sys.path )'
-    //
-    // to build the python27.zip, cd to lib/python2.7, and generate the pyo and the zip file using:
-    //
-    //  python -O -m compileall .
-    //  zip -r ../python27.zip *.py* bsddb compiler ctypes curses distutils email encodings hotshot idlelib importlib json logging multiprocessing pydoc_data sqlite3 unittest wsgiref xml
-    //
-    QString pythonPath = QString::fromUtf8( qgetenv("PYTHONPATH") );
-    //Add the Python distribution of Natron to the Python path
-
-    QStringList toPrepend;
-    if ( !pyPathZip.isEmpty() ) {
-        toPrepend.append(pyPathZip);
-    }
-    if ( !pyPath.isEmpty() ) {
-        toPrepend.append(pyPath);
-    }
-    if ( !pluginPath.isEmpty() ) {
-        toPrepend.append(pluginPath);
-    }
-
-#if defined(__NATRON_OSX__) && defined DEBUG
-    // in debug mode, also prepend the local PySide directory
-    // homebrew's pyside directory
-    toPrepend.append( QString::fromUtf8("/usr/local/Cellar/pyside/1.2.2_1/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
-    // macport's pyside directory
-    toPrepend.append( QString::fromUtf8("/opt/local/Library/Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
-#endif
-
-    if ( toPrepend.isEmpty() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf("PYTHONPATH not modified\n");
-#     endif
-    } else {
-#     ifdef __NATRON_WIN32__
-        const QChar pathSep = QChar::fromLatin1(';');
-#     else
-        const QChar pathSep = QChar::fromLatin1(':');
-#     endif
-        QString toPrependStr = toPrepend.join(pathSep);
-        if (pythonPath.isEmpty()) {
-            pythonPath = toPrependStr;
-        } else {
-            pythonPath = toPrependStr + pathSep + pythonPath;
-        }
-        // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
-#     if 0//def __NATRON_WIN32__
-        _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath.toStdString()).c_str());
-#     else
-        std::string pythonPathString = pythonPath.toStdString();
-        qputenv( "PYTHONPATH", pythonPathString.c_str() );
-        //Py_SetPath( pythonPathString.c_str() ); // does not exist in Python 2
-#     endif
-#     if PY_MAJOR_VERSION >= 3
-        std::wstring pythonPathString = StrUtils::utf8_to_utf16( pythonPath.toStdString() );
-        Py_SetPath( pythonPathString.c_str() ); // argument is copied internally, no need to use static storage
-#     endif
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "PYTHONPATH set to %s\n", pythonPath.toStdString().c_str() );
-#     endif
-    }
-
-    /////////////////////////////////////////
-    // Py_SetProgramName
-    /////////////////////////////////////////
-    //
-    // Must be done before Py_Initialize (see doc of Py_Initialize)
-    //
-#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-    printf( "Py_SetProgramName(\"%s\")\n", _imp->commandLineArgsUtf8[0] );
-#endif
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
-    Py_SetProgramName(_imp->commandLineArgsWide[0]);
-#else
-    // Python 2
-    Py_SetProgramName(_imp->commandLineArgsUtf8[0]);
-#endif
-
-
-    ///Must be called prior to Py_Initialize (calls PyImport_AppendInittab())
+    // Must be called prior to Py_Initialize (calls PyImport_AppendInittab())
     initBuiltinPythonModules();
 
-    //See https://developer.blender.org/T31507
-    //Python will not load anything in site-packages if this is set
-    //We are sure that nothing in system wide site-packages is loaded, for instance on OS X with Python installed
-    //through macports on the system, the following printf show the following:
-
-    /*Py_GetProgramName is /Applications/Natron.app/Contents/MacOS/Natron
-       Py_GetPrefix is /Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7
-       Py_GetExecPrefix is /Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7
-       Py_GetProgramFullPath is /Applications/Natron.app/Contents/MacOS/Natron
-       Py_GetPath is /Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7:/Applications/Natron.app/Contents/MacOS/../Plugins:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python27.zip:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/plat-darwin:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/plat-mac:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/plat-mac/lib-scriptpackages:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-tk:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-old:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-dynload
-       Py_GetPythonHome is ../Frameworks/Python.framework/Versions/2.7/lib
-       Python library is in /Applications/Natron.app/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages*/
-
-    //Py_NoSiteFlag = 1;
-
-
-    /////////////////////////////////////////
-    // Py_Initialize
-    /////////////////////////////////////////
-    //
-    // Initialize the Python interpreter. In an application embedding Python, this should be called before using any other Python/C API functions; with the exception of Py_SetProgramName(), Py_SetPythonHome() and Py_SetPath().
-#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-    printf("Py_Initialize()\n");
-#endif
-    Py_Initialize();
-    // pythonHome must be const, so that the c_str() pointer is never invalidated
-
-    /////////////////////////////////////////
-    // PySys_SetArgv
-    /////////////////////////////////////////
-    //
 #if PY_MAJOR_VERSION >= 3
-    // Python 3
-    PySys_SetArgv( argc, &_imp->args.front() ); /// relative module import
+    _imp->mainModule = NATRON_PYTHON_NAMESPACE::initializePython3(_imp->commandLineArgsWide);
 #else
-    // Python 2
-    PySys_SetArgv( _imp->commandLineArgsUtf8.size(), &_imp->commandLineArgsUtf8.front() ); /// relative module import
+    _imp->mainModule = NATRON_PYTHON_NAMESPACE::initializePython2(_imp->commandLineArgsUtf8);
 #endif
-
-    _imp->mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
-
-    //See http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
-    //Python releases the GIL every 100 virtual Python instructions, we do not want that to happen in the middle of an expression.
-    //_PyEval_SetSwitchInterval(LONG_MAX);
-
-    //See answer for http://stackoverflow.com/questions/15470367/pyeval-initthreads-in-python-3-how-when-to-call-it-the-saga-continues-ad-naus
-    PyEval_InitThreads();
-
-    ///Do as per http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
-    ///All calls to the Python API should call PythonGILLocker beforehand.
-    //_imp->mainThreadState = PyGILState_GetThisThreadState();
-    //PyEval_ReleaseThread(_imp->mainThreadState);
 
     std::string err;
-#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-    /// print info about python lib
-    {
-        printf( "PATH is %s\n", Py_GETENV("PATH") );
-        printf( "PYTHONPATH is %s\n", Py_GETENV("PYTHONPATH") );
-        printf( "PYTHONHOME is %s\n", Py_GETENV("PYTHONHOME") );
-        printf( "Py_DebugFlag is %d\n", Py_DebugFlag );
-        printf( "Py_VerboseFlag is %d\n", Py_VerboseFlag );
-        printf( "Py_InteractiveFlag is %d\n", Py_InteractiveFlag );
-        printf( "Py_InspectFlag is %d\n", Py_InspectFlag );
-        printf( "Py_OptimizeFlag is %d\n", Py_OptimizeFlag );
-        printf( "Py_NoSiteFlag is %d\n", Py_NoSiteFlag );
-        printf( "Py_BytesWarningFlag is %d\n", Py_BytesWarningFlag );
-        printf( "Py_UseClassExceptionsFlag is %d\n", Py_UseClassExceptionsFlag );
-        printf( "Py_FrozenFlag is %d\n", Py_FrozenFlag );
-        printf( "Py_TabcheckFlag is %d\n", Py_TabcheckFlag );
-        printf( "Py_UnicodeFlag is %d\n", Py_UnicodeFlag );
-        printf( "Py_IgnoreEnvironmentFlag is %d\n", Py_IgnoreEnvironmentFlag );
-        printf( "Py_DivisionWarningFlag is %d\n", Py_DivisionWarningFlag );
-        printf( "Py_DontWriteBytecodeFlag is %d\n", Py_DontWriteBytecodeFlag );
-        printf( "Py_NoUserSiteDirectory is %d\n", Py_NoUserSiteDirectory );
-        printf( "Py_GetProgramName is %s\n", Py_GetProgramName() );
-        printf( "Py_GetPrefix is %s\n", Py_GetPrefix() );
-        printf( "Py_GetExecPrefix is %s\n", Py_GetPrefix() );
-        printf( "Py_GetProgramFullPath is %s\n", Py_GetProgramFullPath() );
-        printf( "Py_GetPath is %s\n", Py_GetPath() );
-        printf( "Py_GetPythonHome is %s\n", Py_GetPythonHome() );
-        bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript("from distutils.sysconfig import get_python_lib; print('Python library is in ' + get_python_lib())", &err, 0);
-        assert(ok);
-        Q_UNUSED(ok);
-    }
-#endif
+    // Import NatronEngine
     std::string modulename = NATRON_ENGINE_PYTHON_MODULE_NAME;
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nfrom math import *\nimport " + modulename, &err, 0);
     if (!ok) {
         throw std::runtime_error( tr("Error while loading python module %1: %2").arg( QString::fromUtf8( modulename.c_str() ) ).arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
     }
 
+    // Create NatronEngine.natron wrapper
     ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(modulename + ".natron = " + modulename + ".PyCoreApplication()\n", &err, 0);
     assert(ok);
     if (!ok) {
@@ -3327,6 +3145,7 @@ AppManager::initPython()
     }
 
     if ( !isBackground() ) {
+        // Import NatronGui
         modulename = NATRON_GUI_PYTHON_MODULE_NAME;
         ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nimport " + modulename, &err, 0);
         assert(ok);
@@ -3334,31 +3153,32 @@ AppManager::initPython()
             throw std::runtime_error( tr("Error while loading python module %1: %2").arg( QString::fromUtf8( modulename.c_str() ) ).arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
         }
 
+        // Create NatronGui.natron wrapper
         ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(modulename + ".natron = " +
                                                             modulename + ".PyGuiApplication()\n", &err, 0);
         assert(ok);
         if (!ok) {
             throw std::runtime_error( tr("Error while loading python module %1: %2").arg( QString::fromUtf8( modulename.c_str() ) ).arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
         }
+    }
 
-        //redirect stdout/stderr
-        std::string script(
-            "class StreamCatcher:\n"
-            "   def __init__(self):\n"
-            "       self.value = ''\n"
-            "   def write(self,txt):\n"
-            "       self.value += txt\n"
-            "   def clear(self):\n"
-            "       self.value = ''\n"
-            "catchOut = StreamCatcher()\n"
-            "catchErr = StreamCatcher()\n"
-            "sys.stdout = catchOut\n"
-            "sys.stderr = catchErr\n");
-        ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
-        assert(ok);
-        if (!ok) {
-            throw std::runtime_error( tr("Error while loading StreamCatcher: %1").arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
-        }
+    // redirect stdout/stderr
+    std::string script(
+                       "class StreamCatcher:\n"
+                       "   def __init__(self):\n"
+                       "       self.value = ''\n"
+                       "   def write(self,txt):\n"
+                       "       self.value += txt\n"
+                       "   def clear(self):\n"
+                       "       self.value = ''\n"
+                       "catchOut = StreamCatcher()\n"
+                       "catchErr = StreamCatcher()\n"
+                       "sys.stdout = catchOut\n"
+                       "sys.stderr = catchErr\n");
+    ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
+    assert(ok);
+    if (!ok) {
+        throw std::runtime_error( tr("Error while loading StreamCatcher: %1").arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
     }
 } // AppManager::initPython
 
@@ -3408,19 +3228,6 @@ AppManager::initBuiltinPythonModules()
 }
 
 void
-AppManager::setProjectCreatedDuringRC2Or3(bool b)
-{
-    _imp->lastProjectLoadedCreatedDuringRC2Or3 = b;
-}
-
-//To by-pass a bug introduced in RC3 with the serialization of bezier curves
-bool
-AppManager::wasProjectCreatedDuringRC2Or3() const
-{
-    return _imp->lastProjectLoadedCreatedDuringRC2Or3;
-}
-
-void
 AppManager::toggleAutoHideGraphInputs()
 {
     AppInstanceVec copy;
@@ -3462,7 +3269,7 @@ AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
     QMutexLocker k(&_imp->_appInstancesMutex);
 
     for (AppInstanceVec::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
-        boost::shared_ptr<Project> proj = (*it)->getProject();
+        ProjectPtr proj = (*it)->getProject();
         if (proj) {
             QString path = proj->getProjectPath();
             QString name = proj->getProjectFilename();
@@ -3680,7 +3487,11 @@ AppManager::getQtVersion() const
 QString
 AppManager::getCairoVersion() const
 {
-    return QString::fromUtf8(CAIRO_VERSION_STRING) + QString::fromUtf8(" / ") + QString::fromUtf8( cairo_version_string() );
+#ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
+    return RotoShapeRenderCairo::getCairoVersion();
+#else
+    return QString();
+#endif
 }
 
 
@@ -3719,6 +3530,12 @@ AppManager::getOFXHost() const
     return _imp->ofxHost.get();
 }
 
+const MultiThread*
+AppManager::getMultiThreadHandler() const
+{
+    return _imp->multiThreadSuite.get();
+}
+
 GPUContextPool*
 AppManager::getGPUContextPool() const
 {
@@ -3739,7 +3556,7 @@ Dialogs::errorDialog(const std::string & title,
                      bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->errorDialog(title, message, useHtml);
     } else {
@@ -3754,7 +3571,7 @@ Dialogs::errorDialog(const std::string & title,
                      bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->errorDialog(title, message, stopAsking, useHtml);
     } else {
@@ -3768,7 +3585,7 @@ Dialogs::warningDialog(const std::string & title,
                        bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->warningDialog(title, message, useHtml);
     } else {
@@ -3783,7 +3600,7 @@ Dialogs::warningDialog(const std::string & title,
                        bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->warningDialog(title, message, stopAsking, useHtml);
     } else {
@@ -3797,7 +3614,7 @@ Dialogs::informationDialog(const std::string & title,
                            bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->informationDialog(title, message, useHtml);
     } else {
@@ -3812,7 +3629,7 @@ Dialogs::informationDialog(const std::string & title,
                            bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->informationDialog(title, message, stopAsking, useHtml);
     } else {
@@ -3828,7 +3645,7 @@ Dialogs::questionDialog(const std::string & title,
                         StandardButtonEnum defaultButton)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         return topLvlInstance->questionDialog(title, message, useHtml, buttons, defaultButton);
     } else {
@@ -3848,7 +3665,7 @@ Dialogs::questionDialog(const std::string & title,
                         bool* stopAsking)
 {
     appPTR->hideSplashScreen();
-    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         return topLvlInstance->questionDialog(title, message, useHtml, buttons, defaultButton, stopAsking);
     } else {
@@ -3929,6 +3746,8 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
     PyObject* dict = PyModule_GetDict(mainModule);
 
+    PyErr_Clear();
+
     ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
     PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, 0);
     if (v) {
@@ -3993,58 +3812,34 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
             }
         }
     }
-    if ( !appPTR->isBackground() ) {
-        ///Gui session, do stdout, stderr redirection
-        PyObject *errCatcher = 0;
-        PyObject *outCatcher = 0;
 
-        if ( error && PyObject_HasAttrString(mainModule, "catchErr") ) {
-            errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
-        }
-
-        if ( output && PyObject_HasAttrString(mainModule, "catchOut") ) {
-            outCatcher = PyObject_GetAttrString(mainModule, "catchOut"); //get our catchOutErr created above, new ref
-        }
-
-        PyErr_Print(); //make python print any errors
-
-        PyObject *errorObj = 0;
-        if (errCatcher && error) {
-            errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
-            assert(errorObj);
-            *error += PyStringToStdString(errorObj);
-            PyObject* unicode = PyUnicode_FromString("");
-            PyObject_SetAttrString(errCatcher, "value", unicode);
-            Py_DECREF(errorObj);
-            Py_DECREF(errCatcher);
-        }
-        PyObject *outObj = 0;
-        if (outCatcher && output) {
-            outObj = PyObject_GetAttrString(outCatcher, "value"); //get the stdout from our catchOut object, new ref
-            assert(outObj);
-            *output = PyStringToStdString(outObj);
-            PyObject* unicode = PyUnicode_FromString("");
-            PyObject_SetAttrString(outCatcher, "value", unicode);
-            Py_DECREF(outObj);
-            Py_DECREF(outCatcher);
-        }
-
-        if ( error && !error->empty() ) {
-            *error = "While executing script:\n" + script + "Python error:\n" + *error;
-
-            return false;
-        }
-
-        return v != NULL;
-    } else {
-        if (ex) {
-            PyErr_Print();
-
-            return false;
-        } else {
-            return v != NULL;
-        }
+    if (error) {
+        *error += NATRON_PYTHON_NAMESPACE::getPythonStdErr();
     }
+    if (output) {
+        *output = NATRON_PYTHON_NAMESPACE::getPythonStdOut();
+    }
+
+
+    if (error && !error->empty()) {
+        std::stringstream ss;
+        ss << "While executing script:" << std::endl;
+
+        if (script.size() > 500) {
+            std::string truncScript = script.substr(0,500);
+            ss << truncScript << "...";
+        } else {
+            ss << script;
+        }
+        ss << std::endl;
+        ss << "Python error:" << std::endl;
+        ss << *error;
+        *error = ss.str();
+        return false;
+    }
+
+    return v != NULL;
+
 } // NATRON_PYTHON_NAMESPACE::interpretPythonScript
 
 #if 0 // dead code
@@ -4114,7 +3909,9 @@ NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(const std::string& str)
 PythonGILLocker::PythonGILLocker()
 //    : state(PyGILState_UNLOCKED)
 {
-    appPTR->takeNatronGIL();
+    if (appPTR) {
+        appPTR->takeNatronGIL();
+    }
 //    ///Take the GIL for this thread
 //    state = PyGILState_Ensure();
 //    assert(PyThreadState_Get());
@@ -4125,7 +3922,9 @@ PythonGILLocker::PythonGILLocker()
 
 PythonGILLocker::~PythonGILLocker()
 {
-    appPTR->releaseNatronGIL();
+    if (appPTR) {
+        appPTR->releaseNatronGIL();
+    }
 
 //#if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
 //    assert(PyGILState_Check());  // Not available prior to Python 3.4
@@ -4136,13 +3935,13 @@ PythonGILLocker::~PythonGILLocker()
 }
 
 static bool
-getGroupInfosInternal(const std::string& modulePath,
-                      const std::string& pythonModule,
+getGroupInfosInternal(const std::string& pythonModule,
                       std::string* pluginID,
                       std::string* pluginLabel,
                       std::string* iconFilePath,
                       std::string* grouping,
                       std::string* description,
+                      std::string* pythonScriptDirPath,
                       bool* isToolset,
                       unsigned int* version)
 {
@@ -4152,6 +3951,7 @@ getGroupInfosInternal(const std::string& modulePath,
 #endif
     PythonGILLocker pgl;
     static const QString script = QString::fromUtf8("import sys\n"
+                                                    "import os.path\n"
                                                     "import %1\n"
                                                     "ret = True\n"
                                                     "if not hasattr(%1,\"createInstance\") or not hasattr(%1.createInstance,\"__call__\"):\n"
@@ -4164,6 +3964,7 @@ getGroupInfosInternal(const std::string& modulePath,
                                                     "pluginID = templateLabel\n"
                                                     "version = 1\n"
                                                     "isToolset = False\n"
+                                                    "pythonScriptAbsFilePath = os.path.dirname(%1.__file__)\n"
                                                     "if hasattr(%1,\"getVersion\") and hasattr(%1.getVersion,\"__call__\"):\n"
                                                     "    version = %1.getVersion()\n"
                                                     "if hasattr(%1,\"getIsToolset\") and hasattr(%1.getIsToolset,\"__call__\"):\n"
@@ -4202,6 +4003,10 @@ getGroupInfosInternal(const std::string& modulePath,
 
     std::string deleteScript("del ret\n"
                              "del templateLabel\n");
+
+    PyObject* pythonScriptFilePathObj = 0;
+    pythonScriptFilePathObj = PyObject_GetAttrString(mainModule, "pythonScriptAbsFilePath"); //new ref
+
     PyObject* labelObj = 0;
     labelObj = PyObject_GetAttrString(mainModule, "templateLabel"); //new ref
 
@@ -4232,12 +4037,27 @@ getGroupInfosInternal(const std::string& modulePath,
         pluginDescriptionObj = PyObject_GetAttrString(mainModule, "description"); //new ref
     }
 
-    assert(labelObj);
+    assert(labelObj && pythonScriptFilePathObj);
 
+
+    QString modulePath;
+    {
+        std::string modulePYCAbsoluteFilePath = NATRON_PYTHON_NAMESPACE::PyStringToStdString(pythonScriptFilePathObj);
+#ifdef IS_PYTHON_2
+        modulePath = QString::fromUtf8(modulePYCAbsoluteFilePath.c_str());
+#else
+        Py_XDECREF(pythonScriptFilePathObj);
+        modulePath = QString::fromUtf8(modulePYCAbsoluteFilePath.c_str());
+#endif
+    }
+
+    *pythonScriptDirPath = modulePath.toStdString();
+
+    StrUtils::ensureLastPathSeparator(modulePath);
 
     *pluginLabel = NATRON_PYTHON_NAMESPACE::PyStringToStdString(labelObj);
     Py_XDECREF(labelObj);
-
+    
     if (idObj) {
         *pluginID = NATRON_PYTHON_NAMESPACE::PyStringToStdString(idObj);
         deleteScript.append("del pluginID\n");
@@ -4246,9 +4066,6 @@ getGroupInfosInternal(const std::string& modulePath,
 
     if (iconObj) {
         *iconFilePath = NATRON_PYTHON_NAMESPACE::PyStringToStdString(iconObj);
-        QFileInfo iconInfo( QString::fromUtf8( modulePath.c_str() ) + QString::fromUtf8( iconFilePath->c_str() ) );
-        *iconFilePath =  iconInfo.canonicalFilePath().toStdString();
-
         deleteScript.append("del templateIcon\n");
         Py_XDECREF(iconObj);
     }
@@ -4291,52 +4108,15 @@ getGroupInfosInternal(const std::string& modulePath,
     return true;
 } // getGroupInfosInternal
 
-static
-bool
-getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
-                                const std::string& modulePath,
-                                const std::string& pythonModule,
-                                std::string* pluginID,
-                                std::string* pluginLabel,
-                                std::string* iconFilePath,
-                                std::string* grouping,
-                                std::string* description,
-                                bool* isToolset,
-                                unsigned int* version)
-{
-    QString qModulePath = QString::fromUtf8( resourceFileName.c_str() );
-
-    assert( qModulePath.startsWith( QString::fromUtf8(":/Resources") ) );
-
-    QFile moduleContent(qModulePath);
-    if ( !moduleContent.open(QIODevice::ReadOnly | QIODevice::Text) ) {
-        return false;
-    }
-
-    QByteArray utf8bytes = QString::fromUtf8( pythonModule.c_str() ).toUtf8();
-    char *moduleName = utf8bytes.data();
-    PyObject* moduleCode = Py_CompileString(moduleContent.readAll().constData(), moduleName, Py_file_input);
-    if (!moduleCode) {
-        return false;
-    }
-    PyObject* module = PyImport_ExecCodeModule(moduleName, moduleCode);
-    if (!module) {
-        return false;
-    }
-
-    //Now that the module is loaded, use the regular version
-    return getGroupInfosInternal(modulePath, pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, isToolset, version);
-    //PyDict_SetItemString(priv->globals, moduleName, module);
-}
 
 bool
-NATRON_PYTHON_NAMESPACE::getGroupInfos(const std::string& modulePath,
-                                       const std::string& pythonModule,
+NATRON_PYTHON_NAMESPACE::getGroupInfos(const std::string& pythonModule,
                                        std::string* pluginID,
                                        std::string* pluginLabel,
                                        std::string* iconFilePath,
                                        std::string* grouping,
                                        std::string* description,
+                                       std::string* pythonScriptDirPath,
                                        bool* isToolset,
                                        unsigned int* version)
 {
@@ -4344,17 +4124,7 @@ NATRON_PYTHON_NAMESPACE::getGroupInfos(const std::string& modulePath,
 
     return false;
 #endif
-
-    {
-        std::string tofind(":/Resources");
-        if (modulePath.substr( 0, tofind.size() ) == tofind) {
-            std::string resourceFileName = modulePath + pythonModule + ".py";
-
-            return getGroupInfosFromQtResourceFile(resourceFileName, modulePath, pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, isToolset, version);
-        }
-    }
-
-    return getGroupInfosInternal(modulePath, pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, isToolset, version);
+    return getGroupInfosInternal(pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, pythonScriptDirPath, isToolset, version);
 }
 
 void
@@ -4452,6 +4222,79 @@ NATRON_PYTHON_NAMESPACE::getAttrRecursive(const std::string& fullyQualifiedName,
         }
     }
 }
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+static std::string getPythonStdStream(const std::string& streamName)
+{
+
+    PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+    PyObject *catcher = 0;
+
+    if ( PyObject_HasAttrString(mainModule, streamName.c_str()) ) {
+        catcher = PyObject_GetAttrString(mainModule, streamName.c_str());
+    }
+
+    std::string ret;
+    if (catcher) {
+        PyObject* valueObj = PyObject_GetAttrString(catcher, "value"); //get the  stderr from our catchErr object, new ref
+        assert(valueObj);
+
+        ret = NATRON_PYTHON_NAMESPACE::PyStringToStdString(valueObj);
+        PyObject* unicode = PyUnicode_FromString("");
+        PyObject_SetAttrString(catcher, "value", unicode);
+        Py_DECREF(valueObj);
+        Py_DECREF(catcher);
+    }
+    return ret;
+} // getPythonStdStream
+
+static void clearPythonStdStream(const std::string& streamName)
+{
+    PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+
+    PyObject *catcher = 0;
+
+    if ( PyObject_HasAttrString(mainModule, streamName.c_str()) ) {
+        catcher = PyObject_GetAttrString(mainModule, streamName.c_str());
+    }
+
+    if (catcher) {
+        PyObject* unicode = PyUnicode_FromString("");
+        PyObject_SetAttrString(catcher, "value", unicode);
+        Py_DECREF(catcher);
+    }
+} // clearPythonStdStream
+
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
+std::string
+NATRON_PYTHON_NAMESPACE::getPythonStdOut()
+{
+    return getPythonStdStream("catchOut");
+}
+
+std::string
+NATRON_PYTHON_NAMESPACE::getPythonStdErr()
+{
+    PyErr_Print();
+    return getPythonStdStream("catchErr");
+}
+
+void
+NATRON_PYTHON_NAMESPACE::clearPythonStdOut()
+{
+   clearPythonStdStream("catchOut");
+} // clearPythonStdOut
+
+void
+NATRON_PYTHON_NAMESPACE::clearPythonStdErr()
+{
+
+    PyErr_Clear();
+    clearPythonStdStream("catchErr");
+} // clearPythonStdOut
+
 
 NATRON_NAMESPACE_EXIT
 

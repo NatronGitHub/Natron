@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -40,10 +40,12 @@
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
+#include "Engine/InputDescription.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGraphI.h"
@@ -51,37 +53,50 @@
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
+#include "Engine/RenderEngine.h"
 #include "Engine/PrecompNode.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
-#define NATRON_PYPLUG_EXPORTER_VERSION 10
+#include "Serialization/NodeSerialization.h"
 
 NATRON_NAMESPACE_ENTER
 
 struct NodeCollectionPrivate
 {
-    AppInstWPtr app;
+    AppInstanceWPtr app;
     NodeGraphI* graph;
     mutable QMutex nodesMutex;
     NodesList nodes;
 
-    NodeCollectionPrivate(const AppInstPtr& app)
+    mutable QMutex graphEditedMutex;
+
+    // If false the user cannot ever edit this graph from the UI, except if from Python the setSubGraphEditable function is called
+    bool isEditable;
+
+    // If true, the user did edit the subgraph
+    bool wasGroupEditedByUser;
+
+
+    NodeCollectionPrivate(const AppInstancePtr& app)
         : app(app)
         , graph(0)
         , nodesMutex()
         , nodes()
+        , graphEditedMutex()
+        , isEditable(true)
+        , wasGroupEditedByUser(false)
     {
     }
 
     NodePtr findNodeInternal(const std::string& name, const std::string& recurseName) const;
 };
 
-NodeCollection::NodeCollection(const AppInstPtr& app)
+NodeCollection::NodeCollection(const AppInstancePtr& app)
     : _imp( new NodeCollectionPrivate(app) )
 {
 }
@@ -90,7 +105,7 @@ NodeCollection::~NodeCollection()
 {
 }
 
-AppInstPtr
+AppInstancePtr
 NodeCollection::getApplication() const
 {
     return _imp->app.lock();
@@ -123,27 +138,24 @@ NodeCollection::getNodes() const
 }
 
 void
-NodeCollection::getNodes_recursive(NodesList& nodes,
-                                   bool onlyActive) const
+NodeCollection::getNodes_recursive(NodesList& nodes) const
 {
-    std::list<NodeGroup*> groupToRecurse;
+    std::list<NodeGroupPtr> groupToRecurse;
 
     {
         QMutexLocker k(&_imp->nodesMutex);
         for (NodesList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-            if ( onlyActive && !(*it)->isActivated() ) {
-                continue;
-            }
+
             nodes.push_back(*it);
-            NodeGroup* isGrp = (*it)->isEffectGroup();
+            NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
             if (isGrp) {
                 groupToRecurse.push_back(isGrp);
             }
         }
     }
 
-    for (std::list<NodeGroup*>::const_iterator it = groupToRecurse.begin(); it != groupToRecurse.end(); ++it) {
-        (*it)->getNodes_recursive(nodes, onlyActive);
+    for (std::list<NodeGroupPtr>::const_iterator it = groupToRecurse.begin(); it != groupToRecurse.end(); ++it) {
+        (*it)->getNodes_recursive(nodes);
     }
 }
 
@@ -156,9 +168,14 @@ NodeCollection::addNode(const NodePtr& node)
     }
 }
 
+
+
 void
 NodeCollection::removeNode(const Node* node)
 {
+    if (!node) {
+        return;
+    }
     QMutexLocker k(&_imp->nodesMutex);
     for (NodesList::iterator it =_imp->nodes.begin(); it != _imp->nodes.end();++it) {
         if ( it->get() == node ) {
@@ -166,6 +183,13 @@ NodeCollection::removeNode(const Node* node)
             break;
         }
     }
+    onNodeRemoved(node);
+}
+
+void
+NodeCollection::removeNode(const NodePtr& node)
+{
+    removeNode(node.get());
 }
 
 NodePtr
@@ -196,9 +220,7 @@ NodeCollection::getActiveNodes(NodesList* nodes) const
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->isActivated() ) {
-            nodes->push_back(*it);
-        }
+        nodes->push_back(*it);
     }
 }
 
@@ -208,27 +230,25 @@ NodeCollection::getActiveNodesExpandGroups(NodesList* nodes) const
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->isActivated() ) {
-            nodes->push_back(*it);
-            NodeGroup* isGrp = (*it)->isEffectGroup();
-            if (isGrp) {
-                isGrp->getActiveNodesExpandGroups(nodes);
-            }
+        nodes->push_back(*it);
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
+        if (isGrp) {
+            isGrp->getActiveNodesExpandGroups(nodes);
         }
     }
 }
 
 void
-NodeCollection::getViewers(std::list<ViewerInstance*>* viewers) const
+NodeCollection::getViewers(std::list<ViewerInstancePtr>* viewers) const
 {
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        ViewerInstance* isViewer = (*it)->isEffectViewer();
+        ViewerInstancePtr isViewer = (*it)->isEffectViewerInstance();
         if (isViewer) {
             viewers->push_back(isViewer);
         }
-        NodeGroup* isGrp = (*it)->isEffectGroup();
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
             isGrp->getViewers(viewers);
         }
@@ -236,17 +256,15 @@ NodeCollection::getViewers(std::list<ViewerInstance*>* viewers) const
 }
 
 void
-NodeCollection::getWriters(std::list<OutputEffectInstance*>* writers) const
+NodeCollection::getWriters(std::list<EffectInstancePtr>* writers) const
 {
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->getGroup() && (*it)->isActivated() && (*it)->getEffectInstance()->isWriter() && (*it)->isPartOfProject() ) {
-            OutputEffectInstance* out = dynamic_cast<OutputEffectInstance*>( (*it)->getEffectInstance().get() );
-            assert(out);
-            writers->push_back(out);
+        if ( (*it)->getGroup() && (*it)->getEffectInstance()->isWriter() && (*it)->isPersistent() ) {
+            writers->push_back((*it)->getEffectInstance());
         }
-        NodeGroup* isGrp = (*it)->isEffectGroup();
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
             isGrp->getWriters(writers);
         }
@@ -264,14 +282,12 @@ NodeCollection::quitAnyProcessingInternal(bool blocking)
         } else {
             (*it)->quitAnyProcessing_non_blocking();
         }
-        NodeGroup* isGrp = (*it)->isEffectGroup();
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
+
         if (isGrp) {
             isGrp->quitAnyProcessingInternal(blocking);
         }
-        PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>( (*it)->getEffectInstance().get() );
-        if (isPrecomp) {
-            isPrecomp->getPrecompApp()->getProject()->quitAnyProcessingInternal(blocking);
-        }
+  
     }
 }
 
@@ -279,6 +295,7 @@ void
 NodeCollection::quitAnyProcessingForAllNodes_blocking()
 {
     quitAnyProcessingInternal(true);
+
 }
 
 void
@@ -287,94 +304,52 @@ NodeCollection::quitAnyProcessingForAllNodes_non_blocking()
     quitAnyProcessingInternal(false);
 }
 
-bool
-NodeCollection::isCacheIDAlreadyTaken(const std::string& name) const
-{
-    QMutexLocker k(&_imp->nodesMutex);
-
-    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->getCacheID() == name ) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool
-NodeCollection::hasNodeRendering() const
-{
-    QMutexLocker k(&_imp->nodesMutex);
-
-    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->isOutputNode() ) {
-            NodeGroup* isGrp = (*it)->isEffectGroup();
-            PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>( (*it)->getEffectInstance().get() );
-            if (isGrp) {
-                if ( isGrp->hasNodeRendering() ) {
-                    return true;
-                }
-            } else if (isPrecomp) {
-                if ( isPrecomp->getPrecompApp()->getProject()->hasNodeRendering() ) {
-                    return true;
-                }
-            } else {
-                OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( (*it)->getEffectInstance().get() );
-                if ( effect && effect->getRenderEngine()->hasThreadsWorking() ) {
-                    return true;
-                }
-            }
-        }
-    }
-
-    return false;
-}
 
 void
 NodeCollection::refreshViewersAndPreviews()
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    AppInstPtr appInst = getApplication();
-    if (!appInst) {
+    AppInstancePtr appInst = getApplication();
+    if (!appInst || appInst->isBackground()) {
         return;
     }
-    if ( !appInst->isBackground() ) {
-        NodesList nodes = getNodes();
-        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            assert(*it);
-            (*it)->refreshPreviewsAfterProjectLoad();
-            NodeGroup* isGrp = (*it)->isEffectGroup();
-            if (isGrp) {
-                isGrp->refreshViewersAndPreviews();
-            } else {
-                ViewerInstance* n = (*it)->isEffectViewer();
-                if (n) {
-                    n->renderCurrentFrame(true);
-                }
-            }
+
+
+
+    NodesList nodes = getNodes();
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        assert(*it);
+        (*it)->refreshPreviewsAfterProjectLoad();
+
+        if ((*it)->isEffectViewerNode()) {
+            (*it)->getRenderEngine()->renderCurrentFrame();
+        }
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
+        if (isGrp) {
+            isGrp->refreshViewersAndPreviews();
         }
     }
+
 }
 
 void
 NodeCollection::refreshPreviews()
 {
-    AppInstPtr appInst = getApplication();
+    AppInstancePtr appInst = getApplication();
     if (!appInst) {
         return;
     }
     if ( appInst->isBackground() ) {
         return;
     }
-    double time = appInst->getTimeLine()->currentFrame();
     NodesList nodes;
     getActiveNodes(&nodes);
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isPreviewEnabled() ) {
-            (*it)->refreshPreviewImage(time);
+            (*it)->refreshPreviewImage();
         }
-        NodeGroup* isGrp = (*it)->isEffectGroup();
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
             isGrp->refreshPreviews();
         }
@@ -384,29 +359,30 @@ NodeCollection::refreshPreviews()
 void
 NodeCollection::forceRefreshPreviews()
 {
-    AppInstPtr appInst = getApplication();
+    AppInstancePtr appInst = getApplication();
     if (!appInst) {
         return;
     }
     if ( appInst->isBackground() ) {
         return;
     }
-    double time = appInst->getTimeLine()->currentFrame();
     NodesList nodes;
     getActiveNodes(&nodes);
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isPreviewEnabled() ) {
-            (*it)->computePreviewImage(time);
+            (*it)->computePreviewImage();
         }
-        NodeGroup* isGrp = (*it)->isEffectGroup();
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
             isGrp->forceRefreshPreviews();
         }
     }
 }
 
+
+
 void
-NodeCollection::clearNodesInternal(bool blocking)
+NodeCollection::clearNodesInternal()
 {
     NodesList nodesToDelete;
     {
@@ -416,23 +392,18 @@ NodeCollection::clearNodesInternal(bool blocking)
 
     ///Clear recursively containers inside this group
     for (NodesList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
-        // You should have called quitAnyProcessing before!
-        assert( !(*it)->isNodeRendering() );
 
-        NodeGroup* isGrp = (*it)->isEffectGroup();
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
-            isGrp->clearNodesInternal(blocking);
+            isGrp->clearNodesInternal();
         }
-        PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>( (*it)->getEffectInstance().get() );
-        if (isPrecomp) {
-            isPrecomp->getPrecompApp()->getProject()->clearNodesInternal(blocking);
-        }
+
     }
 
     ///Kill effects
 
     for (NodesList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
-        (*it)->destroyNode(blocking, false);
+        (*it)->destroyNode();
     }
 
 
@@ -453,17 +424,17 @@ void
 NodeCollection::clearNodesBlocking()
 {
     quitAnyProcessingForAllNodes_blocking();
-    clearNodesInternal(true);
+    clearNodesInternal();
 }
 
 void
 NodeCollection::clearNodesNonBlocking()
 {
-    clearNodesInternal(false);
+    clearNodesInternal();
 }
 
 void
-NodeCollection::checkNodeName(const Node* node,
+NodeCollection::checkNodeName(const NodeConstPtr& node,
                               const std::string& baseName,
                               bool appendDigit,
                               bool errorIfExists,
@@ -510,7 +481,7 @@ NodeCollection::checkNodeName(const Node* node,
         foundNodeWithName = false;
         QMutexLocker l(&_imp->nodesMutex);
         for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-            if ( (it->get() != node) && ( (*it)->getScriptName_mt_safe() == *nodeName ) ) {
+            if ( (*it != node) && ( (*it)->getScriptName_mt_safe() == *nodeName ) ) {
                 foundNodeWithName = true;
                 break;
             }
@@ -532,7 +503,8 @@ NodeCollection::checkNodeName(const Node* node,
 } // NodeCollection::checkNodeName
 
 void
-NodeCollection::initNodeName(const std::string& pluginLabel,
+NodeCollection::initNodeName(const std::string& pluginID,
+                             const std::string& pluginLabel,
                              std::string* nodeName)
 {
     std::string baseName(pluginLabel);
@@ -544,9 +516,20 @@ NodeCollection::initNodeName(const std::string& pluginLabel,
         baseName = baseName.substr(0, baseName.size() - 3);
     }
 
-    checkNodeName(0, baseName, true, false, nodeName);
+    bool isOutputNode = pluginID == PLUGINID_NATRON_OUTPUT;
+    if (!isOutputNode) {
+        // For non GroupOutput nodes, always append a digit
+        checkNodeName(NodeConstPtr(), baseName, true, false, nodeName);
+    } else {
+        // For output node, don't append a digit as it is expect there's a single node
+        try {
+            checkNodeName(NodeConstPtr(), baseName, false, false, nodeName);
+        } catch (...) {
+            checkNodeName(NodeConstPtr(), baseName, true, false, nodeName);
+        }
+    }
 }
-
+#if 0
 bool
 NodeCollection::connectNodes(int inputNumber,
                              const NodePtr& input,
@@ -633,7 +616,7 @@ NodeCollection::disconnectNodes(const NodePtr& input,
     }
 
 
-    if (output->disconnectInput( input.get() ) < 0) {
+    if (!output->disconnectInput( input )) {
         return false;
     }
 
@@ -643,6 +626,7 @@ NodeCollection::disconnectNodes(const NodePtr& input,
 
     return true;
 }
+#endif
 
 bool
 NodeCollection::autoConnectNodes(const NodePtr& selected,
@@ -706,49 +690,36 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,
         ///connect it to the first input
         int selectedInput = selected->getPreferredInputForConnection();
         if (selectedInput != -1) {
-            bool ok = connectNodes(selectedInput, created, selected, true);
-            assert(ok);
-            Q_UNUSED(ok);
+            selected->swapInput(created, selectedInput);
             ret = true;
         } else {
             ret = false;
         }
     } else {
         if ( !created->isOutputNode() ) {
+
             ///we find all the nodes that were previously connected to the selected node,
             ///and connect them to the created node instead.
-            std::map<NodePtr, int> outputsConnectedToSelectedNode;
-            selected->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
-            for (std::map<NodePtr, int>::iterator it = outputsConnectedToSelectedNode.begin();
+            OutputNodesMap outputsConnectedToSelectedNode;
+            selected->getOutputs(outputsConnectedToSelectedNode);
+            for (OutputNodesMap::iterator it = outputsConnectedToSelectedNode.begin();
                  it != outputsConnectedToSelectedNode.end(); ++it) {
-                if ( it->first->getParentMultiInstanceName().empty() ) {
-                    bool ok = disconnectNodes(selected, it->first);
-                    assert(ok);
-                    ok = connectNodes(it->second, created, it->first);
-                    Q_UNUSED(ok);
-                    //assert(ok); Might not be ok if the disconnectNodes() action above was queued
+                it->first->disconnectInput(selected);
+
+                for (std::list<int>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+                    it->first->swapInput(created, *it2);
                 }
             }
         }
         ///finally we connect the created node to the selected node
         int createdInput = created->getPreferredInputForConnection();
         if (createdInput != -1) {
-            bool ok = connectNodes(createdInput, selected, created);
-            assert(ok);
-            Q_UNUSED(ok);
+            created->swapInput(selected, createdInput);
             ret = true;
         } else {
             ret = false;
         }
     }
-
-    ///update the render trees
-    std::list<ViewerInstance* > viewers;
-    created->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
-    }
-
     return ret;
 } // autoConnectNodes
 
@@ -761,17 +732,9 @@ NodeCollectionPrivate::findNodeInternal(const std::string& name,
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->getScriptName_mt_safe() == name ) {
             if ( !recurseName.empty() ) {
-                NodeGroup* isGrp = (*it)->isEffectGroup();
+                NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
                 if (isGrp) {
                     return isGrp->getNodeByFullySpecifiedName(recurseName);
-                } else {
-                    NodesList children;
-                    (*it)->getChildrenMultiInstance(&children);
-                    for (NodesList::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                        if ( (*it2)->getScriptName_mt_safe() == recurseName ) {
-                            return *it2;
-                        }
-                    }
                 }
             } else {
                 return *it;
@@ -839,40 +802,41 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
                                      bool blockEval)
 {
     NodesList nodes = getNodes();
-    AppInstPtr appInst = getApplication();
+    AppInstancePtr appInst = getApplication();
     if (!appInst) {
         return;
     }
-    boost::shared_ptr<Project> project = appInst->getProject();
+    ProjectPtr project = appInst->getProject();
+
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isActivated() ) {
-            (*it)->getEffectInstance()->beginChanges();
+            {
+                ScopedChanges_RAII changes((*it)->getEffectInstance().get());
 
-            const KnobsVec& knobs = (*it)->getKnobs();
-            for (U32 j = 0; j < knobs.size(); ++j) {
-                Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >( knobs[j].get() );
-                KnobString* isStringKnob = dynamic_cast<KnobString*>(isString);
-                if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
-                    continue;
-                }
 
-                std::string filepath = isString->getValue();
+                const KnobsVec& knobs = (*it)->getKnobs();
+                for (U32 j = 0; j < knobs.size(); ++j) {
+                    KnobStringBasePtr isString = toKnobStringBase(knobs[j]);
+                    KnobStringPtr isStringKnob = toKnobString(isString);
+                    if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
+                        continue;
+                    }
 
-                if ( !filepath.empty() ) {
-                    if ( project->fixFilePath(projectPathName, newProjectPath, filepath) ) {
-                        isString->setValue(filepath);
+                    std::string filepath = isString->getValue();
+
+                    if ( !filepath.empty() ) {
+                        if ( project->fixFilePath(projectPathName, newProjectPath, filepath) ) {
+                            isString->setValue(filepath);
+                        }
                     }
                 }
             }
-            (*it)->getEffectInstance()->endChanges(blockEval);
-
-
-            NodeGroup* isGrp = (*it)->isEffectGroup();
+            
+            NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
             if (isGrp) {
                 isGrp->fixRelativeFilePaths(projectPathName, newProjectPath, blockEval);
             }
-        }
+
     }
 }
 
@@ -881,49 +845,47 @@ NodeCollection::fixPathName(const std::string& oldName,
                             const std::string& newName)
 {
     NodesList nodes = getNodes();
-    AppInstPtr appInst = getApplication();
+    AppInstancePtr appInst = getApplication();
     if (!appInst) {
         return;
     }
-    boost::shared_ptr<Project> project = appInst->getProject();
+    ProjectPtr project = appInst->getProject();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isActivated() ) {
-            const KnobsVec& knobs = (*it)->getKnobs();
-            for (U32 j = 0; j < knobs.size(); ++j) {
-                Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >( knobs[j].get() );
-                KnobString* isStringKnob = dynamic_cast<KnobString*>(isString);
-                if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
-                    continue;
-                }
-
-                std::string filepath = isString->getValue();
-
-                if ( ( filepath.size() >= (oldName.size() + 2) ) &&
-                     ( filepath[0] == '[') &&
-                     ( filepath[oldName.size() + 1] == ']') &&
-                     ( filepath.substr( 1, oldName.size() ) == oldName) ) {
-                    filepath.replace(1, oldName.size(), newName);
-                    isString->setValue(filepath);
-                }
+        const KnobsVec& knobs = (*it)->getKnobs();
+        for (U32 j = 0; j < knobs.size(); ++j) {
+            KnobStringBasePtr isString = toKnobStringBase(knobs[j]);
+            KnobStringPtr isStringKnob = toKnobString(isString);
+            if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
+                continue;
             }
 
-            NodeGroup* isGrp = (*it)->isEffectGroup();
-            if (isGrp) {
-                isGrp->fixPathName(oldName, newName);
+            std::string filepath = isString->getValue();
+
+            if ( ( filepath.size() >= (oldName.size() + 2) ) &&
+                ( filepath[0] == '[') &&
+                ( filepath[oldName.size() + 1] == ']') &&
+                ( filepath.substr( 1, oldName.size() ) == oldName) ) {
+                filepath.replace(1, oldName.size(), newName);
+                isString->setValue(filepath);
             }
+        }
+
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
+        if (isGrp) {
+            isGrp->fixPathName(oldName, newName);
         }
     }
 }
 
 bool
 NodeCollection::checkIfNodeLabelExists(const std::string & n,
-                                       const Node* caller) const
+                                       const NodeConstPtr& caller) const
 {
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (it->get() != caller) && ( (*it)->getLabel_mt_safe() == n ) ) {
+        if ( (*it != caller) && ( (*it)->getLabel_mt_safe() == n ) ) {
             return true;
         }
     }
@@ -933,12 +895,12 @@ NodeCollection::checkIfNodeLabelExists(const std::string & n,
 
 bool
 NodeCollection::checkIfNodeNameExists(const std::string & n,
-                                      const Node* caller) const
+                                      const NodeConstPtr& caller) const
 {
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (it->get() != caller) && ( (*it)->getScriptName_mt_safe() == n ) ) {
+        if ( (*it != caller) && ( (*it)->getScriptName_mt_safe() == n ) ) {
             return true;
         }
     }
@@ -946,30 +908,35 @@ NodeCollection::checkIfNodeNameExists(const std::string & n,
     return false;
 }
 
-static void
-recomputeFrameRangeForAllReadersInternal(NodeCollection* group,
-                                         int* firstFrame,
-                                         int* lastFrame,
-                                         bool setFrameRange)
+void
+NodeCollection::recomputeFrameRangeForAllReadersInternal(int* firstFrame,
+                                                         int* lastFrame,
+                                                         bool setFrameRange)
 {
-    NodesList nodes = group->getNodes();
+    NodesList nodes = getNodes();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isActivated() ) {
-            if ( (*it)->getEffectInstance()->isReader() ) {
-                double thisFirst, thislast;
-                (*it)->getEffectInstance()->getFrameRange_public( (*it)->getHashValue(), &thisFirst, &thislast );
-                if (thisFirst != INT_MIN) {
-                    *firstFrame = setFrameRange ? thisFirst : std::min(*firstFrame, (int)thisFirst);
+        if ( (*it)->getEffectInstance()->isReader() ) {
+
+
+            GetFrameRangeResultsPtr results;
+            ActionRetCodeEnum stat = (*it)->getEffectInstance()->getFrameRange_public(&results );
+            if (!isFailureRetCode(stat)) {
+                RangeD thisRange;
+
+                results->getFrameRangeResults(&thisRange);
+                if (thisRange.min != INT_MIN) {
+                    *firstFrame = setFrameRange ? thisRange.min : std::min(*firstFrame, (int)thisRange.min);
                 }
-                if (thislast != INT_MAX) {
-                    *lastFrame = setFrameRange ? thislast : std::max(*lastFrame, (int)thislast);
+                if (thisRange.max != INT_MAX) {
+                    *lastFrame = setFrameRange ? thisRange.max : std::max(*lastFrame, (int)thisRange.max);
                 }
-            } else {
-                NodeGroup* isGrp = (*it)->isEffectGroup();
-                if (isGrp) {
-                    recomputeFrameRangeForAllReadersInternal(isGrp, firstFrame, lastFrame, false);
-                }
+            }
+
+        } else {
+            NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
+            if (isGrp) {
+                isGrp->recomputeFrameRangeForAllReadersInternal(firstFrame, lastFrame, false);
             }
         }
     }
@@ -979,110 +946,178 @@ void
 NodeCollection::recomputeFrameRangeForAllReaders(int* firstFrame,
                                                  int* lastFrame)
 {
-    recomputeFrameRangeForAllReadersInternal(this, firstFrame, lastFrame, true);
+    recomputeFrameRangeForAllReadersInternal(firstFrame, lastFrame, true);
+}
+
+
+void
+NodeCollection::setSubGraphEditedByUser(bool edited)
+{
+    {
+        QMutexLocker k(&_imp->graphEditedMutex);
+        _imp->wasGroupEditedByUser = edited;
+    }
+
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(this);
+    if (isGrp) {
+
+        if (isGrp->isSubGraphPersistent()) {
+            KnobIPtr pyPlugPage = isGrp->getNode()->getKnobByName(kPyPlugPageParamName);
+            if (pyPlugPage) {
+                pyPlugPage->setSecret(!edited);
+            }
+
+            KnobIPtr convertToGroupKnob = isGrp->getNode()->getKnobByName(kNatronNodeKnobConvertToGroupButton);
+            if (convertToGroupKnob) {
+                convertToGroupKnob->setSecret(edited || !isSubGraphEditable());
+            }
+        }
+
+    }
+}
+
+bool
+NodeCollection::isSubGraphEditedByUser() const
+{
+    QMutexLocker k(&_imp->graphEditedMutex);
+    return _imp->wasGroupEditedByUser;
 }
 
 void
-NodeCollection::forceComputeInputDependentDataOnAllTrees()
+NodeCollection::setSubGraphEditable(bool editable)
 {
-    NodesList nodes;
+    {
+        QMutexLocker k(&_imp->graphEditedMutex);
+        _imp->isEditable = editable;
+    }
+    onGraphEditableChanged(editable);
+}
 
-    getNodes_recursive(nodes, true);
-    std::list<Project::NodesTree> trees;
-    Project::extractTreesFromNodes(nodes, trees);
+bool
+NodeCollection::isSubGraphEditable() const
+{
+    QMutexLocker k(&_imp->graphEditedMutex);
+    return _imp->isEditable;
+}
 
-    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->markAllInputRelatedDataDirty();
+static void refreshTimeInvariantMetadataOnAllNodes_recursiveInternal(const NodePtr& caller, std::set<HashableObject*>* markedNodes)
+{
+    if (markedNodes->find(caller->getEffectInstance().get()) != markedNodes->end()) {
+        return;
     }
 
-    std::list<Node*> markedNodes;
-    for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
-        it->output.node->forceRefreshAllInputRelatedData();
+    NodeGroupPtr isGroup = caller->isEffectNodeGroup();
+    if (isGroup) {
+        NodesList nodes = isGroup->getNodes();
+        for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            refreshTimeInvariantMetadataOnAllNodes_recursiveInternal(*it, markedNodes);
+        }
+    } else {
+        caller->getEffectInstance()->invalidateHashCacheInternal(markedNodes);
+        caller->getEffectInstance()->onMetadataChanged_nonRecursive_public();
     }
+
 }
 
 void
-NodeCollection::getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >& argsMap) const
+NodeCollection::refreshTimeInvariantMetadataOnAllNodes_recursive()
 {
+    std::set<HashableObject*> markedNodes;
     NodesList nodes = getNodes();
-
-    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( !(*it)->isActivated() ) {
-            continue;
-        }
-        boost::shared_ptr<ParallelRenderArgs> args = (*it)->getEffectInstance()->getParallelRenderArgsTLS();
-        if (args) {
-            argsMap.insert( std::make_pair(*it, args) );
-        }
-
-        if ( (*it)->isMultiInstance() ) {
-            ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
-            ///on parameters.
-            NodesList children;
-            (*it)->getChildrenMultiInstance(&children);
-            for (NodesList::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                boost::shared_ptr<ParallelRenderArgs> childArgs = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
-                if (childArgs) {
-                    argsMap.insert( std::make_pair(*it2, childArgs) );
-                }
-            }
-        }
-
-        //If the node has an attached stroke, that means it belongs to the roto paint tree, hence it is not in the project.
-        boost::shared_ptr<RotoContext> rotoContext = (*it)->getRotoContext();
-        if (args && rotoContext) {
-            for (NodesList::const_iterator it2 = args->rotoPaintNodes.begin(); it2 != args->rotoPaintNodes.end(); ++it2) {
-                boost::shared_ptr<ParallelRenderArgs> args2 = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
-                if (args2) {
-                    argsMap.insert( std::make_pair(*it2, args2) );
-                }
-            }
-        }
-
-
-        const NodeGroup* isGrp = (*it)->isEffectGroup();
-        if (isGrp) {
-            isGrp->getParallelRenderArgs(argsMap);
-        }
-
-        const PrecompNode* isPrecomp = dynamic_cast<const PrecompNode*>( (*it)->getEffectInstance().get() );
-        if (isPrecomp) {
-            isPrecomp->getPrecompApp()->getProject()->getParallelRenderArgs(argsMap);
-        }
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        refreshTimeInvariantMetadataOnAllNodes_recursiveInternal(*it, &markedNodes);
     }
 }
 
 struct NodeGroupPrivate
 {
+    NodeGroup* _publicInterface;
     mutable QMutex nodesLock; // protects inputs & outputs
-    std::vector<NodeWPtr > inputs, guiInputs;
-    NodesWList outputs, guiOutputs;
+    std::vector<NodeWPtr> inputs;
+    NodesWList outputs;
     bool isDeactivatingGroup;
     bool isActivatingGroup;
-    bool isEditable;
-    boost::shared_ptr<KnobButton> exportAsTemplate, convertToGroup;
 
-    NodeGroupPrivate()
-    : nodesLock(QMutex::Recursive)
+    NodeGroupPrivate(NodeGroup* publicInterface)
+    : _publicInterface(publicInterface)
+    , nodesLock(QMutex::Recursive)
     , inputs()
-    , guiInputs()
     , outputs()
-    , guiOutputs()
     , isDeactivatingGroup(false)
     , isActivatingGroup(false)
-    , isEditable(true)
-    , exportAsTemplate()
-    , convertToGroup()
+
     {
     }
+
+    void refreshInputs();
 };
 
-NodeGroup::NodeGroup(const NodePtr &node)
-    : OutputEffectInstance(node)
-    , NodeCollection( node ? node->getApp() : AppInstPtr() )
-    , _imp( new NodeGroupPrivate() )
+void
+NodeGroup::refreshInputs()
 {
-    setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
+    _imp->refreshInputs();
+}
+
+void
+NodeGroup::onNodeRemoved(const Node* node)
+{
+    for (std::vector<NodeWPtr>::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
+        if (it->lock().get() == node) {
+            _imp->inputs.erase(it);
+            break;
+        }
+    }
+    for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
+        if (it->lock().get() == node) {
+            _imp->outputs.erase(it);
+            break;
+        }
+    }
+}
+
+PluginPtr
+NodeGroup::createPlugin()
+{
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_OTHER);
+    PluginPtr ret = Plugin::create(NodeGroup::create, NodeGroup::createRenderClone, PLUGINID_NATRON_GROUP, "Group", 1, 0, grouping);
+
+    QString desc =  tr("Use this to nest multiple nodes into a single node. The original nodes will be replaced by the Group node and its "
+                       "content is available in a separate NodeGraph tab. You can add user parameters to the Group node which can drive "
+                       "parameters of nodes nested within the Group. To specify the outputs and inputs of the Group node, "
+                       "you may add multiple Input node within the group and exactly 1 Output node.");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/group_icon.png");
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
+    return ret;
+}
+
+
+NodeGroup::NodeGroup(const NodePtr &node)
+    : EffectInstance(node)
+    , NodeCollection( node ? node->getApp() : AppInstancePtr() )
+    , _imp( new NodeGroupPrivate(this) )
+{
+}
+
+NodeGroup::NodeGroup(const EffectInstancePtr& mainInstance, const FrameViewRenderKey& key)
+: EffectInstance(mainInstance, key)
+, NodeCollection(mainInstance->getApp())
+, _imp(new NodeGroupPrivate(this))
+{
+    
+}
+
+bool
+NodeGroup::isRenderCloneNeeded() const
+{
+    return true;
 }
 
 bool
@@ -1119,203 +1154,100 @@ NodeGroup::~NodeGroup()
 {
 }
 
-std::string
-NodeGroup::getPluginDescription() const
-{
-    return "Use this to nest multiple nodes into a single node. The original nodes will be replaced by the Group node and its "
-           "content is available in a separate NodeGraph tab. You can add user parameters to the Group node which can drive "
-           "parameters of nodes nested within the Group. To specify the outputs and inputs of the Group node, you may add multiple "
-           "Input node within the group and exactly 1 Output node.";
-}
-
 void
-NodeGroup::addAcceptedComponents(int /*inputNb*/,
-                                 std::list<ImagePlaneDesc>* comps)
+NodeGroupPrivate::refreshInputs()
 {
-    comps->push_back( ImagePlaneDesc::getRGBAComponents() );
-    comps->push_back( ImagePlaneDesc::getRGBComponents() );
-    comps->push_back( ImagePlaneDesc::getAlphaComponents() );
-}
-
-void
-NodeGroup::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
-{
-    depths->push_back(eImageBitDepthByte);
-    depths->push_back(eImageBitDepthShort);
-    depths->push_back(eImageBitDepthFloat);
-}
-
-int
-NodeGroup::getNInputs() const
-{
-    return (int)_imp->inputs.size();
-}
-
-std::string
-NodeGroup::getInputLabel(int inputNb) const
-{
-    NodePtr input;
+    std::vector<InputDescriptionPtr> descriptors;
     {
-        QMutexLocker k(&_imp->nodesLock);
-        if ( ( inputNb >= (int)_imp->inputs.size() ) || (inputNb < 0) ) {
-            return std::string();
-        }
+        QMutexLocker k(&nodesLock);
+        descriptors.resize(inputs.size());
+        for (std::size_t i = 0; i < inputs.size(); ++i) {
+            NodePtr input = inputs[i].lock();
 
-        ///If the input name starts with "input" remove it, otherwise keep the full name
+            descriptors[i].reset(new InputDescription);
+            InputDescriptionPtr& desc = descriptors[i];
 
-        input = _imp->inputs[inputNb].lock();
-        if (!input) {
-            return std::string();
+            QString inputName;
+            if (input) {
+                inputName = QString::fromUtf8( input->getLabel_mt_safe().c_str() );
+
+                if ( inputName.startsWith(QString::fromUtf8("input"), Qt::CaseInsensitive) ) {
+                    inputName.remove(0, 5);
+                }
+            }
+
+
+            desc->setProperty<std::string>(kInputDescPropScriptName, inputName.toStdString());
+            desc->setProperty<std::string>(kInputDescPropLabel, inputName.toStdString());
+
+            GroupInputPtr isGroupInput;
+            if (input) {
+                isGroupInput = input->isEffectGroupInput();
+            }
+            bool isOptional = false;
+            bool isMask = false;
+            if (isGroupInput) {
+                {
+                    KnobBoolPtr knob = toKnobBool(isGroupInput->getKnobByName(kNatronGroupInputIsOptionalParamName));
+                    if (knob) {
+                        isOptional = knob->getValue();
+                    }
+                }
+                {
+                    KnobBoolPtr knob = toKnobBool(isGroupInput->getKnobByName(kNatronGroupInputIsMaskParamName));
+                    if (knob) {
+                        isMask = knob->getValue();
+                    }
+                }
+            }
+
+            desc->setProperty<bool>(kInputDescPropIsOptional, isOptional);
+            desc->setProperty<bool>(kInputDescPropIsMask, isMask);
+            desc->setProperty<std::bitset<4> >(kInputDescPropSupportedComponents, std::bitset<4>(std::string("1111")));
         }
     }
-    QString inputName = QString::fromUtf8( input->getLabel_mt_safe().c_str() );
-
-    if ( inputName.startsWith(QString::fromUtf8("input"), Qt::CaseInsensitive) ) {
-        inputName.remove(0, 5);
+    NodePtr node = _publicInterface->getNode();
+    node->beginInputEdition();
+    node->removeAllInputs();
+    for (std::size_t i = 0; i < descriptors.size(); ++i) {
+        node->addInput(descriptors[i]);
     }
+    node->endInputEdition(true);
 
-    return inputName.toStdString();
-}
+} // refreshInputs
 
-boost::shared_ptr<KnobButton>
-NodeGroup::getExportAsPyPlugButton() const
+TimeValue
+NodeGroup::getCurrentRenderTime() const
 {
-    return _imp->exportAsTemplate;
-}
-
-boost::shared_ptr<KnobButton>
-NodeGroup::getConvertToGroupButton() const
-{
-    return _imp->convertToGroup;
-}
-
-double
-NodeGroup::getCurrentTime() const
-{
-    NodePtr node = getOutputNodeInput(false);
+    NodePtr node = getOutputNodeInput();
 
     if (node) {
-        return node->getEffectInstance()->getCurrentTime();
+        EffectInstancePtr effect = node->getEffectInstance();
+        if (!effect) {
+            return TimeValue(0);
+        }
+        return effect->getCurrentRenderTime();
     }
 
-    return EffectInstance::getCurrentTime();
+    return EffectInstance::getCurrentRenderTime();
 }
 
 ViewIdx
-NodeGroup::getCurrentView() const
+NodeGroup::getCurrentRenderView() const
 {
-    NodePtr node = getOutputNodeInput(false);
+    NodePtr node = getOutputNodeInput();
 
     if (node) {
-        return node->getEffectInstance()->getCurrentView();
-    }
-
-    return EffectInstance::getCurrentView();
-}
-
-bool
-NodeGroup::isInputOptional(int inputNb) const
-{
-    NodePtr n;
-
-    {
-        QMutexLocker k(&_imp->nodesLock);
-
-        if ( ( inputNb >= (int)_imp->inputs.size() ) || (inputNb < 0) ) {
-            return false;
+        EffectInstancePtr effect = node->getEffectInstance();
+        if (!effect) {
+            return ViewIdx(0);
         }
-
-
-        n = _imp->inputs[inputNb].lock();
-        if (!n) {
-            return false;
-        }
+        return effect->getCurrentRenderView();
     }
-    GroupInput* input = dynamic_cast<GroupInput*>( n->getEffectInstance().get() );
 
-    assert(input);
-    if (!input) {
-        return false;
-    }
-    KnobPtr knob = input->getKnobByName(kNatronGroupInputIsOptionalParamName);
-    assert(knob);
-    if (!knob) {
-        return false;
-    }
-    KnobBool* isBool = dynamic_cast<KnobBool*>( knob.get() );
-    assert(isBool);
-
-    return isBool ? isBool->getValue() : false;
+    return EffectInstance::getCurrentRenderView();
 }
 
-bool
-NodeGroup::isHostChannelSelectorSupported(bool* /*defaultR*/,
-                                          bool* /*defaultG*/,
-                                          bool* /*defaultB*/,
-                                          bool* /*defaultA*/) const
-{
-    return false;
-}
-
-bool
-NodeGroup::isInputMask(int inputNb) const
-{
-    NodePtr n;
-
-    {
-        QMutexLocker k(&_imp->nodesLock);
-
-        if ( ( inputNb >= (int)_imp->inputs.size() ) || (inputNb < 0) ) {
-            return false;
-        }
-
-
-        n = _imp->inputs[inputNb].lock();
-        if (!n) {
-            return false;
-        }
-    }
-    GroupInput* input = dynamic_cast<GroupInput*>( n->getEffectInstance().get() );
-
-    if (!input) {
-        return false;
-    }
-    KnobPtr knob = input->getKnobByName(kNatronGroupInputIsMaskParamName);
-    assert(knob);
-    if (!knob) {
-        return false;
-    }
-    KnobBool* isBool = dynamic_cast<KnobBool*>( knob.get() );
-    assert(isBool);
-
-    return isBool ? isBool->getValue() : false;
-}
-
-void
-NodeGroup::initializeKnobs()
-{
-    KnobPtr nodePage = getKnobByName(NATRON_PARAMETER_PAGE_NAME_EXTRA);
-
-    assert(nodePage);
-    KnobPage* isPage = dynamic_cast<KnobPage*>( nodePage.get() );
-    assert(isPage);
-    _imp->exportAsTemplate = AppManager::createKnob<KnobButton>( this, tr("Export as PyPlug") );
-    _imp->exportAsTemplate->setName("exportAsPyPlug");
-    _imp->exportAsTemplate->setHintToolTip( tr("Export this group as a Python group script (PyPlug) that can be shared and/or later "
-                                               "on re-used as a plug-in.") );
-    if (isPage) {
-        isPage->addKnob(_imp->exportAsTemplate);
-    }
-
-    _imp->convertToGroup = AppManager::createKnob<KnobButton>( this, tr("Convert to Group") );
-    _imp->convertToGroup->setName("convertToGroup");
-    _imp->convertToGroup->setHintToolTip( tr("Converts this node to a Group: the internal node-graph and the user parameters will become editable") );
-    if (isPage) {
-        isPage->addKnob(_imp->convertToGroup);
-    }
-    _imp->convertToGroup->setSecret(true);
-
-}
 
 void
 NodeGroup::notifyNodeDeactivated(const NodePtr& node)
@@ -1325,52 +1257,49 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
     }
     NodePtr thisNode = getNode();
 
+    bool mustRefreshInputs = false;
     {
         QMutexLocker k(&_imp->nodesLock);
-        GroupInput* isInput = dynamic_cast<GroupInput*>( node->getEffectInstance().get() );
+        GroupInputPtr isInput = node->isEffectGroupInput();
         if (isInput) {
-            for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-                NodePtr input = _imp->inputs[i].lock();
+            int i = 0;
+            for (std::vector<NodeWPtr>::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it, ++i) {
+                NodePtr input = it->lock();
                 if (node == input) {
                     ///Also disconnect the real input
 
                     thisNode->disconnectInput(i);
 
-
-                    _imp->inputs.erase(_imp->inputs.begin() + i);
-                    thisNode->initializeInputs();
-
-                    return;
+                    _imp->inputs.erase(it);
+                    mustRefreshInputs = true;
+                    break;
                 }
             }
-            ///The input must have been tracked before
-            assert(false);
+        
         }
-        GroupOutput* isOutput = dynamic_cast<GroupOutput*>( node->getEffectInstance().get() );
+        GroupOutputPtr isOutput = toGroupOutput( node->getEffectInstance() );
         if (isOutput) {
             for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
-                if (it->lock()->getEffectInstance().get() == isOutput) {
+                if (it->lock()->getEffectInstance() == isOutput) {
                     _imp->outputs.erase(it);
                     break;
                 }
             }
         }
+    }
 
-        ///Sync gui inputs/outputs
-        _imp->guiInputs = _imp->inputs;
-        _imp->guiOutputs = _imp->outputs;
+    if (mustRefreshInputs) {
+        _imp->refreshInputs();
     }
 
     ///Notify outputs of the group nodes that their inputs may have changed
-    const NodesWList& outputs = thisNode->getOutputs();
-    for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (!output) {
-            continue;
+    OutputNodesMap outputs;
+    thisNode->getOutputs(outputs);
+    for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+
+        for (std::list<int>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            it->first->onInputChanged(*it2);
         }
-        int idx = output->getInputIndex( thisNode.get() );
-        assert(idx != -1);
-        output->onInputChanged(idx);
     }
 } // NodeGroup::notifyNodeDeactivated
 
@@ -1383,106 +1312,91 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
 
     NodePtr thisNode = getNode();
 
+    bool mustRefreshInputs = false;
     {
         QMutexLocker k(&_imp->nodesLock);
-        GroupInput* isInput = dynamic_cast<GroupInput*>( node->getEffectInstance().get() );
+        GroupInputPtr isInput = node->isEffectGroupInput();
         if (isInput) {
             _imp->inputs.push_back(node);
-            _imp->guiInputs.push_back(node);
-            thisNode->initializeInputs();
+            mustRefreshInputs = true;
         }
-        GroupOutput* isOutput = dynamic_cast<GroupOutput*>( node->getEffectInstance().get() );
+        GroupOutputPtr isOutput = toGroupOutput( node->getEffectInstance() );
         if (isOutput) {
             _imp->outputs.push_back(node);
-            _imp->guiOutputs.push_back(node);
         }
     }
-    ///Notify outputs of the group nodes that their inputs may have changed
-    const NodesWList& outputs = thisNode->getOutputs();
-    for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (!output) {
-            continue;
+    if (mustRefreshInputs) {
+        _imp->refreshInputs();
+    }
+    // Notify outputs of the group nodes that their inputs may have changed
+    OutputNodesMap outputs;
+    thisNode->getOutputs(outputs);
+    for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        for (std::list<int>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            it->first->onInputChanged(*it2);
         }
-        int idx = output->getInputIndex( thisNode.get() );
-        assert(idx != -1);
-        output->onInputChanged(idx);
     }
 }
 
 void
 NodeGroup::notifyInputOptionalStateChanged(const NodePtr& /*node*/)
 {
-    getNode()->initializeInputs();
+    _imp->refreshInputs();
 }
 
 void
 NodeGroup::notifyInputMaskStateChanged(const NodePtr& /*node*/)
 {
-    getNode()->initializeInputs();
+    _imp->refreshInputs();
 }
 
 void
-NodeGroup::notifyNodeNameChanged(const NodePtr& node)
+NodeGroup::notifyNodeLabelChanged(const NodePtr& node)
 {
-    GroupInput* isInput = dynamic_cast<GroupInput*>( node->getEffectInstance().get() );
+    GroupInputPtr isInput = node->isEffectGroupInput();
 
     if (isInput) {
-        getNode()->initializeInputs();
+        _imp->refreshInputs();
     }
 }
 
-void
-NodeGroup::dequeueConnexions()
-{
-    QMutexLocker k(&_imp->nodesLock);
-
-    _imp->inputs = _imp->guiInputs;
-    _imp->outputs = _imp->guiOutputs;
-}
-
 NodePtr
-NodeGroup::getOutputNode(bool useGuiConnexions) const
+NodeGroup::getOutputNode() const
 {
     QMutexLocker k(&_imp->nodesLock);
 
     ///A group can only have a single output.
-    if ( ( !useGuiConnexions && _imp->outputs.empty() ) || ( useGuiConnexions && _imp->guiOutputs.empty() ) ) {
+    if (_imp->outputs.empty()) {
         return NodePtr();
     }
 
-    return useGuiConnexions ? _imp->guiOutputs.front().lock() : _imp->outputs.front().lock();
+    return _imp->outputs.front().lock();
 }
 
 NodePtr
-NodeGroup::getOutputNodeInput(bool useGuiConnexions) const
+NodeGroup::getOutputNodeInput() const
 {
-    NodePtr output = getOutputNode(useGuiConnexions);
+    NodePtr output = getOutputNode();
 
     if (output) {
-        return useGuiConnexions ? output->getGuiInput(0) : output->getInput(0);
+        return output->getInput(0);
     }
 
     return NodePtr();
 }
 
 NodePtr
-NodeGroup::getRealInputForInput(bool useGuiConnexions,
-                                const NodePtr& input) const
+NodeGroup::getRealInputForInput(const NodePtr& input) const
 {
     {
         QMutexLocker k(&_imp->nodesLock);
-        if (!useGuiConnexions) {
-            for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-                if (_imp->inputs[i].lock() == input) {
-                    return getNode()->getInput(i);
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->inputs[i].lock() == input) {
+                NodePtr node = getNode();
+                if (!node) {
+                    return NodePtr();
                 }
-            }
-        } else {
-            for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-                if (_imp->guiInputs[i].lock() == input) {
-                    return getNode()->getGuiInput(i);
-                }
+                return node->getRealInput(i);
             }
         }
     }
@@ -1491,67 +1405,38 @@ NodeGroup::getRealInputForInput(bool useGuiConnexions,
 }
 
 void
-NodeGroup::getInputsOutputs(NodesList* nodes,
-                            bool useGuiConnexions) const
+NodeGroup::getInputsOutputs(NodesList* nodes) const
 {
     QMutexLocker k(&_imp->nodesLock);
 
-    if (!useGuiConnexions) {
-        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-            NodesWList outputs;
-            NodePtr input = _imp->inputs[i].lock();
-            if (!input) {
-                continue;
-            }
-            input->getOutputs_mt_safe(outputs);
-            for (NodesWList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-                NodePtr node = it->lock();
-                if (node) {
-                    nodes->push_back(node);
-                }
-            }
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+
+        NodePtr input = _imp->inputs[i].lock();
+        if (!input) {
+            continue;
         }
-    } else {
-        for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-            NodesWList outputs;
-            NodePtr input = _imp->guiInputs[i].lock();
-            if (!input) {
-                continue;
-            }
-            input->getOutputs_mt_safe(outputs);
-            for (NodesWList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-                NodePtr node = it->lock();
-                if (node) {
-                    nodes->push_back(node);
-                }
-            }
+
+        OutputNodesMap outputs;
+        input->getOutputs(outputs);
+        for (OutputNodesMap::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            nodes->push_back(it->first);
         }
     }
 }
 
 void
-NodeGroup::getInputs(std::vector<NodePtr >* inputs,
-                     bool useGuiConnexions) const
+NodeGroup::getInputs(std::vector<NodePtr>* inputs) const
 {
     QMutexLocker k(&_imp->nodesLock);
 
-    if (!useGuiConnexions) {
-        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-            NodePtr input = _imp->inputs[i].lock();
-            if (!input) {
-                continue;
-            }
-            inputs->push_back(input);
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        NodePtr input = _imp->inputs[i].lock();
+        if (!input) {
+            continue;
         }
-    } else {
-        for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-            NodePtr input = _imp->guiInputs[i].lock();
-            if (!input) {
-                continue;
-            }
-            inputs->push_back(input);
-        }
+        inputs->push_back(input);
     }
+
 }
 
 void
@@ -1560,1332 +1445,620 @@ NodeGroup::purgeCaches()
     NodesList nodes = getNodes();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->getEffectInstance()->purgeCaches();
+        (*it)->getEffectInstance()->purgeCaches_public();
     }
-}
-
-bool
-NodeGroup::knobChanged(KnobI* k,
-                       ValueChangedReasonEnum /*reason*/,
-                       ViewSpec /*view*/,
-                       double /*time*/,
-                       bool /*originatedFromMainThread*/)
-{
-    bool ret = true;
-
-    if ( k == _imp->exportAsTemplate.get() ) {
-        boost::shared_ptr<NodeGuiI> gui_i = getNode()->getNodeGui();
-        if (gui_i) {
-            gui_i->exportGroupAsPythonScript();
-        }
-    } else if (k == _imp->convertToGroup.get() ) {
-        getNode()->setPyPlugEdited(true);
-    } else {
-        ret = false;
-    }
-
-    return ret;
 }
 
 void
-NodeGroup::setSubGraphEditable(bool editable)
+NodeGroup::clearLastRenderedImage()
 {
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->isEditable = editable;
-    Q_EMIT graphEditableChanged(editable);
+    EffectInstance::clearLastRenderedImage();
+    NodesList nodes = getNodes();
+
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        (*it)->getEffectInstance()->clearLastRenderedImage();
+    }
+}
+
+void
+NodeGroup::setupInitialSubGraphState()
+{
+    if (!isSubGraphEditable() || !isSubGraphPersistent()) {
+        return;
+    }
+
+    setSubGraphEditedByUser(true);
+
+    NodePtr input, output;
+
+    NodeGroupPtr thisShared = toNodeGroup(EffectInstance::shared_from_this());
+    {
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, thisShared));
+        args->setProperty(kCreateNodeArgsPropAutoConnect, false);
+        args->setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args->setProperty(kCreateNodeArgsPropSettingsOpened, false);
+        output = getApp()->createNode(args);
+        assert(output);
+        if (!output) {
+            throw std::runtime_error( tr("NodeGroup cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_OUTPUT) ).toStdString() );
+        }
+    }
+    {
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, thisShared));
+        args->setProperty(kCreateNodeArgsPropAutoConnect, false);
+        args->setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args->setProperty(kCreateNodeArgsPropSettingsOpened, false);
+        input = getApp()->createNode(args);
+        assert(input);
+        if (!input) {
+            throw std::runtime_error( tr("NodeGroup cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_INPUT) ).toStdString() );
+        }
+    }
+    if ( input && output && !output->getInput(0) ) {
+        output->connectInput(input, 0);
+
+        double x, y;
+        output->getPosition(&x, &y);
+        y -= 100;
+        input->setPosition(x, y);
+    }
+}
+
+void
+NodeGroup::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
+                        const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization)
+{
+    if (getNode()->isPyPlug()) {
+
+        assert(pyPlugSerialization);
+        // This will create internal nodes and restore their links.
+        createNodesFromSerialization(pyPlugSerialization->_children, eCreateNodesFromSerializationFlagsNone, 0);
+
+        // For PyPlugs, the graph s not editable anyway
+        setSubGraphEditedByUser(false);
+
+
+    } else if (projectSerialization && isSubGraphPersistent()) {
+
+        // Ok if we are here that means we are loading a group that was edited.
+        // Clear any initial nodes created and load the sub-graph
+
+        //Clear any node created already in setupInitialSubGraphState()
+        clearNodesBlocking();
+        
+        // This will create internal nodes.
+        createNodesFromSerialization(projectSerialization->_children, eCreateNodesFromSerializationFlagsNone,  0);
+
+        // A group always appear edited
+        setSubGraphEditedByUser(true);
+    } else {
+        // A group always appear edited
+        setSubGraphEditedByUser(true);
+    }
+}
+
+NodePtr
+NodeCollection::findSerializedNodeWithScriptName(const std::string& nodeScriptName,
+                                            const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& createdNodes,
+                                            const NodesList& allNodesInGroup,
+                                            bool allowSearchInAllNodes)
+{
+    for (std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
+        if (it->first->_nodeScriptName == nodeScriptName) {
+            return it->second;
+        }
+    }
+
+    if (allowSearchInAllNodes) {
+        for (NodesList::const_iterator it = allNodesInGroup.begin(); it != allNodesInGroup.end(); ++it) {
+            if ((*it)->getScriptName() == nodeScriptName) {
+                return *it;
+            }
+        }
+    }
+
+
+    return NodePtr();
+}
+
+
+static void
+restoreInput(const NodePtr& node,
+             const std::string& inputLabel,
+             const std::string& inputNodeScriptName,
+             const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& createdNodes,
+             const NodesList& allNodesInGroup,
+             bool allowSearchInAllNodes,
+             bool isMaskInput)
+{
+    if ( inputNodeScriptName.empty() ) {
+        return;
+    }
+    int index = inputLabel.empty() ? -1 : node->getInputNumberFromLabel(inputLabel);
+    if (index == -1) {
+
+        // If the name of the input was not serialized, the string is the index
+        bool ok;
+        index = QString::fromUtf8(inputLabel.c_str()).toInt(&ok);
+        if (!ok) {
+            index = -1;
+        }
+        if (index == -1) {
+            appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(node->getScriptName().c_str()), QDateTime::currentDateTime(),
+                                            Node::tr("Could not find input named %1")
+                                            .arg( QString::fromUtf8( inputNodeScriptName.c_str() ) ) );
+
+        }
+
+        // If the node had a single mask, the inputLabel was "0", indicating the index of the mask
+        // So iterate through masks to find it
+        if (isMaskInput) {
+            // Find the mask corresponding to the index
+            int nInputs = node->getNInputs();
+            int maskIndex = 0;
+            for (int i = 0; i < nInputs; ++i) {
+                if (node->isInputMask(i)) {
+                    if (maskIndex == index) {
+                        index = i;
+                        break;
+                    }
+                    ++maskIndex;
+                    break;
+                }
+            }
+        }
+    }
+
+    NodeCollectionPtr nodeGroup = node->getGroup();
+    if (!nodeGroup) {
+        return;
+    }
+    // The nodes created from the serialization may have changed name if another node with the same script-name already existed.
+    // By chance since we created all nodes within the same Group at the same time, we have a list of the old node serialization
+    // and the corresponding created node (with its new script-name).
+    // If we find a match, make sure we use the new node script-name to restore the input.
+    NodePtr foundNode = NodeGroup::findSerializedNodeWithScriptName(inputNodeScriptName, createdNodes, allNodesInGroup, allowSearchInAllNodes);
+    if (!foundNode) {
+        return;
+
+
+        // Commented-out: Do not attempt to get the node in the nodes list: all nodes within a sub-graph should be connected to nodes at this level.
+        // If it cannot be found in the allCreatedNodesInGroup then this is likely the user does not want the input to connect.
+        //foundNode = nodeGroup->getNodeByName(inputNodeScriptName);
+    }
+
+    node->swapInput(foundNode, index);
+
+} //restoreInput
+
+static void
+restoreInputs(const NodePtr& node,
+              const std::map<std::string, std::string>& inputsMap,
+              const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>& createdNodes,
+              const NodesList& allNodesInGroup,
+              bool allowSearchInAllNodes,
+              bool isMaskInputs)
+{
+    for (std::map<std::string, std::string>::const_iterator it = inputsMap.begin(); it != inputsMap.end(); ++it) {
+        restoreInput(node, it->first, it->second, createdNodes, allNodesInGroup, allowSearchInAllNodes, isMaskInputs);
+    }
+} // restoreInputs
+
+static void
+restoreLinksRecursive(const NodeCollectionPtr& group,
+                      const SERIALIZATION_NAMESPACE::NodeSerializationList& nodes,
+                      const std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>* createdNodes)
+{
+    for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+
+        // The nodes created from the serialization may have changed name if another node with the same script-name already existed.
+        // By chance since we created all nodes within the same Group at the same time, we have a list of the old node serialization
+        // and the corresponding created node (with its new script-name).
+        // If we find a match, make sure we use the new node script-name to restore the input.
+        NodePtr foundNode;
+        if (createdNodes) {
+            foundNode = NodeCollection::findSerializedNodeWithScriptName((*it)->_nodeScriptName, *createdNodes, NodesList(), false);
+        }
+        if (!foundNode) {
+            // We did not find the node in the serialized nodes list, the last resort is to look into already created nodes
+            // and find an exact match, hoping the script-name of the node did not change.
+            foundNode = group->getNodeByName((*it)->_nodeScriptName);
+        }
+        if (!foundNode) {
+            continue;
+        }
+
+        // The allCreatedNodes list is useful if the nodes that we created had their script-name changed from what was inside the node serialization object.
+        // It may have changed if a node would already exist in the group with the same script-name.
+        // This kind of conflict may only occur in the top-level graph that we are restoring: sub-graphs are created entirely so script-names should remain
+        // the same between the serilization object and the created node.
+        foundNode->restoreKnobsLinks(**it, createdNodes ? *createdNodes : std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>());
+
+        NodeGroupPtr isGroup = toNodeGroup(foundNode->getEffectInstance());
+        if (isGroup) {
+
+            // For sub-groupe, we don't have the list of created nodes, and their serialization list, but we should not need it:
+            // It's only the top-level group that we create that may have conflicts with script-names, sub-groups are conflict free since
+            // we just created them.
+            restoreLinksRecursive(isGroup, (*it)->_children, 0);
+        }
+    }
+} // restoreLinksRecursive
+
+
+bool
+NodeCollection::createNodesFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
+                                             CreateNodesFromSerializationFlagsEnum flags,
+                                             NodesList* createdNodesOut)
+{
+
+    // True if the restoration process had errors
+    bool hasError = false;
+    
+    NodeCollectionPtr thisShared = getThisShared();
+
+    // When loading a Project, use the Group name to update the loading status to the user
+    NodeGroupPtr isNodeGroup = toNodeGroup(thisShared);
+
+    QString groupStatusLabel;
+    {
+        if (isNodeGroup) {
+            groupStatusLabel = QString::fromUtf8( isNodeGroup->getNode()->getLabel().c_str() );
+        } else {
+            groupStatusLabel = tr("top-level");
+        }
+        getApplication()->updateProjectLoadStatus( tr("Creating nodes in group: %1").arg(groupStatusLabel) );
+    }
+
+    std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr> localCreatedNodes;
+
+
+    // Loop over all node serialization and create them first
+    for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+        
+        NodePtr node = appPTR->createNodeForProjectLoading(*it, thisShared);
+        if (createdNodesOut) {
+            createdNodesOut->push_back(node);
+        }
+        if (!node) {
+            QString text( tr("ERROR: The node %1 version %2.%3"
+                             " was found in the script but does not"
+                             " exist in the loaded plug-ins.")
+                         .arg( QString::fromUtf8( (*it)->_pluginID.c_str() ) )
+                         .arg((*it)->_pluginMajorVersion).arg((*it)->_pluginMinorVersion) );
+            appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
+            hasError = true;
+            continue;
+        } else {
+            if (node->getPluginID() == PLUGINID_NATRON_STUB) {
+                // If the node could not be created and we made a stub instead, warn the user
+                QString text( tr("WARNING: The node %1 (%2 version %3.%4) "
+                                 "was found in the script but the plug-in could not be found. It has been replaced by a pass-through node instead.")
+                             .arg( QString::fromUtf8( (*it)->_nodeScriptName.c_str() ) )
+                             .arg( QString::fromUtf8( (*it)->_pluginID.c_str() ) )
+                             .arg((*it)->_pluginMajorVersion)
+                             .arg((*it)->_pluginMinorVersion));
+                appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
+                hasError = true;
+            } else if ( (*it)->_pluginMajorVersion != -1 && (node->getMajorVersion() != (int)(*it)->_pluginMajorVersion) ) {
+                // If the node has a IOContainer don't do this check: when loading older projects that had a
+                // ReadOIIO node for example in version 2, we would now create a new Read meta-node with version 1 instead
+                QString text( tr("WARNING: The node %1 (%2 version %3.%4) "
+                                 "was found in the script but was loaded "
+                                 "with version %5.%6 instead.")
+                             .arg( QString::fromUtf8( (*it)->_nodeScriptName.c_str() ) )
+                             .arg( QString::fromUtf8( (*it)->_pluginID.c_str() ) )
+                             .arg((*it)->_pluginMajorVersion)
+                             .arg((*it)->_pluginMinorVersion)
+                             .arg( node->getPlugin()->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0) )
+                             .arg( node->getPlugin()->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 1) ) );
+                appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
+            }
+        }
+
+        assert(node);
+
+        localCreatedNodes.insert(std::make_pair(*it, node));
+
+
+    } // for all nodes
+
+
+    getApplication()->updateProjectLoadStatus( tr("Restoring graph links in group: %1").arg(groupStatusLabel) );
+
+
+    NodesList allNodesInGroup = getNodes();
+
+    // Connect the nodes together
+    for (std::map<SERIALIZATION_NAMESPACE::NodeSerializationPtr, NodePtr>::const_iterator it = localCreatedNodes.begin(); it != localCreatedNodes.end(); ++it) {
+
+
+        // Loop over the inputs map
+        // This is a map <input label, input node name>
+        //
+        // When loading projects before Natron 2.2, the inputs contain both masks and inputs.
+        //
+
+        restoreInputs(it->second, it->first->_inputs, localCreatedNodes, allNodesInGroup, flags & eCreateNodesFromSerializationFlagsConnectToExternalNodes, false /*isMasks*/);
+
+        // After Natron 2.2, masks are saved separatly
+        restoreInputs(it->second, it->first->_masks, localCreatedNodes, allNodesInGroup, flags & eCreateNodesFromSerializationFlagsConnectToExternalNodes, true /*isMasks*/);
+
+    } // for all nodes
+
+    // We may now restore all links
+    restoreLinksRecursive(thisShared, serializedNodes, &localCreatedNodes);
+
+    // Ensure metadatas are passed through the graph
+    // Refresh in one pass in a topological order (since metadatas from outputs depend on metadatas from inputs)
+    // Do it only when we finished restoring the main node graph (and thus all subgraphs) or if loading a PyPlug
+    if (!thisShared->getApplication()->getProject()->isLoadingProject() || !isNodeGroup) {
+
+        TopologicallySortedNodesList sortedNodes;
+        extractTopologicallySortedTrees(true /*recurseOnSubGroups*/, &sortedNodes, 0);
+        for (TopologicallySortedNodesList::const_iterator it = sortedNodes.begin(); it != sortedNodes.end(); ++it) {
+            (*it)->node->getEffectInstance()->onMetadataChanged_nonRecursive_public();
+        }
+    }
+    return !hasError;
+
+} // createNodesFromSerialization
+
+
+bool
+NodeCollection::TopologicalSortNode::isTreeInput() const
+{
+    assert(isPartOfGivenNodes);
+    for (InputsVec::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+        if (!*it) {
+            continue;
+        }
+        if ((*it)->isPartOfGivenNodes) {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool
-NodeGroup::isSubGraphEditable() const
+NodeCollection::TopologicalSortNode::isTreeOutput() const
 {
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->isEditable;
-}
-
-static QString
-escapeString(const QString& str)
-{
-    QString ret;
-
-    for (int i = 0; i < str.size(); ++i) {
-        //if ( (i == 0) || ( str[i - 1] != QLatin1Char('\\') ) ) { // does not work eg if a line ends with '\'
-        if ( str[i] == QLatin1Char('\a') ) {
-            ret.append( QLatin1Char('\\') );
-            ret.append( QLatin1Char('a') );
-        } else if ( str[i] == QLatin1Char('\b') ) {
-            ret.append( QLatin1Char('\\') );
-            ret.append( QLatin1Char('b') );
-        } else if ( str[i] == QLatin1Char('\f') ) {
-            ret.append( QLatin1Char('\\') );
-            ret.append( QLatin1Char('f') );
-        } else if ( str[i] == QLatin1Char('\n') ) {
-            ret.append( QLatin1Char('\\') );
-            ret.append( QLatin1Char('n') );
-        } else if ( str[i] == QLatin1Char('\r') ) {
-            ret.append( QLatin1Char('\\') );
-            ret.append( QLatin1Char('r') );
-        } else if ( str[i] == QLatin1Char('\t') ) {
-            ret.append( QLatin1Char('\\') );
-            ret.append( QLatin1Char('t') );
-        } else if ( str[i] == QLatin1Char('\v') ) {
-            ret.append( QLatin1Char('\\') );
-            ret.append( QLatin1Char('v') );
-        } else if ( str[i] == QLatin1Char('\\') ) {
-            ret.append( QLatin1Char('\\') );
-            ret.append( QLatin1Char('\\') );
-        } else if ( str[i] == QLatin1Char('\'') ) {
-            ret.append( QLatin1Char('\\') );
-            ret.append( QLatin1Char('\'') );
-        } else if ( str[i] == QLatin1Char('"') ) {
-            ret.append( QLatin1Char('\\') );
-            ret.append( QLatin1Char('\"') );
-            //} else if ( str[i] == QLatin1Char('?') ) { // no trigraphs in Python
-            //    ret.append( QLatin1Char('\\') );
-            //    ret.append( QLatin1Char('\?') );
-        } else if (str[i].isPrint()) {
-            ret.append(str[i]);
-        } else {
-#if PY_MAJOR_VERSION >= 3
-            // Python 3 strings are unicode
-            ret.append(QString::fromUTF8("\\u%1").arg(str[i].unicode(), 4, 16, QLatin1Char('0')));
-#else
-            // Python 2: convert to Utf8
-            QByteArray utf8 = QString(str[i]).toUtf8();
-            for (int j = 0; j < utf8.size(); ++i) {
-                ret.append(QString::fromUtf8("\\x%1").arg(utf8[j], 2, 16, QLatin1Char('0')));
-            }
-#endif
+    assert(isPartOfGivenNodes);
+    for (InternalOutputsMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        TopologicalSortNodePtr output = it->first.lock();
+        if (!output) {
+            continue;
         }
-        //}
-    }
-    ret.prepend( QLatin1Char('"') );
-    ret.append( QLatin1Char('"') );
-
-    return ret;
-}
-
-static QString
-escapeString(const std::string& str)
-{
-    QString s = QString::fromUtf8( str.c_str() );
-
-    return escapeString(s);
-}
-
-#define ESC(s) escapeString(s)
-
-
-/* *INDENT-OFF* */
-
-#define WRITE_STATIC_LINE(line) ts << line "\n"
-#define WRITE_INDENT(x)                                 \
-    for (int _i = 0; _i < x; ++_i) { ts << "    "; }
-#define WRITE_STRING(str) ts << str << "\n"
-//#define NUM(n) QString::number(n)
-#define NUM_INT(n) QString::number(n, 10)
-#define NUM_COLOR(n) QString::number(n, 'g', 4)
-#define NUM_PIXEL(n) QString::number(n, 'f', 0)
-// The precision should be set to digits10+1 (i.e. 16 for double)
-// see also:
-// - https://github.com/jbeder/yaml-cpp/issues/197
-// - https://stackoverflow.com/questions/4738768/printing-double-without-losing-precision
-#define NUM_VALUE(n) QString::number(n, 'g', std::numeric_limits<double>::digits10 + 1)
-#define NUM_TIME(n) QString::number(n, 'g', std::numeric_limits<double>::digits10 + 1)
-
-/* *INDENT-ON* */
-
-static bool
-exportKnobValues(int indentLevel,
-                 const KnobPtr knob,
-                 const QString& paramFullName,
-                 bool mustDefineParam,
-                 QTextStream& ts)
-{
-    bool hasExportedValue = false;
-
-    Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>( knob.get() );
-    AnimatingKnobStringHelper* isAnimatedStr = dynamic_cast<AnimatingKnobStringHelper*>( knob.get() );
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-    KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
-    KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
-    KnobGroup* isGrp = dynamic_cast<KnobGroup*>( knob.get() );
-    KnobString* isStringKnob = dynamic_cast<KnobString*>( knob.get() );
-
-    ///Don't export this kind of parameter. Mainly this is the html label of the node which is 99% of times empty
-    if ( isStringKnob &&
-         isStringKnob->isMultiLine() &&
-         isStringKnob->usesRichText() &&
-         !isStringKnob->hasContentWithoutHtmlTags() &&
-         !isStringKnob->isAnimationEnabled() &&
-         isStringKnob->getExpression(0).empty() ) {
+        assert(output->isPartOfGivenNodes);
         return false;
     }
-
-    EffectInstance* holderIsEffect = dynamic_cast<EffectInstance*>( knob->getHolder() );
-
-    if (isChoice && holderIsEffect) {
-        //Do not serialize mask channel selector if the mask is not enabled
-        int maskInputNb = holderIsEffect->getNode()->isMaskChannelKnob(isChoice);
-        if (maskInputNb != -1) {
-            if ( !holderIsEffect->getNode()->isMaskEnabled(maskInputNb) ) {
-                return false;
-            }
-        }
-    }
-
-    int innerIdent = mustDefineParam ? 2 : 1;
-
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        if (isParametric) {
-            if (!hasExportedValue) {
-                hasExportedValue = true;
-                if (mustDefineParam) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("if param is not None:") );
-                }
-            }
-            boost::shared_ptr<Curve> curve = isParametric->getParametricCurve(i);
-            double r, g, b;
-            isParametric->getCurveColor(i, &r, &g, &b);
-            WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setCurveColor(") + NUM_INT(i) + QString::fromUtf8(", ") +
-                                                    NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) + QString::fromUtf8(")") );
-            if (curve) {
-                KeyFrameSet keys = curve->getKeyFrames_mt_safe();
-                int c = 0;
-                if ( !keys.empty() ) {
-                    WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.deleteAllControlPoints(") + NUM_INT(i) + QString::fromUtf8(")") );
-                }
-                for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3, ++c) {
-                    QString interpStr;
-                    switch ( it3->getInterpolation() ) {
-                    case eKeyframeTypeNone:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeNone");
-                        break;
-                    case eKeyframeTypeSmooth:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeSmooth");
-                        break;
-                    case eKeyframeTypeBroken:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeBroken");
-                        break;
-                    case eKeyframeTypeCatmullRom:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeCatmullRom");
-                        break;
-                    case eKeyframeTypeConstant:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeConstant");
-                        break;
-                    case eKeyframeTypeCubic:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeCubic");
-                        break;
-                    case eKeyframeTypeFree:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeFree");
-                        break;
-                    case eKeyframeTypeHorizontal:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeHorizontal");
-                        break;
-                    case eKeyframeTypeLinear:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeLinear");
-                        break;
-                    default:
-                        break;
-                    }
-
-
-                    WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.addControlPoint(") + NUM_INT(i) + QString::fromUtf8(", ") +
-                                                            NUM_TIME( it3->getTime() ) + QString::fromUtf8(", ") +
-                                                            NUM_VALUE( it3->getValue() ) + QString::fromUtf8(", ") + NUM_VALUE( it3->getLeftDerivative() )
-                                                            + QString::fromUtf8(", ") + NUM_VALUE( it3->getRightDerivative() ) + QString::fromUtf8(", ") + interpStr + QString::fromUtf8(")") );
-                }
-            }
-        } else { // !isParametric
-            boost::shared_ptr<Curve> curve = knob->getCurve(ViewIdx(0), i, true);
-            if (curve) {
-                KeyFrameSet keys = curve->getKeyFrames_mt_safe();
-
-                if ( !keys.empty() ) {
-                    if (!hasExportedValue) {
-                        hasExportedValue = true;
-                        if (mustDefineParam) {
-                            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
-                            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("if param is not None:") );
-                        }
-                    }
-                }
-
-                for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {
-                    if (isAnimatedStr) {
-                        std::string value = isAnimatedStr->getValueAtTime(it3->getTime(), i, ViewIdx(0), true);
-                        WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValueAtTime(") + ESC(value) + QString::fromUtf8(", ")
-                                                                + NUM_TIME( it3->getTime() ) + QChar::fromLatin1(')') );
-                    } else if (isBool) {
-                        int v = std::min( 1., std::max( 0., std::floor(it3->getValue() + 0.5) ) );
-                        QString vStr = v ? QString::fromUtf8("True") : QString::fromUtf8("False");
-                        WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValueAtTime(") + vStr + QString::fromUtf8(", ")
-                                                                + NUM_TIME( it3->getTime() )  + QLatin1Char(')') );
-                    } else if (isChoice) {
-                        WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValueAtTime(") + NUM_INT( (int)it3->getValue() ) + QString::fromUtf8(", ")
-                                                                + NUM_TIME( it3->getTime() ) + QLatin1Char(')') );
-                    } else {
-                        WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValueAtTime(") + NUM_VALUE( it3->getValue() ) + QString::fromUtf8(", ")
-                                                                + NUM_TIME( it3->getTime() ) + QString::fromUtf8(", ") + NUM_INT(i) + QLatin1Char(')') );
-                    }
-                }
-            }
-
-            if ( ( !curve || (curve->getKeyFramesCount() == 0) ) && knob->hasModifications(i) ) {
-                if (!hasExportedValue) {
-                    hasExportedValue = true;
-                    if (mustDefineParam) {
-                        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
-                        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("if param is not None:") );
-                    }
-                }
-
-                if (isGrp) {
-                    int v = std::min( 1., std::max( 0., std::floor(isGrp->getValue(i, ViewIdx(0), true) + 0.5) ) );
-                    QString vStr = v ? QString::fromUtf8("True") : QString::fromUtf8("False");
-                    WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setOpened(") + vStr + QString::fromUtf8(")") );
-                } else if (isStr) {
-                    std::string v = isStr->getValue(i, ViewIdx(0), true);
-                    WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValue(") + ESC(v)  + QString::fromUtf8(")") );
-                } else if (isDouble) {
-                    double v = isDouble->getValue(i, ViewIdx(0), true);
-                    WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValue(") + NUM_VALUE(v) + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")") );
-                } else if (isChoice) {
-                    WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.set(") + ESC( isChoice->getActiveEntry().id ) + QString::fromUtf8(")") );
-                } else if (isInt) {
-                    int v = isInt->getValue(i, ViewIdx(0), true);
-                    WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValue(") + NUM_INT(v) + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")") );
-                } else if (isBool) {
-                    int v = std::min( 1., std::max( 0., std::floor(isBool->getValue(i, ViewIdx(0), true) + 0.5) ) );
-                    QString vStr = v ? QString::fromUtf8("True") : QString::fromUtf8("False");
-                    WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValue(") + vStr + QString::fromUtf8(")") );
-                }
-            } // if ((!curve || curve->getKeyFramesCount() == 0) && knob->hasModifications(i)) {
-        } // if (isParametric) {
-    } // for (int i = 0; i < (*it2)->getDimension(); ++i)
-
-    bool isSecretByDefault = knob->getDefaultIsSecret();
-    if (knob->isUserKnob() && isSecretByDefault) {
-        if (!hasExportedValue) {
-            hasExportedValue = true;
-            if (mustDefineParam) {
-                WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("if param is not None:") );
-            }
-        }
-
-        WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setVisibleByDefault(False)") );
-    }
-
-    if ( knob->isUserKnob() ) {
-        bool isSecret = knob->getIsSecret();
-        if (isSecret != isSecretByDefault) {
-            if (!hasExportedValue) {
-                hasExportedValue = true;
-                if (mustDefineParam) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("if param is not None:") );
-                }
-            }
-
-            QString str = QString::fromUtf8("param.setVisible(");
-            if (isSecret) {
-                str += QString::fromUtf8("False");
-            } else {
-                str += QString::fromUtf8("True");
-            }
-            str += QString::fromUtf8(")");
-            WRITE_INDENT(innerIdent); WRITE_STRING(str);
-        }
-
-        bool enabledByDefault = knob->isDefaultEnabled(0);
-        if (!enabledByDefault) {
-            if (!hasExportedValue) {
-                hasExportedValue = true;
-                if (mustDefineParam) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("if param is not None:") );
-                }
-            }
-
-            WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setEnabledByDefault(False)") );
-        }
-
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            bool isEnabled = knob->isEnabled(i);
-            if (isEnabled != enabledByDefault) {
-                if (!hasExportedValue) {
-                    hasExportedValue = true;
-                    if (mustDefineParam) {
-                        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramFullName);
-                        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("if param is not None:") );
-                    }
-                }
-
-                QString str = QString::fromUtf8("param.setEnabled(");
-                if (isEnabled) {
-                    str += QString::fromUtf8("True");
-                } else {
-                    str += QString::fromUtf8("False");
-                }
-                str += QString::fromUtf8(", ");
-                str += NUM_INT(i);
-                str += QLatin1Char(')');
-                WRITE_INDENT(innerIdent); WRITE_STRING(str);
-            }
-        }
-    } // isuserknob
-
-    if (mustDefineParam && hasExportedValue) {
-        WRITE_INDENT(innerIdent); WRITE_STRING("del param");
-    }
-
-    return hasExportedValue;
-} // exportKnobValues
-
-static void
-exportUserKnob(int indentLevel,
-               const KnobPtr& knob,
-               const QString& fullyQualifiedNodeName,
-               KnobGroup* group,
-               KnobPage* page,
-               QTextStream& ts)
-{
-    KnobInt* isInt = dynamic_cast<KnobInt*>( knob.get() );
-    KnobDouble* isDouble = dynamic_cast<KnobDouble*>( knob.get() );
-    KnobBool* isBool = dynamic_cast<KnobBool*>( knob.get() );
-    KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
-    KnobColor* isColor = dynamic_cast<KnobColor*>( knob.get() );
-    KnobString* isStr = dynamic_cast<KnobString*>( knob.get() );
-    KnobFile* isFile = dynamic_cast<KnobFile*>( knob.get() );
-    KnobOutputFile* isOutFile = dynamic_cast<KnobOutputFile*>( knob.get() );
-    KnobPath* isPath = dynamic_cast<KnobPath*>( knob.get() );
-    KnobGroup* isGrp = dynamic_cast<KnobGroup*>( knob.get() );
-    KnobButton* isButton = dynamic_cast<KnobButton*>( knob.get() );
-    KnobSeparator* isSep = dynamic_cast<KnobSeparator*>( knob.get() );
-    KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
-    boost::shared_ptr<KnobI > aliasedParam;
-    {
-        KnobI::ListenerDimsMap listeners;
-        knob->getListeners(listeners);
-        if ( !listeners.empty() ) {
-            KnobPtr listener = listeners.begin()->first.lock();
-            if ( listener && (listener->getAliasMaster() == knob) ) {
-                aliasedParam = listener;
-            }
-        }
-    }
-
-    if (isInt) {
-        QString createToken;
-        switch ( isInt->getDimension() ) {
-        case 1:
-            createToken = QString::fromUtf8(".createIntParam(");
-            break;
-        case 2:
-            createToken = QString::fromUtf8(".createInt2DParam(");
-            break;
-        case 3:
-            createToken = QString::fromUtf8(".createInt3DParam(");
-            break;
-        default:
-            assert(false);
-            createToken = QString::fromUtf8(".createIntParam(");
-            break;
-        }
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + createToken + ESC( isInt->getName() ) +
-                                                 QString::fromUtf8(", ") + ESC( isInt->getLabel() ) + QString::fromUtf8(")") );
-
-
-        std::vector<int> defaultValues = isInt->getDefaultValues_mt_safe();
-
-
-        assert( (int)defaultValues.size() == isInt->getDimension() );
-        for (int i = 0; i < isInt->getDimension(); ++i) {
-            int min = isInt->getMinimum(i);
-            int max = isInt->getMaximum(i);
-            int dMin = isInt->getDisplayMinimum(i);
-            int dMax = isInt->getDisplayMaximum(i);
-            if (min != INT_MIN) {
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMinimum(") + NUM_INT(min) + QString::fromUtf8(", ") +
-                                                         NUM_INT(i) + QString::fromUtf8(")") );
-            }
-            if (max != INT_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMaximum(") + NUM_INT(max) + QString::fromUtf8(", ") +
-                                                         NUM_INT(i) + QString::fromUtf8(")") );
-            }
-            if (dMin != INT_MIN) {
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMinimum(") + NUM_INT(dMin) + QString::fromUtf8(", ") +
-                                                         NUM_INT(i) + QString::fromUtf8(")") );
-            }
-            if (dMax != INT_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMaximum(") + NUM_INT(dMax) + QString::fromUtf8(", ") +
-                                                         NUM_INT(i) + QString::fromUtf8(")") );
-            }
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + NUM_INT(defaultValues[i]) + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")") );
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue(") + NUM_INT(i) + QString::fromUtf8(")") );
-        }
-    } else if (isDouble) {
-        QString createToken;
-        switch ( isDouble->getDimension() ) {
-        case 1:
-            createToken = QString::fromUtf8(".createDoubleParam(");
-            break;
-        case 2:
-            createToken = QString::fromUtf8(".createDouble2DParam(");
-            break;
-        case 3:
-            createToken = QString::fromUtf8(".createDouble3DParam(");
-            break;
-        default:
-            assert(false);
-            createToken = QString::fromUtf8(".createDoubleParam(");
-            break;
-        }
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + createToken + ESC( isDouble->getName() ) +
-                                                 QString::fromUtf8(", ") + ESC( isDouble->getLabel() ) + QString::fromUtf8(")") );
-
-        std::vector<double> defaultValues = isDouble->getDefaultValues_mt_safe();
-        assert( (int)defaultValues.size() == isDouble->getDimension() );
-        for (int i = 0; i < isDouble->getDimension(); ++i) {
-            double min = isDouble->getMinimum(i);
-            double max = isDouble->getMaximum(i);
-            double dMin = isDouble->getDisplayMinimum(i);
-            double dMax = isDouble->getDisplayMaximum(i);
-            if (min != -DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMinimum(") + NUM_VALUE(min) + QString::fromUtf8(", ") +
-                                                         NUM_INT(i) + QString::fromUtf8(")") );
-            }
-            if (max != DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMaximum(") + NUM_VALUE(max) + QString::fromUtf8(", ") +
-                                                         NUM_INT(i) + QString::fromUtf8(")") );
-            }
-            if (dMin != -DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMinimum(") + NUM_VALUE(dMin) + QString::fromUtf8(", ") +
-                                                         NUM_INT(i) + QString::fromUtf8(")") );
-            }
-            if (dMax != DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMaximum(") + NUM_VALUE(dMax) + QString::fromUtf8(", ") +
-                                                         NUM_INT(i) + QString::fromUtf8(")") );
-            }
-            if (defaultValues[i] != 0.) {
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + NUM_VALUE(defaultValues[i]) + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")") );
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue(") + NUM_INT(i) + QString::fromUtf8(")") );
-            }
-        }
-    } else if (isBool) {
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createBooleanParam(") + ESC( isBool->getName() ) +
-                                                 QString::fromUtf8(", ") + ESC( isBool->getLabel() ) + QString::fromUtf8(")") );
-
-        std::vector<bool> defaultValues = isBool->getDefaultValues_mt_safe();
-        assert( (int)defaultValues.size() == isBool->getDimension() );
-
-        if (defaultValues[0]) {
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(True)") );
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue()") );
-        }
-    } else if (isChoice) {
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createChoiceParam(") +
-                                                 ESC( isChoice->getName() ) +
-                                                 QString::fromUtf8(", ") + ESC( isChoice->getLabel() ) + QString::fromUtf8(")") );
-
-        KnobChoice* aliasedIsChoice = dynamic_cast<KnobChoice*>( aliasedParam.get() );
-
-        if (!aliasedIsChoice) {
-            std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
-
-            if (entries.size() > 0) {
-
-                WRITE_INDENT(indentLevel); ts << "entries = [ (" << ESC(entries[0].id) << ", " << ESC(entries[0].tooltip) << "),\n";
-                for (U32 i = 1; i < entries.size(); ++i) {
-                    QString endToken = (i == entries.size() - 1) ? QString::fromUtf8(")]") : QString::fromUtf8("),");
-                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("(") + ESC(entries[i].id) + QString::fromUtf8(", ") + ESC(entries[i].tooltip) + endToken);
-                }
-                WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("param.setOptions(entries)");
-                WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del entries");
-            }
-            std::vector<int> defaultValues = isChoice->getDefaultValues_mt_safe();
-            assert( (int)defaultValues.size() == isChoice->getDimension() );
-            if (defaultValues[0] != 0) {
-                std::string entryStr = isChoice->getEntry(defaultValues[0]).id;
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + ESC(entryStr) + QString::fromUtf8(")") );
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue()") );
-            }
-        } else {
-            std::vector<int> defaultValues = isChoice->getDefaultValues_mt_safe();
-            assert( (int)defaultValues.size() == isChoice->getDimension() );
-            if (defaultValues[0] != 0) {
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + NUM_INT(defaultValues[0]) + QString::fromUtf8(")") );
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue()"));
-            }
-        }
-    } else if (isColor) {
-        QString hasAlphaStr = (isColor->getDimension() == 4) ? QString::fromUtf8("True") : QString::fromUtf8("False");
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createColorParam(") + ESC( isColor->getName() ) +
-                                                 QString::fromUtf8(", ") + ESC( isColor->getLabel() ) + QString::fromUtf8(", ") + hasAlphaStr +  QString::fromUtf8(")") );
-
-
-        std::vector<double> defaultValues = isColor->getDefaultValues_mt_safe();
-        assert( (int)defaultValues.size() == isColor->getDimension() );
-
-        for (int i = 0; i < isColor->getDimension(); ++i) {
-            double min = isColor->getMinimum(i);
-            double max = isColor->getMaximum(i);
-            double dMin = isColor->getDisplayMinimum(i);
-            double dMax = isColor->getDisplayMaximum(i);
-            if (min != -DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMinimum(") + NUM_VALUE(min) + QString::fromUtf8(", ") +
-                                                         NUM_INT(i) + QString::fromUtf8(")") );
-            }
-            if (max != DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMaximum(") + NUM_VALUE(max) + QString::fromUtf8(", ") +
-                                                         NUM_INT(i) + QString::fromUtf8(")") );
-            }
-            if (dMin != -DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMinimum(") + NUM_VALUE(dMin) + QString::fromUtf8(", ") +
-                                                         NUM_INT(i) + QString::fromUtf8(")") );
-            }
-            if (dMax != DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMaximum(") + NUM_VALUE(dMax) + QString::fromUtf8(", ") +
-                                                         NUM_INT(i) + QString::fromUtf8(")") );
-            }
-            if (defaultValues[i] != 0.) {
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + NUM_VALUE(defaultValues[i]) + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")") );
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue(") + NUM_INT(i) + QString::fromUtf8(")") );
-            }
-        }
-    } else if (isButton) {
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createButtonParam(") +
-                                                 ESC( isButton->getName() ) +
-                                                 QString::fromUtf8(", ") + ESC( isButton->getLabel() ) + QString::fromUtf8(")") );
-    } else if (isSep) {
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createSeparatorParam(") +
-                                                 ESC( isSep->getName() ) +
-                                                 QString::fromUtf8(", ") + ESC( isSep->getLabel() ) + QString::fromUtf8(")") );
-    } else if (isStr) {
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createStringParam(") +
-                                                 ESC( isStr->getName() ) +
-                                                 QString::fromUtf8(", ") + ESC( isStr->getLabel() ) + QString::fromUtf8(")") );
-        QString typeStr;
-        if ( isStr->isLabel() ) {
-            typeStr = QString::fromUtf8("eStringTypeLabel");
-        } else if ( isStr->isMultiLine() ) {
-            if ( isStr->usesRichText() ) {
-                typeStr = QString::fromUtf8("eStringTypeRichTextMultiLine");
-            } else {
-                typeStr = QString::fromUtf8("eStringTypeMultiLine");
-            }
-        } else if ( isStr->isCustomKnob() ) {
-            typeStr = QString::fromUtf8("eStringTypeCustom");
-        } else {
-            typeStr = QString::fromUtf8("eStringTypeDefault");
-        }
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setType(NatronEngine.StringParam.TypeEnum.") + typeStr + QString::fromUtf8(")") );
-
-        std::vector<std::string> defaultValues = isStr->getDefaultValues_mt_safe();
-        assert( (int)defaultValues.size() == isStr->getDimension() );
-        QString def = QString::fromUtf8( defaultValues[0].c_str() );
-        if ( !def.isEmpty() ) {
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + ESC(def) + QString::fromUtf8(")") );
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue()") );
-        }
-    } else if (isFile) {
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createFileParam(") + ESC( isFile->getName() ) +
-                                                 QString::fromUtf8(", ") + ESC( isFile->getLabel() ) + QString::fromUtf8(")") );
-        QString seqStr = isFile->isInputImageFile() ? QString::fromUtf8("True") : QString::fromUtf8("False");
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setSequenceEnabled(") + seqStr + QString::fromUtf8(")") );
-
-        std::vector<std::string> defaultValues = isFile->getDefaultValues_mt_safe();
-        assert( (int)defaultValues.size() == isFile->getDimension() );
-        QString def = QString::fromUtf8( defaultValues[0].c_str() );
-        if ( !def.isEmpty() ) {
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue()") + def + QString::fromUtf8(")") );
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue()") );
-        }
-    } else if (isOutFile) {
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createOutputFileParam(") +
-                                                 ESC( isOutFile->getName() ) +
-                                                 QString::fromUtf8(", ") + ESC( isOutFile->getLabel() ) + QString::fromUtf8(")") );
-        assert(isOutFile);
-        QString seqStr = isOutFile->isOutputImageFile() ? QString::fromUtf8("True") : QString::fromUtf8("False");
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setSequenceEnabled(") + seqStr + QString::fromUtf8(")") );
-
-        std::vector<std::string> defaultValues = isOutFile->getDefaultValues_mt_safe();
-        assert( (int)defaultValues.size() == isOutFile->getDimension() );
-        QString def = QString::fromUtf8( defaultValues[0].c_str() );
-        if ( !def.isEmpty() ) {
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + ESC(def) + QString::fromUtf8(")") );
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue()") );
-        }
-    } else if (isPath) {
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createPathParam(") +
-                                                 ESC( isPath->getName() ) +
-                                                 QString::fromUtf8(", ") + ESC( isPath->getLabel() ) + QString::fromUtf8(")") );
-        if ( isPath->isMultiPath() ) {
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setAsMultiPathTable()");
-        }
-
-        std::vector<std::string> defaultValues = isPath->getDefaultValues_mt_safe();
-        assert( (int)defaultValues.size() == isPath->getDimension() );
-        QString def = QString::fromUtf8( defaultValues[0].c_str() );
-        if ( !def.isEmpty() ) {
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + ESC(def) + QString::fromUtf8(")") );
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue()") );
-        }
-    } else if (isGrp) {
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createGroupParam(") +
-                                                 ESC( isGrp->getName() ) +
-                                                 QString::fromUtf8(", ") + ESC( isGrp->getLabel() ) + QString::fromUtf8(")") );
-        if ( isGrp->isTab() ) {
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setAsTab()") );
-        }
-    } else if (isParametric) {
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createParametricParam(") +
-                                                 ESC( isParametric->getName() ) +
-                                                 QString::fromUtf8(", ") + ESC( isParametric->getLabel() ) +  QString::fromUtf8(", ") +
-                                                 NUM_INT( isParametric->getDimension() ) + QString::fromUtf8(")") );
-    }
-
-    WRITE_STATIC_LINE("");
-
-    if (group) {
-        QString grpFullName = fullyQualifiedNodeName + QString::fromUtf8(".") + QString::fromUtf8( group->getName().c_str() );
-        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Add the param to the group, no need to add it to the page");
-        WRITE_INDENT(indentLevel); WRITE_STRING( grpFullName + QString::fromUtf8(".addParam(param)") );
-    } else {
-        assert(page);
-        QString pageFullName = fullyQualifiedNodeName + QString::fromUtf8(".") + QString::fromUtf8( page->getName().c_str() );
-        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Add the param to the page");
-        WRITE_INDENT(indentLevel); WRITE_STRING( pageFullName + QString::fromUtf8(".addParam(param)") );
-    }
-
-    WRITE_STATIC_LINE("");
-    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Set param properties");
-
-    QString help = QString::fromUtf8( knob->getHintToolTip().c_str() );
-    if ( !aliasedParam || ( aliasedParam->getHintToolTip() != knob->getHintToolTip() ) ) {
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setHelp(") + ESC(help) + QString::fromUtf8(")") );
-    }
-
-
-    bool previousHasNewLineActivated = true;
-    KnobsVec children;
-    if (group) {
-        children = group->getChildren();
-    } else if (page) {
-        children = page->getChildren();
-    }
-    for (U32 i = 0; i < children.size(); ++i) {
-        if (children[i] == knob) {
-            if (i > 0) {
-                previousHasNewLineActivated = children[i - 1]->isNewLineActivated();
-            }
-            break;
-        }
-    }
-
-    if (previousHasNewLineActivated) {
-        WRITE_INDENT(indentLevel); WRITE_STRING("param.setAddNewLine(True)");
-    } else {
-        WRITE_INDENT(indentLevel); WRITE_STRING("param.setAddNewLine(False)");
-    }
-
-    if ( !knob->getIsPersistent() ) {
-        WRITE_INDENT(indentLevel); WRITE_STRING("param.setPersistent(False)");
-    }
-
-    if ( !knob->getEvaluateOnChange() ) {
-        WRITE_INDENT(indentLevel); WRITE_STRING("param.setEvaluateOnChange(False)");
-    }
-
-    if ( knob->canAnimate() ) {
-        QString animStr = knob->isAnimationEnabled() ? QString::fromUtf8("True") : QString::fromUtf8("False");
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setAnimationEnabled(") + animStr + QString::fromUtf8(")") );
-    }
-
-    exportKnobValues(indentLevel, knob, QString(), false, ts);
-    WRITE_INDENT(indentLevel); WRITE_STRING( fullyQualifiedNodeName + QString::fromUtf8(".") + QString::fromUtf8( knob->getName().c_str() ) + QString::fromUtf8(" = param") );
-    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del param");
-
-    WRITE_STATIC_LINE("");
-
-    if (isGrp) {
-        KnobsVec children =  isGrp->getChildren();
-        for (KnobsVec::const_iterator it3 = children.begin(); it3 != children.end(); ++it3) {
-            exportUserKnob(indentLevel, *it3, fullyQualifiedNodeName, isGrp, page, ts);
-        }
-    }
-} // exportUserKnob
-
-static void
-exportBezierPointAtTime(int indentLevel,
-                        const boost::shared_ptr<BezierCP>& point,
-                        bool isFeather,
-                        double time,
-                        int idx,
-                        QTextStream& ts)
-{
-    QString token = isFeather ? QString::fromUtf8("bezier.setFeatherPointAtIndex(") : QString::fromUtf8("bezier.setPointAtIndex(");
-    double x, y, lx, ly, rx, ry;
-
-    point->getPositionAtTime(false, time, ViewIdx(0), &x, &y);
-    point->getLeftBezierPointAtTime(false, time, ViewIdx(0), &lx, &ly);
-    point->getRightBezierPointAtTime(false, time, ViewIdx(0), &rx, &ry);
-
-    WRITE_INDENT(indentLevel); WRITE_STRING( token + NUM_INT(idx) + QString::fromUtf8(", ") +
-                                             NUM_TIME(time) + QString::fromUtf8(", ") + NUM_VALUE(x) + QString::fromUtf8(", ") +
-                                             NUM_VALUE(y) + QString::fromUtf8(", ") + NUM_VALUE(lx) + QString::fromUtf8(", ") +
-                                             NUM_VALUE(ly) + QString::fromUtf8(", ") + NUM_VALUE(rx) + QString::fromUtf8(", ") +
-                                             NUM_VALUE(ry) + QString::fromUtf8(")") );
+    return true;
 }
 
-static void
-exportRotoLayer(int indentLevel,
-                const std::list<boost::shared_ptr<RotoItem> >& items,
-                const boost::shared_ptr<RotoLayer>& layer,
-                QTextStream& ts)
+static NodeCollection::TopologicalSortNodePtr
+createTopologicalSortNodeRecursive(bool enterGroups,
+                                   const NodePtr& node,
+                                   const NodeCollection::TopologicalSortNodePtr& callerNode,
+                                   int callerInputNb,
+                                   const NodesList* allNodesList,
+                                   std::list<NodeCollection::TopologicalSortNodePtr>* treeInputNodes,
+                                   std::map<NodePtr, NodeCollection::TopologicalSortNodePtr>* createdNodes)
 {
-    QString parentLayerName = QString::fromUtf8( layer->getScriptName().c_str() ) + QString::fromUtf8("_layer");
 
-    for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
-        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
-        boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
-
-        if (isBezier) {
-            double time;
-            const std::list<boost::shared_ptr<BezierCP> >& cps = isBezier->getControlPoints();
-            const std::list<boost::shared_ptr<BezierCP> >& fps = isBezier->getFeatherPoints();
-
-            if ( cps.empty() ) {
-                continue;
+    // We already visited this node, just add in the output list
+    {
+        std::map<NodePtr, NodeCollection::TopologicalSortNodePtr>::iterator foundCreated = createdNodes->find(node);
+        if (foundCreated != createdNodes->end()) {
+            if (callerNode) {
+                foundCreated->second->outputs[callerNode].push_back(callerInputNb);
             }
-
-            time = cps.front()->getKeyframeTime(false, 0);
-
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier = roto.createBezier(0, 0, ") + NUM_TIME(time) + QString::fromUtf8(")") );
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.setScriptName(") + ESC( isBezier->getScriptName() ) + QString::fromUtf8(")") );
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.setLabel(") + ESC( isBezier->getLabel() ) + QString::fromUtf8(")") );
-            QString lockedStr = isBezier->getLocked() ? QString::fromUtf8("True") : QString::fromUtf8("False");
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.setLocked(") + lockedStr + QString::fromUtf8(")") );
-            QString visibleStr = isBezier->isGloballyActivated() ? QString::fromUtf8("True") : QString::fromUtf8("False");
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.setVisible(") + visibleStr + QString::fromUtf8(")") );
-
-            boost::shared_ptr<KnobBool> activatedKnob = isBezier->getActivatedKnob();
-            exportKnobValues(indentLevel, activatedKnob, QString::fromUtf8("bezier.getActivatedParam()"), true, ts);
-
-            boost::shared_ptr<KnobDouble> featherDist = isBezier->getFeatherKnob();
-            exportKnobValues(indentLevel, featherDist, QString::fromUtf8("bezier.getFeatherDistanceParam()"), true, ts);
-
-            boost::shared_ptr<KnobDouble> opacityKnob = isBezier->getOpacityKnob();
-            exportKnobValues(indentLevel, opacityKnob, QString::fromUtf8("bezier.getOpacityParam()"), true, ts);
-
-            boost::shared_ptr<KnobDouble> fallOffKnob = isBezier->getFeatherFallOffKnob();
-            exportKnobValues(indentLevel, fallOffKnob, QString::fromUtf8("bezier.getFeatherFallOffParam()"), true, ts);
-
-            boost::shared_ptr<KnobColor> colorKnob = isBezier->getColorKnob();
-            exportKnobValues(indentLevel, colorKnob, QString::fromUtf8("bezier.getColorParam()"), true, ts);
-
-            boost::shared_ptr<KnobChoice> compositing = isBezier->getOperatorKnob();
-            exportKnobValues(indentLevel, compositing, QString::fromUtf8("bezier.getCompositingOperatorParam()"), true, ts);
-
-
-            WRITE_INDENT(indentLevel); WRITE_STRING( parentLayerName + QString::fromUtf8(".addItem(bezier)") );
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("");
-
-            assert( cps.size() == fps.size() );
-
-            std::set<double> kf;
-            isBezier->getKeyframeTimes(&kf);
-
-            //the last python call already registered the first control point
-            int nbPts = cps.size() - 1;
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("for i in range(0, ") + NUM_INT(nbPts) + QString::fromUtf8("):") );
-            WRITE_INDENT(2); WRITE_STATIC_LINE("bezier.addControlPoint(0,0)");
-
-            ///Now that all points are created position them
-            int idx = 0;
-            std::list<boost::shared_ptr<BezierCP> >::const_iterator fpIt = fps.begin();
-            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it2 = cps.begin(); it2 != cps.end(); ++it2, ++fpIt, ++idx) {
-                for (std::set<double>::iterator it3 = kf.begin(); it3 != kf.end(); ++it3) {
-                    exportBezierPointAtTime(indentLevel, *it2, false, *it3, idx, ts);
-                    exportBezierPointAtTime(indentLevel, *fpIt, true, *it3, idx, ts);
-                }
-                if ( kf.empty() ) {
-                    exportBezierPointAtTime(indentLevel, *it2, false, time, idx, ts);
-                    exportBezierPointAtTime(indentLevel, *fpIt, true, time, idx, ts);
-                }
-            }
-            if ( isBezier->isCurveFinished() ) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("bezier.setCurveFinished(True)");
-            }
-
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del bezier");
-        } else {
-            QString name =  QString::fromUtf8( isLayer->getScriptName().c_str() );
-            QString layerName = name + QString::fromUtf8("_layer");
-            WRITE_INDENT(indentLevel); WRITE_STRING( name + QString::fromUtf8(" = roto.createLayer()") );
-            WRITE_INDENT(indentLevel); WRITE_STRING( layerName +  QString::fromUtf8(".setScriptName(") + ESC(name) + QString::fromUtf8(")") );
-            WRITE_INDENT(indentLevel); WRITE_STRING( layerName + QString::fromUtf8(".setLabel(") + ESC( isLayer->getLabel() ) + QString::fromUtf8(")") );
-            QString lockedStr = isLayer->getLocked() ? QString::fromUtf8("True") : QString::fromUtf8("False");
-            WRITE_INDENT(indentLevel); WRITE_STRING( layerName + QString::fromUtf8(".setLocked()") + lockedStr + QString::fromUtf8(")") );
-            QString visibleStr = isLayer->isGloballyActivated() ? QString::fromUtf8("True") : QString::fromUtf8("False");
-            WRITE_INDENT(indentLevel); WRITE_STRING( layerName + QString::fromUtf8(".setVisible(") + visibleStr + QString::fromUtf8(")") );
-
-            WRITE_INDENT(indentLevel); WRITE_STRING(parentLayerName + QString::fromUtf8(".addItem(") + layerName);
-
-            const std::list<boost::shared_ptr<RotoItem> >& items = isLayer->getItems();
-            exportRotoLayer(indentLevel, items, isLayer, ts);
-            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("del ") + layerName);
-        }
-        WRITE_STATIC_LINE("");
-    }
-} // exportRotoLayer
-
-static void
-exportAllNodeKnobs(int indentLevel,
-                   const NodePtr& node,
-                   QTextStream& ts)
-{
-    const KnobsVec& knobs = node->getKnobs();
-    std::list<KnobPage*> userPages;
-
-    for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-        if ( (*it2)->getIsPersistent() && !(*it2)->isUserKnob() ) {
-            QString getParamStr  = QString::fromUtf8("lastNode.getParam(\"");
-            const std::string& paramName =  (*it2)->getName();
-            if ( paramName.empty() ) {
-                continue;
-            }
-            getParamStr += QString::fromUtf8( paramName.c_str() );
-            getParamStr += QString::fromUtf8("\")");
-            if ( exportKnobValues(indentLevel, *it2, getParamStr, true, ts) ) {
-                WRITE_STATIC_LINE("");
-            }
-        }
-
-        if ( (*it2)->isUserKnob() ) {
-            KnobPage* isPage = dynamic_cast<KnobPage*>( it2->get() );
-            if (isPage) {
-                userPages.push_back(isPage);
-            }
-        }
-    } // for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2)
-    if ( !userPages.empty() ) {
-        WRITE_STATIC_LINE("");
-        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create the user parameters");
-    }
-    for (std::list<KnobPage*>::iterator it2 = userPages.begin(); it2 != userPages.end(); ++it2) {
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.") + QString::fromUtf8( (*it2)->getName().c_str() ) +
-                                                 QString::fromUtf8(" = lastNode.createPageParam(") + ESC( (*it2)->getName() ) + QString::fromUtf8(", ") +
-                                                 ESC( (*it2)->getLabel() ) + QString::fromUtf8(")") );
-        KnobsVec children =  (*it2)->getChildren();
-        for (KnobsVec::const_iterator it3 = children.begin(); it3 != children.end(); ++it3) {
-            exportUserKnob(indentLevel, *it3, QString::fromUtf8("lastNode"), 0, *it2, ts);
+            return foundCreated->second;
         }
     }
 
-    if ( !userPages.empty() ) {
-        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Refresh the GUI with the newly created parameters");
-        std::list<std::string> pagesOrdering = node->getPagesOrder();
-        if ( !pagesOrdering.empty() ) {
-            QString line = QString::fromUtf8("lastNode.setPagesOrder([");
-            std::list<std::string>::iterator next = pagesOrdering.begin();
-            ++next;
-            for (std::list<std::string>::iterator it = pagesOrdering.begin(); it != pagesOrdering.end(); ++it) {
-                line += QLatin1Char('\'');
-                line += QString::fromUtf8( it->c_str() );
-                line += QLatin1Char('\'');
-                if ( next != pagesOrdering.end() ) {
-                    line += QString::fromUtf8(", ");
-                    ++next;
-                }
-            }
-            line += QString::fromUtf8("])");
-            WRITE_INDENT(indentLevel); WRITE_STRING(line);
-        }
-        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("lastNode.refreshUserParamsGUI()");
+
+    // Check if this node is part of the all nodes list.
+    const bool isPartOfAllNodes = allNodesList ? std::find(allNodesList->begin(), allNodesList->end(), node) != allNodesList->end() : true;
+
+    NodeCollection::TopologicalSortNodePtr ret(new NodeCollection::TopologicalSortNode);
+    createdNodes->insert(std::make_pair(node, ret));
+    ret->node = node;
+    ret->isPartOfGivenNodes = isPartOfAllNodes;
+
+    // Add the output
+    if (callerNode) {
+        ret->outputs[callerNode].push_back(callerInputNb);
     }
 
-    boost::shared_ptr<RotoContext> roto = node->getRotoContext();
-    if (roto) {
-        const std::list<boost::shared_ptr<RotoLayer> >& layers = roto->getLayers();
+    // Recurse on inputs, unless the node is not part of the allNodes list
+    if (isPartOfAllNodes) {
+        int nInputs = node->getNInputs();
 
-        if ( !layers.empty() ) {
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# For the roto node, create all layers and beziers");
-            WRITE_INDENT(indentLevel); WRITE_STRING("roto = lastNode.getRotoContext()");
-            boost::shared_ptr<RotoLayer> baseLayer = layers.front();
-            QString baseLayerName = QString::fromUtf8( baseLayer->getScriptName().c_str() );
-            QString baseLayerToken = baseLayerName + QString::fromUtf8("_layer");
-            WRITE_INDENT(indentLevel); WRITE_STRING( baseLayerToken + QString::fromUtf8(" = roto.getBaseLayer()") );
+        ret->inputs.resize(nInputs);
 
-            WRITE_INDENT(indentLevel); WRITE_STRING( baseLayerToken + QString::fromUtf8(".setScriptName(") + ESC(baseLayerName) + QString::fromUtf8(")") );
-            WRITE_INDENT(indentLevel); WRITE_STRING( baseLayerToken + QString::fromUtf8(".setLabel(") + ESC( baseLayer->getLabel() ) + QString::fromUtf8(")") );
-            QString lockedStr = baseLayer->getLocked() ? QString::fromUtf8("True") : QString::fromUtf8("False");
-            WRITE_INDENT(indentLevel); WRITE_STRING( baseLayerToken + QString::fromUtf8(".setLocked(") + lockedStr + QString::fromUtf8(")") );
-            QString visibleStr = baseLayer->isGloballyActivated() ? QString::fromUtf8("True") : QString::fromUtf8("False");
-            WRITE_INDENT(indentLevel); WRITE_STRING( baseLayerToken + QString::fromUtf8(".setVisible(") + visibleStr + QString::fromUtf8(")") );
-            exportRotoLayer(indentLevel, baseLayer->getItems(), baseLayer,  ts);
-            WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("del ") + baseLayerToken);
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("del roto") );
-        }
-    }
-} // exportAllNodeKnobs
-
-static bool
-exportKnobLinks(int indentLevel,
-                const NodePtr& groupNode,
-                const NodePtr& node,
-                const QString& groupName,
-                const QString& nodeName,
-                QTextStream& ts)
-{
-    bool hasExportedLink = false;
-    const KnobsVec& knobs = node->getKnobs();
-
-    for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-        QString paramName = nodeName + QString::fromUtf8(".getParam(\"") + QString::fromUtf8( (*it2)->getName().c_str() ) + QString::fromUtf8("\")");
-        bool hasDefined = false;
-
-        //Check for alias link
-        KnobPtr alias = (*it2)->getAliasMaster();
-        if (alias) {
-            if (!hasDefined) {
-                WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramName);
-                hasDefined = true;
-            }
-            hasExportedLink = true;
-
-            EffectInstance* aliasHolder = dynamic_cast<EffectInstance*>( alias->getHolder() );
-            assert(aliasHolder);
-            if (!aliasHolder) {
-                throw std::logic_error("exportKnobLinks");
-            }
-            QString aliasName;
-            if ( groupNode && aliasHolder == groupNode->getEffectInstance().get() ) {
-                aliasName = groupName;
+        for (int i = 0; i < nInputs; ++i) {
+            NodePtr input;
+            if (enterGroups) {
+                input = node->getInput(i);
             } else {
-                aliasName = groupName + QString::fromUtf8( aliasHolder->getNode()->getScriptName_mt_safe().c_str() );
+                input = node->getRealInput(i);
             }
-            aliasName += QString::fromUtf8(".getParam(");
-            aliasName += ESC(QString::fromUtf8( alias->getName().c_str() ));
-            aliasName += QString::fromUtf8(")");
-
-            WRITE_INDENT(indentLevel); WRITE_STRING( aliasName + QString::fromUtf8(".setAsAlias(param)") );
-        } else {
-            for (int i = 0; i < (*it2)->getDimension(); ++i) {
-                std::string expr = (*it2)->getExpression(i);
-                QString hasRetVar = (*it2)->isExpressionUsingRetVariable(i) ? QString::fromUtf8("True") : QString::fromUtf8("False");
-                if ( !expr.empty() ) {
-                    if (!hasDefined) {
-                        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramName);
-                        hasDefined = true;
-                    }
-                    hasExportedLink = true;
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setExpression(") + ESC(expr) + QString::fromUtf8(", ") +
-                                                             hasRetVar + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")") );
-                }
-
-                std::pair<int, KnobPtr > master = (*it2)->getMaster(i);
-                if (master.second) {
-                    if (!hasDefined) {
-                        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramName);
-                        hasDefined = true;
-                    }
-                    hasExportedLink = true;
-
-                    EffectInstance* masterHolder = dynamic_cast<EffectInstance*>( master.second->getHolder() );
-                    assert(masterHolder);
-                    if (!masterHolder) {
-                        throw std::logic_error("exportKnobLinks");
-                    }
-                    QString masterName;
-                    if ( groupNode && masterHolder == groupNode->getEffectInstance().get() ) {
-                        masterName = groupName;
-                    } else {
-                        masterName = groupName + QString::fromUtf8( masterHolder->getNode()->getScriptName_mt_safe().c_str() );
-                    }
-                    masterName += QLatin1String(".getParam(");
-                    masterName += ESC(QString::fromUtf8( master.second->getName().c_str() ));
-                    masterName += QLatin1String(")");
-
-
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.slaveTo(") +  masterName + QString::fromUtf8(", ") +
-                                                             NUM_INT(i) + QString::fromUtf8(", ") + NUM_INT(master.first) + QString::fromUtf8(")") );
-                }
+            NodeCollection::TopologicalSortNodePtr inputNode;
+            if (input) {
+                inputNode = createTopologicalSortNodeRecursive(enterGroups, input, ret, i, allNodesList, treeInputNodes, createdNodes);
+            }
+            if (inputNode) {
+                ret->inputs[i] = inputNode;
             }
         }
-        if (hasDefined) {
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del param");
+        if (ret->isTreeInput()) {
+            treeInputNodes->push_back(ret);
         }
+
     }
 
-    return hasExportedLink;
-} // exportKnobLinks
+    return ret;
+    
+} // createTopologicalSortNodeRecursive
 
-static void
-exportGroupInternal(int indentLevel,
-                    const NodeCollection* collection,
-                    const NodePtr& upperLevelGroupNode,
-                    const QString& upperLevelGroupName,
-                    QTextStream& ts)
+static void addToTopologicalSortRecursive(const std::list<NodeCollection::TopologicalSortNodePtr>& graphLevelNodes,
+                                          std::set<NodeCollection::TopologicalSortNodePtr>* markedNodes,
+                                          std::list<NodeCollection::TopologicalSortNodePtr>* finalList)
 {
-    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create all nodes in the group");
-    WRITE_STATIC_LINE("");
+    std::list<NodeCollection::TopologicalSortNodePtr> nextLevelNodes;
+    for (std::list<NodeCollection::TopologicalSortNodePtr>::const_iterator it = graphLevelNodes.begin(); it != graphLevelNodes.end(); ++it) {
 
-    const NodeGroup* isGroup = dynamic_cast<const NodeGroup*>(collection);
-    NodePtr groupNode;
-    if (isGroup) {
-        groupNode = isGroup->getNode();
-    }
-
-    QString groupName = upperLevelGroupName + QString::fromUtf8("group");
-
-    if (isGroup) {
-        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create the parameters of the group node the same way we did for all internal nodes");
-        WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode = ") + groupName);
-        double r, g, b;
-        bool hasColor = groupNode->getColor(&r, &g, &b);
-        if (hasColor) {
-            // TODO: we could check if the color was actually changed from the default (NodeGui::getColorFromGrouping())
-            
-            // a precision of 3 digits is enough for the node color
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setColor(") + NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) +  QString::fromUtf8(")") );
-        }
-        exportAllNodeKnobs(indentLevel, groupNode, ts);
-        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del lastNode");
-        WRITE_STATIC_LINE("");
-    }
-
-
-    NodesList nodes = collection->getNodes();
-    NodesList exportedNodes;
-
-    ///Re-order nodes so we're sure Roto nodes get exported in the end since they may depend on Trackers
-    NodesList rotos;
-    NodesList newNodes;
-    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isRotoPaintingNode() || (*it)->isRotoNode() ) {
-            rotos.push_back(*it);
-        } else {
-            newNodes.push_back(*it);
-        }
-    }
-    newNodes.insert( newNodes.end(), rotos.begin(), rotos.end() );
-
-    for (NodesList::iterator it = newNodes.begin(); it != newNodes.end(); ++it) {
-        ///Don't create viewer while exporting
-        ViewerInstance* isViewer = (*it)->isEffectViewer();
-        if (isViewer) {
-            continue;
-        }
-        if ( !(*it)->isActivated() ) {
+        std::pair<std::set<NodeCollection::TopologicalSortNodePtr>::iterator, bool> insertOk = markedNodes->insert(*it);
+        if (!insertOk.second) {
             continue;
         }
 
-        exportedNodes.push_back(*it);
+        assert((*it)->isPartOfGivenNodes);
 
-        ///Let the parent of the multi-instance node create the children
-        if ( (*it)->getParentMultiInstance() ) {
-            continue;
-        }
-
-        QString nodeName = QString::fromUtf8( (*it)->getPluginID().c_str() );
-
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("# Start of node ") + ESC( (*it)->getScriptName_mt_safe() ) );
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode = app.createNode(") + ESC(nodeName) + QString::fromUtf8(", ") +
-                                                 NUM_INT( (*it)->getPlugin()->getMajorVersion() ) + QString::fromUtf8(", ") + groupName +
-                                                 QString::fromUtf8(")") );
-        if ( !dynamic_cast<GroupOutput*>( (*it)->getEffectInstance().get() ) ) {
-            // Do not set script name of Output nodes:
-            // it triggers an exception in Node::setScriptName()
-            // see https://github.com/MrKepzie/Natron/issues/1452
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setScriptName(") + ESC( (*it)->getScriptName_mt_safe() ) + QString::fromUtf8(")") );
-        }
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setLabel(") + ESC( (*it)->getLabel_mt_safe() ) + QString::fromUtf8(")") );
-        double x, y;
-        (*it)->getPosition(&x, &y);
-        double w, h;
-        (*it)->getSize(&w, &h);
-        // a precision of 1 pixel is enough for the position on the nodegraph
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setPosition(") + NUM_PIXEL(x) + QString::fromUtf8(", ") + NUM_PIXEL(y) + QString::fromUtf8(")") );
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setSize(") + NUM_PIXEL(w) + QString::fromUtf8(", ") + NUM_PIXEL(h) + QString::fromUtf8(")") );
-
-        double r, g, b;
-        bool hasColor = (*it)->getColor(&r, &g, &b);
-        Q_UNUSED(hasColor);
-        // a precision of 3 digits is enough for the node color
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setColor(") + NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) +  QString::fromUtf8(")") );
-
-        std::list<ImagePlaneDesc> userComps;
-        (*it)->getUserCreatedComponents(&userComps);
-        for (std::list<ImagePlaneDesc>::iterator it2 = userComps.begin(); it2 != userComps.end(); ++it2) {
-            const std::vector<std::string>& channels = it2->getChannels();
-            QString compStr = QString::fromUtf8("[");
-            for (std::size_t i = 0; i < channels.size(); ++i) {
-                compStr.append( ESC(channels[i]) );
-                if ( i < (channels.size() - 1) ) {
-                    compStr.push_back( QLatin1Char(',') );
-                }
-            }
-            compStr.push_back( QLatin1Char(']') );
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.addUserPlane(") + ESC( it2->getPlaneLabel() ) + QString::fromUtf8(", ") + compStr +  QString::fromUtf8(")") );
-        }
-
-        QString nodeNameInScript = groupName + QString::fromUtf8( (*it)->getScriptName_mt_safe().c_str() );
-        WRITE_INDENT(indentLevel); WRITE_STRING( nodeNameInScript + QString::fromUtf8(" = lastNode") );
-        WRITE_STATIC_LINE("");
-        exportAllNodeKnobs(indentLevel, *it, ts);
-        WRITE_INDENT(indentLevel); WRITE_STRING("del lastNode");
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("# End of node ") + ESC( (*it)->getScriptName_mt_safe() ) );
-        WRITE_STATIC_LINE("");
-
-        std::list< NodePtr > children;
-        (*it)->getChildrenMultiInstance(&children);
-        if ( !children.empty() ) {
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create children if the node is a multi-instance such as a tracker");
-            for (std::list< NodePtr > ::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                if ( (*it2)->isActivated() ) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode = ") + nodeNameInScript + QString::fromUtf8(".createChild()") );
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setScriptName(\"") + QString::fromUtf8( (*it2)->getScriptName_mt_safe().c_str() ) + QString::fromUtf8("\")") );
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setLabel(\"") + QString::fromUtf8( (*it2)->getLabel_mt_safe().c_str() ) + QString::fromUtf8("\")") );
-                    exportAllNodeKnobs(indentLevel, *it2, ts);
-                    WRITE_INDENT(indentLevel); WRITE_STRING( nodeNameInScript + QString::fromUtf8(".") + QString::fromUtf8( (*it2)->getScriptName_mt_safe().c_str() ) + QString::fromUtf8(" = lastNode") );
-                    WRITE_INDENT(indentLevel); WRITE_STRING("del lastNode");
-                }
-            }
-            WRITE_STATIC_LINE("");
-        }
-
-        NodeGroup* isGrp = (*it)->isEffectGroup();
-        if (isGrp) {
-            WRITE_INDENT(indentLevel); WRITE_STRING(groupName + QString::fromUtf8("group = ") + nodeNameInScript);
-            exportGroupInternal(indentLevel, isGrp, groupNode, groupName, ts);
-            WRITE_STATIC_LINE("");
-        }
-    }
-
-
-    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Now that all nodes are created we can connect them together, restore expressions");
-    bool hasConnected = false;
-    for (NodesList::iterator it = exportedNodes.begin(); it != exportedNodes.end(); ++it) {
-        QString nodeQualifiedName( groupName + QString::fromUtf8( (*it)->getScriptName_mt_safe().c_str() ) );
-
-        if ( !(*it)->getParentMultiInstance() ) {
-            for (int i = 0; i < (*it)->getNInputs(); ++i) {
-                NodePtr inputNode = (*it)->getRealInput(i);
-                if (inputNode) {
-                    hasConnected = true;
-                    QString inputQualifiedName( groupName  + QString::fromUtf8( inputNode->getScriptName_mt_safe().c_str() ) );
-                    WRITE_INDENT(indentLevel); WRITE_STRING( nodeQualifiedName + QString::fromUtf8(".connectInput(") + NUM_INT(i) +
-                                                             QString::fromUtf8(", ") + inputQualifiedName + QString::fromUtf8(")") );
-                }
+        finalList->push_back(*it);
+        for (NodeCollection::TopologicalSortNode::InternalOutputsMap::const_iterator it2 = (*it)->outputs.begin(); it2 != (*it)->outputs.end(); ++it2) {
+            NodeCollection::TopologicalSortNodePtr node = it2->first.lock();
+            if (node) {
+                assert(node->isPartOfGivenNodes);
+                nextLevelNodes.push_back(node);
             }
         }
     }
-    if (hasConnected) {
-        WRITE_STATIC_LINE("");
+    if (!nextLevelNodes.empty()) {
+        addToTopologicalSortRecursive(nextLevelNodes, markedNodes, finalList);
     }
+} // addToTopologicalSortRecursive
 
-    bool hasExported = false;
-
-    for (NodesList::iterator it = exportedNodes.begin(); it != exportedNodes.end(); ++it) {
-        QString nodeQualifiedName( groupName + QString::fromUtf8( (*it)->getScriptName_mt_safe().c_str() ) );
-        if ( exportKnobLinks(indentLevel, groupNode, *it, groupName, nodeQualifiedName, ts) ) {
-            hasExported = true;
-        }
-    }
-    if (hasExported) {
-        WRITE_STATIC_LINE("");
-    }
-    if (isGroup) {
-        exportKnobLinks(indentLevel, upperLevelGroupNode ? upperLevelGroupNode : groupNode, groupNode,
-                        upperLevelGroupNode ? upperLevelGroupName : groupName, groupName, ts);
-    }
-} // exportGroupInternal
 
 void
-NodeCollection::exportGroupToPython(const QString& pluginID,
-                                    const QString& pluginLabel,
-                                    const QString& pluginDescription,
-                                    const QString& pluginIconPath,
-                                    const QString& pluginGrouping,
-                                    int version,
-                                    QString& output)
+NodeCollection::extractTopologicallySortedTreesForOutputs(bool enterGroups, const NodesList& outputNodesList, const NodesList* allNodesList, NodeCollection::TopologicallySortedNodesList* sortedNodes, std::list<NodeCollection::TopologicalSortNodePtr>* outputNodes)
 {
-    QString extModule(pluginLabel);
-
-    extModule.append( QString::fromUtf8("Ext") );
-
-    QTextStream ts(&output);
-    // coding must be set in first or second line, see https://www.python.org/dev/peps/pep-0263/
-    WRITE_STATIC_LINE("# -*- coding: utf-8 -*-");
-    WRITE_STATIC_LINE("# DO NOT EDIT THIS FILE");
-    QString descline = QString( QString::fromUtf8("# This file was automatically generated by %1 PyPlug exporter version %2.") ).arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg(NATRON_PYPLUG_EXPORTER_VERSION);
-    WRITE_STRING(descline);
-    WRITE_STATIC_LINE();
-    QString handWrittenStr = QString::fromUtf8("# Hand-written code should be added in a separate file named %1.py").arg(extModule);
-    WRITE_STRING(handWrittenStr);
-    WRITE_STATIC_LINE("# See http://natron.readthedocs.org/en/master/devel/groups.html#adding-hand-written-code-callbacks-etc");
-    WRITE_STATIC_LINE("# Note that Viewers are never exported");
-    WRITE_STATIC_LINE();
-    WRITE_STATIC_LINE("import " NATRON_ENGINE_PYTHON_MODULE_NAME);
-    WRITE_STATIC_LINE("import sys");
-    WRITE_STATIC_LINE("");
-    WRITE_STATIC_LINE("# Try to import the extensions file where callbacks and hand-written code should be located.");
-    WRITE_STATIC_LINE("try:");
-
-
-    WRITE_INDENT(1); WRITE_STRING( QString::fromUtf8("from ") + extModule + QString::fromUtf8(" import *") );
-    WRITE_STRING("except ImportError:");
-    WRITE_INDENT(1); WRITE_STRING("pass");
-    WRITE_STATIC_LINE("");
-
-    WRITE_STATIC_LINE("def getPluginID():");
-    WRITE_INDENT(1); WRITE_STRING( QString::fromUtf8("return \"") + pluginID + QString::fromUtf8("\"") );
-    WRITE_STATIC_LINE("");
-
-    WRITE_STATIC_LINE("def getLabel():");
-    WRITE_INDENT(1); WRITE_STRING( QString::fromUtf8("return ") + ESC(pluginLabel) );
-    WRITE_STATIC_LINE("");
-
-    WRITE_STATIC_LINE("def getVersion():");
-    WRITE_INDENT(1); WRITE_STRING(QString::fromUtf8("return ") + NUM_INT(version));
-    WRITE_STATIC_LINE("");
-
-    if ( !pluginIconPath.isEmpty() ) {
-        WRITE_STATIC_LINE("def getIconPath():");
-        WRITE_INDENT(1); WRITE_STRING( QString::fromUtf8("return ") + ESC(pluginIconPath) );
-        WRITE_STATIC_LINE("");
+    if (!sortedNodes && !outputNodes) {
+        assert(false);
+        // Nothing to do...
+        return;
     }
 
-    WRITE_STATIC_LINE("def getGrouping():");
-    WRITE_INDENT(1); WRITE_STRING( QString::fromUtf8("return \"") + pluginGrouping + QString::fromUtf8("\"") );
-    WRITE_STATIC_LINE("");
+    // Temp map to ensure we create nodes only once when visited
+    std::map<NodePtr, NodeCollection::TopologicalSortNodePtr> createdNodes;
 
-    if ( !pluginDescription.isEmpty() ) {
-        WRITE_STATIC_LINE("def getPluginDescription():");
-        WRITE_INDENT(1); WRITE_STRING( QString::fromUtf8("return ") + ESC(pluginDescription) );
-        WRITE_STATIC_LINE("");
+    // While building the tree recursively, we mark inputs for the second phase when building the topological sort list.
+    std::list<NodeCollection::TopologicalSortNodePtr> treeInputs;
+
+    for (NodesList::const_iterator it = outputNodesList.begin(); it != outputNodesList.end(); ++it) {
+        NodeCollection::TopologicalSortNodePtr outputTreeNode = createTopologicalSortNodeRecursive(enterGroups, *it, NodeCollection::TopologicalSortNodePtr(), -1, allNodesList, &treeInputs, &createdNodes);
+
+        if (outputNodes) {
+            outputNodes->push_back(outputTreeNode);
+        }
+
+
+        // Store the list of output nodes pointing to this node that are not in the nodes list.
+        // This is needed for example for the Group/UnGroup undo/redo command when we want to re-insert the nodes in
+        // an existing tree.
+        OutputNodesMap outputs;
+        (*it)->getOutputs(outputs);
+        for (OutputNodesMap::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
+            NodeCollection::TopologicalSortNodePtr externalOutputNode(new NodeCollection::TopologicalSortNode);
+            externalOutputNode->node = it2->first;
+            externalOutputNode->isPartOfGivenNodes = false;
+            outputTreeNode->externalOutputs[externalOutputNode] = it2->second;
+        }
+        
     }
 
 
-    WRITE_STATIC_LINE("def createInstance(app,group):");
+    if (sortedNodes) {
+        // Now cycle through the graph from inputs to outputs recursively and build the topological ordering
+        std::set<NodeCollection::TopologicalSortNodePtr> tmpMarkedNodes;
+        addToTopologicalSortRecursive(treeInputs, &tmpMarkedNodes, sortedNodes);
+    }
+} // extractTopologicallySortedTreesForOutputs
 
-    exportGroupInternal(1, this, NodePtr(), QString(), ts);
+/**
+ * @brief Returns true if the given node has at least one of its output node in the given list of nodes
+ **/
+static bool
+hasNodeOutputsInList(const NodesList& nodes,
+                     const NodePtr& node)
+{
+    OutputNodesMap outputs;
+    node->getOutputs(outputs);
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if (*it != node) {
+            OutputNodesMap::const_iterator foundOutput = outputs.find(*it);
 
-    ///Import user hand-written code
-    WRITE_INDENT(1); WRITE_STATIC_LINE("try:");
-    WRITE_INDENT(2); WRITE_STRING( QString::fromUtf8("extModule = sys.modules[") + ESC(extModule) + QString::fromUtf8("]") );
-    WRITE_INDENT(1); WRITE_STATIC_LINE("except KeyError:");
-    WRITE_INDENT(2); WRITE_STATIC_LINE("extModule = None");
+            if (foundOutput != outputs.end()) {
+                return true;
+            }
+        }
+    }
 
-    QString testAttr = QString::fromUtf8("if extModule is not None and hasattr(extModule ,\"createInstanceExt\") and hasattr(extModule.createInstanceExt,\"__call__\"):");
-    WRITE_INDENT(1); WRITE_STRING(testAttr);
-    WRITE_INDENT(2); WRITE_STRING("extModule.createInstanceExt(app,group)");
-} // NodeCollection::exportGroupToPython
+    return false;
+} // hasNodeOutputsInList
+
+
+static void addOutputNodesFromNode(const NodePtr& outputNode, NodesList& outputs)
+{
+    NodeGroupPtr isGroup = toNodeGroup(outputNode->getEffectInstance());
+    ViewerNodePtr isViewer = toViewerNode(outputNode->getEffectInstance());
+    if (isViewer) {
+        for (int i = 0; i < 2; ++i) {
+            EffectInstancePtr viewerProcess = isViewer->getViewerProcessNode(i);
+            if (viewerProcess) {
+                outputs.push_back(viewerProcess->getNode());
+            }
+        }
+
+    } else if (isGroup) {
+        NodePtr groupOutput = isGroup->getOutputNode();
+        if (groupOutput) {
+            outputs.push_back(groupOutput);
+        }
+    } else {
+        outputs.push_back(outputNode);
+    }
+
+}
+
+void
+NodeCollection::extractTopologicallySortedTreesFromNodes(bool enterGroups, const NodesList& nodes, TopologicallySortedNodesList* sortedNodes, std::list<TopologicalSortNodePtr>* outputNodes)
+{
+    NodesList outputs;
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if (hasNodeOutputsInList(nodes, *it)) {
+            continue;
+        }
+        addOutputNodesFromNode(*it, outputs);
+    }
+
+    assert(!outputs.empty());
+    if (!outputs.empty()) {
+        extractTopologicallySortedTreesForOutputs(enterGroups, outputs, &nodes, sortedNodes, outputNodes);
+    }
+} // extractTopologicallySortedTreesFromNodes
+
+
+void
+NodeCollection::extractTopologicallySortedTrees(bool enterGroups,
+                                                TopologicallySortedNodesList* sortedNodes,
+                                                std::list<TopologicalSortNodePtr>* outputNodes) const
+{
+
+    NodesList outputNodesList;
+    // Cycle through all nodes in the group and find outputs
+
+    NodesList nodes = getNodes();
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        OutputNodesMap outputs;
+        (*it)->getOutputs(outputs);
+        if (outputs.empty()) {
+            addOutputNodesFromNode(*it, outputNodesList);
+        }
+    }
+    extractTopologicallySortedTreesForOutputs(enterGroups, outputNodesList, !enterGroups ? &nodes : 0, sortedNodes, outputNodes);
+
+} // extractTopologicallySortedTrees
 
 NATRON_NAMESPACE_EXIT
 

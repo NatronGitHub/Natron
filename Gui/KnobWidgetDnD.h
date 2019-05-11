@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -35,6 +35,8 @@
 
 #include <QtCore/QCoreApplication>
 
+#include "Engine/DimensionIdx.h"
+#include "Engine/ViewIdx.h"
 #include "Gui/GuiFwd.h"
 
 #define KNOB_DND_MIME_DATA_KEY "KnobLink"
@@ -51,14 +53,16 @@ class KnobWidgetDnD : public boost::enable_shared_from_this<KnobWidgetDnD>
 
     // used by boost::make_shared
     KnobWidgetDnD(const KnobGuiPtr& knob,
-                  int dimension,
+                  DimSpec dimension,
+                  ViewSetSpec view,
                   QWidget* widget);
 
 public:
 
 
     static boost::shared_ptr<KnobWidgetDnD> create(const KnobGuiPtr& knob,
-                                            int dimension,
+                                                   DimSpec dimension,
+                                                   ViewSetSpec view,
                                                    QWidget* widget);
 
     ~KnobWidgetDnD();

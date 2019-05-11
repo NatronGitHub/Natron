@@ -1,5 +1,5 @@
 # ***** BEGIN LICENSE BLOCK *****
-# This file is part of Natron <http://www.natron.fr/>,
+# This file is part of Natron <https://natrongithub.github.io/>,
 # Copyright (C) 2013-2018 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
@@ -19,135 +19,11 @@
 # Use this for binaries in App.pro, Renderer.pro etc...this way
 # CONFIG += static-gui static-engine static-host-support static-breakpadclient static-ceres static-libmv
 
-libmv-flags {
-CONFIG += ceres-flags
-INCLUDEPATH += $$PWD/libs/libmv/third_party
-INCLUDEPATH += $$PWD/libs/libmv
-}
-
-glad-flags {
-    CONFIG(debug, debug|release):   INCLUDEPATH += $$PWD/Global/gladDeb/include
-    CONFIG(release, debug|release): INCLUDEPATH += $$PWD/Global/gladRel/include
-}
-
-openmvg-flags {
-CONFIG += ceres-flags boost
-# Make openMVG use openmp
-!macx:*g++* {
-    CONFIG += openmp
-}
-openmp {
-    DEFINES += OPENMVG_USE_OPENMP
-}
-
-DEFINES += OPENMVG_HAVE_BOOST
-
-# Do not use any serialization in openmvg (cereal, ply, stlplus ...)
-DEFINES += OPENMVG_NO_SERIALIZATION
-
-# Use this to use OsiMskSolverInterface.cpp
-#DEFINES += OPENMVG_HAVE_MOSEK
-
-c++11 {
-   DEFINES += OPENMVG_STD_UNORDERED_MAP
-   DEFINES += OPENMVG_STD_SHARED_PTR
-} else {
-   # Use boost::shared_ptr and boost::unordered_map
-   CONFIG += boost
-   DEFINES += OPENMVG_BOOST_UNORDERED_MAP
-   DEFINES += OPENMVG_BOOST_SHARED_PTR
-   DEFINES += OPENMVG_NO_UNIQUE_PTR
-}
-
-INCLUDEPATH += $$PWD/libs/openMVG/openMVG
-INCLUDEPATH += $$PWD/libs/openMVG
-INCLUDEPATH += $$PWD/libs/openMVG/dependencies/osi_clp/Clp/src
-INCLUDEPATH += $$PWD/libs/openMVG/dependencies/osi_clp/Clp/src/OsiClip
-INCLUDEPATH += $$PWD/libs/openMVG/dependencies/osi_clp/CoinUtils/src
-INCLUDEPATH += $$PWD/libs/openMVG/dependencies/osi_clp/Osi/src/Osi
-INCLUDEPATH += $$PWD/libs/flann/src/cpp
-#INCLUDEPATH += $$PWD/libs/lemon
-
-}
-
-ceres-flags {
-CONFIG += glog-flags
-DEFINES += CERES_HAVE_PTHREAD CERES_NO_SUITESPARSE CERES_NO_CXSPARSE CERES_HAVE_RWLOCK
-# Comment to make ceres use a lapack library
-DEFINES += CERES_NO_LAPACK
-!macx:*g++* {
-    CONFIG += openmp
-}
-openmp {
-    DEFINES += CERES_USE_OPENMP
-}
-#If undefined, make sure to add to sources all the files in ceres/internal/ceres/generated
-DEFINES += CERES_RESTRICT_SCHUR_SPECIALIZATION
-DEFINES += WITH_LIBMV_GUARDED_ALLOC GOOGLE_GLOG_DLL_DECL= LIBMV_NO_FAST_DETECTOR=
-c++11 {
-   DEFINES += CERES_STD_UNORDERED_MAP
-   DEFINES += CERES_STD_SHARED_PTR
-} else {
-   # Use boost::shared_ptr and boost::unordered_map
-   CONFIG += boost
-   DEFINES += CERES_BOOST_SHARED_PTR
-   DEFINES += CERES_BOOST_UNORDERED_MAP
-}
-INCLUDEPATH += $$PWD/libs/ceres/config
-INCLUDEPATH += $$PWD/libs/ceres/include
-INCLUDEPATH += $$PWD/libs/ceres/internal
-INCLUDEPATH += $$PWD/libs/Eigen3
-win32-msvc* {
-    CONFIG(64bit) {
-        QMAKE_LFLAGS += /MACHINE:X64
-    } else {
-        QMAKE_LFLAGS += /MACHINE:X86
-    }
-}
-}
-
-glog-flags {
-CONFIG += gflags-flags
-DEFINES += GOOGLE_GLOG_DLL_DECL=
-INCLUDEPATH += $$PWD/libs/gflags
-INCLUDEPATH += $$PWD/libs/gflags/src
-INCLUDEPATH += $$PWD/libs/gflags/src/gflags
-INCLUDEPATH += $$PWD/libs/glog/src
-win32* {
-     INCLUDEPATH += $$PWD/libs/glog/src/windows
-
-    # wingdi.h defines ERROR to be 0. When we call LOG(ERROR), it gets
-    # substituted with 0, and it expands to COMPACT_GOOGLE_LOG_0. To allow us
-    # to keep using this syntax, we define this macro to do the same thing
-    # as COMPACT_GOOGLE_LOG_ERROR.
-     DEFINES += GLOG_NO_ABBREVIATED_SEVERITIES
-}
-!win32* {
-    INCLUDEPATH += $$PWD/libs/glog/src
-}
-win32-msvc* {
-    CONFIG(64bit) {
-        QMAKE_LFLAGS += /MACHINE:X64
-    } else {
-        QMAKE_LFLAGS += /MACHINE:X86
-    }
-}
-}
-
-gflags-flags {
-INCLUDEPATH += $$PWD/libs/gflags
-INCLUDEPATH += $$PWD/libs/gflags/src
-INCLUDEPATH += $$PWD/libs/gflags/src/gflags
-}
-
-libtess-flags {
-INCLUDEPATH += $$PWD/libs/libtess
-}
 
 ################
 # Gui
 static-gui {
-CONFIG += static-engine static-qhttpserver static-hoedown static-libtess
+CONFIG += static-engine static-qhttpserver static-hoedown static-libtess static-serialization
 win32-msvc*{
         CONFIG(64bit) {
                 CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Gui/x64/release/ -lGui
@@ -194,7 +70,7 @@ win32-msvc*{
 # Engine
 
 static-engine {
-CONFIG += static-libmv static-openmvg static-hoedown static-libtess
+CONFIG += static-libmv static-openmvg static-hoedown static-libtess static-serialization
 
 win32-msvc*{
         CONFIG(64bit) {
@@ -215,6 +91,7 @@ win32-msvc*{
 INCLUDEPATH += $$PWD/Engine
 DEPENDPATH += $$OUT_PWD/../Engine
 INCLUDEPATH += $$PWD/libs/SequenceParsing
+INCLUDEPATH += $$PWD/libs
 INCLUDEPATH += $$PWD/Global
 
 win32-msvc*{
@@ -235,6 +112,52 @@ win32-msvc*{
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../Engine/libEngine.a
 }
 } #static-engine
+
+
+################
+# Serialization
+
+static-serialization {
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Serialization/x64/release/ -lSerialization
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../Serialization/x64/debug/ -lSerialization
+        } else {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Serialization/win32/release/ -lSerialization
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../Serialization/win32/debug/ -lSerialization
+        }
+} else {
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Serialization/release/ -lSerialization
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../Serialization/debug/ -lSerialization
+        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Serialization/build/Release/ -lSerialization
+        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../Serialization/build/Debug/ -lSerialization
+        else:unix: LIBS += -L$$OUT_PWD/../Serialization/ -lSerialization
+}
+
+INCLUDEPATH += $$PWD/Serialization
+DEPENDPATH += $$OUT_PWD/../Serialization
+INCLUDEPATH += $$PWD/Global
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/x64/release/libSerialization.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/x64/debug/libSerialization.lib
+        } else {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/win32/release/libSerialization.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/win32/debug/libSerialization.lib
+        }
+} else {
+        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/release/libSerialization.a
+        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/debug/libSerialization.a
+        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/release/libSerialization.lib
+        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/debug/libSerialization.lib
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/build/Release/libSerialization.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Serialization/build/Debug/libSerialization.a
+        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../Serialization/libSerialization.a
+}
+} #static-serialization
+
 
 ################
 # HostSupport
@@ -620,3 +543,180 @@ win32-msvc*{
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/libtess.a
 }
 } # static-libtess
+
+
+################
+# yaml-cpp
+
+static-yaml-cpp {
+
+CONFIG += yaml-cpp-flags
+
+DEPENDPATH += $$OUT_PWD/../libs/yaml-cpp/include/yaml-cpp
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/yaml-cpp/x64/release/ -lyaml-cpp-natron
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/yaml-cpp/x64/debug/ -lyaml-cpp-natron
+        } else {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/yaml-cpp/win32/release/ -lyaml-cpp-natron
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/yaml-cpp/win32/debug/ -lyaml-cpp-natron
+        }
+} else {
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/yaml-cpp/release/ -lyaml-cpp-natron
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/yaml-cpp/debug/ -lyaml-cpp-natron
+        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/yaml-cpp/build/Release/ -lyaml-cpp-natron
+        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/yaml-cpp/build/Debug/ -lyaml-cpp-natron
+        else:unix: LIBS += -L$$OUT_PWD/../libs/yaml-cpp/ -lyaml-cpp-natron
+}
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/x64/release/yaml-cpp-natron.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/x64/debug/yaml-cpp-natron.lib
+        } else {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/win32/release/yaml-cpp-natron.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/win32/debug/yaml-cpp-natron.lib
+        }
+} else {
+        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/release/libyaml-cpp-natron.a
+        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/debug/libyaml-cpp-natron.a
+        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/release/libyaml-cpp-natron.lib
+        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/debug/libyaml-cpp-natron.lib
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/build/Release/libyaml-cpp-natron.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/build/Debug/libyaml-cpp-natron.a
+        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/yaml-cpp/libyaml-cpp-natron.a
+}
+} # static-yaml-cpp
+
+libmv-flags {
+CONFIG += ceres-flags
+INCLUDEPATH += $$PWD/libs/libmv/third_party
+INCLUDEPATH += $$PWD/libs/libmv
+}
+
+glad-flags {
+    CONFIG(debug, debug|release):   INCLUDEPATH += $$PWD/Global/gladDeb/include
+    CONFIG(release, debug|release): INCLUDEPATH += $$PWD/Global/gladRel/include
+}
+
+openmvg-flags {
+CONFIG += ceres-flags boost
+# Make openMVG use openmp
+!macx:*g++* {
+    CONFIG += openmp
+}
+openmp {
+    DEFINES += OPENMVG_USE_OPENMP
+}
+
+DEFINES += OPENMVG_HAVE_BOOST
+
+# Do not use any serialization in openmvg (cereal, ply, stlplus ...)
+DEFINES += OPENMVG_NO_SERIALIZATION
+
+# Use this to use OsiMskSolverInterface.cpp
+#DEFINES += OPENMVG_HAVE_MOSEK
+
+c++11 {
+   DEFINES += OPENMVG_STD_UNORDERED_MAP
+   DEFINES += OPENMVG_STD_SHARED_PTR
+} else {
+   # Use boost::shared_ptr and boost::unordered_map
+   CONFIG += boost
+   DEFINES += OPENMVG_BOOST_UNORDERED_MAP
+   DEFINES += OPENMVG_BOOST_SHARED_PTR
+   DEFINES += OPENMVG_NO_UNIQUE_PTR
+}
+
+INCLUDEPATH += $$PWD/libs/openMVG/openMVG
+INCLUDEPATH += $$PWD/libs/openMVG
+INCLUDEPATH += $$PWD/libs/openMVG/dependencies/osi_clp/Clp/src
+INCLUDEPATH += $$PWD/libs/openMVG/dependencies/osi_clp/Clp/src/OsiClip
+INCLUDEPATH += $$PWD/libs/openMVG/dependencies/osi_clp/CoinUtils/src
+INCLUDEPATH += $$PWD/libs/openMVG/dependencies/osi_clp/Osi/src/Osi
+INCLUDEPATH += $$PWD/libs/flann/src/cpp
+#INCLUDEPATH += $$PWD/libs/lemon
+
+}
+
+ceres-flags {
+CONFIG += glog-flags
+DEFINES += CERES_HAVE_PTHREAD CERES_NO_SUITESPARSE CERES_NO_CXSPARSE CERES_HAVE_RWLOCK
+# Comment to make ceres use a lapack library
+DEFINES += CERES_NO_LAPACK
+!macx:*g++* {
+    CONFIG += openmp
+}
+openmp {
+    DEFINES += CERES_USE_OPENMP
+}
+#If undefined, make sure to add to sources all the files in ceres/internal/ceres/generated
+DEFINES += CERES_RESTRICT_SCHUR_SPECIALIZATION
+DEFINES += WITH_LIBMV_GUARDED_ALLOC GOOGLE_GLOG_DLL_DECL= LIBMV_NO_FAST_DETECTOR=
+c++11 {
+   DEFINES += CERES_STD_UNORDERED_MAP
+   DEFINES += CERES_STD_SHARED_PTR
+} else {
+   # Use boost::shared_ptr and boost::unordered_map
+   CONFIG += boost
+   DEFINES += CERES_BOOST_SHARED_PTR
+   DEFINES += CERES_BOOST_UNORDERED_MAP
+}
+INCLUDEPATH += $$PWD/libs/ceres/config
+INCLUDEPATH += $$PWD/libs/ceres/include
+INCLUDEPATH += $$PWD/libs/ceres/internal
+INCLUDEPATH += $$PWD/libs/Eigen3
+win32-msvc* {
+	CONFIG(64bit) {
+		QMAKE_LFLAGS += /MACHINE:X64
+	} else {
+		QMAKE_LFLAGS += /MACHINE:X86
+	}
+}
+}
+
+glog-flags {
+CONFIG += gflags-flags
+DEFINES += GOOGLE_GLOG_DLL_DECL=
+INCLUDEPATH += $$PWD/libs/gflags
+INCLUDEPATH += $$PWD/libs/gflags/src
+INCLUDEPATH += $$PWD/libs/gflags/src/gflags
+INCLUDEPATH += $$PWD/libs/glog/src
+win32* {
+     INCLUDEPATH += $$PWD/libs/glog/src/windows
+
+    # wingdi.h defines ERROR to be 0. When we call LOG(ERROR), it gets
+    # substituted with 0, and it expands to COMPACT_GOOGLE_LOG_0. To allow us
+    # to keep using this syntax, we define this macro to do the same thing
+    # as COMPACT_GOOGLE_LOG_ERROR.
+     DEFINES += GLOG_NO_ABBREVIATED_SEVERITIES
+}
+!win32* {
+    INCLUDEPATH += $$PWD/libs/glog/src
+}
+win32-msvc* {
+	CONFIG(64bit) {
+		QMAKE_LFLAGS += /MACHINE:X64
+	} else {
+		QMAKE_LFLAGS += /MACHINE:X86
+	}
+}
+}
+
+gflags-flags {
+INCLUDEPATH += $$PWD/libs/gflags
+INCLUDEPATH += $$PWD/libs/gflags/src
+INCLUDEPATH += $$PWD/libs/gflags/src/gflags
+}
+
+libtess-flags {
+INCLUDEPATH += $$PWD/libs/libtess
+}
+
+yaml-cpp-flags {
+INCLUDEPATH += $$PWD/libs/yaml-cpp/include
+DEFINES += YAML=YAML_NATRON
+}
+
+

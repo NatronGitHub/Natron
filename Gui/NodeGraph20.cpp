@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -48,6 +48,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/NodeGui.h"
+#include "Gui/TabWidget.h"
+
+
 
 #include "Global/QtCompat.h"
 
@@ -59,11 +62,14 @@ NodeGraph::checkForHints(bool shiftdown,
                          const QRectF& visibleSceneR)
 {
     NodePtr internalNode = selectedNode->getNode();
+    if (!internalNode) {
+        return;
+    }
     bool doMergeHints = shiftdown && controlDown;
     bool doConnectionHints = controlDown;
 
     //Ignore hints for backdrops
-    BackdropGui* isBd = dynamic_cast<BackdropGui*>( selectedNode.get() );
+    BackdropGuiPtr isBd = toBackdropGui( selectedNode );
 
     if (isBd) {
         return;
@@ -90,28 +96,20 @@ NodeGraph::checkForHints(bool shiftdown,
     NodePtr selectedNodeInternalNode = selectedNode->getNode();
     bool selectedNodeIsReader = selectedNodeInternalNode->getEffectInstance()->isReader() || selectedNodeInternalNode->getNInputs() == 0;
     Edge* edge = 0;
-    std::set<NodeGui*> nodesWithinRect;
+    std::set<NodeGuiPtr> nodesWithinRect;
     getNodesWithinViewportRect(visibleWidgetRect(), &nodesWithinRect);
 
     {
-        for (std::set<NodeGui*>::iterator it = nodesWithinRect.begin(); it != nodesWithinRect.end(); ++it) {
-            bool isAlreadyAnOutput = false;
-            const NodesWList& outputs = internalNode->getGuiOutputs();
-            for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
-                NodePtr node = it2->lock();
-                if (!node) {
-                    continue;
-                }
-                if ( node == (*it)->getNode() ) {
-                    isAlreadyAnOutput = true;
-                    break;
-                }
-            }
-            if (isAlreadyAnOutput) {
+        for (std::set<NodeGuiPtr>::iterator it = nodesWithinRect.begin(); it != nodesWithinRect.end(); ++it) {
+            OutputNodesMap outputs;
+            internalNode->getOutputs(outputs);
+
+            OutputNodesMap::const_iterator foundAsOutput = outputs.find((*it)->getNode());
+            if (foundAsOutput != outputs.end()) {
                 continue;
             }
             QRectF nodeBbox = (*it)->boundingRectWithEdges();
-            if ( ( (*it) != selectedNode.get() ) && (*it)->isVisible() && nodeBbox.intersects(visibleSceneR) ) {
+            if ( ( (*it) != selectedNode ) && (*it)->isVisible() && nodeBbox.intersects(visibleSceneR) ) {
                 if (doMergeHints) {
                     //QRectF nodeRect = (*it)->mapToParent((*it)->boundingRect()).boundingRect();
 
@@ -173,11 +171,6 @@ NodeGraph::checkForHints(bool shiftdown,
                             continue;
                         }
 
-                        if ( (*it)->getNode()->getEffectInstance()->isInputRotoBrush( edge->getInputNumber() ) ) {
-                            edge = 0;
-                            continue;
-                        }
-
                         //Check that the edge can connect to the selected node
                         {
                             Node::CanConnectInputReturnValue ret = edge->getDest()->getNode()->canConnectInput( selectedNodeInternalNode, edge->getInputNumber() );
@@ -234,7 +227,7 @@ NodeGraph::checkForHints(bool shiftdown,
 
         ///find out if the node is already connected to what the edge is connected
         bool alreadyConnected = false;
-        const std::vector<NodeWPtr > & inpNodes = selectedNode->getNode()->getGuiInputs();
+        const std::vector<NodeWPtr> & inpNodes = selectedNode->getNode()->getInputs();
         for (std::size_t i = 0; i < inpNodes.size(); ++i) {
             if ( inpNodes[i].lock() == edge->getSource()->getNode() ) {
                 alreadyConnected = true;
@@ -303,12 +296,15 @@ NodeGraph::moveSelectedNodesBy(bool shiftdown,
     //Get the nodes to move, taking into account the backdrops
     bool ignoreMagnet = false;
     std::set<NodeGuiPtr> nodesToMove;
-    for (NodesGuiList::iterator it = _imp->_selection.begin();
+    for (NodesGuiWList::iterator it = _imp->_selection.begin();
          it != _imp->_selection.end(); ++it) {
-        const NodeGuiPtr& node = *it;
+        NodeGuiPtr node = it->lock();
+        if (!node) {
+            continue;
+        }
         nodesToMove.insert(node);
 
-        std::map<NodeGuiPtr, NodesGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(*it);
+        std::map<NodeGuiPtr, NodesGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(node);
         if ( !controlDown && ( foundBd != _imp->_nodesWithinBDAtPenDown.end() ) ) {
             ignoreMagnet = true; // we move a backdrop, ignore magnet
             for (NodesGuiList::iterator it2 = foundBd->second.begin();
@@ -334,13 +330,13 @@ NodeGraph::moveSelectedNodesBy(bool shiftdown,
     for (std::set<NodeGuiPtr>::iterator it = nodesToMove.begin();
          it != nodesToMove.end(); ++it) {
         //The current position
-        QPointF pos = (*it)->getPos_mt_safe();
+        QPointF pos = (*it)->pos();
 
         //if ignoreMagnet == true, we do not snap nodes to horizontal/vertical positions
         (*it)->refreshPosition(pos.x() + dxScene, pos.y() + dyScene, ignoreMagnet, newPos);
 
         //The new position
-        QPointF newNodePos = (*it)->getPos_mt_safe();
+        QPointF newNodePos = (*it)->pos();
         if (!ignoreMagnet) {
             //Magnet only works when selection is only for a single node
             //Adjust the delta since mouse press by the new position after snapping
@@ -369,7 +365,7 @@ NodeGraph::moveSelectedNodesBy(bool shiftdown,
         return;
     }
 
-    checkForHints(shiftdown, controlDown, _imp->_selection.front(), visibleSceneR);
+    checkForHints(shiftdown, controlDown, _imp->_selection.front().lock(), visibleSceneR);
 } // NodeGraph::moveSelectedNodesBy
 
 void
@@ -388,25 +384,34 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     _imp->_hasMovedOnce = true;
 
     bool mustUpdate = true;
-    boost::shared_ptr<NodeCollection> collection = getGroup();
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+    NodeCollectionPtr collection = getGroup();
+    NodeGroupPtr isGroup = toNodeGroup(collection);
     bool isGroupEditable = true;
     bool groupEdited = true;
     if (isGroup) {
         isGroupEditable = isGroup->isSubGraphEditable();
-        groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
+        groupEdited = isGroup->isSubGraphEditedByUser();
     }
     if (!groupEdited && isGroupEditable) {
         ///check if user is nearby unlock
-        int iw = _imp->unlockIcon.width();
-        int ih = _imp->unlockIcon.height();
-        int w = width();
-        if ( ( e->x() >= (w - iw - 10 - 15) ) && ( e->x() <= (w - 10 + 15) ) &&
-             ( e->y() >= (10 - 15) ) && ( e->y() <= (10 + ih + 15) ) ) {
+        // see NodeGraph::paintEvent()
+        QPoint pixPos = _imp->getPyPlugUnlockPos();
+        int pixW = _imp->unlockIcon.width();
+        int pixH = _imp->unlockIcon.height();
+        QRect pixRect(pixPos.x(), pixPos.y(), pixW, pixH);
+        pixRect.adjust(-2, -2, 2, 2);
+        QRect selRect = pixRect;
+        selRect.adjust(-3, -3, 3, 3);
+        if ( selRect.contains( e->pos() ) ) {
             assert(isGroup);
             QPoint pos = mapToGlobal( e->pos() );
+            // Unfortunately, the timeout delay for the tooltip is hardcoded in Qt 4, and the last parameter to showText doesn't seem to influence anything
+            // Can not fix https://github.com/MrKepzie/Natron/issues/1151 (at least in Qt4)
             QToolTip::showText( pos, NATRON_NAMESPACE::convertFromPlainText(QCoreApplication::translate("NodeGraph", "Clicking the unlock button will convert the PyPlug to a regular group saved in the project and dettach it from the script.\n"
-                                                                                                "Any modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+                                                                                                "Any modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."), NATRON_NAMESPACE::WhiteSpaceNormal),
+                               this, selRect);
+            e->accept();
+            return;
         }
     }
 
@@ -450,13 +455,13 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     }
     case eEventStateResizingBackdrop: {
         mustUpdateNavigator = true;
-        assert(_imp->_backdropResized);
-        QPointF p = _imp->_backdropResized->scenePos();
+        assert(_imp->_backdropResized.lock());
+        QPointF p = _imp->_backdropResized.lock()->scenePos();
         int w = newPos.x() - p.x();
         int h = newPos.y() - p.y();
         checkAndStartAutoScrollTimer(newPos);
         mustUpdate = true;
-        pushUndoCommand( new ResizeBackdropCommand(_imp->_backdropResized, w, h) );
+        pushUndoCommand( new ResizeBackdropCommand(_imp->_backdropResized.lock(), w, h) );
         _imp->cursorSet = true;
         setCursor( QCursor(Qt::SizeFDiagCursor) );
         break;
@@ -518,7 +523,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         } else {
             // Set cursor
             // The cursor should clearly indicate when will happen if mouse is pressed
-            NodeGui* nearbyNode = NULL;
+            NodeGuiPtr nearbyNode;
             Edge* nearbyEdge = NULL;
             NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
 
@@ -566,8 +571,13 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     if (mustUpdate) {
         update();
     }
+
+    TabWidget* tab = getParentPane() ;
+    if (tab && _imp->_evtState == eEventStateNone) {
+        // If the Viewer is in a tab, send the tab widget the event directly
+        qApp->sendEvent(tab, e);
+    }
     QGraphicsView::mouseMoveEvent(e);
 } // mouseMoveEvent
 
 NATRON_NAMESPACE_EXIT
-

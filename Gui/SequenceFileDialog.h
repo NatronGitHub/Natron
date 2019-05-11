@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -41,6 +41,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QStyledItemDelegate>
 #include <QTreeView>
 #include <QDialog>
@@ -60,7 +61,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-#include "Engine/FileSystemModel.h"
+#include "Engine/FileSystemModel.h" // SortableViewI
 #include "Gui/LineEdit.h"
 
 #include "Gui/GuiFwd.h"
@@ -222,7 +223,7 @@ class SequenceDialogView
     SequenceFileDialog* _fd;
 
 public:
-    explicit SequenceDialogView(SequenceFileDialog* fd);
+    explicit SequenceDialogView(Gui* gui, SequenceFileDialog* fd);
 
     void updateNameMapping(const std::vector<std::pair<QString, std::pair<qint64, QString> > > & nameMapping);
 
@@ -353,7 +354,7 @@ public:
      **/
     static void appendFilesFromDirRecursively(QDir* currentDir, QStringList* files);
 
-    static std::vector< boost::shared_ptr<SequenceParsing::SequenceFromFiles> >fileSequencesFromFilesList(const QStringList & files, const QStringList & supportedFileTypes);
+    static std::vector<SequenceParsing::SequenceFromFilesPtr> fileSequencesFromFilesList(const QStringList & files, const QStringList & supportedFileTypes);
 
 public Q_SLOTS:
 
@@ -552,7 +553,7 @@ private:
     QStringList _filters;
     SequenceDialogView* _view;
     boost::scoped_ptr<SequenceItemDelegate> _itemDelegate;
-    boost::shared_ptr<FileSystemModel> _model;
+    FileSystemModelPtr _model;
 
     ///The favorite view and the dialog view don't share the same model as they don't have
     ///the same icon provider
@@ -602,7 +603,7 @@ private:
     QWidget* _centerArea;
     QHBoxLayout* _centerAreaLayout;
     Button* _togglePreviewButton;
-    boost::shared_ptr<FileDialogPreviewProvider> _preview;
+    FileDialogPreviewProviderPtr _preview;
 
     ///Remember  autoSetProjectFormat  state before opening the dialog
     bool _wasAutosetProjectFormatEnabled;

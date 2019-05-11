@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -18,6 +18,7 @@
 
 #include "Gui/Gui.h"
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #ifdef Q_OS_MAC
 
 #include <AppKit/NSView.h>
@@ -85,14 +86,14 @@ static NSString* const NSBackingPropertyOldScaleFactorKey =
 
 NATRON_NAMESPACE_ENTER
 
-bool
-QtMac::isHighDPIInternal(const QWidget* w) {
+double
+QtMac::getHighDPIScaleFactorInternal(const QWidget* w) {
     NSView* view = reinterpret_cast<NSView*>(w->winId());
     CGFloat scaleFactor = 1.0;
     if ([[view window] respondsToSelector: @selector(backingScaleFactor)])
         scaleFactor = [[view window] backingScaleFactor];
     
-    return (scaleFactor > 1.0);
+    return scaleFactor;
 }
 
 NATRON_NAMESPACE_EXIT

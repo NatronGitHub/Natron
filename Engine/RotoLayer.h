@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -45,6 +45,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Global/GlobalDefines.h"
 #include "Engine/FitCurve.h"
 #include "Engine/RotoItem.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
@@ -60,61 +61,88 @@ NATRON_NAMESPACE_ENTER
  * i.e: the last item will be rendered first, etc...
  * Visually, in the GUI the top-most item of a layer corresponds to the first item in the children list
  **/
-struct RotoLayerPrivate;
 class RotoLayer
     : public RotoItem
 {
 public:
 
-    RotoLayer(const boost::shared_ptr<RotoContext>& context,
-              const std::string & name,
-              const boost::shared_ptr<RotoLayer>& parent);
+    RotoLayer(const KnobItemsTablePtr& model);
 
-    explicit RotoLayer(const RotoLayer & other);
+    RotoLayer(const RotoLayerPtr& other, const FrameViewRenderKey& key);
 
     virtual ~RotoLayer();
 
-    virtual void clone(const RotoItem* other) OVERRIDE;
+    virtual bool isItemContainer() const OVERRIDE FINAL;
 
-    /**
-     * @brief Must be implemented by the derived class to save the state into
-     * the serialization object.
-     * Derived implementations must call the parent class implementation.
-     **/
-    virtual void save(RotoItemSerialization* obj) const OVERRIDE;
+    virtual std::string getBaseItemName() const OVERRIDE;
 
-    /**
-     * @brief Must be implemented by the derived class to load the state from
-     * the serialization object.
-     * Derived implementations must call the parent class implementation.
-     **/
-    virtual void load(const RotoItemSerialization & obj) OVERRIDE;
+    virtual std::string getSerializationClassName() const OVERRIDE;
+};
 
-    ///only callable on the main-thread
-    ///No check is done to figure out if the item already exists in this layer
-    ///this is up to the caller responsability
-    void addItem(const boost::shared_ptr<RotoItem>& item, bool declareToPython = true);
+inline RotoLayerPtr
+toRotoLayer(const KnobHolderPtr& item)
+{
+    return boost::dynamic_pointer_cast<RotoLayer>(item);
+}
 
-    ///Inserts the item into the layer before the indicated index.
-    ///The same restrictions as addItem are applied.
-    void insertItem(const boost::shared_ptr<RotoItem>& item, int index);
+struct PlanarTrackLayerPrivate;
+class PlanarTrackLayer : public RotoLayer
+{
+public:
 
-    ///only callable on the main-thread
-    void removeItem(const boost::shared_ptr<RotoItem>& item);
+    PlanarTrackLayer(const KnobItemsTablePtr& model);
 
-    ///Returns the index of the given item in the layer, or -1 if not found
-    int getChildIndex(const boost::shared_ptr<RotoItem>& item) const;
+    PlanarTrackLayer(const PlanarTrackLayerPtr& other, const FrameViewRenderKey& key);
 
-    ///only callable on the main-thread
-    const std::list< boost::shared_ptr<RotoItem> >& getItems() const;
+    virtual ~PlanarTrackLayer();
 
-    ///MT-safe
-    std::list< boost::shared_ptr<RotoItem> > getItems_mt_safe() const;
+    virtual std::string getBaseItemName() const OVERRIDE FINAL;
+
+    virtual std::string getSerializationClassName() const OVERRIDE FINAL;
+
+    virtual bool isRenderCloneNeeded() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
+    virtual bool getTransformAtTimeInternal(TimeValue time, ViewIdx view, Transform::Matrix3x3* matrix) const OVERRIDE FINAL;
+
+    void setExtraMatrix(bool setKeyframe, TimeValue time, ViewSetSpec view, const Transform::Matrix3x3& mat);
+
+    void clearTransformAnimation();
+    void clearTransformAnimationBeforeTime(TimeValue time);
+    void clearTransformAnimationAfterTime(TimeValue time);
+    void deleteTransformKeyframe(TimeValue time);
+
+    void getTransformKeyframes(std::list<double>* keys) const;
+
+    void getExtraMatrixAtTime(TimeValue time, ViewIdx view, Transform::Matrix3x3* mat) const;
+
+    TimeValue getReferenceFrame() const;
+
+    KnobDoublePtr getCornerPinPointKnob(int index) const;
+    KnobDoublePtr getCornerPinPointOffsetKnob(int index) const;
+    KnobChoicePtr getMotionModelKnob() const;
 
 private:
 
-    boost::scoped_ptr<RotoLayerPrivate> _imp;
+    virtual void initializeKnobs() OVERRIDE FINAL;
+
+    virtual void fetchRenderCloneKnobs() OVERRIDE FINAL;
+
+    virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& render) const OVERRIDE FINAL;
+
+    boost::scoped_ptr<PlanarTrackLayerPrivate> _imp;
+
 };
+
+
+inline PlanarTrackLayerPtr
+toPlanarTrackLayer(const KnobHolderPtr& item)
+{
+    return boost::dynamic_pointer_cast<PlanarTrackLayer>(item);
+}
+
 
 NATRON_NAMESPACE_EXIT
 

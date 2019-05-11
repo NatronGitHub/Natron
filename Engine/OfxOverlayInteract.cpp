@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,36 +29,39 @@
 
 #include <ofxNatron.h>
 
+#include "Engine/EffectInstanceTLSData.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Format.h"
 #include "Engine/OverlaySupport.h"
-#include "Engine/Knob.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/AppInstance.h"
 
 
 NATRON_NAMESPACE_ENTER
 
-NatronOverlayInteractSupport::OGLContextSaver::OGLContextSaver(OverlaySupport* viewport)
-    : _viewport(viewport)
-{
-    assert(_viewport);
-    _viewport->saveOpenGLContext();
-}
 
-NatronOverlayInteractSupport::OGLContextSaver::~OGLContextSaver()
-{
-    _viewport->restoreOpenGLContext();
-}
 
-OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
+
+OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance* v,
                                        int bitDepthPerComponent,
                                        bool hasAlpha)
-    : OFX::Host::ImageEffect::OverlayInteract(v, bitDepthPerComponent, hasAlpha)
-    , NatronOverlayInteractSupport()
+    : OFX::Host::Interact::Instance(v->getOverlayDescriptor(bitDepthPerComponent, hasAlpha), (void *)(v->getHandle()))
+    , Natron::OverlayInteractBase()
 {
 }
+
+
+
+OfxOverlayInteract::OfxOverlayInteract(const KnobIPtr& knob,
+                                       OFX::Host::Interact::Descriptor* desc,
+                                       OfxImageEffectInstance* v)
+    : OFX::Host::Interact::Instance(*desc, v)
+    , Natron::OverlayInteractBase(knob)
+{
+}
+
 
 bool
 OfxOverlayInteract::isColorPickerRequired() const
@@ -68,257 +71,416 @@ OfxOverlayInteract::isColorPickerRequired() const
 
 
 // overridden from OFX::Host::Interact::Instance
-////////////////////////////////////////////////////////////////////////////////////////////
-// protect all OpenGL attribs from anything wrong that could be done in interact functions
-// Should this be done in the GUI?
-// Probably not: the fact that interacts are OpenGL
-OfxStatus
-OfxOverlayInteract::createInstanceAction()
-{
-    //OGLContextSaver s(_viewport);
-    return OFX::Host::ImageEffect::OverlayInteract::createInstanceAction();
-}
-
-// overridden from OFX::Host::Interact::Instance
-OfxStatus
-OfxOverlayInteract::drawAction(OfxTime time,
-                               const OfxPointD &renderScale,
-                               int view,
-                               const OfxRGBAColourD* pickerColour)
-{
-    NatronOverlayInteractSupport::OGLContextSaver s(_viewport);
-    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::drawAction(time, renderScale, view, pickerColour);
-
-    return stat;
-}
-
-// overridden from OFX::Host::Interact::Instance
-OfxStatus
-OfxOverlayInteract::penMotionAction(OfxTime time,
-                                    const OfxPointD &renderScale,
-                                    int view,
-                                    const OfxRGBAColourD* pickerColour,
-                                    const OfxPointD &penPos,
-                                    const OfxPointI &penPosViewport,
-                                    double pressure)
-{
-    //OGLContextSaver s(_viewport);
-    return OFX::Host::ImageEffect::OverlayInteract::penMotionAction(time, renderScale, view, pickerColour, penPos, penPosViewport, pressure);
-}
-
-// overridden from OFX::Host::Interact::Instance
-OfxStatus
-OfxOverlayInteract::penUpAction(OfxTime time,
-                                const OfxPointD &renderScale,
-                                int view,
-                                const OfxRGBAColourD* pickerColour,
-                                const OfxPointD &penPos,
-                                const OfxPointI &penPosViewport,
-                                double pressure)
-{
-    return OFX::Host::ImageEffect::OverlayInteract::penUpAction(time, renderScale, view, pickerColour, penPos, penPosViewport, pressure);
-}
-
-// overridden from OFX::Host::Interact::Instance
-OfxStatus
-OfxOverlayInteract::penDownAction(OfxTime time,
-                                  const OfxPointD &renderScale,
-                                  int view,
-                                  const OfxRGBAColourD* pickerColour,
-                                  const OfxPointD &penPos,
-                                  const OfxPointI &penPosViewport,
-                                  double pressure)
-{
-    return OFX::Host::ImageEffect::OverlayInteract::penDownAction(time, renderScale, view, pickerColour, penPos, penPosViewport, pressure);
-}
-
-// overridden from OFX::Host::Interact::Instance
-OfxStatus
-OfxOverlayInteract::keyDownAction(OfxTime time,
-                                  const OfxPointD &renderScale,
-                                  int view,
-                                  const OfxRGBAColourD* pickerColour,
-                                  int key,
-                                  char*   keyString)
-{
-    return OFX::Host::ImageEffect::OverlayInteract::keyDownAction(time, renderScale, view, pickerColour, key, keyString);
-}
-
-// overridden from OFX::Host::Interact::Instance
-OfxStatus
-OfxOverlayInteract::keyUpAction(OfxTime time,
-                                const OfxPointD &renderScale,
-                                int view,
-                                const OfxRGBAColourD* pickerColour,
-                                int key,
-                                char*   keyString)
-{
-    return OFX::Host::ImageEffect::OverlayInteract::keyUpAction(time, renderScale, view, pickerColour, key, keyString);
-}
-
-// overridden from OFX::Host::Interact::Instance
-OfxStatus
-OfxOverlayInteract::keyRepeatAction(OfxTime time,
-                                    const OfxPointD &renderScale,
-                                    int view,
-                                    const OfxRGBAColourD* pickerColour,
-                                    int key,
-                                    char*   keyString)
-{
-    return OFX::Host::ImageEffect::OverlayInteract::keyRepeatAction(time, renderScale, view, pickerColour, key, keyString);
-}
-
-// overridden from OFX::Host::Interact::Instance
-OfxStatus
-OfxOverlayInteract::gainFocusAction(OfxTime time,
-                                    const OfxPointD &renderScale,
-                                    int view,
-                                    const OfxRGBAColourD* pickerColour)
-{
-    return OFX::Host::ImageEffect::OverlayInteract::gainFocusAction(time, renderScale, view, pickerColour);
-}
-
-// overridden from OFX::Host::Interact::Instance
-OfxStatus
-OfxOverlayInteract::loseFocusAction(OfxTime time,
-                                    const OfxPointD &renderScale,
-                                    int view,
-                                    const OfxRGBAColourD* pickerColour)
-{
-    return OFX::Host::ImageEffect::OverlayInteract::loseFocusAction(time, renderScale, view, pickerColour);
-}
-
-// overridden from OFX::Host::Interact::Instance
 bool
 OfxOverlayInteract::getSuggestedColour(double &r,
                                        double &g,
                                        double &b) const
 {
-    OfxImageEffectInstance* effect = dynamic_cast<OfxImageEffectInstance*>(&_instance);
-
-    assert( effect && effect->getOfxEffectInstance() );
-
-    return effect ? effect->getOfxEffectInstance()->getNode()->getOverlayColor(&r, &g, &b) : false;
+    return OverlayInteractBase::getOverlayColor(r, g, b);
 }
 
-// overridden from OFX::Host::Interact::Instance
-OfxStatus
-OfxOverlayInteract::redraw()
+
+static OfxRGBAColourD colorToOfxColor(const ColorRgba<double>& c)
 {
-    OfxImageEffectInstance* effect = dynamic_cast<OfxImageEffectInstance*>(&_instance);
-
-    assert(effect);
-    if ( effect && effect->getOfxEffectInstance()->getNode()->shouldDrawOverlay() ) {
-        AppInstPtr app =  effect->getOfxEffectInstance()->getApp();
-        assert(app);
-        if ( effect->getOfxEffectInstance()->isDoingInteractAction() ) {
-            app->queueRedrawForAllViewers();
-        } else {
-            app->redrawAllViewers();
-        }
-    }
-
-    return kOfxStatOK;
-}
-
-OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
-                                                 OFX::Host::Interact::Descriptor &desc,
-                                                 void *effectInstance)
-    : OFX::Host::Interact::Instance(desc, effectInstance)
-    , NatronOverlayInteractSupport()
-{
-    setCallingViewport(knob);
-}
-
-bool
-OfxParamOverlayInteract::isColorPickerRequired() const
-{
-    return (bool)getProperties().getIntProperty(kNatronOfxInteractColourPicking);
-}
-
-NatronOverlayInteractSupport::NatronOverlayInteractSupport()
-    : _hasColorPicker(false)
-    , _lastColorPicker()
-    , _viewport(NULL)
-{
-}
-
-NatronOverlayInteractSupport::~NatronOverlayInteractSupport()
-{
+    OfxRGBAColourD ret = {c.r, c.g, c.g, c.a};
+    return ret;
 }
 
 void
-NatronOverlayInteractSupport::setCallingViewport(OverlaySupport* viewport)
+OfxOverlayInteract::drawOverlay(TimeValue time,
+                                const RenderScale & renderScale,
+                                ViewIdx view)
 {
-    _viewport = viewport;
-}
 
-OverlaySupport*
-NatronOverlayInteractSupport::getLastCallingViewport() const
-{
-    return _viewport;
-}
-
-OfxStatus
-NatronOverlayInteractSupport::n_swapBuffers()
-{
-    if (_viewport) {
-        _viewport->swapOpenGLBuffers();
-    }
-
-    return kOfxStatOK;
-}
-
-void
-NatronOverlayInteractSupport::n_getViewportSize(double &width,
-                                                double &height) const
-{
-    if (_viewport) {
-        _viewport->getViewportSize(width, height);
-    }
-}
-
-void
-NatronOverlayInteractSupport::n_getPixelScale(double & xScale,
-                                              double & yScale) const
-{
-    if (_viewport) {
-        _viewport->getPixelScale(xScale, yScale);
-    }
-}
-
-#ifdef OFX_EXTENSIONS_NATRON
-// hooks to live kOfxInteractPropScreenPixelRatio in the property set
-double
-NatronOverlayInteractSupport::n_getScreenPixelRatio() const
-{
-    if (_viewport) {
-        return _viewport->getScreenPixelRatio();
-    }
-    return 1.;
-}
+    EffectInstancePtr effect = getEffect();
+    EffectInstanceTLSDataPtr tls = effect->getOrCreateTLSObject();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionDraw,  time, view, renderScale
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ false
 #endif
+                                              );
 
-void
-NatronOverlayInteractSupport::n_getBackgroundColour(double &r,
-                                                    double &g,
-                                                    double &b) const
-{
-    if (_viewport) {
-        _viewport->getBackgroundColour(r, g, b);
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(effect));
+
+    OfxRGBAColourD pickerColor;
+    bool hasPicker = hasColorPicker();
+    if (hasPicker) {
+        pickerColor = colorToOfxColor(getLastColorPickerColor());
     }
+
+    drawAction(time, renderScale, view, hasPicker ? &pickerColor : /*colourPicker=*/0);
+
 }
 
+
 bool
-NatronOverlayInteractSupport::n_getSuggestedColour(double & /*r*/,
-                                                   double & /*g*/,
-                                                   double & /*b*/) const
+OfxOverlayInteract::onOverlayPenDown(TimeValue time,
+                                     const RenderScale & renderScale,
+                                     ViewIdx view,
+                                     const QPointF & viewportPos,
+                                     const QPointF & pos,
+                                     double pressure,
+                                     TimeValue /*timestamp*/,
+                                     PenType /*pen*/)
 {
+
+    OfxPointD penPos;
+    penPos.x = pos.x();
+    penPos.y = pos.y();
+    OfxPointI penPosViewport;
+    penPosViewport.x = viewportPos.x();
+    penPosViewport.y = viewportPos.y();
+
+    EffectInstancePtr effect = getEffect();
+    EffectInstanceTLSDataPtr tls = effect->getOrCreateTLSObject();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionPenDown, time, view, renderScale
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
+
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(effect));
+
+    OfxRGBAColourD pickerColor;
+    bool hasPicker = hasColorPicker();
+    if (hasPicker) {
+        pickerColor = colorToOfxColor(getLastColorPickerColor());
+    }
+
+
+    OfxStatus stat = penDownAction(time, renderScale, view, hasPicker ? &pickerColor : /*colourPicker=*/0, penPos, penPosViewport, pressure);
+
+    if (stat == kOfxStatOK) {
+        return true;
+    }
+    
+    
     return false;
 }
 
+bool
+OfxOverlayInteract::onOverlayPenMotion(TimeValue time,
+                                      const RenderScale & renderScale,
+                                      ViewIdx view,
+                                      const QPointF & viewportPos,
+                                       const QPointF & pos,
+                                       double pressure,
+                                       TimeValue /*timestamp*/)
+{
+
+    OfxPointD penPos;
+    penPos.x = pos.x();
+    penPos.y = pos.y();
+    OfxPointI penPosViewport;
+    penPosViewport.x = viewportPos.x();
+    penPosViewport.y = viewportPos.y();
+    OfxStatus stat;
+
+
+    EffectInstancePtr effect = getEffect();
+    EffectInstanceTLSDataPtr tls = effect->getOrCreateTLSObject();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionPenMotion, time, view, renderScale
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
+
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(effect));
+
+    OfxRGBAColourD pickerColor;
+    bool hasPicker = hasColorPicker();
+    if (hasPicker) {
+        pickerColor = colorToOfxColor(getLastColorPickerColor());
+    }
+
+    stat = penMotionAction(time, renderScale, view, hasPicker ? &pickerColor : /*colourPicker=*/0, penPos, penPosViewport, pressure);
+
+    if (stat == kOfxStatOK) {
+        return true;
+    }
+
+
+    return false;
+}
+
+bool
+OfxOverlayInteract::onOverlayPenUp(TimeValue time,
+                                   const RenderScale & renderScale,
+                                   ViewIdx view,
+                                   const QPointF & viewportPos,
+                                   const QPointF & pos,
+                                   double pressure,
+                                   TimeValue /*timestamp*/)
+{
+    OfxPointD penPos;
+    penPos.x = pos.x();
+    penPos.y = pos.y();
+    OfxPointI penPosViewport;
+    penPosViewport.x = viewportPos.x();
+    penPosViewport.y = viewportPos.y();
+
+    EffectInstancePtr effect = getEffect();
+    EffectInstanceTLSDataPtr tls = effect->getOrCreateTLSObject();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionPenUp, time, view, renderScale
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
+
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(effect));
+
+    OfxRGBAColourD pickerColor;
+    bool hasPicker = hasColorPicker();
+    if (hasPicker) {
+        pickerColor = colorToOfxColor(getLastColorPickerColor());
+    }
+
+
+    OfxStatus stat = penUpAction(time, renderScale, view, hasPicker ? &pickerColor : /*colourPicker=*/0, penPos, penPosViewport, pressure);
+    if (stat == kOfxStatOK) {
+        return true;
+    }
+
+
+    return false;
+}
+
+bool
+OfxOverlayInteract::onOverlayKeyDown(TimeValue time,
+                                     const RenderScale & renderScale,
+                                     ViewIdx view,
+                                     Key key,
+                                     KeyboardModifiers /*modifiers*/)
+{
+
+    EffectInstancePtr effect = getEffect();
+    EffectInstanceTLSDataPtr tls = effect->getOrCreateTLSObject();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionKeyDown, time, view, renderScale
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
+
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(effect));
+
+    OfxRGBAColourD pickerColor;
+    bool hasPicker = hasColorPicker();
+    if (hasPicker) {
+        pickerColor = colorToOfxColor(getLastColorPickerColor());
+    }
+
+    QByteArray keyStr;
+    OfxStatus stat = keyDownAction( time, renderScale, view,hasPicker ? &pickerColor : /*colourPicker=*/0, (int)key, keyStr.data() );
+
+    if (stat == kOfxStatOK) {
+        return true;
+    }
+
+
+    return false;
+}
+
+bool
+OfxOverlayInteract::onOverlayKeyUp(TimeValue time,
+                                   const RenderScale & renderScale,
+                                   ViewIdx view,
+                                   Key key,
+                                   KeyboardModifiers /* modifiers*/)
+{
+
+    EffectInstancePtr effect = getEffect();
+    EffectInstanceTLSDataPtr tls = effect->getOrCreateTLSObject();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionKeyUp, time, view, renderScale
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+
+                                              );
+
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(effect));
+
+    OfxRGBAColourD pickerColor;
+    bool hasPicker = hasColorPicker();
+    if (hasPicker) {
+        pickerColor = colorToOfxColor(getLastColorPickerColor());
+    }
+
+
+    QByteArray keyStr;
+    OfxStatus stat = keyUpAction( time, renderScale, view, hasPicker ? &pickerColor : /*colourPicker=*/0, (int)key, keyStr.data() );
+
+    if (stat == kOfxStatOK) {
+        return true;
+    }
+    
+    
+
+    return false;
+}
+
+bool
+OfxOverlayInteract::onOverlayKeyRepeat(TimeValue time,
+                                       const RenderScale & renderScale,
+                                       ViewIdx view,
+                                       Key key,
+                                       KeyboardModifiers /*modifiers*/)
+{
+
+    EffectInstancePtr effect = getEffect();
+    EffectInstanceTLSDataPtr tls = effect->getOrCreateTLSObject();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionKeyRepeat, time, view, renderScale
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+
+                                              );
+
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(effect));
+
+    OfxRGBAColourD pickerColor;
+    bool hasPicker = hasColorPicker();
+    if (hasPicker) {
+        pickerColor = colorToOfxColor(getLastColorPickerColor());
+    }
+
+
+    QByteArray keyStr;
+    OfxStatus stat = keyRepeatAction( time, renderScale, view, hasPicker ? &pickerColor : /*colourPicker=*/0, (int)key, keyStr.data() );
+
+    if (stat == kOfxStatOK) {
+        return true;
+    }
+
+    return false;
+}
+
+bool
+OfxOverlayInteract::onOverlayFocusGained(TimeValue time,
+                                         const RenderScale & renderScale,
+                                         ViewIdx view)
+{
+
+    EffectInstancePtr effect = getEffect();
+    EffectInstanceTLSDataPtr tls = effect->getOrCreateTLSObject();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionGainFocus, time, view, renderScale
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+
+                                              );
+
+    OfxRGBAColourD pickerColor;
+    bool hasPicker = hasColorPicker();
+    if (hasPicker) {
+        pickerColor = colorToOfxColor(getLastColorPickerColor());
+    }
+
+
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(effect));
+
+    OfxStatus stat;
+    stat = gainFocusAction(time, renderScale, view, hasPicker ? &pickerColor : /*colourPicker=*/0);
+    if (stat == kOfxStatOK) {
+        return true;
+    }
+    
+    
+    return false;
+}
+
+bool
+OfxOverlayInteract::onOverlayFocusLost(TimeValue time,
+                                       const RenderScale & renderScale,
+                                       ViewIdx view)
+{
+
+    EffectInstancePtr effect = getEffect();
+    EffectInstanceTLSDataPtr tls = effect->getOrCreateTLSObject();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionLoseFocus, time, view, renderScale
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+
+                                              );
+
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(effect));
+
+    OfxRGBAColourD pickerColor;
+    bool hasPicker = hasColorPicker();
+    if (hasPicker) {
+        pickerColor = colorToOfxColor(getLastColorPickerColor());
+    }
+
+
+    OfxStatus stat;
+    stat = loseFocusAction(time, renderScale, view, hasPicker ? &pickerColor : /*colourPicker=*/0);
+    if (stat == kOfxStatOK) {
+        return true;
+    }
+
+
+    return false;
+}
+
+
 void
-OfxParamOverlayInteract::getMinimumSize(double & minW,
+OfxOverlayInteract::onViewportSelectionCleared()
+{
+    OfxEffectInstancePtr effect = toOfxEffectInstance(getEffect());
+    if (!effect) {
+        return;
+    }
+    KnobIPtr foundSelKnob = effect->getKnobByName(kNatronOfxImageEffectSelectionRectangle);
+    if (!foundSelKnob) {
+        return;
+    }
+
+    KnobIntPtr isIntKnob = toKnobInt(foundSelKnob);
+    if (!isIntKnob) {
+        return;
+    }
+
+
+    double propV[4] = {0, 0, 0, 0};
+    effect->effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
+    isIntKnob->setValue(0);
+}
+
+
+void
+OfxOverlayInteract::onViewportSelectionUpdated(const RectD& rectangle, bool onRelease)
+{
+    OfxEffectInstancePtr effect = toOfxEffectInstance(getEffect());
+    if (!effect) {
+        return;
+    }
+    KnobIPtr foundSelKnob = effect->getKnobByName(kNatronOfxImageEffectSelectionRectangle);
+    if (!foundSelKnob) {
+        return;
+    }
+
+    KnobIntPtr isIntKnob = toKnobInt(foundSelKnob);
+    if (!isIntKnob) {
+        return;
+    }
+    
+    double propV[4] = {rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2};
+    effect->effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
+    isIntKnob->setValue(onRelease ? 2 : 1);
+}
+
+
+void
+OfxOverlayInteract::getMinimumSize(double & minW,
                                         double & minH) const
 {
     minW = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractMinimumSize, 0);
@@ -326,7 +488,7 @@ OfxParamOverlayInteract::getMinimumSize(double & minW,
 }
 
 void
-OfxParamOverlayInteract::getPreferredSize(int & pW,
+OfxOverlayInteract::getPreferredSize(int & pW,
                                           int & pH) const
 {
     pW = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractPreferedSize, 0);
@@ -334,7 +496,7 @@ OfxParamOverlayInteract::getPreferredSize(int & pW,
 }
 
 void
-OfxParamOverlayInteract::getSize(int &w,
+OfxOverlayInteract::getSize(int &w,
                                  int &h) const
 {
     w = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractSize, 0);
@@ -342,7 +504,7 @@ OfxParamOverlayInteract::getSize(int &w,
 }
 
 void
-OfxParamOverlayInteract::setSize(int w,
+OfxOverlayInteract::setSize(int w,
                                  int h)
 {
     _descriptor.getProperties().setIntProperty(kOfxParamPropInteractSize, w, 0);
@@ -350,19 +512,10 @@ OfxParamOverlayInteract::setSize(int w,
 }
 
 void
-OfxParamOverlayInteract::getPixelAspectRatio(double & par) const
+OfxOverlayInteract::getPixelAspectRatio(double & par) const
 {
     par = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSizeAspect);
 }
 
-OfxStatus
-OfxParamOverlayInteract::redraw()
-{
-    if (_viewport) {
-        _viewport->redraw();
-    }
-
-    return kOfxStatOK;
-}
 
 NATRON_NAMESPACE_EXIT

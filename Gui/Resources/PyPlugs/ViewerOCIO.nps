@@ -1,0 +1,103 @@
+# Natron Presets File
+PluginID: fr.inria.built-in.Viewer
+Params:
+  - Name: layer
+    String: Color.RGBA
+  - Name: alphaChannel
+    String: Color.A
+  - Name: deviceColorspace
+    String: Linear(None)
+  - Name: pyPlugPluginID
+    String: fr.inria.ViewerOCIO
+  - Name: pyPlugPluginLabel
+    String: ViewerOCIO
+  - Name: pyPlugPluginGrouping
+    String: PyPlugs
+  - Name: pyPlugPluginDescription
+    String: A viewer using OpenColorIO color transform capabilities instead of the built-in Natron colorspaces
+  - Name: pyPlugPluginVersion
+    Int: [1, 0]
+  - Name: pyPlugPluginShortcut
+    Int: [73, 100663296]
+  - Name: pyPlugPluginIcon
+    String: ViewerOCIO.png
+UserPages:
+  - TypeName: Page
+    Name: userNatron
+    Label: User
+    Params:
+      - Name: ocioDisplayIndex
+        DefaultString: sRGB
+        NDims: 1
+        TypeName: Choice
+        Label: Display Device
+        Hint: Specifies the display device that will be used to view the sequence.
+        Entries: [None, Rec709, XYZ, sRGB]
+        Props: [Secret]
+      - Name: ocioViewIndex
+        DefaultString: Default
+        NDims: 1
+        TypeName: Choice
+        Label: View Transform
+        Hint: Specifies the display transform to apply to the scene or image.
+        Entries: [Default, RRT, Film, Raw, Log]
+        Props: [Secret, AnimatesChanged]
+PagesOrder: [nodePage, pyPlugPage, userNatron]
+Children:
+  - PluginID: fr.inria.built-in.ViewerInternal
+    Name: ViewerProcess
+    Inputs: {A: OCIODisplay_A, B: OCIODisplay_B}
+    Pos: [66.2, 27.5]
+  - PluginID: fr.inria.built-in.Input
+    Name: Input1_2
+    Label: Input1
+    Pos: [-446.9, 13.5]
+  - PluginID: fr.inria.built-in.Input
+    Name: Input2_2
+    Label: Input2
+    Pos: [-444.2, -63]
+  - PluginID: fr.inria.built-in.Input
+    Name: Input3_2
+    Label: Input3
+    Pos: [-443.7, -145.4]
+  - PluginID: fr.inria.built-in.Input
+    Name: Input4_2
+    Label: Input4
+    Pos: [-204.3, -283.2]
+  - PluginID: fr.inria.built-in.Input
+    Name: Input5_2
+    Label: Input5
+    Pos: [-23.2, -283.2]
+  - PluginID: fr.inria.built-in.Input
+    Name: Input6_2
+    Label: Input6
+    Pos: [162.2, -283.2]
+  - PluginID: fr.inria.built-in.Input
+    Name: Input7_2
+    Label: Input7
+    Pos: [333.5, -281.8]
+  - PluginID: fr.inria.built-in.Input
+    Name: Input8
+    Pos: [516.1, -153.3]
+  - PluginID: fr.inria.built-in.Input
+    Name: Input9
+    Pos: [515.7, -67.7]
+  - PluginID: fr.inria.built-in.Input
+    Name: Input10
+    Pos: [515.2, 4.5]
+  - PluginID: fr.inria.openfx.OCIODisplay
+    Name: OCIODisplay_A
+    Inputs: Input1_2
+    Params:
+      - Name: premult
+        Bool: true
+    Pos: [-26.2, -63.4]
+  - PluginID: fr.inria.openfx.OCIODisplay
+    Name: OCIODisplay_B
+    Inputs: Input1_2
+    Params:
+      - Name: premult
+        Bool: true
+    CloneMaster: OCIODisplay_A
+    Pos: [195, -64.3]
+ViewerParamsOrder: [layer, alphaChannel, displayChannels, aInput, operation, bInput, clipToFormat, proxyMode, proxyLevel, fullFrame, enableRegionOfInterest, refreshViewport, pauseUpdates, fitViewport, syncViewports, zoom, enableGain, gain, autoContrast, enableGamma, gamma, ocioDisplayIndex, ocioViewIndex, enableCheckerBoard, activeView, enableInfoBar]

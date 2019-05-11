@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,9 +34,26 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
+#include "Engine/Plugin.h"
+#include "Engine/KnobUndoCommand.h"
+#include "Engine/Project.h"
+#include "Engine/KnobItemsTable.h"
+#include "Engine/Node.h"
+#include "Engine/EffectInstance.h"
 
+#include "Gui/ActionShortcuts.h"
+#include "Gui/AnimationModuleUndoRedo.h"
+#include "Gui/AnimationModuleEditor.h"
+#include "Gui/AnimationModuleSelectionModel.h"
+#include "Gui/AnimationModuleTreeView.h"
+#include "Gui/AnimationModuleView.h"
+#include "Gui/AnimationModule.h"
+#include "Gui/KnobAnim.h"
+#include "Gui/NodeAnim.h"
+#include "Gui/TableItemAnim.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiPrivate.h"
-#include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
+#include "Gui/TabGroup.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -44,41 +61,18 @@ NATRON_NAMESPACE_ENTER
 void
 KnobGui::onCreateAliasOnGroupActionTriggered()
 {
-    KnobHolder* holder = getKnob()->getHolder();
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
+    KnobHolderPtr holder = getKnob()->getHolder();
+    EffectInstancePtr isEffect = toEffectInstance(holder);
 
     assert(isEffect);
     if (!isEffect) {
         throw std::logic_error("");
     }
-    boost::shared_ptr<NodeCollection> collec = isEffect->getNode()->getGroup();
-    NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>( collec.get() );
+    NodeCollectionPtr collec = isEffect->getNode()->getGroup();
+    NodeGroupPtr isCollecGroup = toNodeGroup(collec);
     assert(isCollecGroup);
     if (isCollecGroup) {
-        createDuplicateOnNode(isCollecGroup, true, boost::shared_ptr<KnobPage>(), boost::shared_ptr<KnobGroup>(), -1);
-    }
-}
-
-void
-KnobGui::onRemoveAliasLinkActionTriggered()
-{
-    KnobPtr thisKnob = getKnob();
-    KnobI::ListenerDimsMap listeners;
-
-    thisKnob->getListeners(listeners);
-    KnobPtr aliasMaster;
-    KnobPtr listener;
-    if ( !listeners.empty() ) {
-        listener = listeners.begin()->first.lock();
-        if (listener) {
-            aliasMaster = listener->getAliasMaster();
-        }
-        if (aliasMaster != thisKnob) {
-            aliasMaster.reset();
-        }
-    }
-    if (aliasMaster && listener) {
-        listener->setKnobAsAliasOfThis(aliasMaster, false);
+        createDuplicateOnNode(isCollecGroup, true, KnobPagePtr(), KnobGroupPtr(), -1);
     }
 }
 
@@ -90,23 +84,22 @@ KnobGui::onUnlinkActionTriggered()
     if (!action) {
         return;
     }
-    int dim = action->data().toInt();
-    KnobPtr thisKnob = getKnob();
-    int dims = thisKnob->getDimension();
-    KnobPtr aliasMaster = thisKnob->getAliasMaster();
-    if (aliasMaster) {
-        thisKnob->setKnobAsAliasOfThis(aliasMaster, false);
-    } else {
-        thisKnob->beginChanges();
+    ViewSetSpec view;
+    DimSpec dimension;
+    getDimViewFromActionData(action, &view, &dimension);
+
+    KnobIPtr thisKnob = getKnob();
+    int dims = thisKnob->getNDimensions();
+
+    {
+        ScopedChanges_RAII changes(thisKnob.get());
         for (int i = 0; i < dims; ++i) {
-            if ( (dim == -1) || (i == dim) ) {
-                std::pair<int, KnobPtr > other = thisKnob->getMaster(i);
-                thisKnob->onKnobUnSlaved(i);
-                onKnobSlavedChanged(i, false);
+            if ( dimension.isAll() || (i == DimIdx(dimension)) ) {
+                thisKnob->unlink(DimIdx(i), ViewSetSpec(view), true /*copyState*/);
             }
         }
-        thisKnob->endChanges();
     }
+
     getKnob()->getHolder()->getApp()->triggerAutoSave();
 }
 
@@ -115,13 +108,21 @@ KnobGui::onSetExprActionTriggered()
 {
     QAction* action = qobject_cast<QAction*>( sender() );
 
-    assert(action);
+    if (!action) {
+        return;
+    }
+    ViewSetSpec viewSpec;
+    DimSpec dimensionSpec;
+    getDimViewFromActionData(action, &viewSpec, &dimensionSpec);
 
-    int dim = action->data().toInt();
-    EditExpressionDialog* dialog = new EditExpressionDialog(getGui(), dim, shared_from_this(), _imp->field);
-    dialog->create(QString::fromUtf8( getKnob()->getExpression(dim == -1 ? 0 : dim).c_str() ), true);
-    QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onEditExprDialogFinished()) );
-    QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onEditExprDialogFinished()) );
+    EditExpressionDialog* dialog = new EditExpressionDialog(getGui(), dimensionSpec, viewSpec, shared_from_this(), _imp->container->getContainerWidget());
+
+    DimIdx dim = dimensionSpec.isAll() ? DimIdx(0) : DimIdx(dimensionSpec);
+    ViewIdx view = viewSpec.isAll() ? ViewIdx(0) : ViewIdx(viewSpec);
+    std::string currentExpression = getKnob()->getExpression(dim, view);
+    ExpressionLanguageEnum lang = getKnob()->getExpressionLanguage(view, dim);
+    dialog->create(lang, QString::fromUtf8(currentExpression.c_str() ));
+    QObject::connect( dialog, SIGNAL(dialogFinished(bool)), this, SLOT(onEditExprDialogFinished(bool)) );
 
     dialog->show();
 }
@@ -130,43 +131,49 @@ void
 KnobGui::onClearExprActionTriggered()
 {
     QAction* act = qobject_cast<QAction*>( sender() );
-
-    assert(act);
-    int dim = act->data().toInt();
-    pushUndoCommand( new SetExpressionCommand(getKnob(), false, dim, "") );
+    if (!act) {
+        return;
+    }
+    ViewSetSpec view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
+    pushUndoCommand( new SetExpressionCommand(getKnob(), eExpressionLanguageExprTk, false, dimension, view, "") );
 }
 
 void
-KnobGui::onEditExprDialogFinished()
+KnobGui::onEditExprDialogFinished(bool accepted)
 {
     EditExpressionDialog* dialog = dynamic_cast<EditExpressionDialog*>( sender() );
 
     if (dialog) {
-        QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
 
-        switch (ret) {
-        case QDialog::Accepted: {
-            bool hasRetVar;
-            QString expr = dialog->getExpression(&hasRetVar);
+        if (accepted) {
+
+            QString expr = dialog->getScript();
+            bool hasRetVar = dialog->isUseRetButtonChecked();
+            ExpressionLanguageEnum language = dialog->getSelectedLanguage();
             std::string stdExpr = expr.toStdString();
-            int dim = dialog->getDimension();
-            std::string existingExpr = getKnob()->getExpression(dim);
-            if (existingExpr != stdExpr) {
-                pushUndoCommand( new SetExpressionCommand(getKnob(), hasRetVar, dim, stdExpr) );
-            }
-            break;
-        }
-        case QDialog::Rejected:
-            break;
+            DimSpec dim = dialog->getDimension();
+            ViewSetSpec view = dialog->getView();
+
+            pushUndoCommand( new SetExpressionCommand(getKnob(), language, hasRetVar, dim, view, stdExpr) );
+
         }
 
-        dialog->deleteLater();
+        dialog->close();
     }
 }
 
 void
 KnobGui::setSecret()
 {
+
+    KnobIPtr knob = getKnob();
+    if (!knob)  {
+        return;
+    }
+
+
     bool showit = !isSecretRecursive();
 
     if (showit) {
@@ -174,7 +181,11 @@ KnobGui::setSecret()
     } else {
         hide();
     }
-    KnobGuiGroup* isGrp = dynamic_cast<KnobGuiGroup*>(this);
+
+    getGui()->refreshTimelineGuiKeyframesLater();
+
+
+    boost::shared_ptr<KnobGuiGroup> isGrp =  boost::dynamic_pointer_cast<KnobGuiGroup>(getWidgetsForView(ViewIdx(0)));
     if (isGrp) {
         const std::list<KnobGuiWPtr>& children = isGrp->getChildren();
         for (std::list<KnobGuiWPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
@@ -185,7 +196,8 @@ KnobGui::setSecret()
             k->setSecret();
         }
     }
-}
+
+} // setSecret
 
 void
 KnobGui::onViewerContextSecretChanged()
@@ -201,22 +213,25 @@ KnobGui::isSecretRecursive() const
     // try TuttlePinning: fold all groups, then switch from perspective to affine to perspective.
     //  VISIBILITY is different from SECRETNESS. The code considers that both things are equivalent, which is wrong.
     // Of course, this check has to be *recursive* (in case the group is within a folded group)
-    KnobPtr knob = getKnob();
-    bool isViewerKnob = _imp->container->isInViewerUIKnob();
-    bool showit = isViewerKnob ? !knob->getInViewerContextSecret() : !knob->getIsSecret();
-    KnobPtr parentKnob = knob->getParentKnob();
-    KnobGroup* parentIsGroup = dynamic_cast<KnobGroup*>( parentKnob.get() );
+    KnobIPtr knob = getKnob();
+    bool showit = _imp->layoutType == eKnobLayoutTypeViewerUI ? !knob->getInViewerContextSecret() : !knob->getIsSecret();
+    KnobIPtr parentKnob = knob->getParentKnob();
+    KnobGroupPtr parentIsGroup = toKnobGroup(parentKnob);
 
-    while (showit && parentKnob && parentIsGroup) {
-        KnobGuiGroup* parentGui = dynamic_cast<KnobGuiGroup*>( _imp->container->getKnobGui(parentKnob).get() );
+    while (showit && parentKnob && parentIsGroup && !parentIsGroup->isTab()) {
+        KnobGuiPtr parentKnobGui = _imp->container->getKnobGui(parentKnob);
+        if (!parentKnobGui) {
+            break;
+        }
+        boost::shared_ptr<KnobGuiGroup> isGrp =  boost::dynamic_pointer_cast<KnobGuiGroup>(parentKnobGui->getWidgetsForView(ViewIdx(0)));
         // check for secretness and visibility of the group
-        bool parentSecret = isViewerKnob ? parentKnob->getInViewerContextSecret() : parentKnob->getIsSecret();
-        if ( parentSecret || ( parentGui && !parentGui->isChecked() ) ) {
+        bool parentSecret = _imp->layoutType == eKnobLayoutTypeViewerUI ? parentKnob->getInViewerContextSecret() : parentKnob->getIsSecret();
+        if ( parentSecret || ( isGrp && !isGrp->isChecked() ) ) {
             showit = false; // one of the including groups is folder, so this item is hidden
         }
         // prepare for next loop iteration
         parentKnob = parentKnob->getParentKnob();
-        parentIsGroup = dynamic_cast<KnobGroup*>( parentKnob.get() );
+        parentIsGroup = toKnobGroup(parentKnob);
     }
 
     return !showit;
@@ -225,285 +240,366 @@ KnobGui::isSecretRecursive() const
 void
 KnobGui::onShowInCurveEditorActionTriggered()
 {
-    KnobPtr knob = getKnob();
 
+    QAction* act = qobject_cast<QAction*>( sender() );
+    if (!act) {
+        return;
+    }
+    ViewSetSpec view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
+
+    KnobIPtr knob = getKnob();
     assert( knob->getHolder()->getApp() );
-    getGui()->setCurveEditorOnTop();
-    std::vector<boost::shared_ptr<Curve> > curves;
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        boost::shared_ptr<Curve> c = getCurve(ViewIdx(0), i);
-        if ( c->isAnimated() ) {
-            curves.push_back(c);
+    getGui()->setAnimationEditorOnTop();
+
+    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    if (!model) {
+        return;
+    }
+    KnobAnimPtr knobAnim = findKnobAnim();
+    if (!knobAnim) {
+        return;
+    }
+
+
+    std::vector<CurveGuiPtr> curves;
+    std::list<QTreeWidgetItem*> treeItems;
+    int nDims = knob->getNDimensions();
+    std::list<ViewIdx> views = knob->getViewsList();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+        if (!view.isAll() && *it != view) {
+            continue;
+        }
+        for (int i = 0; i < nDims; ++i) {
+            if (!dimension.isAll() && dimension != i) {
+                continue;
+            }
+            CurveGuiPtr curve = knobAnim->getCurveGui(DimIdx(i), *it);
+            if ( curve && curve->getInternalCurve()->isAnimated() ) {
+                curves.push_back(curve);
+                QTreeWidgetItem* item = knobAnim->getTreeItem(DimIdx(i), *it);
+                if (item) {
+                    treeItems.push_back(item);
+                }
+            }
+
         }
     }
+
     if ( !curves.empty() ) {
-        getGui()->getCurveEditor()->centerOn(curves);
+        model->getEditor()->setOtherItemsVisibility(treeItems, false);
+        getGui()->getAnimationModuleEditor()->setItemsVisibility(treeItems, true, true /*recurseOnParent*/);
+
+        AnimItemDimViewKeyFramesMap keys;
+        std::vector<TableItemAnimPtr> tableItems;
+        std::vector<NodeAnimPtr> nodes;
+        model->getSelectionModel()->makeSelection(keys, tableItems, nodes, (AnimationModuleSelectionModel::SelectionTypeAdd | AnimationModuleSelectionModel::SelectionTypeClear));
+        getGui()->getAnimationModuleEditor()->getView()->centerOnCurves(curves, false);
     }
+}
+
+void
+KnobGui::removeAnimation(DimSpec dimension, ViewSetSpec view)
+{
+    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    if (!model) {
+        return;
+    }
+    KnobIPtr internalKnob = getKnob();
+    if (!internalKnob) {
+        return;
+    }
+    KnobAnimPtr knobAnim = findKnobAnim();
+    if (!knobAnim) {
+        return;
+    }
+
+    AnimItemDimViewKeyFramesMap keysToRemove;
+
+    int nDims = internalKnob->getNDimensions();
+    std::list<ViewIdx> views = internalKnob->getViewsList();
+
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (!view.isAll() && *it != view) {
+            continue;
+        }
+        for (int i = 0; i < nDims; ++i) {
+            if (!dimension.isAll() && dimension != i) {
+                continue;
+            }
+            AnimItemDimViewIndexID id(knobAnim, *it, DimIdx(i));
+            KeyFrameSet& keys = keysToRemove[id];
+            knobAnim->getKeyframes(DimIdx(i), *it, AnimItemBase::eGetKeyframesTypeMerged, &keys);
+
+        }
+    }
+
+
+    pushUndoCommand( new RemoveKeysCommand(keysToRemove, model) );
 }
 
 void
 KnobGui::onRemoveAnimationActionTriggered()
 {
-    QAction* action = qobject_cast<QAction*>( sender() );
-
-    assert(action);
-    int dim = action->data().toInt();
-    KnobPtr knob = getKnob();
-    std::map<boost::shared_ptr<CurveGui>, std::vector<KeyFrame > > toRemove;
-    KnobGuiPtr thisShared = shared_from_this();
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        if ( (dim == -1) || (dim == i) ) {
-            std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(thisShared, i);
-            for (std::list<boost::shared_ptr<CurveGui> >::iterator it = curves.begin(); it != curves.end(); ++it) {
-                KeyFrameSet keys = (*it)->getInternalCurve()->getKeyFrames_mt_safe();
-                std::vector<KeyFrame > vect;
-                for (KeyFrameSet::const_iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
-                    vect.push_back(*it2);
-                }
-                toRemove.insert( std::make_pair(*it, vect) );
-            }
-        }
+    QAction* act = qobject_cast<QAction*>( sender() );
+    if (!act) {
+        return;
     }
-    pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),
-                                           toRemove) );
-    //refresh the gui so it doesn't indicate the parameter is animated anymore
-    updateGUI(dim);
+    ViewSetSpec view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
+
+    removeAnimation(dimension, view);
+   
 }
 
 void
-KnobGui::setInterpolationForDimensions(QAction* action,
-                                       KeyframeTypeEnum interp)
+KnobGui::onInterpolationActionTriggered()
 {
+    QAction* action = qobject_cast<QAction*>(sender());
     if (!action) {
         return;
     }
-    int dimension = action->data().toInt();
-    KnobPtr knob = getKnob();
+    
+    QList<QVariant> actionData = action->data().toList();
+    if (actionData.size() != 3) {
+        return;
+    }
 
 
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        if ( (dimension == -1) || (dimension == i) ) {
-            boost::shared_ptr<Curve> c = knob->getCurve(ViewIdx(0), i);
-            if (c) {
-                int kfCount = c->getKeyFramesCount();
-                for (int j = 0; j < kfCount; ++j) {
-                    c->setKeyFrameInterpolation(interp, j);
-                }
-                boost::shared_ptr<Curve> guiCurve = getCurve(ViewIdx(0), i);
-                if (guiCurve) {
-                    guiCurve->clone(*c);
-                }
-            }
+    QList<QVariant>::iterator it = actionData.begin();
+    DimSpec dimension = DimSpec(it->toInt());
+    ++it;
+    ViewIdx view = ViewIdx(it->toInt());
+    ++it;
+    KeyframeTypeEnum interp = (KeyframeTypeEnum)it->toInt();
+
+    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    if (!model) {
+        return;
+    }
+    KnobIPtr internalKnob = getKnob();
+    if (!internalKnob) {
+        return;
+    }
+
+    CurveTypeEnum curveType = internalKnob->getKeyFrameDataType();
+    if (curveType != eCurveTypeDouble && curveType != eCurveTypeInt)  {
+        return;
+    }
+
+    KnobAnimPtr knobAnim = findKnobAnim();
+    if (!knobAnim) {
+        return;
+    }
+
+    AnimItemDimViewKeyFramesMap keysToSet;
+
+    int nDims = internalKnob->getNDimensions();
+
+    for (int i = 0; i < nDims; ++i) {
+        if (dimension.isAll() ||  dimension == i) {
+            AnimItemDimViewIndexID id(knobAnim, view,  DimIdx(i));
+            KeyFrameSet& keys = keysToSet[id];
+            knobAnim->getKeyframes(DimIdx(i), view, AnimItemBase::eGetKeyframesTypeMerged, &keys);
         }
     }
-    if ( knob->getHolder() ) {
-        knob->getHolder()->incrHashAndEvaluate(knob->getEvaluateOnChange(), false);
+
+    pushUndoCommand(new SetKeysInterpolationCommand(keysToSet, model, interp));
+}
+
+KnobAnimPtr
+KnobGui::findKnobAnim() const
+{
+
+    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    if (!model) {
+        return KnobAnimPtr();
     }
-    Q_EMIT keyInterpolationChanged();
-}
+    KnobIPtr internalKnob = getKnob();
 
-void
-KnobGui::onConstantInterpActionTriggered()
-{
-    setInterpolationForDimensions(qobject_cast<QAction*>( sender() ), eKeyframeTypeConstant);
-}
-
-void
-KnobGui::onLinearInterpActionTriggered()
-{
-    setInterpolationForDimensions(qobject_cast<QAction*>( sender() ), eKeyframeTypeLinear);
-}
-
-void
-KnobGui::onSmoothInterpActionTriggered()
-{
-    setInterpolationForDimensions(qobject_cast<QAction*>( sender() ), eKeyframeTypeSmooth);
-}
-
-void
-KnobGui::onCatmullromInterpActionTriggered()
-{
-    setInterpolationForDimensions(qobject_cast<QAction*>( sender() ), eKeyframeTypeCatmullRom);
-}
-
-void
-KnobGui::onCubicInterpActionTriggered()
-{
-    setInterpolationForDimensions(qobject_cast<QAction*>( sender() ), eKeyframeTypeCubic);
-}
-
-void
-KnobGui::onHorizontalInterpActionTriggered()
-{
-    setInterpolationForDimensions(qobject_cast<QAction*>( sender() ), eKeyframeTypeHorizontal);
-}
-
-void
-KnobGui::setKeyframe(double time,
-                     int dimension,
-                     ViewSpec view)
-{
-    KnobPtr knob = getKnob();
-
-    assert( knob->getHolder()->getApp() );
-
-    bool keyAdded = knob->onKeyFrameSet(time, view, dimension);
-    Q_EMIT keyFrameSet();
-
-    if ( !knob->getIsSecret() && keyAdded && knob->isDeclaredByPlugin() ) {
-        knob->getHolder()->getApp()->addKeyframeIndicator(time);
+    EffectInstancePtr isEffect = toEffectInstance(internalKnob->getHolder());
+    KnobTableItemPtr isTableItem = toKnobTableItem(internalKnob->getHolder());
+    if (isEffect) {
+        NodeAnimPtr node = model->findNodeAnim(isEffect->getNode());
+        if (!node) {
+            return KnobAnimPtr();
+        }
+        return node->findKnobAnim(internalKnob);
+    } else if (isTableItem) {
+        TableItemAnimPtr item = model->findTableItemAnim(isTableItem);
+        if (!item) {
+            return KnobAnimPtr();
+        }
+        return item->findKnobAnim(internalKnob);
     }
-}
-
-void
-KnobGui::setKeyframe(double time,
-                     const KeyFrame& key,
-                     int dimension,
-                     ViewSpec view)
-{
-    KnobPtr knob = getKnob();
-
-    assert( knob->getHolder()->getApp() );
-
-    bool keyAdded = knob->onKeyFrameSet(time, view, key, dimension);
-    Q_EMIT keyFrameSet();
-    if ( !knob->getIsSecret() && keyAdded && knob->isDeclaredByPlugin() ) {
-        knob->getHolder()->getApp()->addKeyframeIndicator(time);
-    }
+    return KnobAnimPtr();
 }
 
 void
 KnobGui::onSetKeyActionTriggered()
 {
-    QAction* action = qobject_cast<QAction*>( sender() );
+    QAction* act = qobject_cast<QAction*>( sender() );
+    if (!act) {
+        return;
+    }
+    ViewSetSpec view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
 
-    assert(action);
-    int dim = action->data().toInt();
-    KnobPtr knob = getKnob();
+    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    if (!model) {
+        return;
+    }
+    KnobIPtr internalKnob = getKnob();
+    if (!internalKnob) {
+        return;
+    }
 
-    assert( knob->getHolder()->getApp() );
-    //get the current time on the global timeline
-    SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
-    AddKeysCommand::KeysToAddList toAdd;
-    KnobGuiPtr thisShared = shared_from_this();
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        if ( (dim == -1) || (i == dim) ) {
-            std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(thisShared, i);
-            for (std::list<boost::shared_ptr<CurveGui> >::iterator it = curves.begin(); it != curves.end(); ++it) {
-                AddKeysCommand::KeyToAdd keyToAdd;
-                KeyFrame kf;
-                kf.setTime(time);
-                Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-                Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-                AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>( knob.get() );
-                Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
+    KnobAnimPtr knobAnim = findKnobAnim();
+    if (!knobAnim) {
+        return;
+    }
 
-                if (isInt) {
-                    kf.setValue( isInt->getValue(i) );
-                } else if (isBool) {
-                    kf.setValue( isBool->getValue(i) );
-                } else if (isDouble) {
-                    kf.setValue( isDouble->getValue(i) );
-                } else if (isString) {
-                    std::string v = isString->getValue(i);
-                    double dv;
-                    isString->stringToKeyFrameValue(time, ViewIdx(0), v, &dv);
-                    kf.setValue(dv);
-                }
+    KnobIntBasePtr isInt = toKnobIntBase(internalKnob);
+    KnobChoicePtr isChoice = toKnobChoice(internalKnob);
+    KnobBoolBasePtr isBool = toKnobBoolBase(internalKnob);
+    KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(internalKnob);
+    KnobDoubleBasePtr isDouble = toKnobDoubleBase(internalKnob);
 
-                keyToAdd.keyframes.push_back(kf);
-                keyToAdd.curveUI = *it;
-                keyToAdd.knobUI = thisShared;
-                keyToAdd.dimension = i;
-                toAdd.push_back(keyToAdd);
+
+    TimeValue time = internalKnob->getHolder()->getTimelineCurrentTime();
+    AnimItemDimViewKeyFramesMap keysToAdd;
+
+    int nDims = internalKnob->getNDimensions();
+    std::list<ViewIdx> views = internalKnob->getViewsList();
+
+
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (!view.isAll() && *it != view) {
+            continue;
+        }
+        for (int i = 0; i < nDims; ++i) {
+            if (!dimension.isAll() && dimension != i) {
+                continue;
             }
+            AnimItemDimViewIndexID id(knobAnim, *it, DimIdx(i));
+            KeyFrameSet& keys = keysToAdd[id];
+
+            KeyFrame kf;
+            kf.setTime(time);
+            if (isChoice) {
+                ChoiceOption v = isChoice->getCurrentEntryAtTime(time, *it);
+                kf.setProperty(kKeyFramePropString, v.id, 0, false /*failIfnotExist*/);
+                kf.setProperty(kKeyframePropChoiceOptionLabel, v.label, 0, false /*failIfnotExist*/);
+                kf.setValue(isChoice->getValueAtTime(time, DimIdx(i), *it));
+            } else if (isInt) {
+                kf.setValue( isInt->getValue(DimIdx(i), *it) );
+            } else if (isBool) {
+                kf.setValue( isBool->getValue(DimIdx(i), *it) );
+            } else if (isDouble) {
+                kf.setValue( isDouble->getValue(DimIdx(i), *it) );
+            } else if (isString) {
+                std::string v = isString->getValue(DimIdx(i), *it);
+                kf.setProperty(kKeyFramePropString, v, 0, false /*failIfnotExist*/);
+            }
+            keys.insert(kf);
         }
     }
-    pushUndoCommand( new AddKeysCommand(getGui()->getCurveEditor()->getCurveWidget(), toAdd) );
-}
 
-void
-KnobGui::removeKeyFrame(double time,
-                        int dimension,
-                        ViewSpec view)
-{
-    KnobPtr knob = getKnob();
-
-    boost::shared_ptr<Curve> curve = knob->getCurve(view, dimension);
-    bool copyCurveValueAtTimeToInternalValue = false;
-    if (curve) {
-        copyCurveValueAtTimeToInternalValue = curve->getKeyFramesCount() == 1;
-    }
-    knob->onKeyFrameRemoved(time, view, dimension, copyCurveValueAtTimeToInternalValue);
-    Q_EMIT keyFrameRemoved();
-
-
-    assert( knob->getHolder()->getApp() );
-    if ( !knob->getIsSecret() ) {
-        knob->getHolder()->getApp()->removeKeyFrameIndicator(time);
-    }
-    updateGUI(dimension);
-}
-
-void
-KnobGui::setKeyframes(const std::vector<KeyFrame>& keys,
-                      int dimension,
-                      ViewSpec view)
-{
-    KnobPtr knob = getKnob();
-
-    assert( knob->getHolder()->getApp() );
-    knob->beginChanges();
-    std::list<SequenceTime> times;
-    for (std::size_t i = 0; i < keys.size(); ++i) {
-        bool keyAdded = knob->onKeyFrameSet(keys[i].getTime(), view, keys[i], dimension);
-        if (keyAdded) {
-            times.push_back( keys[i].getTime() );
-        }
-    }
-    knob->endChanges();
-    Q_EMIT keyFrameSet();
-    if ( !knob->getIsSecret() && knob->isDeclaredByPlugin() ) {
-        knob->getHolder()->getApp()->addMultipleKeyframeIndicatorsAdded(times, true);
+    if (!keysToAdd.empty()) {
+        pushUndoCommand( new AddKeysCommand(keysToAdd, model, false/*replaceAnimation*/));
     }
 }
 
 void
-KnobGui::removeKeyframes(const std::vector<KeyFrame>& keys,
-                         int dimension,
-                         ViewSpec view)
+KnobGui::removeKeyAtCurrentTime(DimSpec dimension, ViewSetSpec view)
 {
-    KnobPtr knob = getKnob();
-
-    knob->beginChanges();
-    for (std::size_t i = 0; i < keys.size(); ++i) {
-        knob->onKeyFrameRemoved(keys[i].getTime(), view, dimension, i == 0);
+    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    if (!model) {
+        return;
     }
-    knob->endChanges();
-    /*assert( knob->getHolder()->getApp() );
-       if ( !knob->getIsSecret() ) {
-        std::list<SequenceTime> times;
-        for (std::size_t i = 0; i < keys.size(); ++i) {
-            times.push_back(keys[i].getTime());
-        }
-        knob->getHolder()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(times, true);
-       }*/
+    KnobIPtr internalKnob = getKnob();
+    if (!internalKnob) {
+        return;
+    }
+    KnobAnimPtr knobAnim = findKnobAnim();
+    if (!knobAnim) {
+        return;
+    }
 
-    Q_EMIT keyFrameRemoved();
-    updateGUI(dimension);
+
+
+    TimeValue time = internalKnob->getHolder()->getTimelineCurrentTime();
+    AnimItemDimViewKeyFramesMap keysToRemove;
+
+    int nDims = internalKnob->getNDimensions();
+
+    std::list<ViewIdx> views = internalKnob->getViewsList();
+
+
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        if (!view.isAll() && *it != view) {
+            continue;
+        }
+        for (int i = 0; i < nDims; ++i) {
+            if (!dimension.isAll() && dimension != i) {
+                continue;
+            }
+            CurvePtr curve = knobAnim->getCurve(DimIdx(i), *it);
+            if (!curve) {
+                continue;
+            }
+
+            KeyFrame kf;
+            if (curve->getKeyFrameWithTime(time, &kf)) {
+                AnimItemDimViewIndexID id(knobAnim, *it, DimIdx(i));
+                KeyFrameSet& keys = keysToRemove[id];
+                keys.insert(kf);
+            }
+
+        }
+    }
+
+    if (!keysToRemove.empty()) {
+        pushUndoCommand( new RemoveKeysCommand(keysToRemove, model));
+    }
+
+} // removeKeyAtCurrentTime
+
+void
+KnobGui::onRemoveKeyActionTriggered()
+{
+    QAction* act = qobject_cast<QAction*>( sender() );
+    if (!act) {
+        return;
+    }
+    ViewSetSpec view;
+    DimSpec dimension;
+    getDimViewFromActionData(act, &view, &dimension);
+    removeKeyAtCurrentTime(dimension, view);
 }
 
 QString
 KnobGui::getScriptNameHtml() const
 {
-    return QString::fromUtf8("<font size = 4><b>%1</b></font>").arg( QString::fromUtf8( getKnob()->getName().c_str() ) );
+    return QString::fromUtf8("<font size=\"4\"><b>%1</b></font>").arg( QString::fromUtf8( getKnob()->getName().c_str() ) );
 }
 
-QString
-KnobGui::toolTip() const
+enum DimensionLinkTypeEnum
 {
-    KnobPtr knob = getKnob();
-    KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
+    eDimensionLinkTypeNone,
+    eDimensionLinkTypeSimpleLink,
+    eDimensionLinkTypeExpressionLink
+
+};
+
+QString
+KnobGui::toolTip(QWidget* w, ViewIdx view) const
+{
+    KnobIPtr knob = getKnob();
+    KnobChoicePtr isChoice = toKnobChoice(knob);
     bool isMarkdown = knob.get()->isHintInMarkdown();
     QString tt;
     QString realTt;
@@ -521,37 +617,112 @@ KnobGui::toolTip() const
         realTt.append( QString::fromUtf8( isChoice->getHintToolTipFull().c_str() ) );
     }
 
-    std::vector<std::string> expressions;
+
+
+    int nDims = knob->getNDimensions();
+
+
+    // For each dimension, a string indicating the link + a flag indicating if it is an expression or a regular link or nothing
+    std::vector<std::pair<std::string, DimensionLinkTypeEnum> > linkString(nDims);
     bool exprAllSame = true;
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        expressions.push_back( knob->getExpression(i) );
-        if ( (i > 0) && (expressions[i] != expressions[0]) ) {
+    bool hasLink = false;
+    for (int i = 0; i < nDims; ++i) {
+
+        linkString[i].first =  knob->getExpression(DimIdx(i), view);
+
+        if (!linkString[i].first.empty()) {
+            linkString[i].second = eDimensionLinkTypeExpressionLink;
+        } else {
+
+            KnobDimViewKeySet sharedKnobs;
+            knob->getSharedValues(DimIdx(i), view, &sharedKnobs);
+            bool isNonPersistentLink = false;
+            if (!sharedKnobs.empty()) {
+                const KnobDimViewKey& sharingMaster = *sharedKnobs.begin();
+                KnobIPtr sharingMasterKnob = sharingMaster.knob.lock();
+                if (sharingMasterKnob) {
+                    std::string knobName;
+                    EffectInstancePtr sharingHolderIsEffect = toEffectInstance(sharingMasterKnob->getHolder());
+                    KnobTableItemPtr sharingHolderIsTableItem = toKnobTableItem(sharingMasterKnob->getHolder());
+                    if (sharingHolderIsTableItem) {
+                        sharingHolderIsEffect = sharingHolderIsTableItem->getModel()->getNode()->getEffectInstance();
+                    }
+                    if (sharingHolderIsEffect) {
+                        if (!sharingHolderIsEffect->getNode()->isPersistent()) {
+                            isNonPersistentLink = true;
+                        }
+                        knobName = sharingHolderIsEffect->getNode()->getFullyQualifiedName();
+                        knobName += ".";
+                    }
+                    if (!isNonPersistentLink) {
+                        knobName += sharingMasterKnob->getName();
+                        linkString[i].first = knobName;
+                        linkString[i].second = eDimensionLinkTypeSimpleLink;
+                    }
+                }
+            }
+        }
+        if (!linkString[i].first.empty()) {
+            hasLink = true;
+        } else {
+            linkString[i].first = "curve(frame,dimension,view)";
+            linkString[i].second = eDimensionLinkTypeNone;
+        }
+        if ( (i > 0) && (linkString[i] != linkString[0]) ) {
             exprAllSame = false;
         }
+
     }
 
     QString exprTt;
-    if (exprAllSame) {
-        if ( !expressions[0].empty() ) {
-            if (isMarkdown) {
-                exprTt = QString::fromUtf8("ret = **%1**\n\n").arg( QString::fromUtf8( expressions[0].c_str() ).trimmed() );
-            } else {
-                exprTt = QString::fromUtf8("<br />ret = <b>%1</b>").arg( QString::fromUtf8( expressions[0].c_str() ) );
+    if (hasLink) {
+        if (exprAllSame) {
+            if ( !linkString[0].first.empty() ) {
+                QString prefix;
+                switch (linkString[0].second) {
+                    case eDimensionLinkTypeExpressionLink:
+                        prefix = QString::fromUtf8("ret =");
+                        break;
+                    case eDimensionLinkTypeNone:
+                        prefix = tr("Value returned is this parameter animation, Python code:");
+                        break;
+                    case eDimensionLinkTypeSimpleLink:
+                        prefix = tr("Linked to");
+                        break;
+                }
+
+                if (isMarkdown) {
+                    exprTt = QString::fromUtf8("%1 **%2**\n\n").arg(prefix).arg( QString::fromUtf8( linkString[0].first.c_str() ).trimmed() );
+                } else {
+                    exprTt = QString::fromUtf8("<br />%1 <b>%2</b>").arg(prefix).arg( QString::fromUtf8( linkString[0].first.c_str() ) );
+                }
             }
-        }
-    } else {
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            std::string dimName = knob->getDimensionName(i);
-            QString toAppend;
-            if (isMarkdown) {
-                toAppend = QString::fromUtf8("%1 = **%2**\n\n").arg( QString::fromUtf8( dimName.c_str() ) ).arg( QString::fromUtf8( expressions[i].c_str() ).trimmed() );
-            } else {
-                toAppend = QString::fromUtf8("<br />%1 = <b>%2</b>").arg( QString::fromUtf8( dimName.c_str() ) ).arg( QString::fromUtf8( expressions[i].c_str() ) );
+        } else {
+            for (int i = 0; i < nDims; ++i) {
+                std::string dimName = knob->getDimensionName(DimIdx(i));
+                QString toAppend,prefix;
+                switch (linkString[i].second) {
+                    case eDimensionLinkTypeExpressionLink:
+                        prefix = QString::fromUtf8("%1 =").arg(QString::fromUtf8( dimName.c_str() ));
+                        break;
+                    case eDimensionLinkTypeNone:
+                        prefix = tr("%1: Value returned is this parameter animation, Python code:").arg(QString::fromUtf8( dimName.c_str() ));
+                        break;
+                    case eDimensionLinkTypeSimpleLink:
+                        prefix = tr("%1 linked to").arg(QString::fromUtf8( dimName.c_str() ));
+                        break;
+                }
+             
+                if (isMarkdown) {
+                    toAppend = QString::fromUtf8("%1 **%2**\n\n").arg( prefix ).arg( QString::fromUtf8( linkString[i].first.c_str() ).trimmed() );
+                } else {
+                    toAppend = QString::fromUtf8("<br />%1 <b>%2</b>").arg( prefix ).arg( QString::fromUtf8( linkString[i].first.c_str() ) );
+                }
+                exprTt.append(toAppend);
             }
-            exprTt.append(toAppend);
         }
     }
-
+    
     if ( !exprTt.isEmpty() ) {
         tt.append(exprTt);
     }
@@ -570,6 +741,63 @@ KnobGui::toolTip() const
         tt.replace( QString::fromUtf8("<h2>"), QString::fromUtf8("<h2 style=\"font-size:large;\">") );
     }
 
+    bool setToolTip = false;
+    if (!tt.isEmpty() && getLayoutType() == KnobGui::eKnobLayoutTypeViewerUI) {
+        std::list<std::string> additionalShortcuts = knob->getInViewerContextAdditionalShortcuts();
+        EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
+        if (isEffect) {
+            QString additionalKeyboardShortcutString;
+            QString thisActionID = QString::fromUtf8( knob->getName().c_str() );
+
+            QKeySequence keybinds;
+
+            // Try with the shortcut group of the original plugin.
+            QString pluginShortcutGroup = QString::fromUtf8(isEffect->getNode()->getOriginalPlugin()->getPluginShortcutGroup().c_str());
+            keybinds = getKeybind( pluginShortcutGroup, thisActionID );
+
+            {
+                if (!isMarkdown) {
+                    additionalKeyboardShortcutString += QLatin1String("<br/>");
+                } else {
+                    additionalKeyboardShortcutString += QLatin1String("\n");
+                }
+                additionalKeyboardShortcutString += QString::fromUtf8("<b>Keyboard shortcut: %1</b>");
+                // add a fake %1 because additional shortcuts start at %2
+                //additionalKeyboardShortcutString.push_back(QString::fromUtf8("%1"));
+
+
+                tt += additionalKeyboardShortcutString;
+                additionalShortcuts.push_front(thisActionID.toStdString());
+            }
+
+
+            if (w) {
+                QList<QAction*> actions = w->actions();
+                for (QList<QAction*>::iterator it = actions.begin(); it != actions.end(); ++it) {
+                    ToolTipActionShortcut* isToolTipAction = dynamic_cast<ToolTipActionShortcut*>(*it);
+                    if (isToolTipAction) {
+                        w->removeAction(isToolTipAction);
+                        delete isToolTipAction;
+                    }
+                }
+                w->addAction( new ToolTipActionShortcut(pluginShortcutGroup.toStdString(), additionalShortcuts, tt.toStdString(), w));
+                setToolTip = true;
+            }
+            // Ok we set the tooltip with the formating args (%1, %2) on the widget, we can now replace them to make the return value
+            for (std::list<std::string>::iterator it = additionalShortcuts.begin(); it!=additionalShortcuts.end(); ++it) {
+                QKeySequence keybinds = getKeybind( pluginShortcutGroup, QString::fromUtf8( it->c_str() ) );
+                QString argValue;
+                if (!keybinds.isEmpty()) {
+                    argValue = keybinds.toString(QKeySequence::NativeText);
+                }
+                tt = tt.arg(argValue);
+            }
+
+        }
+    }
+    if (!setToolTip && w) {
+        w->setToolTip(tt);
+    }
     return tt;
 } // KnobGui::toolTip
 
@@ -580,135 +808,86 @@ KnobGui::hasToolTip() const
     return true; //!getKnob()->getHintToolTip().empty();
 }
 
-void
-KnobGui::onRemoveKeyActionTriggered()
-{
-    QAction* action = qobject_cast<QAction*>( sender() );
 
-    assert(action);
-    int dim = action->data().toInt();
-    KnobPtr knob = getKnob();
-
-    assert( knob->getHolder()->getApp() );
-    //get the current time on the global timeline
-    SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
-    std::map<boost::shared_ptr<CurveGui>, std::vector<KeyFrame > > toRemove;
-    KnobGuiPtr thisShared = shared_from_this();
-
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        if ( (dim == -1) || (i == dim) ) {
-            std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(thisShared, i);
-            for (std::list<boost::shared_ptr<CurveGui> >::iterator it = curves.begin(); it != curves.end(); ++it) {
-                KeyFrame kf;
-                bool foundKey = knob->getCurve(ViewIdx(0), i)->getKeyFrameWithTime(time, &kf);
-
-                if (foundKey) {
-                    std::vector<KeyFrame > vect;
-                    vect.push_back(kf);
-                    toRemove.insert( std::make_pair(*it, vect) );
-                }
-            }
-        }
-    }
-    pushUndoCommand( new RemoveKeysCommand(getGui()->getCurveEditor()->getCurveWidget(),
-                                           toRemove) );
-}
 
 int
 KnobGui::getKnobsCountOnSameLine() const
 {
-    return _imp->knobsOnSameLine.size();
+    if (!_imp->otherKnobsInMainLayout.empty()) {
+        return _imp->otherKnobsInMainLayout.size();
+    } else {
+        KnobGuiPtr firstKnobOnLine = _imp->firstKnobOnLine.lock();
+        if (!firstKnobOnLine) {
+            return 0;
+        } else {
+            return firstKnobOnLine->_imp->otherKnobsInMainLayout.size();
+        }
+    }
 }
 
 void
 KnobGui::hide()
 {
-    if (!_imp->customInteract) {
-        _hide();
-    } else {
-        _imp->customInteract->hide();
-    }
+    KnobIPtr knob = getKnob();
+    bool newLineActivated = _imp->layoutType == KnobGui::eKnobLayoutTypeViewerUI ? knob->getInViewerContextLayoutType() == eViewerContextLayoutTypeAddNewLine : knob->isNewLineActivated();
 
-    //also  hide the curve from the curve editor if there's any and the knob is not inside a group
-    KnobPtr knob = getKnob();
-    if ( knob && knob->getHolder() && knob->getHolder()->getApp() ) {
-        KnobPtr parent = getKnob()->getParentKnob();
-        bool isSecret = true;
-        while (parent) {
-            if ( !parent->getIsSecret() ) {
-                isSecret = false;
-                break;
-            }
-            parent = parent->getParentKnob();
-        }
-        if (isSecret) {
-            getGui()->getCurveEditor()->hideCurves( shared_from_this() );
-        }
-    }
-
-    ////In order to remove the row of the layout we have to make sure ALL the knobs on the row
-    ////are hidden.
-    bool shouldRemoveWidget = true;
-    for (U32 i = 0; i < _imp->knobsOnSameLine.size(); ++i) {
-        KnobGuiPtr sibling = _imp->container->getKnobGui( _imp->knobsOnSameLine[i].lock() );
-        if ( sibling && !sibling->isSecretRecursive() ) {
-            shouldRemoveWidget = false;
-        }
-    }
-
-    if (shouldRemoveWidget) {
-        if (_imp->field) {
-            _imp->field->hide();
-        }
-        if (_imp->container) {
-            _imp->container->refreshTabWidgetMaxHeight();
+    // We cannot hide the mainContainer because it might contain other knobs on the same layout line. Instead we just hide this knob widget
+    if (newLineActivated) {
+        if (_imp->mainContainer) {
+            _imp->mainContainer->hide();
         }
     } else {
-        if ( _imp->field && !_imp->field->isVisible() ) {
-            _imp->field->show();
+        if (_imp->viewsContainer) {
+            _imp->viewsContainer->hide();
         }
     }
     if (_imp->labelContainer) {
         _imp->labelContainer->hide();
-    } else if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->hide();
     }
+
+    // Also hide the tabwidget if it has any
+    if (_imp->tabGroup) {
+        _imp->tabGroup->hide();
+    }
+
 } // KnobGui::hide
 
 void
-KnobGui::show(int /*index*/)
+KnobGui::show()
 {
-    if ( !getGui() ) {
-        return;
-    }
-    if (!_imp->customInteract) {
-        _show();
-    } else {
-        _imp->customInteract->show();
+    // Since the otherKnobsInMainLayout list might have been empty when calling hide() and now be no longer empty,
+    // if the mainContainer is not visible show it
+    if (_imp->mainContainer) {
+        _imp->mainContainer->show();
     }
 
-    //also show the curve from the curve editor if there's any
-    KnobPtr knob = getKnob();
-    if ( knob && knob->getHolder() && knob->getHolder()->getApp() ) {
-        getGui()->getCurveEditor()->showCurves( shared_from_this() );
+    if (_imp->viewsContainer) {
+        _imp->viewsContainer->show();
     }
-
-    //if (_imp->isOnNewLine) {
-    if (_imp->field) {
-        _imp->field->show();
-    }
-    if (_imp->container) {
-        _imp->container->refreshTabWidgetMaxHeight();
-    }
-    //}
 
     if (_imp->labelContainer) {
         _imp->labelContainer->show();
-    } else if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->show();
+    }
+
+    // Also show the tabwidget if it has any
+    if (_imp->tabGroup) {
+        _imp->tabGroup->show();
+    }
+
+}
+
+void
+KnobGui::onMultiViewUnfoldClicked(bool expanded)
+{
+    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        if (it->first == ViewIdx(0)) {
+            continue;
+        }
+        it->second.field->setVisible(expanded);
     }
 }
 
+#if 0
 int
 KnobGui::getActualIndexInLayout() const
 {
@@ -741,6 +920,7 @@ KnobGui::getActualIndexInLayout() const
 
     return -1;
 }
+#endif
 
 bool
 KnobGui::isOnNewLine() const
@@ -749,34 +929,247 @@ KnobGui::isOnNewLine() const
 }
 
 void
-KnobGui::setEnabledSlot()
+KnobGui::reflectKnobSelectionState(bool selected)
+{
+    if (_imp->customInteract) {
+        return;
+    }
+    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        if (it->second.widgets) {
+            it->second.widgets->reflectSelectionState(selected);
+        }
+    }
+}
+
+void
+KnobGui::setViewEnabledInternal(const std::vector<bool>& perDimEnabled, ViewIdx view)
 {
     if ( !getGui() ) {
         return;
     }
     if (!_imp->customInteract) {
-        setEnabled();
-    }
-    KnobPtr knob = getKnob();
-    if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->setReadOnly( !knob->isEnabled(0) );
-    }
-    KnobGuiPtr thisShared = shared_from_this();
-    if ( knob->getHolder() && knob->getHolder()->getApp() ) {
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            if ( !knob->isEnabled(i) ) {
-                getGui()->getCurveEditor()->hideCurve(thisShared, i);
-            } else {
-                getGui()->getCurveEditor()->showCurve(thisShared, i);
+        KnobGuiPrivate::PerViewWidgetsMap::iterator foundView = _imp->views.find(view);
+        if (foundView != _imp->views.end()) {
+            if (foundView->second.widgets) {
+                foundView->second.widgets->setEnabled(perDimEnabled);
             }
         }
+
+    }
+
+}
+
+void
+KnobGui::setEnabledSlot()
+{
+    KnobIPtr knob = getKnob();
+
+    bool labelEnabled = false;
+    bool knobEnabled = knob->isEnabled();
+    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        std::vector<bool> enabled;
+        for (int i = 0; i < knob->getNDimensions(); ++i) {
+            enabled.push_back(knobEnabled);
+            if (enabled.back()) {
+                // If all dim/view are disabled, draw label disabled
+                labelEnabled = true;
+            }
+        }
+        setViewEnabledInternal(enabled, it->first);
+    }
+
+    if (_imp->descriptionLabel) {
+        _imp->descriptionLabel->setEnabled( labelEnabled );
+    }
+    if (_imp->tabGroup) {
+        _imp->tabGroup->setEnabled(labelEnabled);
     }
 }
 
-QWidget*
-KnobGui::getFieldContainer() const
+void
+KnobGui::onFrozenChanged(bool frozen)
 {
-    return _imp->field;
+    KnobIPtr knob = getKnob();
+    KnobButtonPtr isBtn = toKnobButton(knob);
+
+    if ( isBtn && !isBtn->isRenderButton() ) {
+        return;
+    }
+
+    bool labelEnabled = false;
+    bool knobEnabled = knob->isEnabled();
+    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        std::vector<bool> enabled;
+        for (int i = 0; i < knob->getNDimensions(); ++i) {
+            if (frozen) {
+                enabled.push_back(false);
+            } else {
+                enabled.push_back(knobEnabled);
+            }
+            if (enabled.back()) {
+                // If all dim/view are disabled, draw label disabled
+                labelEnabled = true;
+            }
+        }
+        setViewEnabledInternal(enabled, it->first);
+    }
+
+    if (_imp->descriptionLabel) {
+        _imp->descriptionLabel->setEnabled( labelEnabled );
+    }
+    if (_imp->tabGroup) {
+        _imp->tabGroup->setEnabled(labelEnabled);
+    }
+
+}
+
+bool
+KnobGui::isGuiFrozenForPlayback() const
+{
+    return getGui() ? getGui()->isGUIFrozen() : false;
+}
+
+
+void
+KnobGui::onSplitViewActionTriggered()
+{
+    QAction* action = dynamic_cast<QAction*>(sender());
+    if (!action) {
+        return;
+    }
+    ViewIdx view = ViewIdx(action->data().toInt());
+    KnobIPtr internalKnob = getKnob();
+    if (!internalKnob) {
+        return;
+    }
+    internalKnob->splitView(view);
+}
+
+void
+KnobGui::onUnSplitViewActionTriggered()
+{
+    QAction* action = dynamic_cast<QAction*>(sender());
+    if (!action) {
+        return;
+    }
+    ViewIdx view = ViewIdx(action->data().toInt());
+    KnobIPtr internalKnob = getKnob();
+    if (!internalKnob) {
+        return;
+    }
+    internalKnob->unSplitView(view);
+}
+
+void
+KnobGui::onInternalKnobAvailableViewsChanged()
+{
+    // Sync views to what's inside the knob
+    KnobIPtr internalKnob = getKnob();
+    if (!internalKnob) {
+        return;
+    }
+    std::list<ViewIdx> views = internalKnob->getViewsList();
+
+    // Remove un-needed views
+    KnobGuiPrivate::PerViewWidgetsMap viewsToKeep;
+    for (KnobGuiPrivate::PerViewWidgetsMap::iterator it = _imp->views.begin(); it!=_imp->views.end(); ++it) {
+        std::list<ViewIdx>::iterator found = std::find(views.begin(), views.end(), it->first);
+        if (found != views.end()) {
+            viewsToKeep.insert(*it);
+            continue;
+        }
+        _imp->removeViewGui(it);
+    }
+
+    _imp->views = viewsToKeep;
+
+    // Add new views
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        KnobGuiPrivate::PerViewWidgetsMap::iterator  found = _imp->views.find(*it);
+        if (found == _imp->views.end()) {
+            createViewContainers(*it);
+            KnobGuiPrivate::PerViewWidgetsMap::iterator found = _imp->views.find(*it);
+            assert(found != _imp->views.end());
+            _imp->createViewWidgets(found);
+
+            // This will reflect animation level and view
+            for (int i = 0; i < internalKnob->getNDimensions(); ++i) {
+                onExprChanged(DimIdx(i), *it);
+            }
+
+        }
+    }
+
+    // Refresh view label visibility
+    for (KnobGuiPrivate::PerViewWidgetsMap::iterator it = _imp->views.begin(); it!=_imp->views.end(); ++it) {
+        it->second.viewLabel->setVisible(_imp->views.size() > 1);
+    }
+
+    // Reflect modif state
+    refreshModificationsStateNow();
+
+    _imp->viewUnfoldArrow->setVisible(_imp->views.size() > 1);
+}
+
+void
+KnobGui::onProjectViewsChanged()
+{
+    KnobIPtr knob = getKnob();
+    if (!knob) {
+        return;
+    }
+    if (!knob->getHolder()) {
+        return;
+    }
+    assert(knob->getHolder() && knob->getHolder()->getApp());
+    KnobHolderPtr holder = knob->getHolder();
+    AppInstancePtr app;
+    if (holder) {
+        app = holder->getApp();
+    }
+    if (!app) {
+        return;
+    }
+
+    const std::vector<std::string>& projectViewNames = app->getProject()->getProjectViewNames();
+    for (KnobGuiPrivate::PerViewWidgetsMap::iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+        QString viewLongName, viewShortName;
+        if (it->first >= 0 && it->first < (int)projectViewNames.size()) {
+            viewLongName = QString::fromUtf8(projectViewNames[it->first].c_str());
+            if (!viewLongName.isEmpty()) {
+                viewShortName.append(viewLongName[0]);
+            } else {
+                viewShortName += QString::fromUtf8("(*)");
+            }
+        } else {
+            viewLongName = it->second.viewLabel->text();
+            QString notFoundSuffix = QString::fromUtf8("(*)");
+            if (!viewLongName.endsWith(notFoundSuffix)) {
+                viewLongName.push_back(QLatin1Char(' '));
+                viewLongName += notFoundSuffix;
+            }
+            if (!viewLongName.isEmpty()) {
+                viewShortName.append(viewLongName[0]);
+                viewShortName.push_back(QLatin1Char(' '));
+            }
+            viewShortName += QString::fromUtf8("(*)");
+
+        }
+        it->second.viewLongName = viewLongName;
+        it->second.viewLabel->setText(viewShortName);
+    }
+
+
+    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
+    if (!model) {
+        return;
+    }
+
+    KnobAnimPtr knobAnim = findKnobAnim();
+    if (!knobAnim) {
+        return;
+    }
+    knobAnim->refreshViewLabels(projectViewNames);
 }
 
 NATRON_NAMESPACE_EXIT

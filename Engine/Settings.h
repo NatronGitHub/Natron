@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,19 +31,56 @@
 #include <map>
 #include <vector>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Knob.h"
 #include "Engine/ChoiceOption.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
 
-#define kQSettingsSoftwareMajorVersionSettingName "SoftwareVersionMajor"
-
 NATRON_NAMESPACE_ENTER
 
+
+enum KnownHostNameEnum
+{
+    eKnownHostNameNatron = 0,
+    eKnownHostNameNuke,
+    eKnownHostNameFusion,
+    eKnownHostNameCatalyst,
+    eKnownHostNameVegas,
+    eKnownHostNameToxik,
+    eKnownHostNameScratch,
+    eKnownHostNameDustBuster,
+    eKnownHostNameResolve,
+    eKnownHostNameResolveLite,
+    eKnownHostNameMistika,
+    eKnownHostNamePablo,
+    eKnownHostNameMotionStudio,
+    eKnownHostNameShake,
+    eKnownHostNameBaselight,
+    eKnownHostNameFrameCycler,
+    eKnownHostNameNucoda,
+    eKnownHostNameAvidDS,
+    eKnownHostNameDX,
+    eKnownHostNameTitlerPro,
+    eKnownHostNameNewBlueOFXBridge,
+    eKnownHostNameRamen,
+    eKnownHostNameTuttleOfx,
+    eKnownHostNameNone,
+};
+
+
+typedef std::map<std::string, KeybindShortcut> GroupShortcutsMap;
+typedef std::map<std::string, GroupShortcutsMap> ApplicationShortcutsMap;
+
 /*The current settings in the preferences menu.*/
+struct SettingsPrivate;
 class Settings
     : public KnobHolder
 {
@@ -52,33 +89,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    enum KnownHostNameEnum
-    {
-        eKnownHostNameNatron = 0,
-        eKnownHostNameNuke,
-        eKnownHostNameFusion,
-        eKnownHostNameCatalyst,
-        eKnownHostNameVegas,
-        eKnownHostNameToxik,
-        eKnownHostNameScratch,
-        eKnownHostNameDustBuster,
-        eKnownHostNameResolve,
-        eKnownHostNameResolveLite,
-        eKnownHostNameMistika,
-        eKnownHostNamePablo,
-        eKnownHostNameMotionStudio,
-        eKnownHostNameShake,
-        eKnownHostNameBaselight,
-        eKnownHostNameFrameCycler,
-        eKnownHostNameNucoda,
-        eKnownHostNameAvidDS,
-        eKnownHostNameDX,
-        eKnownHostNameTitlerPro,
-        eKnownHostNameNewBlueOFXBridge,
-        eKnownHostNameRamen,
-        eKnownHostNameTuttleOfx,
-        eKnownHostNameNone,
-    };
+
 
     enum EnableOpenGLEnum
     {
@@ -87,30 +98,34 @@ public:
         eEnableOpenGLDisabledIfBackground,
     };
 
+private: // inherits from KnobHolder
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     Settings();
 
-    virtual ~Settings()
+public:
+    static SettingsPtr create()
     {
+        return SettingsPtr( new Settings() );
     }
+
+    virtual ~Settings();
 
     virtual bool canKnobsAnimate() const OVERRIDE FINAL
     {
         return false;
     }
 
-    virtual bool onKnobValueChanged(KnobI* k,
+    virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
-                                    double time,
-                                    ViewSpec view,
-                                    bool originatedFromMainThread) OVERRIDE FINAL;
+                                    TimeValue time,
+                                    ViewSetSpec view) OVERRIDE FINAL;
 
-    double getRamMaximumPercent() const;
+    std::string getDiskCachePath() const;
 
-    U64 getMaximumViewerDiskCacheSize() const;
+    std::size_t getGeneralPurposeCacheSize() const;
 
-    U64 getMaximumDiskCacheNodeSize() const;
-
-    double getUnreachableRamPercent() const;
+    std::size_t getTileCacheSize() const;
 
     bool getColorPickerLinear() const;
 
@@ -118,45 +133,44 @@ public:
 
     void setNumberOfThreads(int threadsNb);
 
-    int getNumberOfParallelRenders() const;
+    void populateSystemFonts(const std::vector<std::string>& fonts);
+    
+    bool doesKnobChangeRequireRestart(const KnobIPtr& knob);
 
-    void setNumberOfParallelRenders(int nb);
-
-    int getNumberOfThreadsPerEffect() const;
-
-    bool useGlobalThreadPool() const;
-
-    void setUseGlobalThreadPool(bool use);
-
-    void restorePluginSettings();
-
-    void populateSystemFonts(const QSettings& settings, const std::vector<std::string>& fonts);
+    bool doesKnobChangeRequireOFXCacheClear(const KnobIPtr& knob);
 
     // should settings be saved?
     void setSaveSettings(bool);
 
     bool getSaveSettings() const;
 
-    ///save the settings to the application's settings
-    void saveSettings(const std::vector<KnobI*>& settings, bool doWarnings, bool pluginSettings);
-
-    void savePluginsSettings();
-
-    void saveAllSettings();
-
-    void saveSetting(KnobI* knob)
+    enum LoadSettingsType
     {
-        std::vector<KnobI*> knobs;
+        eLoadSettingsNone = 0x0,
+        eLoadSettingsTypeKnobs = 0x1,
+        eLoadSettingsTypePlugins = 0x2,
+        eLoadSettingsTypeShortcuts = 0x4
+    };
 
-        knobs.push_back(knob);
-        saveSettings(knobs, false, false);
-    }
 
-    ///restores the settings from disk
-    void restoreSettings(bool useDefault);
+    /**
+     * @brief Load the all the settings from the settings file.
+     * @param loadType An or of the LoadSettingsType enum indicating what to load from
+     * file.
+     **/
+    void loadSettingsFromFile(LoadSettingsType loadType);
 
-    void restoreKnobsFromSettings(const KnobsVec& knobs);
-    void restoreKnobsFromSettings(const std::vector<KnobI*>& knobs);
+
+    /**
+     * @brief Dump all settings to the settings file.
+     **/
+    void saveSettingsToFile();
+
+    std::string getSettingsAbsoluteFilePath() const;
+
+    std::string getApplicationFontFamily() const;
+
+    int getApplicationFontSize() const;
 
     bool isAutoPreviewOnForNewProjects() const;
 
@@ -170,7 +184,9 @@ public:
 
     void setRenderQueuingEnabled(bool enabled);
 
-    void restoreDefault();
+    void restoreAllSettingsToDefaults();
+
+    void restorePageToDefaults(const KnobPagePtr& tab);
 
     int getMaximumUndoRedoNodeGraph() const;
 
@@ -184,7 +200,9 @@ public:
 
     void setCheckUpdatesEnabled(bool enabled);
 
+#ifdef NATRON_USE_BREAKPAD
     bool isCrashReportingEnabled() const;
+#endif
 
     int getMaxPanelsOpened() const;
 
@@ -220,10 +238,9 @@ public:
     bool getIconsBlackAndWhite() const;
 
     std::string getHostName() const;
-    const std::string& getKnownHostName(KnownHostNameEnum e) const
-    {
-        return _knownHostNames[(int)e].id;
-    }
+
+    const std::string& getKnownHostName(KnownHostNameEnum e) const;
+
 
     std::string getDefaultLayoutFile() const;
 
@@ -237,8 +254,8 @@ public:
 
     ///////////////////////////////////////////////////////
     // "Viewers" pane
+    KnobChoicePtr getViewerBitDepthKnob() const;
     ImageBitDepthEnum getViewersBitDepth() const;
-    int getViewerTilesPowerOf2() const;
     int getCheckerboardTileSize() const;
     void getCheckerboardColor1(double* r, double* g, double* b, double* a) const;
     void getCheckerboardColor2(double* r, double* g, double* b, double* a) const;
@@ -262,10 +279,6 @@ public:
      **/
     void doOCIOStartupCheckIfNeeded();
 
-    /**
-     * @brief Returns true if the QSettings existed prior to loading the settings
-     **/
-    bool didSettingsExistOnStartup() const;
 
     bool notifyOnFileChange() const;
 
@@ -293,8 +306,6 @@ public:
     void setOnProjectCreatedCB(const std::string& func);
     void setOnProjectLoadedCB(const std::string& func);
 
-    bool isLoadFromPyPlugsEnabled() const;
-
     bool isAutoDeclaredVariablePrintActivated() const;
 
     void setAutoDeclaredVariablePrintEnabled(bool enabled);
@@ -311,23 +322,19 @@ public:
     void getKeyframeColor(double* r, double* g, double* b) const;
     void getTrackerKeyframeColor(double* r, double* g, double* b) const;
     void getExprColor(double* r, double* g, double* b) const;
+    void getCloneColor(double* r, double* g, double* b) const;
     void getTextColor(double* r, double* g, double* b) const;
     void getAltTextColor(double* r, double* g, double* b) const;
     void getTimelinePlayheadColor(double* r, double* g, double* b) const;
     void getTimelineBoundsColor(double* r, double* g, double* b) const;
     void getTimelineBGColor(double* r, double* g, double* b) const;
     void getCachedFrameColor(double* r, double* g, double* b) const;
-    void getDiskCachedColor(double* r, double* g, double* b) const;
-    void getCurveEditorBGColor(double* r, double* g, double* b) const;
-    void getCurveEditorGridColor(double* r, double* g, double* b) const;
-    void getCurveEditorScaleColor(double* r, double* g, double* b) const;
-    void getDopeSheetEditorBackgroundColor(double* r, double* g, double* b) const;
-    void getDopeSheetEditorRootRowBackgroundColor(double* r, double* g, double* b, double *a) const;
-    void getDopeSheetEditorKnobRowBackgroundColor(double* r, double* g, double* b, double *a) const;
-    void getDopeSheetEditorScaleColor(double* r, double* g, double* b) const;
-    void getDopeSheetEditorGridColor(double* r, double* g, double* b) const;
+    void getAnimationModuleEditorBackgroundColor(double* r, double* g, double* b) const;
+    void getAnimationModuleEditorRootRowBackgroundColor(double* r, double* g, double* b, double *a) const;
+    void getAnimationModuleEditorKnobRowBackgroundColor(double* r, double* g, double* b, double *a) const;
+    void getAnimationModuleEditorScaleColor(double* r, double* g, double* b) const;
+    void getAnimationModuleEditorGridColor(double* r, double* g, double* b) const;
     void getSliderColor(double* r, double* g, double* b) const;
-
 
     void getSEKeywordColor(double* r, double* g, double* b) const;
     void getSEOperatorColor(double* r, double* g, double* b) const;
@@ -343,11 +350,8 @@ public:
     std::string getSEFontFamily() const;
 
     void getPluginIconFrameColor(int *r, int *g, int *b) const;
-    int getDopeSheetEditorNodeSeparationWith() const;
 
     bool isNaNHandlingEnabled() const;
-
-    bool isCopyInputImageForPluginRenderEnabled() const;
 
     bool isDefaultAppearanceOutdated() const;
     void restoreDefaultAppearance();
@@ -366,272 +370,74 @@ public:
 
     GLRendererID getActiveOpenGLRendererID() const;
 
-    void populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers);
-
     bool isOpenGLRenderingEnabled() const;
+
+    GLRendererID getOpenGLCPUDriver() const;
 
     int getMaxOpenGLContexts() const;
 
     bool isDriveLetterToUNCPathConversionEnabled() const;
 
+    bool getIsFullRecoverySaveModeEnabled() const;
+
+    KnobPathPtr getFileDialogFavoritePathsKnob() const;
+
+    void addKeybind(const std::string & grouping,
+                    const std::string & id,
+                    const std::string& label,
+                    const std::string & description,
+                    const KeyboardModifiers & modifiers,
+                    Key symbol,
+                    const KeyboardModifiers & modifiersMask = KeyboardModifiers(eKeyboardModifierNone));
+
+    void removeKeybind(const std::string& grouping, const std::string& id);
+
+    /**
+     * @brief Returns true if the given keyboard symbol and modifiers match the given action.
+     * The symbol parameter is to be casted to the Qt::Key enum
+     **/
+    bool matchesKeybind(const std::string & group,
+                        const std::string & actionID,
+                        const KeyboardModifiers & modifiers,
+                        Key symbol) const;
+
+    bool getShortcutKeybind(const std::string & group,
+                            const std::string & actionID,
+                            KeyboardModifiers* modifiers,
+                            Key* symbol) const;
+
+    void setShortcutKeybind(const std::string & group,
+                            const std::string & actionID,
+                            const KeyboardModifiers & modifiers,
+                            Key symbol);
+
+    void restoreDefaultShortcuts();
+
+
+    /**
+     * @brief Register an action to the shortcut manager indicating it is using a shortcut.
+     * This is used to update the action's shortcut when it gets modified by the user.
+     **/
+    void addShortcutAction(const std::string & grouping, const std::string & id, KeybindListenerI* action);
+    void removeShortcutAction(const std::string & grouping, const std::string & id, KeybindListenerI* action);
+
+    const ApplicationShortcutsMap& getAllShortcuts() const;
+
+    void populateShortcuts();
+
+
 Q_SIGNALS:
 
-    void settingChanged(KnobI* knob);
+    void shortcutsChanged();
+
+    void settingChanged(const KnobIPtr& knob, ValueChangedReasonEnum reason);
 
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
 
-    void initializeKnobsGeneral();
-    void initializeKnobsThreading();
-    void initializeKnobsRendering();
-    void initializeKnobsGPU();
-    void initializeKnobsProjectSetup();
-    void initializeKnobsDocumentation();
-    void initializeKnobsUserInterface();
-    void initializeKnobsColorManagement();
-    void initializeKnobsCaching();
-    void initializeKnobsViewers();
-    void initializeKnobsNodeGraph();
-    void initializeKnobsPlugins();
-    void initializeKnobsPython();
-    void initializeKnobsAppearance();
-    void initializeKnobsGuiColors();
-    void initializeKnobsCurveEditorColors();
-    void initializeKnobsDopeSheetColors();
-    void initializeKnobsNodeGraphColors();
-    void initializeKnobsScriptEditorColors();
+    boost::scoped_ptr<SettingsPrivate> _imp;
 
-
-    void warnChangedKnobs(const std::vector<KnobI*>& knobs);
-
-    void setCachingLabels();
-    void setDefaultValues();
-
-    bool tryLoadOpenColorIOConfig();
-
-
-    boost::shared_ptr<KnobBool> _natronSettingsExist;
-    boost::shared_ptr<KnobBool> _saveSettings;
-
-
-    // General
-    boost::shared_ptr<KnobPage> _generalTab;
-    boost::shared_ptr<KnobBool> _checkForUpdates;
-    boost::shared_ptr<KnobBool> _enableCrashReports;
-    boost::shared_ptr<KnobButton> _testCrashReportButton;
-    boost::shared_ptr<KnobBool> _autoSaveUnSavedProjects;
-    boost::shared_ptr<KnobInt> _autoSaveDelay;
-    boost::shared_ptr<KnobChoice> _hostName;
-    boost::shared_ptr<KnobString> _customHostName;
-
-    // General/Threading
-    boost::shared_ptr<KnobPage> _threadingPage;
-    boost::shared_ptr<KnobInt> _numberOfThreads;
-    boost::shared_ptr<KnobInt> _numberOfParallelRenders;
-    boost::shared_ptr<KnobBool> _useThreadPool;
-    boost::shared_ptr<KnobInt> _nThreadsPerEffect;
-    boost::shared_ptr<KnobBool> _renderInSeparateProcess;
-    boost::shared_ptr<KnobBool> _queueRenders;
-
-    // General/Rendering
-    boost::shared_ptr<KnobPage> _renderingPage;
-    boost::shared_ptr<KnobBool> _convertNaNValues;
-    boost::shared_ptr<KnobBool> _pluginUseImageCopyForSource;
-    boost::shared_ptr<KnobBool> _activateRGBSupport;
-    boost::shared_ptr<KnobBool> _activateTransformConcatenationSupport;
-
-    // General/GPU rendering
-    boost::shared_ptr<KnobPage> _gpuPage;
-    boost::shared_ptr<KnobString> _openglRendererString;
-    boost::shared_ptr<KnobChoice> _availableOpenGLRenderers;
-    boost::shared_ptr<KnobInt> _nOpenGLContexts;
-    boost::shared_ptr<KnobChoice> _enableOpenGL;
-
-
-
-    // General/Projects setup
-    boost::shared_ptr<KnobPage> _projectsPage;
-    boost::shared_ptr<KnobBool> _firstReadSetProjectFormat;
-    boost::shared_ptr<KnobBool> _autoPreviewEnabledForNewProjects;
-    boost::shared_ptr<KnobBool> _fixPathsOnProjectPathChanged;
-    boost::shared_ptr<KnobBool> _enableMappingFromDriveLettersToUNCShareNames;
-
-    // General/Documentation
-    boost::shared_ptr<KnobPage> _documentationPage;
-    boost::shared_ptr<KnobInt> _wwwServerPort;
-#ifdef NATRON_DOCUMENTATION_ONLINE
-    boost::shared_ptr<KnobChoice> _documentationSource;
-#endif
-
-    // General/User Interface
-    boost::shared_ptr<KnobPage> _uiPage;
-    boost::shared_ptr<KnobBool> _notifyOnFileChange;
-
-#ifdef NATRON_ENABLE_IO_META_NODES
-    boost::shared_ptr<KnobBool> _filedialogForWriters;
-#endif
-    boost::shared_ptr<KnobBool> _renderOnEditingFinished;
-    boost::shared_ptr<KnobBool> _linearPickers;
-    boost::shared_ptr<KnobInt> _maxPanelsOpened;
-    boost::shared_ptr<KnobBool> _useCursorPositionIncrements;
-    boost::shared_ptr<KnobFile> _defaultLayoutFile;
-    boost::shared_ptr<KnobBool> _loadProjectsWorkspace;
-
-    // Color-Management
-    boost::shared_ptr<KnobPage> _ocioTab;
-    boost::shared_ptr<KnobChoice> _ocioConfigKnob;
-    boost::shared_ptr<KnobBool> _warnOcioConfigKnobChanged;
-    boost::shared_ptr<KnobBool> _ocioStartupCheck;
-    boost::shared_ptr<KnobFile> _customOcioConfigFile;
-
-    // Caching
-    boost::shared_ptr<KnobPage> _cachingTab;
-    boost::shared_ptr<KnobBool> _aggressiveCaching;
-    ///The percentage of the value held by _maxRAMPercent to dedicate to playback cache (viewer cache's in-RAM portion) only
-    boost::shared_ptr<KnobString> _maxPlaybackLabel;
-
-    ///The percentage of the system total's RAM to dedicate to caching in theory. In practise this is limited
-    ///by _unreachableRamPercent that determines how much RAM should be left free for other use on the computer
-    boost::shared_ptr<KnobInt> _maxRAMPercent;
-    boost::shared_ptr<KnobString> _maxRAMLabel;
-
-    ///The percentage of the system total's RAM you want to keep free from cache usage
-    ///When the cache grows and reaches a point where it is about to cross that threshold
-    ///it starts freeing the LRU entries regardless of the _maxRAMPercent and _maxPlaybackPercent
-    ///A reasonable value should be set for it, allowing Natron's caches to always stay in RAM and
-    ///avoid being swapped-out on disk. Assuming the user isn't using many applications at the same time,
-    ///10% seems a reasonable value.
-    boost::shared_ptr<KnobInt> _unreachableRAMPercent;
-    boost::shared_ptr<KnobString> _unreachableRAMLabel;
-
-    ///The total disk space allowed for all Natron's caches
-    boost::shared_ptr<KnobInt> _maxViewerDiskCacheGB;
-    boost::shared_ptr<KnobInt> _maxDiskCacheNodeGB;
-    boost::shared_ptr<KnobPath> _diskCachePath;
-    boost::shared_ptr<KnobButton> _wipeDiskCache;
-
-    // Viewer
-    boost::shared_ptr<KnobPage> _viewersTab;
-    boost::shared_ptr<KnobChoice> _texturesMode;
-    boost::shared_ptr<KnobInt> _powerOf2Tiling;
-    boost::shared_ptr<KnobInt> _checkerboardTileSize;
-    boost::shared_ptr<KnobColor> _checkerboardColor1;
-    boost::shared_ptr<KnobColor> _checkerboardColor2;
-    boost::shared_ptr<KnobBool> _autoWipe;
-    boost::shared_ptr<KnobBool> _autoProxyWhenScrubbingTimeline;
-    boost::shared_ptr<KnobChoice> _autoProxyLevel;
-    boost::shared_ptr<KnobInt> _maximumNodeViewerUIOpened;
-    boost::shared_ptr<KnobBool> _viewerKeys;
-
-    // Nodegraph
-    boost::shared_ptr<KnobPage> _nodegraphTab;
-    boost::shared_ptr<KnobBool> _autoScroll;
-    boost::shared_ptr<KnobBool> _autoTurbo;
-    boost::shared_ptr<KnobBool> _snapNodesToConnections;
-    boost::shared_ptr<KnobBool> _useBWIcons;
-    boost::shared_ptr<KnobInt> _maxUndoRedoNodeGraph;
-    boost::shared_ptr<KnobInt> _disconnectedArrowLength;
-    boost::shared_ptr<KnobBool> _hideOptionalInputsAutomatically;
-    boost::shared_ptr<KnobBool> _useInputAForMergeAutoConnect;
-    boost::shared_ptr<KnobBool> _usePluginIconsInNodeGraph;
-    boost::shared_ptr<KnobBool> _useAntiAliasing;
-
-    // Plugins
-    boost::shared_ptr<KnobPage> _pluginsTab;
-    boost::shared_ptr<KnobPath> _extraPluginPaths;
-    boost::shared_ptr<KnobBool> _useStdOFXPluginsLocation;
-    boost::shared_ptr<KnobPath> _templatesPluginPaths;
-    boost::shared_ptr<KnobBool> _preferBundledPlugins;
-    boost::shared_ptr<KnobBool> _loadBundledPlugins;
-
-    // Python
-    boost::shared_ptr<KnobPage> _pythonPage;
-    boost::shared_ptr<KnobString> _onProjectCreated;
-    boost::shared_ptr<KnobString> _defaultOnProjectLoaded;
-    boost::shared_ptr<KnobString> _defaultOnProjectSave;
-    boost::shared_ptr<KnobString> _defaultOnProjectClose;
-    boost::shared_ptr<KnobString> _defaultOnNodeCreated;
-    boost::shared_ptr<KnobString> _defaultOnNodeDelete;
-    boost::shared_ptr<KnobBool> _loadPyPlugsFromPythonScript;
-    boost::shared_ptr<KnobBool> _echoVariableDeclarationToPython;
-
-    // Appearance
-    boost::shared_ptr<KnobPage> _appearanceTab;
-    boost::shared_ptr<KnobChoice> _systemFontChoice;
-    boost::shared_ptr<KnobInt> _fontSize;
-    boost::shared_ptr<KnobFile> _qssFile;
-    boost::shared_ptr<KnobInt> _defaultAppearanceVersion;
-
-    // Appearance/Main Window
-    boost::shared_ptr<KnobPage> _guiColorsTab;
-    boost::shared_ptr<KnobColor> _sunkenColor;
-    boost::shared_ptr<KnobColor> _baseColor;
-    boost::shared_ptr<KnobColor> _raisedColor;
-    boost::shared_ptr<KnobColor> _selectionColor;
-    boost::shared_ptr<KnobColor> _textColor;
-    boost::shared_ptr<KnobColor> _altTextColor;
-    boost::shared_ptr<KnobColor> _timelinePlayheadColor;
-    boost::shared_ptr<KnobColor> _timelineBGColor;
-    boost::shared_ptr<KnobColor> _timelineBoundsColor;
-    boost::shared_ptr<KnobColor> _interpolatedColor;
-    boost::shared_ptr<KnobColor> _keyframeColor;
-    boost::shared_ptr<KnobColor> _trackerKeyframeColor;
-    boost::shared_ptr<KnobColor> _exprColor;
-    boost::shared_ptr<KnobColor> _cachedFrameColor;
-    boost::shared_ptr<KnobColor> _diskCachedFrameColor;
-    boost::shared_ptr<KnobColor> _sliderColor;
-
-    // Apprance/Curve Editor
-    boost::shared_ptr<KnobPage> _curveEditorColorsTab;
-    boost::shared_ptr<KnobColor> _curveEditorBGColor;
-    boost::shared_ptr<KnobColor> _gridColor;
-    boost::shared_ptr<KnobColor> _curveEditorScaleColor;
-
-    // Appearance/Dope Sheet
-    boost::shared_ptr<KnobPage> _dopeSheetEditorColorsTab;
-    boost::shared_ptr<KnobColor> _dopeSheetEditorBackgroundColor;
-    boost::shared_ptr<KnobColor> _dopeSheetEditorRootSectionBackgroundColor;
-    boost::shared_ptr<KnobColor> _dopeSheetEditorKnobSectionBackgroundColor;
-    boost::shared_ptr<KnobColor> _dopeSheetEditorScaleColor;
-    boost::shared_ptr<KnobColor> _dopeSheetEditorGridColor;
-
-    // Appearance/Script Editor
-    boost::shared_ptr<KnobPage> _scriptEditorColorsTab;
-    boost::shared_ptr<KnobColor> _curLineColor;
-    boost::shared_ptr<KnobColor> _keywordColor;
-    boost::shared_ptr<KnobColor> _operatorColor;
-    boost::shared_ptr<KnobColor> _braceColor;
-    boost::shared_ptr<KnobColor> _defClassColor;
-    boost::shared_ptr<KnobColor> _stringsColor;
-    boost::shared_ptr<KnobColor> _commentsColor;
-    boost::shared_ptr<KnobColor> _selfColor;
-    boost::shared_ptr<KnobColor> _numbersColor;
-    boost::shared_ptr<KnobChoice> _scriptEditorFontChoice;
-    boost::shared_ptr<KnobInt> _scriptEditorFontSize;
-
-    // Appearance/Node Graph
-    boost::shared_ptr<KnobPage> _nodegraphColorsTab;
-    boost::shared_ptr<KnobColor> _defaultNodeColor;
-    boost::shared_ptr<KnobColor> _defaultBackdropColor;
-    boost::shared_ptr<KnobColor> _defaultGeneratorColor;
-    boost::shared_ptr<KnobColor> _defaultReaderColor;
-    boost::shared_ptr<KnobColor> _defaultWriterColor;
-    boost::shared_ptr<KnobColor> _defaultColorGroupColor;
-    boost::shared_ptr<KnobColor> _defaultFilterGroupColor;
-    boost::shared_ptr<KnobColor> _defaultTransformGroupColor;
-    boost::shared_ptr<KnobColor> _defaultTimeGroupColor;
-    boost::shared_ptr<KnobColor> _defaultDrawGroupColor;
-    boost::shared_ptr<KnobColor> _defaultKeyerGroupColor;
-    boost::shared_ptr<KnobColor> _defaultChannelGroupColor;
-    boost::shared_ptr<KnobColor> _defaultMergeGroupColor;
-    boost::shared_ptr<KnobColor> _defaultViewsGroupColor;
-    boost::shared_ptr<KnobColor> _defaultDeepGroupColor;
-    std::vector<ChoiceOption> _knownHostNames;
-    bool _restoringSettings;
-    bool _ocioRestored;
-    bool _settingsExisted;
-    bool _defaultAppearanceOutdated;
 };
 
 NATRON_NAMESPACE_EXIT

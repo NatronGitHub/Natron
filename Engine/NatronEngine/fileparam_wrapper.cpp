@@ -19,7 +19,11 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 
 // Extra includes
 NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
+#include <PyAppInstance.h>
+#include <PyItemsTable.h>
+#include <PyNode.h>
 #include <PyParameter.h>
+#include <vector>
 
 
 // Native ---------------------------------------------------------
@@ -83,6 +87,64 @@ static PyObject* Sbk_FileParamFunc_reloadFile(PyObject* self)
     Py_RETURN_NONE;
 }
 
+static PyObject* Sbk_FileParamFunc_setDialogType(PyObject* self, PyObject* args)
+{
+    FileParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (FileParamWrapper*)((::FileParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_FILEPARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "setDialogType", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: setDialogType(bool,bool,std::vector<std::string>)
+    if (numArgs == 3
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[1])))
+        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_VECTOR_STD_STRING_IDX], (pyArgs[2])))) {
+        overloadId = 0; // setDialogType(bool,bool,std::vector<std::string>)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_FileParamFunc_setDialogType_TypeError;
+
+    // Call function/method
+    {
+        bool cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        bool cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+        ::std::vector<std::string > cppArg2;
+        pythonToCpp[2](pyArgs[2], &cppArg2);
+
+        if (!PyErr_Occurred()) {
+            // setDialogType(bool,bool,std::vector<std::string>)
+            cppSelf->setDialogType(cppArg0, cppArg1, cppArg2);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_FileParamFunc_setDialogType_TypeError:
+        const char* overloads[] = {"bool, bool, list", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.FileParam.setDialogType", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_FileParamFunc_setSequenceEnabled(PyObject* self, PyObject* pyArg)
 {
     FileParamWrapper* cppSelf = 0;
@@ -128,6 +190,7 @@ static PyObject* Sbk_FileParamFunc_setSequenceEnabled(PyObject* self, PyObject* 
 static PyMethodDef Sbk_FileParam_methods[] = {
     {"openFile", (PyCFunction)Sbk_FileParamFunc_openFile, METH_NOARGS},
     {"reloadFile", (PyCFunction)Sbk_FileParamFunc_reloadFile, METH_NOARGS},
+    {"setDialogType", (PyCFunction)Sbk_FileParamFunc_setDialogType, METH_VARARGS},
     {"setSequenceEnabled", (PyCFunction)Sbk_FileParamFunc_setSequenceEnabled, METH_O},
 
     {0} // Sentinel

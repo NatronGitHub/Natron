@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,13 +27,15 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
 #include <string>
 #include <map>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
 #include "Global/GlobalDefines.h"
+#include "Engine/TimeValue.h"
 
 #include "Engine/EngineFwd.h"
 
@@ -45,7 +47,9 @@ struct StringAnimationManagerPrivate;
 class StringAnimationManager
 {
 public:
-    StringAnimationManager(const KnobI* knob);
+    StringAnimationManager();
+
+    StringAnimationManager(const StringAnimationManager& other);
 
     ~StringAnimationManager();
 
@@ -56,27 +60,25 @@ public:
 
     bool hasCustomInterp() const;
 
-    void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamHandle);
+    void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamHandle, const std::string& knobName);
 
-    bool customInterpolation(double time, std::string* ret) const;
+    bool customInterpolation(TimeValue time, std::string* ret) const;
 
-    void insertKeyFrame(double time, const std::string & v, double* index);
+    ValueChangedReturnCodeEnum insertKeyFrame(TimeValue time, const std::string & v, double* index);
 
-    void removeKeyFrame(double time);
+    void removeKeyFrame(TimeValue time);
+
+    void removeKeyframes(const std::list<double>& keysRemoved);
 
     void clearKeyFrames();
 
     void stringFromInterpolatedIndex(double interpolated, std::string* returnValue) const;
 
-    void clone(const StringAnimationManager & other);
+    bool clone(const StringAnimationManager & other, SequenceTime offset, const RangeD* range);
 
-    bool cloneAndCheckIfChanged(const StringAnimationManager & other);
+    void load(const std::map<double, std::string> & keyframes);
 
-    void clone(const StringAnimationManager & other, SequenceTime offset, const RangeD* range);
-
-    void load(const std::map<int, std::string> & keyframes);
-
-    void save(std::map<int, std::string>* keyframes) const;
+    void save(std::map<double, std::string>* keyframes) const;
 
 private:
 

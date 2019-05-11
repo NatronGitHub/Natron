@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -42,6 +42,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/TabWidgetI.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER
@@ -109,6 +110,8 @@ private:
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+    virtual QSize sizeHint() const OVERRIDE FINAL;
+    virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     QPixmap makePixmapForDrag(int index);
 
     QPoint _dragPos;
@@ -149,6 +152,7 @@ private:
 struct TabWidgetPrivate;
 class TabWidget
     : public QFrame
+    , public TabWidgetI
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -176,20 +180,12 @@ public:
     ////To be called when it is going to be deleted
     void notifyGuiAboutRemoval();
 
-    ///When not closable a tabwidget cannot float  or be closed
-    void setClosable(bool closable);
 
     /*Appends a new tab to the tab widget. The name of the tab will be the QWidget's object's name.
        Returns false if the object's name is empty but the TabWidget needs a decoration*/
     bool appendTab(PanelWidget* widget, ScriptObject* object);
 
-    /*Appends a new tab to the tab widget. The name of the tab will be the QWidget's object's name.
-       Returns false if the title is empty but the TabWidget needs a decoration*/
-    bool appendTab(const QIcon & icon, PanelWidget* widget,  ScriptObject* object);
-
     /*Inserts before the element at index.*/
-    void insertTab(int index, const QIcon & icon, PanelWidget* widget, ScriptObject* object);
-
     void insertTab(int index, PanelWidget* widget, ScriptObject* object);
 
     /*Removes from the TabWidget, but does not delete the widget.
@@ -213,8 +209,6 @@ public:
 
     void tabAt(int index, PanelWidget** w, ScriptObject** obj) const;
 
-    QStringList getTabScriptNames() const;
-
     PanelWidget* currentWidget() const;
 
     void currentWidget(PanelWidget** w, ScriptObject** obj) const;
@@ -228,7 +222,8 @@ public:
     void setCurrentWidget(PanelWidget* w);
 
     void dettachTabs();
-    static bool moveTab(PanelWidget* what, ScriptObject* obj, TabWidget* where);
+
+    bool moveTab(PanelWidget* what, ScriptObject* obj);
 
     /**
      * @brief Starts dragging the selected panel. The following actions are performed:
@@ -246,25 +241,16 @@ public:
 
     bool isWithinWidget(const QPoint & globalPos) const;
 
-    void setObjectName_mt_safe(const QString & str);
-
-    QString objectName_mt_safe() const;
-
     TabWidget* splitHorizontally(bool autoSave = true);
     TabWidget* splitVertically(bool autoSave = true);
 
-    int activeIndex() const;
-
+    void setTabHeaderVisible(bool visible);
+    bool isTabHeaderVisible() const;
 
     ///MT-Safe
     bool isFullScreen() const;
 
     void togglePaneFullScreen();
-
-    ///MT-Safe
-    bool isAnchor() const;
-
-    void setAsAnchor(bool anchor);
 
     /**
      * @brief Returns true if this tabwidget is part of a floating window
@@ -273,12 +259,27 @@ public:
 
     void discardGuiPointer();
 
-    void onTabScriptNameChanged(PanelWidget* tab, const std::string& oldName, const std::string& newName);
+    // When not closable a tabwidget cannot float  or be closed
+    virtual void setClosable(bool closable) OVERRIDE FINAL;
+
+    virtual bool isAnchor() const OVERRIDE FINAL;
+
+    virtual void setAsAnchor(bool anchor) OVERRIDE FINAL;
+
+    virtual int activeIndex() const OVERRIDE FINAL;
+
+    virtual std::list<std::string> getTabScriptNames() const OVERRIDE FINAL;
+
+    virtual std::string getScriptName() const OVERRIDE FINAL;
+
+    virtual void setScriptName(const std::string & str) OVERRIDE FINAL;
+
+    virtual void setTabsFromScriptNames(const std::list<std::string>& tabs) OVERRIDE FINAL;
 
 public Q_SLOTS:
     /*Makes current the tab at index "index". Passing an
        index out of range will have no effect.*/
-    void makeCurrentTab(int index);
+    virtual void setCurrentIndex(int index) OVERRIDE FINAL;
 
     void createMenu();
 
@@ -286,9 +287,7 @@ public Q_SLOTS:
 
     void moveNodeGraphHere();
 
-    void moveCurveEditorHere();
-
-    void moveDopeSheetEditorHere();
+    void moveAnimationModuleEditorHere();
 
     void newHistogramHere();
 
@@ -330,7 +329,7 @@ public Q_SLOTS:
 
     void onSetAsAnchorActionTriggered();
 
-    void onShowHideTabBarActionTriggered();
+    //void onShowHideTabBarActionTriggered();
 
     void onTabBarMouseLeft();
 

@@ -1,0 +1,21 @@
+--- mesa-11.2.2/src/compiler/glsl/builtin_functions.cpp.orig	2016-03-18 12:40:03.531282000 +0100
++++ mesa-11.2.2/src/compiler/glsl/builtin_functions.cpp	2016-03-18 12:40:12.109407000 +0100
+@@ -62,6 +62,18 @@
+ #include "program/prog_instruction.h"
+ #include <math.h>
+ 
++#ifndef M_PI
++#define M_PI   3.14159265358979323846
++#endif
++
++#ifndef M_PI_2
++#define M_PI_2 1.57079632679489661923
++#endif
++
++#ifndef M_PI_4
++#define M_PI_4   0.78539816339744830962
++#endif
++
+ #define M_PIf   ((float) M_PI)
+ #define M_PI_2f ((float) M_PI_2)
+ #define M_PI_4f ((float) M_PI_4)

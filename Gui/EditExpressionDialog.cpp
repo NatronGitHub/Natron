@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -55,7 +55,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/Curve.h"
 #include "Engine/KnobFile.h"
-#include "Engine/KnobSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Node.h"
@@ -67,12 +66,12 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/ComboBox.h"
-#include "Gui/CurveEditor.h"
 #include "Gui/CurveGui.h"
 #include "Gui/CustomParamInteract.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/KnobGui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiGroup.h"
 #include "Gui/Label.h"
@@ -89,34 +88,44 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/TimeLineGui.h"
 #include "Gui/ViewerTab.h"
 
+
 NATRON_NAMESPACE_ENTER
 
+
 EditExpressionDialog::EditExpressionDialog(Gui* gui,
-                                           int dimension,
+                                           DimSpec dimension,
+                                           ViewSetSpec view,
                                            const KnobGuiPtr& knob,
                                            QWidget* parent)
-    : EditScriptDialog(gui, parent)
+    : EditScriptDialog(gui, knob, dimension, view, parent)
     , _dimension(dimension)
+    , _view(view)
     , _knob(knob)
 {
 }
 
-int
+DimSpec
 EditExpressionDialog::getDimension() const
 {
     return _dimension;
 }
 
+ViewSetSpec
+EditExpressionDialog::getView() const
+{
+    return _view;
+}
+
 void
 EditExpressionDialog::setTitle()
 {
-    KnobPtr k = _knob->getKnob();
+    KnobIPtr k = _knob->getKnob();
     QString title( tr("Set expression on ") );
 
     title.append( QString::fromUtf8( k->getName().c_str() ) );
-    if ( (_dimension != -1) && (k->getDimension() > 1) ) {
+    if ( !_dimension.isAll() && (k->getNDimensions() > 1) ) {
         title.append( QLatin1Char('.') );
-        title.append( QString::fromUtf8( k->getDimensionName(_dimension).c_str() ) );
+        title.append( QString::fromUtf8( k->getDimensionName(DimIdx(_dimension)).c_str() ) );
     }
     setWindowTitle(title);
 }
@@ -124,16 +133,16 @@ EditExpressionDialog::setTitle()
 bool
 EditExpressionDialog::hasRetVariable() const
 {
-    return _knob->getKnob()->isExpressionUsingRetVariable(_dimension == -1 ? 0 : _dimension);
+    return _knob->getKnob()->isExpressionUsingRetVariable(_view.isAll() ? ViewIdx(0) : ViewIdx(_view), _dimension.isAll() ? DimIdx(0) : DimIdx(_dimension));
 }
 
 QString
-EditExpressionDialog::compileExpression(const QString& expr)
+EditExpressionDialog::compileExpression(const QString& expr, ExpressionLanguageEnum language)
 {
     std::string exprResult;
 
     try {
-        _knob->getKnob()->validateExpression(expr.toStdString(), _dimension == -1 ? 0 : _dimension, isUseRetButtonChecked()
+        _knob->getKnob()->validateExpression(expr.toStdString(), language, _dimension.isAll() ? DimIdx(0) : DimIdx(_dimension), _view.isAll() ? ViewIdx(0) : ViewIdx(_view), isUseRetButtonChecked()
                                              , &exprResult);
     } catch (const std::exception& e) {
         QString err = QString( tr("ERROR") + QLatin1String(": %1") ).arg( QString::fromUtf8( e.what() ) );
@@ -144,34 +153,6 @@ EditExpressionDialog::compileExpression(const QString& expr)
     return QString::fromUtf8( exprResult.c_str() );
 }
 
-QString
-EditExpressionDialog::getCustomHelp()
-{
-    QString sep = QString::fromUtf8("<br/>");
-
-    return getHelpPart1() + sep +
-           getHelpThisNodeVariable() + sep +
-           getHelpThisGroupVariable() + sep +
-           getHelpThisParamVariable() + sep +
-           getHelpDimensionVariable() + sep +
-           getHelpPart2();
-}
-
-void
-EditExpressionDialog::getImportedModules(QStringList& modules) const
-{
-    modules.push_back( QString::fromUtf8("math") );
-}
-
-void
-EditExpressionDialog::getDeclaredVariables(std::list<std::pair<QString, QString> >& variables) const
-{
-    variables.push_back( std::make_pair( QString::fromUtf8("thisNode"), tr("the current node") ) );
-    variables.push_back( std::make_pair( QString::fromUtf8("thisGroup"), tr("When thisNode belongs to a group, it references the parent group node, otherwise it will reference the current application instance") ) );
-    variables.push_back( std::make_pair( QString::fromUtf8("thisParam"), tr("the current param being edited") ) );
-    variables.push_back( std::make_pair( QString::fromUtf8("dimension"), tr("Defined only if the parameter is multi-dimensional, it references the dimension of the parameter being edited (0-based index)") ) );
-    variables.push_back( std::make_pair( QString::fromUtf8("frame"), tr("the current time on the timeline or the time passed to the get function") ) );
-}
 
 NATRON_NAMESPACE_EXIT
 

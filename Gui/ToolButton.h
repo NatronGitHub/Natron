@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -55,8 +55,8 @@ class ToolButton
 public:
 
 
-    ToolButton( const GuiAppInstPtr& app,
-                const boost::shared_ptr<PluginGroupNode>& pluginToolButton,
+    ToolButton( const GuiAppInstancePtr& app,
+                const PluginGroupNodePtr& pluginToolButton,
                 const QString & pluginID,
                 int major,
                 int minor,
@@ -91,7 +91,7 @@ public:
 
     void setAction(QAction* action);
 
-    boost::shared_ptr<PluginGroupNode> getPluginToolButton() const;
+    PluginGroupNodePtr getPluginToolButton() const;
 
 public Q_SLOTS:
 

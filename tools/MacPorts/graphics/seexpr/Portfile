@@ -5,8 +5,8 @@ PortSystem          1.0
 PortGroup           cmake 1.0
 
 name                seexpr
-version             1.0.1
-license             MS-PL
+version             2.11
+license             Apache-2
 categories          graphics
 maintainers         nomaintainer
 description         SeExpr is a simple expression language.
@@ -19,16 +19,18 @@ platforms           darwin
 #dist_subdir         ${name}/${version}_3
 #use_bzip2           yes
 master_sites        https://github.com/wdas/SeExpr/archive/
-distname            rel-${version}
+distname            v${version}
 
-checksums           sha1  80890cedd684a93b012b0964dc3b59910aaf5a10
-worksrcdir          SeExpr-rel-${version}
+checksums           sha1  ff397b05a2bdce17c34cf91148dbc1fec5160fff
+worksrcdir          SeExpr-${version}
 
 depends_lib         port:libpng
 depends_build       port:doxygen
 
-patchfiles          seexpr-darwin.diff seexpr-flags.diff
-patch.cmd           "git apply -v"
+patchfiles          0001-seexpr-2.11-fix-cxxflags.patch \
+                    0002-seexpr-2.11-fix-inline-error.patch \
+                    0004-seexpr-2.11-c++98.patch
+#patch.cmd           "git apply -v"
 patch.pre_args      -p1
 
 build.target-append doc

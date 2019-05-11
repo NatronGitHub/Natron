@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,9 +34,13 @@
 
 #include "Engine/NodeGroup.h"
 
+#include "Engine/EngineFwd.h"
+
+
+NATRON_NAMESPACE_ENTER
+
 
 #define kNatronWriteNodeParamEncodingPluginChoice "encodingPluginChoice"
-#define kNatronWriteNodeParamEncodingPluginID "encodingPluginID"
 
 #define kNatronWriteParamFrameStep "frameIncr"
 #define kNatronWriteParamFrameStepLabel "Frame Increment"
@@ -49,8 +53,6 @@
 #define kNatronWriteParamReadBackHint "When checked, the output of this node comes from reading the written file instead of the input node"
 
 #define kNatronWriteParamStartRender "startRender"
-
-NATRON_NAMESPACE_ENTER
 
 /**
  * @brief A wrapper around all OpenFX Writers nodes so that to the user they all appear under a single Write node that has a dynamic
@@ -66,20 +68,25 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-
-    static EffectInstance* BuildEffect(NodePtr n)
-    {
-        return new WriteNode(n);
-    }
-
     /**
      * @brief Returns if the given plug-in is compatible with this WriteNode container.
      * by default all nodes which inherits GenericWriter in OpenFX are.
      **/
-    static bool isBundledWriter(const std::string& pluginID, bool wasProjectCreatedWithLowerCaseIDs);
-    bool isBundledWriter(const std::string& pluginID);
+    static bool isBundledWriter(const std::string& pluginID);
 
-    WriteNode(NodePtr n);
+private: // derives from EffectInstance
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    WriteNode(const NodePtr& n);
+
+public:
+
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new WriteNode(node) );
+    }
+
+    static PluginPtr createPlugin() WARN_UNUSED_RETURN;
 
     virtual ~WriteNode();
 
@@ -88,29 +95,28 @@ public:
     void setEmbeddedWriter(const NodePtr& node);
 
     static bool isVideoWriter(const std::string& pluginID);
-    
+
     virtual bool isWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isVideoWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
-    virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
-    virtual void onEffectCreated(bool mayCreateFileDialog, const CreateNodeArgs& defaultParamValues) OVERRIDE FINAL;
+    virtual void onEffectCreated(const CreateNodeArgs& defaultParamValues) OVERRIDE FINAL;
     virtual bool isSubGraphUserVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
     }
 
+    virtual bool isSubGraphPersistent() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    virtual void setupInitialSubGraphState() OVERRIDE FINAL;
+
+    virtual void refreshDynamicProperties() OVERRIDE FINAL;
+
     void renderSequenceStarted();
     void renderSequenceEnd();
-
-    virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 public Q_SLOTS:
 
@@ -119,16 +125,24 @@ public Q_SLOTS:
 
 private:
 
-    virtual void getFrameRange(double *first, double *last) OVERRIDE FINAL;
+
+    virtual ActionRetCodeEnum getFrameRange(double *first, double *last) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& serialization) OVERRIDE FINAL;
-    virtual bool knobChanged(KnobI* k,
+    virtual void onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization) OVERRIDE FINAL;
+    virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
-                             ViewSpec view,
-                             double time,
-                             bool originatedFromMainThread) OVERRIDE FINAL;
+                             ViewSetSpec view,
+                             TimeValue time) OVERRIDE FINAL;
     boost::scoped_ptr<WriteNodePrivate> _imp;
 };
+
+
+inline WriteNodePtr
+toWriteNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<WriteNode>(effect);
+}
+
 
 NATRON_NAMESPACE_EXIT
 

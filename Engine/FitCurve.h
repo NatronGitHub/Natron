@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -36,7 +36,7 @@
 NATRON_NAMESPACE_ENTER
 
 /**
- * Utility functions to fit a bezier curve to a set of points
+ * Utility functions to fit a Bezier curve to a set of points
  **/
 namespace FitCurve {
 struct SimpleBezierCP
@@ -49,7 +49,7 @@ struct SimpleBezierCP
  * @brief Fit a Bezier curve to a (sub)set of digitized points
  * @param points Array of digitized points
  * @param error User-defined error squared
- * @param generatedBezier[out] The fitted bezier generated
+ * @param generatedBezier[out] The fitted Bezier generated
  **/
 void fit_cubic(const std::vector<Point>& points, double error, std::vector<SimpleBezierCP>* generatedBezier);
 }

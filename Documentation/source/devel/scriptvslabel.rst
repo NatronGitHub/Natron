@@ -8,10 +8,8 @@ This applies currently to the following objects:
 
     *    :doc:`PythonReference/NatronEngine/Effect`
     *    :doc:`PythonReference/NatronEngine/Param`
-    *    :doc:`PythonReference/NatronEngine/Layer`
-    *    :doc:`PythonReference/NatronEngine/BezierCurve`
+    *    :doc:`PythonReference/NatronEngine/ItemBase`
     *    :doc:`PythonReference/NatronEngine/App`
-    *    :doc:`PythonReference/NatronEngine/Track`
     *    :doc:`PythonReference/NatronEngine/PyCoreApplication`
     *    :doc:`PythonReference/NatronGui/PyTabWidget`
     *    :doc:`PythonReference/NatronGui/PyViewer`
@@ -125,7 +123,7 @@ in the tooltip when hovering the mouse on the label column.
     :align: center
 
 In command-line mode or via the *Script Editor* you can also get the script-name of an item
-with the :func:`getScriptName()<>` function of the :doc:`PythonReference/NatronEngine/Track` class.
+with the :func:`getScriptName()<>` function of the :doc:`PythonReference/NatronEngine/ItemBase` class.
 
 
 
@@ -144,7 +142,7 @@ the mouse over the "Manage layout" button (in the top left hand corner of a pane
 Knowing the script-name of a viewer:
 -------------------------------------
 
-The script-name of a viewer is the :ref:`script-name<nodeScriptName>` of the node associated to it, e.g::
+The script-name of a viewer is the :ref:`script-name<nodeScriptName>` of the node associated to it, e.g.:
 
     app1.pane1.Viewer1
 

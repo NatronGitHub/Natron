@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -35,55 +35,73 @@
 
 NATRON_NAMESPACE_ENTER
 
-std::string
-GroupInput::getPluginDescription() const
+
+PluginPtr
+GroupInput::createPlugin()
 {
-    return "This node can only be used within a Group. It adds an input arrow to the group.";
+    std::vector<std::string> grouping;
+    grouping.push_back(PLUGIN_GROUP_OTHER);
+    PluginPtr ret = Plugin::create(GroupInput::create, GroupInput::createRenderClone, PLUGINID_NATRON_INPUT, "Input", 1, 0, grouping);
+
+    QString desc =  tr("This node can only be used within a Group. It adds an input arrow to the group.");
+    ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
+    EffectDescriptionPtr effectDesc = ret->getEffectDescriptor();
+    effectDesc->setProperty<RenderSafetyEnum>(kEffectPropRenderThreadSafety, eRenderSafetyFullySafe);
+    effectDesc->setProperty<bool>(kEffectPropSupportsTiles, true);
+    ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/input_icon.png");
+
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthByte, 1);
+    ret->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthShort, 2);
+    ret->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
+    return ret;
 }
+
+
 
 void
 GroupInput::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Controls") );
+    KnobPagePtr page = createKnob<KnobPage>("controlsPage");
+    page->setLabel(tr("Controls"));
 
-    page->setName("controls");
-
-    boost::shared_ptr<KnobBool> optKnob = AppManager::createKnob<KnobBool>( this, tr("Optional") );
+    KnobBoolPtr optKnob = createKnob<KnobBool>(kNatronGroupInputIsOptionalParamName);
+    optKnob->setLabel(tr("Optional"));
     optKnob->setHintToolTip( tr("When checked, this input of the group will be optional, i.e. it will not be required that it is connected "
                                 "for the render to work.") );
     optKnob->setAnimationEnabled(false);
-    optKnob->setName(kNatronGroupInputIsOptionalParamName);
     page->addKnob(optKnob);
-    optional = optKnob;
+    _optional = optKnob;
 
-    boost::shared_ptr<KnobBool> maskKnob = AppManager::createKnob<KnobBool>( this, tr("Mask") );
+    KnobBoolPtr maskKnob = createKnob<KnobBool>(kNatronGroupInputIsMaskParamName);
     maskKnob->setHintToolTip( tr("When checked, this input of the group will be considered as a mask. A mask is always optional.") );
     maskKnob->setAnimationEnabled(false);
-    maskKnob->setName(kNatronGroupInputIsMaskParamName);
+    maskKnob->setLabel(tr("Mask"));
     page->addKnob(maskKnob);
-    mask = maskKnob;
+    _mask = maskKnob;
 }
 
 bool
-GroupInput::knobChanged(KnobI* k,
+GroupInput::knobChanged(const KnobIPtr& k,
                         ValueChangedReasonEnum /*reason*/,
-                        ViewSpec /*view*/,
-                        double /*time*/,
-                        bool /*originatedFromMainThread*/)
+                        ViewSetSpec /*view*/,
+                        TimeValue /*time*/)
 {
     bool ret = true;
+    KnobBoolPtr optKnob = _optional.lock();
+    KnobBoolPtr maskKnob = _mask.lock();
 
-    if ( k == optional.lock().get() ) {
-        boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
+    if ( k == optKnob ) {
+        NodeCollectionPtr group = getNode()->getGroup();
         group->notifyInputOptionalStateChanged( getNode() );
-    } else if ( k == mask.lock().get() ) {
-        bool isMask = mask.lock()->getValue();
+    } else if ( k == maskKnob ) {
+        bool isMask = maskKnob->getValue();
         if (isMask) {
-            optional.lock()->setValue(true);
+            optKnob->setValue(true);
         } else {
-            optional.lock()->setValue(false);
+            optKnob->setValue(false);
         }
-        boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
+        NodeCollectionPtr group = getNode()->getGroup();
         group->notifyInputMaskStateChanged( getNode() );
     } else {
         ret = false;

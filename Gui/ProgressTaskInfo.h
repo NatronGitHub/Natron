@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -35,6 +35,8 @@
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
+#include "Engine/TimeValue.h"
+
 #include "Gui/GuiFwd.h"
 
 
@@ -67,26 +69,26 @@ private:
 
     ProgressTaskInfo(ProgressPanel* panel,
                      const NodePtr& node,
-                     const int firstFrame,
-                     const int lastFrame,
-                     const int frameStep,
+                     const TimeValue firstFrame,
+                     const TimeValue lastFrame,
+                     const TimeValue frameStep,
                      const bool canPause,
                      const bool canCancel,
                      const QString& message,
-                     const boost::shared_ptr<ProcessHandler>& process);
+                     const ProcessHandlerPtr& process);
 
 public:
-    static boost::shared_ptr<ProgressTaskInfo> create(ProgressPanel* panel,
+    static ProgressTaskInfoPtr create(ProgressPanel* panel,
                                                       const NodePtr& node,
-                                                      const int firstFrame,
-                                                      const int lastFrame,
-                                                      const int frameStep,
+                                                      const TimeValue firstFrame,
+                                                      const TimeValue lastFrame,
+                                                      const TimeValue frameStep,
                                                       const bool canPause,
                                                       const bool canCancel,
                                                       const QString& message,
-                                                      const boost::shared_ptr<ProcessHandler>& process)
+                                                      const ProcessHandlerPtr& process) WARN_UNUSED_RETURN
     {
-        return boost::shared_ptr<ProgressTaskInfo>( new ProgressTaskInfo(panel,
+        return ProgressTaskInfoPtr( new ProgressTaskInfo(panel,
                                                                          node,
                                                                          firstFrame,
                                                                          lastFrame,
@@ -119,7 +121,7 @@ public:
 
     NodePtr getNode() const;
 
-    boost::shared_ptr<ProcessHandler> getProcess() const;
+    ProcessHandlerPtr getProcess() const;
 
 public Q_SLOTS:
 
@@ -140,7 +142,7 @@ public Q_SLOTS:
 
     void onProcessCanceled();
 
-    void getTableItems(std::vector<TableItem*>* items) const;
+    TableItemPtr getTableItem() const;
 
     void createCellWidgets();
 
@@ -163,7 +165,7 @@ private:
     void removeCellWidgets(int row, TableView* view);
 
 
-    void setProcesshandler(const boost::shared_ptr<ProcessHandler>& process);
+    void setProcesshandler(const ProcessHandlerPtr& process);
 
 
     void clearItems();

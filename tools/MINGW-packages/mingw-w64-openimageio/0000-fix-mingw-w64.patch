@@ -1,0 +1,159 @@
+--- a/src/cmake/externalpackages.cmake
++++ b/src/cmake/externalpackages.cmake
+@@ -170,6 +170,8 @@ else ()
+ endif ()
+ 
+ if (NOT Boost_FIND_QUIETLY)
++    add_definitions("-DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB")
++
+     message (STATUS "BOOST_ROOT ${BOOST_ROOT}")
+     message (STATUS "Boost found ${Boost_FOUND} ")
+     message (STATUS "Boost version      ${Boost_VERSION}")
+--- a/src/include/OpenImageIO/missing_math.h
++++ b/src/include/OpenImageIO/missing_math.h
+@@ -106,7 +106,7 @@
+ 
+ OIIO_NAMESPACE_ENTER {
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) && !defined(__GNUC__)
+ // Windows doesn't define these functions from math.h
+ #define hypotf _hypotf
+ #define copysign(x,y) _copysign(x,y)
+--- a/src/include/OpenImageIO/osdep.h
++++ b/src/include/OpenImageIO/osdep.h
+@@ -33,7 +33,9 @@
+ #ifdef _WIN32
+ # define WIN32_LEAN_AND_MEAN
+ # define VC_EXTRALEAN
++# ifndef __MINGW32__
+ # define NOMINMAX
++# endif
+ # include <windows.h>
+ #endif
+ 
+--- a/src/libOpenImageIO/CMakeLists.txt
++++ b/src/libOpenImageIO/CMakeLists.txt
+@@ -258,7 +261,7 @@
+ 
+ 
+ if (WIN32)
+-    target_link_libraries (OpenImageIO psapi.lib)
++    target_link_libraries (OpenImageIO psapi ws2_32)
+ endif ()
+ link_ilmbase (OpenImageIO)
+ add_dependencies (OpenImageIO "${CMAKE_CURRENT_SOURCE_DIR}/libOpenImageIO.map")
+--- a/src/libOpenImageIO/exif.cpp
++++ b/src/libOpenImageIO/exif.cpp
+@@ -36,6 +36,7 @@
+ #include <map>
+ #include <set>
+ #include <algorithm>
++#include <malloc.h>
+ 
+ #include <boost/foreach.hpp>
+ 
+--- a/src/libOpenImageIO/imageinput.cpp
++++ b/src/libOpenImageIO/imageinput.cpp
+@@ -32,6 +32,7 @@
+ #include <cstdlib>
+ #include <cmath>
+ #include <vector>
++#include <malloc.h>
+ #include <memory>
+ 
+ #include <OpenImageIO/dassert.h>
+--- a/src/libtexture/imagecache.cpp
++++ b/src/libtexture/imagecache.cpp
+@@ -32,6 +32,7 @@
+ #include <string>
+ #include <sstream>
+ #include <vector>
++#include <malloc.h>
+ #include <cstring>
+ 
+ #include <OpenEXR/ImathMatrix.h>
+--- a/src/libtexture/texturesys.cpp
++++ b/src/libtexture/texturesys.cpp
+@@ -30,6 +30,7 @@
+ 
+ 
+ #include <cmath>
++#include <malloc.h>
+ #include <string>
+ #include <sstream>
+ #include <cstring>
+--- a/src/libutil/argparse.cpp
++++ b/src/libutil/argparse.cpp
+@@ -39,6 +39,7 @@
+ #include <iterator>
+ #include <string>
+ #include <sstream>
++#include <malloc.h>
+ 
+ #include "strutil.h"
+ #include "sysutil.h"
+--- a/src/libutil/plugin.cpp
++++ b/src/libutil/plugin.cpp
+@@ -93,7 +93,7 @@ dlclose (Handle plugin_handle)
+ void *
+ dlsym (Handle plugin_handle, const char *symbol_name)
+ {
+-    return GetProcAddress ((HMODULE)plugin_handle, symbol_name);
++    return (void *)GetProcAddress ((HMODULE)plugin_handle, symbol_name);
+ }
+ 
+ 
+--- a/src/libutil/sysutil.cpp
++++ b/src/libutil/sysutil.cpp
+@@ -137,7 +137,7 @@ Sysutil::get_local_time (const time_t *time, struct tm *converted_time)
+ #ifdef _MSC_VER
+     localtime_s (converted_time, time);
+ #else
+-    localtime_r (time, converted_time);
++    *converted_time = *localtime(time);
+ #endif
+ }
+ 
+--- a/src/rla.imageio/rlaoutput.cpp
++++ b/src/rla.imageio/rlaoutput.cpp
+@@ -32,6 +32,7 @@
+ #include <cstdlib>
+ #include <cmath>
+ #include <ctime>
++#include <malloc.h>
+ 
+ #include "dassert.h"
+ #include "typedesc.h"
+--- a/CMakeLists.txt	2013-12-30 01:06:13.042400000 +0400
++++ b/CMakeLists.txt	2013-12-30 01:06:22.293200000 +0400
+@@ -423,7 +423,7 @@
+     set (CPACK_GENERATOR "TGZ;STGZ;PackageMaker")
+     set (CPACK_SOURCE_GENERATOR "TGZ")
+ endif ()
+-if (WIN32)
++if (WIN32 AND NOT MINGW)
+     set (CPACK_GENERATOR "NSIS")
+     set(CPACK_PACKAGE_EXECUTABLES "iv" "iv - Image Viewer")
+ #    set(CPACK_CREATE_DESCTOP_LINKS "iv" "iv - Image Viewer")
+--- a/libutil/farmhash.cpp.orig	2016-07-11 12:31:46.468306600 +0300
++++ b/src/libutil/farmhash.cpp	2016-07-11 12:32:30.024306600 +0300
+@@ -108,7 +108,7 @@
+ 
+ #if defined(FARMHASH_UNKNOWN_ENDIAN) || !defined(bswap_64)
+ 
+-#ifdef _MSC_VER
++#if defined(_MSC_VER) || defined (__MINGW32__)
+ 
+ #undef bswap_32
+ #undef bswap_64
+--- a/src/cmake/modules/FindFFmpeg.cmake.orig	2016-07-11 14:14:12.042802600 +0300
++++ b/src/cmake/modules/FindFFmpeg.cmake	2016-07-11 14:14:56.699302600 +0300
+@@ -61,6 +61,7 @@
+   endif()
+ 
+   if (FFMPEG_FOUND)
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+     set(FFMPEG_INCLUDE_DIR ${FFMPEG_AVCODEC_INCLUDE_DIR})
+ 
+     set(FFMPEG_LIBRARIES

@@ -1,0 +1,89 @@
+--- PKGBUILD.orig	2018-06-25 14:27:54.000000000 +0200
++++ PKGBUILD	2018-06-25 14:31:41.000000000 +0200
+@@ -24,7 +24,7 @@
+ fi
+ 
+ pkgver=4.8.7
+-pkgrel=5
++pkgrel=5.0
+ arch=('any')
+ url='https://www.qt.io/'
+ install=qt4-${CARCH}.install
+@@ -97,7 +97,12 @@
+         0030-moc-boost-workaround.patch
+         0031-qt4-gcc6.patch
+         0032-qt4-icu59.patch
+-        0100-qt4-build-debug-qmake.patch)
++        0100-qt4-build-debug-qmake.patch
++        patch-qt-custom-threadpool.diff
++        relwithdeb.diff
++        qt4-pcre.patch
++        0001-Enable-building-with-C-11-and-C-14.patch
++        qt4-selection-flags-static_cast.patch)
+ sha256sums=('e2882295097e47fe089f8ac741a95fef47e0a73a3f3cdf21b56990638f626ea0'
+             'e7c8fccf933dfee061b2960b5754e4835e7cb87c0e36166d3b11d69632732215'
+             '5e6a61ced784d7d24c65d81e769b67b8f6066a33581c8b17cdf374a4c723cd23'
+@@ -123,7 +128,12 @@
+             '62bc20838da22d832c550b9d38f98afb8fa4874915466945ea320575e264869a'
+             '51da49e41edac66559d3ec8dd0a152995a51a53e5d1f63f09fa089a8af7e3112'
+             '61d6bf45649c728dec5f8d22be5b496ed9d40f52c2c70102696d07133cd1750d'
+-            'e19a32b9dc050b3a605a6a5cb40fc3da8d8167ef240c105bb0737cc8bebadceb')
++            'e19a32b9dc050b3a605a6a5cb40fc3da8d8167ef240c105bb0737cc8bebadceb'
++            'SKIP'
++            'SKIP'
++            'SKIP'
++            'SKIP'
++            'SKIP')
+ 
+ prepare() {
+   cd ${srcdir}/${_pkgfqn}
+@@ -151,6 +161,11 @@
+   patch -p1 -i ${srcdir}/0030-moc-boost-workaround.patch
+   patch -p1 -i ${srcdir}/0031-qt4-gcc6.patch
+   patch -p1 -i ${srcdir}/0032-qt4-icu59.patch
++  patch -p0 -i ${srcdir}/patch-qt-custom-threadpool.diff
++  patch -p0 -i ${srcdir}/relwithdeb.diff
++  patch -p0 -i ${srcdir}/qt4-pcre.patch
++  patch -p1 -i ${srcdir}/0001-Enable-building-with-C-11-and-C-14.patch
++  patch -p1 -i ${srcdir}/qt4-selection-flags-static_cast.patch
+ 
+   if check_option "debug" "y"; then
+     patch -p1 -i ${srcdir}/0100-qt4-build-debug-qmake.patch
+@@ -173,9 +188,9 @@
+ 
+   local STATIC_LD=
+ 
+-  sed -i "s|^QMAKE_CFLAGS		=\(.*\)$|QMAKE_CFLAGS		= \1 ${_optim} |g" mkspecs/win32-g++/qmake.conf
+-  sed -i "s|^QMAKE_LFLAGS		=\(.*\)$|QMAKE_LFLAGS		= \1 ${STATIC_LD}|g" mkspecs/win32-g++/qmake.conf
+-  sed -i "s|^QMAKE_LIBS		=\(.*\)$|QMAKE_LIBS		=\1 -llcms2 -llzma|g" mkspecs/win32-g++/qmake.conf
++  sed -i "s|^QMAKE_CFLAGS               =\(.*\)$|QMAKE_CFLAGS           = \1 ${_optim} |g" mkspecs/win32-g++/qmake.conf
++  sed -i "s|^QMAKE_LFLAGS               =\(.*\)$|QMAKE_LFLAGS           = \1 ${STATIC_LD}|g" mkspecs/win32-g++/qmake.conf
++  sed -i "s|^QMAKE_LIBS         =\(.*\)$|QMAKE_LIBS             =\1 -llcms2 -llzma|g" mkspecs/win32-g++/qmake.conf
+ 
+   cd ${srcdir}
+   mv ${_pkgfqn} ${_realname}-${pkgver}
+@@ -192,7 +207,6 @@
+   #pkg_conf_inc=$(pkg-config --dont-define-prefix --cflags-only-I libxml-2.0 dbus-1)
+   export PATH=${srcdir}/${_realname}-${pkgver}/bin:${srcdir}/${_realname}-${pkgver}/lib:${PATH}
+ 
+-  export CXXFLAGS="$CXXFLAGS -std=gnu++98"
+   ./configure \
+     -prefix ${_buildpkgdir} \
+     -datadir ${_buildpkgdir}/share/qt4 \
+@@ -206,7 +220,7 @@
+     -demosdir ${_buildpkgdir}/share/qt4/demos \
+     -opensource \
+     -confirm-license \
+-    -debug-and-release \
++    -release \
+     -platform win32-g++ \
+     -xplatform win32-g++ \
+     -plugin-sql-ibase \
+@@ -227,6 +241,7 @@
+     -little-endian \
+     -xmlpatterns \
+     -multimedia \
++    -no-webkit \
+     -audio-backend \
+     -phonon \
+     -phonon-backend \
