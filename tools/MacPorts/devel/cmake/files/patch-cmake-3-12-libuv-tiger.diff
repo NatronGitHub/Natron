@@ -1,0 +1,58 @@
+diff --git Utilities/cmlibuv/src/unix/core.c Utilities/cmlibuv/src/unix/core.c
+index a357ef3..135b7bb 100644
+--- Utilities/cmlibuv/src/unix/core.c
++++ Utilities/cmlibuv/src/unix/core.c
+@@ -1293,9 +1293,12 @@ int uv_os_unsetenv(const char* name) {
+   if (name == NULL)
+     return UV_EINVAL;
+ 
++#if ( defined(__APPLE__) && MAC_OS_X_VERSION_MAX_ALLOWED < 1050)
++    unsetenv(name);
++#else
+   if (unsetenv(name) != 0)
+     return UV__ERR(errno);
+-
++#endif
+   return 0;
+ }
+ 
+diff --git Utilities/cmlibuv/src/unix/fs.c Utilities/cmlibuv/src/unix/fs.c
+index a6cc6db..420490a 100644
+--- Utilities/cmlibuv/src/unix/fs.c
++++ Utilities/cmlibuv/src/unix/fs.c
+@@ -60,7 +60,7 @@
+ # include <sys/sendfile.h>
+ #endif
+ 
+-#if defined(__APPLE__)
++#if ( defined(__APPLE__) && MAC_OS_X_VERSION_MAX_ALLOWED >= 1050 )
+ # include <copyfile.h>
+ #elif defined(__linux__) && !defined(FICLONE)
+ # include <sys/ioctl.h>
+@@ -674,7 +674,7 @@ static ssize_t uv__fs_sendfile(uv_fs_t* req) {
+ 
+     return -1;
+   }
+-#elif defined(__APPLE__)           || \
++#elif defined(__APPLE__) && MAC_OS_X_VERSION_MAX_ALLOWED >= 1050           || \
+       defined(__DragonFly__)       || \
+       defined(__FreeBSD__)         || \
+       defined(__FreeBSD_kernel__)
+@@ -825,7 +825,7 @@ done:
+ }
+ 
+ static ssize_t uv__fs_copyfile(uv_fs_t* req) {
+-#if defined(__APPLE__) && !TARGET_OS_IPHONE
++#if ( defined(__APPLE__) && MAC_OS_X_VERSION_MAX_ALLOWED >= 1050) && !TARGET_OS_IPHONE
+   /* On macOS, use the native copyfile(3). */
+   copyfile_flags_t flags;
+ 
+@@ -984,7 +984,7 @@ static void uv__to_stat(struct stat* src, uv_stat_t* dst) {
+   dst->st_blksize = src->st_blksize;
+   dst->st_blocks = src->st_blocks;
+ 
+-#if defined(__APPLE__)
++#if ( defined(__APPLE__) && MAC_OS_X_VERSION_MAX_ALLOWED >= 1050)
+   dst->st_atim.tv_sec = src->st_atimespec.tv_sec;
+   dst->st_atim.tv_nsec = src->st_atimespec.tv_nsec;
+   dst->st_mtim.tv_sec = src->st_mtimespec.tv_sec;

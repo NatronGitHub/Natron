@@ -1,0 +1,75 @@
+--- Modules/Platform/Darwin.cmake.orig
++++ Modules/Platform/Darwin.cmake
+@@ -210,6 +210,12 @@
+   ${_apps_paths})
+ unset(_apps_paths)
+ 
++# add to CMAKE_SYSTEM_PREFIX_PATH
++# might already exist before this if the user has specified it
++list(APPEND CMAKE_SYSTEM_PREFIX_PATH
++  __PREFIX__ # MacPorts
++)
++
+ include(Platform/UnixPaths)
+ if(_CMAKE_OSX_SYSROOT_PATH AND EXISTS ${_CMAKE_OSX_SYSROOT_PATH}/usr/include)
+   list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${_CMAKE_OSX_SYSROOT_PATH}/usr)
+@@ -217,7 +223,3 @@
+     list(APPEND _CMAKE_${lang}_IMPLICIT_INCLUDE_DIRECTORIES_INIT ${_CMAKE_OSX_SYSROOT_PATH}/usr/include)
+   endforeach()
+ endif()
+-list(APPEND CMAKE_SYSTEM_PREFIX_PATH
+-  /sw        # Fink
+-  /opt/local # MacPorts
+-  )
+--- Modules/Platform/UnixPaths.cmake.orig
++++ Modules/Platform/UnixPaths.cmake
+@@ -23,22 +23,39 @@
+ # search types.
+ list(APPEND CMAKE_SYSTEM_PREFIX_PATH
+   # Standard
+-  /usr/local /usr /
++  /usr /
++)
+ 
+-  # CMake install location
+-  "${_CMAKE_INSTALL_DIR}"
+-  )
+-if (NOT CMAKE_FIND_NO_INSTALL_PREFIX)
++# CMake install location
++# append the _CMAKE_INSTALL_DIR if not already in the list
++list(FIND CMAKE_SYSTEM_PREFIX_PATH "${_CMAKE_INSTALL_DIR}" HAS_ENTRY)
++if(${HAS_ENTRY} EQUAL -1)
+   list(APPEND CMAKE_SYSTEM_PREFIX_PATH
+-    # Project install destination.
+-    "${CMAKE_INSTALL_PREFIX}"
++    "${_CMAKE_INSTALL_DIR}"
+   )
+-  if(CMAKE_STAGING_PREFIX)
++endif()
++unset(HAS_ENTRY)
++
++if(NOT CMAKE_FIND_NO_INSTALL_PREFIX)
++  # append the CMAKE_INSTALL_PREFIX if not already in the list
++  list(FIND CMAKE_SYSTEM_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}" HAS_ENTRY)
++  if(${HAS_ENTRY} EQUAL -1)
+     list(APPEND CMAKE_SYSTEM_PREFIX_PATH
+-      # User-supplied staging prefix.
+-      "${CMAKE_STAGING_PREFIX}"
++      # Project install destination.
++      "${CMAKE_INSTALL_PREFIX}"
+     )
+   endif()
++  unset(HAS_ENTRY)
++  if(CMAKE_STAGING_PREFIX)
++    # append the CMAKE_STAGING_PREFIX if not already in the list
++    list(FIND CMAKE_SYSTEM_PREFIX_PATH "${CMAKE_STAGING_PREFIX}" HAS_ENTRY)
++    if(${HAS_ENTRY} EQUAL -1)
++      list(APPEND CMAKE_SYSTEM_PREFIX_PATH
++        # User-supplied staging prefix.
++        "${CMAKE_STAGING_PREFIX}"
++      )
++    endif()
++  endif()
+ endif()
+ 
+ # Non "standard" but common install prefixes
