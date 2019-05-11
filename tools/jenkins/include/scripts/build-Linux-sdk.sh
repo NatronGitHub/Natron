@@ -205,12 +205,12 @@ fi
 QT4_VERSION=4.8.7
 QT4_VERSION_SHORT=${QT4_VERSION%.*}
 QT4_TAR="qt-everywhere-opensource-src-${QT4_VERSION}.tar.gz"
-QT4_SITE="https://download.qt.io/official_releases/qt/${QT4_VERSION_SHORT}/${QT4_VERSION}"
+QT4_SITE="https://download.qt.io/archive/qt/${QT4_VERSION_SHORT}/${QT4_VERSION}"
 QT4WEBKIT_VERSION=2.3.4
 QT4WEBKIT_VERSION_SHORT=${QT4WEBKIT_VERSION%.*}
 QT4WEBKIT_VERSION_PKG=4.10.4 # version from QtWebkit.pc
 QT4WEBKIT_TAR="qtwebkit-${QT4WEBKIT_VERSION}.tar.gz"
-QT4WEBKIT_SITE=" http://download.kde.org/stable/qtwebkit-${QT4WEBKIT_VERSION_SHORT}/${QT4WEBKIT_VERSION}"
+QT4WEBKIT_SITE="https://download.kde.org/stable/qtwebkit-${QT4WEBKIT_VERSION_SHORT}/${QT4WEBKIT_VERSION}/src"
 if [ ! -s "$SDK_HOME/installer/bin/qmake" ]; then
     start_build "$QT4_TAR.installer"
     QTIFW_CONF=( "-no-multimedia" "-no-gif" "-qt-libpng" "-no-opengl" "-no-libmng" "-no-libtiff" "-no-libjpeg" "-static" "-openssl-linked" "-confirm-license" "-release" "-opensource" "-nomake" "demos" "-nomake" "docs" "-nomake" "examples" "-no-gtkstyle" "-no-webkit" "-no-avx" "-no-openvg" "-no-phonon" "-no-phonon-backend" "-I${SDK_HOME}/installer/include" "-L${SDK_HOME}/installer/lib" )
@@ -383,7 +383,7 @@ fi
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/bzip2.html
 BZIP2_VERSION=1.0.6
 BZIP2_TAR="bzip2-${BZIP2_VERSION}.tar.gz"
-BZIP2_SITE="http://www.bzip.org/${BZIP2_VERSION}"
+BZIP2_SITE="http://anduin.linuxfromscratch.org/LFS"
 if [ ! -s "$SDK_HOME/lib/libbz2.so.1" ]; then
     start_build "$BZIP2_TAR"
     download "$BZIP2_SITE" "$BZIP2_TAR"
@@ -1142,7 +1142,7 @@ fi
 # see http://www.linuxfromscratch.org/blfs/view/svn/server/mariadb.html
 MARIADB_VERSION=10.2.12
 MARIADB_TAR="mariadb-${MARIADB_VERSION}.tar.gz"
-MARIADB_SITE="https://downloads.mariadb.org/interstitial/mariadb-${MARIADB_VERSION}/source"
+MARIADB_SITE="http://ftp.hosteurope.de/mirror/archive.mariadb.org/mariadb-${MARIADB_VERSION}/source"
 if [ ! -s "$SDK_HOME/bin/mariadb_config" ] || [ "$("${SDK_HOME}/bin/mariadb_config" --version)" != "$MARIADB_VERSION" ] ; then
     start_build "$MARIADB_TAR"
     download "$MARIADB_SITE" "$MARIADB_TAR"
@@ -1244,7 +1244,7 @@ fi
 # Install llvm+osmesa
 OSMESA_VERSION=17.1.10
 OSMESA_TAR="mesa-${OSMESA_VERSION}.tar.gz"
-OSMESA_SITE="ftp://ftp.freedesktop.org/pub/mesa"
+OSMESA_SITE="ftp://ftp.freedesktop.org/pub/mesa/older-versions/17.x"
 OSMESA_GLU_VERSION=9.0.0
 OSMESA_GLU_TAR="glu-${OSMESA_GLU_VERSION}.tar.gz"
 OSMESA_GLU_SITE="ftp://ftp.freedesktop.org/pub/mesa/glu"
@@ -2036,8 +2036,8 @@ fi
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick6.html
 MAGICK_VERSION=6.9.10-9
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
-MAGICK_TAR="ImageMagick-${MAGICK_VERSION}.tar.xz"
-MAGICK_SITE="https://www.imagemagick.org/download/releases"
+MAGICK_TAR="ImageMagick6-${MAGICK_VERSION}.tar.gz"
+MAGICK_SITE="https://gitlab.com/ImageMagick/ImageMagick6/-/archive/${MAGICK_VERSION}"
 if [ "${REBUILD_MAGICK:-}" = "1" ]; then
     rm -rf "$SDK_HOME"/include/ImageMagick-6/ "$SDK_HOME"/lib/libMagick* "$SDK_HOME"/share/ImageMagick-6/ "$SDK_HOME"/lib/pkgconfig/{Image,Magick}* "$SDK_HOME"/magick7 || true
 fi
@@ -2045,7 +2045,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversio
     start_build "$MAGICK_TAR"
     download "$MAGICK_SITE" "$MAGICK_TAR"
     untar "$SRC_PATH/$MAGICK_TAR"
-    pushd "ImageMagick-${MAGICK_VERSION}"
+    pushd "ImageMagick6-${MAGICK_VERSION}"
     #if [ "${MAGICK_CL:-}" = "1" ]; then
     #  MAGICK_CL_OPT="--with-x --enable-opencl"
     #else
@@ -2056,17 +2056,18 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversio
     make -j${MKJOBS}
     make install
     popd
-    rm -rf "ImageMagick-${MAGICK_VERSION}"
+    rm -rf "ImageMagick6-${MAGICK_VERSION}"
     end_build "$MAGICK_TAR"
 fi
 # install ImageMagick7
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick.html
 MAGICK7_VERSION=7.0.8-9
 MAGICK7_VERSION_SHORT=${MAGICK7_VERSION%-*}
-MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.xz"
+MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.gz"
+MAGICK7_SITE="https://gitlab.com/ImageMagick/ImageMagick/-/archive/${MAGICK7_VERSION}"
 if [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/magick7/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Magick++)" != "$MAGICK7_VERSION_SHORT" ]; then
     start_build "$MAGICK7_TAR"
-    download "$MAGICK_SITE" "$MAGICK7_TAR"
+    download "$MAGICK7_SITE" "$MAGICK7_TAR"
     untar "$SRC_PATH/$MAGICK7_TAR"
     pushd "ImageMagick-${MAGICK7_VERSION}"
     #if [ "${MAGICK_CL:-}" = "1" ]; then
@@ -2944,7 +2945,7 @@ if [ ! -s "$SDK_HOME/bin/gdb" ]; then
     end_build "$GDB_TAR"
 fi
 
-
+if false; then # <--- Disabled Qt 5.6 (temporary)
 if [ "${REBUILD_QT5:-}" = "1" ]; then
     rm -rf "$QT5PREFIX"
 fi
@@ -3056,7 +3057,7 @@ if [ ! -s "$QT5PREFIX/lib/pkgconfig/Qt5Core.pc" ] || [ "$(env PKG_CONFIG_PATH=$Q
         end_build "${module}-${QT5_VERSION}"
     done
 fi
-
+fi # ---> Disabled Qt 5.6 (temporary)
 
 # pysetup
 if [ "$PYV" = "3" ]; then
@@ -3111,6 +3112,7 @@ if false; then #[ ! -s "$QT5PREFIX/lib/pkgconfig/shiboken2.pc" ] || [ "$(env PKG
     end_build "shiboken2"
 fi
 
+if false; then # <--- Disabled pyside 2 (temporary)
 # Install pyside2
 PYSIDE2_VERSION="5.6.0"
 PYSIDE2_GIT="https://code.qt.io/pyside/pyside-setup"
@@ -3144,7 +3146,7 @@ if [ ! -x "$SDK_HOME/lib/python${PY2_VERSION_SHORT}/site-packages/PySide2/shibok
     rm -rf pyside-setup
     end_build "pyside2-${PYSIDE2_COMMIT}"
 fi
-
+fi # ---> Disabled pyside 2 (temporary)
 
 
 if [ "${REBUILD_QT4:-}" = "1" ]; then
@@ -3546,7 +3548,7 @@ fi
 echo
 echo "Check for broken libraries and binaries... (everything is OK if nothing is printed)"
 # SDK_HOME=/opt/Natron-sdk; LD_LIBRARY_PATH=$SDK_HOME/qt4/lib:$SDK_HOME/gcc/lib:$SDK_HOME/lib:$SDK_HOME/qt5/lib
-for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl qt4 qt5; do
+for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl qt4; do # removed qt5 (temporary) to prevent script error
     LD_LIBRARY_PATH="$SDK_HOME/$subdir/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" find "$SDK_HOME/$subdir/lib" -name '*.so' -exec bash -c 'ldd {} 2>&1 | fgrep "not found" &>/dev/null' \; -print
     LD_LIBRARY_PATH="$SDK_HOME/$subdir/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" find "$SDK_HOME/$subdir/bin" -maxdepth 1 -exec bash -c 'ldd {} 2>&1 | fgrep "not found" &>/dev/null' \; -print
 done
