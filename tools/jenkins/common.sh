@@ -227,7 +227,7 @@ rsync_remote () {
     $TIMEOUT 3600 rsync -avz -O --chmod=ug=rwx --no-perms --no-owner --no-group --progress --verbose -e 'ssh -oBatchMode=yes' $opts "$from" "${REMOTE_USER}@${REMOTE_URL}:$to"
 }
 
-if ! type -p keychain > /dev/null; then
+if [ -f "$HOME/.ssh/id_rsa_build_master" ] && ! type -p keychain > /dev/null; then
     echo "Error: keychain not available, install from https://www.funtoo.org/Keychain"
     exit 1
 fi
