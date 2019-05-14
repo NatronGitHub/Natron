@@ -378,44 +378,6 @@ fi
 export CC="${SDK_HOME}/gcc/bin/gcc"
 export CXX="${SDK_HOME}/gcc/bin/g++"
 
-# Install xz (required to uncompress source tarballs)
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/xz.html
-XZ_VERSION=5.2.4
-XZ_TAR="xz-${XZ_VERSION}.tar.gz"
-XZ_SITE="https://tukaani.org/xz"
-if [ ! -s "$SDK_HOME/bin/xz" ]; then
-    start_build "$XZ_TAR"
-    download "$XZ_SITE" "$XZ_TAR"
-    untar "$SRC_PATH/$XZ_TAR"
-    pushd "xz-${XZ_VERSION}"
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --enable-static --enable-shared
-    make -j${MKJOBS}
-    make install
-    popd
-    rm -rf "xz-${XZ_VERSION}"
-    end_build "$XZ_TAR"
-fi
-
-# Install m4
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/m4.html
-M4_VERSION=1.4.18
-M4_TAR="m4-${M4_VERSION}.tar.xz"
-M4_SITE="https://ftp.gnu.org/gnu/m4"
-if [ ! -s "$SDK_HOME/bin/m4" ]; then
-    start_build "$M4_TAR"
-    download "$M4_SITE" "$M4_TAR"
-    untar "$SRC_PATH/$M4_TAR"
-    pushd "m4-${M4_VERSION}"
-    # Patch for use with glibc 2.28 and up.
-    patch -Np1 -i "$INC_PATH"/patches/m4/m4-1.4.18-glibc-change-work-around.patch
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --enable-static --enable-shared
-    make -j${MKJOBS}
-    make install
-    popd
-    rm -rf "m4-${M4_VERSION}"
-    end_build "$M4_TAR"
-fi
-
 # Install bzip2
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/bzip2.html
 BZIP2_VERSION=1.0.6
@@ -439,6 +401,45 @@ if [ ! -s "$SDK_HOME/lib/libbz2.so.1" ]; then
     rm -rf "bzip2-${BZIP2_VERSION}"
     end_build "$BZIP2_TAR"
 fi
+
+# Install xz (required to uncompress source tarballs)
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/xz.html
+XZ_VERSION=5.2.4
+XZ_TAR="xz-${XZ_VERSION}.tar.bz2"
+XZ_SITE="https://tukaani.org/xz"
+if [ ! -s "$SDK_HOME/lib/pkgconfig/liblzma.pc" ] || [ "$(pkg-config --modversion liblzma)" != "$XZ_VERSION" ]; then
+    start_build "$XZ_TAR"
+    download "$XZ_SITE" "$XZ_TAR"
+    untar "$SRC_PATH/$XZ_TAR"
+    pushd "xz-$XZ_VERSION"
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --libdir="$SDK_HOME/lib" --enable-shared --enable-static
+    make -j${MKJOBS}
+    make install
+    popd
+    rm -rf "xz-$XZ_VERSION"
+    end_build "$XZ_TAR"
+fi
+
+# Install m4
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/m4.html
+M4_VERSION=1.4.18
+M4_TAR="m4-${M4_VERSION}.tar.xz"
+M4_SITE="https://ftp.gnu.org/gnu/m4"
+if [ ! -s "$SDK_HOME/bin/m4" ]; then
+    start_build "$M4_TAR"
+    download "$M4_SITE" "$M4_TAR"
+    untar "$SRC_PATH/$M4_TAR"
+    pushd "m4-${M4_VERSION}"
+    # Patch for use with glibc 2.28 and up.
+    patch -Np1 -i "$INC_PATH"/patches/m4/m4-1.4.18-glibc-change-work-around.patch
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --enable-static --enable-shared
+    make -j${MKJOBS}
+    make install
+    popd
+    rm -rf "m4-${M4_VERSION}"
+    end_build "$M4_TAR"
+fi
+
 
 # install ncurses (required for gdb and readline)
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/ncurses.html
@@ -830,48 +831,6 @@ if [ ! -s "$SDK_HOME/lib/libreadline.so.${READLINE_VERSION_MAJOR}" ]; then
     end_build "$READLINE_TAR"
 fi
 
-# Install libzip
-ZIP_VERSION=1.5.1
-ZIP_TAR="libzip-${ZIP_VERSION}.tar.xz"
-ZIP_SITE="https://libzip.org/download"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libzip.pc" ] || [ "$(pkg-config --modversion libzip)" != "$ZIP_VERSION" ]; then
-    start_build "$ZIP_TAR"
-    download "$ZIP_SITE" "$ZIP_TAR"
-    untar "$SRC_PATH/$ZIP_TAR"
-    pushd "libzip-${ZIP_VERSION}"
-    mkdir build-natron
-    pushd build-natron
-    #env CFLAGS="$BF" CXXFLAGS="$BF" ../configure --prefix="$SDK_HOME" --disable-static --enable-shared
-    # libzip adds -I$SDK_HOME/include before its own includes, and thus includes the installed zip.h
-    rm  "$SDK_HOME/include/zip.h" || true
-    cmake .. -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE"
-    make -j${MKJOBS}
-    make install
-    popd
-    popd
-    rm -rf "libzip-${ZIP_VERSION}"
-    end_build "$ZIP_TAR"
-fi
-
-# Install xz
-# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/xz.html
-XZ_VERSION=5.2.4
-XZ_TAR="xz-${XZ_VERSION}.tar.bz2"
-XZ_SITE="https://tukaani.org/xz"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/liblzma.pc" ] || [ "$(pkg-config --modversion liblzma)" != "$XZ_VERSION" ]; then
-    start_build "$XZ_TAR"
-    download "$XZ_SITE" "$XZ_TAR"
-    untar "$SRC_PATH/$XZ_TAR"
-    pushd "xz-$XZ_VERSION"
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --libdir="$SDK_HOME/lib" --enable-shared --enable-static
-    make -j${MKJOBS}
-    make install
-    popd
-    rm -rf "xz-$XZ_VERSION"
-    end_build "$XZ_TAR"
-fi
-
-
 # Install nettle (for gnutls)
 # see http://www.linuxfromscratch.org/blfs/view/svn/postlfs/nettle.html
 # disable doc, because install-info in CentOS 6.4 is buggy and always returns exit status 1.
@@ -1075,6 +1034,29 @@ if [ ! -s "$SDK_HOME/bin/cmake" ] || [ $("$SDK_HOME/bin/cmake" --version | head 
     popd
     rm -rf "cmake-${CMAKE_VERSION}"
     end_build "$CMAKE_TAR"
+fi
+
+# Install libzip (requires cmake)
+ZIP_VERSION=1.5.1
+ZIP_TAR="libzip-${ZIP_VERSION}.tar.xz"
+ZIP_SITE="https://libzip.org/download"
+if [ ! -s "$SDK_HOME/lib/pkgconfig/libzip.pc" ] || [ "$(pkg-config --modversion libzip)" != "$ZIP_VERSION" ]; then
+    start_build "$ZIP_TAR"
+    download "$ZIP_SITE" "$ZIP_TAR"
+    untar "$SRC_PATH/$ZIP_TAR"
+    pushd "libzip-${ZIP_VERSION}"
+    mkdir build-natron
+    pushd build-natron
+    #env CFLAGS="$BF" CXXFLAGS="$BF" ../configure --prefix="$SDK_HOME" --disable-static --enable-shared
+    # libzip adds -I$SDK_HOME/include before its own includes, and thus includes the installed zip.h
+    rm  "$SDK_HOME/include/zip.h" || true
+    cmake .. -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE"
+    make -j${MKJOBS}
+    make install
+    popd
+    popd
+    rm -rf "libzip-${ZIP_VERSION}"
+    end_build "$ZIP_TAR"
 fi
 
 # Install icu
