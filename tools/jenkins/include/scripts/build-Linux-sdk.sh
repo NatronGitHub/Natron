@@ -49,6 +49,14 @@ else
     CMAKE_BUILD_TYPE="Release"
 fi
 
+# Check that mandatory utilities are present
+for e in gcc g++ make wget tar patch find; do
+    if ! type -p "$e" > /dev/null; then
+        echo "Error: $e not available"
+        exit 1
+    fi
+fi
+
 # Check distro and version. CentOS/RHEL 6.4 only!
 
 if [ "$PKGOS" = "Linux" ]; then
@@ -248,7 +256,7 @@ if [ ! -s "$SDK_HOME/installer/bin/qmake" ]; then
 fi
 
 # Install qtifw
-QTIFW_GIT=https://github.com/devernay/installer-framework.git
+QTIFW_GIT=https://github.com/NatronGitHub/installer-framework.git
 if [ ! -s $SDK_HOME/installer/bin/binarycreator ]; then
     start_build "qtifw"
     git_clone_commit "$QTIFW_GIT" 1.6-natron
