@@ -381,7 +381,7 @@ export CXX="${SDK_HOME}/gcc/bin/g++"
 # Install xz (required to uncompress source tarballs)
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/xz.html
 XZ_VERSION=5.2.4
-XZ_TAR=xz-${XZ_VERSION}.tar.gz"
+XZ_TAR="xz-${XZ_VERSION}.tar.gz"
 XZ_SITE="https://tukaani.org/xz"
 if [ ! -s "$SDK_HOME/bin/xz" ]; then
     start_build "$XZ_TAR"
