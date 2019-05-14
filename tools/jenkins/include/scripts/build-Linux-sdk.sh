@@ -51,7 +51,7 @@ fi
 
 error=0
 # Check that mandatory utilities are present
-for e in gcc g++ make wget tar patch find; do
+for e in gcc g++ make wget tar patch find gzip; do
     if ! type -p "$e" > /dev/null; then
         echo "Error: $e not available"
         error=1
@@ -59,7 +59,7 @@ for e in gcc g++ make wget tar patch find; do
 done
 
 if [ ! -f /usr/include/X11/Xlib.h ] && [ ! -f /usr/X11R6/include/X11/Xlib.h ]; then
-    echo "Error: X11/Xlib.h not available (on CentOS, do 'you install libX11-del')"
+    echo "Error: X11/Xlib.h not available (on CentOS, do 'you install libX11-devel libXext-devel libXtst-devel')"
     error=1
 fi
 
@@ -377,6 +377,24 @@ fi
 
 export CC="${SDK_HOME}/gcc/bin/gcc"
 export CXX="${SDK_HOME}/gcc/bin/g++"
+
+# Install xz (required to uncompress source tarballs)
+# see http://www.linuxfromscratch.org/lfs/view/development/chapter06/xz.html
+XZ_VERSION=5.2.4
+XZ_TAR=xz-${XZ_VERSION}.tar.gz"
+XZ_SITE="https://tukaani.org/xz"
+if [ ! -s "$SDK_HOME/bin/xz" ]; then
+    start_build "$XZ_TAR"
+    download "$XZ_SITE" "$XZ_TAR"
+    untar "$SRC_PATH/$XZ_TAR"
+    pushd "xz-${XZ_VERSION}"
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --enable-static --enable-shared
+    make -j${MKJOBS}
+    make install
+    popd
+    rm -rf "xz-${XZ_VERSION}"
+    end_build "$XZ_TAR"
+fi
 
 # Install m4
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/m4.html
