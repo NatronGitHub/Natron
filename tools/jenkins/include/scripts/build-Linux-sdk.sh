@@ -49,12 +49,23 @@ else
     CMAKE_BUILD_TYPE="Release"
 fi
 
+error=0
 # Check that mandatory utilities are present
 for e in gcc g++ make wget tar patch find; do
     if ! type -p "$e" > /dev/null; then
         echo "Error: $e not available"
-        exit 1
+        error=1
     fi
+fi
+
+if [ ! -f /usr/include/X11/Xlib.h && ! -f /usr/X11R6/include/X11/Xlib.h ]; then
+    echo "Error: X11/Xlib.h not available (on CentOS, do 'you install libX11-del')"
+    error=1
+fi
+
+if [ "$error" = "1" ]; then
+    echo "Error: build cannot proceed, exiting."
+    exit 1
 fi
 
 # Check distro and version. CentOS/RHEL 6.4 only!
@@ -1278,7 +1289,7 @@ if [ ! -s "$SDK_HOME/osmesa/lib/pkgconfig/gl.pc" ] || [ "$(env PKG_CONFIG_PATH=$
         download "$OSMESA_LLVM_SITE" "$OSMESA_LLVM_TAR"
         mkdir -p "${SDK_HOME}/llvm" || true
     fi
-    git clone https://github.com/devernay/osmesa-install
+    git clone https://github.com/NatronGitHub/osmesa-install
     pushd osmesa-install
     mkdir build
     pushd build
