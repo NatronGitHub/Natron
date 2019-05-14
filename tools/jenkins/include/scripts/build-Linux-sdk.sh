@@ -56,7 +56,7 @@ for e in gcc g++ make wget tar patch find; do
         echo "Error: $e not available"
         error=1
     fi
-fi
+done
 
 if [ ! -f /usr/include/X11/Xlib.h && ! -f /usr/X11R6/include/X11/Xlib.h ]; then
     echo "Error: X11/Xlib.h not available (on CentOS, do 'you install libX11-del')"
