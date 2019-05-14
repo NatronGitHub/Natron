@@ -255,6 +255,8 @@ if [ ! -s "$SDK_HOME/installer/bin/qmake" ]; then
     patch -p1 -i "$INC_PATH"/patches/Qt/qt-everywhere-opensource-src-4.8.7-gcc6.patch
     patch -p1 -i "$INC_PATH"/patches/Qt/0001-Enable-building-with-C-11-and-C-14.patch
     patch -p1 -i "$INC_PATH"/patches/Qt/qt4-selection-flags-static_cast.patch
+    # OpenSSL 1.1 support from ArchLinux https://aur.archlinux.org/cgit/aur.git/tree/qt4-openssl-1.1.patch?h=qt4
+    patch -p1 -i "$INC_PATH"/patches/Qt/qt4-openssl-1.1.patch
 
     ./configure -prefix "$SDK_HOME/installer" "${QTIFW_CONF[@]}" -v
 
@@ -1049,7 +1051,9 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libzip.pc" ] || [ "$(pkg-config --modversion 
     pushd build-natron
     #env CFLAGS="$BF" CXXFLAGS="$BF" ../configure --prefix="$SDK_HOME" --disable-static --enable-shared
     # libzip adds -I$SDK_HOME/include before its own includes, and thus includes the installed zip.h
-    rm  "$SDK_HOME/include/zip.h" || true
+    if [ -f "$SDK_HOME/include/zip.h" ]; then
+        rm  "$SDK_HOME/include/zip.h"
+    fi
     cmake .. -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE"
     make -j${MKJOBS}
     make install
@@ -3426,6 +3430,8 @@ if [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT
     patch -Np0 -i "$INC_PATH"/patches/Qt/qt4-pcre.patch
     patch -Np1 -i "$INC_PATH"/patches/Qt/0001-Enable-building-with-C-11-and-C-14.patch
     patch -Np1 -i "$INC_PATH"/patches/Qt/qt4-selection-flags-static_cast.patch
+    # OpenSSL 1.1 support from ArchLinux https://aur.archlinux.org/cgit/aur.git/tree/qt4-openssl-1.1.patch?h=qt4
+    patch -Np1 -i "$INC_PATH"/patches/Qt/qt4-openssl-1.1.patch
 
     #QT_SRC="$(pwd)/src"
     env CFLAGS="$BF" CXXFLAGS="$BF" OPENSSL_LIBS="-L$SDK_HOME/lib -lssl -lcrypto" ./configure -prefix "$QT4PREFIX" "${QT_CONF[@]}" -shared
