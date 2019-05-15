@@ -1308,7 +1308,7 @@ if [ ! -s "$SDK_HOME/osmesa/lib/pkgconfig/gl.pc" ] || [ "$(env PKG_CONFIG_PATH=$
     if [ "$LLVM_BUILD" = 1 ]; then
        cp "$SRC_PATH/$OSMESA_LLVM_TAR" .
     fi
-    env CFLAGS="-fPIC" OSMESA_DRIVER=3 OSMESA_PREFIX="${SDK_HOME}/osmesa" OSMESA_VERSION="$OSMESA_VERSION" LLVM_PREFIX="${SDK_HOME}/llvm" LLVM_VERSION="$OSMESA_LLVM_VERSION" MKJOBS="${MKJOBS}" LLVM_BUILD="$LLVM_BUILD" ../osmesa-install.sh
+    env BUILD_OSDEMO=0 CFLAGS="-fPIC" OSMESA_DRIVER=3 OSMESA_PREFIX="${SDK_HOME}/osmesa" OSMESA_VERSION="$OSMESA_VERSION" LLVM_PREFIX="${SDK_HOME}/llvm" LLVM_VERSION="$OSMESA_LLVM_VERSION" MKJOBS="${MKJOBS}" LLVM_BUILD="$LLVM_BUILD" ../osmesa-install.sh
     popd
     popd
     rm -rf osmesa-install
