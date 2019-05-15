@@ -95,6 +95,9 @@ if [ -z "${MKJOBS:-}" ]; then
     MKJOBS=$DEFAULT_MKJOBS
 fi
 
+# see https://stackoverflow.com/a/24067243
+function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
+
 download() {
     local master_site=$1
     local package=$2
@@ -255,8 +258,10 @@ if [ ! -s "$SDK_HOME/installer/bin/qmake" ]; then
     patch -p1 -i "$INC_PATH"/patches/Qt/qt-everywhere-opensource-src-4.8.7-gcc6.patch
     patch -p1 -i "$INC_PATH"/patches/Qt/0001-Enable-building-with-C-11-and-C-14.patch
     patch -p1 -i "$INC_PATH"/patches/Qt/qt4-selection-flags-static_cast.patch
-    # OpenSSL 1.1 support from ArchLinux https://aur.archlinux.org/cgit/aur.git/tree/qt4-openssl-1.1.patch?h=qt4
-    patch -p1 -i "$INC_PATH"/patches/Qt/qt4-openssl-1.1.patch
+    if version_gt "$OPENSSL_VERSION" 1.0.9999; then
+        # OpenSSL 1.1 support from ArchLinux https://aur.archlinux.org/cgit/aur.git/tree/qt4-openssl-1.1.patch?h=qt4
+        patch -p1 -i "$INC_PATH"/patches/Qt/qt4-openssl-1.1.patch
+    fi
 
     ./configure -prefix "$SDK_HOME/installer" "${QTIFW_CONF[@]}" -v
 
@@ -1228,7 +1233,7 @@ fi
 MYSQLCLIENT_VERSION=1.3.12
 if [ ! -d "$SDK_HOME/lib/python${PY2_VERSION_SHORT}/site-packages/MySQLdb" ] || [ $("$SDK_HOME/bin/python${PY2_VERSION_SHORT}" -c "import MySQLdb; print MySQLdb.__version__") != ${MYSQLCLIENT_VERSION} ]; then
     start_build "mysqlclient-$MYSQLCLIENT_VERSION"
-    ${SDK_HOME}/bin/pip${PY2_VERSION_SHORT} install --no-binary mysqlclient mysqlclient
+    ${SDK_HOME}/bin/pip${PY2_VERSION_SHORT} install --no-binary mysqlclient mysqlclient=="${MYSQLCLIENT_VERSION}"
     end_build "mysqlclient-$MYSQLCLIENT_VERSION"
 fi
 
@@ -1237,7 +1242,7 @@ fi
 PSYCOPG2_VERSION=2.7.3.2
 if [ ! -d "$SDK_HOME/lib/python${PY2_VERSION_SHORT}/site-packages/psycopg2" ] || [ $("$SDK_HOME/bin/python${PY2_VERSION_SHORT}" -c "import psycopg2; print psycopg2.__version__.split(' ', 1)[0]") != ${PSYCOPG2_VERSION} ]; then
     start_build "psycopg2-$PSYCOPG2_VERSION"
-    ${SDK_HOME}/bin/pip${PY2_VERSION_SHORT} install --no-binary psycopg2 psycopg2
+    ${SDK_HOME}/bin/pip${PY2_VERSION_SHORT} install --no-binary psycopg2 psycopg2=="${PSYCOPG2_VERSION}"
     end_build "psycopg2-$PSYCOPG2_VERSION"
 fi
     
@@ -3430,8 +3435,10 @@ if [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT
     patch -Np0 -i "$INC_PATH"/patches/Qt/qt4-pcre.patch
     patch -Np1 -i "$INC_PATH"/patches/Qt/0001-Enable-building-with-C-11-and-C-14.patch
     patch -Np1 -i "$INC_PATH"/patches/Qt/qt4-selection-flags-static_cast.patch
-    # OpenSSL 1.1 support from ArchLinux https://aur.archlinux.org/cgit/aur.git/tree/qt4-openssl-1.1.patch?h=qt4
-    patch -Np1 -i "$INC_PATH"/patches/Qt/qt4-openssl-1.1.patch
+    if version_gt "$OPENSSL_VERSION" 1.0.9999; then
+        # OpenSSL 1.1 support from ArchLinux https://aur.archlinux.org/cgit/aur.git/tree/qt4-openssl-1.1.patch?h=qt4
+        patch -Np1 -i "$INC_PATH"/patches/Qt/qt4-openssl-1.1.patch
+    fi
 
     #QT_SRC="$(pwd)/src"
     env CFLAGS="$BF" CXXFLAGS="$BF" OPENSSL_LIBS="-L$SDK_HOME/lib -lssl -lcrypto" ./configure -prefix "$QT4PREFIX" "${QT_CONF[@]}" -shared
