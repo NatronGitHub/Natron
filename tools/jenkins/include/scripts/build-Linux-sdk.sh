@@ -16,6 +16,23 @@
 # You should have received a copy of the GNU General Public License
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
+#
+# Build Natron SDK (CY2015+) for Linux
+#
+# By default, running this script will rebuild all packages that need to be updated.
+# Some dependencies are automatically handled, e.g. if package B depends on A, B
+# will be rebuilt when A is rebuilt.
+#
+# Options available by setting the following environment variables:
+#### not yet implemented BEGIN
+# GEN_DOCKERFILE=1 : Output a Dockerfile rather than building the SDK.
+# LIST_STEPS=1 : Output an ordered list of steps to build the SDK
+# BUILD_STEP=step_name : Only build this step (dependent packages are not rebuilt).
+# FORCE_BUILD=1 : Force build, even if up-to-date.
+# Only available when GEN_DOCKERFILE, LIST_STEPS and BUILD_STEPS are not set:
+#### not yet implemented END
+# TAR_SDK=1 : Make an archive of the SDK when building is done and store it in $SRC_PATH
+# UPLOAD_SDK=1 : Upload the SDK tar archive to $REPO_DEST if TAR_SDK=1
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
@@ -33,14 +50,6 @@ if false; then
     ssh-natron-linux64-ci "cd data/natron-support/buildmaster;git pull;include/scripts/build-Linux-sdk.sh"
 fi
 
-#
-# Build Natron SDK (CY2015) for Linux
-#
-
-#options:
-#TAR_SDK=1 : Make an archive of the SDK when building is done and store it in $SRC_PATH
-#UPLOAD_SDK=1 : Upload the SDK tar archive to $REPO_DEST if TAR_SDK=1
-
 source common.sh
 
 if [ "${DEBUG:-}" = "1" ]; then
@@ -53,18 +62,18 @@ error=0
 # Check that mandatory utilities are present
 for e in gcc g++ make wget tar patch find gzip; do
     if ! type -p "$e" > /dev/null; then
-        echo "Error: $e not available"
+        (>&2 echo "Error: $e not available")
         error=1
     fi
 done
 
 if [ ! -f /usr/include/X11/Xlib.h ] && [ ! -f /usr/X11R6/include/X11/Xlib.h ]; then
-    echo "Error: X11/Xlib.h not available (on CentOS, do 'you install libX11-devel libXext-devel libXtst-devel')"
+    (>&2 echo "Error: X11/Xlib.h not available (on CentOS, do 'yum install libICE-devel libSM-devel libX11-devel libXScrnSaver-devel libXcomposite-devel libXcursor-devel libXdamage-devel libXevie-devel libXfixes-devel libXi-devel libXinerama-devel libXp-devel libXp-devel libXpm-devel libXrandr-devel libXrender-devel libXres-devel libXv-devel libXvMC-devel libXxf86dga-devel libXxf86vm-devel libdmx-devel libxkbfile-devel mesa-libGL-devel')")
     error=1
 fi
 
 if [ "$error" = "1" ]; then
-    echo "Error: build cannot proceed, exiting."
+    (>&2 echo "Error: build cannot proceed, exiting.")
     exit 1
 fi
 
@@ -72,13 +81,13 @@ fi
 
 if [ "$PKGOS" = "Linux" ]; then
     if [ ! -s /etc/redhat-release ]; then
-        echo "Build system has been designed for CentOS/RHEL, use at OWN risk!"
+        (>&2 echo "Warning: Build system has been designed for CentOS/RHEL, use at OWN risk!")
         sleep 5
     else
         RHEL_MAJOR=$(cut -d" " -f3 < /etc/redhat-release | cut -d "." -f1)
         RHEL_MINOR=$(cut -d" " -f3 < /etc/redhat-release | cut -d "." -f2)
         if [ "$RHEL_MAJOR" != "6" ] || [ "$RHEL_MINOR" != "4" ]; then
-            echo "Wrong version of CentOS/RHEL, 6.4 is the only supported version!"
+            (>&2 echo "Warning: Wrong version of CentOS/RHEL, 6.4 is the only supported version!")
             sleep 5
         fi
     fi
@@ -2008,8 +2017,8 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/librsvg-2.0.pc" ] || [ "$(pkg-config --modver
     if [ "$LIBRSVG_VERSION_SHORT" = 2.41 ]; then
         # librsvg 2.41 requires rust
         if [ ! -s "$HOME/.cargo/env" ]; then
-            echo "Error: librsvg requires rust. Please install rust by executing:"
-            echo "$SDK_HOME/bin/curl https://sh.rustup.rs -sSf | sh"
+            (>&2 echo "Error: librsvg requires rust. Please install rust by executing:")
+            (>&2 echo "$SDK_HOME/bin/curl https://sh.rustup.rs -sSf | sh")
             exit 1
         fi
         source "$HOME/.cargo/env"
@@ -3058,7 +3067,7 @@ if [ ! -s "$QT5PREFIX/lib/pkgconfig/Qt5Core.pc" ] || [ "$(env PKG_CONFIG_PATH=$Q
         untar "$SRC_PATH/$package"
         dirs=(${module}-*)
         if [ ${#dirs[@]} -ne 1 ]; then
-            echo "Error: more than one match for ${module}-*: ${dirs[*]}"
+            (>&2 echo "Error: Qt5: more than one match for ${module}-*: ${dirs[*]}")
             exit 1
         fi
         dir=${dirs[0]}
