@@ -299,3 +299,8 @@ tools/normalize/normalize.xcodeproj/
 tools/utils/generateGLIncludes
 tools/utils/generateGLIncludes.pro.user
 tools/utils/generateGLIncludes.xcodeproj/
+tools/docker/natron-sdk/build-Linux-sdk.sh
+tools/docker/natron-sdk/common.sh
+tools/docker/natron-sdk/compiler-common.sh
+tools/docker/natron-sdk/Dockerfile
+tools/docker/natron-sdk/include/
