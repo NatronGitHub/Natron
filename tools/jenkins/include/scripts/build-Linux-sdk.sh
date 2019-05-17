@@ -50,172 +50,253 @@ if false; then
     ssh-natron-linux64-ci "cd data/natron-support/buildmaster;git pull;include/scripts/build-Linux-sdk.sh"
 fi
 
-source common.sh
-
-if [ "${DEBUG:-}" = "1" ]; then
-    CMAKE_BUILD_TYPE="Debug"
-else
-    CMAKE_BUILD_TYPE="Release"
+if [ "${GEN_DOCKERFILE:-}" = "1" ]; then
+    cat <<EOF
+# Natron-SDK dockerfile.
+#
+# Build the docker image by going to the directory where this file resides and then execute:
+# "docker build -t natronsdk:latest ."
+FROM centos:6 as intermediate
+WORKDIR /home
+RUN yum install -y git gcc gcc-c++ make tar wget patch libX11-devel mesa-libGL-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel
+RUN git clone https://github.com/NatronGitHub/Natron.git
+WORKDIR /home/Natron/tools/jenkins
+EOF
 fi
 
-error=0
-# Check that mandatory utilities are present
-for e in gcc g++ make wget tar patch find gzip; do
-    if ! type -p "$e" > /dev/null; then
-        (>&2 echo "Error: $e not available")
-        error=1
+function dobuild ()
+{
+    if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${LIST_STEPS:-}" = "1" ]; then
+        return 1
     fi
-done
+    return 0 # must return a status
+}
 
-if [ ! -f /usr/include/X11/Xlib.h ] && [ ! -f /usr/X11R6/include/X11/Xlib.h ]; then
-    (>&2 echo "Error: X11/Xlib.h not available (on CentOS, do 'yum install libICE-devel libSM-devel libX11-devel libXScrnSaver-devel libXcomposite-devel libXcursor-devel libXdamage-devel libXevie-devel libXfixes-devel libXi-devel libXinerama-devel libXp-devel libXp-devel libXpm-devel libXrandr-devel libXrender-devel libXres-devel libXv-devel libXvMC-devel libXxf86dga-devel libXxf86vm-devel libdmx-devel libxkbfile-devel mesa-libGL-devel')")
-    error=1
-fi
+# should we build this step?
+# Also prints output if GEN_DOCKERFILE=1 or LIST_STEPS=1
+function build_step ()
+{
+    # no-build cases (we avoid printing the same step twice)
+    if [ "${GEN_DOCKERFILE:-}" = "1" ]; then
+        if [ "$step" != "$prevstep" ]; then
+            echo "RUN env BUILD_STEP=$step ./include/scripts/build-Linux-sdk.sh || (cd /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK/ && cat "'`ls -t|head -1`'")"
+        fi
+        prevstep="$step"
+        return 1
+    fi
+    if [ "${LIST_STEPS:-}" = "1" ]; then
+        if [ "$step" != "$prevstep" ]; then
+            echo "$step"
+        fi
+        prevstep="$step"
+        return 1
+    fi
+    # maybe-build cases
+    if dobuild && [ -z ${BUILD_STEP+x} ]; then # BUILD_STEP is not set, so build
+        prevstep="$step"
+        return 0
+    fi
+    if dobuild && [ "${BUILD_STEP:-}" = "$step" ]; then # this is the step to build
+        prevstep="$step"
+        return 0
+    fi
+    prevstep="$step"
+    return 1 # must return a status
+}
 
-if [ "$error" = "1" ]; then
-    (>&2 echo "Error: build cannot proceed, exiting.")
-    exit 1
-fi
+# is build forced?
+function force_build()
+{
+    if [ "${FORCE_BUILD:-}" = "1" ]; then
+        return 0
+    fi
+    return 1 # must return a status
+}
 
-# Check distro and version. CentOS/RHEL 6.4 only!
+if dobuild; then
+    source common.sh
 
-if [ "$PKGOS" = "Linux" ]; then
-    if [ ! -s /etc/redhat-release ]; then
-        (>&2 echo "Warning: Build system has been designed for CentOS/RHEL, use at OWN risk!")
-        sleep 5
+    if [ "${DEBUG:-}" = "1" ]; then
+        CMAKE_BUILD_TYPE="Debug"
     else
-        RHEL_MAJOR=$(cut -d" " -f3 < /etc/redhat-release | cut -d "." -f1)
-        RHEL_MINOR=$(cut -d" " -f3 < /etc/redhat-release | cut -d "." -f2)
-        if [ "$RHEL_MAJOR" != "6" ] || [ "$RHEL_MINOR" != "4" ]; then
-            (>&2 echo "Warning: Wrong version of CentOS/RHEL, 6.4 is the only supported version!")
+        CMAKE_BUILD_TYPE="Release"
+    fi
+
+    error=false
+    # Check that mandatory utilities are present
+    for e in gcc g++ make wget tar patch find gzip; do
+        if ! type -p "$e" > /dev/null; then
+            (>&2 echo "Error: $e not available")
+            error=true
+        fi
+    done
+
+    if [ ! -f /usr/include/X11/Xlib.h ] && [ ! -f /usr/X11R6/include/X11/Xlib.h ]; then
+        (>&2 echo "Error: X11/Xlib.h not available (on CentOS, do 'yum install libICE-devel libSM-devel libX11-devel libXScrnSaver-devel libXcomposite-devel libXcursor-devel libXdamage-devel libXevie-devel libXfixes-devel libXi-devel libXinerama-devel libXp-devel libXp-devel libXpm-devel libXrandr-devel libXrender-devel libXres-devel libXv-devel libXvMC-devel libXxf86dga-devel libXxf86vm-devel libdmx-devel libxkbfile-devel mesa-libGL-devel')")
+        error=true
+    fi
+
+    if $error; then
+        (>&2 echo "Error: build cannot proceed, exiting.")
+        exit 1
+    fi
+
+    # Check distro and version. CentOS/RHEL 6.4 only!
+
+    if [ "$PKGOS" = "Linux" ]; then
+        if [ ! -s /etc/redhat-release ]; then
+            (>&2 echo "Warning: Build system has been designed for CentOS/RHEL, use at OWN risk!")
             sleep 5
+        else
+            RHEL_MAJOR=$(cut -d" " -f3 < /etc/redhat-release | cut -d "." -f1)
+            RHEL_MINOR=$(cut -d" " -f3 < /etc/redhat-release | cut -d "." -f2)
+            if [ "$RHEL_MAJOR" != "6" ] || [ "$RHEL_MINOR" != "4" ]; then
+                (>&2 echo "Warning: Wrong version of CentOS/RHEL, 6.4 is the only supported version!")
+                sleep 5
+            fi
         fi
     fi
-fi
 
 
-BINARIES_URL="$REPO_DEST/Third_Party_Binaries"
+    BINARIES_URL="$REPO_DEST/Third_Party_Binaries"
 
 
-SDK="Linux-$ARCH-SDK"
+    SDK="Linux-$ARCH-SDK"
 
-if [ -z "${MKJOBS:-}" ]; then
-    #Default to 4 threads
-    MKJOBS=$DEFAULT_MKJOBS
-fi
+    if [ -z "${MKJOBS:-}" ]; then
+        #Default to 4 threads
+        MKJOBS=$DEFAULT_MKJOBS
+    fi
+fi # dobuild
 
 # see https://stackoverflow.com/a/24067243
 function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
 
-download() {
-    local master_site=$1
-    local package=$2
-    if [ ! -s "$SRC_PATH/$package" ]; then
-        echo "*** downloading $package"
-        wget "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || \
-        wget --no-check-certificate "$master_site/$package" -O "$SRC_PATH/$package" || \
-        rm "$SRC_PATH/$package" || true
-    fi
-    if [ ! -s "$SRC_PATH/$package" ]; then
-        echo "*** Error: unable to download $package"
-        exit 1
+function download() {
+    if dobuild; then
+        local master_site=$1
+        local package=$2
+        if [ ! -s "$SRC_PATH/$package" ]; then
+            echo "*** downloading $package"
+            wget "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || \
+                wget --no-check-certificate "$master_site/$package" -O "$SRC_PATH/$package" || \
+                rm "$SRC_PATH/$package" || true
+        fi
+        if [ ! -s "$SRC_PATH/$package" ]; then
+            echo "*** Error: unable to download $package"
+            exit 1
+        fi
     fi
 }
 
-download_github() {
-    # e.g.:
-    #download_github uclouvain openjpeg 2.3.0 v openjpeg-2.3.0.tar.gz
-    #download_github OpenImageIO oiio 1.6.18 tags/Release- oiio-1.6.18.tar.gz
-    local user=$1
-    local repo=$2
-    local version=$3
-    local tagprefix=$4
-    local package=$5
-    if [ ! -s "$SRC_PATH/$package" ]; then
-        echo "*** downloading $package"
-        wget "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || \
-        wget --no-check-certificate --content-disposition "https://github.com/${user}/${repo}/archive/${tagprefix}${version}.tar.gz" -O "$SRC_PATH/$package" || \
-        rm "$SRC_PATH/$package" || true
-    fi
-    if [ ! -s "$SRC_PATH/$package" ]; then
-        echo "*** Error: unable to download $package"
-        exit 1
+function download_github() {
+    if dobuild; then
+        # e.g.:
+        #download_github uclouvain openjpeg 2.3.0 v openjpeg-2.3.0.tar.gz
+        #download_github OpenImageIO oiio 1.6.18 tags/Release- oiio-1.6.18.tar.gz
+        local user=$1
+        local repo=$2
+        local version=$3
+        local tagprefix=$4
+        local package=$5
+        if [ ! -s "$SRC_PATH/$package" ]; then
+            echo "*** downloading $package"
+            wget "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || \
+                wget --no-check-certificate --content-disposition "https://github.com/${user}/${repo}/archive/${tagprefix}${version}.tar.gz" -O "$SRC_PATH/$package" || \
+                rm "$SRC_PATH/$package" || true
+        fi
+        if [ ! -s "$SRC_PATH/$package" ]; then
+            echo "*** Error: unable to download $package"
+            exit 1
+        fi
     fi
 }
 
 # see https://stackoverflow.com/a/43136160/2607517
 # $1: git repo
 # $2: commit SHA1
-git_clone_commit() {
-    local repo=${1##*/}
-    repo=${repo%.git}
-    git clone -n "$1" && ( cd "$repo" && git checkout "$2" )
-    ## the following requires git 2.5.0 with uploadpack.allowReachableSHA1InWant=true
-    #git init
-    #git remote add origin "$1"
-    #git fetch --depth 1 origin "$2"
-    #git checkout FETCH_HEAD
+function git_clone_commit() {
+    if dobuild; then
+        local repo=${1##*/}
+        repo=${repo%.git}
+        git clone -n "$1" && ( cd "$repo" && git checkout "$2" )
+        ## the following requires git 2.5.0 with uploadpack.allowReachableSHA1InWant=true
+        #git init
+        #git remote add origin "$1"
+        #git fetch --depth 1 origin "$2"
+        #git checkout FETCH_HEAD
+    fi
 }
 
-untar() {
-    echo "*** extracting $1"
-    tar xf "$1"
+function untar() {
+    if dobuild; then
+        echo "*** extracting $1"
+        tar xf "$1"
+    fi
 }
 
-start_build() {
-    echo "*** Building $1..."
-    touch "$LOGDIR/$1".stamp
-    exec 3>&1 4>&2 1>"$LOGDIR/$1".log 2>&1
-    pushd "$TMP_PATH"
+function start_build() {
+    if dobuild; then
+        echo "*** Building $step..."
+        touch "$LOGDIR/$step".stamp
+        exec 3>&1 4>&2 1>"$LOGDIR/$step".log 2>&1
+        pushd "$TMP_PATH"
+    fi
 }
 
-end_build() {
-    popd #"$TMP_PATH"
-    find "$SDK_HOME" -newer "$LOGDIR/$1".stamp > "$LOGDIR/$1"-files.txt
-    rm "$LOGDIR/$1".stamp
-    exec 1>&3 2>&4
-    echo "*** Done"
+function end_build() {
+    if dobuild; then
+        popd #"$TMP_PATH"
+        find "$SDK_HOME" -newer "$LOGDIR/$step".stamp > "$LOGDIR/$step"-files.txt
+        rm "$LOGDIR/$step".stamp
+        exec 1>&3 2>&4
+        echo "*** Done"
+    fi
 }
 
-echo 
-echo "Building Natron-$SDK with $MKJOBS threads ..."
-echo
+if dobuild; then
+    echo 
+    echo "Building Natron-$SDK with $MKJOBS threads ..."
+    echo
 
+    if [ -d "$TMP_PATH" ]; then
+        rm -rf "$TMP_PATH"
+    fi
+    mkdir -p "$TMP_PATH"
+    if [ ! -d "$SRC_PATH" ]; then
+        mkdir -p "$SRC_PATH"
+    fi
 
-if [ -d "$TMP_PATH" ]; then
-    rm -rf "$TMP_PATH"
-fi
-mkdir -p "$TMP_PATH"
-if [ ! -d "$SRC_PATH" ]; then
-    mkdir -p "$SRC_PATH"
+    # check for dirs
+    if [ ! -d "$SDK_HOME/include" ]; then
+        # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/creatingdirs.html
+        mkdir -pv "$SDK_HOME"/{bin,include,lib,sbin,src}
+        mkdir -pv "$SDK_HOME"/share/{color,dict,doc,info,locale,man}
+        mkdir -v  "$SDK_HOME"/share/{misc,terminfo,zoneinfo}
+        mkdir -v  "$SDK_HOME"/libexec
+        mkdir -pv "$SDK_HOME"/share/man/man{1..8}
+        case $(uname -m) in
+            x86_64) ln -sfv lib "$SDK_HOME"/lib64 ;;
+        esac
+    fi
+
+    LOGDIR="$SDK_HOME/var/log/Natron-$SDK"
+    if [ ! -d "$LOGDIR" ]; then
+        mkdir -p "$LOGDIR"
+    fi
+    echo "*** Info: Build logs are in $LOGDIR"
 fi
 
-# check for dirs
-if [ ! -d "$SDK_HOME/include" ]; then
-    # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/creatingdirs.html
-    mkdir -pv "$SDK_HOME"/{bin,include,lib,sbin,src}
-    mkdir -pv "$SDK_HOME"/share/{color,dict,doc,info,locale,man}
-    mkdir -v  "$SDK_HOME"/share/{misc,terminfo,zoneinfo}
-    mkdir -v  "$SDK_HOME"/libexec
-    mkdir -pv "$SDK_HOME"/share/man/man{1..8}
-    case $(uname -m) in
-        x86_64) ln -sfv lib "$SDK_HOME"/lib64 ;;
-    esac
-fi
-
-LOGDIR="$SDK_HOME/var/log/Natron-$SDK"
-if [ ! -d "$LOGDIR" ]; then
-    mkdir -p "$LOGDIR"
-fi
-echo "*** Info: Build logs are in $LOGDIR"
+prevstep=""
 
 # Install openssl for installer
 # see http://www.linuxfromscratch.org/blfs/view/svn/postlfs/openssl10.html
 OPENSSL_VERSION=1.0.2o
 OPENSSL_TAR="openssl-${OPENSSL_VERSION}.tar.gz" # always a new version around the corner
 OPENSSL_SITE="https://www.openssl.org/source"
-if [ ! -s "$SDK_HOME/installer/lib/pkgconfig/openssl.pc" ] || [ "$(env PKG_CONFIG_PATH="$SDK_HOME/installer/lib/pkgconfig:$SDK_HOME/installer/share/pkgconfig" pkg-config --modversion openssl)" != "$OPENSSL_VERSION" ]; then
-    start_build "$OPENSSL_TAR.installer"
+step="$OPENSSL_TAR.installer"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/installer/lib/pkgconfig/openssl.pc" ] || [ "$(env PKG_CONFIG_PATH="$SDK_HOME/installer/lib/pkgconfig:$SDK_HOME/installer/share/pkgconfig" pkg-config --modversion openssl)" != "$OPENSSL_VERSION" ]; }; }; then
+    start_build
     download "$OPENSSL_SITE" "$OPENSSL_TAR"
     untar "$SRC_PATH/$OPENSSL_TAR"
     pushd "openssl-$OPENSSL_VERSION"
@@ -228,7 +309,7 @@ if [ ! -s "$SDK_HOME/installer/lib/pkgconfig/openssl.pc" ] || [ "$(env PKG_CONFI
     make install
     popd
     rm -rf "openssl-$OPENSSL_VERSION"
-    end_build "$OPENSSL_TAR.installer"
+    end_build
 fi
 
 # Install static qt4 for installer
@@ -242,8 +323,9 @@ QT4WEBKIT_VERSION_SHORT=${QT4WEBKIT_VERSION%.*}
 QT4WEBKIT_VERSION_PKG=4.10.4 # version from QtWebkit.pc
 QT4WEBKIT_TAR="qtwebkit-${QT4WEBKIT_VERSION}.tar.gz"
 QT4WEBKIT_SITE="https://download.kde.org/stable/qtwebkit-${QT4WEBKIT_VERSION_SHORT}/${QT4WEBKIT_VERSION}/src"
-if [ ! -s "$SDK_HOME/installer/bin/qmake" ]; then
-    start_build "$QT4_TAR.installer"
+step="$QT4_TAR.installer"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/installer/bin/qmake" ]; }; }; then
+    start_build
     QTIFW_CONF=( "-no-multimedia" "-no-gif" "-qt-libpng" "-no-opengl" "-no-libmng" "-no-libtiff" "-no-libjpeg" "-static" "-openssl-linked" "-confirm-license" "-release" "-opensource" "-nomake" "demos" "-nomake" "docs" "-nomake" "examples" "-no-gtkstyle" "-no-webkit" "-no-avx" "-no-openvg" "-no-phonon" "-no-phonon-backend" "-I${SDK_HOME}/installer/include" "-L${SDK_HOME}/installer/lib" )
 
     download "$QT4_SITE" "$QT4_TAR"
@@ -279,13 +361,14 @@ if [ ! -s "$SDK_HOME/installer/bin/qmake" ]; then
     make install
     popd
     rm -rf "qt-everywhere-opensource-src-${QT4_VERSION}"
-    end_build "$QT4_TAR.installer"
+    end_build
 fi
 
 # Install qtifw
 QTIFW_GIT=https://github.com/NatronGitHub/installer-framework.git
-if [ ! -s $SDK_HOME/installer/bin/binarycreator ]; then
-    start_build "qtifw"
+step="qtifw-1.6-natron"
+if build_step && { force_build || { [ ! -s $SDK_HOME/installer/bin/binarycreator ]; }; }; then
+    start_build
     git_clone_commit "$QTIFW_GIT" 1.6-natron
     pushd installer-framework
     "$SDK_HOME/installer/bin/qmake"
@@ -294,36 +377,40 @@ if [ ! -s $SDK_HOME/installer/bin/binarycreator ]; then
     cp bin/* "$SDK_HOME/installer/bin/"
     popd
     rm -rf installer-framework
-    end_build "qtifw"
+    end_build
 fi
 
 # Setup env
-# now that the installer is built, let's set failsafe values for variables that are either
-# understood by configure/cmake scripts or by GCC itself
-export CMAKE_PREFIX_PATH="$SDK_HOME"
-#export CPPFLAGS="-I$SDK_HOME/include" # configure/cmake
-#export LDFLAGS="-L$SDK_HOME/lib" # configure/cmake
-export CPATH="$SDK_HOME/include" # gcc/g++'s include path
-export LIBRARY_PATH="$SDK_HOME/lib" # gcc/g++'s library path
 
-QT4PREFIX="$SDK_HOME/qt4"
-QT5PREFIX="$SDK_HOME/qt5"
-export PATH="$SDK_HOME/gcc/bin:$SDK_HOME/bin:$PATH"
-export LD_LIBRARY_PATH="$SDK_HOME/lib:$QT4PREFIX/lib:$QT5PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-if [ "$ARCH" = "x86_64" ]; then
-    LD_LIBRARY_PATH="$SDK_HOME/gcc/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-else
-    LD_LIBRARY_PATH="$SDK_HOME/gcc/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+if dobuild; then
+    # now that the installer is built, let's set failsafe values for variables that are either
+    # understood by configure/cmake scripts or by GCC itself
+    export CMAKE_PREFIX_PATH="$SDK_HOME"
+    #export CPPFLAGS="-I$SDK_HOME/include" # configure/cmake
+    #export LDFLAGS="-L$SDK_HOME/lib" # configure/cmake
+    export CPATH="$SDK_HOME/include" # gcc/g++'s include path
+    export LIBRARY_PATH="$SDK_HOME/lib" # gcc/g++'s library path
+
+    QT4PREFIX="$SDK_HOME/qt4"
+    QT5PREFIX="$SDK_HOME/qt5"
+
+    export PATH="$SDK_HOME/gcc/bin:$SDK_HOME/bin:$PATH"
+    export LD_LIBRARY_PATH="$SDK_HOME/lib:$QT4PREFIX/lib:$QT5PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    if [ "$ARCH" = "x86_64" ]; then
+        LD_LIBRARY_PATH="$SDK_HOME/gcc/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    else
+        LD_LIBRARY_PATH="$SDK_HOME/gcc/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    fi
+    #export LD_RUN_PATH="$LD_LIBRARY_PATH"
+    #PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig"
+    BOOST_ROOT="$SDK_HOME"
+    OPENJPEG_HOME="$SDK_HOME"
+    THIRD_PARTY_TOOLS_HOME="$SDK_HOME"
+    PYTHON_HOME="$SDK_HOME"
+    PYTHON_PATH="$SDK_HOME/lib/python${PYVER}"
+    PYTHON_INCLUDE="$SDK_HOME/include/python${PYVER}"
+    export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 fi
-#export LD_RUN_PATH="$LD_LIBRARY_PATH"
-#PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig"
-BOOST_ROOT="$SDK_HOME"
-OPENJPEG_HOME="$SDK_HOME"
-THIRD_PARTY_TOOLS_HOME="$SDK_HOME"
-PYTHON_HOME="$SDK_HOME"
-PYTHON_PATH="$SDK_HOME/lib/python${PYVER}"
-PYTHON_INCLUDE="$SDK_HOME/include/python${PYVER}"
-export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 
 # Old Natron 2 version is 4.8.5
 GCC_VERSION=8.2.0
@@ -361,8 +448,9 @@ CLOOG_VERSION=0.18.4
 CLOOG_TAR="cloog-${CLOOG_VERSION}.tar.gz"
 CLOOG_SITE="http://www.bastoul.net/cloog/pages/download/count.php3?url=."
 
-if [ ! -s "$SDK_HOME/gcc-$GCC_VERSION/bin/gcc" ]; then
-    start_build "$GCC_TAR"
+step="$GCC_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/gcc-$GCC_VERSION/bin/gcc" ]; }; }; then
+    start_build
     download "$GCC_SITE" "$GCC_TAR"
     download "$MPC_SITE" "$MPC_TAR"
     download "$MPFR_SITE" "$MPFR_TAR"
@@ -388,19 +476,22 @@ if [ ! -s "$SDK_HOME/gcc-$GCC_VERSION/bin/gcc" ]; then
     popd #"gcc-$GCC_VERSION"
     rm -rf "gcc-$GCC_VERSION"
     ln -sfnv "gcc-${GCC_VERSION}" "$SDK_HOME/gcc"
-    end_build "$GCC_TAR"
+    end_build
 fi
 
-export CC="${SDK_HOME}/gcc/bin/gcc"
-export CXX="${SDK_HOME}/gcc/bin/g++"
+if dobuild; then
+    export CC="${SDK_HOME}/gcc/bin/gcc"
+    export CXX="${SDK_HOME}/gcc/bin/g++"
+fi
 
 # Install bzip2
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/bzip2.html
 BZIP2_VERSION=1.0.6
 BZIP2_TAR="bzip2-${BZIP2_VERSION}.tar.gz"
 BZIP2_SITE="http://anduin.linuxfromscratch.org/LFS"
-if [ ! -s "$SDK_HOME/lib/libbz2.so.1" ]; then
-    start_build "$BZIP2_TAR"
+step="$BZIP2_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libbz2.so.1" ]; }; }; then
+    start_build
     download "$BZIP2_SITE" "$BZIP2_TAR"
     untar "$SRC_PATH/$BZIP2_TAR"
     pushd "bzip2-${BZIP2_VERSION}"
@@ -415,7 +506,7 @@ if [ ! -s "$SDK_HOME/lib/libbz2.so.1" ]; then
     ln -sfv libbz2.so.1 libbz2.so
     popd
     rm -rf "bzip2-${BZIP2_VERSION}"
-    end_build "$BZIP2_TAR"
+    end_build
 fi
 
 # Install xz (required to uncompress source tarballs)
@@ -423,8 +514,9 @@ fi
 XZ_VERSION=5.2.4
 XZ_TAR="xz-${XZ_VERSION}.tar.bz2"
 XZ_SITE="https://tukaani.org/xz"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/liblzma.pc" ] || [ "$(pkg-config --modversion liblzma)" != "$XZ_VERSION" ]; then
-    start_build "$XZ_TAR"
+step="$XZ_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/liblzma.pc" ] || [ "$(pkg-config --modversion liblzma)" != "$XZ_VERSION" ]; }; }; then
+    start_build
     download "$XZ_SITE" "$XZ_TAR"
     untar "$SRC_PATH/$XZ_TAR"
     pushd "xz-$XZ_VERSION"
@@ -433,7 +525,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/liblzma.pc" ] || [ "$(pkg-config --modversion
     make install
     popd
     rm -rf "xz-$XZ_VERSION"
-    end_build "$XZ_TAR"
+    end_build
 fi
 
 # Install m4
@@ -441,8 +533,9 @@ fi
 M4_VERSION=1.4.18
 M4_TAR="m4-${M4_VERSION}.tar.xz"
 M4_SITE="https://ftp.gnu.org/gnu/m4"
-if [ ! -s "$SDK_HOME/bin/m4" ]; then
-    start_build "$M4_TAR"
+step="$M4_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/m4" ]; }; }; then
+    start_build
     download "$M4_SITE" "$M4_TAR"
     untar "$SRC_PATH/$M4_TAR"
     pushd "m4-${M4_VERSION}"
@@ -453,7 +546,7 @@ if [ ! -s "$SDK_HOME/bin/m4" ]; then
     make install
     popd
     rm -rf "m4-${M4_VERSION}"
-    end_build "$M4_TAR"
+    end_build
 fi
 
 
@@ -463,8 +556,9 @@ NCURSES_VERSION=6.1
 NCURSES_VERSION_PKG=6.1.20180127
 NCURSES_TAR="ncurses-${NCURSES_VERSION}.tar.gz"
 NCURSES_SITE="ftp://ftp.gnu.org/gnu/ncurses"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/ncurses.pc" ] || [ "$(pkg-config --modversion ncurses)" != "$NCURSES_VERSION_PKG" ]; then
-    start_build "$NCURSES_TAR"
+step="$NCURSES_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/ncurses.pc" ] || [ "$(pkg-config --modversion ncurses)" != "$NCURSES_VERSION_PKG" ]; }; }; then
+    start_build
     download "$NCURSES_SITE" "$NCURSES_TAR"
     untar "$SRC_PATH/$NCURSES_TAR"
     pushd "ncurses-${NCURSES_VERSION}"
@@ -492,7 +586,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/ncurses.pc" ] || [ "$(pkg-config --modversion
     done
     popd
     rm -rf "ncurses-${NCURSES_VERSION}"
-    end_build "$NCURSES_TAR"
+    end_build
 fi
 
 # install bison (for SeExpr)
@@ -500,8 +594,9 @@ fi
 BISON_VERSION=3.0.4
 BISON_TAR="bison-${BISON_VERSION}.tar.gz"
 BISON_SITE="http://ftp.gnu.org/pub/gnu/bison"
-if [ ! -s "$SDK_HOME/bin/bison" ]; then
-    start_build "$BISON_TAR"
+step="$BISON_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/bison" ]; }; }; then
+    start_build
     download "$BISON_SITE" "$BISON_TAR"
     untar "$SRC_PATH/$BISON_TAR"
     pushd "bison-${BISON_VERSION}"
@@ -513,7 +608,7 @@ if [ ! -s "$SDK_HOME/bin/bison" ]; then
     make install
     popd
     rm -rf "bison-${BISON_VERSION}"
-    end_build "$BISON_TAR"
+    end_build
 fi
 
 # install flex (for SeExpr)
@@ -521,11 +616,9 @@ fi
 FLEX_VERSION=2.6.4
 FLEX_TAR="flex-${FLEX_VERSION}.tar.gz"
 FLEX_SITE="https://github.com/westes/flex/releases/download/v${FLEX_VERSION}"
-if [ "${REBUILD_OPENJPEG:-}" = "1" ]; then
-    rm -rf "$SDK_HOME"/lib/libopenjp* || true
-fi
-if [ ! -s "$SDK_HOME/bin/flex" ]; then
-    start_build "$FLEX_TAR"
+step="$FLEX_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/flex" ]; }; }; then
+    start_build
     download "$FLEX_SITE" "$FLEX_TAR"
     #download_github westes flex "${FLEX_VERSION}" v "${FLEX_TAR}"
     untar "$SRC_PATH/$FLEX_TAR"
@@ -537,7 +630,7 @@ if [ ! -s "$SDK_HOME/bin/flex" ]; then
     make install
     popd
     rm -rf "flex-${FLEX_VERSION}"
-    end_build "$FLEX_TAR"
+    end_build
 fi
 
 # install pkg-config
@@ -545,8 +638,9 @@ fi
 PKGCONFIG_VERSION=0.29.2
 PKGCONFIG_TAR="pkg-config-${PKGCONFIG_VERSION}.tar.gz"
 PKGCONFIG_SITE="https://pkg-config.freedesktop.org/releases"
-if [ ! -s "$SDK_HOME/bin/pkg-config" ] || [ "$($SDK_HOME/bin/pkg-config --version)" != "$PKGCONFIG_VERSION" ]; then
-    start_build "$PKGCONFIG_TAR"
+step="$PKGCONFIG_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/pkg-config" ] || [ "$($SDK_HOME/bin/pkg-config --version)" != "$PKGCONFIG_VERSION" ]; }; }; then
+    start_build
     download "$PKGCONFIG_SITE" "$PKGCONFIG_TAR"
     untar "$SRC_PATH/$PKGCONFIG_TAR"
     pushd "pkg-config-${PKGCONFIG_VERSION}"
@@ -555,15 +649,16 @@ if [ ! -s "$SDK_HOME/bin/pkg-config" ] || [ "$($SDK_HOME/bin/pkg-config --versio
     make install
     popd
     rm -rf "pkg-config-${PKGCONFIG_VERSION}"
-    end_build "$PKGCONFIG_TAR"
+    end_build
 fi
 
 # install libtool
 LIBTOOL_VERSION=2.4.6
 LIBTOOL_TAR="libtool-${LIBTOOL_VERSION}.tar.gz"
 LIBTOOL_SITE="http://ftp.gnu.org/pub/gnu/libtool"
-if [ ! -s "$SDK_HOME/bin/libtool" ]; then
-    start_build "$LIBTOOL_TAR"
+step="$LIBTOOL_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/libtool" ]; }; }; then
+    start_build
     download "$LIBTOOL_SITE" "$LIBTOOL_TAR"
     untar "$SRC_PATH/$LIBTOOL_TAR"
     pushd "libtool-${LIBTOOL_VERSION}"
@@ -572,7 +667,7 @@ if [ ! -s "$SDK_HOME/bin/libtool" ]; then
     make install
     popd
     rm -rf "libtool-${LIBTOOL_VERSION}"
-    end_build "$LIBTOOL_TAR"
+    end_build
 fi
 
 # Install gperf (used by fontconfig) as well as assemblers (yasm and nasm)
@@ -581,8 +676,9 @@ fi
 GPERF_VERSION=3.1
 GPERF_TAR="gperf-${GPERF_VERSION}.tar.gz"
 GPERF_SITE="http://ftp.gnu.org/pub/gnu/gperf"
-if [ ! -s "$SDK_HOME/bin/gperf" ]; then
-    start_build "$GPERF_TAR"
+step="$GPERF_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/gperf" ]; }; }; then
+    start_build
     download "$GPERF_SITE" "$GPERF_TAR"
     untar "$SRC_PATH/$GPERF_TAR"
     pushd "gperf-${GPERF_VERSION}"
@@ -591,7 +687,7 @@ if [ ! -s "$SDK_HOME/bin/gperf" ]; then
     make install
     popd
     rm -rf "gperf-${GPERF_VERSION}"
-    end_build "$GPERF_TAR"
+    end_build
 fi
 
 # Install autoconf
@@ -599,8 +695,9 @@ fi
 AUTOCONF_VERSION=2.69
 AUTOCONF_TAR="autoconf-${AUTOCONF_VERSION}.tar.xz"
 AUTOCONF_SITE="https://ftp.gnu.org/gnu/autoconf"
-if [ ! -s "$SDK_HOME/bin/autoconf" ]; then
-    start_build "$AUTOCONF_TAR"
+step="$AUTOCONF_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/autoconf" ]; }; }; then
+    start_build
     download "$AUTOCONF_SITE" "$AUTOCONF_TAR"
     untar "$SRC_PATH/$AUTOCONF_TAR"
     pushd "autoconf-${AUTOCONF_VERSION}"
@@ -609,7 +706,7 @@ if [ ! -s "$SDK_HOME/bin/autoconf" ]; then
     make install
     popd
     rm -rf "autoconf-${AUTOCONF_VERSION}"
-    end_build "$AUTOCONF_TAR"
+    end_build
 fi
 
 # Install automake
@@ -617,8 +714,9 @@ fi
 AUTOMAKE_VERSION=1.16.1
 AUTOMAKE_TAR="automake-${AUTOMAKE_VERSION}.tar.xz"
 AUTOMAKE_SITE="https://ftp.gnu.org/gnu/automake"
-if [ ! -s "$SDK_HOME/bin/automake" ] || [ "$("$SDK_HOME/bin/automake" --version | head -1 | awk '{print $4}')" != "$AUTOMAKE_VERSION" ]; then
-    start_build "$AUTOMAKE_TAR"
+step="$AUTOMAKE_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/automake" ] || [ "$("$SDK_HOME/bin/automake" --version | head -1 | awk '{print $4}')" != "$AUTOMAKE_VERSION" ]; }; }; then
+    start_build
     download "$AUTOMAKE_SITE" "$AUTOMAKE_TAR"
     untar "$SRC_PATH/$AUTOMAKE_TAR"
     pushd "automake-${AUTOMAKE_VERSION}"
@@ -627,7 +725,7 @@ if [ ! -s "$SDK_HOME/bin/automake" ] || [ "$("$SDK_HOME/bin/automake" --version 
     make install
     popd
     rm -rf "automake-${AUTOMAKE_VERSION}"
-    end_build "$AUTOMAKE_TAR"
+    end_build
 fi
 
 # Install yasm
@@ -635,8 +733,9 @@ fi
 YASM_VERSION=1.3.0
 YASM_TAR="yasm-${YASM_VERSION}.tar.gz"
 YASM_SITE="http://www.tortall.net/projects/yasm/releases"
-if [ ! -s "$SDK_HOME/bin/yasm" ]; then
-    start_build "$YASM_TAR"
+step="$YASM_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/yasm" ]; }; }; then
+    start_build
     download "$YASM_SITE" "$YASM_TAR"
     untar "$SRC_PATH/$YASM_TAR"
     pushd "yasm-${YASM_VERSION}"
@@ -645,7 +744,7 @@ if [ ! -s "$SDK_HOME/bin/yasm" ]; then
     make install
     popd
     rm -rf "yasm-${YASM_VERSION}"
-    end_build "$YASM_TAR"
+    end_build
 fi
 
 # Install nasm (for x264, lame, ans others)
@@ -653,8 +752,9 @@ fi
 NASM_VERSION=2.13.03
 NASM_TAR="nasm-${NASM_VERSION}.tar.gz"
 NASM_SITE="http://www.nasm.us/pub/nasm/releasebuilds/${NASM_VERSION}"
-if [ ! -s "$SDK_HOME/bin/nasm" ]; then
-    start_build "$NASM_TAR"
+step="$NASM_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/nasm" ]; }; }; then
+    start_build
     download "$NASM_SITE" "$NASM_TAR"
     untar "$SRC_PATH/$NASM_TAR"
     pushd "nasm-${NASM_VERSION}"
@@ -666,14 +766,15 @@ if [ ! -s "$SDK_HOME/bin/nasm" ]; then
     make install
     popd
     rm -rf "nasm-${NASM_VERSION}"
-    end_build "$NASM_TAR"
+    end_build
 fi
 
 # Install gmp (used by ruby)
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/gmp.html
-if [ ! -s "$SDK_HOME/include/gmp.h" ]; then
+step="$GMP_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/include/gmp.h" ]; }; }; then
     REBUILD_RUBY=1
-    start_build "$GMP_TAR"
+    start_build
     download "$GMP_SITE" "$GMP_TAR"
     untar "$SRC_PATH/$GMP_TAR"
     pushd "gmp-${GMP_VERSION}"
@@ -682,7 +783,7 @@ if [ ! -s "$SDK_HOME/include/gmp.h" ]; then
     make install
     popd
     rm -rf "gmp-${GMP_VERSION}"
-    end_build "$GMP_TAR"
+    end_build
 fi
 
 # Install openssl
@@ -690,8 +791,9 @@ fi
 #OPENSSL_VERSION=1.0.2o # defined above
 OPENSSL_TAR="openssl-${OPENSSL_VERSION}.tar.gz" # always a new version around the corner
 OPENSSL_SITE="https://www.openssl.org/source"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/openssl.pc" ] || [ "$(env PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig" pkg-config --modversion openssl)" != "$OPENSSL_VERSION" ]; then
-    start_build "$OPENSSL_TAR"
+step="$OPENSSL_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/openssl.pc" ] || [ "$(env PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig" pkg-config --modversion openssl)" != "$OPENSSL_VERSION" ]; }; }; then
+    start_build
     download "$OPENSSL_SITE" "$OPENSSL_TAR"
     untar "$SRC_PATH/$OPENSSL_TAR"
     pushd "openssl-$OPENSSL_VERSION"
@@ -703,26 +805,27 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/openssl.pc" ] || [ "$(env PKG_CONFIG_PATH="$S
     make install
     popd
     rm -rf "openssl-$OPENSSL_VERSION"
-    end_build "$OPENSSL_TAR"
+    end_build
 fi
 
 
 # install patchelf
-ELF_VERSION=0.9
-ELF_TAR="patchelf-${ELF_VERSION}.tar.bz2"
-ELF_SITE="https://nixos.org/releases/patchelf/patchelf-${ELF_VERSION}/"
-if [ ! -s "$SDK_HOME/bin/patchelf" ]; then
-    start_build "$ELF_TAR"
-    download "$ELF_SITE" "$ELF_TAR"
-    untar "$SRC_PATH/$ELF_TAR"
-    pushd "patchelf-${ELF_VERSION}"
+PATCHELF_VERSION=0.9
+PATCHELF_TAR="patchelf-${PATCHELF_VERSION}.tar.bz2"
+PATCHELF_SITE="https://nixos.org/releases/patchelf/patchelf-${PATCHELF_VERSION}/"
+step="$PATCHELF_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/patchelf" ]; }; }; then
+    start_build
+    download "$PATCHELF_SITE" "$PATCHELF_TAR"
+    untar "$SRC_PATH/$PATCHELF_TAR"
+    pushd "patchelf-${PATCHELF_VERSION}"
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME"
     make
     make install
     #cp src/patchelf "$SDK_HOME/bin/"
     popd
-    rm -rf "patchelf-${ELF_VERSION}"
-    end_build "$ELF_TAR"
+    rm -rf "patchelf-${PATCHELF_VERSION}"
+    end_build
 fi
 
 
@@ -731,8 +834,9 @@ fi
 GETTEXT_VERSION=0.19.8.1
 GETTEXT_TAR="gettext-${GETTEXT_VERSION}.tar.gz"
 GETTEXT_SITE="http://ftp.gnu.org/pub/gnu/gettext"
-if [ ! -s "$SDK_HOME/bin/gettext" ]; then
-    start_build "$GETTEXT_TAR"
+step="$GETTEXT_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/gettext" ]; }; }; then
+    start_build
     download "$GETTEXT_SITE" "$GETTEXT_TAR"
     untar "$SRC_PATH/$GETTEXT_TAR"
     pushd "gettext-${GETTEXT_VERSION}"
@@ -741,7 +845,7 @@ if [ ! -s "$SDK_HOME/bin/gettext" ]; then
     make install
     popd
     rm -rf "gettext-${GETTEXT_VERSION}"
-    end_build "$GETTEXT_TAR"
+    end_build
 fi
 
 # Install expat
@@ -749,11 +853,12 @@ fi
 EXPAT_VERSION=2.2.5
 EXPAT_TAR="expat-${EXPAT_VERSION}.tar.bz2"
 EXPAT_SITE="https://sourceforge.net/projects/expat/files/expat/${EXPAT_VERSION}"
-if [ "${REBUILD_EXPAT:-}" = "1" ]; then
+step="$EXPAT_TAR"
+if build_step && { force_build || { [ "${REBUILD_EXPAT:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/include/expat*.h "$SDK_HOME"/lib/libexpat* "$SDK_HOME"/lib/pkgconfig/expat* || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/expat.pc" ] || [ "$(pkg-config --modversion expat)" != "$EXPAT_VERSION" ]; then
-    start_build "$EXPAT_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/expat.pc" ] || [ "$(pkg-config --modversion expat)" != "$EXPAT_VERSION" ]; }; }; then
+    start_build
     download "$EXPAT_SITE" "$EXPAT_TAR"
     untar "$SRC_PATH/$EXPAT_TAR"
     pushd "expat-${EXPAT_VERSION}"
@@ -762,7 +867,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/expat.pc" ] || [ "$(pkg-config --modversion e
     make install
     popd
     rm -rf "expat-${EXPAT_VERSION}"
-    end_build "$EXPAT_TAR"
+    end_build
 fi
 
 # Install perl (required to install XML:Parser perl module used by intltool)
@@ -770,8 +875,9 @@ fi
 PERL_VERSION=5.26.2
 PERL_TAR="perl-${PERL_VERSION}.tar.gz"
 PERL_SITE="http://www.cpan.org/src/5.0"
-if [ ! -s "$SDK_HOME/bin/perl" ]; then
-    start_build "$PERL_TAR"
+step="$PERL_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/perl" ]; }; }; then
+    start_build
     download "$PERL_SITE" "$PERL_TAR"
     untar "$SRC_PATH/$PERL_TAR"
     pushd "perl-${PERL_VERSION}"
@@ -781,7 +887,7 @@ if [ ! -s "$SDK_HOME/bin/perl" ]; then
     PERL_MM_USE_DEFAULT=1 ${SDK_HOME}/bin/cpan -Ti XML::Parser
     popd
     rm -rf "perl-${PERL_VERSION}"
-    end_build "$PERL_TAR"
+    end_build
 fi
 
 # Install intltool
@@ -789,8 +895,9 @@ fi
 INTLTOOL_VERSION=0.51.0
 INTLTOOL_TAR="intltool-${INTLTOOL_VERSION}.tar.gz"
 INTLTOOL_SITE="https://launchpad.net/intltool/trunk/${INTLTOOL_VERSION}/+download"
-if [ ! -s "$SDK_HOME/bin/intltoolize" ]; then
-    start_build "$INTLTOOL_TAR"
+step="$INTLTOOL_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/intltoolize" ]; }; }; then
+    start_build
     download "$INTLTOOL_SITE" "$INTLTOOL_TAR"
     untar "$SRC_PATH/$INTLTOOL_TAR"
     pushd "intltool-${INTLTOOL_VERSION}"
@@ -800,7 +907,7 @@ if [ ! -s "$SDK_HOME/bin/intltoolize" ]; then
     make install
     popd
     rm -rf "intltool-${INTLTOOL_VERSION}"
-    end_build "$INTLTOOL_TAR"
+    end_build
 fi
 
 # Install zlib
@@ -808,12 +915,13 @@ fi
 ZLIB_VERSION=1.2.11
 ZLIB_TAR="zlib-${ZLIB_VERSION}.tar.gz"
 ZLIB_SITE="https://zlib.net"
-if [ "${REBUILD_ZLIB:-}" = "1" ]; then
+step="$ZLIB_TAR"
+if build_step && { force_build || { [ "${REBUILD_ZLIB:-}" = "1" ]; }; }; then
     rm -rf $SDK_HOME/lib/libz.* || true
     rm -f $SDK_HOME/lib/pkgconfig/zlib.pc || true
 fi
-if [ ! -s "$SDK_HOME/lib/libz.so.1" ]; then
-    start_build "$ZLIB_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libz.so.1" ]; }; }; then
+    start_build
     download "$ZLIB_SITE" "$ZLIB_TAR"
     untar "$SRC_PATH/$ZLIB_TAR"
     pushd "zlib-${ZLIB_VERSION}"
@@ -822,7 +930,7 @@ if [ ! -s "$SDK_HOME/lib/libz.so.1" ]; then
     make install
     popd
     rm -rf "zlib-${ZLIB_VERSION}"
-    end_build "$ZLIB_TAR"
+    end_build
 fi
 
 
@@ -832,8 +940,9 @@ READLINE_VERSION=7.0
 READLINE_VERSION_MAJOR=${READLINE_VERSION%.*}
 READLINE_TAR="readline-${READLINE_VERSION}.tar.gz"
 READLINE_SITE="https://ftp.gnu.org/gnu/readline"
-if [ ! -s "$SDK_HOME/lib/libreadline.so.${READLINE_VERSION_MAJOR}" ]; then
-    start_build "$READLINE_TAR"
+step="$READLINE_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libreadline.so.${READLINE_VERSION_MAJOR}" ]; }; }; then
+    start_build
     download "$READLINE_SITE" "$READLINE_TAR"
     untar "$SRC_PATH/$READLINE_TAR"
     pushd "readline-${READLINE_VERSION}"
@@ -844,7 +953,7 @@ if [ ! -s "$SDK_HOME/lib/libreadline.so.${READLINE_VERSION_MAJOR}" ]; then
     make install
     popd
     rm -rf "readline-${READLINE_VERSION}"
-    end_build "$READLINE_TAR"
+    end_build
 fi
 
 # Install nettle (for gnutls)
@@ -854,8 +963,9 @@ NETTLE_VERSION=3.4
 #NETTLE_VERSION_SHORT=${NETTLE_VERSION%.*}
 NETTLE_TAR="nettle-${NETTLE_VERSION}.tar.gz"
 NETTLE_SITE="https://ftp.gnu.org/gnu/nettle"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/nettle.pc" ] || [ "$(pkg-config --modversion nettle)" != "$NETTLE_VERSION" ]; then
-    start_build "$NETTLE_TAR"
+step="$NETTLE_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/nettle.pc" ] || [ "$(pkg-config --modversion nettle)" != "$NETTLE_VERSION" ]; }; }; then
+    start_build
     download "$NETTLE_SITE" "$NETTLE_TAR"
     untar "$SRC_PATH/$NETTLE_TAR"
     pushd "nettle-${NETTLE_VERSION}"
@@ -865,7 +975,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/nettle.pc" ] || [ "$(pkg-config --modversion 
     make -k install
     popd
     rm -rf "nettle-${NETTLE_VERSION}"
-    end_build "$NETTLE_TAR"
+    end_build
 fi
 
 # Install libtasn1 (for gnutls)
@@ -874,8 +984,9 @@ LIBTASN1_VERSION=4.13
 #LIBTASN1_VERSION_SHORT=${LIBTASN1_VERSION%.*}
 LIBTASN1_TAR="libtasn1-${LIBTASN1_VERSION}.tar.gz"
 LIBTASN1_SITE="https://ftp.gnu.org/gnu/libtasn1"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libtasn1.pc" ] || [ "$(pkg-config --modversion libtasn1)" != "$LIBTASN1_VERSION" ]; then
-    start_build "$LIBTASN1_TAR"
+step="$LIBTASN1_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libtasn1.pc" ] || [ "$(pkg-config --modversion libtasn1)" != "$LIBTASN1_VERSION" ]; }; }; then
+    start_build
     download "$LIBTASN1_SITE" "$LIBTASN1_TAR"
     untar "$SRC_PATH/$LIBTASN1_TAR"
     pushd "libtasn1-${LIBTASN1_VERSION}"
@@ -884,7 +995,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libtasn1.pc" ] || [ "$(pkg-config --modversio
     make install
     popd
     rm -rf "libtasn1-${LIBTASN1_VERSION}"
-    end_build "$LIBTASN1_TAR"
+    end_build
 fi
 
 # Install libunistring (for gnutls)
@@ -894,8 +1005,9 @@ LIBUNISTRING_VERSION_HEX=0x00090A
 #LIBUNISTRING_VERSION_SHORT=${LIBUNISTRING_VERSION%.*}
 LIBUNISTRING_TAR="libunistring-${LIBUNISTRING_VERSION}.tar.gz"
 LIBUNISTRING_SITE="https://ftp.gnu.org/gnu/libunistring"
-if [ ! -s "$SDK_HOME/include/unistring/version.h" ] || ! fgrep "${LIBUNISTRING_VERSION_HEX}" "$SDK_HOME/include/unistring/version.h" &>/dev/null; then
-    start_build "$LIBUNISTRING_TAR"
+step="$LIBUNISTRING_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/include/unistring/version.h" ] || ! fgrep "${LIBUNISTRING_VERSION_HEX}" "$SDK_HOME/include/unistring/version.h" &>/dev/null; }; }; then
+    start_build
     download "$LIBUNISTRING_SITE" "$LIBUNISTRING_TAR"
     untar "$SRC_PATH/$LIBUNISTRING_TAR"
     pushd "libunistring-${LIBUNISTRING_VERSION}"
@@ -904,7 +1016,7 @@ if [ ! -s "$SDK_HOME/include/unistring/version.h" ] || ! fgrep "${LIBUNISTRING_V
     make install
     popd
     rm -rf "libunistring-${LIBUNISTRING_VERSION}"
-    end_build "$LIBUNISTRING_TAR"
+    end_build
 fi
 
 # Install libffi
@@ -912,8 +1024,9 @@ fi
 FFI_VERSION=3.2.1
 FFI_TAR="libffi-${FFI_VERSION}.tar.gz"
 FFI_SITE="ftp://sourceware.org/pub/libffi"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libffi.pc" ] || [ "$(pkg-config --modversion libffi)" != "$FFI_VERSION" ]; then
-    start_build "$FFI_TAR"
+step="$FFI_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libffi.pc" ] || [ "$(pkg-config --modversion libffi)" != "$FFI_VERSION" ]; }; }; then
+    start_build
     download "$FFI_SITE" "$FFI_TAR"
     untar "$SRC_PATH/$FFI_TAR"
     pushd "libffi-${FFI_VERSION}"
@@ -928,7 +1041,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libffi.pc" ] || [ "$(pkg-config --modversion 
     make install
     popd
     rm -rf "libffi-${FFI_VERSION}"
-    end_build "$FFI_TAR"
+    end_build
 fi
 
 # Install p11-kit (for gnutls)
@@ -937,8 +1050,9 @@ P11KIT_VERSION=0.23.12
 #P11KIT_VERSION_SHORT=${P11KIT_VERSION%.*}
 P11KIT_TAR="p11-kit-${P11KIT_VERSION}.tar.gz"
 P11KIT_SITE="https://github.com/p11-glue/p11-kit/releases/download/${P11KIT_VERSION}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/p11-kit-1.pc" ] || [ "$(pkg-config --modversion p11-kit-1)" != "$P11KIT_VERSION" ]; then
-    start_build "$P11KIT_TAR"
+step="$P11KIT_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/p11-kit-1.pc" ] || [ "$(pkg-config --modversion p11-kit-1)" != "$P11KIT_VERSION" ]; }; }; then
+    start_build
     download "$P11KIT_SITE" "$P11KIT_TAR"
     untar "$SRC_PATH/$P11KIT_TAR"
     pushd "p11-kit-${P11KIT_VERSION}"
@@ -947,7 +1061,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/p11-kit-1.pc" ] || [ "$(pkg-config --modversi
     make install
     popd
     rm -rf "p11-kit-${P11KIT_VERSION}"
-    end_build "$P11KIT_TAR"
+    end_build
 fi
 
 # Install gnutls (for ffmpeg)
@@ -956,8 +1070,9 @@ GNUTLS_VERSION=3.6.2
 GNUTLS_VERSION_SHORT=${GNUTLS_VERSION%.*}
 GNUTLS_TAR="gnutls-${GNUTLS_VERSION}.tar.xz"
 GNUTLS_SITE="ftp://ftp.gnupg.org/gcrypt/gnutls/v${GNUTLS_VERSION_SHORT}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/gnutls.pc" ] || [ "$(pkg-config --modversion gnutls)" != "$GNUTLS_VERSION" ]; then
-    start_build "$GNUTLS_TAR"
+step="$GNUTLS_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/gnutls.pc" ] || [ "$(pkg-config --modversion gnutls)" != "$GNUTLS_VERSION" ]; }; }; then
+    start_build
     download "$GNUTLS_SITE" "$GNUTLS_TAR"
     untar "$SRC_PATH/$GNUTLS_TAR"
     pushd "gnutls-${GNUTLS_VERSION}"
@@ -966,7 +1081,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/gnutls.pc" ] || [ "$(pkg-config --modversion 
     make install
     popd
     rm -rf "gnutls-${GNUTLS_VERSION}"
-    end_build "$GNUTLS_TAR"
+    end_build
 fi
 
 
@@ -975,8 +1090,9 @@ fi
 CURL_VERSION=7.61.0
 CURL_TAR="curl-${CURL_VERSION}.tar.bz2"
 CURL_SITE="https://curl.haxx.se/download"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libcurl.pc" ] || [ "$(pkg-config --modversion libcurl)" != "$CURL_VERSION" ]; then
-    start_build "$CURL_TAR"
+step="$CURL_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libcurl.pc" ] || [ "$(pkg-config --modversion libcurl)" != "$CURL_VERSION" ]; }; }; then
+    start_build
     download "$CURL_SITE" "$CURL_TAR"
     untar "$SRC_PATH/$CURL_TAR"
     pushd "curl-${CURL_VERSION}"
@@ -985,7 +1101,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libcurl.pc" ] || [ "$(pkg-config --modversion
     make install
     popd
     rm -rf "curl-${CURL_VERSION}"
-    end_build "$CURL_TAR"
+    end_build
 fi
 
 # Install libarchive (for cmake)
@@ -993,8 +1109,9 @@ fi
 LIBARCHIVE_VERSION=3.3.2
 LIBARCHIVE_TAR="libarchive-${LIBARCHIVE_VERSION}.tar.gz"
 LIBARCHIVE_SITE="http://www.libarchive.org/downloads"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libarchive.pc" ] || [ "$(pkg-config --modversion libarchive)" != "$LIBARCHIVE_VERSION" ]; then
-    start_build "$LIBARCHIVE_TAR"
+step="$LIBARCHIVE_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libarchive.pc" ] || [ "$(pkg-config --modversion libarchive)" != "$LIBARCHIVE_VERSION" ]; }; }; then
+    start_build
     download "$LIBARCHIVE_SITE" "$LIBARCHIVE_TAR"
     untar "$SRC_PATH/$LIBARCHIVE_TAR"
     pushd "libarchive-${LIBARCHIVE_VERSION}"
@@ -1003,7 +1120,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libarchive.pc" ] || [ "$(pkg-config --modvers
     make install
     popd
     rm -rf "libarchive-${LIBARCHIVE_VERSION}"
-    end_build "$LIBARCHIVE_TAR"
+    end_build
 fi
 
 # # Install libuv (for cmake)
@@ -1011,8 +1128,9 @@ fi
 # LIBUV_VERSION=1.22.0
 # LIBUV_TAR="libuv-${LIBUV_VERSION}.tar.gz"
 # LIBUV_SITE="http://www.libuv.org/downloads"
-# if [ ! -s "$SDK_HOME/lib/pkgconfig/libuv.pc" ] || [ "$(pkg-config --modversion libuv)" != "$LIBUV_VERSION" ]; then
-#     start_build "$LIBUV_TAR"
+# step="$LIBUV_TAR"
+# if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libuv.pc" ] || [ "$(pkg-config --modversion libuv)" != "$LIBUV_VERSION" ]; }; }; then
+#     start_build
 #     download_github libuv libuv "${LIBUV_VERSION}" v "${LIBUV_TAR}"
 #     untar "$SRC_PATH/$LIBUV_TAR"
 #     pushd "libuv-${LIBUV_VERSION}"
@@ -1022,7 +1140,7 @@ fi
 #     make install
 #     popd
 #     rm -rf "libuv-${LIBUV_VERSION}"
-#     end_build "$LIBUV_TAR"
+#     end_build
 # fi
 
 # Install cmake
@@ -1039,8 +1157,9 @@ CMAKE_VERSION=3.12.0
 CMAKE_VERSION_SHORT=${CMAKE_VERSION%.*}
 CMAKE_TAR="cmake-${CMAKE_VERSION}.tar.gz"
 CMAKE_SITE="https://cmake.org/files/v${CMAKE_VERSION_SHORT}"
-if [ ! -s "$SDK_HOME/bin/cmake" ] || [ $("$SDK_HOME/bin/cmake" --version | head -1 |awk '{print $3}') != "$CMAKE_VERSION" ]; then
-    start_build "$CMAKE_TAR"
+step="$CMAKE_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/cmake" ] || [ $("$SDK_HOME/bin/cmake" --version | head -1 |awk '{print $3}') != "$CMAKE_VERSION" ]; }; }; then
+    start_build
     download "$CMAKE_SITE" "$CMAKE_TAR"
     untar "$SRC_PATH/$CMAKE_TAR"
     pushd "cmake-${CMAKE_VERSION}"
@@ -1049,15 +1168,16 @@ if [ ! -s "$SDK_HOME/bin/cmake" ] || [ $("$SDK_HOME/bin/cmake" --version | head 
     make install
     popd
     rm -rf "cmake-${CMAKE_VERSION}"
-    end_build "$CMAKE_TAR"
+    end_build
 fi
 
 # Install libzip (requires cmake)
 ZIP_VERSION=1.5.1
 ZIP_TAR="libzip-${ZIP_VERSION}.tar.xz"
 ZIP_SITE="https://libzip.org/download"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libzip.pc" ] || [ "$(pkg-config --modversion libzip)" != "$ZIP_VERSION" ]; then
-    start_build "$ZIP_TAR"
+step="$ZIP_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libzip.pc" ] || [ "$(pkg-config --modversion libzip)" != "$ZIP_VERSION" ]; }; }; then
+    start_build
     download "$ZIP_SITE" "$ZIP_TAR"
     untar "$SRC_PATH/$ZIP_TAR"
     pushd "libzip-${ZIP_VERSION}"
@@ -1074,7 +1194,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libzip.pc" ] || [ "$(pkg-config --modversion 
     popd
     popd
     rm -rf "libzip-${ZIP_VERSION}"
-    end_build "$ZIP_TAR"
+    end_build
 fi
 
 # Install icu
@@ -1082,8 +1202,9 @@ fi
 ICU_VERSION=62.1
 ICU_TAR="icu4c-${ICU_VERSION//./_}-src.tgz"
 ICU_SITE="http://download.icu-project.org/files/icu4c/${ICU_VERSION}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/icu-i18n.pc" ] || [ "$(pkg-config --modversion icu-i18n)" != "$ICU_VERSION" ]; then
-    start_build "$ICU_TAR"
+step="$ICU_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/icu-i18n.pc" ] || [ "$(pkg-config --modversion icu-i18n)" != "$ICU_VERSION" ]; }; }; then
+    start_build
     download "$ICU_SITE" "$ICU_TAR"
     untar "$SRC_PATH/$ICU_TAR"
     pushd icu/source
@@ -1093,7 +1214,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/icu-i18n.pc" ] || [ "$(pkg-config --modversio
     make install
     popd
     rm -rf icu
-    end_build "$ICU_TAR"
+    end_build
 fi
 
 # Install Berkeley DB (optional for python2 and python3)
@@ -1101,8 +1222,9 @@ fi
 #BERKELEYDB_VERSION=6.2.32
 #BERKELEYDB_TAR="db-${BERKELEYDB_VERSION}.tar.gz"
 #BERKELEYDB_SITE="http://download.oracle.com/berkeley-db"
-## FIXME if [ ! -s "$SDK_HOME/lib/pkgconfig/sqlite3.pc" ] || [ "$(pkg-config --modversion sqlite3)" != "$BERKELEYDB_VERSION" ]; then
-#    start_build "$BERKELEYDB_TAR"
+#step="$BERKELEYDB_TAR"
+## FIXME if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/sqlite3.pc" ] || [ "$(pkg-config --modversion sqlite3)" != "$BERKELEYDB_VERSION" ]; }; }; then
+#    start_build
 #    download "$BERKELEYDB_SITE" "$BERKELEYDB_TAR"
 #    untar "$SRC_PATH/$BERKELEYDB_TAR"
 #    pushd "sqlite-autoconf-${BERKELEYDB_VERSION_INT}"
@@ -1111,7 +1233,7 @@ fi
 #    make install
 #    popd
 #    rm -rf "sqlite-autoconf-${BERKELEYDB_VERSION_INT}"
-#    end_build "$BERKELEYDB_TAR"
+#    end_build
 #fi
 
 # Install sqlite (required for webkit and QtSql SQLite module, optional for python2)
@@ -1121,8 +1243,9 @@ SQLITE_VERSION_INT=3240000
 SQLITE_YEAR=2018
 SQLITE_TAR="sqlite-autoconf-${SQLITE_VERSION_INT}.tar.gz"
 SQLITE_SITE="https://sqlite.org/${SQLITE_YEAR}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/sqlite3.pc" ] || [ "$(pkg-config --modversion sqlite3)" != "$SQLITE_VERSION" ]; then
-    start_build "$SQLITE_TAR"
+step="$SQLITE_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/sqlite3.pc" ] || [ "$(pkg-config --modversion sqlite3)" != "$SQLITE_VERSION" ]; }; }; then
+    start_build
     download "$SQLITE_SITE" "$SQLITE_TAR"
     untar "$SRC_PATH/$SQLITE_TAR"
     pushd "sqlite-autoconf-${SQLITE_VERSION_INT}"
@@ -1136,7 +1259,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/sqlite3.pc" ] || [ "$(pkg-config --modversion
     make install
     popd
     rm -rf "sqlite-autoconf-${SQLITE_VERSION_INT}"
-    end_build "$SQLITE_TAR"
+    end_build
 fi
 
 # Install pcre (required by glib)
@@ -1144,8 +1267,9 @@ fi
 PCRE_VERSION=8.42
 PCRE_TAR="pcre-${PCRE_VERSION}.tar.bz2"
 PCRE_SITE="https://ftp.pcre.org/pub/pcre"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libpcre.pc" ] || [ "$(pkg-config --modversion libpcre)" != "$PCRE_VERSION" ]; then
-    start_build "$PCRE_TAR"
+step="$PCRE_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libpcre.pc" ] || [ "$(pkg-config --modversion libpcre)" != "$PCRE_VERSION" ]; }; }; then
+    start_build
     download "$PCRE_SITE" "$PCRE_TAR"
     untar "$SRC_PATH/$PCRE_TAR"
     pushd "pcre-${PCRE_VERSION}"
@@ -1154,7 +1278,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libpcre.pc" ] || [ "$(pkg-config --modversion
     make install
     popd
     rm -rf "pcre-${PCRE_VERSION}"
-    end_build "$PCRE_TAR"
+    end_build
 fi
 
 # Install git (requires curl and pcre)
@@ -1162,8 +1286,9 @@ fi
 GIT_VERSION=2.17.0
 GIT_TAR="git-${GIT_VERSION}.tar.xz"
 GIT_SITE="https://www.kernel.org/pub/software/scm/git"
-if [ ! -s "$SDK_HOME/bin/git" ] || [ "$("${SDK_HOME}/bin/git" --version)" != "git version $GIT_VERSION" ] ; then
-    start_build "$GIT_TAR"
+step="$GIT_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/git" ] || [ "$("${SDK_HOME}/bin/git" --version)" != "git version $GIT_VERSION" ] ; }; }; then
+    start_build
     download "$GIT_SITE" "$GIT_TAR"
     untar "$SRC_PATH/$GIT_TAR"
     pushd "git-${GIT_VERSION}"
@@ -1172,7 +1297,7 @@ if [ ! -s "$SDK_HOME/bin/git" ] || [ "$("${SDK_HOME}/bin/git" --version)" != "gi
     make install
     popd
     rm -rf "git-${GIT_VERSION}"
-    end_build "$GIT_TAR"
+    end_build
 fi
 
 # Install MariaDB (for the Qt mariadb plugin and the python mariadb adapter)
@@ -1180,8 +1305,9 @@ fi
 MARIADB_VERSION=10.2.12
 MARIADB_TAR="mariadb-${MARIADB_VERSION}.tar.gz"
 MARIADB_SITE="http://archive.mariadb.org/mariadb-${MARIADB_VERSION}/source"
-if [ ! -s "$SDK_HOME/bin/mariadb_config" ] || [ "$("${SDK_HOME}/bin/mariadb_config" --version)" != "$MARIADB_VERSION" ] ; then
-    start_build "$MARIADB_TAR"
+step="$MARIADB_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/mariadb_config" ] || [ "$("${SDK_HOME}/bin/mariadb_config" --version)" != "$MARIADB_VERSION" ] ; }; }; then
+    start_build
     download "$MARIADB_SITE" "$MARIADB_TAR"
     untar "$SRC_PATH/$MARIADB_TAR"
     pushd "mariadb-${MARIADB_VERSION}"
@@ -1195,7 +1321,7 @@ if [ ! -s "$SDK_HOME/bin/mariadb_config" ] || [ "$("${SDK_HOME}/bin/mariadb_conf
     popd
     popd
     rm -rf "mariadb-${MARIADB_VERSION}"
-    end_build "$MARIADB_TAR"
+    end_build
 fi
 
 # Install PostgreSQL (for the Qt postgresql plugin and the python postgresql adapter)
@@ -1203,8 +1329,9 @@ fi
 POSTGRESQL_VERSION=10.4
 POSTGRESQL_TAR="postgresql-${POSTGRESQL_VERSION}.tar.bz2"
 POSTGRESQL_SITE="http://ftp.postgresql.org/pub/source/v${POSTGRESQL_VERSION}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libpq.pc" ] || [ "$(pkg-config --modversion libpq)" != "$POSTGRESQL_VERSION" ]; then
-    start_build "$POSTGRESQL_TAR"
+step="$POSTGRESQL_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libpq.pc" ] || [ "$(pkg-config --modversion libpq)" != "$POSTGRESQL_VERSION" ]; }; }; then
+    start_build
     download "$POSTGRESQL_SITE" "$POSTGRESQL_TAR"
     untar "$SRC_PATH/$POSTGRESQL_TAR"
     pushd "postgresql-${POSTGRESQL_VERSION}"
@@ -1213,7 +1340,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libpq.pc" ] || [ "$(pkg-config --modversion l
     make install
     popd
     rm -rf "postgresql-${POSTGRESQL_VERSION}"
-    end_build "$POSTGRESQL_TAR"
+    end_build
 fi
 
 # Install Python2
@@ -1222,8 +1349,9 @@ PY2_VERSION=2.7.15
 PY2_VERSION_SHORT=${PY2_VERSION%.*}
 PY2_TAR="Python-${PY2_VERSION}.tar.xz"
 PY2_SITE="https://www.python.org/ftp/python/${PY2_VERSION}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/python2.pc" ] || [ "$(pkg-config --modversion python2)" != "$PY2_VERSION_SHORT" ]; then
-    start_build "$PY2_TAR"
+step="$PY2_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/python2.pc" ] || [ "$(pkg-config --modversion python2)" != "$PY2_VERSION_SHORT" ]; }; }; then
+    start_build
     download "$PY2_SITE" "$PY2_TAR"
     untar "$SRC_PATH/$PY2_TAR"
     pushd "Python-${PY2_VERSION}"
@@ -1233,26 +1361,28 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/python2.pc" ] || [ "$(pkg-config --modversion
     chmod -v 755 "$SDK_HOME/lib/libpython2.7.so.1.0"
     popd
     rm -rf "Python-${PY2_VERSION}"
-    end_build "$PY2_TAR"
+    end_build
 fi
 
 # Install mysqlclient (MySQL/MariaDB connector)
 # mysqlclient is a fork of MySQL-python. It adds Python 3 support and fixed many bugs.
 # see https://pypi.python.org/pypi/mysqlclient
 MYSQLCLIENT_VERSION=1.3.12
-if [ ! -d "$SDK_HOME/lib/python${PY2_VERSION_SHORT}/site-packages/MySQLdb" ] || [ $("$SDK_HOME/bin/python${PY2_VERSION_SHORT}" -c "import MySQLdb; print MySQLdb.__version__") != ${MYSQLCLIENT_VERSION} ]; then
-    start_build "mysqlclient-$MYSQLCLIENT_VERSION"
+step="mysqlclient-$MYSQLCLIENT_VERSION"
+if build_step && { force_build || { [ ! -d "$SDK_HOME/lib/python${PY2_VERSION_SHORT}/site-packages/MySQLdb" ] || [ $("$SDK_HOME/bin/python${PY2_VERSION_SHORT}" -c "import MySQLdb; print MySQLdb.__version__") != ${MYSQLCLIENT_VERSION} ]; }; }; then
+    start_build
     ${SDK_HOME}/bin/pip${PY2_VERSION_SHORT} install --no-binary mysqlclient mysqlclient=="${MYSQLCLIENT_VERSION}"
-    end_build "mysqlclient-$MYSQLCLIENT_VERSION"
+    end_build
 fi
 
 # install psycopg2 (PostgreSQL connector)
 # see https://pypi.python.org/pypi/psycopg2
 PSYCOPG2_VERSION=2.7.3.2
-if [ ! -d "$SDK_HOME/lib/python${PY2_VERSION_SHORT}/site-packages/psycopg2" ] || [ $("$SDK_HOME/bin/python${PY2_VERSION_SHORT}" -c "import psycopg2; print psycopg2.__version__.split(' ', 1)[0]") != ${PSYCOPG2_VERSION} ]; then
-    start_build "psycopg2-$PSYCOPG2_VERSION"
+step="psycopg2-$PSYCOPG2_VERSION"
+if build_step && { force_build || { [ ! -d "$SDK_HOME/lib/python${PY2_VERSION_SHORT}/site-packages/psycopg2" ] || [ $("$SDK_HOME/bin/python${PY2_VERSION_SHORT}" -c "import psycopg2; print psycopg2.__version__.split(' ', 1)[0]") != ${PSYCOPG2_VERSION} ]; }; }; then
+    start_build
     ${SDK_HOME}/bin/pip${PY2_VERSION_SHORT} install --no-binary psycopg2 psycopg2=="${PSYCOPG2_VERSION}"
-    end_build "psycopg2-$PSYCOPG2_VERSION"
+    end_build
 fi
     
 # Install Python3
@@ -1261,9 +1391,10 @@ PY3_VERSION=3.6.5
 PY3_VERSION_SHORT=${PY3_VERSION%.*}
 PY3_TAR="Python-${PY3_VERSION}.tar.xz"
 PY3_SITE="https://www.python.org/ftp/python/${PY3_VERSION}"
-if [ "$PYV" = "3" ]; then
+step="$PY3_TAR"
+if build_step && { force_build || { [ "$PYV" = "3" ]; }; }; then
     if [ ! -s "$SDK_HOME/lib/pkgconfig/python3.pc" ] || [ "$(pkg-config --modversion python3)" != "$PY3_VERSION_SHORT" ]; then
-        start_build "$PY3_TAR"
+        start_build
         download "$PY3_SITE" "$PY3_TAR"
         untar "$SRC_PATH/$PY3_TAR"
         pushd "Python-${PY3_VERSION}"
@@ -1274,7 +1405,7 @@ if [ "$PYV" = "3" ]; then
         chmod -v 755 /usr/lib/libpython3.so
         popd
         rm -rf "Python-${PY3_VERSION}"
-        end_build "$PY3_TAR"
+        end_build
     fi
 fi
 
@@ -1291,12 +1422,13 @@ OSMESA_DEMOS_SITE="ftp://ftp.freedesktop.org/pub/mesa/demos/${OSMESA_DEMOS_VERSI
 OSMESA_LLVM_VERSION=4.0.1
 OSMESA_LLVM_TAR="llvm-${OSMESA_LLVM_VERSION}.src.tar.xz"
 OSMESA_LLVM_SITE="http://releases.llvm.org/${OSMESA_LLVM_VERSION}"
-if [ "${REBUILD_OSMESA:-}" = "1" ]; then
+step="$OSMESA_TAR"
+if build_step && { force_build || { [ "${REBUILD_OSMESA:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME/osmesa" || true
     rm -rf "$SDK_HOME/llvm" || true
 fi
-if [ ! -s "$SDK_HOME/osmesa/lib/pkgconfig/gl.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/osmesa/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion gl)" != "$OSMESA_VERSION" ]; then
-    start_build "$OSMESA_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/osmesa/lib/pkgconfig/gl.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/osmesa/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion gl)" != "$OSMESA_VERSION" ]; }; }; then
+    start_build
     download "$OSMESA_SITE" "$OSMESA_TAR"
     download "$OSMESA_GLU_SITE" "$OSMESA_GLU_TAR"
     download "$OSMESA_DEMOS_SITE" "$OSMESA_DEMOS_TAR"
@@ -1321,7 +1453,7 @@ if [ ! -s "$SDK_HOME/osmesa/lib/pkgconfig/gl.pc" ] || [ "$(env PKG_CONFIG_PATH=$
     popd
     popd
     rm -rf osmesa-install
-    end_build "$OSMESA_TAR"
+    end_build
 fi
 
 # Install libpng
@@ -1329,12 +1461,13 @@ fi
 LIBPNG_VERSION=1.6.35
 LIBPNG_TAR="libpng-${LIBPNG_VERSION}.tar.gz"
 LIBPNG_SITE="https://download.sourceforge.net/libpng"
-if [ "${REBUILD_PNG:-}" = "1" ]; then
+step="$LIBPNG_TAR"
+if build_step && { force_build || { [ "${REBUILD_PNG:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/{include,lib}/*png* || true
     rm -f "$SDK_HOME"/lib/pkgconfig/*png* || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libpng.pc" ] || [ "$(pkg-config --modversion libpng)" != "$LIBPNG_VERSION" ]; then
-    start_build "$LIBPNG_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libpng.pc" ] || [ "$(pkg-config --modversion libpng)" != "$LIBPNG_VERSION" ]; }; }; then
+    start_build
     download "$LIBPNG_SITE" "$LIBPNG_TAR"
     untar "$SRC_PATH/$LIBPNG_TAR"
     pushd "libpng-${LIBPNG_VERSION}"
@@ -1343,19 +1476,20 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libpng.pc" ] || [ "$(pkg-config --modversion 
     make install
     popd
     rm -rf "libpng-${LIBPNG_VERSION}"
-    end_build "$LIBPNG_TAR"
+    end_build
 fi
 
 # Install FreeType2
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/freetype2.html
-FTYPE_VERSION=2.9.1
-FTYPE_TAR="freetype-${FTYPE_VERSION}.tar.gz"
-FTYPE_SITE="http://download.savannah.gnu.org/releases/freetype"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/freetype2.pc" ]; then # || [ "$(pkg-config --modversion freetype2)" != "$FTYPE_VERSION" ]; then
-    start_build "$FTYPE_TAR"
-    download "$FTYPE_SITE" "$FTYPE_TAR"
-    untar "$SRC_PATH/$FTYPE_TAR"
-    pushd "freetype-${FTYPE_VERSION}"
+FREETYPE_VERSION=2.9.1
+FREETYPE_TAR="freetype-${FREETYPE_VERSION}.tar.gz"
+FREETYPE_SITE="http://download.savannah.gnu.org/releases/freetype"
+step="$FREETYPE_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/freetype2.pc" ]; }; }; then # || [ "$(pkg-config --modversion freetype2)" != "$FREETYPE_VERSION" ]; then
+    start_build
+    download "$FREETYPE_SITE" "$FREETYPE_TAR"
+    untar "$SRC_PATH/$FREETYPE_TAR"
+    pushd "freetype-${FREETYPE_VERSION}"
     # First command enables GX/AAT and OpenType table validation
     sed -ri "s:.*(AUX_MODULES.*valid):\1:" modules.cfg
     # second command enables Subpixel Rendering
@@ -1365,8 +1499,8 @@ env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-stati
     make -j${MKJOBS}
     make install
     popd
-    rm -rf "freetype-${FTYPE_VERSION}"
-    end_build "$FTYPE_TAR"
+    rm -rf "freetype-${FREETYPE_VERSION}"
+    end_build
 fi
 
 # Install libmount (required by glib)
@@ -1382,8 +1516,9 @@ fi
 UTILLINUX_VERSION_SHORT=${UTILLINUX_VERSION%.*}
 UTILLINUX_TAR="util-linux-${UTILLINUX_VERSION}.tar.xz"
 UTILLINUX_SITE="https://www.kernel.org/pub/linux/utils/util-linux/v${UTILLINUX_VERSION_SHORT}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/mount.pc" ] || [ "$(pkg-config --modversion mount)" != "$UTILLINUX_VERSION" ]; then
-    start_build "$UTILLINUX_TAR"
+step="$UTILLINUX_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/mount.pc" ] || [ "$(pkg-config --modversion mount)" != "$UTILLINUX_VERSION" ]; }; }; then
+    start_build
     download "$UTILLINUX_SITE" "$UTILLINUX_TAR"
     untar "$SRC_PATH/$UTILLINUX_TAR"
     pushd "util-linux-${UTILLINUX_VERSION}"
@@ -1405,7 +1540,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/mount.pc" ] || [ "$(pkg-config --modversion m
     make install
     popd
     rm -rf "util-linux-${UTILLINUX_VERSION}"
-    end_build "$UTILLINUX_TAR"
+    end_build
 fi
 
 # Install fontconfig
@@ -1413,13 +1548,14 @@ fi
 FONTCONFIG_VERSION=2.13.0
 FONTCONFIG_TAR="fontconfig-${FONTCONFIG_VERSION}.tar.gz"
 FONTCONFIG_SITE="https://www.freedesktop.org/software/fontconfig/release"
-if [ "${REBUILD_FONTCONFIG:-}" = "1" ]; then
+step="$FONTCONFIG_TAR"
+if build_step && { force_build || { [ "${REBUILD_FONTCONFIG:-}" = "1" ]; }; }; then
     rm -f "$SDK_HOME"/lib/libfontconfig* || true
     rm -rf "$SDK_HOME"/include/fontconfig || true
     rm -f "$SDK_HOME"/lib/pkgconfig/fontconfig.pc || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/fontconfig.pc" ] || [ "$(pkg-config --modversion fontconfig)" != "$FONTCONFIG_VERSION" ]; then
-    start_build "$FONTCONFIG_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/fontconfig.pc" ] || [ "$(pkg-config --modversion fontconfig)" != "$FONTCONFIG_VERSION" ]; }; }; then
+    start_build
     download "$FONTCONFIG_SITE" "$FONTCONFIG_TAR"
     untar "$SRC_PATH/$FONTCONFIG_TAR"
     pushd "fontconfig-${FONTCONFIG_VERSION}"
@@ -1428,7 +1564,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/fontconfig.pc" ] || [ "$(pkg-config --modvers
     make install
     popd
     rm -rf "fontconfig-${FONTCONFIG_VERSION}"
-    end_build "$FONTCONFIG_TAR"
+    end_build
 fi
 
 
@@ -1437,8 +1573,9 @@ fi
 TEXINFO_VERSION=6.5
 TEXINFO_TAR="texinfo-${TEXINFO_VERSION}.tar.gz"
 TEXINFO_SITE="https://ftp.gnu.org/gnu/texinfo"
-if [ ! -s "$SDK_HOME/bin/makeinfo" ]; then
-    start_build "$TEXINFO_TAR"
+step="$TEXINFO_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/makeinfo" ]; }; }; then
+    start_build
     download "$TEXINFO_SITE" "$TEXINFO_TAR"
     untar "$SRC_PATH/$TEXINFO_TAR"
     pushd "texinfo-${TEXINFO_VERSION}"
@@ -1447,21 +1584,24 @@ if [ ! -s "$SDK_HOME/bin/makeinfo" ]; then
     make install
     popd
     rm -rf "texinfo-${TEXINFO_VERSION}"
-    end_build "$TEXINFO_TAR"
+    end_build
 fi
 
 # Install glib
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html
 # We explicitely disable SElinux, see https://github.com/NatronGitHub/Natron/issues/265
-GLIB_VERSION=2.56.1
-if ! grep -F F_SETPIPE_SZ /usr/include/linux/fcntl.h &>/dev/null; then
-    GLIB_VERSION=2.54.3
-fi
+# versions 2.56, 2.58 and 2.60 do not compile on CentOS6.
+# This will be fixed in 2.62: https://github.com/GNOME/glib/commit/0beb62f564072f3585762c9c55fe894485993b62#diff-6b790fb09bbee6ca6c8ee1a76c0f49be
+GLIB_VERSION=2.54.3 
+#if grep -F F_SETPIPE_SZ /usr/include/linux/fcntl.h &>/dev/null; then
+#    GLIB_VERSION=2.56.1
+#fi
 GLIB_VERSION_SHORT=${GLIB_VERSION%.*}
 GLIB_TAR="glib-${GLIB_VERSION}.tar.xz"
 GLIB_SITE="https://ftp.gnome.org/pub/gnome/sources/glib/${GLIB_VERSION_SHORT}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/glib-2.0.pc" ] || [ "$(pkg-config --modversion glib-2.0)" != "$GLIB_VERSION" ]; then
-    start_build "$GLIB_TAR"
+step="$GLIB_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/glib-2.0.pc" ] || [ "$(pkg-config --modversion glib-2.0)" != "$GLIB_VERSION" ]; }; }; then
+    start_build
     download "$GLIB_SITE" "$GLIB_TAR"
     untar "$SRC_PATH/$GLIB_TAR"
     pushd "glib-${GLIB_VERSION}"
@@ -1474,7 +1614,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/glib-2.0.pc" ] || [ "$(pkg-config --modversio
     make install
     popd
     rm -rf "glib-${GLIB_VERSION}"
-    end_build "$GLIB_TAR"
+    end_build
 fi
 
 # Install libxml2
@@ -1483,12 +1623,13 @@ LIBXML2_VERSION=2.9.8
 LIBXML2_TAR="libxml2-${LIBXML2_VERSION}.tar.gz"
 LIBXML2_SITE="ftp://xmlsoft.org/libxml2"
 LIBXML2_ICU=1 # set to 1 if libxml2 should be compiled with ICU support. This implies things for Qt4 and QtWebkit.
-if [ "${REBUILD_XML:-}" = "1" ]; then
+step="$LIBXML2_TAR"
+if build_step && { force_build || { [ "${REBUILD_XML:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/include/libxml2 "$SDK_HOME"/lib/libxml* "$SDK_HOME"/lib/pkgconfig/libxml* || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libxml-2.0.pc" ] || [ "$(pkg-config --modversion libxml-2.0)" != "$LIBXML2_VERSION" ]; then
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libxml-2.0.pc" ] || [ "$(pkg-config --modversion libxml-2.0)" != "$LIBXML2_VERSION" ]; }; }; then
     REBUILD_XSLT=1
-    start_build "$LIBXML2_TAR"
+    start_build
     download "$LIBXML2_SITE" "$LIBXML2_TAR"
     untar "$SRC_PATH/$LIBXML2_TAR"
     pushd "libxml2-${LIBXML2_VERSION}"
@@ -1502,7 +1643,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libxml-2.0.pc" ] || [ "$(pkg-config --modvers
     make install
     popd
     rm -rf "libxml2-${LIBXML2_VERSION}"
-    end_build "$LIBXML2_TAR"
+    end_build
 fi
 
 # Install libxslt
@@ -1510,11 +1651,12 @@ fi
 LIBXSLT_VERSION=1.1.32
 LIBXSLT_TAR="libxslt-${LIBXSLT_VERSION}.tar.gz"
 LIBXSLT_SITE="ftp://xmlsoft.org/libxslt"
-if [ "${REBUILD_XSLT:-}" = "1" ]; then
+step="$LIBXSLT_TAR"
+if build_step && { force_build || { [ "${REBUILD_XSLT:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/include/libxslt "$SDK_HOME"/lib/libxsl* "$SDK_HOME"/lib/pkgconfig/libxslt* || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libxslt.pc" ] || [ "$(pkg-config --modversion libxslt)" != "$LIBXSLT_VERSION" ]; then
-    start_build "$LIBXSLT_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libxslt.pc" ] || [ "$(pkg-config --modversion libxslt)" != "$LIBXSLT_VERSION" ]; }; }; then
+    start_build
     download "$LIBXSLT_SITE" "$LIBXSLT_TAR"
     untar "$SRC_PATH/$LIBXSLT_TAR"
     pushd "libxslt-${LIBXSLT_VERSION}"
@@ -1525,7 +1667,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libxslt.pc" ] || [ "$(pkg-config --modversion
     make install
     popd
     rm -rf "libxslt-${LIBXSLT_VERSION}"
-    end_build "$LIBXSLT_TAR"
+    end_build
 fi
 
 # Install boost
@@ -1536,8 +1678,9 @@ BOOST_VERSION=1.67.0
 BOOST_LIB_VERSION=$(echo "${BOOST_VERSION//./_}" | sed -e 's/_0$//')
 BOOST_TAR="boost_${BOOST_VERSION//./_}.tar.bz2"
 BOOST_SITE="https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source"
-if [ ! -s "$SDK_HOME/lib/libboost_atomic.so" ] || ! fgrep "define BOOST_LIB_VERSION \"${BOOST_LIB_VERSION}\"" "$SDK_HOME/include/boost/version.hpp" &>/dev/null ; then
-    start_build "$BOOST_TAR"
+step="$BOOST_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libboost_atomic.so" ] || ! fgrep "define BOOST_LIB_VERSION \"${BOOST_LIB_VERSION}\"" "$SDK_HOME/include/boost/version.hpp" &>/dev/null ; }; }; then
+    start_build
     download "$BOOST_SITE" "$BOOST_TAR"
     untar "$SRC_PATH/$BOOST_TAR"
     pushd "boost_${BOOST_VERSION//./_}"
@@ -1547,27 +1690,28 @@ if [ ! -s "$SDK_HOME/lib/libboost_atomic.so" ] || ! fgrep "define BOOST_LIB_VERS
     env CPATH="$SDK_HOME/include:$SDK_HOME/include/python${PY2_VERSION_SHORT}" CFLAGS="$BF" CXXFLAGS="$BF" ./b2 -s --prefix="$SDK_HOME" cflags="-fPIC" -j${MKJOBS} install threading=multi link=shared # link=static
     popd
     rm -rf "boost_${BOOST_VERSION//./_}"
-    end_build "$BOOST_TAR"
+    end_build
 fi
 
 # install cppunit
-CPPU_VERSION=1.13.2 # does not require c++11
+CPPUNIT_VERSION=1.13.2 # does not require c++11
 if [[ ! "$GCC_VERSION" =~ ^4\. ]]; then
-    CPPU_VERSION=1.14.0 # 1.14.0 is the first version to require c++11
+    CPPUNIT_VERSION=1.14.0 # 1.14.0 is the first version to require c++11
 fi
-CPPU_TAR="cppunit-${CPPU_VERSION}.tar.gz"
-CPPU_SITE="http://dev-www.libreoffice.org/src"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/cppunit.pc" ] || [ "$(pkg-config --modversion cppunit)" != "$CPPU_VERSION" ]; then
-    start_build "$CPPU_TAR"
-    download "$CPPU_SITE" "$CPPU_TAR"
-    untar "$SRC_PATH/$CPPU_TAR"
-    pushd "cppunit-${CPPU_VERSION}"
+CPPUNIT_TAR="cppunit-${CPPUNIT_VERSION}.tar.gz"
+CPPUNIT_SITE="http://dev-www.libreoffice.org/src"
+step="$CPPUNIT_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/cppunit.pc" ] || [ "$(pkg-config --modversion cppunit)" != "$CPPUNIT_VERSION" ]; }; }; then
+    start_build
+    download "$CPPUNIT_SITE" "$CPPUNIT_TAR"
+    untar "$SRC_PATH/$CPPUNIT_TAR"
+    pushd "cppunit-${CPPUNIT_VERSION}"
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME"
     make -j${MKJOBS}
     make install
     popd
-    rm -rf "cppunit-${CPPU_VERSION}"
-    end_build "$CPPU_TAR"
+    rm -rf "cppunit-${CPPUNIT_VERSION}"
+    end_build
 fi
 
 # Install libjpeg-turbo
@@ -1575,8 +1719,9 @@ fi
 LIBJPEGTURBO_VERSION=1.5.3
 LIBJPEGTURBO_TAR="libjpeg-turbo-${LIBJPEGTURBO_VERSION}.tar.gz"
 LIBJPEGTURBO_SITE="https://sourceforge.net/projects/libjpeg-turbo/files/${LIBJPEGTURBO_VERSION}"
-if [ ! -s "$SDK_HOME/lib/libturbojpeg.so.0.1.0" ]; then
-    start_build "$LIBJPEGTURBO_TAR"
+step="$LIBJPEGTURBO_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libturbojpeg.so.0.1.0" ]; }; }; then
+    start_build
     download "$LIBJPEGTURBO_SITE" "$LIBJPEGTURBO_TAR"
     untar "$SRC_PATH/$LIBJPEGTURBO_TAR"
     pushd "libjpeg-turbo-${LIBJPEGTURBO_VERSION}"
@@ -1585,7 +1730,7 @@ if [ ! -s "$SDK_HOME/lib/libturbojpeg.so.0.1.0" ]; then
     make install
     popd
     rm -rf "libjpeg-turbo-${LIBJPEGTURBO_VERSION}"
-    end_build "$LIBJPEGTURBO_TAR"
+    end_build
 fi
 
 # Install giflib
@@ -1593,8 +1738,9 @@ fi
 GIFLIB_VERSION=5.1.4
 GIFLIB_TAR="giflib-${GIFLIB_VERSION}.tar.bz2"
 GIFLIB_SITE="https://sourceforge.net/projects/giflib/files"
-if [ ! -s "$SDK_HOME/lib/libgif.so" ]; then
-    start_build "$GIFLIB_TAR"
+step="$GIFLIB_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libgif.so" ]; }; }; then
+    start_build
     download "$GIFLIB_SITE" "$GIFLIB_TAR"
     untar "$SRC_PATH/$GIFLIB_TAR"
     pushd "giflib-${GIFLIB_VERSION}"
@@ -1603,7 +1749,7 @@ if [ ! -s "$SDK_HOME/lib/libgif.so" ]; then
     make install
     popd
     rm -rf "giflib-${GIFLIB_VERSION}"
-    end_build "$GIFLIB_TAR"
+    end_build
 fi
 
 # Install tiff
@@ -1611,12 +1757,13 @@ fi
 TIFF_VERSION=4.0.9
 TIFF_TAR="tiff-${TIFF_VERSION}.tar.gz"
 TIFF_SITE="http://download.osgeo.org/libtiff"
-if [ "${REBUILD_TIFF:-}" = "1" ]; then
+step="$TIFF_TAR"
+if build_step && { force_build || { [ "${REBUILD_TIFF:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/{lib,include}/*tiff* || true
     rm -f "$SDK_HOME"/lib/pkgconfig/*tiff* || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libtiff-4.pc" ] || [ "$(pkg-config --modversion libtiff-4)" != "$TIFF_VERSION" ]; then
-    start_build "$TIFF_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libtiff-4.pc" ] || [ "$(pkg-config --modversion libtiff-4)" != "$TIFF_VERSION" ]; }; }; then
+    start_build
     download "$TIFF_SITE" "$TIFF_TAR"
     untar "$SRC_PATH/$TIFF_TAR"
     pushd "tiff-${TIFF_VERSION}"
@@ -1625,7 +1772,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libtiff-4.pc" ] || [ "$(pkg-config --modversi
     make install
     popd
     rm -rf "tiff-${TIFF_VERSION}"
-    end_build "$TIFF_TAR"
+    end_build
 fi
 
 # Install jasper
@@ -1633,11 +1780,12 @@ fi
 JASPER_VERSION=2.0.14
 JASPER_TAR="jasper-${JASPER_VERSION}.tar.gz"
 JASPER_SITE="http://www.ece.uvic.ca/~mdadams/jasper/software"
-if [ "${REBUILD_JASPER:-}" = "1" ]; then
+step="$JASPER_TAR"
+if build_step && { force_build || { [ "${REBUILD_JASPER:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/{include,lib}/*jasper* || true
 fi
-if [ ! -s "$SDK_HOME/lib/libjasper.so" ]; then
-    start_build "$JASPER_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libjasper.so" ]; }; }; then
+    start_build
     download "$JASPER_SITE" "$JASPER_TAR"
     untar "$SRC_PATH/$JASPER_TAR"
     pushd "jasper-${JASPER_VERSION}"
@@ -1650,7 +1798,7 @@ if [ ! -s "$SDK_HOME/lib/libjasper.so" ]; then
     popd
     popd
     rm -rf "jasper-${JASPER_VERSION}"
-    end_build "$JASPER_TAR"
+    end_build
 fi
 
 # Install lcms2
@@ -1658,8 +1806,9 @@ fi
 LCMS_VERSION=2.9
 LCMS_TAR="lcms2-${LCMS_VERSION}.tar.gz"
 LCMS_SITE="https://sourceforge.net/projects/lcms/files/lcms/${LCMS_VERSION}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/lcms2.pc" ] || [ "$(pkg-config --modversion lcms2)" != "$LCMS_VERSION" ]; then
-    start_build "$LCMS_TAR"
+step="$LCMS_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/lcms2.pc" ] || [ "$(pkg-config --modversion lcms2)" != "$LCMS_VERSION" ]; }; }; then
+    start_build
     download "$LCMS_SITE" "$LCMS_TAR"
     untar "$SRC_PATH/$LCMS_TAR"
     pushd "lcms2-${LCMS_VERSION}"
@@ -1668,15 +1817,16 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/lcms2.pc" ] || [ "$(pkg-config --modversion l
     make install
     popd
     rm -rf "lcms2-${LCMS_VERSION}"
-    end_build "$LCMS_TAR"
+    end_build
 fi
 
 # install librevenge
 REVENGE_VERSION=0.0.4
 REVENGE_TAR="librevenge-${REVENGE_VERSION}.tar.xz"
 REVENGE_SITE="https://sourceforge.net/projects/libwpd/files/librevenge/librevenge-${REVENGE_VERSION}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/librevenge-0.0.pc" ] || [ "$(pkg-config --modversion librevenge-0.0)" != "$REVENGE_VERSION" ]; then
-    start_build "$REVENGE_TAR"
+step="$REVENGE_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/librevenge-0.0.pc" ] || [ "$(pkg-config --modversion librevenge-0.0)" != "$REVENGE_VERSION" ]; }; }; then
+    start_build
     download "$REVENGE_SITE" "$REVENGE_TAR"
     untar "$SRC_PATH/$REVENGE_TAR"
     pushd "librevenge-${REVENGE_VERSION}"
@@ -1685,15 +1835,16 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/librevenge-0.0.pc" ] || [ "$(pkg-config --mod
     make install
     popd
     rm -rf "librevenge-${REVENGE_VERSION}"
-    end_build "$REVENGE_TAR"
+    end_build
 fi
 
 # install libcdr
 LIBCDR_VERSION=0.1.4
 LIBCDR_TAR="libcdr-${LIBCDR_VERSION}.tar.xz"
 LIBCDR_SITE="http://dev-www.libreoffice.org/src/libcdr"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libcdr-0.1.pc" ] || [ "$(pkg-config --modversion libcdr-0.1)" != "$LIBCDR_VERSION" ]; then
-    start_build "$LIBCDR_TAR"
+step="$LIBCDR_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libcdr-0.1.pc" ] || [ "$(pkg-config --modversion libcdr-0.1)" != "$LIBCDR_VERSION" ]; }; }; then
+    start_build
     download "$LIBCDR_SITE" "$LIBCDR_TAR"
     untar "$SRC_PATH/$LIBCDR_TAR"
     pushd "libcdr-${LIBCDR_VERSION}"
@@ -1702,19 +1853,20 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libcdr-0.1.pc" ] || [ "$(pkg-config --modvers
     make install
     popd
     rm -rf "libcdr-${LIBCDR_VERSION}"
-    end_build "$LIBCDR_TAR"
+    end_build
 fi
 
 # Install openjpeg
-# see http://www.at.linuxfromscratch.org/blfs/view/cvs/general/openjpeg2.html
+# see http://www.linuxfromscratch.org/blfs/view/cvs/general/openjpeg2.html
 OPENJPEG2_VERSION=2.3.0
 OPENJPEG2_VERSION_SHORT=${OPENJPEG2_VERSION%.*}
 OPENJPEG2_TAR="openjpeg-${OPENJPEG2_VERSION}.tar.gz"
-if [ "${REBUILD_OPENJPEG:-}" = "1" ]; then
+step="$OPENJPEG2_TAR"
+if build_step && { force_build || { [ "${REBUILD_OPENJPEG:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/lib/libopenjp* || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libopenjp2.pc" ] || [ "$(pkg-config --modversion libopenjp2)" != "$OPENJPEG2_VERSION" ]; then
-    start_build "$OPENJPEG2_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libopenjp2.pc" ] || [ "$(pkg-config --modversion libopenjp2)" != "$OPENJPEG2_VERSION" ]; }; }; then
+    start_build
     download_github uclouvain openjpeg "${OPENJPEG2_VERSION}" v "${OPENJPEG2_TAR}"
     untar "$SRC_PATH/$OPENJPEG2_TAR"
     pushd "openjpeg-${OPENJPEG2_VERSION}"
@@ -1730,12 +1882,12 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libopenjp2.pc" ] || [ "$(pkg-config --modvers
     popd
     popd
     rm -rf "openjpeg-${OPENJPEG2_VERSION}"
-    end_build "$OPENJPEG2_TAR"
+    end_build
 fi
 
 
 # Install libraw
-# see http://www.at.linuxfromscratch.org/blfs/view/cvs/general/libraw.html
+# see http://www.linuxfromscratch.org/blfs/view/cvs/general/libraw.html
 LIBRAW_VERSION=0.18.13
 LIBRAW_PACKS_VERSION="${LIBRAW_VERSION}"
 LIBRAW_PACKS_VERSION=0.18.8
@@ -1743,13 +1895,14 @@ LIBRAW_TAR="LibRaw-${LIBRAW_VERSION}.tar.gz"
 LIBRAW_DEMOSAIC_PACK_GPL2="LibRaw-demosaic-pack-GPL2-${LIBRAW_PACKS_VERSION}.tar.gz"
 LIBRAW_DEMOSAIC_PACK_GPL3="LibRaw-demosaic-pack-GPL3-${LIBRAW_PACKS_VERSION}.tar.gz"
 LIBRAW_SITE="https://www.libraw.org/data"
-if [ "${REBUILD_LIBRAW:-}" = "1" ]; then
+step="$LIBRAW_TAR"
+if build_step && { force_build || { [ "${REBUILD_LIBRAW:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/libraw-gpl3 || true
     rm -rf "$SDK_HOME"/libraw-gpl2 || true
     rm -rf "$SDK_HOME"/libraw-lgpl || true
 fi
-if [ ! -s "$SDK_HOME/libraw-gpl2/lib/pkgconfig/libraw.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/libraw-gpl2/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion libraw)" != "$LIBRAW_VERSION" ]; then
-    start_build "$LIBRAW_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/libraw-gpl2/lib/pkgconfig/libraw.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/libraw-gpl2/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion libraw)" != "$LIBRAW_VERSION" ]; }; }; then
+    start_build
     download "$LIBRAW_SITE" "$LIBRAW_TAR"
     download "$LIBRAW_SITE" "$LIBRAW_DEMOSAIC_PACK_GPL2"
     download "$LIBRAW_SITE" "$LIBRAW_DEMOSAIC_PACK_GPL3"
@@ -1773,7 +1926,7 @@ if [ ! -s "$SDK_HOME/libraw-gpl2/lib/pkgconfig/libraw.pc" ] || [ "$(env PKG_CONF
     make install
     popd
     rm -rf "LibRaw-${LIBRAW_VERSION}"
-    end_build "$LIBRAW_TAR"
+    end_build
 fi
 
 # Install openexr
@@ -1781,13 +1934,14 @@ EXR_VERSION=2.2.1
 EXR_ILM_TAR="ilmbase-${EXR_VERSION}.tar.gz"
 EXR_TAR="openexr-${EXR_VERSION}.tar.gz"
 EXR_SITE="http://download.savannah.nongnu.org/releases/openexr"
-if [ "${REBUILD_EXR:-}" = "1" ]; then
+step="$EXR_ILM_TAR"
+if build_step && { force_build || { [ "${REBUILD_EXR:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/lib/libI* "$SDK_HOME"/lib/libHalf* || true
     rm -f "$SDK_HOME"/lib/pkgconfig/{OpenEXR,IlmBase}.pc || true
     rm -f "$SDK_HOME"/bin/exr* || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/IlmBase.pc" ] || [ "$(pkg-config --modversion IlmBase)" != "$EXR_VERSION" ]; then
-    start_build "$EXR_ILM_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/IlmBase.pc" ] || [ "$(pkg-config --modversion IlmBase)" != "$EXR_VERSION" ]; }; }; then
+    start_build
     download "$EXR_SITE" "$EXR_ILM_TAR"
     untar "$SRC_PATH/$EXR_ILM_TAR"
     pushd "ilmbase-${EXR_VERSION}"
@@ -1804,11 +1958,12 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/IlmBase.pc" ] || [ "$(pkg-config --modversion
     cp IlmBase.pc "$SDK_HOME/lib/pkgconfig/"
     popd
     rm -rf "ilmbase-${EXR_VERSION}"
-    end_build "$EXR_ILM_TAR"
+    end_build
 fi
 
-if [ ! -s "$SDK_HOME/lib/pkgconfig/OpenEXR.pc" ] || [ "$(pkg-config --modversion OpenEXR)" != "$EXR_VERSION" ]; then    
-    start_build "$EXR_TAR"
+step="$EXR_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/OpenEXR.pc" ] || [ "$(pkg-config --modversion OpenEXR)" != "$EXR_VERSION" ]; }; }; then    
+    start_build
     download "$EXR_SITE" "$EXR_TAR"
     untar "$SRC_PATH/$EXR_TAR"
     pushd "openexr-${EXR_VERSION}"
@@ -1820,30 +1975,31 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/OpenEXR.pc" ] || [ "$(pkg-config --modversion
     make install
     popd
     rm -rf "openexr-${EXR_VERSION}"
-    end_build "$EXR_TAR"
+    end_build
 fi
 
 # Install pixman
-# see http://www.at.linuxfromscratch.org/blfs/view/cvs/general/pixman.html
-PIX_VERSION=0.34.0
-PIX_TAR="pixman-${PIX_VERSION}.tar.gz"
-PIX_SITE="https://www.cairographics.org/releases"
-if [ "${REBUILD_PIXMAN:-}" = "1" ]; then
+# see http://www.linuxfromscratch.org/blfs/view/cvs/general/pixman.html
+PIXMAN_VERSION=0.34.0
+PIXMAN_TAR="pixman-${PIXMAN_VERSION}.tar.gz"
+PIXMAN_SITE="https://www.cairographics.org/releases"
+step="$PIXMAN_TAR"
+if build_step && { force_build || { [ "${REBUILD_PIXMAN:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/{lib,include}/*pixman* || true
     rm -f "$SDK_HOME"/lib/pkgconfig/*pixman* || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/pixman-1.pc" ] || [ "$(pkg-config --modversion pixman-1)" != "$PIX_VERSION" ]; then
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/pixman-1.pc" ] || [ "$(pkg-config --modversion pixman-1)" != "$PIXMAN_VERSION" ]; }; }; then
     REBUILD_CAIRO=1
-    start_build "$PIX_TAR"
-    download "$PIX_SITE" "$PIX_TAR"
-    untar "$SRC_PATH/$PIX_TAR"
-    pushd "pixman-${PIX_VERSION}"
+    start_build
+    download "$PIXMAN_SITE" "$PIXMAN_TAR"
+    untar "$SRC_PATH/$PIXMAN_TAR"
+    pushd "pixman-${PIXMAN_VERSION}"
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --libdir="$SDK_HOME/lib" --enable-shared --enable-static
     make -j${MKJOBS}
     make install
     popd
-    rm -rf "pixman-${PIX_VERSION}"
-    end_build "$PIX_TAR"
+    rm -rf "pixman-${PIXMAN_VERSION}"
+    end_build
 fi
 
 # Install cairo
@@ -1851,17 +2007,18 @@ fi
 CAIRO_VERSION=1.14.12
 CAIRO_TAR="cairo-${CAIRO_VERSION}.tar.xz"
 CAIRO_SITE="https://www.cairographics.org/releases"
-if [ "${REBUILD_CAIRO:-}" = "1" ]; then
+step="$CAIRO_TAR"
+if build_step && { force_build || { [ "${REBUILD_CAIRO:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/include/cairo || true
     rm -f "$SDK_HOME"/lib/pkgconfig/{cairo-*.pc,cairo.pc} || true
     rm -f "$SDK_HOME"/lib/libcairo* || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/cairo.pc" ] || [ "$(pkg-config --modversion cairo)" != "$CAIRO_VERSION" ]; then
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/cairo.pc" ] || [ "$(pkg-config --modversion cairo)" != "$CAIRO_VERSION" ]; }; }; then
     REBUILD_PANGO=1
     REBUILD_SVG=1
     REBUILD_BUZZ=1
     REBUILD_POPPLER=1
-    start_build "$CAIRO_TAR"
+    start_build
     download "$CAIRO_SITE" "$CAIRO_TAR"
     untar "$SRC_PATH/$CAIRO_TAR"
     pushd "cairo-${CAIRO_VERSION}"
@@ -1870,7 +2027,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/cairo.pc" ] || [ "$(pkg-config --modversion c
     make install
     popd
     rm -rf "cairo-${CAIRO_VERSION}"
-    end_build "$CAIRO_TAR"
+    end_build
 fi
 
 # Install harbuzz
@@ -1878,12 +2035,13 @@ fi
 HARFBUZZ_VERSION=1.8.6
 HARFBUZZ_TAR="harfbuzz-${HARFBUZZ_VERSION}.tar.bz2"
 HARFBUZZ_SITE="https://www.freedesktop.org/software/harfbuzz/release"
-if [ "${REBUILD_HARFBUZZ:-}" = "1" ]; then
+step="$HARFBUZZ_TAR"
+if build_step && { force_build || { [ "${REBUILD_HARFBUZZ:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME/lib/libharfbuzz*" "$SDK_HOME/include/harfbuzz" "$SDK_HOME/lib/pkgconfig/"*harfbuzz* || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/harfbuzz.pc" ] || [ "$(pkg-config --modversion harfbuzz)" != "$HARFBUZZ_VERSION" ]; then
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/harfbuzz.pc" ] || [ "$(pkg-config --modversion harfbuzz)" != "$HARFBUZZ_VERSION" ]; }; }; then
     REBUILD_PANGO=1
-    start_build "$HARFBUZZ_TAR"
+    start_build
     download "$HARFBUZZ_SITE" "$HARFBUZZ_TAR"
     untar "$SRC_PATH/$HARFBUZZ_TAR"
     pushd "harfbuzz-${HARFBUZZ_VERSION}"
@@ -1892,7 +2050,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/harfbuzz.pc" ] || [ "$(pkg-config --modversio
     make install
     popd
     rm -rf "harfbuzz-${HARFBUZZ_VERSION}"
-    end_build "$HARFBUZZ_TAR"
+    end_build
 fi
 
 # Install fribidi (for libass and ffmpeg)
@@ -1900,9 +2058,10 @@ fi
 FRIBIDI_VERSION=1.0.4
 FRIBIDI_TAR="fribidi-${FRIBIDI_VERSION}.tar.bz2"
 FRIBIDI_SITE="https://github.com/fribidi/fribidi/releases/download/v${FRIBIDI_VERSION}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/fribidi.pc" ] || [ "$(pkg-config --modversion fribidi)" != "$FRIBIDI_VERSION" ]; then
+step="$FRIBIDI_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/fribidi.pc" ] || [ "$(pkg-config --modversion fribidi)" != "$FRIBIDI_VERSION" ]; }; }; then
     REBUILD_FFMPEG=1
-    start_build "$FRIBIDI_TAR"
+    start_build
     download "$FRIBIDI_SITE" "$FRIBIDI_TAR"
     untar "$SRC_PATH/$FRIBIDI_TAR"
     pushd "fribidi-${FRIBIDI_VERSION}"
@@ -1920,7 +2079,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/fribidi.pc" ] || [ "$(pkg-config --modversion
     make install
     popd
     rm -rf "fribidi-${FRIBIDI_VERSION}"
-    end_build "$FRIBIDI_TAR"
+    end_build
 fi
 
 # Install pango
@@ -1929,12 +2088,13 @@ PANGO_VERSION=1.42.2
 PANGO_VERSION_SHORT=${PANGO_VERSION%.*}
 PANGO_TAR="pango-${PANGO_VERSION}.tar.xz"
 PANGO_SITE="http://ftp.gnome.org/pub/GNOME/sources/pango/${PANGO_VERSION_SHORT}"
-if [ "${REBUILD_PANGO:-}" = "1" ]; then
+step="$PANGO_TAR"
+if build_step && { force_build || { [ "${REBUILD_PANGO:-}" = "1" ]; }; }; then
     rm -rf $SDK_HOME/include/pango* $SDK_HOME/lib/libpango* $SDK_HOME/lib/pkgconfig/pango* || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/pango.pc" ] || [ "$(pkg-config --modversion pango)" != "$PANGO_VERSION" ]; then
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/pango.pc" ] || [ "$(pkg-config --modversion pango)" != "$PANGO_VERSION" ]; }; }; then
     REBUILD_SVG=1
-    start_build "$PANGO_TAR"
+    start_build
     download "$PANGO_SITE" "$PANGO_TAR"
     untar "$SRC_PATH/$PANGO_TAR"
     pushd "pango-${PANGO_VERSION}"
@@ -1943,45 +2103,47 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/pango.pc" ] || [ "$(pkg-config --modversion p
     make install
     popd
     rm -rf "pango-${PANGO_VERSION}"
-    end_build "$PANGO_TAR"
+    end_build
 fi
 
 # Install libcroco (requires glib and libxml2)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libcroco.html
-CROCO_VERSION=0.6.12
-CROCO_VERSION_SHORT=${CROCO_VERSION%.*}
-CROCO_TAR="libcroco-${CROCO_VERSION}.tar.xz"
-CROCO_SITE="http://ftp.gnome.org/pub/gnome/sources/libcroco/${CROCO_VERSION_SHORT}"
-if [ ! -s "$SDK_HOME/lib/libcroco-0.6.so" ]; then
-    start_build "$CROCO_TAR"
-    download "$CROCO_SITE" "$CROCO_TAR"
-    untar "$SRC_PATH/$CROCO_TAR"
-    pushd "libcroco-${CROCO_VERSION}"
+LIBCROCO_VERSION=0.6.12
+LIBCROCO_VERSION_SHORT=${LIBCROCO_VERSION%.*}
+LIBCROCO_TAR="libcroco-${LIBCROCO_VERSION}.tar.xz"
+LIBCROCO_SITE="http://ftp.gnome.org/pub/gnome/sources/libcroco/${LIBCROCO_VERSION_SHORT}"
+step="$LIBCROCO_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libcroco-0.6.so" ]; }; }; then
+    start_build
+    download "$LIBCROCO_SITE" "$LIBCROCO_TAR"
+    untar "$SRC_PATH/$LIBCROCO_TAR"
+    pushd "libcroco-${LIBCROCO_VERSION}"
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared
     make -j${MKJOBS}
     make install
     popd
-    rm -rf "libcroco-${CROCO_VERSION}"
-    end_build "$CROCO_TAR"
+    rm -rf "libcroco-${LIBCROCO_VERSION}"
+    end_build
 fi
 
 # Install shared-mime-info (required by gdk-pixbuf)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/shared-mime-info.html
-MIME_VERSION=1.9
-MIME_TAR="shared-mime-info-${MIME_VERSION}.tar.xz"
-MIME_SITE="http://freedesktop.org/~hadess"
-if [ ! -s "$SDK_HOME/share/pkgconfig/shared-mime-info.pc" ] || [ "$(pkg-config --modversion shared-mime-info)" != "$MIME_VERSION" ]; then
-    start_build "$MIME_TAR"
-    download "$MIME_SITE" "$MIME_TAR"
-    untar "$SRC_PATH/$MIME_TAR"
-    pushd "shared-mime-info-${MIME_VERSION}"
+SHAREDMIMEINFO_VERSION=1.9
+SHAREDMIMEINFO_TAR="shared-mime-info-${SHAREDMIMEINFO_VERSION}.tar.xz"
+SHAREDMIMEINFO_SITE="http://freedesktop.org/~hadess"
+step="$SHAREDMIMEINFO_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/share/pkgconfig/shared-mime-info.pc" ] || [ "$(pkg-config --modversion shared-mime-info)" != "$SHAREDMIMEINFO_VERSION" ]; }; }; then
+    start_build
+    download "$SHAREDMIMEINFO_SITE" "$SHAREDMIMEINFO_TAR"
+    untar "$SRC_PATH/$SHAREDMIMEINFO_TAR"
+    pushd "shared-mime-info-${SHAREDMIMEINFO_VERSION}"
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared --without-libtiff
     #make -j${MKJOBS}
     make
     make install
     popd
-    rm -rf "shared-mime-info-${MIME_VERSION}"
-    end_build "$MIME_TAR"
+    rm -rf "shared-mime-info-${SHAREDMIMEINFO_VERSION}"
+    end_build
 fi
 
 # Install gdk-pixbuf
@@ -1990,8 +2152,9 @@ GDKPIXBUF_VERSION=2.36.11
 GDKPIXBUF_VERSION_SHORT=${GDKPIXBUF_VERSION%.*}
 GDKPIXBUF_TAR="gdk-pixbuf-${GDKPIXBUF_VERSION}.tar.xz"
 GDKPIXBUF_SITE="http://ftp.gnome.org/pub/gnome/sources/gdk-pixbuf/${GDKPIXBUF_VERSION_SHORT}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/gdk-pixbuf-2.0.pc" ] || [ "$(pkg-config --modversion gdk-pixbuf-2.0)" != "$GDKPIXBUF_VERSION" ]; then
-    start_build "$GDKPIXBUF_TAR"
+step="$GDKPIXBUF_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/gdk-pixbuf-2.0.pc" ] || [ "$(pkg-config --modversion gdk-pixbuf-2.0)" != "$GDKPIXBUF_VERSION" ]; }; }; then
+    start_build
     download "$GDKPIXBUF_SITE" "$GDKPIXBUF_TAR"
     untar "$SRC_PATH/$GDKPIXBUF_TAR"
     pushd "gdk-pixbuf-${GDKPIXBUF_VERSION}"
@@ -2000,7 +2163,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/gdk-pixbuf-2.0.pc" ] || [ "$(pkg-config --mod
     make install
     popd
     rm -rf "gdk-pixbuf-${GDKPIXBUF_VERSION}"
-    end_build "$GDKPIXBUF_TAR"
+    end_build
 fi
 
 # Install librsvg (without vala support)
@@ -2009,11 +2172,12 @@ LIBRSVG_VERSION=2.40.20 # 2.41 requires rust
 LIBRSVG_VERSION_SHORT=${LIBRSVG_VERSION%.*}
 LIBRSVG_TAR="librsvg-${LIBRSVG_VERSION}.tar.xz"
 LIBRSVG_SITE="https://download.gnome.org/sources/librsvg/${LIBRSVG_VERSION_SHORT}"
-if [ "${REBUILD_SVG:-}" = "1" ]; then
+step="$LIBRSVG_TAR"
+if build_step && { force_build || { [ "${REBUILD_SVG:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/include/librsvg* "$SDK_HOME"/lib/librsvg* "$SDK_HOME"/lib/pkgconfig/librsvg* || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/librsvg-2.0.pc" ] || [ "$(pkg-config --modversion librsvg-2.0)" != "$LIBRSVG_VERSION" ]; then
-    start_build "$LIBRSVG_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/librsvg-2.0.pc" ] || [ "$(pkg-config --modversion librsvg-2.0)" != "$LIBRSVG_VERSION" ]; }; }; then
+    start_build
     if [ "$LIBRSVG_VERSION_SHORT" = 2.41 ]; then
         # librsvg 2.41 requires rust
         if [ ! -s "$HOME/.cargo/env" ]; then
@@ -2038,7 +2202,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/librsvg-2.0.pc" ] || [ "$(pkg-config --modver
     make install
     popd
     rm -rf "librsvg-${LIBRSVG_VERSION}"
-    end_build "$LIBRSVG_TAR"
+    end_build
 fi
 
 # Install fftw (GPLv2, for openfx-gmic)
@@ -2046,8 +2210,9 @@ fi
 FFTW_VERSION=3.3.8
 FFTW_TAR="fftw-${FFTW_VERSION}.tar.gz"
 FFTW_SITE="http://www.fftw.org/"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/fftw3.pc" ] || [ "$(pkg-config --modversion fftw3)" != "$FFTW_VERSION" ]; then
-    start_build "$FFTW_TAR"
+step="$FFTW_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/fftw3.pc" ] || [ "$(pkg-config --modversion fftw3)" != "$FFTW_VERSION" ]; }; }; then
+    start_build
     download "$FFTW_SITE" "$FFTW_TAR"
     untar "$SRC_PATH/$FFTW_TAR"
     pushd "fftw-${FFTW_VERSION}"
@@ -2065,7 +2230,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/fftw3.pc" ] || [ "$(pkg-config --modversion f
     make install
     popd
     rm -rf "fftw-${FFTW_VERSION}"
-    end_build "$FFTW_TAR"
+    end_build
 fi
 
 
@@ -2075,11 +2240,12 @@ MAGICK_VERSION=6.9.10-9
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
 MAGICK_TAR="ImageMagick6-${MAGICK_VERSION}.tar.gz"
 MAGICK_SITE="https://gitlab.com/ImageMagick/ImageMagick6/-/archive/${MAGICK_VERSION}"
-if [ "${REBUILD_MAGICK:-}" = "1" ]; then
+step="$MAGICK_TAR"
+if build_step && { force_build || { [ "${REBUILD_MAGICK:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/include/ImageMagick-6/ "$SDK_HOME"/lib/libMagick* "$SDK_HOME"/share/ImageMagick-6/ "$SDK_HOME"/lib/pkgconfig/{Image,Magick}* "$SDK_HOME"/magick7 || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversion Magick++)" != "$MAGICK_VERSION_SHORT" ]; then
-    start_build "$MAGICK_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversion Magick++)" != "$MAGICK_VERSION_SHORT" ]; }; }; then
+    start_build
     download "$MAGICK_SITE" "$MAGICK_TAR"
     untar "$SRC_PATH/$MAGICK_TAR"
     pushd "ImageMagick6-${MAGICK_VERSION}"
@@ -2094,7 +2260,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc" ] || [ "$(pkg-config --modversio
     make install
     popd
     rm -rf "ImageMagick6-${MAGICK_VERSION}"
-    end_build "$MAGICK_TAR"
+    end_build
 fi
 # install ImageMagick7
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick.html
@@ -2102,8 +2268,9 @@ MAGICK7_VERSION=7.0.8-9
 MAGICK7_VERSION_SHORT=${MAGICK7_VERSION%-*}
 MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.gz"
 MAGICK7_SITE="https://gitlab.com/ImageMagick/ImageMagick/-/archive/${MAGICK7_VERSION}"
-if [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/magick7/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Magick++)" != "$MAGICK7_VERSION_SHORT" ]; then
-    start_build "$MAGICK7_TAR"
+step="$MAGICK7_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/magick7/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Magick++)" != "$MAGICK7_VERSION_SHORT" ]; }; }; then
+    start_build
     download "$MAGICK7_SITE" "$MAGICK7_TAR"
     untar "$SRC_PATH/$MAGICK7_TAR"
     pushd "ImageMagick-${MAGICK7_VERSION}"
@@ -2117,15 +2284,16 @@ if [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(env PKG_CONFIG
     make install
     popd
     rm -rf "ImageMagick-${MAGICK7_VERSION}"
-    end_build "$MAGICK7_TAR"
+    end_build
 fi
 
 # Install glew
 GLEW_VERSION=2.1.0
 GLEW_TAR="glew-${GLEW_VERSION}.tgz"
 GLEW_SITE="https://sourceforge.net/projects/glew/files/glew/${GLEW_VERSION}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/glew.pc" ] || [ "$(pkg-config --modversion glew)" != "$GLEW_VERSION" ]; then
-    start_build "$GLEW_TAR"
+step="$GLEW_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/glew.pc" ] || [ "$(pkg-config --modversion glew)" != "$GLEW_VERSION" ]; }; }; then
+    start_build
     download "$GLEW_SITE" "$GLEW_TAR"
     untar "$SRC_PATH/$GLEW_TAR"
     pushd "glew-${GLEW_VERSION}"
@@ -2138,7 +2306,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/glew.pc" ] || [ "$(pkg-config --modversion gl
     chmod +x "$SDK_HOME/lib/libGLEW.so.$GLEW_VERSION"
     popd
     rm -rf "glew-${GLEW_VERSION}"
-    end_build "$GLEW_TAR"
+    end_build
 fi
 
 # Install poppler-glib (without curl, nss3, qt4, qt5)
@@ -2146,11 +2314,12 @@ fi
 POPPLER_VERSION=0.67.0
 POPPLER_TAR="poppler-${POPPLER_VERSION}.tar.xz"
 POPPLER_SITE="https://poppler.freedesktop.org"
-if [ "${REBUILD_POPPLER:-}" = "1" ]; then
+step="$POPPLER_TAR"
+if build_step && { force_build || { [ "${REBUILD_POPPLER:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME/include/poppler" "$SDK_HOME/lib/"libpoppler* "$SDK_HOME/lib/pkgconfig/"*poppler* || true 
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/poppler-glib.pc" ] || [ "$(pkg-config --modversion poppler-glib)" != "$POPPLER_VERSION" ]; then
-    start_build "$POPPLER_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/poppler-glib.pc" ] || [ "$(pkg-config --modversion poppler-glib)" != "$POPPLER_VERSION" ]; }; }; then
+    start_build
     download "$POPPLER_SITE" "$POPPLER_TAR"
     untar "$SRC_PATH/$POPPLER_TAR"
     pushd "poppler-${POPPLER_VERSION}"
@@ -2174,29 +2343,31 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/poppler-glib.pc" ] || [ "$(pkg-config --modve
     popd
     popd
     rm -rf "poppler-${POPPLER_VERSION}"
-    end_build "$POPPLER_TAR"
+    end_build
 fi
 
 # Install poppler-data
-POPPLERD_VERSION=0.4.9
-POPPLERD_TAR="poppler-data-${POPPLERD_VERSION}.tar.gz"
-if [ ! -d "$SDK_HOME/share/poppler" ]; then
-    start_build "$POPPLERD_TAR"
-    download "$POPPLER_SITE" "$POPPLERD_TAR"
-    untar "$SRC_PATH/$POPPLERD_TAR"
-    pushd "poppler-data-${POPPLERD_VERSION}"
+POPPLERDATA_VERSION=0.4.9
+POPPLERDATA_TAR="poppler-data-${POPPLERDATA_VERSION}.tar.gz"
+step="$POPPLERDATA_TAR"
+if build_step && { force_build || { [ ! -d "$SDK_HOME/share/poppler" ]; }; }; then
+    start_build
+    download "$POPPLER_SITE" "$POPPLERDATA_TAR"
+    untar "$SRC_PATH/$POPPLERDATA_TAR"
+    pushd "poppler-data-${POPPLERDATA_VERSION}"
     make install datadir="${SDK_HOME}/share"
     popd
-    rm -rf "poppler-data-${POPPLERD_VERSION}"
-    end_build "$POPPLERD_TAR"
+    rm -rf "poppler-data-${POPPLERDATA_VERSION}"
+    end_build
 fi
 
 # Install tinyxml (used by OpenColorIO)
 TINYXML_VERSION=2.6.2
 TINYXML_TAR="tinyxml_${TINYXML_VERSION//./_}.tar.gz"
 TINYXML_SITE="http://sourceforge.net/projects/tinyxml/files/tinyxml/${TINYXML_VERSION}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/tinyxml.pc" ] || [ "$(pkg-config --modversion tinyxml)" != "$TINYXML_VERSION" ]; then
-    start_build "$TINYXML_TAR"
+step="$TINYXML_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/tinyxml.pc" ] || [ "$(pkg-config --modversion tinyxml)" != "$TINYXML_VERSION" ]; }; }; then
+    start_build
     download "$TINYXML_SITE" "$TINYXML_TAR"
     untar "$SRC_PATH/$TINYXML_TAR"
     pushd "tinyxml"
@@ -2231,7 +2402,7 @@ EOF
     popd
     popd
     rm -rf "tinyxml"
-    end_build "$TINYXML_TAR"
+    end_build
 fi
 
 # Install yaml-cpp (0.5.3 requires boost, 0.6+ requires C++11, used by OpenColorIO)
@@ -2241,8 +2412,9 @@ if [[ ! "$GCC_VERSION" =~ ^4\. ]]; then
 fi
 YAMLCPP_VERSION_SHORT=${YAMLCPP_VERSION%.*}
 YAMLCPP_TAR="yaml-cpp-${YAMLCPP_VERSION}.tar.gz"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/yaml-cpp.pc" ] || [ "$(pkg-config --modversion yaml-cpp)" != "$YAMLCPP_VERSION" ]; then
-    start_build "$YAMLCPP_TAR"
+step="$YAMLCPP_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/yaml-cpp.pc" ] || [ "$(pkg-config --modversion yaml-cpp)" != "$YAMLCPP_VERSION" ]; }; }; then
+    start_build
     download_github jbeder yaml-cpp "${YAMLCPP_VERSION}" yaml-cpp- "${YAMLCPP_TAR}"
     untar "$SRC_PATH/$YAMLCPP_TAR"
     pushd "yaml-cpp-yaml-cpp-${YAMLCPP_VERSION}"
@@ -2254,7 +2426,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/yaml-cpp.pc" ] || [ "$(pkg-config --modversio
     popd
     popd
     rm -rf "yaml-cpp-yaml-cpp-${YAMLCPP_VERSION}"
-    end_build "$YAMLCPP_TAR"
+    end_build
 fi
 
 # Install OpenColorIO (uses yaml-cpp, tinyxml, lcms)
@@ -2264,17 +2436,21 @@ OCIO_BUILD_GIT=0 # set to 1 to build the git version instead of the release
 # non-GIT version:
 OCIO_VERSION=1.1.0
 OCIO_TAR="OpenColorIO-${OCIO_VERSION}.tar.gz"
-## GIT version:
-#OCIO_GIT="https://github.com/imageworks/OpenColorIO.git"
-## 7bd4b1e556e6c98c0aa353d5ecdf711bb272c4fa is October 25, 2017
-#OCIO_COMMIT="7bd4b1e556e6c98c0aa353d5ecdf711bb272c4fa"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/OpenColorIO.pc" ] || [ "$(pkg-config --modversion OpenColorIO)" != "$OCIO_VERSION" ]; then
+if [ "$OCIO_BUILD_GIT" = 1 ]; then
+    ## GIT version:
+    #OCIO_GIT="https://github.com/imageworks/OpenColorIO.git"
+    ## 7bd4b1e556e6c98c0aa353d5ecdf711bb272c4fa is October 25, 2017
+    #OCIO_COMMIT="7bd4b1e556e6c98c0aa353d5ecdf711bb272c4fa"
+    step="OpenColorIO-$OCIO_COMMIT"
+else
+    step="$OCIO_TAR"
+fi
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/OpenColorIO.pc" ] || [ "$(pkg-config --modversion OpenColorIO)" != "$OCIO_VERSION" ]; }; }; then
+    start_build
     if [ "$OCIO_BUILD_GIT" = 1 ]; then
-        start_build "OpenColorIO-$OCIO_COMMIT"
         git_clone_commit "$OCIO_GIT" "$OCIO_COMMIT"
         pushd OpenColorIO
     else
-        start_build "$OCIO_TAR"
         download_github imageworks OpenColorIO "$OCIO_VERSION" v "$OCIO_TAR"
         untar "$SRC_PATH/$OCIO_TAR"
         pushd "OpenColorIO-${OCIO_VERSION}"
@@ -2293,11 +2469,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/OpenColorIO.pc" ] || [ "$(pkg-config --modver
     else
         rm -rf "OpenColorIO-${OCIO_VERSION}"
     fi
-    if [ "$OCIO_BUILD_GIT" = 1 ]; then
-        end_build "OpenColorIO-$OCIO_COMMIT"
-    else
-        end_build "$OCIO_TAR"
-    fi
+    end_build
 fi
 
 # Install webp (for OIIO)
@@ -2305,8 +2477,9 @@ fi
 WEBP_VERSION=1.0.0
 WEBP_TAR="libwebp-${WEBP_VERSION}.tar.gz"
 WEBP_SITE="https://storage.googleapis.com/downloads.webmproject.org/releases/webp"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libwebp.pc" ] || [ "$(pkg-config --modversion libwebp)" != "$WEBP_VERSION" ]; then
-    start_build "$WEBP_TAR"
+step="$WEBP_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libwebp.pc" ] || [ "$(pkg-config --modversion libwebp)" != "$WEBP_VERSION" ]; }; }; then
+    start_build
     download "$WEBP_SITE" "$WEBP_TAR"
     untar "$SRC_PATH/$WEBP_TAR"
     pushd "libwebp-${WEBP_VERSION}"
@@ -2315,7 +2488,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libwebp.pc" ] || [ "$(pkg-config --modversion
     make install
     popd
     rm -rf "libwebp-${WEBP_VERSION}"
-    end_build "$WEBP_TAR"
+    end_build
 fi
 
 # Install oiio
@@ -2323,11 +2496,12 @@ fi
 OIIO_VERSION=1.8.13
 OIIO_VERSION_SHORT=${OIIO_VERSION%.*}
 OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
-if [ "${REBUILD_OIIO:-}" = "1" ]; then
+step="openimageio-${OIIO_VERSION}"
+if build_step && { force_build || { [ "${REBUILD_OIIO:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME/lib/libOpenImage"* "$SDK_HOME/include/OpenImage"* || true
 fi
-if [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; then
-    start_build "openimageio-${OIIO_VERSION}"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; }; }; then
+    start_build
     download_github OpenImageIO oiio "$OIIO_VERSION" Release- "$OIIO_TAR"
     untar "$SRC_PATH/$OIIO_TAR"
     pushd "oiio-Release-${OIIO_VERSION}"
@@ -2358,14 +2532,15 @@ if [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; then
     popd
     popd
     rm -rf "oiio-Release-${OIIO_VERSION}"
-    end_build "openimageio-${OIIO_VERSION}"
+    end_build
 fi
 
 # Install SeExpr
 SEEXPR_VERSION=2.11
 SEEXPR_TAR="SeExpr-${SEEXPR_VERSION}.tar.gz"
-if [ ! -s "$SDK_HOME/lib/libSeExpr.so" ]; then
-    start_build "$SEEXPR_TAR"
+step="$SEEXPR_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libSeExpr.so" ]; }; }; then
+    start_build
     download_github wdas SeExpr "$SEEXPR_VERSION" v "$SEEXPR_TAR"
     untar "$SRC_PATH/$SEEXPR_TAR"
     pushd "SeExpr-${SEEXPR_VERSION}"
@@ -2384,7 +2559,7 @@ if [ ! -s "$SDK_HOME/lib/libSeExpr.so" ]; then
     popd
     popd
     rm -rf "SeExpr-${SEEXPR_VERSION}"
-    end_build "$SEEXPR_TAR"
+    end_build
 fi
 
 # Install eigen
@@ -2430,8 +2605,9 @@ LAME_VERSION=3.100
 #LAME_VERSION_SHORT=${LAME_VERSION%.*}
 LAME_TAR="lame-${LAME_VERSION}.tar.gz"
 LAME_SITE="https://sourceforge.net/projects/lame/files/lame/${LAME_VERSION}"
-if [ ! -s "$SDK_HOME/lib/libmp3lame.so" ] || [ "$("$SDK_HOME/bin/lame" --version |head -1 | sed -e 's/^.*[Vv]ersion \([^ ]*\) .*$/\1/')" != "$LAME_VERSION" ]; then
-    start_build "$LAME_TAR"
+step="$LAME_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libmp3lame.so" ] || [ "$("$SDK_HOME/bin/lame" --version |head -1 | sed -e 's/^.*[Vv]ersion \([^ ]*\) .*$/\1/')" != "$LAME_VERSION" ]; }; }; then
+    start_build
     download "$LAME_SITE" "$LAME_TAR"
     untar "$SRC_PATH/$LAME_TAR"
     pushd "lame-${LAME_VERSION}"
@@ -2440,7 +2616,7 @@ if [ ! -s "$SDK_HOME/lib/libmp3lame.so" ] || [ "$("$SDK_HOME/bin/lame" --version
     make install
     popd
     rm -rf "lame-${LAME_VERSION}"
-    end_build "$LAME_TAR"
+    end_build
 fi
 
 # Install libogg
@@ -2448,8 +2624,9 @@ fi
 LIBOGG_VERSION=1.3.3
 LIBOGG_TAR="libogg-${LIBOGG_VERSION}.tar.gz"
 LIBOGG_SITE="http://downloads.xiph.org/releases/ogg"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/ogg.pc" ] || [ "$(pkg-config --modversion ogg)" != "$LIBOGG_VERSION" ]; then
-    start_build "$LIBOGG_TAR"
+step="$LIBOGG_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/ogg.pc" ] || [ "$(pkg-config --modversion ogg)" != "$LIBOGG_VERSION" ]; }; }; then
+    start_build
     download "$LIBOGG_SITE" "$LIBOGG_TAR"
     untar "$SRC_PATH/$LIBOGG_TAR"
     pushd "libogg-${LIBOGG_VERSION}"
@@ -2458,7 +2635,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/ogg.pc" ] || [ "$(pkg-config --modversion ogg
     make install
     popd
     rm -rf "libogg-${LIBOGG_VERSION}"
-    end_build "$LIBOGG_TAR"
+    end_build
 fi
 
 # Install libvorbis
@@ -2466,8 +2643,9 @@ fi
 LIBVORBIS_VERSION=1.3.6
 LIBVORBIS_TAR="libvorbis-${LIBVORBIS_VERSION}.tar.gz"
 LIBVORBIS_SITE="http://downloads.xiph.org/releases/vorbis"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/vorbis.pc" ] || [ "$(pkg-config --modversion vorbis)" != "$LIBVORBIS_VERSION" ]; then
-    start_build "$LIBVORBIS_TAR"
+step="$LIBVORBIS_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/vorbis.pc" ] || [ "$(pkg-config --modversion vorbis)" != "$LIBVORBIS_VERSION" ]; }; }; then
+    start_build
     download "$LIBVORBIS_SITE" "$LIBVORBIS_TAR"
     untar "$SRC_PATH/$LIBVORBIS_TAR"
     pushd "libvorbis-${LIBVORBIS_VERSION}"
@@ -2476,7 +2654,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/vorbis.pc" ] || [ "$(pkg-config --modversion 
     make install
     popd
     rm -rf "libvorbis-${LIBVORBIS_VERSION}"
-    end_build "$LIBVORBIS_TAR"
+    end_build
 fi
 
 # Install libtheora
@@ -2484,8 +2662,9 @@ fi
 LIBTHEORA_VERSION=1.1.1
 LIBTHEORA_TAR="libtheora-${LIBTHEORA_VERSION}.tar.bz2"
 LIBTHEORA_SITE="http://downloads.xiph.org/releases/theora"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/theora.pc" ] || [ "$(pkg-config --modversion theora)" != "$LIBTHEORA_VERSION" ]; then
-    start_build "$LIBTHEORA_TAR"
+step="$LIBTHEORA_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/theora.pc" ] || [ "$(pkg-config --modversion theora)" != "$LIBTHEORA_VERSION" ]; }; }; then
+    start_build
     download "$LIBTHEORA_SITE" "$LIBTHEORA_TAR"
     untar "$SRC_PATH/$LIBTHEORA_TAR"
     pushd "libtheora-${LIBTHEORA_VERSION}"
@@ -2495,15 +2674,16 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/theora.pc" ] || [ "$(pkg-config --modversion 
     make install
     popd
     rm -rf "libtheora-${LIBTHEORA_VERSION}"
-    end_build "$LIBTHEORA_TAR"
+    end_build
 fi
 
 # Install libmodplug
 LIBMODPLUG_VERSION=0.8.9.0
 LIBMODPLUG_TAR="libmodplug-${LIBMODPLUG_VERSION}.tar.gz"
 LIBMODPLUG_SITE="https://sourceforge.net/projects/modplug-xmms/files/libmodplug/${LIBMODPLUG_VERSION}"
-if [ ! -s "$SDK_HOME/lib/libmodplug.so" ]; then
-    start_build "$LIBMODPLUG_TAR"
+step="$LIBMODPLUG_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libmodplug.so" ]; }; }; then
+    start_build
     download "$LIBMODPLUG_SITE" "$LIBMODPLUG_TAR"
     untar "$SRC_PATH/$LIBMODPLUG_TAR"
     pushd "libmodplug-$LIBMODPLUG_VERSION"
@@ -2512,7 +2692,7 @@ if [ ! -s "$SDK_HOME/lib/libmodplug.so" ]; then
     make install
     popd
     rm -rf "libmodplug-$LIBMODPLUG_VERSION"
-    end_build "$LIBMODPLUG_TAR"
+    end_build
 fi
 
 # Install libvpx
@@ -2520,12 +2700,13 @@ fi
 LIBVPX_VERSION=1.7.0
 LIBVPX_TAR="libvpx-${LIBVPX_VERSION}.tar.gz"
 #LIBVPX_SITE=http://storage.googleapis.com/downloads.webmproject.org/releases/webm
-if [ "${REBUILD_LIBVPX:-}" = "1" ]; then
+step="$LIBVPX_TAR"
+if build_step && { force_build || { [ "${REBUILD_LIBVPX:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/lib/libvpx* || true
     rm -rf "$SDK_HOME"/lib/pkgconfig/vpx.pc || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/vpx.pc" ] || [ "$(pkg-config --modversion vpx)" != "$LIBVPX_VERSION" ]; then
-    start_build "$LIBVPX_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/vpx.pc" ] || [ "$(pkg-config --modversion vpx)" != "$LIBVPX_VERSION" ]; }; }; then
+    start_build
     #download "$LIBVPX_SITE" "$LIBVPX_TAR"
     download_github webmproject libvpx "${LIBVPX_VERSION}" v "${LIBVPX_TAR}"
     untar "$SRC_PATH/$LIBVPX_TAR"
@@ -2537,7 +2718,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/vpx.pc" ] || [ "$(pkg-config --modversion vpx
     make install
     popd
     rm -rf "libvpx-$LIBVPX_VERSION"
-    end_build "$LIBVPX_TAR"
+    end_build
 fi
 
 # Install speex (EOL, use opus)
@@ -2545,8 +2726,9 @@ fi
 SPEEX_VERSION=1.2.0
 SPEEX_TAR="speex-${SPEEX_VERSION}.tar.gz"
 SPEEX_SITE="http://downloads.us.xiph.org/releases/speex"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/speex.pc" ] || [ "$(pkg-config --modversion speex)" != "$SPEEX_VERSION" ]; then
-    start_build "$SPEEX_TAR"
+step="$SPEEX_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/speex.pc" ] || [ "$(pkg-config --modversion speex)" != "$SPEEX_VERSION" ]; }; }; then
+    start_build
     download "$SPEEX_SITE" "$SPEEX_TAR"
     untar "$SRC_PATH/$SPEEX_TAR"
     pushd "speex-$SPEEX_VERSION"
@@ -2555,7 +2737,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/speex.pc" ] || [ "$(pkg-config --modversion s
     make install
     popd
     rm -rf "speex-$SPEEX_VERSION"
-    end_build "$SPEEX_TAR"
+    end_build
 fi
 
 # Install opus
@@ -2563,8 +2745,9 @@ fi
 OPUS_VERSION=1.2.1
 OPUS_TAR="opus-${OPUS_VERSION}.tar.gz"
 OPUS_SITE="https://archive.mozilla.org/pub/opus"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/opus.pc" ] || [ "$(pkg-config --modversion opus)" != "$OPUS_VERSION" ]; then
-    start_build "$OPUS_TAR"
+step="$OPUS_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/opus.pc" ] || [ "$(pkg-config --modversion opus)" != "$OPUS_VERSION" ]; }; }; then
+    start_build
     download "$OPUS_SITE" "$OPUS_TAR"
     untar "$SRC_PATH/$OPUS_TAR"
     pushd "opus-$OPUS_VERSION"
@@ -2573,15 +2756,16 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/opus.pc" ] || [ "$(pkg-config --modversion op
     make install
     popd
     rm -rf "opus-$OPUS_VERSION"
-    end_build "$OPUS_TAR"
+    end_build
 fi
 
 # Install orc
 ORC_VERSION=0.4.28
 ORC_TAR="orc-${ORC_VERSION}.tar.xz"
 ORC_SITE="http://gstreamer.freedesktop.org/src/orc"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/orc-0.4.pc" ] || [ "$(pkg-config --modversion orc-0.4)" != "$ORC_VERSION" ]; then
-    start_build "$ORC_TAR"
+step="$ORC_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/orc-0.4.pc" ] || [ "$(pkg-config --modversion orc-0.4)" != "$ORC_VERSION" ]; }; }; then
+    start_build
     download "$ORC_SITE" "$ORC_TAR"
     untar "$SRC_PATH/$ORC_TAR"
     pushd "orc-$ORC_VERSION"
@@ -2590,7 +2774,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/orc-0.4.pc" ] || [ "$(pkg-config --modversion
     make install
     popd
     rm -rf "orc-$ORC_VERSION"
-    end_build "$ORC_TAR"
+    end_build
 fi
 
 # Install dirac (obsolete since ffmpeg-3.4)
@@ -2598,8 +2782,9 @@ if false; then
 DIRAC_VERSION=1.0.11
 DIRAC_TAR=schroedinger-${DIRAC_VERSION}.tar.gz
 DIRAC_SITE="http://diracvideo.org/download/schroedinger"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/schroedinger-1.0.pc" ] || [ "$(pkg-config --modversion schroedinger-1.0)" != "$DIRAC_VERSION" ]; then
-    start_build "$DIRAC_TAR"
+step="$DIRAC_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/schroedinger-1.0.pc" ] || [ "$(pkg-config --modversion schroedinger-1.0)" != "$DIRAC_VERSION" ]; }; }; then
+    start_build
     download "$DIRAC_SITE" "$DIRAC_TAR"
     untar "$SRC_PATH/$DIRAC_TAR"
     pushd "schroedinger-${DIRAC_VERSION}"
@@ -2610,7 +2795,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/schroedinger-1.0.pc" ] || [ "$(pkg-config --m
     $GSED -i "s/-lschroedinger-1.0/-lschroedinger-1.0 -lorc-0.4/" $SDK_HOME/lib/pkgconfig/schroedinger-1.0.pc
     popd
     rm -rf "schroedinger-${DIRAC_VERSION}"
-    end_build "$DIRAC_TAR"
+    end_build
 fi
 fi
 
@@ -2620,13 +2805,14 @@ X264_VERSION=20180212-2245-stable
 X264_VERSION_PKG=0.152.x
 X264_TAR="x264-snapshot-${X264_VERSION}.tar.bz2"
 X264_SITE="https://download.videolan.org/x264/snapshots"
-if [ "${REBUILD_X264:-}" = "1" ]; then
+step="$X264_TAR"
+if build_step && { force_build || { [ "${REBUILD_X264:-}" = "1" ]; }; }; then
     REBUILD_FFMPEG=1
     rm -rf "$SDK_HOME"/lib/libx264* || true
     rm -rf "$SDK_HOME"/lib/pkgconfig/x264* || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/x264.pc" ] || [ "$(pkg-config --modversion x264)" != "$X264_VERSION_PKG" ]; then
-    start_build "$X264_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/x264.pc" ] || [ "$(pkg-config --modversion x264)" != "$X264_VERSION_PKG" ]; }; }; then
+    start_build
     download "$X264_SITE" "$X264_TAR"
     untar "$SRC_PATH/$X264_TAR"
     pushd "x264-snapshot-${X264_VERSION}"
@@ -2636,7 +2822,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/x264.pc" ] || [ "$(pkg-config --modversion x2
     make install
     popd
     rm -rf "x264-snapshot-${X264_VERSION}"
-    end_build "$X264_TAR"
+    end_build
 fi
 
 # x265
@@ -2645,12 +2831,13 @@ fi
 X265_VERSION=2.8
 X265_TAR="x265_${X265_VERSION}.tar.gz"
 X265_SITE="https://bitbucket.org/multicoreware/x265/downloads"
-if [ "${REBUILD_X265:-}" = "1" ]; then
+step="$X265_TAR"
+if build_step && { force_build || { [ "${REBUILD_X265:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/lib/libx265* || true
     rm -rf "$SDK_HOME"/lib/pkgconfig/x265* || true
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/x265.pc" ] || [ "$(pkg-config --modversion x265)" != "$X265_VERSION" ]; then
-    start_build "$X265_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/x265.pc" ] || [ "$(pkg-config --modversion x265)" != "$X265_VERSION" ]; }; }; then
+    start_build
     download "$X265_SITE" "$X265_TAR"
     untar "$SRC_PATH/$X265_TAR"
     pushd "x265_$X265_VERSION"
@@ -2723,7 +2910,7 @@ EOF
     popd
     popd
     rm -rf "x265_$X265_VERSION"
-    end_build "$X265_TAR"
+    end_build
 fi
 
 # xvid
@@ -2731,8 +2918,9 @@ fi
 XVID_VERSION=1.3.5
 XVID_TAR="xvidcore-${XVID_VERSION}.tar.gz"
 XVID_SITE="http://downloads.xvid.org/downloads"
-if [ ! -s "$SDK_HOME/lib/libxvidcore.so" ]; then
-    start_build "$XVID_TAR"
+step="$XVID_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libxvidcore.so" ]; }; }; then
+    start_build
     download "$XVID_SITE" "$XVID_TAR"
     untar "$SRC_PATH/$XVID_TAR"
     pushd xvidcore/build/generic
@@ -2746,15 +2934,16 @@ if [ ! -s "$SDK_HOME/lib/libxvidcore.so" ]; then
     chmod +x "$SDK_HOME/lib/libxvidcore.so".*.*
     popd
     rm -rf xvidcore
-    end_build "$XVID_TAR"
+    end_build
 fi
 
 # install soxr
 SOXR_VERSION=0.1.2
 SOXR_TAR="soxr-${SOXR_VERSION}-Source.tar.xz"
 SOXR_SITE="https://sourceforge.net/projects/soxr/files"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/soxr.pc" ] || [ "$(pkg-config --modversion soxr)" != "$SOXR_VERSION" ]; then
-    start_build "$SOXR_TAR"
+step="$SOXR_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/soxr.pc" ] || [ "$(pkg-config --modversion soxr)" != "$SOXR_VERSION" ]; }; }; then
+    start_build
     download "$SOXR_SITE" "$SOXR_TAR"
     untar "$SRC_PATH/$SOXR_TAR"
     pushd "soxr-${SOXR_VERSION}-Source"
@@ -2766,7 +2955,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/soxr.pc" ] || [ "$(pkg-config --modversion so
     popd
     popd
     rm -rf "soxr-${SOXR_VERSION}-Source"
-    end_build "$SOXR_TAR"
+    end_build
 fi
 
 # Install libass (for ffmpeg)
@@ -2774,9 +2963,10 @@ fi
 LIBASS_VERSION=0.14.0
 LIBASS_TAR="libass-${LIBASS_VERSION}.tar.xz"
 LIBASS_SITE="https://github.com/libass/libass/releases/download/${LIBASS_VERSION}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libass.pc" ] || [ "$(pkg-config --modversion libass)" != "$LIBASS_VERSION" ]; then
+step="$LIBASS_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libass.pc" ] || [ "$(pkg-config --modversion libass)" != "$LIBASS_VERSION" ]; }; }; then
     REBUILD_FFMPEG=1
-    start_build "$LIBASS_TAR"
+    start_build
     download "$LIBASS_SITE" "$LIBASS_TAR"
     untar "$SRC_PATH/$LIBASS_TAR"
     pushd "libass-${LIBASS_VERSION}"
@@ -2785,7 +2975,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libass.pc" ] || [ "$(pkg-config --modversion 
     make install
     popd
     rm -rf "libass-${LIBASS_VERSION}"
-    end_build "$LIBASS_TAR"
+    end_build
 fi
 
 # Install libbluray (for ffmpeg)
@@ -2793,9 +2983,10 @@ fi
 LIBBLURAY_VERSION=1.0.2
 LIBBLURAY_TAR="libbluray-${LIBBLURAY_VERSION}.tar.bz2"
 LIBBLURAY_SITE="ftp://ftp.videolan.org/pub/videolan/libbluray/${LIBBLURAY_VERSION}"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/libbluray.pc" ] || [ "$(pkg-config --modversion libbluray)" != "$LIBBLURAY_VERSION" ]; then
+step="$LIBBLURAY_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libbluray.pc" ] || [ "$(pkg-config --modversion libbluray)" != "$LIBBLURAY_VERSION" ]; }; }; then
     REBUILD_FFMPEG=1
-    start_build "$LIBBLURAY_TAR"
+    start_build
     download "$LIBBLURAY_SITE" "$LIBBLURAY_TAR"
     untar "$SRC_PATH/$LIBBLURAY_TAR"
     pushd "libbluray-${LIBBLURAY_VERSION}"
@@ -2804,16 +2995,17 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/libbluray.pc" ] || [ "$(pkg-config --modversi
     make install
     popd
     rm -rf "libbluray-${LIBBLURAY_VERSION}"
-    end_build "$LIBBLURAY_TAR"
+    end_build
 fi
 
 # Install openh264 (for ffmpeg)
 OPENH264_VERSION=1.7.0
 OPENH264_TAR="openh264-${OPENH264_VERSION}.tar.gz"
 #OPENH264_SITE="https://github.com/cisco/openh264/archive"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/openh264.pc" ] || [ "$(pkg-config --modversion openh264)" != "$OPENH264_VERSION" ]; then
+step="$OPENH264_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/openh264.pc" ] || [ "$(pkg-config --modversion openh264)" != "$OPENH264_VERSION" ]; }; }; then
     REBUILD_FFMPEG=1
-    start_build "$OPENH264_TAR"
+    start_build
     download_github cisco openh264 "${OPENH264_VERSION}" v "${OPENH264_TAR}"
     #download "$OPENH264_SITE" "$OPENH264_TAR"
     untar "$SRC_PATH/$OPENH264_TAR"
@@ -2823,16 +3015,17 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/openh264.pc" ] || [ "$(pkg-config --modversio
     make HAVE_AVX2=No PREFIX="$SDK_HOME" install
     popd
     rm -rf "openh264-${OPENH264_VERSION}"
-    end_build "$OPENH264_TAR"
+    end_build
 fi
 
 # Install snappy (for ffmpeg)
 SNAPPY_VERSION=1.1.7
 SNAPPY_TAR="snappy-${SNAPPY_VERSION}.tar.gz"
 SNAPPY_SITE="https://github.com/google/snappy/releases/download/${SNAPPY_VERSION}"
-if [ ! -s "$SDK_HOME/lib/libsnappy.so" ]; then
+step="$SNAPPY_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libsnappy.so" ]; }; }; then
     REBUILD_FFMPEG=1
-    start_build "$SNAPPY_TAR"
+    start_build
     #download "$SNAPPY_SITE" "$SNAPPY_TAR"
     download_github google snappy "${SNAPPY_VERSION}" "" "${SNAPPY_TAR}"
     untar "$SRC_PATH/$SNAPPY_TAR"
@@ -2845,7 +3038,7 @@ if [ ! -s "$SDK_HOME/lib/libsnappy.so" ]; then
     popd
     popd
     rm -rf "snappy-${SNAPPY_VERSION}"
-    end_build "$SNAPPY_TAR"
+    end_build
 fi
 
 # Install FFmpeg
@@ -2854,11 +3047,12 @@ FFMPEG_VERSION=4.0.2
 FFMPEG_VERSION_LIBAVCODEC=58.18.100
 FFMPEG_TAR="ffmpeg-${FFMPEG_VERSION}.tar.bz2"
 FFMPEG_SITE="http://www.ffmpeg.org/releases"
-if [ "${REBUILD_FFMPEG:-}" = "1" ]; then
+step="$FFMPEG_TAR"
+if build_step && { force_build || { [ "${REBUILD_FFMPEG:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/ffmpeg-* || true
 fi
-if [ ! -d "$SDK_HOME/ffmpeg-gpl2" ] || [ ! -d "$SDK_HOME/ffmpeg-lgpl" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/ffmpeg-gpl2/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion libavcodec)" != "$FFMPEG_VERSION_LIBAVCODEC" ]; then
-    start_build "$FFMPEG_TAR"
+if build_step && { force_build || { [ ! -d "$SDK_HOME/ffmpeg-gpl2" ] || [ ! -d "$SDK_HOME/ffmpeg-lgpl" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/ffmpeg-gpl2/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion libavcodec)" != "$FFMPEG_VERSION_LIBAVCODEC" ]; }; }; then
+    start_build
     download "$FFMPEG_SITE" "$FFMPEG_TAR"
     untar "$SRC_PATH/$FFMPEG_TAR"
     pushd "ffmpeg-${FFMPEG_VERSION}"
@@ -2873,7 +3067,7 @@ if [ ! -d "$SDK_HOME/ffmpeg-gpl2" ] || [ ! -d "$SDK_HOME/ffmpeg-lgpl" ] || [ "$(
     make install
     popd
     rm -rf "ffmpeg-${FFMPEG_VERSION}"
-    end_build "$FFMPEG_TAR"
+    end_build
 fi
 
 # Install dbus (for QtDBus)
@@ -2881,8 +3075,9 @@ fi
 DBUS_VERSION=1.12.8
 DBUS_TAR="dbus-${DBUS_VERSION}.tar.gz"
 DBUS_SITE="https://dbus.freedesktop.org/releases/dbus"
-if [ ! -s "$SDK_HOME/lib/pkgconfig/dbus-1.pc" ] || [ "$(pkg-config --modversion dbus-1)" != "$DBUS_VERSION" ]; then
-    start_build "$DBUS_TAR"
+step="$DBUS_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/dbus-1.pc" ] || [ "$(pkg-config --modversion dbus-1)" != "$DBUS_VERSION" ]; }; }; then
+    start_build
     download "$DBUS_SITE" "$DBUS_TAR"
     untar "$SRC_PATH/$DBUS_TAR"
     pushd "dbus-${DBUS_VERSION}"
@@ -2891,7 +3086,7 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/dbus-1.pc" ] || [ "$(pkg-config --modversion 
     make install
     popd
     rm -rf "dbus-${DBUS_VERSION}"
-    end_build "$DBUS_TAR"
+    end_build
 fi
 
 
@@ -2902,11 +3097,12 @@ RUBY_VERSION_SHORT=${RUBY_VERSION%.*}
 RUBY_VERSION_PKG=${RUBY_VERSION_SHORT}.0
 RUBY_TAR="ruby-${RUBY_VERSION}.tar.xz"
 RUBY_SITE="http://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION_SHORT}"
-if [ "${REBUILD_RUBY:-}" = "1" ]; then
+step="$RUBY_TAR"
+if build_step && { force_build || { [ "${REBUILD_RUBY:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME/lib/pkgconfig/ruby"*.pc
 fi
-if [ ! -s "$SDK_HOME/lib/pkgconfig/ruby-${RUBY_VERSION_SHORT}.pc" ] || [ "$(pkg-config --modversion "ruby-${RUBY_VERSION_SHORT}")" != "$RUBY_VERSION_PKG" ]; then
-    start_build "$RUBY_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/ruby-${RUBY_VERSION_SHORT}.pc" ] || [ "$(pkg-config --modversion "ruby-${RUBY_VERSION_SHORT}")" != "$RUBY_VERSION_PKG" ]; }; }; then
+    start_build
     download "$RUBY_SITE" "$RUBY_TAR"
     untar "$SRC_PATH/$RUBY_TAR"
     pushd "ruby-${RUBY_VERSION}"
@@ -2915,18 +3111,18 @@ if [ ! -s "$SDK_HOME/lib/pkgconfig/ruby-${RUBY_VERSION_SHORT}.pc" ] || [ "$(pkg-
     make install
     popd
     rm -rf "ruby-${RUBY_VERSION}"
-    end_build "$RUBY_TAR"
+    end_build
 fi
 
 # Install breakpad tools
-if [ ! -s "${SDK_HOME}/bin/dump_syms" ]; then
+BREAKPAD_GIT=https://github.com/NatronGitHub/breakpad.git # breakpad for server-side or linux dump_syms, not for Natron!
+BREAKPAD_GIT_COMMIT=f264b48eb0ed8f0893b08f4f9c7ae9685090ccb8
+step="breakpad-${BREAKPAD_GIT_COMMIT}-natron"
+if build_step && { force_build || { [ ! -s "${SDK_HOME}/bin/dump_syms" ]; }; }; then
 
-    GIT_BREAKPAD=https://github.com/olear/breakpad.git # breakpad for server-side or linux dump_syms, not for Natron!
-    GIT_BREAKPAD_COMMIT=f264b48eb0ed8f0893b08f4f9c7ae9685090ccb8
-
-    start_build "breakpad-olear-${GIT_BREAKPAD_COMMIT}"
+    start_build
     rm -f breakpad || true
-    git_clone_commit "$GIT_BREAKPAD" "$GIT_BREAKPAD_COMMIT"
+    git_clone_commit "$BREAKPAD_GIT" "$BREAKPAD_GIT_COMMIT"
     pushd breakpad
     git submodule update -i
 
@@ -2938,7 +3134,7 @@ if [ ! -s "${SDK_HOME}/bin/dump_syms" ]; then
     cp src/tools/linux/dump_syms/dump_syms "$SDK_HOME/bin/"
     popd
     rm -rf breakpad
-    end_build "breakpad-olear-${GIT_BREAKPAD_COMMIT}"
+    end_build
 fi
 
 # Install valgrind
@@ -2946,8 +3142,9 @@ fi
 VALGRIND_VERSION=3.13.0
 VALGRIND_TAR="valgrind-${VALGRIND_VERSION}.tar.bz2"
 VALGRIND_SITE="https://sourceware.org/ftp/valgrind"
-if [ ! -s "$SDK_HOME/bin/valgrind" ]; then
-    start_build "$VALGRIND_TAR"
+step="$VALGRIND_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/valgrind" ]; }; }; then
+    start_build
     download "$VALGRIND_SITE" "$VALGRIND_TAR"
     untar "$SRC_PATH/$VALGRIND_TAR"
     pushd "valgrind-${VALGRIND_VERSION}"
@@ -2957,7 +3154,7 @@ if [ ! -s "$SDK_HOME/bin/valgrind" ]; then
     make install
     popd
     rm -rf "valgrind-${VALGRIND_VERSION}"
-    end_build "$VALGRIND_TAR"
+    end_build
 fi
 
 # install gdb (requires xz, zlib ncurses, python2, texinfo)
@@ -2965,8 +3162,9 @@ fi
 GDB_VERSION=8.1
 GDB_TAR="gdb-${GDB_VERSION}.tar.xz" # when using the sdk during debug we get a conflict with native gdb, so bundle our own
 GDB_SITE="ftp://ftp.gnu.org/gnu/gdb"
-if [ ! -s "$SDK_HOME/bin/gdb" ]; then
-    start_build "$GDB_TAR"
+step="$GDB_TAR"
+if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/gdb" ]; }; }; then
+    start_build
     download "$GDB_SITE" "$GDB_TAR"
     untar "$SRC_PATH/$GDB_TAR"
     pushd "gdb-${GDB_VERSION}"
@@ -2979,11 +3177,11 @@ if [ ! -s "$SDK_HOME/bin/gdb" ]; then
     make install
     popd
     rm -rf "gdb-${GDB_VERSION}"
-    end_build "$GDB_TAR"
+    end_build
 fi
 
 if false; then # <--- Disabled Qt 5.6 (temporary)
-if [ "${REBUILD_QT5:-}" = "1" ]; then
+if build_step && { force_build || { [ "${REBUILD_QT5:-}" = "1" ]; }; }; then
     rm -rf "$QT5PREFIX"
 fi
 # Qt5
@@ -3017,8 +3215,9 @@ QT_MODULES=( qtxmlpatterns qtwebview qtwebsockets qtwebengine qtwebchannel qttoo
 QT_MODULES_URL=( "$QT_XMLPATTERNS_URL" "$QT_WEBVIEW_URL" "$QT_WEBSOCKETS_URL" "$QT_WEBENGINE_URL" "$QT_WEBCHANNEL_URL" "$QT_TOOLS_URL" "$QT_TRANSLATIONS_URL" "$QT_SVG_URL" "$QT_SCRIPT_URL" "$QT_QUICKCONTROLS_URL" "$QT_QUICKCONTROLS2_URL" "$QT_MULTIMEDIA_URL" "$QT_IMAGEFORMATS_URL" "$QT_GRAPHICALEFFECTS_URL" "$QT_DECLARATIVE_URL" "$QT_X11EXTRAS_URL" )
 
 export QTDIR="$QT5PREFIX"
-if [ ! -s "$QT5PREFIX/lib/pkgconfig/Qt5Core.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT5PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Qt5Core)" != "$QT5_VERSION" ]; then
-    start_build "qt5-${QT5_VERSION}"
+step="qt5-${QT5_VERSION}"
+if build_step && { force_build || { [ ! -s "$QT5PREFIX/lib/pkgconfig/Qt5Core.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT5PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion Qt5Core)" != "$QT5_VERSION" ]; }; }; then
+    start_build
 
     # Install QtBase
     QT_CONF=( "-v" "-openssl-linked" "-opengl" "desktop" "-opensource" "-nomake" "examples" "-nomake" "tests" "-release" "-no-gtkstyle" "-confirm-license" "-no-c++11" "-shared" "-qt-xcb" )
@@ -3049,12 +3248,13 @@ if [ ! -s "$QT5PREFIX/lib/pkgconfig/Qt5Core.pc" ] || [ "$(env PKG_CONFIG_PATH=$Q
 
     popd
     rm -rf qtbase
-    end_build "qt5-${QT5_VERSION}"
+    end_build
 
     for (( i=0; i<${#QT_MODULES[@]}; i++ )); do
         module=${QT_MODULES[i]}
         moduleurl=${QT_MODULES_URL[i]}
-        start_build "${module}-${QT5_VERSION}"
+        step="${module}-${QT5_VERSION}"
+        start_build
         package="${module}-${QT5_VERSION}.tar.gz"
         if [ ! -s "$SRC_PATH/$package" ]; then
             echo "*** downloading $package"
@@ -3091,39 +3291,43 @@ if [ ! -s "$QT5PREFIX/lib/pkgconfig/Qt5Core.pc" ] || [ "$(env PKG_CONFIG_PATH=$Q
             (cd "$m"; ln -sfv "$QT5_VERSION"/*/private .)
         done
 
-        end_build "${module}-${QT5_VERSION}"
+        end_build
     done
 fi
 fi # ---> Disabled Qt 5.6 (temporary)
 
 # pysetup
-if [ "$PYV" = "3" ]; then
-    export PYTHON_PATH=$SDK_HOME/lib/python${PYVER}
-    export PYTHON_INCLUDE=$SDK_HOME/include/python${PYVER}
-    PY_EXE=$SDK_HOME/bin/python${PYV}
-    PY_LIB=$SDK_HOME/lib/libpython${PYVER}.so
-    PY_INC=$SDK_HOME/include/python${PYVER}
-    USE_PY3=true
-else
-    PY_EXE=$SDK_HOME/bin/python${PYV}
-    PY_LIB=$SDK_HOME/lib/libpython${PYVER}.so
-    PY_INC=$SDK_HOME/include/python${PYVER}
-    USE_PY3=false
+# If PYV is not set, set it to 2
+if dobuild; then
+    if [ "$PYV" = "3" ]; then
+        export PYTHON_PATH=$SDK_HOME/lib/python${PYVER}
+        export PYTHON_INCLUDE=$SDK_HOME/include/python${PYVER}
+        PY_EXE=$SDK_HOME/bin/python${PYV}
+        PY_LIB=$SDK_HOME/lib/libpython${PYVER}.so
+        PY_INC=$SDK_HOME/include/python${PYVER}
+        USE_PY3=true
+    else
+        PY_EXE=$SDK_HOME/bin/python${PYV}
+        PY_LIB=$SDK_HOME/lib/libpython${PYVER}.so
+        PY_INC=$SDK_HOME/include/python${PYVER}
+        USE_PY3=false
+    fi
+
+
+    # add qt5 to lib path to build shiboken2 and pyside2
+    LD_LIBRARY_PATH="$QT5PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    #LD_RUN_PATH="$LD_LIBRARY_PATH"
 fi
-
-
-# add qt5 to lib path to build shiboken2 and pyside2
-LD_LIBRARY_PATH="$QT5PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-#LD_RUN_PATH="$LD_LIBRARY_PATH"
 
 
 # Install shiboken2. Requires clang. Not required for PySide2 5.6, which bundles shiboken2
 SHIBOKEN2_VERSION=2
 SHIBOKEN2_GIT="https://code.qt.io/pyside/shiboken"
 SHIBOKEN2_COMMIT="5.9"
+step="shiboken2-$SHIBOKEN2_COMMIT"
 # SKIP: not required when using pyside-setup.git, see below
-if false; then #[ ! -s "$QT5PREFIX/lib/pkgconfig/shiboken2.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT5PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion "shiboken2")" != "$SHIBOKEN2_VERSION" ]; then
-    start_build "shiboken2"
+if false; then #[[ build_step && ( force_build || ( [ ! -s "$QT5PREFIX/lib/pkgconfig/shiboken2.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT5PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion "shiboken2")" != "$SHIBOKEN2_VERSION" ]; }; }; then
+    start_build
     git_clone_commit "$SHIBOKEN2_GIT" "$SHIBOKEN2_COMMIT"
     pushd shiboken
 
@@ -3146,7 +3350,7 @@ if false; then #[ ! -s "$QT5PREFIX/lib/pkgconfig/shiboken2.pc" ] || [ "$(env PKG
     popd
     popd
     rm -rf shiboken
-    end_build "shiboken2"
+    end_build
 fi
 
 if false; then # <--- Disabled pyside 2 (temporary)
@@ -3154,9 +3358,9 @@ if false; then # <--- Disabled pyside 2 (temporary)
 PYSIDE2_VERSION="5.6.0"
 PYSIDE2_GIT="https://code.qt.io/pyside/pyside-setup"
 PYSIDE2_COMMIT="5.6" # 5.9 is unstable, see https://github.com/fredrikaverpil/pyside2-wheels/issues/55
-if [ ! -x "$SDK_HOME/lib/python${PY2_VERSION_SHORT}/site-packages/PySide2/shiboken2" ] || [ "$($SDK_HOME/lib/python${PY2_VERSION_SHORT}/site-packages/PySide2/shiboken2 --version|head -1 | sed -e 's/^.* v\([^ ]*\)/\1/')" != "$PYSIDE2_VERSION" ]; then
-
-    start_build "pyside2-${PYSIDE2_COMMIT}"
+step="pyside2-${PYSIDE2_COMMIT}"
+if build_step && { force_build || { [ ! -x "$SDK_HOME/lib/python${PY2_VERSION_SHORT}/site-packages/PySide2/shiboken2" ] || [ "$($SDK_HOME/lib/python${PY2_VERSION_SHORT}/site-packages/PySide2/shiboken2 --version|head -1 | sed -e 's/^.* v\([^ ]*\)/\1/')" != "$PYSIDE2_VERSION" ]; }; }; then
+    start_build
     git_clone_commit "$PYSIDE2_GIT" "$PYSIDE2_COMMIT"
     pushd pyside-setup
 
@@ -3181,18 +3385,21 @@ if [ ! -x "$SDK_HOME/lib/python${PY2_VERSION_SHORT}/site-packages/PySide2/shibok
     ln -sf "$SDK_HOME/lib/python${PY2_VERSION_SHORT}/site-packages/PySide2/shiboken2" "$QT5PREFIX/bin/shiboken2"
     popd
     rm -rf pyside-setup
-    end_build "pyside2-${PYSIDE2_COMMIT}"
+    end_build
 fi
 fi # ---> Disabled pyside 2 (temporary)
 
 
-if [ "${REBUILD_QT4:-}" = "1" ]; then
+if build_step && { force_build || { [ "${REBUILD_QT4:-}" = "1" ]; }; }; then
     rm -rf "$QT4PREFIX" || true
 fi
 # Qt4
-export QTDIR="$QT4PREFIX"
-if [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT4PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion QtCore)" != "$QT4_VERSION" ]; then
-    start_build "$QT4_TAR"
+if dobuild; then
+    export QTDIR="$QT4PREFIX"
+fi
+step="$QT4_TAR"
+if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT4PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion QtCore)" != "$QT4_VERSION" ]; }; }; then
+    start_build
     QT_CONF=( "-v" "-system-zlib" "-system-libtiff" "-system-libpng" "-no-libmng" "-system-libjpeg" "-no-gtkstyle" "-glib" "-xrender" "-xrandr" "-xcursor" "-xfixes" "-xinerama" "-fontconfig" "-xinput" "-sm" "-no-multimedia" "-confirm-license" "-release" "-opensource" "-dbus-linked" "-opengl" "desktop" "-nomake" "demos" "-nomake" "docs" "-nomake" "examples" "-optimized-qmake" )
     # qtwebkit is installed separately (see below)
     # also install the sqlite plugin.
@@ -3469,10 +3676,12 @@ if [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT
     done
     popd
     rm -rf "qt-everywhere-opensource-src-${QT4_VERSION}"
-    end_build "$QT4_TAR"
+    end_build
 fi
-if [ ! -s "$QT4PREFIX/lib/pkgconfig/QtWebKit.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT4PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion QtWebKit)" != "$QT4WEBKIT_VERSION_PKG" ]; then
-    start_build "$QT4WEBKIT_TAR"
+
+step="$QT4WEBKIT_TAR"
+if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtWebKit.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT4PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion QtWebKit)" != "$QT4WEBKIT_VERSION_PKG" ]; }; }; then
+    start_build
     # install a more recent qtwebkit, see http://www.linuxfromscratch.org/blfs/view/7.9/x/qt4.html
     download "$QT4WEBKIT_SITE" "$QT4WEBKIT_TAR"
     mkdir "qtwebkit-${QT4WEBKIT_VERSION}"
@@ -3493,21 +3702,26 @@ if [ ! -s "$QT4PREFIX/lib/pkgconfig/QtWebKit.pc" ] || [ "$(env PKG_CONFIG_PATH=$
     make -C WebKitBuild/Release install -j${MKJOBS}
     popd
     rm -rf "qtwebkit-${QT4WEBKIT_VERSION}"
-    end_build "$QT4WEBKIT_TAR"
+    end_build
 fi
 
-# add qt4 to lib path to build shiboken and pyside
-LD_LIBRARY_PATH="$QT4PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-#LD_RUN_PATH="$LD_LIBRARY_PATH"
+if dobuild; then
+    # add qt4 to lib path to build shiboken and pyside
+    LD_LIBRARY_PATH="$QT4PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    #LD_RUN_PATH="$LD_LIBRARY_PATH"
+fi
 
 # Install shiboken
 SHIBOKEN_VERSION=1.2.4
 #SHIBOKEN_TAR="shiboken-${SHIBOKEN_VERSION}.tar.bz2"
 #SHIBOKEN_SITE="https://download.qt.io/official_releases/pyside"
 SHIBOKEN_TAR="Shiboken-${SHIBOKEN_VERSION}.tar.gz"
-SHIBOKEN_PREFIX="$QT4PREFIX"
-if [ ! -s "$SHIBOKEN_PREFIX/lib/pkgconfig/shiboken.pc" ] || [ "$(env PKG_CONFIG_PATH=$SHIBOKEN_PREFIX/lib/pkgconfig:$QT4PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion shiboken)" != "$SHIBOKEN_VERSION" ]; then
-    start_build "$SHIBOKEN_TAR"
+step="$SHIBOKEN_TAR"
+if dobuild; then
+    SHIBOKEN_PREFIX="$QT4PREFIX"
+fi
+if build_step && { force_build || { [ ! -s "$SHIBOKEN_PREFIX/lib/pkgconfig/shiboken.pc" ] || [ "$(env PKG_CONFIG_PATH=$SHIBOKEN_PREFIX/lib/pkgconfig:$QT4PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion shiboken)" != "$SHIBOKEN_VERSION" ]; }; }; then
+    start_build
     #download "$SHIBOKEN_SITE" "$SHIBOKEN_TAR"
     download_github pyside Shiboken "${SHIBOKEN_VERSION}" "" "${SHIBOKEN_TAR}"
     untar "$SRC_PATH/$SHIBOKEN_TAR"
@@ -3533,7 +3747,7 @@ if [ ! -s "$SHIBOKEN_PREFIX/lib/pkgconfig/shiboken.pc" ] || [ "$(env PKG_CONFIG_
     popd
     popd
     rm -rf "shiboken-$SHIBOKEN_VERSION"
-    end_build "$SHIBOKEN_TAR"
+    end_build
 fi
 
 # Install pyside
@@ -3541,10 +3755,12 @@ PYSIDE_VERSION=1.2.4
 #PYSIDE_TAR="pyside-qt4.8+${PYSIDE_VERSION}.tar.bz2"
 #PYSIDE_SITE="https://download.qt.io/official_releases/pyside"
 PYSIDE_TAR="PySide-${PYSIDE_VERSION}.tar.gz"
-PYSIDE_PREFIX="$QT4PREFIX"
-if [ ! -s "$PYSIDE_PREFIX/lib/pkgconfig/pyside${PYSIDE_V:-}.pc" ] || [ "$(env PKG_CONFIG_PATH=$PYSIDE_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion pyside)" != "$PYSIDE_VERSION" ]; then
-
-    start_build "$PYSIDE_TAR"
+step="$PYSIDE_TAR"
+if dobuild; then
+    PYSIDE_PREFIX="$QT4PREFIX"
+fi
+if build_step && { force_build || { [ ! -s "$PYSIDE_PREFIX/lib/pkgconfig/pyside${PYSIDE_V:-}.pc" ] || [ "$(env PKG_CONFIG_PATH=$PYSIDE_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion pyside)" != "$PYSIDE_VERSION" ]; }; }; then
+    start_build
     #download "$PYSIDE_SITE" "$PYSIDE_TAR"
     download_github pyside PySide "${PYSIDE_VERSION}" "" "${PYSIDE_TAR}"
     untar "$SRC_PATH/$PYSIDE_TAR"
@@ -3568,38 +3784,48 @@ if [ ! -s "$PYSIDE_PREFIX/lib/pkgconfig/pyside${PYSIDE_V:-}.pc" ] || [ "$(env PK
     popd
     #rm -rf "pyside-qt4.8+${PYSIDE_VERSION}"
     rm -rf "PySide-${PYSIDE_VERSION}"
-    end_build "$PYSIDE_TAR"
+    end_build
 fi
 
-# make sure all libs are user-writable and executable
-chmod 755 "$SDK_HOME"/lib*/lib*.so*
+if dobuild; then
+    # make sure all libs are user-writable and executable
+    chmod 755 "$SDK_HOME"/lib*/lib*.so*
 
-if [ ! -z "${TAR_SDK:-}" ]; then
-    # Done, make a tarball
-    pushd "$SDK_HOME/.."
-    tar cJf "$SRC_PATH/Natron-$SDK.tar.xz" "Natron-sdk"
-    echo "*** SDK available at $SRC_PATH/Natron-$SDK.tar.xz"
+    if [ ! -z "${TAR_SDK:-}" ]; then
+        # Done, make a tarball
+        pushd "$SDK_HOME/.."
+        tar cJf "$SRC_PATH/Natron-$SDK.tar.xz" "Natron-sdk"
+        echo "*** SDK available at $SRC_PATH/Natron-$SDK.tar.xz"
 
-    if [ ! -z "${UPLOAD_SDK:-}" ]; then
-        rsync -avz -O --progress --verbose -e 'ssh -oBatchMode=yes' "$SRC_PATH/Natron-$SDK.tar.xz" "$BINARIES_URL"
+        if [ ! -z "${UPLOAD_SDK:-}" ]; then
+            rsync -avz -O --progress --verbose -e 'ssh -oBatchMode=yes' "$SRC_PATH/Natron-$SDK.tar.xz" "$BINARIES_URL"
+        fi
+        popd
     fi
-    popd
+
+    echo
+    echo "Check for broken libraries and binaries... (everything is OK if nothing is printed)"
+    # SDK_HOME=/opt/Natron-sdk; LD_LIBRARY_PATH=$SDK_HOME/qt4/lib:$SDK_HOME/gcc/lib:$SDK_HOME/lib:$SDK_HOME/qt5/lib
+    for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl qt4; do # removed qt5 (temporary) to prevent script error
+        LD_LIBRARY_PATH="$SDK_HOME/$subdir/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" find "$SDK_HOME/$subdir/lib" -name '*.so' -exec bash -c 'ldd {} 2>&1 | fgrep "not found" &>/dev/null' \; -print
+        LD_LIBRARY_PATH="$SDK_HOME/$subdir/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" find "$SDK_HOME/$subdir/bin" -maxdepth 1 -exec bash -c 'ldd {} 2>&1 | fgrep "not found" &>/dev/null' \; -print
+    done
+    echo "Check for broken libraries and binaries... done!"
+
+    echo
+    echo "Natron SDK Done"
+    echo
 fi
 
-echo
-echo "Check for broken libraries and binaries... (everything is OK if nothing is printed)"
-# SDK_HOME=/opt/Natron-sdk; LD_LIBRARY_PATH=$SDK_HOME/qt4/lib:$SDK_HOME/gcc/lib:$SDK_HOME/lib:$SDK_HOME/qt5/lib
-for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl qt4; do # removed qt5 (temporary) to prevent script error
-    LD_LIBRARY_PATH="$SDK_HOME/$subdir/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" find "$SDK_HOME/$subdir/lib" -name '*.so' -exec bash -c 'ldd {} 2>&1 | fgrep "not found" &>/dev/null' \; -print
-    LD_LIBRARY_PATH="$SDK_HOME/$subdir/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" find "$SDK_HOME/$subdir/bin" -maxdepth 1 -exec bash -c 'ldd {} 2>&1 | fgrep "not found" &>/dev/null' \; -print
-done
-echo "Check for broken libraries and binaries... done!"
+if [ "${GEN_DOCKERFILE:-}" = "1" ]; then
+    cat <<EOF
+FROM centos:6
+MAINTAINER https://github.com/NatronGitHub/Natron
+COPY --from=intermediate /opt/Natron-sdk /opt/Natron-sdk
+EOF
+fi
 
-echo
-echo "Natron SDK Done"
-echo
 exit 0
-
 
 # Local variables:
 # mode: shell-script
