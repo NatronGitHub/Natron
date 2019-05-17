@@ -172,7 +172,8 @@ fi
 
 # The version of Python used by the SDK and to build Natron
 # Python 2 or 3, NOTE! v3 is probably broken, been untested for a long while
-PYV=2
+# If PYV is not set, set it to 2
+: "${PYV:=2}"
 if [ "$PYV" = "3" ]; then
     PYVER=3.4
 else
