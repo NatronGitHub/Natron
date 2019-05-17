@@ -9,7 +9,7 @@
 
 #include "yaml-cpp/node/detail/node.h"
 #include "yaml-cpp/node/detail/node_data.h"
-#include <boost/type_traits.hpp>
+#include <type_traits>
 
 namespace YAML {
 namespace detail {
@@ -22,9 +22,9 @@ struct get_idx {
 };
 
 template <typename Key>
-struct get_idx<
-    Key, typename boost::enable_if_c<boost::is_unsigned<Key>::value &&
-                                     !boost::is_same<Key, bool>::value>::type> {
+struct get_idx<Key,
+               typename std::enable_if<std::is_unsigned<Key>::value &&
+                                       !std::is_same<Key, bool>::value>::type> {
   static node* get(const std::vector<node*>& sequence, const Key& key,
                    shared_memory_holder /* pMemory */) {
     return key < sequence.size() ? sequence[key] : 0;
@@ -32,7 +32,7 @@ struct get_idx<
 
   static node* get(std::vector<node*>& sequence, const Key& key,
                    shared_memory_holder pMemory) {
-    if (key > sequence.size())
+   if (key > sequence.size() || (key > 0 && !sequence[key-1]->is_defined()))
       return 0;
     if (key == sequence.size())
       sequence.push_back(&pMemory->create_node());
@@ -41,7 +41,7 @@ struct get_idx<
 };
 
 template <typename Key>
-struct get_idx<Key, typename boost::enable_if<boost::is_signed<Key> >::type> {
+struct get_idx<Key, typename std::enable_if<std::is_signed<Key>::value>::type> {
   static node* get(const std::vector<node*>& sequence, const Key& key,
                    shared_memory_holder pMemory) {
     return key >= 0 ? get_idx<std::size_t>::get(
@@ -131,6 +131,14 @@ template <typename Key>
 inline bool node_data::remove(const Key& key, shared_memory_holder pMemory) {
   if (m_type != NodeType::Map)
     return false;
+
+  for (kv_pairs::iterator it = m_undefinedPairs.begin();
+       it != m_undefinedPairs.end();) {
+    kv_pairs::iterator jt = std::next(it);
+    if (it->first->equals(key, pMemory))
+      m_undefinedPairs.erase(it);
+    it = jt;
+  }
 
   for (node_map::iterator it = m_map.begin(); it != m_map.end(); ++it) {
     if (it->first->equals(key, pMemory)) {

@@ -122,7 +122,7 @@ class YAML_CPP_API Emitter : private noncopyable {
   bool CanEmitNewline() const;
 
  private:
-  std::auto_ptr<EmitterState> m_pState;
+  std::unique_ptr<EmitterState> m_pState;
   ostream_wrapper m_stream;
 };
 
@@ -162,12 +162,12 @@ inline Emitter& Emitter::WriteStreamable(T value) {
 
 template <>
 inline void Emitter::SetStreamablePrecision<float>(std::stringstream& stream) {
-  stream.precision(GetFloatPrecision());
+  stream.precision(static_cast<std::streamsize>(GetFloatPrecision()));
 }
 
 template <>
 inline void Emitter::SetStreamablePrecision<double>(std::stringstream& stream) {
-  stream.precision(GetDoublePrecision());
+  stream.precision(static_cast<std::streamsize>(GetDoublePrecision()));
 }
 
 // overloads of insertion
