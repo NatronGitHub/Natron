@@ -304,3 +304,5 @@ tools/docker/natron-sdk/common.sh
 tools/docker/natron-sdk/compiler-common.sh
 tools/docker/natron-sdk/Dockerfile
 tools/docker/natron-sdk/include/
+tools/docker/natron-sdk/pkg/
+
