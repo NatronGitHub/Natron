@@ -292,4 +292,9 @@ tools/docker/natron-sdk/common.sh
 tools/docker/natron-sdk/compiler-common.sh
 tools/docker/natron-sdk/Dockerfile
 tools/docker/natron-sdk/include/
+<<<<<<< HEAD
 >>>>>>> 44159ec4c... tools: add natron-sdk docker image tool
+=======
+tools/docker/natron-sdk/pkg/
+
+>>>>>>> 3fe46c258... build-Linux-sdk.sh: [WIP] move each package to an individual file (for docker)
