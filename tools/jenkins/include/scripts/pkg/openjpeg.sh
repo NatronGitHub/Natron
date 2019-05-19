@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Install openjpeg
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/openjpeg2.html

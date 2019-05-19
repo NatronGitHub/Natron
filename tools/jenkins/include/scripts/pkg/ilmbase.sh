@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Install openexr
 EXR_VERSION=2.2.1
