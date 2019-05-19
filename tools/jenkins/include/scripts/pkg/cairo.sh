@@ -5,7 +5,6 @@
 CAIRO_VERSION=1.14.12
 CAIRO_TAR="cairo-${CAIRO_VERSION}.tar.xz"
 CAIRO_SITE="https://www.cairographics.org/releases"
-step="$CAIRO_TAR"
 if build_step && { force_build || { [ "${REBUILD_CAIRO:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/include/cairo || true
     rm -f "$SDK_HOME"/lib/pkgconfig/{cairo-*.pc,cairo.pc} || true
