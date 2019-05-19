@@ -110,7 +110,7 @@ function checkpoint()
             checkpointstep="$s"
         done
         echo "$copyline pkg/"
-        echo "RUN env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK/ && cat "'`ls -t|head -1`'")"
+        echo "RUN env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK/ && cat "'`ls -t |grep -f .log|head -1`'")"
         pkgs=()
     fi
     return 0
@@ -558,7 +558,11 @@ build pyside
 
 if dobuild; then
     # make sure all libs are user-writable and executable
-    chmod 755 "$SDK_HOME"/lib*/lib*.so*
+    for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl qt4; do # removed qt5 (temporary) to prevent script error
+        if compgen -G "$SDK_HOME/$subdir/lib*/lib*.so*" > /dev/null; then
+            chmod 755 "$SDK_HOME"/$subdir/lib*/lib*.so*
+        fi
+    done
 
     if [ ! -z "${TAR_SDK:-}" ]; then
         # Done, make a tarball
