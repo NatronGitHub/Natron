@@ -63,6 +63,7 @@ if [ "${GEN_DOCKERFILE:-}" = "1" -o "${GEN_DOCKERFILE:-}" = "2" ]; then
 
 FROM centos:6 as intermediate
 MAINTAINER https://github.com/NatronGitHub/Natron
+WORKDIR /home
 RUN yum install -y git gcc gcc-c++ make tar wget patch libX11-devel mesa-libGL-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel
 COPY include/patches/ include/patches/
 COPY build-Linux-sdk.sh common.sh compiler-common.sh ./
@@ -110,7 +111,7 @@ function checkpoint()
             checkpointstep="$s"
         done
         echo "$copyline pkg/"
-        echo "RUN env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK/ && cat "'`ls -t |grep -f .log|head -1`'")"
+        echo "RUN env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'")"
         pkgs=()
     fi
     return 0
@@ -145,11 +146,15 @@ function build_step ()
         prevstep="$step"
         return 0
     fi
-    if dobuild && [ "$reachedstep" = "0" ]; then # build this step
+    if dobuild && [ "$reachedstep" = "0" ] ; then # build this step
         if [ "${LAST_STEP:-}" = "$step" ]; then # this is the last step to build
             reachedstep=1
         fi
         prevstep="$step"
+        return 0
+    fi
+    if dobuild && [ "$prevstep" = "$step" ]; then
+        # build_step is called a second time on LAST_STEP, this is OK
         return 0
     fi
     prevstep="$step"
@@ -207,7 +212,7 @@ if dobuild; then
             RHEL_MAJOR=$(cut -d" " -f3 < /etc/redhat-release | cut -d "." -f1)
             RHEL_MINOR=$(cut -d" " -f3 < /etc/redhat-release | cut -d "." -f2)
             if [ "$RHEL_MAJOR" != "6" ] || [ "$RHEL_MINOR" != "4" ]; then
-                (>&2 echo "Warning: Wrong CentOS/RHEL version (${RHEL_MAJOR}.{$RHEL_MINOR}): only CentOS 6.4 is officially supported.")
+                (>&2 echo "Warning: Wrong CentOS/RHEL version (${RHEL_MAJOR}.${RHEL_MINOR}): only CentOS 6.4 is officially supported.")
             fi
         fi
     fi
@@ -238,7 +243,7 @@ function download() {
                 rm "$SRC_PATH/$package" || true
         fi
         if [ ! -s "$SRC_PATH/$package" ]; then
-            echo "*** Error: unable to download $package"
+            (>&2 echo "Error: unable to download $package.")
             exit 1
         fi
     fi
@@ -261,7 +266,7 @@ function download_github() {
                 rm "$SRC_PATH/$package" || true
         fi
         if [ ! -s "$SRC_PATH/$package" ]; then
-            echo "*** Error: unable to download $package"
+            (>&2 echo "Error: unable to download $package")
             exit 1
         fi
     fi
@@ -580,8 +585,8 @@ if dobuild; then
     echo "Check for broken libraries and binaries... (everything is OK if nothing is printed)"
     # SDK_HOME=/opt/Natron-sdk; LD_LIBRARY_PATH=$SDK_HOME/qt4/lib:$SDK_HOME/gcc/lib:$SDK_HOME/lib:$SDK_HOME/qt5/lib
     for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl qt4; do # removed qt5 (temporary) to prevent script error
-        LD_LIBRARY_PATH="$SDK_HOME/$subdir/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" find "$SDK_HOME/$subdir/lib" -name '*.so' -exec bash -c 'ldd {} 2>&1 | fgrep "not found" &>/dev/null' \; -print
-        LD_LIBRARY_PATH="$SDK_HOME/$subdir/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" find "$SDK_HOME/$subdir/bin" -maxdepth 1 -exec bash -c 'ldd {} 2>&1 | fgrep "not found" &>/dev/null' \; -print
+        [ -d "$SDK_HOME/$subdir/lib" ] && LD_LIBRARY_PATH="$SDK_HOME/$subdir/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" find "$SDK_HOME/$subdir/lib" -name '*.so' -exec bash -c 'ldd {} 2>&1 | fgrep "not found" &>/dev/null' \; -print
+        [ -d "$SDK_HOME/$subdir/bin" ] && LD_LIBRARY_PATH="$SDK_HOME/$subdir/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" find "$SDK_HOME/$subdir/bin" -maxdepth 1 -exec bash -c 'ldd {} 2>&1 | fgrep "not found" &>/dev/null' \; -print
     done
     echo "Check for broken libraries and binaries... done!"
 
