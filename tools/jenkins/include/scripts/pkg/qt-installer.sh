@@ -194,7 +194,8 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/installer/bin/qmake" ]; };
     ##patch6 -p1 -b .cupsEnumDests
     #%endif
     patch -Np0 -i "$INC_PATH/patches/Qt/$Patch10" # -p0 -b .prefer_adwaita_on_gnome
-    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch15" # -p1 -b .enable_ft_lcdfilter
+    # disable for installer build
+    #patch -Np1 -i "$INC_PATH/patches/Qt/$Patch15" # -p1 -b .enable_ft_lcdfilter
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch23" # -p1 -b .glib_eventloop_nullcheck
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch25" # -p1 -b .qdbusconnection_no_debug
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch26" # -p1 -b .linguist_qtmake-qt4
