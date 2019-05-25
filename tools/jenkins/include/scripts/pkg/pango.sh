@@ -2,7 +2,7 @@
 
 # Install pango
 # see http://www.linuxfromscratch.org/blfs/view/svn/x/pango.html
-PANGO_VERSION=1.42.2
+PANGO_VERSION=1.42.4
 PANGO_VERSION_SHORT=${PANGO_VERSION%.*}
 PANGO_TAR="pango-${PANGO_VERSION}.tar.xz"
 PANGO_SITE="http://ftp.gnome.org/pub/GNOME/sources/pango/${PANGO_VERSION_SHORT}"

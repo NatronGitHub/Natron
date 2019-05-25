@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # install soxr
-SOXR_VERSION=0.1.2
+# see https://sourceforge.net/projects/soxr/files
+SOXR_VERSION=0.1.3
 SOXR_TAR="soxr-${SOXR_VERSION}-Source.tar.xz"
 SOXR_SITE="https://sourceforge.net/projects/soxr/files"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/soxr.pc" ] || [ "$(pkg-config --modversion soxr)" != "$SOXR_VERSION" ]; }; }; then

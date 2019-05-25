@@ -111,7 +111,7 @@ function checkpoint()
             checkpointstep="$s"
         done
         echo "$copyline pkg/"
-        echo "RUN env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'")"
+        echo "RUN env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
         pkgs=()
     fi
     return 0
@@ -202,7 +202,7 @@ if dobuild; then
         exit 1
     fi
 
-    # Check distro and version. CentOS/RHEL 6.4 only!
+    # Check distro and version. CentOS/RHEL 6.10 only!
 
     if [ "$PKGOS" = "Linux" ]; then
         if [ ! -s /etc/redhat-release ]; then
@@ -211,8 +211,8 @@ if dobuild; then
         else
             RHEL_MAJOR=$(cut -d" " -f3 < /etc/redhat-release | cut -d "." -f1)
             RHEL_MINOR=$(cut -d" " -f3 < /etc/redhat-release | cut -d "." -f2)
-            if [ "$RHEL_MAJOR" != "6" ] || [ "$RHEL_MINOR" != "4" ]; then
-                (>&2 echo "Warning: Wrong CentOS/RHEL version (${RHEL_MAJOR}.${RHEL_MINOR}): only CentOS 6.4 is officially supported.")
+            if [ "$RHEL_MAJOR" != "6" ] || [ "$RHEL_MINOR" != "10" ]; then
+                (>&2 echo "Warning: Wrong CentOS/RHEL version (${RHEL_MAJOR}.${RHEL_MINOR}): only CentOS 6.10 is officially supported.")
             fi
         fi
     fi
@@ -353,6 +353,9 @@ reachedstep=0 # becomes 1 when LAST_STEP is reached
 pkgs=()
 
 build openssl-installer
+
+checkpoint
+
 build qt-installer
 build qtifw
 
@@ -420,6 +423,9 @@ build expat
 build perl # (required to install XML:Parser perl module used by intltool)
 build intltool
 build zlib
+
+checkpoint
+
 build readline
 build nettle # (for gnutls)
 build libtasn1 # (for gnutls)
@@ -432,17 +438,40 @@ build libarchive # (for cmake)
 #build libuv # (for cmake but we use the one bundled with cmake)
 build cmake
 build libzip # (requires cmake)
-build icu
 #build berkeleydb # (optional for python2 and python3)
 build sqlite # (required for webkit and QtSql SQLite module, optional for python2)
 build pcre # (required by glib)
+
+checkpoint
+
 build git # (requires curl and pcre)
 build mariadb # (for the Qt mariadb plugin and the python mariadb adapter)
 build postgresql # (for the Qt postgresql plugin and the python postgresql adapter)
+
+checkpoint
+
 build python2
-build mysqlclient # (MySQL/MariaDB connector)
-build psycopg2 # (PostgreSQL connector)
+
+checkpoint
+
 build python3
+
+checkpoint
+
+build ninja # (requires python3, required for building glib > 2.59.0)
+build meson # (requires python3, required for building glib > 2.59.0)
+
+checkpoint
+
+build mysqlclient # (MySQL/MariaDB connector for python 2/3)
+build psycopg2 # (PostgreSQL connector for python 2/3)
+
+checkpoint
+
+build icu # requires python
+
+checkpoint
+
 build osmesa
 
 checkpoint
@@ -452,10 +481,17 @@ build freetype
 build libmount # (required by glib)
 build fontconfig
 build texinfo # (for gdb)
-build glib
+
+checkpoint
+
 build libxml2
-build libxslt
+build libxslt # (required by glib)
+build dbus # (for QtDBus and glib)
+build glib
 build boost
+
+checkpoint
+
 build cppunit
 build libjpeg-turbo
 build giflib
@@ -512,7 +548,6 @@ build libbluray # (for ffmpeg)
 build openh264 # (for ffmpeg)
 build snappy # (for ffmpeg)
 build ffmpeg
-build dbus # (for QtDBus)
 build ruby # (necessary for qtwebkit)
 build breakpad
 build valgrind
@@ -550,6 +585,9 @@ fi
 checkpoint
 
 build qt4
+
+checkpoint
+
 build qt4webkit
 
 if dobuild; then
@@ -602,6 +640,7 @@ if [ "${GEN_DOCKERFILE:-}" = "1" -o "${GEN_DOCKERFILE:-}" = "2" ]; then
 RUN rm -rf /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK
 FROM centos:6
 COPY --from=intermediate /opt/Natron-sdk /opt/Natron-sdk
+COPY --from=intermediate /home/src /opt/Natron-sdk/src
 EOF
 fi
 

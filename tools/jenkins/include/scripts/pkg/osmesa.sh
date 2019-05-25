@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Install llvm+osmesa
+# be careful if upgrading, the script applies important patches
 OSMESA_VERSION=17.1.10
 OSMESA_TAR="mesa-${OSMESA_VERSION}.tar.gz"
 OSMESA_SITE="ftp://ftp.freedesktop.org/pub/mesa/older-versions/17.x"

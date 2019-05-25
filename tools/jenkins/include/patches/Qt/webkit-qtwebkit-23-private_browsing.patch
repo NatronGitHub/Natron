@@ -1,0 +1,25 @@
+diff -up webkit-qtwebkit-23/Source/WebCore/loader/icon/IconController.cpp.private_browsing webkit-qtwebkit-23/Source/WebCore/loader/icon/IconController.cpp
+--- webkit-qtwebkit-23/Source/WebCore/loader/icon/IconController.cpp.private_browsing	2014-09-24 06:42:05.000000000 -0500
++++ webkit-qtwebkit-23/Source/WebCore/loader/icon/IconController.cpp	2015-03-23 11:20:04.050447318 -0500
+@@ -163,6 +163,10 @@ void IconController::startLoader()
+     }
+ 
+     if (iconDatabase().supportsAsynchronousMode()) {
++       //  FIXME (<rdar://problem/9168605>) - We should support in-memory-only private browsing icons in asynchronous icon database mode.
++       if (m_frame->page()->settings()->privateBrowsingEnabled())
++           return;
++
+         m_frame->loader()->documentLoader()->getIconLoadDecisionForIconURL(urlString);
+         // Commit the icon url mapping to the database just in case we don't end up loading later.
+         commitToDatabase(iconURL);
+@@ -206,10 +210,6 @@ void IconController::continueLoadWithDec
+ {
+     ASSERT(iconLoadDecision != IconLoadUnknown);
+ 
+-    //  FIXME (<rdar://problem/9168605>) - We should support in-memory-only private browsing icons in asynchronous icon database mode.
+-    if (iconDatabase().supportsAsynchronousMode() && m_frame->page()->settings()->privateBrowsingEnabled())
+-        return;
+-
+     if (iconLoadDecision == IconLoadNo) {
+         KURL iconURL(url());
+         String urlString(iconURL.string());

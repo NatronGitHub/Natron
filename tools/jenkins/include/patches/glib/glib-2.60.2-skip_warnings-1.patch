@@ -1,0 +1,75 @@
+Submitted By: Bruce dubbs <bdubbs@linuxfromscratch.org>
+Date: 2017-10-15
+Initial Package Version: 2.54.0
+Upstream Status: Not submitted
+Origin: Self
+Description: Adds a capabiility to skip printing warning messages using
+             an environment variable: GLIB_LOG_LEVEL.  The value
+             of the variable is a digit that correponds to:
+             1  Alert
+             2  Critical
+             3  Error
+             4  Warning
+             5  Notice
+
+             For instance GLIB_LOG_LEVEL=4 will skip output of Waring and 
+             Notice messages (and Info/Debug messages if they are turned on).
+
+--- glib-2.54.0/glib/gmessages.c	2017-08-19 08:39:20.000000000 -0500
++++ glib-2.54.0-new/glib/gmessages.c	2017-10-15 14:45:52.004885278 -0500
+@@ -523,6 +523,35 @@
+ 
+ /* --- functions --- */
+ 
++/* skip_message
++ *
++ * This internal function queries an optional environment variable, 
++ * GLIB_LOG_LEVEL and converts it to a value consistent
++ * with the type GLogLevelFlags.  If the value is equal to
++ * or greater than the integer equivalent of the log_level.
++ * then the function returns a boolean that indicates that
++ * loging the output should be skipped.
++ */
++
++static gboolean skip_message( GLogLevelFlags log_level);
++
++static gboolean skip_message( GLogLevelFlags log_level)
++{
++  char*    user_log_level;
++  int      user_log_int;
++  gboolean skip = FALSE;
++
++  user_log_level = getenv( "GLIB_LOG_LEVEL" );
++
++  user_log_int = ( user_log_level != NULL ) ? atoi( user_log_level ) : 0;
++  user_log_int = ( user_log_int   != 0    ) ? 1 << user_log_int      : 0;
++  
++  if ( user_log_int >= log_level ) skip = TRUE;
++ 
++  return skip;
++}
++
++
+ static void _g_log_abort (gboolean breakpoint);
+ 
+ static void
+@@ -2496,6 +2525,9 @@
+   g_return_val_if_fail (fields != NULL, G_LOG_WRITER_UNHANDLED);
+   g_return_val_if_fail (n_fields > 0, G_LOG_WRITER_UNHANDLED);
+ 
++  /* If the user does not want this message level, just return */
++  if ( skip_message( log_level) ) return G_LOG_WRITER_HANDLED;
++
+   stream = log_level_to_file (log_level);
+   if (!stream || fileno (stream) < 0)
+     return G_LOG_WRITER_UNHANDLED;
+@@ -2640,6 +2672,9 @@
+   FILE *stream;
+   gsize i;
+ 
++  /* If the user does not want this message level, just return */
++  if ( skip_message( log_level) ) return G_LOG_WRITER_HANDLED;
++
+   /* we cannot call _any_ GLib functions in this fallback handler,
+    * which is why we skip UTF-8 conversion, etc.
+    * since we either recursed or ran out of memory, we're in a pretty

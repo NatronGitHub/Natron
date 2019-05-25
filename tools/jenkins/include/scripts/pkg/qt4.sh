@@ -9,7 +9,7 @@ if dobuild; then
 fi
 if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT4PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion QtCore)" != "$QT4_VERSION" ]; }; }; then
     start_build
-    QT_CONF=( "-v" "-system-zlib" "-system-libtiff" "-system-libpng" "-no-libmng" "-system-libjpeg" "-no-gtkstyle" "-glib" "-xrender" "-xrandr" "-xcursor" "-xfixes" "-xinerama" "-fontconfig" "-xinput" "-sm" "-no-multimedia" "-confirm-license" "-release" "-opensource" "-dbus-linked" "-opengl" "desktop" "-nomake" "demos" "-nomake" "docs" "-nomake" "examples" "-optimized-qmake" )
+    QT_CONF=( "-v" "-sm" "-system-zlib" "-system-libtiff" "-system-libpng" "-no-libmng" "-system-libjpeg" "-no-gtkstyle" "-glib" "-xrender" "-xrandr" "-xcursor" "-xfixes" "-xinerama" "-fontconfig" "-xinput" "-xshape" "-xkb" "-no-multimedia" "-confirm-license" "-release" "-opensource" "-dbus-linked" "-opengl" "desktop" "-nomake" "demos" "-nomake" "docs" "-nomake" "examples" "-optimized-qmake" )
     # qtwebkit is installed separately (see below)
     # also install the sqlite plugin.
     # link with the SDK's openssl
@@ -37,7 +37,7 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" 
     ############################################################
     # Fedora patches
 
-    ## Patches from https://download.fedoraproject.org/pub/fedora/linux/development/rawhide/Everything/source/tree/Packages/q/qt-4.8.7-33.fc28.src.rpm
+    ## Patches from https://download.fedoraproject.org/pub/fedora/linux/development/rawhide/Everything/source/tree/Packages/q/qt-4.8.7-49.fc31.src.rpm
 
     # set default QMAKE_CFLAGS_RELEASE
     Patch2=qt-everywhere-opensource-src-4.8.0-tp-multilib-optflags.patch
@@ -98,6 +98,9 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" 
     # backport https://codereview.qt-project.org/#/c/205874/
     Patch56=qt-everywhere-opensource-src-4.8.7-mariadb.patch
 
+    # use QMAKE_LFLAGS_RELEASE when building qmake
+    Patch57=qt-everywhere-opensource-src-4.8.7-qmake_LFLAGS.patch
+
     # Fails to create debug build of Qt projects on mingw (rhbz#653674)
     Patch64=qt-everywhere-opensource-src-4.8.5-QTBUG-14467.patch
 
@@ -157,10 +160,23 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" 
     Patch91=qt-everywhere-opensource-src-4.8.7-mips64.patch
 
     # fix build issue(s) with gcc6
-    Patch100=qt-everywhere-opensource-src-4.8.7-gcc6.patch
+    Patch92=qt-everywhere-opensource-src-4.8.7-gcc6.patch
 
     # support alsa-1.1.x
-    Patch101=qt-everywhere-opensource-src-4.8.7-alsa-1.1.patch
+    Patch93=qt-everywhere-opensource-src-4.8.7-alsa-1.1.patch
+
+    # support OpenSSL 1.1.x, from Debian (Gert Wollny, Dmitry Eremin-Solenikov)
+    # https://anonscm.debian.org/cgit/pkg-kde/qt/qt4-x11.git/tree/debian/patches/openssl_1.1.patch?h=experimental
+    # fixes for -openssl-linked by Kevin Kofler
+    Patch94=qt-everywhere-opensource-src-4.8.7-openssl-1.1.patch
+
+    # fix build with ICU >= 59, from OpenSUSE (Fabian Vogt)
+    # https://build.opensuse.org/package/view_file/KDE:Qt/libqt4/fix-build-icu59.patch?expand=1
+    Patch95=qt-everywhere-opensource-src-4.8.7-icu59.patch
+
+    # workaround qtscript failures when building with f28's gcc8
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1580047
+    Patch96=qt-everywhere-opensource-src-4.8.7-gcc8_qtscript.patch
 
     # upstream patches
     # backported from Qt5 (essentially)
@@ -173,6 +189,16 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" 
 
     # aarch64 support, https://bugreports.qt-project.org/browse/QTBUG-35442
     Patch180=qt-aarch64.patch
+
+    # Fix problem caused by gcc 9 fixing a longstanding bug.
+    # https://github.com/qt/qtbase/commit/c35a3f519007af44c3b364b9af86f6a336f6411b.patch
+    Patch181=qt-everywhere-opensource-src-4.8.7-qforeach.patch
+
+    ## upstream git
+
+    ## security patches
+    # CVE-2018-19872 qt: malformed PPM image causing division by zero and crash in qppmhandler.cpp
+    Patch500=qt-everywhere-opensource-src-4.8.7-crash-in-qppmhandler.patch
 
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch4" # -p1 -b .uic_multilib
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch5" # -p1 -b .webcore_debuginfo
@@ -196,6 +222,7 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" 
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch54" # -p1 -b .mysql_config
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch55" # -p1 -b .cups-1
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch56" # -p1 -b .mariadb
+    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch57" # -p1 -b .qmake_LFLAGS
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch64" # -p1 -b .QTBUG-14467
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch65" # -p1 -b .qtreeview-kpackagekit-crash
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch67" # -p1 -b .s390
@@ -218,18 +245,29 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" 
     #rm -rf src/3rdparty/clucene
     #%endif
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch91" # -p1 -b .mips64
-    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch100" # -p1 -b .gcc6
-    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch101" # -p1 -b .alsa1.1
+    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch92" # -p1 -b .gcc6
+    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch93" # -p1 -b .alsa1.1
+    if version_gt "$OPENSSL_VERSION" 1.0.9999; then
+	patch -Np1 -i "$INC_PATH/patches/Qt/$Patch94" # -p1 -b .openssl1.1
+    fi
+    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch95" # -p1 -b .icu59
+    if vergion_gt "$GCC_VERSION" 7.99; then
+	patch -Np1 -i "$INC_PATH/patches/Qt/$Patch96" # -p1 -b .gcc8_qtscript
+    fi
+
 
     # upstream patches
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch102" # -p1 -b .qgtkstyle_disable_gtk_theme_check
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch113" # -p1 -b .QTBUG-22829
 
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch180" # -p1 -b .aarch64
+    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch181" # -p1 -b .qforeach
 
     # upstream git
 
     # security fixes
+    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch500" # -p1 -b .malformed-ppb-image-causing-crash
+
     # regression fixes for the security fixes
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch84" # -p1 -b .QTBUG-35459
 
@@ -256,13 +294,45 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" 
     patch -Np0 -i "$INC_PATH"/patches/Qt/patch-better-invalid-fonttable-handling.diff
     # (30) Backport of Qt5 patch to fix an issue with null bytes in QSetting strings (QTBUG-56124).
     patch -Np0 -i "$INC_PATH"/patches/Qt/patch-qsettings-null.diff
+
+    # (35) Various from NiXos
+    # see also < https://trac.macports.org/ticket/55932 >
+    # and < https://github.com/NixOS/nixpkgs/tree/master/pkgs/development/libraries/qt-4.x/4.8 >
+
+    # (a) allow use of libressl as well as openssl
+    if version_gt "1.1.0" "$OPENSSL_VERSION"; then
+       patch -Np0 -i "$INC_PATH"/patches/Qt/patch-allow_libressl.diff
+    fi
+
+    # (b) allow parallel qmake building
+    # normally qmake is built using a single thread / job
+
+    patch -Np0 -i "$INC_PATH"/patches/Qt/patch-parallelize_qmake_build.diff
+
+    # (c) fix unix makefile generation to augment this specific variable
+    # ('ret'), not overwrite it -- this matches the other uses of the
+    # specific variable in that area, especially that in the 'if' statement.
+
+    patch -Np0 -i "$INC_PATH"/patches/Qt/patch-qmake_generators_unix_unixmake.cpp.diff
+
+    # (d) fix to not call qsettings before constructing a qapplication,
+    # because it causes a dead-lock.
+
+    patch -Np0 -i "$INC_PATH"/patches/Qt/patch-src_corelib_io_qsettings.cpp.diff
+
+    # (e) fix to properly use QFixed as a type rather than a constructor
+    # (I think). Without this fix, the build errors out on Clang 5.
+
+    patch -Np0 -i "$INC_PATH"/patches/Qt/patch-src_gui_text_qfontengine_coretext.mm.diff
+
     # avoid conflict with newer versions of pcre, see eg https://github.com/LLNL/spack/pull/4270
     patch -Np0 -i "$INC_PATH"/patches/Qt/qt4-pcre.patch
     patch -Np1 -i "$INC_PATH"/patches/Qt/0001-Enable-building-with-C-11-and-C-14.patch
     patch -Np1 -i "$INC_PATH"/patches/Qt/qt4-selection-flags-static_cast.patch
-    if version_gt "$OPENSSL_VERSION" 1.0.9999; then
-        # OpenSSL 1.1 support from ArchLinux https://aur.archlinux.org/cgit/aur.git/tree/qt4-openssl-1.1.patch?h=qt4
-        patch -Np1 -i "$INC_PATH"/patches/Qt/qt4-openssl-1.1.patch
+
+    # workaround FTBFS with gcc9 (from fedora package 4.8.7-46)
+    if version_gt "$GCC_VERSION" 8.99; then
+	QT_CONF+=("-no-javascript-jit")
     fi
 
     #QT_SRC="$(pwd)/src"

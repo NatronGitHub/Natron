@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # Install oiio
+# see https://github.com/OpenImageIO/oiio/releases
 #OIIO_VERSION=1.7.19
-OIIO_VERSION=1.8.13
+OIIO_VERSION=2.0.8
 OIIO_VERSION_SHORT=${OIIO_VERSION%.*}
 OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
 if build_step && { force_build || { [ "${REBUILD_OIIO:-}" = "1" ]; }; }; then
@@ -14,14 +15,15 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; 
     untar "$SRC_PATH/$OIIO_TAR"
     pushd "oiio-Release-${OIIO_VERSION}"
 
-    patches=$(find  "$INC_PATH/patches/OpenImageIO/$OIIO_VERSION_SHORT" -type f)
-    for p in $patches; do
-        if [[ "$p" = *-mingw-* ]] && [ "$OS" != "MINGW64_NT-6.1" ]; then
-            continue
-        fi
-        patch -p1 -i "$p"
-    done
-
+    if [ -d "$INC_PATH/patches/OpenImageIO/$OIIO_VERSION_SHORT" ]; then
+	patches=$(find  "$INC_PATH/patches/OpenImageIO/$OIIO_VERSION_SHORT" -type f)
+	for p in $patches; do
+            if [[ "$p" == *-mingw-* ]] && [ "$OS" != "MINGW64_NT-6.1" ]; then
+		continue
+            fi
+            patch -p1 -i "$p"
+	done
+    fi
     if [ "${DEBUG:-}" = "1" ]; then
         OIIOMAKE="debug"
     fi

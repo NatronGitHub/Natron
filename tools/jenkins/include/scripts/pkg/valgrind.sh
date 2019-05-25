@@ -2,7 +2,7 @@
 
 # Install valgrind
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/valgrind.html
-VALGRIND_VERSION=3.13.0
+VALGRIND_VERSION=3.15.0
 VALGRIND_TAR="valgrind-${VALGRIND_VERSION}.tar.bz2"
 VALGRIND_SITE="https://sourceware.org/ftp/valgrind"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/valgrind" ]; }; }; then

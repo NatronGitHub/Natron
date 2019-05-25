@@ -2,7 +2,7 @@
 
 # Install libvpx
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/libvpx.html
-LIBVPX_VERSION=1.7.0
+LIBVPX_VERSION=1.8.0
 LIBVPX_TAR="libvpx-${LIBVPX_VERSION}.tar.gz"
 #LIBVPX_SITE=http://storage.googleapis.com/downloads.webmproject.org/releases/webm
 if build_step && { force_build || { [ "${REBUILD_LIBVPX:-}" = "1" ]; }; }; then

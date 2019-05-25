@@ -2,7 +2,7 @@
 
 # Install libxml2
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libxml2.html
-LIBXML2_VERSION=2.9.8
+LIBXML2_VERSION=2.9.9
 LIBXML2_TAR="libxml2-${LIBXML2_VERSION}.tar.gz"
 LIBXML2_SITE="ftp://xmlsoft.org/libxml2"
 LIBXML2_ICU=1 # set to 1 if libxml2 should be compiled with ICU support. This implies things for Qt4 and QtWebkit.

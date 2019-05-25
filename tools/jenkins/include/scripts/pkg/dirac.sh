@@ -3,7 +3,8 @@
 # Install dirac (obsolete since ffmpeg-3.4)
 DIRAC_VERSION=1.0.11
 DIRAC_TAR=schroedinger-${DIRAC_VERSION}.tar.gz
-DIRAC_SITE="http://diracvideo.org/download/schroedinger"
+#DIRAC_SITE="http://diracvideo.org/download/schroedinger"
+DIRAC_SITE="https://download.videolan.org/contrib/schroedinger/"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/schroedinger-1.0.pc" ] || [ "$(pkg-config --modversion schroedinger-1.0)" != "$DIRAC_VERSION" ]; }; }; then
     start_build
     download "$DIRAC_SITE" "$DIRAC_TAR"

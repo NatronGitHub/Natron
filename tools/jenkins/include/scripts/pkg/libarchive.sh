@@ -2,7 +2,7 @@
 
 # Install libarchive (for cmake)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libarchive.html
-LIBARCHIVE_VERSION=3.3.2
+LIBARCHIVE_VERSION=3.3.3
 LIBARCHIVE_TAR="libarchive-${LIBARCHIVE_VERSION}.tar.gz"
 LIBARCHIVE_SITE="http://www.libarchive.org/downloads"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libarchive.pc" ] || [ "$(pkg-config --modversion libarchive)" != "$LIBARCHIVE_VERSION" ]; }; }; then

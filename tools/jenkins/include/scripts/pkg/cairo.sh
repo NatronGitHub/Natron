@@ -2,7 +2,7 @@
 
 # Install cairo
 # see http://www.linuxfromscratch.org/blfs/view/svn/x/cairo.html
-CAIRO_VERSION=1.14.12
+CAIRO_VERSION=1.16.0
 CAIRO_TAR="cairo-${CAIRO_VERSION}.tar.xz"
 CAIRO_SITE="https://www.cairographics.org/releases"
 if build_step && { force_build || { [ "${REBUILD_CAIRO:-}" = "1" ]; }; }; then

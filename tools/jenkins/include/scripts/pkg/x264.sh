@@ -2,8 +2,8 @@
 
 # x264
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/x264.html
-X264_VERSION=20180212-2245-stable
-X264_VERSION_PKG=0.152.x
+X264_VERSION=20190209-2245-stable
+X264_VERSION_PKG=0.155.x
 X264_TAR="x264-snapshot-${X264_VERSION}.tar.bz2"
 X264_SITE="https://download.videolan.org/x264/snapshots"
 if build_step && { force_build || { [ "${REBUILD_X264:-}" = "1" ]; }; }; then

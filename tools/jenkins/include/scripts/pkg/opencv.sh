@@ -3,7 +3,7 @@
 exit 1
 
 # Install opencv
-CV_TAR=opencv-2.4.11.zip
+CV_TAR=opencv-2.4.13.6.zip
 if [ ! -s $SDK_HOME/lib/pkgconfig/opencv.pc ]; then
    pushd "$TMP_PATH"
    if [ ! -s $CWD/src/$CV_TAR ]; then

@@ -2,7 +2,7 @@
 
 # Install ImageMagick6
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick6.html
-MAGICK_VERSION=6.9.10-9
+MAGICK_VERSION=6.9.10-46
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
 MAGICK_TAR="ImageMagick6-${MAGICK_VERSION}.tar.gz"
 MAGICK_SITE="https://gitlab.com/ImageMagick/ImageMagick6/-/archive/${MAGICK_VERSION}"
@@ -19,7 +19,8 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc"
     #else
     MAGICK_CL_OPT="--without-x"
     #fi
-    patch -p0 -i "$INC_PATH/patches/ImageMagick/pango-align-hack.diff"
+    # the following patch was integrated, see https://github.com/ImageMagick/ImageMagick/issues/1488
+    #patch -p0 -i "$INC_PATH/patches/ImageMagick/pango-align-hack.diff"
     env CFLAGS="$BF -DMAGICKCORE_EXCLUDE_DEPRECATED=1" CXXFLAGS="$BF -DMAGICKCORE_EXCLUDE_DEPRECATED=1" ./configure --prefix="$SDK_HOME" --with-magick-plus-plus=yes --with-quantum-depth=32 --without-dps --without-djvu --without-fftw --without-fpx --without-gslib --without-gvc --without-jbig --without-jpeg --with-lcms --without-openjp2 --without-lqr --without-lzma --without-openexr --with-pango --with-png --with-rsvg --without-tiff --without-webp --with-xml --with-zlib --without-bzlib --disable-static --enable-shared --enable-hdri --with-freetype --with-fontconfig --without-modules ${MAGICK_CL_OPT:-}
     make -j${MKJOBS}
     make install
