@@ -2,9 +2,10 @@
 
 # Install gnutls (for ffmpeg)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/postlfs/gnutls.html
-GNUTLS_VERSION=3.6.2
+GNUTLS_VERSION=3.6.7
+GNUTLS_VERSION_MICRO=.1
 GNUTLS_VERSION_SHORT=${GNUTLS_VERSION%.*}
-GNUTLS_TAR="gnutls-${GNUTLS_VERSION}.tar.xz"
+GNUTLS_TAR="gnutls-${GNUTLS_VERSION}${GNUTLS_VERSION_MICRO}.tar.xz"
 GNUTLS_SITE="ftp://ftp.gnupg.org/gcrypt/gnutls/v${GNUTLS_VERSION_SHORT}"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/gnutls.pc" ] || [ "$(pkg-config --modversion gnutls)" != "$GNUTLS_VERSION" ]; }; }; then
     start_build

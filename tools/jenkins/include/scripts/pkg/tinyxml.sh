@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Install tinyxml (used by OpenColorIO)
+# see http://sourceforge.net/projects/tinyxml/files/tinyxml
 TINYXML_VERSION=2.6.2
 TINYXML_TAR="tinyxml_${TINYXML_VERSION//./_}.tar.gz"
 TINYXML_SITE="http://sourceforge.net/projects/tinyxml/files/tinyxml/${TINYXML_VERSION}"

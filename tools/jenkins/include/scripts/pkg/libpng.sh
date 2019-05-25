@@ -2,7 +2,7 @@
 
 # Install libpng
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/libpng.html
-LIBPNG_VERSION=1.6.35
+LIBPNG_VERSION=1.6.37
 LIBPNG_TAR="libpng-${LIBPNG_VERSION}.tar.gz"
 LIBPNG_SITE="https://download.sourceforge.net/libpng"
 if build_step && { force_build || { [ "${REBUILD_PNG:-}" = "1" ]; }; }; then

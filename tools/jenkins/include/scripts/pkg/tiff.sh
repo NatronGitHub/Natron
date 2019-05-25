@@ -2,7 +2,7 @@
 
 # Install tiff
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libtiff.html
-TIFF_VERSION=4.0.9
+TIFF_VERSION=4.0.10
 TIFF_TAR="tiff-${TIFF_VERSION}.tar.gz"
 TIFF_SITE="http://download.osgeo.org/libtiff"
 if build_step && { force_build || { [ "${REBUILD_TIFF:-}" = "1" ]; }; }; then

@@ -2,7 +2,7 @@
 
 # Install p11-kit (for gnutls)
 # http://www.linuxfromscratch.org/blfs/view/svn/postlfs/p11-kit.html
-P11KIT_VERSION=0.23.12
+P11KIT_VERSION=0.23.15
 #P11KIT_VERSION_SHORT=${P11KIT_VERSION%.*}
 P11KIT_TAR="p11-kit-${P11KIT_VERSION}.tar.gz"
 P11KIT_SITE="https://github.com/p11-glue/p11-kit/releases/download/${P11KIT_VERSION}"

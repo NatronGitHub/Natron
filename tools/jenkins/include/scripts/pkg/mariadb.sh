@@ -2,7 +2,8 @@
 
 # Install MariaDB (for the Qt mariadb plugin and the python mariadb adapter)
 # see http://www.linuxfromscratch.org/blfs/view/svn/server/mariadb.html
-MARIADB_VERSION=10.2.12
+MARIADB_VERSION=10.2.24
+#MARIADB_VERSION=10.3.15 # fails with "plugin/handler_socket/libhsclient/hstcpcli.cpp:9:10: fatal error: my_global.h: No such file or directory"
 MARIADB_TAR="mariadb-${MARIADB_VERSION}.tar.gz"
 MARIADB_SITE="http://archive.mariadb.org/mariadb-${MARIADB_VERSION}/source"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/mariadb_config" ] || [ "$("${SDK_HOME}/bin/mariadb_config" --version)" != "$MARIADB_VERSION" ] ; }; }; then

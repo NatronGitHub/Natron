@@ -1,0 +1,14 @@
+diff -up webkit-qtwebkit-23/Source/JavaScriptCore/runtime/JSObject.cpp.gcc5 webkit-qtwebkit-23/Source/JavaScriptCore/runtime/JSObject.cpp
+--- webkit-qtwebkit-23/Source/JavaScriptCore/runtime/JSObject.cpp.gcc5	2014-09-24 06:42:05.000000000 -0500
++++ webkit-qtwebkit-23/Source/JavaScriptCore/runtime/JSObject.cpp	2015-03-20 08:15:53.192778375 -0500
+@@ -1922,6 +1922,10 @@ void JSObject::putByIndexBeyondVectorLen
+     }
+ }
+ 
++template void JSObject::putByIndexBeyondVectorLengthWithoutAttributes<ContiguousShape>(ExecState* exec, unsigned i, JSValue value);
++template void JSObject::putByIndexBeyondVectorLengthWithoutAttributes<DoubleShape>(ExecState* exec, unsigned i, JSValue value);
++template void JSObject::putByIndexBeyondVectorLengthWithoutAttributes<Int32Shape>(ExecState* exec, unsigned i, JSValue value);
++
+ void JSObject::putByIndexBeyondVectorLengthWithArrayStorage(ExecState* exec, unsigned i, JSValue value, bool shouldThrow, ArrayStorage* storage)
+ {
+     JSGlobalData& globalData = exec->globalData();

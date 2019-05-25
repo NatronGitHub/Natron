@@ -2,7 +2,7 @@
 
 # Install webp (for OIIO)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/libwebp.html
-WEBP_VERSION=1.0.0
+WEBP_VERSION=1.0.2
 WEBP_TAR="libwebp-${WEBP_VERSION}.tar.gz"
 WEBP_SITE="https://storage.googleapis.com/downloads.webmproject.org/releases/webp"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libwebp.pc" ] || [ "$(pkg-config --modversion libwebp)" != "$WEBP_VERSION" ]; }; }; then

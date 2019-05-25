@@ -2,7 +2,7 @@
 
 # Install openjpeg
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/openjpeg2.html
-OPENJPEG2_VERSION=2.3.0
+OPENJPEG2_VERSION=2.3.1
 OPENJPEG2_VERSION_SHORT=${OPENJPEG2_VERSION%.*}
 OPENJPEG2_TAR="openjpeg-${OPENJPEG2_VERSION}.tar.gz"
 if build_step && { force_build || { [ "${REBUILD_OPENJPEG:-}" = "1" ]; }; }; then

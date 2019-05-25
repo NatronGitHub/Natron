@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # install patchelf
-PATCHELF_VERSION=0.9
+# see https://nixos.org/releases/patchelf
+PATCHELF_VERSION=0.10
 PATCHELF_TAR="patchelf-${PATCHELF_VERSION}.tar.bz2"
 PATCHELF_SITE="https://nixos.org/releases/patchelf/patchelf-${PATCHELF_VERSION}/"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/patchelf" ]; }; }; then

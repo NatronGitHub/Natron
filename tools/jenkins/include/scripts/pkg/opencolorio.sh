@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # Install OpenColorIO (uses yaml-cpp, tinyxml, lcms)
+# see https://github.com/imageworks/OpenColorIO/releases
 # We build a version more recent than 1.0.9, because 1.0.9 only supports yaml-cpp 0.3 and we
 # installed yaml-cpp 0.5.
 OCIO_BUILD_GIT=0 # set to 1 to build the git version instead of the release
 # non-GIT version:
-OCIO_VERSION=1.1.0
+OCIO_VERSION=1.1.1
 OCIO_TAR="OpenColorIO-${OCIO_VERSION}.tar.gz"
 # if [ "$OCIO_BUILD_GIT" = 1 ]; then
 #     ## GIT version:

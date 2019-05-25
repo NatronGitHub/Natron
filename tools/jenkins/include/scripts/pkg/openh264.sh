@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Install openh264 (for ffmpeg)
-OPENH264_VERSION=1.7.0
+# see https://github.com/cisco/openh264/releases
+OPENH264_VERSION=1.8.0
 OPENH264_TAR="openh264-${OPENH264_VERSION}.tar.gz"
 #OPENH264_SITE="https://github.com/cisco/openh264/archive"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/openh264.pc" ] || [ "$(pkg-config --modversion openh264)" != "$OPENH264_VERSION" ]; }; }; then

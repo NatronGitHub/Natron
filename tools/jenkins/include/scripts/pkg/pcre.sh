@@ -2,7 +2,7 @@
 
 # Install pcre (required by glib)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/pcre.html
-PCRE_VERSION=8.42
+PCRE_VERSION=8.43
 PCRE_TAR="pcre-${PCRE_VERSION}.tar.bz2"
 PCRE_SITE="https://ftp.pcre.org/pub/pcre"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libpcre.pc" ] || [ "$(pkg-config --modversion libpcre)" != "$PCRE_VERSION" ]; }; }; then
