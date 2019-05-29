@@ -640,7 +640,7 @@ if [ "${GEN_DOCKERFILE:-}" = "1" -o "${GEN_DOCKERFILE:-}" = "2" ]; then
 RUN rm -rf /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK
 FROM centos:6
 COPY --from=intermediate /opt/Natron-sdk /opt/Natron-sdk
-COPY --from=intermediate /home/src /opt/Natron-sdk/src
+#COPY --from=intermediate /home/src /opt/Natron-sdk/src
 EOF
 fi
 

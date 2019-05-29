@@ -68,7 +68,13 @@ This directory contains various tools to help building and maintaining Natron.
 	  - execute `MSYSTEM=MINGW64 BITS=64 ./include/scripts/build-Windows-sdk.sh` to rebuild and install the Natron-specific packages.
 	  
   - build the Natron binaries and execute the unit tests on OS X 10.9 (`macStartupJenkins.sh`), Linux CentOS 6.4 32bit and 64bit (`linuxStartupJenkins.sh`) and Windows 10 32bit and 64bit (`winStartupJenkins.bat`). These build scripts are basically updated versions of the scripts from the `buildmaster`directory, but were never tested to produce actual releases. Also note that the OS X script does not produce universal 32/64 bits binaries.
-	  
+
+- **docker**
+
+  Contains tools to build a docker image that contains the Natron SDK installed on top of CentOS6.
+
+  The `natron-sdk` docker image is also available from dockerhub, see https://hub.docker.com/r/natrongithub/natron-sdk
+  
 - **MINGW-packages**
 
   This directory contains Natron-specific packages for MSYS2. For example, therer are ffmpeg and libraw versions with different licences, a patched version of Qt4, and a version of OpenImageIO 1.7 (because later versions hang when quitting Natron, see [this OpenImageIO issue](https://github.com/OpenImageIO/oiio/issues/1795)).
