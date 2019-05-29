@@ -501,6 +501,7 @@ build lcms2
 build librevenge
 build libcdr
 build openjpeg
+build libraw
 build ilmbase
 build openexr
 build pixman
