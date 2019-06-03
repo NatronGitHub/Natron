@@ -11,7 +11,7 @@ if build_step && { force_build || { [ "${REBUILD_SVG:-}" = "1" ]; }; }; then
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/librsvg-2.0.pc" ] || [ "$(pkg-config --modversion librsvg-2.0)" != "$LIBRSVG_VERSION" ]; }; }; then
     start_build
-    if [ "$LIBRSVG_VERSION_SHORT" = 2.41 ]; then
+    if version_gt "$LIBRSVG_VERSION_SHORT" 2.40; then
         # librsvg 2.41 requires rust
         if [ ! -s "$HOME/.cargo/env" ]; then
             (>&2 echo "Error: librsvg requires rust. Please install rust by executing:")
@@ -26,7 +26,6 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/librsvg-2.0.
         fi
         export RUSTFLAGS
     fi
-    pushd "$TMP_PATH"
     download "$LIBRSVG_SITE" "$LIBRSVG_TAR"
     untar "$SRC_PATH/$LIBRSVG_TAR"
     pushd "librsvg-${LIBRSVG_VERSION}"

@@ -2,7 +2,7 @@
 
 # Install libcroco (requires glib and libxml2)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libcroco.html
-LIBCROCO_VERSION=0.6.12
+LIBCROCO_VERSION=0.6.13
 LIBCROCO_VERSION_SHORT=${LIBCROCO_VERSION%.*}
 LIBCROCO_TAR="libcroco-${LIBCROCO_VERSION}.tar.xz"
 LIBCROCO_SITE="http://ftp.gnome.org/pub/gnome/sources/libcroco/${LIBCROCO_VERSION_SHORT}"

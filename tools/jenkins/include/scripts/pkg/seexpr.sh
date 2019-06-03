@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Install SeExpr
+# Be careful when upgrading, v3.0 uses llvm and is probably not trivial to build.
 SEEXPR_VERSION=2.11
 SEEXPR_TAR="SeExpr-${SEEXPR_VERSION}.tar.gz"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libSeExpr.so" ]; }; }; then

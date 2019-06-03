@@ -2,7 +2,7 @@
 
 # Install fontconfig
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/fontconfig.html
-FONTCONFIG_VERSION=2.13.0
+FONTCONFIG_VERSION=2.13.1
 FONTCONFIG_TAR="fontconfig-${FONTCONFIG_VERSION}.tar.gz"
 FONTCONFIG_SITE="https://www.freedesktop.org/software/fontconfig/release"
 if build_step && { force_build || { [ "${REBUILD_FONTCONFIG:-}" = "1" ]; }; }; then

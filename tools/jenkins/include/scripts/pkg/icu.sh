@@ -2,7 +2,7 @@
 
 # Install icu
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/icu.html
-ICU_VERSION=62.1
+ICU_VERSION=64.2
 ICU_TAR="icu4c-${ICU_VERSION//./_}-src.tgz"
 ICU_SITE="http://download.icu-project.org/files/icu4c/${ICU_VERSION}"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/icu-i18n.pc" ] || [ "$(pkg-config --modversion icu-i18n)" != "$ICU_VERSION" ]; }; }; then

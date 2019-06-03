@@ -1,10 +1,14 @@
 #!/bin/bash
 
+exit 1 # unfinished
+
 # Install Berkeley DB (optional for python2 and python3)
 # see http://www.linuxfromscratch.org/blfs/view/svn/server/db.html
-BERKELEYDB_VERSION=6.2.32
+#BERKELEYDB_VERSION=6.2.32
+BERKELEYDB_VERSION=5.3.28
 BERKELEYDB_TAR="db-${BERKELEYDB_VERSION}.tar.gz"
-BERKELEYDB_SITE="http://download.oracle.com/berkeley-db"
+#BERKELEYDB_SITE="http://download.oracle.com/otn/berkeley-db"
+BERKELEYDB_SITE="http://anduin.linuxfromscratch.org/BLFS/bdb"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/sqlite3.pc" ] || [ "$(pkg-config --modversion sqlite3)" != "$BERKELEYDB_VERSION" ]; }; }; then
     start_build
     download "$BERKELEYDB_SITE" "$BERKELEYDB_TAR"

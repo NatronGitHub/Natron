@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # install libcdr
-LIBCDR_VERSION=0.1.4
+LIBCDR_VERSION=0.1.5
 LIBCDR_TAR="libcdr-${LIBCDR_VERSION}.tar.xz"
 LIBCDR_SITE="http://dev-www.libreoffice.org/src/libcdr"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libcdr-0.1.pc" ] || [ "$(pkg-config --modversion libcdr-0.1)" != "$LIBCDR_VERSION" ]; }; }; then

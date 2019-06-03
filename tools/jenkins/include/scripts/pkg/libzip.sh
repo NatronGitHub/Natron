@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install libzip (requires cmake)
-ZIP_VERSION=1.5.1
+ZIP_VERSION=1.5.2
 ZIP_TAR="libzip-${ZIP_VERSION}.tar.xz"
 ZIP_SITE="https://libzip.org/download"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libzip.pc" ] || [ "$(pkg-config --modversion libzip)" != "$ZIP_VERSION" ]; }; }; then
