@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -77,7 +77,7 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_ORGANIZATION_DOMAIN_SUB "inria"
 #define NATRON_ORGANIZATION_DOMAIN NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_ORGANIZATION_DOMAIN_TOPLEVEL
 #define NATRON_APPLICATION_NAME "Natron"
-#define NATRON_WEBSITE_URL "http://www.natron.fr"
+#define NATRON_WEBSITE_URL "http://natrongithub.github.io"
 #define NATRON_FORUM_URL "https://discuss.pixls.us/c/software/natron"
 #define NATRON_ISSUE_TRACKER_URL "https://github.com/NatronGitHub/Natron/issues"
 
@@ -120,10 +120,10 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_VERSION_MINOR_30 0
 #define NATRON_VERSION_REVISION_30 0
 
-// RB-2: 2.3.14
+// RB-2: 2.3.15
 #define NATRON_VERSION_MAJOR_23 2
 #define NATRON_VERSION_MINOR_23 3
-#define NATRON_VERSION_REVISION_23 14
+#define NATRON_VERSION_REVISION_23 15
 
 // RB-2.2: 2.2.10
 #define NATRON_VERSION_MAJOR_22 2
@@ -141,7 +141,7 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_VERSION_REVISION NATRON_VERSION_REVISION_23
 
 
-#define NATRON_LAST_VERSION_URL "http://downloads.natron.fr/LATEST_VERSION.txt"
+#define NATRON_LATEST_VERSION_URL "https://natrongithub.github.io/LATEST_VERSION.txt"
 #define NATRON_LAST_VERSION_FILE_VERSION 1
 
 // homemade builds should always show "Devel"

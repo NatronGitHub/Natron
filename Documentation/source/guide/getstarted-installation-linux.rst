@@ -12,17 +12,18 @@ This chapter will guide your through the installation and maintenance of Natron 
 Requirements
 ------------
 
-Natron will work on any distribution released after 2010, this includes (but not limited to):
+Natron will work on any Linux distribution which still receives seccurity updates.
+This includes (but not limited to):
 
- * CentOS/RHEL 6.4 and higher
- * Fedora 14 and higher
- * Ubuntu 10.04 and higher
- * Debian 7 and higher
+ * `CentOS <https://www.centos.org/>`_ / `RHEL <https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux>`_ 6.10 and later
+ * `Debian <https://www.debian.org/>`_ 8 "Jessie" and later
+ * `Ubuntu <https://www.ubuntu.com/>`_ 16.04 LTS (Xenial Xerus) and later
+ * `Fedora <https://getfedora.org>`_ 28 and later
 
-The basic requirements are:
+The official binaries are built on CentOS 6.10, thus the basic system requirements are:
 
  * x86 compatible CPU (Core2 x86_64 or higher recommended)
- * Linux 2.6.18 and higher
+ * Linux 2.6.32 and higher
  * Glibc 2.12 and higher
  * libgcc 4.4 and higher
  * OpenGL 2.0 or higher with the following extensions:
@@ -37,7 +38,7 @@ The basic requirements are:
 Download
 --------
 
-Navigate to http://natron.fr/download and download the latest version. This documentation will assume that you downloaded the installer (our default and recommended choice).
+Navigate to https://natrongithub.github.io/1#download and download the latest version. This documentation will assume that you downloaded the installer (our default and recommended choice).
 
 .. image:: _images/linux_install_01.png
    :width: 30%
@@ -115,4 +116,4 @@ The application also include a basic settings category, where you can configure 
 Advanced installation
 ---------------------
 
-Natron also has RPM and DEB packages, these are recommended for multi-user installations or for deployment on more than one machine. You can find more information on our website at http://natron.fr/download .
+Natron also has RPM and DEB packages, these are recommended for multi-user installations or for deployment on more than one machine. You can find more information on our website at https://natrongithub.github.io/ .

@@ -6,7 +6,7 @@ diff -up qt-everywhere-opensource-src-4.8.7/configure.gcc6 qt-everywhere-opensou
  	# Check gcc's version
  	case "$(${QMAKE_CONF_COMPILER} -dumpversion)" in
 -	    5*|4*|3.4*)
-+	    8*|7*|6*|5*|4*|3.4*)
++	    9*|8*|7*|6*|5*|4*|3.4*)
  		;;
              3.3*)
                  canBuildWebKit="no"
@@ -15,7 +15,7 @@ diff -up qt-everywhere-opensource-src-4.8.7/configure.gcc6 qt-everywhere-opensou
          COMPILER_VERSION="3.*"
          ;;
 -    5*|4.*)
-+    8*|7*|6*|5*|4.*)
++    9*|8*|7*|6*|5*|4.*)
          COMPILER_VERSION="4"
          ;;
      *)

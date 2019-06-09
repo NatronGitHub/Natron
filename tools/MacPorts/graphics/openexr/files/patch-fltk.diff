@@ -1,6 +1,6 @@
 --- exrdisplay/Makefile.in.orig	2016-01-31 06:22:45.000000000 -0700
 +++ exrdisplay/Makefile.in	2016-01-31 06:24:22.000000000 -0700
-@@ -695,10 +695,10 @@
+@@ -699,10 +699,10 @@
  
  
  @HAVE_FLTK_TRUE@all-local:

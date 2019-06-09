@@ -3,33 +3,27 @@
 G’MIC Fade layers node
 ======================
 
-*This documentation is for version 0.3 of G’MIC Fade layers.*
+*This documentation is for version 1.0 of G’MIC Fade layers.*
 
 Description
 -----------
 
-Note:
-
-This filter needs at least two layers to work properly. Set the Input layers option to handle multiple input layers.
-
-Author: David Tschumperle. Latest update: 2012/04/08.
-
-Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
+Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
 ------
 
-+-----------+-------------+----------+
-| Input     | Description | Optional |
-+===========+=============+==========+
-| Input     |             | No       |
-+-----------+-------------+----------+
-| Ext. In 1 |             | Yes      |
-+-----------+-------------+----------+
-| Ext. In 2 |             | Yes      |
-+-----------+-------------+----------+
-| Ext. In 3 |             | Yes      |
-+-----------+-------------+----------+
++----------+-------------+----------+
+| Input    | Description | Optional |
++==========+=============+==========+
+| Source   |             | No       |
++----------+-------------+----------+
+| Layer -1 |             | Yes      |
++----------+-------------+----------+
+| Layer -2 |             | Yes      |
++----------+-------------+----------+
+| Layer -3 |             | Yes      |
++----------+-------------+----------+
 
 Controls
 --------
@@ -46,15 +40,15 @@ Controls
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0 | |                     |
 |                                            |         |         | | **Merged**          |
 |                                            |         |         | | **Layer 0**         |
-|                                            |         |         | | **Layer 1**         |
-|                                            |         |         | | **Layer 2**         |
-|                                            |         |         | | **Layer 3**         |
-|                                            |         |         | | **Layer 4**         |
-|                                            |         |         | | **Layer 5**         |
-|                                            |         |         | | **Layer 6**         |
-|                                            |         |         | | **Layer 7**         |
-|                                            |         |         | | **Layer 8**         |
-|                                            |         |         | | **Layer 9**         |
+|                                            |         |         | | **Layer -1**        |
+|                                            |         |         | | **Layer -2**        |
+|                                            |         |         | | **Layer -3**        |
+|                                            |         |         | | **Layer -4**        |
+|                                            |         |         | | **Layer -5**        |
+|                                            |         |         | | **Layer -6**        |
+|                                            |         |         | | **Layer -7**        |
+|                                            |         |         | | **Layer -8**        |
+|                                            |         |         | | **Layer -9**        |
 +--------------------------------------------+---------+---------+-----------------------+
 | Resize Mode / ``Resize_Mode``              | Choice  | Dynamic | |                     |
 |                                            |         |         | | **Fixed (Inplace)** |

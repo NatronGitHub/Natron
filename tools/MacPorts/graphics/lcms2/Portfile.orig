@@ -5,6 +5,7 @@ PortGroup               muniversal 1.0
 
 name                    lcms2
 version                 2.9
+revision                1
 worksrcdir              lcms2-${version}
 categories              graphics
 platforms               darwin
@@ -27,6 +28,8 @@ master_sites            sourceforge:project/lcms/lcms/${version}/ \
 
 checksums               rmd160  0003ffd3561e6ed787be81b5ed7b7af52211fe19 \
                         sha256  48c6fdf98396fa245ed86e622028caf49b96fa22f3e5734f853f806fbc8e7d20
+
+patchfiles              patch-CVE-2018-16435.diff
 
 depends_lib             port:jpeg \
                         port:tiff \

@@ -3,7 +3,7 @@
 PortSystem                      1.0
 
 name                            curl
-version                         7.61.0
+version                         7.64.0
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -26,9 +26,9 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  eb76610e2b375210d34a7418de44555b9e852de8 \
-                                sha256  ef6e55192d04713673b4409ccbcb4cb6cd723137d6e10ca45b0c593a454e1720 \
-                                size    2348892
+                                rmd160  40806b3ea50ddab9d2f063dad37e81fdf6b04a17 \
+                                sha256  2f2f13fa34d44aa29cb444077ad7dc4dc6d189584ad552e0aaeb06e608af6001 \
+                                size    2398904
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
@@ -41,7 +41,9 @@ if {${name} eq ${subport}} {
                                 port:libpsl \
                                 port:zlib
 
-    patchfiles                  libressl.patch
+    # Prevent curl-config from telling curl's dependents that they have to
+    # link with all of curl's dependencies as well.
+    patchfiles                  configure.patch
 
     configure.args              --disable-silent-rules \
                                 --enable-ipv6 \
@@ -55,7 +57,6 @@ if {${name} eq ${subport}} {
                                 --without-nghttp2 \
                                 --without-nss \
                                 --without-polarssl \
-                                --without-spnego \
                                 --without-ssl \
                                 --without-darwinssl \
                                 --disable-ares \
@@ -79,10 +80,11 @@ if {${name} eq ${subport}} {
             set dirs ${worksrcpath}
         }
         foreach dir ${dirs} {
-            reinplace -E {s|-arch [a-z0-9_]+||g} \
-                ${dir}/curl-config \
-                ${dir}/libcurl.pc
-            reinplace -E {s/ '(host_alias|--host)=[^']+'//g} ${dir}/curl-config
+            reinplace -E {s|-arch [a-z0-9_]+||g} ${dir}/curl-config
+            # These flags only ends up in curl-config in some cases, such as
+            # when "cross compiling" a universal binary.
+            # See https://trac.macports.org/ticket/24001
+            reinplace -E -q {s/ '(host_alias|--host)=[^']+'//g} ${dir}/curl-config
         }
     }
 
@@ -183,12 +185,6 @@ if {${name} eq ${subport}} {
         configure.args-replace  --without-libssh2 --with-libssh2
     }
 
-    variant spnego description {Enable SPNEGO authentication support} {
-        # kind of broken?
-        depends_lib-append      port:fbopenssl
-        configure.args-replace  --without-spnego --with-spnego=${prefix}
-    }
-
     variant ssl conflicts gnutls wolfssl darwinssl description {Allow secure connections using OpenSSL} {
         depends_lib-append      path:lib/libssl.dylib:openssl \
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
@@ -228,8 +224,8 @@ subport curl-ca-bundle {
     set certdata_file           certdata.txt
     # The output of the Tcl command "clock seconds" (you can run it in tclsh) when
     # the certdata.txt file in the port was last updated.
-    set certdata_updated        1525833000
-    set certdata_version        0037f2516d10
+    set certdata_updated        1545056376
+    set certdata_version        3a4a3b9133e9
     set certdata_extract_cmd    bzip2
     set certdata_extract_suffix .tar.bz2
     set certdata_distfile       certdata-${certdata_version}${certdata_extract_suffix}
@@ -245,9 +241,9 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  c3ae5e3cdb2fc2145ef0bb2879c848a5e10c80c4 \
-                                sha256  770ef57d954f41d38a2c76f381d105649945a53f11ef163593e9c9bc53e52b70 \
-                                size    190241
+                                rmd160  39cd56f6d1e13ca53eee747629aad349206d5ddb \
+                                sha256  c191063da22a44d5694c765aa2210373e4c48c4a5f1d700321a3c03e80eae16b \
+                                size    191985
 
     extract.only                ${curl_distfile}
     set curl_mk_ca_bundle_files "${worksrcdir}/Makefile ${worksrcdir}/lib/mk-ca-bundle.pl"

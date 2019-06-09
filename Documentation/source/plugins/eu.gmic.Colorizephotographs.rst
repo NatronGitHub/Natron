@@ -3,35 +3,27 @@
 G’MIC Colorize photographs node
 ===============================
 
-*This documentation is for version 0.3 of G’MIC Colorize photographs.*
+*This documentation is for version 1.0 of G’MIC Colorize photographs.*
 
 Description
 -----------
 
-Note: This filter needs two layers to work properly. The bottom layer must be a B&W image, while the
-
-top layer contains color patches that will be extrapolated in a smart way (edge-directed) to fill the entire image. At the end,
-
-you get a completely recolored image.
-
-Author: David Tschumperle. Latest update: 2013/16/01.
-
-Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com).
+Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
 ------
 
-+-----------+-------------+----------+
-| Input     | Description | Optional |
-+===========+=============+==========+
-| Input     |             | No       |
-+-----------+-------------+----------+
-| Ext. In 1 |             | Yes      |
-+-----------+-------------+----------+
-| Ext. In 2 |             | Yes      |
-+-----------+-------------+----------+
-| Ext. In 3 |             | Yes      |
-+-----------+-------------+----------+
++----------+-------------+----------+
+| Input    | Description | Optional |
++==========+=============+==========+
+| Source   |             | No       |
++----------+-------------+----------+
+| Layer -1 |             | Yes      |
++----------+-------------+----------+
+| Layer -2 |             | Yes      |
++----------+-------------+----------+
+| Layer -3 |             | Yes      |
++----------+-------------+----------+
 
 Controls
 --------
@@ -54,15 +46,15 @@ Controls
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0                 | |                             |
 |                                            |         |                         | | **Merged**                  |
 |                                            |         |                         | | **Layer 0**                 |
-|                                            |         |                         | | **Layer 1**                 |
-|                                            |         |                         | | **Layer 2**                 |
-|                                            |         |                         | | **Layer 3**                 |
-|                                            |         |                         | | **Layer 4**                 |
-|                                            |         |                         | | **Layer 5**                 |
-|                                            |         |                         | | **Layer 6**                 |
-|                                            |         |                         | | **Layer 7**                 |
-|                                            |         |                         | | **Layer 8**                 |
-|                                            |         |                         | | **Layer 9**                 |
+|                                            |         |                         | | **Layer -1**                |
+|                                            |         |                         | | **Layer -2**                |
+|                                            |         |                         | | **Layer -3**                |
+|                                            |         |                         | | **Layer -4**                |
+|                                            |         |                         | | **Layer -5**                |
+|                                            |         |                         | | **Layer -6**                |
+|                                            |         |                         | | **Layer -7**                |
+|                                            |         |                         | | **Layer -8**                |
+|                                            |         |                         | | **Layer -9**                |
 +--------------------------------------------+---------+-------------------------+-------------------------------+
 | Resize Mode / ``Resize_Mode``              | Choice  | Dynamic                 | |                             |
 |                                            |         |                         | | **Fixed (Inplace)**         |

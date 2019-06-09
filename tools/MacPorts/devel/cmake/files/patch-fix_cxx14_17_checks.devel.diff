@@ -1,0 +1,87 @@
+--- Source/Checks/cm_cxx14_check.cpp.orig
++++ Source/Checks/cm_cxx14_check.cpp
+@@ -1,15 +1,16 @@
+-#include <cstdio>
+-#include <iterator>
++// actually use c++14 feature to force the compiler to do something,
++// since it might otherwise try to optimize all of this out even if it
++// doesn't understand it.
++
++#include <iostream>
+ #include <memory>
+ 
+-int main()
++int
++main
++(void)
+ {
+-  int a[] = { 0, 1, 2 };
+-  auto ai = std::cbegin(a);
+-
+-  int b[] = { 2, 1, 0 };
+-  auto bi = std::cend(b);
+-
+-  std::unique_ptr<int> u(new int(0));
+-  return *u + *ai + *(bi - 1);
++  std::unique_ptr < int > foo = std::make_unique < int > (4);
++  std::cout << "std::make_unique < int >(4) is '"
++            << *foo << "'" << std::endl;
++  return 0;
+ }
+--- Source/Checks/cm_cxx17_check.cpp.orig
++++ Source/Checks/cm_cxx17_check.cpp
+@@ -1,31 +1,27 @@
+-#include <cstdio>
+-#include <iterator>
+-#include <memory>
+-#include <unordered_map>
++// requires c++17 or newer, so will fail tests of c++14 or earlier
++#include <optional>
+ 
+-#ifdef _MSC_VER
+-#  include <comdef.h>
+-#endif
++#include <iostream>
++#include <string>
+ 
+-int main()
+-{
+-  int a[] = { 0, 1, 2 };
+-  auto ai = std::cbegin(a);
+-
+-  int b[] = { 2, 1, 0 };
+-  auto bi = std::cend(b);
+-
+-  auto ci = std::size(a);
+-
+-  std::unique_ptr<int> u(new int(0));
+-
+-#ifdef _MSC_VER
+-  // clang-cl has problems instantiating this constructor in C++17 mode
+-  //  error: indirection requires pointer operand ('const _GUID' invalid)
+-  //      return *_IID;
+-  IUnknownPtr ptr{};
+-  IDispatchPtr disp(ptr);
+-#endif
++std::optional < std::string >
++create
++(bool b) {
++  if (b) {
++    return "foo!";
++  }
++  return {};
++}
+ 
+-  return *u + *ai + *(bi - 1) + (3 - static_cast<int>(ci));
++int
++main
++(void)
++{
++  std::cout << "create(false) returned "
++            << create(false).value_or("empty")
++            << std::endl;
++  std::cout << "create(true) returned "
++            << create(true).value_or("empty")
++            << std::endl;
++  return 0;
+ }

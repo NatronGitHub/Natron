@@ -285,8 +285,8 @@ post-destroot {
 }
 
 livecheck.type                  regex
-livecheck.url                   ${homepage}Download_source.php
-livecheck.regex                 ${my_name}-(\[0-9\]+\\.\[0-9\]*\[02468\](\\.\[0-9\]+)*)\\.tar
+livecheck.url                   https://graphviz.gitlab.io/_pages/Download/Download_source.html
+livecheck.regex                 ${my_name}-(\[0-9\]+\\.\[0-9\]*\[02468\](\\.\[0-9\]+)*)\\.tar.gz
 } else {
     livecheck.type              none
 }

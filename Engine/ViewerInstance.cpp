@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -1438,10 +1438,13 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
     const double par = inArgs.activeInputToRender->getAspectRatio(-1);
 
-
-    //We are going to render a non cached frame and not in playback, clear persistent messages
+    // We are going to render a non cached frame and not in playback, clear persistent messages
+    // (this code comes from https://github.com/NatronGitHub/Natron/commit/b0fcc946380571295b9230e9381218684474ca65)
     if (!inArgs.params->isSequential) {
-        clearPersistentMessage(true);
+        // Do not clear all previously set persistent message!
+        // This also clears messages which do not come from the render action, such as messages set by InstanceChanged()!
+        // Instead, the user can excplicitely clear the persistent messages using the refresh button, see ViewerTab::refresh(bool)
+        //clearPersistentMessage(true);
     }
 
     ImagePlaneDesc components, pairedComponents;

@@ -1,11 +1,11 @@
---- configure.orig	2017-11-17 16:05:28.000000000 -0700
-+++ configure	2018-04-25 08:15:04.000000000 -0700
-@@ -15851,7 +15851,7 @@
+--- configure.orig      2017-11-17 16:05:28.000000000 -0700
++++ configure   2018-04-25 08:15:04.000000000 -0700
+@@ -22447,7 +22447,7 @@
  
  fi
  
 -for ac_header in limits.h unistd.h ucontext.h
 +for ac_header in limits.h unistd.h
  do :
- as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
  ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"

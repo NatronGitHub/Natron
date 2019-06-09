@@ -1,0 +1,12 @@
+diff -up webkit-qtwebkit-23/Source/WebCore/WebCore.pri.save_memory webkit-qtwebkit-23/Source/WebCore/WebCore.pri
+--- webkit-qtwebkit-23/Source/WebCore/WebCore.pri.save_memory	2013-02-15 09:46:12.000000000 -0600
++++ webkit-qtwebkit-23/Source/WebCore/WebCore.pri	2013-02-21 16:42:30.996634743 -0600
+@@ -336,6 +336,8 @@ mac {
+ }
+ unix:!mac:*-g++*:QMAKE_CXXFLAGS += -fdata-sections
+ unix:!mac:*-g++*:QMAKE_LFLAGS += -Wl,--gc-sections
++unix:!mac:*-g++*:!equals(QT_ARCH, powerpc):!equals(QT_ARCH, s390):!equals(QT_ARCH, mips):!equals(QT_ARCH, arm):QMAKE_LFLAGS += -Wl,--no-keep-memory
++unix:!mac:*-g++*:!equals(QT_ARCH, powerpc):!equals(QT_ARCH, s390):!equals(QT_ARCH, mips):!equals(QT_ARCH, arm):QMAKE_LFLAGS += -Wl,--reduce-memory-overheads
+ linux*-g++*:QMAKE_LFLAGS += $$QMAKE_LFLAGS_NOUNDEF
+ 
+ unix|win32-g++* {

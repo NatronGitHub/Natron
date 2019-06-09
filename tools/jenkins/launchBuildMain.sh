@@ -91,12 +91,14 @@ source manageLog.sh
 source gitRepositories.sh
 
 # refresh credentials
-keychainstatus=0
-eval `keychain -q --eval --agents ssh id_rsa_build_master` || keychainstatus=1
-if [ $keychainstatus != 0 ]; then
-    echo "Restarting ssh-agent"
-    keychain -k
-    eval `keychain --eval --agents ssh id_rsa_build_master`
+if [ -f "$HOME/.ssh/id_rsa_build_master" ]; then
+    keychainstatus=0
+    eval `keychain -q --eval --agents ssh id_rsa_build_master` || keychainstatus=1
+    if [ $keychainstatus != 0 ]; then
+        echo "Restarting ssh-agent"
+        keychain -k
+        eval `keychain --eval --agents ssh id_rsa_build_master`
+    fi
 fi
 
 GIT_BRANCH=$(echo $GIT_BRANCH | sed 's#origin/##')

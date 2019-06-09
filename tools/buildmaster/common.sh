@@ -199,8 +199,8 @@ else
     REPO_URL=http://downloads.natron.fr
 fi
 
-THIRD_PARTY_SRC_URL=http://downloads.natron.fr/Third_Party_Sources
-THIRD_PARTY_BIN_URL=$REPO_URL/Third_Party_Binaries
+THIRD_PARTY_SRC_URL=https://natrongithub.github.io/files/src
+THIRD_PARTY_BIN_URL=https://natrongithub.github.io/files/bin
 
 
 # Threads

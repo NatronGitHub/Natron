@@ -55,8 +55,7 @@ prepare() {
 
 build() {
   [[ -d "build-${MINGW_CHOST}" ]] && rm -rf "build-${MINGW_CHOST}"
-  mkdir -p ${srcdir}/build-${MINGW_CHOST}
-  cd ${srcdir}/build-${MINGW_CHOST}
+  mkdir -p ${srcdir}/build-${MINGW_CHOST} && cd ${srcdir}/build-${MINGW_CHOST}
 
   MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
   ${MINGW_PREFIX}/bin/cmake \
@@ -69,7 +68,6 @@ build() {
     -DUSE_EXTERNAL_LCMS=ON \
     -DOCIO_USE_BOOST_PTR=ON \
     -DOCIO_BUILD_PYGLUE=ON \
-    -DPYTHON_EXECUTABLE=${MINGW_PREFIX}/bin/python2.exe \
     -DOCIO_BUILD_TRUELIGHT=OFF \
     -DOCIO_BUILD_APPS=OFF \
     -DOCIO_BUILD_NUKE=OFF \
@@ -77,7 +75,7 @@ build() {
     -DOCIO_BUILD_TESTS=OFF \
     -DOCIO_BUILD_GPU_TESTS=OFF \
     -DOCIO_BUILD_PYGLUE=OFF \
-    -DOCIO_BUILD_JNIGLUE=OFF \
+    -DOCIO_BUILD_JNIGLUE=OFF \    
     ../${_realname}
 
   make

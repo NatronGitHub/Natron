@@ -1,6 +1,6 @@
 --- build/make/Makefile.orig	2018-02-06 19:44:37.000000000 -0800
 +++ build/make/Makefile	2018-02-08 07:00:14.000000000 -0800
-@@ -199,7 +199,7 @@
+@@ -200,7 +200,7 @@
  	$(qexec)$(AS) $(ASFLAGS) -o $@ $<
  
  .PRECIOUS: %.c.S

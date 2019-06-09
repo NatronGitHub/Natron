@@ -1,37 +1,16 @@
 --- IlmImf/Makefile.in.orig	2016-05-22 12:57:47.000000000 -0700
 +++ IlmImf/Makefile.in	2016-05-22 13:18:35.000000000 -0700
-@@ -572,9 +572,10 @@
+@@ -581,10 +581,11 @@
  		 ImfOptimizedPixelReading.h
  
  EXTRA_DIST = $(noinst_HEADERS) b44ExpLogTable.cpp b44ExpLogTable.h dwaLookups.cpp dwaLookups.h CMakeLists.txt
 -INCLUDES = @ILMBASE_CXXFLAGS@ \
 +INCLUDES = \
- 	   -I$(top_builddir)  \
--	   -I$(top_srcdir)/config
-+	   -I$(top_srcdir)/config \
+ 	   -I$(top_builddir) \
+ 	   -I$(top_srcdir)/config \
+-	   $(ILMBASE_CFLAGS) $(ZLIB_CFLAGS)
++	   $(ILMBASE_CFLAGS) $(ZLIB_CFLAGS) \
 +	   @ILMBASE_CXXFLAGS@
  
  CLEANFILES = b44ExpLogTable b44ExpLogTable.h dwaLookups dwaLookups.h
  b44ExpLogTable_SOURCES = b44ExpLogTable.cpp
---- IlmImfUtil/Makefile.in.orig	2014-08-09 21:48:23.000000000 -0700
-+++ IlmImfUtil/Makefile.in	2016-05-22 14:30:46.000000000 -0700
-@@ -375,15 +375,16 @@
- 	ImfImageDataWindow.h ImfImageDataWindow.cpp \
- 	ImfImageChannelRenaming.h
- 
--libIlmImfUtil_la_LDFLAGS = @ILMBASE_LDFLAGS@ -version-info \
-+libIlmImfUtil_la_LDFLAGS = -version-info \
- 	@LIBTOOL_VERSION@ -no-undefined $(am__append_1)
- libIlmImfUtil_la_LIBADD = -L$(top_builddir)/IlmImf @ILMBASE_LIBS@ -lIlmImf
- libIlmImfUtilincludedir = $(includedir)/OpenEXR
- EXTRA_DIST = CMakeLists.txt
--INCLUDES = @ILMBASE_CXXFLAGS@ \
-+INCLUDES = \
- 	   -I$(top_builddir)  \
- 	   -I$(top_srcdir)/IlmImf  \
--	   -I$(top_srcdir)/config
-+	   -I$(top_srcdir)/config \
-+	   @ILMBASE_CXXFLAGS@
- 
- all: all-am
- 

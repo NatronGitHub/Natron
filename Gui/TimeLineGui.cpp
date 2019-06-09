@@ -1,5 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * This file is part of Natron <http://www.natron.fr/>,
+ * This file is part of Natron <https://natrongithub.github.io/>,
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -489,8 +489,8 @@ TimeLineGui::paintGL()
         glEnd();
         glCheckErrorIgnoreOSXBug();
 
-#if (__GNUC__ > 8 || (__GNUC__ == 8 && __GNUC_MINOR__ >= 1)) && !defined(ENFORCE_GCC8)
-#error "Timeline GUI is wrong with GCC 8.1, either fix or check that it is OK with a later version and adjust the error, see https://github.com/NatronGitHub/Natron/issues/279"
+#if (__GNUC__ == 8 && __GNUC_MINOR__ >= 1 && __GNUC_MINOR__ < 3) && !defined(ENFORCE_GCC8)
+#error "Timeline GUI is wrong with GCC 8.1 (and maybe GCC 8.2), see https://github.com/NatronGitHub/Natron/issues/279"
 #endif
         double tickBottom = toTimeLineCoordinates( 0, height() - 1 - fontM.height() ).y();
         double tickTop = toTimeLineCoordinates( 0, height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT) ).y();

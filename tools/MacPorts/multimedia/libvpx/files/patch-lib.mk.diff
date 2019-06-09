@@ -1,0 +1,10 @@
+--- libs.mk.orig	2019-02-10 00:15:33.000000000 -0800
++++ libs.mk	2019-02-10 00:17:01.000000000 -0800
+@@ -145,7 +145,6 @@
+ endif
+ CODEC_EXPORTS-yes += vpx/exports_com
+ CODEC_EXPORTS-$(CONFIG_ENCODERS) += vpx/exports_enc
+-CODEC_EXPORTS-$(CONFIG_VP9_ENCODER) += vpx/exports_spatial_svc
+ CODEC_EXPORTS-$(CONFIG_DECODERS) += vpx/exports_dec
+ 
+ INSTALL-LIBS-yes += include/vpx/vpx_codec.h

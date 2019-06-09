@@ -8,8 +8,9 @@ PortGroup           active_variants 1.1
 
 name                ffmpeg
 conflicts           ffmpeg-devel
+# Please increase the revision of mpv whenever ffmpeg's version is updated.
 epoch               1
-version             4.0.1
+version             4.1.1
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -51,9 +52,9 @@ master_sites        ${homepage}releases/
 
 use_xz              yes
 
-checksums           rmd160  f66f0d16ef4869c4b67b0ae7b04ef652f72956d4 \
-                    sha256  605f5c01c60db35d3b617a79cabb2c7032412be243554602eeed1b628125c0ee \
-                    size    8663660
+checksums           rmd160  e16400cfaa2a975805f84730f8a8c5e255d2f92b \
+                    sha256  373749824dfd334d84e55dff406729edfd1606575ee44dd485d97d45ea4d2d86 \
+                    size    8893404
 
 depends_build       port:pkgconfig \
                     port:gmake \
@@ -108,11 +109,6 @@ platform darwin powerpc {
     universal_variant     no
 }
 
-# _Nullable not available with clang < 700.
-if {[vercmp ${xcodeversion} 7.0] < 0} {
-    patchfiles-append   patch-libavcodec-videotoolboxenc.c-drop-Nullable.diff
-}
-
 # gcc > 4.2 is required, https://trac.ffmpeg.org/ticket/1464
 # WARNING: gcc 4.2 is outdated and may miscompile FFmpeg. Please use a newer compiler.
 compiler.blacklist-append \
@@ -158,6 +154,7 @@ configure.args      --enable-swscale \
                     --disable-audiotoolbox \
                     --disable-videotoolbox \
                     --disable-sdl2 \
+                    --disable-securetransport \
                     --mandir=${prefix}/share/man \
                     --enable-shared --enable-pthreads \
                     --cxx=${configure.cxx} \
@@ -187,9 +184,13 @@ platform darwin {
     }
 
     # AudioToolbox support requires CoreMedia Framework available on 10.7+
-    # libsdl2 requires minimum Xcode 10.7 SDK to build successfully
     if {${os.major} > 10} {
         configure.args-replace --disable-audiotoolbox --enable-audiotoolbox
+    }
+
+    # libsdl2 requires minimum Xcode 10.7 SDK to build successfully
+    # but builds on Snow Leopard
+    if {${os.major} > 9} {
         configure.args-replace --disable-sdl2 --enable-sdl2
         depends_lib-append     port:libsdl2
     }
@@ -210,8 +211,8 @@ platform darwin {
         patchfiles-append patch-configure-no-error-on-missing-prototypes.diff
     }
 
-    # kCVPixelFormatType_OneComponent8 used in avfoundation indev is only available on 10.8+
-    if {${os.major} < 12} {
+    # avfoundation is only available on 10.7+
+    if {${os.major} < 11} {
         configure.args-append --disable-indev=avfoundation
     }
 }
@@ -385,19 +386,17 @@ platform darwin {
     }
 }
 
-variant high10 requires gpl2 description {Build using libx264 with 10-bit output} {}
-
-if {[variant_isset high10]} {
-    require_active_variants x264 high10
-} else {
-    require_active_variants x264 "" high10
-}
-
 variant jack description {Enable jack library and indev support} {
 # jack will autoconfigure if not disabled
     depends_lib-append      port:jack
     configure.args-delete   --disable-libjack \
                             --disable-indev=jack
+}
+
+variant darwinssl description {Enable https support using Apple built-in TLS library instead of GNU TLS} {
+    configure.args-delete   --disable-securetransport
+    configure.args-delete   --enable-gnutls
+    depends_lib-delete      port:gnutls
 }
 
 variant highbitdepth description {Build using libvpx with 10/12-bit output} {}

@@ -30,15 +30,26 @@ def afterNodeCreatedCallback(thisNode, app, userEdited):
 def setNodeDefaults(app):
     app.afterNodeCreated.set("afterNodeCreatedCallback")
 
+    
+def setProjectDefaults(app):
+    app.getProjectParam('autoPreviews').setValue(False)
+    app.getProjectParam('outputFormat').setValue("2k_185")
+    app.getProjectParam('frameRate').setValue(24)
+    app.getProjectParam('frameRange').setValue(1, 0)
+    app.getProjectParam('frameRange').setValue(30, 1)
+    app.getProjectParam('lockRange').setValue(True)
+
+
 def myCallback(app):
     addFormats(app)
     setNodeDefaults(app)
+    setProjectDefaults(app)
 
 
 
 #Set the After Project Created/Loaded callbacks
-NatronEngine.natron.setOnProjectCreatedCallback("myCallback")
-NatronEngine.natron.setOnProjectLoadedCallback("myCallback")
+NatronEngine.natron.setOnProjectCreatedCallback("init.myCallback")
+NatronEngine.natron.setOnProjectLoadedCallback("init.myCallback")
 
 #Add this path to the Natron search paths so that our PyPlug can be found.
 #Note that we could also set this from the NATRON_PLUGIN_PATH environment variable
