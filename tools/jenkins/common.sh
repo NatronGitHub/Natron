@@ -51,7 +51,7 @@ Darwin)
     PKGOS=OSX
     ;;
 *)
-    echo "$CHECK_OS not supported!"
+    (>&2 echo "$CHECK_OS not supported!")
     exit 1
     ;;
 esac
@@ -130,7 +130,7 @@ elif [ "$PKGOS" = "OSX" ]; then
     TIMEOUT="${MACPORTS}/bin/gtimeout"
 elif [ "$PKGOS" = "Windows" ]; then
     if [ -z "${BITS:-}" ]; then
-        echo "You must select a BITS"
+        (>&2 echo "Error: You must select a value for BITS (32 or 64)")
         exit 1
     fi
     if [ "${BITS}" = "32" ]; then
@@ -140,7 +140,7 @@ elif [ "$PKGOS" = "Windows" ]; then
         SDK_HOME="/mingw64"
         ARCH=x86_64
     else
-        echo "Unsupported BITS"
+        (>&2 echo "Error: Unsupported BITS=$BITS")
         exit 1
     fi
     # define TMP, which is used by QDir::tempPath http://doc.qt.io/qt-4.8/qdir.html#tempPath
@@ -158,7 +158,7 @@ elif [ "$PKGOS" = "Windows" ]; then
     # Path where GPL builds are stored
     CUSTOM_BUILDS_PATH="$SDK_HOME"
 else
-    echo "Unsupported build platform"
+    (>&2 echo "Error: Unsupported build platform PKGOS=$PKGOS")
     exit 1
 fi
 
@@ -172,7 +172,8 @@ fi
 
 # The version of Python used by the SDK and to build Natron
 # Python 2 or 3, NOTE! v3 is probably broken, been untested for a long while
-PYV=2
+# If PYV is not set, set it to 2
+: "${PYV:=2}"
 if [ "$PYV" = "3" ]; then
     PYVER=3.4
 else
@@ -199,7 +200,7 @@ else
     REPO_URL=http://downloads.natron.fr
 fi
 
-THIRD_PARTY_SRC_URL=https://natrongithub.github.io/files/src
+THIRD_PARTY_SRC_URL=https://sourceforge.net/projects/natron/files/Third_Party/Sources
 THIRD_PARTY_BIN_URL=https://natrongithub.github.io/files/bin
 
 
@@ -227,8 +228,8 @@ rsync_remote () {
     $TIMEOUT 3600 rsync -avz -O --chmod=ug=rwx --no-perms --no-owner --no-group --progress --verbose -e 'ssh -oBatchMode=yes' $opts "$from" "${REMOTE_USER}@${REMOTE_URL}:$to"
 }
 
-if ! type -p keychain > /dev/null; then
-    echo "Error: keychain not available, install from https://www.funtoo.org/Keychain"
+if [ -f "$HOME/.ssh/id_rsa_build_master" ] && ! type -p keychain > /dev/null; then
+    (>&2 echo "Error: keychain not available, install from https://www.funtoo.org/Keychain")
     exit 1
 fi
 
@@ -241,8 +242,8 @@ if [ "$PKGOS" = "Windows" ]; then
         elif [ -d "$CUSTOM_BUILDS_PATH/ffmpeg-gpl2" ]; then
             FFMPEG_PATH="$CUSTOM_BUILDS_PATH/ffmpeg-gpl2"
         else
-            echo "FFmpeg cannot be fount in $SDK_HOME/ffmpeg-gpl or $SDK_HOME/ffmpeg-gpl2"
-            echo "Setting FFMPEG_PATH=$SDK_HOME/ffmpeg-gpl2"
+            (>&2 echo "Warning: FFmpeg cannot be found in $SDK_HOME/ffmpeg-gpl or $SDK_HOME/ffmpeg-gpl2")
+            (>&2 echo "Info: Setting FFMPEG_PATH=$SDK_HOME/ffmpeg-gpl2")
             FFMPEG_PATH="$SDK_HOME/ffmpeg-gpl2"
         fi
         LIBRAW_PATH="$CUSTOM_BUILDS_PATH/libraw-gpl2"        
@@ -257,8 +258,8 @@ elif [ "$PKGOS" = "Linux" ]; then
         elif [ -d "$CUSTOM_BUILDS_PATH/ffmpeg-gpl2" ]; then
             FFMPEG_PATH="$CUSTOM_BUILDS_PATH/ffmpeg-gpl2"
         else
-            echo "FFmpeg cannot be fount in $SDK_HOME/ffmpeg-gpl or $SDK_HOME/ffmpeg-gpl2"
-            echo "Setting FFMPEG_PATH=$SDK_HOME/ffmpeg-gpl2"
+            (>&2 echo "FFmpeg cannot be found in $SDK_HOME/ffmpeg-gpl or $SDK_HOME/ffmpeg-gpl2")
+            (>&2 echo "Info: Setting FFMPEG_PATH=$SDK_HOME/ffmpeg-gpl2")
             FFMPEG_PATH="$SDK_HOME/ffmpeg-gpl2"
         fi
         LIBRAW_PATH="$CUSTOM_BUILDS_PATH/libraw-gpl2"
@@ -293,8 +294,8 @@ if [ -d "$SDK_HOME/osmesa" ]; then
 elif [ -d "/opt/osmesa" ]; then
     OSMESA_PATH="/opt/osmesa"
 else
-    echo "OSMesa cannot be found in $SDK_HOME/osmesa or /opt/osmesa"
-    echo "Setting OSMESA_PATH=$SDK_HOME/osmesa"
+    (>&2 echo "Warning: OSMesa cannot be found in $SDK_HOME/osmesa or /opt/osmesa")
+    (>&2 echo "Info: Setting OSMESA_PATH=$SDK_HOME/osmesa")
     OSMESA_PATH="$SDK_HOME/osmesa"
 fi
 
@@ -303,8 +304,8 @@ if [ -d "$SDK_HOME/llvm" ]; then
 elif [ -d "/opt/llvm" ]; then
     LLVM_PATH="/opt/llvm"
 else
-    echo "LLVM cannot be found in $SDK_HOME/llvm or /opt/llvm"
-    echo "Setting LLVM_PATH=$SDK_HOME/llvm"
+    (>&2 echo "Warning: LLVM cannot be found in $SDK_HOME/llvm or /opt/llvm")
+    (>&2 echo "Info: Setting LLVM_PATH=$SDK_HOME/llvm")
     LLVM_PATH="$SDK_HOME/llvm"
 fi
 
@@ -316,8 +317,8 @@ elif [ -d "$SDK_HOME/libexec/qt${QT_VERSION_MAJOR}" ]; then
 elif [ -x "$SDK_HOME/bin/qmake" ] || [ -x "$SDK_HOME/bin/qmake.exe" ]; then
     QTDIR="$SDK_HOME"
 else
-    echo "Qt cannot be found in $SDK_HOME or $SDK_HOME/qt${QT_VERSION_MAJOR}"
-    echo "setting QTDIR=$SDK_HOME/qt${QT_VERSION_MAJOR}"
+    (>&2 echo "Warning: Qt cannot be found in $SDK_HOME or $SDK_HOME/qt${QT_VERSION_MAJOR}")
+    (>&2 echo "Info: setting QTDIR=$SDK_HOME/qt${QT_VERSION_MAJOR}")
     QTDIR="$SDK_HOME/qt${QT_VERSION_MAJOR}"
 fi
 export QTDIR
