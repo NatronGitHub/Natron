@@ -1,2 +1,2 @@
 #!/bin/sh
-docker push natrongithub/i386/natron-sdk:latest
+docker push natrongithub/natron-sdk:latest
