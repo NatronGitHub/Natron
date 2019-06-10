@@ -665,7 +665,7 @@ EOF
     if [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
         cat <<EOF
 COPY --from=intermediate /usr/bin/setarch /usr/bin/setarch
-echo 'ENTRYPOINT ["setarch", "i686"]'
+ENTRYPOINT ["setarch", "i686"]
 EOF
     fi
 fi
