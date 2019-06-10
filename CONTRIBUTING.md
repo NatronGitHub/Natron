@@ -93,7 +93,9 @@ Coding Style
 
 There are two overarching rules:
 
-1. When making changes, conform to the style and conventions of the surrounding code.
+1. When making changes, conform to the style and conventions of the
+surrounding code. Do not modify spacing, indentation, or symbol names
+if there is no change to the underlying code.
 
 2. Strive for clarity, even if that means occasionally breaking the
 guidelines. Use your head and ask for advice if your common sense seems to
