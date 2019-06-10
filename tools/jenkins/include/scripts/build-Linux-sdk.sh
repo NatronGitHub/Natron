@@ -113,24 +113,6 @@ function build()
             exit 1
         fi
     fi
-    # maybe-build cases
-    if dobuild && [ -z ${LAST_STEP+x} ]; then # LAST_STEP is not set, so build
-        prevstep="$step"
-        return 0
-    fi
-    if dobuild && [ "$reachedstep" = "0" ] ; then # build this step
-        if [ "${LAST_STEP:-}" = "$step" ]; then # this is the last step to build
-            reachedstep=1
-        fi
-        prevstep="$step"
-        return 0
-    fi
-    if dobuild && [ "$prevstep" = "$step" ]; then
-        # build_step is called a second time on LAST_STEP, this is OK
-        return 0
-    fi
-    prevstep="$step"
-    return 1 # must return a status
 }
 
 function checkpoint()
@@ -352,7 +334,7 @@ function end_build() {
 }
 
 if dobuild; then
-    echo
+    echo 
     echo "Building Natron-$SDK with $MKJOBS threads ..."
     echo
 
@@ -696,3 +678,4 @@ exit 0
 # sh-indent-comment: t
 # indent-tabs-mode: nil
 # End:
+
