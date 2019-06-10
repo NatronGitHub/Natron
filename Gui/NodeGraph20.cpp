@@ -409,11 +409,16 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         if ( selRect.contains( e->pos() ) ) {
             assert(isGroup);
             QPoint pos = mapToGlobal( e->pos() );
+            QString tipText = NATRON_NAMESPACE::convertFromPlainText(QCoreApplication::translate("NodeGraph", "Clicking the unlock button will convert the PyPlug to a regular group saved in the project and dettach it from the script.\n"
+                                                                                                              "Any modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."), NATRON_NAMESPACE::WhiteSpaceNormal);
+#ifdef QT4_TOOLTIP_HAS_TIMEOUT
+            // https://github.com/NatronGitHub/Natron/issues/136
+            // https://github.com/NatronGitHub/qt/commit/ae4ad4ccac01cc4e9460b57c3337300526703f47
+            QToolTip::showText( pos, tipText, this, selRect, 10000);
+#else
             // Unfortunately, the timeout delay for the tooltip is hardcoded in Qt 4, and the last parameter to showText doesn't seem to influence anything
-            // Can not fix https://github.com/MrKepzie/Natron/issues/1151 (at least in Qt4)
-            QToolTip::showText( pos, NATRON_NAMESPACE::convertFromPlainText(QCoreApplication::translate("NodeGraph", "Clicking the unlock button will convert the PyPlug to a regular group saved in the project and dettach it from the script.\n"
-                                                                                                "Any modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."), NATRON_NAMESPACE::WhiteSpaceNormal),
-                               this, selRect);
+            QToolTip::showText( pos, tipText, this, selRect);
+#endif
         }
     }
 
