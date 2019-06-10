@@ -249,18 +249,12 @@ if [ "$BUNDLE_IO" = "1" ]; then
         cp -fv "$y" "$IO_LIBS/"
     done
 
-    rm -f "$IO_LIBS"/{liblcms*,libgcc*,libstdc*,libbz2*,libfont*,libfree*,libpng*,libjpeg*,libtiff*,libz.*}
     (cd "$IO_LIBS" ;
-     ln -sf ../../../../../lib/libbz2.so.1 .
-     ln -sf ../../../../../lib/libfontconfig.so.1 .
-     ln -sf ../../../../../lib/libfreetype.so.6 .
-     ln -sf ../../../../../lib/libpng16.so.16 .
-     ln -sf ../../../../../lib/libjpeg.so.8 .
-     ln -sf ../../../../../lib/libtiff.so.5 .
-     ln -sf ../../../../../lib/libz.so.1 .
-     ln -sf ../../../../../lib/libgcc_s.so.1 .
-     ln -sf ../../../../../lib/libstdc++.so.6 .
-     ln -sf ../../../../../lib/liblcms2.so.2 .
+     for f in {libcairo.so*,libpixman-*.so*,liblcms*.so*,libgomp.so*,libOpenColorIO.so*,libtinyxml.so*,libbz2.so*,libfontconfig.so*,libz.so*,libglib-*.so**,libgthread-*.so*,libpng*.so*,libjpeg.so*,libtiff.so*,libfreetype.so*,libexpat.so*,libgcc_s.so*,libstdc++.so*}; do
+         if [ -f "$f" ]; then
+             rm -f "$f" && ln -sf ../../../../../lib/"$f" .
+         fi
+     done
      for i in *.so*; do
          patchelf --set-rpath "\$ORIGIN" "$i" || true
      done;
@@ -359,24 +353,12 @@ if [ "$BUNDLE_ARENA" = "1" ]; then
     for x in $OFX_ARENA_DEPENDS; do
         cp -fv "$x" "$ARENA_LIBS/"
     done
-    rm -f "$ARENA_LIBS"/{libcairo*,libpix*,liblcms*,libgomp*,libOpenColorIO*,libtinyxml*libbz2*,libfont*,libz.so*,libglib-2*,libgthread*,libpng*,libfree*,libexpat*,libgcc*,libstdc*}
-    (cd "$ARENA_LIBS" ; 
-     ln -sf ../../../../../lib/libbz2.so.1 .
-     ln -sf ../../../../../lib/libexpat.so.1 .
-     ln -sf ../../../../../lib/libfontconfig.so.1 .
-     ln -sf ../../../../../lib/libfreetype.so.6 .
-     ln -sf ../../../../../lib/libglib-2.0.so.0 .
-     ln -sf ../../../../../lib/libgthread-2.0.so.0 .
-     ln -sf ../../../../../lib/libpng16.so.16 .
-     ln -sf ../../../../../lib/libz.so.1 .
-     ln -sf ../../../../../lib/libgcc_s.so.1 .
-     ln -sf ../../../../../lib/libstdc++.so.6 .
-     ln -sf ../../../../../lib/libOpenColorIO.so.1 .
-     ln -sf ../../../../../lib/libtinyxml.so .
-     ln -sf ../../../../../lib/libgomp.so.1 .
-     ln -sf ../../../../../lib/libpixman-1.so.0 .
-     ln -sf ../../../../../lib/libcairo.so.2 .
-     ln -sf ../../../../../lib/liblcms2.so.2 .
+    (cd "$ARENA_LIBS" ;
+     for f in {libcairo.so*,libpixman-*.so*,liblcms*.so*,libgomp.so*,libOpenColorIO.so*,libtinyxml.so*,libbz2.so*,libfontconfig.so*,libz.so*,libglib-*.so**,libgthread-*.so*,libpng*.so*,libjpeg.so*,libtiff.so*,libfreetype.so*,libexpat.so*,libgcc_s.so*,libstdc++.so*}; do
+         if [ -f "$f" ]; then
+             rm -f "$f" && ln -sf ../../../../../lib/"$f" .
+         fi
+     done
      for i in *.so*; do
          patchelf --set-rpath "\$ORIGIN" "$i" || true
      done;
@@ -543,10 +525,20 @@ for location in "${COPY_LOCATIONS[@]}"; do
 
     # icu libraries don't seem to be picked up by this ldd call above
     pushd "${SDK_HOME}/lib"
-    for dep in libicudata.so.[0-9][0-9] libicui18n.so.[0-9][0-9] libicuuc.so.[0-9][0-9] libbz2.so.[0-9] liblcms2.so.[0-9] libcairo.so.[0-9]; do
-        CORE_DEPENDS="$CORE_DEPENDS ${SDK_HOME}/lib/$dep"
+    for dep in {libicudata.so.*,libicui18n.so.*,libicuuc.so.*,libbz2.so.*,liblcms2.so.*,libcairo.so.*,libOpenColorIO.so.*}; do
+        if [ -f "$dep" ]; then
+            CORE_DEPENDS="$CORE_DEPENDS ${SDK_HOME}/lib/$dep"
+        fi
     done
     popd
+
+    # Copy dependencies
+    for i in $CORE_DEPENDS; do
+        dep=$(basename "$i")
+        if [ ! -f "${location}/lib/$dep" ]; then
+            cp -f "$i" "${location}/lib/"
+        fi
+    done
 
     # Copy dependencies of the libraries
     LIB_DEPENDS="$(env LD_LIBRARY_PATH="${location}/lib:$LD_LIBRARY_PATH" ldd $(find "${location}/lib" -maxdepth 1 -type f -name 'lib*.so*')|grep /opt | awk '{print $3}'|sort|uniq)"
@@ -570,11 +562,9 @@ for location in "${COPY_LOCATIONS[@]}"; do
     #fi
 
     if [ "$BUNDLE_IO" = "1" ]; then
-        mv "$IO_LIBS"/{libOpenColor*,libtinyxml*,libgomp*} "${location}/lib/"
+        mv "$IO_LIBS"/{libcairo.so*,libOpenColorIO.so*,libtinyxml.so*,libgomp.so*} "${location}/lib/"
         (cd "$IO_LIBS" ;
-         ln -sf ../../../../../lib/libOpenColorIO.so.[0-9] .
-         ln -sf ../../../../../lib/libtinyxml.so .
-         ln -sf ../../../../../lib/libgomp.so.[0-9] .
+         ln -sf ../../../../../lib/{libcairo.so*,libOpenColorIO.so*,libtinyxml.so*,libgomp.so*} .
         )
     fi
 
