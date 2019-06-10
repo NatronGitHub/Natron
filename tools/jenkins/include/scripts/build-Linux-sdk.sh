@@ -24,13 +24,15 @@
 # will be rebuilt when A is rebuilt.
 #
 # Options available by setting the following environment variables:
-#### not yet implemented BEGIN
+#
 # GEN_DOCKERFILE=1 : Output a Dockerfile rather than building the SDK.
+# GEN_DOCKERFILE32=1 : Output a 32-bit Dockerfile rather than building the SDK.
 # LIST_STEPS=1 : Output an ordered list of steps to build the SDK
 # LAST_STEP=step_name : Only build until this step (be careful, as dependent packages are not rebuilt).
 # FORCE_BUILD=1 : Force build, even if up-to-date. If LAST_STEP is specified, only force-build this step.
+#
 # Only available when GEN_DOCKERFILE, LIST_STEPS and LAST_STEPS are not set:
-#### not yet implemented END
+#
 # TAR_SDK=1 : Make an archive of the SDK when building is done and store it in $SRC_PATH
 # UPLOAD_SDK=1 : Upload the SDK tar archive to $REPO_DEST if TAR_SDK=1
 
@@ -52,6 +54,9 @@ fi
 
 scriptdir=`dirname "$0"`
 
+if [ "${GEN_DOCKERFILE32:-}" = "1" -a -z "${GEN_DOCKERFILE+x}" ]; then
+    GEN_DOCKERFILE=1
+fi
 if [ "${GEN_DOCKERFILE:-}" = "1" -o "${GEN_DOCKERFILE:-}" = "2" ]; then
     cat <<EOF
 # Natron-SDK dockerfile.
@@ -60,11 +65,25 @@ if [ "${GEN_DOCKERFILE:-}" = "1" -o "${GEN_DOCKERFILE:-}" = "2" ]; then
 # cd tools/docker/natron-sdk/
 # ./build.sh
 # SDK is installed in /opt/Natron-sdk
-
-FROM centos:6 as intermediate
+EOF
+    if [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
+        # - base on i386/centos:6
+        # - set the yum archs
+        # - install util-linux to get the "setarch" executable
+        DOCKER_BASE="i386/centos:6"
+        LINUX32="setarch i686"
+        DOCKERFILE_I386='RUN echo "i686" > /etc/yum/vars/arch && echo "i386" > /etc/yum/vars/basearch'
+    else
+        DOCKER_BASE="centos:6"
+        LINUX32=
+        DOCKERFILE_I386=
+    fi
+    cat <<EOF
+FROM $DOCKER_BASE as intermediate
 MAINTAINER https://github.com/NatronGitHub/Natron
 WORKDIR /home
-RUN yum install -y git gcc gcc-c++ make tar wget patch libX11-devel mesa-libGL-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel
+$DOCKERFILE_I386
+RUN yum install -y util-linux git gcc gcc-c++ make tar wget patch libX11-devel mesa-libGL-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel
 COPY include/patches/ include/patches/
 COPY build-Linux-sdk.sh common.sh compiler-common.sh ./
 EOF
@@ -94,6 +113,24 @@ function build()
             exit 1
         fi
     fi
+    # maybe-build cases
+    if dobuild && [ -z ${LAST_STEP+x} ]; then # LAST_STEP is not set, so build
+        prevstep="$step"
+        return 0
+    fi
+    if dobuild && [ "$reachedstep" = "0" ] ; then # build this step
+        if [ "${LAST_STEP:-}" = "$step" ]; then # this is the last step to build
+            reachedstep=1
+        fi
+        prevstep="$step"
+        return 0
+    fi
+    if dobuild && [ "$prevstep" = "$step" ]; then
+        # build_step is called a second time on LAST_STEP, this is OK
+        return 0
+    fi
+    prevstep="$step"
+    return 1 # must return a status
 }
 
 function checkpoint()
@@ -111,7 +148,7 @@ function checkpoint()
             checkpointstep="$s"
         done
         echo "$copyline pkg/"
-        echo "RUN env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
+        echo "RUN $LINUX32 env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
         pkgs=()
     fi
     return 0
@@ -315,7 +352,7 @@ function end_build() {
 }
 
 if dobuild; then
-    echo 
+    echo
     echo "Building Natron-$SDK with $MKJOBS threads ..."
     echo
 
@@ -639,10 +676,16 @@ checkpoint
 if [ "${GEN_DOCKERFILE:-}" = "1" -o "${GEN_DOCKERFILE:-}" = "2" ]; then
     cat <<EOF
 RUN rm -rf /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK
-FROM centos:6
+FROM $DOCKER_BASE
 COPY --from=intermediate /opt/Natron-sdk /opt/Natron-sdk
 #COPY --from=intermediate /home/src /opt/Natron-sdk/src
 EOF
+    if [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
+        cat <<EOF
+COPY --from=intermediate /usr/bin/setarch /usr/bin/setarch
+ENTRYPOINT ["setarch", "i686"]
+EOF
+    fi
 fi
 
 exit 0
@@ -653,4 +696,3 @@ exit 0
 # sh-indent-comment: t
 # indent-tabs-mode: nil
 # End:
-

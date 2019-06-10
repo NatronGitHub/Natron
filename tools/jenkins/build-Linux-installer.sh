@@ -349,8 +349,10 @@ CORE_DEPENDS="$(ldd $(find "${TMP_PORTABLE_DIR}/bin" -maxdepth 1 -type f) | grep
 
 # icu libraries don't seem to be picked up by this ldd call above
 pushd "${SDK_HOME}/lib"
-for dep in libicudata.so.[0-9][0-9] libicui18n.so.[0-9][0-9] libicuuc.so.[0-9][0-9] libbz2.so.[0-9] liblcms2.so.[0-9] libcairo.so.[0-9]; do
-    CORE_DEPENDS="$CORE_DEPENDS ${SDK_HOME}/lib/$dep"
+for dep in {libicudata.so.*,libicui18n.so.*,libicuuc.so.*,libbz2.so.*,liblcms2.so.*,libcairo.so.*,libOpenColorIO.so.*}; do
+    if [ -f "$dep" ]; then
+        CORE_DEPENDS="$CORE_DEPENDS ${SDK_HOME}/lib/$dep"
+    fi
 done
 popd
 
