@@ -2,8 +2,8 @@
 
 # Install harbuzz
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/harfbuzz.html
-HARFBUZZ_VERSION=2.4.0
-HARFBUZZ_TAR="harfbuzz-${HARFBUZZ_VERSION}.tar.bz2"
+HARFBUZZ_VERSION=2.5.1
+HARFBUZZ_TAR="harfbuzz-${HARFBUZZ_VERSION}.tar.xz"
 HARFBUZZ_SITE="https://www.freedesktop.org/software/harfbuzz/release"
 if build_step && { force_build || { [ "${REBUILD_HARFBUZZ:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME/lib/libharfbuzz*" "$SDK_HOME/include/harfbuzz" "$SDK_HOME/lib/pkgconfig/"*harfbuzz* || true

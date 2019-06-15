@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # Install openssl
-# see http://www.linuxfromscratch.org/blfs/view/svn/postlfs/openssl10.html
-#OPENSSL_VERSION=1.1.1b # defined in openssl-installer.sh
+# see openssl-installer.sh
 OPENSSL_TAR="openssl-${OPENSSL_VERSION}.tar.gz" # always a new version around the corner
 OPENSSL_SITE="https://www.openssl.org/source"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/openssl.pc" ] || [ "$(env PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig" pkg-config --modversion openssl)" != "$OPENSSL_VERSION" ]; }; }; then
