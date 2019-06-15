@@ -661,6 +661,8 @@ RUN rm -rf /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK
 FROM $DOCKER_BASE
 COPY --from=intermediate /opt/Natron-sdk /opt/Natron-sdk
 #COPY --from=intermediate /home/src /opt/Natron-sdk/src
+## retrieve sources using:
+## docker run natrongithub/natron-sdk:latest tar -C /opt/Natron-sdk -cf - src | tar xvf -
 EOF
     if [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
         cat <<EOF
