@@ -27,7 +27,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/poppler-glib
                      -DENABLE_QT5=OFF
                      -DENABLE_QT4=OFF
                      -DENABLE_GTK_DOC=OFF )
-    cmake .. -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DENABLE_XPDF_HEADERS=ON "${natron_options[@]}"
+    cmake .. -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DENABLE_XPDF_HEADERS=ON -DENABLE_UNSTABLE_API_ABI_HEADERS=ON "${natron_options[@]}"
     make -j${MKJOBS}
     make install
     popd

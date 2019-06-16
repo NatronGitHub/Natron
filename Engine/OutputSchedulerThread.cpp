@@ -3190,7 +3190,7 @@ RenderEngine::waitForEngineToQuit_main_thread(bool allowRestart)
     assert( QThread::currentThread() == qApp->thread() );
     assert(!_imp->engineWatcher);
     _imp->engineWatcher.reset( new RenderEngineWatcher(this) );
-    QObject::connect( _imp->engineWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onWatcherEngineQuitEmitted()) );
+    QObject::connect( _imp->engineWatcher.get(), SIGNAL(taskFinished(int,GenericWatcherCallerArgsPtr)), this, SLOT(onWatcherEngineQuitEmitted()) );
     _imp->engineWatcher->scheduleBlockingTask(allowRestart ? RenderEngineWatcher::eBlockingTaskWaitForQuitAllowRestart : RenderEngineWatcher::eBlockingTaskWaitForQuitDisallowRestart);
 }
 
@@ -3296,7 +3296,7 @@ RenderEngine::waitForAbortToComplete_main_thread()
     assert( QThread::currentThread() == qApp->thread() );
     assert(!_imp->engineWatcher);
     _imp->engineWatcher.reset( new RenderEngineWatcher(this) );
-    QObject::connect( _imp->engineWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onWatcherEngineAbortedEmitted()) );
+    QObject::connect( _imp->engineWatcher.get(), SIGNAL(taskFinished(int,GenericWatcherCallerArgsPtr)), this, SLOT(onWatcherEngineAbortedEmitted()) );
     _imp->engineWatcher->scheduleBlockingTask(RenderEngineWatcher::eBlockingTaskWaitForAbort);
 }
 
