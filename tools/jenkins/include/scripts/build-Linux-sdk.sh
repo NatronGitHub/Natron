@@ -484,6 +484,7 @@ checkpoint
 
 build mysqlclient # (MySQL/MariaDB connector for python 2/3)
 build psycopg2 # (PostgreSQL connector for python 2/3)
+build sphinx # (Python documentation generator)
 build sphinx-rtd-theme # (Read the Docs theme for Sphinx)
 
 checkpoint
