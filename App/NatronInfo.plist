@@ -10,8 +10,10 @@
 	<string>@ICON@</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
-	<key>CFBundleGetInfoString</key>
-	<string>@SHORT_VERSION@</string>
+	<key>CFBundleShortVersionString</key>
+	<string>@FULL_VERSION@</string>
+	<key>CFBundleVersion</key>
+	<string>@FULL_VERSION@</string>	
 	<key>CFBundleSignature</key>
 	<string>@TYPEINFO@</string>
 	<key>CFBundleName</key>
