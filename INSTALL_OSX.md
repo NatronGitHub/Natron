@@ -57,7 +57,7 @@ Now, if you want to use turbojpeg instead of jpeg:
     
 And finally install the required packages:
 
-    sudo port -v -N install qt4-mac boost cairo expat gsed py27-pyside py27-sphinx
+    sudo port -v -N install qt4-mac boost cairo expat gsed py27-pyside py27-sphinx py27-sphinx_rtd_theme
     sudo ln -s python2.7-config /opt/local/bin/python2-config
 
 Create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
