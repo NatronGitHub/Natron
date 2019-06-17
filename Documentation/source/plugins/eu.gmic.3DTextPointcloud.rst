@@ -1,0 +1,68 @@
+.. _eu.gmic.3DTextPointcloud:
+
+G’MIC 3D Text Pointcloud node
+=============================
+
+*This documentation is for version 1.0 of G’MIC 3D Text Pointcloud.*
+
+Description
+-----------
+
+Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
+
+Inputs
+------
+
+====== =========== ========
+Input  Description Optional
+====== =========== ========
+Source             No
+====== =========== ========
+
+Controls
+--------
+
+.. tabularcolumns:: |>{\raggedright}p{0.2\columnwidth}|>{\raggedright}p{0.06\columnwidth}|>{\raggedright}p{0.07\columnwidth}|p{0.63\columnwidth}|
+
+.. cssclass:: longtable
+
+========================================== ======= ================================= =====================
+Parameter / script name                    Type    Default                           Function
+========================================== ======= ================================= =====================
+Frames / ``Frames``                        Integer 64                                 
+1st Text / ``p1st_Text``                   String  G’MIC                              
+2nd Text / ``p2nd_Text``                   String  Rocks!                             
+Smoothness / ``Smoothness``                Double  1                                  
+Color / ``Color``                          Color   r: 0.784314 g: 0.862745 b: 1 a: 1  
+Background / ``Background``                Color   r: 1 g: 1 b: 1 a: 1                
+X-Shado / ``XShado``                       Double  2                                  
+Y-Shado / ``YShado``                       Double  2                                  
+Shadow Smoothness / ``Shadow_Smoothness``  Double  1                                  
+Stationary Frames / ``Stationary_Frames``  Integer 19                                 
+Output Layer / ``Output_Layer``            Choice  Layer 0                           .  
+                                                                                     . **Merged**
+                                                                                     . **Layer 0**
+                                                                                     . **Layer -1**
+                                                                                     . **Layer -2**
+                                                                                     . **Layer -3**
+                                                                                     . **Layer -4**
+                                                                                     . **Layer -5**
+                                                                                     . **Layer -6**
+                                                                                     . **Layer -7**
+                                                                                     . **Layer -8**
+                                                                                     . **Layer -9**
+Resize Mode / ``Resize_Mode``              Choice  Dynamic                           .  
+                                                                                     . **Fixed (Inplace)**
+                                                                                     . **Dynamic**
+                                                                                     . **Downsample 1/2**
+                                                                                     . **Downsample 1/4**
+                                                                                     . **Downsample 1/8**
+                                                                                     . **Downsample 1/16**
+Ignore Alpha / ``Ignore_Alpha``            Boolean Off                                
+Preview/Draft Mode / ``PreviewDraft_Mode`` Boolean Off                                
+Log Verbosity / ``Log_Verbosity``          Choice  Off                               .  
+                                                                                     . **Off**
+                                                                                     . **Level 1**
+                                                                                     . **Level 2**
+                                                                                     . **Level 3**
+========================================== ======= ================================= =====================
