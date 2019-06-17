@@ -13,15 +13,13 @@ Blur the image where there are edges in the alpha/matte channel.
 Inputs
 ------
 
-+--------+-------------+----------+
-| Input  | Description | Optional |
-+========+=============+==========+
-| Source |             | No       |
-+--------+-------------+----------+
-| Mask   |             | Yes      |
-+--------+-------------+----------+
-| Matte  |             | Yes      |
-+--------+-------------+----------+
+====== =========== ========
+Input  Description Optional
+====== =========== ========
+Source             No
+Mask               Yes
+Matte              Yes
+====== =========== ========
 
 Controls
 --------
@@ -30,38 +28,27 @@ Controls
 
 .. cssclass:: longtable
 
-+---------------------------------------+---------+----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Parameter / script name               | Type    | Default  | Function                                                                                                                                                  |
-+=======================================+=========+==========+===========================================================================================================================================================+
-| Convert to Group / ``convertToGroup`` | Button  |          | Converts this node to a Group: the internal node-graph and the user parameters will become editable                                                       |
-+---------------------------------------+---------+----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------+
-| R / ``Blur1NatronOfxParamProcessR``   | Boolean | On       |                                                                                                                                                           |
-+---------------------------------------+---------+----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------+
-| G / ``Blur1NatronOfxParamProcessG``   | Boolean | On       |                                                                                                                                                           |
-+---------------------------------------+---------+----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------+
-| B / ``Blur1NatronOfxParamProcessB``   | Boolean | On       |                                                                                                                                                           |
-+---------------------------------------+---------+----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------+
-| A / ``Blur1NatronOfxParamProcessA``   | Boolean | On       |                                                                                                                                                           |
-+---------------------------------------+---------+----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------+
-| External Matte / ``externalMatte``    | Boolean | Off      | Use the edges from the Matte input instead of the alpha channel of the source image.                                                                      |
-+---------------------------------------+---------+----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Size / ``size``                       | Double  | 3        |                                                                                                                                                           |
-+---------------------------------------+---------+----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Filter / ``filter``                   | Choice  | Gaussian | |                                                                                                                                                         |
-|                                       |         |          | | **Simple (simple)**: Gradient is estimated by centered finite differences.                                                                              |
-|                                       |         |          | | **Sobel (sobel)**: Compute gradient using the Sobel 3x3 filter.                                                                                         |
-|                                       |         |          | | **Rotation Invariant (rotinvariant)**: Compute gradient using a 3x3 rotation-invariant filter.                                                          |
-|                                       |         |          | | **Quasi-Gaussian (quasigaussian)**: Quasi-Gaussian filter (0-order recursive Deriche filter, faster) - IIR (infinite support / impulsional response).   |
-|                                       |         |          | | **Gaussian (gaussian)**: Gaussian filter (Van Vliet recursive Gaussian filter, more isotropic, slower) - IIR (infinite support / impulsional response). |
-|                                       |         |          | | **Box (box)**: Box filter - FIR (finite support / impulsional response).                                                                                |
-|                                       |         |          | | **Triangle (triangle)**: Triangle/tent filter - FIR (finite support / impulsional response).                                                            |
-|                                       |         |          | | **Quadratic (quadratic)**: Quadratic filter - FIR (finite support / impulsional response).                                                              |
-+---------------------------------------+---------+----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Crop To Format / ``cropToFormat``     | Boolean | On       |                                                                                                                                                           |
-+---------------------------------------+---------+----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Edge Mult / ``edgeMult``              | Double  | 2        | Sharpness of the borders of the blur area.                                                                                                                |
-+---------------------------------------+---------+----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Invert Mask / ``Merge1maskInvert``    | Boolean | Off      |                                                                                                                                                           |
-+---------------------------------------+---------+----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Mix / ``Blur1mix``                    | Double  | 1        |                                                                                                                                                           |
-+---------------------------------------+---------+----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------+
+===================================== ======= ======== =========================================================================================================================================================
+Parameter / script name               Type    Default  Function
+===================================== ======= ======== =========================================================================================================================================================
+Convert to Group / ``convertToGroup`` Button           Converts this node to a Group: the internal node-graph and the user parameters will become editable
+R / ``Blur1NatronOfxParamProcessR``   Boolean On        
+G / ``Blur1NatronOfxParamProcessG``   Boolean On        
+B / ``Blur1NatronOfxParamProcessB``   Boolean On        
+A / ``Blur1NatronOfxParamProcessA``   Boolean On        
+External Matte / ``externalMatte``    Boolean Off      Use the edges from the Matte input instead of the alpha channel of the source image.
+Size / ``size``                       Double  3         
+Filter / ``filter``                   Choice  Gaussian .  
+                                                       . **Simple (simple)**: Gradient is estimated by centered finite differences.
+                                                       . **Sobel (sobel)**: Compute gradient using the Sobel 3x3 filter.
+                                                       . **Rotation Invariant (rotinvariant)**: Compute gradient using a 3x3 rotation-invariant filter.
+                                                       . **Quasi-Gaussian (quasigaussian)**: Quasi-Gaussian filter (0-order recursive Deriche filter, faster) - IIR (infinite support / impulsional response).
+                                                       . **Gaussian (gaussian)**: Gaussian filter (Van Vliet recursive Gaussian filter, more isotropic, slower) - IIR (infinite support / impulsional response).
+                                                       . **Box (box)**: Box filter - FIR (finite support / impulsional response).
+                                                       . **Triangle (triangle)**: Triangle/tent filter - FIR (finite support / impulsional response).
+                                                       . **Quadratic (quadratic)**: Quadratic filter - FIR (finite support / impulsional response).
+Crop To Format / ``cropToFormat``     Boolean On        
+Edge Mult / ``edgeMult``              Double  2        Sharpness of the borders of the blur area.
+Invert Mask / ``Merge1maskInvert``    Boolean Off       
+Mix / ``Blur1mix``                    Double  1         
+===================================== ======= ======== =========================================================================================================================================================

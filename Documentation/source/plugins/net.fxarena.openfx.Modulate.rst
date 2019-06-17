@@ -15,13 +15,12 @@ Modulate color node.
 Inputs
 ------
 
-+--------+-------------+----------+
-| Input  | Description | Optional |
-+========+=============+==========+
-| Source |             | No       |
-+--------+-------------+----------+
-| Mask   |             | Yes      |
-+--------+-------------+----------+
+====== =========== ========
+Input  Description Optional
+====== =========== ========
+Source             No
+Mask               Yes
+====== =========== ========
 
 Controls
 --------
@@ -30,19 +29,15 @@ Controls
 
 .. cssclass:: longtable
 
-+-----------------------------+---------+---------+-------------------------------------------------------------------------------------------------------+
-| Parameter / script name     | Type    | Default | Function                                                                                              |
-+=============================+=========+=========+=======================================================================================================+
-| Brightness / ``brightness`` | Double  | 100     | Adjust brightness (%)                                                                                 |
-+-----------------------------+---------+---------+-------------------------------------------------------------------------------------------------------+
-| Saturation / ``saturation`` | Double  | 100     | Adjust saturation (%)                                                                                 |
-+-----------------------------+---------+---------+-------------------------------------------------------------------------------------------------------+
-| Hue / ``hue``               | Double  | 100     | Adjust hue (%)                                                                                        |
-+-----------------------------+---------+---------+-------------------------------------------------------------------------------------------------------+
-| OpenMP / ``openmp``         | Boolean | On      | Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host. |
-+-----------------------------+---------+---------+-------------------------------------------------------------------------------------------------------+
-| OpenCL / ``opencl``         | Boolean | Off     | Enable/Disable OpenCL. This will enable the plugin to use supported GPU(s) for better performance.    |
-+-----------------------------+---------+---------+-------------------------------------------------------------------------------------------------------+
+=========================== ======= ======= =====================================================================================================
+Parameter / script name     Type    Default Function
+=========================== ======= ======= =====================================================================================================
+Brightness / ``brightness`` Double  100     Adjust brightness (%)
+Saturation / ``saturation`` Double  100     Adjust saturation (%)
+Hue / ``hue``               Double  100     Adjust hue (%)
+OpenMP / ``openmp``         Boolean On      Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.
+OpenCL / ``opencl``         Boolean Off     Enable/Disable OpenCL. This will enable the plugin to use supported GPU(s) for better performance.
+=========================== ======= ======= =====================================================================================================
 
 .. |pluginIcon| image:: net.fxarena.openfx.Modulate.png
    :width: 10.0%

@@ -15,13 +15,12 @@ Arc Distort transform node.
 Inputs
 ------
 
-+--------+-------------+----------+
-| Input  | Description | Optional |
-+========+=============+==========+
-| Source |             | No       |
-+--------+-------------+----------+
-| Mask   |             | Yes      |
-+--------+-------------+----------+
+====== =========== ========
+Input  Description Optional
+====== =========== ========
+Source             No
+Mask               Yes
+====== =========== ========
 
 Controls
 --------
@@ -30,41 +29,34 @@ Controls
 
 .. cssclass:: longtable
 
-+----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
-| Parameter / script name    | Type    | Default     | Function                                                                                              |
-+============================+=========+=============+=======================================================================================================+
-| Angle / ``angle``          | Double  | 60          | Arc angle                                                                                             |
-+----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
-| Rotate / ``rotate``        | Double  | 0           | Arc rotate                                                                                            |
-+----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
-| Top radius / ``top``       | Double  | 0           | Arc top radius                                                                                        |
-+----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
-| Bottom radius / ``bottom`` | Double  | 0           | Arc bottom radius                                                                                     |
-+----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
-| Flip / ``flip``            | Boolean | Off         | Flip image                                                                                            |
-+----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
-| Matte / ``matte``          | Boolean | Off         | Merge Alpha before applying effect                                                                    |
-+----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
-| Virtual Pixel / ``pixel``  | Choice  | Transparent | | Virtual Pixel Method                                                                                |
-|                            |         |             | | **Undefined**                                                                                       |
-|                            |         |             | | **Background**                                                                                      |
-|                            |         |             | | **Black**                                                                                           |
-|                            |         |             | | **CheckerTile**                                                                                     |
-|                            |         |             | | **Dither**                                                                                          |
-|                            |         |             | | **Edge**                                                                                            |
-|                            |         |             | | **Gray**                                                                                            |
-|                            |         |             | | **HorizontalTile**                                                                                  |
-|                            |         |             | | **HorizontalTileEdge**                                                                              |
-|                            |         |             | | **Mirror**                                                                                          |
-|                            |         |             | | **Random**                                                                                          |
-|                            |         |             | | **Tile**                                                                                            |
-|                            |         |             | | **Transparent**                                                                                     |
-|                            |         |             | | **VerticalTile**                                                                                    |
-|                            |         |             | | **VerticalTileEdge**                                                                                |
-|                            |         |             | | **White**                                                                                           |
-+----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
-| OpenMP / ``openmp``        | Boolean | Off         | Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host. |
-+----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
+========================== ======= =========== =====================================================================================================
+Parameter / script name    Type    Default     Function
+========================== ======= =========== =====================================================================================================
+Angle / ``angle``          Double  60          Arc angle
+Rotate / ``rotate``        Double  0           Arc rotate
+Top radius / ``top``       Double  0           Arc top radius
+Bottom radius / ``bottom`` Double  0           Arc bottom radius
+Flip / ``flip``            Boolean Off         Flip image
+Matte / ``matte``          Boolean Off         Merge Alpha before applying effect
+Virtual Pixel / ``pixel``  Choice  Transparent . Virtual Pixel Method
+                                               . **Undefined**
+                                               . **Background**
+                                               . **Black**
+                                               . **CheckerTile**
+                                               . **Dither**
+                                               . **Edge**
+                                               . **Gray**
+                                               . **HorizontalTile**
+                                               . **HorizontalTileEdge**
+                                               . **Mirror**
+                                               . **Random**
+                                               . **Tile**
+                                               . **Transparent**
+                                               . **VerticalTile**
+                                               . **VerticalTileEdge**
+                                               . **White**
+OpenMP / ``openmp``        Boolean Off         Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.
+========================== ======= =========== =====================================================================================================
 
 .. |pluginIcon| image:: net.fxarena.openfx.Arc.png
    :width: 10.0%

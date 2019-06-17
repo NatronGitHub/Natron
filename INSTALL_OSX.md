@@ -57,7 +57,7 @@ Now, if you want to use turbojpeg instead of jpeg:
     
 And finally install the required packages:
 
-    sudo port -v -N install qt4-mac boost cairo expat gsed py27-pyside py27-sphinx py27-sphinx_rtd_theme
+    sudo port -v -N install qt4-mac boost cairo expat gsed py27-pyside pandoc py27-sphinx py27-sphinx_rtd_theme
     sudo ln -s python2.7-config /opt/local/bin/python2-config
 
 Create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
@@ -121,8 +121,8 @@ Install libraries:
 
     brew tap homebrew/python
     brew tap homebrew/science
-    brew install expat cairo gnu-sed
-    brew install --build-from-source qt --with-mysql (on 
+    brew install expat cairo gnu-sed pandoc sphinx-doc
+    brew install --build-from-source qt --with-mysql
 
 On macOS Sierra, install the sierra-compatible recipe (to be used only in Sierra, since this builds Qt from sources and takes a while):
 

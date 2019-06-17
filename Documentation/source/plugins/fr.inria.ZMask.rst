@@ -13,11 +13,11 @@ Creates a mask from a depth buffer by specifying the center value and the amplit
 Inputs
 ------
 
-+--------+-------------+----------+
-| Input  | Description | Optional |
-+========+=============+==========+
-| Source |             | No       |
-+--------+-------------+----------+
+====== =========== ========
+Input  Description Optional
+====== =========== ========
+Source             No
+====== =========== ========
 
 Controls
 --------
@@ -26,32 +26,23 @@ Controls
 
 .. cssclass:: longtable
 
-+---------------------------------------+---------+-------------------------+-----------------------------------------------------------------------------------------------------+
-| Parameter / script name               | Type    | Default                 | Function                                                                                            |
-+=======================================+=========+=========================+=====================================================================================================+
-| Convert to Group / ``convertToGroup`` | Button  |                         | Converts this node to a Group: the internal node-graph and the user parameters will become editable |
-+---------------------------------------+---------+-------------------------+-----------------------------------------------------------------------------------------------------+
-| Z picking / ``zPicking``              | Boolean | Off                     |                                                                                                     |
-+---------------------------------------+---------+-------------------------+-----------------------------------------------------------------------------------------------------+
-| Center Value / ``centerValue``        | Color   | r: 1 g: 1 b: 1          |                                                                                                     |
-+---------------------------------------+---------+-------------------------+-----------------------------------------------------------------------------------------------------+
-| Tightness / ``tightness``             | Color   | r: 1 g: 1 b: 1 a: 1     |                                                                                                     |
-+---------------------------------------+---------+-------------------------+-----------------------------------------------------------------------------------------------------+
-| Contrast / ``contrast``               | Color   | r: 1 g: 1 b: 1 a: 1     |                                                                                                     |
-+---------------------------------------+---------+-------------------------+-----------------------------------------------------------------------------------------------------+
-| Offset / ``offset``                   | Color   | r: 0 g: 0 b: 0 a: 0     |                                                                                                     |
-+---------------------------------------+---------+-------------------------+-----------------------------------------------------------------------------------------------------+
-| Gamma / ``gamma``                     | Color   | r: 1 g: 1 b: 1 a: 1     |                                                                                                     |
-+---------------------------------------+---------+-------------------------+-----------------------------------------------------------------------------------------------------+
-| Invert Gradient / ``invertGradient``  | Boolean | Off                     |                                                                                                     |
-+---------------------------------------+---------+-------------------------+-----------------------------------------------------------------------------------------------------+
-| Source Layer / ``Source_channels``    | Choice  |                         | |                                                                                                   |
-|                                       |         |                         | | **None**                                                                                          |
-+---------------------------------------+---------+-------------------------+-----------------------------------------------------------------------------------------------------+
-| Output Layer / ``channels``           | Choice  | DisparityLeft.Disparity | |                                                                                                   |
-|                                       |         |                         | | **Color.RGBA (uk.co.thefoundry.OfxImagePlaneColour)**                                             |
-|                                       |         |                         | | **DisparityLeft.Disparity (uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft)**                   |
-|                                       |         |                         | | **DisparityRight.Disparity (uk.co.thefoundry.OfxImagePlaneStereoDisparityRight)**                 |
-|                                       |         |                         | | **Backward.Motion (uk.co.thefoundry.OfxImagePlaneBackMotionVector)**                              |
-|                                       |         |                         | | **Forward.Motion (uk.co.thefoundry.OfxImagePlaneForwardMotionVector)**                            |
-+---------------------------------------+---------+-------------------------+-----------------------------------------------------------------------------------------------------+
+===================================== ======= ======================= ===================================================================================================
+Parameter / script name               Type    Default                 Function
+===================================== ======= ======================= ===================================================================================================
+Convert to Group / ``convertToGroup`` Button                          Converts this node to a Group: the internal node-graph and the user parameters will become editable
+Z picking / ``zPicking``              Boolean Off                      
+Center Value / ``centerValue``        Color   r: 1 g: 1 b: 1           
+Tightness / ``tightness``             Color   r: 1 g: 1 b: 1 a: 1      
+Contrast / ``contrast``               Color   r: 1 g: 1 b: 1 a: 1      
+Offset / ``offset``                   Color   r: 0 g: 0 b: 0 a: 0      
+Gamma / ``gamma``                     Color   r: 1 g: 1 b: 1 a: 1      
+Invert Gradient / ``invertGradient``  Boolean Off                      
+Source Layer / ``Source_channels``    Choice                          .  
+                                                                      . **None**
+Output Layer / ``channels``           Choice  DisparityLeft.Disparity .  
+                                                                      . **Color.RGBA (uk.co.thefoundry.OfxImagePlaneColour)**
+                                                                      . **DisparityLeft.Disparity (uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft)**
+                                                                      . **DisparityRight.Disparity (uk.co.thefoundry.OfxImagePlaneStereoDisparityRight)**
+                                                                      . **Backward.Motion (uk.co.thefoundry.OfxImagePlaneBackMotionVector)**
+                                                                      . **Forward.Motion (uk.co.thefoundry.OfxImagePlaneForwardMotionVector)**
+===================================== ======= ======================= ===================================================================================================

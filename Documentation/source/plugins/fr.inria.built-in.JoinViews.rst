@@ -13,11 +13,11 @@ Take in input separate views to make a multiple view stream output. The first vi
 Inputs
 ------
 
-+-------+-------------+----------+
-| Input | Description | Optional |
-+=======+=============+==========+
-| Main  |             | Yes      |
-+-------+-------------+----------+
+===== =========== ========
+Input Description Optional
+===== =========== ========
+Main              Yes
+===== =========== ========
 
 Controls
 --------
@@ -26,7 +26,7 @@ Controls
 
 .. cssclass:: longtable
 
-+-------------------------+------+---------+----------+
-| Parameter / script name | Type | Default | Function |
-+=========================+======+=========+==========+
-+-------------------------+------+---------+----------+
+======================= ==== ======= ========
+Parameter / script name Type Default Function
+======================= ==== ======= ========
+======================= ==== ======= ========

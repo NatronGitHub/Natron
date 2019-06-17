@@ -19,13 +19,12 @@ Lin to Log conversion: xLog = (logRef + log10(max( xLin, 1e-10 ) / linRef)*nGamm
 Inputs
 ------
 
-+--------+-------------+----------+
-| Input  | Description | Optional |
-+========+=============+==========+
-| Source |             | No       |
-+--------+-------------+----------+
-| Mask   |             | Yes      |
-+--------+-------------+----------+
+====== =========== ========
+Input  Description Optional
+====== =========== ========
+Source             No
+Mask               Yes
+====== =========== ========
 
 Controls
 --------
@@ -34,24 +33,17 @@ Controls
 
 .. cssclass:: longtable
 
-+-------------------------------+---------+----------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| Parameter / script name       | Type    | Default                    | Function                                                                                                                                    |
-+===============================+=========+============================+=============================================================================================================================================+
-| Operation / ``operation``     | Choice  | Log to Lin                 | | The operation to perform.                                                                                                                 |
-|                               |         |                            | | **Log to Lin (log2lin)**: Convert the input from logarithmic to linear colorspace (usually after a Read node).                            |
-|                               |         |                            | | **Lin to Log (lin2log)**: Convert the input from linear to logarithmic colorspace (usually before a Write node).                          |
-+-------------------------------+---------+----------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| Linear Reference / ``linRef`` | Color   | r: 0.18 g: 0.18 b: 0.18    | Linear value of the reference gray point. Set this to the linear value that corresponds with the log reference value.                       |
-+-------------------------------+---------+----------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| Log Reference / ``logRef``    | Color   | r: 445 g: 445 b: 445       | Log value of the reference gray point. Set this to the log value that corresponds with the lin reference value.                             |
-+-------------------------------+---------+----------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| Negative Gamma / ``nGamma``   | Color   | r: 0.6 g: 0.6 b: 0.6       | The film response gamma value.                                                                                                              |
-+-------------------------------+---------+----------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| Density / ``density``         | Color   | r: 0.002 g: 0.002 b: 0.002 | Density per code value. The change in the negative gamma for each log space code value. This is usually left to the default value of 0.002. |
-+-------------------------------+---------+----------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| (Un)premult / ``premult``     | Boolean | Off                        | Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.          |
-+-------------------------------+---------+----------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| Invert Mask / ``maskInvert``  | Boolean | Off                        | When checked, the effect is fully applied where the mask is 0.                                                                              |
-+-------------------------------+---------+----------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| Mix / ``mix``                 | Double  | 1                          | Mix factor between the original and the transformed image.                                                                                  |
-+-------------------------------+---------+----------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+============================= ======= ========================== ===========================================================================================================================================
+Parameter / script name       Type    Default                    Function
+============================= ======= ========================== ===========================================================================================================================================
+Operation / ``operation``     Choice  Log to Lin                 . The operation to perform.
+                                                                 . **Log to Lin (log2lin)**: Convert the input from logarithmic to linear colorspace (usually after a Read node).
+                                                                 . **Lin to Log (lin2log)**: Convert the input from linear to logarithmic colorspace (usually before a Write node).
+Linear Reference / ``linRef`` Color   r: 0.18 g: 0.18 b: 0.18    Linear value of the reference gray point. Set this to the linear value that corresponds with the log reference value.
+Log Reference / ``logRef``    Color   r: 445 g: 445 b: 445       Log value of the reference gray point. Set this to the log value that corresponds with the lin reference value.
+Negative Gamma / ``nGamma``   Color   r: 0.6 g: 0.6 b: 0.6       The film response gamma value.
+Density / ``density``         Color   r: 0.002 g: 0.002 b: 0.002 Density per code value. The change in the negative gamma for each log space code value. This is usually left to the default value of 0.002.
+(Un)premult / ``premult``     Boolean Off                        Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.
+Invert Mask / ``maskInvert``  Boolean Off                        When checked, the effect is fully applied where the mask is 0.
+Mix / ``mix``                 Double  1                          Mix factor between the original and the transformed image.
+============================= ======= ========================== ===========================================================================================================================================

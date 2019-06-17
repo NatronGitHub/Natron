@@ -25,13 +25,12 @@ CImg is a free, open-source library distributed under the CeCILL-C (close to the
 Inputs
 ------
 
-+--------+-------------+----------+
-| Input  | Description | Optional |
-+========+=============+==========+
-| Source |             | No       |
-+--------+-------------+----------+
-| Mask   |             | Yes      |
-+--------+-------------+----------+
+====== =========== ========
+Input  Description Optional
+====== =========== ========
+Source             No
+Mask               Yes
+====== =========== ========
 
 Controls
 --------
@@ -40,19 +39,15 @@ Controls
 
 .. cssclass:: longtable
 
-+------------------------------+---------+-----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Parameter / script name      | Type    | Default   | Function                                                                                                                                                                                                                                                              |
-+==============================+=========+===========+=======================================================================================================================================================================================================================================================================+
-| Metric / ``metric``          | Choice  | Euclidean | | Type of metric.                                                                                                                                                                                                                                                     |
-|                              |         |           | | **Chebyshev (chebyshev)**: max(abs(x-xborder),abs(y-yborder))                                                                                                                                                                                                       |
-|                              |         |           | | **Manhattan (manhattan)**: abs(x-xborder) + abs(y-yborder)                                                                                                                                                                                                          |
-|                              |         |           | | **Euclidean (euclidean)**: sqrt(sqr(x-xborder) + sqr(y-yborder))                                                                                                                                                                                                    |
-+------------------------------+---------+-----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Signed Distance / ``signed`` | Boolean | Off       | Instead of computing the distance to pixels with a value of zero, compute the signed distance to the contour between zero and non-zero pixels. On output, non-zero-valued pixels have a positive signed distance, zero-valued pixels have a negative signed distance. |
-+------------------------------+---------+-----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| (Un)premult / ``premult``    | Boolean | Off       | Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.                                                                                                                                    |
-+------------------------------+---------+-----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Invert Mask / ``maskInvert`` | Boolean | Off       | When checked, the effect is fully applied where the mask is 0.                                                                                                                                                                                                        |
-+------------------------------+---------+-----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Mix / ``mix``                | Double  | 1         | Mix factor between the original and the transformed image.                                                                                                                                                                                                            |
-+------------------------------+---------+-----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+============================ ======= ========= =====================================================================================================================================================================================================================================================================
+Parameter / script name      Type    Default   Function
+============================ ======= ========= =====================================================================================================================================================================================================================================================================
+Metric / ``metric``          Choice  Euclidean . Type of metric.
+                                               . **Chebyshev (chebyshev)**: max(abs(x-xborder),abs(y-yborder))
+                                               . **Manhattan (manhattan)**: abs(x-xborder) + abs(y-yborder)
+                                               . **Euclidean (euclidean)**: sqrt(sqr(x-xborder) + sqr(y-yborder))
+Signed Distance / ``signed`` Boolean Off       Instead of computing the distance to pixels with a value of zero, compute the signed distance to the contour between zero and non-zero pixels. On output, non-zero-valued pixels have a positive signed distance, zero-valued pixels have a negative signed distance.
+(Un)premult / ``premult``    Boolean Off       Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.
+Invert Mask / ``maskInvert`` Boolean Off       When checked, the effect is fully applied where the mask is 0.
+Mix / ``mix``                Double  1         Mix factor between the original and the transformed image.
+============================ ======= ========= =====================================================================================================================================================================================================================================================================

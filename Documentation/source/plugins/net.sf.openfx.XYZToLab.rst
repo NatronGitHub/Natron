@@ -13,11 +13,11 @@ Convert from CIE XYZ color space to CIE L*a*b color space. L*a*b coordinates are
 Inputs
 ------
 
-+--------+-------------+----------+
-| Input  | Description | Optional |
-+========+=============+==========+
-| Source |             | No       |
-+--------+-------------+----------+
+====== =========== ========
+Input  Description Optional
+====== =========== ========
+Source             No
+====== =========== ========
 
 Controls
 --------
@@ -26,7 +26,7 @@ Controls
 
 .. cssclass:: longtable
 
-+-------------------------+------+---------+----------+
-| Parameter / script name | Type | Default | Function |
-+=========================+======+=========+==========+
-+-------------------------+------+---------+----------+
+======================= ==== ======= ========
+Parameter / script name Type Default Function
+======================= ==== ======= ========
+======================= ==== ======= ========

@@ -48,7 +48,7 @@ Expression language
       -  ‘``i``’: current processed pixel value (i.e. value located at **(x,y,z,c)**) in the associated image, if any (**0** otherwise).
       -  ‘``iN``’: Nth channel value of current processed pixel (i.e. value located at **(x,y,z,N)**) in the associated image, if any (**0** otherwise). **‘N’** must be an integer in range **[0,9]**.
       -  ‘``R``’,‘``G``’,‘``B``’ and ‘``A``’ are equivalent to ‘``i0``’, ‘``i1``’, ‘``i2``’ and ‘``i3``’ respectively.
-      -  ‘``I``’: current vector-valued processed pixel in the associated image, if any (**0** otherwise). The number of vector components is equal to the number of image channels (e.g. **I = [ R,G,B ]** for a **RGB** image).
+      -  ‘``I``’: current vector-valued processed pixel in the associated image, if any (**0** otherwise). The number of vector components is equal to the number of image channels (e.g. **I = [ R,G,B ]** for a **RGB** image).
       -  You may add ‘``#ind``’ to any of the variable name above to retrieve the information for any numbered image **[ind]** of the list (when this makes sense). For instance ‘``ia#0``’ denotes the average value of the first image of the list).
       -  ‘``x``’: current processed column of the associated image, if any (**0** otherwise).
       -  ‘``y``’: current processed row of the associated image, if any (**0** otherwise).
@@ -57,8 +57,8 @@ Expression language
       -  ‘``t``’: thread id when an expression is evaluated with multiple threads (**0** means ‘master thread’).
       -  ‘``T``’: current time [OpenFX-only].
       -  ‘``K``’: render scale (1 means full scale, 0.5 means half scale) [OpenFX-only].
-      -  ‘``e``’: value of e, i.e. **2.71828…**
-      -  ‘``pi``’: value of pi, i.e. **3.1415926…**
+      -  ‘``e``’: value of e, i.e. \ **2.71828…**
+      -  ‘``pi``’: value of pi, i.e. \ **3.1415926…**
       -  ‘``u``’: a random value between **[0,1]**, following a uniform distribution.
       -  ‘``g``’: a random value, following a gaussian distribution of variance 1 (roughly in **[-6,6]**).
       -  ‘``interpolation``’: value of the default interpolation mode used when reading pixel values with the pixel access operators (i.e. when the interpolation argument is not explicitly specified, see below for more details on pixel access operators). Its initial default value is **0**.
@@ -78,12 +78,12 @@ Expression language
       -  Function ‘``find(A,B,_is_forward,_starting_indice)``’ returns the index where sub-vector **B** appears in vector **A**, (or **-1** if **B** is not found in **A**). Argument **A** can be also replaced by an image indice **#ind**.
       -  A **2**-dimensional vector may be seen as a complex number and used in those particular functions/operators: ‘``**``’ (complex multiplication), ‘``//``’ (complex division), ‘``^^``’ (complex exponentiation), ‘``**=``’ (complex self-multiplication), ‘``//=``’ (complex self-division), ‘``^^=``’ (complex self-exponentiation), ‘``cabs()``’ (complex modulus), ‘``carg()``’ (complex argument), ‘``cconj()``’ (complex conjugate), ‘``cexp()``’ (complex exponential) and ‘``clog()``’ (complex logarithm).
       -  A **MN**-dimensional vector may be seen as a **M** x **N** matrix and used in those particular functions/operators: ‘``*``’ (matrix-vector multiplication), ‘``det(A)``’ (determinant), ‘``diag(V)``’ (diagonal matrix from a vector), ‘``eig(A)``’ (eigenvalues/eigenvectors), ‘``eye(n)``’ (n x n identity matrix), ‘``inv(A)``’ (matrix inverse), ‘``mul(A,B,_nb_colsB)``’ (matrix-matrix multiplication), ‘``pseudoinv(A,_nb_colsA)``’, ‘``rot(u,v,w,angle)``’ (3d rotation matrix), ‘``rot(angle)``’ (2d rotation matrix), ‘``solve(A,B,_nb_colsB)``’ (least-square solver of linear system A.X = B), ‘``svd(A,_nb_colsA)``’ (singular value decomposition), ‘``trace(A)``’ (matrix trace) and ‘``transp(A,nb_colsA)``’ (matrix transpose). Argument ‘``nb_colsB``’ may be omitted if it is equal to **1**.
-      -  Specifying a vector-valued math expression as an argument of a command that operates on image values (e.g. ‘``fill``’) modifies the whole spectrum range of the processed image(s), for each spatial coordinates **(x,y,z)**. The command does not loop over the **C**-axis in this case.
+      -  Specifying a vector-valued math expression as an argument of a command that operates on image values (e.g. ‘``fill``’) modifies the whole spectrum range of the processed image(s), for each spatial coordinates **(x,y,z)**. The command does not loop over the **C**-axis in this case.
 
    -  **String manipulation:** Character strings are defined and managed as vectors objects. Dedicated functions and initializers to manage strings are
 
-      -  ``[ 'string' ]`` and ``'string'`` define a vector whose values are the ascii codes of the specified **character string** (e.g. ``'foo'`` is equal to **[ 102,111,111 ]**).
-      -  ``_'character'`` returns the (scalar) ascii code of the specified character (e.g. ``_'A'`` is equal to **65**).
+      -  ``[ 'string' ]`` and ``'string'`` define a vector whose values are the ascii codes of the specified **character string** (e.g. ``'foo'`` is equal to **[ 102,111,111 ]**).
+      -  ``_'character'`` returns the (scalar) ascii code of the specified character (e.g. ``_'A'`` is equal to **65**).
       -  A special case happens for **empty** strings: Values of both expressions ``[ '' ]`` and ``''`` are **0**.
       -  Functions ‘``lowercase()``’ and ‘``uppercase()``’ return string with all string characters lowercased or uppercased.
       -  Function ‘``stov(str,_starting_indice,_is_strict)``’ parses specified string ‘``str``’ and returns the value contained in it.
@@ -95,7 +95,7 @@ Expression language
 
       -  ‘``;``’: expression separator. The returned value is always the last encountered expression. For instance expression ‘``1;2;pi``’ is evaluated as ‘``pi``’.
       -  ‘``=``’: variable assignment. Variables in mathematical parser can only refer to numerical values (vectors or scalars). Variable names are case-sensitive. Use this operator in conjunction with ‘``;``’ to define more complex evaluable expressions, such as ‘``t=cos(x);3*t^2+2*t+1``’. These variables remain **local** to the mathematical parser and cannot be accessed outside the evaluated expression.
-      -  Variables defined in math parser may have a **constant** property, by specifying keyword ``const`` before the variable name (e.g. ``const foo = pi/4;``). The value set to such a variable must be indeed a ``constant scalar``. Constant variables allows certain types of optimizations in the math JIT compiler.
+      -  Variables defined in math parser may have a **constant** property, by specifying keyword ``const`` before the variable name (e.g. ``const foo = pi/4;``). The value set to such a variable must be indeed a ``constant scalar``. Constant variables allows certain types of optimizations in the math JIT compiler.
 
    -  The following **specific functions** are also defined:
 
@@ -107,7 +107,7 @@ Expression language
       -  ‘``i(#ind,_x,_y,_z,_c,_interpolation,_boundary_conditions)``’, ‘``j(#ind,_dx,_dy,_dz,_dc,_interpolation,_boundary_conditions)``’, ‘``i[#ind,offset,_boundary_conditions]``’ and ‘``i[offset,_boundary_conditions]``’ are similar expressions used to access pixel values for any numbered image **[ind]** of the list.
       -  ‘``I/J[offset,_boundary_conditions]``’ and ‘``I/J(#ind,_x,_y,_z,_interpolation,_boundary_conditions)``’ do the same as ‘``i/j[offset,_boundary_conditions]``’ and ‘``i/j(#ind,_x,_y,_z,_c,_interpolation,_boundary_conditions)``’ but return a vector instead of a scalar (e.g. a vector **[ R,G,B ]** for a pixel at **(a,b,c)** in a color image).
       -  ‘``sort(#ind,_is_increasing,_axis)``’ sorts the values in the specified image **[ind]**.
-      -  ‘``crop(_#ind,_x,_y,_z,_c,_dx,_dy,_dz,_dc,_boundary_conditions)``’ returns a vector whose values come from the cropped region of image **[ind]** (or from default image selected if ‘``ind``’ is not specified). Cropped region starts from point **(x,y,z,c)** and has a size of **dx x dy x dz x dc**. Arguments for coordinates and sizes can be omitted if they are not ambiguous (e.g. ‘``crop(#ind,x,y,dx,dy)``’ is a valid invokation of this function).
+      -  ‘``crop(_#ind,_x,_y,_z,_c,_dx,_dy,_dz,_dc,_boundary_conditions)``’ returns a vector whose values come from the cropped region of image **[ind]** (or from default image selected if ‘``ind``’ is not specified). Cropped region starts from point **(x,y,z,c)** and has a size of **dx x dy x dz x dc**. Arguments for coordinates and sizes can be omitted if they are not ambiguous (e.g. ‘``crop(#ind,x,y,dx,dy)``’ is a valid invokation of this function).
       -  ‘``draw(_#ind,S,x,y,z,c,dx,_dy,_dz,_dc,_opacity,_M,_max_M)``’ draws a sprite **S** in image **[ind]** (or in default image selected if ‘``ind``’ is not specified) at coordinates **(x,y,z,c)**. The size of the sprite **dx x dy x dz x dc** must be specified. You can also specify a corresponding opacity mask **M** if its size matches **S**.
       -  ‘``resize(#ind,w,_h,_d,_s,_interp,_boundary_conditions,cx,_cy,_cz,_cc)``’ resizes an image of the associated list with specified dimension and interpolation method. When using this, function, you should consider retrieving the (non-constant) image dimensions using the dynamic functions ‘``w(_#ind)``’, ‘``h(_#ind)``’, ‘``d(_#ind)``’, ‘``s(_#ind)``’, ‘``wh(_#ind)``’, ‘``whd(_#ind)``’ and ‘``whds(_#ind)``’ instead of the corresponding constant variables.
       -  ‘``if(condition,expr_then,_expr_else)``’: return value of ‘``expr_then``’ or ‘``expr_else``’, depending on the value of ‘``condition``’ **(0=false, other=true)**. ‘``expr_else``’ can be omitted in which case **0** is returned if the condition does not hold. Using the ternary operator ‘``condition?expr_then[:expr_else]``’ gives an equivalent expression. For instance, expressions ‘``if(x%10==0,255,i)``’ and ‘``x%10?i:255``’ both draw blank vertical lines on every 10th column of an image.
@@ -117,7 +117,7 @@ Expression language
       -  ‘``break()``’ and ‘``continue()``’ respectively breaks and continues the current running bloc (loop, init or main environment).
       -  ‘``date(attr,path)``’ returns the date attribute for the given ‘path’ (file or directory), with **‘attr’** being **{ 0=year \| 1=month \| 2=day \| 3=day of week \| 4=hour \| 5=minute \| 6=second }**, or a vector of those values.
       -  ’\ ``date(_attr)`` returns the specified attribute for the current (locale) date.
-      -  ‘``print(expr1,expr2,...)`` or’\ ``print(#ind)`` prints the value of the specified expressions (or image information) on the console, and returns the value of the last expression (or **nan** in case of an image). Function ‘``prints(expr)``’ also prints the string composed of the ascii characters defined by the vector-valued expression (e.g. ‘``prints('Hello')``’).
+      -  ‘``print(expr1,expr2,...)`` or’\ ``print(#ind)`` prints the value of the specified expressions (or image information) on the console, and returns the value of the last expression (or **nan** in case of an image). Function ‘``prints(expr)``’ also prints the string composed of the ascii characters defined by the vector-valued expression (e.g. ‘``prints('Hello')``’).
       -  ’\ ``debug(expression)`` prints detailed debug information about the sequence of operations done by the math parser to evaluate the expression (and returns its value).
       -  ‘``display(_X,_w,_h,_d,_s)`` or’\ ``display(#ind)`` display the contents of the vector ‘``X``’ (or specified image) and wait for user events. if no arguments are provided, a memory snapshot of the math parser environment is displayed instead.
       -  ‘``init(expression)`` and’\ ``end(expression)`` evaluates the specified expressions only once, respectively at the beginning and end of the evaluation procedure, and this, even when multiple evaluations are required (e.g. in ‘``fill init(foo=0);++foo``’).
@@ -128,8 +128,8 @@ Expression language
 
    -  **User-defined macros:**
 
-      -  Custom macro functions can be defined in a math expression, using the assignment operator ‘``=``’, e.g. ‘``foo(x,y) = cos(x + y); result = foo(1,2) + foo(2,3)``’.
-      -  Trying to override a built-in function (e.g. ‘``abs()``’) has no effect.
+      -  Custom macro functions can be defined in a math expression, using the assignment operator ‘``=``’, e.g. ‘``foo(x,y) = cos(x + y); result = foo(1,2) + foo(2,3)``’.
+      -  Trying to override a built-in function (e.g. ‘``abs()``’) has no effect.
       -  Overloading macros with different number of arguments is possible. Re-defining a previously defined macro with the same number of arguments discards its previous definition.
       -  Macro functions are indeed processed as **macros** by the mathematical evaluator. You should avoid invoking them with arguments that are themselves results of assignments or self-operations. For instance, ‘``foo(x) = x + x; z = 0; foo(++z)``’ returns **‘4’** rather than expected value **‘2’**.
       -  When substituted, macro arguments are placed inside parentheses, except if a number sign ‘``#``’ is located just before or after the argument name. For instance, expression ‘``foo(x,y) = x*y; foo(1+2,3)``’ returns **‘9’** (being substituted as ‘``(1+2)*(3)``’), while expression ‘``foo(x,y) = x#*y#; foo(1+2,3)``’ returns **‘7’** (being substituted as ‘``1+2*3``’).
@@ -147,13 +147,12 @@ Expression language
 Inputs
 ------
 
-+--------+-------------+----------+
-| Input  | Description | Optional |
-+========+=============+==========+
-| Source |             | Yes      |
-+--------+-------------+----------+
-| Mask   |             | Yes      |
-+--------+-------------+----------+
+====== =========== ========
+Input  Description Optional
+====== =========== ========
+Source             Yes
+Mask               Yes
+====== =========== ========
 
 Controls
 --------
@@ -162,19 +161,15 @@ Controls
 
 .. cssclass:: longtable
 
-+------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
-| Parameter / script name      | Type    | Default | Function                                                                                                                           |
-+==============================+=========+=========+====================================================================================================================================+
-| Expression / ``expression``  | String  | i       | G’MIC/CImg expression, see the plugin description/help, or http://gmic.eu/reference.shtml#section9                                 |
-+------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
-| Help... / ``help``           | Button  |         | Display help for writing GMIC expressions.                                                                                         |
-+------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
-| (Un)premult / ``premult``    | Boolean | Off     | Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied. |
-+------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
-| Invert Mask / ``maskInvert`` | Boolean | Off     | When checked, the effect is fully applied where the mask is 0.                                                                     |
-+------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
-| Mix / ``mix``                | Double  | 1       | Mix factor between the original and the transformed image.                                                                         |
-+------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
+============================ ======= ======= ==================================================================================================================================
+Parameter / script name      Type    Default Function
+============================ ======= ======= ==================================================================================================================================
+Expression / ``expression``  String  i       G’MIC/CImg expression, see the plugin description/help, or http://gmic.eu/reference.shtml#section9
+Help... / ``help``           Button          Display help for writing GMIC expressions.
+(Un)premult / ``premult``    Boolean Off     Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.
+Invert Mask / ``maskInvert`` Boolean Off     When checked, the effect is fully applied where the mask is 0.
+Mix / ``mix``                Double  1       Mix factor between the original and the transformed image.
+============================ ======= ======= ==================================================================================================================================
 
 .. |pluginIcon| image:: net.sf.cimg.CImgExpression.png
    :width: 10.0%

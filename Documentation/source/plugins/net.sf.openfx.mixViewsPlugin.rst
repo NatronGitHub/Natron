@@ -15,11 +15,11 @@ Mix two views together.
 Inputs
 ------
 
-+--------+-------------+----------+
-| Input  | Description | Optional |
-+========+=============+==========+
-| Source |             | No       |
-+--------+-------------+----------+
+====== =========== ========
+Input  Description Optional
+====== =========== ========
+Source             No
+====== =========== ========
 
 Controls
 --------
@@ -28,11 +28,11 @@ Controls
 
 .. cssclass:: longtable
 
-+-------------------------+--------+---------+-------------------------------+
-| Parameter / script name | Type   | Default | Function                      |
-+=========================+========+=========+===============================+
-| Mix / ``mix``           | Double | 0       | Mix factor for the right view |
-+-------------------------+--------+---------+-------------------------------+
+======================= ====== ======= =============================
+Parameter / script name Type   Default Function
+======================= ====== ======= =============================
+Mix / ``mix``           Double 0       Mix factor for the right view
+======================= ====== ======= =============================
 
 .. |pluginIcon| image:: net.sf.openfx.mixViewsPlugin.png
    :width: 10.0%

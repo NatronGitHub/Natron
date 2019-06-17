@@ -25,17 +25,14 @@ See also: http://opticalenquiry.com/nuke/index.php?title=Switch
 Inputs
 ------
 
-+-------+-------------+----------+
-| Input | Description | Optional |
-+=======+=============+==========+
-| 0     |             | Yes      |
-+-------+-------------+----------+
-| 1     |             | Yes      |
-+-------+-------------+----------+
-| 2     |             | Yes      |
-+-------+-------------+----------+
-| 3     |             | Yes      |
-+-------+-------------+----------+
+===== =========== ========
+Input Description Optional
+===== =========== ========
+0                 Yes
+1                 Yes
+2                 Yes
+3                 Yes
+===== =========== ========
 
 Controls
 --------
@@ -44,13 +41,12 @@ Controls
 
 .. cssclass:: longtable
 
-+---------------------------+---------+---------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Parameter / script name   | Type    | Default | Function                                                                                                                                                                                           |
-+===========================+=========+=========+====================================================================================================================================================================================================+
-| Which / ``which``         | Integer | 0       | The input to display. Each input is displayed at the value corresponding to the number of the input. For example, setting which to 4 displays the image from input 4.                              |
-+---------------------------+---------+---------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Automatic / ``automatic`` | Boolean | Off     | When checked, automatically switch to the first connected input with a non-empty region of definition. This can be used to recompose a single clip from effects applied to different frame ranges. |
-+---------------------------+---------+---------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+========================= ======= ======= ==================================================================================================================================================================================================
+Parameter / script name   Type    Default Function
+========================= ======= ======= ==================================================================================================================================================================================================
+Which / ``which``         Integer 0       The input to display. Each input is displayed at the value corresponding to the number of the input. For example, setting which to 4 displays the image from input 4.
+Automatic / ``automatic`` Boolean Off     When checked, automatically switch to the first connected input with a non-empty region of definition. This can be used to recompose a single clip from effects applied to different frame ranges.
+========================= ======= ======= ==================================================================================================================================================================================================
 
 .. |pluginIcon| image:: net.sf.openfx.switchPlugin.png
    :width: 10.0%

@@ -13,10 +13,10 @@ This node can only be used within a Group. It adds an input arrow to the group.
 Inputs
 ------
 
-+-------+-------------+----------+
-| Input | Description | Optional |
-+=======+=============+==========+
-+-------+-------------+----------+
+===== =========== ========
+Input Description Optional
+===== =========== ========
+===== =========== ========
 
 Controls
 --------
@@ -25,10 +25,9 @@ Controls
 
 .. cssclass:: longtable
 
-+-------------------------+---------+---------+-----------------------------------------------------------------------------------------------------------------------------------+
-| Parameter / script name | Type    | Default | Function                                                                                                                          |
-+=========================+=========+=========+===================================================================================================================================+
-| Optional / ``optional`` | Boolean | Off     | When checked, this input of the group will be optional, i.e. it will not be required that it is connected for the render to work. |
-+-------------------------+---------+---------+-----------------------------------------------------------------------------------------------------------------------------------+
-| Mask / ``isMask``       | Boolean | Off     | When checked, this input of the group will be considered as a mask. A mask is always optional.                                    |
-+-------------------------+---------+---------+-----------------------------------------------------------------------------------------------------------------------------------+
+======================= ======= ======= =================================================================================================================================
+Parameter / script name Type    Default Function
+======================= ======= ======= =================================================================================================================================
+Optional / ``optional`` Boolean Off     When checked, this input of the group will be optional, i.e. it will not be required that it is connected for the render to work.
+Mask / ``isMask``       Boolean Off     When checked, this input of the group will be considered as a mask. A mask is always optional.
+======================= ======= ======= =================================================================================================================================

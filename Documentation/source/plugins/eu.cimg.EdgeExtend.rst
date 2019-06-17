@@ -31,13 +31,12 @@ CImg is a free, open-source library distributed under the CeCILL-C (close to the
 Inputs
 ------
 
-+--------+-------------+----------+
-| Input  | Description | Optional |
-+========+=============+==========+
-| Source |             | No       |
-+--------+-------------+----------+
-| Mask   |             | Yes      |
-+--------+-------------+----------+
+====== =========== ========
+Input  Description Optional
+====== =========== ========
+Source             No
+Mask               Yes
+====== =========== ========
 
 Controls
 --------
@@ -46,32 +45,24 @@ Controls
 
 .. cssclass:: longtable
 
-+--------------------------------------------+---------+----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Parameter / script name                    | Type    | Default        | Function                                                                                                                                                                                                                                    |
-+============================================+=========+================+=============================================================================================================================================================================================================================================+
-| Premult Source / ``edgeExtendPremult``     | Boolean | Off            | Premultiply the source image by its alpha channel before processing. Do not check if the source matte is already premultiplied                                                                                                              |
-+--------------------------------------------+---------+----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Size / ``edgeExtendSize``                  | Double  | 20             | Maximum blur kernel size applied in the ExtendSlices filter. Raise to extend the edges further.                                                                                                                                             |
-+--------------------------------------------+---------+----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Slices / ``edgeExtendSlices``              | Integer | 5              | Number of blur kernels applied in the ExtendSlices filter. A count of 1 just merges the source image over the source image blurred by a kernel of size Size.                                                                                |
-+--------------------------------------------+---------+----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Unpremult Result / ``edgeExtendUnpremult`` | Boolean | Off            | Unpremultiply the result image by its alpha channel after processing.                                                                                                                                                                       |
-+--------------------------------------------+---------+----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Filter / ``filter``                        | Choice  | Quasi-Gaussian | | Bluring filter. The quasi-Gaussian filter should be appropriate in most cases. The Gaussian filter is more isotropic (its impulse response has rotational symmetry), but slower.                                                          |
-|                                            |         |                | | **Quasi-Gaussian (quasigaussian)**: Quasi-Gaussian filter (0-order recursive Deriche filter, faster) - IIR (infinite support / impulsional response).                                                                                     |
-|                                            |         |                | | **Gaussian (gaussian)**: Gaussian filter (Van Vliet recursive Gaussian filter, more isotropic, slower) - IIR (infinite support / impulsional response).                                                                                   |
-|                                            |         |                | | **Box (box)**: Box filter - FIR (finite support / impulsional response).                                                                                                                                                                  |
-|                                            |         |                | | **Triangle (triangle)**: Triangle/tent filter - FIR (finite support / impulsional response).                                                                                                                                              |
-|                                            |         |                | | **Quadratic (quadratic)**: Quadratic filter - FIR (finite support / impulsional response).                                                                                                                                                |
-+--------------------------------------------+---------+----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Expand RoD / ``expandRoD``                 | Boolean | On             | Expand the source region of definition by 1.5*size (3.6*sigma).                                                                                                                                                                             |
-+--------------------------------------------+---------+----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Crop To Format / ``cropToFormat``          | Boolean | On             | If the source is inside the format and the effect extends it outside of the format, crop it to avoid unnecessary calculations. To avoid unwanted crops, only the borders that were inside of the format in the source clip will be cropped. |
-+--------------------------------------------+---------+----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Invert Mask / ``maskInvert``               | Boolean | Off            | When checked, the effect is fully applied where the mask is 0.                                                                                                                                                                              |
-+--------------------------------------------+---------+----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Mix / ``mix``                              | Double  | 1              | Mix factor between the original and the transformed image.                                                                                                                                                                                  |
-+--------------------------------------------+---------+----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+========================================== ======= ============== ===========================================================================================================================================================================================================================================
+Parameter / script name                    Type    Default        Function
+========================================== ======= ============== ===========================================================================================================================================================================================================================================
+Premult Source / ``edgeExtendPremult``     Boolean Off            Premultiply the source image by its alpha channel before processing. Do not check if the source matte is already premultiplied
+Size / ``edgeExtendSize``                  Double  20             Maximum blur kernel size applied in the ExtendSlices filter. Raise to extend the edges further.
+Slices / ``edgeExtendSlices``              Integer 5              Number of blur kernels applied in the ExtendSlices filter. A count of 1 just merges the source image over the source image blurred by a kernel of size Size.
+Unpremult Result / ``edgeExtendUnpremult`` Boolean Off            Unpremultiply the result image by its alpha channel after processing.
+Filter / ``filter``                        Choice  Quasi-Gaussian . Bluring filter. The quasi-Gaussian filter should be appropriate in most cases. The Gaussian filter is more isotropic (its impulse response has rotational symmetry), but slower.
+                                                                  . **Quasi-Gaussian (quasigaussian)**: Quasi-Gaussian filter (0-order recursive Deriche filter, faster) - IIR (infinite support / impulsional response).
+                                                                  . **Gaussian (gaussian)**: Gaussian filter (Van Vliet recursive Gaussian filter, more isotropic, slower) - IIR (infinite support / impulsional response).
+                                                                  . **Box (box)**: Box filter - FIR (finite support / impulsional response).
+                                                                  . **Triangle (triangle)**: Triangle/tent filter - FIR (finite support / impulsional response).
+                                                                  . **Quadratic (quadratic)**: Quadratic filter - FIR (finite support / impulsional response).
+Expand RoD / ``expandRoD``                 Boolean On             Expand the source region of definition by 1.5*size (3.6*sigma).
+Crop To Format / ``cropToFormat``          Boolean On             If the source is inside the format and the effect extends it outside of the format, crop it to avoid unnecessary calculations. To avoid unwanted crops, only the borders that were inside of the format in the source clip will be cropped.
+Invert Mask / ``maskInvert``               Boolean Off            When checked, the effect is fully applied where the mask is 0.
+Mix / ``mix``                              Double  1              Mix factor between the original and the transformed image.
+========================================== ======= ============== ===========================================================================================================================================================================================================================================
 
 .. |pluginIcon| image:: eu.cimg.EdgeExtend.png
    :width: 10.0%

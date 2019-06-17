@@ -27,13 +27,12 @@ The above is the only real workflow for this node - working from the top paramet
 Inputs
 ------
 
-+--------+-------------+----------+
-| Input  | Description | Optional |
-+========+=============+==========+
-| Source |             | No       |
-+--------+-------------+----------+
-| InM    |             | Yes      |
-+--------+-------------+----------+
+====== =========== ========
+Input  Description Optional
+====== =========== ========
+Source             No
+InM                Yes
+====== =========== ========
 
 Controls
 --------
@@ -42,36 +41,28 @@ Controls
 
 .. cssclass:: longtable
 
-+---------------------------------------+---------+----------------+-----------------------------------------------------------------------------------------------------+
-| Parameter / script name               | Type    | Default        | Function                                                                                            |
-+=======================================+=========+================+=====================================================================================================+
-| Convert to Group / ``convertToGroup`` | Button  |                | Converts this node to a Group: the internal node-graph and the user parameters will become editable |
-+---------------------------------------+---------+----------------+-----------------------------------------------------------------------------------------------------+
-| Screen Type / ``screenType``          | Choice  | Blue           | |                                                                                                   |
-|                                       |         |                | | **Green**                                                                                         |
-|                                       |         |                | | **Blue**                                                                                          |
-+---------------------------------------+---------+----------------+-----------------------------------------------------------------------------------------------------+
-| Size / ``size``                       | Double  | 10             | Size of color expansion.                                                                            |
-+---------------------------------------+---------+----------------+-----------------------------------------------------------------------------------------------------+
-| Darks / ``off``                       | Color   | r: 0 g: 0 b: 0 | | adjust the color values to get the best separation between black and the screen type color.       |
-|                                       |         |                | | You want to be left with only shades of the screen color and black.                               |
-|                                       |         |                | | If a green screen is selected start by bringing down darks->green                                 |
-|                                       |         |                | | If a blue screen is selected start by bringing down darks->blue                                   |
-+---------------------------------------+---------+----------------+-----------------------------------------------------------------------------------------------------+
-| Lights / ``mult``                     | Color   | r: 1 g: 1 b: 1 | | adjust the color values to get the best separation between black and the screen type color.       |
-|                                       |         |                | | You want to be left with only shades of the screen color and black.                               |
-|                                       |         |                | | If a green screen is selected start by bringing down darks->green                                 |
-|                                       |         |                | | If a blue screen is selected start by bringing down darks->blue                                   |
-+---------------------------------------+---------+----------------+-----------------------------------------------------------------------------------------------------+
-| Erode / ``erode``                     | Double  | 0              | increase this value if you still see traces of the foreground edge color in the output              |
-+---------------------------------------+---------+----------------+-----------------------------------------------------------------------------------------------------+
-| Patch Black / ``multi``               | Double  | 0              | | Increase this to optionally remove the black from the output.                                     |
-|                                       |         |                | | This should only be used once the the above darks/lights have been set.                           |
-+---------------------------------------+---------+----------------+-----------------------------------------------------------------------------------------------------+
-| Filter / ``filt``                     | Boolean | On             |                                                                                                     |
-+---------------------------------------+---------+----------------+-----------------------------------------------------------------------------------------------------+
-| Level / ``level``                     | Double  | 1              | multiply the rgb output. Helps remove noise from main key                                           |
-+---------------------------------------+---------+----------------+-----------------------------------------------------------------------------------------------------+
+===================================== ======= ============== ===================================================================================================
+Parameter / script name               Type    Default        Function
+===================================== ======= ============== ===================================================================================================
+Convert to Group / ``convertToGroup`` Button                 Converts this node to a Group: the internal node-graph and the user parameters will become editable
+Screen Type / ``screenType``          Choice  Blue           .  
+                                                             . **Green**
+                                                             . **Blue**
+Size / ``size``                       Double  10             Size of color expansion.
+Darks / ``off``                       Color   r: 0 g: 0 b: 0 . adjust the color values to get the best separation between black and the screen type color.
+                                                             . You want to be left with only shades of the screen color and black.
+                                                             . If a green screen is selected start by bringing down darks->green
+                                                             . If a blue screen is selected start by bringing down darks->blue
+Lights / ``mult``                     Color   r: 1 g: 1 b: 1 . adjust the color values to get the best separation between black and the screen type color.
+                                                             . You want to be left with only shades of the screen color and black.
+                                                             . If a green screen is selected start by bringing down darks->green
+                                                             . If a blue screen is selected start by bringing down darks->blue
+Erode / ``erode``                     Double  0              increase this value if you still see traces of the foreground edge color in the output
+Patch Black / ``multi``               Double  0              . Increase this to optionally remove the black from the output.
+                                                             . This should only be used once the the above darks/lights have been set.
+Filter / ``filt``                     Boolean On              
+Level / ``level``                     Double  1              multiply the rgb output. Helps remove noise from main key
+===================================== ======= ============== ===================================================================================================
 
 .. |pluginIcon| image:: fr.inria.PIKColor.png
    :width: 10.0%

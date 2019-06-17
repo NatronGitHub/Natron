@@ -137,17 +137,14 @@ See also:
 Inputs
 ------
 
-+-------+-------------------------------------------------------------------------------+----------+
-| Input | Description                                                                   | Optional |
-+=======+===============================================================================+==========+
-| B     | The main input. This input is passed through when the merge node is disabled. | Yes      |
-+-------+-------------------------------------------------------------------------------+----------+
-| A     | The image sequence to merge with input B.                                     | Yes      |
-+-------+-------------------------------------------------------------------------------+----------+
-| Mask  |                                                                               | Yes      |
-+-------+-------------------------------------------------------------------------------+----------+
-| A2    |                                                                               | Yes      |
-+-------+-------------------------------------------------------------------------------+----------+
+===== ============================================================================= ========
+Input Description                                                                   Optional
+===== ============================================================================= ========
+B     The main input. This input is passed through when the merge node is disabled. Yes
+A     The image sequence to merge with input B.                                     Yes
+Mask                                                                                Yes
+A2                                                                                  Yes
+===== ============================================================================= ========
 
 Controls
 --------
@@ -156,89 +153,73 @@ Controls
 
 .. cssclass:: longtable
 
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Parameter / script name         | Type    | Default | Function                                                                                                                                                                                                                                                                       |
-+=================================+=========+=========+================================================================================================================================================================================================================================================================================+
-| Operation / ``operation``       | Choice  | over    | | The operation used to merge the input A and B images.                                                                                                                                                                                                                        |
-|                                 |         |         | | The operator formula is applied to each component: A and B represent the input component (Red, Green, Blue, or Alpha) of each input, and a and b represent the Alpha component of each input.                                                                                |
-|                                 |         |         | | If Alpha masking is checked, the output alpha is computed using a different formula (a+b - a*b).                                                                                                                                                                             |
-|                                 |         |         | | Alpha masking is always enabled for HSL modes (hue, saturation, color, luminosity).                                                                                                                                                                                          |
-|                                 |         |         | | **atop**: Ab + B(1 - a) (a.k.a. src-atop)                                                                                                                                                                                                                                    |
-|                                 |         |         | | **average**: (A + B) / 2                                                                                                                                                                                                                                                     |
-|                                 |         |         | | **color**: SetLum(A, Lum(B))                                                                                                                                                                                                                                                 |
-|                                 |         |         | | **color-burn**: darken B towards A                                                                                                                                                                                                                                           |
-|                                 |         |         | | **color-dodge**: brighten B towards A                                                                                                                                                                                                                                        |
-|                                 |         |         | | **conjoint-over**: A + B(1-a)/b, A if a > b                                                                                                                                                                                                                                  |
-|                                 |         |         | | **copy**: A (a.k.a. src)                                                                                                                                                                                                                                                     |
-|                                 |         |         | | **difference**: abs(A-B) (a.k.a. absminus)                                                                                                                                                                                                                                   |
-|                                 |         |         | | **disjoint-over**: A+B(1-a)/b, A+B if a+b < 1                                                                                                                                                                                                                                |
-|                                 |         |         | | **divide**: A/B, 0 if A < 0 and B < 0                                                                                                                                                                                                                                        |
-|                                 |         |         | | **exclusion**: A+B-2AB                                                                                                                                                                                                                                                       |
-|                                 |         |         | | **freeze**: 1-sqrt(1-A)/B                                                                                                                                                                                                                                                    |
-|                                 |         |         | | **from**: B-A (a.k.a. subtract)                                                                                                                                                                                                                                              |
-|                                 |         |         | | **geometric**: 2AB/(A+B)                                                                                                                                                                                                                                                     |
-|                                 |         |         | | **grain-extract**: B - A + 0.5                                                                                                                                                                                                                                               |
-|                                 |         |         | | **grain-merge**: B + A - 0.5                                                                                                                                                                                                                                                 |
-|                                 |         |         | | **hard-light**: multiply if A < 0.5, screen if A > 0.5                                                                                                                                                                                                                       |
-|                                 |         |         | | **hue**: SetLum(SetSat(A, Sat(B)), Lum(B))                                                                                                                                                                                                                                   |
-|                                 |         |         | | **hypot**: sqrt(A*A+B*B)                                                                                                                                                                                                                                                     |
-|                                 |         |         | | **in**: Ab (a.k.a. src-in)                                                                                                                                                                                                                                                   |
-|                                 |         |         | | **luminosity**: SetLum(B, Lum(A))                                                                                                                                                                                                                                            |
-|                                 |         |         | | **mask**: Ba (a.k.a dst-in)                                                                                                                                                                                                                                                  |
-|                                 |         |         | | **matte**: Aa + B(1-a) (unpremultiplied over)                                                                                                                                                                                                                                |
-|                                 |         |         | | **max**: max(A, B) (a.k.a. lighten only)                                                                                                                                                                                                                                     |
-|                                 |         |         | | **min**: min(A, B) (a.k.a. darken only)                                                                                                                                                                                                                                      |
-|                                 |         |         | | **minus**: A-B                                                                                                                                                                                                                                                               |
-|                                 |         |         | | **multiply**: AB, 0 if A < 0 and B < 0                                                                                                                                                                                                                                       |
-|                                 |         |         | | **out**: A(1-b) (a.k.a. src-out)                                                                                                                                                                                                                                             |
-|                                 |         |         | | **over**: A+B(1-a) (a.k.a. src-over)                                                                                                                                                                                                                                         |
-|                                 |         |         | | **overlay**: multiply if B < 0.5, screen if B > 0.5                                                                                                                                                                                                                          |
-|                                 |         |         | | **pinlight**: if B >= 0.5 then max(A, 2*B - 1), min(A, B \* 2.0 ) else                                                                                                                                                                                                       |
-|                                 |         |         | | **plus**: A+B (a.k.a. add)                                                                                                                                                                                                                                                   |
-|                                 |         |         | | **reflect**: A*A / (1 - B)                                                                                                                                                                                                                                                   |
-|                                 |         |         | | **saturation**: SetLum(SetSat(B, Sat(A)), Lum(B))                                                                                                                                                                                                                            |
-|                                 |         |         | | **screen**: A+B-AB if A or B <= 1, otherwise max(A, B)                                                                                                                                                                                                                       |
-|                                 |         |         | | **soft-light**: burn-in if A < 0.5, lighten if A > 0.5                                                                                                                                                                                                                       |
-|                                 |         |         | | **stencil**: B(1-a) (a.k.a. dst-out)                                                                                                                                                                                                                                         |
-|                                 |         |         | | **under**: A(1-b)+B (a.k.a. dst-over)                                                                                                                                                                                                                                        |
-|                                 |         |         | | **xor**: A(1-b)+B(1-a)                                                                                                                                                                                                                                                       |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Bounding Box / ``bbox``         | Choice  | Union   | | What to use to produce the output image’s bounding box.                                                                                                                                                                                                                      |
-|                                 |         |         | | **Union (union)**: Union of all connected inputs.                                                                                                                                                                                                                            |
-|                                 |         |         | | **Intersection (intersection)**: Intersection of all connected inputs.                                                                                                                                                                                                       |
-|                                 |         |         | | **A (a)**: Bounding box of input A.                                                                                                                                                                                                                                          |
-|                                 |         |         | | **B (b)**: Bounding box of input B.                                                                                                                                                                                                                                          |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Alpha masking / ``screenAlpha`` | Boolean | Off     | When enabled, the input images are unchanged where the other image has 0 alpha, and the output alpha is set to a+b - a*b. When disabled the alpha channel is processed as any other channel. Option is disabled for operations where it does not apply or makes no difference. |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| R / ``AChannelsR``              | Boolean | On      | Use red component from A input(s).                                                                                                                                                                                                                                             |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| G / ``AChannelsG``              | Boolean | On      | Use green component from A input(s).                                                                                                                                                                                                                                           |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| B / ``AChannelsB``              | Boolean | On      | Use blue component from A input(s).                                                                                                                                                                                                                                            |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| A / ``AChannelsA``              | Boolean | On      | Use alpha component from A input(s).                                                                                                                                                                                                                                           |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| R / ``BChannelsR``              | Boolean | On      | Use red component from B input.                                                                                                                                                                                                                                                |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| G / ``BChannelsG``              | Boolean | On      | Use green component from B input.                                                                                                                                                                                                                                              |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| B / ``BChannelsB``              | Boolean | On      | Use blue component from B input.                                                                                                                                                                                                                                               |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| A / ``BChannelsA``              | Boolean | On      | Use alpha component from B input.                                                                                                                                                                                                                                              |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| R / ``OutputChannelsR``         | Boolean | On      | Write red component to output.                                                                                                                                                                                                                                                 |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| G / ``OutputChannelsG``         | Boolean | On      | Write green component to output.                                                                                                                                                                                                                                               |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| B / ``OutputChannelsB``         | Boolean | On      | Write blue component to output.                                                                                                                                                                                                                                                |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| A / ``OutputChannelsA``         | Boolean | On      | Write alpha component to output.                                                                                                                                                                                                                                               |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Invert Mask / ``maskInvert``    | Boolean | Off     | When checked, the effect is fully applied where the mask is 0.                                                                                                                                                                                                                 |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Mix / ``mix``                   | Double  | 1       | Mix factor between the original and the transformed image.                                                                                                                                                                                                                     |
-+---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+=============================== ======= ======= ==============================================================================================================================================================================================================================================================================
+Parameter / script name         Type    Default Function
+=============================== ======= ======= ==============================================================================================================================================================================================================================================================================
+Operation / ``operation``       Choice  over    . The operation used to merge the input A and B images.
+                                                . The operator formula is applied to each component: A and B represent the input component (Red, Green, Blue, or Alpha) of each input, and a and b represent the Alpha component of each input.
+                                                . If Alpha masking is checked, the output alpha is computed using a different formula (a+b - a*b).
+                                                . Alpha masking is always enabled for HSL modes (hue, saturation, color, luminosity).
+                                                . **atop**: Ab + B(1 - a) (a.k.a. src-atop)
+                                                . **average**: (A + B) / 2
+                                                . **color**: SetLum(A, Lum(B))
+                                                . **color-burn**: darken B towards A
+                                                . **color-dodge**: brighten B towards A
+                                                . **conjoint-over**: A + B(1-a)/b, A if a > b
+                                                . **copy**: A (a.k.a. src)
+                                                . **difference**: abs(A-B) (a.k.a. absminus)
+                                                . **disjoint-over**: A+B(1-a)/b, A+B if a+b < 1
+                                                . **divide**: A/B, 0 if A < 0 and B < 0
+                                                . **exclusion**: A+B-2AB
+                                                . **freeze**: 1-sqrt(1-A)/B
+                                                . **from**: B-A (a.k.a. subtract)
+                                                . **geometric**: 2AB/(A+B)
+                                                . **grain-extract**: B - A + 0.5
+                                                . **grain-merge**: B + A - 0.5
+                                                . **hard-light**: multiply if A < 0.5, screen if A > 0.5
+                                                . **hue**: SetLum(SetSat(A, Sat(B)), Lum(B))
+                                                . **hypot**: sqrt(A*A+B*B)
+                                                . **in**: Ab (a.k.a. src-in)
+                                                . **luminosity**: SetLum(B, Lum(A))
+                                                . **mask**: Ba (a.k.a dst-in)
+                                                . **matte**: Aa + B(1-a) (unpremultiplied over)
+                                                . **max**: max(A, B) (a.k.a. lighten only)
+                                                . **min**: min(A, B) (a.k.a. darken only)
+                                                . **minus**: A-B
+                                                . **multiply**: AB, 0 if A < 0 and B < 0
+                                                . **out**: A(1-b) (a.k.a. src-out)
+                                                . **over**: A+B(1-a) (a.k.a. src-over)
+                                                . **overlay**: multiply if B < 0.5, screen if B > 0.5
+                                                . **pinlight**: if B >= 0.5 then max(A, 2*B - 1), min(A, B \* 2.0 ) else
+                                                . **plus**: A+B (a.k.a. add)
+                                                . **reflect**: A*A / (1 - B)
+                                                . **saturation**: SetLum(SetSat(B, Sat(A)), Lum(B))
+                                                . **screen**: A+B-AB if A or B <= 1, otherwise max(A, B)
+                                                . **soft-light**: burn-in if A < 0.5, lighten if A > 0.5
+                                                . **stencil**: B(1-a) (a.k.a. dst-out)
+                                                . **under**: A(1-b)+B (a.k.a. dst-over)
+                                                . **xor**: A(1-b)+B(1-a)
+Bounding Box / ``bbox``         Choice  Union   . What to use to produce the output image’s bounding box.
+                                                . **Union (union)**: Union of all connected inputs.
+                                                . **Intersection (intersection)**: Intersection of all connected inputs.
+                                                . **A (a)**: Bounding box of input A.
+                                                . **B (b)**: Bounding box of input B.
+Alpha masking / ``screenAlpha`` Boolean Off     When enabled, the input images are unchanged where the other image has 0 alpha, and the output alpha is set to a+b - a*b. When disabled the alpha channel is processed as any other channel. Option is disabled for operations where it does not apply or makes no difference.
+R / ``AChannelsR``              Boolean On      Use red component from A input(s).
+G / ``AChannelsG``              Boolean On      Use green component from A input(s).
+B / ``AChannelsB``              Boolean On      Use blue component from A input(s).
+A / ``AChannelsA``              Boolean On      Use alpha component from A input(s).
+R / ``BChannelsR``              Boolean On      Use red component from B input.
+G / ``BChannelsG``              Boolean On      Use green component from B input.
+B / ``BChannelsB``              Boolean On      Use blue component from B input.
+A / ``BChannelsA``              Boolean On      Use alpha component from B input.
+R / ``OutputChannelsR``         Boolean On      Write red component to output.
+G / ``OutputChannelsG``         Boolean On      Write green component to output.
+B / ``OutputChannelsB``         Boolean On      Write blue component to output.
+A / ``OutputChannelsA``         Boolean On      Write alpha component to output.
+Invert Mask / ``maskInvert``    Boolean Off     When checked, the effect is fully applied where the mask is 0.
+Mix / ``mix``                   Double  1       Mix factor between the original and the transformed image.
+=============================== ======= ======= ==============================================================================================================================================================================================================================================================================
 
 .. |pluginIcon| image:: net.sf.openfx.MergePlugin.png
    :width: 10.0%

@@ -15,11 +15,11 @@ Remap Z-Depth pass according to a close limit value and a far limit
 Inputs
 ------
 
-+--------+-------------+----------+
-| Input  | Description | Optional |
-+========+=============+==========+
-| Source |             | No       |
-+--------+-------------+----------+
+====== =========== ========
+Input  Description Optional
+====== =========== ========
+Source             No
+====== =========== ========
 
 Controls
 --------
@@ -28,31 +28,24 @@ Controls
 
 .. cssclass:: longtable
 
-+---------------------------------------+---------+-----------------------------+-----------------------------------------------------------------------------------------------------+
-| Parameter / script name               | Type    | Default                     | Function                                                                                            |
-+=======================================+=========+=============================+=====================================================================================================+
-| Convert to Group / ``convertToGroup`` | Button  |                             | Converts this node to a Group: the internal node-graph and the user parameters will become editable |
-+---------------------------------------+---------+-----------------------------+-----------------------------------------------------------------------------------------------------+
-| Z Picking mode / ``zPicking``         | Boolean | Off                         |                                                                                                     |
-+---------------------------------------+---------+-----------------------------+-----------------------------------------------------------------------------------------------------+
-| Close Limit / ``closeLimit``          | Color   | r: 0 g: 0 b: 0 a: 0         | Define the Z value remapped to white.                                                               |
-+---------------------------------------+---------+-----------------------------+-----------------------------------------------------------------------------------------------------+
-| Far Limit / ``farLimit``              | Color   | r: 100 g: 100 b: 100 a: 100 | Define the Z value remapped to black.                                                               |
-+---------------------------------------+---------+-----------------------------+-----------------------------------------------------------------------------------------------------+
-| Gamma / ``gamma``                     | Color   | r: 1 g: 1 b: 1 a: 1         |                                                                                                     |
-+---------------------------------------+---------+-----------------------------+-----------------------------------------------------------------------------------------------------+
-| Invert Gradient / ``invertGradient``  | Boolean | Off                         |                                                                                                     |
-+---------------------------------------+---------+-----------------------------+-----------------------------------------------------------------------------------------------------+
-| Source Layer / ``Source_channels``    | Choice  |                             | |                                                                                                   |
-|                                       |         |                             | | **None**                                                                                          |
-+---------------------------------------+---------+-----------------------------+-----------------------------------------------------------------------------------------------------+
-| Output Layer / ``channels``           | Choice  | DisparityLeft.Disparity     | |                                                                                                   |
-|                                       |         |                             | | **Color.RGBA (uk.co.thefoundry.OfxImagePlaneColour)**                                             |
-|                                       |         |                             | | **DisparityLeft.Disparity (uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft)**                   |
-|                                       |         |                             | | **DisparityRight.Disparity (uk.co.thefoundry.OfxImagePlaneStereoDisparityRight)**                 |
-|                                       |         |                             | | **Backward.Motion (uk.co.thefoundry.OfxImagePlaneBackMotionVector)**                              |
-|                                       |         |                             | | **Forward.Motion (uk.co.thefoundry.OfxImagePlaneForwardMotionVector)**                            |
-+---------------------------------------+---------+-----------------------------+-----------------------------------------------------------------------------------------------------+
+===================================== ======= =========================== ===================================================================================================
+Parameter / script name               Type    Default                     Function
+===================================== ======= =========================== ===================================================================================================
+Convert to Group / ``convertToGroup`` Button                              Converts this node to a Group: the internal node-graph and the user parameters will become editable
+Z Picking mode / ``zPicking``         Boolean Off                          
+Close Limit / ``closeLimit``          Color   r: 0 g: 0 b: 0 a: 0         Define the Z value remapped to white.
+Far Limit / ``farLimit``              Color   r: 100 g: 100 b: 100 a: 100 Define the Z value remapped to black.
+Gamma / ``gamma``                     Color   r: 1 g: 1 b: 1 a: 1          
+Invert Gradient / ``invertGradient``  Boolean Off                          
+Source Layer / ``Source_channels``    Choice                              .  
+                                                                          . **None**
+Output Layer / ``channels``           Choice  DisparityLeft.Disparity     .  
+                                                                          . **Color.RGBA (uk.co.thefoundry.OfxImagePlaneColour)**
+                                                                          . **DisparityLeft.Disparity (uk.co.thefoundry.OfxImagePlaneStereoDisparityLeft)**
+                                                                          . **DisparityRight.Disparity (uk.co.thefoundry.OfxImagePlaneStereoDisparityRight)**
+                                                                          . **Backward.Motion (uk.co.thefoundry.OfxImagePlaneBackMotionVector)**
+                                                                          . **Forward.Motion (uk.co.thefoundry.OfxImagePlaneForwardMotionVector)**
+===================================== ======= =========================== ===================================================================================================
 
 .. |pluginIcon| image:: fr.inria.ZRemap.png
    :width: 10.0%

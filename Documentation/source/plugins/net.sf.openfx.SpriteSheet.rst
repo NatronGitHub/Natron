@@ -13,11 +13,11 @@ Read individual frames from a sprite sheet. A sprite sheet is a series of images
 Inputs
 ------
 
-+--------+-------------+----------+
-| Input  | Description | Optional |
-+========+=============+==========+
-| Source |             | No       |
-+--------+-------------+----------+
+====== =========== ========
+Input  Description Optional
+====== =========== ========
+Source             No
+====== =========== ========
 
 Controls
 --------
@@ -26,12 +26,10 @@ Controls
 
 .. cssclass:: longtable
 
-+--------------------------------+---------+------------------+---------------------------------------------------------------------------------------+
-| Parameter / script name        | Type    | Default          | Function                                                                              |
-+================================+=========+==================+=======================================================================================+
-| Sprite Size / ``spriteSize``   | Integer | x: 64 y: 64      | Size in pixels of an individual sprite.                                               |
-+--------------------------------+---------+------------------+---------------------------------------------------------------------------------------+
-| Sprite Range / ``spriteRange`` | Integer | first: 0 last: 0 | Index of the first and last sprite in the animation. The sprite index starts at zero. |
-+--------------------------------+---------+------------------+---------------------------------------------------------------------------------------+
-| Frame Offset / ``frameOffset`` | Integer | 1                | Output frame number for the first sprite.                                             |
-+--------------------------------+---------+------------------+---------------------------------------------------------------------------------------+
+============================== ======= ================ =====================================================================================
+Parameter / script name        Type    Default          Function
+============================== ======= ================ =====================================================================================
+Sprite Size / ``spriteSize``   Integer x: 64 y: 64      Size in pixels of an individual sprite.
+Sprite Range / ``spriteRange`` Integer first: 0 last: 0 Index of the first and last sprite in the animation. The sprite index starts at zero.
+Frame Offset / ``frameOffset`` Integer 1                Output frame number for the first sprite.
+============================== ======= ================ =====================================================================================
