@@ -122,6 +122,7 @@ Install libraries:
     brew tap homebrew/python
     brew tap homebrew/science
     brew install expat cairo gnu-sed pandoc sphinx-doc
+    /usr/local/opt/sphinx-doc/libexec/bin/pip3 install sphinx_rtd_theme
     brew install --build-from-source qt --with-mysql
 
 On macOS Sierra, install the sierra-compatible recipe (to be used only in Sierra, since this builds Qt from sources and takes a while):
