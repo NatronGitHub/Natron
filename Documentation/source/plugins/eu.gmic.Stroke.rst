@@ -13,11 +13,11 @@ Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -26,54 +26,72 @@ Controls
 
 .. cssclass:: longtable
 
-======================================================= ======= =================== =====================
-Parameter / script name                                 Type    Default             Function
-======================================================= ======= =================== =====================
-Thickness (px) / ``Thickness_px``                       Integer 3                    
-Threshold (%) / ``Threshold_``                          Double  50                   
-Smoothness (px) / ``Smoothness_px``                     Double  0                    
-Shape / ``Shape``                                       Choice  Round               .  
-                                                                                    . **Square**
-                                                                                    . **Diamond**
-                                                                                    . **Round**
-Direction / ``Direction``                               Choice  Outward             .  
-                                                                                    . **Inward**
-                                                                                    . **Outward**
-Zoom (%) / ``Zoom_``                                    Double  100                  
-X-Shift (px) / ``XShift_px``                            Integer 0                    
-Y-Shift (px) / ``YShift_px``                            Integer 0                    
-Starting Color / ``Starting_Color``                     Color   r: 1 g: 1 b: 1 a: 1  
-Ending Color / ``Ending_Color``                         Color   r: 1 g: 1 b: 1 a: 1  
-Inside Color / ``Inside_Color``                         Color   r: 0 g: 0 b: 0 a: 0  
-Outside Color / ``Outside_Color``                       Color   r: 0 g: 0 b: 0 a: 0  
-Output Stroke Layer On / ``Output_Stroke_Layer_On``     Choice  Top                 .  
-                                                                                    . **Bottom**
-                                                                                    . **Top**
-Keep Original Image Size / ``Keep_Original_Image_Size`` Boolean Off                  
-Output Layer / ``Output_Layer``                         Choice  Layer 0             .  
-                                                                                    . **Merged**
-                                                                                    . **Layer 0**
-                                                                                    . **Layer -1**
-                                                                                    . **Layer -2**
-                                                                                    . **Layer -3**
-                                                                                    . **Layer -4**
-                                                                                    . **Layer -5**
-                                                                                    . **Layer -6**
-                                                                                    . **Layer -7**
-                                                                                    . **Layer -8**
-                                                                                    . **Layer -9**
-Resize Mode / ``Resize_Mode``                           Choice  Dynamic             .  
-                                                                                    . **Fixed (Inplace)**
-                                                                                    . **Dynamic**
-                                                                                    . **Downsample 1/2**
-                                                                                    . **Downsample 1/4**
-                                                                                    . **Downsample 1/8**
-                                                                                    . **Downsample 1/16**
-Ignore Alpha / ``Ignore_Alpha``                         Boolean Off                  
-Preview/Draft Mode / ``PreviewDraft_Mode``              Boolean Off                  
-Log Verbosity / ``Log_Verbosity``                       Choice  Off                 .  
-                                                                                    . **Off**
-                                                                                    . **Level 1**
-                                                                                    . **Level 2**
-                                                                                    . **Level 3**
-======================================================= ======= =================== =====================
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Parameter / script name                                 | Type    | Default             | Function              |
++=========================================================+=========+=====================+=======================+
+| Thickness (px) / ``Thickness_px``                       | Integer | 3                   |                       |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Threshold (%) / ``Threshold_``                          | Double  | 50                  |                       |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Smoothness (px) / ``Smoothness_px``                     | Double  | 0                   |                       |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Shape / ``Shape``                                       | Choice  | Round               | |                     |
+|                                                         |         |                     | | **Square**          |
+|                                                         |         |                     | | **Diamond**         |
+|                                                         |         |                     | | **Round**           |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Direction / ``Direction``                               | Choice  | Outward             | |                     |
+|                                                         |         |                     | | **Inward**          |
+|                                                         |         |                     | | **Outward**         |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Zoom (%) / ``Zoom_``                                    | Double  | 100                 |                       |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| X-Shift (px) / ``XShift_px``                            | Integer | 0                   |                       |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Y-Shift (px) / ``YShift_px``                            | Integer | 0                   |                       |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Starting Color / ``Starting_Color``                     | Color   | r: 1 g: 1 b: 1 a: 1 |                       |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Ending Color / ``Ending_Color``                         | Color   | r: 1 g: 1 b: 1 a: 1 |                       |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Inside Color / ``Inside_Color``                         | Color   | r: 0 g: 0 b: 0 a: 0 |                       |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Outside Color / ``Outside_Color``                       | Color   | r: 0 g: 0 b: 0 a: 0 |                       |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Output Stroke Layer On / ``Output_Stroke_Layer_On``     | Choice  | Top                 | |                     |
+|                                                         |         |                     | | **Bottom**          |
+|                                                         |         |                     | | **Top**             |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Keep Original Image Size / ``Keep_Original_Image_Size`` | Boolean | Off                 |                       |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Output Layer / ``Output_Layer``                         | Choice  | Layer 0             | |                     |
+|                                                         |         |                     | | **Merged**          |
+|                                                         |         |                     | | **Layer 0**         |
+|                                                         |         |                     | | **Layer -1**        |
+|                                                         |         |                     | | **Layer -2**        |
+|                                                         |         |                     | | **Layer -3**        |
+|                                                         |         |                     | | **Layer -4**        |
+|                                                         |         |                     | | **Layer -5**        |
+|                                                         |         |                     | | **Layer -6**        |
+|                                                         |         |                     | | **Layer -7**        |
+|                                                         |         |                     | | **Layer -8**        |
+|                                                         |         |                     | | **Layer -9**        |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Resize Mode / ``Resize_Mode``                           | Choice  | Dynamic             | |                     |
+|                                                         |         |                     | | **Fixed (Inplace)** |
+|                                                         |         |                     | | **Dynamic**         |
+|                                                         |         |                     | | **Downsample 1/2**  |
+|                                                         |         |                     | | **Downsample 1/4**  |
+|                                                         |         |                     | | **Downsample 1/8**  |
+|                                                         |         |                     | | **Downsample 1/16** |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Ignore Alpha / ``Ignore_Alpha``                         | Boolean | Off                 |                       |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Preview/Draft Mode / ``PreviewDraft_Mode``              | Boolean | Off                 |                       |
++---------------------------------------------------------+---------+---------------------+-----------------------+
+| Log Verbosity / ``Log_Verbosity``                       | Choice  | Off                 | |                     |
+|                                                         |         |                     | | **Off**             |
+|                                                         |         |                     | | **Level 1**         |
+|                                                         |         |                     | | **Level 2**         |
+|                                                         |         |                     | | **Level 3**         |
++---------------------------------------------------------+---------+---------------------+-----------------------+

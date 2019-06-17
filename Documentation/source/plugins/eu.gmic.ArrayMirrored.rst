@@ -13,11 +13,11 @@ Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -26,50 +26,61 @@ Controls
 
 .. cssclass:: longtable
 
-========================================== ======= ======== =====================
-Parameter / script name                    Type    Default  Function
-========================================== ======= ======== =====================
-Iterations / ``Iterations``                Integer 1         
-X-Offset (%) / ``XOffset_``                Double  0         
-Y-Offset (%) / ``YOffset_``                Double  0         
-Array Mode / ``Array_Mode``                Choice  XY-Axes  .  
-                                                            . **X-Axis**
-                                                            . **Y-Axis**
-                                                            . **XY-Axes**
-                                                            . **2XY-Axes**
-Initialization / ``Initialization``        Choice  Original .  
-                                                            . **Original**
-                                                            . **Mirror X**
-                                                            . **Mirror Y**
-                                                            . **Rotate 90 deg.**
-                                                            . **Rotate 180 deg.**
-                                                            . **Rotate 270 deg.**
-Expand Size / ``Expand_Size``              Boolean Off       
-Crop (%) / ``Crop_``                       Integer 0         
-Output Layer / ``Output_Layer``            Choice  Layer 0  .  
-                                                            . **Merged**
-                                                            . **Layer 0**
-                                                            . **Layer -1**
-                                                            . **Layer -2**
-                                                            . **Layer -3**
-                                                            . **Layer -4**
-                                                            . **Layer -5**
-                                                            . **Layer -6**
-                                                            . **Layer -7**
-                                                            . **Layer -8**
-                                                            . **Layer -9**
-Resize Mode / ``Resize_Mode``              Choice  Dynamic  .  
-                                                            . **Fixed (Inplace)**
-                                                            . **Dynamic**
-                                                            . **Downsample 1/2**
-                                                            . **Downsample 1/4**
-                                                            . **Downsample 1/8**
-                                                            . **Downsample 1/16**
-Ignore Alpha / ``Ignore_Alpha``            Boolean Off       
-Preview/Draft Mode / ``PreviewDraft_Mode`` Boolean Off       
-Log Verbosity / ``Log_Verbosity``          Choice  Off      .  
-                                                            . **Off**
-                                                            . **Level 1**
-                                                            . **Level 2**
-                                                            . **Level 3**
-========================================== ======= ======== =====================
++--------------------------------------------+---------+----------+-----------------------+
+| Parameter / script name                    | Type    | Default  | Function              |
++============================================+=========+==========+=======================+
+| Iterations / ``Iterations``                | Integer | 1        |                       |
++--------------------------------------------+---------+----------+-----------------------+
+| X-Offset (%) / ``XOffset_``                | Double  | 0        |                       |
++--------------------------------------------+---------+----------+-----------------------+
+| Y-Offset (%) / ``YOffset_``                | Double  | 0        |                       |
++--------------------------------------------+---------+----------+-----------------------+
+| Array Mode / ``Array_Mode``                | Choice  | XY-Axes  | |                     |
+|                                            |         |          | | **X-Axis**          |
+|                                            |         |          | | **Y-Axis**          |
+|                                            |         |          | | **XY-Axes**         |
+|                                            |         |          | | **2XY-Axes**        |
++--------------------------------------------+---------+----------+-----------------------+
+| Initialization / ``Initialization``        | Choice  | Original | |                     |
+|                                            |         |          | | **Original**        |
+|                                            |         |          | | **Mirror X**        |
+|                                            |         |          | | **Mirror Y**        |
+|                                            |         |          | | **Rotate 90 deg.**  |
+|                                            |         |          | | **Rotate 180 deg.** |
+|                                            |         |          | | **Rotate 270 deg.** |
++--------------------------------------------+---------+----------+-----------------------+
+| Expand Size / ``Expand_Size``              | Boolean | Off      |                       |
++--------------------------------------------+---------+----------+-----------------------+
+| Crop (%) / ``Crop_``                       | Integer | 0        |                       |
++--------------------------------------------+---------+----------+-----------------------+
+| Output Layer / ``Output_Layer``            | Choice  | Layer 0  | |                     |
+|                                            |         |          | | **Merged**          |
+|                                            |         |          | | **Layer 0**         |
+|                                            |         |          | | **Layer -1**        |
+|                                            |         |          | | **Layer -2**        |
+|                                            |         |          | | **Layer -3**        |
+|                                            |         |          | | **Layer -4**        |
+|                                            |         |          | | **Layer -5**        |
+|                                            |         |          | | **Layer -6**        |
+|                                            |         |          | | **Layer -7**        |
+|                                            |         |          | | **Layer -8**        |
+|                                            |         |          | | **Layer -9**        |
++--------------------------------------------+---------+----------+-----------------------+
+| Resize Mode / ``Resize_Mode``              | Choice  | Dynamic  | |                     |
+|                                            |         |          | | **Fixed (Inplace)** |
+|                                            |         |          | | **Dynamic**         |
+|                                            |         |          | | **Downsample 1/2**  |
+|                                            |         |          | | **Downsample 1/4**  |
+|                                            |         |          | | **Downsample 1/8**  |
+|                                            |         |          | | **Downsample 1/16** |
++--------------------------------------------+---------+----------+-----------------------+
+| Ignore Alpha / ``Ignore_Alpha``            | Boolean | Off      |                       |
++--------------------------------------------+---------+----------+-----------------------+
+| Preview/Draft Mode / ``PreviewDraft_Mode`` | Boolean | Off      |                       |
++--------------------------------------------+---------+----------+-----------------------+
+| Log Verbosity / ``Log_Verbosity``          | Choice  | Off      | |                     |
+|                                            |         |          | | **Off**             |
+|                                            |         |          | | **Level 1**         |
+|                                            |         |          | | **Level 2**         |
+|                                            |         |          | | **Level 3**         |
++--------------------------------------------+---------+----------+-----------------------+

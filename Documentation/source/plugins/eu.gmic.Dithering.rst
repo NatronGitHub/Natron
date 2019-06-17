@@ -13,11 +13,11 @@ Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -26,54 +26,66 @@ Controls
 
 .. cssclass:: longtable
 
-========================================== ======= ============= ==========================
-Parameter / script name                    Type    Default       Function
-========================================== ======= ============= ==========================
-Brightness (%) / ``Brightness_``           Double  0              
-Contrast (%) / ``Contrast_``               Double  0              
-Gamma (%) / ``Gamma_``                     Double  0              
-Hue / ``Hue``                              Double  0              
-Saturation (%) / ``Saturation_``           Double  0              
-Smoothness / ``Smoothness``                Double  0              
-Preview Type / ``Preview_Type``            Choice  Full          .  
-                                                                 . **Full**
-                                                                 . **Forward Horizontal**
-                                                                 . **Forward Vertical**
-                                                                 . **Backward Horizontal**
-                                                                 . **Backward Vertical**
-                                                                 . **Duplicate Top**
-                                                                 . **Duplicate Left**
-                                                                 . **Duplicate Bottom**
-                                                                 . **Duplicate Right**
-                                                                 . **Duplicate Horizontal**
-                                                                 . **Duplicate Vertical**
-                                                                 . **Checkered**
-                                                                 . **Checkered Inverse**
-Preview Split / ``Preview_Split``          Double  x: 0.5 y: 0.5  
-Output Layer / ``Output_Layer``            Choice  Layer 0       .  
-                                                                 . **Merged**
-                                                                 . **Layer 0**
-                                                                 . **Layer -1**
-                                                                 . **Layer -2**
-                                                                 . **Layer -3**
-                                                                 . **Layer -4**
-                                                                 . **Layer -5**
-                                                                 . **Layer -6**
-                                                                 . **Layer -7**
-                                                                 . **Layer -8**
-                                                                 . **Layer -9**
-Resize Mode / ``Resize_Mode``              Choice  Dynamic       .  
-                                                                 . **Fixed (Inplace)**
-                                                                 . **Dynamic**
-                                                                 . **Downsample 1/2**
-                                                                 . **Downsample 1/4**
-                                                                 . **Downsample 1/8**
-                                                                 . **Downsample 1/16**
-Ignore Alpha / ``Ignore_Alpha``            Boolean Off            
-Preview/Draft Mode / ``PreviewDraft_Mode`` Boolean Off            
-Log Verbosity / ``Log_Verbosity``          Choice  Off           .  
-                                                                 . **Off**
-                                                                 . **Level 1**
-                                                                 . **Level 2**
-                                                                 . **Level 3**
-========================================== ======= ============= ==========================
++--------------------------------------------+---------+---------------+----------------------------+
+| Parameter / script name                    | Type    | Default       | Function                   |
++============================================+=========+===============+============================+
+| Brightness (%) / ``Brightness_``           | Double  | 0             |                            |
++--------------------------------------------+---------+---------------+----------------------------+
+| Contrast (%) / ``Contrast_``               | Double  | 0             |                            |
++--------------------------------------------+---------+---------------+----------------------------+
+| Gamma (%) / ``Gamma_``                     | Double  | 0             |                            |
++--------------------------------------------+---------+---------------+----------------------------+
+| Hue / ``Hue``                              | Double  | 0             |                            |
++--------------------------------------------+---------+---------------+----------------------------+
+| Saturation (%) / ``Saturation_``           | Double  | 0             |                            |
++--------------------------------------------+---------+---------------+----------------------------+
+| Smoothness / ``Smoothness``                | Double  | 0             |                            |
++--------------------------------------------+---------+---------------+----------------------------+
+| Preview Type / ``Preview_Type``            | Choice  | Full          | |                          |
+|                                            |         |               | | **Full**                 |
+|                                            |         |               | | **Forward Horizontal**   |
+|                                            |         |               | | **Forward Vertical**     |
+|                                            |         |               | | **Backward Horizontal**  |
+|                                            |         |               | | **Backward Vertical**    |
+|                                            |         |               | | **Duplicate Top**        |
+|                                            |         |               | | **Duplicate Left**       |
+|                                            |         |               | | **Duplicate Bottom**     |
+|                                            |         |               | | **Duplicate Right**      |
+|                                            |         |               | | **Duplicate Horizontal** |
+|                                            |         |               | | **Duplicate Vertical**   |
+|                                            |         |               | | **Checkered**            |
+|                                            |         |               | | **Checkered Inverse**    |
++--------------------------------------------+---------+---------------+----------------------------+
+| Preview Split / ``Preview_Split``          | Double  | x: 0.5 y: 0.5 |                            |
++--------------------------------------------+---------+---------------+----------------------------+
+| Output Layer / ``Output_Layer``            | Choice  | Layer 0       | |                          |
+|                                            |         |               | | **Merged**               |
+|                                            |         |               | | **Layer 0**              |
+|                                            |         |               | | **Layer -1**             |
+|                                            |         |               | | **Layer -2**             |
+|                                            |         |               | | **Layer -3**             |
+|                                            |         |               | | **Layer -4**             |
+|                                            |         |               | | **Layer -5**             |
+|                                            |         |               | | **Layer -6**             |
+|                                            |         |               | | **Layer -7**             |
+|                                            |         |               | | **Layer -8**             |
+|                                            |         |               | | **Layer -9**             |
++--------------------------------------------+---------+---------------+----------------------------+
+| Resize Mode / ``Resize_Mode``              | Choice  | Dynamic       | |                          |
+|                                            |         |               | | **Fixed (Inplace)**      |
+|                                            |         |               | | **Dynamic**              |
+|                                            |         |               | | **Downsample 1/2**       |
+|                                            |         |               | | **Downsample 1/4**       |
+|                                            |         |               | | **Downsample 1/8**       |
+|                                            |         |               | | **Downsample 1/16**      |
++--------------------------------------------+---------+---------------+----------------------------+
+| Ignore Alpha / ``Ignore_Alpha``            | Boolean | Off           |                            |
++--------------------------------------------+---------+---------------+----------------------------+
+| Preview/Draft Mode / ``PreviewDraft_Mode`` | Boolean | Off           |                            |
++--------------------------------------------+---------+---------------+----------------------------+
+| Log Verbosity / ``Log_Verbosity``          | Choice  | Off           | |                          |
+|                                            |         |               | | **Off**                  |
+|                                            |         |               | | **Level 1**              |
+|                                            |         |               | | **Level 2**              |
+|                                            |         |               | | **Level 3**              |
++--------------------------------------------+---------+---------------+----------------------------+

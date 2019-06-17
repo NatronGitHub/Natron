@@ -17,13 +17,15 @@ See also http://opticalenquiry.com/nuke/index.php?title=CopyRectange
 Inputs
 ------
 
-===== ============================================= ========
-Input Description                                   Optional
-===== ============================================= ========
-B     The image from which the rectangle is copied. No
-A     The image from which the rectangle is copied. No
-Mask                                                Yes
-===== ============================================= ========
++-------+-----------------------------------------------+----------+
+| Input | Description                                   | Optional |
++=======+===============================================+==========+
+| B     | The image from which the rectangle is copied. | No       |
++-------+-----------------------------------------------+----------+
+| A     | The image from which the rectangle is copied. | No       |
++-------+-----------------------------------------------+----------+
+| Mask  |                                               | Yes      |
++-------+-----------------------------------------------+----------+
 
 Controls
 --------
@@ -32,13 +34,18 @@ Controls
 
 .. cssclass:: longtable
 
-==================================== ======= ========= ==============================================================================================================================
-Parameter / script name              Type    Default   Function
-==================================== ======= ========= ==============================================================================================================================
-Bottom Left / ``bottomLeft``         Double  x: 0 y: 0 Coordinates of the bottom left corner of the rectangle
-Size / ``size``                      Double  w: 1 h: 1 Width and height of the rectangle
-Interactive Update / ``interactive`` Boolean Off       If checked, update the parameter values during interaction with the image viewer, else update the values when pen is released.
-Softness / ``softness``              Double  0         Size of the fade around edges of the rectangle to apply
-Invert Mask / ``maskInvert``         Boolean Off       When checked, the effect is fully applied where the mask is 0.
-Mix / ``mix``                        Double  1         Mix factor between the original and the transformed image.
-==================================== ======= ========= ==============================================================================================================================
++--------------------------------------+---------+-----------+--------------------------------------------------------------------------------------------------------------------------------+
+| Parameter / script name              | Type    | Default   | Function                                                                                                                       |
++======================================+=========+===========+================================================================================================================================+
+| Bottom Left / ``bottomLeft``         | Double  | x: 0 y: 0 | Coordinates of the bottom left corner of the rectangle                                                                         |
++--------------------------------------+---------+-----------+--------------------------------------------------------------------------------------------------------------------------------+
+| Size / ``size``                      | Double  | w: 1 h: 1 | Width and height of the rectangle                                                                                              |
++--------------------------------------+---------+-----------+--------------------------------------------------------------------------------------------------------------------------------+
+| Interactive Update / ``interactive`` | Boolean | Off       | If checked, update the parameter values during interaction with the image viewer, else update the values when pen is released. |
++--------------------------------------+---------+-----------+--------------------------------------------------------------------------------------------------------------------------------+
+| Softness / ``softness``              | Double  | 0         | Size of the fade around edges of the rectangle to apply                                                                        |
++--------------------------------------+---------+-----------+--------------------------------------------------------------------------------------------------------------------------------+
+| Invert Mask / ``maskInvert``         | Boolean | Off       | When checked, the effect is fully applied where the mask is 0.                                                                 |
++--------------------------------------+---------+-----------+--------------------------------------------------------------------------------------------------------------------------------+
+| Mix / ``mix``                        | Double  | 1         | Mix factor between the original and the transformed image.                                                                     |
++--------------------------------------+---------+-----------+--------------------------------------------------------------------------------------------------------------------------------+

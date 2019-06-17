@@ -17,11 +17,11 @@ This plugin does not concatenate transforms.
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -30,12 +30,13 @@ Controls
 
 .. cssclass:: longtable
 
-============================= ======= ========= ========================================================================================================================
-Parameter / script name       Type    Default   Function
-============================= ======= ========= ========================================================================================================================
-Translate / ``translate``     Double  x: 0 y: 0 New position of the bottom-left pixel. Rounded to the closest pixel.
-Interactive / ``interactive`` Boolean Off       When checked the image will be rendered whenever moving the overlay interact instead of when releasing the mouse button.
-============================= ======= ========= ========================================================================================================================
++-------------------------------+---------+-----------+--------------------------------------------------------------------------------------------------------------------------+
+| Parameter / script name       | Type    | Default   | Function                                                                                                                 |
++===============================+=========+===========+==========================================================================================================================+
+| Translate / ``translate``     | Double  | x: 0 y: 0 | New position of the bottom-left pixel. Rounded to the closest pixel.                                                     |
++-------------------------------+---------+-----------+--------------------------------------------------------------------------------------------------------------------------+
+| Interactive / ``interactive`` | Boolean | Off       | When checked the image will be rendered whenever moving the overlay interact instead of when releasing the mouse button. |
++-------------------------------+---------+-----------+--------------------------------------------------------------------------------------------------------------------------+
 
 .. |pluginIcon| image:: net.sf.openfx.Position.png
    :width: 10.0%

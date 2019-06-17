@@ -13,11 +13,11 @@ Rounds fractional frame numbers to integers. This can be used to avoid computing
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -26,12 +26,12 @@ Controls
 
 .. cssclass:: longtable
 
-======================= ====== ======= =================================================================
-Parameter / script name Type   Default Function
-======================= ====== ======= =================================================================
-Rounding / ``rounding`` Choice rint    . Rounding type/operation to use when blocking fractional frames.
-                                       . **rint**: Round to the nearest integer value.
-                                       . **floor**: Round dound to the nearest integer value.
-                                       . **ceil**: Round up to the nearest integer value.
-                                       . **none**: Do not round.
-======================= ====== ======= =================================================================
++-------------------------+--------+---------+-------------------------------------------------------------------+
+| Parameter / script name | Type   | Default | Function                                                          |
++=========================+========+=========+===================================================================+
+| Rounding / ``rounding`` | Choice | rint    | | Rounding type/operation to use when blocking fractional frames. |
+|                         |        |         | | **rint**: Round to the nearest integer value.                   |
+|                         |        |         | | **floor**: Round dound to the nearest integer value.            |
+|                         |        |         | | **ceil**: Round up to the nearest integer value.                |
+|                         |        |         | | **none**: Do not round.                                         |
++-------------------------+--------+---------+-------------------------------------------------------------------+

@@ -13,11 +13,11 @@ Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -26,40 +26,48 @@ Controls
 
 .. cssclass:: longtable
 
-============================================================== ======= =================== =====================
-Parameter / script name                                        Type    Default             Function
-============================================================== ======= =================== =====================
-Color 1 (Up/Left Corner) / ``Color_1_UpLeft_Corner``           Color   r: 1 g: 1 b: 1 a: 1  
-Color 2 (Up/Right Corner) / ``Color_2_UpRight_Corner``         Color   r: 1 g: 0 b: 0 a: 0  
-Color 3 (Bottom/Left Corner) / ``Color_3_BottomLeft_Corner``   Color   r: 0 g: 1 b: 0 a: 0  
-Color 4 (Bottom/Right Corner) / ``Color_4_BottomRight_Corner`` Color   r: 0 g: 0 b: 1 a: 1  
-Colorspace / ``Colorspace``                                    Choice  Linear RGB          .  
-                                                                                           . **sRGB**
-                                                                                           . **Linear RGB**
-                                                                                           . **Lab**
-Output Layer / ``Output_Layer``                                Choice  Layer 0             .  
-                                                                                           . **Merged**
-                                                                                           . **Layer 0**
-                                                                                           . **Layer -1**
-                                                                                           . **Layer -2**
-                                                                                           . **Layer -3**
-                                                                                           . **Layer -4**
-                                                                                           . **Layer -5**
-                                                                                           . **Layer -6**
-                                                                                           . **Layer -7**
-                                                                                           . **Layer -8**
-                                                                                           . **Layer -9**
-Resize Mode / ``Resize_Mode``                                  Choice  Dynamic             .  
-                                                                                           . **Fixed (Inplace)**
-                                                                                           . **Dynamic**
-                                                                                           . **Downsample 1/2**
-                                                                                           . **Downsample 1/4**
-                                                                                           . **Downsample 1/8**
-                                                                                           . **Downsample 1/16**
-Ignore Alpha / ``Ignore_Alpha``                                Boolean Off                  
-Log Verbosity / ``Log_Verbosity``                              Choice  Off                 .  
-                                                                                           . **Off**
-                                                                                           . **Level 1**
-                                                                                           . **Level 2**
-                                                                                           . **Level 3**
-============================================================== ======= =================== =====================
++----------------------------------------------------------------+---------+---------------------+-----------------------+
+| Parameter / script name                                        | Type    | Default             | Function              |
++================================================================+=========+=====================+=======================+
+| Color 1 (Up/Left Corner) / ``Color_1_UpLeft_Corner``           | Color   | r: 1 g: 1 b: 1 a: 1 |                       |
++----------------------------------------------------------------+---------+---------------------+-----------------------+
+| Color 2 (Up/Right Corner) / ``Color_2_UpRight_Corner``         | Color   | r: 1 g: 0 b: 0 a: 0 |                       |
++----------------------------------------------------------------+---------+---------------------+-----------------------+
+| Color 3 (Bottom/Left Corner) / ``Color_3_BottomLeft_Corner``   | Color   | r: 0 g: 1 b: 0 a: 0 |                       |
++----------------------------------------------------------------+---------+---------------------+-----------------------+
+| Color 4 (Bottom/Right Corner) / ``Color_4_BottomRight_Corner`` | Color   | r: 0 g: 0 b: 1 a: 1 |                       |
++----------------------------------------------------------------+---------+---------------------+-----------------------+
+| Colorspace / ``Colorspace``                                    | Choice  | Linear RGB          | |                     |
+|                                                                |         |                     | | **sRGB**            |
+|                                                                |         |                     | | **Linear RGB**      |
+|                                                                |         |                     | | **Lab**             |
++----------------------------------------------------------------+---------+---------------------+-----------------------+
+| Output Layer / ``Output_Layer``                                | Choice  | Layer 0             | |                     |
+|                                                                |         |                     | | **Merged**          |
+|                                                                |         |                     | | **Layer 0**         |
+|                                                                |         |                     | | **Layer -1**        |
+|                                                                |         |                     | | **Layer -2**        |
+|                                                                |         |                     | | **Layer -3**        |
+|                                                                |         |                     | | **Layer -4**        |
+|                                                                |         |                     | | **Layer -5**        |
+|                                                                |         |                     | | **Layer -6**        |
+|                                                                |         |                     | | **Layer -7**        |
+|                                                                |         |                     | | **Layer -8**        |
+|                                                                |         |                     | | **Layer -9**        |
++----------------------------------------------------------------+---------+---------------------+-----------------------+
+| Resize Mode / ``Resize_Mode``                                  | Choice  | Dynamic             | |                     |
+|                                                                |         |                     | | **Fixed (Inplace)** |
+|                                                                |         |                     | | **Dynamic**         |
+|                                                                |         |                     | | **Downsample 1/2**  |
+|                                                                |         |                     | | **Downsample 1/4**  |
+|                                                                |         |                     | | **Downsample 1/8**  |
+|                                                                |         |                     | | **Downsample 1/16** |
++----------------------------------------------------------------+---------+---------------------+-----------------------+
+| Ignore Alpha / ``Ignore_Alpha``                                | Boolean | Off                 |                       |
++----------------------------------------------------------------+---------+---------------------+-----------------------+
+| Log Verbosity / ``Log_Verbosity``                              | Choice  | Off                 | |                     |
+|                                                                |         |                     | | **Off**             |
+|                                                                |         |                     | | **Level 1**         |
+|                                                                |         |                     | | **Level 2**         |
+|                                                                |         |                     | | **Level 3**         |
++----------------------------------------------------------------+---------+---------------------+-----------------------+

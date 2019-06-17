@@ -19,12 +19,13 @@ CImg is a free, open-source library distributed under the CeCILL-C (close to the
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             Yes
-Mask               Yes
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | Yes      |
++--------+-------------+----------+
+| Mask   |             | Yes      |
++--------+-------------+----------+
 
 Controls
 --------
@@ -33,22 +34,28 @@ Controls
 
 .. cssclass:: longtable
 
-============================ ======= ======== ==================================================================================================================================
-Parameter / script name      Type    Default  Function
-============================ ======= ======== ==================================================================================================================================
-Sigma / ``sigma``            Double  0.01     Amplitude of the random additive noise.
-Type / ``type``              Choice  Gaussian . Type of additive noise.
-                                              . **Gaussian (gaussian)**: Gaussian noise.
-                                              . **Uniform (uniform)**: Uniform noise.
-                                              . **Salt & Pepper (saltnpepper)**: Salt & pepper noise.
-                                              . **Poisson (poisson)**: Poisson noise. Image is divided by Sigma before computing noise, then remultiplied by Sigma.
-                                              . **Rice (rice)**: Rician noise.
-Seed / ``seed``              Integer 2000     Random seed: change this if you want different instances to have different noise.
-Static Seed / ``staticSeed`` Boolean Off      When enabled, the dither pattern remains the same for every frame producing a constant noise effect.
-(Un)premult / ``premult``    Boolean Off      Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.
-Invert Mask / ``maskInvert`` Boolean Off      When checked, the effect is fully applied where the mask is 0.
-Mix / ``mix``                Double  1        Mix factor between the original and the transformed image.
-============================ ======= ======== ==================================================================================================================================
++------------------------------+---------+----------+------------------------------------------------------------------------------------------------------------------------------------+
+| Parameter / script name      | Type    | Default  | Function                                                                                                                           |
++==============================+=========+==========+====================================================================================================================================+
+| Sigma / ``sigma``            | Double  | 0.01     | Amplitude of the random additive noise.                                                                                            |
++------------------------------+---------+----------+------------------------------------------------------------------------------------------------------------------------------------+
+| Type / ``type``              | Choice  | Gaussian | | Type of additive noise.                                                                                                          |
+|                              |         |          | | **Gaussian (gaussian)**: Gaussian noise.                                                                                         |
+|                              |         |          | | **Uniform (uniform)**: Uniform noise.                                                                                            |
+|                              |         |          | | **Salt & Pepper (saltnpepper)**: Salt & pepper noise.                                                                            |
+|                              |         |          | | **Poisson (poisson)**: Poisson noise. Image is divided by Sigma before computing noise, then remultiplied by Sigma.              |
+|                              |         |          | | **Rice (rice)**: Rician noise.                                                                                                   |
++------------------------------+---------+----------+------------------------------------------------------------------------------------------------------------------------------------+
+| Seed / ``seed``              | Integer | 2000     | Random seed: change this if you want different instances to have different noise.                                                  |
++------------------------------+---------+----------+------------------------------------------------------------------------------------------------------------------------------------+
+| Static Seed / ``staticSeed`` | Boolean | Off      | When enabled, the dither pattern remains the same for every frame producing a constant noise effect.                               |
++------------------------------+---------+----------+------------------------------------------------------------------------------------------------------------------------------------+
+| (Un)premult / ``premult``    | Boolean | Off      | Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied. |
++------------------------------+---------+----------+------------------------------------------------------------------------------------------------------------------------------------+
+| Invert Mask / ``maskInvert`` | Boolean | Off      | When checked, the effect is fully applied where the mask is 0.                                                                     |
++------------------------------+---------+----------+------------------------------------------------------------------------------------------------------------------------------------+
+| Mix / ``mix``                | Double  | 1        | Mix factor between the original and the transformed image.                                                                         |
++------------------------------+---------+----------+------------------------------------------------------------------------------------------------------------------------------------+
 
 .. |pluginIcon| image:: net.sf.cimg.CImgNoise.png
    :width: 10.0%

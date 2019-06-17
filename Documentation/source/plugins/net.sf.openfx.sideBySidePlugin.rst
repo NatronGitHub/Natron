@@ -15,11 +15,11 @@ Put the left and right view of the input next to each other.
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -28,17 +28,19 @@ Controls
 
 .. cssclass:: longtable
 
-======================= ======= ======= ==============================================
-Parameter / script name Type    Default Function
-======================= ======= ======= ==============================================
-Vertical / ``vertical`` Boolean Off     Stack views vertically instead of horizontally
-View 1 / ``view1``      Choice  Left    . First view
-                                        . **Left (left)**: Left view.
-                                        . **Right (right)**: Right view.
-View 2 / ``view2``      Choice  Right   . Second view
-                                        . **Left (left)**: Left view.
-                                        . **Right (right)**: Right view.
-======================= ======= ======= ==============================================
++-------------------------+---------+---------+------------------------------------------------+
+| Parameter / script name | Type    | Default | Function                                       |
++=========================+=========+=========+================================================+
+| Vertical / ``vertical`` | Boolean | Off     | Stack views vertically instead of horizontally |
++-------------------------+---------+---------+------------------------------------------------+
+| View 1 / ``view1``      | Choice  | Left    | | First view                                   |
+|                         |         |         | | **Left (left)**: Left view.                  |
+|                         |         |         | | **Right (right)**: Right view.               |
++-------------------------+---------+---------+------------------------------------------------+
+| View 2 / ``view2``      | Choice  | Right   | | Second view                                  |
+|                         |         |         | | **Left (left)**: Left view.                  |
+|                         |         |         | | **Right (right)**: Right view.               |
++-------------------------+---------+---------+------------------------------------------------+
 
 .. |pluginIcon| image:: net.sf.openfx.sideBySidePlugin.png
    :width: 10.0%

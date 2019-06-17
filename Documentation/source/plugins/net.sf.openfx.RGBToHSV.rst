@@ -15,11 +15,11 @@ Convert from linear RGB to HSV color model (hue, saturation, value, as defined b
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -28,11 +28,11 @@ Controls
 
 .. cssclass:: longtable
 
-======================= ======= ======= ===================================================================================================
-Parameter / script name Type    Default Function
-======================= ======= ======= ===================================================================================================
-Unpremult / ``premult`` Boolean Off     Divide the image by the alpha channel before processing. Use if the input images are premultiplied.
-======================= ======= ======= ===================================================================================================
++-------------------------+---------+---------+-----------------------------------------------------------------------------------------------------+
+| Parameter / script name | Type    | Default | Function                                                                                            |
++=========================+=========+=========+=====================================================================================================+
+| Unpremult / ``premult`` | Boolean | Off     | Divide the image by the alpha channel before processing. Use if the input images are premultiplied. |
++-------------------------+---------+---------+-----------------------------------------------------------------------------------------------------+
 
 .. |pluginIcon| image:: net.sf.openfx.RGBToHSV.png
    :width: 10.0%

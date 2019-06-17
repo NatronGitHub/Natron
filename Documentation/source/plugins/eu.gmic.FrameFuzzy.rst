@@ -13,11 +13,11 @@ Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -26,60 +26,75 @@ Controls
 
 .. cssclass:: longtable
 
-=================================================== ======= =================== =====================
-Parameter / script name                             Type    Default             Function
-=================================================== ======= =================== =====================
-Depth / ``Depth``                                   Double  3                    
-X-Center / ``XCenter``                              Double  0                    
-Y-Center / ``YCenter``                              Double  0                    
-Left Side Orientation / ``Left_Side_Orientation``   Choice  Normal              .  
-                                                                                . **Normal**
-                                                                                . **Mirror-X**
-                                                                                . **Mirror-Y**
-                                                                                . **Mirror-XY**
-Right Side Orientation / ``Right_Side_Orientation`` Choice  Normal              .  
-                                                                                . **Normal**
-                                                                                . **Mirror-X**
-                                                                                . **Mirror-Y**
-                                                                                . **Mirror-XY**
-Upper Side Orientation / ``Upper_Side_Orientation`` Choice  Normal              .  
-                                                                                . **Normal**
-                                                                                . **Mirror-X**
-                                                                                . **Mirror-Y**
-                                                                                . **Mirror-XY**
-Lower Side Orientation / ``Lower_Side_Orientation`` Choice  Normal              .  
-                                                                                . **Normal**
-                                                                                . **Mirror-X**
-                                                                                . **Mirror-Y**
-                                                                                . **Mirror-XY**
-Horizontal Size (%) / ``Horizontal_Size_``          Double  5                    
-Vertical Size (%) / ``Vertical_Size_``              Double  5                    
-Fuzzyness / ``Fuzzyness``                           Double  10                   
-Smoothness / ``Smoothness``                         Double  1                    
-Color / ``Color``                                   Color   r: 1 g: 1 b: 1 a: 1  
-Output Layer / ``Output_Layer``                     Choice  Layer 0             .  
-                                                                                . **Merged**
-                                                                                . **Layer 0**
-                                                                                . **Layer -1**
-                                                                                . **Layer -2**
-                                                                                . **Layer -3**
-                                                                                . **Layer -4**
-                                                                                . **Layer -5**
-                                                                                . **Layer -6**
-                                                                                . **Layer -7**
-                                                                                . **Layer -8**
-                                                                                . **Layer -9**
-Resize Mode / ``Resize_Mode``                       Choice  Dynamic             .  
-                                                                                . **Fixed (Inplace)**
-                                                                                . **Dynamic**
-                                                                                . **Downsample 1/2**
-                                                                                . **Downsample 1/4**
-                                                                                . **Downsample 1/8**
-                                                                                . **Downsample 1/16**
-Ignore Alpha / ``Ignore_Alpha``                     Boolean Off                  
-Log Verbosity / ``Log_Verbosity``                   Choice  Off                 .  
-                                                                                . **Off**
-                                                                                . **Level 1**
-                                                                                . **Level 2**
-                                                                                . **Level 3**
-=================================================== ======= =================== =====================
++-----------------------------------------------------+---------+---------------------+-----------------------+
+| Parameter / script name                             | Type    | Default             | Function              |
++=====================================================+=========+=====================+=======================+
+| Depth / ``Depth``                                   | Double  | 3                   |                       |
++-----------------------------------------------------+---------+---------------------+-----------------------+
+| X-Center / ``XCenter``                              | Double  | 0                   |                       |
++-----------------------------------------------------+---------+---------------------+-----------------------+
+| Y-Center / ``YCenter``                              | Double  | 0                   |                       |
++-----------------------------------------------------+---------+---------------------+-----------------------+
+| Left Side Orientation / ``Left_Side_Orientation``   | Choice  | Normal              | |                     |
+|                                                     |         |                     | | **Normal**          |
+|                                                     |         |                     | | **Mirror-X**        |
+|                                                     |         |                     | | **Mirror-Y**        |
+|                                                     |         |                     | | **Mirror-XY**       |
++-----------------------------------------------------+---------+---------------------+-----------------------+
+| Right Side Orientation / ``Right_Side_Orientation`` | Choice  | Normal              | |                     |
+|                                                     |         |                     | | **Normal**          |
+|                                                     |         |                     | | **Mirror-X**        |
+|                                                     |         |                     | | **Mirror-Y**        |
+|                                                     |         |                     | | **Mirror-XY**       |
++-----------------------------------------------------+---------+---------------------+-----------------------+
+| Upper Side Orientation / ``Upper_Side_Orientation`` | Choice  | Normal              | |                     |
+|                                                     |         |                     | | **Normal**          |
+|                                                     |         |                     | | **Mirror-X**        |
+|                                                     |         |                     | | **Mirror-Y**        |
+|                                                     |         |                     | | **Mirror-XY**       |
++-----------------------------------------------------+---------+---------------------+-----------------------+
+| Lower Side Orientation / ``Lower_Side_Orientation`` | Choice  | Normal              | |                     |
+|                                                     |         |                     | | **Normal**          |
+|                                                     |         |                     | | **Mirror-X**        |
+|                                                     |         |                     | | **Mirror-Y**        |
+|                                                     |         |                     | | **Mirror-XY**       |
++-----------------------------------------------------+---------+---------------------+-----------------------+
+| Horizontal Size (%) / ``Horizontal_Size_``          | Double  | 5                   |                       |
++-----------------------------------------------------+---------+---------------------+-----------------------+
+| Vertical Size (%) / ``Vertical_Size_``              | Double  | 5                   |                       |
++-----------------------------------------------------+---------+---------------------+-----------------------+
+| Fuzzyness / ``Fuzzyness``                           | Double  | 10                  |                       |
++-----------------------------------------------------+---------+---------------------+-----------------------+
+| Smoothness / ``Smoothness``                         | Double  | 1                   |                       |
++-----------------------------------------------------+---------+---------------------+-----------------------+
+| Color / ``Color``                                   | Color   | r: 1 g: 1 b: 1 a: 1 |                       |
++-----------------------------------------------------+---------+---------------------+-----------------------+
+| Output Layer / ``Output_Layer``                     | Choice  | Layer 0             | |                     |
+|                                                     |         |                     | | **Merged**          |
+|                                                     |         |                     | | **Layer 0**         |
+|                                                     |         |                     | | **Layer -1**        |
+|                                                     |         |                     | | **Layer -2**        |
+|                                                     |         |                     | | **Layer -3**        |
+|                                                     |         |                     | | **Layer -4**        |
+|                                                     |         |                     | | **Layer -5**        |
+|                                                     |         |                     | | **Layer -6**        |
+|                                                     |         |                     | | **Layer -7**        |
+|                                                     |         |                     | | **Layer -8**        |
+|                                                     |         |                     | | **Layer -9**        |
++-----------------------------------------------------+---------+---------------------+-----------------------+
+| Resize Mode / ``Resize_Mode``                       | Choice  | Dynamic             | |                     |
+|                                                     |         |                     | | **Fixed (Inplace)** |
+|                                                     |         |                     | | **Dynamic**         |
+|                                                     |         |                     | | **Downsample 1/2**  |
+|                                                     |         |                     | | **Downsample 1/4**  |
+|                                                     |         |                     | | **Downsample 1/8**  |
+|                                                     |         |                     | | **Downsample 1/16** |
++-----------------------------------------------------+---------+---------------------+-----------------------+
+| Ignore Alpha / ``Ignore_Alpha``                     | Boolean | Off                 |                       |
++-----------------------------------------------------+---------+---------------------+-----------------------+
+| Log Verbosity / ``Log_Verbosity``                   | Choice  | Off                 | |                     |
+|                                                     |         |                     | | **Off**             |
+|                                                     |         |                     | | **Level 1**         |
+|                                                     |         |                     | | **Level 2**         |
+|                                                     |         |                     | | **Level 3**         |
++-----------------------------------------------------+---------+---------------------+-----------------------+

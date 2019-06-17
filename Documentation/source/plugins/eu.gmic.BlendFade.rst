@@ -13,14 +13,17 @@ Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (
 Inputs
 ------
 
-======== =========== ========
-Input    Description Optional
-======== =========== ========
-Source               No
-Layer -1             Yes
-Layer -2             Yes
-Layer -3             Yes
-======== =========== ========
++----------+-------------+----------+
+| Input    | Description | Optional |
++==========+=============+==========+
+| Source   |             | No       |
++----------+-------------+----------+
+| Layer -1 |             | Yes      |
++----------+-------------+----------+
+| Layer -2 |             | Yes      |
++----------+-------------+----------+
+| Layer -3 |             | Yes      |
++----------+-------------+----------+
 
 Controls
 --------
@@ -29,51 +32,65 @@ Controls
 
 .. cssclass:: longtable
 
-================================== ======= ============================== =====================
-Parameter / script name            Type    Default                        Function
-================================== ======= ============================== =====================
-Preset / ``Preset``                Choice  Linear                         .  
-                                                                          . **Custom**
-                                                                          . **Linear**
-                                                                          . **Circular**
-                                                                          . **Wave**
-                                                                          . **Keftales**
-Offset / ``Offset``                Double  0                               
-Thinness / ``Thinness``            Double  0                               
-Sharpness / ``Sharpness``          Double  5                               
-Sharpest / ``Sharpest``            Boolean Off                             
-Revert Layers / ``Revert_Layers``  Boolean Off                             
-Colorspace / ``Colorspace``        Choice  sRGB                           .  
-                                                                          . **sRGB**
-                                                                          . **Linear RGB**
-                                                                          . **Lab**
-1st Parameter / ``p1st_Parameter`` Double  0                               
-2nd Parameter / ``p2nd_Parameter`` Double  0                               
-3rd Parameter / ``p3rd_Parameter`` Double  0                               
-Formula / ``Formula``              String  cos(4*pi*x/w) \* sin(4*pi*y/h)  
-Output Layer / ``Output_Layer``    Choice  Layer 0                        .  
-                                                                          . **Merged**
-                                                                          . **Layer 0**
-                                                                          . **Layer -1**
-                                                                          . **Layer -2**
-                                                                          . **Layer -3**
-                                                                          . **Layer -4**
-                                                                          . **Layer -5**
-                                                                          . **Layer -6**
-                                                                          . **Layer -7**
-                                                                          . **Layer -8**
-                                                                          . **Layer -9**
-Resize Mode / ``Resize_Mode``      Choice  Dynamic                        .  
-                                                                          . **Fixed (Inplace)**
-                                                                          . **Dynamic**
-                                                                          . **Downsample 1/2**
-                                                                          . **Downsample 1/4**
-                                                                          . **Downsample 1/8**
-                                                                          . **Downsample 1/16**
-Ignore Alpha / ``Ignore_Alpha``    Boolean Off                             
-Log Verbosity / ``Log_Verbosity``  Choice  Off                            .  
-                                                                          . **Off**
-                                                                          . **Level 1**
-                                                                          . **Level 2**
-                                                                          . **Level 3**
-================================== ======= ============================== =====================
++------------------------------------+---------+--------------------------------+-----------------------+
+| Parameter / script name            | Type    | Default                        | Function              |
++====================================+=========+================================+=======================+
+| Preset / ``Preset``                | Choice  | Linear                         | |                     |
+|                                    |         |                                | | **Custom**          |
+|                                    |         |                                | | **Linear**          |
+|                                    |         |                                | | **Circular**        |
+|                                    |         |                                | | **Wave**            |
+|                                    |         |                                | | **Keftales**        |
++------------------------------------+---------+--------------------------------+-----------------------+
+| Offset / ``Offset``                | Double  | 0                              |                       |
++------------------------------------+---------+--------------------------------+-----------------------+
+| Thinness / ``Thinness``            | Double  | 0                              |                       |
++------------------------------------+---------+--------------------------------+-----------------------+
+| Sharpness / ``Sharpness``          | Double  | 5                              |                       |
++------------------------------------+---------+--------------------------------+-----------------------+
+| Sharpest / ``Sharpest``            | Boolean | Off                            |                       |
++------------------------------------+---------+--------------------------------+-----------------------+
+| Revert Layers / ``Revert_Layers``  | Boolean | Off                            |                       |
++------------------------------------+---------+--------------------------------+-----------------------+
+| Colorspace / ``Colorspace``        | Choice  | sRGB                           | |                     |
+|                                    |         |                                | | **sRGB**            |
+|                                    |         |                                | | **Linear RGB**      |
+|                                    |         |                                | | **Lab**             |
++------------------------------------+---------+--------------------------------+-----------------------+
+| 1st Parameter / ``p1st_Parameter`` | Double  | 0                              |                       |
++------------------------------------+---------+--------------------------------+-----------------------+
+| 2nd Parameter / ``p2nd_Parameter`` | Double  | 0                              |                       |
++------------------------------------+---------+--------------------------------+-----------------------+
+| 3rd Parameter / ``p3rd_Parameter`` | Double  | 0                              |                       |
++------------------------------------+---------+--------------------------------+-----------------------+
+| Formula / ``Formula``              | String  | cos(4*pi*x/w) \* sin(4*pi*y/h) |                       |
++------------------------------------+---------+--------------------------------+-----------------------+
+| Output Layer / ``Output_Layer``    | Choice  | Layer 0                        | |                     |
+|                                    |         |                                | | **Merged**          |
+|                                    |         |                                | | **Layer 0**         |
+|                                    |         |                                | | **Layer -1**        |
+|                                    |         |                                | | **Layer -2**        |
+|                                    |         |                                | | **Layer -3**        |
+|                                    |         |                                | | **Layer -4**        |
+|                                    |         |                                | | **Layer -5**        |
+|                                    |         |                                | | **Layer -6**        |
+|                                    |         |                                | | **Layer -7**        |
+|                                    |         |                                | | **Layer -8**        |
+|                                    |         |                                | | **Layer -9**        |
++------------------------------------+---------+--------------------------------+-----------------------+
+| Resize Mode / ``Resize_Mode``      | Choice  | Dynamic                        | |                     |
+|                                    |         |                                | | **Fixed (Inplace)** |
+|                                    |         |                                | | **Dynamic**         |
+|                                    |         |                                | | **Downsample 1/2**  |
+|                                    |         |                                | | **Downsample 1/4**  |
+|                                    |         |                                | | **Downsample 1/8**  |
+|                                    |         |                                | | **Downsample 1/16** |
++------------------------------------+---------+--------------------------------+-----------------------+
+| Ignore Alpha / ``Ignore_Alpha``    | Boolean | Off                            |                       |
++------------------------------------+---------+--------------------------------+-----------------------+
+| Log Verbosity / ``Log_Verbosity``  | Choice  | Off                            | |                     |
+|                                    |         |                                | | **Off**             |
+|                                    |         |                                | | **Level 1**         |
+|                                    |         |                                | | **Level 2**         |
+|                                    |         |                                | | **Level 3**         |
++------------------------------------+---------+--------------------------------+-----------------------+

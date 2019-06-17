@@ -15,12 +15,13 @@ Swirl effect using ImageMagick.
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-Mask               Yes
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
+| Mask   |             | Yes      |
++--------+-------------+----------+
 
 Controls
 --------
@@ -29,30 +30,33 @@ Controls
 
 .. cssclass:: longtable
 
-========================== ======= =========== =====================================================================================================
-Parameter / script name    Type    Default     Function
-========================== ======= =========== =====================================================================================================
-OpenMP / ``openmp``        Boolean Off         Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.
-Matte / ``matte``          Boolean Off         Merge Alpha before applying effect.
-Virtual Pixel / ``vpixel`` Choice  Transparent . Virtual Pixel Method.
-                                               . **Undefined**
-                                               . **Background**
-                                               . **Black**
-                                               . **CheckerTile**
-                                               . **Dither**
-                                               . **Edge**
-                                               . **Gray**
-                                               . **HorizontalTile**
-                                               . **HorizontalTileEdge**
-                                               . **Mirror**
-                                               . **Random**
-                                               . **Tile**
-                                               . **Transparent**
-                                               . **VerticalTile**
-                                               . **VerticalTileEdge**
-                                               . **White**
-Amount / ``amount``        Double  60          Swirl amount.
-========================== ======= =========== =====================================================================================================
++----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
+| Parameter / script name    | Type    | Default     | Function                                                                                              |
++============================+=========+=============+=======================================================================================================+
+| OpenMP / ``openmp``        | Boolean | Off         | Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host. |
++----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
+| Matte / ``matte``          | Boolean | Off         | Merge Alpha before applying effect.                                                                   |
++----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
+| Virtual Pixel / ``vpixel`` | Choice  | Transparent | | Virtual Pixel Method.                                                                               |
+|                            |         |             | | **Undefined**                                                                                       |
+|                            |         |             | | **Background**                                                                                      |
+|                            |         |             | | **Black**                                                                                           |
+|                            |         |             | | **CheckerTile**                                                                                     |
+|                            |         |             | | **Dither**                                                                                          |
+|                            |         |             | | **Edge**                                                                                            |
+|                            |         |             | | **Gray**                                                                                            |
+|                            |         |             | | **HorizontalTile**                                                                                  |
+|                            |         |             | | **HorizontalTileEdge**                                                                              |
+|                            |         |             | | **Mirror**                                                                                          |
+|                            |         |             | | **Random**                                                                                          |
+|                            |         |             | | **Tile**                                                                                            |
+|                            |         |             | | **Transparent**                                                                                     |
+|                            |         |             | | **VerticalTile**                                                                                    |
+|                            |         |             | | **VerticalTileEdge**                                                                                |
+|                            |         |             | | **White**                                                                                           |
++----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
+| Amount / ``amount``        | Double  | 60          | Swirl amount.                                                                                         |
++----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
 
 .. |pluginIcon| image:: net.fxarena.openfx.Swirl.png
    :width: 10.0%

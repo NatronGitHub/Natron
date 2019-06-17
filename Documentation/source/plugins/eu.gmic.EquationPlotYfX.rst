@@ -13,11 +13,11 @@ Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -26,51 +26,61 @@ Controls
 
 .. cssclass:: longtable
 
-================================= ======= ================= =====================
-Parameter / script name           Type    Default           Function
-================================= ======= ================= =====================
-F(X) / ``FX``                     String  X*c+10*cos(X+c+u)  
-X-Min / ``XMin``                  Double  -10                
-X-Max / ``XMax``                  Double  10                 
-Resolution / ``Resolution``       Integer 100                
-Channels / ``Channels``           Integer 3                  
-Plot Type / ``Plot_Type``         Choice  Splines           .  
-                                                            . **None**
-                                                            . **Lines**
-                                                            . **Splines**
-                                                            . **Bars**
-Vertex Type / ``Vertex_Type``     Choice  None              .  
-                                                            . **None**
-                                                            . **Points**
-                                                            . **Crosses 1**
-                                                            . **Crosses 2**
-                                                            . **Circles 1**
-                                                            . **Circles 2**
-                                                            . **Square 1**
-                                                            . **Square 2**
-Output Layer / ``Output_Layer``   Choice  Layer 0           .  
-                                                            . **Merged**
-                                                            . **Layer 0**
-                                                            . **Layer -1**
-                                                            . **Layer -2**
-                                                            . **Layer -3**
-                                                            . **Layer -4**
-                                                            . **Layer -5**
-                                                            . **Layer -6**
-                                                            . **Layer -7**
-                                                            . **Layer -8**
-                                                            . **Layer -9**
-Resize Mode / ``Resize_Mode``     Choice  Dynamic           .  
-                                                            . **Fixed (Inplace)**
-                                                            . **Dynamic**
-                                                            . **Downsample 1/2**
-                                                            . **Downsample 1/4**
-                                                            . **Downsample 1/8**
-                                                            . **Downsample 1/16**
-Ignore Alpha / ``Ignore_Alpha``   Boolean Off                
-Log Verbosity / ``Log_Verbosity`` Choice  Off               .  
-                                                            . **Off**
-                                                            . **Level 1**
-                                                            . **Level 2**
-                                                            . **Level 3**
-================================= ======= ================= =====================
++-----------------------------------+---------+-------------------+-----------------------+
+| Parameter / script name           | Type    | Default           | Function              |
++===================================+=========+===================+=======================+
+| F(X) / ``FX``                     | String  | X*c+10*cos(X+c+u) |                       |
++-----------------------------------+---------+-------------------+-----------------------+
+| X-Min / ``XMin``                  | Double  | -10               |                       |
++-----------------------------------+---------+-------------------+-----------------------+
+| X-Max / ``XMax``                  | Double  | 10                |                       |
++-----------------------------------+---------+-------------------+-----------------------+
+| Resolution / ``Resolution``       | Integer | 100               |                       |
++-----------------------------------+---------+-------------------+-----------------------+
+| Channels / ``Channels``           | Integer | 3                 |                       |
++-----------------------------------+---------+-------------------+-----------------------+
+| Plot Type / ``Plot_Type``         | Choice  | Splines           | |                     |
+|                                   |         |                   | | **None**            |
+|                                   |         |                   | | **Lines**           |
+|                                   |         |                   | | **Splines**         |
+|                                   |         |                   | | **Bars**            |
++-----------------------------------+---------+-------------------+-----------------------+
+| Vertex Type / ``Vertex_Type``     | Choice  | None              | |                     |
+|                                   |         |                   | | **None**            |
+|                                   |         |                   | | **Points**          |
+|                                   |         |                   | | **Crosses 1**       |
+|                                   |         |                   | | **Crosses 2**       |
+|                                   |         |                   | | **Circles 1**       |
+|                                   |         |                   | | **Circles 2**       |
+|                                   |         |                   | | **Square 1**        |
+|                                   |         |                   | | **Square 2**        |
++-----------------------------------+---------+-------------------+-----------------------+
+| Output Layer / ``Output_Layer``   | Choice  | Layer 0           | |                     |
+|                                   |         |                   | | **Merged**          |
+|                                   |         |                   | | **Layer 0**         |
+|                                   |         |                   | | **Layer -1**        |
+|                                   |         |                   | | **Layer -2**        |
+|                                   |         |                   | | **Layer -3**        |
+|                                   |         |                   | | **Layer -4**        |
+|                                   |         |                   | | **Layer -5**        |
+|                                   |         |                   | | **Layer -6**        |
+|                                   |         |                   | | **Layer -7**        |
+|                                   |         |                   | | **Layer -8**        |
+|                                   |         |                   | | **Layer -9**        |
++-----------------------------------+---------+-------------------+-----------------------+
+| Resize Mode / ``Resize_Mode``     | Choice  | Dynamic           | |                     |
+|                                   |         |                   | | **Fixed (Inplace)** |
+|                                   |         |                   | | **Dynamic**         |
+|                                   |         |                   | | **Downsample 1/2**  |
+|                                   |         |                   | | **Downsample 1/4**  |
+|                                   |         |                   | | **Downsample 1/8**  |
+|                                   |         |                   | | **Downsample 1/16** |
++-----------------------------------+---------+-------------------+-----------------------+
+| Ignore Alpha / ``Ignore_Alpha``   | Boolean | Off               |                       |
++-----------------------------------+---------+-------------------+-----------------------+
+| Log Verbosity / ``Log_Verbosity`` | Choice  | Off               | |                     |
+|                                   |         |                   | | **Off**             |
+|                                   |         |                   | | **Level 1**         |
+|                                   |         |                   | | **Level 2**         |
+|                                   |         |                   | | **Level 3**         |
++-----------------------------------+---------+-------------------+-----------------------+

@@ -13,11 +13,11 @@ Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -26,73 +26,93 @@ Controls
 
 .. cssclass:: longtable
 
-============================================== ======= ============= =============================
-Parameter / script name                        Type    Default       Function
-============================================== ======= ============= =============================
-Skin Estimation / ``Skin_Estimation``          Choice  Automatic     .  
-                                                                     . **None**
-                                                                     . **Manual**
-                                                                     . **Automatic**
-Tolerance / ``Tolerance``                      Double  0.5            
-Smoothness / ``Smoothness``                    Double  1              
-Threshold / ``Threshold``                      Double  1              
-Pre-Normalize Image / ``PreNormalize_Image``   Boolean On             
-X-Coordinate [Manual] / ``XCoordinate_Manual`` Double  50             
-Y-Coordinate [Manual] / ``YCoordinate_Manual`` Double  50             
-Radius [Manual] / ``Radius_Manual``            Double  5              
-Base Scale / ``Base_Scale``                    Double  2              
-Fine Scale / ``Fine_Scale``                    Double  0.2            
-Smoothness_2 / ``Smoothness_2``                Double  3              
-Smoothness Type / ``Smoothness_Type``          Choice  Bilateral     .  
-                                                                     . **Gaussian**
-                                                                     . **Bilateral**
-Gain / ``Gain``                                Double  0.05           
-Preview Data / ``Preview_Data``                Choice  Result Image  .  
-                                                                     . **Skin Mask**
-                                                                     . **Base Scale**
-                                                                     . **Medium Scale (Original)**
-                                                                     . **Medium Scale (Smoothed)**
-                                                                     . **Fine Scale**
-                                                                     . **Result Image**
-Preview Type / ``Preview_Type``                Choice  Full          .  
-                                                                     . **Full**
-                                                                     . **Forward Horizontal**
-                                                                     . **Forward Vertical**
-                                                                     . **Backward Horizontal**
-                                                                     . **Backward Vertical**
-                                                                     . **Duplicate Top**
-                                                                     . **Duplicate Left**
-                                                                     . **Duplicate Bottom**
-                                                                     . **Duplicate Right**
-                                                                     . **Duplicate Horizontal**
-                                                                     . **Duplicate Vertical**
-                                                                     . **Checkered**
-                                                                     . **Checkered Inverse**
-Preview Split / ``Preview_Split``              Double  x: 0.5 y: 0.5  
-Output Layer / ``Output_Layer``                Choice  Layer 0       .  
-                                                                     . **Merged**
-                                                                     . **Layer 0**
-                                                                     . **Layer -1**
-                                                                     . **Layer -2**
-                                                                     . **Layer -3**
-                                                                     . **Layer -4**
-                                                                     . **Layer -5**
-                                                                     . **Layer -6**
-                                                                     . **Layer -7**
-                                                                     . **Layer -8**
-                                                                     . **Layer -9**
-Resize Mode / ``Resize_Mode``                  Choice  Dynamic       .  
-                                                                     . **Fixed (Inplace)**
-                                                                     . **Dynamic**
-                                                                     . **Downsample 1/2**
-                                                                     . **Downsample 1/4**
-                                                                     . **Downsample 1/8**
-                                                                     . **Downsample 1/16**
-Ignore Alpha / ``Ignore_Alpha``                Boolean Off            
-Preview/Draft Mode / ``PreviewDraft_Mode``     Boolean Off            
-Log Verbosity / ``Log_Verbosity``              Choice  Off           .  
-                                                                     . **Off**
-                                                                     . **Level 1**
-                                                                     . **Level 2**
-                                                                     . **Level 3**
-============================================== ======= ============= =============================
++------------------------------------------------+---------+---------------+-------------------------------+
+| Parameter / script name                        | Type    | Default       | Function                      |
++================================================+=========+===============+===============================+
+| Skin Estimation / ``Skin_Estimation``          | Choice  | Automatic     | |                             |
+|                                                |         |               | | **None**                    |
+|                                                |         |               | | **Manual**                  |
+|                                                |         |               | | **Automatic**               |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Tolerance / ``Tolerance``                      | Double  | 0.5           |                               |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Smoothness / ``Smoothness``                    | Double  | 1             |                               |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Threshold / ``Threshold``                      | Double  | 1             |                               |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Pre-Normalize Image / ``PreNormalize_Image``   | Boolean | On            |                               |
++------------------------------------------------+---------+---------------+-------------------------------+
+| X-Coordinate [Manual] / ``XCoordinate_Manual`` | Double  | 50            |                               |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Y-Coordinate [Manual] / ``YCoordinate_Manual`` | Double  | 50            |                               |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Radius [Manual] / ``Radius_Manual``            | Double  | 5             |                               |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Base Scale / ``Base_Scale``                    | Double  | 2             |                               |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Fine Scale / ``Fine_Scale``                    | Double  | 0.2           |                               |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Smoothness_2 / ``Smoothness_2``                | Double  | 3             |                               |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Smoothness Type / ``Smoothness_Type``          | Choice  | Bilateral     | |                             |
+|                                                |         |               | | **Gaussian**                |
+|                                                |         |               | | **Bilateral**               |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Gain / ``Gain``                                | Double  | 0.05          |                               |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Preview Data / ``Preview_Data``                | Choice  | Result Image  | |                             |
+|                                                |         |               | | **Skin Mask**               |
+|                                                |         |               | | **Base Scale**              |
+|                                                |         |               | | **Medium Scale (Original)** |
+|                                                |         |               | | **Medium Scale (Smoothed)** |
+|                                                |         |               | | **Fine Scale**              |
+|                                                |         |               | | **Result Image**            |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Preview Type / ``Preview_Type``                | Choice  | Full          | |                             |
+|                                                |         |               | | **Full**                    |
+|                                                |         |               | | **Forward Horizontal**      |
+|                                                |         |               | | **Forward Vertical**        |
+|                                                |         |               | | **Backward Horizontal**     |
+|                                                |         |               | | **Backward Vertical**       |
+|                                                |         |               | | **Duplicate Top**           |
+|                                                |         |               | | **Duplicate Left**          |
+|                                                |         |               | | **Duplicate Bottom**        |
+|                                                |         |               | | **Duplicate Right**         |
+|                                                |         |               | | **Duplicate Horizontal**    |
+|                                                |         |               | | **Duplicate Vertical**      |
+|                                                |         |               | | **Checkered**               |
+|                                                |         |               | | **Checkered Inverse**       |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Preview Split / ``Preview_Split``              | Double  | x: 0.5 y: 0.5 |                               |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Output Layer / ``Output_Layer``                | Choice  | Layer 0       | |                             |
+|                                                |         |               | | **Merged**                  |
+|                                                |         |               | | **Layer 0**                 |
+|                                                |         |               | | **Layer -1**                |
+|                                                |         |               | | **Layer -2**                |
+|                                                |         |               | | **Layer -3**                |
+|                                                |         |               | | **Layer -4**                |
+|                                                |         |               | | **Layer -5**                |
+|                                                |         |               | | **Layer -6**                |
+|                                                |         |               | | **Layer -7**                |
+|                                                |         |               | | **Layer -8**                |
+|                                                |         |               | | **Layer -9**                |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Resize Mode / ``Resize_Mode``                  | Choice  | Dynamic       | |                             |
+|                                                |         |               | | **Fixed (Inplace)**         |
+|                                                |         |               | | **Dynamic**                 |
+|                                                |         |               | | **Downsample 1/2**          |
+|                                                |         |               | | **Downsample 1/4**          |
+|                                                |         |               | | **Downsample 1/8**          |
+|                                                |         |               | | **Downsample 1/16**         |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Ignore Alpha / ``Ignore_Alpha``                | Boolean | Off           |                               |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Preview/Draft Mode / ``PreviewDraft_Mode``     | Boolean | Off           |                               |
++------------------------------------------------+---------+---------------+-------------------------------+
+| Log Verbosity / ``Log_Verbosity``              | Choice  | Off           | |                             |
+|                                                |         |               | | **Off**                     |
+|                                                |         |               | | **Level 1**                 |
+|                                                |         |               | | **Level 2**                 |
+|                                                |         |               | | **Level 3**                 |
++------------------------------------------------+---------+---------------+-------------------------------+

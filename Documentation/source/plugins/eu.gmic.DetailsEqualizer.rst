@@ -13,11 +13,11 @@ Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -26,129 +26,157 @@ Controls
 
 .. cssclass:: longtable
 
-============================================= ======= ================= ===================================
-Parameter / script name                       Type    Default           Function
-============================================= ======= ================= ===================================
-Base Scale / ``Base_Scale``                   Double  5                  
-Detail Scale / ``Detail_Scale``               Double  0.5                
-Threshold / ``Threshold``                     Double  0                  
-Smoothness / ``Smoothness``                   Double  0                  
-Smoothness Type / ``Smoothness_Type``         Choice  Diffusion         .  
-                                                                        . **Gaussian**
-                                                                        . **Bilateral**
-                                                                        . **Diffusion**
-Gain / ``Gain``                               Double  0                  
-Threshold_2 / ``Threshold_2``                 Double  0                  
-Smoothness_2 / ``Smoothness_2``               Double  0                  
-Smoothness Type_2 / ``Smoothness_Type_2``     Choice  Diffusion         .  
-                                                                        . **Gaussian**
-                                                                        . **Bilateral**
-                                                                        . **Diffusion**
-Gain_2 / ``Gain_2``                           Double  0                  
-Threshold_3 / ``Threshold_3``                 Double  0                  
-Smoothness_3 / ``Smoothness_3``               Double  0                  
-Smoothness Type_3 / ``Smoothness_Type_3``     Choice  Diffusion         .  
-                                                                        . **Gaussian**
-                                                                        . **Bilateral**
-                                                                        . **Diffusion**
-Gain_3 / ``Gain_3``                           Double  0                  
-Threshold_4 / ``Threshold_4``                 Double  0                  
-Smoothness_4 / ``Smoothness_4``               Double  0                  
-Smoothness Type_4 / ``Smoothness_Type_4``     Choice  Diffusion         .  
-                                                                        . **Gaussian**
-                                                                        . **Bilateral**
-                                                                        . **Diffusion**
-Gain_4 / ``Gain_4``                           Double  0                  
-Channel(s) / ``Channels``                     Choice  YCbCr [Luminance] .  
-                                                                        . **All**
-                                                                        . **RGBA [All]**
-                                                                        . **RGB [All]**
-                                                                        . **RGB [Red]**
-                                                                        . **RGB [Green]**
-                                                                        . **RGB [Blue]**
-                                                                        . **RGBA [Alpha]**
-                                                                        . **Linear RGB [All]**
-                                                                        . **Linear RGB [Red]**
-                                                                        . **Linear RGB [Green]**
-                                                                        . **Linear RGB [Blue]**
-                                                                        . **YCbCr [Luminance]**
-                                                                        . **YCbCr [Blue-Red Chrominances]**
-                                                                        . **YCbCr [Blue Chrominance]**
-                                                                        . **YCbCr [Red Chrominance]**
-                                                                        . **YCbCr [Green Chrominance]**
-                                                                        . **Lab [Lightness]**
-                                                                        . **Lab [ab-Chrominances]**
-                                                                        . **Lab [a-Chrominance]**
-                                                                        . **Lab [b-Chrominance]**
-                                                                        . **Lch [ch-Chrominances]**
-                                                                        . **Lch [c-Chrominance]**
-                                                                        . **Lch [h-Chrominance]**
-                                                                        . **HSV [Hue]**
-                                                                        . **HSV [Saturation]**
-                                                                        . **HSV [Value]**
-                                                                        . **HSI [Intensity]**
-                                                                        . **HSL [Lightness]**
-                                                                        . **CMYK [Cyan]**
-                                                                        . **CMYK [Magenta]**
-                                                                        . **CMYK [Yellow]**
-                                                                        . **CMYK [Key]**
-                                                                        . **YIQ [Luma]**
-                                                                        . **YIQ [Chromas]**
-                                                                        . **RYB [All]**
-                                                                        . **RYB [Red]**
-                                                                        . **RYB [Yellow]**
-                                                                        . **RYB [Blue]**
-Value Action / ``Value_Action``               Choice  None              .  
-                                                                        . **None**
-                                                                        . **Cut**
-                                                                        . **Normalize**
-Parallel Processing / ``Parallel_Processing`` Choice  Auto              .  
-                                                                        . **Auto**
-                                                                        . **One Thread**
-                                                                        . **Two Threads**
-                                                                        . **Four Threads**
-                                                                        . **Eight Threads**
-                                                                        . **Sixteen Threads**
-), Spatial Overlap / ``_Spatial_Overlap``     Integer 32                 
-Preview Type / ``Preview_Type``               Choice  Full              .  
-                                                                        . **Full**
-                                                                        . **Forward Horizontal**
-                                                                        . **Forward Vertical**
-                                                                        . **Backward Horizontal**
-                                                                        . **Backward Vertical**
-                                                                        . **Duplicate Top**
-                                                                        . **Duplicate Left**
-                                                                        . **Duplicate Bottom**
-                                                                        . **Duplicate Right**
-                                                                        . **Duplicate Horizontal**
-                                                                        . **Duplicate Vertical**
-                                                                        . **Checkered**
-                                                                        . **Checkered Inverse**
-Preview Split / ``Preview_Split``             Double  x: 0.5 y: 0.5      
-Output Layer / ``Output_Layer``               Choice  Layer 0           .  
-                                                                        . **Merged**
-                                                                        . **Layer 0**
-                                                                        . **Layer -1**
-                                                                        . **Layer -2**
-                                                                        . **Layer -3**
-                                                                        . **Layer -4**
-                                                                        . **Layer -5**
-                                                                        . **Layer -6**
-                                                                        . **Layer -7**
-                                                                        . **Layer -8**
-                                                                        . **Layer -9**
-Resize Mode / ``Resize_Mode``                 Choice  Dynamic           .  
-                                                                        . **Fixed (Inplace)**
-                                                                        . **Dynamic**
-                                                                        . **Downsample 1/2**
-                                                                        . **Downsample 1/4**
-                                                                        . **Downsample 1/8**
-                                                                        . **Downsample 1/16**
-Ignore Alpha / ``Ignore_Alpha``               Boolean Off                
-Preview/Draft Mode / ``PreviewDraft_Mode``    Boolean Off                
-Log Verbosity / ``Log_Verbosity``             Choice  Off               .  
-                                                                        . **Off**
-                                                                        . **Level 1**
-                                                                        . **Level 2**
-                                                                        . **Level 3**
-============================================= ======= ================= ===================================
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Parameter / script name                       | Type    | Default           | Function                            |
++===============================================+=========+===================+=====================================+
+| Base Scale / ``Base_Scale``                   | Double  | 5                 |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Detail Scale / ``Detail_Scale``               | Double  | 0.5               |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Threshold / ``Threshold``                     | Double  | 0                 |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Smoothness / ``Smoothness``                   | Double  | 0                 |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Smoothness Type / ``Smoothness_Type``         | Choice  | Diffusion         | |                                   |
+|                                               |         |                   | | **Gaussian**                      |
+|                                               |         |                   | | **Bilateral**                     |
+|                                               |         |                   | | **Diffusion**                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Gain / ``Gain``                               | Double  | 0                 |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Threshold_2 / ``Threshold_2``                 | Double  | 0                 |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Smoothness_2 / ``Smoothness_2``               | Double  | 0                 |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Smoothness Type_2 / ``Smoothness_Type_2``     | Choice  | Diffusion         | |                                   |
+|                                               |         |                   | | **Gaussian**                      |
+|                                               |         |                   | | **Bilateral**                     |
+|                                               |         |                   | | **Diffusion**                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Gain_2 / ``Gain_2``                           | Double  | 0                 |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Threshold_3 / ``Threshold_3``                 | Double  | 0                 |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Smoothness_3 / ``Smoothness_3``               | Double  | 0                 |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Smoothness Type_3 / ``Smoothness_Type_3``     | Choice  | Diffusion         | |                                   |
+|                                               |         |                   | | **Gaussian**                      |
+|                                               |         |                   | | **Bilateral**                     |
+|                                               |         |                   | | **Diffusion**                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Gain_3 / ``Gain_3``                           | Double  | 0                 |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Threshold_4 / ``Threshold_4``                 | Double  | 0                 |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Smoothness_4 / ``Smoothness_4``               | Double  | 0                 |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Smoothness Type_4 / ``Smoothness_Type_4``     | Choice  | Diffusion         | |                                   |
+|                                               |         |                   | | **Gaussian**                      |
+|                                               |         |                   | | **Bilateral**                     |
+|                                               |         |                   | | **Diffusion**                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Gain_4 / ``Gain_4``                           | Double  | 0                 |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Channel(s) / ``Channels``                     | Choice  | YCbCr [Luminance] | |                                   |
+|                                               |         |                   | | **All**                           |
+|                                               |         |                   | | **RGBA [All]**                    |
+|                                               |         |                   | | **RGB [All]**                     |
+|                                               |         |                   | | **RGB [Red]**                     |
+|                                               |         |                   | | **RGB [Green]**                   |
+|                                               |         |                   | | **RGB [Blue]**                    |
+|                                               |         |                   | | **RGBA [Alpha]**                  |
+|                                               |         |                   | | **Linear RGB [All]**              |
+|                                               |         |                   | | **Linear RGB [Red]**              |
+|                                               |         |                   | | **Linear RGB [Green]**            |
+|                                               |         |                   | | **Linear RGB [Blue]**             |
+|                                               |         |                   | | **YCbCr [Luminance]**             |
+|                                               |         |                   | | **YCbCr [Blue-Red Chrominances]** |
+|                                               |         |                   | | **YCbCr [Blue Chrominance]**      |
+|                                               |         |                   | | **YCbCr [Red Chrominance]**       |
+|                                               |         |                   | | **YCbCr [Green Chrominance]**     |
+|                                               |         |                   | | **Lab [Lightness]**               |
+|                                               |         |                   | | **Lab [ab-Chrominances]**         |
+|                                               |         |                   | | **Lab [a-Chrominance]**           |
+|                                               |         |                   | | **Lab [b-Chrominance]**           |
+|                                               |         |                   | | **Lch [ch-Chrominances]**         |
+|                                               |         |                   | | **Lch [c-Chrominance]**           |
+|                                               |         |                   | | **Lch [h-Chrominance]**           |
+|                                               |         |                   | | **HSV [Hue]**                     |
+|                                               |         |                   | | **HSV [Saturation]**              |
+|                                               |         |                   | | **HSV [Value]**                   |
+|                                               |         |                   | | **HSI [Intensity]**               |
+|                                               |         |                   | | **HSL [Lightness]**               |
+|                                               |         |                   | | **CMYK [Cyan]**                   |
+|                                               |         |                   | | **CMYK [Magenta]**                |
+|                                               |         |                   | | **CMYK [Yellow]**                 |
+|                                               |         |                   | | **CMYK [Key]**                    |
+|                                               |         |                   | | **YIQ [Luma]**                    |
+|                                               |         |                   | | **YIQ [Chromas]**                 |
+|                                               |         |                   | | **RYB [All]**                     |
+|                                               |         |                   | | **RYB [Red]**                     |
+|                                               |         |                   | | **RYB [Yellow]**                  |
+|                                               |         |                   | | **RYB [Blue]**                    |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Value Action / ``Value_Action``               | Choice  | None              | |                                   |
+|                                               |         |                   | | **None**                          |
+|                                               |         |                   | | **Cut**                           |
+|                                               |         |                   | | **Normalize**                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Parallel Processing / ``Parallel_Processing`` | Choice  | Auto              | |                                   |
+|                                               |         |                   | | **Auto**                          |
+|                                               |         |                   | | **One Thread**                    |
+|                                               |         |                   | | **Two Threads**                   |
+|                                               |         |                   | | **Four Threads**                  |
+|                                               |         |                   | | **Eight Threads**                 |
+|                                               |         |                   | | **Sixteen Threads**               |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| ), Spatial Overlap / ``_Spatial_Overlap``     | Integer | 32                |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Preview Type / ``Preview_Type``               | Choice  | Full              | |                                   |
+|                                               |         |                   | | **Full**                          |
+|                                               |         |                   | | **Forward Horizontal**            |
+|                                               |         |                   | | **Forward Vertical**              |
+|                                               |         |                   | | **Backward Horizontal**           |
+|                                               |         |                   | | **Backward Vertical**             |
+|                                               |         |                   | | **Duplicate Top**                 |
+|                                               |         |                   | | **Duplicate Left**                |
+|                                               |         |                   | | **Duplicate Bottom**              |
+|                                               |         |                   | | **Duplicate Right**               |
+|                                               |         |                   | | **Duplicate Horizontal**          |
+|                                               |         |                   | | **Duplicate Vertical**            |
+|                                               |         |                   | | **Checkered**                     |
+|                                               |         |                   | | **Checkered Inverse**             |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Preview Split / ``Preview_Split``             | Double  | x: 0.5 y: 0.5     |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Output Layer / ``Output_Layer``               | Choice  | Layer 0           | |                                   |
+|                                               |         |                   | | **Merged**                        |
+|                                               |         |                   | | **Layer 0**                       |
+|                                               |         |                   | | **Layer -1**                      |
+|                                               |         |                   | | **Layer -2**                      |
+|                                               |         |                   | | **Layer -3**                      |
+|                                               |         |                   | | **Layer -4**                      |
+|                                               |         |                   | | **Layer -5**                      |
+|                                               |         |                   | | **Layer -6**                      |
+|                                               |         |                   | | **Layer -7**                      |
+|                                               |         |                   | | **Layer -8**                      |
+|                                               |         |                   | | **Layer -9**                      |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Resize Mode / ``Resize_Mode``                 | Choice  | Dynamic           | |                                   |
+|                                               |         |                   | | **Fixed (Inplace)**               |
+|                                               |         |                   | | **Dynamic**                       |
+|                                               |         |                   | | **Downsample 1/2**                |
+|                                               |         |                   | | **Downsample 1/4**                |
+|                                               |         |                   | | **Downsample 1/8**                |
+|                                               |         |                   | | **Downsample 1/16**               |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Ignore Alpha / ``Ignore_Alpha``               | Boolean | Off               |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Preview/Draft Mode / ``PreviewDraft_Mode``    | Boolean | Off               |                                     |
++-----------------------------------------------+---------+-------------------+-------------------------------------+
+| Log Verbosity / ``Log_Verbosity``             | Choice  | Off               | |                                   |
+|                                               |         |                   | | **Off**                           |
+|                                               |         |                   | | **Level 1**                       |
+|                                               |         |                   | | **Level 2**                       |
+|                                               |         |                   | | **Level 3**                       |
++-----------------------------------------------+---------+-------------------+-------------------------------------+

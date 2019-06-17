@@ -15,12 +15,13 @@ Polaroid image effect node.
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-Mask               Yes
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
+| Mask   |             | Yes      |
++--------+-------------+----------+
 
 Controls
 --------
@@ -29,15 +30,19 @@ Controls
 
 .. cssclass:: longtable
 
-======================= ======= ========== =====================================================================================================
-Parameter / script name Type    Default    Function
-======================= ======= ========== =====================================================================================================
-Angle / ``angle``       Double  5          Adjust polaroid angle
-Caption / ``caption``   String  Enter text Add caption to polaroid
-Font family / ``font``  Choice             The name of the font to be used
-Font size / ``size``    Integer 64         The height of the characters to render in pixels
-OpenMP / ``openmp``     Boolean Off        Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.
-======================= ======= ========== =====================================================================================================
++-------------------------+---------+------------+-------------------------------------------------------------------------------------------------------+
+| Parameter / script name | Type    | Default    | Function                                                                                              |
++=========================+=========+============+=======================================================================================================+
+| Angle / ``angle``       | Double  | 5          | Adjust polaroid angle                                                                                 |
++-------------------------+---------+------------+-------------------------------------------------------------------------------------------------------+
+| Caption / ``caption``   | String  | Enter text | Add caption to polaroid                                                                               |
++-------------------------+---------+------------+-------------------------------------------------------------------------------------------------------+
+| Font family / ``font``  | Choice  |            | The name of the font to be used                                                                       |
++-------------------------+---------+------------+-------------------------------------------------------------------------------------------------------+
+| Font size / ``size``    | Integer | 64         | The height of the characters to render in pixels                                                      |
++-------------------------+---------+------------+-------------------------------------------------------------------------------------------------------+
+| OpenMP / ``openmp``     | Boolean | Off        | Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host. |
++-------------------------+---------+------------+-------------------------------------------------------------------------------------------------------+
 
 .. |pluginIcon| image:: net.fxarena.openfx.Polaroid.png
    :width: 10.0%

@@ -13,11 +13,11 @@ Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -26,57 +26,76 @@ Controls
 
 .. cssclass:: longtable
 
-============================================================================= ======= ======== =====================
-Parameter / script name                                                       Type    Default  Function
-============================================================================= ======= ======== =====================
-Number of Scales / ``Number_of_Scales``                                       Integer 4         
-Starting Scale (%) / ``Starting_Scale_``                                      Double  25        
-Ending Scale (%) / ``Ending_Scale_``                                          Double  100       
-Non-Linearity / ``NonLinearity``                                              Double  0         
-Rescaling / ``Rescaling``                                                     Choice  Lanczsos .  
-                                                                                               . **Bloc**
-                                                                                               . **Linear**
-                                                                                               . **Cubic**
-                                                                                               . **Lanczsos**
-X-Centering / ``XCentering``                                                  Double  0.5       
-Y-Centering / ``YCentering``                                                  Double  0.5       
-Angle / ``Angle``                                                             Double  0         
-Enable Interpolated Motion / ``Enable_Interpolated_Motion``                   Boolean Off       
-Ending X-Centering / ``Ending_XCentering``                                    Double  0.5       
-Ending Y-Centering / ``Ending_YCentering``                                    Double  0.5       
-Ending Angle / ``Ending_Angle``                                               Double  0         
-G’MIC Operator / ``GMIC_Operator``                                            String            
-Return Scaling / ``Return_Scaling``                                           Choice  None     .  
-                                                                                               . **None**
-                                                                                               . **Bloc**
-                                                                                               . **Linear**
-                                                                                               . **Cubic**
-                                                                                               . **Lanczos**
-Lock Return Scaling to Source Layer / ``Lock_Return_Scaling_to_Source_Layer`` Boolean Off       
-Output Layer / ``Output_Layer``                                               Choice  Layer 0  .  
-                                                                                               . **Merged**
-                                                                                               . **Layer 0**
-                                                                                               . **Layer -1**
-                                                                                               . **Layer -2**
-                                                                                               . **Layer -3**
-                                                                                               . **Layer -4**
-                                                                                               . **Layer -5**
-                                                                                               . **Layer -6**
-                                                                                               . **Layer -7**
-                                                                                               . **Layer -8**
-                                                                                               . **Layer -9**
-Resize Mode / ``Resize_Mode``                                                 Choice  Dynamic  .  
-                                                                                               . **Fixed (Inplace)**
-                                                                                               . **Dynamic**
-                                                                                               . **Downsample 1/2**
-                                                                                               . **Downsample 1/4**
-                                                                                               . **Downsample 1/8**
-                                                                                               . **Downsample 1/16**
-Ignore Alpha / ``Ignore_Alpha``                                               Boolean Off       
-Preview/Draft Mode / ``PreviewDraft_Mode``                                    Boolean Off       
-Log Verbosity / ``Log_Verbosity``                                             Choice  Off      .  
-                                                                                               . **Off**
-                                                                                               . **Level 1**
-                                                                                               . **Level 2**
-                                                                                               . **Level 3**
-============================================================================= ======= ======== =====================
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Parameter / script name                                                       | Type    | Default  | Function              |
++===============================================================================+=========+==========+=======================+
+| Number of Scales / ``Number_of_Scales``                                       | Integer | 4        |                       |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Starting Scale (%) / ``Starting_Scale_``                                      | Double  | 25       |                       |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Ending Scale (%) / ``Ending_Scale_``                                          | Double  | 100      |                       |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Non-Linearity / ``NonLinearity``                                              | Double  | 0        |                       |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Rescaling / ``Rescaling``                                                     | Choice  | Lanczsos | |                     |
+|                                                                               |         |          | | **Bloc**            |
+|                                                                               |         |          | | **Linear**          |
+|                                                                               |         |          | | **Cubic**           |
+|                                                                               |         |          | | **Lanczsos**        |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| X-Centering / ``XCentering``                                                  | Double  | 0.5      |                       |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Y-Centering / ``YCentering``                                                  | Double  | 0.5      |                       |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Angle / ``Angle``                                                             | Double  | 0        |                       |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Enable Interpolated Motion / ``Enable_Interpolated_Motion``                   | Boolean | Off      |                       |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Ending X-Centering / ``Ending_XCentering``                                    | Double  | 0.5      |                       |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Ending Y-Centering / ``Ending_YCentering``                                    | Double  | 0.5      |                       |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Ending Angle / ``Ending_Angle``                                               | Double  | 0        |                       |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| G’MIC Operator / ``GMIC_Operator``                                            | String  |          |                       |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Return Scaling / ``Return_Scaling``                                           | Choice  | None     | |                     |
+|                                                                               |         |          | | **None**            |
+|                                                                               |         |          | | **Bloc**            |
+|                                                                               |         |          | | **Linear**          |
+|                                                                               |         |          | | **Cubic**           |
+|                                                                               |         |          | | **Lanczos**         |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Lock Return Scaling to Source Layer / ``Lock_Return_Scaling_to_Source_Layer`` | Boolean | Off      |                       |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Output Layer / ``Output_Layer``                                               | Choice  | Layer 0  | |                     |
+|                                                                               |         |          | | **Merged**          |
+|                                                                               |         |          | | **Layer 0**         |
+|                                                                               |         |          | | **Layer -1**        |
+|                                                                               |         |          | | **Layer -2**        |
+|                                                                               |         |          | | **Layer -3**        |
+|                                                                               |         |          | | **Layer -4**        |
+|                                                                               |         |          | | **Layer -5**        |
+|                                                                               |         |          | | **Layer -6**        |
+|                                                                               |         |          | | **Layer -7**        |
+|                                                                               |         |          | | **Layer -8**        |
+|                                                                               |         |          | | **Layer -9**        |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Resize Mode / ``Resize_Mode``                                                 | Choice  | Dynamic  | |                     |
+|                                                                               |         |          | | **Fixed (Inplace)** |
+|                                                                               |         |          | | **Dynamic**         |
+|                                                                               |         |          | | **Downsample 1/2**  |
+|                                                                               |         |          | | **Downsample 1/4**  |
+|                                                                               |         |          | | **Downsample 1/8**  |
+|                                                                               |         |          | | **Downsample 1/16** |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Ignore Alpha / ``Ignore_Alpha``                                               | Boolean | Off      |                       |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Preview/Draft Mode / ``PreviewDraft_Mode``                                    | Boolean | Off      |                       |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+
+| Log Verbosity / ``Log_Verbosity``                                             | Choice  | Off      | |                     |
+|                                                                               |         |          | | **Off**             |
+|                                                                               |         |          | | **Level 1**         |
+|                                                                               |         |          | | **Level 2**         |
+|                                                                               |         |          | | **Level 3**         |
++-------------------------------------------------------------------------------+---------+----------+-----------------------+

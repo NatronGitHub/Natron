@@ -15,12 +15,13 @@ Roll effect using ImageMagick.
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-Mask               Yes
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
+| Mask   |             | Yes      |
++--------+-------------+----------+
 
 Controls
 --------
@@ -29,31 +30,35 @@ Controls
 
 .. cssclass:: longtable
 
-========================== ======= =========== =====================================================================================================
-Parameter / script name    Type    Default     Function
-========================== ======= =========== =====================================================================================================
-OpenMP / ``openmp``        Boolean Off         Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.
-Matte / ``matte``          Boolean Off         Merge Alpha before applying effect.
-Virtual Pixel / ``vpixel`` Choice  Transparent . Virtual Pixel Method.
-                                               . **Undefined**
-                                               . **Background**
-                                               . **Black**
-                                               . **CheckerTile**
-                                               . **Dither**
-                                               . **Edge**
-                                               . **Gray**
-                                               . **HorizontalTile**
-                                               . **HorizontalTileEdge**
-                                               . **Mirror**
-                                               . **Random**
-                                               . **Tile**
-                                               . **Transparent**
-                                               . **VerticalTile**
-                                               . **VerticalTileEdge**
-                                               . **White**
-X / ``x``                  Double  0           Adjust roll X
-Y / ``y``                  Double  0           Adjust roll Y
-========================== ======= =========== =====================================================================================================
++----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
+| Parameter / script name    | Type    | Default     | Function                                                                                              |
++============================+=========+=============+=======================================================================================================+
+| OpenMP / ``openmp``        | Boolean | Off         | Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host. |
++----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
+| Matte / ``matte``          | Boolean | Off         | Merge Alpha before applying effect.                                                                   |
++----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
+| Virtual Pixel / ``vpixel`` | Choice  | Transparent | | Virtual Pixel Method.                                                                               |
+|                            |         |             | | **Undefined**                                                                                       |
+|                            |         |             | | **Background**                                                                                      |
+|                            |         |             | | **Black**                                                                                           |
+|                            |         |             | | **CheckerTile**                                                                                     |
+|                            |         |             | | **Dither**                                                                                          |
+|                            |         |             | | **Edge**                                                                                            |
+|                            |         |             | | **Gray**                                                                                            |
+|                            |         |             | | **HorizontalTile**                                                                                  |
+|                            |         |             | | **HorizontalTileEdge**                                                                              |
+|                            |         |             | | **Mirror**                                                                                          |
+|                            |         |             | | **Random**                                                                                          |
+|                            |         |             | | **Tile**                                                                                            |
+|                            |         |             | | **Transparent**                                                                                     |
+|                            |         |             | | **VerticalTile**                                                                                    |
+|                            |         |             | | **VerticalTileEdge**                                                                                |
+|                            |         |             | | **White**                                                                                           |
++----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
+| X / ``x``                  | Double  | 0           | Adjust roll X                                                                                         |
++----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
+| Y / ``y``                  | Double  | 0           | Adjust roll Y                                                                                         |
++----------------------------+---------+-------------+-------------------------------------------------------------------------------------------------------+
 
 .. |pluginIcon| image:: net.fxarena.openfx.Roll.png
    :width: 10.0%

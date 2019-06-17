@@ -29,12 +29,13 @@ See also: http://opticalenquiry.com/nuke/index.php?title=Grade and http://optica
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-Mask               Yes
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
+| Mask   |             | Yes      |
++--------+-------------+----------+
 
 Controls
 --------
@@ -43,24 +44,37 @@ Controls
 
 .. cssclass:: longtable
 
-============================ ======= =================== ==========================================================================================================================================================
-Parameter / script name      Type    Default             Function
-============================ ======= =================== ==========================================================================================================================================================
-Black Point / ``blackPoint`` Color   r: 0 g: 0 b: 0 a: 0 Set the color of the darkest pixels in the image.
-White Point / ``whitePoint`` Color   r: 1 g: 1 b: 1 a: 1 Set the color of the brightest pixels in the image.
-Black / ``black``            Color   r: 0 g: 0 b: 0 a: 0 Colors corresponding to the blackpoint are set to this value.
-White / ``white``            Color   r: 1 g: 1 b: 1 a: 1 Colors corresponding to the whitepoint are set to this value.
-Multiply / ``multiply``      Color   r: 1 g: 1 b: 1 a: 1 Multiplies the result by this value.
-Offset / ``offset``          Color   r: 0 g: 0 b: 0 a: 0 Adds this value to the result (this applies to black and white).
-Gamma / ``gamma``            Color   r: 1 g: 1 b: 1 a: 1 Final gamma correction. Negative values are not affected by gamma.
-Normalize / ``normalize``    Button                      Normalize the image by setting the white point and black point from the minimum and maximum values of the input.
-Reverse / ``reverse``        Boolean Off                 Apply the inverse correction. Useful to apply the inverse of a Grade downstream: copy-and-paste or clone the upstream node, and invert the downstream one.
-Clamp Black / ``clampBlack`` Boolean On                  All colors below 0 on output are set to 0.
-Clamp White / ``clampWhite`` Boolean Off                 All colors above 1 on output are set to 1.
-(Un)premult / ``premult``    Boolean Off                 Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.
-Invert Mask / ``maskInvert`` Boolean Off                 When checked, the effect is fully applied where the mask is 0.
-Mix / ``mix``                Double  1                   Mix factor between the original and the transformed image.
-============================ ======= =================== ==========================================================================================================================================================
++------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Parameter / script name      | Type    | Default             | Function                                                                                                                                                   |
++==============================+=========+=====================+============================================================================================================================================================+
+| Black Point / ``blackPoint`` | Color   | r: 0 g: 0 b: 0 a: 0 | Set the color of the darkest pixels in the image.                                                                                                          |
++------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| White Point / ``whitePoint`` | Color   | r: 1 g: 1 b: 1 a: 1 | Set the color of the brightest pixels in the image.                                                                                                        |
++------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Black / ``black``            | Color   | r: 0 g: 0 b: 0 a: 0 | Colors corresponding to the blackpoint are set to this value.                                                                                              |
++------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| White / ``white``            | Color   | r: 1 g: 1 b: 1 a: 1 | Colors corresponding to the whitepoint are set to this value.                                                                                              |
++------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Multiply / ``multiply``      | Color   | r: 1 g: 1 b: 1 a: 1 | Multiplies the result by this value.                                                                                                                       |
++------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Offset / ``offset``          | Color   | r: 0 g: 0 b: 0 a: 0 | Adds this value to the result (this applies to black and white).                                                                                           |
++------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Gamma / ``gamma``            | Color   | r: 1 g: 1 b: 1 a: 1 | Final gamma correction. Negative values are not affected by gamma.                                                                                         |
++------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Normalize / ``normalize``    | Button  |                     | Normalize the image by setting the white point and black point from the minimum and maximum values of the input.                                           |
++------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Reverse / ``reverse``        | Boolean | Off                 | Apply the inverse correction. Useful to apply the inverse of a Grade downstream: copy-and-paste or clone the upstream node, and invert the downstream one. |
++------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Clamp Black / ``clampBlack`` | Boolean | On                  | All colors below 0 on output are set to 0.                                                                                                                 |
++------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Clamp White / ``clampWhite`` | Boolean | Off                 | All colors above 1 on output are set to 1.                                                                                                                 |
++------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| (Un)premult / ``premult``    | Boolean | Off                 | Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.                         |
++------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Invert Mask / ``maskInvert`` | Boolean | Off                 | When checked, the effect is fully applied where the mask is 0.                                                                                             |
++------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Mix / ``mix``                | Double  | 1                   | Mix factor between the original and the transformed image.                                                                                                 |
++------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 .. |pluginIcon| image:: net.sf.openfx.GradePlugin.png
    :width: 10.0%

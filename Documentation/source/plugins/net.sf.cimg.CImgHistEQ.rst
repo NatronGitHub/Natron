@@ -19,12 +19,13 @@ CImg is a free, open-source library distributed under the CeCILL-C (close to the
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-Mask               Yes
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
+| Mask   |             | Yes      |
++--------+-------------+----------+
 
 Controls
 --------
@@ -33,14 +34,17 @@ Controls
 
 .. cssclass:: longtable
 
-============================ ======= ======= ==================================================================================================================================
-Parameter / script name      Type    Default Function
-============================ ======= ======= ==================================================================================================================================
-NbLevels / ``nb_levels``     Integer 4096    Number of histogram levels used for the equalization.
-(Un)premult / ``premult``    Boolean Off     Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.
-Invert Mask / ``maskInvert`` Boolean Off     When checked, the effect is fully applied where the mask is 0.
-Mix / ``mix``                Double  1       Mix factor between the original and the transformed image.
-============================ ======= ======= ==================================================================================================================================
++------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
+| Parameter / script name      | Type    | Default | Function                                                                                                                           |
++==============================+=========+=========+====================================================================================================================================+
+| NbLevels / ``nb_levels``     | Integer | 4096    | Number of histogram levels used for the equalization.                                                                              |
++------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
+| (Un)premult / ``premult``    | Boolean | Off     | Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied. |
++------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
+| Invert Mask / ``maskInvert`` | Boolean | Off     | When checked, the effect is fully applied where the mask is 0.                                                                     |
++------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
+| Mix / ``mix``                | Double  | 1       | Mix factor between the original and the transformed image.                                                                         |
++------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
 
 .. |pluginIcon| image:: net.sf.cimg.CImgHistEQ.png
    :width: 10.0%

@@ -21,12 +21,13 @@ CImg is a free, open-source library distributed under the CeCILL-C (close to the
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-Mask               Yes
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
+| Mask   |             | Yes      |
++--------+-------------+----------+
 
 Controls
 --------
@@ -35,16 +36,21 @@ Controls
 
 .. cssclass:: longtable
 
-============================ ======= ======= ==================================================================================================================================
-Parameter / script name      Type    Default Function
-============================ ======= ======= ==================================================================================================================================
-Radius / ``radius``          Integer 5       Radius of the spatial kernel (positional sigma), in pixel units (>=0).
-Smoothness / ``epsilon``     Double  0.2     Regularization parameter. The actual guided filter parameter is epsilon^2).
-Iterations / ``iterations``  Integer 1       Number of iterations.
-(Un)premult / ``premult``    Boolean Off     Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.
-Invert Mask / ``maskInvert`` Boolean Off     When checked, the effect is fully applied where the mask is 0.
-Mix / ``mix``                Double  1       Mix factor between the original and the transformed image.
-============================ ======= ======= ==================================================================================================================================
++------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
+| Parameter / script name      | Type    | Default | Function                                                                                                                           |
++==============================+=========+=========+====================================================================================================================================+
+| Radius / ``radius``          | Integer | 5       | Radius of the spatial kernel (positional sigma), in pixel units (>=0).                                                             |
++------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
+| Smoothness / ``epsilon``     | Double  | 0.2     | Regularization parameter. The actual guided filter parameter is epsilon^2).                                                        |
++------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
+| Iterations / ``iterations``  | Integer | 1       | Number of iterations.                                                                                                              |
++------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
+| (Un)premult / ``premult``    | Boolean | Off     | Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied. |
++------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
+| Invert Mask / ``maskInvert`` | Boolean | Off     | When checked, the effect is fully applied where the mask is 0.                                                                     |
++------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
+| Mix / ``mix``                | Double  | 1       | Mix factor between the original and the transformed image.                                                                         |
++------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------+
 
 .. |pluginIcon| image:: net.sf.cimg.CImgGuided.png
    :width: 10.0%

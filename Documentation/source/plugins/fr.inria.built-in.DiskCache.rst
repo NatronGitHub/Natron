@@ -15,11 +15,11 @@ WARNING: The DiskCache node must be part of the tree when you want to read cache
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -28,12 +28,13 @@ Controls
 
 .. cssclass:: longtable
 
-============================ ====== ================= ============================================================================
-Parameter / script name      Type   Default           Function
-============================ ====== ================= ============================================================================
-Frame range / ``frameRange`` Choice Input frame range .  
-                                                      . **Input frame range**
-                                                      . **Project frame range**
-                                                      . **Manual**
-Pre-cache / ``preRender``    Button                   Cache the frame range specified by rendering images at zoom-level 100% only.
-============================ ====== ================= ============================================================================
++------------------------------+--------+-------------------+------------------------------------------------------------------------------+
+| Parameter / script name      | Type   | Default           | Function                                                                     |
++==============================+========+===================+==============================================================================+
+| Frame range / ``frameRange`` | Choice | Input frame range | |                                                                            |
+|                              |        |                   | | **Input frame range**                                                      |
+|                              |        |                   | | **Project frame range**                                                    |
+|                              |        |                   | | **Manual**                                                                 |
++------------------------------+--------+-------------------+------------------------------------------------------------------------------+
+| Pre-cache / ``preRender``    | Button |                   | Cache the frame range specified by rendering images at zoom-level 100% only. |
++------------------------------+--------+-------------------+------------------------------------------------------------------------------+

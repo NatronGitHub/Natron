@@ -13,11 +13,11 @@ The Angle Blur effect gives the illusion of motion in a given direction.
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -26,10 +26,12 @@ Controls
 
 .. cssclass:: longtable
 
-===================================== ====== ======= ===================================================================================================
-Parameter / script name               Type   Default Function
-===================================== ====== ======= ===================================================================================================
-Convert to Group / ``convertToGroup`` Button         Converts this node to a Group: the internal node-graph and the user parameters will become editable
-Angle / ``angleBlur_angle``           Double 0       Determines the direction into which the image is blurred. This is an angle in degrees.
-Distance / ``angleBlur_distance``     Double 0       Determines how much the image will be blurred
-===================================== ====== ======= ===================================================================================================
++---------------------------------------+--------+---------+-----------------------------------------------------------------------------------------------------+
+| Parameter / script name               | Type   | Default | Function                                                                                            |
++=======================================+========+=========+=====================================================================================================+
+| Convert to Group / ``convertToGroup`` | Button |         | Converts this node to a Group: the internal node-graph and the user parameters will become editable |
++---------------------------------------+--------+---------+-----------------------------------------------------------------------------------------------------+
+| Angle / ``angleBlur_angle``           | Double | 0       | Determines the direction into which the image is blurred. This is an angle in degrees.              |
++---------------------------------------+--------+---------+-----------------------------------------------------------------------------------------------------+
+| Distance / ``angleBlur_distance``     | Double | 0       | Determines how much the image will be blurred                                                       |
++---------------------------------------+--------+---------+-----------------------------------------------------------------------------------------------------+

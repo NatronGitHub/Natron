@@ -13,11 +13,11 @@ Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -26,49 +26,69 @@ Controls
 
 .. cssclass:: longtable
 
-=================================================================================== ======= ======= =====================
-Parameter / script name                                                             Type    Default Function
-=================================================================================== ======= ======= =====================
-X-Tiles / ``XTiles``                                                                Integer 5        
-Y-Tiles / ``YTiles``                                                                Integer 5        
-Curvature / ``Curvature``                                                           Double  0.5      
-Connectors Centering / ``Connectors_Centering``                                     Double  0        
-Connectors Variability / ``Connectors_Variability``                                 Double  0        
-Relief Smoothness / ``Relief_Smoothness``                                           Double  0.3      
-Relief Contrast / ``Relief_Contrast``                                               Double  100      
-Outline Smoothness / ``Outline_Smoothness``                                         Double  0.2      
-Outline Contrast / ``Outline_Contrast``                                             Double  255      
-Scale / ``Scale``                                                                   Double  100      
-Scale Variations / ``Scale_Variations``                                             Double  0        
-Angle / ``Angle``                                                                   Double  0        
-Angle Variations / ``Angle_Variations``                                             Double  0        
-Shuffle Pieces / ``Shuffle_Pieces``                                                 Boolean Off      
-Additional Outline / ``Additional_Outline``                                         Boolean Off      
-Output Each Piece on a Different Layer / ``Output_Each_Piece_on_a_Different_Layer`` Boolean Off      
-Output Layer / ``Output_Layer``                                                     Choice  Layer 0 .  
-                                                                                                    . **Merged**
-                                                                                                    . **Layer 0**
-                                                                                                    . **Layer -1**
-                                                                                                    . **Layer -2**
-                                                                                                    . **Layer -3**
-                                                                                                    . **Layer -4**
-                                                                                                    . **Layer -5**
-                                                                                                    . **Layer -6**
-                                                                                                    . **Layer -7**
-                                                                                                    . **Layer -8**
-                                                                                                    . **Layer -9**
-Resize Mode / ``Resize_Mode``                                                       Choice  Dynamic .  
-                                                                                                    . **Fixed (Inplace)**
-                                                                                                    . **Dynamic**
-                                                                                                    . **Downsample 1/2**
-                                                                                                    . **Downsample 1/4**
-                                                                                                    . **Downsample 1/8**
-                                                                                                    . **Downsample 1/16**
-Ignore Alpha / ``Ignore_Alpha``                                                     Boolean Off      
-Preview/Draft Mode / ``PreviewDraft_Mode``                                          Boolean Off      
-Log Verbosity / ``Log_Verbosity``                                                   Choice  Off     .  
-                                                                                                    . **Off**
-                                                                                                    . **Level 1**
-                                                                                                    . **Level 2**
-                                                                                                    . **Level 3**
-=================================================================================== ======= ======= =====================
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Parameter / script name                                                             | Type    | Default | Function              |
++=====================================================================================+=========+=========+=======================+
+| X-Tiles / ``XTiles``                                                                | Integer | 5       |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Y-Tiles / ``YTiles``                                                                | Integer | 5       |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Curvature / ``Curvature``                                                           | Double  | 0.5     |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Connectors Centering / ``Connectors_Centering``                                     | Double  | 0       |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Connectors Variability / ``Connectors_Variability``                                 | Double  | 0       |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Relief Smoothness / ``Relief_Smoothness``                                           | Double  | 0.3     |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Relief Contrast / ``Relief_Contrast``                                               | Double  | 100     |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Outline Smoothness / ``Outline_Smoothness``                                         | Double  | 0.2     |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Outline Contrast / ``Outline_Contrast``                                             | Double  | 255     |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Scale / ``Scale``                                                                   | Double  | 100     |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Scale Variations / ``Scale_Variations``                                             | Double  | 0       |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Angle / ``Angle``                                                                   | Double  | 0       |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Angle Variations / ``Angle_Variations``                                             | Double  | 0       |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Shuffle Pieces / ``Shuffle_Pieces``                                                 | Boolean | Off     |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Additional Outline / ``Additional_Outline``                                         | Boolean | Off     |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Output Each Piece on a Different Layer / ``Output_Each_Piece_on_a_Different_Layer`` | Boolean | Off     |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Output Layer / ``Output_Layer``                                                     | Choice  | Layer 0 | |                     |
+|                                                                                     |         |         | | **Merged**          |
+|                                                                                     |         |         | | **Layer 0**         |
+|                                                                                     |         |         | | **Layer -1**        |
+|                                                                                     |         |         | | **Layer -2**        |
+|                                                                                     |         |         | | **Layer -3**        |
+|                                                                                     |         |         | | **Layer -4**        |
+|                                                                                     |         |         | | **Layer -5**        |
+|                                                                                     |         |         | | **Layer -6**        |
+|                                                                                     |         |         | | **Layer -7**        |
+|                                                                                     |         |         | | **Layer -8**        |
+|                                                                                     |         |         | | **Layer -9**        |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Resize Mode / ``Resize_Mode``                                                       | Choice  | Dynamic | |                     |
+|                                                                                     |         |         | | **Fixed (Inplace)** |
+|                                                                                     |         |         | | **Dynamic**         |
+|                                                                                     |         |         | | **Downsample 1/2**  |
+|                                                                                     |         |         | | **Downsample 1/4**  |
+|                                                                                     |         |         | | **Downsample 1/8**  |
+|                                                                                     |         |         | | **Downsample 1/16** |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Ignore Alpha / ``Ignore_Alpha``                                                     | Boolean | Off     |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Preview/Draft Mode / ``PreviewDraft_Mode``                                          | Boolean | Off     |                       |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+
+| Log Verbosity / ``Log_Verbosity``                                                   | Choice  | Off     | |                     |
+|                                                                                     |         |         | | **Off**             |
+|                                                                                     |         |         | | **Level 1**         |
+|                                                                                     |         |         | | **Level 2**         |
+|                                                                                     |         |         | | **Level 3**         |
++-------------------------------------------------------------------------------------+---------+---------+-----------------------+

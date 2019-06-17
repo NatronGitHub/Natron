@@ -13,11 +13,11 @@ Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -26,48 +26,65 @@ Controls
 
 .. cssclass:: longtable
 
-============================================= ======= ============= =====================
-Parameter / script name                       Type    Default       Function
-============================================= ======= ============= =====================
-Fractal Set / ``Fractal_Set``                 Choice  Mandelbrot    .  
-                                                                    . **Mandelbrot**
-                                                                    . **Julia**
-Iterations / ``Iterations``                   Integer 1024           
-X-Seed (Julia) / ``XSeed_Julia``              Double  0.317          
-Y-Seed (Julia) / ``YSeed_Julia``              Double  0.03           
-Number of Colors / ``Number_of_Colors``       Integer 16             
-Smoothness / ``Smoothness``                   Integer 8              
-Seed / ``Seed``                               Integer 255            
-Zoom Center / ``Zoom_Center``                 Double  x: 0.5 y: 0.5  
-Zoom Factor / ``Zoom_Factor``                 Double  0.25           
-Zoom In / ``Zoom_In``                         Boolean Off            
-Center / ``Center``                           Boolean Off            
-Zoom Out / ``Zoom_Out``                       Boolean Off            
-Display Coordinates / ``Display_Coordinates`` Boolean Off            
-Output Layer / ``Output_Layer``               Choice  Layer 0       .  
-                                                                    . **Merged**
-                                                                    . **Layer 0**
-                                                                    . **Layer -1**
-                                                                    . **Layer -2**
-                                                                    . **Layer -3**
-                                                                    . **Layer -4**
-                                                                    . **Layer -5**
-                                                                    . **Layer -6**
-                                                                    . **Layer -7**
-                                                                    . **Layer -8**
-                                                                    . **Layer -9**
-Resize Mode / ``Resize_Mode``                 Choice  Dynamic       .  
-                                                                    . **Fixed (Inplace)**
-                                                                    . **Dynamic**
-                                                                    . **Downsample 1/2**
-                                                                    . **Downsample 1/4**
-                                                                    . **Downsample 1/8**
-                                                                    . **Downsample 1/16**
-Ignore Alpha / ``Ignore_Alpha``               Boolean Off            
-Preview/Draft Mode / ``PreviewDraft_Mode``    Boolean Off            
-Log Verbosity / ``Log_Verbosity``             Choice  Off           .  
-                                                                    . **Off**
-                                                                    . **Level 1**
-                                                                    . **Level 2**
-                                                                    . **Level 3**
-============================================= ======= ============= =====================
++-----------------------------------------------+---------+---------------+-----------------------+
+| Parameter / script name                       | Type    | Default       | Function              |
++===============================================+=========+===============+=======================+
+| Fractal Set / ``Fractal_Set``                 | Choice  | Mandelbrot    | |                     |
+|                                               |         |               | | **Mandelbrot**      |
+|                                               |         |               | | **Julia**           |
++-----------------------------------------------+---------+---------------+-----------------------+
+| Iterations / ``Iterations``                   | Integer | 1024          |                       |
++-----------------------------------------------+---------+---------------+-----------------------+
+| X-Seed (Julia) / ``XSeed_Julia``              | Double  | 0.317         |                       |
++-----------------------------------------------+---------+---------------+-----------------------+
+| Y-Seed (Julia) / ``YSeed_Julia``              | Double  | 0.03          |                       |
++-----------------------------------------------+---------+---------------+-----------------------+
+| Number of Colors / ``Number_of_Colors``       | Integer | 16            |                       |
++-----------------------------------------------+---------+---------------+-----------------------+
+| Smoothness / ``Smoothness``                   | Integer | 8             |                       |
++-----------------------------------------------+---------+---------------+-----------------------+
+| Seed / ``Seed``                               | Integer | 255           |                       |
++-----------------------------------------------+---------+---------------+-----------------------+
+| Zoom Center / ``Zoom_Center``                 | Double  | x: 0.5 y: 0.5 |                       |
++-----------------------------------------------+---------+---------------+-----------------------+
+| Zoom Factor / ``Zoom_Factor``                 | Double  | 0.25          |                       |
++-----------------------------------------------+---------+---------------+-----------------------+
+| Zoom In / ``Zoom_In``                         | Boolean | Off           |                       |
++-----------------------------------------------+---------+---------------+-----------------------+
+| Center / ``Center``                           | Boolean | Off           |                       |
++-----------------------------------------------+---------+---------------+-----------------------+
+| Zoom Out / ``Zoom_Out``                       | Boolean | Off           |                       |
++-----------------------------------------------+---------+---------------+-----------------------+
+| Display Coordinates / ``Display_Coordinates`` | Boolean | Off           |                       |
++-----------------------------------------------+---------+---------------+-----------------------+
+| Output Layer / ``Output_Layer``               | Choice  | Layer 0       | |                     |
+|                                               |         |               | | **Merged**          |
+|                                               |         |               | | **Layer 0**         |
+|                                               |         |               | | **Layer -1**        |
+|                                               |         |               | | **Layer -2**        |
+|                                               |         |               | | **Layer -3**        |
+|                                               |         |               | | **Layer -4**        |
+|                                               |         |               | | **Layer -5**        |
+|                                               |         |               | | **Layer -6**        |
+|                                               |         |               | | **Layer -7**        |
+|                                               |         |               | | **Layer -8**        |
+|                                               |         |               | | **Layer -9**        |
++-----------------------------------------------+---------+---------------+-----------------------+
+| Resize Mode / ``Resize_Mode``                 | Choice  | Dynamic       | |                     |
+|                                               |         |               | | **Fixed (Inplace)** |
+|                                               |         |               | | **Dynamic**         |
+|                                               |         |               | | **Downsample 1/2**  |
+|                                               |         |               | | **Downsample 1/4**  |
+|                                               |         |               | | **Downsample 1/8**  |
+|                                               |         |               | | **Downsample 1/16** |
++-----------------------------------------------+---------+---------------+-----------------------+
+| Ignore Alpha / ``Ignore_Alpha``               | Boolean | Off           |                       |
++-----------------------------------------------+---------+---------------+-----------------------+
+| Preview/Draft Mode / ``PreviewDraft_Mode``    | Boolean | Off           |                       |
++-----------------------------------------------+---------+---------------+-----------------------+
+| Log Verbosity / ``Log_Verbosity``             | Choice  | Off           | |                     |
+|                                               |         |               | | **Off**             |
+|                                               |         |               | | **Level 1**         |
+|                                               |         |               | | **Level 2**         |
+|                                               |         |               | | **Level 3**         |
++-----------------------------------------------+---------+---------------+-----------------------+

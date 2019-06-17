@@ -13,11 +13,11 @@ Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (
 Inputs
 ------
 
-====== =========== ========
-Input  Description Optional
-====== =========== ========
-Source             No
-====== =========== ========
++--------+-------------+----------+
+| Input  | Description | Optional |
++========+=============+==========+
+| Source |             | No       |
++--------+-------------+----------+
 
 Controls
 --------
@@ -26,63 +26,76 @@ Controls
 
 .. cssclass:: longtable
 
-====================================================== ======= ========== ========================
-Parameter / script name                                Type    Default    Function
-====================================================== ======= ========== ========================
-Order / ``Order``                                      Choice  Increasing .  
-                                                                          . **Decreasing**
-                                                                          . **Increasing**
-Axis / ``Axis``                                        Choice  X-axis     .  
-                                                                          . **X-axis**
-                                                                          . **Y-axis**
-                                                                          . **X-axis Then Y-axis**
-                                                                          . **Y-axis Then X-axis**
-Sorting Criterion / ``Sorting_Criterion``              Choice  Red        .  
-                                                                          . **Red**
-                                                                          . **Green**
-                                                                          . **Blue**
-                                                                          . **Intensity**
-                                                                          . **Luminance**
-                                                                          . **Lightness**
-                                                                          . **Hue**
-                                                                          . **Saturation**
-                                                                          . **Minimum**
-                                                                          . **Maximum**
-                                                                          . **Random**
-Mask By / ``Mask_By``                                  Choice  Criterion  .  
-                                                                          . **Bottom Layer**
-                                                                          . **Criterion**
-                                                                          . **Contours**
-                                                                          . **Random**
-Lower Mask Threshold (%) / ``Lower_Mask_Threshold_``   Double  0           
-Higher Mask Threshold (%) / ``Higher_Mask_Threshold_`` Double  100         
-Mask Smoothness (%) / ``Mask_Smoothness_``             Double  0           
-Invert Mask / ``Invert_Mask``                          Boolean Off         
-Preview Mask / ``Preview_Mask``                        Boolean Off         
-Output Layer / ``Output_Layer``                        Choice  Layer 0    .  
-                                                                          . **Merged**
-                                                                          . **Layer 0**
-                                                                          . **Layer -1**
-                                                                          . **Layer -2**
-                                                                          . **Layer -3**
-                                                                          . **Layer -4**
-                                                                          . **Layer -5**
-                                                                          . **Layer -6**
-                                                                          . **Layer -7**
-                                                                          . **Layer -8**
-                                                                          . **Layer -9**
-Resize Mode / ``Resize_Mode``                          Choice  Dynamic    .  
-                                                                          . **Fixed (Inplace)**
-                                                                          . **Dynamic**
-                                                                          . **Downsample 1/2**
-                                                                          . **Downsample 1/4**
-                                                                          . **Downsample 1/8**
-                                                                          . **Downsample 1/16**
-Ignore Alpha / ``Ignore_Alpha``                        Boolean Off         
-Preview/Draft Mode / ``PreviewDraft_Mode``             Boolean Off         
-Log Verbosity / ``Log_Verbosity``                      Choice  Off        .  
-                                                                          . **Off**
-                                                                          . **Level 1**
-                                                                          . **Level 2**
-                                                                          . **Level 3**
-====================================================== ======= ========== ========================
++--------------------------------------------------------+---------+------------+--------------------------+
+| Parameter / script name                                | Type    | Default    | Function                 |
++========================================================+=========+============+==========================+
+| Order / ``Order``                                      | Choice  | Increasing | |                        |
+|                                                        |         |            | | **Decreasing**         |
+|                                                        |         |            | | **Increasing**         |
++--------------------------------------------------------+---------+------------+--------------------------+
+| Axis / ``Axis``                                        | Choice  | X-axis     | |                        |
+|                                                        |         |            | | **X-axis**             |
+|                                                        |         |            | | **Y-axis**             |
+|                                                        |         |            | | **X-axis Then Y-axis** |
+|                                                        |         |            | | **Y-axis Then X-axis** |
++--------------------------------------------------------+---------+------------+--------------------------+
+| Sorting Criterion / ``Sorting_Criterion``              | Choice  | Red        | |                        |
+|                                                        |         |            | | **Red**                |
+|                                                        |         |            | | **Green**              |
+|                                                        |         |            | | **Blue**               |
+|                                                        |         |            | | **Intensity**          |
+|                                                        |         |            | | **Luminance**          |
+|                                                        |         |            | | **Lightness**          |
+|                                                        |         |            | | **Hue**                |
+|                                                        |         |            | | **Saturation**         |
+|                                                        |         |            | | **Minimum**            |
+|                                                        |         |            | | **Maximum**            |
+|                                                        |         |            | | **Random**             |
++--------------------------------------------------------+---------+------------+--------------------------+
+| Mask By / ``Mask_By``                                  | Choice  | Criterion  | |                        |
+|                                                        |         |            | | **Bottom Layer**       |
+|                                                        |         |            | | **Criterion**          |
+|                                                        |         |            | | **Contours**           |
+|                                                        |         |            | | **Random**             |
++--------------------------------------------------------+---------+------------+--------------------------+
+| Lower Mask Threshold (%) / ``Lower_Mask_Threshold_``   | Double  | 0          |                          |
++--------------------------------------------------------+---------+------------+--------------------------+
+| Higher Mask Threshold (%) / ``Higher_Mask_Threshold_`` | Double  | 100        |                          |
++--------------------------------------------------------+---------+------------+--------------------------+
+| Mask Smoothness (%) / ``Mask_Smoothness_``             | Double  | 0          |                          |
++--------------------------------------------------------+---------+------------+--------------------------+
+| Invert Mask / ``Invert_Mask``                          | Boolean | Off        |                          |
++--------------------------------------------------------+---------+------------+--------------------------+
+| Preview Mask / ``Preview_Mask``                        | Boolean | Off        |                          |
++--------------------------------------------------------+---------+------------+--------------------------+
+| Output Layer / ``Output_Layer``                        | Choice  | Layer 0    | |                        |
+|                                                        |         |            | | **Merged**             |
+|                                                        |         |            | | **Layer 0**            |
+|                                                        |         |            | | **Layer -1**           |
+|                                                        |         |            | | **Layer -2**           |
+|                                                        |         |            | | **Layer -3**           |
+|                                                        |         |            | | **Layer -4**           |
+|                                                        |         |            | | **Layer -5**           |
+|                                                        |         |            | | **Layer -6**           |
+|                                                        |         |            | | **Layer -7**           |
+|                                                        |         |            | | **Layer -8**           |
+|                                                        |         |            | | **Layer -9**           |
++--------------------------------------------------------+---------+------------+--------------------------+
+| Resize Mode / ``Resize_Mode``                          | Choice  | Dynamic    | |                        |
+|                                                        |         |            | | **Fixed (Inplace)**    |
+|                                                        |         |            | | **Dynamic**            |
+|                                                        |         |            | | **Downsample 1/2**     |
+|                                                        |         |            | | **Downsample 1/4**     |
+|                                                        |         |            | | **Downsample 1/8**     |
+|                                                        |         |            | | **Downsample 1/16**    |
++--------------------------------------------------------+---------+------------+--------------------------+
+| Ignore Alpha / ``Ignore_Alpha``                        | Boolean | Off        |                          |
++--------------------------------------------------------+---------+------------+--------------------------+
+| Preview/Draft Mode / ``PreviewDraft_Mode``             | Boolean | Off        |                          |
++--------------------------------------------------------+---------+------------+--------------------------+
+| Log Verbosity / ``Log_Verbosity``                      | Choice  | Off        | |                        |
+|                                                        |         |            | | **Off**                |
+|                                                        |         |            | | **Level 1**            |
+|                                                        |         |            | | **Level 2**            |
+|                                                        |         |            | | **Level 3**            |
++--------------------------------------------------------+---------+------------+--------------------------+
