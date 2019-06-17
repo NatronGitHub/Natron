@@ -5,7 +5,7 @@ Version 2.0:
 
 Frédéric Devernay <devernay@github>
 Alexandre Gauthier-Foichat <MrKepzie@github>
-Ole-André Rodlie <olear@github> (Openfx-Arena Plug-Ins)
+Ole-André Rodlie <rodlie@github> (Openfx-Arena Plug-Ins)
 Axel Airo-Farulla  <Eaknyt@github>
 
 #Artists:
@@ -15,13 +15,13 @@ Jean-Christophe Levet (icons + logo + splashscreen + UI design)
 #Packaging:
 
 Alexandre Gauthier-Foichat <MrKepzie@github> (Linux & Windows & OSX)
-Ole-André Rodlie <olear@github> (Linux & Windows)
+Ole-André Rodlie <rodlie@github> (Linux & Windows)
 Frédéric Devernay <devernay@github> (OSX)
 
 #Testing (not everyone listed):
 
 Omar Brown <blackearth2014@github>
-Ole-André Rodlie <olear@github>
+Ole-André Rodlie <rodlie@github>
 François "CoyHot" Grassard <Francois-Grassard@github>
 Francesco Paglia <fPaglia@github>
 rcspam <rcspam@github>
@@ -45,12 +45,12 @@ Jean-Christophe Levet (icons + logo + splashscreen)
 #Packaging:
 
 Alexandre Gauthier-Foichat <MrKepzie@github> (Windows & OSX)
-Ole Andre Rodlie <olar@github> (Linux)
+Ole Andre Rodlie <rodlie@github> (Linux)
 
 #Testing:
 
 Omar Brown <blackearth2014@github>
-Ole Andre Rodlie <olar@github>
+Ole Andre Rodlie <rodlie@github>
 Paul Geraskin <mifth@github>
 François "CoyHot" Grassard <Francois-Grassard@github>
 Francesco Paglia <fPaglia@github>

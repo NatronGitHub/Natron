@@ -40,7 +40,7 @@ Controls
 |                             |         |              | | **Misc/Checkerboard**                                                                                                                     |
 |                             |         |              | | **Misc/Stripes**                                                                                                                          |
 |                             |         |              | | **Gradient/Regular**                                                                                                                      |
-|                             |         |              | | **Gradient/Radial**                                                                                                                       |
+|                             |         |              | | **Gradient/Linear**                                                                                                                       |
 |                             |         |              | | **Misc/Loops 1**                                                                                                                          |
 |                             |         |              | | **Misc/Loops 2**                                                                                                                          |
 |                             |         |              | | **Misc/Loops 3**                                                                                                                          |

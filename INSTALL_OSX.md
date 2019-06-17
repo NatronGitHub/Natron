@@ -54,10 +54,10 @@ Now, if you want to use turbojpeg instead of jpeg:
 
     sudo port -f uninstall jpeg
     sudo port -v install libjpeg-turbo
-    
+
 And finally install the required packages:
 
-    sudo port -v -N install qt4-mac qt4-mac-mariadb-plugin qt4-mac-sqlite3-plugin boost cairo expat gsed py27-pyside py27-sphinx
+    sudo port -v -N install qt4-mac qt4-mac-mariadb-plugin qt4-mac-sqlite3-plugin boost cairo expat gsed py27-pyside pandoc py27-sphinx py27-sphinx_rtd_theme
     sudo ln -s python2.7-config /opt/local/bin/python2-config
 
 Create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
@@ -121,8 +121,9 @@ Install libraries:
 
     brew tap homebrew/python
     brew tap homebrew/science
-    brew install expat cairo gnu-sed
-    brew install --build-from-source qt --with-mysql (on 
+    brew install expat cairo gnu-sed pandoc sphinx-doc
+    /usr/local/opt/sphinx-doc/libexec/bin/pip3 install sphinx_rtd_theme
+    brew install --build-from-source qt --with-mysql
 
 On macOS Sierra, install the sierra-compatible recipe (to be used only in Sierra, since this builds Qt from sources and takes a while):
 
@@ -229,7 +230,7 @@ macx:openmp {
   QMAKE_CXX=/opt/local/bin/clang++-mp-7.0
   QMAKE_OBJECTIVE_CC=$$QMAKE_CC -stdlib=libc++
   QMAKE_LINK=$$QMAKE_CXX
-  
+
   INCLUDEPATH += /opt/local/include/libomp
   LIBS += -L/opt/local/lib/libomp -liomp5
   cc_setting.name = CC
@@ -269,8 +270,8 @@ macx:openmp {
   QMAKE_CXX=/usr/local/opt/llvm/bin/clang++
   QMAKE_OBJECTIVE_CC=$$QMAKE_CC -stdlib=libc++
   QMAKE_LINK=$$QMAKE_CXX
-  
-  LIBS += -L/usr/local/opt/llvm/lib -liomp5
+
+  LIBS += -L/usr/local/opt/llvm/lib -lomp
   cc_setting.name = CC
   cc_setting.value = /usr/local/opt/llvm/bin/clang
   cxx_setting.name = CXX
@@ -383,25 +384,30 @@ build files are somewhere under `~/Library/Developer/Xcode`.
 
 See instructions under "Using clang-omp with Xcode" at the following page https://clang-omp.github.io
 
-On Macports clang now ships with openmp by default, to install:
+On Macports clang now ships with openmp by default. To install it:
+```
 sudo port install clang-5.0
-
+```
 
 In your config.pri file, add the following lines and change the paths according to your installation of clang
 
+```
 openmp {
 INCLUDEPATH += /opt/local/include/libomp
-LIBS += -L/opt/local/lib/libomp -liomp5
+LIBS += -L/opt/local/lib/libomp -liomp5 # may also be -lomp
 
 cc_setting.name = CC
 cc_setting.value = /opt/local/bin/clang-mp-5.0
 cxx_setting.name = CXX
 cxx_setting.value = /opt/local/bin/clang++-mp-5.0 -stdlib=libc++
-QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting
+ld_setting.name = LD
+ld_setting.value = /opt/local/bin/clang-mp-5.0
+ldplusplus_setting.name = LDPLUSPLUS
+ldplusplus_setting.value = /opt/local/bin/clang++-mp-5.0 -stdlib=libc++
+QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting ld_setting ldplusplus_setting
 QMAKE_LFLAGS += "-B /usr/bin"
-
 }
-
+```
 
 The qmake call should add CONFIG+=openmp
 

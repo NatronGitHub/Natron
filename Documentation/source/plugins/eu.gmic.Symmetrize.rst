@@ -45,7 +45,7 @@ Controls
 |                                            |         |                | | **Symmetry**        |
 |                                            |         |                | | **Antisymmetry**    |
 +--------------------------------------------+---------+----------------+-----------------------+
-| Swap sides / ``Swap_sides``                | Boolean | Off            |                       |
+| Swap Sides / ``Swap_Sides``                | Boolean | Off            |                       |
 +--------------------------------------------+---------+----------------+-----------------------+
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0        | |                     |
 |                                            |         |                | | **Merged**          |

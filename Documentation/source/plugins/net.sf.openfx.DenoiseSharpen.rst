@@ -42,6 +42,8 @@ To check what details have been kept after denoising, you can raise the Sharpen 
 
 You can also check what was actually removed from the original image by selecting the “Noise” Output mode (instead of “Result”). If too many image details are visible in the noise, noise parameters may need to be tuned.
 
+This plugin was compiled with OpenMP support.
+
 Inputs
 ------
 

@@ -31,7 +31,7 @@ Controls
 +============================================+=========+===============+============================+
 | Strength (%) / ``Strength_``               | Double  | 75            |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
-| Value offset / ``Value_offset``            | Double  | 16            |                            |
+| Value Offset / ``Value_Offset``            | Double  | 16            |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
 | Colorspace / ``Colorspace``                | Choice  | HSV           | |                          |
 |                                            |         |               | | **HSI**                  |
@@ -41,34 +41,34 @@ Controls
 |                                            |         |               | | **RGB**                  |
 |                                            |         |               | | **YCbCr**                |
 +--------------------------------------------+---------+---------------+----------------------------+
-| Min cut (%) / ``Min_cut_``                 | Double  | 1             |                            |
+| Min Cut (%) / ``Min_Cut_``                 | Double  | 1             |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
-| Max cut (%) / ``Max_cut_``                 | Double  | 1             |                            |
+| Max Cut (%) / ``Max_Cut_``                 | Double  | 1             |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
 | Regularization / ``Regularization``        | Double  | 5             |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
-| Low scale / ``Low_scale``                  | Double  | 15            |                            |
+| Low Scale / ``Low_Scale``                  | Double  | 15            |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
-| Middle scale / ``Middle_scale``            | Double  | 80            |                            |
+| Middle Scale / ``Middle_Scale``            | Double  | 80            |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
-| High scale / ``High_scale``                | Double  | 250           |                            |
+| High Scale / ``High_Scale``                | Double  | 250           |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
-| Preview type / ``Preview_type``            | Choice  | Full          | |                          |
+| Preview Type / ``Preview_Type``            | Choice  | Full          | |                          |
 |                                            |         |               | | **Full**                 |
-|                                            |         |               | | **Forward horizontal**   |
-|                                            |         |               | | **Forward vertical**     |
-|                                            |         |               | | **Backward horizontal**  |
-|                                            |         |               | | **Backward vertical**    |
-|                                            |         |               | | **Duplicate top**        |
-|                                            |         |               | | **Duplicate left**       |
-|                                            |         |               | | **Duplicate bottom**     |
-|                                            |         |               | | **Duplicate right**      |
-|                                            |         |               | | **Duplicate horizontal** |
-|                                            |         |               | | **Duplicate vertical**   |
+|                                            |         |               | | **Forward Horizontal**   |
+|                                            |         |               | | **Forward Vertical**     |
+|                                            |         |               | | **Backward Horizontal**  |
+|                                            |         |               | | **Backward Vertical**    |
+|                                            |         |               | | **Duplicate Top**        |
+|                                            |         |               | | **Duplicate Left**       |
+|                                            |         |               | | **Duplicate Bottom**     |
+|                                            |         |               | | **Duplicate Right**      |
+|                                            |         |               | | **Duplicate Horizontal** |
+|                                            |         |               | | **Duplicate Vertical**   |
 |                                            |         |               | | **Checkered**            |
-|                                            |         |               | | **Checkered inverse**    |
+|                                            |         |               | | **Checkered Inverse**    |
 +--------------------------------------------+---------+---------------+----------------------------+
-| Preview split / ``Preview_split``          | Double  | x: 0.5 y: 0.5 |                            |
+| Preview Split / ``Preview_Split``          | Double  | x: 0.5 y: 0.5 |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0       | |                          |
 |                                            |         |               | | **Merged**               |

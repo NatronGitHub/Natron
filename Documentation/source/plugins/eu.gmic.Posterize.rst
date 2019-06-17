@@ -37,28 +37,28 @@ Controls
 +--------------------------------------------+---------+---------------+----------------------------+
 | Colors / ``Colors``                        | Integer | 12            |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
-| Minimal area / ``Minimal_area``            | Integer | 0             |                            |
+| Minimal Area / ``Minimal_Area``            | Integer | 0             |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
 | Outline (%) / ``Outline_``                 | Double  | 0             |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
-| Normalize colors / ``Normalize_colors``    | Boolean | Off           |                            |
+| Normalize Colors / ``Normalize_Colors``    | Boolean | Off           |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
-| Preview type / ``Preview_type``            | Choice  | Full          | |                          |
+| Preview Type / ``Preview_Type``            | Choice  | Full          | |                          |
 |                                            |         |               | | **Full**                 |
-|                                            |         |               | | **Forward horizontal**   |
-|                                            |         |               | | **Forward vertical**     |
-|                                            |         |               | | **Backward horizontal**  |
-|                                            |         |               | | **Backward vertical**    |
-|                                            |         |               | | **Duplicate top**        |
-|                                            |         |               | | **Duplicate left**       |
-|                                            |         |               | | **Duplicate bottom**     |
-|                                            |         |               | | **Duplicate right**      |
-|                                            |         |               | | **Duplicate horizontal** |
-|                                            |         |               | | **Duplicate vertical**   |
+|                                            |         |               | | **Forward Horizontal**   |
+|                                            |         |               | | **Forward Vertical**     |
+|                                            |         |               | | **Backward Horizontal**  |
+|                                            |         |               | | **Backward Vertical**    |
+|                                            |         |               | | **Duplicate Top**        |
+|                                            |         |               | | **Duplicate Left**       |
+|                                            |         |               | | **Duplicate Bottom**     |
+|                                            |         |               | | **Duplicate Right**      |
+|                                            |         |               | | **Duplicate Horizontal** |
+|                                            |         |               | | **Duplicate Vertical**   |
 |                                            |         |               | | **Checkered**            |
-|                                            |         |               | | **Checkered inverse**    |
+|                                            |         |               | | **Checkered Inverse**    |
 +--------------------------------------------+---------+---------------+----------------------------+
-| Preview split / ``Preview_split``          | Double  | x: 0.5 y: 0.5 |                            |
+| Preview Split / ``Preview_Split``          | Double  | x: 0.5 y: 0.5 |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0       | |                          |
 |                                            |         |               | | **Merged**               |

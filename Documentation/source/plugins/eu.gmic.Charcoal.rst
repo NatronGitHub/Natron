@@ -31,42 +31,42 @@ Controls
 +=======================================================================+=========+=====================+============================+
 | Granularity / ``Granularity``                                         | Integer | 65                  |                            |
 +-----------------------------------------------------------------------+---------+---------------------+----------------------------+
-| Lowlights crossover point / ``Lowlights_crossover_point``             | Integer | 70                  |                            |
+| Lowlights Crossover Point / ``Lowlights_Crossover_Point``             | Integer | 70                  |                            |
 +-----------------------------------------------------------------------+---------+---------------------+----------------------------+
-| Highlights crossover point / ``Highlights_crossover_point``           | Integer | 170                 |                            |
+| Highlights Crossover Point / ``Highlights_Crossover_Point``           | Integer | 170                 |                            |
 +-----------------------------------------------------------------------+---------+---------------------+----------------------------+
-| Boost contrast / ``Boost_contrast``                                   | Boolean | Off                 |                            |
+| Boost Contrast / ``Boost_Contrast``                                   | Boolean | Off                 |                            |
 +-----------------------------------------------------------------------+---------+---------------------+----------------------------+
-| Resize image for optimum effect / ``Resize_image_for_optimum_effect`` | Boolean | On                  |                            |
+| Resize Image for Optimum Effect / ``Resize_Image_for_Optimum_Effect`` | Boolean | On                  |                            |
 +-----------------------------------------------------------------------+---------+---------------------+----------------------------+
-| Add chalk highlights / ``Add_chalk_highlights``                       | Boolean | Off                 |                            |
+| Add Chalk Highlights / ``Add_Chalk_Highlights``                       | Boolean | Off                 |                            |
 +-----------------------------------------------------------------------+---------+---------------------+----------------------------+
-| Minimal highlights / ``Minimal_highlights``                           | Integer | 50                  |                            |
+| Minimal Highlights / ``Minimal_Highlights``                           | Integer | 50                  |                            |
 +-----------------------------------------------------------------------+---------+---------------------+----------------------------+
-| Maximal highlights / ``Maximal_highlights``                           | Integer | 70                  |                            |
+| Maximal Highlights / ``Maximal_Highlights``                           | Integer | 70                  |                            |
 +-----------------------------------------------------------------------+---------+---------------------+----------------------------+
-| Background color / ``Background_color``                               | Color   | r: 1 g: 1 b: 1 a: 1 |                            |
+| Background Color / ``Background_Color``                               | Color   | r: 1 g: 1 b: 1 a: 1 |                            |
 +-----------------------------------------------------------------------+---------+---------------------+----------------------------+
-| Foreground color / ``Foreground_color``                               | Color   | r: 0 g: 0 b: 0 a: 0 |                            |
+| Foreground Color / ``Foreground_Color``                               | Color   | r: 0 g: 0 b: 0 a: 0 |                            |
 +-----------------------------------------------------------------------+---------+---------------------+----------------------------+
-| Invert background/foreground / ``Invert_backgroundforeground``        | Boolean | Off                 |                            |
+| Invert Background / Foreground / ``Invert_Background__Foreground``    | Boolean | Off                 |                            |
 +-----------------------------------------------------------------------+---------+---------------------+----------------------------+
-| Preview type / ``Preview_type``                                       | Choice  | Full                | |                          |
+| Preview Type / ``Preview_Type``                                       | Choice  | Full                | |                          |
 |                                                                       |         |                     | | **Full**                 |
-|                                                                       |         |                     | | **Forward horizontal**   |
-|                                                                       |         |                     | | **Forward vertical**     |
-|                                                                       |         |                     | | **Backward horizontal**  |
-|                                                                       |         |                     | | **Backward vertical**    |
-|                                                                       |         |                     | | **Duplicate top**        |
-|                                                                       |         |                     | | **Duplicate left**       |
-|                                                                       |         |                     | | **Duplicate bottom**     |
-|                                                                       |         |                     | | **Duplicate right**      |
-|                                                                       |         |                     | | **Duplicate horizontal** |
-|                                                                       |         |                     | | **Duplicate vertical**   |
+|                                                                       |         |                     | | **Forward Horizontal**   |
+|                                                                       |         |                     | | **Forward Vertical**     |
+|                                                                       |         |                     | | **Backward Horizontal**  |
+|                                                                       |         |                     | | **Backward Vertical**    |
+|                                                                       |         |                     | | **Duplicate Top**        |
+|                                                                       |         |                     | | **Duplicate Left**       |
+|                                                                       |         |                     | | **Duplicate Bottom**     |
+|                                                                       |         |                     | | **Duplicate Right**      |
+|                                                                       |         |                     | | **Duplicate Horizontal** |
+|                                                                       |         |                     | | **Duplicate Vertical**   |
 |                                                                       |         |                     | | **Checkered**            |
-|                                                                       |         |                     | | **Checkered inverse**    |
+|                                                                       |         |                     | | **Checkered Inverse**    |
 +-----------------------------------------------------------------------+---------+---------------------+----------------------------+
-| Preview split / ``Preview_split``                                     | Double  | x: 0.5 y: 0.5       |                            |
+| Preview Split / ``Preview_Split``                                     | Double  | x: 0.5 y: 0.5       |                            |
 +-----------------------------------------------------------------------+---------+---------------------+----------------------------+
 | Output Layer / ``Output_Layer``                                       | Choice  | Layer 0             | |                          |
 |                                                                       |         |                     | | **Merged**               |

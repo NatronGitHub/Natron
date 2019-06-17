@@ -19,6 +19,21 @@ fi
 
 #PANDOC="$HOME/.cabal/bin/pandoc"
 PANDOC=pandoc
+# Note than in pandoc >= 2.4 there is no way to force grid tables in rst output.
+# See https://github.com/jgm/pandoc/issues/5393
+pandocversion=$($PANDOC --version |head -1 | awk '{print $2}')
+# see https://stackoverflow.com/a/24067243
+function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
+
+if version_gt "$pandocversion" "2.3.1"; then
+    echo "Error: pandoc >= 2.4 cannot be forced to produce grid tables in rst output"
+    echo "Maybe it was fixed in your version (pandoc $pandocversion)? Please check https://github.com/jgm/pandoc/issues/5393"
+    echo "Fix $0 if you think your version works to produce grid tables,"
+    echo "or modify the 'multiline table element hack' in convertFromPlainTextToMarkdown() and Node::makeDocumentation()"
+    echo "In the meantime, pandoc 2.3.1 binaries can be downloaded from https://github.com/jgm/pandoc/releases/2.3.1"
+    exit
+fi
+
 SED=sed
 if [ "$(uname -s)" = "Darwin" ]; then
     SED=gsed
@@ -53,8 +68,10 @@ touch "$TMP_FOLDER/dummy.ntp"
 rm "$TMP_FOLDER/dummy.ntp"
 
 pushd "$TMP_FOLDER"
+
 for i in *.md; do
-    $PANDOC "$i" --columns=1000 -o "$(echo "$i"|$SED 's/\.md$/.rst/')"
+    $PANDOC -f markdown -t rst-simple_tables-multiline_tables+grid_tables "$i" --columns=1000 -o "$(echo "$i"|$SED 's/\.md$/.rst/')"
+#    $PANDOC "$i" --columns=1000 -o "$(echo "$i"|$SED 's/\.md$/.rst/')"
 done
 for x in plugins/*.md; do
     $PANDOC "$x" --columns=9000 -o "$(echo "$x"|$SED 's/\.md$/.rst/')"

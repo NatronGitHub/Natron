@@ -37,38 +37,38 @@ Controls
 +---------------------------------------------------+---------+---------------+----------------------------+
 | Smoothness / ``Smoothness``                       | Double  | 0             |                            |
 +---------------------------------------------------+---------+---------------+----------------------------+
-| Number of tones / ``Number_of_tones``             | Integer | 5             |                            |
+| Number of Tones / ``Number_of_Tones``             | Integer | 5             |                            |
 +---------------------------------------------------+---------+---------------+----------------------------+
-| Size for dark tones / ``Size_for_dark_tones``     | Integer | 8             |                            |
+| Size for Dark Tones / ``Size_for_Dark_Tones``     | Integer | 8             |                            |
 +---------------------------------------------------+---------+---------------+----------------------------+
-| Size for bright tones / ``Size_for_bright_tones`` | Integer | 8             |                            |
+| Size for Bright Tones / ``Size_for_Bright_Tones`` | Integer | 8             |                            |
 +---------------------------------------------------+---------+---------------+----------------------------+
-| Shape / ``Shape``                                 | Choice  | Circle (inv.) | |                          |
+| Shape / ``Shape``                                 | Choice  | Circle (Inv.) | |                          |
 |                                                   |         |               | | **Square**               |
 |                                                   |         |               | | **Diamond**              |
 |                                                   |         |               | | **Circle**               |
-|                                                   |         |               | | **Square (inv.)**        |
-|                                                   |         |               | | **Diamond (inv.)**       |
-|                                                   |         |               | | **Circle (inv.)**        |
+|                                                   |         |               | | **Square (Inv.)**        |
+|                                                   |         |               | | **Diamond (Inv.)**       |
+|                                                   |         |               | | **Circle (Inv.)**        |
 +---------------------------------------------------+---------+---------------+----------------------------+
 | Smoothness_2 / ``Smoothness_2``                   | Double  | 0.1           |                            |
 +---------------------------------------------------+---------+---------------+----------------------------+
-| Preview type / ``Preview_type``                   | Choice  | Full          | |                          |
+| Preview Type / ``Preview_Type``                   | Choice  | Full          | |                          |
 |                                                   |         |               | | **Full**                 |
-|                                                   |         |               | | **Forward horizontal**   |
-|                                                   |         |               | | **Forward vertical**     |
-|                                                   |         |               | | **Backward horizontal**  |
-|                                                   |         |               | | **Backward vertical**    |
-|                                                   |         |               | | **Duplicate top**        |
-|                                                   |         |               | | **Duplicate left**       |
-|                                                   |         |               | | **Duplicate bottom**     |
-|                                                   |         |               | | **Duplicate right**      |
-|                                                   |         |               | | **Duplicate horizontal** |
-|                                                   |         |               | | **Duplicate vertical**   |
+|                                                   |         |               | | **Forward Horizontal**   |
+|                                                   |         |               | | **Forward Vertical**     |
+|                                                   |         |               | | **Backward Horizontal**  |
+|                                                   |         |               | | **Backward Vertical**    |
+|                                                   |         |               | | **Duplicate Top**        |
+|                                                   |         |               | | **Duplicate Left**       |
+|                                                   |         |               | | **Duplicate Bottom**     |
+|                                                   |         |               | | **Duplicate Right**      |
+|                                                   |         |               | | **Duplicate Horizontal** |
+|                                                   |         |               | | **Duplicate Vertical**   |
 |                                                   |         |               | | **Checkered**            |
-|                                                   |         |               | | **Checkered inverse**    |
+|                                                   |         |               | | **Checkered Inverse**    |
 +---------------------------------------------------+---------+---------------+----------------------------+
-| Preview split / ``Preview_split``                 | Double  | x: 0.5 y: 0.5 |                            |
+| Preview Split / ``Preview_Split``                 | Double  | x: 0.5 y: 0.5 |                            |
 +---------------------------------------------------+---------+---------------+----------------------------+
 | Output Layer / ``Output_Layer``                   | Choice  | Layer 0       | |                          |
 |                                                   |         |               | | **Merged**               |

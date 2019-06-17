@@ -155,7 +155,7 @@ struct OutputSchedulerThreadPrivate
 
     // Pointer to the args used in threadLoopOnce(), only usable from the scheduler thread
     boost::weak_ptr<OutputSchedulerThreadStartArgs> runArgs;
-    
+
 
     mutable QMutex lastRunArgsMutex;
     std::vector<ViewIdx> lastPlaybackViewsToRender;
@@ -585,7 +585,7 @@ OutputSchedulerThreadPrivate::runAfterFrameRenderedCallback(TimeValue frame)
         effect->setPersistentMessage(eMessageTypeWarning, kPythonCallbackPersistentMessageError, e.what());
     }
 
-    
+
 } // runAfterFrameRenderedCallback
 
 
@@ -735,7 +735,7 @@ OutputSchedulerThread::beginSequenceRender()
 
     _imp->runBeforeRenderCallback();
     aboutToStartRender();
-    
+
     // Notify everyone that the render is started
     _imp->engine.lock()->s_renderStarted(direction == eRenderDirectionForward);
 
@@ -765,9 +765,9 @@ OutputSchedulerThread::beginSequenceRender()
                                                                                        eRenderBackendTypeCPU /*useOpenGL*/,
                                                                                        EffectOpenGLContextDataPtr());
         if (isFailureRetCode(stat)) {
-            
+
             _imp->engine.lock()->abortRenderingNoRestart();
-            
+
             return;
         }
     }
@@ -839,7 +839,7 @@ OutputSchedulerThread::endSequenceRender()
                                                                            eRenderBackendTypeCPU /*use OpenGL render*/,
                                                                            EffectOpenGLContextDataPtr()) );
     }
-    
+
 
     // Did we stop the render because we got aborted ?
     bool wasAborted = isBeingAborted();
@@ -968,8 +968,8 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
                 renderFinished = true;
             }
         }
-        
-        
+
+
         // Start a new render before calling processFrame()
         TimeValue nextFrameToRender(-1.);
         if (!renderFinished) {
@@ -1293,7 +1293,7 @@ OutputSchedulerThreadPrivate::validateRenderSequenceArgs(RenderSequenceArgs& arg
                 } else {
                     Dialogs::warningDialog( Node::tr("Image Sequence").toStdString(), message.toStdString() );
                 }
-                
+
             }
         }
     }
@@ -1345,7 +1345,7 @@ OutputSchedulerThread::renderFrameRange(bool isBlocking,
         args.viewsToRender = viewsToRender;
         args.direction = direction;
     }
-    
+
     _imp->validateRenderSequenceArgs(args);
 
     {

@@ -33,11 +33,11 @@ Controls
 +-----------------------------------+---------+-------------+----------------------------------+
 | Size / ``Size``                   | Integer | 24          |                                  |
 +-----------------------------------+---------+-------------+----------------------------------+
-| Color model / ``Color_model``     | Choice  | White dices | |                                |
-|                                   |         |             | | **Black dices**                |
-|                                   |         |             | | **White dices**                |
-|                                   |         |             | | **Dices with colored numbers** |
-|                                   |         |             | | **Dices with colored sides**   |
+| Color Model / ``Color_Model``     | Choice  | White Dices | |                                |
+|                                   |         |             | | **Black Dices**                |
+|                                   |         |             | | **White Dices**                |
+|                                   |         |             | | **Dices with Colored Numbers** |
+|                                   |         |             | | **Dices with Colored Sides**   |
 +-----------------------------------+---------+-------------+----------------------------------+
 | Output Layer / ``Output_Layer``   | Choice  | Layer 0     | |                                |
 |                                   |         |             | | **Merged**                     |

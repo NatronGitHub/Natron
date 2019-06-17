@@ -29,32 +29,32 @@ Controls
 +----------------------------------------------------------+---------+---------------+----------------------------+
 | Parameter / script name                                  | Type    | Default       | Function                   |
 +==========================================================+=========+===============+============================+
-| G/M smoothness / ``GM_smoothness``                       | Double  | 6             |                            |
+| G/M Smoothness / ``GM_Smoothness``                       | Double  | 6             |                            |
 +----------------------------------------------------------+---------+---------------+----------------------------+
-| R/B smoothness (principal) / ``RB_smoothness_principal`` | Double  | 6             |                            |
+| R/B Smoothness (Principal) / ``RB_Smoothness_Principal`` | Double  | 6             |                            |
 +----------------------------------------------------------+---------+---------------+----------------------------+
-| R/B smoothness (secondary) / ``RB_smoothness_secondary`` | Double  | 4             |                            |
+| R/B Smoothness (Secondary) / ``RB_Smoothness_Secondary`` | Double  | 4             |                            |
 +----------------------------------------------------------+---------+---------------+----------------------------+
 | Algorithm / ``Algorithm``                                | Choice  | Standard      | |                          |
 |                                                          |         |               | | **Standard**             |
-|                                                          |         |               | | **Motion-compensated**   |
+|                                                          |         |               | | **Motion-Compensated**   |
 +----------------------------------------------------------+---------+---------------+----------------------------+
-| Preview type / ``Preview_type``                          | Choice  | Full          | |                          |
+| Preview Type / ``Preview_Type``                          | Choice  | Full          | |                          |
 |                                                          |         |               | | **Full**                 |
-|                                                          |         |               | | **Forward horizontal**   |
-|                                                          |         |               | | **Forward vertical**     |
-|                                                          |         |               | | **Backward horizontal**  |
-|                                                          |         |               | | **Backward vertical**    |
-|                                                          |         |               | | **Duplicate top**        |
-|                                                          |         |               | | **Duplicate left**       |
-|                                                          |         |               | | **Duplicate bottom**     |
-|                                                          |         |               | | **Duplicate right**      |
-|                                                          |         |               | | **Duplicate horizontal** |
-|                                                          |         |               | | **Duplicate vertical**   |
+|                                                          |         |               | | **Forward Horizontal**   |
+|                                                          |         |               | | **Forward Vertical**     |
+|                                                          |         |               | | **Backward Horizontal**  |
+|                                                          |         |               | | **Backward Vertical**    |
+|                                                          |         |               | | **Duplicate Top**        |
+|                                                          |         |               | | **Duplicate Left**       |
+|                                                          |         |               | | **Duplicate Bottom**     |
+|                                                          |         |               | | **Duplicate Right**      |
+|                                                          |         |               | | **Duplicate Horizontal** |
+|                                                          |         |               | | **Duplicate Vertical**   |
 |                                                          |         |               | | **Checkered**            |
-|                                                          |         |               | | **Checkered inverse**    |
+|                                                          |         |               | | **Checkered Inverse**    |
 +----------------------------------------------------------+---------+---------------+----------------------------+
-| Preview split / ``Preview_split``                        | Double  | x: 0.5 y: 0.5 |                            |
+| Preview Split / ``Preview_Split``                        | Double  | x: 0.5 y: 0.5 |                            |
 +----------------------------------------------------------+---------+---------------+----------------------------+
 | Output Layer / ``Output_Layer``                          | Choice  | Layer 0       | |                          |
 |                                                          |         |               | | **Merged**               |

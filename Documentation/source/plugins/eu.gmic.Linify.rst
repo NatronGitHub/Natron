@@ -35,32 +35,32 @@ Controls
 +---------------------------------------------------------------------------+---------+---------------+----------------------------+
 | Resolution (%) / ``Resolution_``                                          | Double  | 40            |                            |
 +---------------------------------------------------------------------------+---------+---------------+----------------------------+
-| Line opacity / ``Line_opacity``                                           | Double  | 10            |                            |
+| Line Opacity / ``Line_Opacity``                                           | Double  | 10            |                            |
 +---------------------------------------------------------------------------+---------+---------------+----------------------------+
-| Line precision / ``Line_precision``                                       | Integer | 24            |                            |
+| Line Precision / ``Line_Precision``                                       | Integer | 24            |                            |
 +---------------------------------------------------------------------------+---------+---------------+----------------------------+
-| Color mode / ``Color_mode``                                               | Choice  | Subtractive   | |                          |
+| Color Mode / ``Color_Mode``                                               | Choice  | Subtractive   | |                          |
 |                                                                           |         |               | | **Subtractive**          |
 |                                                                           |         |               | | **Additive**             |
 +---------------------------------------------------------------------------+---------+---------------+----------------------------+
-| Preview progression while running / ``Preview_progression_while_running`` | Boolean | On            |                            |
+| Preview Progression While Running / ``Preview_Progression_While_Running`` | Boolean | On            |                            |
 +---------------------------------------------------------------------------+---------+---------------+----------------------------+
-| Preview type / ``Preview_type``                                           | Choice  | Full          | |                          |
+| Preview Type / ``Preview_Type``                                           | Choice  | Full          | |                          |
 |                                                                           |         |               | | **Full**                 |
-|                                                                           |         |               | | **Forward horizontal**   |
-|                                                                           |         |               | | **Forward vertical**     |
-|                                                                           |         |               | | **Backward horizontal**  |
-|                                                                           |         |               | | **Backward vertical**    |
-|                                                                           |         |               | | **Duplicate top**        |
-|                                                                           |         |               | | **Duplicate left**       |
-|                                                                           |         |               | | **Duplicate bottom**     |
-|                                                                           |         |               | | **Duplicate right**      |
-|                                                                           |         |               | | **Duplicate horizontal** |
-|                                                                           |         |               | | **Duplicate vertical**   |
+|                                                                           |         |               | | **Forward Horizontal**   |
+|                                                                           |         |               | | **Forward Vertical**     |
+|                                                                           |         |               | | **Backward Horizontal**  |
+|                                                                           |         |               | | **Backward Vertical**    |
+|                                                                           |         |               | | **Duplicate Top**        |
+|                                                                           |         |               | | **Duplicate Left**       |
+|                                                                           |         |               | | **Duplicate Bottom**     |
+|                                                                           |         |               | | **Duplicate Right**      |
+|                                                                           |         |               | | **Duplicate Horizontal** |
+|                                                                           |         |               | | **Duplicate Vertical**   |
 |                                                                           |         |               | | **Checkered**            |
-|                                                                           |         |               | | **Checkered inverse**    |
+|                                                                           |         |               | | **Checkered Inverse**    |
 +---------------------------------------------------------------------------+---------+---------------+----------------------------+
-| Preview split / ``Preview_split``                                         | Double  | x: 0.5 y: 0.5 |                            |
+| Preview Split / ``Preview_Split``                                         | Double  | x: 0.5 y: 0.5 |                            |
 +---------------------------------------------------------------------------+---------+---------------+----------------------------+
 | Output Layer / ``Output_Layer``                                           | Choice  | Layer 0       | |                          |
 |                                                                           |         |               | | **Merged**               |

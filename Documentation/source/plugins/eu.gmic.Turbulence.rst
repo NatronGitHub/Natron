@@ -33,9 +33,9 @@ Controls
 +---------------------------------------------+---------+------------+------------------------+
 | Octaves / ``Octaves``                       | Integer | 6          |                        |
 +---------------------------------------------+---------+------------+------------------------+
-| Damping per octave / ``Damping_per_octave`` | Double  | 4          |                        |
+| Damping per Octave / ``Damping_per_Octave`` | Double  | 4          |                        |
 +---------------------------------------------+---------+------------+------------------------+
-| Difference mixing / ``Difference_mixing``   | Double  | 0          |                        |
+| Difference Mixing / ``Difference_Mixing``   | Double  | 0          |                        |
 +---------------------------------------------+---------+------------+------------------------+
 | Mode / ``Mode``                             | Choice  | Turbulence | |                      |
 |                                             |         |            | | **Turbulence**       |

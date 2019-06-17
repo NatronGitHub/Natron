@@ -39,13 +39,13 @@ Controls
 |                                   |         |                | | **Straight**             |
 |                                   |         |                | | **Curved**               |
 +-----------------------------------+---------+----------------+----------------------------+
-| Color / ``Color``                 | Choice  | White on black | |                          |
-|                                   |         |                | | **White on black**       |
-|                                   |         |                | | **Black on white**       |
-|                                   |         |                | | **White on transparent** |
-|                                   |         |                | | **Black on transparent** |
-|                                   |         |                | | **Transparent on white** |
-|                                   |         |                | | **Transparent on black** |
+| Color / ``Color``                 | Choice  | White on Black | |                          |
+|                                   |         |                | | **White on Black**       |
+|                                   |         |                | | **Black on White**       |
+|                                   |         |                | | **White on Transparent** |
+|                                   |         |                | | **Black on Transparent** |
+|                                   |         |                | | **Transparent on White** |
+|                                   |         |                | | **Transparent on Black** |
 |                                   |         |                | | **Random**               |
 +-----------------------------------+---------+----------------+----------------------------+
 | Output Layer / ``Output_Layer``   | Choice  | Layer 0        | |                          |

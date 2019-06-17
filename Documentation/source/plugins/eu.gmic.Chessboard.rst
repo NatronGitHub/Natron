@@ -29,38 +29,38 @@ Controls
 +--------------------------------------------+---------+---------------------+----------------------------+
 | Parameter / script name                    | Type    | Default             | Function                   |
 +============================================+=========+=====================+============================+
-| First size / ``First_size``                | Integer | 64                  |                            |
+| First Size / ``First_Size``                | Integer | 64                  |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| Second size / ``Second_size``              | Integer | 64                  |                            |
+| Second Size / ``Second_Size``              | Integer | 64                  |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| First offset / ``First_offset``            | Integer | 0                   |                            |
+| First Offset / ``First_Offset``            | Integer | 0                   |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| Second offset / ``Second_offset``          | Integer | 0                   |                            |
+| Second Offset / ``Second_Offset``          | Integer | 0                   |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
 | Angle / ``Angle``                          | Double  | 0                   |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
 | Opacity / ``Opacity``                      | Double  | 0.5                 |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| First color / ``First_color``              | Color   | r: 0 g: 0 b: 0 a: 0 |                            |
+| First Color / ``First_Color``              | Color   | r: 0 g: 0 b: 0 a: 0 |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| Second color / ``Second_color``            | Color   | r: 1 g: 1 b: 1 a: 1 |                            |
+| Second Color / ``Second_Color``            | Color   | r: 1 g: 1 b: 1 a: 1 |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| Preview type / ``Preview_type``            | Choice  | Full                | |                          |
+| Preview Type / ``Preview_Type``            | Choice  | Full                | |                          |
 |                                            |         |                     | | **Full**                 |
-|                                            |         |                     | | **Forward horizontal**   |
-|                                            |         |                     | | **Forward vertical**     |
-|                                            |         |                     | | **Backward horizontal**  |
-|                                            |         |                     | | **Backward vertical**    |
-|                                            |         |                     | | **Duplicate top**        |
-|                                            |         |                     | | **Duplicate left**       |
-|                                            |         |                     | | **Duplicate bottom**     |
-|                                            |         |                     | | **Duplicate right**      |
-|                                            |         |                     | | **Duplicate horizontal** |
-|                                            |         |                     | | **Duplicate vertical**   |
+|                                            |         |                     | | **Forward Horizontal**   |
+|                                            |         |                     | | **Forward Vertical**     |
+|                                            |         |                     | | **Backward Horizontal**  |
+|                                            |         |                     | | **Backward Vertical**    |
+|                                            |         |                     | | **Duplicate Top**        |
+|                                            |         |                     | | **Duplicate Left**       |
+|                                            |         |                     | | **Duplicate Bottom**     |
+|                                            |         |                     | | **Duplicate Right**      |
+|                                            |         |                     | | **Duplicate Horizontal** |
+|                                            |         |                     | | **Duplicate Vertical**   |
 |                                            |         |                     | | **Checkered**            |
-|                                            |         |                     | | **Checkered inverse**    |
+|                                            |         |                     | | **Checkered Inverse**    |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| Preview split / ``Preview_split``          | Double  | x: 0.5 y: 0.5       |                            |
+| Preview Split / ``Preview_Split``          | Double  | x: 0.5 y: 0.5       |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0             | |                          |
 |                                            |         |                     | | **Merged**               |

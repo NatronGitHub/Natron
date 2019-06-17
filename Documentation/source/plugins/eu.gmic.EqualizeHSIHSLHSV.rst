@@ -36,85 +36,85 @@ Controls
 +-----------------------------------------------+---------+---------------+----------------------------+
 | Opacity (%) / ``Opacity_``                    | Double  | 100           |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Value blending / ``Value_blending``           | Double  | 0             |                            |
+| Value Blending / ``Value_Blending``           | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Color blending / ``Color_blending``           | Double  | 0             |                            |
+| Color Blending / ``Color_Blending``           | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Preview mapping / ``Preview_mapping``         | Choice  | None          | |                          |
+| Preview Mapping / ``Preview_Mapping``         | Choice  | None          | |                          |
 |                                               |         |               | | **None**                 |
 |                                               |         |               | | **Grey**                 |
 |                                               |         |               | | **Color**                |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Hue offset / ``Hue_offset``                   | Double  | 0             |                            |
+| Hue Offset / ``Hue_Offset``                   | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Saturation offset / ``Saturation_offset``     | Double  | 0             |                            |
+| Saturation Offset / ``Saturation_Offset``     | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Value offset / ``Value_offset``               | Double  | 0             |                            |
+| Value Offset / ``Value_Offset``               | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Hue offset_2 / ``Hue_offset_2``               | Double  | 0             |                            |
+| Hue Offset_2 / ``Hue_Offset_2``               | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Saturation offset_2 / ``Saturation_offset_2`` | Double  | 0             |                            |
+| Saturation Offset_2 / ``Saturation_Offset_2`` | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Value offset_2 / ``Value_offset_2``           | Double  | 0             |                            |
+| Value Offset_2 / ``Value_Offset_2``           | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Hue offset_3 / ``Hue_offset_3``               | Double  | 0             |                            |
+| Hue Offset_3 / ``Hue_Offset_3``               | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Saturation offset_3 / ``Saturation_offset_3`` | Double  | 0             |                            |
+| Saturation Offset_3 / ``Saturation_Offset_3`` | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Value offset_3 / ``Value_offset_3``           | Double  | 0             |                            |
+| Value Offset_3 / ``Value_Offset_3``           | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Hue offset_4 / ``Hue_offset_4``               | Double  | 0             |                            |
+| Hue Offset_4 / ``Hue_Offset_4``               | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Saturation offset_4 / ``Saturation_offset_4`` | Double  | 0             |                            |
+| Saturation Offset_4 / ``Saturation_Offset_4`` | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Value offset_4 / ``Value_offset_4``           | Double  | 0             |                            |
+| Value Offset_4 / ``Value_Offset_4``           | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Hue offset_5 / ``Hue_offset_5``               | Double  | 0             |                            |
+| Hue Offset_5 / ``Hue_Offset_5``               | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Saturation offset_5 / ``Saturation_offset_5`` | Double  | 0             |                            |
+| Saturation Offset_5 / ``Saturation_Offset_5`` | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Value offset_5 / ``Value_offset_5``           | Double  | 0             |                            |
+| Value Offset_5 / ``Value_Offset_5``           | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Hue offset_6 / ``Hue_offset_6``               | Double  | 0             |                            |
+| Hue Offset_6 / ``Hue_Offset_6``               | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Saturation offset_6 / ``Saturation_offset_6`` | Double  | 0             |                            |
+| Saturation Offset_6 / ``Saturation_Offset_6`` | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Value offset_6 / ``Value_offset_6``           | Double  | 0             |                            |
+| Value Offset_6 / ``Value_Offset_6``           | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Hue offset_7 / ``Hue_offset_7``               | Double  | 0             |                            |
+| Hue Offset_7 / ``Hue_Offset_7``               | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Saturation offset_7 / ``Saturation_offset_7`` | Double  | 0             |                            |
+| Saturation Offset_7 / ``Saturation_Offset_7`` | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Value offset_7 / ``Value_offset_7``           | Double  | 0             |                            |
+| Value Offset_7 / ``Value_Offset_7``           | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Hue offset_8 / ``Hue_offset_8``               | Double  | 0             |                            |
+| Hue Offset_8 / ``Hue_Offset_8``               | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Saturation offset_8 / ``Saturation_offset_8`` | Double  | 0             |                            |
+| Saturation Offset_8 / ``Saturation_Offset_8`` | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Value offset_8 / ``Value_offset_8``           | Double  | 0             |                            |
+| Value Offset_8 / ``Value_Offset_8``           | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Hue offset_9 / ``Hue_offset_9``               | Double  | 0             |                            |
+| Hue Offset_9 / ``Hue_Offset_9``               | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Saturation offset_9 / ``Saturation_offset_9`` | Double  | 0             |                            |
+| Saturation Offset_9 / ``Saturation_Offset_9`` | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Value offset_9 / ``Value_offset_9``           | Double  | 0             |                            |
+| Value Offset_9 / ``Value_Offset_9``           | Double  | 0             |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Preview type / ``Preview_type``               | Choice  | Full          | |                          |
+| Preview Type / ``Preview_Type``               | Choice  | Full          | |                          |
 |                                               |         |               | | **Full**                 |
-|                                               |         |               | | **Forward horizontal**   |
-|                                               |         |               | | **Forward vertical**     |
-|                                               |         |               | | **Backward horizontal**  |
-|                                               |         |               | | **Backward vertical**    |
-|                                               |         |               | | **Duplicate top**        |
-|                                               |         |               | | **Duplicate left**       |
-|                                               |         |               | | **Duplicate bottom**     |
-|                                               |         |               | | **Duplicate right**      |
-|                                               |         |               | | **Duplicate horizontal** |
-|                                               |         |               | | **Duplicate vertical**   |
+|                                               |         |               | | **Forward Horizontal**   |
+|                                               |         |               | | **Forward Vertical**     |
+|                                               |         |               | | **Backward Horizontal**  |
+|                                               |         |               | | **Backward Vertical**    |
+|                                               |         |               | | **Duplicate Top**        |
+|                                               |         |               | | **Duplicate Left**       |
+|                                               |         |               | | **Duplicate Bottom**     |
+|                                               |         |               | | **Duplicate Right**      |
+|                                               |         |               | | **Duplicate Horizontal** |
+|                                               |         |               | | **Duplicate Vertical**   |
 |                                               |         |               | | **Checkered**            |
-|                                               |         |               | | **Checkered inverse**    |
+|                                               |         |               | | **Checkered Inverse**    |
 +-----------------------------------------------+---------+---------------+----------------------------+
-| Preview split / ``Preview_split``             | Double  | x: 0.5 y: 0.5 |                            |
+| Preview Split / ``Preview_Split``             | Double  | x: 0.5 y: 0.5 |                            |
 +-----------------------------------------------+---------+---------------+----------------------------+
 | Output Layer / ``Output_Layer``               | Choice  | Layer 0       | |                          |
 |                                               |         |               | | **Merged**               |

@@ -29,37 +29,37 @@ Controls
 +-------------------------------------------------------+---------+---------+-----------------------+
 | Parameter / script name                               | Type    | Default | Function              |
 +=======================================================+=========+=========+=======================+
-| Preview bands / ``Preview_bands``                     | Boolean | Off     |                       |
+| Preview Bands / ``Preview_Bands``                     | Boolean | Off     |                       |
 +-------------------------------------------------------+---------+---------+-----------------------+
-| Hue band / ``Hue_band``                               | Double  | 180     |                       |
+| Hue Band / ``Hue_Band``                               | Double  | 180     |                       |
 +-------------------------------------------------------+---------+---------+-----------------------+
-| Band width / ``Band_width``                           | Double  | 40      |                       |
+| Band Width / ``Band_Width``                           | Double  | 40      |                       |
 +-------------------------------------------------------+---------+---------+-----------------------+
-| Hue shift / ``Hue_shift``                             | Double  | 0       |                       |
+| Hue Shift / ``Hue_Shift``                             | Double  | 0       |                       |
 +-------------------------------------------------------+---------+---------+-----------------------+
-| Saturation correction / ``Saturation_correction``     | Double  | 0       |                       |
+| Saturation Correction / ``Saturation_Correction``     | Double  | 0       |                       |
 +-------------------------------------------------------+---------+---------+-----------------------+
-| Value correction / ``Value_correction``               | Double  | 0       |                       |
+| Value Correction / ``Value_Correction``               | Double  | 0       |                       |
 +-------------------------------------------------------+---------+---------+-----------------------+
-| Hue band_2 / ``Hue_band_2``                           | Double  | 180     |                       |
+| Hue Band_2 / ``Hue_Band_2``                           | Double  | 180     |                       |
 +-------------------------------------------------------+---------+---------+-----------------------+
-| Band width_2 / ``Band_width_2``                       | Double  | 40      |                       |
+| Band Width_2 / ``Band_Width_2``                       | Double  | 40      |                       |
 +-------------------------------------------------------+---------+---------+-----------------------+
-| Hue shift_2 / ``Hue_shift_2``                         | Double  | 0       |                       |
+| Hue Shift_2 / ``Hue_Shift_2``                         | Double  | 0       |                       |
 +-------------------------------------------------------+---------+---------+-----------------------+
-| Saturation correction_2 / ``Saturation_correction_2`` | Double  | 0       |                       |
+| Saturation Correction_2 / ``Saturation_Correction_2`` | Double  | 0       |                       |
 +-------------------------------------------------------+---------+---------+-----------------------+
-| Value correction_2 / ``Value_correction_2``           | Double  | 0       |                       |
+| Value Correction_2 / ``Value_Correction_2``           | Double  | 0       |                       |
 +-------------------------------------------------------+---------+---------+-----------------------+
-| Hue band_3 / ``Hue_band_3``                           | Double  | 180     |                       |
+| Hue Band_3 / ``Hue_Band_3``                           | Double  | 180     |                       |
 +-------------------------------------------------------+---------+---------+-----------------------+
-| Band width_3 / ``Band_width_3``                       | Double  | 40      |                       |
+| Band Width_3 / ``Band_Width_3``                       | Double  | 40      |                       |
 +-------------------------------------------------------+---------+---------+-----------------------+
-| Hue shift_3 / ``Hue_shift_3``                         | Double  | 0       |                       |
+| Hue Shift_3 / ``Hue_Shift_3``                         | Double  | 0       |                       |
 +-------------------------------------------------------+---------+---------+-----------------------+
-| Saturation correction_3 / ``Saturation_correction_3`` | Double  | 0       |                       |
+| Saturation Correction_3 / ``Saturation_Correction_3`` | Double  | 0       |                       |
 +-------------------------------------------------------+---------+---------+-----------------------+
-| Value correction_3 / ``Value_correction_3``           | Double  | 0       |                       |
+| Value Correction_3 / ``Value_Correction_3``           | Double  | 0       |                       |
 +-------------------------------------------------------+---------+---------+-----------------------+
 | Output Layer / ``Output_Layer``                       | Choice  | Layer 0 | |                     |
 |                                                       |         |         | | **Merged**          |

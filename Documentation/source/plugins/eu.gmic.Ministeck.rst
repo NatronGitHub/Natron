@@ -29,19 +29,19 @@ Controls
 +--------------------------------------------+---------+---------+-----------------------+
 | Parameter / script name                    | Type    | Default | Function              |
 +============================================+=========+=========+=======================+
-| Number of colors / ``Number_of_colors``    | Integer | 8       |                       |
+| Number of Colors / ``Number_of_Colors``    | Integer | 8       |                       |
 +--------------------------------------------+---------+---------+-----------------------+
 | Resolution (px) / ``Resolution_px``        | Integer | 64      |                       |
 +--------------------------------------------+---------+---------+-----------------------+
-| Piece size (px) / ``Piece_size_px``        | Integer | 8       |                       |
+| Piece Size (px) / ``Piece_Size_px``        | Integer | 8       |                       |
 +--------------------------------------------+---------+---------+-----------------------+
-| Piece complexity / ``Piece_complexity``    | Integer | 2       |                       |
+| Piece Complexity / ``Piece_Complexity``    | Integer | 2       |                       |
 +--------------------------------------------+---------+---------+-----------------------+
-| Relief amplitude / ``Relief_amplitude``    | Double  | 100     |                       |
+| Relief Amplitude / ``Relief_Amplitude``    | Double  | 100     |                       |
 +--------------------------------------------+---------+---------+-----------------------+
-| Relief size / ``Relief_size``              | Double  | 0.3     |                       |
+| Relief Size / ``Relief_Size``              | Double  | 0.3     |                       |
 +--------------------------------------------+---------+---------+-----------------------+
-| Add 1px outline / ``Add_1px_outline``      | Boolean | Off     |                       |
+| Add 1px Outline / ``Add_1px_Outline``      | Boolean | Off     |                       |
 +--------------------------------------------+---------+---------+-----------------------+
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0 | |                     |
 |                                            |         |         | | **Merged**          |

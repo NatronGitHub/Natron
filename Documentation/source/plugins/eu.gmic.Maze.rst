@@ -29,20 +29,20 @@ Controls
 +---------------------------------------------------------+---------+------------+-----------------------------+
 | Parameter / script name                                 | Type    | Default    | Function                    |
 +=========================================================+=========+============+=============================+
-| Cell size / ``Cell_size``                               | Integer | 24         |                             |
+| Cell Size / ``Cell_Size``                               | Integer | 24         |                             |
 +---------------------------------------------------------+---------+------------+-----------------------------+
 | Thickness / ``Thickness``                               | Integer | 1          |                             |
 +---------------------------------------------------------+---------+------------+-----------------------------+
 | Masking / ``Masking``                                   | Choice  | None       | |                           |
 |                                                         |         |            | | **None**                  |
-|                                                         |         |            | | **Render on dark areas**  |
-|                                                         |         |            | | **Render on white areas** |
+|                                                         |         |            | | **Render on Dark Areas**  |
+|                                                         |         |            | | **Render on White Areas** |
 +---------------------------------------------------------+---------+------------+-----------------------------+
-| Preserve image dimension / ``Preserve_image_dimension`` | Boolean | On         |                             |
+| Preserve Image Dimension / ``Preserve_Image_Dimension`` | Boolean | On         |                             |
 +---------------------------------------------------------+---------+------------+-----------------------------+
-| Maze type / ``Maze_type``                               | Choice  | Dark walls | |                           |
-|                                                         |         |            | | **Dark walls**            |
-|                                                         |         |            | | **White walls**           |
+| Maze Type / ``Maze_Type``                               | Choice  | Dark Walls | |                           |
+|                                                         |         |            | | **Dark Walls**            |
+|                                                         |         |            | | **White Walls**           |
 +---------------------------------------------------------+---------+------------+-----------------------------+
 | Output Layer / ``Output_Layer``                         | Choice  | Layer 0    | |                           |
 |                                                         |         |            | | **Merged**                |

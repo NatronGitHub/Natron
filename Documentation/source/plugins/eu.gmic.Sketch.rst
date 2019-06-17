@@ -29,19 +29,19 @@ Controls
 +-----------------------------------------------------+---------+----------------+----------------------------------+
 | Parameter / script name                             | Type    | Default        | Function                         |
 +=====================================================+=========+================+==================================+
-| Number of orientations / ``Number_of_orientations`` | Integer | 3              |                                  |
+| Number of Orientations / ``Number_of_Orientations`` | Integer | 3              |                                  |
 +-----------------------------------------------------+---------+----------------+----------------------------------+
-| Starting angle / ``Starting_angle``                 | Double  | 45             |                                  |
+| Starting Angle / ``Starting_Angle``                 | Double  | 45             |                                  |
 +-----------------------------------------------------+---------+----------------+----------------------------------+
-| Angle range / ``Angle_range``                       | Double  | 180            |                                  |
+| Angle Range / ``Angle_Range``                       | Double  | 180            |                                  |
 +-----------------------------------------------------+---------+----------------+----------------------------------+
-| Stroke length / ``Stroke_length``                   | Double  | 30             |                                  |
+| Stroke Length / ``Stroke_Length``                   | Double  | 30             |                                  |
 +-----------------------------------------------------+---------+----------------+----------------------------------+
-| Contour threshold / ``Contour_threshold``           | Double  | 1.75           |                                  |
+| Contour Threshold / ``Contour_Threshold``           | Double  | 1.75           |                                  |
 +-----------------------------------------------------+---------+----------------+----------------------------------+
 | Opacity / ``Opacity``                               | Double  | 0.02           |                                  |
 +-----------------------------------------------------+---------+----------------+----------------------------------+
-| Background intensity / ``Background_intensity``     | Double  | 0.5            |                                  |
+| Background Intensity / ``Background_Intensity``     | Double  | 0.5            |                                  |
 +-----------------------------------------------------+---------+----------------+----------------------------------+
 | Density / ``Density``                               | Double  | 0.75           |                                  |
 +-----------------------------------------------------+---------+----------------+----------------------------------+
@@ -53,33 +53,33 @@ Controls
 +-----------------------------------------------------+---------+----------------+----------------------------------+
 | Coherence / ``Coherence``                           | Double  | 6              |                                  |
 +-----------------------------------------------------+---------+----------------+----------------------------------+
-| Boost stroke / ``Boost_stroke``                     | Boolean | Off            |                                  |
+| Boost Stroke / ``Boost_Stroke``                     | Boolean | Off            |                                  |
 +-----------------------------------------------------+---------+----------------+----------------------------------+
-| Curved stroke / ``Curved_stroke``                   | Boolean | On             |                                  |
+| Curved Stroke / ``Curved_Stroke``                   | Boolean | On             |                                  |
 +-----------------------------------------------------+---------+----------------+----------------------------------+
-| Color model / ``Color_model``                       | Choice  | Color on white | |                                |
+| Color Model / ``Color_Model``                       | Choice  | Color on white | |                                |
 |                                                     |         |                | | **Black on white**             |
 |                                                     |         |                | | **White on black**             |
 |                                                     |         |                | | **Black on transparent white** |
 |                                                     |         |                | | **White on transparent black** |
 |                                                     |         |                | | **Color on white**             |
 +-----------------------------------------------------+---------+----------------+----------------------------------+
-| Preview type / ``Preview_type``                     | Choice  | Full           | |                                |
+| Preview Type / ``Preview_Type``                     | Choice  | Full           | |                                |
 |                                                     |         |                | | **Full**                       |
-|                                                     |         |                | | **Forward horizontal**         |
-|                                                     |         |                | | **Forward vertical**           |
-|                                                     |         |                | | **Backward horizontal**        |
-|                                                     |         |                | | **Backward vertical**          |
-|                                                     |         |                | | **Duplicate top**              |
-|                                                     |         |                | | **Duplicate left**             |
-|                                                     |         |                | | **Duplicate bottom**           |
-|                                                     |         |                | | **Duplicate right**            |
-|                                                     |         |                | | **Duplicate horizontal**       |
-|                                                     |         |                | | **Duplicate vertical**         |
+|                                                     |         |                | | **Forward Horizontal**         |
+|                                                     |         |                | | **Forward Vertical**           |
+|                                                     |         |                | | **Backward Horizontal**        |
+|                                                     |         |                | | **Backward Vertical**          |
+|                                                     |         |                | | **Duplicate Top**              |
+|                                                     |         |                | | **Duplicate Left**             |
+|                                                     |         |                | | **Duplicate Bottom**           |
+|                                                     |         |                | | **Duplicate Right**            |
+|                                                     |         |                | | **Duplicate Horizontal**       |
+|                                                     |         |                | | **Duplicate Vertical**         |
 |                                                     |         |                | | **Checkered**                  |
-|                                                     |         |                | | **Checkered inverse**          |
+|                                                     |         |                | | **Checkered Inverse**          |
 +-----------------------------------------------------+---------+----------------+----------------------------------+
-| Preview split / ``Preview_split``                   | Double  | x: 0.5 y: 0.5  |                                  |
+| Preview Split / ``Preview_Split``                   | Double  | x: 0.5 y: 0.5  |                                  |
 +-----------------------------------------------------+---------+----------------+----------------------------------+
 | Output Layer / ``Output_Layer``                     | Choice  | Layer 0        | |                                |
 |                                                     |         |                | | **Merged**                     |

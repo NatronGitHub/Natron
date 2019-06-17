@@ -42,11 +42,11 @@ Controls
 | Angle / ``Angle``                          | Double  | 0             |                        |
 +--------------------------------------------+---------+---------------+------------------------+
 | Interpolation / ``Interpolation``          | Choice  | Cubic         | |                      |
-|                                            |         |               | | **Nearest neighbor** |
+|                                            |         |               | | **Nearest Neighbor** |
 |                                            |         |               | | **Linear**           |
 |                                            |         |               | | **Cubic**            |
 +--------------------------------------------+---------+---------------+------------------------+
-| Preview grid / ``Preview_grid``            | Boolean | Off           |                        |
+| Preview Grid / ``Preview_Grid``            | Boolean | Off           |                        |
 +--------------------------------------------+---------+---------------+------------------------+
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0       | |                      |
 |                                            |         |               | | **Merged**           |

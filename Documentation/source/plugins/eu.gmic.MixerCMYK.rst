@@ -29,54 +29,54 @@ Controls
 +---------------------------------------------+---------+---------------+----------------------------+
 | Parameter / script name                     | Type    | Default       | Function                   |
 +=============================================+=========+===============+============================+
-| Cyan factor / ``Cyan_factor``               | Double  | 1             |                            |
+| Cyan Factor / ``Cyan_Factor``               | Double  | 1             |                            |
 +---------------------------------------------+---------+---------------+----------------------------+
-| Cyan shift / ``Cyan_shift``                 | Double  | 0             |                            |
+| Cyan Shift / ``Cyan_Shift``                 | Double  | 0             |                            |
 +---------------------------------------------+---------+---------------+----------------------------+
-| Cyan smoothness / ``Cyan_smoothness``       | Double  | 0             |                            |
+| Cyan Smoothness / ``Cyan_Smoothness``       | Double  | 0             |                            |
 +---------------------------------------------+---------+---------------+----------------------------+
-| Magenta factor / ``Magenta_factor``         | Double  | 1             |                            |
+| Magenta Factor / ``Magenta_Factor``         | Double  | 1             |                            |
 +---------------------------------------------+---------+---------------+----------------------------+
-| Magenta shift / ``Magenta_shift``           | Double  | 0             |                            |
+| Magenta Shift / ``Magenta_Shift``           | Double  | 0             |                            |
 +---------------------------------------------+---------+---------------+----------------------------+
-| Magenta smoothness / ``Magenta_smoothness`` | Double  | 0             |                            |
+| Magenta Smoothness / ``Magenta_Smoothness`` | Double  | 0             |                            |
 +---------------------------------------------+---------+---------------+----------------------------+
-| Yellow factor / ``Yellow_factor``           | Double  | 1             |                            |
+| Yellow Factor / ``Yellow_Factor``           | Double  | 1             |                            |
 +---------------------------------------------+---------+---------------+----------------------------+
-| Yellow shift / ``Yellow_shift``             | Double  | 0             |                            |
+| Yellow Shift / ``Yellow_Shift``             | Double  | 0             |                            |
 +---------------------------------------------+---------+---------------+----------------------------+
-| Yellow smoothness / ``Yellow_smoothness``   | Double  | 0             |                            |
+| Yellow Smoothness / ``Yellow_Smoothness``   | Double  | 0             |                            |
 +---------------------------------------------+---------+---------------+----------------------------+
-| Key factor / ``Key_factor``                 | Double  | 1             |                            |
+| Key Factor / ``Key_Factor``                 | Double  | 1             |                            |
 +---------------------------------------------+---------+---------------+----------------------------+
-| Key shift / ``Key_shift``                   | Double  | 0             |                            |
+| Key Shift / ``Key_Shift``                   | Double  | 0             |                            |
 +---------------------------------------------+---------+---------------+----------------------------+
-| Key smoothness / ``Key_smoothness``         | Double  | 0             |                            |
+| Key Smoothness / ``Key_Smoothness``         | Double  | 0             |                            |
 +---------------------------------------------+---------+---------------+----------------------------+
-| Tones range / ``Tones_range``               | Choice  | All tones     | |                          |
+| Tones Range / ``Tones_Range``               | Choice  | All tones     | |                          |
 |                                             |         |               | | **All tones**            |
 |                                             |         |               | | **Shadows**              |
-|                                             |         |               | | **Mid-tones**            |
+|                                             |         |               | | **Mid-Tones**            |
 |                                             |         |               | | **Highlights**           |
 +---------------------------------------------+---------+---------------+----------------------------+
-| Tones smoothness / ``Tones_smoothness``     | Double  | 2             |                            |
+| Tones Smoothness / ``Tones_Smoothness``     | Double  | 2             |                            |
 +---------------------------------------------+---------+---------------+----------------------------+
-| Preview type / ``Preview_type``             | Choice  | Full          | |                          |
+| Preview Type / ``Preview_Type``             | Choice  | Full          | |                          |
 |                                             |         |               | | **Full**                 |
-|                                             |         |               | | **Forward horizontal**   |
-|                                             |         |               | | **Forward vertical**     |
-|                                             |         |               | | **Backward horizontal**  |
-|                                             |         |               | | **Backward vertical**    |
-|                                             |         |               | | **Duplicate top**        |
-|                                             |         |               | | **Duplicate left**       |
-|                                             |         |               | | **Duplicate bottom**     |
-|                                             |         |               | | **Duplicate right**      |
-|                                             |         |               | | **Duplicate horizontal** |
-|                                             |         |               | | **Duplicate vertical**   |
+|                                             |         |               | | **Forward Horizontal**   |
+|                                             |         |               | | **Forward Vertical**     |
+|                                             |         |               | | **Backward Horizontal**  |
+|                                             |         |               | | **Backward Vertical**    |
+|                                             |         |               | | **Duplicate Top**        |
+|                                             |         |               | | **Duplicate Left**       |
+|                                             |         |               | | **Duplicate Bottom**     |
+|                                             |         |               | | **Duplicate Right**      |
+|                                             |         |               | | **Duplicate Horizontal** |
+|                                             |         |               | | **Duplicate Vertical**   |
 |                                             |         |               | | **Checkered**            |
-|                                             |         |               | | **Checkered inverse**    |
+|                                             |         |               | | **Checkered Inverse**    |
 +---------------------------------------------+---------+---------------+----------------------------+
-| Preview split / ``Preview_split``           | Double  | x: 0.5 y: 0.5 |                            |
+| Preview Split / ``Preview_Split``           | Double  | x: 0.5 y: 0.5 |                            |
 +---------------------------------------------+---------+---------------+----------------------------+
 | Output Layer / ``Output_Layer``             | Choice  | Layer 0       | |                          |
 |                                             |         |               | | **Merged**               |

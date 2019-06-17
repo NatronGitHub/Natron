@@ -255,7 +255,7 @@ Node::load(const CreateNodeArgsPtr& args)
         _imp->inputDescriptions.resize(inputs.size());
         for (std::size_t i = 0; i < inputs.size(); ++i) {
             InputDescriptionPtr copy(new InputDescription(*inputs[i]));
-            
+
             // Default initialize label and script-name properties
             _imp->inputDescriptions[i] = copy;
 
@@ -328,13 +328,13 @@ Node::load(const CreateNodeArgsPtr& args)
 
     // Refresh knobs Viewer UI order so that serialization does not save it if it did not change
     _imp->refreshDefaultViewerKnobsOrder();
-    
+
     // Run the Python callback
     _imp->runOnNodeCreatedCB(!serialization);
-    
+
     // If needed compute a preview for this node
     computePreviewImage();
-    
+
     // Resume knobChanged calls
     _imp->effect->endChanges();
 
@@ -381,7 +381,7 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
                             isInt->setValue(v[d]);
                         }
                     }
-                    
+
                 } else if (isBool) {
                     std::vector<bool> v = args.getPropertyNUnsafe<bool>(propName);
                     nDims = std::min((int)v.size(), nDims);
@@ -573,7 +573,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
             page->addKnob(knob);
         }
     } // groupSerialization
-    
+
 } // restoreUserKnob
 
 
@@ -671,7 +671,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             // Don't serialize non persistant knobs
             continue;
         }
-       
+
         if (knob->getKnobDeclarationType() == KnobI::eKnobDeclarationTypeUser) {
             // Don't serialize user knobs, its taken care of by user pages
             continue;
@@ -1460,14 +1460,14 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
                     continue;
                 }
                 _imp->effect->onKnobValueChanged_public(*it, eValueChangedReasonRestoreDefault, time, ViewIdx(0));
-                
+
             }
         }
     }
 
     // Refresh hash & meta-data and trigger a render
     _imp->effect->invalidateCacheHashAndEvaluate(true, true);
-    
+
 } // restoreNodeToDefaultState
 
 
@@ -1609,10 +1609,10 @@ Node::moveToGroup(const NodeCollectionPtr& group)
         args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, settingsPanelVisible);
         args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, position[0], 0);
         args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, position[1], 1);
-        
+
         newGraph->createNodeGui(shared_from_this(), *args);
     }
-    
+
 } // moveToGroup
 
 
@@ -1781,7 +1781,7 @@ Node::destroyNode()
         app->recheckInvalidLinks();
     }
 
-    
+
     _imp->effect.reset();
 
 

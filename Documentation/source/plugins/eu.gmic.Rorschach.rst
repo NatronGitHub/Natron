@@ -31,13 +31,13 @@ Controls
 +===================================+=========+=========+=======================+
 | Scale / ``Scale``                 | Double  | 3       |                       |
 +-----------------------------------+---------+---------+-----------------------+
-| Mirror / ``Mirror``               | Choice  | X-axis  | |                     |
+| Mirror / ``Mirror``               | Choice  | X-Axis  | |                     |
 |                                   |         |         | | **None**            |
-|                                   |         |         | | **X-axis**          |
-|                                   |         |         | | **Y-axis**          |
-|                                   |         |         | | **XY-axes**         |
+|                                   |         |         | | **X-Axis**          |
+|                                   |         |         | | **Y-Axis**          |
+|                                   |         |         | | **XY-Axes**         |
 +-----------------------------------+---------+---------+-----------------------+
-| Stencil type / ``Stencil_type``   | Choice  | Color   | |                     |
+| Stencil Type / ``Stencil_Type``   | Choice  | Color   | |                     |
 |                                   |         |         | | **Black & White**   |
 |                                   |         |         | | **RGB**             |
 |                                   |         |         | | **Color**           |

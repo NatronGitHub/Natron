@@ -35,19 +35,28 @@ Controls
 +-------------------------------------------------------+---------+-------------------+-------------------------+
 | Parameter / script name                               | Type    | Default           | Function                |
 +=======================================================+=========+===================+=========================+
-| Order by / ``Order_by``                               | Choice  | Maximum dimension | |                       |
+| Order By / ``Order_By``                               | Choice  | Maximum Dimension | |                       |
 |                                                       |         |                   | | **Width**             |
 |                                                       |         |                   | | **Height**            |
-|                                                       |         |                   | | **Maximum dimension** |
+|                                                       |         |                   | | **Maximum Dimension** |
 |                                                       |         |                   | | **Area**              |
+|                                                       |         |                   | | **Name**              |
 +-------------------------------------------------------+---------+-------------------+-------------------------+
-| Tends to be square / ``Tends_to_be_square``           | Boolean | Off               |                         |
+| Tends to Be Square / ``Tends_to_Be_Square``           | Boolean | On                |                         |
 +-------------------------------------------------------+---------+-------------------+-------------------------+
-| Force transparency / ``Force_transparency``           | Boolean | On                |                         |
+| Force Transparency / ``Force_Transparency``           | Boolean | On                |                         |
 +-------------------------------------------------------+---------+-------------------+-------------------------+
-| Output coordinates file / ``Output_coordinates_file`` | Boolean | Off               |                         |
+| Add Image Label / ``Add_Image_Label``                 | Boolean | Off               |                         |
 +-------------------------------------------------------+---------+-------------------+-------------------------+
-| Output folder / ``Output_folder``                     | N/A     |                   |                         |
+| Font Height (px) / ``Font_Height_px``                 | Double  | 16                |                         |
++-------------------------------------------------------+---------+-------------------+-------------------------+
+| Font Colors / ``Font_Colors``                         | Choice  | Black on white    | |                       |
+|                                                       |         |                   | | **White on black**    |
+|                                                       |         |                   | | **Black on white**    |
++-------------------------------------------------------+---------+-------------------+-------------------------+
+| Output Coordinates File / ``Output_Coordinates_File`` | Boolean | Off               |                         |
++-------------------------------------------------------+---------+-------------------+-------------------------+
+| Output Folder / ``Output_Folder``                     | N/A     |                   |                         |
 +-------------------------------------------------------+---------+-------------------+-------------------------+
 | Output Layer / ``Output_Layer``                       | Choice  | Layer 0           | |                       |
 |                                                       |         |                   | | **Merged**            |

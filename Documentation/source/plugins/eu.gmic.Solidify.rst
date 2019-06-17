@@ -31,35 +31,35 @@ Controls
 +===========================================================+=========+===================+============================+
 | Smoothness (%) / ``Smoothness_``                          | Double  | 75                |                            |
 +-----------------------------------------------------------+---------+-------------------+----------------------------+
-| Regularization / ``Regularization``                       | Choice  | Delaunay-oriented | |                          |
+| Regularization / ``Regularization``                       | Choice  | Delaunay-Oriented | |                          |
 |                                                           |         |                   | | **Isotropic**            |
-|                                                           |         |                   | | **Delaunay-oriented**    |
-|                                                           |         |                   | | **Edge-oriented**        |
+|                                                           |         |                   | | **Delaunay-Oriented**    |
+|                                                           |         |                   | | **Edge-Oriented**        |
 +-----------------------------------------------------------+---------+-------------------+----------------------------+
-| Regularization iterations / ``Regularization_iterations`` | Integer | 20                |                            |
+| Regularization Iterations / ``Regularization_Iterations`` | Integer | 20                |                            |
 +-----------------------------------------------------------+---------+-------------------+----------------------------+
-| Dilation / erosion / ``Dilation__erosion``                | Integer | 0                 |                            |
+| Dilation / Erosion / ``Dilation__Erosion``                | Integer | 0                 |                            |
 +-----------------------------------------------------------+---------+-------------------+----------------------------+
 | Colorspace / ``Colorspace``                               | Choice  | Linear RGB        | |                          |
 |                                                           |         |                   | | **sRGB**                 |
 |                                                           |         |                   | | **Linear RGB**           |
 +-----------------------------------------------------------+---------+-------------------+----------------------------+
-| Preview type / ``Preview_type``                           | Choice  | Full              | |                          |
+| Preview Type / ``Preview_Type``                           | Choice  | Full              | |                          |
 |                                                           |         |                   | | **Full**                 |
-|                                                           |         |                   | | **Forward horizontal**   |
-|                                                           |         |                   | | **Forward vertical**     |
-|                                                           |         |                   | | **Backward horizontal**  |
-|                                                           |         |                   | | **Backward vertical**    |
-|                                                           |         |                   | | **Duplicate top**        |
-|                                                           |         |                   | | **Duplicate left**       |
-|                                                           |         |                   | | **Duplicate bottom**     |
-|                                                           |         |                   | | **Duplicate right**      |
-|                                                           |         |                   | | **Duplicate horizontal** |
-|                                                           |         |                   | | **Duplicate vertical**   |
+|                                                           |         |                   | | **Forward Horizontal**   |
+|                                                           |         |                   | | **Forward Vertical**     |
+|                                                           |         |                   | | **Backward Horizontal**  |
+|                                                           |         |                   | | **Backward Vertical**    |
+|                                                           |         |                   | | **Duplicate Top**        |
+|                                                           |         |                   | | **Duplicate Left**       |
+|                                                           |         |                   | | **Duplicate Bottom**     |
+|                                                           |         |                   | | **Duplicate Right**      |
+|                                                           |         |                   | | **Duplicate Horizontal** |
+|                                                           |         |                   | | **Duplicate Vertical**   |
 |                                                           |         |                   | | **Checkered**            |
-|                                                           |         |                   | | **Checkered inverse**    |
+|                                                           |         |                   | | **Checkered Inverse**    |
 +-----------------------------------------------------------+---------+-------------------+----------------------------+
-| Preview split / ``Preview_split``                         | Double  | x: 0.5 y: 0.5     |                            |
+| Preview Split / ``Preview_Split``                         | Double  | x: 0.5 y: 0.5     |                            |
 +-----------------------------------------------------------+---------+-------------------+----------------------------+
 | Output Layer / ``Output_Layer``                           | Choice  | Layer 0           | |                          |
 |                                                           |         |                   | | **Merged**               |

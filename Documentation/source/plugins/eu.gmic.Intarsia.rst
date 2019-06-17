@@ -29,27 +29,27 @@ Controls
 +---------------------------------------------------------------------+---------+---------------+------------------------+
 | Parameter / script name                                             | Type    | Default       | Function               |
 +=====================================================================+=========+===============+========================+
-| Output directory / ``Output_directory``                             | N/A     |               |                        |
+| Output Directory / ``Output_Directory``                             | N/A     |               |                        |
 +---------------------------------------------------------------------+---------+---------------+------------------------+
-| Output HTML file / ``Output_HTML_file``                             | String  | intarsia.html |                        |
+| Output HTML File / ``Output_HTML_File``                             | String  | intarsia.html |                        |
 +---------------------------------------------------------------------+---------+---------------+------------------------+
-| Maximum image size / ``Maximum_image_size``                         | Integer | 512           |                        |
+| Maximum Image Size / ``Maximum_Image_Size``                         | Integer | 512           |                        |
 +---------------------------------------------------------------------+---------+---------------+------------------------+
-| Maximum number of image colors / ``Maximum_number_of_image_colors`` | Integer | 12            |                        |
+| Maximum Number of Image Colors / ``Maximum_Number_of_Image_Colors`` | Integer | 12            |                        |
 +---------------------------------------------------------------------+---------+---------------+------------------------+
-| Starting point / ``Starting_point``                                 | Choice  | Top right     | |                      |
-|                                                                     |         |               | | **Top left**         |
-|                                                                     |         |               | | **Top right**        |
-|                                                                     |         |               | | **Bottom left**      |
-|                                                                     |         |               | | **Bottom right**     |
+| Starting Point / ``Starting_Point``                                 | Choice  | Top Right     | |                      |
+|                                                                     |         |               | | **Top Left**         |
+|                                                                     |         |               | | **Top Right**        |
+|                                                                     |         |               | | **Bottom Left**      |
+|                                                                     |         |               | | **Bottom Right**     |
 +---------------------------------------------------------------------+---------+---------------+------------------------+
-| Loop method / ``Loop_method``                                       | Choice  | Row by row    | |                      |
-|                                                                     |         |               | | **Row by row**       |
-|                                                                     |         |               | | **Column by column** |
+| Loop Method / ``Loop_Method``                                       | Choice  | Row by Row    | |                      |
+|                                                                     |         |               | | **Row by Row**       |
+|                                                                     |         |               | | **Column by Column** |
 +---------------------------------------------------------------------+---------+---------------+------------------------+
-| Add comment area in HTML page / ``Add_comment_area_in_HTML_page``   | Boolean | On            |                        |
+| Add Comment Area in HTML Page / ``Add_Comment_Area_in_HTML_Page``   | Boolean | On            |                        |
 +---------------------------------------------------------------------+---------+---------------+------------------------+
-| Preview progress (%) / ``Preview_progress_``                        | Double  | 100           |                        |
+| Preview Progress (%) / ``Preview_Progress_``                        | Double  | 100           |                        |
 +---------------------------------------------------------------------+---------+---------------+------------------------+
 | Output Layer / ``Output_Layer``                                     | Choice  | Layer 0       | |                      |
 |                                                                     |         |               | | **Merged**           |

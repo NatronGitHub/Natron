@@ -29,67 +29,71 @@ Controls
 +--------------------------------------------+---------+---------------+-------------------------------------+
 | Parameter / script name                    | Type    | Default       | Function                            |
 +============================================+=========+===============+=====================================+
-| Low frequency / ``Low_frequency``          | Double  | 0             |                                     |
+| Low Frequency / ``Low_Frequency``          | Double  | 0             |                                     |
 +--------------------------------------------+---------+---------------+-------------------------------------+
-| High frequency / ``High_frequency``        | Double  | 100           |                                     |
+| High Frequency / ``High_Frequency``        | Double  | 100           |                                     |
 +--------------------------------------------+---------+---------------+-------------------------------------+
 | Channel(s) / ``Channels``                  | Choice  | All           | |                                   |
 |                                            |         |               | | **All**                           |
-|                                            |         |               | | **RGBA [all]**                    |
-|                                            |         |               | | **RGB [all]**                     |
-|                                            |         |               | | **RGB [red]**                     |
-|                                            |         |               | | **RGB [green]**                   |
-|                                            |         |               | | **RGB [blue]**                    |
-|                                            |         |               | | **RGBA [alpha]**                  |
-|                                            |         |               | | **Linear RGB [all]**              |
-|                                            |         |               | | **Linear RGB [red]**              |
-|                                            |         |               | | **Linear RGB [green]**            |
-|                                            |         |               | | **Linear RGB [blue]**             |
-|                                            |         |               | | **YCbCr [luminance]**             |
-|                                            |         |               | | **YCbCr [blue-red chrominances]** |
-|                                            |         |               | | **YCbCr [blue chrominance]**      |
-|                                            |         |               | | **YCbCr [red chrominance]**       |
-|                                            |         |               | | **YCbCr [green chrominance]**     |
-|                                            |         |               | | **Lab [lightness]**               |
-|                                            |         |               | | **Lab [ab-chrominances]**         |
-|                                            |         |               | | **Lab [a-chrominance]**           |
-|                                            |         |               | | **Lab [b-chrominance]**           |
-|                                            |         |               | | **Lch [ch-chrominances]**         |
-|                                            |         |               | | **Lch [c-chrominance]**           |
-|                                            |         |               | | **Lch [h-chrominance]**           |
-|                                            |         |               | | **HSV [hue]**                     |
-|                                            |         |               | | **HSV [saturation]**              |
-|                                            |         |               | | **HSV [value]**                   |
-|                                            |         |               | | **HSI [intensity]**               |
-|                                            |         |               | | **HSL [lightness]**               |
-|                                            |         |               | | **CMYK [cyan]**                   |
-|                                            |         |               | | **CMYK [magenta]**                |
-|                                            |         |               | | **CMYK [yellow]**                 |
-|                                            |         |               | | **CMYK [key]**                    |
-|                                            |         |               | | **YIQ [luma]**                    |
-|                                            |         |               | | **YIQ [chromas]**                 |
+|                                            |         |               | | **RGBA [All]**                    |
+|                                            |         |               | | **RGB [All]**                     |
+|                                            |         |               | | **RGB [Red]**                     |
+|                                            |         |               | | **RGB [Green]**                   |
+|                                            |         |               | | **RGB [Blue]**                    |
+|                                            |         |               | | **RGBA [Alpha]**                  |
+|                                            |         |               | | **Linear RGB [All]**              |
+|                                            |         |               | | **Linear RGB [Red]**              |
+|                                            |         |               | | **Linear RGB [Green]**            |
+|                                            |         |               | | **Linear RGB [Blue]**             |
+|                                            |         |               | | **YCbCr [Luminance]**             |
+|                                            |         |               | | **YCbCr [Blue-Red Chrominances]** |
+|                                            |         |               | | **YCbCr [Blue Chrominance]**      |
+|                                            |         |               | | **YCbCr [Red Chrominance]**       |
+|                                            |         |               | | **YCbCr [Green Chrominance]**     |
+|                                            |         |               | | **Lab [Lightness]**               |
+|                                            |         |               | | **Lab [ab-Chrominances]**         |
+|                                            |         |               | | **Lab [a-Chrominance]**           |
+|                                            |         |               | | **Lab [b-Chrominance]**           |
+|                                            |         |               | | **Lch [ch-Chrominances]**         |
+|                                            |         |               | | **Lch [c-Chrominance]**           |
+|                                            |         |               | | **Lch [h-Chrominance]**           |
+|                                            |         |               | | **HSV [Hue]**                     |
+|                                            |         |               | | **HSV [Saturation]**              |
+|                                            |         |               | | **HSV [Value]**                   |
+|                                            |         |               | | **HSI [Intensity]**               |
+|                                            |         |               | | **HSL [Lightness]**               |
+|                                            |         |               | | **CMYK [Cyan]**                   |
+|                                            |         |               | | **CMYK [Magenta]**                |
+|                                            |         |               | | **CMYK [Yellow]**                 |
+|                                            |         |               | | **CMYK [Key]**                    |
+|                                            |         |               | | **YIQ [Luma]**                    |
+|                                            |         |               | | **YIQ [Chromas]**                 |
+|                                            |         |               | | **RYB [All]**                     |
+|                                            |         |               | | **RYB [Red]**                     |
+|                                            |         |               | | **RYB [Yellow]**                  |
+|                                            |         |               | | **RYB [Blue]**                    |
 +--------------------------------------------+---------+---------------+-------------------------------------+
-| Value action / ``Value_action``            | Choice  | Normalize     | |                                   |
+| Value Action / ``Value_Action``            | Choice  | Normalize     | |                                   |
 |                                            |         |               | | **None**                          |
 |                                            |         |               | | **Cut**                           |
 |                                            |         |               | | **Normalize**                     |
 +--------------------------------------------+---------+---------------+-------------------------------------+
-| Preview type / ``Preview_type``            | Choice  | Full          | |                                   |
+| Preview Type / ``Preview_Type``            | Choice  | Full          | |                                   |
 |                                            |         |               | | **Full**                          |
-|                                            |         |               | | **Forward horizontal**            |
-|                                            |         |               | | **Forward vertical**              |
-|                                            |         |               | | **Backward horizontal**           |
-|                                            |         |               | | **Backward vertical**             |
-|                                            |         |               | | **Duplicate top**                 |
-|                                            |         |               | | **Duplicate left**                |
-|                                            |         |               | | **Duplicate bottom**              |
-|                                            |         |               | | **Duplicate right**               |
-|                                            |         |               | | **Duplicate horizontal**          |
-|                                            |         |               | | **Duplicate vertical**            |
+|                                            |         |               | | **Forward Horizontal**            |
+|                                            |         |               | | **Forward Vertical**              |
+|                                            |         |               | | **Backward Horizontal**           |
+|                                            |         |               | | **Backward Vertical**             |
+|                                            |         |               | | **Duplicate Top**                 |
+|                                            |         |               | | **Duplicate Left**                |
+|                                            |         |               | | **Duplicate Bottom**              |
+|                                            |         |               | | **Duplicate Right**               |
+|                                            |         |               | | **Duplicate Horizontal**          |
+|                                            |         |               | | **Duplicate Vertical**            |
 |                                            |         |               | | **Checkered**                     |
-|                                            |         |               | | **Checkered inverse**             |
+|                                            |         |               | | **Checkered Inverse**             |
 +--------------------------------------------+---------+---------------+-------------------------------------+
-| Preview split / ``Preview_split``          | Double  | x: 0.5 y: 0.5 |                                     |
+| Preview Split / ``Preview_Split``          | Double  | x: 0.5 y: 0.5 |                                     |
 +--------------------------------------------+---------+---------------+-------------------------------------+
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0       | |                                   |
 |                                            |         |               | | **Merged**                        |

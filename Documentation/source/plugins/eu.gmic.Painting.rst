@@ -31,30 +31,30 @@ Controls
 +============================================+=========+===============+============================+
 | Abstraction / ``Abstraction``              | Integer | 5             |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
-| Details scale / ``Details_scale``          | Double  | 2.5           |                            |
+| Details Scale / ``Details_Scale``          | Double  | 2.5           |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
 | Color / ``Color``                          | Double  | 1.5           |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
 | Smoothness / ``Smoothness``                | Double  | 50            |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
-| Sharpen shades / ``Sharpen_shades``        | Boolean | On            |                            |
+| Sharpen Shades / ``Sharpen_Shades``        | Boolean | On            |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
-| Preview type / ``Preview_type``            | Choice  | Full          | |                          |
+| Preview Type / ``Preview_Type``            | Choice  | Full          | |                          |
 |                                            |         |               | | **Full**                 |
-|                                            |         |               | | **Forward horizontal**   |
-|                                            |         |               | | **Forward vertical**     |
-|                                            |         |               | | **Backward horizontal**  |
-|                                            |         |               | | **Backward vertical**    |
-|                                            |         |               | | **Duplicate top**        |
-|                                            |         |               | | **Duplicate left**       |
-|                                            |         |               | | **Duplicate bottom**     |
-|                                            |         |               | | **Duplicate right**      |
-|                                            |         |               | | **Duplicate horizontal** |
-|                                            |         |               | | **Duplicate vertical**   |
+|                                            |         |               | | **Forward Horizontal**   |
+|                                            |         |               | | **Forward Vertical**     |
+|                                            |         |               | | **Backward Horizontal**  |
+|                                            |         |               | | **Backward Vertical**    |
+|                                            |         |               | | **Duplicate Top**        |
+|                                            |         |               | | **Duplicate Left**       |
+|                                            |         |               | | **Duplicate Bottom**     |
+|                                            |         |               | | **Duplicate Right**      |
+|                                            |         |               | | **Duplicate Horizontal** |
+|                                            |         |               | | **Duplicate Vertical**   |
 |                                            |         |               | | **Checkered**            |
-|                                            |         |               | | **Checkered inverse**    |
+|                                            |         |               | | **Checkered Inverse**    |
 +--------------------------------------------+---------+---------------+----------------------------+
-| Preview split / ``Preview_split``          | Double  | x: 0.5 y: 0.5 |                            |
+| Preview Split / ``Preview_Split``          | Double  | x: 0.5 y: 0.5 |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0       | |                          |
 |                                            |         |               | | **Merged**               |

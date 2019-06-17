@@ -29,48 +29,48 @@ Controls
 +-------------------------------------------------+---------+---------------+----------------------------+
 | Parameter / script name                         | Type    | Default       | Function                   |
 +=================================================+=========+===============+============================+
-| Lightness factor / ``Lightness_factor``         | Double  | 1             |                            |
+| Lightness Factor / ``Lightness_Factor``         | Double  | 1             |                            |
 +-------------------------------------------------+---------+---------------+----------------------------+
-| Lightness shift / ``Lightness_shift``           | Double  | 0             |                            |
+| Lightness Shift / ``Lightness_Shift``           | Double  | 0             |                            |
 +-------------------------------------------------+---------+---------------+----------------------------+
-| Lightness smoothness / ``Lightness_smoothness`` | Double  | 0             |                            |
+| Lightness Smoothness / ``Lightness_Smoothness`` | Double  | 0             |                            |
 +-------------------------------------------------+---------+---------------+----------------------------+
-| A-color factor / ``Acolor_factor``              | Double  | 1             |                            |
+| A-Color Factor / ``AColor_Factor``              | Double  | 1             |                            |
 +-------------------------------------------------+---------+---------------+----------------------------+
-| A-color shift / ``Acolor_shift``                | Double  | 0             |                            |
+| A-Color Shift / ``AColor_Shift``                | Double  | 0             |                            |
 +-------------------------------------------------+---------+---------------+----------------------------+
-| A-color smoothness / ``Acolor_smoothness``      | Double  | 0             |                            |
+| A-Color Smoothness / ``AColor_Smoothness``      | Double  | 0             |                            |
 +-------------------------------------------------+---------+---------------+----------------------------+
-| B-color factor / ``Bcolor_factor``              | Double  | 1             |                            |
+| B-Color Factor / ``BColor_Factor``              | Double  | 1             |                            |
 +-------------------------------------------------+---------+---------------+----------------------------+
-| B-color shift / ``Bcolor_shift``                | Double  | 0             |                            |
+| B-Color Shift / ``BColor_Shift``                | Double  | 0             |                            |
 +-------------------------------------------------+---------+---------------+----------------------------+
-| B-color smoothness / ``Bcolor_smoothness``      | Double  | 0             |                            |
+| B-Color Smoothness / ``BColor_Smoothness``      | Double  | 0             |                            |
 +-------------------------------------------------+---------+---------------+----------------------------+
-| Tones range / ``Tones_range``                   | Choice  | All tones     | |                          |
-|                                                 |         |               | | **All tones**            |
+| Tones Range / ``Tones_Range``                   | Choice  | All Tones     | |                          |
+|                                                 |         |               | | **All Tones**            |
 |                                                 |         |               | | **Shadows**              |
-|                                                 |         |               | | **Mid-tones**            |
+|                                                 |         |               | | **Mid-Tones**            |
 |                                                 |         |               | | **Highlights**           |
 +-------------------------------------------------+---------+---------------+----------------------------+
-| Tones smoothness / ``Tones_smoothness``         | Double  | 2             |                            |
+| Tones Smoothness / ``Tones_Smoothness``         | Double  | 2             |                            |
 +-------------------------------------------------+---------+---------------+----------------------------+
-| Preview type / ``Preview_type``                 | Choice  | Full          | |                          |
+| Preview Type / ``Preview_Type``                 | Choice  | Full          | |                          |
 |                                                 |         |               | | **Full**                 |
-|                                                 |         |               | | **Forward horizontal**   |
-|                                                 |         |               | | **Forward vertical**     |
-|                                                 |         |               | | **Backward horizontal**  |
-|                                                 |         |               | | **Backward vertical**    |
-|                                                 |         |               | | **Duplicate top**        |
-|                                                 |         |               | | **Duplicate left**       |
-|                                                 |         |               | | **Duplicate bottom**     |
-|                                                 |         |               | | **Duplicate right**      |
-|                                                 |         |               | | **Duplicate horizontal** |
-|                                                 |         |               | | **Duplicate vertical**   |
+|                                                 |         |               | | **Forward Horizontal**   |
+|                                                 |         |               | | **Forward Vertical**     |
+|                                                 |         |               | | **Backward Horizontal**  |
+|                                                 |         |               | | **Backward Vertical**    |
+|                                                 |         |               | | **Duplicate Top**        |
+|                                                 |         |               | | **Duplicate Left**       |
+|                                                 |         |               | | **Duplicate Bottom**     |
+|                                                 |         |               | | **Duplicate Right**      |
+|                                                 |         |               | | **Duplicate Horizontal** |
+|                                                 |         |               | | **Duplicate Vertical**   |
 |                                                 |         |               | | **Checkered**            |
-|                                                 |         |               | | **Checkered inverse**    |
+|                                                 |         |               | | **Checkered Inverse**    |
 +-------------------------------------------------+---------+---------------+----------------------------+
-| Preview split / ``Preview_split``               | Double  | x: 0.5 y: 0.5 |                            |
+| Preview Split / ``Preview_Split``               | Double  | x: 0.5 y: 0.5 |                            |
 +-------------------------------------------------+---------+---------------+----------------------------+
 | Output Layer / ``Output_Layer``                 | Choice  | Layer 0       | |                          |
 |                                                 |         |               | | **Merged**               |

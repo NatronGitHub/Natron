@@ -5,6 +5,33 @@ Code contributions to Natron are always welcome. That's a big part of
 why it's an open source project. Please review this document to get a
 briefing on our process.
 
+Code of Conduct
+---------------
+
+By contributing to Natron and the open source software projects managed
+within the [Natron organization on GitHub](https://github.com/NatronGitHub),
+you agree to follow the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/1/4/code-of-conduct).
+
+Examples of behavior that contributes to creating a positive environment
+include:
+
+* Using welcoming and inclusive language
+* Being respectful of differing viewpoints and experiences
+* Gracefully accepting constructive criticism
+* Focusing on what is best for the community
+* Showing empathy towards other community members
+
+Examples of unacceptable behavior by participants include:
+
+* The use of sexualized language or imagery and unwelcome sexual attention or
+  advances
+* Trolling, insulting/derogatory comments, and personal or political attacks
+* Public or private harassment
+* Publishing others' private information, such as a physical or electronic
+  address, without explicit permission
+* Other conduct which could reasonably be considered inappropriate in a
+  professional setting
+
 
 Bug Reports and Issue Tracking
 ------------------------------
@@ -26,6 +53,11 @@ Please give an account of
 
 with enough detail that others can reproduce the problem.
 
+
+Contributions Under Repository License
+--------------------------------------
+
+Whenever you make a contribution to a repository containing notice of a [license](https://github.com/NatronGitHub/Natron/blob/master/LICENSE.txt), you license your contribution under the same terms, and you agree that you have the right to license your contribution under those terms.
 
 Pull Requests and Code Review
 -----------------------------
@@ -61,9 +93,10 @@ Coding Style
 
 There are two overarching rules:
 
-1. When making changes, conform to the style and conventions of the surrounding code.
+1. When making changes, conform to the style and conventions of the
+surrounding code. Do not modify spacing, indentation, or symbol names
+if there is no change to the underlying code.
 
 2. Strive for clarity, even if that means occasionally breaking the
 guidelines. Use your head and ask for advice if your common sense seems to
 disagree with the conventions.
-

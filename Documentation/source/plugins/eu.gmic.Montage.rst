@@ -35,39 +35,39 @@ Controls
 +---------------------------------------------+---------+-----------------------+------------------------+
 | Parameter / script name                     | Type    | Default               | Function               |
 +=============================================+=========+=======================+========================+
-| Montage type / ``Montage_type``             | Choice  | Auto                  | |                      |
+| Montage Type / ``Montage_Type``             | Choice  | Auto                  | |                      |
 |                                             |         |                       | | **Auto**             |
-|                                             |         |                       | | **Custom layout**    |
+|                                             |         |                       | | **Custom Layout**    |
 |                                             |         |                       | | **Horizontal**       |
 |                                             |         |                       | | **Vertical**         |
-|                                             |         |                       | | **Horizontal array** |
-|                                             |         |                       | | **Vertical array**   |
+|                                             |         |                       | | **Horizontal Array** |
+|                                             |         |                       | | **Vertical Array**   |
 +---------------------------------------------+---------+-----------------------+------------------------+
-| Custom layout / ``Custom_layout``           | String  | V(H(0,1),H(2,V(3,4))) |                        |
+| Custom Layout / ``Custom_Layout``           | String  | V(H(0,1),H(2,V(3,4))) |                        |
 +---------------------------------------------+---------+-----------------------+------------------------+
-| Merging mode / ``Merging_mode``             | Choice  | Scaled                | |                      |
+| Merging Mode / ``Merging_Mode``             | Choice  | Scaled                | |                      |
 |                                             |         |                       | | **Aligned**          |
 |                                             |         |                       | | **Scaled**           |
 +---------------------------------------------+---------+-----------------------+------------------------+
-| Centering / scale / ``Centering__scale``    | Double  | 0.5                   |                        |
+| Centering / Scale / ``Centering__Scale``    | Double  | 0.5                   |                        |
 +---------------------------------------------+---------+-----------------------+------------------------+
 | Padding (px) / ``Padding_px``               | Integer | 0                     |                        |
 +---------------------------------------------+---------+-----------------------+------------------------+
 | Frame (px) / ``Frame_px``                   | Integer | 0                     |                        |
 +---------------------------------------------+---------+-----------------------+------------------------+
-| Frame color / ``Frame_color``               | Color   | r: 0 g: 0 b: 0 a: 0   |                        |
+| Frame Color / ``Frame_Color``               | Color   | r: 0 g: 0 b: 0 a: 0   |                        |
 +---------------------------------------------+---------+-----------------------+------------------------+
 | Angle / ``Angle``                           | Double  | 0                     |                        |
 +---------------------------------------------+---------+-----------------------+------------------------+
-| Angle variations / ``Angle_variations``     | Double  | 0                     |                        |
+| Angle Variations / ``Angle_Variations``     | Double  | 0                     |                        |
 +---------------------------------------------+---------+-----------------------+------------------------+
-| Cycle layers / ``Cycle_layers``             | Integer | 0                     |                        |
+| Cycle Layers / ``Cycle_Layers``             | Integer | 0                     |                        |
 +---------------------------------------------+---------+-----------------------+------------------------+
-| Revert layer order / ``Revert_layer_order`` | Boolean | Off                   |                        |
+| Revert Layer Order / ``Revert_Layer_Order`` | Boolean | Off                   |                        |
 +---------------------------------------------+---------+-----------------------+------------------------+
-| Output as / ``Output_as``                   | Choice  | Single layer          | |                      |
-|                                             |         |                       | | **Single layer**     |
-|                                             |         |                       | | **Multiple layers**  |
+| Output As / ``Output_As``                   | Choice  | Single Layer          | |                      |
+|                                             |         |                       | | **Single Layer**     |
+|                                             |         |                       | | **Multiple Layers**  |
 +---------------------------------------------+---------+-----------------------+------------------------+
 | Output Layer / ``Output_Layer``             | Choice  | Layer 0               | |                      |
 |                                             |         |                       | | **Merged**           |

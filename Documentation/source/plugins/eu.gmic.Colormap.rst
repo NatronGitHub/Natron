@@ -29,7 +29,7 @@ Controls
 +--------------------------------------------+---------+---------------------+----------------------------+
 | Parameter / script name                    | Type    | Default             | Function                   |
 +============================================+=========+=====================+============================+
-| Colormap / ``Colormap``                    | Choice  | Custom              | |                          |
+| Colormap / ``Colormap``                    | Choice  | Standard (256)      | |                          |
 |                                            |         |                     | | **Adaptive**             |
 |                                            |         |                     | | **Custom**               |
 |                                            |         |                     | | **Standard (256)**       |
@@ -43,42 +43,42 @@ Controls
 +--------------------------------------------+---------+---------------------+----------------------------+
 | Dithering / ``Dithering``                  | Double  | 1                   |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| Number of tones / ``Number_of_tones``      | Integer | 32                  |                            |
+| Number of Tones / ``Number_of_Tones``      | Integer | 32                  |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| Number of colors / ``Number_of_colors``    | Integer | 8                   |                            |
+| Number of Colors / ``Number_of_Colors``    | Integer | 8                   |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| 1st color / ``p1st_color``                 | Color   | r: 0 g: 0 b: 0 a: 0 |                            |
+| 1st Color / ``p1st_Color``                 | Color   | r: 0 g: 0 b: 0 a: 0 |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| 2nd color / ``p2nd_color``                 | Color   | r: 1 g: 1 b: 1 a: 1 |                            |
+| 2nd Color / ``p2nd_Color``                 | Color   | r: 1 g: 1 b: 1 a: 1 |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| 3rd color / ``p3rd_color``                 | Color   | r: 1 g: 0 b: 0 a: 0 |                            |
+| 3rd Color / ``p3rd_Color``                 | Color   | r: 1 g: 0 b: 0 a: 0 |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| 4th color / ``p4th_color``                 | Color   | r: 0 g: 1 b: 0 a: 0 |                            |
+| 4th Color / ``p4th_Color``                 | Color   | r: 0 g: 1 b: 0 a: 0 |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| 5th color / ``p5th_color``                 | Color   | r: 0 g: 0 b: 1 a: 1 |                            |
+| 5th Color / ``p5th_Color``                 | Color   | r: 0 g: 0 b: 1 a: 1 |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| 6th color / ``p6th_color``                 | Color   | r: 1 g: 1 b: 0 a: 0 |                            |
+| 6th Color / ``p6th_Color``                 | Color   | r: 1 g: 1 b: 0 a: 0 |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| 7th color / ``p7th_color``                 | Color   | r: 1 g: 0 b: 1 a: 1 |                            |
+| 7th Color / ``p7th_Color``                 | Color   | r: 1 g: 0 b: 1 a: 1 |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| 8th color / ``p8th_color``                 | Color   | r: 0 g: 1 b: 1 a: 1 |                            |
+| 8th Color / ``p8th_Color``                 | Color   | r: 0 g: 1 b: 1 a: 1 |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| Preview type / ``Preview_type``            | Choice  | Full                | |                          |
+| Preview Type / ``Preview_Type``            | Choice  | Full                | |                          |
 |                                            |         |                     | | **Full**                 |
-|                                            |         |                     | | **Forward horizontal**   |
-|                                            |         |                     | | **Forward vertical**     |
-|                                            |         |                     | | **Backward horizontal**  |
-|                                            |         |                     | | **Backward vertical**    |
-|                                            |         |                     | | **Duplicate top**        |
-|                                            |         |                     | | **Duplicate left**       |
-|                                            |         |                     | | **Duplicate bottom**     |
-|                                            |         |                     | | **Duplicate right**      |
-|                                            |         |                     | | **Duplicate horizontal** |
-|                                            |         |                     | | **Duplicate vertical**   |
+|                                            |         |                     | | **Forward Horizontal**   |
+|                                            |         |                     | | **Forward Vertical**     |
+|                                            |         |                     | | **Backward Horizontal**  |
+|                                            |         |                     | | **Backward Vertical**    |
+|                                            |         |                     | | **Duplicate Top**        |
+|                                            |         |                     | | **Duplicate Left**       |
+|                                            |         |                     | | **Duplicate Bottom**     |
+|                                            |         |                     | | **Duplicate Right**      |
+|                                            |         |                     | | **Duplicate Horizontal** |
+|                                            |         |                     | | **Duplicate Vertical**   |
 |                                            |         |                     | | **Checkered**            |
-|                                            |         |                     | | **Checkered inverse**    |
+|                                            |         |                     | | **Checkered Inverse**    |
 +--------------------------------------------+---------+---------------------+----------------------------+
-| Preview split / ``Preview_split``          | Double  | x: 0.5 y: 0.5       |                            |
+| Preview Split / ``Preview_Split``          | Double  | x: 0.5 y: 0.5       |                            |
 +--------------------------------------------+---------+---------------------+----------------------------+
 | Output Layer / ``Output_Layer``            | Choice  | Layer 0             | |                          |
 |                                            |         |                     | | **Merged**               |

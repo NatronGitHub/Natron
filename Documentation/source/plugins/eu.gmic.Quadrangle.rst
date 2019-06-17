@@ -29,16 +29,16 @@ Controls
 +---------------------------------------------------+---------+-----------------+------------------------+
 | Parameter / script name                           | Type    | Default         | Function               |
 +===================================================+=========+=================+========================+
-| Top-left vertex (%) / ``Topleft_vertex_``         | Double  | x: 0.05 y: 0.05 |                        |
+| Top-Left Vertex (%) / ``TopLeft_Vertex_``         | Double  | x: 0.05 y: 0.05 |                        |
 +---------------------------------------------------+---------+-----------------+------------------------+
-| Top-right vertex (%) / ``Topright_vertex_``       | Double  | x: 0.95 y: 0.25 |                        |
+| Top-Right Vertex (%) / ``TopRight_Vertex_``       | Double  | x: 0.95 y: 0.25 |                        |
 +---------------------------------------------------+---------+-----------------+------------------------+
-| Bottom-right vertex (%) / ``Bottomright_vertex_`` | Double  | x: 0.6 y: 0.95  |                        |
+| Bottom-Right Vertex (%) / ``BottomRight_Vertex_`` | Double  | x: 0.6 y: 0.95  |                        |
 +---------------------------------------------------+---------+-----------------+------------------------+
-| Bottom-left vertex (%) / ``Bottomleft_vertex_``   | Double  | x: 0.4 y: 0.95  |                        |
+| Bottom-Left Vertex (%) / ``BottomLeft_Vertex_``   | Double  | x: 0.4 y: 0.95  |                        |
 +---------------------------------------------------+---------+-----------------+------------------------+
 | Interpolation / ``Interpolation``                 | Choice  | Linear          | |                      |
-|                                                   |         |                 | | **Nearest neighbor** |
+|                                                   |         |                 | | **Nearest Neighbor** |
 |                                                   |         |                 | | **Linear**           |
 +---------------------------------------------------+---------+-----------------+------------------------+
 | Boundary / ``Boundary``                           | Choice  | Mirror          | |                      |
@@ -47,7 +47,7 @@ Controls
 |                                                   |         |                 | | **Periodic**         |
 |                                                   |         |                 | | **Mirror**           |
 +---------------------------------------------------+---------+-----------------+------------------------+
-| Preview type / ``Preview_type``                   | Choice  | Output          | |                      |
+| Preview Type / ``Preview_Type``                   | Choice  | Output          | |                      |
 |                                                   |         |                 | | **Input**            |
 |                                                   |         |                 | | **Output**           |
 |                                                   |         |                 | | **Both**             |
