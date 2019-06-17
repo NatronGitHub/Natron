@@ -4,7 +4,7 @@
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/openssl.html
 #OPENSSL_VERSION=1.1.1b
 # see https://web.archive.org/web/20181008083143/http://www.linuxfromscratch.org/blfs/view/svn/postlfs/openssl10.html
-OPENSSL_VERSION=1.0.2r
+OPENSSL_VERSION=1.0.2s
 OPENSSL_TAR="openssl-${OPENSSL_VERSION}.tar.gz" # always a new version around the corner
 OPENSSL_SITE="https://www.openssl.org/source"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/installer/lib/pkgconfig/openssl.pc" ] || [ "$(env PKG_CONFIG_PATH="$SDK_HOME/installer/lib/pkgconfig:$SDK_HOME/installer/share/pkgconfig" pkg-config --modversion openssl)" != "$OPENSSL_VERSION" ]; }; }; then
