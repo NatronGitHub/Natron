@@ -714,7 +714,8 @@ PyObject* getAttrRecursive(const std::string& fullyQualifiedName, PyObject* pare
  **/
 class PythonGILLocker
 {
-    // PyGILState_STATE state;
+    // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
+    PyGILState_STATE state;
 
 public:
     PythonGILLocker();
