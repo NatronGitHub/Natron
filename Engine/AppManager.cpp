@@ -3284,8 +3284,9 @@ AppManager::initPython()
     //See answer for http://stackoverflow.com/questions/15470367/pyeval-initthreads-in-python-3-how-when-to-call-it-the-saga-continues-ad-naus
     PyEval_InitThreads();
 
-    ///Do as per http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
+    // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
     ///All calls to the Python API should call PythonGILLocker beforehand.
+    // Disabled because it seems to crash Natron at launch.
     //_imp->mainThreadState = PyGILState_GetThisThreadState();
     //PyEval_ReleaseThread(_imp->mainThreadState);
 
@@ -3377,8 +3378,8 @@ AppManager::tearDownPython()
 
     return;
 #endif
-    ///See http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
-    //PyGILState_Ensure();
+    ///See https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
+    PyGILState_Ensure();
 
     Py_DECREF(_imp->mainModule);
     Py_Finalize();
@@ -3935,20 +3936,25 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
 #endif
     PythonGILLocker pgl;
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+    int status = -1;
+#if 0 //USE_PYRUN_SIMPLESTRING
+    status = PyRun_SimpleString(script.c_str());
+#else
     PyObject* dict = PyModule_GetDict(mainModule);
-
     ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
     PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, 0);
     if (v) {
         Py_DECREF(v);
+        status = 0;
     }
+#endif
 
     if (error) {
         error->clear();
     }
     PyObject* ex = PyErr_Occurred();
     if (ex) {
-        assert(v == NULL);
+        assert(status < 0);
         if (!error) {
             PyErr_Clear();
         } else {
@@ -4043,14 +4049,14 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
             return false;
         }
 
-        return v != NULL;
+        return status == 0;
     } else {
         if (ex) {
             PyErr_Print();
 
             return false;
         } else {
-            return v != NULL;
+            return status == 0;
         }
     }
 } // NATRON_PYTHON_NAMESPACE::interpretPythonScript
@@ -4119,28 +4125,35 @@ NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(const std::string& str)
     return makeNameScriptFriendlyInternal(str, false);
 }
 
+// Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
 PythonGILLocker::PythonGILLocker()
-//    : state(PyGILState_UNLOCKED)
+    : state(PyGILState_UNLOCKED)
 {
+    // Take the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
     appPTR->takeNatronGIL();
-//    ///Take the GIL for this thread
-//    state = PyGILState_Ensure();
-//    assert(PyThreadState_Get());
-//#if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
-//    assert(PyGILState_Check()); // Not available prior to Python 3.4
-//#endif
+
+    // Also take the Python GIL, since not doing so seems to crash Natron during recursive Natron->Python->Natron->Python calls, see https://github.com/NatronGitHub/Natron/issues/379
+    // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
+    // Take the GIL for this thread
+    state = PyGILState_Ensure();
+    assert(PyThreadState_Get());
+#if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
+    assert(PyGILState_Check()); // Not available prior to Python 3.4
+#endif
 }
 
 PythonGILLocker::~PythonGILLocker()
 {
+    // Release the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
     appPTR->releaseNatronGIL();
 
-//#if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
-//    assert(PyGILState_Check());  // Not available prior to Python 3.4
-//#endif
-//
-//    ///Release the GIL, no thread will own it afterwards.
-//    PyGILState_Release(state);
+    // We took the Python GIL too, so realease it here.
+    // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
+#if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
+    assert(PyGILState_Check());  // Not available prior to Python 3.4
+#endif
+    // Release the GIL, no thread will own it afterwards.
+    PyGILState_Release(state);
 }
 
 static bool

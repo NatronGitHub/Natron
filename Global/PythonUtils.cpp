@@ -281,15 +281,17 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
 
     PyObject* mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
 
-    //See http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
+    //See https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
     //Python releases the GIL every 100 virtual Python instructions, we do not want that to happen in the middle of an expression.
+    // Not recessary since we also have the Natron GIL to control the execution of our own scripts.
     //_PyEval_SetSwitchInterval(LONG_MAX);
 
     //See answer for http://stackoverflow.com/questions/15470367/pyeval-initthreads-in-python-3-how-when-to-call-it-the-saga-continues-ad-naus
     PyEval_InitThreads();
 
-    ///Do as per http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
+    // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
     ///All calls to the Python API should call PythonGILLocker beforehand.
+    // Disabled because it seems to crash Natron at launch.
     //_imp->mainThreadState = PyGILState_GetThisThreadState();
     //PyEval_ReleaseThread(_imp->mainThreadState);
 
