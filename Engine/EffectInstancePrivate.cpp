@@ -452,28 +452,28 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(callback, &error, &args);
     } catch (const std::exception& e) {
-        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run onParamChanged callback: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to get signature of onParamChanged callback: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
 
         return;
     }
 
     if ( !error.empty() ) {
-        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run onParamChanged callback: %1").arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to get signature of onParamChanged callback: %1").arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
 
         return;
     }
 
     std::string signatureError;
     signatureError.append( tr("The param changed callback supports the following signature(s):").toStdString() );
-    signatureError.append("\n- callback(thisParam,thisNode,thisGroup,app,userEdited)");
+    signatureError.append("\n- callback(thisParam, thisNode, thisGroup, app, userEdited)");
     if (args.size() != 5) {
-        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run onParamChanged callback: %1").arg( QString::fromUtf8( signatureError.c_str() ) ).toStdString() );
+        _publicInterface->getApp()->appendToScriptEditor( tr("Wrong signature of onParamChanged callback: %1").arg( QString::fromUtf8( signatureError.c_str() ) ).toStdString() );
 
         return;
     }
 
     if ( ( (args[0] != "thisParam") || (args[1] != "thisNode") || (args[2] != "thisGroup") || (args[3] != "app") || (args[4] != "userEdited") ) ) {
-        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run onParamChanged callback: %1").arg( QString::fromUtf8( signatureError.c_str() ) ).toStdString() );
+        _publicInterface->getApp()->appendToScriptEditor( tr("Wrong signature of onParamChanged callback: %1").arg( QString::fromUtf8( signatureError.c_str() ) ).toStdString() );
 
         return;
     }

@@ -1691,14 +1691,14 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             try {
                 NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
             } catch (const std::exception& e) {
-                effect->getApp()->appendToScriptEditor( std::string("Failed to run onFrameRendered callback: ")
+                effect->getApp()->appendToScriptEditor( std::string("Failed to get signature of onFrameRendered callback: ")
                                                         + e.what() );
 
                 return;
             }
 
             if ( !error.empty() ) {
-                effect->getApp()->appendToScriptEditor("Failed to run after frame render callback: " + error);
+                effect->getApp()->appendToScriptEditor("Failed to get signature of onFrameRendered callback: " + error);
 
                 return;
             }
@@ -1706,14 +1706,8 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             std::string signatureError;
             signatureError.append("The after frame render callback supports the following signature(s):\n");
             signatureError.append("- callback(frame, thisNode, app)");
-            if (args.size() != 3) {
-                effect->getApp()->appendToScriptEditor("Failed to run after frame render callback: " + signatureError);
-
-                return;
-            }
-
-            if ( (args[0] != "frame") || (args[1] != "thisNode") || (args[2] != "app") ) {
-                effect->getApp()->appendToScriptEditor("Failed to run after frame render callback: " + signatureError);
+            if ( (args.size() != 3) || (args[0] != "frame") || (args[1] != "thisNode") || (args[2] != "app") ) {
+                effect->getApp()->appendToScriptEditor("Wrong signature of onFrameRendered callback: " + signatureError);
 
                 return;
             }
@@ -2214,14 +2208,14 @@ private:
             try {
                 NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
             } catch (const std::exception& e) {
-                output->getApp()->appendToScriptEditor( std::string("Failed to run beforeFrameRendered callback: ")
+                output->getApp()->appendToScriptEditor( std::string("Failed to get signature of beforeFrameRendered callback: ")
                                                         + e.what() );
 
                 return;
             }
 
             if ( !error.empty() ) {
-                output->getApp()->appendToScriptEditor("Failed to run before frame render callback: " + error);
+                output->getApp()->appendToScriptEditor("Failed to get signature of beforeFrameRendered callback: " + error);
 
                 return;
             }
@@ -2229,14 +2223,8 @@ private:
             std::string signatureError;
             signatureError.append("The before frame render callback supports the following signature(s):\n");
             signatureError.append("- callback(frame, thisNode, app)");
-            if (args.size() != 3) {
-                output->getApp()->appendToScriptEditor("Failed to run before frame render callback: " + signatureError);
-
-                return;
-            }
-
-            if ( (args[0] != "frame") || (args[1] != "thisNode") || (args[2] != "app") ) {
-                output->getApp()->appendToScriptEditor("Failed to run before frame render callback: " + signatureError);
+            if ( (args.size() != 3) || (args[0] != "frame") || (args[1] != "thisNode") || (args[2] != "app") ) {
+                output->getApp()->appendToScriptEditor("Wrong signature of beforeFrameRendered callback: " + signatureError);
 
                 return;
             }
@@ -2589,14 +2577,14 @@ DefaultScheduler::aboutToStartRender()
         try {
             NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
         } catch (const std::exception& e) {
-            effect->getApp()->appendToScriptEditor( std::string("Failed to run beforeRender callback: ")
+            effect->getApp()->appendToScriptEditor( std::string("Failed to get signature of beforeRender callback: ")
                                                     + e.what() );
 
             return;
         }
 
         if ( !error.empty() ) {
-            effect->getApp()->appendToScriptEditor("Failed to run beforeRender callback: " + error);
+            effect->getApp()->appendToScriptEditor("Failed to get signature of beforeRender callback: " + error);
 
             return;
         }
@@ -2604,13 +2592,7 @@ DefaultScheduler::aboutToStartRender()
         std::string signatureError;
         signatureError.append("The beforeRender callback supports the following signature(s):\n");
         signatureError.append("- callback(thisNode, app)");
-        if (args.size() != 2) {
-            effect->getApp()->appendToScriptEditor("Failed to run beforeRender callback: " + signatureError);
-
-            return;
-        }
-
-        if ( (args[0] != "thisNode") || (args[1] != "app") ) {
+        if ( (args.size() != 2) || (args[0] != "thisNode") || (args[1] != "app") ) {
             effect->getApp()->appendToScriptEditor("Failed to run beforeRender callback: " + signatureError);
 
             return;
@@ -2654,14 +2636,14 @@ DefaultScheduler::onRenderStopped(bool aborted)
         try {
             NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
         } catch (const std::exception& e) {
-            effect->getApp()->appendToScriptEditor( std::string("Failed to run afterRender callback: ")
+            effect->getApp()->appendToScriptEditor( std::string("Failed to get signature of afterRender callback: ")
                                                     + e.what() );
 
             return;
         }
 
         if ( !error.empty() ) {
-            effect->getApp()->appendToScriptEditor("Failed to run afterRender callback: " + error);
+            effect->getApp()->appendToScriptEditor("Failed to get signature of afterRender callback: " + error);
 
             return;
         }
@@ -2669,14 +2651,8 @@ DefaultScheduler::onRenderStopped(bool aborted)
         std::string signatureError;
         signatureError.append("The after render callback supports the following signature(s):\n");
         signatureError.append("- callback(aborted, thisNode, app)");
-        if (args.size() != 3) {
-            effect->getApp()->appendToScriptEditor("Failed to run afterRender callback: " + signatureError);
-
-            return;
-        }
-
-        if ( (args[0] != "aborted") || (args[1] != "thisNode") || (args[2] != "app") ) {
-            effect->getApp()->appendToScriptEditor("Failed to run afterRender callback: " + signatureError);
+        if ( (args.size() != 3) || (args[0] != "aborted") || (args[1] != "thisNode") || (args[2] != "app") ) {
+            effect->getApp()->appendToScriptEditor("Wrong signature of afterRender callback: " + signatureError);
 
             return;
         }

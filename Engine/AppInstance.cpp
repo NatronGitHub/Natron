@@ -2125,14 +2125,14 @@ AppInstance::execOnProjectCreatedCallback()
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
     } catch (const std::exception& e) {
-        appendToScriptEditor( std::string("Failed to run onProjectCreated callback: ")
+        appendToScriptEditor( std::string("Failed to get signature of onProjectCreated callback: ")
                               + e.what() );
 
         return;
     }
 
     if ( !error.empty() ) {
-        appendToScriptEditor("Failed to run onProjectCreated callback: " + error);
+        appendToScriptEditor("Failed to get signature of onProjectCreated callback: " + error);
 
         return;
     }
@@ -2141,12 +2141,12 @@ AppInstance::execOnProjectCreatedCallback()
     signatureError.append("The on project created callback supports the following signature(s):\n");
     signatureError.append("- callback(app)");
     if (args.size() != 1) {
-        appendToScriptEditor("Failed to run onProjectCreated callback: " + signatureError);
+        appendToScriptEditor("Wrong signature of onProjectCreated callback: " + signatureError);
 
         return;
     }
     if (args[0] != "app") {
-        appendToScriptEditor("Failed to run onProjectCreated callback: " + signatureError);
+        appendToScriptEditor("Wrong signature of onProjectCreated callback: " + signatureError);
 
         return;
     }
