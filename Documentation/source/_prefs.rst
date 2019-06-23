@@ -326,7 +326,7 @@ Python
 
 Callback called once a new project is created (this is never called when “After project loaded” is called.)
 
-The signature of the callback is : callback(app) where:
+The signature of the callback is: ``callback(app)`` where:
 
 - app: points to the current application instance
 
