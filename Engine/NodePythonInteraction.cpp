@@ -124,29 +124,23 @@ NodePrivate::runOnNodeCreatedCBInternal(const std::string& cb,
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(callbackFunction, &error, &args);
     } catch (const std::exception& e) {
-        _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to run onNodeCreated callback: ")
+        _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to get signature of onNodeCreated callback: ")
                                                          + e.what() );
 
         return;
     }
 
     if ( !error.empty() ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + error);
+        _publicInterface->getApp()->appendToScriptEditor("Failed to get signature of onNodeCreated callback: " + error);
 
         return;
     }
 
     std::string signatureError;
     signatureError.append("The on node created callback supports the following signature(s):\n");
-    signatureError.append("- callback(thisNode,app,userEdited)");
-    if (args.size() != 3) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + signatureError);
-
-        return;
-    }
-
-    if ( (args[0] != "thisNode") || (args[1] != "app") || (args[2] != "userEdited") ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + signatureError);
+    signatureError.append("- callback(thisNode, app, userEdited)");
+    if ( (args.size() != 3) || (args[0] != "thisNode") || (args[1] != "app") || (args[2] != "userEdited") ) {
+        _publicInterface->getApp()->appendToScriptEditor("Wrong signature of onNodeCreated callback: " + signatureError);
 
         return;
     }
@@ -187,29 +181,23 @@ NodePrivate::runOnNodeDeleteCBInternal(const std::string& cb)
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(callbackFunction, &error, &args);
     } catch (const std::exception& e) {
-        _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to run onNodeDeletion callback: ")
+        _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to get signature of onNodeDeletion callback: ")
                                                          + e.what() );
 
         return;
     }
 
     if ( !error.empty() ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + error);
+        _publicInterface->getApp()->appendToScriptEditor("Failed to get signature of onNodeDeletion callback: " + error);
 
         return;
     }
 
     std::string signatureError;
-    signatureError.append("The on node deletion callback supports the following signature(s):\n");
-    signatureError.append("- callback(thisNode,app)");
-    if (args.size() != 2) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + signatureError);
-
-        return;
-    }
-
-    if ( (args[0] != "thisNode") || (args[1] != "app") ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + signatureError);
+    signatureError.append("The onNodeDeletion callback supports the following signature(s):\n");
+    signatureError.append("- callback(thisNode, app)");
+    if ( (args.size() != 2) || (args[0] != "thisNode") || (args[1] != "app") ) {
+        _publicInterface->getApp()->appendToScriptEditor("Wrong signature of onNodeDeletion callback: " + signatureError);
 
         return;
     }
@@ -328,29 +316,23 @@ NodePrivate::runInputChangedCallback(int index,
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(callbackFunction, &error, &args);
     } catch (const std::exception& e) {
-        _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to run onInputChanged callback: ")
+        _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to get signature of onInputChanged callback: ")
                                                          + e.what() );
 
         return;
     }
 
     if ( !error.empty() ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onInputChanged callback: " + error);
+        _publicInterface->getApp()->appendToScriptEditor("Failed to get signature of onInputChanged callback: " + error);
 
         return;
     }
 
     std::string signatureError;
-    signatureError.append("The on input changed callback supports the following signature(s):\n");
-    signatureError.append("- callback(inputIndex,thisNode,thisGroup,app)");
-    if (args.size() != 4) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onInputChanged callback: " + signatureError);
-
-        return;
-    }
-
-    if ( (args[0] != "inputIndex") || (args[1] != "thisNode") || (args[2] != "thisGroup") || (args[3] != "app") ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onInputChanged callback: " + signatureError);
+    signatureError.append("The onInputChanged callback supports the following signature(s):\n");
+    signatureError.append("- callback(inputIndex, thisNode, thisGroup, app)");
+    if ( (args.size() != 4) || (args[0] != "inputIndex") || (args[1] != "thisNode") || (args[2] != "thisGroup") || (args[3] != "app") ) {
+        _publicInterface->getApp()->appendToScriptEditor("Wrong signature of onInputChanged callback: " + signatureError);
 
         return;
     }
@@ -404,28 +386,22 @@ NodePrivate::runChangedParamCallback(const std::string& cb, const KnobIPtr& k, b
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(callbackFunction, &error, &args);
     } catch (const std::exception& e) {
-        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run onParamChanged callback: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to get signature of onParamChanged callback: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
 
         return;
     }
 
     if ( !error.empty() ) {
-        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run onParamChanged callback: %1").arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to get signature of onParamChanged callback: %1").arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
 
         return;
     }
 
     std::string signatureError;
-    signatureError.append( tr("The param changed callback supports the following signature(s):").toStdString() );
-    signatureError.append("\n- callback(thisParam,thisNode,thisGroup,app,userEdited)");
-    if (args.size() != 5) {
-        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run onParamChanged callback: %1").arg( QString::fromUtf8( signatureError.c_str() ) ).toStdString() );
-
-        return;
-    }
-
-    if ( ( (args[0] != "thisParam") || (args[1] != "thisNode") || (args[2] != "thisGroup") || (args[3] != "app") || (args[4] != "userEdited") ) ) {
-        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run onParamChanged callback: %1").arg( QString::fromUtf8( signatureError.c_str() ) ).toStdString() );
+    signatureError.append( tr("The onParamChanged callback supports the following signature(s):").toStdString() );
+    signatureError.append("\n- callback(thisParam, thisNode, thisGroup, app, userEdited)");
+    if ( (args.size() != 5) || (args[0] != "thisParam") || (args[1] != "thisNode") || (args[2] != "thisGroup") || (args[3] != "app") || (args[4] != "userEdited") ) {
+        _publicInterface->getApp()->appendToScriptEditor( tr("Wrong signature of onParamChanged callback: %1").arg( QString::fromUtf8( signatureError.c_str() ) ).toStdString() );
 
         return;
     }
@@ -502,28 +478,22 @@ NodePrivate::runAfterItemsSelectionChangedCallback(const std::string& cb, const 
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(callbackFunction, &error, &args);
     } catch (const std::exception& e) {
-        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run afterItemsSelectionChanged callback: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to get signature of afterItemsSelectionChanged callback: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
 
         return;
     }
 
     if ( !error.empty() ) {
-        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run afterItemsSelectionChanged callback: %1").arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to get signature of afterItemsSelectionChanged callback: %1").arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
 
         return;
     }
 
     std::string signatureError;
-    signatureError.append( tr("The after items selection changed callback supports the following signature(s):").toStdString() );
+    signatureError.append( tr("The afterItemsSelectionChanged callback supports the following signature(s):").toStdString() );
     signatureError.append("\n- callback(thisNode, thisTable, app, deselected, selected, reason)");
-    if (args.size() != 6) {
-        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run afterItemsSelectionChanged callback: %1").arg( QString::fromUtf8( signatureError.c_str() ) ).toStdString() );
-
-        return;
-    }
-
-    if ( ( (args[0] != "thisNode") || (args[1] != "thisTable") || (args[2] != "app") || (args[3] != "deselected") || (args[4] != "selected") || (args[5] != "reason") ) ) {
-        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to run afterItemsSelectionChanged callback: %1").arg( QString::fromUtf8( signatureError.c_str() ) ).toStdString() );
+    if ( (args.size() != 6) || (args[0] != "thisNode") || (args[1] != "thisTable") || (args[2] != "app") || (args[3] != "deselected") || (args[4] != "selected") || (args[5] != "reason") ) {
+        _publicInterface->getApp()->appendToScriptEditor( tr("Wrong signature of afterItemsSelectionChanged callback: %1").arg( QString::fromUtf8( signatureError.c_str() ) ).toStdString() );
 
         return;
     }

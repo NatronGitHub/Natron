@@ -486,29 +486,23 @@ void OutputSchedulerThreadPrivate::runBeforeFrameRenderCallback(TimeValue frame)
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
     } catch (const std::exception& e) {
-        outputNode->getApp()->appendToScriptEditor( std::string("Failed to run beforeFrameRendered callback: ")
+        outputNode->getApp()->appendToScriptEditor( std::string("Failed to get signature of beforeFrameRendered callback: ")
                                                    + e.what() );
 
         return;
     }
 
     if ( !error.empty() ) {
-        outputNode->getApp()->appendToScriptEditor("Failed to run before frame render callback: " + error);
+        outputNode->getApp()->appendToScriptEditor("Failed to get signature of beforeFrameRendered callback: " + error);
 
         return;
     }
 
     std::string signatureError;
-    signatureError.append("The before frame render callback supports the following signature(s):\n");
+    signatureError.append("The beforeFrameRendered callback supports the following signature:\n");
     signatureError.append("- callback(frame, thisNode, app)");
-    if (args.size() != 3) {
-        outputNode->getApp()->appendToScriptEditor("Failed to run before frame render callback: " + signatureError);
-
-        return;
-    }
-
-    if ( (args[0] != "frame") || (args[1] != "thisNode") || (args[2] != "app") ) {
-        outputNode->getApp()->appendToScriptEditor("Failed to run before frame render callback: " + signatureError);
+    if ( (args.size() != 3) || (args[0] != "frame") || (args[1] != "thisNode") || (args[2] != "app") ) {
+        outputNode->getApp()->appendToScriptEditor("Wrong signature of beforeFrameRendered callback: " + signatureError);
 
         return;
     }
@@ -545,29 +539,23 @@ OutputSchedulerThreadPrivate::runAfterFrameRenderedCallback(TimeValue frame)
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
     } catch (const std::exception& e) {
-        effect->getApp()->appendToScriptEditor( std::string("Failed to run onFrameRendered callback: ")
+        effect->getApp()->appendToScriptEditor( std::string("Failed to get signature of afterFrameRendered callback: ")
                                                + e.what() );
 
         return;
     }
 
     if ( !error.empty() ) {
-        effect->getApp()->appendToScriptEditor("Failed to run after frame render callback: " + error);
+        effect->getApp()->appendToScriptEditor("Failed to get signature of afterFrameRendered callback: " + error);
 
         return;
     }
 
     std::string signatureError;
-    signatureError.append("The after frame render callback supports the following signature(s):\n");
+    signatureError.append("The afterFrameRendered callback supports the following signature(s):\n");
     signatureError.append("- callback(frame, thisNode, app)");
-    if (args.size() != 3) {
-        effect->getApp()->appendToScriptEditor("Failed to run after frame render callback: " + signatureError);
-
-        return;
-    }
-
-    if ( (args[0] != "frame") || (args[1] != "thisNode") || (args[2] != "app") ) {
-        effect->getApp()->appendToScriptEditor("Failed to run after frame render callback: " + signatureError);
+    if ( (args.size() != 3) || (args[0] != "frame") || (args[1] != "thisNode") || (args[2] != "app") ) {
+        effect->getApp()->appendToScriptEditor("Wrong signature of afterFrameRendered callback: " + signatureError);
 
         return;
     }
@@ -602,29 +590,23 @@ OutputSchedulerThreadPrivate::runBeforeRenderCallback()
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
     } catch (const std::exception& e) {
-        outputNode->getApp()->appendToScriptEditor( std::string("Failed to run beforeRender callback: ")
+        outputNode->getApp()->appendToScriptEditor( std::string("Failed to get signature of beforeRender callback: ")
                                                    + e.what() );
 
         return;
     }
 
     if ( !error.empty() ) {
-        outputNode->getApp()->appendToScriptEditor("Failed to run beforeRender callback: " + error);
+        outputNode->getApp()->appendToScriptEditor("Failed to get signature of beforeRender callback: " + error);
 
         return;
     }
 
     std::string signatureError;
-    signatureError.append("The beforeRender callback supports the following signature(s):\n");
+    signatureError.append("The beforeRender callback supports the following signature:\n");
     signatureError.append("- callback(thisNode, app)");
-    if (args.size() != 2) {
-        outputNode->getApp()->appendToScriptEditor("Failed to run beforeRender callback: " + signatureError);
-
-        return;
-    }
-
-    if ( (args[0] != "thisNode") || (args[1] != "app") ) {
-        outputNode->getApp()->appendToScriptEditor("Failed to run beforeRender callback: " + signatureError);
+    if ( (args.size() != 2) || (args[0] != "thisNode") || (args[1] != "app") ) {
+        outputNode->getApp()->appendToScriptEditor("Wrong signature of beforeRender callback: " + signatureError);
 
         return;
     }
@@ -657,29 +639,23 @@ OutputSchedulerThreadPrivate::runAfterRenderCallback(bool aborted)
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
     } catch (const std::exception& e) {
-        outputNode->getApp()->appendToScriptEditor( std::string("Failed to run afterRender callback: ")
+        outputNode->getApp()->appendToScriptEditor( std::string("Failed to get signature of afterRender callback: ")
                                                    + e.what() );
 
         return;
     }
 
     if ( !error.empty() ) {
-        outputNode->getApp()->appendToScriptEditor("Failed to run afterRender callback: " + error);
+        outputNode->getApp()->appendToScriptEditor("Failed to get signature of afterRender callback: " + error);
 
         return;
     }
 
     std::string signatureError;
-    signatureError.append("The after render callback supports the following signature(s):\n");
+    signatureError.append("The afterRender callback supports the following signature:\n");
     signatureError.append("- callback(aborted, thisNode, app)");
-    if (args.size() != 3) {
-        outputNode->getApp()->appendToScriptEditor("Failed to run afterRender callback: " + signatureError);
-
-        return;
-    }
-
-    if ( (args[0] != "aborted") || (args[1] != "thisNode") || (args[2] != "app") ) {
-        outputNode->getApp()->appendToScriptEditor("Failed to run afterRender callback: " + signatureError);
+    if ( (args.size() != 3) || (args[0] != "aborted") || (args[1] != "thisNode") || (args[2] != "app") ) {
+        outputNode->getApp()->appendToScriptEditor("Wrong signature of afterRender callback: " + signatureError);
 
         return;
     }
