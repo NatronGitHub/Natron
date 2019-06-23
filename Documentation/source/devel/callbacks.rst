@@ -64,12 +64,15 @@ containing the table item itself.
 To retrieve the :ref:`app<App>` instance into which the callback was called, you may call the
 :func:`getApp()<NatronEngine.Param.getApp>` function on the parameter.
 
-For the param changed callback of :ref:`PyPanel<pypanel>` and :ref:`PyModalDialog<pyModalDialog>`
-on the other hand, Natron will define a string variable **paramName** indicating the :ref:`script-name<autoVar>`
-of the parameter which just had its value changed. The signature of the callback is then:
+For the *parameter changed callback* of :ref:`PyPanel<pypanel>` and :ref:`PyModalDialog<pyModalDialog>`, the signature of the callback function is:
 
     callback(paramName, app, userEdited)
 
+- **paramName** indicating the :ref:`script-name<autoVar>` of the parameter which just had its value changed.
+- **app** : This variable will be set so it points to the correct :ref:`application instance<App>`.
+- **userEdited** : This indicates whether or not the parameter change is due to user interaction (i.e: because the user changed
+the value by herself/himself) or due to another parameter changing the value of the parameter
+via a derivative of the :func:`setValue(value)<>` function.
 
 .. note::
 
@@ -120,7 +123,7 @@ Example
 
 
 
-Using the param changed callback for  :ref:`PyModalDialog<pyModalDialog>` and  :ref:`PyModalDialog<pyModalDialog>`
+Using the param changed callback for  :ref:`PyModalDialog<pyModalDialog>` and  :ref:`PyPanel<pypanel>`
 --------------------------------------------------------------------------------------------------------------------
 
 
