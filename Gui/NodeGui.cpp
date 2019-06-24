@@ -404,11 +404,10 @@ NodeGui::ensurePanelCreated()
     beginEditKnobs();
 
     if (_settingsPanel) {
-
-
-        {
+        NodePtr node = getNode();
+        if (node) {
             // Connect slots from the extra label to refresh the font when it changes
-            KnobStringPtr extraLabelKnob = getNode()->getEffectInstance()->getExtraLabelKnob();
+            KnobStringPtr extraLabelKnob = node->getEffectInstance()->getExtraLabelKnob();
             if (extraLabelKnob) {
                 KnobGuiIPtr extraLabelKnobUI = _settingsPanel->getKnobGui(extraLabelKnob);
                 if (extraLabelKnobUI) {
@@ -488,7 +487,13 @@ void
 NodeGui::getInitialSize(int *w,
                         int *h) const
 {
-    PluginPtr plugin = getNode()->getPlugin();
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        *w = *h = 0;
+        return;
+    }
+    PluginPtr plugin = node->getPlugin();
     if (!plugin) {
         *w = *h = 0;
         return;
@@ -512,9 +517,9 @@ NodeGui::createGui()
 
     setZValue(depth);
     NodePtr node = getNode();
-
+    assert(node);
     int cornerRadiusPx;
-    if (node->isEffectStubNode()) {
+    if (node && node->isEffectStubNode()) {
         cornerRadiusPx = TO_DPIX(9);
     } else {
         cornerRadiusPx = 0;
@@ -532,18 +537,23 @@ NodeGui::createGui()
         _resizeHandle->setZValue(depth + 1);
     }
 
-    PluginPtr plugin = node->getPlugin();
-
-    QString iconFilePath = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath).c_str());
-    StrUtils::ensureLastPathSeparator(iconFilePath);
-    QString iconBaseFilePath =  QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str());
-    if (!iconBaseFilePath.isEmpty()) {
-        iconFilePath += iconBaseFilePath;
-    } else {
-        // No icon ? If this is a pyplug, use the default icon for Groups
-        std::string pyPlugFile = plugin->getPropertyUnsafe<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
-        if (!pyPlugFile.empty()) {
-            iconFilePath = QString::fromUtf8(PLUGIN_DEFAULT_RESOURCES_PATH "Images/group_icon.png");
+    PluginPtr plugin;
+    if (node) {
+        plugin = node->getPlugin();
+    }
+    QString iconFilePath;
+    if (plugin) {
+        iconFilePath = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath).c_str());
+        StrUtils::ensureLastPathSeparator(iconFilePath);
+        QString iconBaseFilePath =  QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str());
+        if (!iconBaseFilePath.isEmpty()) {
+            iconFilePath += iconBaseFilePath;
+        } else {
+            // No icon ? If this is a pyplug, use the default icon for Groups
+            std::string pyPlugFile = plugin->getPropertyUnsafe<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
+            if (!pyPlugFile.empty()) {
+                iconFilePath = QString::fromUtf8(PLUGIN_DEFAULT_RESOURCES_PATH "Images/group_icon.png");
+            }
         }
     }
 
@@ -561,7 +571,9 @@ NodeGui::createGui()
 
         int size = TO_DPIX(NATRON_PLUGIN_ICON_SIZE);
         QPixmap pix;
-        pix.load(iconFilePath);
+        if (!iconFilePath.isEmpty()) {
+            pix.load(iconFilePath);
+        }
         if (!pix.isNull()) {
             if (std::max( pix.width(), pix.height() ) != size) {
                 pix = pix.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
@@ -579,7 +591,9 @@ NodeGui::createGui()
 
 
     _nameItem = new NodeGraphTextItem(getDagGui(), this, false);
-    _nameItem->setPlainText( QString::fromUtf8( node->getLabel().c_str() ) );
+    if (node) {
+        _nameItem->setPlainText( QString::fromUtf8( node->getLabel().c_str() ) );
+    }
     _nameItem->setDefaultTextColor( QColor(0, 0, 0, 255) );
     //_nameItem->setFont( QFont(appFont,appFontSize) );
     _nameItem->setZValue(depth + 1);
@@ -638,8 +652,12 @@ NodeGui::createGui()
 
     onAvailableViewsChanged();
 
-    GroupInputPtr isGrpInput = node->isEffectGroupInput();
-    GroupOutputPtr isGrpOutput = toGroupOutput( node->getEffectInstance() );
+    GroupInputPtr isGrpInput;
+    GroupOutputPtr isGrpOutput;
+    if (node) {
+        isGrpInput = node->isEffectGroupInput();
+        isGrpOutput = toGroupOutput( node->getEffectInstance() );
+    }
 
     if (!isGrpInput && !isGrpOutput) {
         QGradientStops ptGrad;
@@ -661,7 +679,11 @@ NodeGui::createGui()
 void
 NodeGui::onSettingsPanelColorChanged(const QColor & color)
 {
-    getNode()->onNodeUIColorChanged(color.redF(), color.greenF(), color.blueF());
+    NodePtr node = getNode();
+    assert(node);
+    if (node) {
+        node->onNodeUIColorChanged(color.redF(), color.greenF(), color.blueF());
+    }
 
     Q_EMIT colorChanged(color);
 
@@ -685,10 +707,10 @@ NodeGui::togglePreview_internal(bool refreshPreview)
         return;
     }
     NodePtr node = getNode();
-    if ( node && getNode()->isPreviewEnabled() ) {
+    if ( node && node->isPreviewEnabled() ) {
         ensurePreviewCreated();
         if (refreshPreview) {
-            getNode()->computePreviewImage();
+            node->computePreviewImage();
         }
     } else {
         if (_previewPixmap) {
@@ -758,11 +780,15 @@ void
 NodeGui::refreshSize()
 {
     QRectF bbox = boundingRect();
-
-    KnobStringPtr extraLabelKnob = getNode()->getEffectInstance()->getExtraLabelKnob();
     QString label;
-    if (extraLabelKnob) {
-        label = QString::fromUtf8(extraLabelKnob->getValue().c_str());
+
+    NodePtr node = getNode();
+    assert(node);
+    if (node) {
+        KnobStringPtr extraLabelKnob = node->getEffectInstance()->getExtraLabelKnob();
+        if (extraLabelKnob) {
+            label = QString::fromUtf8(extraLabelKnob->getValue().c_str());
+        }
     }
     resize( bbox.width(), bbox.height(), false, !label.isEmpty() );
 }
@@ -900,8 +926,11 @@ NodeGui::resize(int width,
     adjustSizeToContent(&width, &height, adjustToTextSize);
     const int iconWidth = getPluginIconWidth();
 
-    getNode()->onNodeUISizeChanged(width, height);
-
+    NodePtr node = getNode();
+    assert(node);
+    if (node) {
+        node->onNodeUISizeChanged(width, height);
+    }
     const QPointF topLeft = mapFromParent( pos() );
     const QPointF bottomRight(topLeft.x() + width, topLeft.y() + height);
     const QPointF bottomLeft = topLeft + QPointF(0, height);
@@ -1181,11 +1210,13 @@ NodeGui::changePosition(double dx,
 void
 NodeGui::refreshDashedStateOfEdges()
 {
-    ViewerNodePtr viewer = getNode()->isEffectViewerNode();
-
+    NodePtr node = getNode();
+    assert(node);
+    ViewerNodePtr viewer;
+    if (node) {
+        viewer = node->isEffectViewerNode();
+    }
     if (viewer) {
-
-
         NodePtr aInput = viewer->getCurrentAInput();
         NodePtr bInput = viewer->getCurrentBInput();
 
@@ -1217,7 +1248,12 @@ NodeGui::refreshDashedStateOfEdges()
 void
 NodeGui::refreshEdges()
 {
-    const std::vector<NodeWPtr> & nodeInputs = getNode()->getInputs();
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
+    const std::vector<NodeWPtr> & nodeInputs = node->getInputs();
 
     if ( _inputEdges.size() != nodeInputs.size() ) {
         return;
@@ -1270,6 +1306,10 @@ void
 NodeGui::updatePreviewImage()
 {
     NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
     if (QThread::currentThread() != qApp->thread()) {
         return;
     }
@@ -1439,6 +1479,10 @@ NodeGui::initializeInputs()
     refreshOutputEdgeVisibility();
 
     NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
 
     ///The actual numbers of inputs of the internal node
     const std::vector<NodeWPtr>& inputs = node->getInputs();
@@ -1688,10 +1732,15 @@ NodeGui::isNearby(QPointF &point)
 Edge*
 NodeGui::firstAvailableEdge()
 {
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
         Edge* a = _inputEdges[i];
         if ( !a->hasSource() ) {
-            if ( getNode()->isInputOptional(i) ) {
+            if ( node->isInputOptional(i) ) {
                 continue;
             }
         }
@@ -1717,7 +1766,8 @@ NodeGui::applyBrush(const QBrush & brush)
 void
 NodeGui::refreshCurrentBrush()
 {
-    bool isCloneLinked = getDagGui()->isNodeCloneLinked(getNode());
+    NodePtr node = getNode();
+    bool isCloneLinked = node && getDagGui()->isNodeCloneLinked(node);
     if (isCloneLinked) {
         QColor cloneLinkColor;
         {
@@ -1782,7 +1832,12 @@ NodeGui::findConnectedEdge(NodeGui* parent)
 bool
 NodeGui::connectEdge(int edgeNumber)
 {
-    const std::vector<NodeWPtr> & inputs = getNode()->getInputs();
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return false;
+    }
+    const std::vector<NodeWPtr> & inputs = node->getInputs();
 
     if ( (edgeNumber < 0) || ( edgeNumber >= (int)inputs.size() ) || ( _inputEdges.size() != inputs.size() ) ) {
         return false;
@@ -1797,7 +1852,6 @@ NodeGui::connectEdge(int edgeNumber)
 
     _inputEdges[edgeNumber]->setSource(src);
 
-    assert(node);
     if (node->getPluginID() == PLUGINID_NATRON_LAYEREDCOMP) {
         initializeInputsLayeredComp();
     } else if (node->isEntitledForInspectorInputsStyle()) {
@@ -1970,7 +2024,12 @@ NodeGui::hideGui()
     getDagGui()->refreshNodeLinksLater();
 
     NodePtr node = getNode();
-    ViewerNodePtr isViewer = node->isEffectViewerNode();
+    assert(node);
+
+    ViewerNodePtr isViewer;
+    if (node) {
+        isViewer = node->isEffectViewerNode();
+    }
     if (isViewer) {
         ViewerGL* viewerGui = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
         if (viewerGui) {
@@ -1986,7 +2045,7 @@ NodeGui::hideGui()
         NodeGuiPtr thisShared = shared_from_this();
         _graph->getGui()->removeNodeViewerInterface(thisShared, false);
     }
-    {
+    if (node) {
         NodeGroupPtr isGrp = node->isEffectNodeGroup();
         if ( isGrp && isGrp->isSubGraphUserVisible() ) {
             NodeGraphI* graph_i = isGrp->getNodeGraph();
@@ -2009,7 +2068,12 @@ NodeGui::initializeKnobs()
         _settingsPanel->initializeKnobs();
 
         // If the node holding this settings panel is in a group, and the group is not editable, make it disabled
-        NodeCollectionPtr collec = getNode()->getGroup();
+        NodePtr node = getNode();
+        assert(node);
+        if (!node) {
+            return;
+        }
+        NodeCollectionPtr collec = node->getGroup();
         NodeGroupPtr isGroup = toNodeGroup(collec);
         if (isGroup) {
             if ( !isGroup->isSubGraphEditedByUser() ) {
@@ -2058,7 +2122,11 @@ NodeGui::onPersistentMessageChanged()
     }
 
     PersistentMessageMap messages;
-    getNode()->getPersistentMessage(&messages, false);
+    NodePtr node = getNode();
+    assert(node);
+    if (node) {
+        node->getPersistentMessage(&messages, false);
+    }
     MessageTypeEnum type = eMessageTypeWarning;
     bool hasPersistentMessage = false;
     for (PersistentMessageMap::const_iterator it = messages.begin(); it != messages.end(); ++it) {
@@ -2149,12 +2217,13 @@ NodeGui::refreshStateIndicator()
         return;
     }
 
-    if ( !getNode() ) {
+    NodePtr node = getNode();
+    if ( !node ) {
         return;
     }
 
     PersistentMessageMap messages;
-    getNode()->getPersistentMessage(&messages, false);
+    node->getPersistentMessage(&messages, false);
     MessageTypeEnum type = eMessageTypeWarning;
     bool hasPersistentMessage = false;
     for (PersistentMessageMap::const_iterator it = messages.begin(); it != messages.end(); ++it) {
@@ -2258,7 +2327,12 @@ NodeGui::refreshOutputEdgeVisibility()
 {
     if (_outputEdge) {
         OutputNodesMap outputs;
-        getNode()->getOutputs(outputs);
+        NodePtr node = getNode();
+        assert(node);
+        if (!node) {
+            return;
+        }
+        node->getOutputs(outputs);
         if ( outputs.empty() ) {
             if ( !_outputEdge->isVisible() ) {
                 _outputEdge->setActive(true);
@@ -2361,7 +2435,11 @@ NodeGui::getSize() const
         return QSize( bbox.width(), bbox.height() );
     } else {
         double w,h;
-        getNode()->getSize(&w, &h);
+        NodePtr node = getNode();
+
+        if (node) {
+            node->getSize(&w, &h);
+        }
         return QSize(w,h);
     }
 }
@@ -2381,7 +2459,10 @@ NodeGui::onDisabledKnobToggled(bool disabled)
     }
 
     NodePtr node = getNode();
-
+    assert(node);
+    if (!node) {
+        return;
+    }
     int firstFrame, lastFrame;
     bool lifetimeEnabled = node->getEffectInstance()->isLifetimeActivated(&firstFrame, &lastFrame);
     int curFrame = node->getApp()->getTimeLine()->currentFrame();
@@ -2556,7 +2637,12 @@ NodeGui::setScale_natron(double scale)
     }
     refreshEdges();
     OutputNodesMap  outputs;
-    getNode()->getOutputs(outputs);
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
+    node->getOutputs(outputs);
     for (OutputNodesMap::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         it->first->doRefreshEdgesGUI();
     }
@@ -2690,6 +2776,10 @@ NodeGui::refreshNodeText()
         return;
     }
     NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
 
     KnobStringPtr extraLabelKnob;
     extraLabelKnob = node->getEffectInstance()->getExtraLabelKnob();
@@ -2824,7 +2914,12 @@ QColor
 NodeGui::getCurrentColor() const
 {
     double r,g,b;
-    getNode()->getColor(&r,&g,&b);
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return QColor();
+    }
+    node->getColor(&r,&g,&b);
     QColor c;
     c.setRgbF(Image::clamp(r, 0.,1.),
                Image::clamp(g, 0.,1.),
@@ -2864,6 +2959,10 @@ void
 NodeGui::onSwitchInputActionTriggered()
 {
     NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
 
     if (node && node->getNInputs() >= 2) {
         node->switchInput0And1();
@@ -2974,6 +3073,10 @@ NodeGui::onSettingsPanelClosedChanged(bool closed)
 
         if (!closed) {
             NodePtr node = getNode();
+            assert(node);
+            if (!node) {
+                return;
+            }
             TimeValue time(node->getApp()->getTimeLine()->currentFrame());
             node->getEffectInstance()->refreshAfterTimeChange(false, time);
         }
@@ -3065,14 +3168,24 @@ void
 NodeGui::getPosition(double *x,
                      double* y) const
 {
-    return getNode()->getPosition(x, y);
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
+    return node->getPosition(x, y);
 }
 
 void
 NodeGui::getSize(double* w,
                  double* h) const
 {
-    return getNode()->getSize(w, h);
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
+    return node->getSize(w, h);
 }
 
 
@@ -3165,7 +3278,12 @@ NodeGui::refreshAnimationIcon()
         return;
     }
     bool hasAnimation = false;
-    const KnobsVec& knobs = getNode()->getKnobs();
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
+    const KnobsVec& knobs = node->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end() ;++it) {
         hasAnimation |= (*it)->hasAnimation();
         if (hasAnimation) {
@@ -3185,6 +3303,10 @@ NodeGui::onIdentityStateChanged(int inputNb)
     }
     NodePtr ptInput;
     NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
     bool enabled = true;
 
     if (node->getEffectInstance()->getDisabledKnobValue()) {
@@ -3716,7 +3838,12 @@ NodeGui::onInputLabelChanged(int inputNb,const QString& label)
 void
 NodeGui::onKeepInAnimationModuleKnobChanged()
 {
-    bool keep = getNode()->getEffectInstance()->isKeepInAnimationModuleButtonDown();
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
+    bool keep = node->getEffectInstance()->isKeepInAnimationModuleButtonDown();
     if (keep) {
         getDagGui()->getGui()->addNodeGuiToAnimationModuleEditor(shared_from_this());
     } else {
@@ -3796,7 +3923,12 @@ static void addKnobTableItemKeysRecursive(const KnobTableItemPtr& item, TimeLine
 void
 NodeGui::getAllVisibleKnobsKeyframes(TimeLineKeysSet* keys) const
 {
-    EffectInstancePtr effect = getNode()->getEffectInstance();
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
+    EffectInstancePtr effect = node->getEffectInstance();
     if (!effect) {
         return;
     }
@@ -3925,9 +4057,14 @@ NodeGui::addComponentsWithDialog(const KnobChoicePtr& knob)
 
             return false;
         }
-        assert(knob->getHolder() == getNode()->getEffectInstance());
+        NodePtr node = getNode();
+        assert(node);
+        if (!node) {
+            false;
+        }
+        assert(knob->getHolder() == node->getEffectInstance());
 
-        if ( !getNode()->getEffectInstance()->addUserComponents(comps) ) {
+        if ( !node->getEffectInstance()->addUserComponents(comps) ) {
             Dialogs::errorDialog( tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString() );
             return false;
         }
@@ -3948,12 +4085,17 @@ NodeGui::refreshLinkIndicators(const std::list<std::pair<NodePtr, bool> >& links
     };
     LinkType type = eLinkTypeNone;
     std::string cloneNodeName;
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
     for (std::list<std::pair<NodePtr, bool> >::const_iterator it = links.begin(); it!=links.end(); ++it) {
         if (it->second) {
             type = eLinkTypeClone;
             cloneNodeName = it->first->getFullyQualifiedName();
             break;
-        } else if (it->first != getNode()) {
+        } else if (it->first != node) {
             type = eLinkTypeSimple;
         }
     }
