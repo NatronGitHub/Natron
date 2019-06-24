@@ -920,7 +920,7 @@ AppManager::loadInternal(const CLArgs& cl)
     // Set the locale AGAIN, because Qt resets it in the QCoreApplication constructor and in Py_InitializeEx
     // see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
     setApplicationLocale();
-    
+
     Log::instance(); //< enable logging
     bool mustSetSignalsHandlers = true;
 #ifdef NATRON_USE_BREAKPAD
@@ -952,7 +952,7 @@ AppManager::loadInternal(const CLArgs& cl)
 # endif
 
     // Settings: we must load these and set the custom settings (using python) ASAP, before creating the OFX Plugin Cache
-    
+
     _imp->_settings = Settings::create();
     _imp->_settings->initializeKnobsPublic();
 
@@ -965,7 +965,7 @@ AppManager::loadInternal(const CLArgs& cl)
         settingsLoadType = Settings::eLoadSettingsTypeKnobs;
     }
     _imp->_settings->loadSettingsFromFile(settingsLoadType);
-    
+
 
     if (cl.isCacheClearRequestedOnLaunch()) {
         // Clear the cache before attempting to load any data.
@@ -1430,7 +1430,7 @@ AppManager::clearAllCaches()
 
     _imp->generalPurposeCache->clear();
     _imp->tileCache->clear();
-    
+
     ///for each app instance clear all its nodes cache
     for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
         (*it)->clearOpenFXPluginsCaches();
@@ -2046,7 +2046,7 @@ AppManager::loadNodesPresets()
                     if (dimVec.size() > 1) {
                         pyPlugVersionMinor = dimVec[1]._value.isInt;
                     }
-                    
+
                 }
             }
 
@@ -2087,8 +2087,8 @@ AppManager::loadNodesPresets()
                 p->setProperty<ImageBitDepthEnum>(kNatronPluginPropOutputSupportedBitDepths, eImageBitDepthFloat, 0);
                 p->setProperty<std::bitset<4> >(kNatronPluginPropOutputSupportedComponents, std::bitset<4>(std::string("1111")));
                 registerPlugin(p);
-                
-                
+
+
             }
         }
     }
@@ -2483,7 +2483,7 @@ AppManager::getPluginBinary(const QString & pluginId,
                             bool caseSensitivePluginSearch) const
 {
     Q_UNUSED(minorVersion);
-    
+
     PluginsMap::const_iterator foundID = _imp->_plugins.find( pluginId.toStdString() );
     if ( !caseSensitivePluginSearch && foundID == _imp->_plugins.end() ) {
         foundID = _imp->_plugins.end();
@@ -2576,7 +2576,7 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
     if (retNode) {
         return retNode;
     }
-    
+
     // If the node could not be created, make a Stub node
     {
         CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_STUB, group));
@@ -2587,7 +2587,7 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
         } catch (...) {
             return retNode;
         }
-        
+
         args->addParamDefaultValue<std::string>(kStubNodeParamSerialization, ss.str());
         args->setProperty<bool>(kCreateNodeArgsPropSilent, true); // also load deprecated plugins
         args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
@@ -2642,7 +2642,7 @@ AppManager::printCacheMemoryStats() const
             }
             totalBytes += it->second.nBytes;
             totalNEntries += it->second.nEntries;
-            
+
             reportStr += QString::fromUtf8(it->first.c_str());
             reportStr += QLatin1String("--> ");
             if (it->second.nBytes > 0) {
@@ -4070,7 +4070,7 @@ getGroupInfosInternal(const std::string& pythonModule,
 
     *pluginLabel = NATRON_PYTHON_NAMESPACE::PyStringToStdString(labelObj);
     Py_XDECREF(labelObj);
-    
+
     if (idObj) {
         *pluginID = NATRON_PYTHON_NAMESPACE::PyStringToStdString(idObj);
         deleteScript.append("del pluginID\n");

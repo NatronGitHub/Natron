@@ -441,7 +441,8 @@ NodeGui::ensurePanelCreated()
 void
 NodeGui::onSettingsPanelClosed(bool closed)
 {
-    if (getNode()->hasAnyPersistentMessage()) {
+    NodePtr internalNode = getNode();
+    if (internalNode && internalNode->hasAnyPersistentMessage()) {
         const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
             (*it)->getViewer()->updatePersistentMessage();
@@ -457,7 +458,7 @@ NodeGui::createPanel(QVBoxLayout* container,
     NodeSettingsPanel* panel = 0;
     NodePtr node = getNode();
 
-    if ( node->getEffectInstance()->getMakeSettingsPanel() ) {
+    if ( node && node->getEffectInstance()->getMakeSettingsPanel() ) {
         assert(container);
         panel = new NodeSettingsPanel(_graph->getGui(), thisAsShared, container, container->parentWidget() );
 
@@ -532,7 +533,7 @@ NodeGui::createGui()
     }
 
     PluginPtr plugin = node->getPlugin();
-    
+
     QString iconFilePath = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath).c_str());
     StrUtils::ensureLastPathSeparator(iconFilePath);
     QString iconBaseFilePath =  QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str());
@@ -569,9 +570,9 @@ NodeGui::createGui()
         } else {
             _pluginIcon->hide();
         }
-        
+
     }
-    
+
     _presetIcon = new NodeGraphPixmapItem(getDagGui(), this);
     _presetIcon->setZValue(depth + 1);
     _presetIcon->hide();
@@ -671,7 +672,10 @@ void
 NodeGui::beginEditKnobs()
 {
     _wasBeginEditCalled = true;
-    getNode()->beginEditKnobs();
+    NodePtr node = getNode();
+    if (node) {
+        node->beginEditKnobs();
+    }
 }
 
 void
@@ -680,7 +684,8 @@ NodeGui::togglePreview_internal(bool refreshPreview)
     if ( !canMakePreview() ) {
         return;
     }
-    if ( getNode()->isPreviewEnabled() ) {
+    NodePtr node = getNode();
+    if ( node && getNode()->isPreviewEnabled() ) {
         ensurePreviewCreated();
         if (refreshPreview) {
             getNode()->computePreviewImage();
@@ -728,7 +733,10 @@ NodeGui::onPreviewKnobToggled()
 void
 NodeGui::togglePreview()
 {
-    getNode()->togglePreview();
+    NodePtr node = getNode();
+    if (node) {
+        node->togglePreview();
+    }
     togglePreview_internal();
 }
 
@@ -1099,7 +1107,8 @@ NodeGui::refreshPosition(double x,
                 }
             }
 
-            if ( ( !_magnecEnabled.x() || !_magnecEnabled.y() ) ) {
+            NodePtr node = getNode();
+            if ( node && ( !_magnecEnabled.x() || !_magnecEnabled.y() ) ) {
                 ///check now the outputs
                 OutputNodesMap outputs;
                 node->getOutputs(outputs);
@@ -1349,7 +1358,9 @@ NodeGui::initializeInputsForInspector()
     NodePtr node = getNode();
 
     assert(node);
-
+    if (!node) {
+        return;
+    }
     // Count mask inputs first
     std::vector<bool> masksInputs(_inputEdges.size());
     int nMasksInputs = 0;
@@ -1786,13 +1797,12 @@ NodeGui::connectEdge(int edgeNumber)
 
     _inputEdges[edgeNumber]->setSource(src);
 
-    NodePtr node = getNode();
     assert(node);
     if (node->getPluginID() == PLUGINID_NATRON_LAYEREDCOMP) {
         initializeInputsLayeredComp();
     } else if (node->isEntitledForInspectorInputsStyle()) {
         initializeInputsForInspector();
-    } 
+    }
 
     refreshEdgesVisility();
 
@@ -1893,6 +1903,10 @@ NodeGui::showGui()
     show();
     setActive(true);
     NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
         _graph->scene()->addItem(_inputEdges[i]);
         _inputEdges[i]->setParentItem( parentItem() );
@@ -1954,7 +1968,7 @@ NodeGui::hideGui()
     }
 
     getDagGui()->refreshNodeLinksLater();
-    
+
     NodePtr node = getNode();
     ViewerNodePtr isViewer = node->isEffectViewerNode();
     if (isViewer) {
@@ -1968,7 +1982,7 @@ NodeGui::hideGui()
         if (_panelOpenedBeforeDeactivate) {
             setVisibleSettingsPanel(false);
         }
-        
+
         NodeGuiPtr thisShared = shared_from_this();
         _graph->getGui()->removeNodeViewerInterface(thisShared, false);
     }
@@ -2157,7 +2171,7 @@ NodeGui::refreshStateIndicator()
     }
 
     bool showIndicator = true;
-    int value = getNode()->getIsNodeRenderingCounter();
+    int value = node->getIsNodeRenderingCounter();
     bool isSelected = getIsSelected();
     if (value >= 1) {
         _stateIndicator->setBrush(Qt::yellow);
@@ -2216,7 +2230,7 @@ NodeGui::refreshRenderingIndicator()
     }
     refreshStateIndicator();
     for (std::size_t i = 0; i < _inputEdges.size(); ++i) {
-        int value = getNode()->getIsInputNRenderingCounter(i);
+        int value = node->getIsInputNRenderingCounter(i);
         if (value >= 1) {
             _inputEdges[i]->turnOnRenderingColor();
         } else {
@@ -2335,7 +2349,7 @@ NodeGui::destroyGui()
     _graph->refreshNodeLinksLater();
 
     _graph->update();
-    
+
 } // NodeGui::destroyGui
 
 QSize
@@ -2386,7 +2400,12 @@ NodeGui::onStreamWarningsChanged()
     }
 
     std::map<Node::StreamWarningEnum, QString> warnings;
-    getNode()->getStreamWarnings(&warnings);
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
+    node->getStreamWarnings(&warnings);
     if ( warnings.empty() ) {
         _streamIssuesWarning->setActive(false);
 
@@ -2717,7 +2736,7 @@ NodeGui::refreshNodeText()
                 if (presetDesc[i].presetLabel == presetsLabel) {
                     QPixmap pix;
                     Gui::getPresetIcon(presetDesc[i].presetFilePath, presetDesc[i].presetIconFile, TO_DPIX(NATRON_PLUGIN_ICON_SIZE), &pix);
-                    
+
                     if (!pix.isNull() && _presetIcon) {
                         _presetIcon->setVisible(true);
                         _presetIcon->setPixmap(pix);
@@ -2725,7 +2744,7 @@ NodeGui::refreshNodeText()
                     }
                     break;
                 }
-                
+
             }
         }
 
@@ -2846,7 +2865,7 @@ NodeGui::onSwitchInputActionTriggered()
 {
     NodePtr node = getNode();
 
-    if (node->getNInputs() >= 2) {
+    if (node && node->getNInputs() >= 2) {
         node->switchInput0And1();
         _graph->getGui()->getApp()->renderAllViewers();
         update();
@@ -2928,7 +2947,10 @@ NodeGui::refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs,
                                      TimeValue time)
 {
     NodePtr node = getNode();
-
+    assert(node);
+    if (!node) {
+        return;
+    }
     if ( ( _settingsPanel && !_settingsPanel->isClosed() ) ) {
         if (onlyTimeEvaluationKnobs) {
             node->getEffectInstance()->refreshAfterTimeChangeOnlyKnobsWithTimeEvaluation(time);
@@ -3012,17 +3034,21 @@ NodeGui::setName(const QString & newName)
 
     stdName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(stdName);
 
-
-    std::string oldScriptName = getNode()->getScriptName();
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
+    std::string oldScriptName = node->getScriptName();
     try {
-        getNode()->setScriptName(stdName);
+        node->setScriptName(stdName);
     } catch (const std::exception& e) {
         //Dialogs::errorDialog(tr("Rename").toStdString(), tr("Could not set node script-name to ").toStdString() + stdName + ": " + e.what());
         //return;
     }
 
     _settingNameFromGui = true;
-    getNode()->setLabel( newName.toStdString() );
+    node->setLabel( newName.toStdString() );
     _settingNameFromGui = false;
 
     onInternalNameChanged(QString(), newName);
@@ -3090,7 +3116,12 @@ NodeGui::isOverlayLocked() const
 void
 NodeGui::onAvailableViewsChanged()
 {
-    const std::vector<std::string>& views = getNode()->getCreatedViews();
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
+    const std::vector<std::string>& views = node->getCreatedViews();
 
     if ( views.empty() || (views.size() == 1) ) {
         if ( _availableViewsIndicator->isActive() ) {
@@ -3283,7 +3314,7 @@ NodeGui::setCurrentCursor(const QString& customCursorFilePath)
     QString cursorFilePath = customCursorFilePath;
 
     if ( !QFile::exists(customCursorFilePath) ) {
-        QString resourcesPath = QString::fromUtf8( getNode()->getPluginResourcesPath().c_str() );
+        QString resourcesPath = QString::fromUtf8( node->getPluginResourcesPath().c_str() );
         if ( !resourcesPath.endsWith( QLatin1Char('/') ) ) {
             resourcesPath += QLatin1Char('/');
         }
@@ -3310,14 +3341,14 @@ struct GroupKnobDialogPrivate
     QDialogButtonBox* buttonBox;
     DockablePanel* panel;
     KnobGroupPtr knob;
-    
+
     GroupKnobDialogPrivate()
     : mainLayout(0)
     , buttonBox(0)
     , panel(0)
     , knob()
     {
-        
+
     }
 };
 
@@ -3407,7 +3438,7 @@ GroupKnobDialog::GroupKnobDialog(Gui* gui, const KnobGroupConstPtr& group)
     }
 
 
-    
+
 }
 
 GroupKnobDialog::~GroupKnobDialog()
@@ -3648,7 +3679,12 @@ NodeGui::onRightClickActionTriggered()
     const std::vector<std::pair<QString, QKeySequence> >& shortcuts = action->getShortcuts();
     assert( !shortcuts.empty() );
     std::string knobName = shortcuts.front().first.toStdString();
-    KnobIPtr knob = getNode()->getKnobByName(knobName);
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
+    KnobIPtr knob = node->getKnobByName(knobName);
     if (!knob) {
         // Plug-in specified invalid knob name in the menu
         return;
@@ -3742,7 +3778,7 @@ static void addKnobTableItemKeysRecursive(const KnobTableItemPtr& item, TimeLine
     if (!item->isItemSelected()) {
         return;
     }
-    
+
 
     // Add knobs keyframes
     const KnobsVec& knobs = item->getKnobs();
@@ -3864,7 +3900,7 @@ NodeGui::onNodePresetsChanged()
                     getSize(&w, &h);
                     w = TO_DPIX(NODE_WIDTH) + TO_DPIX(NATRON_PLUGIN_ICON_SIZE) + TO_DPIX(PLUGIN_ICON_OFFSET) * 2;
                     resize(w, h);
-                    
+
                     double x, y;
                     getPosition(&x, &y);
                     x -= TO_DPIX(NATRON_PLUGIN_ICON_SIZE) / 2. + TO_DPIX(PLUGIN_ICON_OFFSET);

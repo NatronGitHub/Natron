@@ -67,7 +67,7 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface, 
 , renderKnobs()
 , pluginMemoryChunks()
 {
-    
+
 }
 
 EffectInstance::Implementation::~Implementation()
@@ -303,7 +303,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
     // If using OpenGL, bind the frame buffer
     if (args.backendType == eRenderBackendTypeOpenGL) {
-        
+
         assert(args.glContext);
 
         GLuint fboID = args.glContext->getOrCreateFBOId();
@@ -787,12 +787,10 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
             }
         }
 
-        
+
     } // for each plane to render
     return eActionStatusOK;
 } // renderHandlerPostProcess
 
 
 NATRON_NAMESPACE_EXIT
-
-

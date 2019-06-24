@@ -291,7 +291,7 @@ Node::linkToNode(const NodePtr& other)
                 continue;
             }
         }
-       
+
         KnobIPtr masterKnob = other->getKnobByName((*it)->getName());
         if (!masterKnob) {
             continue;
@@ -1203,7 +1203,7 @@ Node::getOriginalFrameRangeForReader(const std::string& pluginID,
 bool
 Node::isSubGraphEditedByUser() const
 {
-    
+
     NodeGroupPtr isGroup = isEffectNodeGroup();
     if (!isGroup) {
         return false;

@@ -246,9 +246,9 @@ NodeGraph::removeNode(const NodeGuiPtr & node)
                 break;
             }
 
-            
-            
-            
+
+
+
         }
         if (!foundLinkedErrorMessage.empty()) {
             StandardButtonEnum reply = Dialogs::questionDialog( tr("Delete").toStdString(), foundLinkedErrorMessage, false );
@@ -419,7 +419,7 @@ NodeGraph::selectNode(const NodeGuiPtr & n,
     bool magnifiedNodeSelected = false;
     if (_imp->_magnifiedNode.lock()) {
         magnifiedNodeSelected = _imp->findSelectedNode(_imp->_magnifiedNode.lock()) != _imp->_selection.end();
-                                
+
     }
     if (magnifiedNodeSelected && _imp->_magnifOn) {
         _imp->_magnifOn = false;
