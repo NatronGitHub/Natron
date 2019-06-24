@@ -1735,7 +1735,7 @@ NodeGui::firstAvailableEdge()
     NodePtr node = getNode();
     assert(node);
     if (!node) {
-        return;
+        return NULL;
     }
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
         Edge* a = _inputEdges[i];
