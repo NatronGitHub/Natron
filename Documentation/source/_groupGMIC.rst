@@ -313,6 +313,7 @@ The following sections contain documentation about every node in the GMIC group.
     plugins/eu.gmic.Stroke.rst
     plugins/eu.gmic.SuperPixels.rst
     plugins/eu.gmic.Superformula.rst
+    plugins/eu.gmic.Symmetric2DShape.rst
     plugins/eu.gmic.Symmetrize.rst
     plugins/eu.gmic.Taquin.rst
     plugins/eu.gmic.Tetris.rst
