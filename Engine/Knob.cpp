@@ -2904,6 +2904,8 @@ KnobHelper::executeExpression(const std::string& expr,
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
     PyObject* globalDict = PyModule_GetDict(mainModule);
 
+    PyErr_Clear();
+
     PyObject* v = PyRun_String(expr.c_str(), Py_file_input, globalDict, 0);
     Py_XDECREF(v);
 

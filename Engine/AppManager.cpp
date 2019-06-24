@@ -3941,6 +3941,9 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     status = PyRun_SimpleString(script.c_str());
 #else
     PyObject* dict = PyModule_GetDict(mainModule);
+
+    PyErr_Clear();
+
     ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
     PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, 0);
     if (v) {
@@ -4130,7 +4133,9 @@ PythonGILLocker::PythonGILLocker()
     : state(PyGILState_UNLOCKED)
 {
     // Take the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
-    appPTR->takeNatronGIL();
+    if (appPTR) {
+        appPTR->takeNatronGIL();
+    }
 
     // Also take the Python GIL, since not doing so seems to crash Natron during recursive Natron->Python->Natron->Python calls, see https://github.com/NatronGitHub/Natron/issues/379
     // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
@@ -4145,7 +4150,9 @@ PythonGILLocker::PythonGILLocker()
 PythonGILLocker::~PythonGILLocker()
 {
     // Release the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
-    appPTR->releaseNatronGIL();
+    if (appPTR) {
+        appPTR->releaseNatronGIL();
+    }
 
     // We took the Python GIL too, so realease it here.
     // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads

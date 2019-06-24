@@ -326,6 +326,8 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
 
         PyObject* dict = PyModule_GetDict(mainModule);
 
+        PyErr_Clear();
+
         ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
         std::string script("from distutils.sysconfig import get_python_lib; print('Python library is in ' + get_python_lib())");
         PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, 0);
