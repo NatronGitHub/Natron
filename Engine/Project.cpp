@@ -1683,7 +1683,7 @@ Project::isGraphWorthLess() const
      */
 
     ///If it has never auto-saved, then the user didn't do anything, hence the project is worthless.
-    return ( !hasEverAutoSaved() && !hasProjectBeenSavedByUser() ) || !hasNodes();
+    return ( hasEverAutoSaved() && hasProjectBeenSavedByUser() ) || !hasNodes();
 }
 
 QString
