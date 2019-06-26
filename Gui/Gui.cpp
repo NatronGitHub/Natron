@@ -57,6 +57,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ProjectGui.h"
 #include "Gui/ToolButton.h"
 #include "Gui/RenderStatsDialog.h"
+#include "Gui/ViewerTab.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -219,6 +220,13 @@ Gui::abortProject(bool quitApp,
                   bool blocking)
 {
     GuiAppInstancePtr app = getApp();
+
+    // stop viewers before anything else
+    std::list<ViewerTab*> viewers = getViewersList();
+    for (std::list<ViewerTab*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        (*it)->abortRendering();
+    }
+
     if (app && app->getProject()->hasNodes() && warnUserIfSaveNeeded) {
         int ret = saveWarning();
         if (ret == 0) {
