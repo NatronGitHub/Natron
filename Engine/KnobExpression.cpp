@@ -1188,7 +1188,11 @@ bool
 KnobHelper::clearExpressionInternal(DimIdx dimension,
                                     ViewIdx view)
 {
-    PythonGILLocker pgl;
+    // Do not take the Python GIL:
+    // We do not execute Python code here, and it may crash Natron
+    // when Natron is quitting, because Python was already
+    // torn down. See https://travis-ci.org/NatronGitHub/Natron/jobs/549547215
+    /// PythonGILLocker pgl;
     bool hadExpression = false;
     KnobIPtr thisShared = shared_from_this();
     KnobDimViewKeySet dependencies;
