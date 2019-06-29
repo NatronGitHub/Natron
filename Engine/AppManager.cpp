@@ -3916,6 +3916,9 @@ NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(const std::string& str)
 PythonGILLocker::PythonGILLocker()
     : state(PyGILState_UNLOCKED)
 {
+    if (!Py_IsInitialized()) {
+        throw std::runtime_error("Trying to execute python code, but Py_IsInitialized() returns false");
+    }
     // Take the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
     if (appPTR) {
         appPTR->takeNatronGIL();
