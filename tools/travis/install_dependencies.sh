@@ -158,9 +158,9 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support;
         # - opencolorio
         if [ ! -d "$HOME/ocio/lib" ]; then
-            wget https://github.com/imageworks/OpenColorIO/archive/v1.1.0.tar.gz -O /tmp/ocio.tgz;
+            wget https://github.com/imageworks/OpenColorIO/archive/v1.1.1.tar.gz -O /tmp/ocio.tgz;
             tar -xvzf /tmp/ocio.tgz -C $HOME;
-            pushd $HOME/OpenColorIO-1.1.0;
+            pushd $HOME/OpenColorIO-1.1.1;
             find . -name CMakeLists.txt -exec sed -e s/-Werror// -i {} \; ;
             mkdir _build && cd _build;
             cmake -DCMAKE_INSTALL_PREFIX=$HOME/ocio -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF ..;
@@ -190,9 +190,9 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         fi
         # - openimageio
         if [ ! -d "$HOME/oiio/lib" ]; then
-            wget https://github.com/OpenImageIO/oiio/archive/Release-1.8.8.tar.gz -O /tmp/oiio.tgz;
+            wget https://github.com/OpenImageIO/oiio/archive/Release-2.0.8.tar.gz -O /tmp/oiio.tgz;
             tar -xvzf /tmp/oiio.tgz -C $HOME;
-            pushd $HOME/oiio-Release-1.8.8;
+            pushd $HOME/oiio-Release-2.0.8;
             mkdir _build && cd _build;
             cmake -DCMAKE_INSTALL_PREFIX=$HOME/oiio -DILMBASE_HOME=$HOME/openexr -DOPENEXR_HOME=$HOME/openexr -DOCIO_PATH=$HOME/ocio -DUSE_QT=OFF -DUSE_PYTHON=OFF -DUSE_PYTHON3=OFF -DUSE_FIELD3D=OFF -DUSE_FFMPEG=OFF -DUSE_OPENJPEG=ON -DUSE_OCIO=ON -DUSE_OPENCV=OFF -DUSE_OPENSSL=OFF -DUSE_FREETYPE=ON -DUSE_GIF=OFF -DUSE_PTEX=OFF -DUSE_LIBRAW=ON -DOIIO_BUILD_TESTS=OFF -DOIIO_BUILD_TOOLS=OFF -DSTOP_ON_WARNING=OFF ..;
             make $J && make install;
