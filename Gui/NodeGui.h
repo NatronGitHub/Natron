@@ -45,6 +45,9 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QRectF>
 #include <QtCore/QMutex>
 #include <QtCore/QSize>
+GCC_ONLY_DIAG_OFF(class-memaccess)
+#include <QtCore/QVector>
+GCC_ONLY_DIAG_ON(class-memaccess)
 #include <QGraphicsItem>
 #include <QDialog>
 #include <QtCore/QMutex>
