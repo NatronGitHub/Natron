@@ -49,6 +49,14 @@ createDuplicateKnob( const std::string& knobName,
     return boost::dynamic_pointer_cast<KNOBTYPE>(duplicateKnob);
 }
 
+
+void
+ViewerNode::abortAllViewersRendering()
+{
+    return _imp->abortAllViewersRendering();
+}
+
+
 void
 ViewerNode::initializeKnobs()
 {
@@ -1740,7 +1748,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
             if (_imp->playForwardButtonKnob.lock()->getValue()) {
                 _imp->startPlayback(eRenderDirectionForward);
             } else {
-                _imp->abortAllViewersRendering();
+                abortAllViewersRendering();
             }
         }
     } else if (k == _imp->playBackwardButtonKnob.lock()) {
@@ -1748,7 +1756,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
             if (_imp->playBackwardButtonKnob.lock()->getValue()) {
                 _imp->startPlayback(eRenderDirectionBackward);
             } else {
-                _imp->abortAllViewersRendering();
+                abortAllViewersRendering();
             }
         }
     } else if (k == _imp->curFrameKnob.lock()) {
@@ -1800,7 +1808,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
             getApp()->setGuiFrozen(_imp->enableTurboModeButtonKnob.lock()->getValue());
         }
     } else if (k == _imp->abortRenderingAction.lock()) {
-        _imp->abortAllViewersRendering();
+        abortAllViewersRendering();
     } else if (k == _imp->setInPointButtonKnob.lock()) {
         _imp->inPointKnob.lock()->setValue(getTimelineCurrentTime(), ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
     } else if (k == _imp->setOutPointButtonKnob.lock()) {

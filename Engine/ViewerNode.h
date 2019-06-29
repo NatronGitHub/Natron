@@ -334,6 +334,7 @@ public:
 
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
 
+    void abortAllViewersRendering();
 
 public Q_SLOTS:
 
