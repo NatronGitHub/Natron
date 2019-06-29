@@ -222,9 +222,11 @@ Documentation/pdf
 Engine.xcodeproj/
 Gui.xcodeproj/
 HostSupport.xcodeproj/
+Info.plist
 Natron-bin.xcodeproj/
 Natron.xcodeproj/
 NatronCrashReporter.xcodeproj/
+NatronProjectConverter.xcodeproj/
 NatronRenderer-bin.xcodeproj/
 NatronRenderer.xcodeproj/
 NatronRendererCrashReporter.xcodeproj/
