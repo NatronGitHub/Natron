@@ -82,6 +82,7 @@ macx {
     INSTALLS += Resources
 }
 
+QMAKE_SUBSTITUTES += $$PWD/../Gui/Resources/etc/fonts/fonts.conf.in
 
 
 win32-g++ {
