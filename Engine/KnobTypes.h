@@ -35,7 +35,9 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QCoreApplication>
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
+GCC_ONLY_DIAG_OFF(class-memaccess)
 #include <QtCore/QVector>
+GCC_ONLY_DIAG_ON(class-memaccess)
 #include <QtCore/QMutex>
 #include <QtCore/QString>
 

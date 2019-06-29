@@ -51,6 +51,14 @@ run-without-python {
 
     QMAKE_CFLAGS_WARN_ON += -Wall -Wextra -Wmissing-prototypes -Wmissing-declarations -Wno-multichar -Winit-self -Wno-long-long
     QMAKE_CXXFLAGS_WARN_ON += -Wall -Wextra -Wno-multichar -Winit-self -Wno-long-long
+    *clang* | *xcode* {
+    	# In file included from <built-in>:1:
+    	# In file included from /usr/local/Cellar/python@2/2.7.16/Frameworks/Python.framework/Versions/2.7/include/python2.7/Python.h:88:
+    	# /usr/local/Cellar/python@2/2.7.16/Frameworks/Python.framework/Versions/2.7/include/python2.7/unicodeobject.h:534:5: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+    	#     register PyObject *obj,     /* Object */
+    	#     ^~~~~~~~~
+        QMAKE_CXXFLAGS += -Wno-deprecated-register
+    }
     #QMAKE_CFLAGS_WARN_ON += -pedantic
     #QMAKE_CXXFLAGS_WARN_ON += -pedantic
     #QMAKE_CXXFLAGS_WARN_ON += -Weffc++

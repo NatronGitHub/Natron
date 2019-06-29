@@ -859,22 +859,22 @@ AppManager::setApplicationLocale()
 #if defined(__APPLE__) && defined(_LIBCPP_VERSION) && (defined(_LIBCPP_USE_AVAILABILITY_APPLE) || !defined(_LIBCPP_DISABLE_AVAILABILITY)) && (__MAC_OS_X_VERSION_MIN_REQUIRED < 1090)
     try {
         std::locale::global( std::locale("C") );
-    } catch (std::runtime_error) {
+    } catch (std::runtime_error&) {
         qDebug() << "Could not set C++ locale!";
     }
 #else
     try {
         std::locale::global( std::locale(std::locale("en_US.UTF-8"), "C", std::locale::numeric) );
-    } catch (std::runtime_error) {
+    } catch (std::runtime_error&) {
         try {
             std::locale::global( std::locale(std::locale("C.UTF-8"), "C", std::locale::numeric) );
-        } catch (std::runtime_error) {
+        } catch (std::runtime_error&) {
             try {
                 std::locale::global( std::locale(std::locale("UTF-8"), "C", std::locale::numeric) );
-            } catch (std::runtime_error) {
+            } catch (std::runtime_error&) {
                 try {
                     std::locale::global( std::locale("C") );
-                } catch (std::runtime_error) {
+                } catch (std::runtime_error&) {
                     qDebug() << "Could not set C++ locale!";
                 }
             }

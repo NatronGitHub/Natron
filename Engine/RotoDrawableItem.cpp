@@ -238,7 +238,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     RotoPaintPtr rotoPaintEffect = toRotoPaint(node->getEffectInstance());
     assert(rotoPaintEffect);
     rotoPaintEffect->refreshSourceKnobs(thisShared);
-    
+
     AppInstancePtr app = rotoPaintEffect->getApp();
 
     QString fixedNamePrefix = QString::fromUtf8( rotoPaintEffect->getNode()->getScriptName_mt_safe().c_str() );
@@ -313,7 +313,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         // Link the color parameter to the color of the constant node
         KnobIPtr knob = _imp->effectNode->getKnobByName(kConstantParamColor);
         knob->linkTo(getColorKnob());
-        
+
     } else if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
         // Link transform knobs
         KnobIPtr translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
@@ -641,7 +641,7 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
         return RotoItem::onKnobValueChanged(knob, reason, time, view);
     }
 
-   
+
     return true;
 } // RotoDrawableItem::onKnobValueChanged
 
@@ -794,7 +794,7 @@ RotoDrawableItem::refreshNodesConnections(const RotoDrawableItemPtr& previous)
                 // No node upstream, make the merge be a pass-through of input B (upstreamNode)
                 mergeInputA = upstreamNode;
                 _imp->timeOffsetNode->disconnectInput(0);
-                
+
             }
         }   break;
         case eRotoStrokeTypeBurn:
@@ -930,7 +930,7 @@ RotoDrawableItem::refreshNodesConnections(const RotoDrawableItemPtr& previous)
         _imp->mergeNode->swapInput(maskInputNode, 2);
 
     }
-    
+
 } // RotoDrawableItem::refreshNodesConnections
 
 void
@@ -1260,7 +1260,7 @@ RotoDrawableItem::resetTransformCenter()
 
     //centerKnob->unSlave(DimSpec::all(), ViewSetSpec::all(), false);
     centerKnob->removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
-    
+
     std::vector<double> values(2);
     values[0] = (bbox.x1 + bbox.x2) / 2.;
     values[1] = (bbox.y1 + bbox.y2) / 2.;
@@ -1426,7 +1426,7 @@ RotoDrawableItem::fetchRenderCloneKnobs()
         _imp->brushSpacing = getKnobByNameAndType<KnobDouble>(kRotoBrushSpacingParam);
         _imp->brushHardness = getKnobByNameAndType<KnobDouble>(kRotoBrushHardnessParam);
         _imp->visiblePortion = getKnobByNameAndType<KnobDouble>(kRotoBrushVisiblePortionParam);
-        
+
 
         // Transform
         _imp->translate = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemTranslateParam);
@@ -1487,7 +1487,7 @@ RotoDrawableItem::initializeKnobs()
     RotoDrawableItemPtr thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() );
     RotoPaintPtr rotoPaintEffect = toRotoPaint(node->getEffectInstance());
     assert(rotoPaintEffect);
-    
+
     Bezier* isBezier = dynamic_cast<Bezier*>(this);
     RotoStrokeType type = getBrushType();
 
@@ -1554,7 +1554,7 @@ RotoDrawableItem::initializeKnobs()
         _imp->color = createDuplicateOfTableKnob<KnobColor>(kRotoColorParam);
     }
 
-  
+
 
     // The comp item doesn't have a vector graphics mask hence cannot have a transform on it
     if (type != eRotoStrokeTypeComp) {
@@ -1677,7 +1677,7 @@ RotoDrawableItem::refreshRightClickMenu(const KnobChoicePtr& refreshRightClickMe
     }
 
     refreshRightClickMenuInternal->appendChoice(ChoiceOption(kRotoDrawableItemRightClickMenuPlanarTrackParam));
-    
+
 }
 
 NATRON_NAMESPACE_EXIT

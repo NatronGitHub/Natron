@@ -19,7 +19,7 @@ CONFIG -= warn_on
 *g++* {
   QMAKE_CXXFLAGS += -Wp,-w
 }
-*clang* {
+*clang* | *xcode* {
   QMAKE_CXXFLAGS += -Wp,-w
 }
 
