@@ -838,7 +838,6 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
 
             const bool labelOnSameColumn = ret->isLabelOnSameColumn();
             Qt::Alignment labelAlignment;
-            Qt::Alignment fieldAlignment;
 
             if (isGroup) {
                 labelAlignment = Qt::AlignLeft;

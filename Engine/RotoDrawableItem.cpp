@@ -1054,7 +1054,7 @@ RotoDrawableItem::isActivated(double time) const
             return _imp->activated->getValueAtTime(time);
         }
         }
-    } catch (std::runtime_error) {
+    } catch (std::runtime_error&) {
     }
     return false;
 }
