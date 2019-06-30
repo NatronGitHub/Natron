@@ -985,7 +985,8 @@ RotoDrawableItem::isActivated(TimeValue time, ViewIdx view) const
                 return _imp->customRange.lock()->getValueAtTime(time, DimIdx(0), view);
         }
 
-    } catch (std::runtime_error) {
+    } catch (std::runtime_error&) {
+        // ignore
     }
     return false;
 }

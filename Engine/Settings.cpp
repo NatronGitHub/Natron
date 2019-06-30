@@ -2563,7 +2563,7 @@ Settings::loadSettingsFromFile(LoadSettingsType loadType)
                 _imp->_defaultAppearanceOutdated = true;
                 _imp->_defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION);
             }
-        } catch (std::logic_error) {
+        } catch (std::logic_error&) {
             // ignore
         }
 
