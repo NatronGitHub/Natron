@@ -232,7 +232,7 @@ Project::loadProject(const QString & path,
 
         if ( !loadProjectInternal(realPath, realName, isAutoSave, isUntitledAutosave) ) {
             appPTR->showErrorLog();
-        } 
+        }
     } catch (const std::exception & e) {
         Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Error while loading project: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
         if ( !getApp()->isBackground() ) {
@@ -750,7 +750,7 @@ Project::initializeKnobs()
         page->addKnob(param);
         _imp->envVars = param;
     }
-    
+
 
     ///Initialize the OCIO Config
     onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
@@ -896,7 +896,7 @@ Project::initializeKnobs()
 
     KnobPagePtr layersPage = createKnob<KnobPage>("planesPage");
     layersPage->setLabel(tr("Planes"));
-    
+
     {
         KnobLayersPtr param = createKnob<KnobLayers>("defaultPlanes");
         param->setLabel(tr("Default Planes"));
@@ -1143,8 +1143,8 @@ Project::initializeKnobs()
         pythonPage->addKnob(param);
         _imp->onNodeDeleted = param;
     }
-    
-    
+
+
 
     Q_EMIT knobsInitialized();
 } // initializeKnobs
@@ -2050,7 +2050,7 @@ Project::onQuitAnyProcessingWatcherTaskFinished(int taskID,
     }
     assert(taskID == (int)NodeRenderWatcher::eBlockingTaskQuitAnyProcessing);
     Q_UNUSED(taskID);
-    
+
     std::list<ProjectPrivate::RenderWatcher>::iterator found = _imp->renderWatchers.end();
     for (std::list<ProjectPrivate::RenderWatcher>::iterator it = _imp->renderWatchers.begin(); it != _imp->renderWatchers.end(); ++it) {
         if (it->watcher.get() == watcher) {
@@ -2540,7 +2540,7 @@ Project::onOCIOConfigPathChanged(const std::string& path,
             }
             _imp->envVars->setValue(newEnv);
         }
-    } catch (std::logic_error) {
+    } catch (std::logic_error&) {
         // ignore
     }
 }
@@ -2642,7 +2642,7 @@ Project::recomputeFrameRangeFromReaders()
     dims[0] = first;
     dims[1] = last;
     _imp->frameRange->setValueAcrossDimensions(dims);
-    
+
 }
 
 void
@@ -2718,7 +2718,7 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
         getActiveNodes(&nodes);
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if ( (*it)->isPersistent() ) {
-                
+
                 SERIALIZATION_NAMESPACE::NodeSerializationPtr state;
                 StubNodePtr isStub = toStubNode((*it)->getEffectInstance());
                 if (isStub) {
@@ -2730,7 +2730,7 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
                     state = boost::make_shared<SERIALIZATION_NAMESPACE::NodeSerialization>();
                     (*it)->toSerialization(state.get());
                 }
-                
+
                 serialization->_nodes.push_back(state);
             }
         }
@@ -2841,7 +2841,7 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
         // Save viewports
         getApp()->getViewportsProjection(&serialization->_viewportsData);
     }
-    
+
 } // Project::toSerialization
 
 
@@ -2940,7 +2940,7 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
     if (!foundFrameRangeKnob) {
         recomputeFrameRangeFromReaders();
     }
-    
+
 } // Project::fromSerialization
 
 

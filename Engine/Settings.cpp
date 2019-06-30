@@ -325,7 +325,7 @@ public:
     , _defaultAppearanceOutdated(false)
     , saveSettings(true)
     {
-        
+
     }
 
     void initializeKnobsGeneral();
@@ -443,7 +443,7 @@ Settings::addKeybind(const std::string & grouping,
     kA.ignoreMask = modifiersMask;
 
     Q_EMIT shortcutsChanged();
-    
+
 } // addKeybind
 
 void
@@ -2440,7 +2440,7 @@ Settings::saveSettingsToFile()
             if (it2->second.modifiers == it2->second.defaultModifiers && it2->second.currentShortcut == it2->second.defaultShortcut) {
                 continue;
             }
-            
+
             SERIALIZATION_NAMESPACE::SettingsSerialization::KeybindShortcut shortcut;
             SERIALIZATION_NAMESPACE::SettingsSerialization::KeybindShortcutKey key;
             key.grouping = it->first;
@@ -2505,8 +2505,8 @@ SettingsPrivate::loadSettingsFromFileInternal(const SERIALIZATION_NAMESPACE::Set
             plugin->setRenderScaleEnabled(it->second.renderScaleEnabled);
             plugin->setMultiThreadingEnabled(it->second.multiThreadingEnabled);
             plugin->setOpenGLEnabled(it->second.openGLEnabled);
-            
-            
+
+
         } // for all plug-ins data
     }
 
@@ -3149,7 +3149,7 @@ Settings::getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const
     assert(paths);
     try {
         _imp->_extraPluginPaths->getPaths(paths);
-    } catch (std::logic_error) {
+    } catch (std::logic_error&) {
         paths->clear();
     }
 }

@@ -1201,7 +1201,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     ///Set host properties after restoring settings since it depends on the host name.
     try {
         _imp->ofxHost->setProperties();
-    } catch (std::logic_error) {
+    } catch (std::logic_error&) {
         // ignore
     }
 
@@ -1213,7 +1213,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     try {
         loadAllPlugins();
         _imp->loadBuiltinFormats();
-    } catch (std::logic_error) {
+    } catch (std::logic_error&) {
         // ignore
     }
 
@@ -1272,13 +1272,13 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
             if (!wasKilled) {
                 try {
                     mainInstance->getProject()->reset(true/*aboutToQuit*/, true /*blocking*/);
-                } catch (std::logic_error) {
+                } catch (std::logic_error&) {
                     // ignore
                 }
 
                 try {
                     mainInstance->quitNow();
-                } catch (std::logic_error) {
+                } catch (std::logic_error&) {
                     // ignore
                 }
             }
