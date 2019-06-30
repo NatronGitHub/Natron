@@ -1962,7 +1962,7 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,
                 } else {
                     assert(false);
                 }
-            } catch (std::logic_error) {
+            } catch (std::logic_error&) {
                 // ignore
             }
         } // for (int j = 0; j < knobs[i]->getDimension(); ++j) {
@@ -2121,7 +2121,7 @@ Settings::restoreSettings(bool useDefault)
         appPTR->setNThreadsToRender( getNumberOfThreads() );
         appPTR->setUseThreadPool( _useThreadPool->getValue() );
         appPTR->setPluginsUseInputImageCopyToRender( _pluginUseImageCopyForSource->getValue() );
-    } catch (std::logic_error) {
+    } catch (std::logic_error&) {
         // ignore
     }
 
@@ -2706,7 +2706,7 @@ Settings::getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const
     assert(paths);
     try {
         _extraPluginPaths->getPaths(paths);
-    } catch (std::logic_error) {
+    } catch (std::logic_error&) {
         paths->clear();
     }
 }

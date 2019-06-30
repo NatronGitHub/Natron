@@ -898,7 +898,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
                 pluginCache->addFileToPath(natronBundledPluginsPath);
             }
         }
-    } catch (std::logic_error) {
+    } catch (std::logic_error&) {
         // ignore
     }
 
@@ -1539,7 +1539,7 @@ OfxHost::mutexCreate(OfxMutexHandle *mutex,
 #endif
 
         return kOfxStatOK;
-    } catch (std::bad_alloc) {
+    } catch (std::bad_alloc&) {
         qDebug() << "mutexCreate(): memory error.";
 
         return kOfxStatErrMemory;
@@ -1580,7 +1580,7 @@ OfxHost::mutexDestroy(const OfxMutexHandle mutex)
 #endif
 
         return kOfxStatOK;
-    } catch (std::bad_alloc) {
+    } catch (std::bad_alloc&) {
         qDebug() << "mutexDestroy(): memory error.";
 
         return kOfxStatErrMemory;
@@ -1610,7 +1610,7 @@ OfxHost::mutexLock(const OfxMutexHandle mutex)
         reinterpret_cast<QMutex*>(mutex)->lock();
 
         return kOfxStatOK;
-    } catch (std::bad_alloc) {
+    } catch (std::bad_alloc&) {
         qDebug() << "mutexLock(): memory error.";
 
         return kOfxStatErrMemory;
@@ -1639,7 +1639,7 @@ OfxHost::mutexUnLock(const OfxMutexHandle mutex)
         reinterpret_cast<QMutex*>(mutex)->unlock();
 
         return kOfxStatOK;
-    } catch (std::bad_alloc) {
+    } catch (std::bad_alloc&) {
         qDebug() << "mutexUnLock(): memory error.";
 
         return kOfxStatErrMemory;
@@ -1671,7 +1671,7 @@ OfxHost::mutexTryLock(const OfxMutexHandle mutex)
         } else {
             return kOfxStatFailed;
         }
-    } catch (std::bad_alloc) {
+    } catch (std::bad_alloc&) {
         qDebug() << "mutexTryLock(): memory error.";
 
         return kOfxStatErrMemory;

@@ -1072,7 +1072,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         _imp->_diskCache = boost::make_shared<Cache<Image> >("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.);
         _imp->_viewerCache = boost::make_shared<Cache<FrameEntry> >("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.);
         _imp->setViewerCacheTileSize();
-    } catch (std::logic_error) {
+    } catch (std::logic_error&) {
         // ignore
     }
 
@@ -1100,7 +1100,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     ///Set host properties after restoring settings since it depends on the host name.
     try {
         _imp->ofxHost->setProperties();
-    } catch (std::logic_error) {
+    } catch (std::logic_error&) {
         // ignore
     }
 
@@ -1108,7 +1108,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     try {
         loadAllPlugins();
         _imp->loadBuiltinFormats();
-    } catch (std::logic_error) {
+    } catch (std::logic_error&) {
         // ignore
     }
 
@@ -1167,13 +1167,13 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
             if (!wasKilled) {
                 try {
                     mainInstance->getProject()->reset(true/*aboutToQuit*/, true /*blocking*/);
-                } catch (std::logic_error) {
+                } catch (std::logic_error&) {
                     // ignore
                 }
 
                 try {
                     mainInstance->quitNow();
-                } catch (std::logic_error) {
+                } catch (std::logic_error&) {
                     // ignore
                 }
             }
