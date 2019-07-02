@@ -3844,7 +3844,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
     bool isTracking = _imp->viewer->isDoingPartialUpdates();
     NodePtr rotoPaintNode;
     RotoStrokeItemPtr curStroke;
-    bool isDrawing;
+    bool isDrawing = false;
     _imp->viewer->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
 
     bool rotoUse1Thread = false;

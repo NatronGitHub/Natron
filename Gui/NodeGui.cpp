@@ -2124,14 +2124,14 @@ NodeGui::onPersistentMessageChanged()
     }
 
     QString message;
-    int type;
+    int type = 0;
     NodePtr node = getNode();
     if (node) {
         node->getPersistentMessage(&message, &type);
     }
     _persistentMessage->setVisible( !message.isEmpty() );
 
-    if ( message.isEmpty() ) {
+    if ( !node || message.isEmpty() ) {
         setToolTip( QString() );
     } else {
         if (type == 1) {

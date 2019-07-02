@@ -2636,6 +2636,10 @@ exportGroupInternal(int indentLevel,
                     const QString& upperLevelGroupName,
                     QTextStream& ts)
 {
+    assert(collection);
+    if (!collection) {
+        throw std::logic_error(__func__);
+    }
     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create all nodes in the group");
     WRITE_STATIC_LINE("");
 

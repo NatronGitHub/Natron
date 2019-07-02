@@ -1833,6 +1833,10 @@ AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstance* writer
     ///get the output file knob to get the name of the sequence
     const DiskCacheNode* isDiskCache = dynamic_cast<const DiskCacheNode*>(writer);
 
+    assert(writer);
+    if (!writer) {
+        throw std::logic_error(__func__);
+    }
     if (isDiskCache) {
         *sequenceName = tr("Caching");
     } else {

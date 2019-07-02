@@ -1162,6 +1162,10 @@ WriteNode::knobChanged(KnobI* k,
                        double time,
                        bool originatedFromMainThread)
 {
+    assert(k);
+    if (!k) {
+        return false;
+    }
     bool ret = true;
     NodePtr writer = _imp->embeddedPlugin.lock();
 

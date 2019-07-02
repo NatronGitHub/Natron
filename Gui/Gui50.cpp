@@ -1193,7 +1193,9 @@ static NodeGraph*
 isNodeGraphChild(QWidget* w)
 {
     NodeGraph* n = dynamic_cast<NodeGraph*>(w);
-
+    if (!w) {
+        return 0;
+    }
     if (n) {
         return n;
     } else {

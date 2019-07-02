@@ -2084,7 +2084,7 @@ Project::setOrAddProjectFormat(const Format & frmt,
             }
         } else if (!skipAdd) {
             dispW = frmt;
-            bool existed;
+            bool existed = false;
             tryAddProjectFormat(dispW, &existed);
             if (!existed) {
                 mustRefreshNodeFormats = true;

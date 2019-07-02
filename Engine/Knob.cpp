@@ -4332,7 +4332,7 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
                                     bool isUserKnob)
 {
     ///find-out to which node that master knob belongs to
-    if ( !getHolder()->getApp() ) {
+    if ( !otherHolder || !getHolder()->getApp() ) {
         return KnobIPtr();
     }
 
