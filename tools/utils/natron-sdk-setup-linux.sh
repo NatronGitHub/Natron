@@ -1,6 +1,6 @@
 # Source this file from a shell to setup the environment for Natron
 # compilation and tests where the Natron source tree is:
-# . path_to/natron-sdk-setup.sh
+# . path_to_Natron_sources/tools/utils/natron-sdk-setup-linux.sh
 SCRIPTPATH="$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )"
 NATRON="$( dirname "$( dirname "$SCRIPTPATH" )" )"
 TOP_SOURCES="$( dirname "${NATRON}" )"
@@ -15,13 +15,14 @@ LIBRARY_PATH="$SDK/lib:$QTDIR/lib:$GCC/lib64:$GCC/lib:$FFMPEG/lib:$LIBRAW/lib"
 LD_LIBRARY_PATH="$SDK/lib:$QTDIR/lib:$GCC/lib64:$GCC/lib:$FFMPEG/lib:$LIBRAW/lib"
 LD_RUN_PATH="$SDK/lib:$QTDIR/lib:$GCC/lib:$FFMPEG/lib:$LIBRAW/lib"
 CPATH="$SDK/include:$QTDIR/include:$GCC/include:$FFMPEG/include:$LIBRAW/include"
-export PKG_CONFIG_PATH="$SDK/lib/pkgconfig:$SDK/osmesa/lib/pkgconfig:$QTDIR/lib/pkgconfig:$GCC/lib/pkgconfig:$FFMPEG/lib/pkgconfig:$LIBRAW/lib/pkgconfig"
-export QTDIR LD_LIBRARY_PATH LD_RUN_PATH PKG_CONFIG_PATH CPATH
+PKG_CONFIG_PATH="$SDK/lib/pkgconfig:$SDK/osmesa/lib/pkgconfig:$QTDIR/lib/pkgconfig:$GCC/lib/pkgconfig:$FFMPEG/lib/pkgconfig:$LIBRAW/lib/pkgconfig"
+PYTHONPATH="$QTDIR/lib/python2.7/site-packages/"
+export QTDIR LD_LIBRARY_PATH LD_RUN_PATH CPATH PKG_CONFIG_PATH PYTHONPATH
 NATRON_PLUGIN_PATH="$NATRON/Gui/Resources/PyPlugs"
 OFX_PLUGIN_PATH="$HOME/Development/OFX/Plugins"
-export NATRON_PLUGIN_PATH OFX_PLUGIN_PATH
+OCIO="$HOME/Development/Natron-gforge/OpenColorIO-Configs/blender/config.ocio"
+export NATRON_PLUGIN_PATH OFX_PLUGIN_PATH OCIO
 export LANG="C"
-export OCIO="$HOME/Development/Natron-gforge/OpenColorIO-Configs/blender/config.ocio"
 echo "###################################################################"
 echo "# Shell is now setup to compile and run Natron and OpenFX plugins #"
 echo "###################################################################"
