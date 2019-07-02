@@ -173,15 +173,15 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         # OpenEXR
         # see https://github.com/PixarAnimationStudios/USD/blob/master/.travis.yml
         if [ ! -d "$HOME/openexr/lib" ]; then
-            wget http://download.savannah.nongnu.org/releases/openexr/ilmbase-2.2.1.tar.gz -O /tmp/ilmbase.tgz;
+            wget https://github.com/openexr/openexr/releases/download/v2.3.0/ilmbase-2.3.0.tar.gz -O /tmp/ilmbase.tgz;
             tar -xvzf /tmp/ilmbase.tgz -C $HOME;
-            pushd $HOME/ilmbase-2.2.1;
+            pushd $HOME/ilmbase-2.3.0;
             ./configure --prefix=$HOME/openexr;
             make && make install;
             popd;
-            wget http://download.savannah.nongnu.org/releases/openexr/openexr-2.2.1.tar.gz -O /tmp/openexr.tgz;
+            wget https://github.com/openexr/openexr/releases/download/v2.3.0/openexr-2.3.0.tar.gz -O /tmp/openexr.tgz;
             tar -xvzf /tmp/openexr.tgz -C $HOME;
-            pushd $HOME/openexr-2.2.1;
+            pushd $HOME/openexr-2.3.0;
             ./configure --prefix=$HOME/openexr --with-pkg-config=no LDFLAGS="-Wl,-rpath -Wl,$HOME/openexr/lib";
             make $J && make install;
             popd;
@@ -194,7 +194,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
             tar -xvzf /tmp/oiio.tgz -C $HOME;
             pushd $HOME/oiio-Release-2.0.8;
             mkdir _build && cd _build;
-            cmake -DCMAKE_INSTALL_PREFIX=$HOME/oiio -DILMBASE_HOME=$HOME/openexr -DOPENEXR_HOME=$HOME/openexr -DOCIO_PATH=$HOME/ocio -DUSE_QT=OFF -DUSE_PYTHON=OFF -DUSE_PYTHON3=OFF -DUSE_FIELD3D=OFF -DUSE_FFMPEG=OFF -DUSE_OPENJPEG=ON -DUSE_OCIO=ON -DUSE_OPENCV=OFF -DUSE_OPENSSL=OFF -DUSE_FREETYPE=ON -DUSE_GIF=OFF -DUSE_PTEX=OFF -DUSE_LIBRAW=ON -DOIIO_BUILD_TESTS=OFF -DOIIO_BUILD_TOOLS=OFF -DSTOP_ON_WARNING=OFF ..;
+            cmake -DCMAKE_INSTALL_PREFIX=$HOME/oiio -DILMBASE_ROOT_DIR=$HOME/openexr -DOPENEXR_ROOT_DIR=$HOME/openexr -DOCIO_HOME=$HOME/ocio -DUSE_QT=OFF -DUSE_PYTHON=OFF -DUSE_PYTHON3=OFF -DUSE_FIELD3D=OFF -DUSE_FFMPEG=OFF -DUSE_OPENJPEG=ON -DUSE_OCIO=ON -DUSE_OPENCV=OFF -DUSE_OPENSSL=OFF -DUSE_FREETYPE=ON -DUSE_GIF=OFF -DUSE_PTEX=OFF -DUSE_LIBRAW=ON -DOIIO_BUILD_TESTS=OFF -DOIIO_BUILD_TOOLS=OFF -DSTOP_ON_WARNING=OFF ..;
             make $J && make install;
             popd;
         else

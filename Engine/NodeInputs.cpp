@@ -319,7 +319,7 @@ Node::getSupportedComponents(int inputNb) const
         if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputDescriptions.size() ) ) {
             return std::bitset<4>();
         }
-        
+
         return _imp->inputDescriptions[inputNb]->getPropertyUnsafe<std::bitset<4> >(kInputDescPropSupportedComponents);
     }
 }
@@ -1026,7 +1026,7 @@ Node::disconnectOutput(const NodePtr& output, int outputInputIndex)
 
     //Will just refresh the gui
     Q_EMIT outputsChanged();
-    
+
     return ret;
 }
 
@@ -1072,7 +1072,7 @@ Node::getInputNames(std::map<std::string, std::string> & inputNames,
             }
 
         }
-        
+
     }
 }
 
@@ -1280,7 +1280,7 @@ Node::endInputEdition(bool triggerRender)
             }
 
             triggerRender = triggerRender && hasChanged;
-            
+
             if (triggerRender) {
                 getApp()->renderAllViewers();
             }
@@ -1354,7 +1354,7 @@ bool
 Node::duringInputChangedAction() const
 {
     assert( QThread::currentThread() == qApp->thread() );
-    
+
     return _imp->inputModifiedRecursion > 0;
 }
 
@@ -1429,7 +1429,7 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
                 return true;
             }
         }
-        
+
         return false;
     }
 }
@@ -1671,14 +1671,14 @@ Node::autoConnect(const NodePtr& selected)
             position.y = selectedNodeMiddlePos.y + selectedNodeSize.y / 2. + selectedNodeSize.y / 2.;
 
             //Don't pop a dot, it will most likely annoy the user, just fallback on behavior 0
-            
+
             int index = getPreferredInputForConnection();
             if (index != -1) {
                 swapInput(selected, index);
             }
         }
     }
-    
+
     setPosition(position.x, position.y);
     return true;
 

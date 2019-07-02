@@ -416,10 +416,10 @@ OfxEffectInstance::describePlugin()
                 inputDesc->setProperty<bool>(kInputDescPropIsMask, clip->isMask());
                 inputDesc->setProperty<bool>(kInputDescPropSupportsTiles, clip->supportsTiles());
                 inputDesc->setProperty<bool>(kInputDescPropSupportsTemporal, clip->temporalAccess());
-                
+
                 natronPlugin->addInputDescription(inputDesc);
             } // isOutput
-            
+
         } // for each clip
     } // isFirstTimeLoadingPlugin
 
@@ -500,7 +500,7 @@ OfxEffectInstance::createInstanceAction()
 {
 
     ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-    
+
     EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
     assert(!tls->isCurrentAction(kOfxActionCreateInstance));
     EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxActionCreateInstance, TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
@@ -606,7 +606,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         // already created
         return;
     }
-    
+
     ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
     QString pluginID = QString::fromUtf8( getNode()->getPluginID().c_str() );
@@ -1147,13 +1147,13 @@ OfxEffectInstance::onMetadataChanged(const NodeMetadata& metadata)
 
 
     ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-    
+
     assert(_imp->common->effect);
     _imp->common->effect->beginInstanceChangedAction(kOfxChangeUserEdited);
     _imp->common->effect->clipInstanceChangedAction(kOfxImageEffectOutputClipName, kOfxChangeUserEdited, time, s);
     _imp->common->effect->endInstanceChangedAction(kOfxChangeUserEdited);
 
-    
+
     EffectInstance::onMetadataChanged(metadata);
 }
 
@@ -1369,7 +1369,7 @@ OfxEffectInstance::getFramesNeeded(TimeValue time,
         OFX::Host::ImageEffect::ViewsRangeMap inputRanges;
         {
             assert(_imp->common->effect);
-            
+
             ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
             OfxStatus stat = _imp->common->effect->getFrameViewsNeeded( (OfxTime)time, view, inputRanges );
@@ -1616,10 +1616,10 @@ OfxEffectInstance::beginSequenceRender(double first,
                                                   , /*canBeCalledRecursively*/ false
 #endif
                                                   );
-        
+
 
         ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-        
+
         stat = effectInstance()->beginRenderAction(first, last, step,
                                                    interactive, scale,
                                                    isSequentialRender, isRenderResponseToUserInteraction,
@@ -1720,9 +1720,9 @@ OfxEffectInstance::render(const RenderActionArgs& args)
 
         RenderScale combinedScale = EffectInstance::getCombinedScale(args.mipMapLevel, args.proxyScale);
         RenderActionArgsSetter_RAII actionArgsTls(tls, args.time, args.view, args.proxyScale, args.mipMapLevel, args.roi, outputPlanesMap);
-        
+
         ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-        
+
         stat = _imp->common->effect->renderAction((OfxTime)args.time,
                                           field,
                                           ofxRoI,
@@ -1756,7 +1756,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
                     err = tr("Unknown failure reason.");
                 }
                 getNode()->setPersistentMessage( eMessageTypeError, kNatronPersistentErrorOpenFXPlugin, err.toStdString() );
-                
+
             }
             return eActionStatusFailed;
 
@@ -1858,7 +1858,7 @@ public:
             state->evaluateValueChange(DimSpec::all(), TimeValue(0) /*time*/, ViewSetSpec::all(), eValueChangedReasonUserEdited);
         }
     }
-    
+
 
 };
 
@@ -1868,6 +1868,10 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
                                ViewSetSpec /*view*/,
                                TimeValue time)
 {
+    assert(k);
+    if (!k) {
+        throw std::logic_error(__func__);
+    }
     if (!_imp->common->initialized) {
         return false;
     }
@@ -1915,20 +1919,20 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
             }
         }
     }
-    
+
     EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
     EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxActionInstanceChanged, time, ViewIdx(0), renderScale
 #ifdef DEBUG
                                               , /*canSetValue*/ true
                                               , /*canBeCalledRecursively*/ true
 #endif
-                                              
+
                                               );
-    
+
 
 
     ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-    
+
     OfxStatus stat = kOfxStatOK;
     stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale);
 
@@ -1952,8 +1956,8 @@ OfxEffectInstance::beginKnobsValuesChanged(ValueChangedReasonEnum reason)
         return;
     }
 
-    
-    
+
+
     ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
 
@@ -1989,9 +1993,9 @@ OfxEffectInstance::purgeCaches()
     if (!_imp->common->initialized) {
         return;
     }
-    
+
     ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-    
+
     // The kOfxActionPurgeCaches is an action that may be passed to a plug-in instance from time to time in low memory situations. Instances recieving this action should destroy any data structures they may have and release the associated memory, they can later reconstruct this from the effect's parameter set and associated information. http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionPurgeCaches
     OfxStatus stat;
     {
@@ -1999,8 +2003,8 @@ OfxEffectInstance::purgeCaches()
 
         ///Take the preferences lock so that it cannot be modified throughout the action.
         assert(_imp->common->effect);
-        
-        
+
+
         stat =  _imp->common->effect->purgeCachesAction();
 
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
@@ -2056,7 +2060,7 @@ OfxEffectInstance::onPropertiesChanged(const EffectDescription& description)
             hostFrameThreading = true;
             break;
     }
-    
+
 
     SequentialPreferenceEnum sequential = description.getPropertyUnsafe<SequentialPreferenceEnum>(kEffectPropSupportsSequentialRender);
     int sequentialProp = 0;
@@ -2463,7 +2467,7 @@ OfxEffectInstance::dettachOpenGLContext( const OSGLContextPtr& /*glContext*/, co
 #endif
                                               );
 
-    
+
     ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
     OfxGLContextEffectData* isOfxData = dynamic_cast<OfxGLContextEffectData*>( data.get() );

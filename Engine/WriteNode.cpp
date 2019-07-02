@@ -1065,6 +1065,10 @@ WriteNode::knobChanged(const KnobIPtr& k,
                        ViewSetSpec view,
                        TimeValue time)
 {
+    assert(k);
+    if (!k) {
+        return false;
+    }
     bool ret = true;
     NodePtr writer = _imp->embeddedPlugin.lock();
 

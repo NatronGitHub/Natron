@@ -287,7 +287,7 @@ NodeCollection::quitAnyProcessingInternal(bool blocking)
         if (isGrp) {
             isGrp->quitAnyProcessingInternal(blocking);
         }
-  
+
     }
 }
 
@@ -831,7 +831,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
                     }
                 }
             }
-            
+
             NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
             if (isGrp) {
                 isGrp->fixRelativeFilePaths(projectPathName, newProjectPath, blockEval);
@@ -1111,7 +1111,7 @@ NodeGroup::NodeGroup(const EffectInstancePtr& mainInstance, const FrameViewRende
 , NodeCollection(mainInstance->getApp())
 , _imp(new NodeGroupPrivate(this))
 {
-    
+
 }
 
 bool
@@ -1275,7 +1275,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
                     break;
                 }
             }
-        
+
         }
         GroupOutputPtr isOutput = toGroupOutput( node->getEffectInstance() );
         if (isOutput) {
@@ -1525,7 +1525,7 @@ NodeGroup::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projec
 
         //Clear any node created already in setupInitialSubGraphState()
         clearNodesBlocking();
-        
+
         // This will create internal nodes.
         createNodesFromSerialization(projectSerialization->_children, eCreateNodesFromSerializationFlagsNone,  0);
 
@@ -1694,7 +1694,7 @@ NodeCollection::createNodesFromSerialization(const SERIALIZATION_NAMESPACE::Node
 
     // True if the restoration process had errors
     bool hasError = false;
-    
+
     NodeCollectionPtr thisShared = getThisShared();
 
     // When loading a Project, use the Group name to update the loading status to the user
@@ -1715,7 +1715,7 @@ NodeCollection::createNodesFromSerialization(const SERIALIZATION_NAMESPACE::Node
 
     // Loop over all node serialization and create them first
     for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
-        
+
         NodePtr node = appPTR->createNodeForProjectLoading(*it, thisShared);
         if (createdNodesOut) {
             createdNodesOut->push_back(node);
@@ -1898,7 +1898,7 @@ createTopologicalSortNodeRecursive(bool enterGroups,
     }
 
     return ret;
-    
+
 } // createTopologicalSortNodeRecursive
 
 static void addToTopologicalSortRecursive(const std::list<NodeCollection::TopologicalSortNodePtr>& graphLevelNodes,
@@ -1964,7 +1964,7 @@ NodeCollection::extractTopologicallySortedTreesForOutputs(bool enterGroups, cons
             externalOutputNode->isPartOfGivenNodes = false;
             outputTreeNode->externalOutputs[externalOutputNode] = it2->second;
         }
-        
+
     }
 
 

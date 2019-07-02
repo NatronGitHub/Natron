@@ -208,7 +208,9 @@ CompleterLineEdit::setTextFromIndex(const QModelIndex & index)
         if (isNodeDialog) {
             isNodeDialog->finish(true);
         } else {
-            _imp->dialog->accept();
+            if (_imp->dialog) {
+                _imp->dialog->accept();
+            }
         }
     }
 }
@@ -229,7 +231,9 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
             if (isNodeDialog) {
                 isNodeDialog->finish(false);
             } else {
-                _imp->dialog->reject();
+                if (_imp->dialog) {
+                    _imp->dialog->accept();
+                }
             }
         } else {
             if ( _imp->listView->isVisible() ) {
@@ -273,7 +277,9 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
                 if (isNodeDialog) {
                     isNodeDialog->finish(true);
                 } else {
-                    _imp->dialog->accept();
+                    if (_imp->dialog) {
+                        _imp->dialog->accept();
+                    }
                 }
             }
             e->accept();
@@ -297,7 +303,9 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
                     if (isNodeDialog) {
                         isNodeDialog->finish(true);
                     } else {
-                        _imp->dialog->accept();
+                        if (_imp->dialog) {
+                            _imp->dialog->accept();
+                        }
                     }
                 }
                 e->accept();

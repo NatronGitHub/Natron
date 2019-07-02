@@ -936,11 +936,11 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
             }
 
 
-            
+
             // Now that we ran the python script, refresh the default page order so it doesn't get serialized into the project for nothing
             containerNode->refreshDefaultPagesOrder();
         } // isPyPlugEncodedWithPythonScript
-        
+
     } // CreatingNodeTreeFlag_RAII
 
     return node;
@@ -1038,7 +1038,7 @@ AppInstance::onNodeAboutToBeCreated(const NodePtr& /*node*/, const CreateNodeArg
 void
 AppInstance::onNodeCreated(const NodePtr& /*node*/, const CreateNodeArgsPtr& /*args*/)
 {
-    
+
 }
 
 NodePtr
@@ -1120,7 +1120,7 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
     }
 
     std::string foundPluginID = plugin->getPluginID();
-    
+
     {
         bool useDialogForWriters = appPTR->getCurrentSettings()->isFileDialogEnabledForNewWriters();
 

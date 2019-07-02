@@ -169,7 +169,7 @@ EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
     }
 
     EffectInstancePtr clone = createFunc(boost::const_pointer_cast<EffectInstance>(shared_from_this()), key);
-    
+
 
     // Make a copy of the main instance input locally so the state of the graph does not change throughout the render
     int nInputs = getNInputs();
@@ -180,7 +180,7 @@ EffectInstance::createRenderCopy(const FrameViewRenderKey& key) const
 
     FrameViewPair p = {key.time, key.view};
     for (int i = 0; i < nInputs; ++i) {
-       
+
         EffectInstancePtr mainInstanceInput = getInputMainInstance(i);
         clone->_imp->renderData->mainInstanceInputs[i] = mainInstanceInput;
         if (mainInstanceInput) {
@@ -277,12 +277,12 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
                         }
 
                         U64 inputHash = inputEffect->computeHash(inputArgs);
-                        
+
                         // Append the input hash
                         hash->append(inputHash);
                     }
                 }
-                
+
             }
         }
     } // args.hashType != HashableObject::eComputeHashTypeTimeViewVariant
@@ -303,7 +303,7 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 
 
         CacheEntryLockerBasePtr cacheAccess = appPTR->getGeneralPurposeCache()->get(framesNeededResults);
-        
+
         CacheEntryLockerBase::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
         if (cacheStatus == CacheEntryLockerBase::eCacheEntryStatusMustCompute) {
             cacheAccess->insertInCache();
@@ -455,8 +455,8 @@ EffectInstance::refreshMetadaWarnings(const NodeMetadata &metadata)
     } else {
         warnings[Node::eStreamWarningPixelAspectRatio] = QString();
     }
-    
-    
+
+
     getNode()->setStreamWarnings(warnings);
 } // refreshMetadaWarnings
 
@@ -491,7 +491,7 @@ EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,
         // Very heavy to compute since many frames are fetched upstream. Cache it.
         return true;
     }
-   
+
     if ( isForceCachingEnabled() ) {
         // Users wants it cached
         return true;
@@ -645,7 +645,7 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
         return true;
     }
 
-    
+
     // Get the RoI on the input:
     // We must call getRegionOfInterest on the time and view and the current render window of the current action of this effect.
     RenderScale currentScale = EffectInstance::getCombinedScale(mipMapLevel, proxyScale);
@@ -938,7 +938,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
         roiExpandPixels = roiPixels;
     }
-    
+
 
 
     bool mustConvertImage = false;
@@ -1030,8 +1030,8 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
                 return false;
             }
         }
-        
-        
+
+
         Image::CopyPixelsArgs copyArgs;
         {
             copyArgs.roi = initArgs.bounds;
@@ -1072,7 +1072,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         }
         ActionRetCodeEnum stat = convertedImage->copyPixels(*outArgs->image, copyArgs);
         if (isFailureRetCode(stat)) {
-            return false;   
+            return false;
         }
         outArgs->image = convertedImage;
     } // mustConvertImage
@@ -1176,7 +1176,7 @@ EffectInstance::evaluate(bool isSignificant,
     NodePtr node = getNode();
 
     if ( refreshMetadata && node && node->isNodeCreated() ) {
-        
+
         // Force a re-compute of the meta-data if needed
         onMetadataChanged_recursive_public();
     }
@@ -2076,7 +2076,7 @@ EffectInstance::isHostPlaneSelectorEnabled() const
         // A multi-planar plug-in handles planes on its own
         return false;
     }
-    
+
     return plugin->getPropertyUnsafe<bool>(kNatronPluginPropHostPlaneSelector);
 }
 
@@ -2545,4 +2545,3 @@ NATRON_NAMESPACE_EXIT
 
 NATRON_NAMESPACE_USING
 #include "moc_EffectInstance.cpp"
-

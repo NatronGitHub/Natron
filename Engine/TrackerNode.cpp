@@ -243,7 +243,7 @@ TrackerNode::setupInitialSubGraphState()
         tNode->connectInput(cpNode, 0);
         cpNode->connectInput(input, 0);
     }
-    
+
     // Initialize transform nodes now because they need to link to some of the Transform/CornerPin node
     // knobs.
     initializeTransformPageKnobs(_imp->transformPageKnob.lock());
@@ -573,7 +573,7 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         trackingPage->addKnob(param);
         _imp->ui->defaultMotionModel = param;
     }
-    
+
     addKnobToViewerUI(_imp->ui->addTrackButton.lock());
     _imp->ui->addTrackButton.lock()->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
     addKnobToViewerUI(_imp->ui->trackBwButton.lock());
@@ -1372,7 +1372,7 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
 
     boost::shared_ptr<TransformOverlayInteract> transformInteract(new TransformOverlayInteract());
     registerOverlay(eOverlayViewportTypeViewer, transformInteract, transformKnobs);
-    
+
 
     std::map<std::string, std::string> cpKnobs;
     cpKnobs["from1"] = kCornerPinParamFrom1;
@@ -1438,11 +1438,11 @@ TrackerNode::initializeKnobs()
     _imp->knobsTable->setColumnText(5, tr("%1 X").arg(QString::fromUtf8(kTrackerParamOffsetLabel)).toStdString());
     _imp->knobsTable->setColumnText(6, tr("%1 Y").arg(QString::fromUtf8(kTrackerParamOffsetLabel)).toStdString());
     _imp->knobsTable->setColumnText(7, tr(kTrackerParamErrorLabel).toStdString());
-    
+
     _imp->knobsTable->setColumnIcon(2, "motionTypeAffine.png");
-    
+
     _imp->tracker.reset(new TrackerHelper(_imp));
-    
+
     KnobPagePtr trackingPage = createKnob<KnobPage>("trackingPage");
     trackingPage->setLabel(tr("Tracking"));
     _imp->trackingPageKnob = trackingPage;
@@ -1985,7 +1985,7 @@ TrackerNodePrivate::trackStepFunctor(int trackIndex, const TrackArgsBasePtr& arg
         track->natronMarker->setEnabledAtTime(TimeValue(frame), false);
     }
 
-    
+
     return ret;
 } // trackStepFunctor
 

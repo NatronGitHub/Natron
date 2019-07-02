@@ -46,22 +46,13 @@ The SDK may be updated by pulling the last modifications to the script and re-ex
 
 ### Environment to use the Natron SDK
 
-Once the SDK is built, you should set your environment as follows, to make sure that the Natron SDK is preferred over any other system library. This must be done in every terminal where you intend to compile and/or run Natron:
+Once the SDK is built, you should set your environment in the shell from which you execute or test Natron, to make sure that the Natron SDK is preferred over any other system library:
 
 ```
-SDK=/opt/Natron-sdk
-GCC="$SDK/gcc"
-QTDIR="$SDK/qt4"
-FFMPEG="$SDK/ffmpeg-gpl2"
-LIBRAW="$SDK/libraw-gpl2"
-PATH="$SDK/bin:$QTDIR/bin:$GCC/bin:$FFMPEG/bin:$LIBRAW_PATH:$PATH"
-LIBRARY_PATH="$SDK/lib:$QTDIR/lib:$GCC/lib64:$GCC/lib:$FFMPEG/lib:$LIBRAW/lib"
-LD_LIBRARY_PATH="$SDK/lib:$QTDIR/lib:$GCC/lib64:$GCC/lib:$FFMPEG/lib:$LIBRAW/lib"
-LD_RUN_PATH="$SDK/lib:$QTDIR/lib:$GCC/lib:$FFMPEG/lib:$LIBRAW/lib"
-CPATH="$SDK/include:$QTDIR/include:$GCC/include:$FFMPEG/include:$LIBRAW/include"
-export PKG_CONFIG_PATH="$SDK/lib/pkgconfig:$SDK/osmesa/lib/pkgconfig:$QTDIR/lib/pkgconfig:$GCC/lib/pkgconfig:$FFMPEG/lib/pkgconfig:$LIBRAW/lib/pkgconfig"
-export QTDIR LD_LIBRARY_PATH LD_RUN_PATH PKG_CONFIG_PATH CPATH
+. path_to_Natron_sources/tools/utils/natron-sdk-setup-linux.sh
 ```
+
+This must be done in every shell/terminal where you intend to compile and/or run Natron.
 
 ## Manually install dependencies
 
@@ -129,10 +120,23 @@ git submodule update -i --recursive
 ### Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
+to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz).
 Place it at the root of Natron repository.
 
-***note:*** *If it is name something like: `OpenColorIO-Configs-Natron-v2.0` rename it to `OpenColorIO-Configs`*
+***note:*** *If it is name something like: `OpenColorIO-Configs-Natron-v2.3` rename it to `OpenColorIO-Configs`*
+
+
+```
+wget https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.3.tar.gz
+tar -xvzf Natron-v2.3.tar.gz
+mv OpenColorIO-Configs-Natron-v2.3 OpenColorIO-Configs
+```
+
+***note:*** In order to reclaim disk space, you may keep only the following subfolder : blender*, natron, nuke-default
+
+```
+(cd OpenColorIO-Configs && rm -v !("blender"|"blender-cycles"|"natron"|"nuke-default") -R)
+```
 
 ### config.pri
 
