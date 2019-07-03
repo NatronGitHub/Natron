@@ -16,7 +16,7 @@
 
 - Fix bugs in DenoiseSharpen that caused crashes #300
 - Add support for chromatic aberration correction when reading RAW files #309
-- Update CImg and G'MIC to 2.6.6
+- Update CImg and G'MIC to 2.6.7
 
 
 ## Version 2.3.14
