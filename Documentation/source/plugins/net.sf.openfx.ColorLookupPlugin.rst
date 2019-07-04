@@ -7,6 +7,11 @@ ColorLookup node
 
 *This documentation is for version 1.1 of ColorLookup.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.ColorLookupPlugin
+
 Description
 -----------
 

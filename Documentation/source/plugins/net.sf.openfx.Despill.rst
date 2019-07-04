@@ -7,6 +7,11 @@ Despill node
 
 *This documentation is for version 1.0 of Despill.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.Despill
+
 Description
 -----------
 

@@ -7,6 +7,11 @@ FrameRange node
 
 *This documentation is for version 1.0 of FrameRange.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.FrameRange
+
 Description
 -----------
 

@@ -7,6 +7,11 @@ Glow node
 
 *This documentation is for version 1.0 of Glow.*
 
+Plugin ID
+-----------
+
+fr.inria.Glow
+
 Description
 -----------
 

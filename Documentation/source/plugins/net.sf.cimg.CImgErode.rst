@@ -7,6 +7,11 @@ Erode node
 
 *This documentation is for version 2.1 of Erode.*
 
+Plugin ID
+-----------
+
+net.sf.CImgErode
+
 Description
 -----------
 

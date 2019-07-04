@@ -7,6 +7,11 @@ EdgeExtend node
 
 *This documentation is for version 4.0 of EdgeExtend.*
 
+Plugin ID
+-----------
+
+eu.cimg.EdgeExtend
+
 Description
 -----------
 

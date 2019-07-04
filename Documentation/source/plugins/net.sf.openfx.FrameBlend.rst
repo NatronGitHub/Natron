@@ -7,6 +7,11 @@ FrameBlend node
 
 *This documentation is for version 2.0 of FrameBlend.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.FrameBlend
+
 Description
 -----------
 

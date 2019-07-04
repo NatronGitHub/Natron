@@ -7,6 +7,11 @@ AdjustRoD node
 
 *This documentation is for version 1.1 of AdjustRoD.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.AdjustRoDPluginPlugin
+
 Description
 -----------
 

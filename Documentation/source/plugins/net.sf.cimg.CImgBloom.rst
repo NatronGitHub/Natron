@@ -7,6 +7,11 @@ Bloom node
 
 *This documentation is for version 4.0 of Bloom.*
 
+Plugin ID
+-----------
+
+net.sf.cimg.CImgBloom
+
 Description
 -----------
 

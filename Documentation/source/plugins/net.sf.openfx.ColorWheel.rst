@@ -7,6 +7,11 @@ ColorWheel node
 
 *This documentation is for version 1.0 of ColorWheel.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.ColorWheel
+
 Description
 -----------
 

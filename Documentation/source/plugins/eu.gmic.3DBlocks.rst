@@ -5,6 +5,11 @@ G’MIC 3D Blocks node
 
 *This documentation is for version 1.0 of G’MIC 3D Blocks.*
 
+Plugin ID
+-----------
+
+eu.cimg.3DBlocks
+
 Description
 -----------
 

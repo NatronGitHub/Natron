@@ -7,6 +7,11 @@ GodRays node
 
 *This documentation is for version 1.0 of GodRays.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.GodRays
+
 Description
 -----------
 

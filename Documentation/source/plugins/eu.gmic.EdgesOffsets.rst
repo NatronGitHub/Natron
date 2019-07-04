@@ -5,6 +5,11 @@ G’MIC Edges Offsets node
 
 *This documentation is for version 1.0 of G’MIC Edges Offsets.*
 
+Plugin ID
+-----------
+
+eu.gmic.EdgesOffset
+
 Description
 -----------
 

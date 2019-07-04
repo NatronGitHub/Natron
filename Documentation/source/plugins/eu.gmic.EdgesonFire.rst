@@ -5,6 +5,11 @@ G’MIC Edges on Fire node
 
 *This documentation is for version 1.0 of G’MIC Edges on Fire.*
 
+Plugin ID
+-----------
+
+eu.gmic.EdgesonFire
+
 Description
 -----------
 

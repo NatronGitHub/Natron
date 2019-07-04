@@ -5,6 +5,11 @@ ErodeBlur node
 
 *This documentation is for version 4.0 of ErodeBlur.*
 
+Plugin ID
+-----------
+
+eu.cimg.ErodeBlur
+
 Description
 -----------
 

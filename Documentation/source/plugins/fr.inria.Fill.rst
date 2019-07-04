@@ -7,6 +7,11 @@ Fill node
 
 *This documentation is for version 1.0 of Fill.*
 
+Plugin ID
+-----------
+
+fr.inria.Fill
+
 Description
 -----------
 

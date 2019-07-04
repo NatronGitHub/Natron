@@ -7,6 +7,11 @@ ChromaKeyer node
 
 *This documentation is for version 1.1 of ChromaKeyer.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.ChromaKeyerPlugin
+
 Description
 -----------
 

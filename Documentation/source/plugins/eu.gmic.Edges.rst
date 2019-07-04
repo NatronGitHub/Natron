@@ -5,6 +5,11 @@ G’MIC Edges node
 
 *This documentation is for version 1.0 of G’MIC Edges.*
 
+Plugin ID
+-----------
+
+eu.gmic.Edges
+
 Description
 -----------
 

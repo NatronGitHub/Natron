@@ -5,6 +5,11 @@ EdgeBlur node
 
 *This documentation is for version 1.0 of EdgeBlur.*
 
+Plugin ID
+-----------
+
+fr.inria.EdgeBlur
+
 Description
 -----------
 

@@ -7,6 +7,11 @@ Shadertoy node
 
 *This documentation is for version 1.0 of Shadertoy.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.Shadertoy
+
 Description
 -----------
 

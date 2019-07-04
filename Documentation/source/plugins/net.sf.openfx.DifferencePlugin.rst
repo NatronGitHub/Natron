@@ -7,6 +7,11 @@ Difference node
 
 *This documentation is for version 1.0 of Difference.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.DifferencePlugin
+
 Description
 -----------
 

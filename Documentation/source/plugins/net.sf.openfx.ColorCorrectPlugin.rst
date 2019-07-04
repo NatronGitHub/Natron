@@ -7,6 +7,11 @@ ColorCorrect node
 
 *This documentation is for version 2.1 of ColorCorrect.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.ColorCorrectPlugin
+
 Description
 -----------
 

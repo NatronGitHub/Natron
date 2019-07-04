@@ -5,6 +5,11 @@ G’MIC 3D Extrusion node
 
 *This documentation is for version 1.0 of G’MIC 3D Extrusion.*
 
+Plugin ID
+-----------
+
+eu.cimg.3DExtrusion
+
 Description
 -----------
 

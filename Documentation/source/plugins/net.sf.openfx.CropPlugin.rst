@@ -7,6 +7,11 @@ Crop node
 
 *This documentation is for version 1.0 of Crop.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.CropPlugin
+
 Description
 -----------
 

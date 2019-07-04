@@ -7,6 +7,11 @@ ColorBars node
 
 *This documentation is for version 1.0 of ColorBars.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.ColorBars
+
 Description
 -----------
 

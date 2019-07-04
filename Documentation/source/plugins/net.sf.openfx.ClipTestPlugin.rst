@@ -7,6 +7,11 @@ ClipTest node
 
 *This documentation is for version 2.0 of ClipTest.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.ClipTestPlugin
+
 Description
 -----------
 

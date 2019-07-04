@@ -5,6 +5,11 @@ G’MIC Laplacian node
 
 *This documentation is for version 1.0 of G’MIC Laplacian.*
 
+Plugin ID
+-----------
+
+eu.gmic.Laplacian
+
 Description
 -----------
 

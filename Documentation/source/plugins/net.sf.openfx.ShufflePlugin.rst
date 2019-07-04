@@ -7,6 +7,11 @@ Shuffle node
 
 *This documentation is for version 3.0 of Shuffle.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.ShufflePlugin
+
 Description
 -----------
 

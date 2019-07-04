@@ -7,6 +7,11 @@ Dissolve node
 
 *This documentation is for version 1.0 of Dissolve.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.DissolvePlugin
+
 Description
 -----------
 

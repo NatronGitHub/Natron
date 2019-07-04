@@ -5,6 +5,11 @@ DenoiseSharpen node
 
 *This documentation is for version 1.0 of DenoiseSharpen.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.DenoiseSharpen
+
 Description
 -----------
 

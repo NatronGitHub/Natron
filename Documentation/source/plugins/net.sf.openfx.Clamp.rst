@@ -7,6 +7,11 @@ Clamp node
 
 *This documentation is for version 2.0 of Clamp.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.Clamp
+
 Description
 -----------
 

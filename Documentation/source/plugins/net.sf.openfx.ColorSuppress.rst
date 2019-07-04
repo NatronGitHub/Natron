@@ -5,6 +5,11 @@ ColorSuppress node
 
 *This documentation is for version 1.0 of ColorSuppress.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.ColorSuppress
+
 Description
 -----------
 

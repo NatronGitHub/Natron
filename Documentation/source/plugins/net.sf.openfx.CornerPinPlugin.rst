@@ -7,6 +7,11 @@ CornerPin node
 
 *This documentation is for version 1.0 of CornerPin.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.CornerPinPlugin
+
 Description
 -----------
 

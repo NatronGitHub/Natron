@@ -7,6 +7,11 @@ FrameHold node
 
 *This documentation is for version 1.0 of FrameHold.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.FrameHold
+
 Description
 -----------
 

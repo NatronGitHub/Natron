@@ -7,6 +7,11 @@ SmoothPatchBased node
 
 *This documentation is for version 2.0 of SmoothPatchBased.*
 
+Plugin ID
+-----------
+
+net.sf.cimg.CImgDenoise
+
 Description
 -----------
 

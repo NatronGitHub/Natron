@@ -5,6 +5,11 @@ G’MIC Chessboard node
 
 *This documentation is for version 1.0 of G’MIC Chessboard.*
 
+Plugin ID
+-----------
+
+eu.gmic.Chessboard
+
 Description
 -----------
 

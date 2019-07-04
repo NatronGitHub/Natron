@@ -5,6 +5,11 @@ Distance node
 
 *This documentation is for version 1.0 of Distance.*
 
+Plugin ID
+-----------
+
+eu.cimg.Distance
+
 Description
 -----------
 

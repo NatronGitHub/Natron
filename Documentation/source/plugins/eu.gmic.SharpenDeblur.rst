@@ -5,6 +5,11 @@ G’MIC Sharpen Deblur node
 
 *This documentation is for version 1.0 of G’MIC Sharpen Deblur.*
 
+Plugin ID
+-----------
+
+eu.gmic.SharpenDeblur
+
 Description
 -----------
 

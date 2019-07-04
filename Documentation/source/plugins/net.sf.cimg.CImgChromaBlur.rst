@@ -7,6 +7,11 @@ ChromaBlur node
 
 *This documentation is for version 4.0 of ChromaBlur.*
 
+Plugin ID
+-----------
+
+net.sf.cimg.CImgChromaBlur
+
 Description
 -----------
 

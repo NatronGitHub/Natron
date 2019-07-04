@@ -7,6 +7,11 @@ Dilate node
 
 *This documentation is for version 2.1 of Dilate.*
 
+Plugin ID
+-----------
+
+net.sf.cimg.CImgDilate
+
 Description
 -----------
 

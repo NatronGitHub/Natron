@@ -7,6 +7,11 @@ CheckerBoard node
 
 *This documentation is for version 1.0 of CheckerBoard.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.CheckerBoardPlugin
+
 Description
 -----------
 

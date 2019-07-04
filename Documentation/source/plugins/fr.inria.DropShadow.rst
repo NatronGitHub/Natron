@@ -7,6 +7,11 @@ DropShadow node
 
 *This documentation is for version 1.0 of DropShadow.*
 
+Plugin ID
+-----------
+
+fr.inria.DropShadow
+
 Description
 -----------
 

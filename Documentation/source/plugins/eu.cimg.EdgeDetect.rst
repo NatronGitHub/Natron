@@ -7,6 +7,11 @@ EdgeDetect node
 
 *This documentation is for version 4.0 of EdgeDetect.*
 
+Plugin ID
+-----------
+
+eu.cimg.EdgeDetect
+
 Description
 -----------
 

@@ -7,6 +7,11 @@ STMap node
 
 *This documentation is for version 2.0 of STMap.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.STMap
+
 Description
 -----------
 

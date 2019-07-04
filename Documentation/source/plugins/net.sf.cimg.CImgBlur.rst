@@ -7,6 +7,11 @@ Blur node
 
 *This documentation is for version 4.0 of Blur.*
 
+Plugin ID
+-----------
+
+net.sf.cimg.CImgBlur
+
 Description
 -----------
 

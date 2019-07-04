@@ -7,6 +7,11 @@ ColorMatrix node
 
 *This documentation is for version 2.0 of ColorMatrix.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.ColorMatrixPlugin
+
 Description
 -----------
 
