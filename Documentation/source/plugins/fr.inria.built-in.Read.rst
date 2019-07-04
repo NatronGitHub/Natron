@@ -5,6 +5,11 @@ Read node
 
 *This documentation is for version 1.0 of Read.*
 
+Plugin ID
+-----------
+
+fr.inria.built-in.Read
+
 Description
 -----------
 

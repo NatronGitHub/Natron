@@ -5,6 +5,11 @@ Solid node
 
 *This documentation is for version 1.0 of Solid.*
 
+Plugin ID
+-----------
+
+net.sf.openfx.Solid
+
 Description
 -----------
 

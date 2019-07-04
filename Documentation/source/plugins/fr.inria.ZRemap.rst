@@ -7,6 +7,11 @@ ZRemap node
 
 *This documentation is for version 1.0 of ZRemap.*
 
+Plugin ID
+-----------
+
+fr.inria.ZRemap
+
 Description
 -----------
 

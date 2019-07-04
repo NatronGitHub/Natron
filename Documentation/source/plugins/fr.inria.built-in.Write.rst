@@ -5,6 +5,11 @@ Write node
 
 *This documentation is for version 1.0 of Write.*
 
+Plugin ID
+-----------
+
+fr.inria.built-in.Write
+
 Description
 -----------
 
