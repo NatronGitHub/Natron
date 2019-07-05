@@ -5,7 +5,7 @@ LensDistortion node
 
 |pluginIcon| 
 
-*This documentation is for version 4.0 of LensDistortion.*
+*This documentation is for version 4.0 of LensDistortion (net.sf.openfx.LensDistortion).*
 
 Description
 -----------

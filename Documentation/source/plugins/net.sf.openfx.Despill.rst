@@ -5,7 +5,7 @@ Despill node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Despill.*
+*This documentation is for version 1.0 of Despill (net.sf.openfx.Despill).*
 
 Description
 -----------

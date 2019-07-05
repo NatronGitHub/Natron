@@ -3,7 +3,7 @@
 RGBToYPbPr601 node
 ==================
 
-*This documentation is for version 1.0 of RGBToYPbPr601.*
+*This documentation is for version 1.0 of RGBToYPbPr601 (net.sf.openfx.RGBToYPbPr601).*
 
 Description
 -----------

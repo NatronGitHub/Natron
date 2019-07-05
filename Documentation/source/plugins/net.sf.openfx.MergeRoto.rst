@@ -3,7 +3,7 @@
 RotoMerge node
 ==============
 
-*This documentation is for version 1.0 of RotoMerge.*
+*This documentation is for version 1.0 of RotoMerge (net.sf.openfx.MergeRoto).*
 
 Description
 -----------

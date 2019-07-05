@@ -5,7 +5,7 @@ Position node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Position.*
+*This documentation is for version 1.0 of Position (net.sf.openfx.Position).*
 
 Description
 -----------

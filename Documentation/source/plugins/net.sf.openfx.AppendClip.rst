@@ -3,7 +3,7 @@
 AppendClip node
 ===============
 
-*This documentation is for version 1.0 of AppendClip.*
+*This documentation is for version 1.0 of AppendClip (net.sf.openfx.AppendClip).*
 
 Description
 -----------

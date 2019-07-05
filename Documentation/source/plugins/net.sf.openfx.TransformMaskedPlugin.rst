@@ -5,7 +5,7 @@ TransformMasked node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of TransformMasked.*
+*This documentation is for version 1.0 of TransformMasked (net.sf.openfx.TransformMaskedPlugin).*
 
 Description
 -----------

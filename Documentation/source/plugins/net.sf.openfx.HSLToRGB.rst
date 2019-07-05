@@ -3,7 +3,7 @@
 HSLToRGB node
 =============
 
-*This documentation is for version 1.0 of HSLToRGB.*
+*This documentation is for version 1.0 of HSLToRGB (net.sf.openfx.HSLToRGB).*
 
 Description
 -----------

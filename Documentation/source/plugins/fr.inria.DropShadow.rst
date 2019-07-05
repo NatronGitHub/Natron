@@ -5,7 +5,7 @@ DropShadow node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of DropShadow.*
+*This documentation is for version 1.0 of DropShadow (fr.inria.DropShadow).*
 
 Description
 -----------

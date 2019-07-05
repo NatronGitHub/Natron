@@ -5,7 +5,7 @@ Sketch node
 
 |pluginIcon| 
 
-*This documentation is for version 2.2 of Sketch.*
+*This documentation is for version 2.2 of Sketch (net.fxarena.openfx.Sketch).*
 
 Description
 -----------

@@ -5,7 +5,7 @@ Mirror node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Mirror.*
+*This documentation is for version 1.0 of Mirror (net.sf.openfx.Mirror).*
 
 Description
 -----------

@@ -5,7 +5,7 @@ WriteOIIO node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of WriteOIIO.*
+*This documentation is for version 1.0 of WriteOIIO (fr.inria.openfx.WriteOIIO).*
 
 Description
 -----------

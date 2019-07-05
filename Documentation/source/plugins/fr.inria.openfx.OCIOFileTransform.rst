@@ -5,7 +5,7 @@ OCIOFileTransform node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of OCIOFileTransform.*
+*This documentation is for version 1.0 of OCIOFileTransform (fr.inria.openfx.OCIOFileTransform).*
 
 Description
 -----------

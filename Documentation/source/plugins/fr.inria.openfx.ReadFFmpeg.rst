@@ -5,7 +5,7 @@ ReadFFmpeg node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of ReadFFmpeg.*
+*This documentation is for version 1.0 of ReadFFmpeg (fr.inria.openfx.ReadFFmpeg).*
 
 Description
 -----------

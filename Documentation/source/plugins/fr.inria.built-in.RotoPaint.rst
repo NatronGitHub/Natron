@@ -3,7 +3,7 @@
 RotoPaint node
 ==============
 
-*This documentation is for version 1.0 of RotoPaint.*
+*This documentation is for version 1.0 of RotoPaint (fr.inria.built-in.RotoPaint).*
 
 Description
 -----------

@@ -3,7 +3,7 @@
 SeExprSimple node
 =================
 
-*This documentation is for version 2.0 of SeExprSimple.*
+*This documentation is for version 2.0 of SeExprSimple (fr.inria.openfx.SeExprSimple).*
 
 Description
 -----------

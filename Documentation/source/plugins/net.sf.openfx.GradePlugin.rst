@@ -5,7 +5,7 @@ Grade node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of Grade.*
+*This documentation is for version 2.0 of Grade (net.sf.openfx.GradePlugin).*
 
 Description
 -----------

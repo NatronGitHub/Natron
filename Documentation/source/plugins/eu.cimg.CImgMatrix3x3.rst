@@ -3,7 +3,7 @@
 Matrix3x3 node
 ==============
 
-*This documentation is for version 1.0 of Matrix3x3.*
+*This documentation is for version 1.0 of Matrix3x3 (eu.cimg.CImgMatrix3x3).*
 
 Description
 -----------

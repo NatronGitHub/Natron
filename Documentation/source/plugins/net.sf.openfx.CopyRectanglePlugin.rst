@@ -3,7 +3,7 @@
 CopyRectangle node
 ==================
 
-*This documentation is for version 2.0 of CopyRectangle.*
+*This documentation is for version 2.0 of CopyRectangle (net.sf.openfx.CopyRectanglePlugin).*
 
 Description
 -----------

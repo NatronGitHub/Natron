@@ -5,7 +5,7 @@ ColorBars node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of ColorBars.*
+*This documentation is for version 1.0 of ColorBars (net.sf.openfx.ColorBars).*
 
 Description
 -----------

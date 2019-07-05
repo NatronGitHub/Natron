@@ -5,7 +5,7 @@ Tile node
 
 |pluginIcon| 
 
-*This documentation is for version 3.2 of Tile.*
+*This documentation is for version 3.2 of Tile (net.fxarena.openfx.Tile).*
 
 Description
 -----------

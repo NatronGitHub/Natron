@@ -5,7 +5,7 @@ ReadOIIO node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of ReadOIIO.*
+*This documentation is for version 2.0 of ReadOIIO (fr.inria.openfx.ReadOIIO).*
 
 Description
 -----------

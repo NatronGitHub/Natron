@@ -5,7 +5,7 @@ HueKeyer node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of HueKeyer.*
+*This documentation is for version 1.0 of HueKeyer (net.sf.openfx.HueKeyer).*
 
 Description
 -----------

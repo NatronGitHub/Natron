@@ -5,7 +5,7 @@ Add node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of Add.*
+*This documentation is for version 2.0 of Add (net.sf.openfx.AddPlugin).*
 
 Description
 -----------

@@ -3,7 +3,7 @@
 EdgeBlur node
 =============
 
-*This documentation is for version 1.0 of EdgeBlur.*
+*This documentation is for version 1.0 of EdgeBlur (fr.inria.EdgeBlur).*
 
 Description
 -----------

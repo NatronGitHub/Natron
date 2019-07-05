@@ -5,7 +5,7 @@ Noise node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of Noise.*
+*This documentation is for version 2.0 of Noise (net.sf.cimg.CImgNoise).*
 
 Description
 -----------

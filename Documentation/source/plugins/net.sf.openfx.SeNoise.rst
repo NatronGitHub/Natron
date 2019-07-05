@@ -3,7 +3,7 @@
 SeNoise node
 ============
 
-*This documentation is for version 1.0 of SeNoise.*
+*This documentation is for version 1.0 of SeNoise (net.sf.openfx.SeNoise).*
 
 Description
 -----------

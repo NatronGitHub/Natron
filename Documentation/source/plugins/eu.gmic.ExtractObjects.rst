@@ -3,7 +3,7 @@
 G’MIC Extract Objects node
 ==========================
 
-*This documentation is for version 1.0 of G’MIC Extract Objects.*
+*This documentation is for version 1.0 of G’MIC Extract Objects (eu.gmic.ExtractObjects).*
 
 Description
 -----------
@@ -75,6 +75,10 @@ Controls
 | Ignore Alpha / ``Ignore_Alpha``                | Boolean | Off       |                       |
 +------------------------------------------------+---------+-----------+-----------------------+
 | Preview/Draft Mode / ``PreviewDraft_Mode``     | Boolean | Off       |                       |
++------------------------------------------------+---------+-----------+-----------------------+
+| Global Random Seed / ``Global_Random_Seed``    | Integer | 0         |                       |
++------------------------------------------------+---------+-----------+-----------------------+
+| Animate Random Seed / ``Animate_Random_Seed``  | Boolean | Off       |                       |
 +------------------------------------------------+---------+-----------+-----------------------+
 | Log Verbosity / ``Log_Verbosity``              | Choice  | Off       | |                     |
 |                                                |         |           | | **Off**             |

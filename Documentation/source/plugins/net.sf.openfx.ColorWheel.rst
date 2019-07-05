@@ -5,7 +5,7 @@ ColorWheel node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of ColorWheel.*
+*This documentation is for version 1.0 of ColorWheel (net.sf.openfx.ColorWheel).*
 
 Description
 -----------

@@ -3,7 +3,7 @@
 XYZToLab node
 =============
 
-*This documentation is for version 1.0 of XYZToLab.*
+*This documentation is for version 1.0 of XYZToLab (net.sf.openfx.XYZToLab).*
 
 Description
 -----------

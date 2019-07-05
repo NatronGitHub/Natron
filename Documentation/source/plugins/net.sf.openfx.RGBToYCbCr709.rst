@@ -3,7 +3,7 @@
 RGBToYCbCr709 node
 ==================
 
-*This documentation is for version 1.0 of RGBToYCbCr709.*
+*This documentation is for version 1.0 of RGBToYCbCr709 (net.sf.openfx.RGBToYCbCr709).*
 
 Description
 -----------

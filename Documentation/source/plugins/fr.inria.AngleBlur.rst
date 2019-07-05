@@ -3,7 +3,7 @@
 AngleBlur node
 ==============
 
-*This documentation is for version 1.0 of AngleBlur.*
+*This documentation is for version 1.0 of AngleBlur (fr.inria.AngleBlur).*
 
 Description
 -----------

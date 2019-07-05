@@ -3,7 +3,7 @@
 Log2Lin node
 ============
 
-*This documentation is for version 1.0 of Log2Lin.*
+*This documentation is for version 1.0 of Log2Lin (net.sf.openfx.Log2Lin).*
 
 Description
 -----------

@@ -5,7 +5,7 @@ Plasma node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of Plasma.*
+*This documentation is for version 2.0 of Plasma (net.sf.cimg.CImgPlasma).*
 
 Description
 -----------

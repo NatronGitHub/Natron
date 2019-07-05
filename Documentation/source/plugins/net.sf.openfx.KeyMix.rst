@@ -3,7 +3,7 @@
 KeyMix node
 ===========
 
-*This documentation is for version 1.0 of KeyMix.*
+*This documentation is for version 1.0 of KeyMix (net.sf.openfx.KeyMix).*
 
 Description
 -----------

@@ -5,7 +5,7 @@ Polaroid node
 
 |pluginIcon| 
 
-*This documentation is for version 1.4 of Polaroid.*
+*This documentation is for version 1.4 of Polaroid (net.fxarena.openfx.Polaroid).*
 
 Description
 -----------

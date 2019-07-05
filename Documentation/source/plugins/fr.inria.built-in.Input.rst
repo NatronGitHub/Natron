@@ -3,7 +3,7 @@
 Input node
 ==========
 
-*This documentation is for version 1.0 of Input.*
+*This documentation is for version 1.0 of Input (fr.inria.built-in.Input).*
 
 Description
 -----------

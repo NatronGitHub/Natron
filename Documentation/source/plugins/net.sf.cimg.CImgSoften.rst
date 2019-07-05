@@ -3,7 +3,7 @@
 Soften node
 ===========
 
-*This documentation is for version 4.0 of Soften.*
+*This documentation is for version 4.0 of Soften (net.sf.cimg.CImgSoften).*
 
 Description
 -----------

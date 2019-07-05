@@ -3,7 +3,7 @@
 Matrix5x5 node
 ==============
 
-*This documentation is for version 1.0 of Matrix5x5.*
+*This documentation is for version 1.0 of Matrix5x5 (eu.cimg.CImgMatrix5x5).*
 
 Description
 -----------

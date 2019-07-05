@@ -5,7 +5,7 @@ PIKColor node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of PIKColor.*
+*This documentation is for version 1.0 of PIKColor (fr.inria.PIKColor).*
 
 Description
 -----------

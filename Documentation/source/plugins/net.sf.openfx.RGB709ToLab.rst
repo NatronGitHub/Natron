@@ -5,7 +5,7 @@ RGB709ToLab node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of RGB709ToLab.*
+*This documentation is for version 1.0 of RGB709ToLab (net.sf.openfx.RGB709ToLab).*
 
 Description
 -----------

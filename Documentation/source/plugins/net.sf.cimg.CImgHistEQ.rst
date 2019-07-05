@@ -5,7 +5,7 @@ HistEQ node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of HistEQ.*
+*This documentation is for version 2.0 of HistEQ (net.sf.cimg.CImgHistEQ).*
 
 Description
 -----------

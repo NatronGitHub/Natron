@@ -3,7 +3,7 @@
 Backdrop node
 =============
 
-*This documentation is for version 1.0 of Backdrop.*
+*This documentation is for version 1.0 of Backdrop (fr.inria.built-in.BackDrop).*
 
 Description
 -----------

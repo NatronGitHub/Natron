@@ -5,7 +5,7 @@ Anaglyph node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Anaglyph.*
+*This documentation is for version 1.0 of Anaglyph (net.sf.openfx.anaglyphPlugin).*
 
 Description
 -----------

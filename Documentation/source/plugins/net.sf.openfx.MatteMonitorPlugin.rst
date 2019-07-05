@@ -3,7 +3,7 @@
 MatteMonitor node
 =================
 
-*This documentation is for version 1.0 of MatteMonitor.*
+*This documentation is for version 1.0 of MatteMonitor (net.sf.openfx.MatteMonitorPlugin).*
 
 Description
 -----------

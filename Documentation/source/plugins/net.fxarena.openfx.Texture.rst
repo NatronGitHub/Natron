@@ -5,7 +5,7 @@ Texture node
 
 |pluginIcon| 
 
-*This documentation is for version 3.7 of Texture.*
+*This documentation is for version 3.7 of Texture (net.fxarena.openfx.Texture).*
 
 Description
 -----------

@@ -5,7 +5,7 @@ Charcoal node
 
 |pluginIcon| 
 
-*This documentation is for version 2.2 of Charcoal.*
+*This documentation is for version 2.2 of Charcoal (net.fxarena.openfx.Charcoal).*
 
 Description
 -----------

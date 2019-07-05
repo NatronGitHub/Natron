@@ -5,7 +5,7 @@ SharpenInvDiff node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of SharpenInvDiff.*
+*This documentation is for version 2.0 of SharpenInvDiff (net.sf.cimg.CImgSharpenInvDiff).*
 
 Description
 -----------

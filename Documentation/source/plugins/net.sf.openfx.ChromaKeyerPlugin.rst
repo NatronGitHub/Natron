@@ -5,7 +5,7 @@ ChromaKeyer node
 
 |pluginIcon| 
 
-*This documentation is for version 1.1 of ChromaKeyer.*
+*This documentation is for version 1.1 of ChromaKeyer (net.sf.openfx.ChromaKeyerPlugin).*
 
 Description
 -----------

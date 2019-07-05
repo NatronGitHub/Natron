@@ -5,7 +5,7 @@ Merge node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Merge.*
+*This documentation is for version 1.0 of Merge (net.sf.openfx.MergePlugin).*
 
 Description
 -----------

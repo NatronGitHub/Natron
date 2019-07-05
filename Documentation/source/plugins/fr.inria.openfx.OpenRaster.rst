@@ -5,7 +5,7 @@ OpenRaster node
 
 |pluginIcon| 
 
-*This documentation is for version 2.1 of OpenRaster.*
+*This documentation is for version 2.1 of OpenRaster (fr.inria.openfx.OpenRaster).*
 
 Description
 -----------

@@ -3,7 +3,7 @@
 Tracker node
 ============
 
-*This documentation is for version 1.0 of Tracker.*
+*This documentation is for version 1.0 of Tracker (fr.inria.built-in.Tracker).*
 
 Description
 -----------

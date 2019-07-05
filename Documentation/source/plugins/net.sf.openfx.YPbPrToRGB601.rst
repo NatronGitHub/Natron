@@ -3,7 +3,7 @@
 YPbPrToRGB601 node
 ==================
 
-*This documentation is for version 1.0 of YPbPrToRGB601.*
+*This documentation is for version 1.0 of YPbPrToRGB601 (net.sf.openfx.YPbPrToRGB601).*
 
 Description
 -----------

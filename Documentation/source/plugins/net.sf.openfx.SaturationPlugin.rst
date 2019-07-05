@@ -5,7 +5,7 @@ Saturation node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of Saturation.*
+*This documentation is for version 2.0 of Saturation (net.sf.openfx.SaturationPlugin).*
 
 Description
 -----------

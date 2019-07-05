@@ -5,7 +5,7 @@ CornerPin node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of CornerPin.*
+*This documentation is for version 1.0 of CornerPin (net.sf.openfx.CornerPinPlugin).*
 
 Description
 -----------

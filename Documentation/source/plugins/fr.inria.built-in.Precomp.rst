@@ -3,7 +3,7 @@
 Precomp node
 ============
 
-*This documentation is for version 1.0 of Precomp.*
+*This documentation is for version 1.0 of Precomp (fr.inria.built-in.Precomp).*
 
 Description
 -----------

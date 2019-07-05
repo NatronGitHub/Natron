@@ -5,7 +5,7 @@ Ramp node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of Ramp.*
+*This documentation is for version 2.0 of Ramp (net.sf.openfx.Ramp).*
 
 Description
 -----------

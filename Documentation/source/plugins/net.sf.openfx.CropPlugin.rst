@@ -5,7 +5,7 @@ Crop node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Crop.*
+*This documentation is for version 1.0 of Crop (net.sf.openfx.CropPlugin).*
 
 Description
 -----------

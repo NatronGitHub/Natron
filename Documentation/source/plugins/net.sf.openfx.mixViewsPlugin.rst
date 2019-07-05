@@ -5,7 +5,7 @@ MixViews node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of MixViews.*
+*This documentation is for version 1.0 of MixViews (net.sf.openfx.mixViewsPlugin).*
 
 Description
 -----------

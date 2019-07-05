@@ -5,7 +5,7 @@ Glow node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Glow.*
+*This documentation is for version 1.0 of Glow (fr.inria.Glow).*
 
 Description
 -----------

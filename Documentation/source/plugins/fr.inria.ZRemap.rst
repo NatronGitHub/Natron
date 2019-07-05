@@ -5,7 +5,7 @@ ZRemap node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of ZRemap.*
+*This documentation is for version 1.0 of ZRemap (fr.inria.ZRemap).*
 
 Description
 -----------

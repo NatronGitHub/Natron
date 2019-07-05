@@ -3,7 +3,7 @@
 SmoothBilateralGuided node
 ==========================
 
-*This documentation is for version 2.0 of SmoothBilateralGuided.*
+*This documentation is for version 2.0 of SmoothBilateralGuided (net.sf.cimg.CImgBilateralGuided).*
 
 Description
 -----------

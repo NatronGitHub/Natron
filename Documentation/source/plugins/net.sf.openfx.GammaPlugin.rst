@@ -5,7 +5,7 @@ Gamma node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of Gamma.*
+*This documentation is for version 2.0 of Gamma (net.sf.openfx.GammaPlugin).*
 
 Description
 -----------

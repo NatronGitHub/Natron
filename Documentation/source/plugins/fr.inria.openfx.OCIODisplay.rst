@@ -5,7 +5,7 @@ OCIODisplay node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of OCIODisplay.*
+*This documentation is for version 1.0 of OCIODisplay (fr.inria.openfx.OCIODisplay).*
 
 Description
 -----------

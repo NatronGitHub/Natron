@@ -3,7 +3,7 @@
 ContactSheet node
 =================
 
-*This documentation is for version 1.0 of ContactSheet.*
+*This documentation is for version 1.0 of ContactSheet (net.sf.openfx.ContactSheetOFX).*
 
 Description
 -----------

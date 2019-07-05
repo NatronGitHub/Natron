@@ -3,7 +3,7 @@
 Card3D node
 ===========
 
-*This documentation is for version 1.0 of Card3D.*
+*This documentation is for version 1.0 of Card3D (net.sf.openfx.Card3D).*
 
 Description
 -----------

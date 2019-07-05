@@ -5,7 +5,7 @@ Edges node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of Edges.*
+*This documentation is for version 2.0 of Edges (net.fxarena.openfx.Edges).*
 
 Description
 -----------

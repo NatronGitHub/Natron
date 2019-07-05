@@ -3,7 +3,7 @@
 Distance node
 =============
 
-*This documentation is for version 1.0 of Distance.*
+*This documentation is for version 1.0 of Distance (eu.cimg.Distance).*
 
 Description
 -----------

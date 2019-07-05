@@ -5,7 +5,7 @@ OCIOLookTransform node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of OCIOLookTransform.*
+*This documentation is for version 1.0 of OCIOLookTransform (fr.inria.openfx.OCIOLookTransform).*
 
 Description
 -----------

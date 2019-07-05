@@ -5,7 +5,7 @@ Shuffle node
 
 |pluginIcon| 
 
-*This documentation is for version 3.0 of Shuffle.*
+*This documentation is for version 3.0 of Shuffle (net.sf.openfx.ShufflePlugin).*
 
 Description
 -----------

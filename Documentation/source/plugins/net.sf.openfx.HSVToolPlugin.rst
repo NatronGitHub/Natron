@@ -5,7 +5,7 @@ HSVTool node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of HSVTool.*
+*This documentation is for version 1.0 of HSVTool (net.sf.openfx.HSVToolPlugin).*
 
 Description
 -----------

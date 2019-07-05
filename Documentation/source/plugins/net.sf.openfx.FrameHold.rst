@@ -5,7 +5,7 @@ FrameHold node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of FrameHold.*
+*This documentation is for version 1.0 of FrameHold (net.sf.openfx.FrameHold).*
 
 Description
 -----------

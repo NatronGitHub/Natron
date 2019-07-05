@@ -5,7 +5,7 @@ ReadPSD node
 
 |pluginIcon| 
 
-*This documentation is for version 2.7 of ReadPSD.*
+*This documentation is for version 2.7 of ReadPSD (net.fxarena.openfx.ReadPSD).*
 
 Description
 -----------

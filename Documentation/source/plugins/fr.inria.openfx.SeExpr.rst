@@ -5,7 +5,7 @@ SeExpr node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of SeExpr.*
+*This documentation is for version 2.0 of SeExpr (fr.inria.openfx.SeExpr).*
 
 Description
 -----------

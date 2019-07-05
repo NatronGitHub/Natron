@@ -5,7 +5,7 @@ OCIOCDLTransform node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of OCIOCDLTransform.*
+*This documentation is for version 1.0 of OCIOCDLTransform (fr.inria.openfx.OCIOCDLTransform).*
 
 Description
 -----------

@@ -5,7 +5,7 @@ Text node
 
 |pluginIcon| 
 
-*This documentation is for version 6.9 of Text.*
+*This documentation is for version 6.9 of Text (net.fxarena.openfx.Text).*
 
 Description
 -----------

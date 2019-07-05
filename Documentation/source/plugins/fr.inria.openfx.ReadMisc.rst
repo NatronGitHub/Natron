@@ -5,7 +5,7 @@ ReadMisc node
 
 |pluginIcon| 
 
-*This documentation is for version 1.1 of ReadMisc.*
+*This documentation is for version 1.1 of ReadMisc (fr.inria.openfx.ReadMisc).*
 
 Description
 -----------

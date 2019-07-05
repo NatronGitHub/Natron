@@ -5,7 +5,7 @@ Radial node
 
 |pluginIcon| 
 
-*This documentation is for version 2.1 of Radial.*
+*This documentation is for version 2.1 of Radial (net.sf.openfx.Radial).*
 
 Description
 -----------

@@ -5,7 +5,7 @@ WriteFFmpeg node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of WriteFFmpeg.*
+*This documentation is for version 1.0 of WriteFFmpeg (fr.inria.openfx.WriteFFmpeg).*
 
 Description
 -----------

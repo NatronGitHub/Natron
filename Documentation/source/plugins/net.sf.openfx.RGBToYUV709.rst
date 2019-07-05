@@ -3,7 +3,7 @@
 RGBToYUV709 node
 ================
 
-*This documentation is for version 1.0 of RGBToYUV709.*
+*This documentation is for version 1.0 of RGBToYUV709 (net.sf.openfx.RGBToYUV709).*
 
 Description
 -----------

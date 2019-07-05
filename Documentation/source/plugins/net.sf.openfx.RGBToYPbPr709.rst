@@ -3,7 +3,7 @@
 RGBToYPbPr709 node
 ==================
 
-*This documentation is for version 1.0 of RGBToYPbPr709.*
+*This documentation is for version 1.0 of RGBToYPbPr709 (net.sf.openfx.RGBToYPbPr709).*
 
 Description
 -----------

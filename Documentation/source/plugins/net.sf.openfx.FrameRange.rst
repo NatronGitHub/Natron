@@ -5,7 +5,7 @@ FrameRange node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of FrameRange.*
+*This documentation is for version 1.0 of FrameRange (net.sf.openfx.FrameRange).*
 
 Description
 -----------

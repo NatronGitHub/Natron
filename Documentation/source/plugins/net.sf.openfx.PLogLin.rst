@@ -3,7 +3,7 @@
 PLogLin node
 ============
 
-*This documentation is for version 1.0 of PLogLin.*
+*This documentation is for version 1.0 of PLogLin (net.sf.openfx.PLogLin).*
 
 Description
 -----------

@@ -3,7 +3,7 @@
 TimeBlur node
 =============
 
-*This documentation is for version 1.0 of TimeBlur.*
+*This documentation is for version 1.0 of TimeBlur (net.sf.openfx.TimeBlur).*
 
 Description
 -----------

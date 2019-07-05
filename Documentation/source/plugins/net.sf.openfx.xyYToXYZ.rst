@@ -3,7 +3,7 @@
 xyYToXYZ node
 =============
 
-*This documentation is for version 1.0 of xyYToXYZ.*
+*This documentation is for version 1.0 of xyYToXYZ (net.sf.openfx.xyYToXYZ).*
 
 Description
 -----------

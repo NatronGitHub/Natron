@@ -5,7 +5,7 @@ HueCorrect node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of HueCorrect.*
+*This documentation is for version 1.0 of HueCorrect (net.sf.openfx.HueCorrect).*
 
 Description
 -----------

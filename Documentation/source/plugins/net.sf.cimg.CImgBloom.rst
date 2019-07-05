@@ -5,7 +5,7 @@ Bloom node
 
 |pluginIcon| 
 
-*This documentation is for version 4.0 of Bloom.*
+*This documentation is for version 4.0 of Bloom (net.sf.cimg.CImgBloom).*
 
 Description
 -----------

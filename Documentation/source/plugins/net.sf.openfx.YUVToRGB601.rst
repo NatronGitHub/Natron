@@ -3,7 +3,7 @@
 YUVToRGB601 node
 ================
 
-*This documentation is for version 1.0 of YUVToRGB601.*
+*This documentation is for version 1.0 of YUVToRGB601 (net.sf.openfx.YUVToRGB601).*
 
 Description
 -----------

@@ -5,7 +5,7 @@ Swirl node
 
 |pluginIcon| 
 
-*This documentation is for version 2.9 of Swirl.*
+*This documentation is for version 2.9 of Swirl (net.fxarena.openfx.Swirl).*
 
 Description
 -----------

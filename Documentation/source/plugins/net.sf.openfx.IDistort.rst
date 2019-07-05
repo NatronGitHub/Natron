@@ -5,7 +5,7 @@ IDistort node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of IDistort.*
+*This documentation is for version 2.0 of IDistort (net.sf.openfx.IDistort).*
 
 Description
 -----------
