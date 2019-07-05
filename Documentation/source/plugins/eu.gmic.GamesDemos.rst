@@ -3,7 +3,7 @@
 G’MIC Games & Demos node
 ========================
 
-*This documentation is for version 1.0 of G’MIC Games & Demos.*
+*This documentation is for version 1.0 of G’MIC Games & Demos (eu.gmic.GamesDemos).*
 
 Description
 -----------
@@ -32,71 +32,75 @@ Controls
 
 .. cssclass:: longtable
 
-+--------------------------------------------+---------+---------+---------------------------+
-| Parameter / script name                    | Type    | Default | Function                  |
-+============================================+=========+=========+===========================+
-| Selection / ``Selection``                  | Choice  | 2048    | |                         |
-|                                            |         |         | | **2048**                |
-|                                            |         |         | | **Blobs Editor**        |
-|                                            |         |         | | **Bouncing Balls**      |
-|                                            |         |         | | **Connect-Four**        |
-|                                            |         |         | | **Fire Effect**         |
-|                                            |         |         | | **Fireworks**           |
-|                                            |         |         | | **Fish-Eye Effect**     |
-|                                            |         |         | | **Fourier Filtering**   |
-|                                            |         |         | | **Hanoi Tower**         |
-|                                            |         |         | | **Histogram**           |
-|                                            |         |         | | **Hough Transform**     |
-|                                            |         |         | | **Jawbreaker**          |
-|                                            |         |         | | **Virtual Landscape**   |
-|                                            |         |         | | **The Game of Life**    |
-|                                            |         |         | | **Light Effect**        |
-|                                            |         |         | | **Mandelbrot Explorer** |
-|                                            |         |         | | **3D Metaballs**        |
-|                                            |         |         | | **Minesweeper**         |
-|                                            |         |         | | **Minimal Path**        |
-|                                            |         |         | | **Pacman**              |
-|                                            |         |         | | **Paint**               |
-|                                            |         |         | | **Plasma Effect**       |
-|                                            |         |         | | **RGB Quantization**    |
-|                                            |         |         | | **3D Reflection**       |
-|                                            |         |         | | **3D Rubber Object**    |
-|                                            |         |         | | **Shadebobs**           |
-|                                            |         |         | | **Spline Editor**       |
-|                                            |         |         | | **3D Starfield**        |
-|                                            |         |         | | **Tetris**              |
-|                                            |         |         | | **Tic-Tac-Toe**         |
-|                                            |         |         | | **3D Waves**            |
-|                                            |         |         | | **Fractal Whirl**       |
-+--------------------------------------------+---------+---------+---------------------------+
-| Output Layer / ``Output_Layer``            | Choice  | Layer 0 | |                         |
-|                                            |         |         | | **Merged**              |
-|                                            |         |         | | **Layer 0**             |
-|                                            |         |         | | **Layer -1**            |
-|                                            |         |         | | **Layer -2**            |
-|                                            |         |         | | **Layer -3**            |
-|                                            |         |         | | **Layer -4**            |
-|                                            |         |         | | **Layer -5**            |
-|                                            |         |         | | **Layer -6**            |
-|                                            |         |         | | **Layer -7**            |
-|                                            |         |         | | **Layer -8**            |
-|                                            |         |         | | **Layer -9**            |
-+--------------------------------------------+---------+---------+---------------------------+
-| Resize Mode / ``Resize_Mode``              | Choice  | Dynamic | |                         |
-|                                            |         |         | | **Fixed (Inplace)**     |
-|                                            |         |         | | **Dynamic**             |
-|                                            |         |         | | **Downsample 1/2**      |
-|                                            |         |         | | **Downsample 1/4**      |
-|                                            |         |         | | **Downsample 1/8**      |
-|                                            |         |         | | **Downsample 1/16**     |
-+--------------------------------------------+---------+---------+---------------------------+
-| Ignore Alpha / ``Ignore_Alpha``            | Boolean | Off     |                           |
-+--------------------------------------------+---------+---------+---------------------------+
-| Preview/Draft Mode / ``PreviewDraft_Mode`` | Boolean | Off     |                           |
-+--------------------------------------------+---------+---------+---------------------------+
-| Log Verbosity / ``Log_Verbosity``          | Choice  | Off     | |                         |
-|                                            |         |         | | **Off**                 |
-|                                            |         |         | | **Level 1**             |
-|                                            |         |         | | **Level 2**             |
-|                                            |         |         | | **Level 3**             |
-+--------------------------------------------+---------+---------+---------------------------+
++-----------------------------------------------+---------+---------+---------------------------+
+| Parameter / script name                       | Type    | Default | Function                  |
++===============================================+=========+=========+===========================+
+| Selection / ``Selection``                     | Choice  | 2048    | |                         |
+|                                               |         |         | | **2048**                |
+|                                               |         |         | | **Blobs Editor**        |
+|                                               |         |         | | **Bouncing Balls**      |
+|                                               |         |         | | **Connect-Four**        |
+|                                               |         |         | | **Fire Effect**         |
+|                                               |         |         | | **Fireworks**           |
+|                                               |         |         | | **Fish-Eye Effect**     |
+|                                               |         |         | | **Fourier Filtering**   |
+|                                               |         |         | | **Hanoi Tower**         |
+|                                               |         |         | | **Histogram**           |
+|                                               |         |         | | **Hough Transform**     |
+|                                               |         |         | | **Jawbreaker**          |
+|                                               |         |         | | **Virtual Landscape**   |
+|                                               |         |         | | **The Game of Life**    |
+|                                               |         |         | | **Light Effect**        |
+|                                               |         |         | | **Mandelbrot Explorer** |
+|                                               |         |         | | **3D Metaballs**        |
+|                                               |         |         | | **Minesweeper**         |
+|                                               |         |         | | **Minimal Path**        |
+|                                               |         |         | | **Pacman**              |
+|                                               |         |         | | **Paint**               |
+|                                               |         |         | | **Plasma Effect**       |
+|                                               |         |         | | **RGB Quantization**    |
+|                                               |         |         | | **3D Reflection**       |
+|                                               |         |         | | **3D Rubber Object**    |
+|                                               |         |         | | **Shadebobs**           |
+|                                               |         |         | | **Spline Editor**       |
+|                                               |         |         | | **3D Starfield**        |
+|                                               |         |         | | **Tetris**              |
+|                                               |         |         | | **Tic-Tac-Toe**         |
+|                                               |         |         | | **3D Waves**            |
+|                                               |         |         | | **Fractal Whirl**       |
++-----------------------------------------------+---------+---------+---------------------------+
+| Output Layer / ``Output_Layer``               | Choice  | Layer 0 | |                         |
+|                                               |         |         | | **Merged**              |
+|                                               |         |         | | **Layer 0**             |
+|                                               |         |         | | **Layer -1**            |
+|                                               |         |         | | **Layer -2**            |
+|                                               |         |         | | **Layer -3**            |
+|                                               |         |         | | **Layer -4**            |
+|                                               |         |         | | **Layer -5**            |
+|                                               |         |         | | **Layer -6**            |
+|                                               |         |         | | **Layer -7**            |
+|                                               |         |         | | **Layer -8**            |
+|                                               |         |         | | **Layer -9**            |
++-----------------------------------------------+---------+---------+---------------------------+
+| Resize Mode / ``Resize_Mode``                 | Choice  | Dynamic | |                         |
+|                                               |         |         | | **Fixed (Inplace)**     |
+|                                               |         |         | | **Dynamic**             |
+|                                               |         |         | | **Downsample 1/2**      |
+|                                               |         |         | | **Downsample 1/4**      |
+|                                               |         |         | | **Downsample 1/8**      |
+|                                               |         |         | | **Downsample 1/16**     |
++-----------------------------------------------+---------+---------+---------------------------+
+| Ignore Alpha / ``Ignore_Alpha``               | Boolean | Off     |                           |
++-----------------------------------------------+---------+---------+---------------------------+
+| Preview/Draft Mode / ``PreviewDraft_Mode``    | Boolean | Off     |                           |
++-----------------------------------------------+---------+---------+---------------------------+
+| Global Random Seed / ``Global_Random_Seed``   | Integer | 0       |                           |
++-----------------------------------------------+---------+---------+---------------------------+
+| Animate Random Seed / ``Animate_Random_Seed`` | Boolean | Off     |                           |
++-----------------------------------------------+---------+---------+---------------------------+
+| Log Verbosity / ``Log_Verbosity``             | Choice  | Off     | |                         |
+|                                               |         |         | | **Off**                 |
+|                                               |         |         | | **Level 1**             |
+|                                               |         |         | | **Level 2**             |
+|                                               |         |         | | **Level 3**             |
++-----------------------------------------------+---------+---------+---------------------------+

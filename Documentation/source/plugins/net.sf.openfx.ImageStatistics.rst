@@ -5,7 +5,7 @@ ImageStatistics node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of ImageStatistics.*
+*This documentation is for version 1.0 of ImageStatistics (net.sf.openfx.ImageStatistics).*
 
 Description
 -----------

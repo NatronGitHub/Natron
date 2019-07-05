@@ -5,7 +5,7 @@ Keyer node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Keyer.*
+*This documentation is for version 1.0 of Keyer (net.sf.openfx.KeyerPlugin).*
 
 Description
 -----------

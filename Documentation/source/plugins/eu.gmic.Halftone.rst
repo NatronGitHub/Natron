@@ -3,7 +3,7 @@
 G’MIC Halftone node
 ===================
 
-*This documentation is for version 1.0 of G’MIC Halftone.*
+*This documentation is for version 1.0 of G’MIC Halftone (eu.gmic.Halftone).*
 
 Description
 -----------
@@ -100,6 +100,10 @@ Controls
 | Ignore Alpha / ``Ignore_Alpha``                   | Boolean | Off           |                            |
 +---------------------------------------------------+---------+---------------+----------------------------+
 | Preview/Draft Mode / ``PreviewDraft_Mode``        | Boolean | Off           |                            |
++---------------------------------------------------+---------+---------------+----------------------------+
+| Global Random Seed / ``Global_Random_Seed``       | Integer | 0             |                            |
++---------------------------------------------------+---------+---------------+----------------------------+
+| Animate Random Seed / ``Animate_Random_Seed``     | Boolean | Off           |                            |
 +---------------------------------------------------+---------+---------------+----------------------------+
 | Log Verbosity / ``Log_Verbosity``                 | Choice  | Off           | |                          |
 |                                                   |         |               | | **Off**                  |

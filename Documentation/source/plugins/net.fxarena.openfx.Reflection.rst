@@ -5,7 +5,7 @@ Reflection node
 
 |pluginIcon| 
 
-*This documentation is for version 3.2 of Reflection.*
+*This documentation is for version 3.2 of Reflection (net.fxarena.openfx.Reflection).*
 
 Description
 -----------

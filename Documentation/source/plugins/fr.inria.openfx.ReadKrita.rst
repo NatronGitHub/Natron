@@ -5,7 +5,7 @@ ReadKrita node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of ReadKrita.*
+*This documentation is for version 2.0 of ReadKrita (fr.inria.openfx.ReadKrita).*
 
 Description
 -----------

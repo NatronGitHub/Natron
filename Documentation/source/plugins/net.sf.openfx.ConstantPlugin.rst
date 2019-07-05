@@ -5,7 +5,7 @@ Constant node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Constant.*
+*This documentation is for version 1.0 of Constant (net.sf.openfx.ConstantPlugin).*
 
 Description
 -----------

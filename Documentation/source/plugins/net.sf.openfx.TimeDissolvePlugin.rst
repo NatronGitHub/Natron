@@ -3,7 +3,7 @@
 TimeDissolve node
 =================
 
-*This documentation is for version 1.0 of TimeDissolve.*
+*This documentation is for version 1.0 of TimeDissolve (net.sf.openfx.TimeDissolvePlugin).*
 
 Description
 -----------

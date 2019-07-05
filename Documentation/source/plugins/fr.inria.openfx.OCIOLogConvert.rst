@@ -5,7 +5,7 @@ OCIOLogConvert node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of OCIOLogConvert.*
+*This documentation is for version 1.0 of OCIOLogConvert (fr.inria.openfx.OCIOLogConvert).*
 
 Description
 -----------

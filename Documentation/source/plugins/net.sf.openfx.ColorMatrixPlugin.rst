@@ -5,7 +5,7 @@ ColorMatrix node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of ColorMatrix.*
+*This documentation is for version 2.0 of ColorMatrix (net.sf.openfx.ColorMatrixPlugin).*
 
 Description
 -----------

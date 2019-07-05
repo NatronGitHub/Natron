@@ -5,7 +5,7 @@ Roll node
 
 |pluginIcon| 
 
-*This documentation is for version 2.9 of Roll.*
+*This documentation is for version 2.9 of Roll (net.fxarena.openfx.Roll).*
 
 Description
 -----------

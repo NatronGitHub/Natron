@@ -3,7 +3,7 @@
 RGBToYCbCr601 node
 ==================
 
-*This documentation is for version 1.0 of RGBToYCbCr601.*
+*This documentation is for version 1.0 of RGBToYCbCr601 (net.sf.openfx.RGBToYCbCr601).*
 
 Description
 -----------

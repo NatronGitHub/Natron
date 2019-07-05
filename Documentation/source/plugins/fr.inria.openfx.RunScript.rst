@@ -5,7 +5,7 @@ RunScript node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of RunScript.*
+*This documentation is for version 1.0 of RunScript (fr.inria.openfx.RunScript).*
 
 Description
 -----------

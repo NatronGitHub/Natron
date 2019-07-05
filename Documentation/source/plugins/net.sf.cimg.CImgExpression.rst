@@ -5,7 +5,7 @@ GMICExpr node
 
 |pluginIcon| 
 
-*This documentation is for version 2.1 of GMICExpr.*
+*This documentation is for version 2.1 of GMICExpr (net.sf.cimg.CImgExpression).*
 
 Description
 -----------

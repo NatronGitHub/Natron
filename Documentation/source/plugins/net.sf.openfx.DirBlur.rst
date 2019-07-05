@@ -5,7 +5,7 @@ DirBlur node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of DirBlur.*
+*This documentation is for version 1.0 of DirBlur (net.sf.openfx.DirBlur).*
 
 Description
 -----------

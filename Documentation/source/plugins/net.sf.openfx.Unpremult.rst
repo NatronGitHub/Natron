@@ -5,7 +5,7 @@ Unpremult node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of Unpremult.*
+*This documentation is for version 2.0 of Unpremult (net.sf.openfx.Unpremult).*
 
 Description
 -----------

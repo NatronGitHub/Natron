@@ -5,7 +5,7 @@ RGBToHSV node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of RGBToHSV.*
+*This documentation is for version 1.0 of RGBToHSV (net.sf.openfx.RGBToHSV).*
 
 Description
 -----------

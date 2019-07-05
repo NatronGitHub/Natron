@@ -5,7 +5,7 @@ Switch node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Switch.*
+*This documentation is for version 1.0 of Switch (net.sf.openfx.switchPlugin).*
 
 Description
 -----------

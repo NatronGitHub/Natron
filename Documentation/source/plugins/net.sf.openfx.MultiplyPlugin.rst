@@ -5,7 +5,7 @@ Multiply node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of Multiply.*
+*This documentation is for version 2.0 of Multiply (net.sf.openfx.MultiplyPlugin).*
 
 Description
 -----------

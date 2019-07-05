@@ -5,7 +5,7 @@ SharpenShock node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of SharpenShock.*
+*This documentation is for version 2.0 of SharpenShock (net.sf.cimg.CImgSharpenShock).*
 
 Description
 -----------

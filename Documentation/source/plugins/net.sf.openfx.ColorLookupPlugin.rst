@@ -5,7 +5,7 @@ ColorLookup node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of ColorLookup.*
+*This documentation is for version 1.1 of ColorLookup (net.sf.openfx.ColorLookupPlugin).*
 
 Description
 -----------

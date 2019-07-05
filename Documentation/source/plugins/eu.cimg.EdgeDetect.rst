@@ -5,7 +5,7 @@ EdgeDetect node
 
 |pluginIcon| 
 
-*This documentation is for version 4.0 of EdgeDetect.*
+*This documentation is for version 4.0 of EdgeDetect (eu.cimg.EdgeDetect).*
 
 Description
 -----------

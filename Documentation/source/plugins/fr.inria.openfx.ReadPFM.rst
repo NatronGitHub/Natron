@@ -5,7 +5,7 @@ ReadPFM node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of ReadPFM.*
+*This documentation is for version 1.0 of ReadPFM (fr.inria.openfx.ReadPFM).*
 
 Description
 -----------

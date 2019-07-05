@@ -3,7 +3,7 @@
 YPbPrToRGB709 node
 ==================
 
-*This documentation is for version 1.0 of YPbPrToRGB709.*
+*This documentation is for version 1.0 of YPbPrToRGB709 (net.sf.openfx.YPbPrToRGB709).*
 
 Description
 -----------

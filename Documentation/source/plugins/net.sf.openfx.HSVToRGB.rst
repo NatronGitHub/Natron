@@ -5,7 +5,7 @@ HSVToRGB node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of HSVToRGB.*
+*This documentation is for version 1.0 of HSVToRGB (net.sf.openfx.HSVToRGB).*
 
 Description
 -----------

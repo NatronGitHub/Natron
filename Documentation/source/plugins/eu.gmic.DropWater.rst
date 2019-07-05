@@ -3,7 +3,7 @@
 G’MIC Drop Water node
 =====================
 
-*This documentation is for version 1.0 of G’MIC Drop Water.*
+*This documentation is for version 1.0 of G’MIC Drop Water (eu.gmic.DropWater).*
 
 Description
 -----------
@@ -97,6 +97,10 @@ Controls
 | Ignore Alpha / ``Ignore_Alpha``                           | Boolean | Off        |                                   |
 +-----------------------------------------------------------+---------+------------+-----------------------------------+
 | Preview/Draft Mode / ``PreviewDraft_Mode``                | Boolean | Off        |                                   |
++-----------------------------------------------------------+---------+------------+-----------------------------------+
+| Global Random Seed / ``Global_Random_Seed``               | Integer | 0          |                                   |
++-----------------------------------------------------------+---------+------------+-----------------------------------+
+| Animate Random Seed / ``Animate_Random_Seed``             | Boolean | Off        |                                   |
 +-----------------------------------------------------------+---------+------------+-----------------------------------+
 | Log Verbosity / ``Log_Verbosity``                         | Choice  | Off        | |                                 |
 |                                                           |         |            | | **Off**                         |

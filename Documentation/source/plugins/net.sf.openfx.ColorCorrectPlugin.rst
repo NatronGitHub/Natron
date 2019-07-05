@@ -5,7 +5,7 @@ ColorCorrect node
 
 |pluginIcon| 
 
-*This documentation is for version 2.1 of ColorCorrect.*
+*This documentation is for version 2.1 of ColorCorrect (net.sf.openfx.ColorCorrectPlugin).*
 
 Description
 -----------

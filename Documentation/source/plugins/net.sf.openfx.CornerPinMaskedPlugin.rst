@@ -5,7 +5,7 @@ CornerPinMasked node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of CornerPinMasked.*
+*This documentation is for version 1.0 of CornerPinMasked (net.sf.openfx.CornerPinMaskedPlugin).*
 
 Description
 -----------

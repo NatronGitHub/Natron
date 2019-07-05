@@ -3,7 +3,7 @@
 OneView node
 ============
 
-*This documentation is for version 1.0 of OneView.*
+*This documentation is for version 1.0 of OneView (fr.inria.built-in.OneView).*
 
 Description
 -----------

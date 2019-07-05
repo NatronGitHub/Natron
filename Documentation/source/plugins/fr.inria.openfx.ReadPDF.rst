@@ -5,7 +5,7 @@ ReadPDF node
 
 |pluginIcon| 
 
-*This documentation is for version 1.4 of ReadPDF.*
+*This documentation is for version 1.4 of ReadPDF (fr.inria.openfx.ReadPDF).*
 
 Description
 -----------

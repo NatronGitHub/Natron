@@ -5,7 +5,7 @@ NoOp node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of NoOp.*
+*This documentation is for version 2.0 of NoOp (net.sf.openfx.NoOpPlugin).*
 
 Description
 -----------

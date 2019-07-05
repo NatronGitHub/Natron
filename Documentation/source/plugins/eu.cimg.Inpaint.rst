@@ -5,7 +5,7 @@ Inpaint node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Inpaint.*
+*This documentation is for version 1.0 of Inpaint (eu.cimg.Inpaint).*
 
 Description
 -----------

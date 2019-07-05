@@ -3,7 +3,7 @@
 HSIToRGB node
 =============
 
-*This documentation is for version 1.0 of HSIToRGB.*
+*This documentation is for version 1.0 of HSIToRGB (net.sf.openfx.HSIToRGB).*
 
 Description
 -----------

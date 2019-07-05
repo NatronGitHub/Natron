@@ -3,7 +3,7 @@
 RGBToHSL node
 =============
 
-*This documentation is for version 1.0 of RGBToHSL.*
+*This documentation is for version 1.0 of RGBToHSL (net.sf.openfx.RGBToHSL).*
 
 Description
 -----------

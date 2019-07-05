@@ -5,7 +5,7 @@ Polar node
 
 |pluginIcon| 
 
-*This documentation is for version 4.3 of Polar.*
+*This documentation is for version 4.3 of Polar (net.fxarena.openfx.Polar).*
 
 Description
 -----------

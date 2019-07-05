@@ -5,7 +5,7 @@ Equalize node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of Equalize.*
+*This documentation is for version 2.0 of Equalize (net.sf.cimg.CImgEqualize).*
 
 Description
 -----------

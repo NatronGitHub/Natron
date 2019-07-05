@@ -3,7 +3,7 @@
 SeGrain node
 ============
 
-*This documentation is for version 1.0 of SeGrain.*
+*This documentation is for version 1.0 of SeGrain (net.sf.openfx.SeGrain).*
 
 Description
 -----------

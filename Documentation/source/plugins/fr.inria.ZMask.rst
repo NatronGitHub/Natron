@@ -3,7 +3,7 @@
 ZMask node
 ==========
 
-*This documentation is for version 1.0 of ZMask.*
+*This documentation is for version 1.0 of ZMask (fr.inria.ZMask).*
 
 Description
 -----------

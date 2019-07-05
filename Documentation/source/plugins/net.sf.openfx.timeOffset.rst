@@ -5,7 +5,7 @@ TimeOffset node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of TimeOffset.*
+*This documentation is for version 1.0 of TimeOffset (net.sf.openfx.timeOffset).*
 
 Description
 -----------

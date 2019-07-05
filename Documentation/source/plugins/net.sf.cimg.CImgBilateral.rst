@@ -5,7 +5,7 @@ SmoothBilateral node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of SmoothBilateral.*
+*This documentation is for version 2.0 of SmoothBilateral (net.sf.cimg.CImgBilateral).*
 
 Description
 -----------

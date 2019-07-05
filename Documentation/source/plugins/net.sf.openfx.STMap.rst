@@ -5,7 +5,7 @@ STMap node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of STMap.*
+*This documentation is for version 2.0 of STMap (net.sf.openfx.STMap).*
 
 Description
 -----------

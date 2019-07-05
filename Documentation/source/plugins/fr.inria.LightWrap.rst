@@ -5,7 +5,7 @@ LightWrap node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of LightWrap.*
+*This documentation is for version 1.0 of LightWrap (fr.inria.LightWrap).*
 
 Description
 -----------

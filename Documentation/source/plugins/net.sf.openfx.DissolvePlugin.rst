@@ -5,7 +5,7 @@ Dissolve node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Dissolve.*
+*This documentation is for version 1.0 of Dissolve (net.sf.openfx.DissolvePlugin).*
 
 Description
 -----------

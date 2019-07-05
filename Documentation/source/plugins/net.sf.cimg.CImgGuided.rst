@@ -5,7 +5,7 @@ SmoothGuided node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of SmoothGuided.*
+*This documentation is for version 2.0 of SmoothGuided (net.sf.cimg.CImgGuided).*
 
 Description
 -----------

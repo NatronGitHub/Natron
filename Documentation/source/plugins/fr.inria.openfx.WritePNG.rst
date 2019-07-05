@@ -5,7 +5,7 @@ WritePNG node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of WritePNG.*
+*This documentation is for version 1.0 of WritePNG (fr.inria.openfx.WritePNG).*
 
 Description
 -----------

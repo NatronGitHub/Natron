@@ -5,7 +5,7 @@ Erode node
 
 |pluginIcon| 
 
-*This documentation is for version 2.1 of Erode.*
+*This documentation is for version 2.1 of Erode (net.sf.cimg.CImgErode).*
 
 Description
 -----------

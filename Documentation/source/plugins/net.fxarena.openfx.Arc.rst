@@ -5,7 +5,7 @@ Arc node
 
 |pluginIcon| 
 
-*This documentation is for version 4.2 of Arc.*
+*This documentation is for version 4.2 of Arc (net.fxarena.openfx.Arc).*
 
 Description
 -----------

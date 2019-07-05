@@ -5,7 +5,7 @@ SideBySide node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of SideBySide.*
+*This documentation is for version 1.0 of SideBySide (net.sf.openfx.sideBySidePlugin).*
 
 Description
 -----------

@@ -5,7 +5,7 @@ Invert node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of Invert.*
+*This documentation is for version 2.0 of Invert (net.sf.openfx.Invert).*
 
 Description
 -----------

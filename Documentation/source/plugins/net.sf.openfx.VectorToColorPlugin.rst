@@ -5,7 +5,7 @@ VectorToColor node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of VectorToColor.*
+*This documentation is for version 1.0 of VectorToColor (net.sf.openfx.VectorToColorPlugin).*
 
 Description
 -----------

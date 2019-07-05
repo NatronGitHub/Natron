@@ -5,7 +5,7 @@ Reformat node
 
 |pluginIcon| 
 
-*This documentation is for version 1.1 of Reformat.*
+*This documentation is for version 1.1 of Reformat (net.sf.openfx.Reformat).*
 
 Description
 -----------

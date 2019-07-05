@@ -5,7 +5,7 @@ Shadertoy node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Shadertoy.*
+*This documentation is for version 1.0 of Shadertoy (net.sf.openfx.Shadertoy).*
 
 Description
 -----------

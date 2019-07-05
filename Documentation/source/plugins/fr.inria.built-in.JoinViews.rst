@@ -3,7 +3,7 @@
 JoinViews node
 ==============
 
-*This documentation is for version 1.0 of JoinViews.*
+*This documentation is for version 1.0 of JoinViews (fr.inria.built-in.JoinViews).*
 
 Description
 -----------

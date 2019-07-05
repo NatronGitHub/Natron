@@ -5,7 +5,7 @@ SmoothAnisotropic node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of SmoothAnisotropic.*
+*This documentation is for version 2.0 of SmoothAnisotropic (net.sf.cimg.CImgSmooth).*
 
 Description
 -----------

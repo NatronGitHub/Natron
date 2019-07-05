@@ -3,7 +3,7 @@
 G’MIC Maze node
 ===============
 
-*This documentation is for version 1.0 of G’MIC Maze.*
+*This documentation is for version 1.0 of G’MIC Maze (eu.gmic.Maze).*
 
 Description
 -----------
@@ -68,6 +68,10 @@ Controls
 |                                                         |         |            | | **Downsample 1/16**       |
 +---------------------------------------------------------+---------+------------+-----------------------------+
 | Ignore Alpha / ``Ignore_Alpha``                         | Boolean | Off        |                             |
++---------------------------------------------------------+---------+------------+-----------------------------+
+| Global Random Seed / ``Global_Random_Seed``             | Integer | 0          |                             |
++---------------------------------------------------------+---------+------------+-----------------------------+
+| Animate Random Seed / ``Animate_Random_Seed``           | Boolean | Off        |                             |
 +---------------------------------------------------------+---------+------------+-----------------------------+
 | Log Verbosity / ``Log_Verbosity``                       | Choice  | Off        | |                           |
 |                                                         |         |            | | **Off**                   |

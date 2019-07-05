@@ -3,7 +3,7 @@
 Median node
 ===========
 
-*This documentation is for version 2.0 of Median.*
+*This documentation is for version 2.0 of Median (net.sf.cimg.CImgMedian).*
 
 Description
 -----------

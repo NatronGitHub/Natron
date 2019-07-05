@@ -5,7 +5,7 @@ CheckerBoard node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of CheckerBoard.*
+*This documentation is for version 1.0 of CheckerBoard (net.sf.openfx.CheckerBoardPlugin).*
 
 Description
 -----------

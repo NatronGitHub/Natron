@@ -5,7 +5,7 @@ ReadSVG node
 
 |pluginIcon| 
 
-*This documentation is for version 3.3 of ReadSVG.*
+*This documentation is for version 3.3 of ReadSVG (net.fxarena.openfx.ReadSVG).*
 
 Description
 -----------

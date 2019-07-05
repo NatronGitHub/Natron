@@ -5,7 +5,7 @@ OCIOColorSpace node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of OCIOColorSpace.*
+*This documentation is for version 1.0 of OCIOColorSpace (fr.inria.openfx.OCIOColorSpace).*
 
 Description
 -----------

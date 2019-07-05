@@ -5,7 +5,7 @@ PIK node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of PIK.*
+*This documentation is for version 1.0 of PIK (net.sf.openfx.PIK).*
 
 Description
 -----------

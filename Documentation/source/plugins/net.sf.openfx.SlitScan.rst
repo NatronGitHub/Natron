@@ -5,7 +5,7 @@ SlitScan node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of SlitScan.*
+*This documentation is for version 1.0 of SlitScan (net.sf.openfx.SlitScan).*
 
 Description
 -----------

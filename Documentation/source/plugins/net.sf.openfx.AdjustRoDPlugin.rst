@@ -5,7 +5,7 @@ AdjustRoD node
 
 |pluginIcon| 
 
-*This documentation is for version 1.1 of AdjustRoD.*
+*This documentation is for version 1.1 of AdjustRoD (net.sf.openfx.AdjustRoDPlugin).*
 
 Description
 -----------

@@ -5,7 +5,7 @@ XYZToRGB709 node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of XYZToRGB709.*
+*This documentation is for version 1.0 of XYZToRGB709 (net.sf.openfx.XYZToRGB709).*
 
 Description
 -----------

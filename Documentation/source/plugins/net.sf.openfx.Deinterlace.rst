@@ -5,7 +5,7 @@ Deinterlace node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Deinterlace.*
+*This documentation is for version 1.0 of Deinterlace (net.sf.openfx.Deinterlace).*
 
 Description
 -----------

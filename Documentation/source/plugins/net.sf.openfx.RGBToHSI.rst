@@ -3,7 +3,7 @@
 RGBToHSI node
 =============
 
-*This documentation is for version 1.0 of RGBToHSI.*
+*This documentation is for version 1.0 of RGBToHSI (net.sf.openfx.RGBToHSI).*
 
 Description
 -----------

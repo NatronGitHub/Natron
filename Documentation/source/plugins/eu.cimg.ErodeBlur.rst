@@ -3,7 +3,7 @@
 ErodeBlur node
 ==============
 
-*This documentation is for version 4.0 of ErodeBlur.*
+*This documentation is for version 4.0 of ErodeBlur (eu.cimg.ErodeBlur).*
 
 Description
 -----------

@@ -5,7 +5,7 @@ Premult node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of Premult.*
+*This documentation is for version 2.0 of Premult (net.sf.openfx.Premult).*
 
 Description
 -----------

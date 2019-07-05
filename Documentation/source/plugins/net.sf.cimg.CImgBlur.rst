@@ -5,7 +5,7 @@ Blur node
 
 |pluginIcon| 
 
-*This documentation is for version 4.0 of Blur.*
+*This documentation is for version 4.0 of Blur (net.sf.cimg.CImgBlur).*
 
 Description
 -----------

@@ -3,7 +3,7 @@
 Group node
 ==========
 
-*This documentation is for version 1.0 of Group.*
+*This documentation is for version 1.0 of Group (fr.inria.built-in.Group).*
 
 Description
 -----------

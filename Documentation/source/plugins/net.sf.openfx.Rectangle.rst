@@ -5,7 +5,7 @@ Rectangle node
 
 |pluginIcon| 
 
-*This documentation is for version 2.1 of Rectangle.*
+*This documentation is for version 2.1 of Rectangle (net.sf.openfx.Rectangle).*
 
 Description
 -----------

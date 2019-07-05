@@ -5,7 +5,7 @@ ChromaBlur node
 
 |pluginIcon| 
 
-*This documentation is for version 4.0 of ChromaBlur.*
+*This documentation is for version 4.0 of ChromaBlur (net.sf.cimg.CImgChromaBlur).*
 
 Description
 -----------

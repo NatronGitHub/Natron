@@ -3,7 +3,7 @@
 Dot node
 ========
 
-*This documentation is for version 1.0 of Dot.*
+*This documentation is for version 1.0 of Dot (fr.inria.built-in.Dot).*
 
 Description
 -----------

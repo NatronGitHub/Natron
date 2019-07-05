@@ -3,7 +3,7 @@
 Write node
 ==========
 
-*This documentation is for version 1.0 of Write.*
+*This documentation is for version 1.0 of Write (fr.inria.built-in.Write).*
 
 Description
 -----------

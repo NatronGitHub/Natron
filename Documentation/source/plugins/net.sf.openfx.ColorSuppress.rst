@@ -3,7 +3,7 @@
 ColorSuppress node
 ==================
 
-*This documentation is for version 1.0 of ColorSuppress.*
+*This documentation is for version 1.0 of ColorSuppress (net.sf.openfx.ColorSuppress).*
 
 Description
 -----------

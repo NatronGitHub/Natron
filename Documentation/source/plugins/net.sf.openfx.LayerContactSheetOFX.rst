@@ -3,7 +3,7 @@
 LayerContactSheet node
 ======================
 
-*This documentation is for version 1.0 of LayerContactSheet.*
+*This documentation is for version 1.0 of LayerContactSheet (net.sf.openfx.LayerContactSheetOFX).*
 
 Description
 -----------

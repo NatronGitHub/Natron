@@ -3,7 +3,7 @@
 LabToXYZ node
 =============
 
-*This documentation is for version 1.0 of LabToXYZ.*
+*This documentation is for version 1.0 of LabToXYZ (net.sf.openfx.LabToXYZ).*
 
 Description
 -----------

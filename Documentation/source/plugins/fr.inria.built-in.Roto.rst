@@ -3,7 +3,7 @@
 Roto node
 =========
 
-*This documentation is for version 1.0 of Roto.*
+*This documentation is for version 1.0 of Roto (fr.inria.built-in.Roto).*
 
 Description
 -----------

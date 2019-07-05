@@ -5,7 +5,7 @@ Oilpaint node
 
 |pluginIcon| 
 
-*This documentation is for version 2.1 of Oilpaint.*
+*This documentation is for version 2.1 of Oilpaint (net.fxarena.openfx.Oilpaint).*
 
 Description
 -----------

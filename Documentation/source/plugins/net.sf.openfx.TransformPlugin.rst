@@ -5,7 +5,7 @@ Transform node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Transform.*
+*This documentation is for version 1.0 of Transform (net.sf.openfx.TransformPlugin).*
 
 Description
 -----------

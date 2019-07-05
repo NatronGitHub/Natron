@@ -386,7 +386,7 @@ Node::makeDocumentation(bool genHTML) const
         }
         ms << "&nbsp;\n\n"; // &nbsp; required so that there is no legend when converted to rst by pandoc
     }
-    ms << tr("*This documentation is for version %2.%3 of %1.*").arg(pluginLabel).arg(majorVersion).arg(minorVersion) << "\n\n";
+    ms << tr("*This documentation is for version %1.%2 of %3 (%4).*").arg(majorVersion).arg(minorVersion).arg(pluginLabel).arg(pluginID) << "\n\n";
 
     ms << "\n" << tr("Description") << "\n--------------------------------------------------------------------------------\n\n";
 

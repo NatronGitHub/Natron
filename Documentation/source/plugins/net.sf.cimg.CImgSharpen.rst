@@ -5,7 +5,7 @@ Sharpen node
 
 |pluginIcon| 
 
-*This documentation is for version 4.0 of Sharpen.*
+*This documentation is for version 4.0 of Sharpen (net.sf.cimg.CImgSharpen).*
 
 Description
 -----------

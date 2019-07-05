@@ -3,7 +3,7 @@
 YCbCrToRGB709 node
 ==================
 
-*This documentation is for version 1.0 of YCbCrToRGB709.*
+*This documentation is for version 1.0 of YCbCrToRGB709 (net.sf.openfx.YCbCrToRGB709).*
 
 Description
 -----------

@@ -5,7 +5,7 @@ GodRays node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of GodRays.*
+*This documentation is for version 1.0 of GodRays (net.sf.openfx.GodRays).*
 
 Description
 -----------

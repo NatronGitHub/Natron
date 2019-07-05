@@ -5,7 +5,7 @@ Resize node
 
 |pluginIcon| 
 
-*This documentation is for version 2.0 of Resize.*
+*This documentation is for version 2.0 of Resize (fr.inria.openfx.OIIOResize).*
 
 Description
 -----------

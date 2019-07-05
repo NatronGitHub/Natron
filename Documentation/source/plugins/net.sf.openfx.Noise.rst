@@ -5,7 +5,7 @@ Rand node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of Rand.*
+*This documentation is for version 1.0 of Rand (net.sf.openfx.Noise).*
 
 Description
 -----------

@@ -5,7 +5,7 @@ Wave node
 
 |pluginIcon| 
 
-*This documentation is for version 2.9 of Wave.*
+*This documentation is for version 2.9 of Wave (net.fxarena.openfx.Wave).*
 
 Description
 -----------

@@ -5,7 +5,7 @@ EdgeExtend node
 
 |pluginIcon| 
 
-*This documentation is for version 4.0 of EdgeExtend.*
+*This documentation is for version 4.0 of EdgeExtend (eu.cimg.EdgeExtend).*
 
 Description
 -----------

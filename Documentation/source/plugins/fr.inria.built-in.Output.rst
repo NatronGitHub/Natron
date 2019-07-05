@@ -3,7 +3,7 @@
 Output node
 ===========
 
-*This documentation is for version 1.0 of Output.*
+*This documentation is for version 1.0 of Output (fr.inria.built-in.Output).*
 
 Description
 -----------

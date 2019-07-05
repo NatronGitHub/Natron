@@ -5,7 +5,7 @@ ReadCDR node
 
 |pluginIcon| 
 
-*This documentation is for version 1.0 of ReadCDR.*
+*This documentation is for version 1.0 of ReadCDR (fr.inria.openfx.ReadCDR).*
 
 Description
 -----------

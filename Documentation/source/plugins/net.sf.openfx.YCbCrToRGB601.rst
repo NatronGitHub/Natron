@@ -3,7 +3,7 @@
 YCbCrToRGB601 node
 ==================
 
-*This documentation is for version 1.0 of YCbCrToRGB601.*
+*This documentation is for version 1.0 of YCbCrToRGB601 (net.sf.openfx.YCbCrToRGB601).*
 
 Description
 -----------

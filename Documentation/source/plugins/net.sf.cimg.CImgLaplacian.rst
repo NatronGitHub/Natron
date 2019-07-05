@@ -5,7 +5,7 @@ Laplacian node
 
 |pluginIcon| 
 
-*This documentation is for version 4.0 of Laplacian.*
+*This documentation is for version 4.0 of Laplacian (net.sf.cimg.CImgLaplacian).*
 
 Description
 -----------

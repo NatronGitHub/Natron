@@ -5,7 +5,7 @@ Implode node
 
 |pluginIcon| 
 
-*This documentation is for version 2.3 of Implode.*
+*This documentation is for version 2.3 of Implode (net.fxarena.openfx.Implode).*
 
 Description
 -----------
