@@ -34,7 +34,7 @@ echo 'done'
 echo "# Create links to plugins in $HOME/OFX/Plugins:"
 echo "mkdir -p \"$HOME/OFX/Plugins\""
 echo "cd \"$TOP_SOURCES\""
-echo 'ln -s openfx-*/*-release/*.ofx.bundle "$HOME/OFX/Plugins"'
+echo 'ln -s $PWD/openfx-*/*-release/*.ofx.bundle "$HOME/OFX/Plugins"'
 echo "# Compile Natron with:"
 echo "cd \"$NATRON\""
 echo 'qmake CONFIG+=debug CONFIG+=enable-cairo CONFIG+=enable-osmesa CONFIG+=openmp LLVM_PATH=$SDK/llvm OSMESA_PATH=$SDK/osmesa -r && make'

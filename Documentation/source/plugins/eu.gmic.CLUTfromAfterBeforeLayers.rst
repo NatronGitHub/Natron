@@ -8,6 +8,18 @@ G’MIC CLUT from After / Before Layers node
 Description
 -----------
 
+What is this filter for?
+
+This filter requires at least two input layers to work properly.
+
+It assumes you have an input top layer A and a base layer B such that A and B both represent the same image but with only color variations (typically A has been obtained from B using the color curves tool).
+
+This filter is then able to estimate and outputs a color HaldCLUT H so that applying H on the base layer B gives back A.
+
+This is useful when you have a color transformation between two images, that you want to recover and re-apply on a bunch of other images.
+
+Author: David Tschumperle. Latest Update: 2018/07/25.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

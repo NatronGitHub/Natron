@@ -10,7 +10,7 @@ PortGroup           legacysupport 1.0
 
 name                poppler
 conflicts           xpdf-tools
-version             0.74.0
+version             0.78.0
 license             GPL-2+
 maintainers         {devans @dbevans} openmaintainer
 categories          graphics
@@ -24,9 +24,9 @@ master_sites        ${homepage}
 
 use_xz              yes
 
-checksums           rmd160  a50bb9ec9522f5ddf70907e0bbed1bbee10372ad \
-                    sha256  92e09fd3302567fd36146b36bb707db43ce436e8841219025a82ea9fb0076b2f \
-                    size    1514044
+checksums           rmd160  013f849a9c24d2f75cf5b60a8b32dfb3ebac6cb8 \
+                    sha256  622fdd3187a7339c3b78b861b7cd820ea41ebce0609839ba28ee52c3387938c2 \
+                    size    1540264
 
 depends_build-append \
                     port:pkgconfig
@@ -46,6 +46,11 @@ depends_lib-append  port:bzip2 \
                     port:poppler-data \
                     port:tiff \
                     port:zlib
+
+# remove top-level paths, such that internal headers and
+# libraries are used instead of any already-installed ones.
+configure.ldflags-delete -L${prefix}/lib
+configure.cppflags-delete -I${prefix}/include
 
 configure.ldflags-append -liconv
 gobject_introspection yes
@@ -114,10 +119,6 @@ if {${subport} ne ${name}} {
                 ${destroot}${prefix}/lib/pkgconfig/poppler-splash.pc \
                 ${destroot}${prefix}/lib/pkgconfig/poppler.pc
     }
-} else {
-    # generation of Poppler-0.18.gir fails if previous version of poppler is active
-    # appropriate for main poppler port only
-    conflicts_build ${name}
 }
 
 livecheck.type      regex

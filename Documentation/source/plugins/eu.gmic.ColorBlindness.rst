@@ -8,6 +8,10 @@ G’MIC Color Blindness node
 Description
 -----------
 
+Note: This filter simulates different types of colorblindness vision.
+
+Author: David Tschumperle. Latest Update: 2016/20/04.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

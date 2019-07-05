@@ -8,6 +8,10 @@ G’MIC Split Details Wavelets node
 Description
 -----------
 
+Note: This filter decomposes an image into several detail scales, using wavelet atrous. It should provide similar results to the Wavelet Decompose Plug-in (by Marco Rossini).
+
+Author: David Tschumperle. Latest Update: 2016/23/03.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

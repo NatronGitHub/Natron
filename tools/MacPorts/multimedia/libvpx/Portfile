@@ -82,7 +82,7 @@ configure.args      --enable-vp8 \
                     --disable-examples \
                     --disable-unit-tests
 
-configure.env       LD="${configure.cc}"
+configure.env       LD=${configure.cc}
 
 # add in when docs are installed correctly
 #variant docs description {Build documentation} {

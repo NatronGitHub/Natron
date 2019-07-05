@@ -8,6 +8,16 @@ G’MIC Details Equalizer node
 Description
 -----------
 
+Coarse scale:
+
+Medium scale:
+
+Small scale:
+
+Fine scale:
+
+Author: Jerome Boulanger and David Tschumperle. Latest Update: 2015/11/11.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

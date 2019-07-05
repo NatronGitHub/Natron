@@ -8,6 +8,10 @@ G’MIC Ascii Art node
 Description
 -----------
 
+Click here for a detailed description of this filter.: http://www.gimpchat.com/viewtopic.php?f=28&t=10047
+
+Author: David Tschumperle. Latest Update: 2014/27/03.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

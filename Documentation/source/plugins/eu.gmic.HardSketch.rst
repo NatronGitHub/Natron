@@ -8,6 +8,8 @@ G’MIC Hard Sketch node
 Description
 -----------
 
+Author: David Tschumperle. Latest Update: 2010/29/12.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
@@ -29,8 +31,6 @@ Controls
 +---------------------------------------------+---------+----------------+----------------------------------+
 | Parameter / script name                     | Type    | Default        | Function                         |
 +=============================================+=========+================+==================================+
-| Detail Level / ``Detail_Level``             | Double  | 0.8            |                                  |
-+---------------------------------------------+---------+----------------+----------------------------------+
 | Amplitude / ``Amplitude``                   | Double  | 300            |                                  |
 +---------------------------------------------+---------+----------------+----------------------------------+
 | Density / ``Density``                       | Double  | 50             |                                  |

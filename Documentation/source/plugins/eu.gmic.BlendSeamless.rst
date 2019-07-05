@@ -8,6 +8,18 @@ G’MIC Blend Seamless node
 Description
 -----------
 
+Note: This filter needs at least two layers to work properly. Set the Input layers option to handle multiple input layers.
+
+Click here for a detailed description of this filter.: http://gimpchat.com/viewtopic.php?f=28&t=10204
+
++ Video tutorial 1: http://www.youtube.com/watch?v=Nu-S1HmOCgE
+
++ Video tutorial 2: http://www.youtube.com/watch?v=zsHgQY6025I
+
++ Video tutorial 3: http://www.youtube.com/watch?v=2e6FikWMkaQ
+
+Author: David Tschumperle. Latest Update: 2014/04/05.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

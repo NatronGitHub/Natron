@@ -8,6 +8,10 @@ G’MIC Poster Edges node
 Description
 -----------
 
+Click here for a detailed description of this filter.: http://www.davidrevoy.com/article147/gmic-new-filter-poster-edges
+
+Authors: David Tschumperle and David Revoy. Latest Update: 2012/30/11.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

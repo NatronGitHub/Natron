@@ -8,6 +8,10 @@ G’MIC JPEG Artefacts node
 Description
 -----------
 
+This filter simulates the JPEG compression artifacts, using DCT quantization on 8x8 blocs.
+
+Author: David Tschumperle. Latest Update: 2017/05/07.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

@@ -8,6 +8,8 @@ G’MIC Remove Hot Pixels node
 Description
 -----------
 
+Author: Jerome Boulanger. Latest Update: 2010/29/12.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
@@ -29,15 +31,9 @@ Controls
 +--------------------------------------------+---------+---------------+----------------------------+
 | Parameter / script name                    | Type    | Default       | Function                   |
 +============================================+=========+===============+============================+
-| Threshold / ``Threshold``                  | Double  | 75            |                            |
-+--------------------------------------------+---------+---------------+----------------------------+
-| Smoothness / ``Smoothness``                | Double  | 3.5           |                            |
-+--------------------------------------------+---------+---------------+----------------------------+
-| Factor / ``Factor``                        | Double  | 0.1           |                            |
-+--------------------------------------------+---------+---------------+----------------------------+
 | Mask Size / ``Mask_Size``                  | Integer | 3             |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
-| Threshold_2 / ``Threshold_2``              | Double  | 10            |                            |
+| Threshold / ``Threshold``                  | Double  | 10            |                            |
 +--------------------------------------------+---------+---------------+----------------------------+
 | Preview Type / ``Preview_Type``            | Choice  | Full          | |                          |
 |                                            |         |               | | **Full**                 |

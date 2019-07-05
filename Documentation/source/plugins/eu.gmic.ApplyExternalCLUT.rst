@@ -8,6 +8,10 @@ G’MIC Apply External CLUT node
 Description
 -----------
 
+Note: Do not forget to set the Input layers option if you select Top layer or Bottom layer.
+
+Author: David Tschumperle. Latest Update: 2016/02/08.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

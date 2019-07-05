@@ -8,6 +8,10 @@ G’MIC Quadtree Variations node
 Description
 -----------
 
+For ‘Ellipse painting’ only:
+
+Author: David Tschumperle. Latest Update: 2017/15/06.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

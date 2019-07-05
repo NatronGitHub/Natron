@@ -8,6 +8,16 @@ G’MIC Contrast Swiss Mask node
 Description
 -----------
 
+Contrast Mask need the negative of the mask
+
+Uncheck for Contrast Mask,Check for Contrast Boost
+
+Merge the Mask
+
+Author: PhotoComiX. Latest Update: 2011/01/01.
+
+Filter explained here: http://www.gimpchat.com/viewtopic.php?f=9&t=864
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

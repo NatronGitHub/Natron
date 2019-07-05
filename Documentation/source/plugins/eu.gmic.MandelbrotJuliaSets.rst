@@ -8,6 +8,14 @@ G’MIC Mandelbrot Julia Sets node
 Description
 -----------
 
+Fractal Type:
+
+Colormap:
+
+Navigation:
+
+Author: David Tschumperle. Latest Update: 2018/06/27.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

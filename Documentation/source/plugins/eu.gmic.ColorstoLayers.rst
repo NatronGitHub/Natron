@@ -8,6 +8,10 @@ G’MIC Colors to Layers node
 Description
 -----------
 
+Note: This filter decomposes an image into several layers each with a single color + a residual layer (if any).
+
+Author: David Tschumperle. Latest Update: 2015/11/03.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

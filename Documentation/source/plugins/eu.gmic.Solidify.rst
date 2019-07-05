@@ -8,6 +8,10 @@ G’MIC Solidify node
 Description
 -----------
 
+Note: This filter reconstructs transparent regions of an image using a transport-diffusion algorithm. Useful only for images having an alpha-channel.
+
+Author: David Tschumperle. Latest Update: 2016/07/04.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

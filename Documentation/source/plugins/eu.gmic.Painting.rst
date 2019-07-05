@@ -8,6 +8,10 @@ G’MIC Painting node
 Description
 -----------
 
+Authors: Lyle Kroll, Angelo Lama and David Tschumperle.
+
+Latest Update: 2011/28/02.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

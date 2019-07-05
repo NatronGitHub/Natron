@@ -8,6 +8,8 @@ G’MIC Channels to Layers node
 Description
 -----------
 
+Author: David Tschumperle. Latest Update: 2015/15/07.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

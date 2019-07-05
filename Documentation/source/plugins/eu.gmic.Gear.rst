@@ -8,6 +8,8 @@ G’MIC Gear node
 Description
 -----------
 
+Author: David Tschumperle. Latest Update: 2018/01/08.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

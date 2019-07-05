@@ -8,6 +8,8 @@ G’MIC Abstraction node
 Description
 -----------
 
+Author: David Tschumperle. Latest Update: 2011/19/10.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

@@ -8,6 +8,12 @@ G’MIC Light Leaks node
 Description
 -----------
 
+This filter uses the free light leaks dataset available at :
+
+Lomo Light Leaks: http://www.photoshoptutorials.ws/downloads/mockups-graphics/lomo-light-leaks/
+
+Author: David Tschumperle. Latest Update: 2015/01/07.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

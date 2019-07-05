@@ -8,6 +8,12 @@ G’MIC Brushify node
 Description
 -----------
 
+Brush parameters:
+
+Painting parameters:
+
+Author: David Tschumperle. Latest Update: 2016/22/04.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

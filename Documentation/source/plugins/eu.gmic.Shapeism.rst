@@ -8,6 +8,12 @@ G’MIC Shapeism node
 Description
 -----------
 
+Note: Parameters Branches, Thickness and Angle are used only for Custom shapes.
+
+Click here for a detailed description of this filter.: http://gimpchat.com/viewtopic.php?f=28&t=7500&sid=5b483979826903b8f8fc8fdaf1767dae
+
+Author: David Tschumperle. Latest Update: 2013/11/06.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

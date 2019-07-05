@@ -8,6 +8,26 @@ G’MIC Equalize HSI-HSL-HSV node
 Description
 -----------
 
+Black:
+
+Near black:
+
+Dark grey:
+
+Mi-dark grey:
+
+Middle grey:
+
+Mid-light grey:
+
+Light grey:
+
+Highlights:
+
+White:
+
+Authors: David Tschumperle and David Revoy. Latest Update: 2018/01/19.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

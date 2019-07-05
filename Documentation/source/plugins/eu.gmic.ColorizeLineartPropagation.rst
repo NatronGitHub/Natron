@@ -8,6 +8,26 @@ G’MIC Colorize Lineart Propagation node
 Description
 -----------
 
+Layers ordering:
+
+Note: You probably need to select All for the Input layers option on the left.
+
+Color Spots = your layer with color indications.
+
+Lineart = your layer with line-art (b&w or transparent).
+
+Extrapolated Colors = the G’MIC generated layer with flat colors.
+
+Warnings:
+
+- Do not rely too much on the preview, it is probably not accurate !
+
+- Activate option Extrapolate color as one layer per single color/region only if you have a lot of available memory !
+
+Click here for a detailed description of this filter.: http://www.gimpchat.com/viewtopic.php?f=28&t=7567
+
+Authors: David Tschumperle, Timothee Giet and David Revoy. Latest Update: 2013/19/06.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

@@ -8,6 +8,8 @@ G’MIC Light Rays node
 Description
 -----------
 
+Author: David Tschumperle. Latest Update: 2011/03/01.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

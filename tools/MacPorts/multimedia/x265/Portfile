@@ -24,7 +24,7 @@ long_description    x265 is a free software library and application for \
                     compression format, and is released under the terms of the \
                     GNU GPL.
 homepage            https://www.videolan.org/developers/x265.html
-master_sites        http://ftp.videolan.org/pub/videolan/x265/
+master_sites        https://download.videolan.org/pub/videolan/x265/
 distname            ${name}_${version}
 worksrcdir          ${distname}/source
 

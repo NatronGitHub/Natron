@@ -10,7 +10,7 @@ name                ffmpeg
 conflicts           ffmpeg-devel
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 epoch               1
-version             4.1.1
+version             4.1.3
 license             LGPL-2.1+
 categories          multimedia
 maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
@@ -52,9 +52,9 @@ master_sites        ${homepage}releases/
 
 use_xz              yes
 
-checksums           rmd160  e16400cfaa2a975805f84730f8a8c5e255d2f92b \
-                    sha256  373749824dfd334d84e55dff406729edfd1606575ee44dd485d97d45ea4d2d86 \
-                    size    8893404
+checksums           rmd160  bdc1bef58ea91e33b8851527de85f78e59cf5c67 \
+                    sha256  0c3020452880581a8face91595b239198078645e7d7184273b8bcc7758beb63d \
+                    size    8895988
 
 depends_build       port:pkgconfig \
                     port:gmake \
@@ -253,7 +253,11 @@ if {[variant_isset universal]} {
     lappend merger_configure_args(x86_64) --enable-x86asm
 } else {
     configure.args-append --arch=${configure.build_arch}
+    if {[vercmp [macports_version] 2.5.99] >= 0} {
+    configure.env-append  ASFLAGS=[get_canonical_archflags]
+    } else {
     configure.env-append  ASFLAGS='[get_canonical_archflags]'
+    }
     if {${build_arch} eq "i386" || ${build_arch} eq "x86_64"} {
         depends_build-append port:nasm
         configure.args-append --enable-x86asm

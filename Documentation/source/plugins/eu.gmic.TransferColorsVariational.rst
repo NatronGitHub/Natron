@@ -8,6 +8,16 @@ G’MIC Transfer Colors Variational node
 Description
 -----------
 
+Instructions:
+
+- This filter transfers the colors of one layer to all the others.
+
+- This is a highly experimental filter, it may be unstable or particularly long to render.
+
+- Don’t forget to set the Input layers... option on the left to manage your input layers.
+
+Author: David Tschumperle. Latest Update: 2015/04/04.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

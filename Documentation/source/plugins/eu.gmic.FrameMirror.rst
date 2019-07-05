@@ -8,6 +8,14 @@ G’MIC Frame Mirror node
 Description
 -----------
 
+Frame size:
+
+Image alignment:
+
+Frame dilation/shrinking:
+
+Author: David Tschumperle. Latest Update: 2018/08/20.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

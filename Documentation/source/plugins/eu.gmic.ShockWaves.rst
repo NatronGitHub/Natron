@@ -8,6 +8,8 @@ G’MIC Shock Waves node
 Description
 -----------
 
+Author: David Tschumperle. Latest Update: 2014/01/12.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

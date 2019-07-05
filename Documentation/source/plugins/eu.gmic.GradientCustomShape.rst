@@ -8,6 +8,16 @@ G’MIC Gradient Custom Shape node
 Description
 -----------
 
+Shape selection:
+
+Note: Shapes with small strokes may lead to incorrect previews.
+
+Gradient parameters:
+
+Color definitions:
+
+Author: David Tschumperle. Latest Update: 2013/03/10.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

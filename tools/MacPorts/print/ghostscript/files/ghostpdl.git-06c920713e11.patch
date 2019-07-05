@@ -1,0 +1,92 @@
+From 06c920713e11bce9bd541bbf9bf294b2ba16aee8 Mon Sep 17 00:00:00 2001
+From: Chris Liddell <chris.liddell@artifex.com>
+Date: Wed, 10 Apr 2019 14:23:39 +0100
+Subject: [PATCH] Bug 700952: re-introduce over/underflow workaround
+
+Commit 355434f4b1bbe8c4f98cafad5a6868aa2f0eaae1 reverted a workaround that
+compensated for over/underflow in Freetype's TTF hinting (related to freedom
+and projection vector calculations). That problem no longer exists in recent
+Freetype releases, and the workaround actually caused other issues to occur
+with hinting.
+
+What wasn't obvious was that the workaround also protected over/underflow
+issues relating to the unitsPerEm value.
+
+So this re-instates the workaround, but bases the decision on how the final
+scale is distributing between the Freetype "size" and the Freetype matrix on
+the unitsPerEm value (this is relevant for all font types as, for non-TTF,
+font types, Freetype derives the unitsPerEm from the FontMatrix (for PS type
+fonts).
+
+Also fixes Bug 700875
+---
+ base/fapi_ft.c | 33 +++++++++++++++++++++++++++------
+ 1 file changed, 27 insertions(+), 6 deletions(-)
+
+diff --git a/base/fapi_ft.c b/base/fapi_ft.c
+index 07b4167..c9fe9ff 100644
+--- base/fapi_ft.c.orig
++++ base/fapi_ft.c
+@@ -974,13 +974,19 @@ make_rotation(FT_Matrix * a_transform, const FT_Vector * a_vector)
+  */
+ static void
+ transform_decompose(FT_Matrix * a_transform, FT_UInt * xresp, FT_UInt * yresp,
+-                    FT_Fixed * a_x_scale, FT_Fixed * a_y_scale)
++                    FT_Fixed * a_x_scale, FT_Fixed * a_y_scale, int units_per_EM)
+ {
+     double scalex, scaley, fact = 1.0;
+     double factx = 1.0, facty = 1.0;
+     FT_Matrix ftscale_mat;
+     FT_UInt xres;
+     FT_UInt yres;
++    /* We have to account for units_per_EM as we fiddle with the scaling
++     * in order to avoid underflow (mostly in the TTF hinting code), but
++     * we also want to clamp to a lower value (512, admittedly arrived at
++     * via experimentation) in order to preserve the fidelity of the outlines.
++     */
++    double upe = units_per_EM > 512 ? (float)units_per_EM : 512.0;
+ 
+     scalex = hypot((double)a_transform->xx, (double)a_transform->xy);
+     scaley = hypot((double)a_transform->yx, (double)a_transform->yy);
+@@ -1067,10 +1073,25 @@ transform_decompose(FT_Matrix * a_transform, FT_UInt * xresp, FT_UInt * yresp,
+         scalex *= fact;
+     }
+ 
+-    ftscale_mat.xx = (FT_Fixed) (65536.0 / scalex);
+-    ftscale_mat.xy = (FT_Fixed) 0;
+-    ftscale_mat.yx = (FT_Fixed) 0;
+-    ftscale_mat.yy = (FT_Fixed) (65536.0 / scaley);
++    /* see above */
++    fact = 1.0;
++    while (scaley * yres > (double)upe * 72.0 && (xres > 0 && yres > 0)
++           && (scalex > 0.0 && scaley > 0.0)) {
++        if (scaley < yres) {
++            xres >>= 1;
++            yres >>= 1;
++            fact *= 2.0;
++        }
++        else {
++            scalex /= 1.25;
++            scaley /= 1.25;
++        }
++    }
++
++    ftscale_mat.xx = (FT_Fixed) ((65536.0 / scalex) * fact);
++    ftscale_mat.xy = 0;
++    ftscale_mat.yx = 0;
++    ftscale_mat.yy = (FT_Fixed) ((65536.0 / scaley) * fact);
+ 
+     FT_Matrix_Multiply(a_transform, &ftscale_mat);
+     memcpy(a_transform, &ftscale_mat, sizeof(FT_Matrix));
+@@ -1315,7 +1336,7 @@ gs_fapi_ft_get_scaled_font(gs_fapi_server * a_server, gs_fapi_font * a_font,
+          * transform.
+          */
+         transform_decompose(&face->ft_transform, &face->horz_res,
+-                            &face->vert_res, &face->width, &face->height);
++                            &face->vert_res, &face->width, &face->height, face->ft_face->units_per_EM);
+ 
+         ft_error = FT_Set_Char_Size(face->ft_face, face->width, face->height,
+                                     face->horz_res, face->vert_res);
+-- 
+2.9.1
+

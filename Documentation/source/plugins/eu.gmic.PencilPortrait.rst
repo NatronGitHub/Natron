@@ -8,6 +8,8 @@ G’MIC Pencil Portrait node
 Description
 -----------
 
+Authors: Jamac4k and David Tschumperle. Latest Update: 2015/29/06.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

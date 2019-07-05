@@ -6,6 +6,7 @@ The following sections contain documentation about every node in the GMIC group.
 .. toctree::
     :maxdepth: 1
 
+    plugins/eu.gmic.AboutGMIC.rst
     plugins/eu.gmic.3DBlocks.rst
     plugins/eu.gmic.3DColoredObject.rst
     plugins/eu.gmic.3DElevation.rst
@@ -13,14 +14,13 @@ The following sections contain documentation about every node in the GMIC group.
     plugins/eu.gmic.3DImageObject.rst
     plugins/eu.gmic.3DLathing.rst
     plugins/eu.gmic.3DRandomObjects.rst
-    plugins/eu.gmic.3DTextPointcloud.rst
-    plugins/eu.gmic.3DTiles.rst
     plugins/eu.gmic.Abstraction.rst
     plugins/eu.gmic.AddGrain.rst
     plugins/eu.gmic.AlignLayers.rst
     plugins/eu.gmic.ApplyExternalCLUT.rst
     plugins/eu.gmic.ArrayFaded.rst
     plugins/eu.gmic.ArrayMirrored.rst
+    plugins/eu.gmic.ArrayRandom.rst
     plugins/eu.gmic.ArrayRandomColors.rst
     plugins/eu.gmic.ArrayRegular.rst
     plugins/eu.gmic.AsciiArt.rst
@@ -29,6 +29,8 @@ The following sections contain documentation about every node in the GMIC group.
     plugins/eu.gmic.Bandpass.rst
     plugins/eu.gmic.BarnsleyFern.rst
     plugins/eu.gmic.BasicAdjustments.rst
+    plugins/eu.gmic.BayerFilter.rst
+    plugins/eu.gmic.BayerReconstruction.rst
     plugins/eu.gmic.BlackWhite.rst
     plugins/eu.gmic.BlendAverageAll.rst
     plugins/eu.gmic.BlendEdges.rst
@@ -52,6 +54,7 @@ The following sections contain documentation about every node in the GMIC group.
     plugins/eu.gmic.CLUTfromAfterBeforeLayers.rst
     plugins/eu.gmic.Camouflage.rst
     plugins/eu.gmic.Canvas.rst
+    plugins/eu.gmic.CanvasTexture.rst
     plugins/eu.gmic.CartesianTransform.rst
     plugins/eu.gmic.Cartoon.rst
     plugins/eu.gmic.ChannelProcessing.rst
@@ -83,6 +86,8 @@ The following sections contain documentation about every node in the GMIC group.
     plugins/eu.gmic.Cubism.rst
     plugins/eu.gmic.Cupid.rst
     plugins/eu.gmic.Curvature.rst
+    plugins/eu.gmic.CustomCodeGlobal.rst
+    plugins/eu.gmic.CustomCodeLocal.rst
     plugins/eu.gmic.CustomizeCLUT.rst
     plugins/eu.gmic.Cutout.rst
     plugins/eu.gmic.DecomposeChannels.rst
@@ -103,7 +108,6 @@ The following sections contain documentation about every node in the GMIC group.
     plugins/eu.gmic.Droste.rst
     plugins/eu.gmic.Edges.rst
     plugins/eu.gmic.EdgesOffsets.rst
-    plugins/eu.gmic.EdgesonFire.rst
     plugins/eu.gmic.Ellipsionism.rst
     plugins/eu.gmic.Engrave.rst
     plugins/eu.gmic.EqualizeHSIHSLHSV.rst
@@ -117,12 +121,15 @@ The following sections contain documentation about every node in the GMIC group.
     plugins/eu.gmic.ExtractObjects.rst
     plugins/eu.gmic.FadeLayers.rst
     plugins/eu.gmic.FeltPen.rst
+    plugins/eu.gmic.FishEye.rst
     plugins/eu.gmic.FlipRotateBlocs.rst
     plugins/eu.gmic.Flower.rst
     plugins/eu.gmic.FourierAnalysis.rst
     plugins/eu.gmic.FourierTransform.rst
     plugins/eu.gmic.FourierWatermark.rst
+    plugins/eu.gmic.Fractalize.rst
     plugins/eu.gmic.FrameBlur.rst
+    plugins/eu.gmic.FrameCube.rst
     plugins/eu.gmic.FrameFuzzy.rst
     plugins/eu.gmic.FrameMirror.rst
     plugins/eu.gmic.FramePainting.rst
@@ -170,7 +177,6 @@ The following sections contain documentation about every node in the GMIC group.
     plugins/eu.gmic.Kuwahara.rst
     plugins/eu.gmic.Laplacian.rst
     plugins/eu.gmic.Lava.rst
-    plugins/eu.gmic.LavaLamp.rst
     plugins/eu.gmic.LayerstoTiles.rst
     plugins/eu.gmic.LightGlow.rst
     plugins/eu.gmic.LightLeaks.rst
@@ -238,8 +244,11 @@ The following sections contain documentation about every node in the GMIC group.
     plugins/eu.gmic.QuickCopyright.rst
     plugins/eu.gmic.RainSnow.rst
     plugins/eu.gmic.Rainbow.rst
+    plugins/eu.gmic.Raindrops.rst
+    plugins/eu.gmic.Random.rst
     plugins/eu.gmic.RandomColorEllipses.rst
     plugins/eu.gmic.RandomShadeStripes.rst
+    plugins/eu.gmic.RedEyeAttenuation.rst
     plugins/eu.gmic.Reflection.rst
     plugins/eu.gmic.ReliefLight.rst
     plugins/eu.gmic.RemoveHotPixels.rst
@@ -247,6 +256,7 @@ The following sections contain documentation about every node in the GMIC group.
     plugins/eu.gmic.ResynthetizeTexturePatchBased.rst
     plugins/eu.gmic.Retinex.rst
     plugins/eu.gmic.RetroFade.rst
+    plugins/eu.gmic.Ripple.rst
     plugins/eu.gmic.Rodilius.rst
     plugins/eu.gmic.Rorschach.rst
     plugins/eu.gmic.SampleImage.rst
@@ -291,12 +301,12 @@ The following sections contain documentation about every node in the GMIC group.
     plugins/eu.gmic.SmoothPeronaMalik.rst
     plugins/eu.gmic.SmoothSelectiveGaussian.rst
     plugins/eu.gmic.SmoothSkin.rst
+    plugins/eu.gmic.SmoothThinBrush.rst
     plugins/eu.gmic.SmoothTotalVariation.rst
     plugins/eu.gmic.SmoothWavelets.rst
     plugins/eu.gmic.Snowflake.rst
     plugins/eu.gmic.Solidify.rst
     plugins/eu.gmic.SolveMaze.rst
-    plugins/eu.gmic.SpatialTransition.rst
     plugins/eu.gmic.Sphere.rst
     plugins/eu.gmic.Spherize.rst
     plugins/eu.gmic.SplitDetailsAlpha.rst
@@ -342,7 +352,11 @@ The following sections contain documentation about every node in the GMIC group.
     plugins/eu.gmic.VectorPainting.rst
     plugins/eu.gmic.Vignette.rst
     plugins/eu.gmic.VisibleWatermark.rst
+    plugins/eu.gmic.Warhol.rst
     plugins/eu.gmic.WarpbyIntensity.rst
+    plugins/eu.gmic.Water.rst
+    plugins/eu.gmic.Wave.rst
+    plugins/eu.gmic.Weave.rst
     plugins/eu.gmic.WhirlDrawing.rst
     plugins/eu.gmic.Whirls.rst
     plugins/eu.gmic.Wind.rst

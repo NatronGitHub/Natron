@@ -8,6 +8,8 @@ G’MIC Light Glow node
 Description
 -----------
 
+Author: David Tschumperle. Latest Update: 2011/21/02.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

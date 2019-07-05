@@ -8,6 +8,14 @@ G’MIC Upscale Scale2x node
 Description
 -----------
 
+Note: This filter re-implements the scaling algorithm described at :
+
+http://scale2x.sourceforge.net
+
+This filter is useful for resizing images that have very few colors (e.g. indexed images). It is generally useless for 1 colors images.
+
+Author: David Tschumperle. Latest Update: 2010/29/12.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

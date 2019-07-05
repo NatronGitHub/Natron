@@ -8,6 +8,16 @@ G’MIC Linify node
 Description
 -----------
 
+Note:
+
+- This filter is our own implementation of the nice algorithm proposed on the webpage http://linify.me.
+
+- This is a quite resource-demanding filter, so please be patient when running it.
+
+- It actually renders better when applied on small images (<1024).
+
+Author: David Tschumperle. Latest Update: 2017/11/21.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

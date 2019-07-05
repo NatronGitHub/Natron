@@ -8,6 +8,16 @@ G’MIC Drop Water node
 Description
 -----------
 
+Shape geometry:
+
+Parameters Density, Radius, Variability and Random seed are used only in Procedural shapes mode.
+
+Light parameters:
+
+Shadow parameters:
+
+Author: David Tschumperle. Latest Update: 2015/21/07.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

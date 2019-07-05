@@ -8,6 +8,16 @@ G’MIC Resynthetize Texture FFT node
 Description
 -----------
 
+Note: This filter tries to re-synthetize a micro-texture (given as the input image) onto an output (seamless) image with an arbitrary size. It uses a phase randomization technique, as described in:
+
+Micro-Texture Synthesis by Phase Randomization: http://www.ipol.im/pub/art/2011/ggm_rpn/
+
+This filter is based on the work of Bruno Galerne, Yann Gousseau and Jean-Michel Morel.
+
+Click here for a detailed description of this filter.: http://gimpchat.com/viewtopic.php?f=28&t=10141
+
+Authors: David Tschumperle and Jerome Boulanger. Latest Update: 2014/09/04.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

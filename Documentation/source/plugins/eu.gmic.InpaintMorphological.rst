@@ -8,6 +8,10 @@ G’MIC Inpaint Morphological node
 Description
 -----------
 
+Note: It is strongly suggested to apply this filter only on a selection around the region to inpaint, to save computation time!
+
+Author: David Tschumperle. Latest Update: 2015/25/11.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

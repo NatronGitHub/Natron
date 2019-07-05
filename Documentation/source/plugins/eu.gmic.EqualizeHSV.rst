@@ -8,6 +8,10 @@ G’MIC Equalize HSV node
 Description
 -----------
 
+Author: Jerome Ferrari. Latest Update: 01/14/2011.
+
+Filter explained here: http://www.flickr.com/groups/gmic/discuss/72157625798533482
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

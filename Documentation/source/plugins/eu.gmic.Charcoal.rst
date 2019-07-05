@@ -8,6 +8,12 @@ G’MIC Charcoal node
 Description
 -----------
 
+Author: David Tschumperle. Latest Update: 2011/17/03.
+
+Inspired from the Charcoal script by micomicon :
+
+http://registry.gimp.org/node/25078
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

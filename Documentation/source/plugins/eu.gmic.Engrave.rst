@@ -8,6 +8,12 @@ G’MIC Engrave node
 Description
 -----------
 
+Black & White foreground:
+
+Color background:
+
+Authors: Lyle Kroll and David Tschumperle. Latest Update: 03/13/2015.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

@@ -8,6 +8,16 @@ G’MIC Noise Perlin node
 Description
 -----------
 
+1st scale:
+
+2nd scale:
+
+3rd scale:
+
+4th scale:
+
+Author: David Tschumperle. Latest Update: 2019/01/24.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

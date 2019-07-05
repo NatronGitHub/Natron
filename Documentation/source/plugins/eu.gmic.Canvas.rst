@@ -8,6 +8,12 @@ G’MIC Canvas node
 Description
 -----------
 
+First direction :
+
+Second direction :
+
+Author: David Tschumperle. Latest Update: 2010/29/12.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

@@ -8,6 +8,12 @@ G’MIC Retinex node
 Description
 -----------
 
+Note: This filter implements the Multiscale Color Retinex algorithm, as described in:
+
+http://www.ipol.im/pub/art/2014/107/
+
+Author: David Tschumperle. Latest Update: 2016/13/09.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

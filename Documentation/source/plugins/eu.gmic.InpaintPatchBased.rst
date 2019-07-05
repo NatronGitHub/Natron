@@ -8,6 +8,12 @@ G’MIC Inpaint Patch-Based node
 Description
 -----------
 
+A quick tutorial on how to use this filter can be found here:
+
+G’MIC Inpainting tutorial on Patrick David’s blog.: http://blog.patdavid.net/2014/02/getting-around-in-gimp-gmic-inpainting.html
+
+Authors: David Tschumperle and Maxime Daisy. Latest Update: 2015/25/11.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

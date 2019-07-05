@@ -8,6 +8,30 @@ G’MIC Montage node
 Description
 -----------
 
+Instructions:
+
+- Don’t forget to set the Input layers... option on the left if you have multiple input layers for your montage.
+
+- The Custom layout parameter is only active when Montage type is set to Custom layout. This is basically a string containing expressions such as:
+
+::
+
+    \. H\(a,b\) or V\(a,b\) stand respectively for an horizontal and vertical merge of two blocks a and b\. 
+
+    \. R\(a\), stands for a 90\-deg\. rotated version of a block a\. Use RR\(a\) and RRR\(a\) for resp\. 180\-deg and 270\-deg\. rotations\. 
+
+    \. M\(a\), stands for a X\-mirrored version of a block a\. Use MRR\(a\) for a Y\-mirrored version of a\.
+
+- A block a can be a layer index or a nested montage expression itself.
+
+- Layer indices start from 0 (top layer) and are treated periodically.
+
+Click here for a tutorial: http://blog.patdavid.net/2014/05/gmic-montage.html
+
++ video tutorial: http://www.youtube.com/watch?v=iM42vx22gwg
+
+Author: David Tschumperle. Latest Update: 2014/22/12.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

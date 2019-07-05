@@ -8,6 +8,14 @@ G’MIC Blend Standard node
 Description
 -----------
 
+Note: In custom formulas, a and b respectively stand for the values of the base layer and the blend layer, and are defined in value range [0,1].
+
+Note: This filter needs at least two layers to work properly. Do not forget to set the Input layers option below to handle multiple input layers.
+
+Reference page for G’MIC blending modes: https://github.com/dtschump/gmic-community/wiki/Blending-modes
+
+Author: David Tschumperle. Latest Update: 2017/03/08.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

@@ -8,6 +8,10 @@ G’MIC Blur Bloom node
 Description
 -----------
 
+Parameter Angle is only active when Anisotropy>0
+
+Author: David Tschumperle. Latest Update: 2015/03/02.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

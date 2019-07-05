@@ -8,6 +8,12 @@ G’MIC Freaky Details node
 Description
 -----------
 
+Authors: David Tschumperle and Patrick David. Latest Update: 2013/27/02.
+
+This effect has been done following:
+
+This tutorial from Patrick David: http://blog.patdavid.net/2013/02/calvin-hollywood-freaky-details-in-gimp.html
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

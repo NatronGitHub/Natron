@@ -8,6 +8,12 @@ G’MIC Highlight Bloom node
 Description
 -----------
 
+Author: David Tschumperle. Latest Update: 2016/24/10.
+
+This effect has been inspired by:
+
+This tutorial by Sebastien Guyader and Patrick David: https://pixls.us/articles/highlight-bloom-and-photoillustration-look/
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

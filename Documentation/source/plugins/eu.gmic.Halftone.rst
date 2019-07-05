@@ -8,6 +8,12 @@ G’MIC Halftone node
 Description
 -----------
 
+Image parameters :
+
+Halftone parameters :
+
+Author: David Tschumperle. Latest Update: 2012/23/07.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

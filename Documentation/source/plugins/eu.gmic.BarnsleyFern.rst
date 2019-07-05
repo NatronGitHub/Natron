@@ -8,6 +8,12 @@ G’MIC Barnsley Fern node
 Description
 -----------
 
+This filter renders the Barnsley fern fractal, described here:
+
+https://en.wikipedia.org/wiki/Barnsley_fern
+
+Author: David Tschumperle. Latest Update: 2016/18/10.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

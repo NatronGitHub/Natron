@@ -8,6 +8,8 @@ G’MIC Mighty Details node
 Description
 -----------
 
+Author: David Tschumperle. Latest Update: 2014/08/08.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

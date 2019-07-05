@@ -8,6 +8,38 @@ G’MIC Color Presets node
 Description
 -----------
 
+Note: The color LUTs proposed in this category comes from:
+
+Abigail Gonzalez - FreshLUTs
+
+Alex Jordan - FreshLUTs
+
+RawTherapee Film Simulation
+
+Eric Ellerbrock - FreshLUTs
+
+FilterGrade Free Cinematic LUTs Pack
+
+J.T. Semple - FreshLUTs
+
+Lutify.Me Free LUTs
+
+Moviz LUTs
+
+Ohad Peretz - FreshLUTs
+
+ON1 Free Photography LUTs
+
+PictureFX - A Free HaldCLUT Set
+
+RocketStock 35 Free LUTs for Color Grading
+
+Shamoon Abbasi - FreshLUTs
+
+SmallHD Free Movie Look Pack
+
+Author: David Tschumperle. Latest Update: 2019/05/03.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

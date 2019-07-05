@@ -8,6 +8,10 @@ G’MIC Fourier Watermark node
 Description
 -----------
 
+Note: To make the watermark visible afterwards, use the ‘Fourier Analysis’ filter.
+
+Author: David Tschumperle. Latest Update: 2010/29/12.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

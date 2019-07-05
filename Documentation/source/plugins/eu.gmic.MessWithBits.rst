@@ -8,6 +8,12 @@ G’MIC Mess With Bits node
 Description
 -----------
 
+Input processing:
+
+Output processing:
+
+Author: David Tschumperle. Latest Update: 2019/01/16.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
