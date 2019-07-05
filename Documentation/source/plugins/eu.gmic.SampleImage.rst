@@ -8,6 +8,10 @@ G’MIC Sample Image node
 Description
 -----------
 
+Choosing 0 for parameters Width or Height means Automatic.
+
+Author: David Tschumperle. Latest Update: 2017/16/01.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

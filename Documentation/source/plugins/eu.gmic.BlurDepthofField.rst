@@ -8,6 +8,14 @@ G’MIC Blur Depth-of-Field node
 Description
 -----------
 
+Gaussian depth-of-field:
+
+User-defined depth-of-field:
+
+You can specify your own depth-of-field image, as a bottom layer image whose luminance encodes the depth for each pixel. Don’t forget to modify the Input layers combo-box to make this layer active for the filter.
+
+Author: David Tschumperle. Latest Update: 2014/25/02.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

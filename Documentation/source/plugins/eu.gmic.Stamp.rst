@@ -8,6 +8,8 @@ G’MIC Stamp node
 Description
 -----------
 
+Authors: Antaron, Mahvin and David Tschumperle. Latest Update: 2015/16/03.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

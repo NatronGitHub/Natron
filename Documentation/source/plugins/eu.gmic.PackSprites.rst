@@ -8,6 +8,16 @@ G’MIC Pack Sprites node
 Description
 -----------
 
+Notes:
+
+- Parameters Width and Height are considered only when No masking mode is selected.
+
+- Set different sprites on different layers to pack multiple sprites at the same time.
+
+Click here for a video tutorial: http://www.youtube.com/watch?v=bpg7CGH7vCM
+
+Author: David Tschumperle. Latest Update: 2013/24/06.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

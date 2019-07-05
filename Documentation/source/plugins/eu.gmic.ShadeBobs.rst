@@ -8,6 +8,12 @@ G’MIC Shade Bobs node
 Description
 -----------
 
+Bobs parameters :
+
+Curve parameters :
+
+Author: David Tschumperle. Latest Update: 2012/18/04.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

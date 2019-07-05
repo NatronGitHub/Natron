@@ -8,6 +8,10 @@ G’MIC Blend Edges node
 Description
 -----------
 
+Note: This filter needs two layers to work properly. Set the Input layers option to handle multiple input layers.
+
+Author: David Tschumperle. Latest Update: 2013/21/01.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

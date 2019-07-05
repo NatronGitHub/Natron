@@ -8,6 +8,18 @@ G’MIC Simulate Film node
 Description
 -----------
 
+Note: The color LUTs proposed in this filter come from various free sources :
+
+\* RawTherapee Film Simulation.
+
+\* Pat David Film Emulation.
+
+\* Fuji Film Simulation Profiles.
+
+\* Print Film LUTs For Download.
+
+Author: David Tschumperle. Latest Update: 2019/02/27.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

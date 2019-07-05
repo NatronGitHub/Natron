@@ -8,6 +8,10 @@ G’MIC Smooth Patch-PCA node
 Description
 -----------
 
+Note: Beware, this filter uses a very computationally intensive algorithm to denoise images. So, do not complain too much if you have less than 8 cores available for the computation :)
+
+Authors: David Tschumperle and Jerome Boulanger. Latest Update: 2016/24/03.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

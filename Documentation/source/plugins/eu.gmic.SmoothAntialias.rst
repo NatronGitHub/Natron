@@ -8,6 +8,8 @@ G’MIC Smooth Antialias node
 Description
 -----------
 
+Author: David Tschumperle. Latest Update: 2016/11/13.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

@@ -8,6 +8,8 @@ G’MIC Symmetric 2D Shape node
 Description
 -----------
 
+Author: David Tschumperle. Latest Update: 2019/06/17.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

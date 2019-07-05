@@ -8,6 +8,8 @@ G’MIC Streak node
 Description
 -----------
 
+Author: David Tschumperle. Latest Update: 2017/12/22.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

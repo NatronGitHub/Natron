@@ -8,6 +8,8 @@ G’MIC Split Details Alpha node
 Description
 -----------
 
+Author: David Tschumperle. Latest Update: 2014/22/04.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

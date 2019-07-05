@@ -8,6 +8,10 @@ G’MIC Resynthetize Texture Patch-Based node
 Description
 -----------
 
+Note: This filter tries to re-synthetize an input texture image onto a bigger output image (with an arbitrary size). Beware, this filter is quite slow to compute!
+
+Authors: David Tschumperle. Latest Update: 2015/22/10.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

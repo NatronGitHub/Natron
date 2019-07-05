@@ -8,6 +8,10 @@ G’MIC Fade Layers node
 Description
 -----------
 
+Note: This filter needs at least two layers to work properly. Set the Input layers option to handle multiple input layers.
+
+Author: David Tschumperle. Latest Update: 2012/04/08.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

@@ -8,6 +8,10 @@ G’MIC Sharpen Unsharp Mask node
 Description
 -----------
 
+Note: This filter is inspired by the original GIMP Unsharp Mask filter, with additional parameters.
+
+Author: David Tschumperle. Latest Update: 2010/29/12.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

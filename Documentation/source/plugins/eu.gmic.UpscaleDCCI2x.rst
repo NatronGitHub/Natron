@@ -8,6 +8,24 @@ G’MIC Upscale DCCI2x node
 Description
 -----------
 
+Directional Cubic Convolution Interpolation
+
+Author: Garagecoder. Latest Update : 2015/11/07.
+
+Note: This filter re-implements the scaling algorithm described at :
+
+wikipedia.org: https://en.wikipedia.org/wiki/Directional_Cubic_Convolution_Interpolation
+
+The algorithm is intended for enlarging images while avoiding
+
+artifacts, e.g. staircase artifacts.
+
+Threshold controls edge[lower] to texture[higher] balance.
+
+Exponent controls texture edge sharpness[higher].
+
+Warning: highly experimental...
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

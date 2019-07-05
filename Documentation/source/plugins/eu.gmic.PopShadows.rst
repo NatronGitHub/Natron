@@ -8,6 +8,8 @@ G’MIC Pop Shadows node
 Description
 -----------
 
+Authors: Morgan Hardwood and David Tschumperle. Latest Update: 2017/03/05.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

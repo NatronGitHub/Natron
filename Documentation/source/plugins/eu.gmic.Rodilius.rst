@@ -8,6 +8,10 @@ G’MIC Rodilius node
 Description
 -----------
 
+Click here for a video tutorial: http://www.youtube.com/watch?v=RC07VUpzwGc
+
+Authors: David Tschumperle and Rod/GimpChat. Latest Update: 2013/05/03.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

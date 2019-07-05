@@ -8,6 +8,8 @@ G’MIC Tone Mapping Fast node
 Description
 -----------
 
+Authors: Paul Nasca and David Tschumperle. Latest Update: 2011/10/06.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

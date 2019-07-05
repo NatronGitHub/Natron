@@ -8,6 +8,10 @@ G’MIC Intarsia node
 Description
 -----------
 
+Note: Intarsia is a method of Crochet/Knitting with a number of colours, in which a separate ball of yarn is used for each area of colour. This filter creates a HTML version of a graph chart which is solely used for this purpose
+
+Author: David Tschumperle. Latest Update: 2015/09/07.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

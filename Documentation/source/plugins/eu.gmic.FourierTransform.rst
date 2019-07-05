@@ -8,6 +8,12 @@ G’MIC Fourier Transform node
 Description
 -----------
 
+Note: Apply this filter once to get the direct FFT, and once again to get the reverse transform.
+
+Click here for a video tutorial: http://www.youtube.com/watch?v=3137dDa6P4s
+
+Author: David Tschumperle. Latest Update: 2018/06/16.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

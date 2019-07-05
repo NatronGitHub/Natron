@@ -8,6 +8,10 @@ G’MIC Polygonize Energy node
 Description
 -----------
 
+Click here for a detailed description of this filter.: http://www.gimpchat.com/viewtopic.php?f=28&t=9174
+
+Author: David Tschumperle. Latest Update: 2013/02/12.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

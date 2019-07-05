@@ -8,6 +8,16 @@ G’MIC Smooth Skin node
 Description
 -----------
 
+Step 1: Skin detection
+
+Step 2: Medium scale smoothing
+
+Step 3: Details enhancement
+
+Click here for a video tutorial: http://www.youtube.com/watch?v=H8pQfq-ybCc
+
+Author: David Tschumperle. Latest Update: 2013/20/12.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

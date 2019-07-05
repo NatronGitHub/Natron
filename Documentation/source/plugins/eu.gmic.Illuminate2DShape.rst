@@ -8,6 +8,18 @@ G’MIC Illuminate 2D Shape node
 Description
 -----------
 
+Input / Output:
+
+Shape:
+
+Parameter Minimal shape area is only active in Multiple colored shapes input mode.
+
+Illumination:
+
+Note: This filter automatically adds illumination to an opaque shape defined over a transparent background.
+
+Author: David Tschumperle. Latest Update: 2018/05/18.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

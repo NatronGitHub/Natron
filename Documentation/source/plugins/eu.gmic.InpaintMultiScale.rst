@@ -8,6 +8,12 @@ G’MIC Inpaint Multi-Scale node
 Description
 -----------
 
+(Set Number of scales to 0 for automatic scale detection)
+
+Note: Preview and final result may strongly differ.
+
+Author: David Tschumperle. Latest Update: 2015/25/11.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

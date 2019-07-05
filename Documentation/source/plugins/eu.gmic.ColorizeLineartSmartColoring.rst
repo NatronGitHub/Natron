@@ -8,6 +8,18 @@ G’MIC Colorize Lineart Smart Coloring node
 Description
 -----------
 
+Global geometry parameters:
+
+Add strokes with a saturated color having value 255 (e.g. pure red) on your lineart allows to guide the colorization algorithm with virtual contours.
+
+For Random colors mode only:
+
+For color spots mode only:
+
+Connection parameters:
+
+Authors: David Tschumperle, Sebastien Fourey and David Revoy. Latest Update: 2018/11/09.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

@@ -8,6 +8,16 @@ G’MIC Pixel Sort node
 Description
 -----------
 
+Sorting parameters:
+
+Masking parameters:
+
+Note: This filter implements one version of the algorithm described here :
+
+http://satyarth.me/articles/pixel-sorting/
+
+Author: David Tschumperle. Latest Update: 2016/05/09.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

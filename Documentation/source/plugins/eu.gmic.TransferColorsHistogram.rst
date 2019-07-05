@@ -8,6 +8,12 @@ G’MIC Transfer Colors Histogram node
 Description
 -----------
 
+Note: The bottom layer contains the reference colors.
+
+This filter needs at least two layers to work properly. Set the Input layers option to handle multiple input layers.
+
+Author: David Tschumperle. Latest Update: 2018/11/26.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

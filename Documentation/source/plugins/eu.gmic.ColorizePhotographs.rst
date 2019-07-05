@@ -8,6 +8,10 @@ G’MIC Colorize Photographs node
 Description
 -----------
 
+Note: This filter needs two layers to work properly. The bottom layer must be a B&W image, while the top layer contains color patches that will be extrapolated in a smart way (edge-directed) to fill the entire image. At the end, you get a completely recolored image.
+
+Author: David Tschumperle. Latest Update: 2013/16/01.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

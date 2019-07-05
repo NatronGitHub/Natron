@@ -8,6 +8,10 @@ G’MIC Layers to Tiles node
 Description
 -----------
 
+For both parameters, 0 means automatic.
+
+Author: David Tschumperle. Latest Update: 2010/29/12.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

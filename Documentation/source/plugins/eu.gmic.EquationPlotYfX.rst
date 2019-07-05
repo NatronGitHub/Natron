@@ -8,6 +8,10 @@ G’MIC Equation Plot Y=f(X) node
 Description
 -----------
 
+Note : Use variable X instead of x in the above equation to take care of the X-min/max settings. Variable c refers to the current channel number. Variable u refers to a uniformly distributed random value in [0,1]. Reduce resolution to be able to view separate graph vertices.
+
+Author: David Tschumperle. Latest Update: 2010/29/12.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

@@ -8,6 +8,10 @@ G’MIC Drawn Montage node
 Description
 -----------
 
+Note: This filter requires a top layer containing the desired montage layout defined as free-form shapes of different colors. You can then assign each layer to a layout color to create the montage.
+
+Author: David Tschumperle. Latest Update: 2018/01/29.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

@@ -8,6 +8,16 @@ G’MIC Droste node
 Description
 -----------
 
+Upper-left coordinates :
+
+Upper-right coordinates :
+
+Lower-right coordinates :
+
+Lower-left coordinates :
+
+Author: David Tschumperle. Latest Update: 2012/11/06.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

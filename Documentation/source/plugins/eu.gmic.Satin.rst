@@ -8,6 +8,10 @@ G’MIC Satin node
 Description
 -----------
 
+This filter has been inspired by this tutorial from DeviantArt user fence-post.
+
+Author: David Tschumperle. Latest Update: 2017/11/27.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

@@ -8,6 +8,12 @@ G’MIC Customize CLUT node
 Description
 -----------
 
+Global correction:
+
+Color correspondences:
+
+Author: David Tschumperle. Latest Update: 2016/14/06.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

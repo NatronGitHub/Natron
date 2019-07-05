@@ -8,6 +8,12 @@ G’MIC Tileable Rotation node
 Description
 -----------
 
+Note: This filter implements the tileable rotation technique described by Peter Yu, at:
+
+[Peter Yu] Create rotated tileable patterns: http://www.peteryu.ca/tutorials/gimp/rotate_tileable_patterns
+
+Author: David Tschumperle. Latest Update: 2011/26/05.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

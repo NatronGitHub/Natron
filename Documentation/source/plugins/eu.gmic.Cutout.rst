@@ -8,6 +8,8 @@ G’MIC Cutout node
 Description
 -----------
 
+Authors: David Tschumperle and Garagecoder Latest Update: 2014/03/06.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

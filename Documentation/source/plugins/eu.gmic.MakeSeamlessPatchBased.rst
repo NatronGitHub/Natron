@@ -8,6 +8,10 @@ G’MIC Make Seamless Patch-Based node
 Description
 -----------
 
+Note: This filter helps in converting your input pattern as a seamless (a.k.a periodic) texture.
+
+Author: David Tschumperle. Latest Update: 2015/15/12.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

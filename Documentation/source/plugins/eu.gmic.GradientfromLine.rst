@@ -8,6 +8,10 @@ G’MIC Gradient from Line node
 Description
 -----------
 
+Note: Set length to 0 to release gradient length constraints.
+
+Author: David Tschumperle. Latest Update: 2015/29/06.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

@@ -8,6 +8,12 @@ G’MIC Square to Circle node
 Description
 -----------
 
+This filter implements the mapping functions described in this page, by C. Fong:
+
+http://squircular.blogspot.com/2015/09/mapping-circle-to-square.html
+
+Author: David Tschumperle. Latest Update: 2017/10/30.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

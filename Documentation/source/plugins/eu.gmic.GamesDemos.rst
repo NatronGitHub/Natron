@@ -8,6 +8,12 @@ G’MIC Games & Demos node
 Description
 -----------
 
+Note: This filter proposes a showcase of some interactive demos, all written as G’MIC scripts.
+
+On most demos, you can use the keyboard shortcut CTRL+D to double the window size (and CTRL+C to go back to the original size). Also, feel free to use the mouse buttons, as they are often used to perform an action.
+
+Author: David Tschumperle. Latest Update: 2014/10/09.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

@@ -8,6 +8,10 @@ G’MIC Import Data node
 Description
 -----------
 
+Note: This filter can import any image data read by the G’MIC language interpreter. It includes exotic formats as : Pandore, CImg, Inrimage, AVI/MPEG (requires FFMPEG installed), ...
+
+Author: David Tschumperle. Latest Update: 2010/29/12.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

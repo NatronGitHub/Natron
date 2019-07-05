@@ -8,6 +8,8 @@ G’MIC Flower node
 Description
 -----------
 
+Author: David Tschumperle. Latest Update: 2010/29/12.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
@@ -30,12 +32,6 @@ Controls
 | Parameter / script name                    | Type    | Default        | Function              |
 +============================================+=========+================+=======================+
 | Center (%) / ``Center_``                   | Double  | x: 0.5 y: 0.5  |                       |
-+--------------------------------------------+---------+----------------+-----------------------+
-| Radius / ``Radius``                        | Double  | 70             |                       |
-+--------------------------------------------+---------+----------------+-----------------------+
-| Amplitude / ``Amplitude``                  | Double  | 1              |                       |
-+--------------------------------------------+---------+----------------+-----------------------+
-| Center (%)_2 / ``Center__2``               | Double  | x: 0.5 y: 0.5  |                       |
 +--------------------------------------------+---------+----------------+-----------------------+
 | Amplitude / Angle / ``Amplitude__Angle``   | Double  | x: 0.75 y: 0.5 |                       |
 +--------------------------------------------+---------+----------------+-----------------------+

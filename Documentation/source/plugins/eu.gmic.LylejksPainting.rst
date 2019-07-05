@@ -8,6 +8,10 @@ G’MIC Lylejk’s Painting node
 Description
 -----------
 
+Authors: Lyle Kroll and David Tschumperle. Latest Update: 2015/23/02.
+
+Filter Explained here: http://www.gimpchat.com/viewtopic.php?f=10&t=2624
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

@@ -1,12 +1,14 @@
-.. _eu.gmic.LavaLamp:
+.. _eu.gmic.FrameCube:
 
-G’MIC Lava Lamp node
-====================
+G’MIC Frame Cube node
+=====================
 
-*This documentation is for version 1.0 of G’MIC Lava Lamp.*
+*This documentation is for version 1.0 of G’MIC Frame Cube.*
 
 Description
 -----------
+
+Author: David Tschumperle, Angelo Lama. Latest Update: 2012/29/01.
 
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
@@ -29,19 +31,35 @@ Controls
 +-----------------------------------------------------+---------+---------+-----------------------+
 | Parameter / script name                             | Type    | Default | Function              |
 +=====================================================+=========+=========+=======================+
-| Number of Key-Frames / ``Number_of_KeyFrames``      | Integer | 3       |                       |
+| Depth / ``Depth``                                   | Double  | 3       |                       |
 +-----------------------------------------------------+---------+---------+-----------------------+
-| Number of Inter-Frames / ``Number_of_InterFrames``  | Integer | 30      |                       |
+| X-Center / ``XCenter``                              | Double  | 0       |                       |
 +-----------------------------------------------------+---------+---------+-----------------------+
-| Smooth Looping / ``Smooth_Looping``                 | Boolean | On      |                       |
+| Y-Center / ``YCenter``                              | Double  | 0       |                       |
 +-----------------------------------------------------+---------+---------+-----------------------+
-| Resolution / ``Resolution``                         | Double  | 20      |                       |
+| Left Side Orientation / ``Left_Side_Orientation``   | Choice  | Normal  | |                     |
+|                                                     |         |         | | **Normal**          |
+|                                                     |         |         | | **Mirror-X**        |
+|                                                     |         |         | | **Mirror-Y**        |
+|                                                     |         |         | | **Mirror-XY**       |
 +-----------------------------------------------------+---------+---------+-----------------------+
-| Size / ``Size``                                     | Double  | 2       |                       |
+| Right Side Orientation / ``Right_Side_Orientation`` | Choice  | Normal  | |                     |
+|                                                     |         |         | | **Normal**          |
+|                                                     |         |         | | **Mirror-X**        |
+|                                                     |         |         | | **Mirror-Y**        |
+|                                                     |         |         | | **Mirror-XY**       |
 +-----------------------------------------------------+---------+---------+-----------------------+
-| Smoothness / ``Smoothness``                         | Double  | 0.01    |                       |
+| Upper Side Orientation / ``Upper_Side_Orientation`` | Choice  | Normal  | |                     |
+|                                                     |         |         | | **Normal**          |
+|                                                     |         |         | | **Mirror-X**        |
+|                                                     |         |         | | **Mirror-Y**        |
+|                                                     |         |         | | **Mirror-XY**       |
 +-----------------------------------------------------+---------+---------+-----------------------+
-| Transparent Background / ``Transparent_Background`` | Boolean | Off     |                       |
+| Lower Side Orientation / ``Lower_Side_Orientation`` | Choice  | Normal  | |                     |
+|                                                     |         |         | | **Normal**          |
+|                                                     |         |         | | **Mirror-X**        |
+|                                                     |         |         | | **Mirror-Y**        |
+|                                                     |         |         | | **Mirror-XY**       |
 +-----------------------------------------------------+---------+---------+-----------------------+
 | Output Layer / ``Output_Layer``                     | Choice  | Layer 0 | |                     |
 |                                                     |         |         | | **Merged**          |
@@ -65,8 +83,6 @@ Controls
 |                                                     |         |         | | **Downsample 1/16** |
 +-----------------------------------------------------+---------+---------+-----------------------+
 | Ignore Alpha / ``Ignore_Alpha``                     | Boolean | Off     |                       |
-+-----------------------------------------------------+---------+---------+-----------------------+
-| Preview/Draft Mode / ``PreviewDraft_Mode``          | Boolean | Off     |                       |
 +-----------------------------------------------------+---------+---------+-----------------------+
 | Log Verbosity / ``Log_Verbosity``                   | Choice  | Off     | |                     |
 |                                                     |         |         | | **Off**             |

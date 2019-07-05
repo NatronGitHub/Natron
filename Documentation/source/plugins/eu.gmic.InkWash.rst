@@ -8,6 +8,18 @@ G’MIC Ink Wash node
 Description
 -----------
 
+Ink wash controls
+
+Check if you wish visual control on this step
+
+UNcheck to reactivate the other controls
+
+To activate the sliders below chose ’Manual Controls
+
+Author: PhotoComiX. Latest Update: 2011/05/04.
+
+Forum thread about the filter discussion": : http://gimpchat.com/viewtopic.php?f=10&t=914
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

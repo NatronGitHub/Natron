@@ -8,6 +8,10 @@ G’MIC Op Art node
 Description
 -----------
 
+Note: If you set the parameter Shape to Custom layers, the different shapes used to map the pixel intensities will be defined as the Number of scales top layers of your image. Don’t forget to set also Input layers to All to be sure these layers are passed to the filter.
+
+Author: David Tschumperle. Latest Update: 2013/16/12.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

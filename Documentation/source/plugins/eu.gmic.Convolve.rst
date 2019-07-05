@@ -8,6 +8,12 @@ G’MIC Convolve node
 Description
 -----------
 
+Note: If parameter Kernel is set to Custom, it uses the custom convolution kernel defined below. Use commas and semicolons as separators for res. matrix columns and rows.
+
+Note: Kernel multiplier is useful only when parameter Value range is set to Cut.
+
+Author: David Tschumperle. Latest Update: 2013/06/06.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

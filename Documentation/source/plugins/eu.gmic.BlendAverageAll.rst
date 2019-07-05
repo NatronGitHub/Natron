@@ -8,6 +8,10 @@ G’MIC Blend Average All node
 Description
 -----------
 
+Note: This filter takes multiple layers as input and average them. Set the Input layers option to handle multiple input layers.
+
+Author: David Tschumperle. Latest Update: 2013/11/08.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

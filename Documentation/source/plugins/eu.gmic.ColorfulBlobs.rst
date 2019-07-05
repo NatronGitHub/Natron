@@ -8,6 +8,10 @@ G’MIC Colorful Blobs node
 Description
 -----------
 
+This filter can be used to create custom palettes with given color shades. It has been inspired by Adobe’s Playful Palette.
+
+Author: David Tschumperle. Latest Update: 2018/08/26.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

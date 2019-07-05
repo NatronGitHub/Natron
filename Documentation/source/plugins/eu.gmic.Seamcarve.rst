@@ -8,6 +8,16 @@ G’MIC Seamcarve node
 Description
 -----------
 
+Note: You can define a transparent top layer that will help the seam-carving algorithm to preserve or force removing image structures:
+
+- Draw areas in red to force removing them.
+
+- Draw areas in green to preserve them.
+
+- Don’t forget also to set the Input layers... parameter to input both layers to the filter.
+
+Authors: Garagecoder and David Tschumperle. Latest Update: 2014/02/06.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs

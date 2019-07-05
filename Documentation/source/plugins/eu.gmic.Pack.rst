@@ -8,6 +8,10 @@ G’MIC Pack node
 Description
 -----------
 
+This filter tries to pack all input layers into a single image, while trying to minimize the empty areas. This problem being NP-hard, the algorithm finds (of course) a non-optimal, but often acceptable solution to this packing problem.
+
+Author: David Tschumperle. Latest Update: 2019/03/20.
+
 Wrapper for the G’MIC framework (http://gmic.eu) written by Tobias Fleischer (http://www.reduxfx.com) and Frederic Devernay.
 
 Inputs
