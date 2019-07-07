@@ -1,0 +1,26 @@
+#!/bin/sh
+
+FCONSTANT_CFSTRINGS_SUPPORT=no
+COMPILER=$1
+VERBOSE=$2
+WORKDIR=$3
+
+cd $3
+touch fconstant_cfstrings.c
+
+if "$COMPILER" -fconstant-cfstrings -c fconstant_cfstrings.c 2>/dev/null 1>&2; then
+    if "$COMPILER" -fconstant-cfstrings -c fconstant_cfstrings.c 2>&1 | grep "unrecognized" >/dev/null ; then
+        true
+    else
+        FCONSTANT_CFSTRINGS_SUPPORT=yes
+    fi
+fi
+rm -f fconstant_cfstrings.c fconstant_cfstrings.o
+
+if [ "$FCONSTANT_CFSTRINGS_SUPPORT" != "yes" ]; then
+    [ "$VERBOSE" = "yes" ] && echo "compiler flag -fconstant-cfstrings support not detected"
+    exit 0
+else
+    [ "$VERBOSE" = "yes" ] && echo "compiler flag -fconstant-cfstrings support detected"
+    exit 1
+fi

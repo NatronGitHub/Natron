@@ -1,0 +1,18 @@
+$OpenBSD$
+
+Don't define ::isfinite and ::signbit.  These conflict with
+std::isfinite and std::signbit in gcc 6, cause errors
+'call of overloaded... is ambigous'.
+
+Index: src/3rdparty/webkit/Source/JavaScriptCore/wtf/MathExtras.h
+--- src/3rdparty/webkit/Source/JavaScriptCore/wtf/MathExtras.h.orig
++++ src/3rdparty/webkit/Source/JavaScriptCore/wtf/MathExtras.h
+@@ -99,7 +99,7 @@ inline bool signbit(double x) { return copysign(1.0, x
+ 
+ #endif
+ 
+-#if OS(OPENBSD)
++#if 0 && OS(OPENBSD)
+ 
+ #ifndef isfinite
+ inline bool isfinite(double x) { return finite(x); }

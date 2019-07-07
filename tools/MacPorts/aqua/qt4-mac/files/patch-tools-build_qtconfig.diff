@@ -1,0 +1,11 @@
+--- tools/orig.tools.pro	2014-04-10 20:37:12.000000000 +0200
++++ tools/tools.pro	2015-03-21 21:58:01.000000000 +0100
+@@ -20,7 +20,7 @@
+                 SUBDIRS += designer
+             }
+         }
+-        unix:!symbian:!mac:!embedded:!qpa:SUBDIRS += qtconfig
++        unix:!symbian:!embedded:!qpa:SUBDIRS += qtconfig
+         win32:!wince*:SUBDIRS += activeqt
+     }
+     contains(QT_CONFIG, declarative) {

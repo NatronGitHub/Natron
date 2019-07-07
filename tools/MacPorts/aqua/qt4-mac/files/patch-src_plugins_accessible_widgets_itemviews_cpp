@@ -1,0 +1,23 @@
+$OpenBSD$
+
+Fix build with gcc 6:
+error: invalid conversion from 'int' to
+'QItemSelectionModel::SelectionFlag' [-fpermissive]
+
+Columns & Deselect = 0x0040 & 0x0004 = 0 is an int, but
+Columns | Deselect calls Qt's operator | and returns a Qt internal type
+to allow the conversion.  Qt also allows a conversion from constant 0,
+but gcc 6 seems not to allow Columns & Deselect as constant 0.
+
+Index: src/plugins/accessible/widgets/itemviews.cpp
+--- src/plugins/accessible/widgets/itemviews.cpp.orig
++++ src/plugins/accessible/widgets/itemviews.cpp
+@@ -393,7 +393,7 @@ bool QAccessibleTable2::unselectColumn(int column)
+     QModelIndex index = view()->model()->index(0, column, view()->rootIndex());
+     if (!index.isValid() || view()->selectionMode() & QAbstractItemView::NoSelection)
+         return false;
+-    view()->selectionModel()->select(index, QItemSelectionModel::Columns & QItemSelectionModel::Deselect);
++    view()->selectionModel()->select(index, QItemSelectionModel::Columns | QItemSelectionModel::Deselect);
+     return true;
+ }
+ 
