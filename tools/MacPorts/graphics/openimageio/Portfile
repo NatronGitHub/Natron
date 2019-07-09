@@ -1,50 +1,77 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id$
 
-PortSystem 1.0
-PortGroup        github 1.0
-PortGroup        cmake 1.0
-PortGroup        conflicts_build 1.0
-PortGroup        qt4 1.0
-PortGroup       compiler_blacklist_versions 1.0
-# gcc-4.8 cannot compile universal
-# The internal yaml-cpp is not compiled with multiple archs in universal mode
-#PortGroup        muniversal 1.0
+PortSystem          1.0
+PortGroup           github 1.0
+#PortGroup           qt5 1.0
+PortGroup           cmake 1.1
+PortGroup           cxx11 1.1
+PortGroup           active_variants 1.1
 
-epoch        	 1
-
-fetch.type              git
-github.setup     OpenImageIO oiio 1.8.13 tags/Release-
-#github.version      ${version}-dist
-#github.tarball_from downloads
-
-name             openimageio
-conflicts        openimageio16
-conflicts        openimageio17
-#revision         1
-categories       graphics
+github.setup        OpenImageIO oiio 2.0.8
+revision            2
+name                openimageio
+categories          graphics
+license             BSD
+maintainers         {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
+description         a library for reading and writing images
+long_description    OpenImageIO is a library for reading and writing images, and a bunch of related classes, utilities, and applications.
 platforms           darwin
-license          BSD
-maintainers      openmaintainer
-description      OpenImageIO is a library for reading and writing images
-long_description ${description}
-homepage         http://sites.google.com/site/openimageio/
 
+checksums           rmd160  2b47ff1879a0d7cd359dab80b8120164bde9e0fd \
+                    sha256  3c4794b0e8674728389363de291bada25ff86b4a6f5582380ed2def1ca2e07ae \
+                    size    29799717
 
-#master_sites     debian:o/openimageio/
-#worksrcdir       ${name}-${version}~dfsg0.orig
-#distfiles           ${name}_${version}~dfsg0.orig${extract.suffix}
-#checksums           rmd160  94c6e2274be01e82cfe8bc4bf11677593d33f299 \
-#                    sha256  4cf3b373e56694ce9e3896a356b68a2ed92978e76be653a5b5e45b17937faae8
+github.master_sites ${github.homepage}/archive
+distname            Release-${version}
+worksrcdir          oiio-Release-${version}
 
-depends_lib      port:boost path:lib/libjpeg.dylib:jpeg port:tiff port:libpng port:openexr port:glew port:ilmbase port:libraw port:giflib port:webp
+patch.pre_args  -p1
+patchfiles \
+    oiio-2.0.8-invalidatespec.patch
 
-# can't compile openimageio when another version is installed, because the include path is wrong
-conflicts_build  ${name}
+# avoid
+#    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
+configure.args-append \
+    -DUSE_CCACHE=OFF
 
-depends_build    port:txt2man
-depends_skip_archcheck txt2man
-# port:opencolorio
+# do not "Try to download and build any missing dependencies"
+configure.args-append \
+    -DBUILD_MISSING_DEPS=OFF
+
+depends_lib-append \
+    port:robin-map \
+    port:zlib \
+    port:bzip2 \
+    port:boost \
+    path:lib/libjpeg.dylib:jpeg \
+    port:libpng \
+    port:tiff \
+    port:ilmbase \
+    port:giflib \
+    port:libraw \
+    port:webp \
+    port:openexr
+
+configure.args-append \
+    -DOIIO_BUILD_TESTS:BOOL=FALSE \
+    -DBOOST_ROOT=${prefix} \
+    -DUSE_QT:BOOL=FALSE \
+    -DUSE_PYTHON:BOOL=FALSE \
+    -DUSE_PYTHON3:BOOL=FALSE \
+    -DUSE_FIELD3D:BOOL=FALSE \
+    -DUSE_FFMPEG:BOOL=FALSE \
+    -DUSE_OPENJPEG:BOOL=FALSE \
+    -DUSE_OCIO:BOOL=FALSE \
+    -DUSE_OPENCV:BOOL=FALSE \
+    -DUSE_OPENSSL:BOOL=FALSE \
+    -DUSE_FREETYPE:BOOL=FALSE \
+    -DUSE_GIF:BOOL=TRUE \
+    -DUSE_PTEX:BOOL=FALSE \
+    -DUSE_LIBRAW:BOOL=TRUE \
+    -DUSE_NUKE:BOOL=FALSE \
+    -DUSE_OPENGL:BOOL=FALSE \
+    -DUSE_WEBP:BOOL=TRUE \
+    -DSTOP_ON_WARNING:BOOL=FALSE
 
 # we need gcc atomics (clang >= 3.5 maybe?, gcc >= 4.8 works)
 # tested with openimageio 1.4.6rc1:
@@ -88,45 +115,11 @@ if {${configure.build_arch} eq "ppc" || ${configure.build_arch} eq "ppc64"} {
     #configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
 }
 
-#post-extract {
-#    system "touch ${worksrcpath}/LICENSE  ${workpath}/${worksrcdir}/LICENSE"
-#}
+# optional components
 
-# As of 1.7.17, there is only one debian patch:
-# 0001-Fix_documentation_generation.patch
-# see https://packages.debian.org/source/sid/openimageio
+default_variants    +opencolorio +openjpeg +freetype
 
-patch.pre_args	-p1
-patchfiles \
-    0003-boost-latest.patch \
-    oiio-1.5.23-invalidatespec.patch \
-    oiio-1.8.7-c99math.patch \
-    oiio-1.8.7-nothreads.patch
-
-cmake.out_of_source yes
-
-configure.args-append \
-    -DOIIO_BUILD_TESTS:BOOL=FALSE \
-    -DBOOST_ROOT=${prefix} \
-    -DUSE_QT:BOOL=FALSE \
-    -DUSE_PYTHON:BOOL=FALSE \
-    -DUSE_PYTHON3:BOOL=FALSE \
-    -DUSE_FIELD3D:BOOL=FALSE \
-    -DUSE_FFMPEG:BOOL=FALSE \
-    -DUSE_OPENJPEG:BOOL=FALSE \
-    -DUSE_OCIO:BOOL=FALSE \
-    -DUSE_OPENCV:BOOL=FALSE \
-    -DUSE_OPENSSL:BOOL=FALSE \
-    -DUSE_FREETYPE:BOOL=FALSE \
-    -DUSE_GIF:BOOL=TRUE \
-    -DUSE_PTEX:BOOL=FALSE \
-    -DUSE_LIBRAW:BOOL=TRUE \
-    -DUSE_NUKE:BOOL=FALSE \
-    -DSTOP_ON_WARNING:BOOL=FALSE
-
-default_variants    +opencolorio +openjpeg +qt4 +freetype
-
-variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype description {Natron version} {
+variant natron conflicts ffmpeg qt5 dicom openvdb ptex dicom requires opencolorio openjpeg freetype description {Natron version} {
     if {${configure.cxx_stdlib} eq "libstdc++"} {
     }
 }
@@ -149,31 +142,56 @@ variant openjpeg description {Add OpenJPEG support.} {
     configure.args-append       -DUSE_OPENJPEG:BOOL=TRUE -DOPENJPEG_HOME=${prefix} -DOPENJPEG_INCLUDE_DIR=`pkg-config --variable=includedir libopenjp2`
 }
 
-variant python26 conflicts python27 description {Add Python 2.6 bindings.} {
-    depends_lib-append          port:python26
-    configure.args-delete       -DUSE_PYTHON:BOOL=FALSE
-    configure.args-append       -DUSE_PYTHON:BOOL=TRUE \
-                                -DPYTHON_VERSION=2.6 \
-                                -DPYTHON_EXECUTABLE=${prefix}/bin/python2.6 \
-                                -DPYTHON_LIBRARY=${prefix}/lib/libpython2.6.dylib \
-                                -DPYTHON_INCLUDE_DIR=${frameworks_dir}/Python.framework/Versions/2.6/Headers \
-                                -DPYTHON_PACKAGES_PATH=${frameworks_dir}/Python.framework/Versions/2.6/lib/python2.6/site-packages
+variant python27 description {Build the Python 2.7 bindings} conflicts python36 python37 {
+    depends_lib-append \
+        port:python27 \
+        port:py27-numpy
+    configure.args-append \
+        -DPYTHON_VERSION=2.7 \
+        -DPYTHON_EXECUTABLE=${prefix}/bin/python2.7 \
+        -DPYTHON_SITE_DIR=${frameworks_dir}/Python.framework/Versions/2.7/lib/python2.7
 }
 
-variant python27 conflicts python26 description {Add Python 2.7 bindings.} {
-    depends_lib-append          port:python27
-    configure.args-delete       -DUSE_PYTHON:BOOL=FALSE
-    configure.args-append       -DUSE_PYTHON:BOOL=TRUE \
-                                -DPYTHON_VERSION=2.7 \
-                                -DPYTHON_EXECUTABLE=${prefix}/bin/python2.7 \
-                                -DPYTHON_LIBRARY=${prefix}/lib/libpython2.7.dylib \
-                                -DPYTHON_INCLUDE_DIR=${frameworks_dir}/Python.framework/Versions/2.7/Headers \
-                                -DPYTHON_PACKAGES_PATH=${frameworks_dir}/Python.framework/Versions/2.7/lib/python2.7/site-packages
+variant python36 description {Build the Python 3.6 bindings} conflicts python27 python37 {
+    depends_lib-append \
+        port:python36 \
+        port:py36-numpy
+    configure.args-append \
+        -DPYTHON_VERSION=3.6 \
+        -DPYTHON_EXECUTABLE=${prefix}/bin/python3.6 \
+        -DPYTHON_SITE_DIR=${frameworks_dir}/Python.framework/Versions/3.6/lib/python3.6
 }
 
-variant qt4 description {Build the Qt-based image viewer.} {
+variant python37 description {Build the Python 3.7 bindings} conflicts python27 python36 {
+    depends_lib-append \
+        port:python37 \
+        port:py37-numpy
+    configure.args-append \
+        -DPYTHON_VERSION=3.7 \
+        -DPYTHON_EXECUTABLE=${prefix}/bin/python3.7 \
+        -DPYTHON_SITE_DIR=${frameworks_dir}/Python.framework/Versions/3.7/lib/python3.7
+}
+
+#if {![variant_isset python36] && ![variant_isset python37]} {
+#    default_variants +python27
+#}
+
+if {![variant_isset python27] && ![variant_isset python36] && ![variant_isset python37]} {
+    configure.args-append \
+        -DUSE_PYTHON=OFF
+} else {
+    depends_build-append \
+        port:pybind11
+}
+
+
+variant qt5 description {Build the Qt-based image viewer.} {
+#    qt5.depends_component qtbase
+#    qt5.min_version       5.6
     configure.args-delete -DUSE_QT:BOOL=FALSE
     configure.args-append -DUSE_QT:BOOL=TRUE
+    configure.args-delete -DUSE_OPENGL:BOOL=FALSE
+    configure.args-append -DUSE_OPENGL:BOOL=TRUE
     depends_lib-append port:qt4-mac
 }
 
@@ -189,6 +207,32 @@ variant freetype description {Use FreeType.} {
     depends_lib-append port:freetype
 }
 
-#configure.args   --enable-bsdtar=shared --enable-bsdcpio=shared \
-#                 --without-lzmadec --without-lzma
-#use_autoreconf	yes
+
+variant opencv description {Use OpenCV.} {
+    configure.args-delete -DUSE_OPENCV:BOOL=FALSE
+    configure.args-append -DUSE_OPENCV:BOOL=TRUE
+    depends_lib-append port:opencv
+}
+
+variant ptex description {Use PTex.} {
+    configure.args-delete -DUSE_PTEX:BOOL=FALSE
+    configure.args-append -DUSE_PTEX:BOOL=TRUE
+    depends_lib-append port:ptex
+}
+
+variant openvdb description {Use OpenVDB.} {
+    configure.args-delete -DUSE_TBB:BOOL=FALSE
+    configure.args-append -DUSE_TBB:BOOL=TRUE
+    configure.args-delete -DUSE_OPENVDB:BOOL=FALSE
+    configure.args-append -DUSE_OPENVDB:BOOL=TRUE
+    depends_lib-append port:tbb \
+                       port:openvdb
+}
+
+variant dicom description {Use DICOM from dcmtk.} {
+    configure.args-delete -DUSE_DICOM:BOOL=FALSE
+    configure.args-append -DUSE_DICOM:BOOL=TRUE
+    depends_lib-append port:dcmtk
+}
+
+livecheck.regex     archive/Release-(\\d+(?:\\.\\d+)*)${extract.suffix}
