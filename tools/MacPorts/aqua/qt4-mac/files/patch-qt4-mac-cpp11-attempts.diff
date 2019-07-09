@@ -1,0 +1,265 @@
+diff --git src/3rdparty/javascriptcore/JavaScriptCore/bytecompiler/BytecodeGenerator.cpp src/3rdparty/javascriptcore/JavaScriptCore/bytecompiler/BytecodeGenerator.cpp
+index b0a0877c..046b11c8 100644
+--- src/3rdparty/javascriptcore/JavaScriptCore/bytecompiler/BytecodeGenerator.cpp
++++ src/3rdparty/javascriptcore/JavaScriptCore/bytecompiler/BytecodeGenerator.cpp
+@@ -1835,9 +1835,20 @@ RegisterID* BytecodeGenerator::emitNextPropertyName(RegisterID* dst, RegisterID*
+ RegisterID* BytecodeGenerator::emitCatch(RegisterID* targetRegister, Label* start, Label* end)
+ {
+ #if ENABLE(JIT)
+-    HandlerInfo info = { start->bind(0, 0), end->bind(0, 0), instructions().size(), m_dynamicScopeDepth + m_baseScopeDepth, CodeLocationLabel() };
++    HandlerInfo info = {
++        static_cast<uint32_t>(start->bind(0, 0)),
++        static_cast<uint32_t>(end->bind(0, 0)),
++        static_cast<uint32_t>(instructions().size()),
++        static_cast<uint32_t>(m_dynamicScopeDepth + m_baseScopeDepth),
++        CodeLocationLabel()
++    };
+ #else
+-    HandlerInfo info = { start->bind(0, 0), end->bind(0, 0), instructions().size(), m_dynamicScopeDepth + m_baseScopeDepth };
++    HandlerInfo info = {
++        static_cast<uint32_t>(start->bind(0, 0)),
++        static_cast<uint32_t>(end->bind(0, 0)),
++        static_cast<uint32_t>(instructions().size()),
++        static_cast<uint32_t>(m_dynamicScopeDepth + m_baseScopeDepth)
++    };
+ #endif
+ 
+     m_codeBlock->addExceptionHandler(info);
+@@ -1889,7 +1900,7 @@ void BytecodeGenerator::emitPushNewScope(RegisterID* dst, const Identifier& prop
+ 
+ void BytecodeGenerator::beginSwitch(RegisterID* scrutineeRegister, SwitchInfo::SwitchType type)
+ {
+-    SwitchInfo info = { instructions().size(), type };
++    SwitchInfo info = { static_cast<uint32_t>(instructions().size()), type };
+     switch (type) {
+         case SwitchInfo::SwitchImmediate:
+             emitOpcode(op_switch_imm);
+diff --git src/3rdparty/javascriptcore/JavaScriptCore/bytecompiler/BytecodeGenerator.h src/3rdparty/javascriptcore/JavaScriptCore/bytecompiler/BytecodeGenerator.h
+index 8b6a4251..af74e60c 100644
+--- src/3rdparty/javascriptcore/JavaScriptCore/bytecompiler/BytecodeGenerator.h
++++ src/3rdparty/javascriptcore/JavaScriptCore/bytecompiler/BytecodeGenerator.h
+@@ -176,7 +176,7 @@ namespace JSC {
+             // Node::emitCode assumes that dst, if provided, is either a local or a referenced temporary.
+             ASSERT(!dst || dst == ignoredResult() || !dst->isTemporary() || dst->refCount());
+             if (!m_codeBlock->numberOfLineInfos() || m_codeBlock->lastLineInfo().lineNumber != n->lineNo()) {
+-                LineInfo info = { instructions().size(), n->lineNo() };
++                LineInfo info = { static_cast<uint32_t>(instructions().size()), n->lineNo() };
+                 m_codeBlock->addLineInfo(info);
+             }
+             if (m_emitNodeDepth >= s_maxEmitNodeDepth)
+@@ -195,7 +195,7 @@ namespace JSC {
+         void emitNodeInConditionContext(ExpressionNode* n, Label* trueTarget, Label* falseTarget, bool fallThroughMeansTrue)
+         {
+             if (!m_codeBlock->numberOfLineInfos() || m_codeBlock->lastLineInfo().lineNumber != n->lineNo()) {
+-                LineInfo info = { instructions().size(), n->lineNo() };
++                LineInfo info = { static_cast<uint32_t>(instructions().size()), n->lineNo() };
+                 m_codeBlock->addLineInfo(info);
+             }
+             if (m_emitNodeDepth >= s_maxEmitNodeDepth)
+diff --git src/3rdparty/javascriptcore/JavaScriptCore/runtime/Identifier.cpp src/3rdparty/javascriptcore/JavaScriptCore/runtime/Identifier.cpp
+index 747c4ac8..0702c423 100644
+--- src/3rdparty/javascriptcore/JavaScriptCore/runtime/Identifier.cpp
++++ src/3rdparty/javascriptcore/JavaScriptCore/runtime/Identifier.cpp
+@@ -195,7 +195,7 @@ PassRefPtr<UString::Rep> Identifier::add(JSGlobalData* globalData, const UChar*
+         UString::Rep::empty().hash();
+         return &UString::Rep::empty();
+     }
+-    UCharBuffer buf = {s, length}; 
++    UCharBuffer buf = {s, static_cast<unsigned>(length)};
+     pair<HashSet<UString::Rep*>::iterator, bool> addResult = globalData->identifierTable->add<UCharBuffer, UCharBufferTranslator>(buf);
+ 
+     // If the string is newly-translated, then we need to adopt it.
+diff --git src/3rdparty/javascriptcore/JavaScriptCore/runtime/JSONObject.cpp src/3rdparty/javascriptcore/JavaScriptCore/runtime/JSONObject.cpp
+index b089584e..daacbdbb 100644
+--- src/3rdparty/javascriptcore/JavaScriptCore/runtime/JSONObject.cpp
++++ src/3rdparty/javascriptcore/JavaScriptCore/runtime/JSONObject.cpp
+@@ -320,7 +320,11 @@ void Stringifier::appendQuotedString(StringBuilder& builder, const UString& valu
+             default:
+                 static const char hexDigits[] = "0123456789abcdef";
+                 UChar ch = data[i];
+-                UChar hex[] = { '\\', 'u', hexDigits[(ch >> 12) & 0xF], hexDigits[(ch >> 8) & 0xF], hexDigits[(ch >> 4) & 0xF], hexDigits[ch & 0xF] };
++                UChar hex[] = { '\\', 'u',
++                                static_cast<UChar>(hexDigits[(ch >> 12) & 0xF]),
++                                static_cast<UChar>(hexDigits[(ch >> 8) & 0xF]),
++                                static_cast<UChar>(hexDigits[(ch >> 4) & 0xF]),
++                                static_cast<UChar>(hexDigits[ch & 0xF]) };
+                 builder.append(hex, sizeof(hex) / sizeof(UChar));
+                 break;
+         }
+diff --git src/3rdparty/javascriptcore/JavaScriptCore/runtime/Structure.cpp src/3rdparty/javascriptcore/JavaScriptCore/runtime/Structure.cpp
+index 499c53a7..ac4ab864 100644
+--- src/3rdparty/javascriptcore/JavaScriptCore/runtime/Structure.cpp
++++ src/3rdparty/javascriptcore/JavaScriptCore/runtime/Structure.cpp
+@@ -156,9 +156,10 @@ Structure::Structure(JSValue prototype, const TypeInfo& typeInfo)
+ Structure::~Structure()
+ {
+     if (m_previous) {
+-        if (m_nameInPrevious)
+-            m_previous->table.remove(StructureTransitionTableHash::Key(RefPtr<UString::Rep>(m_nameInPrevious.get()), m_attributesInPrevious), m_specificValueInPrevious);
+-        else
++        if (m_nameInPrevious) {
++            unsigned attrInPrev = m_attributesInPrevious;
++            m_previous->table.remove(StructureTransitionTableHash::Key(RefPtr<UString::Rep>(m_nameInPrevious.get()), attrInPrev), m_specificValueInPrevious);
++        } else
+             m_previous->table.removeAnonymousSlotTransition(m_anonymousSlotsInPrevious);
+ 
+     }
+diff --git src/3rdparty/javascriptcore/JavaScriptCore/runtime/Structure.h src/3rdparty/javascriptcore/JavaScriptCore/runtime/Structure.h
+index 7571efc1..a8deb5ef 100644
+--- src/3rdparty/javascriptcore/JavaScriptCore/runtime/Structure.h
++++ src/3rdparty/javascriptcore/JavaScriptCore/runtime/Structure.h
+@@ -316,8 +316,10 @@ namespace JSC {
+         Structure* existingTransition = singleTransition();
+         TransitionTable* transitionTable = new TransitionTable;
+         setTransitionTable(transitionTable);
+-        if (existingTransition)
+-            add(StructureTransitionTableHash::Key(RefPtr<UString::Rep>(existingTransition->m_nameInPrevious.get()), existingTransition->m_attributesInPrevious), existingTransition, existingTransition->m_specificValueInPrevious);
++        if (existingTransition) {
++            const unsigned attrsInPrev = existingTransition->m_attributesInPrevious;
++            add(StructureTransitionTableHash::Key(RefPtr<UString::Rep>(existingTransition->m_nameInPrevious.get()), attrsInPrev), existingTransition, existingTransition->m_specificValueInPrevious);
++        }
+     }
+ } // namespace JSC
+ 
+diff --git src/3rdparty/javascriptcore/JavaScriptCore/wtf/unicode/UTF8.cpp src/3rdparty/javascriptcore/JavaScriptCore/wtf/unicode/UTF8.cpp
+index 21d58563..cbfc528e 100644
+--- src/3rdparty/javascriptcore/JavaScriptCore/wtf/unicode/UTF8.cpp
++++ src/3rdparty/javascriptcore/JavaScriptCore/wtf/unicode/UTF8.cpp
+@@ -229,7 +229,7 @@ static bool isLegalUTF8(const unsigned char* source, int length)
+ // This table contains as many values as there might be trailing bytes
+ // in a UTF-8 sequence.
+ static const UChar32 offsetsFromUTF8[6] = { 0x00000000UL, 0x00003080UL, 0x000E2080UL, 
+-            0x03C82080UL, 0xFA082080UL, 0x82082080UL };
++            0x03C82080UL, static_cast<UChar32>(0xFA082080UL), static_cast<UChar32>(0x82082080UL) };
+ 
+ ConversionResult convertUTF8ToUTF16(
+     const char** sourceStart, const char* sourceEnd, 
+diff --git src/3rdparty/javascriptcore/JavaScriptCore/yarr/RegexCompiler.cpp src/3rdparty/javascriptcore/JavaScriptCore/yarr/RegexCompiler.cpp
+index 9cd3d123..c37bf518 100644
+--- src/3rdparty/javascriptcore/JavaScriptCore/yarr/RegexCompiler.cpp
++++ src/3rdparty/javascriptcore/JavaScriptCore/yarr/RegexCompiler.cpp
+@@ -719,7 +719,7 @@ const char* compileRegex(const UString& patternString, RegexPattern& pattern)
+ 
+     constructor.setupOffsets();
+ 
+-    return false;
++    return NULL;
+ };
+ 
+ 
+diff --git src/gui/kernel/qcocoaview_mac.mm src/gui/kernel/qcocoaview_mac.mm
+index 34dc8156..81f67d5e 100644
+--- src/gui/kernel/qcocoaview_mac.mm
++++ src/gui/kernel/qcocoaview_mac.mm
+@@ -1352,7 +1352,7 @@ Qt::DropAction QDragManager::drag(QDrag *o)
+     // Save supported actions:
+     [theView setSupportedActions: qt_mac_mapDropActions(dragPrivate()->possible_actions)];
+     QPoint pointInView = [theView qt_qwidget]->mapFromGlobal(dndParams->globalPoint);
+-    NSPoint imageLoc = {pointInView.x() - hotspot.x(), pointInView.y() + pix.height() - hotspot.y()};
++    NSPoint imageLoc = {static_cast<CGFloat>(pointInView.x() - hotspot.x()), static_cast<CGFloat>(pointInView.y() + pix.height() - hotspot.y())};
+     NSSize mouseOffset = {0.0, 0.0};
+     NSPasteboard *pboard = [NSPasteboard pasteboardWithName:NSDragPboard];
+     dragPrivate()->executed_action = Qt::ActionMask;
+diff --git src/gui/kernel/qcursor_mac.mm src/gui/kernel/qcursor_mac.mm
+index 764bc382..91c2cedb 100644
+--- src/gui/kernel/qcursor_mac.mm
++++ src/gui/kernel/qcursor_mac.mm
+@@ -369,7 +369,7 @@ void QCursorData::initCursorFromBitmap()
+     type = QCursorData::TYPE_ImageCursor;
+     curs.cp.my_cursor = true;
+     QPixmap bmCopy = QPixmap::fromImage(finalCursor);
+-    NSPoint hotSpot = { hx, hy };
++    NSPoint hotSpot = { static_cast<CGFloat>(hx), static_cast<CGFloat>(hy) };
+     nsimage = static_cast<NSImage*>(qt_mac_create_nsimage(bmCopy));
+     curs.cp.nscursor = [[NSCursor alloc] initWithImage:nsimage hotSpot: hotSpot];
+     [nsimage release];
+@@ -379,7 +379,7 @@ void QCursorData::initCursorFromPixmap()
+ {
+     type = QCursorData::TYPE_ImageCursor;
+     curs.cp.my_cursor = true;
+-    NSPoint hotSpot = { hx, hy };
++    NSPoint hotSpot = { static_cast<CGFloat>(hx), static_cast<CGFloat>(hy) };
+     NSImage *nsimage;
+     nsimage = static_cast<NSImage *>(qt_mac_create_nsimage(pixmap));
+     curs.cp.nscursor = [[NSCursor alloc] initWithImage:nsimage hotSpot: hotSpot];
+diff --git src/gui/kernel/qt_cocoa_helpers_mac.mm src/gui/kernel/qt_cocoa_helpers_mac.mm
+index 761c8da5..cabf4c8d 100644
+--- src/gui/kernel/qt_cocoa_helpers_mac.mm
++++ src/gui/kernel/qt_cocoa_helpers_mac.mm
+@@ -462,17 +462,17 @@ void qt_dispatchTabletProximityEvent(void * /*NSEvent * */ tabletEvent)
+ {
+     NSEvent *proximityEvent = static_cast<NSEvent *>(tabletEvent);
+     // simply construct a Carbon proximity record and handle it all in one spot.
+-    TabletProximityRec carbonProximityRec = { [proximityEvent vendorID],
+-                                              [proximityEvent tabletID],
+-                                              [proximityEvent pointingDeviceID],
+-                                              [proximityEvent deviceID],
+-                                              [proximityEvent systemTabletID],
+-                                              [proximityEvent vendorPointingDeviceType],
+-                                              [proximityEvent pointingDeviceSerialNumber],
++    TabletProximityRec carbonProximityRec = { static_cast<UInt16>([proximityEvent vendorID]),
++                                              static_cast<UInt16>([proximityEvent tabletID]),
++                                              static_cast<UInt16>([proximityEvent pointingDeviceID]),
++                                              static_cast<UInt16>([proximityEvent deviceID]),
++                                              static_cast<UInt16>([proximityEvent systemTabletID]),
++                                              static_cast<UInt16>([proximityEvent vendorPointingDeviceType]),
++                                              static_cast<UInt32>([proximityEvent pointingDeviceSerialNumber]),
+                                               [proximityEvent uniqueID],
+-                                              [proximityEvent capabilityMask],
+-                                              [proximityEvent pointingDeviceType],
+-                                              [proximityEvent isEnteringProximity] };
++                                              static_cast<UInt32>([proximityEvent capabilityMask]),
++                                              static_cast<UInt8>([proximityEvent pointingDeviceType]),
++                                              static_cast<UInt8>([proximityEvent isEnteringProximity]) };
+     qt_dispatchTabletProximityEvent(carbonProximityRec);
+ }
+ #endif // QT_MAC_USE_COCOA
+diff --git src/gui/styles/qmacstyle_mac.mm src/gui/styles/qmacstyle_mac.mm
+index 196d14bd..549a2d7e 100644
+--- src/gui/styles/qmacstyle_mac.mm
++++ src/gui/styles/qmacstyle_mac.mm
+@@ -3466,8 +3466,8 @@ void QMacStyle::drawControl(ControlElement ce, const QStyleOption *opt, QPainter
+                     tti.version = qt_mac_hitheme_version;
+                     tti.state = tds;
+                     QColor textColor = btn->palette.buttonText().color();
+-                    CGFloat colorComp[] = { textColor.redF(), textColor.greenF(),
+-                                          textColor.blueF(), textColor.alphaF() };
++                    CGFloat colorComp[] = { static_cast<CGFloat>(textColor.redF()), static_cast<CGFloat>(textColor.greenF()),
++                                          static_cast<CGFloat>(textColor.blueF()), static_cast<CGFloat>(textColor.alphaF()) };
+                     CGContextSetFillColorSpace(cg, QCoreGraphicsPaintEngine::macGenericColorSpace());
+                     CGContextSetFillColor(cg, colorComp);
+                     tti.fontID = themeId;
+@@ -3708,8 +3708,8 @@ void QMacStyle::drawControl(ControlElement ce, const QStyleOption *opt, QPainter
+                 tti.version = qt_mac_hitheme_version;
+                 tti.state = tds;
+                 QColor textColor = myTab.palette.windowText().color();
+-                CGFloat colorComp[] = { textColor.redF(), textColor.greenF(),
+-                                        textColor.blueF(), textColor.alphaF() };
++                CGFloat colorComp[] = { static_cast<CGFloat>(textColor.redF()), static_cast<CGFloat>(textColor.greenF()),
++                                        static_cast<CGFloat>(textColor.blueF()), static_cast<CGFloat>(textColor.alphaF()) };
+                 CGContextSetFillColorSpace(cg, QCoreGraphicsPaintEngine::macGenericColorSpace());
+                 CGContextSetFillColor(cg, colorComp);
+                 switch (d->aquaSizeConstrain(opt, w)) {
+@@ -3898,8 +3898,8 @@ void QMacStyle::drawControl(ControlElement ce, const QStyleOption *opt, QPainter
+                 CGContextSetShouldAntialias(cg, true);
+                 CGContextSetShouldSmoothFonts(cg, true);
+                 QColor textColor = p->pen().color();
+-                CGFloat colorComp[] = { textColor.redF(), textColor.greenF(),
+-                                      textColor.blueF(), textColor.alphaF() };
++                CGFloat colorComp[] = { static_cast<CGFloat>(textColor.redF()), static_cast<CGFloat>(textColor.greenF()),
++                                      static_cast<CGFloat>(textColor.blueF()), static_cast<CGFloat>(textColor.alphaF()) };
+                 CGContextSetFillColorSpace(cg, QCoreGraphicsPaintEngine::macGenericColorSpace());
+                 CGContextSetFillColor(cg, colorComp);
+                 HIThemeTextInfo tti;
+@@ -5034,8 +5034,8 @@ void QMacStyle::drawComplexControl(ComplexControl cc, const QStyleOptionComplex
+                 tti.version = qt_mac_hitheme_version;
+                 tti.state = tds;
+                 QColor textColor = groupBox->palette.windowText().color();
+-                CGFloat colorComp[] = { textColor.redF(), textColor.greenF(),
+-                                      textColor.blueF(), textColor.alphaF() };
++                CGFloat colorComp[] = { static_cast<CGFloat>(textColor.redF()), static_cast<CGFloat>(textColor.greenF()),
++                                      static_cast<CGFloat>(textColor.blueF()), static_cast<CGFloat>(textColor.alphaF()) };
+                 CGContextSetFillColorSpace(cg, QCoreGraphicsPaintEngine::macGenericColorSpace());
+                 CGContextSetFillColor(cg, colorComp);
+                 tti.fontID = checkable ? kThemeSystemFont : kThemeSmallSystemFont;
+

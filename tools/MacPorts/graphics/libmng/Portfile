@@ -7,7 +7,7 @@ version                 2.0.3
 categories              graphics
 platforms               darwin
 license                 zlib
-maintainers             {blair @blair} openmaintainer
+maintainers             nomaintainer
 
 description             Library for read MNG, an extension to PNG.
 

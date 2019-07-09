@@ -2297,7 +2297,7 @@ SettingsPrivate::initializeKnobsPython()
     _onProjectCreated->setLabel(tr("After project created"));
     _onProjectCreated->setHintToolTip( tr("Callback called once a new project is created (this is never called "
                                           "when \"After project loaded\" is called.)\n"
-                                          "The signature of the callback is : callback(app) where:\n"
+                                          "The signature of the callback is: callback(app) where:\n"
                                           "- app: points to the current application instance\n") );
     _pythonPage->addKnob(_onProjectCreated);
 

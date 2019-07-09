@@ -1,0 +1,19 @@
+--- src/gui/painting/qpaintengine_mac.cpp.orig
++++ src/gui/painting/qpaintengine_mac.cpp
+@@ -334,7 +334,16 @@
+     if ((colorSpace = m_displayColorSpaceHash.value(displayID)))
+         return colorSpace;
+ 
++#if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
+     colorSpace = CGDisplayCopyColorSpace(displayID);
++#else
++    CMProfileRef displayProfile = 0;
++    CMError err = CMGetProfileByAVID((CMDisplayIDType)displayID, &displayProfile);
++    if (err == noErr) {
++        colorSpace = CGColorSpaceCreateWithPlatformColorSpace(displayProfile);
++        CMCloseProfile(displayProfile);
++    }
++#endif
+     if (colorSpace == 0)
+         colorSpace = CGColorSpaceCreateDeviceRGB();
+ 

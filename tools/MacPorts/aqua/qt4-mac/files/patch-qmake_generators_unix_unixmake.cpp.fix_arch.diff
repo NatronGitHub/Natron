@@ -1,0 +1,87 @@
+--- qmake/generators/unix/unixmake.cpp.framework
++++ qmake/generators/unix/unixmake.cpp
+@@ -589,9 +589,11 @@
+     libdirs.append(QMakeLocalFileName("@PREFIX@/lib"));
+     const QString lflags[] = { "QMAKE_LIBDIR_FLAGS", "QMAKE_FRAMEWORKPATH_FLAGS", "QMAKE_LFLAGS", "QMAKE_LIBS", QString() };
+     for(int i = 0; !lflags[i].isNull(); i++) {
++      // warn_msg(WarnLogic, "processPrlFiles: 0: lflags[%d] is '%s'", i, lflags[i].toLatin1().constData());
+         QStringList &l = project->values(lflags[i]);
+         for(int lit = 0; lit < l.size(); ++lit) {
+             QString opt = l.at(lit).trimmed();
++            // warn_msg(WarnLogic, "processPrlFiles: 1: opt[%d] is '%s'", lit, opt.toLatin1().constData());
+             if(opt.startsWith("-")) {
+                 if(opt.startsWith("-L")) {
+                     QMakeLocalFileName l(opt.right(opt.length()-2));
+@@ -727,6 +729,7 @@
+             for(int lit = 0; lit < l.size(); ++lit) {
+                 QString arch("default");
+                 QString opt = l.at(lit).trimmed();
++                // warn_msg(WarnLogic, "processPrlFiles: 2: opt[%d] is '%s'", lit, opt.toLatin1().constData());
+                 if(opt.startsWith("-")) {
+                     if (Option::target_mode == Option::TARG_MACX_MODE && opt.startsWith("-Xarch")) {
+                         if (opt.length() > 7) {
+@@ -734,7 +737,7 @@
+                             opt = l.at(++lit);
+                         }
+                     }
+-
++                    // warn_msg(WarnLogic, "processPrlFiles: 2: arch is '%s'", arch.toLatin1().constData());
+                     if(opt.startsWith("-L") ||
+                        (Option::target_mode == Option::TARG_MACX_MODE && opt.startsWith("-F"))) {
+                         if(!lflags[arch].contains(opt))
+@@ -771,6 +774,55 @@
+                             lflags[arch].append("-framework");
+                             lflags[arch].append(opt);
+                         }
++                    } else if (Option::target_mode == Option::TARG_MACX_MODE && opt.startsWith("-arch")) {
++                      // warn_msg(WarnLogic, "%d / %d: %s, %s", lit, l.size (), opt.toLatin1().constData(), l.at(lit).toLatin1().constData(), l.at(1+lit).toLatin1().constData());
++                      // make sure "-arch" is exact
++                      if (opt.toLower() != "-arch") {
++                        warn_msg(WarnLogic, "Expect '-arch' flag to be standalone; got '%s'; ignoring extra.", opt.toLatin1().constData());
++                      }
++                      // retrieve the next argument, if it exists
++                      if (++lit >= l.size ()) {
++                        warn_msg(WarnLogic, "Lone '-arch' flag; ignoring.");
++                        continue;
++                      }
++                      QString t_arch = l.at(lit).trimmed().toLower();
++                      // make sure next option is valid
++                      const QString archs[] = { "i386", "x86_64", "ppc", "ppc64", QString() };
++                      int i = 0;
++                      for(; !archs[i].isNull(); ++i) {
++                        if (t_arch.startsWith(archs[i])) {
++                          break;
++                        }
++                      }
++                      if (archs[i].isNull()) {
++                        warn_msg(WarnLogic, "Lone '-arch' flag; ignoring.");
++                        --lit;
++                        continue;
++                      }
++                      // make sure the option is exact
++                      if (archs[i] != t_arch) {
++                        warn_msg(WarnLogic, "Expect ARCH of '-arch ARCH' flag to be exact; got '%s'; ignoring extra.", t_arch.toLatin1().constData());
++                        t_arch = archs[i];
++                      }
++                      // see if this flag is alread in place in the ldflags
++                      // for "default" and the selected arch.
++                      // is "-arch ARCH" already in any set of flags?
++                      bool found = false;
++                      for(int j = 0; j < lflags["default"].size(); ++j) {
++                        if ((lflags[arch].at(j) == "-arch") &&
++                            (lflags[arch].at(j+1) == t_arch)) {
++                          // yes: flag already exists; ignore it
++                          found = true;
++                          break;
++                        }
++                      }
++                      if (!found) {
++                        // no: add it
++                        lflags[arch].append("-arch");
++                        lflags[arch].append(t_arch);
++                      } else {
++                        warn_msg(WarnLogic, "Found duplicate '-arch %s' flag; ignoring.", t_arch.toLatin1().constData());
++                      }
+                     } else {
+                         lflags[arch].append(opt);
+                     }

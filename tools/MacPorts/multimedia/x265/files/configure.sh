@@ -1,8 +1,11 @@
 #!/bin/bash
+# see https://github.com/videolan/x265/blob/master/build/msys/multilib.sh
+
 set -e
 #set -x
 
 if [ "$ARCH" != "x86_64" ]; then
+    # no multilib on i386 or ppc
     exec "$CONFIGURE" "$@"
 fi
 

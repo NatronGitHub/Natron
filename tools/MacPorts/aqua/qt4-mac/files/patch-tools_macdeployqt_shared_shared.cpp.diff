@@ -1,0 +1,11 @@
+--- tools/macdeployqt/shared/shared.cpp.orig
++++ tools/macdeployqt/shared/shared.cpp
+@@ -141,7 +141,7 @@
+                 state = DylibName;
+                 continue;
+             } else if (part < parts.count() && parts.at(part).endsWith(".framework")) {
+-                info.installName += "/" + (qtPath + "lib/").simplified();
++                info.installName += "/" + (qtPath + "Frameworks/").simplified();
+                 info.frameworkDirectory = info.installName;
+                 state = FrameworkName;
+                 continue;
