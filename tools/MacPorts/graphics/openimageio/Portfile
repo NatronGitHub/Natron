@@ -27,7 +27,8 @@ worksrcdir          oiio-Release-${version}
 
 patch.pre_args  -p1
 patchfiles \
-    oiio-2.0.8-invalidatespec.patch
+    oiio-2.0.8-invalidatespec.patch \
+    oiio-2.0.8-atomic-load.patch
 
 # avoid
 #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
