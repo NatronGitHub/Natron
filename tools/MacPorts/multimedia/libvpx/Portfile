@@ -54,15 +54,7 @@ compiler.blacklist  *gcc-3.* *gcc-4.* {clang < 800} macports-clang-3.3 macports-
 # Make sure that mp-clang-3.9 is picked if all compilers were blacklisted.
 # Especially important for 10.6 on libc++, since the fallback list contains macports-clang-3.7
 # as the first, and thus selected, fallback option (even though it has been blacklisted earlier).
-compiler.fallback-append macports-clang-3.9
-
-# on Leopard clang-3.9.1 fails, but newer clangs succeed (5.0 tested)
-# vpx/src/vpx_image.c.o vpx/src/vpx_image.c clang: error: unable to execute command: Bus error
-if { ${os.platform} eq "darwin" && ${os.major} < 10 } {
-    compiler.blacklist-append macports-clang-3.9
-    compiler.fallback-delete macports-clang-3.9
-    compiler.fallback-append macports-clang-5.0 macports-clang-6.0 macports-clang-7.0
-}
+compiler.fallback-append macports-clang-5.0 macports-clang-6.0 macports-clang-7.0 macports-clang-8.0
 
 license_noconflict  clang-3.9 clang-5.0 clang-6.0 clang-7.0
 
