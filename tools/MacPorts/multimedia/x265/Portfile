@@ -34,7 +34,7 @@ depends_build-append \
 
 compiler.blacklist  *llvm-gcc-4.2
 
-configure.env-append CONFIGURE='${configure.cmd}'
+configure.env-append CONFIGURE='${configure.cmd}' BUILD='${build.cmd}'
 build.env-append     BUILD='${build.cmd}'
 destroot.env-append  BUILD='${build.cmd}' ARCH=none
 configure.cmd        ${portpath}/${filesdir}/configure.sh
