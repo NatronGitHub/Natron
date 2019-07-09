@@ -1273,7 +1273,7 @@ Settings::initializeKnobsCaching()
 
     QString defaultLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
     QString diskCacheTt( tr("WARNING: Changing this parameter requires a restart of the application. \n"
-                            "This is points to the location where %1 on-disk caches will be. "
+                            "This points to the location where %1 on-disk caches will be. "
                             "This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, "
                             "the default location will be used. The default location is: \n").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
 
@@ -1360,7 +1360,7 @@ Settings::initializeKnobsPython()
     _onProjectCreated->setName("afterProjectCreated");
     _onProjectCreated->setHintToolTip( tr("Callback called once a new project is created (this is never called "
                                           "when \"After project loaded\" is called.)\n"
-                                          "The signature of the callback is : callback(app) where:\n"
+                                          "The signature of the callback is: callback(app) where:\n"
                                           "- app: points to the current application instance\n") );
     _pythonPage->addKnob(_onProjectCreated);
 
