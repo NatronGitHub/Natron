@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # Install libbluray (for ffmpeg)
+# see http://ftp.videolan.org/pub/videolan/libbluray
 # BD-Java support is disabled, because it requires apache-ant and a JDK for building
-LIBBLURAY_VERSION=1.1.1
+LIBBLURAY_VERSION=1.1.2
 LIBBLURAY_TAR="libbluray-${LIBBLURAY_VERSION}.tar.bz2"
 LIBBLURAY_SITE="ftp://ftp.videolan.org/pub/videolan/libbluray/${LIBBLURAY_VERSION}"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libbluray.pc" ] || [ "$(pkg-config --modversion libbluray)" != "$LIBBLURAY_VERSION" ]; }; }; then

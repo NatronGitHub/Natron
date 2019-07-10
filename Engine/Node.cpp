@@ -6759,14 +6759,14 @@ Node::Implementation::runOnNodeCreatedCBInternal(const std::string& cb,
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
     } catch (const std::exception& e) {
-        _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to run onNodeCreated callback: ")
+        _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to get signature onNodeCreated callback: ")
                                                           + e.what() );
 
         return;
     }
 
     if ( !error.empty() ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + error);
+        _publicInterface->getApp()->appendToScriptEditor("Failed to get signature onNodeCreated callback: " + error);
 
         return;
     }
@@ -6775,13 +6775,13 @@ Node::Implementation::runOnNodeCreatedCBInternal(const std::string& cb,
     signatureError.append("The on node created callback supports the following signature(s):\n");
     signatureError.append("- callback(thisNode,app,userEdited)");
     if (args.size() != 3) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + signatureError);
+        _publicInterface->getApp()->appendToScriptEditor("Wrong signature of onNodeCreated callback: " + signatureError);
 
         return;
     }
 
     if ( (args[0] != "thisNode") || (args[1] != "app") || (args[2] != "userEdited") ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + signatureError);
+        _publicInterface->getApp()->appendToScriptEditor("Wrong signature of onNodeCreated callback: " + signatureError);
 
         return;
     }
@@ -6817,14 +6817,14 @@ Node::Implementation::runOnNodeDeleteCBInternal(const std::string& cb)
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
     } catch (const std::exception& e) {
-        _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to run onNodeDeletion callback: ")
+        _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to get signature of onNodeDeletion callback: ")
                                                           + e.what() );
 
         return;
     }
 
     if ( !error.empty() ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + error);
+        _publicInterface->getApp()->appendToScriptEditor("Failed to get signature of onNodeDeletion callback: " + error);
 
         return;
     }
@@ -6833,13 +6833,13 @@ Node::Implementation::runOnNodeDeleteCBInternal(const std::string& cb)
     signatureError.append("The on node deletion callback supports the following signature(s):\n");
     signatureError.append("- callback(thisNode,app)");
     if (args.size() != 2) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + signatureError);
+        _publicInterface->getApp()->appendToScriptEditor("Wrong signature of onNodeDeletion callback: " + signatureError);
 
         return;
     }
 
     if ( (args[0] != "thisNode") || (args[1] != "app") ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + signatureError);
+        _publicInterface->getApp()->appendToScriptEditor("Wrong signature of onNodeDeletion callback: " + signatureError);
 
         return;
     }
@@ -6989,14 +6989,14 @@ Node::Implementation::runInputChangedCallback(int index,
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
     } catch (const std::exception& e) {
-        _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to run onInputChanged callback: ")
+        _publicInterface->getApp()->appendToScriptEditor( std::string("Failed to get signature of onInputChanged callback: ")
                                                           + e.what() );
 
         return;
     }
 
     if ( !error.empty() ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onInputChanged callback: " + error);
+        _publicInterface->getApp()->appendToScriptEditor("Failed to get signature of onInputChanged callback: " + error);
 
         return;
     }
@@ -7005,13 +7005,13 @@ Node::Implementation::runInputChangedCallback(int index,
     signatureError.append("The on input changed callback supports the following signature(s):\n");
     signatureError.append("- callback(inputIndex,thisNode,thisGroup,app)");
     if (args.size() != 4) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onInputChanged callback: " + signatureError);
+        _publicInterface->getApp()->appendToScriptEditor("Wrong signature of onInputChanged callback: " + signatureError);
 
         return;
     }
 
     if ( (args[0] != "inputIndex") || (args[1] != "thisNode") || (args[2] != "thisGroup") || (args[3] != "app") ) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onInputChanged callback: " + signatureError);
+        _publicInterface->getApp()->appendToScriptEditor("Wrong signature of onInputChanged callback: " + signatureError);
 
         return;
     }

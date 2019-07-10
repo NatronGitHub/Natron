@@ -3,8 +3,7 @@
 PortSystem 1.0
 
 name                libraw
-version             0.19.2
-revision            0
+version             0.18.13
 set demosaicversion 0.18.8
 description         library for RAW images manipulation
 long_description    a library for reading RAW files obtained from digital photo \
@@ -20,9 +19,9 @@ distname            LibRaw-${version}
 
 checksums \
     LibRaw-${version}${extract.suffix} \
-        rmd160  818cf1472a58651daa2aa1e0f637649a39c413a7 \
-        sha256  400d47969292291d297873a06fb0535ccce70728117463927ddd9452aa849644 \
-        size    1302092 \
+        rmd160  85b6bd331d631167ebcdf39a0492e607334d9902 \
+        sha256  cb1f9d0d1fabc8967d501d95c05d2b53d97a2b917345c66553b1abbea06757ca \
+        size    1287631 \
     LibRaw-demosaic-pack-GPL2-${demosaicversion}${extract.suffix} \
         rmd160  b86ee8d0e790b2976f90ac7adecf8df4a3d92cd4 \
         sha256  0b24bcf7bbb5d13fde58bb071f94dc9354be09bc44b2bba0698493065e99f8da \
@@ -32,6 +31,7 @@ checksums \
         sha256  ffd6916cd66c8101e4e6b589799f256c897748d2fd2486aa34c3705146dbc701 \
         size    39002
 
+patchfiles          libraw_x3f.diff
 
 depends_build       port:pkgconfig
 

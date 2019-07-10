@@ -244,7 +244,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                 ///Render the input image with the bit depth of its preference
                                 ImageBitDepthEnum inputPrefDepth = inputEffect->getBitDepth(-1);
 
-                                if ( compsNeeded->empty() ) {
+                                if ( !compsNeeded || compsNeeded->empty() ) {
                                     continue;
                                 }
 

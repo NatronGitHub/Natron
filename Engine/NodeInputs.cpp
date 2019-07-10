@@ -1165,6 +1165,10 @@ int
 Node::disconnectInputInternal(Node* input, bool useGuiValues)
 {
     assert(_imp->inputsInitialized);
+    assert(input);
+    if (!input) {
+        throw std::logic_error(__func__);
+    }
     int found = -1;
     NodePtr inputShared;
     {

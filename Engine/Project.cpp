@@ -2084,7 +2084,7 @@ Project::setOrAddProjectFormat(const Format & frmt,
             }
         } else if (!skipAdd) {
             dispW = frmt;
-            bool existed;
+            bool existed = false;
             tryAddProjectFormat(dispW, &existed);
             if (!existed) {
                 mustRefreshNodeFormats = true;
@@ -2511,7 +2511,7 @@ Project::onOCIOConfigPathChanged(const std::string& path,
             _imp->envVars->setValue(newEnv);
         }
         endChanges(block);
-    } catch (std::logic_error) {
+    } catch (std::logic_error&) {
         // ignore
     }
 }

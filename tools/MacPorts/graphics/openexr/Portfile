@@ -32,7 +32,7 @@ if {${subport} ne "ilmbase"} {
 }
 
 if {${subport} eq ${name}} {
-    revision 1
+    #revision 0
 
     checksums \
         rmd160  3444fe1aa647be9ab2e6ea1638e27ea97c3f6688 \
@@ -72,7 +72,7 @@ if {${subport} eq ${name}} {
         configure.optflags "-O2"
     }
     # clang-4.0 and later are not yet tested, use -O2 just to be on the safe side
-    if { ${configure.compiler} eq "macports-clang-4.0" || ${configure.compiler} eq "macports-clang-5.0" || ${configure.compiler} eq "macports-clang-6.0" } {
+    if { ${configure.compiler} eq "macports-clang-4.0" || ${configure.compiler} eq "macports-clang-5.0" || ${configure.compiler} eq "macports-clang-6.0" || ${configure.compiler} eq "macports-clang-7.0" || ${configure.compiler} eq "macports-clang-8.0"} {
         configure.optflags "-O2"
     }
 }
@@ -85,9 +85,6 @@ subport ilmbase {
                 size    595490
 
     depends_build   port:gsed
-
-    # https://github.com/openexr/openexr/pull/170
-    patchfiles-append ilmbase-threadpool.diff
 
     # Bitrotted ucontext usage is buggy, don't bother with it.
     patchfiles-append patch-configure.diff

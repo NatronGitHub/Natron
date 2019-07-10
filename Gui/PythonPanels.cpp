@@ -112,33 +112,32 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         try {
             NATRON_PYTHON_NAMESPACE::getFunctionArguments(callback, &error, &args);
         } catch (const std::exception& e) {
-            getApp()->appendToScriptEditor( std::string("Failed to run onParamChanged callback: ")
+            getApp()->appendToScriptEditor( std::string("Failed to get signature of onParamChanged callback: ")
                                             + e.what() );
 
             return false;
         }
 
         if ( !error.empty() ) {
-            getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + error);
+            getApp()->appendToScriptEditor("Failed to get signature of onParamChanged callback: " + error);
 
             return false;
         }
 
         std::string signatureError;
         signatureError.append("The param changed callback supports the following signature(s):\n");
-        signatureError.append("- callback(paramName,app,userEdited)");
+        signatureError.append("- callback(paramName, app, userEdited)");
         if (args.size() != 3) {
-            getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + signatureError);
+            getApp()->appendToScriptEditor("Wrong signature of onParamChanged callback: " + signatureError);
 
             return false;
         }
 
         if ( ( (args[0] != "paramName") || (args[1] != "app") || (args[2] != "userEdited") ) ) {
-            getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + signatureError);
+            getApp()->appendToScriptEditor("Wrong signature of onParamChanged callback: " + signatureError);
 
             return false;
         }
-
 
         std::string appID =  getApp()->getAppIDString();
         std::stringstream ss;

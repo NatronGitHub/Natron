@@ -1,0 +1,11 @@
+--- src/3rdparty/webkit/Source/JavaScriptCore/wtf/text/AtomicString.cpp.orig	2019-07-06 00:52:49.000000000 +0200
++++ src/3rdparty/webkit/Source/JavaScriptCore/wtf/text/AtomicString.cpp	2019-07-06 00:53:59.000000000 +0200
+@@ -294,7 +294,7 @@
+     if (!s)
+         return 0;
+ 
+-    int length = 0;
++    unsigned length = 0;
+     while (s[length] != UChar(0))
+         length++;
+ 

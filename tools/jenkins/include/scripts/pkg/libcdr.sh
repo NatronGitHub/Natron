@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # install libcdr
+# see https://dev-www.libreoffice.org/src/libcdr/
 LIBCDR_VERSION=0.1.5
 LIBCDR_TAR="libcdr-${LIBCDR_VERSION}.tar.xz"
 LIBCDR_SITE="http://dev-www.libreoffice.org/src/libcdr"

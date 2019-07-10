@@ -323,13 +323,18 @@ NodeGui::initialize(NodeGraph* dag,
         refreshPosition(p.x(), p.y(), true);
     }
 
-    getNode()->initializeHostOverlays();
+    if (internalNode) {
+        internalNode->initializeHostOverlays();
+    }
 } // initialize
 
 bool
 NodeGui::getColorFromGrouping(QColor* color)
 {
     NodePtr internalNode = getNode();
+    if (!internalNode) {
+        return false;
+    }
     EffectInstancePtr iseffect = internalNode->getEffectInstance();
     if (!iseffect) {
         return false;
@@ -448,7 +453,10 @@ NodeGui::ensurePanelCreated()
          * We just do one redraw when all children are created
          */
         NodesList children;
-        getNode()->getChildrenMultiInstance(&children);
+        NodePtr internalNode = getNode();
+        if (internalNode) {
+            internalNode->getChildrenMultiInstance(&children);
+        }
         for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
             NodeGuiIPtr gui_i = (*it)->getNodeGui();
             assert(gui_i);
@@ -470,7 +478,8 @@ NodeGui::ensurePanelCreated()
 void
 NodeGui::onSettingsPanelClosed(bool closed)
 {
-    if (getNode()->hasAnyPersistentMessage()) {
+    NodePtr internalNode = getNode();
+    if (internalNode && internalNode->hasAnyPersistentMessage()) {
         const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
             (*it)->getViewer()->updatePersistentMessage();
@@ -486,7 +495,7 @@ NodeGui::createPanel(QVBoxLayout* container,
     NodeSettingsPanel* panel = 0;
     NodePtr node = getNode();
 
-    if ( node->getEffectInstance()->getMakeSettingsPanel() ) {
+    if ( node && node->getEffectInstance()->getMakeSettingsPanel() ) {
         assert(container);
         MultiInstancePanelPtr multiPanel;
         if ( node->isTrackerNodePlugin() && node->isMultiInstance() && node->getParentMultiInstanceName().empty() ) {
@@ -533,7 +542,13 @@ void
 NodeGui::getInitialSize(int *w,
                         int *h) const
 {
-    const QString& iconFilePath = getNode()->getPlugin()->getIconFilePath();
+    NodePtr internalNode = getNode();
+    if (!internalNode) {
+        *w = TO_DPIX(NODE_WIDTH);
+        *h = TO_DPIY(NODE_HEIGHT);
+        return;
+    }
+    const QString& iconFilePath = internalNode->getPlugin()->getIconFilePath();
 
     if ( !iconFilePath.isEmpty() && QFile::exists(iconFilePath) && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph() ) {
         *w = TO_DPIX(NODE_WIDTH) + TO_DPIX(NATRON_PLUGIN_ICON_SIZE) + TO_DPIX(PLUGIN_ICON_OFFSET) * 2;
@@ -550,7 +565,9 @@ NodeGui::createGui()
 
     setZValue(depth);
     NodePtr node = getNode();
-
+    if (!node) {
+        return; // throw exception instead?
+    }
     int cornerRadiusPx = 0;
     _boundingBox = new NodeGraphRectItem(this, cornerRadiusPx);
     _boundingBox->setZValue(depth);
@@ -682,7 +699,10 @@ void
 NodeGui::beginEditKnobs()
 {
     _wasBeginEditCalled = true;
-    getNode()->beginEditKnobs();
+    NodePtr node = getNode();
+    if (node) {
+        node->beginEditKnobs();
+    }
 }
 
 void
@@ -691,7 +711,8 @@ NodeGui::togglePreview_internal(bool refreshPreview)
     if ( !canMakePreview() ) {
         return;
     }
-    if ( getNode()->isPreviewEnabled() ) {
+    NodePtr node = getNode();
+    if ( node && getNode()->isPreviewEnabled() ) {
         ensurePreviewCreated();
         if (refreshPreview) {
             getNode()->computePreviewImage( _graph->getGui()->getApp()->getTimeLine()->currentFrame() );
@@ -739,7 +760,10 @@ NodeGui::onPreviewKnobToggled()
 void
 NodeGui::togglePreview()
 {
-    getNode()->togglePreview();
+    NodePtr node = getNode();
+    if (node) {
+        node->togglePreview();
+    }
     togglePreview_internal();
 }
 
@@ -1104,9 +1128,10 @@ NodeGui::refreshPosition(double x,
                 }
             }
 
-            if ( ( !_magnecEnabled.x() || !_magnecEnabled.y() ) ) {
+            NodePtr node = getNode();
+            if ( node && ( !_magnecEnabled.x() || !_magnecEnabled.y() ) ) {
                 ///check now the outputs
-                const NodesWList & outputs = getNode()->getGuiOutputs();
+                const NodesWList & outputs = node->getGuiOutputs();
                 for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
                     NodePtr output = it->lock();
                     if (!output) {
@@ -1178,7 +1203,9 @@ NodeGui::changePosition(double dx,
 void
 NodeGui::refreshDashedStateOfEdges()
 {
-    ViewerInstance* viewer = getNode()->isEffectViewer();
+    NodePtr node = getNode();
+
+    ViewerInstance* viewer = node ? node->isEffectViewer() : NULL;
 
     if (viewer) {
         int activeInputs[2];
@@ -1207,7 +1234,11 @@ NodeGui::refreshDashedStateOfEdges()
 void
 NodeGui::refreshEdges()
 {
-    const std::vector<NodeWPtr> & nodeInputs = getNode()->getGuiInputs();
+    NodePtr node = getNode();
+    if (!node) {
+        return;
+    }
+    const std::vector<NodeWPtr> & nodeInputs = node->getGuiInputs();
 
     if ( _inputEdges.size() != nodeInputs.size() ) {
         return;
@@ -1264,7 +1295,7 @@ NodeGui::updatePreviewImage(double time)
 {
     NodePtr node = getNode();
 
-    if ( isVisible() && node->isPreviewEnabled() && node->isActivated() && node->getApp()->getProject()->isAutoPreviewEnabled() ) {
+    if ( isVisible() && node && node->isPreviewEnabled() && node->isActivated() && node->getApp()->getProject()->isAutoPreviewEnabled() ) {
         if ( (node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos) ||
              ( node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) ) {
             return;
@@ -1371,7 +1402,9 @@ NodeGui::initializeInputsForInspector()
     NodePtr node = getNode();
 
     assert(node);
-
+    if (!node) {
+        return;
+    }
     // Count mask inputs first
     std::vector<bool> masksInputs(_inputEdges.size());
     int nMasksInputs = 0;
@@ -1448,7 +1481,7 @@ NodeGui::initializeInputs()
     int emptyInputsCount = 0;
     for (U32 i = 0; i < inputs.size(); ++i) {
         Edge* edge = new Edge( i, 0., thisShared, parentItem() );
-        if ( node->getEffectInstance()->isInputRotoBrush(i) || !isVisible() ) {
+        if ( ( node && node->getEffectInstance()->isInputRotoBrush(i) ) || !isVisible() ) {
             edge->setActive(false);
             edge->hide();
         }
@@ -1461,7 +1494,8 @@ NodeGui::initializeInputs()
             assert(gui);
             edge->setSource(gui);
         }
-        if ( !node->getEffectInstance()->isInputMask(i) &&
+        if ( node &&
+             !node->getEffectInstance()->isInputMask(i) &&
              !node->getEffectInstance()->isInputRotoBrush(i) ) {
             if (!input) {
                 ++emptyInputsCount;
@@ -1482,7 +1516,7 @@ NodeGui::initializeInputs()
         double angle =  piDividedbyX;
         int maskIndex = 0;
         for (U32 i = 0; i < _inputEdges.size(); ++i) {
-            if ( !node->getEffectInstance()->isInputRotoBrush(i) ) {
+            if ( node && !node->getEffectInstance()->isInputRotoBrush(i) ) {
                 double edgeAngle;
                 bool incrAngle = true;
                 if ( node->getEffectInstance()->isInputMask(i) ) {
@@ -1646,7 +1680,8 @@ NodeGui::firstAvailableEdge()
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
         Edge* a = _inputEdges[i];
         if ( !a->hasSource() ) {
-            if ( getNode()->getEffectInstance()->isInputOptional(i) ) {
+            NodePtr node;
+            if ( node && node->getEffectInstance()->isInputOptional(i) ) {
                 continue;
             }
         }
@@ -1744,7 +1779,11 @@ NodeGui::findConnectedEdge(NodeGui* parent)
 bool
 NodeGui::connectEdge(int edgeNumber)
 {
-    const std::vector<NodeWPtr> & inputs = getNode()->getGuiInputs();
+    NodePtr node = getNode();
+    if (!node) {
+        return false;
+    }
+    const std::vector<NodeWPtr> & inputs = node->getGuiInputs();
 
     if ( (edgeNumber < 0) || ( edgeNumber >= (int)inputs.size() ) || ( _inputEdges.size() != inputs.size() ) ) {
         return false;
@@ -1759,7 +1798,6 @@ NodeGui::connectEdge(int edgeNumber)
 
     _inputEdges[edgeNumber]->setSource(src);
 
-    NodePtr node = getNode();
     assert(node);
     if ( dynamic_cast<InspectorNode*>( node.get() ) ) {
         initializeInputsForInspector();
@@ -1864,6 +1902,10 @@ NodeGui::showGui()
     show();
     setActive(true);
     NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
         _graph->scene()->addItem(_inputEdges[i]);
         _inputEdges[i]->setParentItem( parentItem() );
@@ -1917,6 +1959,10 @@ NodeGui::activate(bool triggerRender)
 {
     ///first activate all child instance if any
     NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
     bool isMultiInstanceChild = !node->getParentMultiInstanceName().empty();
 
     if (!isMultiInstanceChild) {
@@ -1933,7 +1979,7 @@ NodeGui::activate(bool triggerRender)
 
     if (!isMultiInstanceChild && triggerRender) {
         std::list<ViewerInstance* > viewers;
-        getNode()->hasViewersConnected(&viewers);
+        node->hasViewersConnected(&viewers);
         for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
             (*it)->renderCurrentFrame(true);
         }
@@ -1969,7 +2015,7 @@ NodeGui::hideGui()
         it->second.arrow->hide();
     }
     NodePtr node = getNode();
-    ViewerInstance* isViewer = node->isEffectViewer();
+    ViewerInstance* isViewer = node ? node->isEffectViewer() : NULL;
     if (isViewer) {
         ViewerGL* viewerGui = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
         if (viewerGui) {
@@ -1985,7 +2031,7 @@ NodeGui::hideGui()
         NodeGuiPtr thisShared = shared_from_this();
         _graph->getGui()->removeNodeViewerInterface(thisShared, false);
 
-        NodeGroup* isGrp = node->isEffectGroup();
+        NodeGroup* isGrp = node ? node->isEffectGroup() : NULL;
         if ( isGrp && isGrp->isSubGraphUserVisible() ) {
             NodeGraphI* graph_i = isGrp->getNodeGraph();
             assert(graph_i);
@@ -2022,7 +2068,9 @@ NodeGui::deactivate(bool triggerRender)
 
     if (!isMultiInstanceChild && triggerRender) {
         std::list<ViewerInstance* > viewers;
-        getNode()->hasViewersConnected(&viewers);
+        if (node) {
+            node->hasViewersConnected(&viewers);
+        }
         for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
             (*it)->renderCurrentFrame(true);
         }
@@ -2076,12 +2124,14 @@ NodeGui::onPersistentMessageChanged()
     }
 
     QString message;
-    int type;
-    getNode()->getPersistentMessage(&message, &type);
-
+    int type = 0;
+    NodePtr node = getNode();
+    if (node) {
+        node->getPersistentMessage(&message, &type);
+    }
     _persistentMessage->setVisible( !message.isEmpty() );
 
-    if ( message.isEmpty() ) {
+    if ( !node || message.isEmpty() ) {
         setToolTip( QString() );
     } else {
         if (type == 1) {
@@ -2175,7 +2225,9 @@ void
 NodeGui::copyFrom(const NodeGuiSerialization & obj)
 {
     setPos_mt_safe( QPointF( obj.getX(), obj.getY() ) );
-    if ( getNode()->isPreviewEnabled() != obj.isPreviewEnabled() ) {
+    NodePtr node = getNode();
+    assert(node);
+    if ( node && ( node->isPreviewEnabled() != obj.isPreviewEnabled() ) ){
         togglePreview();
     }
     double w, h;
@@ -2197,13 +2249,14 @@ NodeGui::refreshStateIndicator()
     }
     QString message;
     int type;
-    if ( !getNode() ) {
+    NodePtr node = getNode();
+    if ( !node ) {
         return;
     }
-    getNode()->getPersistentMessage(&message, &type);
+    node->getPersistentMessage(&message, &type);
 
     bool showIndicator = true;
-    int value = getNode()->getIsNodeRenderingCounter();
+    int value = node->getIsNodeRenderingCounter();
     bool isSelected = getIsSelected();
     if (value >= 1) {
         _stateIndicator->setBrush(Qt::yellow);
@@ -2262,7 +2315,7 @@ NodeGui::refreshRenderingIndicator()
     }
     refreshStateIndicator();
     for (std::size_t i = 0; i < _inputEdges.size(); ++i) {
-        int value = getNode()->getIsInputNRenderingCounter(i);
+        int value = node->getIsInputNRenderingCounter(i);
         if (value >= 1) {
             _inputEdges[i]->turnOnRenderingColor();
         } else {
@@ -2283,9 +2336,14 @@ NodeGui::moveBelowPositionRecursively(const QRectF & r)
 {
     QRectF sceneRect = mapToScene( boundingRect() ).boundingRect();
 
+    NodePtr node = getNode();
+
+    if (!node) {
+        return;
+    }
     if ( r.intersects(sceneRect) ) {
         changePosition(0, r.height() + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-        const NodesWList & outputs = getNode()->getGuiOutputs();
+        const NodesWList & outputs = node->getGuiOutputs();
         for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             NodePtr output = it->lock();
             if (!output) {
@@ -2345,6 +2403,10 @@ void
 NodeGui::onAllKnobsSlaved(bool b)
 {
     NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
 
     if (b) {
         NodePtr masterNode = node->getMasterNode();
@@ -2451,6 +2513,10 @@ NodeGui::onKnobsLinksChanged()
         return;
     }
     NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
 
     typedef std::list<Node::KnobLink> InternalLinks;
     InternalLinks links;
@@ -2509,7 +2575,7 @@ NodeGui::onKnobsLinksChanged()
             }
         } else {
             ///There's no link to the master node yet
-            if ( masterNode && (masterNode->getNodeGui().get() != this) && ( masterNode->getGroup() == getNode()->getGroup() ) ) {
+            if ( masterNode && (masterNode->getNodeGui().get() != this) && ( masterNode->getGroup() == node->getGroup() ) ) {
                 NodeGuiIPtr master_i = masterNode->getNodeGui();
                 NodeGuiPtr master = boost::dynamic_pointer_cast<NodeGui>(master_i);
                 assert(master);
@@ -2551,7 +2617,8 @@ void
 NodeGui::refreshOutputEdgeVisibility()
 {
     if (_outputEdge) {
-        if ( getNode()->getGuiOutputs().empty() ) {
+        NodePtr node = getNode();
+        if ( node && node->getGuiOutputs().empty() ) {
             if ( !_outputEdge->isVisible() ) {
                 _outputEdge->setActive(true);
                 _outputEdge->show();
@@ -2690,6 +2757,10 @@ NodeGui::onDisabledKnobToggled(bool disabled)
     }
 
     NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
     ///When received whilst the node is under a multi instance, let the MultiInstancePanel call this slot instead.
     if ( ( sender() == node.get() ) && node->isMultiInstance() ) {
         return;
@@ -2713,7 +2784,12 @@ NodeGui::onStreamWarningsChanged()
     }
 
     std::map<Node::StreamWarningEnum, QString> warnings;
-    getNode()->getStreamWarnings(&warnings);
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
+    node->getStreamWarnings(&warnings);
     if ( warnings.empty() ) {
         _streamIssuesWarning->setActive(false);
 
@@ -2863,7 +2939,13 @@ NodeGui::setScale_natron(double scale)
         _outputEdge->setScale(scale);
     }
     refreshEdges();
-    const NodesWList & outputs = getNode()->getGuiOutputs();
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        update();
+        return;
+    }
+    const NodesWList & outputs = node->getGuiOutputs();
     for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         NodePtr output = it->lock();
         if (output) {
@@ -3063,7 +3145,7 @@ NodeGui::onOutputLayerChanged()
         return;
     }
     _channelsExtraLabel = extraLayerStr;
-    setNameItemHtml(QString::fromUtf8( getNode()->getLabel().c_str() ), _nodeLabel);
+    setNameItemHtml(QString::fromUtf8( internalNode->getLabel().c_str() ), _nodeLabel);
 }
 
 void
@@ -3073,6 +3155,10 @@ NodeGui::refreshNodeText(const QString & label)
         return;
     }
     NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
     _nodeLabel = label;
     if ( node->isMultiInstance() ) {
         ///The multi-instances store in the kNatronOfxParamStringSublabelName knob the name of the instance
@@ -3084,7 +3170,7 @@ NodeGui::refreshNodeText(const QString & label)
     setNameItemHtml(QString::fromUtf8( node->getLabel().c_str() ), _nodeLabel);
 
     //For the merge node, set its operator icon
-    if ( getNode()->getPlugin()->getPluginID() == QString::fromUtf8(PLUGINID_OFX_MERGE) ) {
+    if ( node->getPlugin()->getPluginID() == QString::fromUtf8(PLUGINID_OFX_MERGE) ) {
         QString subLabelContent = KnobGuiString::getNatronHtmlTagContent(label);
         if  ( !subLabelContent.isEmpty() ) {
             //Remove surrounding parenthesis
@@ -3140,7 +3226,7 @@ NodeGui::onSwitchInputActionTriggered()
 {
     NodePtr node = getNode();
 
-    if (node->getNInputs() >= 2) {
+    if (node && node->getNInputs() >= 2) {
         node->switchInput0And1();
         std::list<ViewerInstance* > viewers;
         node->hasViewersConnected(&viewers);
@@ -3226,7 +3312,10 @@ NodeGui::refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs,
                                      SequenceTime time)
 {
     NodePtr node = getNode();
-
+    assert(node);
+    if (!node) {
+        return;
+    }
     if ( ( _settingsPanel && !_settingsPanel->isClosed() ) ) {
         if (onlyTimeEvaluationKnobs) {
             node->getEffectInstance()->refreshAfterTimeChangeOnlyKnobsWithTimeEvaluation(time);
@@ -3252,8 +3341,9 @@ NodeGui::onSettingsPanelClosedChanged(bool closed)
         if (_mainInstancePanel) {
             _settingsPanel->getMultiInstancePanel()->onSettingsPanelClosed(closed);
         } else {
-            if (!closed) {
-                NodePtr node = getNode();
+            NodePtr node = getNode();
+            assert(node);
+            if (node && !closed) {
                 SequenceTime time = node->getApp()->getTimeLine()->currentFrame();
                 node->getEffectInstance()->refreshAfterTimeChange(false, time);
             }
@@ -3319,17 +3409,21 @@ NodeGui::setName(const QString & newName)
 
     stdName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(stdName);
 
-
-    std::string oldScriptName = getNode()->getScriptName();
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
+    std::string oldScriptName = node->getScriptName();
     try {
-        getNode()->setScriptName(stdName);
+        node->setScriptName(stdName);
     } catch (const std::exception& e) {
         //Dialogs::errorDialog(tr("Rename").toStdString(), tr("Could not set node script-name to ").toStdString() + stdName + ": " + e.what());
         //return;
     }
 
     _settingNameFromGui = true;
-    getNode()->setLabel( newName.toStdString() );
+    node->setLabel( newName.toStdString() );
     _settingNameFromGui = false;
 
     onInternalNameChanged(newName);
@@ -3678,7 +3772,12 @@ NodeGui::setOverlayLocked(bool locked)
 void
 NodeGui::onAvailableViewsChanged()
 {
-    const std::vector<std::string>& views = getNode()->getCreatedViews();
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
+    const std::vector<std::string>& views = node->getCreatedViews();
 
     if ( views.empty() || (views.size() == 1) ) {
         if ( _availableViewsIndicator->isActive() ) {
@@ -3723,6 +3822,10 @@ NodeGui::onIdentityStateChanged(int inputNb)
     }
     NodePtr ptInput;
     NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
     bool disabled = node->isNodeDisabled();
     int firstFrame, lastFrame;
     bool lifetimeEnabled = node->isLifetimeActivated(&firstFrame, &lastFrame);
@@ -3890,7 +3993,7 @@ NodeGui::setCurrentCursor(const QString& customCursorFilePath)
     QString cursorFilePath = customCursorFilePath;
 
     if ( !QFile::exists(customCursorFilePath) ) {
-        QString resourcesPath = QString::fromUtf8( getNode()->getPluginResourcesPath().c_str() );
+        QString resourcesPath = QString::fromUtf8( node->getPluginResourcesPath().c_str() );
         if ( !resourcesPath.endsWith( QLatin1Char('/') ) ) {
             resourcesPath += QLatin1Char('/');
         }
@@ -4032,7 +4135,12 @@ NodeGui::onRightClickActionTriggered()
     const std::vector<std::pair<QString, QKeySequence> >& shortcuts = action->getShortcuts();
     assert( !shortcuts.empty() );
     std::string knobName = shortcuts.front().first.toStdString();
-    KnobIPtr knob = getNode()->getKnobByName(knobName);
+    NodePtr node = getNode();
+    assert(node);
+    if (!node) {
+        return;
+    }
+    KnobIPtr knob = node->getKnobByName(knobName);
     if (!knob) {
         // Plug-in specified invalid knob name in the menu
         return;

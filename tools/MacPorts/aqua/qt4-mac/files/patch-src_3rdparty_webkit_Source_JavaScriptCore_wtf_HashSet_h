@@ -1,0 +1,36 @@
+$OpenBSD$
+
+Prevent error from gcc 6:
+HashSet.h:191:32: error: could not convert ...
+from 'std::pair<WTF::HashTableIterator<...>, bool>'
+to 'std::pair<WTF::HashTableConstIteratorAdapter<...>, bool>'
+
+gcc 6 accepts 'pair<iterator, bool>(p.first, p.second)' but gcc 8
+needs 'iterator(p.first)' to convert the iterator.
+
+The iterator_const_cast for MSVC doesn't work in gcc 6.
+
+Index: src/3rdparty/webkit/Source/JavaScriptCore/wtf/HashSet.h
+--- src/3rdparty/webkit/Source/JavaScriptCore/wtf/HashSet.h.orig
++++ src/3rdparty/webkit/Source/JavaScriptCore/wtf/HashSet.h
+@@ -188,7 +188,8 @@ namespace WTF {
+ #if COMPILER(MSVC) && _MSC_VER >= 1700
+         return iterator_const_cast(m_impl.add(value));
+ #else
+-        return m_impl.add(value);
++        pair<typename HashTableType::iterator, bool> p = m_impl.add(value);
++        return pair<iterator, bool>(iterator(p.first), p.second);
+ #endif
+     }
+ 
+@@ -201,7 +202,9 @@ namespace WTF {
+ #if COMPILER(MSVC) && _MSC_VER >= 1700
+         return iterator_const_cast(m_impl.template addPassingHashCode<T, T, Adapter>(value, value));
+ #else
+-        return m_impl.template addPassingHashCode<T, T, Adapter>(value, value);
++        pair<typename HashTableType::iterator, bool> p =
++            m_impl.template addPassingHashCode<T, T, Adapter>(value, value);
++        return pair<iterator, bool>(iterator(p.first), p.second);
+ #endif
+     }
+ 

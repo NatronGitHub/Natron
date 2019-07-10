@@ -1,0 +1,11 @@
+--- src/3rdparty/webkit/Source/JavaScriptCore/runtime/Identifier.cpp~	2015-05-07 16:14:45.000000000 +0200
++++ src/3rdparty/webkit/Source/JavaScriptCore/runtime/Identifier.cpp	2019-07-06 01:56:36.000000000 +0200
+@@ -222,7 +222,7 @@
+     }
+     if (!length)
+         return StringImpl::empty();
+-    UCharBuffer buf = {s, length}; 
++    UCharBuffer buf = {s, static_cast<unsigned int>(length)}; 
+     pair<HashSet<StringImpl*>::iterator, bool> addResult = globalData->identifierTable->add<UCharBuffer, IdentifierUCharBufferTranslator>(buf);
+ 
+     // If the string is newly-translated, then we need to adopt it.

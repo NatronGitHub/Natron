@@ -9,6 +9,7 @@ QT4_SITE="https://download.qt.io/archive/qt/${QT4_VERSION_SHORT}/${QT4_VERSION}"
 QT4WEBKIT_VERSION=2.3.4
 QT4WEBKIT_VERSION_SHORT=${QT4WEBKIT_VERSION%.*}
 QT4WEBKIT_VERSION_PKG=4.10.4 # version from QtWebkit.pc
+# see https://download.kde.org/stable/qtwebkit-2.3/
 QT4WEBKIT_TAR="qtwebkit-${QT4WEBKIT_VERSION}.tar.gz"
 QT4WEBKIT_SITE="https://download.kde.org/stable/qtwebkit-${QT4WEBKIT_VERSION_SHORT}/${QT4WEBKIT_VERSION}/src"
 SYSTEM_GCC_VERSION=$(gcc -dumpversion)

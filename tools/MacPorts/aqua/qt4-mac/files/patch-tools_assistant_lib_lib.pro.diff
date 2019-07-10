@@ -1,0 +1,26 @@
+--- tools/assistant/lib/lib.pro.orig
++++ tools/assistant/lib/lib.pro
+@@ -12,16 +12,15 @@
+     application \
+     framework.
+ DEFINES -= QT_ASCII_CAST_WARNINGS
+-qclucene = QtCLucene$${QT_LIBINFIX}
+-if(!debug_and_release|build_pass):CONFIG(debug, debug|release) { 
+-    mac:qclucene = $${qclucene}_debug
+-    win32:qclucene = $${qclucene}d
+-}
+-linux-lsb-g++:LIBS_PRIVATE += --lsb-shared-libs=$$qclucene
++
++qtAddLibrary(QtCLucene)
++
+ unix|win32-g++*:QMAKE_PKGCONFIG_REQUIRES += QtNetwork \
+     QtSql \
+-    QtXml
+-LIBS_PRIVATE += -l$$qclucene
++    QtGui \
++    QtCore \
++    QtCLucene
++
+ RESOURCES += helpsystem.qrc
+ SOURCES += qhelpenginecore.cpp \
+     qhelpengine.cpp \

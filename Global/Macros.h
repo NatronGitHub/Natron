@@ -350,6 +350,8 @@ CLANG_DIAG_PRAGMA( ignored CLANG_DIAG_JOINSTR(-W, x) )
 #   define CLANG_DIAG_ON(x) CLANG_DIAG_PRAGMA(pop)
 // For example: #pragma clang diagnostic warning "-Wno-unused-variable"
 #  define GCC_DIAG_PEDANTIC "-Wpedantic"
+#  define GCC_ONLY_DIAG_OFF(x)
+#  define GCC_ONLY_DIAG_ON(x)
 #else // Ensure these macros so nothing for other compilers.
 #  define CLANG_DIAG_OFF(x)
 #  define CLANG_DIAG_ON(x)
@@ -360,6 +362,8 @@ CLANG_DIAG_PRAGMA( ignored CLANG_DIAG_JOINSTR(-W, x) )
 // GCC before ~4.8 does not accept "-Wpedantic" quietly.
 #    define GCC_DIAG_PEDANTIC "-pedantic"
 #  endif
+#  define GCC_ONLY_DIAG_OFF(x) GCC_DIAG_OFF(x)
+#  define GCC_ONLY_DIAG_ON(x) GCC_DIAG_ON(x)
 #endif
 
 

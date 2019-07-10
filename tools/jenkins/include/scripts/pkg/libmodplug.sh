@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Install libmodplug
+# see https://sourceforge.net/projects/modplug-xmms/files/libmodplug/
 LIBMODPLUG_VERSION=0.8.9.0
 LIBMODPLUG_TAR="libmodplug-${LIBMODPLUG_VERSION}.tar.gz"
 LIBMODPLUG_SITE="https://sourceforge.net/projects/modplug-xmms/files/libmodplug/${LIBMODPLUG_VERSION}"

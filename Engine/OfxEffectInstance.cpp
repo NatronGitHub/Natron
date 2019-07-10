@@ -2561,6 +2561,10 @@ OfxEffectInstance::knobChanged(KnobI* k,
                                double time,
                                bool /*originatedFromMainThread*/)
 {
+    assert(k);
+    if (!k) {
+        throw std::logic_error(__func__);
+    }
     if (!_imp->initialized) {
         return false;
     }
@@ -2597,11 +2601,16 @@ OfxEffectInstance::knobChanged(KnobI* k,
     OfxStatus stat = kOfxStatOK;
     int recursionLevel = getRecursionLevel();
 
+    OfxImageEffectInstance* effect = effectInstance();
+    assert(effect);
+    if (!effect) {
+        throw std::logic_error(__func__);
+    }
     if (recursionLevel == 1) {
         SET_CAN_SET_VALUE(true);
         // assert(!view.isAll() && !view.isCurrent());
         ViewIdx v = ( view.isAll() || view.isCurrent() ) ? ViewIdx(0) : ViewIdx(view);
-        ClipsThreadStorageSetter clipSetter( effectInstance(),
+        ClipsThreadStorageSetter clipSetter( effect,
                                              v,
                                              Image::getLevelFromScale(renderScale.x) );
 
@@ -2609,13 +2618,13 @@ OfxEffectInstance::knobChanged(KnobI* k,
         ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
         ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
         ///the clip preferences to stay the same throughout the action.
-        stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale);
+        stat = effect->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale);
     } else {
         ///This action as all the overlay interacts actions can trigger recursive actions, such as
         ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
         ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
         ///the clip preferences to stay the same throughout the action.
-        stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale);
+        stat = effect->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {

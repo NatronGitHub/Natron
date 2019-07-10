@@ -1,0 +1,108 @@
+--- qmake/generators/unix/unixmake.cpp.orig
++++ qmake/generators/unix/unixmake.cpp
+@@ -472,8 +472,9 @@
+ UnixMakefileGenerator::findLibraries()
+ {
+     QList<QMakeLocalFileName> libdirs, frameworkdirs;
++    frameworkdirs.append(QMakeLocalFileName("@PREFIX@/Library/Frameworks"));
+     frameworkdirs.append(QMakeLocalFileName("/System/Library/Frameworks"));
+-    frameworkdirs.append(QMakeLocalFileName("/Library/Frameworks"));
++    libdirs.append(QMakeLocalFileName("@PREFIX@/lib"));
+     const QString lflags[] = { "QMAKE_LIBDIR_FLAGS", "QMAKE_FRAMEWORKPATH_FLAGS", "QMAKE_LFLAGS", "QMAKE_LIBS", "QMAKE_LIBS_PRIVATE", QString() };
+     for(int i = 0; !lflags[i].isNull(); i++) {
+         QStringList &l = project->values(lflags[i]);
+@@ -583,7 +584,9 @@
+ UnixMakefileGenerator::processPrlFiles()
+ {
+     QList<QMakeLocalFileName> libdirs, frameworkdirs;
++    frameworkdirs.append(QMakeLocalFileName("@PREFIX@/Library/Frameworks"));
+     frameworkdirs.append(QMakeLocalFileName("/System/Library/Frameworks"));
++    libdirs.append(QMakeLocalFileName("@PREFIX@/lib"));
+     const QString lflags[] = { "QMAKE_LIBDIR_FLAGS", "QMAKE_FRAMEWORKPATH_FLAGS", "QMAKE_LFLAGS", "QMAKE_LIBS", QString() };
+     for(int i = 0; !lflags[i].isNull(); i++) {
+         QStringList &l = project->values(lflags[i]);
+@@ -627,13 +630,78 @@
+                     else
+                         opt = l.at(++lit);
+                     opt = opt.trimmed();
+-                    const QList<QMakeLocalFileName> dirs = frameworkdirs + libdirs;
+-                    for(int dep_i = 0; dep_i < dirs.size(); ++dep_i) {
++
++		    // See if this framework is specified as
++		    // "foo,bar", which to Apple's LD means to look
++		    // for "foo" with the addition "bar" first in all
++		    // paths, then if not found do the same for just
++		    // "foo".  Tricky looking for "," but not "\,"
++
++#if 0
++		    warn_msg(WarnLogic, "out before: '%s'\n", opt.toLatin1().constData());
++#endif
++		    int num_cs = 0;
++		    int loc_1 = -1;
++		    int loc = opt.indexOf(",");
++		    bool found = false;
++		    while (!found && (loc != -1)) { 
++		      found = (loc == 0);
++		      if (!found) {
++			found = (opt[loc-1] != '\\');
++		      }
++		      if (found) {
++			if (loc_1 == -1) {
++			  loc_1 = loc;
++			}
++			++num_cs;
++		      } else {
++			loc = opt.indexOf(",", loc);
++		      }
++		    }
++#if 0
++		    warn_msg(WarnLogic, "found == %s, loc == %d\n",
++			     (found ? "true" : "false"), loc);
++#endif
++		    if (found) {
++		      // split into name and extension
++		      if (num_cs > 1) {
++			warn_msg(WarnLogic, "When parsing -framework '%s', found more than one ',' in the name.  Assuming the first ',' is used to delineate between the framework name and the optional extension.\n", opt.toLatin1().constData());
++		      }
++		      QString ext = opt.mid(loc_1+1);
++		      opt = opt.left(loc_1);
++		      found = false;
++		      const QList<QMakeLocalFileName> dirs = frameworkdirs + libdirs;
++		      for(int dep_i = 0; dep_i < dirs.size(); ++dep_i) {
++                        QString prl = dirs[dep_i].local() + "/" + opt + ".framework/" + opt + ext + Option::prl_ext;
++#if 0
++			warn_msg(WarnLogic, "Looking for PRL '%s'\n", prl.toLatin1().constData());
++#endif
++                        if(processPrlFile(prl)) {
++#if 0
++			  warn_msg(WarnLogic, "Found PRL for framework '%s' with optional extension '%s': '%s'\n", opt.toLatin1().constData(), ext.toLatin1().constData(), prl.toLatin1().constData());
++#endif
++			  found = true;
++			  break;
++			}
++		      }
++		    }
++		    // if not found yet, try the primary name
++		    if (!found) {
++		      const QList<QMakeLocalFileName> dirs = frameworkdirs + libdirs;
++		      for(int dep_i = 0; dep_i < dirs.size(); ++dep_i) {
+                         QString prl = dirs[dep_i].local() + "/" + opt + ".framework/" + opt + Option::prl_ext;
+-                        if(processPrlFile(prl))
+-                            break;
+-                    }
+-                }
++#if 0
++			warn_msg(WarnLogic, "Looking for PRL '%s'\n", prl.toLatin1().constData());
++#endif
++                        if(processPrlFile(prl)) {
++#if 0
++			  warn_msg(WarnLogic, "Found PRL for framework '%s': '%s'\n", opt.toLatin1().constData(), prl.toLatin1().constData());
++#endif
++			  break;
++			}
++		      }
++		    }
++		}
+             } else if(!opt.isNull()) {
+                 QString lib = opt;
+                 processPrlFile(lib);

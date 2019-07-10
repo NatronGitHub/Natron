@@ -2904,6 +2904,8 @@ KnobHelper::executeExpression(const std::string& expr,
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
     PyObject* globalDict = PyModule_GetDict(mainModule);
 
+    PyErr_Clear();
+
     PyObject* v = PyRun_String(expr.c_str(), Py_file_input, globalDict, 0);
     Py_XDECREF(v);
 
@@ -4330,7 +4332,7 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
                                     bool isUserKnob)
 {
     ///find-out to which node that master knob belongs to
-    if ( !getHolder()->getApp() ) {
+    if ( !otherHolder || !getHolder()->getApp() ) {
         return KnobIPtr();
     }
 

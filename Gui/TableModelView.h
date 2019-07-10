@@ -36,6 +36,9 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+GCC_ONLY_DIAG_OFF(class-memaccess)
+#include <QtCore/QVector>
+GCC_ONLY_DIAG_ON(class-memaccess)
 #include <QTreeView>
 #include <QAbstractItemModel>
 #include <QItemEditorFactory>

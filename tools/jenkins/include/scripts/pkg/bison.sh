@@ -2,7 +2,7 @@
 
 # install bison (for SeExpr)
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/bison.html
-BISON_VERSION=3.3.2
+BISON_VERSION=3.4.1
 BISON_TAR="bison-${BISON_VERSION}.tar.gz"
 BISON_SITE="http://ftp.gnu.org/pub/gnu/bison"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/bison" ]; }; }; then

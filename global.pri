@@ -51,6 +51,14 @@ run-without-python {
 
     QMAKE_CFLAGS_WARN_ON += -Wall -Wextra -Wmissing-prototypes -Wmissing-declarations -Wno-multichar -Winit-self -Wno-long-long
     QMAKE_CXXFLAGS_WARN_ON += -Wall -Wextra -Wno-multichar -Winit-self -Wno-long-long
+    *clang* | *xcode* {
+    	# In file included from <built-in>:1:
+    	# In file included from /usr/local/Cellar/python@2/2.7.16/Frameworks/Python.framework/Versions/2.7/include/python2.7/Python.h:88:
+    	# /usr/local/Cellar/python@2/2.7.16/Frameworks/Python.framework/Versions/2.7/include/python2.7/unicodeobject.h:534:5: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+    	#     register PyObject *obj,     /* Object */
+    	#     ^~~~~~~~~
+        QMAKE_CXXFLAGS += -Wno-deprecated-register
+    }
     #QMAKE_CFLAGS_WARN_ON += -pedantic
     #QMAKE_CXXFLAGS_WARN_ON += -pedantic
     #QMAKE_CXXFLAGS_WARN_ON += -Weffc++
@@ -516,6 +524,49 @@ unix:!macx {
 enforce-gcc8 {
   DEFINES += ENFORCE_GCC8
 }
+
+############################################
+## fontconfig directories
+## see https://github.com/NatronGitHub/Natron/blob/201c9b560d50c33f5761ba16b4a60455f909c455/Gui/Resources/etc/fonts/fonts.conf
+
+FC_DEFAULT_FONTS =
+FC_CACHEDIR =
+
+# Linux & friends
+unix:!macx {
+FC_DEFAULT_FONTS += "<dir>/usr/share/fonts</dir>"
+FC_DEFAULT_FONTS += "<dir>/usr/X11/lib/X11/fonts</dir>"
+FC_DEFAULT_FONTS += "<dir>/usr/X11R6/lib/X11/fonts</dir>"
+FC_DEFAULT_FONTS += "<dir>/usr/share/X11/fonts</dir>"
+FC_DEFAULT_FONTS += "<dir>/usr/local/share/fonts</dir>"
+FC_CACHEDIR += "<dir>/var/cache/fontconfig</dir>"
+}
+
+# macOS
+macx {
+# Homebrew
+FC_DEFAULT_FONTS += "<dir>/usr/local/share/fonts</dir>"
+# XQuartz
+FC_DEFAULT_FONTS += "<dir>/opt/X11/share/fonts</dir>"
+# MacPorts
+FC_DEFAULT_FONTS += "<dir>/opt/local/share/fonts</dir>"
+FC_DEFAULT_FONTS += "<dir>/System/Library/Fonts</dir>"
+FC_DEFAULT_FONTS += "<dir>/Network/Library/Fonts</dir>"
+FC_DEFAULT_FONTS += "<dir>/Library/Fonts</dir>"
+FC_DEFAULT_FONTS += "<dir>~/Library/Fonts</dir>"
+FC_DEFAULT_FONTS += "<dir>/System/Library/Assets/com_apple_MobileAsset_Font3</dir>"
+FC_DEFAULT_FONTS += "<dir>/System/Library/Assets/com_apple_MobileAsset_Font4</dir>"
+FC_DEFAULT_FONTS += "<dir>/System/Library/Assets/com_apple_MobileAsset_Font5</dir>"
+# There's no system-default FC_CACHEDIR on macOS
+#FC_CACHEDIR += "<dir>/opt/X11/var/cache/fontconfig</dir> <!-- XQuartz -->"
+}
+
+# Windows
+win32 {
+FC_DEFAULT_FONTS += "<dir>WINDOWSFONTDIR</dir>"
+FC_CACHEDIR += "<cachedir>LOCAL_APPDATA_FONTCONFIG_CACHE</cachedir>"
+}
+
 
 # and finally...
 include(config.pri)

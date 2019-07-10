@@ -1,0 +1,122 @@
+diff --git src/gui/kernel/qapplication.cpp src/gui/kernel/qapplication.cpp
+index 22da34e0154a5b37566f38c514648a9125ee5771..3efa5433eb2801bed7e2a5f1bcf8ae609ed88d86 100644
+--- src/gui/kernel/qapplication.cpp
++++ src/gui/kernel/qapplication.cpp
+@@ -818,9 +818,19 @@ void QApplicationPrivate::construct(
+ 
+     qt_is_gui_used = (qt_appType != QApplication::Tty);
+     process_cmdline();
+-    // the environment variable has the lowest precedence of runtime graphicssystem switches
++    // the environment variable has almost the lowest precedence of runtime graphicssystem switches
+     if (graphics_system_name.isEmpty())
+         graphics_system_name = QString::fromLocal8Bit(qgetenv("QT_GRAPHICSSYSTEM"));
++    if (graphics_system_name.isEmpty()) {
++        // Fetch the default graphics system from the settings store if no other setting has been made
++        QSettings settings(QSettings::UserScope, QLatin1String("Trolltech"));
++        settings.beginGroup(QLatin1String("Qt"));
++        const QString defaultGraphicsSystem = settings.value(QLatin1String("DefaultGraphicsSystem")).toString();
++        if (! defaultGraphicsSystem.isNull() && ! defaultGraphicsSystem.isEmpty()) {
++            graphics_system_name = defaultGraphicsSystem;
++        }
++    }
++
+ 
+ #if defined(Q_WS_X11) && !defined(QT_NO_EGL)
+     if (graphics_system_name.isEmpty()) {
+diff --git tools/qtconfig/main.cpp tools/qtconfig/main.cpp
+index a0f5dd6ed3cc204f61041bc65f96b1af88bdbb97..1cbb8538d5c8706b223e89fcaca70e9000db1c8b 100644
+--- tools/qtconfig/main.cpp
++++ tools/qtconfig/main.cpp
+@@ -51,6 +51,13 @@ int main(int argc, char **argv)
+ {
+     Q_INIT_RESOURCE(qtconfig);
+ 
++    const QByteArray graphicsSystem = qgetenv("QT_GRAPHICSSYSTEM");
++    if (graphicsSystem.isNull() || graphicsSystem.isEmpty()) {
++        // force native graphics mode unless the user set one via QT_GRAPHICSSYSTEM.
++        // We have to use QT_GRAPHICSSYSTEM because that will override any previous
++        // settings stored in our own settings store.
++        qputenv("QT_GRAPHICSSYSTEM", "Native");
++    }
+     QApplication app(argc, argv);
+ 
+     QTranslator translator;
+diff --git tools/qtconfig/mainwindow.cpp tools/qtconfig/mainwindow.cpp
+index 1bb6e4eae01fd43d9de41d627677abc8521908d8..e1726fb174c406311bf132d4f6c70ba3016a4c41 100644
+--- tools/qtconfig/mainwindow.cpp
++++ tools/qtconfig/mainwindow.cpp
+@@ -227,6 +238,7 @@ MainWindow::MainWindow()
+     connect(ui->rtlExtensionsCheckBox, SIGNAL(toggled(bool)), SLOT(somethingModified()));
+     connect(ui->inputStyleCombo, SIGNAL(activated(int)), SLOT(somethingModified()));
+     connect(ui->inputMethodCombo, SIGNAL(activated(int)), SLOT(somethingModified()));
++    connect(ui->graphicsSystemCombo, SIGNAL(activated(int)), SLOT(somethingModified()));
+     connect(ui->guiStyleCombo, SIGNAL(activated(QString)), SLOT(styleSelected(QString)));
+     connect(ui->familySubstitutionCombo, SIGNAL(activated(QString)), SLOT(substituteSelected(QString)));
+     connect(ui->tunePaletteButton, SIGNAL(clicked()), SLOT(tunePalette()));
+@@ -416,7 +463,26 @@ MainWindow::MainWindow()
+     ui->inputMethodCombo->hide();
+     ui->inputMethodLabel->hide();
+ #endif
+-
++#ifdef Q_OS_MAC
++    ui->graphicsSystemCombo->setToolTip(tr("Select the graphicsssystem to be used by default.\n"
++        "Native: use native CoreGraphics rendering\n"
++        "Raster: use raster graphics\n"
++        "OpenGL: use OpenGL (experimental!)\n"
++        "Raster mode is the preferred default except on Mac OS 10.14 and newer where it causes flickering.\n"
++        "Use Native rendering on those newer OS versions (or if you experience other graphics glitches).\n"
++        "Note that Raster mode is not compatible with certain built-in widget styles like CDE or Plastique."));
++    QStringList graphicsSystems;
++    QString defaultGraphicsSystem = settings.value(QLatin1String("DefaultGraphicsSystem"), QLatin1String("(unset)")).toString();
++
++    graphicsSystems << "(unset)" << "Native" << "Raster" << "OpenGL";
++    ui->graphicsSystemCombo->addItems(graphicsSystems);
++    if (!defaultGraphicsSystem.isNull() && !defaultGraphicsSystem.isEmpty()) {
++        ui->graphicsSystemCombo->setCurrentIndex(graphicsSystems.indexOf(QRegExp(defaultGraphicsSystem, Qt::CaseInsensitive)));
++    }
++#else
++    ui->graphicsSystemLabel->hide();
++    ui->graphicsSystemCombo->hide();
++#endif
+     ui->fontEmbeddingCheckBox->setChecked(settings.value(QLatin1String("embedFonts"), true)
+                                           .toBool());
+     fontpaths = settings.value(QLatin1String("fontPath")).toStringList();
+@@ -573,6 +639,13 @@ void MainWindow::fileSave()
+ #if defined(Q_WS_X11) && !defined(QT_NO_XIM)
+         settings.setValue(QLatin1String("DefaultInputMethod"), ui->inputMethodCombo->currentText());
+ #endif
++#ifdef Q_OS_MAC
++        if (ui->graphicsSystemCombo->currentIndex() > 0) {
++            settings.setValue(QLatin1String("DefaultGraphicsSystem"), ui->graphicsSystemCombo->currentText());
++        } else {
++            settings.remove(QLatin1String("DefaultGraphicsSystem"));
++        }
++#endif
+ 
+         QString audioSink = settings.value(QLatin1String("audiosink"), QLatin1String("Auto")).toString();
+         QString videoMode = settings.value(QLatin1String("videomode"), QLatin1String("Auto")).toString();
+diff --git tools/qtconfig/mainwindow.ui tools/qtconfig/mainwindow.ui
+index 454021ecdf2c00b29b9f2b86a2a68893da57b572..7593f7140b8ad73b1c615439dd4b473e37b3e9a7 100644
+--- tools/qtconfig/mainwindow.ui
++++ tools/qtconfig/mainwindow.ui
+@@ -901,6 +901,20 @@
+           </property>
+          </widget>
+         </item>
++        <item>
++         <widget class="QLabel" name="graphicsSystemLabel">
++          <property name="text">
++           <string>Default Graphics System:</string>
++          </property>
++         </widget>
++        </item>
++        <item>
++         <widget class="QComboBox" name="graphicsSystemCombo">
++          <property name="currentIndex">
++           <number>-1</number>
++          </property>
++         </widget>
++        </item>
+         <item>
+          <spacer>
+           <property name="orientation">

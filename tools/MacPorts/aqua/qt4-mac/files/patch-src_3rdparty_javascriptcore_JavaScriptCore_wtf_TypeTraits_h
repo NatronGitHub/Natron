@@ -1,0 +1,26 @@
+$OpenBSD$
+
+Disable __GLIBCXX__ code to prevent error from gcc 6:
+error: 'std::tr1' has not been declared
+
+Index: src/3rdparty/javascriptcore/JavaScriptCore/wtf/TypeTraits.h
+--- src/3rdparty/javascriptcore/JavaScriptCore/wtf/TypeTraits.h.orig
++++ src/3rdparty/javascriptcore/JavaScriptCore/wtf/TypeTraits.h
+@@ -24,7 +24,7 @@
+ 
+ #include "Platform.h"
+ 
+-#if (defined(__GLIBCXX__) && (__GLIBCXX__ >= 20070724) && defined(__GXX_EXPERIMENTAL_CXX0X__)) || (defined(_MSC_VER) && (_MSC_VER >= 1600))
++#if (0 && defined(__GLIBCXX__) && (__GLIBCXX__ >= 20070724) && defined(__GXX_EXPERIMENTAL_CXX0X__)) || (defined(_MSC_VER) && (_MSC_VER >= 1600))
+ #include <type_traits>
+ #endif
+ 
+@@ -166,7 +166,7 @@ namespace WTF {
+         typedef T Type;
+     };
+ 
+-#if (defined(__GLIBCXX__) && (__GLIBCXX__ >= 20070724) && defined(__GXX_EXPERIMENTAL_CXX0X__)) || (defined(_MSC_VER) && (_MSC_VER >= 1600))
++#if (0 && defined(__GLIBCXX__) && (__GLIBCXX__ >= 20070724) && defined(__GXX_EXPERIMENTAL_CXX0X__)) || (defined(_MSC_VER) && (_MSC_VER >= 1600))
+ 
+     // GCC's libstdc++ 20070724 and later supports C++ TR1 type_traits in the std namespace.
+     // VC10 (VS2010) and later support C++ TR1 type_traits in the std::tr1 namespace.

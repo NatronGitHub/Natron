@@ -1,0 +1,10 @@
+--- qmake/option.h.orig
++++ qmake/option.h
+@@ -214,6 +214,7 @@
+         DocumentationPath,
+         HeadersPath,
+         LibrariesPath,
++        FrameworksPath,
+         BinariesPath,
+         PluginsPath,
+         DataPath,

@@ -1997,7 +1997,7 @@ TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
 
     //Now that tracking is done update viewer once to refresh the whole visible portion
 
-    if ( _imp->paramsProvider->getUpdateViewer() ) {
+    if ( _imp->paramsProvider && _imp->paramsProvider->getUpdateViewer() ) {
         //Refresh all viewers to the current frame
         timeline->seekFrame(lastValidFrame, true, 0, eTimelineChangeReasonOtherSeek);
     }

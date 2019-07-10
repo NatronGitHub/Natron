@@ -1,15 +1,6 @@
---- Portfile.orig	2018-06-22 17:51:30.000000000 +0200
-+++ Portfile	2018-06-22 17:52:10.000000000 +0200
-@@ -29,7 +29,7 @@
- }
- 
- if {${subport} eq ${name}} {
--    #revision 0
-+    revision 1
- 
-     depends_lib-append port:ilmbase
- 
-@@ -61,8 +61,17 @@
+--- Portfile.orig	2019-06-29 14:55:24.000000000 -0700
++++ Portfile	2019-07-08 20:44:28.000000000 -0700
+@@ -63,8 +63,17 @@
      # avoid "can't find a register in class 'BREG' while reloading 'asm'
      # see #51470 for MacPorts report
      # see https://github.com/openexr/openexr/issues/128 for upstream report
@@ -23,19 +14,16 @@
 +        configure.optflags "-O2"
 +    }
 +    # clang-4.0 and later are not yet tested, use -O2 just to be on the safe side
-+    if { ${configure.compiler} eq "macports-clang-4.0" || ${configure.compiler} eq "macports-clang-5.0" || ${configure.compiler} eq "macports-clang-6.0" } {
++    if { ${configure.compiler} eq "macports-clang-4.0" || ${configure.compiler} eq "macports-clang-5.0" || ${configure.compiler} eq "macports-clang-6.0" || ${configure.compiler} eq "macports-clang-7.0" || ${configure.compiler} eq "macports-clang-8.0"} {
 +        configure.optflags "-O2"
      }
  }
  
-@@ -74,6 +83,11 @@
-         sha256  cac206e63be68136ef556c2b555df659f45098c159ce24804e9d5e9e0286609e \
-         size    573073
+@@ -75,6 +84,8 @@
+                 sha256  456978d1a978a5f823c7c675f3f36b0ae14dba36638aeaa3c4b0e784f12a3862 \
+                 size    595490
  
 +    depends_build   port:gsed
-+
-+    # https://github.com/openexr/openexr/pull/170
-+    patchfiles-append ilmbase-threadpool.diff
 +
      # Bitrotted ucontext usage is buggy, don't bother with it.
      patchfiles-append patch-configure.diff

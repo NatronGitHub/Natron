@@ -3,7 +3,7 @@
 PortSystem                      1.0
 
 name                            curl
-version                         7.64.0
+version                         7.65.1
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     {ryandesign @ryandesign}
@@ -26,9 +26,9 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  40806b3ea50ddab9d2f063dad37e81fdf6b04a17 \
-                                sha256  2f2f13fa34d44aa29cb444077ad7dc4dc6d189584ad552e0aaeb06e608af6001 \
-                                size    2398904
+                                rmd160  bbd3437e70b34bd577b6cb09020ca667d3723e18 \
+                                sha256  f6c22074877f235aebc7c53057dbc7ee82358f8ae58bfb767e955c18c859a77a \
+                                size    2392672
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
@@ -116,6 +116,8 @@ if {${name} eq ${subport}} {
             CONTRIBUTE.md \
             FAQ \
             FEATURES \
+            GOVERNANCE.md \
+            HELP-US.md \
             HISTORY.md \
             HTTP-COOKIES.md \
             HTTP2.md \
@@ -123,7 +125,6 @@ if {${name} eq ${subport}} {
             KNOWN_BUGS \
             LICENSE-MIXING.md \
             MAIL-ETIQUETTE \
-            MANUAL \
             RESOURCES \
             ROADMAP.md \
             SECURITY-PROCESS.md \
@@ -228,8 +229,8 @@ subport curl-ca-bundle {
     set certdata_file           certdata.txt
     # The output of the Tcl command "clock seconds" (you can run it in tclsh) when
     # the certdata.txt file in the port was last updated.
-    set certdata_updated        1545056376
-    set certdata_version        3a4a3b9133e9
+    set certdata_updated        1559870717
+    set certdata_version        3709f100f264
     set certdata_extract_cmd    bzip2
     set certdata_extract_suffix .tar.bz2
     set certdata_distfile       certdata-${certdata_version}${certdata_extract_suffix}
@@ -245,9 +246,9 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  39cd56f6d1e13ca53eee747629aad349206d5ddb \
-                                sha256  c191063da22a44d5694c765aa2210373e4c48c4a5f1d700321a3c03e80eae16b \
-                                size    191985
+                                rmd160  4f198d012501659d460f8fca9e17fabfd3b80a1c \
+                                sha256  9126c48a0b071abf105cabc1a20984b8b6480b4e9a6a719dd88c933b0c03542c \
+                                size    195136
 
     extract.only                ${curl_distfile}
     set curl_mk_ca_bundle_files "${worksrcdir}/Makefile ${worksrcdir}/lib/mk-ca-bundle.pl"

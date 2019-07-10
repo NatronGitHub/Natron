@@ -61,6 +61,9 @@ isNodeGuiChild(QGraphicsItem* item)
     if (n) {
         return n;
     }
+    if (!item) {
+        return 0;
+    }
     QGraphicsItem* parent = item->parentItem();
     if (parent) {
         return isNodeGuiChild(parent);
@@ -76,6 +79,9 @@ isEdgeChild(QGraphicsItem* item)
 
     if (n) {
         return n;
+    }
+    if (!item) {
+        return 0;
     }
     QGraphicsItem* parent = item->parentItem();
     if (parent) {

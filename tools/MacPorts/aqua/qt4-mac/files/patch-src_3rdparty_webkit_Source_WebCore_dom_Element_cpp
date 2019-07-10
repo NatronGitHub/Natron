@@ -1,0 +1,18 @@
+$OpenBSD$
+
+Prevent error from gcc 6.
+Element.cpp:1083:60: error: operands to ?: have different types
+'WebCore::RenderStyle*' and 'bool'
+
+Index: src/3rdparty/webkit/Source/WebCore/dom/Element.cpp
+--- src/3rdparty/webkit/Source/WebCore/dom/Element.cpp.orig
++++ src/3rdparty/webkit/Source/WebCore/dom/Element.cpp
+@@ -1080,7 +1080,7 @@ void Element::recalcStyle(StyleChange change)
+ {
+     // Ref currentStyle in case it would otherwise be deleted when setRenderStyle() is called.
+     RefPtr<RenderStyle> currentStyle(renderStyle());
+-    bool hasParentStyle = parentNodeForRenderingAndStyle() ? parentNodeForRenderingAndStyle()->renderStyle() : false;
++    bool hasParentStyle = parentNodeForRenderingAndStyle() ? bool(parentNodeForRenderingAndStyle()->renderStyle()) : false;
+     bool hasDirectAdjacentRules = currentStyle && currentStyle->childrenAffectedByDirectAdjacentRules();
+     bool hasIndirectAdjacentRules = currentStyle && currentStyle->childrenAffectedByForwardPositionalRules();
+ 

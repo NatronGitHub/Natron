@@ -1,0 +1,11 @@
+--- tools/macdeployqt/macdeployqt/main.cpp.orig
++++ tools/macdeployqt/macdeployqt/main.cpp
+@@ -127,7 +127,7 @@
+ 
+     if (plugins) {
+         if (deploymentInfo.qtPath.isEmpty())
+-            deploymentInfo.pluginPath = "/Developer/Applications/Qt/plugins"; // Assume binary package.
++            deploymentInfo.pluginPath = "@QT_PLUGINS_DIR@"; // Assume binary package.
+         else
+             deploymentInfo.pluginPath = deploymentInfo.qtPath + "/plugins";
+ 

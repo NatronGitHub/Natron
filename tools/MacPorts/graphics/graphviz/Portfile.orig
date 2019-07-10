@@ -322,6 +322,15 @@ subport graphviz-gui${thisbranch} {
     
     patchfiles                  patch-project.pbxproj.diff
     
+    # this port does not build with the new xcode build system at present
+    if {[vercmp ${xcodeversion} 10.0] >= 0} {
+        # Xcode10 will not build against an IBDocument.SystemTarget of 10.5
+        patchfiles-append    patch-xib-target.diff
+
+        build.pre_args      -UseNewBuildSystem=NO
+        destroot.pre_args   -UseNewBuildSystem=NO
+    }
+
     xcode.configuration         Release
     
     build.dir                   ${worksrcpath}/macosx

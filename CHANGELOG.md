@@ -8,11 +8,16 @@
 ## Version 2.3.15
 
 - Inputs of the selected nodes are now always visible
+- Avoid crash and issues when NatronEngine.Effect.destroy() is called #368
+- macOS: fix version numbers in Finder information #372
+- Fix callbacks in PyPanel and PyModalDialog #379
 
 ### Plugins
 
 - Fix bugs in DenoiseSharpen that caused crashes #300
-- Add support for chromatic aberration correction when reading RAW files #309 
+- Add support for chromatic aberration correction when reading RAW files #309
+- Update CImg and G'MIC to 2.6.7 and fix several issues in GMIC plugins
+- Many new GMIC plugins, including GMIC Custom Code
 
 
 ## Version 2.3.14
