@@ -1,5 +1,5 @@
-Natron Build Master
-===================
+Natron Continuous Integration Tools
+===================================
 
 Scripts used to build and distribute [Natron](http://www.natron.fr) on Linux, Windows and Mac.
 
@@ -85,7 +85,7 @@ netsh advfirewall firewall add rule name="sshd" dir=out action=allow protocol=TC
 Mac Setup
 =========
 
-If homebrew is installed (as on the defaults virtual machines on ci.inria.fr), it should be uninstalled using:
+If homebrew is installed (as on the defaults virtual machines on http://ci.inria.fr), it should be uninstalled using:
 
     brew list -1 | xargs brew rm
 
@@ -157,12 +157,60 @@ Launching a build
 The old buildmaster.sh script is deprecated and only works with the workstation at INRIA and the natron.fr/builds frontend.
 A new version was ported to launchBuildMain.sh which does not require any external database and may be called directly with options from the command line and is designed to work with the jenkins CI infratstructure. 
 
-A list of options of the build script are in the beginning of the script file. 
-
 Example launch command:
 ```
 NATRON_LICENSE=GPL GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_BRANCH=master GIT_COMMIT=f7ee2a2c43bd0de9fc8d3776346408dd4f43426b UNIT_TESTS=true BUILD_NUMBER=1 BUILD_NAME=test COMPILE_TYPE=relwithdebinfo MKJOBS=4 ./launchBuildMain.sh
 ```
+
+Options
+-------
+
+The following options can be passed to `launchBuildMain.sh` as environment variables:
+
+`RELEASE_TAG`: Make a release build. The version (x.y.z) must correspond with tags in Natron, openfx-io, openfx-misc, openfx-arena. Note that the plugins use "Natron-x.y.z" tags and Natron uses "x.y.z" tags. You do not have to prefix with "tags/"
+
+`SNAPSHOT_BRANCH`: If set and `RELEASE_TAG` is not set, this indicates the branch on which to launch a snapshot from. If `SNAPSHOT_COMMIT` is also set, this will build this specific commit on that branch, otherwise it will build the latest commit on the branch. If `GIT_COMMIT` is set, `GIT_BRANCH` is ignored.
+
+`SNAPSHOT_COMMIT`: If set, this indicate the commit on which to launch a snapshot from. This has to be set in combination with `SNAPSHOT_BRANCH`. If `GIT_COMMIT` is set, `GIT_BRANCH` is ignored.
+
+`UNIT_TESTS`: Run unit tests after build. Value can be "false" or "true" (for compatibility with jenkins).
+
+`NATRON_LICENSE`: Must be `GPL` or `COMMERCIAL`. When GPL is selected, GPL components (such as certain codecs of ffmpeg or demosaic patterns of libraw) will be included.
+
+`DISABLE_BREAKPAD`: If set to 1, natron will be built without crash reporting capabilities.
+
+`COMPILE_TYPE`: The type of build to do, i.e in terms of compilation. Valid values are (`relwithdebinfo`, `release`, `debug`). Must be `relwithdebinfo` or `debug` if DISABLE_BREAKPAD is not 1.
+
+`BITS`: Windows only: Must indicate if this is a 64 or 32 bits build.
+
+`NATRON_DEV_STATUS`: `ALPHA`, `BETA`, `RC`, `STABLE` or `CUSTOM`. This is only useful when doing a release, i.e. if specifying `RELEASE_TAG`.
+
+`NATRON_CUSTOM_BUILD_USER_NAME`: When `NATRON_DEV_STATUS` is `CUSTOM`, tag the build with a specific user/client name that will be displayed within Natron.
+
+`NATRON_BUILD_NUMBER`: When doing a release this is the number of the release (if doing a rebuild).
+
+`NATRON_EXTRA_QMAKE_FLAGS`: Optional qmake flags to pass when building Natron.
+
+`BUILD_NAME`: Set this to label the project build. On the slave, the build artifacts are stored for some amount of time in `$WORKSPACE/builds_archive/$BUILD_NAME/$BUILD_NUMBER`.
+
+`DISABLE_RPM_DEB_PKGS`: If set to 1, deb and rpm packages will never be built. Default is to build when `NATRON_BUILD_CONFIG`=`STABLE`.
+
+`DISABLE_PORTABLE_ARCHIVE`: If set to 1, a portable archive will not be built (Windows and Linux).
+
+`REMOTE_URL`: The URL that the online installer will use to check for updates. 
+This should be consistent with the `REMOTE_URL` value passed to the upload-artifacts project.
+
+`REMOTE_USER`: The name of the user on `REMOTE_URL` that should be used when uploading using rsync.
+This should be consistent with the `REMOTE_USER` value passed to the upload-artifacts project.
+
+`REMOTE_PREFIX`: The prefix to upload artifacts to, relative to `REMOTE_USER@REMOTE_URL`'s home dir.
+This should be consistent with the `REMOTE_PREFIX_USER` value passed to the upload-artifacts project.
+
+`WITH_ONLINE_INSTALLER`: Set to 1 to also build a online installer for `SNAPSHOT` and `RELEASE` builds (only available for Windows and Linux).
+
+`DEBUG_SCRIPTS`: If set to 1, binaries from previous build with same options are not cleaned so that the scripts can continue the same compilation.
+
+`EXTRA_PYTHON_MODULES_SCRIPT`: Path to a python script that should install extra modules with `pip` or `easy_install`.
 
 
 Upgrading a library on the build machine
@@ -191,34 +239,6 @@ Mac:
 ----
 
 See `INSTALL_OSX.md` in the main Natron repository: libraries are handled by macports. To update a Natron-specific package, the MacPorts `Portfile` located in `Natron/tools/MacPorts` can to be updated.
-
-
-
-Connecting to existing servers
-===============================
-
-
-- Remote login to the linux 'natron' (Dell T7600 Precision) buildstation located at INRIA:
-Username is 'user', password is 'ubuntu16'
-It is running 2 CentOS VM (32 and 64bit)
-<MISSING DOC>
-
-- Remote login to the osx 'mistral' (MacPro 2012) buildstation located at INRIA:
-Username is 'user', passwoard is 'osx106'
-
-- Remote login to the Windows 7 workstation:
-
-In your VLC client:
-```
-IP: 194.199.26.228:
-Port: 5900
-User/passwd: NatronWinBuild
-
-gforge natron-ci account (used by buildmaster to build):
-
-login: natron-ci
-pwd: NatronWinBuild2017!
-```
 
 
 Jenkins
