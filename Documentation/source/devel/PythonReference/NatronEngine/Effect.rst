@@ -213,8 +213,8 @@ Removes any input Effect connected to the given *inputNumber* of this node.
 
     :rtype: :class:`dict`
 
-    Returns the layer available on this node. This is a dict with a :ref:`ImageLayer<NatronEngine.ImageLayer>`
-    as key and :ref:`Effect<NatronEngine.Effect>` as value. The Effect is the closest node in
+    Returns the layer available on this node. This is a dict with a :class:`ImageLayer<NatronEngine.ImageLayer>`
+    as key and :class:`Effect<NatronEngine.Effect>` as value. The Effect is the closest node in
     the upstream tree (including this node) that produced that layer.
 
     For example, in a simple graph Read --> Blur, if the Read node has a layer available
@@ -326,7 +326,7 @@ no such parameter exists.
 
     :rtype: :class:`sequence`
 
-Returns all the :doc:`parameters<NatronEngine.Param>` of this Effect as a sequence.
+Returns all the :class:`Param<NatronEngine.Param>` of this Effect as a sequence.
 
 
 

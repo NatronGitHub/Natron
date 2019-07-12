@@ -7,7 +7,7 @@ Tracker
 Synopsis
 --------
 
-This class is a container for :doc:`tracks<NatronEngine.Track>`
+This class is a container for :doc:`tracks<Track>`
 See :ref:`detailed<tracker.details>` description below.
 
 Functions
@@ -25,8 +25,8 @@ Functions
 Detailed Description
 --------------------
 
-The Tracker is a special class attached to :doc:`effects<NatronEngine.Effect>` that needs
-tracking capabilities. It contains all :doc:`tracks<NatronEngine.Track>` for this node
+The Tracker is a special class attached to :doc:`effects<Effect>` that needs
+tracking capabilities. It contains all :doc:`tracks<Track>` for this node
 and also allow to start and stop tracking from a Python script.
 
 Member functions description

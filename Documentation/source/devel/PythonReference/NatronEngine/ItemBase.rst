@@ -5,7 +5,7 @@ ItemBase
 ********
 
 
-**Inherited by:** :ref:`BezierCurve`, :ref:`Layer`
+**Inherited by:** :doc:`BezierCurve`, :doc:`Layer`
 
 Synopsis
 --------

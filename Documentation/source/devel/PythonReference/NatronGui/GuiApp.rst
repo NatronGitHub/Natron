@@ -4,7 +4,7 @@
 GuiApp
 *********
 
-**Inherits** :doc:`App`
+**Inherits** :doc:`../NatronEngine/App`
 
 
 Synopsis
@@ -44,9 +44,9 @@ Functions
 Detailed Description
 ---------------------------
 
-See :ref:`App<NatronEngine.App>` for the documentation of base functionnalities of this class.
+See :doc:`App<../NatronEngine/App>` for the documentation of base functionnalities of this class.
 
-To create a new :ref:`modal dialog<NatronGui.PyModalDialog>` , use the
+To create a new :doc:`modal dialog<PyModalDialog>` , use the
 :func:`createModalDialog()<NatronGui.GuiApp.createModalDialog>` function.
 
 Several functions are made available to pop dialogs to ask the user for filename(s) or colors.
@@ -69,7 +69,7 @@ Member functions description
     :rtype: :class:`PyModalDialog<NatronGui.PyModalDialog>`
 
 Creates a :doc:`modal dialog<NatronGui.PyModalDialog>` : the control will not be returned to the user until the dialog is not closed.
-Once the dialog is created, you can enrich it with :doc:`parameters<NatronEngine.Param>` or even
+Once the dialog is created, you can enrich it with :doc:`parameters<../NatronEngine/Param>` or even
 raw PySide Qt widgets.
 To show the dialog call the function :func:`exec()<>` on the dialog.
 

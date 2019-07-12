@@ -6,7 +6,7 @@ Int2DParam
 
 **Inherits** :doc:`IntParam`
 
-**Inherited by:** :ref:`Int3DParam`
+**Inherited by:** :doc:`Int3DParam`
 
 Synopsis
 --------

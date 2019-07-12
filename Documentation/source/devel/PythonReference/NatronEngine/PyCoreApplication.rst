@@ -4,7 +4,7 @@
 PyCoreApplication
 *****************
 
-**Inherited by:** :ref:`PyGuiApplication`
+**Inherited by:** :doc:`../NatronGui/PyGuiApplication`
 
 Synopsis
 --------
@@ -66,7 +66,7 @@ that Natron pre-declared for you, e.g.:
 .. warning::
 
     The variable stored in the module **NatronEngine** contains a reference to a :doc:`PyCoreApplication`.
-    If you need to have the GUI functionalities provided by :doc:`PyGuiApplication`, you must then use
+    If you need to have the GUI functionalities provided by :doc:`../NatronGui/PyGuiApplication`, you must then use
     the variable **natron** belonging to the module **NatronGui**.
     Hence make sure to make the following import to have access to **natron**::
 
@@ -98,7 +98,7 @@ launch Natron in the following ways::
     Natron -t
     NatronRenderer
 
-For interactive runs of Natron (with the user interface displayed), the derived class :doc:`PyGuiApplication` is
+For interactive runs of Natron (with the user interface displayed), the derived class :doc:`../NatronGui/PyGuiApplication` is
 used instead, which gives access to more GUI specific functionalities.
 
 You should never need to make a new instance of this object yourself. Note that even if you

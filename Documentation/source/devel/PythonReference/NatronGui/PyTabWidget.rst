@@ -104,7 +104,7 @@ Member functions description
 
 .. method:: NatronGui.PyTabWidget.appendTab(tab)
 
-    :param tab: :class:`PySide.QtGui.QWidget`
+    :param tab: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`
 
 Appends a new tab to the tab widget and makes it current.
 
@@ -140,7 +140,7 @@ Returns the number of tabs in this pane.
 
 .. method:: NatronGui.PyTabWidget.currentWidget()
 
-    :rtype: :class:`PySide.QtGui.QWidget`
+    :rtype: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`
 
 Returns the current active tab.
 
@@ -182,7 +182,7 @@ Returns the name of the tab at the given *index* if it exists or an empty string
 
 .. method:: NatronGui.PyTabWidget.insertTab(index,tab)
 
-    :param tab: :class:`PySide.QtGui.QWidget`
+    :param tab: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`
     :param index: :class:`int`
 
 Inserts the given *tab* at the given *index* in this tab-widget.
@@ -190,7 +190,7 @@ Inserts the given *tab* at the given *index* in this tab-widget.
 
 .. method:: NatronGui.PyTabWidget.removeTab(tab)
 
-    :param tab: :class:`PySide.QtGui.QWidget`
+    :param tab: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`
 
 Removes the given *tab* from this pane if it is found. Note that this function
 does not destroy the *tab*, unlike :func:`closeTab(index)<NatronGui.PyTabWidget.closeTab>`.

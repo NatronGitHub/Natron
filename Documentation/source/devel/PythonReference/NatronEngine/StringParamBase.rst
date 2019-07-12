@@ -6,7 +6,7 @@ StringParamBase
 
 **Inherits** :doc:`AnimatedParam`
 
-**Inherited by:** :ref:`PathParam`, :ref:`OutputFileParam`, :ref:`FileParam`, :ref:`StringParam`
+**Inherited by:** :doc:`PathParam`, :doc:`OutputFileParam`, :doc:`FileParam`, :doc:`StringParam`
 
 Synopsis
 --------

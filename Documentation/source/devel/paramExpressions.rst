@@ -296,7 +296,7 @@ Generating custom animation for motion editing:
 In this example we will demonstrate how to perform Loop,Negate and Reverse effects
 on an animation even though this is already available as a preset in Natron.
 
-To do be able to do this we make use of the :ref:`curve(frame,dimension)<NatronEngine.Param.curve>`
+To do be able to do this we make use of the :func:`curve(frame,dimension)<NatronEngine.Param.curve>`
 function of the :ref:`Param<Param>` class. This function returns the value of the animation
 curve (of the given dimension) at the given time.
 

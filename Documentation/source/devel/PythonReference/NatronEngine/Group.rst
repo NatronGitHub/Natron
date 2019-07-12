@@ -5,7 +5,7 @@ Group
 *****
 
 
-**Inherited by:** :ref:`Effect`, :ref:`App`, :ref:`GuiApp`
+**Inherited by:** :doc:`Effect`, :doc:`App`, :doc:`../NatronGui/GuiApp`
 
 Synopsis
 --------
