@@ -44,6 +44,21 @@ if [ "$COMPILER" = "clang" ] || [ "$COMPILER" = "clang-omp" ]; then
     if [ -x /opt/local/bin/llvm-dsymutil-mp-4.0 ]; then
         DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-4.0
     fi
+    if [ -x /opt/local/bin/llvm-dsymutil-mp-5.0 ]; then
+        DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-5.0
+    fi
+    if [ -x /opt/local/bin/llvm-dsymutil-mp-5.0 ]; then
+        DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-5.0
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-7.0 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-7.0
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-8.0 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-8.0
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-9.0 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-9.0
+    fi
 fi
 
 # the list of libs in /opt/local/lib/libgcc

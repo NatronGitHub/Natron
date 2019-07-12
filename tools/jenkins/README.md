@@ -167,6 +167,8 @@ Options
 
 The following options can be passed to `launchBuildMain.sh` as environment variables:
 
+`WORKSPACE`: The absolute path to a directory on the local filesystem were builds are done, external files are downloaded, and builds are archived.
+
 `RELEASE_TAG`: Make a release build. The version (x.y.z) must correspond with tags in Natron, openfx-io, openfx-misc, openfx-arena. Note that the plugins use "Natron-x.y.z" tags and Natron uses "x.y.z" tags. You do not have to prefix with "tags/"
 
 `SNAPSHOT_BRANCH`: If set and `RELEASE_TAG` is not set, this indicates the branch on which to launch a snapshot from. If `SNAPSHOT_COMMIT` is also set, this will build this specific commit on that branch, otherwise it will build the latest commit on the branch. If `GIT_COMMIT` is set, `GIT_BRANCH` is ignored.
@@ -192,6 +194,8 @@ The following options can be passed to `launchBuildMain.sh` as environment varia
 `NATRON_EXTRA_QMAKE_FLAGS`: Optional qmake flags to pass when building Natron.
 
 `BUILD_NAME`: Set this to label the project build. On the slave, the build artifacts are stored for some amount of time in `$WORKSPACE/builds_archive/$BUILD_NAME/$BUILD_NUMBER`.
+
+`BUILD_NUMBER`: A unique number to identify the build (usually incremented at each build). See also `BUILD_NAME`.
 
 `DISABLE_RPM_DEB_PKGS`: If set to 1, deb and rpm packages will never be built. Default is to build when `NATRON_BUILD_CONFIG`=`STABLE`.
 

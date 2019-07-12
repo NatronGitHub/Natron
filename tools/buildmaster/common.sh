@@ -199,7 +199,7 @@ else
     REPO_URL=http://downloads.natron.fr
 fi
 
-THIRD_PARTY_SRC_URL=https://natrongithub.github.io/files/src
+THIRD_PARTY_SRC_URL=https://sourceforge.net/projects/natron/files/Third_Party/Sources
 THIRD_PARTY_BIN_URL=https://natrongithub.github.io/files/bin
 
 

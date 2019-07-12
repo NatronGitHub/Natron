@@ -47,6 +47,21 @@ if [ "$COMPILER" = "clang" ] || [ "$COMPILER" = "clang-omp" ]; then
     if [ -x /opt/local/bin/llvm-dsymutil-mp-4.0 ]; then
         DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-4.0
     fi
+    if [ -x /opt/local/bin/llvm-dsymutil-mp-5.0 ]; then
+        DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-5.0
+    fi
+    if [ -x /opt/local/bin/llvm-dsymutil-mp-6.0 ]; then
+        DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-6.0
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-7.0 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-7.0
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-8.0 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-8.0
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-9.0 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-9.0
+    fi
 fi
 
 # the list of libs in /opt/local/lib/libgcc
@@ -60,6 +75,12 @@ omplibs="omp"
 BPAD_TAG=""
 if [ "${NATRON_BUILD_CONFIG:-}" != "" ] && [ "${NATRON_BUILD_CONFIG:-}" != "SNAPSHOT" ]; then
     BPAD_TAG="-release"
+    #if [ -f "$TMP_BINARIES_PATH/natron-fullversion.txt" ]; then
+    #    GET_VER=`cat "$TMP_BINARIES_PATH/natron-fullversion.txt"`
+    #    if [ "$GET_VER" != "" ]; then
+    #        TAG=$GET_VER
+    #    fi
+    #fi
 fi
 
 if [ ! -d "$TMP_BINARIES_PATH" ]; then
@@ -155,24 +176,23 @@ for bin in IO Misc CImg Arena GMIC Shadertoy Extra Magick OCL; do
         echo "* stripping $ofx_binary";
         # Retain the original binary for QA and use with the util 'atos'
         #mv -f "$ofx_binary" "${binary}_FULL";
-        ARCHS="x86_64 i386"
-        if [ "$BITS" = "Universal" ] && lipo "$ofx_binary" -verify_arch "$ARCHS"; then
+        if [ "$BITS" = "Universal" ] && if lipo "$ofx_binary" -verify_arch i386 x86_64; then
             # Extract each arch into a "thin" binary for stripping
-            # Perform desired stripping on each thin binary.
-            for a in $ARCHS; do
-                lipo "$ofx_binary" -thin "$a" -output "${ofx_binary}_$a"
-                strip -S -x -r "${ofx_binary}_$a"
-            done
+            lipo "$ofx_binary" -thin x86_64 -output "${ofx_binary}_x86_64";
+            lipo "$ofx_binary" -thin i386   -output "${ofx_binary}_i386";
 
+            # Perform desired stripping on each thin binary.
+            strip -S -x -r "${ofx_binary}_i386";
+            strip -S -x -r "${ofx_binary}_x86_64";
             # Make the new universal binary from our stripped thin pieces.
-            lipo "-arch x86_64 ${ofx_binary}_x86_64 -arch i386 ${ofx_binary}_i386" -create -output "${ofx_binary}"
+            lipo -arch i386 "${ofx_binary}_i386" -arch x86_64 "${ofx_binary}_x86_64" -create -output "${ofx_binary}";
 
             # We're now done with the temp thin binaries, so chuck them.
-            rm -f "${ofx_binary}_i386"
-            rm -f "${ofx_binary}_x86_64"
-# Do not strip, otherwise we get the following error "the __LINKEDIT segment does not cover the end of the file"
-#else
-#           strip -S -x -r "${ofx_binary}"
+            rm -f "${ofx_binary}_i386";
+            rm -f "${ofx_binary}_x86_64";
+        # Do not strip, otherwise we get the following error "the __LINKEDIT segment does not cover the end of the file"
+        #else
+        #   strip -S -x -r "${ofx_binary}"
         fi
         #rm -f "${ofx_binary}_FULL";
     else

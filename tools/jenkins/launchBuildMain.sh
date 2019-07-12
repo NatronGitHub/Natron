@@ -4,7 +4,7 @@
 #
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
-set -x # Print commands and their arguments as they are executed.
+#set -x # Print commands and their arguments as they are executed.
 
 
 # Configurable Options:
@@ -65,9 +65,9 @@ echo "NATRON_EXTRA_QMAKE_FLAGS          : \"${NATRON_EXTRA_QMAKE_FLAGS:-}\""
 echo "DISABLE_RPM_DEB_PKGS              : \"${DISABLE_RPM_DEB_PKGS:-}\""
 echo "DISABLE_PORTABLE_ARCHIVE          : \"${DISABLE_PORTABLE_ARCHIVE:-}\""
 echo "EXTRA_PYTHON_MODULES_SCRIPT       : \"${EXTRA_PYTHON_MODULES_SCRIPT:-}\""
-echo "REMOTE_URL                        : \"${REMOTE_URL}\""
-echo "REMOTE_USER                       : \"${REMOTE_USER}\""
-echo "REMOTE_PREFIX                     : \"${REMOTE_PREFIX}\""
+echo "REMOTE_URL                        : \"${REMOTE_URL:-}\""
+echo "REMOTE_USER                       : \"${REMOTE_USER:-}\""
+echo "REMOTE_PREFIX                     : \"${REMOTE_PREFIX:-}\""
 echo "-----------------------------------------------------------------------"
 
 if [ "${NATRON_LICENSE:-}" != "GPL" ] && [ "${NATRON_LICENSE:-}" != "COMMERCIAL" ]; then
@@ -77,6 +77,11 @@ fi
 
 if [ -z "${BUILD_NAME:-}" ] || [ -z "${BUILD_NUMBER:-}" ]; then
     echo "Must set BUILD_NAME and BUILD_NUMBER"
+    exit 1
+fi
+
+if [ -z "${WORKSPACE:-}" ] || [ ! -d "${WORKSPACE}" ]; then
+    echo "WORKSPACE must be set to an existing directory on the local filesystem."
     exit 1
 fi
 
@@ -185,7 +190,7 @@ setBuildOption "GIT_URL_OPENFX_ARENA" "$GIT_URL_OPENFX_ARENA"
 setBuildOption "GIT_URL_OPENFX_GMIC" "$GIT_URL_OPENFX_GMIC"
 setBuildOption "GIT_URL_OPENFX_OPENCV" "$GIT_URL_OPENFX_OPENCV"
 
-BUILDS_ARCHIVE_PATH="$CWD/builds_archive"
+BUILDS_ARCHIVE_PATH="$WORKSPACE/builds_archive"
 
 BUILD_ARCHIVE_DIRECTORY="$BUILDS_ARCHIVE_PATH/$BUILD_NAME/$BUILD_NUMBER"
 
