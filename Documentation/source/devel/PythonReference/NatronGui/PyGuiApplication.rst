@@ -4,12 +4,12 @@
 PyGuiApplication
 ****************
 
-**Inherits** :class:`PyCoreApplication`
+**Inherits** :doc:`../NatronEngine/PyCoreApplication`
 
 Synopsis
 --------
 
-See :doc:`PyCoreApplication` for a detailed explanation of the purpose of this object.
+See :doc:`../NatronEngine/PyCoreApplication` for a detailed explanation of the purpose of this object.
 This class is only used when Natron is run in GUI mode (with user interface).
 It gives you access to more GUI functionalities via the :doc:`GuiApp` class.
 

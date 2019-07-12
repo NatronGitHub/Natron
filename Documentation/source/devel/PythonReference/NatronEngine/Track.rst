@@ -71,7 +71,3 @@ Member functions description
 
     Resets the track completely removing any animation on all parameters and any keyframe
     on the pattern.
-
-
-
-

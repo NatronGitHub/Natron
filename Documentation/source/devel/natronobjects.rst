@@ -13,13 +13,13 @@ Natron is separated in 2 internal modules:
 The latest is only available in **GUI** mode. You may access *globally* to the Natron
 process with either **NatronEngine.natron** or **NatronGui.natron**
 
-NatronEngine.natron is of type :ref:`PyCoreApplication<NatronEngine.PyCoreApplication>` and
-NatronGui.natron is of type :ref:`PyGuiApplication<NatronGui.PyGuiApplication>`.
+NatronEngine.natron is of type :doc:`PyCoreApplication<NatronEngine/PyCoreApplication>` and
+NatronGui.natron is of type :doc:`PyGuiApplication<NatronGui/PyGuiApplication>`.
 This is a singleton and there is only a **single** instance of that variable living throughout the
 execution of the Natron process.
 
 When using with **NatronGui.natron** you get access to GUI functionalities in addition
-to the internal functionalities exposed by :ref:`PyCoreApplication<NatronEngine.PyCoreApplication>`
+to the internal functionalities exposed by :doc:`PyCoreApplication<NatronEngine/PyCoreApplication>`
 
 Basically if using Natron in command-line you may only use **NatronEngine.natron**.
 

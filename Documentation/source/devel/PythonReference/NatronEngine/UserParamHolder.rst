@@ -5,7 +5,7 @@
 UserParamHolder
 ***************
 
-**Inherited by** : :doc:`Effect`, :doc:`PyModalDialog`
+**Inherited by** : :doc:`Effect`, :doc:`../NatronGui/PyModalDialog`
 
 Synopsis
 --------

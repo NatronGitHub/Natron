@@ -40,7 +40,7 @@ Detailed Description
 --------------------
 
 A Bezier initially is in an *opened* state, meaning it doesn't produce a shape yet.
-At this stage you can then add control points using the :func`addControlPoint(x,y)<NatronEngine.BezierCurve.addControlPoint>`
+At this stage you can then add control points using the :func:`addControlPoint(x,y)<NatronEngine.BezierCurve.addControlPoint>`
 function.
 Once you are done adding control points, call the function :func:`setCurveFinished(finished)<NatronEngine.BezierCurve.setCurveFinished>`
 to close the shape by connecting the last control point with the first.
@@ -58,7 +58,7 @@ otherwise the position is sampled between the surrounding keyframes.
 
 To get a list of all keyframes time for a Bezier call the function :func:`getUserKeyframes()<NatronEngine.ItemBase.getUserKeyframes>`.
 
-Each property of a Bezier is a regular :ref:`parameter<NatronEngine.Param>`.
+Each property of a Bezier is a regular :class:`Param<NatronEngine.Param>`.
 All parameters can be retrieved with their *script-name* with the function :func:`getParam(scriptName)<NatronEngine.ItemBase.getParam>`.
 
 

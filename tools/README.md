@@ -6,19 +6,6 @@ This directory contains various tools to help building and maintaining Natron.
   
   Repository for Natron-specific ports for MacPorts. Some ports are not in MacPorts (e.g. openimageio), some have extra patches that fix specific issues (licensing, universal builds, etc.). Next to each `Portfile`, we always store the original MacPorts `Portfile.orig` and the `Portfile.patch` to apply. The `check.sh` script helps checking which `Portfile`s have to be updated after a `sudo port selfupdate`.
 
-- **buildmaster**
-
-  The directory contains script that are used to build Natron binaries on the Natron build farm. These scripts require a complicated infrastructure (build farm with one machine of each arch, database to store the build results, web server to store the binaries and build symbols, etc.).
-  
-  These scripts are here mainly for reference, and the jenkins scripts are probably more up-to-date, although they were never used to produce releases.
-  
-  The main script is `buildmaster.sh`, and we launch it that way:
-  - on OS X 10.6, Linux CentOS 6.4 32bit, Linux CentOS 64bit: `env NATRON_LICENSE=GPL ./buildmaster.sh`
-  - on Window 7 64bit, we run in parallel the scripts to build the 32bit and the 64bit versions:
-    - `env NATRON_LICENSE=GPL MSYSTEM=MINGW32 BITS=32 MKJOBS=2  ./buildmaster.sh`
-    - `env NATRON_LICENSE=GPL MSYSTEM=MINGW64 BITS=64 MKJOBS=2  ./buildmaster.sh`
-  The script that builds the Windows packages is in `buildmaster/include/scripts/build-Windows-installer.sh`, and must be updated every type a dependency DLL filename changes (this was made automatic in the corresponding jenkins script).
-  
 - **genStaticDocs.sh**
 
   This is the script used to generate the HTML documentation which is shippend with Natron binaries. This script is executed by the buildmaster and jenkins scripts, but it can also be used to preview the result while writing documentation.
@@ -39,7 +26,7 @@ This directory contains various tools to help building and maintaining Natron.
 
 - **jenkins**
 
-  These scripts are used to
+  These scripts are used to:
   
   - build the Natron SDK on Linux 32bit and Linux64bit (any distribution):
 	
@@ -67,7 +54,21 @@ This directory contains various tools to help building and maintaining Natron.
 	  
 	  - execute `MSYSTEM=MINGW64 BITS=64 ./include/scripts/build-Windows-sdk.sh` to rebuild and install the Natron-specific packages.
 	  
-  - build the Natron binaries and execute the unit tests on OS X 10.9 (`macStartupJenkins.sh`), Linux CentOS 6.4 32bit and 64bit (`linuxStartupJenkins.sh`) and Windows 10 32bit and 64bit (`winStartupJenkins.bat`). These build scripts are basically updated versions of the scripts from the `buildmaster`directory, but were never tested to produce actual releases. Also note that the OS X script does not produce universal 32/64 bits binaries.
+  - build the Natron binaries and execute the unit tests on OS X 10.9 (`macStartupJenkins.sh`), Linux CentOS 6.4 32bit and 64bit (`linuxStartupJenkins.sh`) and Windows 10 32bit and 64bit (`winStartupJenkins.bat`). These build scripts are basically updated versions of the scripts from the `buildmaster`directory, but were never tested to produce actual releases. Also note that the OS X script does not produce universal 32/64 bits binaries when run on OS X 10.9.
+
+- **buildmaster**
+
+  The directory, given for reference, contains the old scripts that were used to build Natron binaries on the Natron build farm. These scripts require a complicated infrastructure (build farm with one machine of each arch, database to store the build results, web server to store the binaries and build symbols, etc.).
+  
+  These scripts are here mainly for reference, and the jenkins scripts are probably more up-to-date, although they were never used to produce releases.
+  
+  The main script is `buildmaster.sh`, and we launch it that way:
+  - on OS X 10.6, Linux CentOS 6.4 32bit, Linux CentOS 64bit: `env NATRON_LICENSE=GPL ./buildmaster.sh`
+  - on Window 7 64bit, we run in parallel the scripts to build the 32bit and the 64bit versions:
+    - `env NATRON_LICENSE=GPL MSYSTEM=MINGW32 BITS=32 MKJOBS=2  ./buildmaster.sh`
+    - `env NATRON_LICENSE=GPL MSYSTEM=MINGW64 BITS=64 MKJOBS=2  ./buildmaster.sh`
+  The script that builds the Windows packages is in `buildmaster/include/scripts/build-Windows-installer.sh`, and must be updated every type a dependency DLL filename changes (this was made automatic in the corresponding jenkins script).
+  
 
 - **docker**
 

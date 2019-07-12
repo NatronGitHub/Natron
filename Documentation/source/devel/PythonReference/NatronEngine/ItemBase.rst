@@ -4,7 +4,7 @@
 ItemBase
 ********
 
-**Inherited by:** :ref:`BezierCurve<BezierCurve>`, :ref:`StrokeItem<StrokeItem>`, :ref:`Track<Track>`
+**Inherited by:** :doc:`BezierCurve`, :doc:`StrokeItem<`, :doc:`Track`
 
 Synopsis
 --------
@@ -157,7 +157,3 @@ Set the item's icon file path.
     :param view: :class:`str<PySide.QtCore.QString>`
 
     Set a user keyframe at the given timeline *time* and for the given *view*.
-
-
-
-

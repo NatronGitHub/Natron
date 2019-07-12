@@ -367,7 +367,7 @@ no such parameter exists.
 
     :rtype: :class:`sequence`
 
-Returns all the :doc:`parameters<NatronEngine.Param>` of this Effect as a sequence.
+Returns all the :class:`Param<NatronEngine.Param>` of this Effect as a sequence.
 
 
 

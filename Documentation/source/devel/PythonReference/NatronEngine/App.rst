@@ -6,7 +6,7 @@ App
 
 **Inherits** :doc:`Group`
 
-**Inherited by:** :ref:`GuiApp`
+**Inherited by:** :doc:`../NatronGui/GuiApp`
 
 Synopsis
 --------

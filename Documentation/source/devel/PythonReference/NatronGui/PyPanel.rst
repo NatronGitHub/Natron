@@ -4,7 +4,7 @@
 PyPanel
 ********
 
-**Inherits** :class:`PySide.QtGui.QWidget` :class:`NatronEngine.UserParamHolder`
+**Inherits** :`QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>` :doc:`../NatronEngine/UserParamHolder`
 
 
 Synopsis
@@ -40,7 +40,7 @@ inserted as tabs into :doc:`tab-widgets<PyTabWidget>` .
 There are 2 possible usage of this class:
 
     * Sub-class it and create your own GUI using `PySide <http://qt-project.org/wiki/PySideDocumentation>`_
-    * Use the API proposed by :doc:`PyPanel` to add custom user :doc:`parameters<NatronEngine.Param>` as done for :doc:`PyModalDialog`.
+    * Use the API proposed by :doc:`PyPanel` to add custom user :doc:`parameters<../NatronEngine/Param>` as done for :doc:`PyModalDialog`.
 
 Sub-classing:
 ^^^^^^^^^^^^^
@@ -62,7 +62,7 @@ See the following :ref:`example <pysideExample>`.
 Using the PyPanel API:
 ^^^^^^^^^^^^^^^^^^^^^^
 
-You can start adding user parameters using all the :func:`createXParam<>` functions inherited from the :doc:`UserParamHolder` class.
+You can start adding user parameters using all the :func:`createXParam<>` functions inherited from the :doc:`../NatronEngine/UserParamHolder` class.
 
 Once all your parameters are created, create the GUI for them using the :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>` function::
 
@@ -190,9 +190,9 @@ attempting to modify the underlying layout in these circumstances will result in
 
 .. method:: NatronGui.PyPanel.addWidget(widget)
 
-    :param widget: :class:`PySide.QtGui.QWidget`
+    :param widget: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`
 
-Append a QWidget inherited *widget* at the bottom of the dialog. This allows to add custom GUI created directly using PySide
+Append a `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>` inherited *widget* at the bottom of the dialog. This allows to add custom GUI created directly using PySide
 that will be inserted **after** any custom parameter.
 
 .. warning::
@@ -230,9 +230,9 @@ Returns all the user parameters used by the panel.
 .. method:: NatronGui.PyPanel.insertWidget(index,widget)
 
     :param index: :class:`int`
-    :param widget: :class:`PySide.QtGui.QWidget`
+    :param widget: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`
 
-Inserts a QWidget inherited *widget* at the given *index* of the layout in the dialog. This allows to add custom GUI created directly using PySide.
+Inserts a `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>` inherited *widget* at the given *index* of the layout in the dialog. This allows to add custom GUI created directly using PySide.
 The widget will always be inserted **after** any user parameter.
 
 .. warning::
@@ -256,7 +256,7 @@ The signature of the :ref:`callback<callbacks>` used on :ref:`PyModalDialog<pyMo
 - **paramName** indicating the :ref:`script-name<autoVar>` of the parameter which just had its value changed.
 - **app** : This variable will be set so it points to the correct :ref:`application instance<App>`.
 - **userEdited** : This indicates whether or not the parameter change is due to user interaction (i.e: because the user changed
-  the value by herself/himself) or due to another parameter changing the value of the parameter
+  the value by theirself) or due to another parameter changing the value of the parameter
   via a derivative of the :func:`setValue(value)<>` function.
 
 Example::

@@ -22,19 +22,20 @@ set -x # Print commands and their arguments as they are executed.
 # SNAPSHOT_BRANCH: If set and RELEASE_TAG is not set, this describes a specific branch to build as a snapshot
 # SNAPSHOT_COMMIT: The commit to build for a snapshot on the given SNAPSHOT_BRANCH. If not set, the latest commit of the branch will be built
 # UNIT_TESTS: "false" or "true" (for compat with jenkins) to run the full unit tests suite after the build
-# NATRON_LICENSE: (GPL or COMMERCIAL) The license to build Natron with. If GPL then GPL components will be included
-# NATRON_DEV_STATUS: ALPHA, BETA, RC, STABLE, CUSTOM: this is useful when doing a release (i.e: if specifying RELEASE_TAG.)
-# NATRON_BUILD_NUMBER: When doing a release this is the number of the release (if doing a rebuild)
-# NATRON_CUSTOM_BUILD_USER_NAME: For a release, Tag the build with a specific user/client name
-# COMPILE_TYPE: The type of build to do, i.e in terms of compilation. Valid values are (relwithdebinfo, release, debug)
-# NATRON_EXTRA_QMAKE_FLAGS: Optional qmake flags to pass when building Natron
-# BITS: Windows only: Must indicate if this is a 64 or 32 bits build
-# DEBUG_SCRIPTS: If set to 1, binaries from previous build with same options are not cleaned so that the scripts can continue the same compilation
+# NATRON_LICENSE: (GPL or COMMERCIAL) The license to build Natron with. If GPL then GPL components will be included.
 # DISABLE_BREAKPAD: If set to 1, natron will be built without crash reporting capabilities
+# COMPILE_TYPE: The type of build to do, i.e in terms of compilation. Valid values are (`relwithdebinfo`, `release`, `debug`). Must be `relwithdebinfo` or `debug` if DISABLE_BREAKPAD is not 1.
+# NATRON_DEV_STATUS: ALPHA, BETA, RC, STABLE, CUSTOM: this is useful when doing a release (i.e: if specifying RELEASE_TAG.)
+# NATRON_CUSTOM_BUILD_USER_NAME: For a release, Tag the build with a specific user/client name
+# NATRON_BUILD_NUMBER: When doing a release this is the number of the release (if doing a rebuild)
+# NATRON_EXTRA_QMAKE_FLAGS: Optional qmake flags to pass when building Natron
+# BUILD_NAME: Give a name to the build so that it can be found in the archive
 # DISABLE_RPM_DEB_PKGS: If set to 1, deb and rpm packages will not be built. Otherwise they are only built for a release
 # DISABLE_PORTABLE_ARCHIVE: If set to 1, a portable archive will not be built
-# BUILD_NAME: Give a name to the build so that it can be found in the archive
+# BITS: Windows only: Must indicate if this is a 64 or 32 bits build
+# DEBUG_SCRIPTS: If set to 1, binaries from previous build with same options are not cleaned so that the scripts can continue the same compilation
 # EXTRA_PYTHON_MODULES_SCRIPT: Path to a python script that should install extra modules with pip or easy_install.
+#
 # The options above are set by custom parameters in the build configuration
 # https://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin#GitPlugin-Jenkins,GITpluginandWindows
 
