@@ -1,0 +1,15 @@
+diff --git llvm-7.0.1.src/tools/clang/lib/Driver/ToolChains/Darwin.cpp llvm-7.0.1.src/tools/clang/lib/Driver/ToolChains/Darwin.cpp
+index dc540688..64adab5c 100644
+--- llvm-7.0.1.src/tools/clang/lib/Driver/ToolChains/Darwin.cpp
++++ llvm-7.0.1.src/tools/clang/lib/Driver/ToolChains/Darwin.cpp
+@@ -700,8 +700,8 @@ types::ID MachO::LookupTypeForExtension(StringRef Ext) const {
+ bool MachO::HasNativeLLVMSupport() const { return true; }
+ 
+ ToolChain::CXXStdlibType Darwin::GetDefaultCXXStdlibType() const {
+-  // Default to use libc++ on OS X 10.9+ and iOS 7+.
+-  if ((isTargetMacOS() && !isMacosxVersionLT(10, 9)) ||
++  // Default to use libc++ on OS X 10.4+ and iOS 7+.
++  if ((isTargetMacOS() && !isMacosxVersionLT(10, 4)) ||
+        (isTargetIOSBased() && !isIPhoneOSVersionLT(7, 0)) ||
+        isTargetWatchOSBased())
+     return ToolChain::CST_Libcxx;

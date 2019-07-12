@@ -1,0 +1,39 @@
+diff --git a/lib/Driver/ToolChains/Clang.cpp b/lib/Driver/ToolChains/Clang.cpp
+index 292cf72b56..d8c6327080 100644
+--- a/tools/clang/lib/Driver/ToolChains/Clang.cpp
++++ b/tools/clang/lib/Driver/ToolChains/Clang.cpp
+@@ -3229,6 +3229,8 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
+     case Driver::OMPRT_OMP:
+     case Driver::OMPRT_IOMP5:
+       // Clang can generate useful OpenMP code for these two runtime libraries.
++      // Automatically find MacPorts' omp.h
++      CmdArgs.push_back("-I@@PREFIX@@/include/libomp");
+       CmdArgs.push_back("-fopenmp");
+ 
+       // If no option regarding the use of TLS in OpenMP codegeneration is
+diff --git a/lib/Driver/ToolChains/CommonArgs.cpp b/lib/Driver/ToolChains/CommonArgs.cpp
+index 8a597b5b3a..9441bb8a56 100644
+--- a/tools/clang/lib/Driver/ToolChains/CommonArgs.cpp
++++ b/tools/clang/lib/Driver/ToolChains/CommonArgs.cpp
+@@ -444,15 +444,21 @@ bool tools::addOpenMPRuntime(ArgStringList &CmdArgs, const ToolChain &TC,
+ 
+   switch (TC.getDriver().getOpenMPRuntime(Args)) {
+   case Driver::OMPRT_OMP:
++    // Automatically find MacPorts' libomp
++    CmdArgs.push_back("-L@@PREFIX@@/lib/libomp");
+     CmdArgs.push_back("-lomp");
+     break;
+   case Driver::OMPRT_GOMP:
++    // Automatically find MacPorts' libomp
++    CmdArgs.push_back("-L@@PREFIX@@/lib/libomp");
+     CmdArgs.push_back("-lgomp");
+ 
+     if (GompNeedsRT)
+       CmdArgs.push_back("-lrt");
+     break;
+   case Driver::OMPRT_IOMP5:
++    // Automatically find MacPorts' libomp
++    CmdArgs.push_back("-L@@PREFIX@@/lib/libomp");
+     CmdArgs.push_back("-liomp5");
+     break;
+   case Driver::OMPRT_Unknown:

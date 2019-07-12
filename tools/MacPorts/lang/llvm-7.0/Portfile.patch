@@ -1,0 +1,12 @@
+--- Portfile.orig	2019-07-11 06:06:48.000000000 +0200
++++ Portfile	2019-07-11 06:06:31.000000000 +0200
+@@ -407,6 +407,9 @@
+ 
+         # https://llvm.org/bugs/show_bug.cgi?id=25680
+         configure.cxxflags-append -U__STRICT_ANSI__
++
++        # https://trac.macports.org/ticket/58712
++        configure.args-append -DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=OFF
+     }
+ 
+     # https://llvm.org/bugs/show_bug.cgi?id=25674

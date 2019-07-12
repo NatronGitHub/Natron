@@ -1,0 +1,316 @@
+From 6edfb88a439f007e5b22f06389ff65fb20a8900a Mon Sep 17 00:00:00 2001
+From: David Fang <fang@csl.cornell.edu>
+Date: Wed, 15 Jan 2014 21:27:34 -0800
+Subject: [PATCH 3003/3003] implement atomic<> using mutex/lock_guard for 64b
+ ops on 32b PPC not pretty, not fast, but passes atomic tests
+
+---
+ include/__atomic_locked | 240 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/atomic          |  46 ++++++++++
+ 2 files changed, 286 insertions(+)
+ create mode 100644 include/__atomic_locked
+
+diff --git llvm_master/projects/libcxx/include/__atomic_locked macports_master/projects/libcxx/include/__atomic_locked
+new file mode 100644
+index 000000000..f10dd747e
+--- /dev/null
++++ macports_master/projects/libcxx/include/__atomic_locked
+@@ -0,0 +1,240 @@
++// -*- C++ -*-
++//===--------------------------- __atomic_locked --------------------------===//
++//
++//                     The LLVM Compiler Infrastructure
++//
++// This file is distributed under the University of Illinois Open Source
++// License. See LICENSE.TXT for details.
++//
++//===----------------------------------------------------------------------===//
++
++#ifndef _LIBCPP_ATOMIC_LOCKED
++#define _LIBCPP_ATOMIC_LOCKED
++
++#include <__mutex_base>	// for mutex and lock_guard
++
++/**
++	This provides slow-but-usable lock-based atomic access to
++	structures for which atomic lock-free functions are missing.
++	This is motivated by the desire for 64b atomic operations
++	on 32b PowerPC architectures.  
++**/
++
++#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
++#pragma GCC system_header
++#endif
++
++_LIBCPP_BEGIN_NAMESPACE_STD
++
++template <class _Tp, bool = is_integral<_Tp>::value && !is_same<_Tp, bool>::value>
++struct __atomic_mutex_locked  // false
++{
++    mutable _Atomic(_Tp) __a_;
++    mutable mutex __lock_;
++    typedef lock_guard<mutex>	lock_type;
++
++    _Tp& na(void) const { return reinterpret_cast<_Tp&>(__a_); }
++    volatile _Tp& na(void) const volatile { return reinterpret_cast<volatile _Tp&>(__a_); }
++
++    _LIBCPP_INLINE_VISIBILITY
++    bool is_lock_free() const volatile _NOEXCEPT
++        {return false;}
++    _LIBCPP_INLINE_VISIBILITY
++    bool is_lock_free() const _NOEXCEPT
++        {return false;}
++    _LIBCPP_INLINE_VISIBILITY
++    void store(_Tp __d, memory_order = memory_order_seq_cst) volatile _NOEXCEPT
++        { const lock_type g(const_cast<mutex&>(__lock_)); na() = __d; }
++    _LIBCPP_INLINE_VISIBILITY
++    void store(_Tp __d, memory_order = memory_order_seq_cst) _NOEXCEPT
++        { const lock_type g(__lock_); na() = __d; }
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp load(memory_order = memory_order_seq_cst) const volatile _NOEXCEPT
++        { const lock_type g(const_cast<mutex&>(__lock_)); return na(); }
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp load(memory_order = memory_order_seq_cst) const _NOEXCEPT
++        { const lock_type g(__lock_); return na(); }
++    _LIBCPP_INLINE_VISIBILITY
++    operator _Tp() const volatile _NOEXCEPT {return load();}
++    _LIBCPP_INLINE_VISIBILITY
++    operator _Tp() const _NOEXCEPT          {return load();}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp exchange(_Tp __d, memory_order = memory_order_seq_cst) volatile _NOEXCEPT
++        { const lock_type g(const_cast<mutex&>(__lock_));
++	// or use std::swap
++          const _Tp ret = na(); na() = __d; return ret; }
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp exchange(_Tp __d, memory_order = memory_order_seq_cst) _NOEXCEPT
++        { const lock_type g(__lock_);
++	// or use std::swap
++          const _Tp ret = na(); na() = __d; return ret; }
++    _LIBCPP_INLINE_VISIBILITY
++    bool compare_exchange_weak(_Tp& __e, _Tp __d,
++                               memory_order __s, memory_order __f) volatile _NOEXCEPT
++        { const lock_type g(const_cast<mutex&>(__lock_));
++	  if (na() == __e) { na() = __d; return true; }
++	  else { __e = na(); return false; }
++	}
++    _LIBCPP_INLINE_VISIBILITY
++    bool compare_exchange_weak(_Tp& __e, _Tp __d,
++                               memory_order __s, memory_order __f) _NOEXCEPT
++        { const lock_type g(__lock_);
++	  if (na() == __e) { na() = __d; return true; }
++	  else { __e = na(); return false; }
++	}
++
++    // for now, _weak inditinguishable from _strong
++    _LIBCPP_INLINE_VISIBILITY
++    bool compare_exchange_strong(_Tp& __e, _Tp __d,
++                                 memory_order __s, memory_order __f) volatile _NOEXCEPT
++        {return compare_exchange_weak(__e, __d, __s, __f);}
++    _LIBCPP_INLINE_VISIBILITY
++    bool compare_exchange_strong(_Tp& __e, _Tp __d,
++                                 memory_order __s, memory_order __f) _NOEXCEPT
++        {return compare_exchange_weak(__e, __d, __s, __f);}
++    _LIBCPP_INLINE_VISIBILITY
++    bool compare_exchange_weak(_Tp& __e, _Tp __d,
++                              memory_order __m = memory_order_seq_cst) volatile _NOEXCEPT
++        {return compare_exchange_weak(__e, __d, __m, __m);}
++    _LIBCPP_INLINE_VISIBILITY
++    bool compare_exchange_weak(_Tp& __e, _Tp __d,
++                               memory_order __m = memory_order_seq_cst) _NOEXCEPT
++        {return compare_exchange_weak(__e, __d, __m, __m);}
++    _LIBCPP_INLINE_VISIBILITY
++    bool compare_exchange_strong(_Tp& __e, _Tp __d,
++                              memory_order __m = memory_order_seq_cst) volatile _NOEXCEPT
++        {return compare_exchange_strong(__e, __d, __m, __m);}
++    _LIBCPP_INLINE_VISIBILITY
++    bool compare_exchange_strong(_Tp& __e, _Tp __d,
++                                 memory_order __m = memory_order_seq_cst) _NOEXCEPT
++        {return compare_exchange_strong(__e, __d, __m, __m);}
++
++    _LIBCPP_INLINE_VISIBILITY
++#ifndef _LIBCPP_HAS_NO_DEFAULTED_FUNCTIONS
++    __atomic_mutex_locked() _NOEXCEPT = default;
++#else
++    __atomic_mutex_locked() _NOEXCEPT : __a_() {}
++#endif // _LIBCPP_HAS_NO_DEFAULTED_FUNCTIONS
++
++    _LIBCPP_INLINE_VISIBILITY
++    _LIBCPP_CONSTEXPR __atomic_mutex_locked(_Tp __d) _NOEXCEPT : __a_(__d) {}
++#ifndef _LIBCPP_HAS_NO_DELETED_FUNCTIONS
++    __atomic_mutex_locked(const __atomic_mutex_locked&) = delete;
++    __atomic_mutex_locked& operator=(const __atomic_mutex_locked&) = delete;
++    __atomic_mutex_locked& operator=(const __atomic_mutex_locked&) volatile = delete;
++#else  // _LIBCPP_HAS_NO_DELETED_FUNCTIONS
++private:
++    __atomic_mutex_locked(const __atomic_mutex_locked&);
++    __atomic_mutex_locked& operator=(const __atomic_mutex_locked&);
++    __atomic_mutex_locked& operator=(const __atomic_mutex_locked&) volatile;
++#endif  // _LIBCPP_HAS_NO_DELETED_FUNCTIONS
++};	// end struct __atomic_mutex_locked
++
++// atomic<Integral>
++
++template <class _Tp>
++struct __atomic_mutex_locked<_Tp, true>
++    : public __atomic_mutex_locked<_Tp, false>
++{
++    typedef __atomic_mutex_locked<_Tp, false> __base;
++    typedef	typename __base::lock_type	lock_type;
++    using __base::__lock_;
++    using __base::na;
++
++    _LIBCPP_INLINE_VISIBILITY
++    __atomic_mutex_locked() _NOEXCEPT _LIBCPP_DEFAULT
++    _LIBCPP_INLINE_VISIBILITY
++    _LIBCPP_CONSTEXPR __atomic_mutex_locked(_Tp __d) _NOEXCEPT : __base(__d) {}
++
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp fetch_add(_Tp __op, memory_order __m = memory_order_seq_cst) volatile _NOEXCEPT
++        { const lock_type g(const_cast<mutex&>(__lock_));
++	  const _Tp ret = na(); na() += __op; return ret;
++	}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp fetch_add(_Tp __op, memory_order __m = memory_order_seq_cst) _NOEXCEPT
++        { const lock_type g(__lock_);
++	  const _Tp ret = na(); na() += __op; return ret;
++	}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp fetch_sub(_Tp __op, memory_order __m = memory_order_seq_cst) volatile _NOEXCEPT
++        { const lock_type g(const_cast<mutex&>(__lock_));
++	  const _Tp ret = na(); na() -= __op; return ret;
++	}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp fetch_sub(_Tp __op, memory_order __m = memory_order_seq_cst) _NOEXCEPT
++        { const lock_type g(__lock_);
++	  const _Tp ret = na(); na() -= __op; return ret;
++	}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp fetch_and(_Tp __op, memory_order __m = memory_order_seq_cst) volatile _NOEXCEPT
++        { const lock_type g(const_cast<mutex&>(__lock_));
++	  const _Tp ret = na(); na() &= __op; return ret;
++	}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp fetch_and(_Tp __op, memory_order __m = memory_order_seq_cst) _NOEXCEPT
++        { const lock_type g(__lock_);
++	  const _Tp ret = na(); na() &= __op; return ret;
++	}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp fetch_or(_Tp __op, memory_order __m = memory_order_seq_cst) volatile _NOEXCEPT
++        { const lock_type g(const_cast<mutex&>(__lock_));
++	  const _Tp ret = na(); na() |= __op; return ret;
++	}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp fetch_or(_Tp __op, memory_order __m = memory_order_seq_cst) _NOEXCEPT
++        { const lock_type g(__lock_);
++	  const _Tp ret = na(); na() |= __op; return ret;
++	}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp fetch_xor(_Tp __op, memory_order __m = memory_order_seq_cst) volatile _NOEXCEPT
++        { const lock_type g(const_cast<mutex&>(__lock_));
++	  const _Tp ret = na(); na() ^= __op; return ret;
++	}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp fetch_xor(_Tp __op, memory_order __m = memory_order_seq_cst) _NOEXCEPT
++        { const lock_type g(__lock_);
++	  const _Tp ret = na(); na() ^= __op; return ret;
++	}
++
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator++(int) volatile _NOEXCEPT      {return fetch_add(_Tp(1));}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator++(int) _NOEXCEPT               {return fetch_add(_Tp(1));}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator--(int) volatile _NOEXCEPT      {return fetch_sub(_Tp(1));}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator--(int) _NOEXCEPT               {return fetch_sub(_Tp(1));}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator++() volatile _NOEXCEPT         {return fetch_add(_Tp(1)) + _Tp(1);}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator++() _NOEXCEPT                  {return fetch_add(_Tp(1)) + _Tp(1);}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator--() volatile _NOEXCEPT         {return fetch_sub(_Tp(1)) - _Tp(1);}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator--() _NOEXCEPT                  {return fetch_sub(_Tp(1)) - _Tp(1);}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator+=(_Tp __op) volatile _NOEXCEPT {return fetch_add(__op) + __op;}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator+=(_Tp __op) _NOEXCEPT          {return fetch_add(__op) + __op;}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator-=(_Tp __op) volatile _NOEXCEPT {return fetch_sub(__op) - __op;}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator-=(_Tp __op) _NOEXCEPT          {return fetch_sub(__op) - __op;}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator&=(_Tp __op) volatile _NOEXCEPT {return fetch_and(__op) & __op;}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator&=(_Tp __op) _NOEXCEPT          {return fetch_and(__op) & __op;}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator|=(_Tp __op) volatile _NOEXCEPT {return fetch_or(__op) | __op;}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator|=(_Tp __op) _NOEXCEPT          {return fetch_or(__op) | __op;}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator^=(_Tp __op) volatile _NOEXCEPT {return fetch_xor(__op) ^ __op;}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator^=(_Tp __op) _NOEXCEPT          {return fetch_xor(__op) ^ __op;}
++};
++
++_LIBCPP_END_NAMESPACE_STD
++
++#endif  // _LIBCPP_ATOMIC_LOCKED
+diff --git llvm_master/projects/libcxx/include/atomic macports_master/projects/libcxx/include/atomic
+index f55e28ff5..9ccf1ca75 100644
+--- llvm_master/projects/libcxx/include/atomic
++++ macports_master/projects/libcxx/include/atomic
+@@ -1885,4 +1885,50 @@ typedef atomic<uintmax_t> atomic_uintmax_t;
+ 
+ _LIBCPP_END_NAMESPACE_STD
+ 
++#if	defined(__ppc__) && !defined(__ppc64__)
++// specialize fallback implementation where 64b atomics are missing
++#include <__atomic_locked>
++
++_LIBCPP_BEGIN_NAMESPACE_STD
++
++template <>
++struct atomic<long long> : public __atomic_mutex_locked<long long>
++{
++    typedef long long		_Tp;
++    typedef __atomic_mutex_locked<_Tp> __base;
++    _LIBCPP_INLINE_VISIBILITY
++    atomic() _NOEXCEPT _LIBCPP_DEFAULT
++    _LIBCPP_INLINE_VISIBILITY
++    _LIBCPP_CONSTEXPR atomic(_Tp __d) _NOEXCEPT : __base(__d) {}
++
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator=(_Tp __d) volatile _NOEXCEPT
++        {__base::store(__d); return __d;}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator=(_Tp __d) _NOEXCEPT
++        {__base::store(__d); return __d;}
++};
++
++template <>
++struct atomic<unsigned long long> :
++	public __atomic_mutex_locked<unsigned long long>
++{
++    typedef unsigned long long		_Tp;
++    typedef __atomic_mutex_locked<_Tp> __base;
++    _LIBCPP_INLINE_VISIBILITY
++    atomic() _NOEXCEPT _LIBCPP_DEFAULT
++    _LIBCPP_INLINE_VISIBILITY
++    _LIBCPP_CONSTEXPR atomic(_Tp __d) _NOEXCEPT : __base(__d) {}
++
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator=(_Tp __d) volatile _NOEXCEPT
++        {__base::store(__d); return __d;}
++    _LIBCPP_INLINE_VISIBILITY
++    _Tp operator=(_Tp __d) _NOEXCEPT
++        {__base::store(__d); return __d;}
++};
++
++_LIBCPP_END_NAMESPACE_STD
++#endif	// defined(__ppc__) && !defined(__ppc64__)
++
+ #endif  // _LIBCPP_ATOMIC
+-- 
+2.13.2
+

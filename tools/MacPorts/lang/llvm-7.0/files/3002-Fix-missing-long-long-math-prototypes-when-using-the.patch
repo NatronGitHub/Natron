@@ -1,0 +1,51 @@
+From 272f8f07e4ab1935fa6ce73fdd5373742e8e4c3d Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Sat, 17 Jan 2015 16:26:20 -0800
+Subject: [PATCH 3002/3003] Fix missing long long math prototypes when using
+ the Snow Leopard SDK
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+---
+ include/math.h | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+
+diff --git llvm_master/projects/libcxx/include/math.h macports_master/projects/libcxx/include/math.h
+index 8c30ba85d..023943ca2 100644
+--- llvm_master/projects/libcxx/include/math.h
++++ macports_master/projects/libcxx/include/math.h
+@@ -300,6 +300,32 @@ long double    truncl(long double x);
+ 
+ #include_next <math.h>
+ 
++#ifdef __APPLE__
++# if __has_include(<Availability.h>)
++#  include <Availability.h>
++#  if __MAC_OS_X_VERSION_MAX_ALLOWED < 1070
++#    define __APPLE_BAD_MATH_H 1
++#  else
++#    define __APPLE_BAD_MATH_H 0
++#  endif
++# else
++#  define __APPLE_BAD_MATH_H 1
++# endif
++
++# if __APPLE_BAD_MATH_H
++/* These prototypes are incorrectly omitted from <math.h> on Snow Leopard despite being available */
++extern "C" {
++    extern long long int llrintl(long double);
++    extern long long int llrint(double);
++    extern long long int llrintf(float);
++
++    extern long long int llroundl(long double);
++    extern long long int llround(double);
++    extern long long int llroundf(float);
++}
++# endif
++#endif // __APPLE__
++
+ #ifdef __cplusplus
+ 
+ // We support including .h headers inside 'extern "C"' contexts, so switch
+-- 
+2.13.2
+

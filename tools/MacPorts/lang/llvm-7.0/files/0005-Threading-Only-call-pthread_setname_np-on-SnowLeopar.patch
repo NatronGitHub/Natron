@@ -1,0 +1,36 @@
+From 1bbe86f7fae2f5222ee6d88d7e3c8d2dae3145c6 Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Wed, 27 Dec 2017 23:05:43 -0800
+Subject: [PATCH 5/5] Threading: Only call pthread_setname_np() on SnowLeopard+
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+---
+ lib/Support/Unix/Threading.inc | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git llvm_master/lib/Support/Unix/Threading.inc macports_master/lib/Support/Unix/Threading.inc
+index 267af388ecd..1c8c1b026e3 100644
+--- llvm_master/lib/Support/Unix/Threading.inc
++++ macports_master/lib/Support/Unix/Threading.inc
+@@ -15,6 +15,7 @@
+ #include "llvm/ADT/Twine.h"
+ 
+ #if defined(__APPLE__)
++#include <Availability.h>
+ #include <mach/mach_init.h>
+ #include <mach/mach_port.h>
+ #endif
+@@ -153,8 +154,10 @@ void llvm::set_thread_name(const Twine &Name) {
+   ::pthread_setname_np(::pthread_self(), "%s",
+     const_cast<char *>(NameStr.data()));
+ #elif defined(__APPLE__)
++#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1060
+   ::pthread_setname_np(NameStr.data());
+ #endif
++#endif
+ }
+ 
+ void llvm::get_thread_name(SmallVectorImpl<char> &Name) {
+-- 
+2.15.1
+

@@ -51,12 +51,12 @@ patchfiles          patch-build-make-configure.sh.diff \
 # {standard input}:unknown:Undefined local symbol LC2
 
 compiler.blacklist  *gcc-3.* *gcc-4.* {clang < 800} macports-clang-3.3 macports-clang-3.4 macports-clang-3.7
-# Make sure that mp-clang-3.9 is picked if all compilers were blacklisted.
+# Make sure that mp-clang-5.0 is picked if all compilers were blacklisted.
 # Especially important for 10.6 on libc++, since the fallback list contains macports-clang-3.7
 # as the first, and thus selected, fallback option (even though it has been blacklisted earlier).
 compiler.fallback-append macports-clang-5.0 macports-clang-6.0 macports-clang-7.0 macports-clang-8.0
 
-license_noconflict  clang-3.9 clang-5.0 clang-6.0 clang-7.0
+license_noconflict  clang-5.0 clang-6.0 clang-7.0
 
 # As of 1.7.0: builds both static and shared libraries
 # doesn't install docs or examples correctly, so disable them.
