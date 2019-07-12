@@ -68,7 +68,7 @@ or text input, you can create :ref:`modal dialogs<pyModalDialog>`.
 Basically you can add :ref:`user parameters<Param>`, and retrieve their value afterwards
 when the user pressed **OK**.
 
-You can start adding user parameters using all the :func:`createXParam<>` functions inherited from the :doc:`NatronEngine/UserParamHolder` class.
+You can start adding user parameters using all the :func:`createXParam<>` functions inherited from the :doc:`PythonReference/NatronEngine/UserParamHolder` class.
 See the documentation of the :ref:`PyModalDialog<pyModalDialog>` for more information:
 
     dialog = app.createModalDialog()

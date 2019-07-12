@@ -7,4 +7,4 @@
 Out node
 ========
 
-The *Out* node is a convenience node identical to the :ref:`net.sf.openfx.MergePlugin`, except that the operator is set to *out* by default.
+The *Out* node is a convenience node identical to :ref:`Merge <net.sf.openfx.MergePlugin>`, except that the operator is set to *out* by default.

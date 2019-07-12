@@ -4,14 +4,14 @@
 HSVTool
 =======
 
-The :ref:`net.sf.openfx.HSVToolPlugin` node converts the input color space to a HSV color space and converts the adjusted values back to the image input color space for further processing for the output. The :ref:`net.sf.openfx.HSVToolPlugin` node is used to adjust the HSV channel components of an image the the Read node stream. It's basic operation are to adjust the Hue: which is the color of the input image, Saturation: which is the color range of the input image, and Brightness: which is the color value level and the grayscale of the input image.
+The :ref:`HSVTool <net.sf.openfx.HSVToolPlugin>` node converts the input color space to a HSV color space and converts the adjusted values back to the image input color space for further processing for the output. The :ref:`HSVTool <net.sf.openfx.HSVToolPlugin>` node is used to adjust the HSV channel components of an image the the Read node stream. It's basic operation are to adjust the Hue: which is the color of the input image, Saturation: which is the color range of the input image, and Brightness: which is the color value level and the grayscale of the input image.
 
 Each section has a rang controls that can be adjusted to limit the effects of a node by narrowing the input color ranges.
 
-What are some standard work-flow using :ref:`net.sf.openfx.HSVToolPlugin`?
+What are some standard work-flow using :ref:`HSVTool <net.sf.openfx.HSVToolPlugin>`?
 
 1. You can do secondary color corrections or color replacements with the source/destination eyedropper tool.
-2. You can use the :ref:`net.sf.openfx.HSVToolPlugin` for linear/color keying.
+2. You can use the :ref:`HSVTool <net.sf.openfx.HSVToolPlugin>` for linear/color keying.
 3. You can do an overall color shift by using the rotation range adjuster in the Hue parameters etc.
 
 .. figure:: _images/hsvtool_01.png
@@ -31,7 +31,7 @@ This is when you make adjustments to Hue, Saturation, and Brightness to limit th
 
 .. figure:: _images/hsvtool_04.png
 
-There are several alpha output component that the :ref:`net.sf.openfx.HSVToolPlugin` uses to limit effects. The next images are the results of the output alpha mode from the :ref:`net.sf.openfx.HSVToolPlugin`.
+There are several alpha output component that the :ref:`HSVTool <net.sf.openfx.HSVToolPlugin>` uses to limit effects. The next images are the results of the output alpha mode from the :ref:`HSVTool <net.sf.openfx.HSVToolPlugin>`.
 
 .. note:: Each of the matte generated displays are based from the colors that are spread across the image  on a single pixel selection and it HSV values.
 
@@ -40,18 +40,18 @@ There are several alpha output component that the :ref:`net.sf.openfx.HSVToolPlu
 
 .. figure:: _images/hsvtool_07.png
 
-By using a low resolution and/or compressed image you will see the artifacts in the alpha channel. This makes it harder to do a replacement or secondary color correction. Is is evident that the blue channel has the most artifacts/noise, you can use the :ref:`net.sf.cimg.CImgDenoise` node and blur one or two pixels in the blue channel to soften the pixel edges. This technique will not always work, remember to apply dynamic range applications when using the :ref:`net.sf.openfx.HSVToolPlugin`. You can only push the Saturation and Brightness so far. Also remember that :ref:`net.sf.openfx.HSVToolPlugin` need color input in order to apply any color filtering even though it can output greyscale and matte data.
+By using a low resolution and/or compressed image you will see the artifacts in the alpha channel. This makes it harder to do a replacement or secondary color correction. Is is evident that the blue channel has the most artifacts/noise, you can use the :ref:`CImgDenoise <net.sf.cimg.CImgDenoise>` or :ref:`CImgBlur <net.sf.cimg.CImgBlur>` node and blur one or two pixels in the blue channel to soften the pixel edges. This technique will not always work, remember to apply dynamic range applications when using the :ref:`HSVTool <net.sf.openfx.HSVToolPlugin>`. You can only push the Saturation and Brightness so far. Also remember that :ref:`HSVTool <net.sf.openfx.HSVToolPlugin>` need color input in order to apply any color filtering even though it can output greyscale and matte data.
 
 HSVTool Keyer
 ~~~~~~~~~~~~~
 
-The :ref:`net.sf.openfx.HSVToolPlugin` can be used as a color keyer. It uses the same principles as the :ref:`net.sf.openfx.ChromaKeyerPlugin` and the :ref:`net.sf.openfx.KeyerPlugin` nodes. What separates the :ref:`net.sf.openfx.HSVToolPlugin` as a keyer is that the matte is inverted with it's selection.
+The :ref:`HSVTool <net.sf.openfx.HSVToolPlugin>` can be used as a color keyer. It uses the same principles as the :ref:`ChromaKeyer <net.sf.openfx.ChromaKeyerPlugin>` and the :ref:`Keyer <net.sf.openfx.KeyerPlugin>` nodes. What separates the :ref:`HSVTool <net.sf.openfx.HSVToolPlugin>` as a keyer is that the matte is inverted with it's selection.
 
-When you need to pull a key with the :ref:`net.sf.openfx.ChromaKeyerPlugin` the key color is outputted as black or represents a transparency. See node grap below for an example.
+When you need to pull a key with the :ref:`ChromaKeyer <net.sf.openfx.ChromaKeyerPlugin>` the key color is outputted as black or represents a transparency. See node grap below for an example.
 
 .. figure:: _images/hsvtool_08.png
 
-The image below is the :ref:`net.sf.openfx.ChromaKeyerPlugin` parameters panel. You can see that the eyedropper has a chroma green selection from the input image. You may also notice the acceptance angle is very high, this is because the source material is compressed.
+The image below is the :ref:`ChromaKeyer <net.sf.openfx.ChromaKeyerPlugin>` parameters panel. You can see that the eyedropper has a chroma green selection from the input image. You may also notice the acceptance angle is very high, this is because the source material is compressed.
 
 .. figure:: _images/hsvtool_09.png
 
@@ -61,11 +61,11 @@ Even if the chromakey generates transparency from the node, it still outputs a b
 
 .. note:: A holdout matte is a section of your image that tells the keyer not to key the selected area. A holdout matte is commonly used to define a area within your image that might have similar colors to the color being keyed.
 
-The node graph below is using the same green screen image when pulling a key with the :ref:`net.sf.openfx.HSVToolPlugin`. The alpha output shows up as the white color. This :ref:`net.sf.openfx.HSVToolPlugin` does not subtract the color to generate a matte, as oppose to the :ref:`net.sf.openfx.ChromaKeyerPlugin` and :ref:`net.sf.openfx.KeyerPlugin` nodes that subtracts the color to generate a matte. If you are concerned about color spaces, :ref:`net.sf.openfx.ChromaKeyerPlugin` and :ref:`net.sf.openfx.KeyerPlugin` process data in RGB color space and the :ref:`net.sf.openfx.HSVToolPlugin` process in HSV color space.
+The node graph below is using the same green screen image when pulling a key with the :ref:`HSVTool <net.sf.openfx.HSVToolPlugin>`. The alpha output shows up as the white color. This :ref:`HSVTool <net.sf.openfx.HSVToolPlugin>` does not subtract the color to generate a matte, as oppose to the :ref:`ChromaKeyer <net.sf.openfx.ChromaKeyerPlugin>` and :ref:`Keyer <net.sf.openfx.KeyerPlugin>` nodes that subtracts the color to generate a matte. If you are concerned about color spaces, :ref:`ChromaKeyer <net.sf.openfx.ChromaKeyerPlugin>` and :ref:`Keyer <net.sf.openfx.KeyerPlugin>` process data in RGB color space and the :ref:`HSVTool <net.sf.openfx.HSVToolPlugin>` process in HSV color space.
 
 .. figure:: _images/hsvtool_10.png
 
-The image below is the :ref:`net.sf.openfx.HSVToolPlugin` parameters panel. You can see that the source color eyedropper operator has a chroma green selected. As you look further down the panel you will notice the Hue, Saturation, and Brightness parameters which has all the values the make up the chroma green selection.
+The image below is the :ref:`HSVTool <net.sf.openfx.HSVToolPlugin>` parameters panel. You can see that the source color eyedropper operator has a chroma green selected. As you look further down the panel you will notice the Hue, Saturation, and Brightness parameters which has all the values the make up the chroma green selection.
 
 .. figure:: _images/hsvtool_11.png
 
@@ -75,8 +75,8 @@ There are eight output alpha modes. The only mode that can't generate a matte is
 
 .. figure:: _images/hsvtool_12.png
 
-The image above displays two :ref:`net.sf.openfx.HSVToolPlugin` nodes that is keying the same input, but generating two different mattes based on the output alpha. The middle viewer is the Hue mode output. The viewer on the right is the min(Hue, Saturation) mode output. When you are working with compressed source images the output alpha modes will yield different results.
+The image above displays two :ref:`HSVTool <net.sf.openfx.HSVToolPlugin>` nodes that is keying the same input, but generating two different mattes based on the output alpha. The middle viewer is the Hue mode output. The viewer on the right is the min(Hue, Saturation) mode output. When you are working with compressed source images the output alpha modes will yield different results.
 
 .. figure:: _images/hsvtool_13.png
 
-.. note:: If you need more control on the alpha/matte output, the :ref:`net.sf.openfx.ColorLookupPlugin` node can help adjusting edges.
+.. note:: If you need more control on the alpha/matte output, the :ref:`ColorLookup <net.sf.openfx.ColorLookupPlugin>` node can help adjusting edges.

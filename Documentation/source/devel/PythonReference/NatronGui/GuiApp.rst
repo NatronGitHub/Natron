@@ -66,9 +66,9 @@ Member functions description
 
 .. method:: NatronGui.GuiApp.createModalDialog()
 
-    :rtype: :class:`PyModalDialog<NatronGui.PyModalDialog>`
+    :rtype: :doc:`PyModalDialog<PyModalDialog>`
 
-Creates a :doc:`modal dialog<NatronGui.PyModalDialog>` : the control will not be returned to the user until the dialog is not closed.
+Creates a :doc:`modal dialog<PyModalDialog>` : the control will not be returned to the user until the dialog is not closed.
 Once the dialog is created, you can enrich it with :doc:`parameters<../NatronEngine/Param>` or even
 raw PySide Qt widgets.
 To show the dialog call the function :func:`exec()<>` on the dialog.
