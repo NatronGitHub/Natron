@@ -24,7 +24,7 @@ If you appreciate what we do on G’MIC and want to help us maintaining and deve
 
 Go to the donation page: https://libreart.info/en/projects/gmic
 
-G’MIC officially collaborates with LILA (“Libre comme l’Art”), a French non-profit organization, which promotes Arts and Artists as well as access to technics and knowledge for everyone.
+G’MIC officially collaborates with LILA (“Libre comme l’Art”), a French non-profit organization, which promotes Arts and Artists as well as access to techniques and knowledge for everyone.
 
 LILA collects donations to help developing G’MIC.
 

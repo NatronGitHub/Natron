@@ -113,7 +113,7 @@ Controls
 |                                               |         |                    | | **Action Magenta 01**                   |
 |                                               |         |                    | | **Action Red 01**                       |
 |                                               |         |                    | | **Adventure 1453**                      |
-|                                               |         |                    | | **Agressive Highligjtes Recovery 5**    |
+|                                               |         |                    | | **Aggressive Highlights Recovery 5**    |
 |                                               |         |                    | | **Bleech Bypass Green**                 |
 |                                               |         |                    | | **Bleech Bypass Yellow 01**             |
 |                                               |         |                    | | **Blue Dark**                           |

@@ -31,7 +31,7 @@ Basically if using Natron in command-line you may only use **NatronEngine.natron
     it then makes it more confusing for people reading the code as to which version of the **natron**
     variable you are using.
 
-It handles all *application-wide* informations about plug-ins, environment,
+It handles all *application-wide* information about plug-ins, environment,
 :doc:`application settings<PythonReference/NatronEngine/AppSettings>`...
 but also can hold one or multiple :doc:`application instance<PythonReference/NatronEngine/App>`
 which are made available to the global variables via the following variables::
@@ -51,7 +51,7 @@ so Natron does the following assignment for you::
     mode hence the *app* variable is not declared.
 
 
-The :doc:`PythonReference/NatronEngine/App` object is responsible for managing all informations
+The :doc:`PythonReference/NatronEngine/App` object is responsible for managing all information
 relative to a project. This includes all the :doc:`nodes<PythonReference/NatronEngine/Effect>`,
 project settings and render controls. See :ref:`this section <creatingNode>` to create
 and control nodes.

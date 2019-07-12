@@ -20,7 +20,7 @@ Optionally, a signed distance to the frontier between zero and nonzero values ca
 
 The distance transform can then be thresholded using the Threshold effect, or transformed using the ColorLookup effect, in order to generate a mask for another effect.
 
-See alse https://en.wikipedia.org/wiki/Distance_transform
+See also https://en.wikipedia.org/wiki/Distance_transform
 
 Uses the ‘distance’ function from the CImg library.
 

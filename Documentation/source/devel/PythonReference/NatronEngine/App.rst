@@ -482,7 +482,7 @@ timeline. If the user seeks a specific frames, then all Viewers will render that
     :param message: :class:`str<NatronEngine.std::string>`
 
 Writes the given *message* to the Script Editor panel of Natron. This can be useful to
-inform the user of various informations, warnings or errors.
+inform the user of various information, warnings or errors.
 
 
 .. method:: NatronEngine.App.saveProject(filename)
@@ -503,7 +503,7 @@ inform the user of various informations, warnings or errors.
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
     Save the project under the given *filename*.
-    In GUI mode, if *filename* is empty, it promps the user where to save the project.
+    In GUI mode, if *filename* is empty, it prompts the user where to save the project.
 
 
     This function returns *True* if it saved successfully, *False* otherwise.

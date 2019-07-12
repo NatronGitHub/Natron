@@ -85,7 +85,7 @@ Controls
 +--------------------------------------+---------+---------------+----------------------------------------------------------------------------------------------------------------------------------------------------+
 | Amount / ``amount``                  | Double  | 1             | Amount of blur transform to apply. A value of 1 means to apply the full transform range. A value of 0 means to apply no blur at all. Default is 1. |
 +--------------------------------------+---------+---------------+----------------------------------------------------------------------------------------------------------------------------------------------------+
-| Centered / ``centered``              | Boolean | Off           | When checked, apply directional blur symmetrically arount the neutral position.                                                                    |
+| Centered / ``centered``              | Boolean | Off           | When checked, apply directional blur symmetrically around the neutral position.                                                                    |
 +--------------------------------------+---------+---------------+----------------------------------------------------------------------------------------------------------------------------------------------------+
 | Fading / ``fading``                  | Double  | 0             | Controls the fading function. A value of 1 corresponds to linear fading. A value of 0 disables fading. Default is 0.                               |
 +--------------------------------------+---------+---------------+----------------------------------------------------------------------------------------------------------------------------------------------------+

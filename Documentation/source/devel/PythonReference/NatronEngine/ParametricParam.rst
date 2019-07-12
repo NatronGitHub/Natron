@@ -143,7 +143,7 @@ Returns the number of control points of the curve at the given *dimension*.
     :param nthCtl: :class:`int<PySide.QtCore.int>`
     :rtype: :class:`tuple`
 
-Returns a *tuple* containing informations about the *nth* control point (sorted by increasing X order)
+Returns a *tuple* containing information about the *nth* control point (sorted by increasing X order)
 control point of the curve at the given *dimension*.
 The tuple is composed of 5 members:
 

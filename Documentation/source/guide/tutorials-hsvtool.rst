@@ -55,7 +55,7 @@ The image below is the :ref:`ChromaKeyer <net.sf.openfx.ChromaKeyerPlugin>` para
 
 .. figure:: _images/hsvtool_09.png
 
-As you can see from the panel the chromakey substracted the chroma green, replacing it with black/transparent. The “Key Lift” and “Key Gain” clamps the black/white to make a clean matte from the keyed selection.
+As you can see from the panel the chromakey subtracted the chroma green, replacing it with black/transparent. The “Key Lift” and “Key Gain” clamps the black/white to make a clean matte from the keyed selection.
 
 Even if the chromakey generates transparency from the node, it still outputs a black and white matte that can be used as an inverted mask or holdout matte to apply needed filter effects.
 

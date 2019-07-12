@@ -11,7 +11,7 @@ Double2DParam
 Synopsis
 --------
 
-See :doc:`DoubleParam` for more informations on this class.
+See :doc:`DoubleParam` for more information on this class.
 
 Functions
 ^^^^^^^^^

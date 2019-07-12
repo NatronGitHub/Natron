@@ -14,7 +14,7 @@ Reflection node
 Description
 -----------
 
-Mirror/Reflection tranform node.
+Mirror/Reflection transform node.
 
 Inputs
 ------
