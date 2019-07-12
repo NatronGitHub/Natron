@@ -16,3 +16,4 @@ Developers Guide
     APIReference
     introduction
     gettingstarted
+    devel-faq
