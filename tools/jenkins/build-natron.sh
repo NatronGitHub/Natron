@@ -141,7 +141,7 @@ cat config.pri
 echo "========================================================================"
 
 # setup build dir
-if [ "$QMAKE_BUILD_SUBDIR" = "1" ]; then
+if [ "${QMAKE_BUILD_SUBDIR:-}" = "1" ]; then
     # disabled by default, because it does not always work right, eg for Info.plist creation on macOS
     # Since we delete the sources after the build, we really don't care
     rm -rf build || true
