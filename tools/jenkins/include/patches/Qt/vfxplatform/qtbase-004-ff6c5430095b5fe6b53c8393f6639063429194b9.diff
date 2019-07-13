@@ -26,7 +26,7 @@ index fcc195f..4d204df 100644
  }
  
 +
-+//ADSK: allow for customized system DPI settings
++//ADSK: allow for customized system DPI setttings
 +
 +void QApplication::setCustomDpiOverride(const int dpi)
 +{

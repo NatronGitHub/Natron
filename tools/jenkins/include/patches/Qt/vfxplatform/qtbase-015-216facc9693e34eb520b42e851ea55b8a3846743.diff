@@ -107,7 +107,7 @@ index bce0455..2d49442 100644
 +    if (!m_leftButtonRetained)
 +        m_leftButtonRetained = true;
 +
-     // Handle any active poup windows; clicking outside them should close them
+     // Handle any active poup windows; clicking outisde them should close them
      // all. Don't do anything or clicks inside one of the menus, let Cocoa
      // handle that case. Note that in practice many windows of the Qt::Popup type
 @@ -888,6 +900,10 @@ - (void)mouseUp:(NSEvent *)theEvent
