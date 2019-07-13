@@ -41,21 +41,21 @@ sudo yum -y install git2u
  * Install tmux: `sudo yum -y install libevent tmux`
  * Launch tmux: `tmux`
  * Build SDK: run `include/scripts/build-Linux-sdk.sh` (this will take forever, it's recommended to use a prebuilt archive)
- * Dettach tmux while building and reconnect when done:
-    type ctrl+b then type 'd' in tmux to dettach., to reattach: `tmux attach`
+ * Detach tmux while building and reconnect when done:
+    type ctrl+b then type 'd' in tmux to detach., to reattach: `tmux attach`
 
 Windows Setup
 =============
 
  * Install Windows 7 Pro/Enterprise 64bit
 
-Note that if this is a VM created on the ci-inria, you must install update the storage controler driver with this iso:
+Note that if this is a VM created on the ci-inria, you must install update the storage controller driver with this iso:
 
 https://fedoraproject.org/wiki/Windows_Virtio_Drivers#Direct_download
 
 You can mount the iso using daemon tools.
 Then launch Administrative Tools.exe and in Computer Management select Devices Manager, expand Storage controllers and right click "Update driver" and select the location where the iso was mounted.
-The disk should be available now from the Storage/Disk Management area of Computer Management (still in Administrative Tools.exe). Right click and add a volume on the disk with NTFS formating.
+The disk should be available now from the Storage/Disk Management area of Computer Management (still in Administrative Tools.exe). Right click and add a volume on the disk with NTFS formatting.
 
  * Install http://repo.msys2.org/distrib/msys2-x86_64-latest.exe (or http://repo.msys2.org/distrib/msys2-i686-latest.exe if on a 32-bit machine) from http://www.msys2.org/ . The default install location is `C:\msys64` (`C:\msys32` on a 
  * Start MSYS terminal: Start, All Programs, MSYS2 64bit (or 32bit), MSYS2 MSYS

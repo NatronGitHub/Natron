@@ -32,7 +32,7 @@ setup_spawnattr(posix_spawnattr_t* spawnattr)
   count = 1;
 
   /* Run the real Natron executable using the same architure as this
-   * executable, this allows users to controle the architecture using
+   * executable, this allows users to control the architecture using
    * "arch -ppc Natron"
    */
 

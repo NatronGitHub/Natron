@@ -618,7 +618,7 @@ find "${PYDIR}" -type f -name '*.pyo' -exec rm {} \;
 (cd "${PYDIR}"; xargs rm -rf || true) < "$INC_PATH/python-exclude.txt"
 
 
-# Fix RPATH (we dont want to link against system libraries when deployed)
+# Fix RPATH (we don't want to link against system libraries when deployed)
 # some libs (eg libssl, libcrypto, libpython2.7) have 555 right - make sure all are 755 before patching
 (cd "$LIBS_PACKAGE_PATH/data/lib";
  chmod 755 *.so* || true
