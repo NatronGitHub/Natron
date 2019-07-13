@@ -470,7 +470,7 @@ ViewerTab::removeTrackerInterface(const NodeGuiPtr& n,
                 }
             }
             if (!removeAndDontSetAnother) {
-                ///If theres another tracker node, set it as the current tracker interface
+                ///If there's another tracker node, set it as the current tracker interface
                 std::map<NodeGuiWPtr, TrackerGui*>::iterator newTracker = _imp->trackerNodes.end();
                 for (std::map<NodeGuiWPtr, TrackerGui*>::iterator it2 = _imp->trackerNodes.begin(); it2 != _imp->trackerNodes.end(); ++it2) {
                     if ( (it2->second != it->second) && it2->first.lock()->isSettingsPanelVisible() ) {
@@ -708,7 +708,7 @@ ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n,
     }
 
     if (setAnotherFromSamePlugin && activeNodeForPlugin == n) {
-        ///If theres another roto node, set it as the current roto interface
+        ///If there's another roto node, set it as the current roto interface
         std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator newInterface = _imp->nodesContext.end();
         for (std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator it2 = _imp->nodesContext.begin(); it2 != _imp->nodesContext.end(); ++it2) {
             NodeGuiPtr otherNode = it2->first.lock();
@@ -788,7 +788,7 @@ ViewerTab::onCompositingOperatorChangedInternal(ViewerCompositingOperatorEnum ol
                                                 ViewerCompositingOperatorEnum newOp)
 {
     // Do not reset the wipe controls, this makes "toggle wipe" impractical!
-    // instead, teh user should use the "center wipe" shortcut (Shift-F)
+    // instead, the user should use the "center wipe" shortcut (Shift-F)
     //if ( (oldOp == eViewerCompositingOperatorNone) && (newOp != eViewerCompositingOperatorNone) ) {
     //    _imp->viewer->resetWipeControls();
     //}

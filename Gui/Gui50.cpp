@@ -939,7 +939,7 @@ Gui::exportGroupAsPythonScript(NodeCollection* collection)
     }
 
     if (!hasOutput) {
-        Dialogs::errorDialog( tr("Export").toStdString(), tr("To export as group, at least one Ouptut node must exist.").toStdString() );
+        Dialogs::errorDialog( tr("Export").toStdString(), tr("To export as group, at least one Output node must exist.").toStdString() );
 
         return;
     }

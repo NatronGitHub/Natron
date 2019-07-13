@@ -506,7 +506,7 @@ private:
     virtual void tabletEvent(QTabletEvent* e) OVERRIDE FINAL;
 
     /**
-     *@brief initiliazes OpenGL context related stuff. This is called once after widget creation.
+     *@brief initializes OpenGL context related stuff. This is called once after widget creation.
      **/
     virtual void initializeGL() OVERRIDE FINAL;
 

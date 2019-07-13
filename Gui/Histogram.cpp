@@ -1113,7 +1113,7 @@ HistogramPrivate::renderHistogram(Histogram::DisplayModeEnum channel)
        bottom, another for the top of the bin.*/
     glDrawArrays(GL_LINES, 0, 512);
     histogramRenderingShader->release();
-    /*reseting opengl context*/
+    /*resetting opengl context*/
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
     glActiveTexture(GL_TEXTURE2);

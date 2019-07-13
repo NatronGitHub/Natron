@@ -170,7 +170,7 @@ mouseShortcutToString(const Qt::KeyboardModifiers & modifiers,
 
 typedef std::list<GuiShortCutGroup> GuiAppShorcuts;
 
-///A small hack to the QTreeWidget class to make 2 fuctions public so we can use them in the ShortcutDelegate class
+///A small hack to the QTreeWidget class to make 2 functions public so we can use them in the ShortcutDelegate class
 class HackedTreeWidget
     : public QTreeWidget
 {

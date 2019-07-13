@@ -237,7 +237,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
 
             QRectF createdNodeRect( position.x(), position.y(), createdNodeSize.width(), createdNodeSize.height() );
 
-            ///and move the selected node below recusively
+            ///and move the selected node below recursively
             for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
                 NodePtr output = it->lock();
                 if (!output) {
