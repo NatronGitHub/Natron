@@ -129,7 +129,7 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
             // computed iterator to avoid n square complexity
             itKeys = *lastUpperIt;
         } else {
-            // Otherwise start from the begining
+            // Otherwise start from the beginning
             itKeys = keys.begin();
         }
 

@@ -897,7 +897,7 @@ Tree::buildTreeInternal(const NodesGuiList& selectedNodes,
         index = 0;
         for (NodesGuiList::iterator it = maskInputs.begin(); it != maskInputs.end(); ++it, ++index) {
             QPointF p = (*it)->mapToParent( (*it)->mapFromScene(currentNodeScenePos) );
-            ///Note that here we subsctract nodeSize.width(): Actually we substract twice nodeSize.width() / 2: once to get to the left of the node
+            ///Note that here we subsctract nodeSize.width(): Actually we subtract twice nodeSize.width() / 2: once to get to the left of the node
             ///and another time to add the space of half a node
             p.rx() += ( (nodeSize.width() + (*it)->getSize().width() / 2.) ) * (index + 1);
 
@@ -994,10 +994,10 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr> & nodes
 {
     ///1) Separate the nodes in trees they belong to, once a node has been "used" by a tree, mark it
     ///and don't try to reposition it for another tree
-    ///2) For all trees : recursively position each nodes so that each input of a node is positionned as following:
-    /// a) The first non mask input is positionned above the node
-    /// b) All others non mask inputs are positionned on the left of the node, each one separated by the space of half a node
-    /// c) All masks are positionned on the right of the node, each one separated by the space of half a node
+    ///2) For all trees : recursively position each nodes so that each input of a node is positioned as following:
+    /// a) The first non mask input is positioned above the node
+    /// b) All others non mask inputs are positioned on the left of the node, each one separated by the space of half a node
+    /// c) All masks are positioned on the right of the node, each one separated by the space of half a node
     ///3) Move all trees so that they are next to each other and their "top level" node
     ///(the input that is at the highest position in the Y coordinate) is at the same
     ///Y level (node centers have the same Y)
@@ -1005,7 +1005,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr> & nodes
     std::list<NodeGui*> usedNodes;
 
     ///A list of Tree
-    ///Each tree is a lit of nodes with a boolean indicating if it was already positionned( "used" ) by another tree, if set to
+    ///Each tree is a lit of nodes with a boolean indicating if it was already positioned( "used" ) by another tree, if set to
     ///true we don't do anything
     /// Each node that doesn't have any output is a potential tree.
     TreePtrList trees;
@@ -1820,7 +1820,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         InlinedGroup expandedGroup;
 
         /*
-         * First-off copy all the nodes within the group, except the Inputs and Ouput nodes
+         * First-off copy all the nodes within the group, except the Inputs and Output nodes
          */
         NodeClipBoard cb;
         NodesList nodes = group->getNodes();

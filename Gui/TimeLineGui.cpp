@@ -412,7 +412,7 @@ TimeLineGui::paintGL()
         QPointF topRight = toTimeLineCoordinates(width() - 1, 0);
 
 
-        /// change the backgroud color of the portion of the timeline where images are lying
+        /// change the background color of the portion of the timeline where images are lying
         double firstFrame, lastFrame;
         if ( !_imp->viewerTab->isFileDialogViewer() ) {
             _imp->gui->getApp()->getFrameRange(&firstFrame, &lastFrame);
