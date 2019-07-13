@@ -386,7 +386,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     const unsigned int mipMapLevel = args.mipMapLevel;
     SupportsEnum supportsRS = supportsRenderScaleMaybe();
     ///This flag is relevant only when the mipMapLevel is different than 0. We use it to determine
-    ///wether the plug-in should render in the full scale image, and then we downscale afterwards or
+    ///whether the plug-in should render in the full scale image, and then we downscale afterwards or
     ///if the plug-in can just use the downscaled image to render.
     bool renderFullScaleThenDownscale = (supportsRS == eSupportsNo && mipMapLevel != 0);
     unsigned int renderMappedMipMapLevel;
@@ -890,7 +890,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     if (storage == eStorageModeGLTex) {
         createInCache = false;
     } else {
-        // in Analysis, the node upstream of te analysis node should always cache
+        // in Analysis, the node upstream of the analysis node should always cache
         createInCache = (frameArgs->isAnalysis && frameArgs->treeRoot->getEffectInstance().get() == args.caller) ? true : shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view, frameArgs->visitsCount);
     }
     ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
@@ -965,7 +965,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if (doCacheLookup) {
                 int nLookups = draftModeSupported && frameArgs->draftMode ? 2 : 1;
 
-                // If the node does'nt support render scale, first lookup the cache with requested level, if not cached then lookup
+                // If the node doesn't support render scale, first lookup the cache with requested level, if not cached then lookup
                 // with full scale
                 unsigned int lookupMipMapLevel = (renderMappedMipMapLevel != mipMapLevel && !isDuringPaintStroke)? mipMapLevel : renderMappedMipMapLevel;
                 for (int n = 0; n < nLookups; ++n) {
@@ -1089,7 +1089,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
 
 
-    ///In the event where we had the image from the cache, but it wasn't completly rendered over the RoI but the cache was almost full,
+    ///In the event where we had the image from the cache, but it wasn't completely rendered over the RoI but the cache was almost full,
     ///we don't hold a pointer to it, allowing the cache to free it.
     ///Hence after rendering all the input images, we redo a cache look-up to check whether the image is still here
     ImagePtr isPlaneCached;
@@ -1740,7 +1740,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     //bool multiplanar = isMultiPlanar();
     for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
-        //If we have worked on a local swaped image, swap it in the cache
+        //If we have worked on a local swapped image, swap it in the cache
         if (it->second.cacheSwapImage) {
             const CacheAPI* cache = it->second.cacheSwapImage->getCacheAPI();
             const Cache<Image>* imgCache = dynamic_cast<const Cache<Image>*>(cache);
@@ -1828,7 +1828,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////// End requested format convertion ////////////////////////////////////////////////////////////////////
+    ////////////////// End requested format conversion ////////////////////////////////////////////////////////////////////
 
 
     ///// Termination

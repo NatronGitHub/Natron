@@ -42,7 +42,7 @@
 /*    University, Pittsburgh, Pennsylvania, May 1996.  (Submitted to         */
 /*    Discrete & Computational Geometry.)                                    */
 /*                                                                           */
-/*  This file, the paper listed above, and other information are available   */
+/*  This file, the paper listed above, and other information is available    */
 /*    from the Web page http://www.cs.cmu.edu/~quake/robust.html .           */
 /*                                                                           */
 /*****************************************************************************/

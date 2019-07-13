@@ -1506,7 +1506,7 @@ RotoPaintInteract::isNearbyFeatherBar(double time,
            For each selected bezier, we compute the extent of the feather bars and check if the mouse would be nearby one of these bars.
            The feather bar of a control point is only displayed is the feather point is equal to the bezier control point.
            In order to give it the  correc direction we use the derivative of the bezier curve at the control point and then use
-           the pointInPolygon function to make sure the feather bar is always oriented on the outter part of the polygon.
+           the pointInPolygon function to make sure the feather bar is always oriented on the outer part of the polygon.
            The pointInPolygon function needs the polygon of the bezier to test whether the point is inside or outside the polygon
            hence in this loop we compute the polygon for each bezier.
          */

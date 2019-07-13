@@ -92,7 +92,7 @@ public:
 
     ///only callable on the main-thread
     ///No check is done to figure out if the item already exists in this layer
-    ///this is up to the caller responsability
+    ///this is up to the caller responsibility
     void addItem(const RotoItemPtr& item, bool declareToPython = true);
 
     ///Inserts the item into the layer before the indicated index.

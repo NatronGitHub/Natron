@@ -460,8 +460,7 @@ public:
     virtual void checkAnimationLevel(ViewSpec view, int dimension) = 0;
 
     /**
-     * @brief If the parameter is multidimensional, this is the label thats the that will be displayed
-     * for a dimension.
+     * @brief If the parameter is multidimensional, this is the label that will be displayed for a dimension.
      **/
     virtual std::string getDimensionName(int dimension) const = 0;
     virtual void setDimensionName(int dim, const std::string & name) = 0;
@@ -522,7 +521,7 @@ public:
 
     /**
      * @brief Same as clone(const KnobIPtr& ) except that the given offset is applied
-     * on the keyframes time and only the keyframes withing the given range are copied.
+     * on the keyframes time and only the keyframes within the given range are copied.
      * If the range is NULL everything will be copied.
      *
      * Note that unlike the other version of clone, this version is more relaxed and accept parameters
@@ -704,7 +703,7 @@ public:
 
     /**
      * @brief Returns in dependencies a list of all the knobs used in the expression at the given dimension
-     * @returns True on sucess, false if no expression is set.
+     * @returns True on success, false if no expression is set.
      **/
     virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobIWPtr, int> >& dependencies) const = 0;
 
@@ -989,7 +988,7 @@ public:
 
     /**
      * @brief If a knob is evaluating on change, that means
-     * everytime a value changes, the knob will call the
+     * every time a value changes, the knob will call the
      * evaluate function on the KnobHolder holding it.
      * By default this is set to true.
      **/
@@ -2521,7 +2520,7 @@ protected:
     //////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @brief Can be overriden to prevent values to be set directly.
+     * @brief Can be overridden to prevent values to be set directly.
      * Instead the setValue/setValueAtTime actions are queued up
      * They will be dequeued when dequeueValuesSet will be called.
      **/
@@ -2544,7 +2543,7 @@ protected:
     virtual void assertActionIsNotRecursive() const {}
 
     /**
-     * @brief Should be called in the begining of an action.
+     * @brief Should be called in the beginning of an action.
      * Right after assertActionIsNotRecursive() for non recursive actions.
      **/
     virtual void incrementRecursionLevel() {}
@@ -2789,12 +2788,12 @@ public:
 #define MANAGE_RECURSION(assertNonRecursive) RecursionLevelRAII actionRecursionManager(this, assertNonRecursive)
 
 /**
- * @brief Should be called in the begining of any action that cannot be called recursively.
+ * @brief Should be called in the beginning of any action that cannot be called recursively.
  **/
 #define NON_RECURSIVE_ACTION() MANAGE_RECURSION(true)
 
 /**
- * @brief Should be called in the begining of any action that can be called recursively
+ * @brief Should be called in the beginning of any action that can be called recursively
  **/
 #define RECURSIVE_ACTION() MANAGE_RECURSION(false)
 

@@ -743,7 +743,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
         for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
             U64 nodeHash = (*it2)->getHashValue();
 
-            // For rotopaint nodes, since the tree internally is always the same for all renders (it does'nt depend where the viewer is connected) the visits count is the  number of output nodes
+            // For rotopaint nodes, since the tree internally is always the same for all renders (it doesn't depend where the viewer is connected) the visits count is the  number of output nodes
             NodesWList outputs;
             (*it2)->getOutputs_mt_safe(outputs);
             int visitsCounter = (int)outputs.size();

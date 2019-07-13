@@ -69,7 +69,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 
-//The plug-in that is instanciated whenever this node is created and doesn't point to any valid or known extension
+//The plug-in that is instantiated whenever this node is created and doesn't point to any valid or known extension
 #define WRITE_NODE_DEFAULT_WRITER PLUGINID_OFX_WRITEOIIO
 #define kPluginSelectorParamEntryDefault "Default"
 
@@ -436,7 +436,7 @@ WriteNodePrivate::destroyWriteNode()
             for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
 
                 // The internal node still holds a shared ptr to the knob.
-                // Since we want to keep some knobs around, ensure they do not get deleted in the desctructor of the embedded node
+                // Since we want to keep some knobs around, ensure they do not get deleted in the destructor of the embedded node
                 embeddedNode->getEffectInstance()->removeKnobFromList(it->get());
 
                 if ( !(*it)->isDeclaredByPlugin() ) {

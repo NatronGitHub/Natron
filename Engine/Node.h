@@ -114,7 +114,7 @@ public:
     const Plugin* getPlugin() const;
 
     /**
-     * @brief Used internally when instanciating a Python template, we first make a group and then pass a pointer
+     * @brief Used internally when instantiating a Python template, we first make a group and then pass a pointer
      * to the real plugin.
      **/
     void switchInternalPlugin(Plugin* plugin);
@@ -236,7 +236,7 @@ public:
 
     /**
      * @brief When frozen is true all the knobs of this effect read-only so the user can't interact with it.
-     * @brief This function will be called on all input nodes aswell
+     * @brief This function will be called on all input nodes as well
      **/
     void setKnobsFrozen(bool frozen);
 
@@ -475,7 +475,7 @@ public:
 
     bool isMultiThreadingSupportEnabledForPlugin() const;
 
-    /////////////////////ROTO-PAINT related functionnalities//////////////////////
+    //////////////////////ROTO-PAINT related functionalities//////////////////////
     //////////////////////////////////////////////////////////////////////////////
 
     void prepareForNextPaintStrokeRender();
@@ -801,7 +801,7 @@ public:
      * a dialog. The message can be of 4 types...
      * INFORMATION_MESSAGE : you just want to inform the user about something.
      * eMessageTypeWarning : you want to inform the user that something important happened.
-     * eMessageTypeError : you want to inform the user an error occured.
+     * eMessageTypeError : you want to inform the user an error occurred.
      * eMessageTypeQuestion : you want to ask the user about something.
      * The function will return true always except for a message of type eMessageTypeQuestion, in which
      * case the function may return false if the user pressed the 'No' button.
@@ -814,7 +814,7 @@ public:
      * node's graphical interface and on any connected viewer. The message can be of 3 types...
      * INFORMATION_MESSAGE : you just want to inform the user about something.
      * eMessageTypeWarning : you want to inform the user that something important happened.
-     * eMessageTypeError : you want to inform the user an error occured.
+     * eMessageTypeError : you want to inform the user an error occurred.
      * @param content The message you want to pass.
      **/
     void setPersistentMessage(MessageTypeEnum type, const std::string & content);
@@ -889,7 +889,7 @@ public:
 #endif
 
     /**
-     * @brief Attemps to lock an image for render. If it successfully obtained the lock,
+     * @brief Attempts to lock an image for render. If it successfully obtained the lock,
      * the thread can continue and render normally. If another thread is currently
      * rendering that image, this function will wait until the image is available for render again.
      * This is used internally by EffectInstance::renderRoI
@@ -975,7 +975,7 @@ public:
     bool canOthersConnectToThisNode() const;
 
     /**
-     * @brief Clears any pointer refering to the last rendered image
+     * @brief Clears any pointer referring to the last rendered image
      **/
     void clearLastRenderedImage();
 

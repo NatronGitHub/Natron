@@ -53,7 +53,7 @@ public:
     virtual ~AbortableThread();
 
     /**
-     * @brief Set the informations related to a specific render so we know if it was aborted or not in getAbortInfo()
+     * @brief Set the information related to a specific render so we know if it was aborted or not in getAbortInfo()
      **/
     void setAbortInfo(bool isRenderResponseToUserInteraction,
                       const AbortableRenderInfoPtr& abortInfo,

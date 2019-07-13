@@ -402,7 +402,7 @@ public:
     UpdateViewerParamsPtr lastRenderParams[2];
 
     /*
-     * @brief If this list is not empty, this is the list of canonical rectangles we should update on the viewer, completly
+     * @brief If this list is not empty, this is the list of canonical rectangles we should update on the viewer, completely
      * disregarding the RoI. This is protected by viewerParamsMutex
      */
     std::list<RectD> partialUpdateRects;

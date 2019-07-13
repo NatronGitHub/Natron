@@ -103,7 +103,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kRotoActivatedParamLabel "Activated"
 #define kRotoActivatedHint \
     "Controls whether the selected shape(s) should be rendered or not." \
-    "Note that you can animate this parameter so you can activate/deactive the shape " \
+    "Note that you can animate this parameter so you can activate/deactivate the shape " \
     "throughout the time."
 
 #define kRotoLockedHint \
@@ -1314,7 +1314,7 @@ public:
 
     /*
      * We have chosen to disable rotopainting and roto shapes from the same RotoContext because the rendering techniques are
-     * very much differents. The rotopainting systems requires an entire compositing tree held inside whereas the rotoshapes
+     * very much different. The rotopainting systems requires an entire compositing tree held inside whereas the rotoshapes
      * are rendered and optimized by Cairo internally.
      */
     bool isPaintNode;

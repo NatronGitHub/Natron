@@ -76,7 +76,7 @@ class NodeFrameRequest;
 class ParallelRenderArgs
 {
 public:
-    // Developper note: the fields were reordered to optimize packing.
+    // Developer note: the fields were reordered to optimize packing.
     // see http://www.catb.org/esr/structure-packing/
 
     ///The initial time requested to render.
@@ -195,7 +195,7 @@ struct FrameViewPerRequestData
 
 struct FrameViewRequest
 {
-    ///All different requests led by different branchs in the tree
+    ///All different requests led by different branches in the tree
     //std::list<std::pair<RectD, FrameViewPerRequestData> > requests;
 
     ///Final datas that are computed once the whole tree has been cycled through

@@ -261,7 +261,7 @@ public:
 
 
     /**
-     * @brief Called when a frame has been rendered completetly
+     * @brief Called when a frame has been rendered completely
      * @param policy If eSchedulingPolicyFFA the render thread is not using the appendToBuffer API
      * but is directly rendering (e.g: a Writer rendering image sequences doesn't need to be ordered)
      * then the scheduler takes this as a hint to know how many frames have been rendered.
@@ -298,7 +298,7 @@ public:
 
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     /**
-     * @brief Called by render-threads to pick some work to do or to get asleep if theres nothing to do
+     * @brief Called by render-threads to pick some work to do or to get asleep if there's nothing to do
      **/
     int pickFrameToRender(RenderThreadTask* thread, bool* enableRenderStats, std::vector<ViewIdx>* viewsToRender);
 #endif
