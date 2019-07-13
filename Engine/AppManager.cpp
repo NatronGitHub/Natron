@@ -504,7 +504,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
 
 
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
-    //otherwise it might crash with thread local storage
+    //otherwise it might crash with thread-local storage
 
 
     ///the QCoreApplication must have been created so far.

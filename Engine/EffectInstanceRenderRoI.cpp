@@ -377,7 +377,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ///For writer we never want to cache otherwise the next time we want to render it will skip writing the image on disk!
     bool byPassCache = args.byPassCache;
 
-    ///Use the hash at this time, and then copy it to the clips in the thread local storage to use the same value
+    ///Use the hash at this time, and then copy it to the clips in the thread-local storage to use the same value
     ///through all the rendering of this frame.
     U64 nodeHash = frameArgs->nodeHash;
     const double par = getAspectRatio(-1);
@@ -1921,7 +1921,7 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
     if (safety == eRenderSafetyFullySafeFrame) {
         tlsCopy = boost::make_shared<std::map<NodePtr, ParallelRenderArgsPtr> >();
         /*
-         * Since we're about to start new threads potentially, copy all the thread local storage on all nodes (any node may be involved in
+         * Since we're about to start new threads potentially, copy all the thread-local storage on all nodes (any node may be involved in
          * expressions, and we need to retrieve the exact local time of render).
          */
         self->getApp()->getProject()->getParallelRenderArgs(*tlsCopy);

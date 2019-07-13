@@ -482,7 +482,7 @@ EffectInstance::aborted() const
     /**
        The solution here is to store per-render info on the thread that we retrieve.
        These info contain an atomic integer determining whether this particular render was aborted or not.
-       If this thread does not have abort info yet on it, we retrieve them from the thread local storage of this node
+       If this thread does not have abort info yet on it, we retrieve them from the thread-local storage of this node
        and set it.
        Threads that start a render generally already have the AbortableThread::setAbortInfo function called on them, but
        threads spawned from the thread pool may not.
@@ -840,7 +840,7 @@ EffectInstance::getImage(int inputNb,
     RectD thisRod;
     double thisEffectRenderTime = time;
 
-    ///Try to find in the input images thread local storage if we already pre-computed the image
+    ///Try to find in the input images thread-local storage if we already pre-computed the image
     EffectInstance::InputImagesMap inputImagesThreadLocal;
     OSGLContextPtr glContext;
     AbortableRenderInfoPtr renderInfo;
@@ -1045,7 +1045,7 @@ EffectInstance::getImage(int inputNb,
         }
 
         if ( inputImg && inputImagesThreadLocal.empty() ) {
-            ///If the effect is analysis (e.g: Tracker) there's no input images in the thread local storage, hence add it
+            ///If the effect is analysis (e.g: Tracker) there's no input images in the thread-local storage, hence add it
             tls->currentRenderArgs.inputImages[inputNb].push_back(inputImg);
         }
 
@@ -1169,7 +1169,7 @@ EffectInstance::getImage(int inputNb,
 #endif
 
     if ( inputImagesThreadLocal.empty() ) {
-        ///If the effect is analysis (e.g: Tracker) there's no input images in the thread local storage, hence add it
+        ///If the effect is analysis (e.g: Tracker) there's no input images in the thread-local storage, hence add it
         tls->currentRenderArgs.inputImages[inputNb].push_back(inputImg);
     }
 
@@ -2711,7 +2711,7 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
 
         /*
          * Since new planes can have been allocated on the fly by allocateImagePlaneAndSetInThreadLocalStorage(), refresh
-         * the planes map from the thread local storage once the render action is finished
+         * the planes map from the thread-local storage once the render action is finished
          */
         if ( it == planesLists.begin() ) {
             outputPlanes = tls->currentRenderArgs.outputPlanes;
@@ -3878,7 +3878,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
 
         return eStatusOK;
     } else {
-        ///If this is running on a render thread, attempt to find the RoD in the thread local storage.
+        ///If this is running on a render thread, attempt to find the RoD in the thread-local storage.
 
         if ( QThread::currentThread() != qApp->thread() ) {
             EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
@@ -3999,7 +3999,7 @@ EffectInstance::getFrameRange_public(U64 hash,
         *first = std::floor(fFirst + 0.5);
         *last = std::floor(fLast + 0.5);
     } else {
-        ///If this is running on a render thread, attempt to find the info in the thread local storage.
+        ///If this is running on a render thread, attempt to find the info in the thread-local storage.
         if ( QThread::currentThread() != qApp->thread() ) {
             EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
             if (tls && tls->currentRenderArgs.validArgs) {
