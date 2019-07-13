@@ -73,7 +73,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/StandardPaths.h"
 
 
-// Don't forget to update glad.h and glad.c aswell when updating theses
+// Don't forget to update glad.h and glad.c as well when updating these
 #define NATRON_OPENGL_VERSION_REQUIRED_MAJOR 2
 #define NATRON_OPENGL_VERSION_REQUIRED_MINOR 0
 
@@ -438,7 +438,7 @@ AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath, bool is
             }
         }
         if (subFolderCount < 256) {
-            qDebug() << cachePath << "doesn't contain sub-folders indexed from 00 to FF. Reseting.";
+            qDebug() << cachePath << "doesn't contain sub-folders indexed from 00 to FF. Resetting.";
             cleanUpCacheDiskStructure(cachePath, isTiled);
             
             return false;
@@ -494,7 +494,7 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath, bool isT
 void
 AppManagerPrivate::setMaxCacheFiles()
 {
-    /*Default to something reasonnable if the code below would happen to not work for some reason*/
+    /*Default to something reasonable if the code below would happen to not work for some reason*/
     size_t hardMax = NATRON_MAX_CACHE_FILES_OPENED;
 
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)

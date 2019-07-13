@@ -54,7 +54,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/LogEntry.h"
 #include "Engine/EngineFwd.h"
 
-/*macro to get the unique pointer to the controler*/
+/*macro to get the unique pointer to the controller*/
 #define appPTR AppManager::instance()
 
 
@@ -347,7 +347,7 @@ public:
 
     /**
      * @brief Called by the caches to check that there's enough free memory on the computer to perform the allocation.
-     * WARNING: This functin may remove some entries from the caches.
+     * WARNING: This function may remove some entries from the caches.
      **/
     void checkCacheFreeMemoryIsGoodEnough();
 

@@ -504,7 +504,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
 
 
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
-    //otherwise it might crash with thread local storage
+    //otherwise it might crash with thread-local storage
 
 
     ///the QCoreApplication must have been created so far.
@@ -740,7 +740,7 @@ AppManager::setApplicationLocale()
     // https://github.com/cth103/dcpomatic/blob/master/src/lib/safe_stringstream.h
     // stringstreams don't seem to be thread-safe on OSX because the change the locale.
 
-    // We also set explicitely the LC_NUMERIC locale to "C" to avoid juggling
+    // We also set explicitly the LC_NUMERIC locale to "C" to avoid juggling
     // between locales when using stringstreams.
     // See function __convert_from_v(...) in
     // /usr/include/c++/4.2.1/x86_64-apple-darwin10/bits/c++locale.h
@@ -4157,7 +4157,7 @@ PythonGILLocker::~PythonGILLocker()
         appPTR->releaseNatronGIL();
     }
 
-    // We took the Python GIL too, so realease it here.
+    // We took the Python GIL too, so release it here.
     // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
 #if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
     assert(PyGILState_Check());  // Not available prior to Python 3.4

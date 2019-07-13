@@ -65,7 +65,7 @@ public:
     MemoryFile();
 
     /**
-     * @brief The constructor attemps to create the file if the file
+     * @brief The constructor attempts to create the file if the file
      * doesn't exist already. If the file is empty, this function doesn't create the mapping
      * (i.e: data() will return NULL).
      * To open the file mapping if the file didn't exist already, call resize() or call the other constructor.
@@ -79,7 +79,7 @@ public:
                FileOpenModeEnum open_mode);
 
     /**
-     * @brief The constructor attemps to create the file if the file
+     * @brief The constructor attempts to create the file if the file
      * doesn't exist already and creates the file mapping to the memory. The file size will be
      * resized to 'size' bytes.
      * This is equivalent to calling the other constructor and then calling resize(size)
@@ -99,7 +99,7 @@ public:
     ~MemoryFile();
 
     /**
-     * @brief Attemps to create the file if the file didn't exist already.
+     * @brief Attempts to create the file if the file didn't exist already.
      * If the file did exist, this function will also map the file to memory and the data
      * can be read using the pointer returned by data(). Otherwise data() returns NULL and you
      * explicitly need to call resize(...) to create the file mapping.

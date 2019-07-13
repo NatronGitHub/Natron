@@ -409,7 +409,7 @@ OSGLContext::unsetCurrentContext(const AbortableRenderInfoPtr& abortInfo)
     --_imp->renderOwningContextCount;
     if (!_imp->renderOwningContextCount) {
 #ifdef DEBUG
-        //qDebug() << "Dettaching" << this << "from frame" << _imp->renderOwningContextFrameTime;
+        //qDebug() << "Detaching" << this << "from frame" << _imp->renderOwningContextFrameTime;
 #endif
         _imp->renderOwningContext.reset();
         unsetCurrentContextNoRender();

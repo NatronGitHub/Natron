@@ -1412,7 +1412,7 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
 void
 TrackerNodeInteract::rebuildMarkerTextures()
 {
-    ///Refreh textures for all markers
+    ///Refresh textures for all markers
     std::list<TrackMarkerPtr> markers;
 
     getContext()->getSelectedMarkers(&markers);

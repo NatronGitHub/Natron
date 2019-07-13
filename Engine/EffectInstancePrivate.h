@@ -183,7 +183,7 @@ public:
     mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
     bool duringInteractAction; //< true when we're running inside an interact action
 
-    ///Current chuncks of memory held by the plug-in
+    ///Current chunks of memory held by the plug-in
     mutable QMutex pluginMemoryChunksMutex;
     std::list<PluginMemoryWPtr> pluginMemoryChunks;
 
@@ -232,7 +232,7 @@ public:
     // Render clones are very small copies holding just pointers to Knobs that are used to render plug-ins that are only
     // eRenderSafetyInstanceSafe or lower
     EffectInstance* mainInstance; // pointer to the main-instance if this instance is a clone
-    bool isDoingInstanceSafeRender; // true if this intance is rendering
+    bool isDoingInstanceSafeRender; // true if this instance is rendering
     mutable QMutex renderClonesMutex;
     std::list<EffectInstancePtr> renderClonesPool;
     bool mustSyncPrivateData; //!< true if the effect's knobs were changed but instanceChanged could not be called (e.g. when loading a PyPlug), so that syncPrivateData should be called in getPreferredMetadata_public before calling getPreferredMetadata
@@ -363,7 +363,7 @@ public:
     /// - fullscaleMappedImage is the fullscale image remapped to what the plugin can support (components/bitdepth)
     /// - downscaledMappedImage is the downscaled image remapped to what the plugin can support (components/bitdepth wise)
     /// - fullscaleMappedImage is pointing to "image" if the plug-in does support the renderscale, meaning we don't use it.
-    /// - Similarily downscaledMappedImage is pointing to "downscaledImage" if the plug-in doesn't support the render scale.
+    /// - Similarly downscaledMappedImage is pointing to "downscaledImage" if the plug-in doesn't support the render scale.
     ///
     /// - renderMappedImage is what is given to the plug-in to render the image into,it is mapped to an image that the plug-in
     ///can render onto (good scale, good components, good bitdepth)

@@ -68,7 +68,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Plugin.h"
 #include "Engine/Settings.h"
 
-//The plug-in that is instanciated whenever this node is created and doesn't point to any valid or known extension
+//The plug-in that is instantiated whenever this node is created and doesn't point to any valid or known extension
 #define READ_NODE_DEFAULT_READER PLUGINID_OFX_READOIIO
 #define kPluginSelectorParamEntryDefault "Default"
 
@@ -471,7 +471,7 @@ ReadNodePrivate::destroyReadNode()
             for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
                 
                 // The internal node still holds a shared ptr to the knob.
-                // Since we want to keep some knobs around, ensure they do not get deleted in the desctructor of the embedded node
+                // Since we want to keep some knobs around, ensure they do not get deleted in the destructor of the embedded node
                 embeddedPlugin->getEffectInstance()->removeKnobFromList(it->get());
                 
                 if ( !(*it)->isDeclaredByPlugin() ) {
@@ -1108,7 +1108,7 @@ ReadNode::initializeKnobs()
     KnobButtonPtr fileInfos = AppManager::createKnob<KnobButton>( this, tr("File Info...") );
 
     fileInfos->setName("fileInfo");
-    fileInfos->setHintToolTip( tr("Press to display informations about the file") );
+    fileInfos->setHintToolTip( tr("Press to display information about the file") );
     controlpage->addKnob(fileInfos);
     _imp->fileInfosKnob = fileInfos;
     _imp->readNodeKnobs.push_back(fileInfos);

@@ -368,7 +368,7 @@ public:
     GLTexturePtr selectedMarkerTexture;
     int selectedMarkerTextureTime;
     RectI selectedMarkerTextureRoI;
-    //If theres a single selection, this points to it
+    //If there's a single selection, this points to it
     TrackMarkerWPtr selectedMarker;
     GLuint pboID;
     TrackWatcherPtr imageGetterWatcher;

@@ -852,7 +852,7 @@ Node::computeHashInternal()
         ///Also append the effect's label to distinguish 2 instances with the same parameters
         Hash64_appendQString( &_imp->hash, QString::fromUtf8( getScriptName().c_str() ) );
 
-        ///Also append the project's creation time in the hash because 2 projects openend concurrently
+        ///Also append the project's creation time in the hash because 2 projects opened concurrently
         ///could reproduce the same (especially simple graphs like Viewer-Reader)
         qint64 creationTime =  getApp()->getProject()->getProjectCreationTime();
         _imp->hash.append(creationTime);
@@ -1973,7 +1973,7 @@ Node::createInfoPage()
     nodeInfos->setAsMultiLine();
     nodeInfos->setAsCustomHTMLText(true);
     nodeInfos->setEvaluateOnChange(false);
-    nodeInfos->setHintToolTip( tr("Input and output informations, press Refresh to update them with current values") );
+    nodeInfos->setHintToolTip( tr("Input and output information, press Refresh to update them with current values") );
     infoPage->addKnob(nodeInfos);
     _imp->nodeInfos = nodeInfos;
 
@@ -2964,7 +2964,7 @@ Node::deactivate(const std::list<NodePtr> & outputsToDisconnect,
         }
     }
 
-    // If the effect was doing OpenGL rendering and had context(s) bound, dettach them.
+    // If the effect was doing OpenGL rendering and had context(s) bound, detach them.
     _imp->effect->dettachAllOpenGLContexts();
 
 
@@ -3098,7 +3098,7 @@ Node::activate(const std::list<NodePtr> & outputsToRestore,
 
     {
         QMutexLocker l(&_imp->activatedMutex);
-        _imp->activated = true; //< flag it true before notifying the GUI because the gui rely on this flag (espcially the Viewer)
+        _imp->activated = true; //< flag it true before notifying the GUI because the gui rely on this flag (especially the Viewer)
     }
 
     NodeCollectionPtr group = getGroup();
@@ -5645,7 +5645,7 @@ Node::canOthersConnectToThisNode() const
 void
 Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
 {
-    ///If marked, we alredy set render args
+    ///If marked, we already set render args
     for (std::list<NodeWPtr>::iterator it = markedNodes.begin(); it != markedNodes.end(); ++it) {
         if (it->lock().get() == this) {
             return;

@@ -353,7 +353,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
        We need to pass more parameters to the constructor . That means we cannot
        create it in the virtual function newInstance. Thus we create it before
-       instanciating the OfxImageEffect. The problem is that calling OFX::Host::ImageEffect::ImageEffectPlugin::createInstance
+       instantiating the OfxImageEffect. The problem is that calling OFX::Host::ImageEffect::ImageEffectPlugin::createInstance
        creates the OfxImageEffect and calls populate(). populate() will actually create all OfxClipInstance and OfxParamInstance.
        All these subclasses need a valid pointer to an this. Hence we need to set the pointer to this in
        OfxImageEffect BEFORE calling populate().
@@ -1372,7 +1372,7 @@ OfxEffectInstance::getPreferredMetadata(NodeMetadata& metadata)
         ///First push the "default" meta-datas to the clips so that they get proper values
         onMetadataRefreshed(metadata);
 
-        ///It has been overriden and no data is actually set on the clip, everything will be set into the
+        ///It has been overridden and no data is actually set on the clip, everything will be set into the
         ///metadata object
         stat = _imp->effect->getClipPreferences_safe(metadata);
     }
@@ -1772,7 +1772,7 @@ OfxEffectInstance::getFrameRange(double *first,
             int inputsCount = getNInputs();
 
             ///Uncommented the isOptional() introduces a bugs with Genarts Monster plug-ins when 2 generators
-            ///are connected in the pipeline. They must rely on the time domain to maintain an internal state and apparantly
+            ///are connected in the pipeline. They must rely on the time domain to maintain an internal state and apparently
             ///not taking optional inputs into accounts messes it up.
             for (int i = 0; i < inputsCount; ++i) {
                 //if (!isInputOptional(i)) {
@@ -1860,8 +1860,8 @@ OfxEffectInstance::isIdentity(double time,
             stat = _imp->effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, identityView, identityPlane, inputclip);
         }
         if (identityView != view || identityPlane != kFnOfxImagePlaneColour) {
-#pragma message WARN("can Natron RB2-multiplane2 handle isIdentity accross views and planes?")
-            // Natron 2 cannot handle isIdentity accross planes
+#pragma message WARN("can Natron RB2-multiplane2 handle isIdentity across views and planes?")
+            // Natron 2 cannot handle isIdentity across planes
             stat = kOfxStatOK;
         }
     }
@@ -2668,7 +2668,7 @@ OfxEffectInstance::endKnobsValuesChanged(ValueChangedReasonEnum reason)
 void
 OfxEffectInstance::purgeCaches()
 {
-    // The kOfxActionPurgeCaches is an action that may be passed to a plug-in instance from time to time in low memory situations. Instances recieving this action should destroy any data structures they may have and release the associated memory, they can later reconstruct this from the effect's parameter set and associated information. http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionPurgeCaches
+    // The kOfxActionPurgeCaches is an action that may be passed to a plug-in instance from time to time in low memory situations. Instances receiving this action should destroy any data structures they may have and release the associated memory, they can later reconstruct this from the effect's parameter set and associated information. http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionPurgeCaches
     OfxStatus stat;
     {
         SET_CAN_SET_VALUE(false);

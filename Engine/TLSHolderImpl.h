@@ -200,7 +200,7 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
 {
     //3 cases where this function returns NULL:
     // 1) No spawner thread registered
-    // 2) T is not a ParallelRenderArgs (see comments above copyAndReturnNewTLS explicit template instanciation
+    // 2) T is not a ParallelRenderArgs (see comments above copyAndReturnNewTLS explicit template instantiation
     // 3) The spawner thread did not have TLS but was marked in the spawn map...
     // Either way: return a new object
 

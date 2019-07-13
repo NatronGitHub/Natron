@@ -775,7 +775,7 @@ Interpolation::integrate_clamp(double tcur,
 
     // now, find out on which intervals the function is constant/clamped, and on which intervals it is a cubic.
     // ignore the solutions with an order of 2 (which means the tangent is horizontal and the polynomial doesn't change sign)
-    // algorithm: order the solutions, sort them wrt time. The cubic sections are where there are transitions bewteen min and max solutions.
+    // algorithm: order the solutions, sort them wrt time. The cubic sections are where there are transitions between min and max solutions.
     std::vector<Sol> sols;
     for (int i = 0; i < nmax; ++i) {
         double deriv = cubicDerive(c0, c1, c2, c3, tmax[i]);

@@ -181,7 +181,7 @@ public:
     //
     // Params -
     //
-    //    time              - the effect time at which changed occured
+    //    time              - the effect time at which changed occurred
     //    renderScale       - the render scale
     virtual OfxStatus drawAction(OfxTime time,
                                  const OfxPointD &renderScale,
@@ -192,7 +192,7 @@ public:
     //
     // Params  -
     //
-    //    time              - the effect time at which changed occured
+    //    time              - the effect time at which changed occurred
     //    renderScale       - the render scale
     //    penX              - the X position
     //    penY              - the Y position
@@ -209,7 +209,7 @@ public:
     //
     // Params  -
     //
-    //    time              - the effect time at which changed occured
+    //    time              - the effect time at which changed occurred
     //    renderScale       - the render scale
     //    penX              - the X position
     //    penY              - the Y position
@@ -226,7 +226,7 @@ public:
     //
     // Params  -
     //
-    //    time              - the effect time at which changed occured
+    //    time              - the effect time at which changed occurred
     //    renderScale       - the render scale
     //    penX              - the X position
     //    penY              - the Y position
@@ -243,7 +243,7 @@ public:
     //
     // Params  -
     //
-    //    time              - the effect time at which changed occured
+    //    time              - the effect time at which changed occurred
     //    renderScale       - the render scale
     //    key               - the pressed key
     //    keyString         - the pressed key string
@@ -258,7 +258,7 @@ public:
     //
     // Params  -
     //
-    //    time              - the effect time at which changed occured
+    //    time              - the effect time at which changed occurred
     //    renderScale       - the render scale
     //    key               - the pressed key
     //    keyString         - the pressed key string
@@ -273,7 +273,7 @@ public:
     //
     // Params  -
     //
-    //    time              - the effect time at which changed occured
+    //    time              - the effect time at which changed occurred
     //    renderScale       - the render scale
     //    key               - the pressed key
     //    keyString         - the pressed key string
@@ -288,7 +288,7 @@ public:
     //
     // Params -
     //
-    //    time              - the effect time at which changed occured
+    //    time              - the effect time at which changed occurred
     //    renderScale       - the render scale
     virtual OfxStatus gainFocusAction(OfxTime time,
                                       const OfxPointD &renderScale,
@@ -299,7 +299,7 @@ public:
     //
     // Params -
     //
-    //    time              - the effect time at which changed occured
+    //    time              - the effect time at which changed occurred
     //    renderScale       - the render scale
     virtual OfxStatus loseFocusAction(OfxTime time,
                                       const OfxPointD &renderScale,

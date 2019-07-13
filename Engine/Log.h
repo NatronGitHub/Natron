@@ -67,7 +67,7 @@ public:
     static void print(const std::string & log);
 
     /**
-     * @brief Same as print but using printf-like formating. Do not insert line-breaks
+     * @brief Same as print but using printf-like formatting. Do not insert line-breaks
      * the log will do it for you and format the content to 80 columns.
      **/
     static void print(const char *format, ...);

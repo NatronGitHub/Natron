@@ -3491,14 +3491,14 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
 
         // IMPORTANT NOTE:
         // The two sqrt below are due to a probable cairo bug.
-        // To check wether the bug is present is a given cairo version,
+        // To check whether the bug is present is a given cairo version,
         // make any shape with a very large feather and set
         // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
         // and approximately equal to 0.5.
         // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
         // older Cairo versions.
         cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2], innerOpacity);
-        ///outter is faded
+        ///outer is faded
         cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2], outterOpacity);
         cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2], outterOpacity);
         ///inner is full color
@@ -3602,7 +3602,7 @@ RotoContextPrivate::renderFeather_cairo(const std::list<RotoFeatherVertex>& vert
             p2.x = outterVertices[1]->x;
             p2.y = outterVertices[1]->y;
         } else {
-            // Repeat p1 if only 1 outter vertex
+            // Repeat p1 if only 1 outer vertex
             p2 = p1;
         }
         if (innerVertices[1]) {
@@ -3639,14 +3639,14 @@ RotoContextPrivate::renderFeather_cairo(const std::list<RotoFeatherVertex>& vert
 
         // IMPORTANT NOTE:
         // The two sqrt below are due to a probable cairo bug.
-        // To check wether the bug is present is a given cairo version,
+        // To check whether the bug is present is a given cairo version,
         // make any shape with a very large feather and set
         // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
         // and approximately equal to 0.5.
         // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
         // older Cairo versions.
         cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2], 1.);
-        // outter is faded
+        // outer is faded
         cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2], 0.);
         cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2], 0.);
         // inner is full color
@@ -3857,7 +3857,7 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
         --fprev; // can only be valid since we assert the list is not empty
 
 
-        // initialize the state with a segment between the first inner vertex and first outter vertex
+        // initialize the state with a segment between the first inner vertex and first outer vertex
         RotoFeatherVertex lastInnerVert,lastOutterVert;
         {
             lastInnerVert.x = bSegmentIt->x;
@@ -3981,7 +3981,7 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
 
     } // for all points in polygon
 
-    // Now tesselate the internal bezier using glu
+    // Now tessellate the internal bezier using glu
     tessPolygonData tessData;
     tessData.internalStrips = internalStrips;
     tessData.internalFans = internalFans;
@@ -4044,7 +4044,7 @@ RotoContextPrivate::renderInternalShape_cairo(const std::list<RotoTriangles>& tr
                 cairo_mesh_pattern_line_to(mesh, coonsPatchStart->x, coonsPatchStart->y);
                 // IMPORTANT NOTE:
                 // The two sqrt below are due to a probable cairo bug.
-                // To check wether the bug is present is a given cairo version,
+                // To check whether the bug is present is a given cairo version,
                 // make any shape with a very large feather and set
                 // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
                 // and approximately equal to 0.5.
@@ -4079,7 +4079,7 @@ RotoContextPrivate::renderInternalShape_cairo(const std::list<RotoTriangles>& tr
             cairo_mesh_pattern_line_to(mesh, fanStart->x, fanStart->y);
             // IMPORTANT NOTE:
             // The two sqrt below are due to a probable cairo bug.
-            // To check wether the bug is present is a given cairo version,
+            // To check whether the bug is present is a given cairo version,
             // make any shape with a very large feather and set
             // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
             // and approximately equal to 0.5.
@@ -4115,7 +4115,7 @@ RotoContextPrivate::renderInternalShape_cairo(const std::list<RotoTriangles>& tr
 
             // IMPORTANT NOTE:
             // The two sqrt below are due to a probable cairo bug.
-            // To check wether the bug is present is a given cairo version,
+            // To check whether the bug is present is a given cairo version,
             // make any shape with a very large feather and set
             // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
             // and approximately equal to 0.5.
@@ -4257,7 +4257,7 @@ RotoContextPrivate::renderInternalShape(double time,
 
             // IMPORTANT NOTE:
             // The two sqrt below are due to a probable cairo bug.
-            // To check wether the bug is present is a given cairo version,
+            // To check whether the bug is present is a given cairo version,
             // make any shape with a very large feather and set
             // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
             // and approximately equal to 0.5.

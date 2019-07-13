@@ -310,7 +310,7 @@ public:
         return dt;
     }
 
-    ///Overriden from BufferableObject
+    ///Overridden from BufferableObject
     virtual std::size_t sizeInRAM() const OVERRIDE FINAL
     {
         return size();
@@ -745,7 +745,7 @@ public:
 
     /**
      * @brief Copies the content of the portion defined by roi of the other image pixels into this image.
-     * The internal bitmap will be copied aswell
+     * The internal bitmap will be copied as well
      **/
     void pasteFrom( const Image & src, const RectI & srcRoi, bool copyBitmap = true, const OSGLContextPtr& glContext = OSGLContextPtr() );
 

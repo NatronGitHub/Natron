@@ -201,7 +201,7 @@ GCC_DIAG_ON(maybe-uninitialized)
 #define kTrackerParamMotionTypeHint "The type of motion in output of this node."
 
 #define kTrackerParamMotionTypeNone "None"
-#define kTrackerParamMotionTypeNoneHelp "No transformation applied in output to the image: this node is a pass-through. Set it to this mode when tracking to correclty see the input image on the viewer"
+#define kTrackerParamMotionTypeNoneHelp "No transformation applied in output to the image: this node is a pass-through. Set it to this mode when tracking to correctly see the input image on the viewer"
 
 #define kTrackerParamMotionTypeStabilize "Stabilize"
 #define kTrackerParamMotionTypeStabilizeHelp "Transforms the image so that the tracked points do not move"
@@ -275,8 +275,8 @@ GCC_DIAG_ON(maybe-uninitialized)
 #define kTrackerParamDisableTransformHint "When checked, the CornerPin/Transform applied by the parameters is disabled temporarily. This is useful if " \
     "you are using a CornerPin and you need to edit the From or To points. " \
     "For example, in match-move mode to replace a portion of the image by another one. To achieve such effect, you would need to place " \
-    "the From points of the CornerPin controls to the desired 4 corners in the image. Similarly, you may want to stabilize the image onto a moving vehicule, in " \
-    "which case you would want to set the CornerPin points to enclose the vehicule."
+    "the From points of the CornerPin controls to the desired 4 corners in the image. Similarly, you may want to stabilize the image onto a moving vehicle, in " \
+    "which case you would want to set the CornerPin points to enclose the vehicle."
 
 #define kTrackerParamCornerPinFromPointsSetOnce "fromPointsSet"
 
@@ -632,7 +632,7 @@ public:
      * jitter or remove jitter.
      * @param jitterAdd If jitterPeriod > 1 this parameter is disregarded. Otherwise, if jitterAdd is false, then
      * the values of the center points are smoothed with high frequencies removed (using average over jitterPeriod)
-     * If jitterAdd is true, then we compute the smoothed points (using average over jitterPeriod), and substract it
+     * If jitterAdd is true, then we compute the smoothed points (using average over jitterPeriod), and subtract it
      * from the original points to get the high frequencies. We then add those high frequencies back to the original
      * points to increase shaking/motion
      **/

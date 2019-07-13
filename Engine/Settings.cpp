@@ -262,7 +262,7 @@ Settings::initializeKnobsGeneral()
     _customHostName->setName("customHostName");
     _customHostName->setHintToolTip( tr("This is the name of the OpenFX host (application) as it appears to the OpenFX plugins. "
                                         "Changing it to the name of another application can help loading some plugins which "
-                                        "restrict their usage to specific OpenFX hosts. You shoud leave "
+                                        "restrict their usage to specific OpenFX hosts. You should leave "
                                         "this to its default value, unless a specific plugin refuses to load or run. "
                                         "Changing this takes effect upon the next application launch, and requires clearing "
                                         "the OpenFX plugins cache from the Cache menu. "
@@ -1400,7 +1400,7 @@ Settings::initializeKnobsPython()
                                                      "whether you want to upgrade to the new version of the PyPlug in your project. "
                                                      "If the .py file is not found, it will fallback to the same behavior "
                                                      "as when this option is unchecked. When unchecked the PyPlug will load as a regular group "
-                                                     "with the informations embedded in the project file.") );
+                                                     "with the information embedded in the project file.") );
     _loadPyPlugsFromPythonScript->setDefaultValue(true);
     _pythonPage->addKnob(_loadPyPlugsFromPythonScript);
 
