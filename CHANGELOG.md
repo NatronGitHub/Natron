@@ -11,12 +11,13 @@
 - Avoid crash and issues when NatronEngine.Effect.destroy() is called #368
 - macOS: fix version numbers in Finder information #372
 - Fix callbacks in PyPanel and PyModalDialog #379
+- Fix recursive Python calls and handle the Python GIL properly
 
 ### Plugins
 
 - Fix bugs in DenoiseSharpen that caused crashes #300
 - Add support for chromatic aberration correction when reading RAW files #309
-- Update CImg and G'MIC to 2.6.7 and fix several issues in GMIC plugins
+- Update CImg and G'MIC to 2.6.7 and fix several issues in GMIC plugins (which are still beta)
 - Many new GMIC plugins, including GMIC Custom Code
 
 

@@ -40,6 +40,7 @@ CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
 #include <QtCore/QString>
 #include <QtCore/QProcess>
+#include <QtCore/QMap>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
@@ -797,6 +798,8 @@ void getFunctionArguments(const std::string& pyFunc, std::string* error, std::ve
 PyObject* getAttrRecursive(const std::string& fullyQualifiedName, PyObject* parentObj, bool* isDefined);
 } // namespace NATRON_PYTHON_NAMESPACE
 
+// #define DEBUG_PYTHON_GIL // to debug Python GIL issues
+
 /**
  * @brief Small helper class to use as RAII to hold the GIL (Global Interpreter Lock) before calling ANY Python code.
  **/
@@ -804,7 +807,10 @@ class PythonGILLocker
 {
     // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
     PyGILState_STATE state;
-
+#ifdef DEBUG_PYTHON_GIL
+    static QMap<QString, int> pythonCount;
+    static QMap<QString, int> natronCount;
+#endif
 public:
     PythonGILLocker();
 
