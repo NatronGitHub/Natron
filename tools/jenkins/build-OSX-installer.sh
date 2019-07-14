@@ -176,7 +176,7 @@ for bin in IO Misc CImg Arena GMIC Shadertoy Extra Magick OCL; do
         echo "* stripping $ofx_binary";
         # Retain the original binary for QA and use with the util 'atos'
         #mv -f "$ofx_binary" "${binary}_FULL";
-        if [ "$BITS" = "Universal" ] && if lipo "$ofx_binary" -verify_arch i386 x86_64; then
+        if [ "$BITS" = "Universal" ] && lipo "$ofx_binary" -verify_arch i386 x86_64; then
             # Extract each arch into a "thin" binary for stripping
             lipo "$ofx_binary" -thin x86_64 -output "${ofx_binary}_x86_64";
             lipo "$ofx_binary" -thin i386   -output "${ofx_binary}_i386";
@@ -816,15 +816,14 @@ if [ "$STRIP" = 1 ]; then
             echo "* stripping $binary";
             # Retain the original binary for QA and use with the util 'atos'
             #mv -f "$binary" "${binary}_FULL";
-            ARCHS="x86_64 i386"
-            if [ "$BITS" = "Universal" ] && lipo "$binary" -verify_arch "$ARCHS"; then
+            if [ "$BITS" = "Universal" ] && lipo "$binary" -verify_arch x86_64 i386; then
                 # Extract each arch into a "thin" binary for stripping
-                for a in $ARCHS; do
-                    lipo "$binary" -thin "$a" -output "${binary}_$a"
-                    strip -S -x -r "${binary}_$a"
-                done
-                               # Perform desired stripping on each thin binary.
+                lipo "$binary" -thin x86_64 -output "${binary}_x86_64";
+                lipo "$binary" -thin i386   -output "${binary}_i386";
 
+                # Perform desired stripping on each thin binary.
+                strip -S -x -r "${binary}_i386";
+                strip -S -x -r "${binary}_x86_64";
 
                 # Make the new universal binary from our stripped thin pieces.
                 lipo "-arch x86_64 ${binary}_x86_64 -arch i386 ${binary}_i386" -create -output "${binary}";
@@ -886,7 +885,7 @@ export PYDIR="$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 
 # Install pip
 if [ -x "${TMP_PORTABLE_DIR}.app/Contents/MacOS"/natron-python ]; then
-    wget --no-check-certificate http://bootstrap.pypa.io/get-pip.py
+    $CURL --remote-name --insecure --no-check-certificate http://bootstrap.pypa.io/get-pip.py
     "${TMP_PORTABLE_DIR}.app/Contents/MacOS"/natron-python get-pip.py
     rm get-pip.py
 fi
