@@ -17,7 +17,8 @@ if [ "$PKGOS" = "OSX" ]; then
     if command -v clang-mp-9.0 >/dev/null 2>&1 || command -v clang-mp-8.0 >/dev/null 2>&1 || command -v clang-mp-7.0 >/dev/null 2>&1 || command -v clang-mp-6.0 >/dev/null 2>&1 || command -v clang-mp-5.0 >/dev/null 2>&1 || command -v clang-mp-4.0 >/dev/null 2>&1; then
         COMPILER=clang-omp
         if grep -q "configure.optflags.*-Os" /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl; then
-            echo "Warning: clang-3.9.1 is known to generate wrong code with -Os on openexr, please edit /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl and set configure.optflags to -O2"
+            true
+            #echo "Warning: clang-3.9.1 is known to generate wrong code with -Os on openexr, please edit /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl and set configure.optflags to -O2"
             #exit 1
         fi
     fi
