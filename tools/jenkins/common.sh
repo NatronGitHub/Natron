@@ -123,7 +123,7 @@ elif [ "$PKGOS" = "OSX" ]; then
     # sed adds a newline on OSX! http://stackoverflow.com/questions/13325138/why-does-sed-add-a-new-line-in-osx
     # let's use gsed in binary mode.
     # gsed is provided by the gsed package on MacPorts or the gnu-sed package on homebrew
-    # xhen using this variable, do not double-quote it ("$GSED"), because it contains options
+    # when using this variable, do not double-quote it ("$GSED"), because it contains options
     GSED="${MACPORTS}/bin/gsed -b"
     PATH="${MACPORTS}/bin:$PATH"
     # timeout is available in GNU coreutils:

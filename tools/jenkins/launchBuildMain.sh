@@ -158,6 +158,13 @@ if [ -f "$HOME/.ssh/id_rsa_build_master" ]; then
     fi
 fi
 
+# check that TIMEOUT works
+$TIMEOUT 1 true && echo "$TIMEOUT works"
+#check that SED works
+echo "$SED does not work" | $GSED -e "s/does not work/works/"
+# check that curl works
+$CURL --silent --head http://www.google.com > /dev/null && echo "$CURL works"
+
 GIT_BRANCH=$(echo $GIT_BRANCH | sed 's#origin/##')
 BUILD_NATRON=0
 DO_UTEST=0
