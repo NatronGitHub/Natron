@@ -277,7 +277,7 @@ thread.
 :rtype: :class:`Effect<NatronEngine.Effect>`
 
     Same as :func:`getInput(inputNumber)<NatronEngine.Effect.getInput>` except that the parameter in input
-    is the name of the input as diplayed on the node-graph. This function is made available for convenience.
+    is the name of the input as displayed on the node-graph. This function is made available for convenience.
 
 
 
@@ -384,7 +384,7 @@ of the region of definition.
     :rtype: :class:`Roto<NatronEngine.Roto>`
 
 Returns the roto context for this node. Currently only the Roto node has a roto context.
-The roto context is in charge of maintaining all informations relative to :doc:`Beziers<BezierCurve>`
+The roto context is in charge of maintaining all information relative to :doc:`Beziers<BezierCurve>`
 and :doc:`Layers<Layer>`.
 Most of the nodes don't have a roto context though and this function will return None.
 
@@ -395,7 +395,7 @@ Most of the nodes don't have a roto context though and this function will return
     :rtype: :class:`Tracker<NatronEngine.Tracker>`
 
 Returns the tracker context for this node. Currently only the Tracker node has a tracker context.
-The tracker context is in charge of maintaining all informations relative to :doc:`Tracks<Track>`.
+The tracker context is in charge of maintaining all information relative to :doc:`Tracks<Track>`.
 Most of the nodes don't have a tracker context though and this function will return None.
 
 

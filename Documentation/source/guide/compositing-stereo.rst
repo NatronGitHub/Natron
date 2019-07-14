@@ -30,7 +30,7 @@ You can remove the “Main” view if needed (in our case it does not make sense
 .. image:: _images/multiview09.png
    :width: 40%
 
-The Read node will have a special “V” mark on its top-left corner, indicating that it has multiple views available. When hovering the “V” indicator with the mouse, more informations are available regarding which views are present in this Read node
+The Read node will have a special “V” mark on its top-left corner, indicating that it has multiple views available. When hovering the “V” indicator with the mouse, more information is available regarding which views are present in this Read node
 
 .. image:: _images/multiview10.png
    :width: 30%

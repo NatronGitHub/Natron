@@ -598,7 +598,7 @@ make CXX="/opt/llvm/bin/clang++ -fsanitize=thread -fPIE -pie" LINK="/opt/llvm/bi
 - install dependencies
 
 [[[[ Special note for Ubuntu 12.04 (Precise):
-we alse require
+we also require
 - boost >= 1.49 for Natron
 - ilmbase, openexr, opencolorio, openimageio for TuttleOFX
 - opencv for the opencv plugins

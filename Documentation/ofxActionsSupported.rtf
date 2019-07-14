@@ -83,7 +83,7 @@ This action
 \b\fs48 \cf0 The Generic Purge Caches Action\
 \pard\pardeftab720\sa320
 
-\b0\fs32 \cf0 The kOfxActionPurgeCaches is an action that may be passed to a plug-in instance from time to time in low memory situations. Instances recieving this action should destroy any data structures they may have and release the associated memory, they can later reconstruct this from the effect's parameter set and associated information.\
+\b0\fs32 \cf0 The kOfxActionPurgeCaches is an action that may be passed to a plug-in instance from time to time in low memory situations. Instances receiving this action should destroy any data structures they may have and release the associated memory, they can later reconstruct this from the effect's parameter set and associated information.\
 For Image Effects, it is generally a bad idea to call this after each render, but rather it should be called after 
 \f1\fs26 \cf3 kOfxImageEffectActionEndSequenceRender
 \f0\fs32 \cf0 . Some effects, typically those flagged with the \cf3 \ul \ulc3 kOfxImageEffectInstancePropSequentialRender\cf0 \ulnone  property, may need to cache information from previously rendered frames to function correctly, or have data structures that are expensive to reconstruct at each frame (eg: a particle system). Ideally, such effect should free such structures during the 

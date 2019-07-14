@@ -268,7 +268,7 @@ This function will return a new parameter of type integer with 3 dimensions.
 
 .. warning::
 
-    Afer calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
+    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
     to refresh the user interface. The refreshing is done in a separate function because it may
     be expensive and thus allows you to make multiple changes to user parameters at once
     while keeping the user interface responsive.

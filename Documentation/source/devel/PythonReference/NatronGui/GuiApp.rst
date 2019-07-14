@@ -44,7 +44,7 @@ Functions
 Detailed Description
 ---------------------------
 
-See :doc:`App<../NatronEngine/App>` for the documentation of base functionnalities of this class.
+See :doc:`App<../NatronEngine/App>` for the documentation of base functionalities of this class.
 
 To create a new :doc:`modal dialog<PyModalDialog>` , use the
 :func:`createModalDialog()<NatronGui.GuiApp.createModalDialog>` function.
