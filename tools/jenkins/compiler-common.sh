@@ -26,7 +26,7 @@ if [ "$PKGOS" = "OSX" ]; then
         COMPILER=clang-omp
     fi
     #COMPILER=clang-omp
-    COMPILER=${COMPILER:-gcc}
+    COMPILER=${COMPILER:-clang}
 
     if [ "$COMPILER" != "gcc" -a "$COMPILER" != "clang" -a "$COMPILER" != "clang-omp" ]; then
         echo "Error: COMPILER must be gcc or clang or clang-omp"
