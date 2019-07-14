@@ -5,21 +5,23 @@ These are step-by-step instructions to compile Natron on OS X.
 
 OS X 10.6 (a.k.a. Snow Leopard) and newer are supported when building with MacPorts, and Homebrew can be used to compile it on the latest OS X.
 
-## Checkout sources
+## Official Natron binaries
 
-    git clone https://github.com/NatronGitHub/Natron.git
-    cd Natron
+The official Natron and plugins binaries are built using the section about MacPorts in these instructions to prepare the system, and the `launchBuildMain.sh` build script found in the `tools/jenkins` directory. The script takes care of everything, from checking out sources, to compiling and packaging.
 
-If you want to compile the bleeding edge version, use the master
-branch:
+These binaries are built on an OS X 10.9 (Mavericks) virtual machine with [Xcode 6.2](https://developer.apple.com/devcenter/download.action?path=/Developer_Tools/Xcode_6.2/Xcode_6.2.dmg). Note that [Mavericks can not be downloaded anymore from the 10.14 (High Sierra) App Store](https://www.macworld.co.uk/how-to/mac-software/download-old-os-x-3629363/), so you will need to use a Mac with an older system (up to 10.13), or look for [alternatives](https://applehint.com/t/download-all-macos-x-10-4-10-14-original/376).
 
-    git checkout master
+The build system is based on [MacPorts](https://www.macports.org) with the custom ports found in the `tools/MacPorts` directory in the sources. We are not using [Homebrew](https://brew.sh), because MacPorts is easier to customize.
 
-Update the submodules:
+Everything is compiled using the latest version of [Clang](https://clang.llvm.org) rather than the version bundled with Xcode, in order to have full OpenMP support.
 
-    git submodule update -i --recursive
 
-## Install libraries
+## Building on a VM (Virtual Machine)
+
+Natron can be built on a virtual machine, in order to target older versions of OS X / macOS.  Due to the OS X Software License Agreement, OS X may only be virtualized on Mac hardware. The excellent blog post [OS X on OS X](https://ntk.me/2012/09/07/os-x-on-os-x/) ([archive](https://web.archive.org/web/20190520141144/https://ntk.me/2012/09/07/os-x-on-os-x/)) gives all the instructions to install an OS X virtual machine.
+
+
+## Install Dependencies
 
 In order to have Natron compiling, first you need to install the required libraries.
 
@@ -59,19 +61,18 @@ make sure you have the right versions of cctools and ld64:
 
     port -N install ld64-latest@274.2 +llvm80 cctools@921_2 +llvm80
 
-We noticed that clang 3.9.1 generates wrong code with `-Os` when compiling openexr (later clang versions were not checked), so it is safer to also change `default configure.optflags      {-Os}` to `default configure.optflags      {-O2}` in `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` (type `sudo nano /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` to edit it).
-
-The libtool that comes with OS X 10.6 does not work well with clang-generated binaries, and you may have to `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
+The libtool that comes with OS X 10.6 Snow Leopard does not work well with clang-generated binaries, so on this system you may have to `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
 
 #### Install Ports
 
-Now, if you want to use turbojpeg instead of jpeg:
+Now, use libjpeg-turbo instead of jpeg:
 
     sudo port -f uninstall jpeg
     sudo port -v -N install libjpeg-turbo
     
 And finally install the required packages:
 
+	sudo port -v -N install clang-8.0
     sudo port -v -N install opencolorio -quartz -python27
     sudo port -v -N install qt4-mac boost cairo expat
     sudo port -v -N install gsed gawk coreutils findutils
@@ -223,6 +224,20 @@ And install (after making sure `/opt/qt4` is user-writable) using:
 
     make install
 
+
+## Checkout sources
+
+    git clone https://github.com/NatronGitHub/Natron.git
+    cd Natron
+
+If you want to compile the bleeding edge version, use the master
+branch:
+
+    git checkout master
+
+Update the submodules:
+
+    git submodule update -i --recursive
 
 ### Download OpenColorIO-Configs
 
