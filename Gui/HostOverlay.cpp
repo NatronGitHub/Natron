@@ -1883,7 +1883,7 @@ TransformInteract::penMotion(double time,
     prevPenPos.z = 1.;
 
     Transform::Matrix3x3 rotation, transform, transformscale;
-    ////for the rotation bar/translation/center dragging we dont use the same transform, we don't want to undo the rotation transform
+    ////for the rotation bar/translation/center dragging we don't use the same transform, we don't want to undo the rotation transform
     if ( (_mouseState != TransformInteract::eDraggingTranslation) && (_mouseState != TransformInteract::eDraggingCenter) ) {
         ///undo skew + rotation to the current position
         rotation = Transform::matInverseTransformCanonical(0., 0., 1., 1., 0., 0., false, rot, targetCenter.x, targetCenter.y);
@@ -2128,7 +2128,7 @@ TransformInteract::penMotion(double time,
     bool valuesChanged = (centerChanged || translateChanged || scaleChanged || rotateChanged || skewXChanged || skewYChanged);
 
     if ( (_mouseState != TransformInteract::eReleased) && _interactiveDrag && valuesChanged ) {
-        // no need to redraw overlay since it is slave to the paramaters
+        // no need to redraw overlay since it is slave to the parameters
         EffectInstancePtr holder = _overlay->getNode()->getNode()->getEffectInstance();
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
         KeyFrame k;
@@ -2255,7 +2255,7 @@ CornerPinInteract::penMotion(double time,
     }
 
     if ( (_dragging != -1) && _interactiveDrag && valuesChanged ) {
-        // no need to redraw overlay since it is slave to the paramaters
+        // no need to redraw overlay since it is slave to the parameters
 
         if (_useFromDrag) {
             KnobDoublePtr knob = _from[_dragging].lock();
@@ -2351,7 +2351,7 @@ TransformInteract::penUp(double /*time*/,
     bool ret = _mouseState != TransformInteract::eReleased;
 
     if ( !_interactiveDrag && (_mouseState != TransformInteract::eReleased) ) {
-        // no need to redraw overlay since it is slave to the paramaters
+        // no need to redraw overlay since it is slave to the parameters
 
         /*
            Give eValueChangedReasonPluginEdited reason so that the command uses the undo/redo stack
@@ -2417,7 +2417,7 @@ CornerPinInteract::penUp(double /*time*/,
     bool didSomething = _dragging != -1;
 
     if ( !_interactiveDrag && (_dragging != -1) ) {
-        // no need to redraw overlay since it is slave to the paramaters
+        // no need to redraw overlay since it is slave to the parameters
         if (_useFromDrag) {
             KnobDoublePtr knob = _from[_dragging].lock();
             assert(knob);

@@ -258,7 +258,7 @@ Project::loadProject(const QString & path,
 
         return false;
     } catch (...) {
-        Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Unkown error while loading project.").toStdString() );
+        Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Unknown error while loading project.").toStdString() );
         if ( !getApp()->isBackground() ) {
             CreateNodeArgs args(PLUGINID_NATRON_VIEWER, shared_from_this() );
             args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
@@ -1027,8 +1027,8 @@ Project::initializeKnobs()
 
     KnobStringPtr comments = AppManager::createKnob<KnobString>( this, tr("Comments") );
     comments->setName("comments");
-    comments->setHintToolTip( tr("This area is a good place to write some informations about the project such as its authors, license "
-                                 "and anything worth mentionning about it.") );
+    comments->setHintToolTip( tr("This area is a good place to write some information about the project such as its authors, license "
+                                 "and anything worth mentioning about it.") );
     comments->setAsMultiLine();
     comments->setAnimationEnabled(false);
     infoPage->addKnob(comments);
@@ -1791,7 +1791,7 @@ Project::removeLastAutosave()
     }
 
     /*
-     * Since we may have saved the project to an old project, overwritting the existing file, there might be
+     * Since we may have saved the project to an old project, overwriting the existing file, there might be
      * a oldProject.ntp.autosave file next to it that belonged to the old project, make sure it gets removed too
      */
     QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );

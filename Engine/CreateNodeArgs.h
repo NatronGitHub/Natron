@@ -88,7 +88,7 @@
 #define kCreateNodeArgsPropNodeSerialization "CreateNodeArgsPropNodeSerialization"
 
 /**
- * @brief optional x1 bool If set to true when creating a node with the plug-in PLUGINID_NATRON_GROUP the inital Input and Output nodes
+ * @brief optional x1 bool If set to true when creating a node with the plug-in PLUGINID_NATRON_GROUP the initial Input and Output nodes
  * will NOT be created. If the property kCreateNodeArgsPropNodeSerialization is set to a non null value it acts as if this property is set to true
  * Default value - false
  **/
@@ -173,7 +173,7 @@
 /**
  * @brief optional x1 boost::shared_ptr<Node> A Pointer to a node that contains this node. This is used internally by the Read and Write nodes
  * which are meta-bundles to the internal decoders/encoders.
- * Defalt value - null
+ * Default value - null
  **/
 #define kCreateNodeArgsPropMetaNodeContainer "CreateNodeArgsPropMetaNodeContainer"
 

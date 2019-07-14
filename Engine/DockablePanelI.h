@@ -32,7 +32,7 @@
 NATRON_NAMESPACE_ENTER
 
 /**
- * @brief Interface used by the Engine Knob class to interact with the gui for dynamic parmeter creation
+ * @brief Interface used by the Engine Knob class to interact with the gui for dynamic parameter creation
  **/
 class DockablePanelI
 {

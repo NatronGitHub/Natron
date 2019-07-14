@@ -479,7 +479,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionGraphForcePreview "Refresh Preview Images"
 
 #define kShortcutIDActionGraphShowCacheSize "cacheSize"
-#define kShortcutDescActionGraphShowCacheSize "Diplay Cache Memory Consumption"
+#define kShortcutDescActionGraphShowCacheSize "Display Cache Memory Consumption"
 
 #define kShortcutIDActionGraphOpenNodePanel "openSettingsPanel"
 #define kShortcutDescActionGraphOpenNodePanel "Open Node Settings Panel"

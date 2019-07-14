@@ -68,7 +68,7 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
 
     QString tt = QString( tr("Information, from left to right:<br />"
                              "<br />"
-                             "<font color=orange>Input:</font> Specifies whether the information are for the input <b>A</b> or <b>B</b><br />"
+                             "<font color=orange>Input:</font> Specifies whether the information is for the input <b>A</b> or <b>B</b><br />"
                              "<font color=orange>Image format:</font>  An identifier for the pixel components and bitdepth of the displayed image<br />"
                              "<font color=orange>Format:</font>  The resolution of the input (where the image is displayed)<br />"
                              "<font color=orange>RoD:</font>  The region of definition of the displayed image (where the data is defined)<br />"

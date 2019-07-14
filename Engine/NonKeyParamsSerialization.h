@@ -36,7 +36,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
-//Should not be needed but doesn't work without explicit instanciation with XML
+//Should not be needed but doesn't work without explicit instantiation with XML
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON

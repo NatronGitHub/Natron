@@ -79,7 +79,7 @@ public:
     // waitUntilNextFrameIsDue() before displaying each frame.
     //
     // If playState == ePlayStateRunning, then waitUntilNextFrameIsDue()
-    // sleeps until the apropriate amount of time has elapsed
+    // sleeps until the appropriate amount of time has elapsed
     // since the last call to waitUntilNextFrameIsDue().
     // If playState != ePlayStateRunning, then waitUntilNextFrameIsDue()
     // returns immediately.

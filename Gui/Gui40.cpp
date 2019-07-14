@@ -630,7 +630,7 @@ Gui::debugImage(const Image* image,
         renderWindow = bounds;
     } else {
         if ( !roi.intersect(bounds, &renderWindow) ) {
-            qDebug() << "The RoI does not interesect the bounds of the image.";
+            qDebug() << "The RoI does not intersect the bounds of the image.";
 
             return;
         }
@@ -1011,7 +1011,7 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
             continue;
         }
         if ( (*it)->getInternalNode()->isDoingPartialUpdates() ) {
-            //When tracking, we handle rendering separatly
+            //When tracking, we handle rendering separately
             continue;
         }
         (*it)->getInternalNode()->renderCurrentFrame(!isPlayback);

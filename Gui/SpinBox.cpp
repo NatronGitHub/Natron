@@ -824,7 +824,7 @@ SpinBox::mouseMoveEvent(QMouseEvent *e)
         if ( isEnabled() ||
              isReadOnly() ||
              !hasFocus() ) {
-            // Multiply by some amount to ressemble a wheel event
+            // Multiply by some amount to resemble a wheel event
             int delta = ( e->x() - _imp->lastMousePos.x() ) * 3;
             int shift = 0;
             if ( modCASIsShift(e) ) {

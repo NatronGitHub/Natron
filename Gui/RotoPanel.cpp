@@ -196,7 +196,7 @@ private:
  * 1) The user pastes one item upon another. The target's shape and attributes are copied and the
  * name is the source's name plus "- copy" at the end.
  * 2) The user pastes several items upon a layer in which case the items are copied into that layer and
- * the new items name is the same than the original appeneded with "- copy".
+ * the new items name is the same than the original appended with "- copy".
  *
  * Anything else will not do anything and you should not issue a command which will yield an unsupported behaviour
  * otherwise you'll create an empty action in the undo/redo stack.
@@ -2089,7 +2089,7 @@ TreeWidget::dragAndDropHandler(const QMimeData* mime,
                         isTargetLayerAParent = isLayerAParent_recursive(isIntoALayer, ret->droppedRotoItem);
                     }
                     if (!intoParentLayer || isTargetLayerAParent) {
-                        ///insert at the begining of the layer
+                        ///insert at the beginning of the layer
                         ret->insertIndex = isIntoALayer ? isIntoALayer->getItems().size() : 0;
                         ret->newParentLayer = isIntoALayer;
                         ret->newParentItem = into;
@@ -2835,7 +2835,7 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
                                                            srcBezier->getParentLayer(), false) );
                 copy->clone( srcBezier.get() );
                 copy->createNodes();
-                //clone overwrittes the script name, don't forget to set it back
+                //clone overwrites the script name, don't forget to set it back
                 copy->setScriptName(name);
                 copy->setLabel(name);
                 it->itemCopy = copy;
@@ -2851,7 +2851,7 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
                 }
                 copy->clone( srcStroke.get() );
                 copy->createNodes();
-                //clone overwrittes the script name, don't forget to set it back
+                //clone overwrites the script name, don't forget to set it back
                 copy->setScriptName(name);
                 copy->setLabel(name);
                 it->itemCopy = copy;

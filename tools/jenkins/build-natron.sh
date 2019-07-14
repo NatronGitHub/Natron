@@ -234,7 +234,7 @@ fi
 
 if [ "$COMPILE_TYPE" != "debug" ]; then
     # Let us benefit from maximum optimization for release builds,
-    # includng non-conformant IEEE floating-point computation.
+    # including non-conformant IEEE floating-point computation.
     QMAKE_FLAGS_EXTRA+=(CONFIG+=noassertions CONFIG+=fast)
 fi
 

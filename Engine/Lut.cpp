@@ -361,7 +361,7 @@ Lut::to_byte_planar(unsigned char* to,
     unsigned char *p;
     unsigned error;
     if (!alpha) {
-        /* go fowards from starting point to end of line: */
+        /* go forwards from starting point to end of line: */
         error = 0x80;
         for (p = to + start * outDelta, q = from + start * inDelta; p < end; p += outDelta, q += inDelta) {
             error = (error & 0xff) + toFunc_hipart_to_uint8xx[hipart(*q)];
@@ -376,7 +376,7 @@ Lut::to_byte_planar(unsigned char* to,
         }
     } else {
         const float *a = alpha;
-        /* go fowards from starting point to end of line: */
+        /* go forwards from starting point to end of line: */
         error = 0x80;
         for (p = to + start * outDelta, q = from + start * inDelta, a += start * inDelta; p < end; p += outDelta, q += inDelta, a += inDelta) {
             const float v = *q * *a;
@@ -478,7 +478,7 @@ Lut::to_byte_packed(unsigned char* to,
         int dstY = dstBounds.y2 - y - 1;
         const float *src_pixels = from + (srcY * (srcBounds.x2 - srcBounds.x1) * inPackingSize);
         unsigned char *dst_pixels = to + (dstY * (dstBounds.x2 - dstBounds.x1) * outPackingSize);
-        /* go fowards from starting point to end of line: */
+        /* go forwards from starting point to end of line: */
         for (int x = start; x < rect.x2; ++x) {
             int inCol = x * inPackingSize;
             int outCol = x * outPackingSize;
@@ -573,7 +573,7 @@ Lut::to_float_packed(float* to,
         int dstY = dstBounds.y2 - y - 1;
         const float *src_pixels = from + (srcY * (srcBounds.x2 - srcBounds.x1) * inPackingSize);
         float *dst_pixels = to + (dstY * (dstBounds.x2 - dstBounds.x1) * outPackingSize);
-        /* go fowards from starting point to end of line: */
+        /* go forwards from starting point to end of line: */
         for (int x = rect.x1; x < rect.x2; ++x) {
             int inCol = x * inPackingSize;
             int outCol = x * outPackingSize;
@@ -994,7 +994,7 @@ to_byte_planar(unsigned char *to,
         int start = rand() % W;
         const float *q;
         unsigned char *p;
-        /* go fowards from starting point to end of line: */
+        /* go forwards from starting point to end of line: */
         float error = .5;
         for (p = to + start * outDelta, q = from + start * inDelta; p < end; p += outDelta, q += inDelta) {
             float G = error + *q * 255.0f;
@@ -1030,7 +1030,7 @@ to_byte_planar(unsigned char *to,
         const float *q;
         const float *a = alpha;
         unsigned char *p;
-        /* go fowards from starting point to end of line: */
+        /* go forwards from starting point to end of line: */
         float error = .5;
         for (p = to + start * outDelta, q = from + start * inDelta, a += start * inDelta; p < end;
              p += outDelta, q += inDelta, a += inDelta) {
@@ -1160,7 +1160,7 @@ to_byte_packed(unsigned char* to,
 
         const float *src_pixels = from + (srcY * (srcBounds.x2 - srcBounds.x1) * inPackingSize);
         unsigned char *dst_pixels = to + (y * (dstBounds.x2 - dstBounds.x1) * outPackingSize);
-        /* go fowards from starting point to end of line: */
+        /* go forwards from starting point to end of line: */
         for (int x = start; x < rect.x2; ++x) {
             int inCol = x * inPackingSize;
             int outCol = x * outPackingSize;

@@ -990,7 +990,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
     // Roi is the coordinates of the 4 corners of the texture in the bounds with the current zoom
     // factor taken into account.
 
-    // When auto-contrast is enabled or user RoI, we compute exactly the iamge portion displayed in the rectangle and
+    // When auto-contrast is enabled or user RoI, we compute exactly the image portion displayed in the rectangle and
     // do not round it to Viewer tiles.
 
     outArgs->params->tiles.clear();

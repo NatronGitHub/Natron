@@ -1070,7 +1070,7 @@ explode(const QString& str)
         QString word = str.mid(startIndex, index - startIndex);
         const QChar& nextChar = str[index];
 
-        // Dashes and the likes should stick to the word occuring before it. Whitespace doesn't have to.
+        // Dashes and the likes should stick to the word occurring before it. Whitespace doesn't have to.
         if ( nextChar.isSpace() ) {
             ret.push_back(word);
             ret.push_back(nextChar);

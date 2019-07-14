@@ -482,7 +482,7 @@ EffectInstance::aborted() const
     /**
        The solution here is to store per-render info on the thread that we retrieve.
        These info contain an atomic integer determining whether this particular render was aborted or not.
-       If this thread does not have abort info yet on it, we retrieve them from the thread local storage of this node
+       If this thread does not have abort info yet on it, we retrieve them from the thread-local storage of this node
        and set it.
        Threads that start a render generally already have the AbortableThread::setAbortInfo function called on them, but
        threads spawned from the thread pool may not.
@@ -840,7 +840,7 @@ EffectInstance::getImage(int inputNb,
     RectD thisRod;
     double thisEffectRenderTime = time;
 
-    ///Try to find in the input images thread local storage if we already pre-computed the image
+    ///Try to find in the input images thread-local storage if we already pre-computed the image
     EffectInstance::InputImagesMap inputImagesThreadLocal;
     OSGLContextPtr glContext;
     AbortableRenderInfoPtr renderInfo;
@@ -999,7 +999,7 @@ EffectInstance::getImage(int inputNb,
 
     ImagePtr inputImg;
 
-    ///For the roto brush, we do things separatly and render the mask with the RotoContext.
+    ///For the roto brush, we do things separately and render the mask with the RotoContext.
     if (useRotoInput) {
         ///Usage of roto outside of the rotopaint node is no longer handled
         assert(attachedStroke);
@@ -1045,7 +1045,7 @@ EffectInstance::getImage(int inputNb,
         }
 
         if ( inputImg && inputImagesThreadLocal.empty() ) {
-            ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
+            ///If the effect is analysis (e.g: Tracker) there's no input images in the thread-local storage, hence add it
             tls->currentRenderArgs.inputImages[inputNb].push_back(inputImg);
         }
 
@@ -1169,7 +1169,7 @@ EffectInstance::getImage(int inputNb,
 #endif
 
     if ( inputImagesThreadLocal.empty() ) {
-        ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
+        ///If the effect is analysis (e.g: Tracker) there's no input images in the thread-local storage, hence add it
         tls->currentRenderArgs.inputImages[inputNb].push_back(inputImg);
     }
 
@@ -1807,7 +1807,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
 
             if (storage == eStorageModeGLTex) {
 
-                // When using the GPU, we dont want to retrieve partially rendered image because rendering the portion
+                // When using the GPU, we don't want to retrieve partially rendered image because rendering the portion
                 // needed then reading it back to put it in the CPU image would take much more effort than just computing
                 // the GPU image.
                 std::list<RectI> restToRender;
@@ -1837,7 +1837,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
 
                 if (storage == eStorageModeGLTex) {
 
-                    // When using the GPU, we dont want to retrieve partially rendered image because rendering the portion
+                    // When using the GPU, we don't want to retrieve partially rendered image because rendering the portion
                     // needed then reading it back to put it in the CPU image would take much more effort than just computing
                     // the GPU image.
                     std::list<RectI> restToRender;
@@ -2035,7 +2035,7 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
         //Take the lock after getting the image from the cache or while allocating it
         ///to make sure a thread will not attempt to write to the image while its being allocated.
         ///When calling allocateMemory() on the image, the cache already has the lock since it added it
-        ///so taking this lock now ensures the image will be allocated completetly
+        ///so taking this lock now ensures the image will be allocated completely
 
         getOrCreateFromCacheInternal(key, cachedImgParams, createInCache, downscaleImage);
         if (!*downscaleImage) {
@@ -2711,7 +2711,7 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
 
         /*
          * Since new planes can have been allocated on the fly by allocateImagePlaneAndSetInThreadLocalStorage(), refresh
-         * the planes map from the thread local storage once the render action is finished
+         * the planes map from the thread-local storage once the render action is finished
          */
         if ( it == planesLists.begin() ) {
             outputPlanes = tls->currentRenderArgs.outputPlanes;
@@ -3467,7 +3467,7 @@ EffectInstance::onOverlayPenMotion_public(double time,
     }
 
     _imp->setDuringInteractAction(false);
-    //Don't chek if render is needed on pen motion, wait for the pen up
+    //Don't check if render is needed on pen motion, wait for the pen up
 
     //checkIfRenderNeeded();
     return ret;
@@ -3878,7 +3878,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
 
         return eStatusOK;
     } else {
-        ///If this is running on a render thread, attempt to find the RoD in the thread local storage.
+        ///If this is running on a render thread, attempt to find the RoD in the thread-local storage.
 
         if ( QThread::currentThread() != qApp->thread() ) {
             EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
@@ -3999,7 +3999,7 @@ EffectInstance::getFrameRange_public(U64 hash,
         *first = std::floor(fFirst + 0.5);
         *last = std::floor(fLast + 0.5);
     } else {
-        ///If this is running on a render thread, attempt to find the info in the thread local storage.
+        ///If this is running on a render thread, attempt to find the info in the thread-local storage.
         if ( QThread::currentThread() != qApp->thread() ) {
             EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
             if (tls && tls->currentRenderArgs.validArgs) {
@@ -4113,7 +4113,7 @@ EffectInstance::releaseRenderInstance(const EffectInstancePtr& instance)
 }
 
 /**
- * @brief This function calls the impementation specific attachOpenGLContext()
+ * @brief This function calls the implementation specific attachOpenGLContext()
  **/
 StatusEnum
 EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
@@ -4175,7 +4175,7 @@ EffectInstance::dettachAllOpenGLContexts()
 }
 
 /**
- * @brief This function calls the impementation specific dettachOpenGLContext()
+ * @brief This function calls the implementation specific dettachOpenGLContext()
  **/
 StatusEnum
 EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext, const EffectInstance::OpenGLContextEffectDataPtr& data)

@@ -1110,7 +1110,7 @@ TrackerNode::drawOverlay(double time,
                     }
 
 
-                    //////DRAWING OUTTER POINTS
+                    //////DRAWING OUTER POINTS
 
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterBtmLeft) || (_imp->ui->eventState == eMouseStateDraggingOuterBtmLeft) ) ) {
                         glColor3f(0.f * l, 1.f * l, 0.f * l);
@@ -1191,7 +1191,7 @@ TrackerNode::drawOverlay(double time,
                     glVertex2d( innerMidBtm.x(), innerMidBtm.y() );
                     glVertex2d( innerMidBtmExt.x(), innerMidBtmExt.y() );
 
-                    //////DRAWING OUTTER HANDLES
+                    //////DRAWING OUTER HANDLES
 
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterMidLeft) || (_imp->ui->eventState == eMouseStateDraggingOuterMidLeft) ) ) {
                         glColor3f(0.f * l, 1.f * l, 0.f * l);
@@ -1856,7 +1856,7 @@ TrackerNode::onOverlayPenMotion(double time,
             nextDiagVec.x = prev.x - diag.x;
             nextDiagVec.y = prev.y - diag.y;
 
-            //Clamp so the 4 points remaing the same in the homography
+            //Clamp so the 4 points remaining the same in the homography
             if (prevVec.x * nextVec.y - prevVec.y * nextVec.x < 0.) {         // cross-product
                 TrackerNodeInteract::findLineIntersection(cur, prev, next, &cur);
             }

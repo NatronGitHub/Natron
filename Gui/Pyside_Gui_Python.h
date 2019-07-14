@@ -27,7 +27,7 @@
 
 #include "Global/Macros.h"
 
-//Defined to avoid including some headers when running shiboken which may crash shiboken (particularily boost headers)
+//Defined to avoid including some headers when running shiboken which may crash shiboken (particularly boost headers)
 #define SBK_RUN
 
 #include <pyside_global.h>

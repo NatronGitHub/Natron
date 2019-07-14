@@ -432,7 +432,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QObject::connect( _imp->toggleGainButton, SIGNAL(clicked(bool)), this, SLOT(onGainToggled(bool)) );
 
     _imp->gainBox = new SpinBox(_imp->secondSettingsRow, SpinBox::eSpinBoxTypeDouble);
-    QString gainTt =  QString::fromUtf8("<p><b>") + tr("Gain:") + QString::fromUtf8("</b></p><p>") + tr("Gain is shown as f-stops. The image is multipled by pow(2,value) before display.") + QString::fromUtf8("</p>");
+    QString gainTt =  QString::fromUtf8("<p><b>") + tr("Gain:") + QString::fromUtf8("</b></p><p>") + tr("Gain is shown as f-stops. The image is multiplied by pow(2,value) before display.") + QString::fromUtf8("</p>");
     _imp->gainBox->setToolTip(gainTt);
     _imp->gainBox->setIncrement(0.1);
     _imp->gainBox->setValue(0.0);

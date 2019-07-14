@@ -61,7 +61,7 @@ struct NodeMetadataPrivate
     //For each input specific datas
     std::vector<PerInputData> inputsData;
 
-    //True if the images can only be sampled continuously (eg: the clip is infact an animating roto spline and can be rendered anywhen).
+    //True if the images can only be sampled continuously (eg: the clip is in fact an animating roto spline and can be rendered anywhen).
     //False if the images can only be sampled at discreet times (eg: the clip is a sequence of frames),
     bool canRenderAtNonframes;
 

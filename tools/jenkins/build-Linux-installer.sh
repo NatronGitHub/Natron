@@ -559,7 +559,7 @@ fi
 # Copy Python distrib to installer package
 cp -r "$PYDIR" "$LIBS_PACKAGE_PATH/data/lib/"
 
-# Fix RPATH (we dont want to link against system libraries when deployed)
+# Fix RPATH (we don't want to link against system libraries when deployed)
 for location in "$LIBS_PACKAGE_PATH/data" "${TMP_PORTABLE_DIR}"; do
     fixrpath "${location}/bin" "/../lib"
     fixrpath "${location}/lib" ""

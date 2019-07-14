@@ -5901,7 +5901,7 @@ KnobHolder::slaveAllKnobs(KnobHolder* other,
     ///Call it prior to slaveTo: it will set the master pointer as pointing to other
     onAllKnobsSlaved(true, other);
 
-    ///When loading a project, we don't need to slave all knobs here because the serialization of each knob separatly
+    ///When loading a project, we don't need to slave all knobs here because the serialization of each knob separately
     ///will reslave it correctly if needed
     if (!restore) {
         beginChanges();

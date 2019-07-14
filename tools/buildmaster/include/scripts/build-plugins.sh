@@ -157,7 +157,7 @@ if [ "${DEBUG_MODE:-}" = "1" ]; then
 else
     BUILD_MODE=relwithdebinfo
     # Let us benefit from maximum optimization for release builds,
-    # includng non-conformant IEEE floating-point computation.
+    # including non-conformant IEEE floating-point computation.
     OPTFLAG=-Ofast
 fi
 

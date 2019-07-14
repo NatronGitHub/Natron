@@ -158,7 +158,7 @@ public:
 class Plugin
 {
     LibraryBinary* _binary;
-    QString _resourcesPath; // Path to the resources (images etc..) of the plug-in, or empty if statically linked  (epxected to be found in resources)
+    QString _resourcesPath; // Path to the resources (images etc..) of the plug-in, or empty if statically linked  (expected to be found in resources)
     QString _id;
     QString _label;
     QString _iconFilePath;

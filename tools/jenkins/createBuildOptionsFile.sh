@@ -34,7 +34,7 @@ DISABLE_RPM_DEB_PKGS=""
 # If set to 1, a portable archive will not be built
 DISABLE_PORTABLE_ARCHIVE=""
 
-# This mode is useful when debuging scripts: it doesn't remove any cloned repo or binary so that we don't redo
+# This mode is useful when debugging scripts: it doesn't remove any cloned repo or binary so that we don't redo
 # tasks that take time
 DEBUG_SCRIPTS=""
 

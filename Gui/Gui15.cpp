@@ -74,12 +74,12 @@ Gui::importLayout()
             iArchive >> boost::serialization::make_nvp("Layout", s);
             restoreLayout(true, false, s);
         } catch (const boost::archive::archive_exception & e) {
-            QString err = QString::fromUtf8("Exception occured when opening file %1: %2").arg( QString::fromUtf8( filename.c_str() ) ).arg( QString::fromUtf8( e.what() ) );
+            QString err = QString::fromUtf8("Exception occurred when opening file %1: %2").arg( QString::fromUtf8( filename.c_str() ) ).arg( QString::fromUtf8( e.what() ) );
             Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
             return;
         } catch (const std::exception & e) {
-            QString err = QString::fromUtf8("Exception occured when opening file %1: %2").arg( QString::fromUtf8( filename.c_str() ) ).arg( QString::fromUtf8( e.what() ) );
+            QString err = QString::fromUtf8("Exception occurred when opening file %1: %2").arg( QString::fromUtf8( filename.c_str() ) ).arg( QString::fromUtf8( e.what() ) );
             Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
             return;
@@ -108,13 +108,13 @@ Gui::createDefaultLayoutInternal(bool wipePrevious)
                 restoreLayout(false, false, s);
             } catch (const boost::archive::archive_exception & e) {
                 ifile.close();
-                QString err = QString::fromUtf8("Exception occured when opening file %1: %2").arg( QString::fromUtf8( fileLayout.c_str() ) ).arg( QString::fromUtf8( e.what() ) );
+                QString err = QString::fromUtf8("Exception occurred when opening file %1: %2").arg( QString::fromUtf8( fileLayout.c_str() ) ).arg( QString::fromUtf8( e.what() ) );
                 Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
                 return;
             } catch (const std::exception & e) {
                 ifile.close();
-                QString err = QString::fromUtf8("Exception occured when opening file %1: %2").arg( QString::fromUtf8( fileLayout.c_str() ) ).arg( QString::fromUtf8( e.what() ) );
+                QString err = QString::fromUtf8("Exception occurred when opening file %1: %2").arg( QString::fromUtf8( fileLayout.c_str() ) ).arg( QString::fromUtf8( e.what() ) );
                 Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
                 return;

@@ -35,7 +35,7 @@
 NATRON_NAMESPACE_ENTER
 
 /** @class This class describes the rectangle (or portion) of an image that is contained
- * into a texture. x1,y1,x2,y2 are respectivly the image coordinates of the left,bottom,right,top
+ * into a texture. x1,y1,x2,y2 are respectively the image coordinates of the left,bottom,right,top
  * edges of the texture. w,h are the width and height of the texture. Note that x2 - x1 != w
  * and likewise y2 - y1 != h , this is because a texture might not contain all the lines/columns
  * of the image in the portion defined.

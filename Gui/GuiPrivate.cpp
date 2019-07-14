@@ -638,7 +638,7 @@ GuiPrivate::restoreGuiGeometry()
         QSize size = settings.value( QString::fromUtf8("size") ).toSize();
         _gui->resize(size);
     } else {
-        ///No window size serialized, give some appriopriate default value according to the screen size
+        ///No window size serialized, give some appropriate default value according to the screen size
         QDesktopWidget* desktop = QApplication::desktop();
         QRect screen = desktop->screenGeometry();
         _gui->resize( (int)( 0.93 * screen.width() ), (int)( 0.93 * screen.height() ) ); // leave some space

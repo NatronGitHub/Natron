@@ -241,7 +241,7 @@ if [ "$PKGOS" = "Windows" ]; then
         elif [ -d "$CUSTOM_BUILDS_PATH/ffmpeg-gpl2" ]; then
             FFMPEG_PATH="$CUSTOM_BUILDS_PATH/ffmpeg-gpl2"
         else
-            echo "FFmpeg cannot be fount in $SDK_HOME/ffmpeg-gpl or $SDK_HOME/ffmpeg-gpl2"
+            echo "FFmpeg cannot be found in $SDK_HOME/ffmpeg-gpl or $SDK_HOME/ffmpeg-gpl2"
             echo "Setting FFMPEG_PATH=$SDK_HOME/ffmpeg-gpl2"
             FFMPEG_PATH="$SDK_HOME/ffmpeg-gpl2"
         fi
@@ -257,7 +257,7 @@ elif [ "$PKGOS" = "Linux" ]; then
         elif [ -d "$CUSTOM_BUILDS_PATH/ffmpeg-gpl2" ]; then
             FFMPEG_PATH="$CUSTOM_BUILDS_PATH/ffmpeg-gpl2"
         else
-            echo "FFmpeg cannot be fount in $SDK_HOME/ffmpeg-gpl or $SDK_HOME/ffmpeg-gpl2"
+            echo "FFmpeg cannot be found in $SDK_HOME/ffmpeg-gpl or $SDK_HOME/ffmpeg-gpl2"
             echo "Setting FFMPEG_PATH=$SDK_HOME/ffmpeg-gpl2"
             FFMPEG_PATH="$SDK_HOME/ffmpeg-gpl2"
         fi
