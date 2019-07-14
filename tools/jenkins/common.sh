@@ -34,8 +34,11 @@ LANG="C"
 export LANG
 GSED="sed -b"
 TIMEOUT="timeout"
-WGET="wget --referer https://natron.fr/"
+#WGET="wget --referer https://natron.fr/"
 
+# tell curl to continue downloads and follow redirects
+curlopts="--location --continue-at -"
+CURL="curl $curlopts"
 
 # Get OS
 #

@@ -488,7 +488,7 @@ for location in "${COPY_LOCATIONS[@]}"; do
     #mkdir "${location}/lib/compat"
     #mv "${location}/lib"/{libgomp*,libgcc*,libstdc*} "${location}/lib/compat/"
     if [ ! -f "$SRC_PATH/strings${BITS}.tgz" ]; then
-        $WGET "$THIRD_PARTY_BIN_URL/strings${BITS}.tgz" -O "$SRC_PATH/strings${BITS}.tgz"
+        $CURL "$THIRD_PARTY_BIN_URL/strings${BITS}.tgz" --output "$SRC_PATH/strings${BITS}.tgz"
     fi
     tar xvf "$SRC_PATH/strings${BITS}.tgz" -C "${location}/bin/"
 
@@ -545,7 +545,7 @@ export PYDIR="$PYDIR"
 
 # Install pip
 if [ -x "${TMP_PORTABLE_DIR}"/bin/natron-python ]; then
-    wget --no-check-certificate http://bootstrap.pypa.io/get-pip.py
+    $CURL --remote-name --insecure http://bootstrap.pypa.io/get-pip.py
     "${TMP_PORTABLE_DIR}"/bin/natron-python get-pip.py
     rm get-pip.py
 fi

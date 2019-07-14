@@ -29,6 +29,8 @@ Homebrew is easier to set up than MacPorts, but cannot build universal binaries.
 
 ### MacPorts
 
+#### Basic Setup
+
 You need an up to date MacPorts version. Just download it and install it from <http://www.macports.org>, and execute the following commands in a terminal:
 
     sudo port selfupdate
@@ -44,22 +46,37 @@ Then, create the index file:
 
 It is also recommended to add the  following line to `/opt/local/etc/macports/variants.conf`:
 
-    -x11 +no_x11 +bash_completion +no_gnome +quartz
+    -x11 +no_x11 +bash_completion +no_gnome +quartz +natron
 
-If compiling on Mac OS X 10.6 with Xcode 4 (using GCC 4.2.1 and libstdc++), you should also revert to the default compilers list of Xcode 3.2.6 (MacPort's `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` sets it to a different value for an unknown reason, resulting in llvm-gcc-4.2 being used to compile everything in MacPorts). Add the following line to `/opt/local/etc/macports/macports.conf`:
+#### Notes for OS X 10.6 Snow Leopard
 
-    default_compilers gcc-4.2 clang llvm-gcc-4.2 macports-clang-3.4 macports-clang-3.3 macports-llvm-gcc-4.2 apple-gcc-4.2 gcc-4.0
+On older systems such as 10.6, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)", and install and set clang-8.0 as the default compiler in the end. Also add the following to `/opt/local/etc/macports/variants.conf`:
+
+    -llvm34 -llvm37 -llvm39 -llvm40 -llvm50 -llvm60 -llvm70 +llvm80
+    -ld64_97 -ld64_127 -ld64_236
+
+make sure you have the right versions of cctools and ld64:
+
+    port -N install ld64-latest@274.2 +llvm80 cctools@921_2 +llvm80
+
+We noticed that clang 3.9.1 generates wrong code with `-Os` when compiling openexr (later clang versions were not checked), so it is safer to also change `default configure.optflags      {-Os}` to `default configure.optflags      {-O2}` in `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` (type `sudo nano /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` to edit it).
+
+The libtool that comes with OS X 10.6 does not work well with clang-generated binaries, and you may have to `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
+
+#### Install Ports
 
 Now, if you want to use turbojpeg instead of jpeg:
 
     sudo port -f uninstall jpeg
-    sudo port -v install libjpeg-turbo
+    sudo port -v -N install libjpeg-turbo
     
 And finally install the required packages:
 
-    sudo port -v install opencolorio -quartz
-    sudo port -v -N install qt4-mac boost cairo expat gsed py27-pyside pandoc py27-sphinx py27-sphinx_rtd_theme
-    sudo ln -s python2.7-config /opt/local/bin/python2-config
+    sudo port -v -N install cmake
+    sudo port -v -N install opencolorio -quartz -python27
+    sudo port -v -N install qt4-mac boost cairo expat gsed py27-pyside py27-sphinx py27-sphinx_rtd_theme
+    sudo port select --set python python27
+    sudo port select --set python2 python27
 
 Create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
 configuration, for example using the following comands:
@@ -68,9 +85,9 @@ configuration, for example using the following comands:
 sudo -s
 cat > /opt/local/lib/pkgconfig/glu.pc << EOF
  prefix=/usr
- exec_prefix=${prefix}
- libdir=${exec_prefix}/lib
- includedir=${prefix}/include
+ exec_prefix=\${prefix}
+ libdir=\${exec_prefix}/lib
+ includedir=\${prefix}/include
 
 
 Name: glu
@@ -78,21 +95,33 @@ Name: glu
  Description: glu
  Requires:
  Libs:
- Cflags: -I${includedir}
+ Cflags: -I\${includedir}
 EOF
 ```
 
 If you intend to build the [openfx-io](https://github.com/NatronGitHub/openfx-io) plugins too, you will need these additional packages:
 
-    yes | sudo port -v install x264 libvpx +highbitdepth libraw +gpl2 openexr ffmpeg +gpl2 +highbitdepth opencolorio openimageio +natron seexpr
+    sudo port -v -N install x264
+	sudo port -v -N install libvpx +highbitdepth
+	sudo port -v -N install ffmpeg +gpl2 +highbitdepth +natronmini
+	sudo port -v -N install libraw +gpl2
+	sudo port -v -N install openexr
+	sudo port -v -N install opencolorio -quartz -python27
+	sudo port -v -N install openimageio +natron
+	sudo port -v -N install seexpr
 
 and for [openfx-arena](https://github.com/NatronGitHub/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
-    yes | sudo port -v install librsvg ImageMagick +natron poppler librevenge libcdr-0.1 libzip
+    sudo port -v -N install librsvg
+	sudo port -v -N install ImageMagick +natron
+	sudo port -v -N install poppler
+	sudo port -v -N install librevenge
+	sudo port -v -N install libcdr-0.1
+	sudo port -v -N install libzip
 
 and for [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic):
 
-    yes | sudo port -v install fftw-3
+    sudo port -v -N install fftw-3
 
 ### Homebrew
 
@@ -122,7 +151,7 @@ Install libraries:
 
     brew tap homebrew/python
     brew tap homebrew/science
-    brew install expat cairo gnu-sed pandoc sphinx-doc
+    brew install expat cairo gnu-sed cmake wget keychain sphinx-doc
     /usr/local/opt/sphinx-doc/libexec/bin/pip3 install sphinx_rtd_theme
     brew install --build-from-source qt --with-mysql
 

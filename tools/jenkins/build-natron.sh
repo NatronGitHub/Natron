@@ -85,7 +85,7 @@ OCIO_CONFIGS_URL=https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Nat
 OCIO_CONFIGS_DIR="$SRC_PATH/OpenColorIO-Configs-Natron-v${OCIO_CONFIGS_VERSION}"
 if [ ! -d "$OCIO_CONFIGS_DIR" ]; then
     mkdir -p "$SRC_PATH" || true
-    $WGET "$OCIO_CONFIGS_URL" -O "$SRC_PATH/OpenColorIO-Configs-Natron-v${OCIO_CONFIGS_VERSION}.tar.gz"
+    $CURL "$OCIO_CONFIGS_URL" --output "$SRC_PATH/OpenColorIO-Configs-Natron-v${OCIO_CONFIGS_VERSION}.tar.gz"
     tar xf "$SRC_PATH/OpenColorIO-Configs-Natron-v${OCIO_CONFIGS_VERSION}.tar.gz" -C "$SRC_PATH"/
     rm -rf "$OCIO_CONFIGS_DIR/aces_1.0.1/baked" || true
     rm -rf "$OCIO_CONFIGS_DIR/aces_1.0.1/python" || true
