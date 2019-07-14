@@ -55,7 +55,7 @@ struct MemoryFilePrivate
 {
     std::string path; //< filepath of the backing file
 
-    char* data; //< pointer to the begining of the mapped file
+    char* data; //< pointer to the beginning of the mapped file
     size_t size; //< the effective size of the file
 #if defined(__NATRON_UNIX__)
     int file_handle; //< unix file handle
@@ -463,4 +463,3 @@ MemoryFile::remove()
 }
 
 NATRON_NAMESPACE_EXIT
-

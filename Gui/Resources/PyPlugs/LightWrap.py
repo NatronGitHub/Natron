@@ -215,7 +215,7 @@ def createInstance(app,group):
     lastNode.controlsPage.addParam(param)
 
     # Set param properties
-    param.setHelp("Merge operation bewteen the foreground object and the background. The default operation is \"plus\", which produces a glow effect.")
+    param.setHelp("Merge operation between the foreground object and the background. The default operation is \"plus\", which produces a glow effect.")
     param.setAddNewLine(True)
     param.setAnimationEnabled(True)
     lastNode.highlightmerge = param

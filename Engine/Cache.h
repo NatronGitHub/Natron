@@ -206,7 +206,7 @@ public:
 
     enum CacheEntryStatusEnum
     {
-        // The entry is cached and may be retrieved from 
+        // The entry is cached and may be retrieved from
         eCacheEntryStatusCached,
 
         // The entry was not cached and must be computed by this thread
@@ -221,7 +221,7 @@ public:
 
     CacheEntryLockerBase()
     {
-        
+
     }
 
 
@@ -424,8 +424,8 @@ public:
      * @brief This function serves 2 purposes: either fetch existing tiles from the cache or allocate new ones, or both at the same time.
      * This function tries to obtain tilesToAlloc.size() free tiles from the internal storage. If not available, grow the internal memory mapped file
      * so at least tilesToAlloc.size() free tiles are available.
-     * @param tilesToAlloc A vector of size of the number of desired tiles in output. The numbers in the vector are used to offset the bucket of the 
-     * cache on which to retrieve tiles from. If NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED is defined, this is instead the number of tiles 
+     * @param tilesToAlloc A vector of size of the number of desired tiles in output. The numbers in the vector are used to offset the bucket of the
+     * cache on which to retrieve tiles from. If NATRON_CACHE_TILES_MEMORY_ALLOCATOR_CENTRALIZED is defined, this is instead the number of tiles
      * to allocate.
      * @param allocatedTilesData[out] In output, this contains each tiles allocated as a pair of <tileIndex, pointer>
      * Each tile will have exactly NATRON_TILE_SIZE_BYTES bytes. The index is the index that must be passed back to the unLockTiles
@@ -455,10 +455,10 @@ public:
                                       std::vector<void*>* existingTilesData,
                                       std::vector<std::pair<TileInternalIndex, void*> >* allocatedTilesData,
                                       void** cacheData) = 0;
-    
+
 #ifdef DEBUG
     /**
-     * @brief Debug: Ensures that the index is valid in the storage. Can only be called between retrieveAndLockTiles and 
+     * @brief Debug: Ensures that the index is valid in the storage. Can only be called between retrieveAndLockTiles and
      * the corresponding call to unLockTiles
      **/
     virtual bool checkTileIndex(TileInternalIndex encodedIndex) const = 0;
@@ -490,7 +490,7 @@ public:
      * @brief Clears the cache of its last recently used entries so at least nBytesToFree are available for the given storage.
      * This should be called before allocating any buffer in the application to ensure we do not hit the swap.
      *
-     * This function is not blocking and it is not guaranteed that the memory is available when returning. 
+     * This function is not blocking and it is not guaranteed that the memory is available when returning.
      * Evicted entries will be deleted in a separate thread so this thread can continue its own work.
      **/
     virtual void evictLRUEntries(std::size_t nBytesToFree) = 0;
@@ -569,7 +569,7 @@ class Cache
     friend struct CacheEntryLockerPrivate<persistent>;
     friend class CacheEntryLocker<persistent>;
     friend struct CacheBucket<persistent>;
-    
+
     void initialize(const boost::shared_ptr<Cache<persistent> >& thisShared);
 
 
@@ -580,7 +580,7 @@ public:
     virtual ~Cache();
 
     /**
-     * @brief Clear any data on disk saved by the Cache. This function can be called before any Cache object is created 
+     * @brief Clear any data on disk saved by the Cache. This function can be called before any Cache object is created
      * to ensure the Cache does not try to load any data when initializing. Note that this function may be called whilst a
      * process is using the Cache resources, but it will not remove data from shared memory until all process is done using
      * this resource.
@@ -623,7 +623,7 @@ public:
     virtual void cleanupMappedProcessList() OVERRIDE FINAL;
     virtual boost::uuids::uuid getCurrentProcessUUID() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isUUIDCurrentlyActive(const boost::uuids::uuid& tag) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+
 private:
 
     boost::scoped_ptr<CachePrivate<persistent> > _imp;

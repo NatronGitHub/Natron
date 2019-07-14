@@ -38,12 +38,13 @@ Natron multiple times on the same computer, the different processes will share t
 - Avoid crash and issues when NatronEngine.Effect.destroy() is called #368
 - macOS: fix version numbers in Finder information #372
 - Fix callbacks in PyPanel and PyModalDialog #379
+- Fix recursive Python calls and handle the Python GIL properly
 
 ### Plugins
 
 - Fix bugs in DenoiseSharpen that caused crashes #300
 - Add support for chromatic aberration correction when reading RAW files #309
-- Update CImg and G'MIC to 2.6.7 and fix several issues in GMIC plugins
+- Update CImg and G'MIC to 2.6.7 and fix several issues in GMIC plugins (which are still beta)
 - Many new GMIC plugins, including GMIC Custom Code
 
 
@@ -767,7 +768,7 @@ scroll the items by pressing the up/down arrows. Checkbox can now also have focu
 - It is now possible to zoom the range of a slider around the current position by holding certain modifiers: Hold CTRL to zoom-in x10, hold CTRL + SHIFT to zoom-in x100. This can help adjusting precisely a parameter value
 - It is now possible to extract one or more nodes from the graph by pressing CTRL + SHIFT + X or via the right click menu. This will keep the connections between all extracted nodes but remove them from the surrounding tree and shift them by 200 pixels on the right.
 - It is now possible to merge 2 nodes (with a MergeOFX node) by holding CTRL + SHIFT and moving a node close to another one. The bounding box of both nodes should be green, indicating that a merge is possible.
-- A new Info tab on each node now contains informations about the format of images coming from each input and out-going from the node. This can help understand what data is really processed under the hood.
+- A new Info tab on each node now contains information about the format of images coming from each input and out-going from the node. This can help understand what data is really processed under the hood.
 - New shortcut to set the zoom level of the viewer to 100% (CTRL + 1)
 - New shortcut to toggle preview images for selected nodes: ALT + P
 - Added the possibility to edit node names in the node graph by pressing the key N
@@ -776,7 +777,7 @@ scroll the items by pressing the up/down arrows. Checkbox can now also have focu
 - Roto : when selecting points with the selection rectangle, if the SHIFT modifier is held down, it will not clear the previous selection. Also when holding down SHIFT, clicking on a selected point will remove it from the selection. Similarly, if selecting points with the selection rectangle but while holding down both SHIFT and CTRL will now allow to keep the previous selection but remove from the selection the newly selected points.
 - Roto : the Beziers animation can now be controlled in the curve editor, as well as the per-shape parameters.
 - The ColorCorrect and Grade nodes can now choose on which channels to operate on, including the alpha channel
-- The viewer info bar font has been changed to the same font of the rest of the application and a line of 1 pixel now separates the Viewer from the informations.
+- The viewer info bar font has been changed to the same font of the rest of the application and a line of 1 pixel now separates the Viewer from the information.
 - The viewer refresh button will now be red when it is actively rendering (not using the cache).
 - The turbo-mode button is now next to the FPS box of the viewer’s player bar instead of being on top of the properties bin.
 - The paste/duplicate/clone nodes operations now position new nodes under the mouse cursor.
@@ -849,7 +850,7 @@ for a station with 8 cores. Some tuning may be needed for stations with huge num
 filepath parameter.
 - Fixed a few bugs with the render progression report
 - Copy/Paste of a node will use an index-based copy differentiation instead of an incremental number of "- copy" appended to the original node name. For example: "Blur" "Blur.1" "Blur.2", etc...
-- The project now contains more informations visible in the Infos tab of the project settings. In particular, we added the following:
+- The project now contains more information visible in the Infos tab of the project settings. In particular, we added the following:
   - Original author name (the person who created the project) (read-only)
   - Last author name (the person who last saved this project) (read-only)
   - Creation date (read-only)
@@ -900,7 +901,7 @@ to
 Then all file-paths that depended on this variable will be updated to point to the correct location of the file.
 - File-paths are now "watched" by Natron: When a file changes outside of Natron, for example because another software have overwritten it or modified it, Natron will be notified and will reload the images.
 - New shortcuts editor: you can now customise the entire keyboard layout for the application.
-- Caching has been improved and should now be more aware of your system capabilities. It should strive for being as close possible to what the settings in the preferences are set to. Note that it might still need some tweeking on some platforms though because we're using system-dependents informations to make the Cache work.
+- Caching has been improved and should now be more aware of your system capabilities. It should strive for being as close possible to what the settings in the preferences are set to. Note that it might still need some tweeking on some platforms though because we're using system-dependent information to make the Cache work.
 - You can now add control points/keyframes to curves by double-clicking on them. However, it doesn't apply for the Roto Beziers.
 - File dialog speed has been increased drastically
 - ReadFFMPEG: improve stability a lot

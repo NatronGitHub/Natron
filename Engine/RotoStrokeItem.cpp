@@ -462,7 +462,7 @@ std::string
 RotoStrokeItem::getBaseItemName() const
 {
     std::string itemName;
-    
+
     switch (_imp->type) {
         case eRotoStrokeTypeSolid:
             itemName = kRotoPaintBrushBaseName;
@@ -686,7 +686,7 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
             pointBox.x2 += padding;
             pointBox.y1 -= padding;
             pointBox.y2 += padding;
-            
+
 
             if (!bboxSet) {
                 bboxSet = true;
@@ -790,10 +790,10 @@ RotoStrokeItem::endSubStroke()
     }
 
 
-    
+
     // The stroke is finished, reset the transform center
     resetTransformCenter();
-    
+
     // Reset nodes thread-safety since we now allow multiple concurrent threads again
     resetNodesThreadSafety();
 
@@ -931,7 +931,7 @@ RotoStrokeItem::setStrokes(const std::list<std::list<RotoPoint> >& strokes)
                 k.setValue( it2->pressure());
                 ValueChangedReturnCodeEnum aok = s.pressureCurve->setOrAddKeyframe(k);
                 assert(aok == eValueChangedReturnCodeKeyframeAdded);
-           
+
             }
             // Use CatmullRom interpolation, which means that the tangent may be modified by the next point on the curve.
             // In a previous version, the previous keyframe was set to Free so its tangents don't get overwritten, but this caused oscillations.
@@ -1154,7 +1154,7 @@ RotoStrokeItemPrivate::computeBoundingBox(TimeValue time, ViewIdx view) const
 
     RectD bbox;
     Transform::Matrix3x3 transform;
-    
+
     _publicInterface->getTransformAtTime(time, view, &transform);
     bool pressureAffectsSize = pressureSize.lock()->getValueAtTime(time);
     bool bboxSet = false;
@@ -1277,7 +1277,7 @@ RotoStrokeItem::getBoundingBox(TimeValue time, ViewIdx view) const
     }
     RectD bbox;
     bbox = _imp->computeBoundingBox(time, view);
-    
+
     if (renderClone) {
         if (!_imp->renderCachedBbox) {
             _imp->renderCachedBbox.reset(new std::map<TimeValue,RectD>);
@@ -1407,7 +1407,7 @@ void
 RotoStrokeItem::fetchRenderCloneKnobs()
 {
     RotoDrawableItem::fetchRenderCloneKnobs();
-    
+
     // Make a strength parameter when relevant
     if (_imp->type == eRotoStrokeTypeBlur ||
         _imp->type == eRotoStrokeTypeSharpen) {
@@ -1567,4 +1567,3 @@ RotoStrokeItem::getBrushCloneBlackOutsideKnob() const
 }
 
 NATRON_NAMESPACE_EXIT
-

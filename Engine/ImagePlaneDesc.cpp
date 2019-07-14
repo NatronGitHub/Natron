@@ -350,7 +350,7 @@ extractOFXEncodedCustomPlane(const std::string& comp, std::string* layerName, st
 
     const std::size_t planeNameStartIdx = foundPlane + foundPlaneLen;
 
-    // Find the optionnal plane label
+    // Find the optional plane label
     // If planeLabelStartIdx = 0, there's no plane label.
     std::size_t planeLabelStartIdx = 0;
 
@@ -363,7 +363,7 @@ extractOFXEncodedCustomPlane(const std::string& comp, std::string* layerName, st
 
 
 
-    // Find the optionnal channels label
+    // Find the optional channels label
     // If channelsLabelStartIdx = 0, there's no channels label.
     std::size_t channelsLabelStartIdx = 0;
 

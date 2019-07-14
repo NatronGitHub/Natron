@@ -620,7 +620,7 @@ Gui::debugImage(const ImagePtr& image,
         renderWindow = bounds;
     } else {
         if ( !roi.intersect(bounds, &renderWindow) ) {
-            qDebug() << "The RoI does not interesect the bounds of the image.";
+            qDebug() << "The RoI does not intersect the bounds of the image.";
 
             return;
         }
@@ -655,7 +655,7 @@ Gui::debugImage(const ImagePtr& image,
 
     Image::CPUData imageData;
     imageToWrite->getCPUData(&imageData);
- 
+
 
     QImage output(renderWindow.width(), renderWindow.height(), QImage::Format_ARGB32);
     switch (imageToWrite->getBitDepth()) {
@@ -974,7 +974,7 @@ Gui::onMustRefreshViewersAndKnobsLaterReceived()
             continue;
         }
         if ( internalNode->isDoingPartialUpdates() ) {
-            //When tracking, we handle rendering separatly
+            //When tracking, we handle rendering separately
             continue;
         }
         internalNode->getNode()->getRenderEngine()->renderCurrentFrame();
@@ -1021,7 +1021,7 @@ Gui::refreshTimelineGuiKeyframesNow()
         if (!node) {
             continue;
         }
-        
+
         node->getAllVisibleKnobsKeyframes(&_imp->keyframesVisibleOnTimeline);
     }
 

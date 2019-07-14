@@ -23,8 +23,8 @@ if [ -z "${CWD:-}" ]; then
 fi
 
 # Set common paths used across scripts
-TMP_PATH="$CWD/tmp"
-SRC_PATH="$CWD/src"
+TMP_PATH="$WORKSPACE/tmp"
+SRC_PATH="$WORKSPACE/src"
 INC_PATH="$CWD/include"
 # posix name for temporary directory
 TMPDIR=${TMPDIR:-/tmp}
@@ -34,8 +34,11 @@ LANG="C"
 export LANG
 GSED="sed -b"
 TIMEOUT="timeout"
-WGET="wget --referer https://natron.fr/"
+#WGET="wget --referer https://natron.fr/"
 
+# tell curl to continue downloads and follow redirects
+curlopts="--location --continue-at -"
+CURL="curl $curlopts"
 
 # Get OS
 #
@@ -120,7 +123,7 @@ elif [ "$PKGOS" = "OSX" ]; then
     # sed adds a newline on OSX! http://stackoverflow.com/questions/13325138/why-does-sed-add-a-new-line-in-osx
     # let's use gsed in binary mode.
     # gsed is provided by the gsed package on MacPorts or the gnu-sed package on homebrew
-    # xhen using this variable, do not double-quote it ("$GSED"), because it contains options
+    # when using this variable, do not double-quote it ("$GSED"), because it contains options
     GSED="${MACPORTS}/bin/gsed -b"
     PATH="${MACPORTS}/bin:$PATH"
     # timeout is available in GNU coreutils:

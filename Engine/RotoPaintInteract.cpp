@@ -650,7 +650,7 @@ RotoPaintInteract::onRoleChangedInternal(const KnobGroupPtr& roleGroup)
     multiStrokeEnabled.lock()->setInViewerContextSecret(!isPaintRole);
 
     selectedRole = role;
-    
+
     return true;
 } // RotoPaintInteract::onRoleChangedInternal
 
@@ -3319,18 +3319,18 @@ RotoPaintInteract::onOverlayKeyDown(TimeValue /*time*/,
             didSomething = true;
         }
     }
-    
+
     if ( ( (key == Key_Escape) && ( (selectedTool == eRotoToolDrawBezier) || (selectedTool == eRotoToolOpenBezier) ) ) ) {
         if ( ( (selectedTool == eRotoToolDrawBezier) || (selectedTool == eRotoToolOpenBezier) ) && builtBezier && !builtBezier->isCurveFinished(view) ) {
             _imp->publicInterface->pushUndoCommand( new OpenCloseUndoCommand(_imp->ui, builtBezier, view) );
-            
+
             builtBezier.reset();
             selectedCps.clear();
             setCurrentTool( selectAllAction.lock() );
             didSomething = true;
         }
     }
-    
+
     return didSomething;
 } //onOverlayKeyDown
 
@@ -3341,9 +3341,9 @@ RotoPaintInteract::onOverlayKeyUp(TimeValue /*time*/,
                                   Key key,
                                   KeyboardModifiers /*modifiers*/)
 {
-    
+
     bool didSomething = false;
-    
+
     if ( (key == Key_Shift_L) || (key == Key_Shift_R) ) {
         if (shiftDown) {
             --shiftDown;
@@ -3358,8 +3358,8 @@ RotoPaintInteract::onOverlayKeyUp(TimeValue /*time*/,
             --altDown;
         }
     }
-    
-    
+
+
     if (!ctrlDown) {
         if ( !iSelectingwithCtrlA && showCpsBbox && ( (key == Key_Control_L) || (key == Key_Control_R) ) ) {
             transformMode = (transformMode == eSelectedCpsTransformModeTranslateAndScale ?
@@ -3367,12 +3367,12 @@ RotoPaintInteract::onOverlayKeyUp(TimeValue /*time*/,
             didSomething = true;
         }
     }
-    
+
     if ( ( (key == Key_Control_L) || (key == Key_Control_R) ) && iSelectingwithCtrlA ) {
         iSelectingwithCtrlA = false;
     }
-    
-    
+
+
     return didSomething;
 } // onOverlayKeyUp
 
@@ -3402,7 +3402,7 @@ RotoPaintInteract::onOverlayFocusLost(TimeValue /*time*/,
     shiftDown = 0;
     ctrlDown = 0;
     altDown = 0;
-    
+
     return true;
 } // onOverlayFocusLost
 

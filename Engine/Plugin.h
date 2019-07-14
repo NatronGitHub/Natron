@@ -156,7 +156,7 @@ NATRON_NAMESPACE_ENTER
 #define kNatronPluginPropPyPlugIsPythonScript "NatronPluginPropPyPlugIsPythonScript"
 
 /**
- * @brief x1 bool property (optional) indicating for a PyPlug if this is a toolset or not. 
+ * @brief x1 bool property (optional) indicating for a PyPlug if this is a toolset or not.
  * Toolsets are always encoded in Python.
  * Default value - Empty
  **/
@@ -234,7 +234,7 @@ NATRON_NAMESPACE_ENTER
 #define kNatronPluginPropViewAware "NatronPluginPropViewAware"
 
 /**
- * @brief x1 ViewInvarianceLevel property (optional) indicating for a plug-in that has the property kNatronPluginPropViewAware set to 
+ * @brief x1 ViewInvarianceLevel property (optional) indicating for a plug-in that has the property kNatronPluginPropViewAware set to
  * true whether images vary depending on the view.
  * Default value - eViewInvarianceAllViewsVariant
  **/
@@ -385,7 +385,7 @@ public:
 
     // the node ID is the same as name for menu items and the pluginID if this is a leaf
     QString getTreeNodeID() const;
-    
+
 };
 
 // Identify a preset for a node
@@ -447,7 +447,7 @@ class Plugin : public PropertiesHolder
     EffectDescriptionPtr _effectDescription;
 
 private:
-    
+
     virtual void initializeProperties() const OVERRIDE FINAL;
 
     Plugin();

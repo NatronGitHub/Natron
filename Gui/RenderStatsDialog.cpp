@@ -339,13 +339,13 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
 
     QString statsDesc = NATRON_NAMESPACE::convertFromPlainText(tr(
                                                            "Statistics are accumulated over each frame rendered by default.\nIf you want to display statistics of the last "
-                                                           "frame rendered, uncheck the \"Accumulate\" checkbox.\nIf you want to have more detailed informations besides the time spent "
+                                                           "frame rendered, uncheck the \"Accumulate\" checkbox.\nIf you want to have more detailed information besides the time spent "
                                                            "rendering for each node,\ncheck the \"Advanced\" checkbox.\n The \"Time spent to render\" is the time spent "
                                                            "to render a frame (or more if \"Accumulate\" is checked).\nIf there are multiple parallel renders (see preferences) "
-                                                           "the time will be accumulated across each threads.\nHover the mouse over each column header to have detailed informations "
+                                                           "the time will be accumulated across each threads.\nHover the mouse over each column header to have detailed information "
                                                            "for each statistic.\nBy default, nodes are sorted by decreasing time spent to render.\nClicking on a node will center "
                                                            "the node-graph on it.\nWhen in \"Advanced\" mode, double-clicking on the \"Rendered Tiles\" or "
-                                                           "the \"Identity Tiles\" cell\nwill open-up a window containing detailed informations about the tiles rendered.\n"), NATRON_NAMESPACE::WhiteSpaceNormal);
+                                                           "the \"Identity Tiles\" cell\nwill open-up a window containing detailed information about the tiles rendered.\n"), NATRON_NAMESPACE::WhiteSpaceNormal);
     _imp->descriptionLabel = new Label(statsDesc, this);
     _imp->mainLayout->addWidget(_imp->descriptionLabel);
 

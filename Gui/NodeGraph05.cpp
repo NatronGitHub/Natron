@@ -110,8 +110,8 @@ NodeGraph::setNodeToDefaultPosition(const NodeGuiPtr& node, const NodesGuiList& 
             hasPositionnedNode = true;
         }
     }
-    
-    
+
+
 
     // Ok fallback with the node in the middle of the node graph
     if (!hasPositionnedNode) {
@@ -122,4 +122,3 @@ NodeGraph::setNodeToDefaultPosition(const NodeGuiPtr& node, const NodesGuiList& 
 }
 
 NATRON_NAMESPACE_EXIT
-

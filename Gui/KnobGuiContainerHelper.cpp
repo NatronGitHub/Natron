@@ -65,7 +65,7 @@ struct KnobGuiContainerHelperPrivate
     KnobGuiContainerHelper* _p;
     KnobHolderWPtr holder;
 
-    // Stores our KnobGui refered to by the internal Knob
+    // Stores our KnobGui referred to by the internal Knob
     KnobsGuiMapping knobsMap;
     KnobPageGuiWPtr currentPage;
     PagesMap pages;

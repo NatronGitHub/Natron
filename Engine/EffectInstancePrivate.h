@@ -259,8 +259,8 @@ struct FrameViewKey_Compare
         } else if (lhs.plane > rhs.plane) {
             return false;
         }
-        
-        
+
+
         return false;
     }
 };
@@ -351,7 +351,7 @@ public:
     Implementation(EffectInstance* publicInterface, const Implementation& other);
 
     ~Implementation();
-    
+
     void fetchSubLabelKnob();
 
 
@@ -385,7 +385,7 @@ public:
      * @brief Get the results of the getFrameRange action for this render
      **/
     GetTimeInvariantMetadataResultsPtr getTimeInvariantMetadataResults() const;
-    
+
 
     /**
      * @brief Helper function in the implementation of renderRoI to determine from the planes requested
@@ -429,7 +429,7 @@ public:
     AcceptedRequestConcatenationFlags getConcatenationFlagsForInput(int inputNb) const;
 
 
-   
+
     /**
      * @brief Helper function in the implementation of renderRoI to determine the image backend (OpenGL, CPU...)
      **/
@@ -584,7 +584,7 @@ public:
 
     void onLayerChanged(bool isOutput);
 
-    
+
 };
 
 

@@ -123,7 +123,7 @@ struct ViewerInstancePrivate
     ActionRetCodeEnum getChannelOptions(TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const;
 
     void setDisplayChannelsFromLayer(const std::list<ImagePlaneDesc>& availableLayers);
-    
+
 };
 
 
@@ -642,7 +642,7 @@ ViewerInstancePrivate::refreshLayerAndAlphaChannelComboBox()
 
     std::vector<ChoiceOption> layerOptions;
     std::vector<ChoiceOption> channelOptions;
-    
+
     // Append None choice
     layerOptions.push_back(ChoiceOption("-", "",""));
     channelOptions.push_back(ChoiceOption("-", "", ""));
@@ -891,7 +891,7 @@ findAutoContrastVminVmaxForComponents(const Image::CPUData& colorImage,
                                       DisplayChannelsEnum channels,
                                       const RectI & roi,
                                       MinMaxVal* ret)
-    
+
 
 {
     switch (channels) {
@@ -1234,7 +1234,7 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
                     uTmpPix[0] = Image::clampIfInt<unsigned char>( (double)uTmpPix[0] + matteA );
 
                 }
-       
+
                 // The viewer has the particularity to write-out BGRA 8-bit images instead of RGBA since the resulting
                 // image is directly fed to the GL_BGRA OpenGL texture format.
                 *dst_pixels_uint = toBGRA(uTmpPix[0], uTmpPix[1], uTmpPix[2], uTmpPix[3]);

@@ -318,7 +318,7 @@ thread.
 :rtype: :class:`Effect<NatronEngine.Effect>`
 
     Same as :func:`getInput(inputNumber)<NatronEngine.Effect.getInput>` except that the parameter in input
-    is the name of the input as diplayed on the node-graph. This function is made available for convenience.
+    is the name of the input as displayed on the node-graph. This function is made available for convenience.
 
 
 

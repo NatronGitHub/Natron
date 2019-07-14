@@ -46,7 +46,7 @@ Detailed Description
 --------------------
 
 When running Natron there's a **unique** instance of the :doc:`PyCoreApplication` object.
-It holds general informations about the process.
+It holds general information about the process.
 
 Generally, throughout your scripts, you can access this object with the variable *natron*
 that Natron pre-declared for you, e.g.:

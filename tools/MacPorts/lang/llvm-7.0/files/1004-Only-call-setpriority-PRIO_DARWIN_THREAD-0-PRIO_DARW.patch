@@ -1,0 +1,29 @@
+From 9f9ae872db92fced923774e7ed8fdbbfa9db8dba Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Sat, 17 Jan 2015 19:08:57 -0800
+Subject: [PATCH 1004/1008] Only call setpriority(PRIO_DARWIN_THREAD, 0,
+ PRIO_DARWIN_BG) if it is available
+
+Tiger and earlier versions of darwin do not support this.
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+---
+ tools/libclang/CIndex.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git llvm_master/tools/clang/tools/libclang/CIndex.cpp macports_master/tools/clang/tools/libclang/CIndex.cpp
+index 499d9abf9a..97a47396ee 100644
+--- llvm_master/tools/clang/tools/libclang/CIndex.cpp
++++ macports_master/tools/clang/tools/libclang/CIndex.cpp
+@@ -8504,7 +8504,7 @@ void clang::setThreadBackgroundPriority() {
+   if (getenv("LIBCLANG_BGPRIO_DISABLE"))
+     return;
+ 
+-#ifdef USE_DARWIN_THREADS
++#if defined(USE_DARWIN_THREADS) && defined(PRIO_DARWIN_THREAD) && defined(PRIO_DARWIN_BG)
+   setpriority(PRIO_DARWIN_THREAD, 0, PRIO_DARWIN_BG);
+ #endif
+ }
+-- 
+2.17.1 (Apple Git-112)
+

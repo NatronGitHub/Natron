@@ -244,7 +244,7 @@ RemoveMultipleNodesCommand::undo()
         serializationList.push_back(it->serialization);
     }
 
-    
+
     NodesList createdNodes;
     _graph->getGroup()->createNodesFromSerialization(serializationList, NodeCollection::eCreateNodesFromSerializationFlagsConnectToExternalNodes, &createdNodes);
 
@@ -255,7 +255,7 @@ RemoveMultipleNodesCommand::undo()
             itNodes->node = *it;
         }
     }
-    
+
 
     _graph->getGui()->getApp()->triggerAutoSave();
     //_graph->getGui()->getApp()->renderAllViewers();
@@ -269,7 +269,7 @@ void
 RemoveMultipleNodesCommand::redo()
 {
     _isRedone = true;
-    
+
     for (std::list<NodeToRemove>::iterator it = _nodes.begin();
          it != _nodes.end();
          ++it) {
@@ -803,7 +803,7 @@ Tree::buildTreeInternal(const NodesGuiList& selectedNodes,
         index = 0;
         for (NodesGuiList::iterator it = maskInputs.begin(); it != maskInputs.end(); ++it, ++index) {
             QPointF p = (*it)->mapToParent( (*it)->mapFromScene(currentNodeScenePos) );
-            ///Note that here we subsctract nodeSize.width(): Actually we substract twice nodeSize.width() / 2: once to get to the left of the node
+            ///Note that here we subsctract nodeSize.width(): Actually we subtract twice nodeSize.width() / 2: once to get to the left of the node
             ///and another time to add the space of half a node
             p.rx() += ( (nodeSize.width() + (*it)->getSize().width() / 2.) ) * (index + 1);
 
@@ -868,10 +868,10 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr> & nodes
 {
     ///1) Separate the nodes in trees they belong to, once a node has been "used" by a tree, mark it
     ///and don't try to reposition it for another tree
-    ///2) For all trees : recursively position each nodes so that each input of a node is positionned as following:
-    /// a) The first non mask input is positionned above the node
-    /// b) All others non mask inputs are positionned on the left of the node, each one separated by the space of half a node
-    /// c) All masks are positionned on the right of the node, each one separated by the space of half a node
+    ///2) For all trees : recursively position each nodes so that each input of a node is positioned as following:
+    /// a) The first non mask input is positioned above the node
+    /// b) All others non mask inputs are positioned on the left of the node, each one separated by the space of half a node
+    /// c) All masks are positioned on the right of the node, each one separated by the space of half a node
     ///3) Move all trees so that they are next to each other and their "top level" node
     ///(the input that is at the highest position in the Y coordinate) is at the same
     ///Y level (node centers have the same Y)
@@ -879,7 +879,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr> & nodes
     std::list<NodeGui*> usedNodes;
 
     ///A list of Tree
-    ///Each tree is a lit of nodes with a boolean indicating if it was already positionned( "used" ) by another tree, if set to
+    ///Each tree is a lit of nodes with a boolean indicating if it was already positioned( "used" ) by another tree, if set to
     ///true we don't do anything
     /// Each node that doesn't have any output is a potential tree.
     TreePtrList trees;
@@ -1287,7 +1287,7 @@ GroupFromSelectionCommand::redo()
     Point bboxCenter;
     bboxCenter.x = (originalNodesBbox.x1 + originalNodesBbox.x2) / 2.;
     bboxCenter.y = (originalNodesBbox.y1 + originalNodesBbox.y2) / 2.;
-    
+
     // Create the actual Group node within this Group
     NodeCollectionPtr oldContainer = _oldGroup.lock();
     if (!oldContainer) {
@@ -1408,7 +1408,7 @@ GroupFromSelectionCommand::redo()
         }
 
     }
-    
+
     //Create only a single output
 
     {
@@ -1509,8 +1509,8 @@ InlineGroupCommand::InlineGroupCommand(const NodeCollectionPtr& newGroup, const 
                 inlinedGroup.groupOutputs.push_back(outp);
             }
         }
-        
-        
+
+
         NodesList nodes = group->getNodes();
         // Only move the nodes that are not GroupInput and GroupOutput
         // Compute the BBox of the inlined nodes so we can make space
@@ -1597,7 +1597,7 @@ InlineGroupCommand::undo()
             movedNode->setPosition(it2->position[0], it2->position[1]);
         }
 
-        
+
         // Re-connect all input outputs to the GroupInput
         for (std::vector<InlinedGroup::InputOutput>::const_iterator it2 = it->inputsMap.begin(); it2 != it->inputsMap.end(); ++it2) {
             NodePtr inputOutput = it2->output.lock();
@@ -1732,7 +1732,7 @@ InlineGroupCommand::redo()
         group->getNode()->connectOutputsToMainInput();
         group->getNode()->destroyNode();
 
-        
+
     } // for each group
 
 
@@ -1758,7 +1758,7 @@ RestoreNodeToDefaultCommand::RestoreNodeToDefaultCommand(const NodesGuiList & no
 
 RestoreNodeToDefaultCommand::~RestoreNodeToDefaultCommand()
 {
-    
+
 }
 
 void

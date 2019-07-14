@@ -161,7 +161,7 @@ public:
     virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view,FramesNeededMap* framesNeeded) OVERRIDE WARN_UNUSED_RETURN;
     virtual ActionRetCodeEnum getFrameRange(double *first, double *last) OVERRIDE FINAL;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
-    
+
     virtual bool canHandleRenderScaleForOverlays() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void beginKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE;
     virtual void endKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE;
@@ -211,7 +211,7 @@ public:
     virtual bool supportsConcurrentOpenGLRenders() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ActionRetCodeEnum attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ActionRetCodeEnum dettachOpenGLContext(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data) OVERRIDE FINAL;
-    
+
     virtual EffectInstanceTLSDataPtr getTLSObject() const OVERRIDE FINAL;
     virtual EffectInstanceTLSDataPtr getTLSObjectForThread(QThread* thread) const OVERRIDE FINAL;
     virtual EffectInstanceTLSDataPtr getOrCreateTLSObject() const OVERRIDE FINAL;
@@ -236,7 +236,7 @@ public:
     virtual void onPropertiesChanged(const EffectDescription& description) OVERRIDE FINAL;
     virtual void refreshDynamicProperties() OVERRIDE FINAL;
 
-    /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
+    /********OVERRIDDEN FROM EFFECT INSTANCE: END*************/
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
     static ContextEnum mapToContextEnum(const std::string &s);
     static std::string mapContextToString(ContextEnum ctx);

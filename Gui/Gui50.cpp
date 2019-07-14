@@ -155,7 +155,7 @@ Gui::getCurrentNodeViewerInterface(const PluginPtr& plugin) const
         return NodeGuiPtr();
     }
     ViewerTab* viewer = viewers.front();
-    
+
     return viewer->getCurrentNodeViewerInterface(plugin);
 }
 
@@ -547,7 +547,7 @@ Gui::keyPressEvent(QKeyEvent* e)
             }
         }
     } else if ( (key == Qt::Key_V) && modCASIsControl(e) ) {
-        
+
         NodeGraph* lastUsedGraph = getLastSelectedGraph();
         if (!lastUsedGraph) {
             lastUsedGraph = _imp->_nodeGraphArea;
@@ -1102,7 +1102,7 @@ Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
         }
 #endif
         QDir dir(path);
-        
+
         //if the path dropped is not a directory append it
         if ( !dir.exists() ) {
             filesList << path;

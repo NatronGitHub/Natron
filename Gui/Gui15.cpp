@@ -63,7 +63,7 @@ Gui::importLayoutInternal(const std::string& filename)
 
         return;
     }
-    
+
     try {
         WorkspaceSerialization s;
         try {
@@ -353,7 +353,7 @@ Gui::addVisibleDockablePanel(DockablePanel* panel)
                 if ( !isPanel->isFloating() ) {
                     ++nbDockedPanels;
                 }
-                
+
             }
         }
 

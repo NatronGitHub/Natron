@@ -88,7 +88,7 @@ Image::~Image()
         }
 
     }
-   
+
     if (!toDeleteInDeleterThread.empty()) {
         appPTR->deleteCacheEntriesInSeparateThread(toDeleteInDeleterThread);
     }
@@ -284,7 +284,7 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
             return eActionStatusOK;
         }
 
-    } 
+    }
 #endif
     ImagePtr tmpImage;
     {

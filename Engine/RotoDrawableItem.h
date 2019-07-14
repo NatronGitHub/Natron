@@ -133,7 +133,7 @@ protected:
      * nodes to their default thread safety for rendering.
      **/
     void resetNodesThreadSafety();
-    
+
 public:
     /**
      * @brief Connects nodes used by this item in the rotopaint tree. createNodes() must have been called prior

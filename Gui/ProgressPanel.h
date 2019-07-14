@@ -143,7 +143,7 @@ private:
     void addTaskToTable(const ProgressTaskInfoPtr& task);
 
 private:
-    // overriden from QWidget
+    // overridden from QWidget
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;

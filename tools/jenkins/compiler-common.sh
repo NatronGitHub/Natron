@@ -14,10 +14,11 @@ if [ "$PKGOS" = "OSX" ]; then
     osxver=$(uname -r)
 
     # if clang-mp-5.0 or clang-mp-4.0 is available
-    if command -v clang-mp-5.0 >/dev/null 2>&1 || command -v clang-mp-4.0 >/dev/null 2>&1; then
+    if command -v clang-mp-9.0 >/dev/null 2>&1 || command -v clang-mp-8.0 >/dev/null 2>&1 || command -v clang-mp-7.0 >/dev/null 2>&1 || command -v clang-mp-6.0 >/dev/null 2>&1 || command -v clang-mp-5.0 >/dev/null 2>&1 || command -v clang-mp-4.0 >/dev/null 2>&1; then
         COMPILER=clang-omp
         if grep -q "configure.optflags.*-Os" /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl; then
-            echo "Warning: clang-3.9.1 is known to generate wrong code with -Os on openexr, please edit /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl and set configure.optflags to -O2"
+            true
+            #echo "Warning: clang-3.9.1 is known to generate wrong code with -Os on openexr, please edit /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl and set configure.optflags to -O2"
             #exit 1
         fi
     fi
@@ -26,7 +27,7 @@ if [ "$PKGOS" = "OSX" ]; then
         COMPILER=clang-omp
     fi
     #COMPILER=clang-omp
-    COMPILER=${COMPILER:-gcc}
+    COMPILER=${COMPILER:-clang}
 
     if [ "$COMPILER" != "gcc" -a "$COMPILER" != "clang" -a "$COMPILER" != "clang-omp" ]; then
         echo "Error: COMPILER must be gcc or clang or clang-omp"
@@ -57,7 +58,7 @@ if [ "$PKGOS" = "OSX" ]; then
         CC=clang-mp-4.0
         CXX="clang++-mp-4.0 -stdlib=libc++ -std=c++11"
         # newer version (testing) using clang
-        # if clang-mp-5.0 is available
+        # if a recent clang-mp is available
         if command -v clang-mp-6.0 >/dev/null 2>&1; then
             CC=clang-mp-6.0
             CXX="clang++-mp-6.0 -stdlib=libc++ -std=c++11"
@@ -71,7 +72,27 @@ if [ "$PKGOS" = "OSX" ]; then
             CC=/usr/local/opt/llvm/bin/clang
             CXX="/usr/local/opt/llvm/bin/clang++ -std=c++11"
         fi
-
+        # clang > 7.0 sometimes chokes on building Universal CImg.ofx, probably because of #pragma omp atomic
+        #Undefined symbols for architecture i386:
+        #"___atomic_load", referenced from:
+        #_.omp_outlined..468 in CImgExpression.o
+        #_.omp_outlined..608 in CImgExpression.o
+        case "$osxver" in
+            #9.*|10.*)
+            #    true;;
+            *)
+                if command -v clang-mp-9.0 >/dev/null 2>&1; then
+                    CC=clang-mp-9.0
+                    CXX="clang++-mp-9.0 -stdlib=libc++ -std=c++11"
+                elif command -v clang-mp-8.0 >/dev/null 2>&1; then
+                    CC=clang-mp-8.0
+                    CXX="clang++-mp-8.0 -stdlib=libc++ -std=c++11"
+                elif command -v clang-mp-7.0 >/dev/null 2>&1; then
+                    CC=clang-mp-7.0
+                    CXX="clang++-mp-7.0 -stdlib=libc++ -std=c++11"
+                fi
+                ;;
+        esac
         OBJECTIVE_CC=$CC
         OBJECTIVE_CXX=$CXX
     else

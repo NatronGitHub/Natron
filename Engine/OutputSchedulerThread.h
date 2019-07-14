@@ -197,7 +197,7 @@ public:
     // The list of frames that should be processed together by the scheduler
     std::list<RenderFrameSubResultPtr> frames;
 
-    
+
 };
 
 typedef boost::shared_ptr<RenderFrameResultsContainer> RenderFrameResultsContainerPtr;
@@ -237,13 +237,13 @@ protected:
 
 public:
 
-    
+
 
     virtual ~OutputSchedulerThread();
 
     /**
      * @brief When enabled, after a frame is rendered, the processFrame function is called. Note that the processFrame
-     * function is called in the ordered that renders were launched with createFrameRenderResults. 
+     * function is called in the ordered that renders were launched with createFrameRenderResults.
      * This is used for example by the Viewer to upload the rendered frames to the OpenGL texture.
      * @mode Controls whether the processFrame call should be operated on the main-thread or on a dedicated thread.
      * By default processFrame is disabled.
@@ -324,7 +324,7 @@ protected:
     void runAfterFrameRenderedCallback(TimeValue frame);
 
     virtual ProcessFrameArgsBasePtr createProcessFrameArgs(const OutputSchedulerThreadStartArgsPtr& runArgs, const RenderFrameResultsContainerPtr& results) = 0;
-    
+
 
     /**
      * @brief Set the timeline to the next frame to be rendered, this is used by startSchedulerAtFrame()
@@ -407,7 +407,7 @@ private:
 
 
     void startFrameRenderFromLastStartedFrame();
-    
+
     void startFrameRender(TimeValue startingFrame);
 
     friend struct OutputSchedulerThreadPrivate;

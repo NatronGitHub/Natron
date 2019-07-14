@@ -287,6 +287,8 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
     //_PyEval_SetSwitchInterval(LONG_MAX);
 
     //See answer for http://stackoverflow.com/questions/15470367/pyeval-initthreads-in-python-3-how-when-to-call-it-the-saga-continues-ad-naus
+    // Note: on Python >= 3.7 this is already done by Py_Initialize(),
+    // but it doesn't hurt do do it once more.
     PyEval_InitThreads();
 
     // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
@@ -294,6 +296,12 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
     // Disabled because it seems to crash Natron at launch.
     //_imp->mainThreadState = PyGILState_GetThisThreadState();
     //PyEval_ReleaseThread(_imp->mainThreadState);
+
+    // Release the GIL, because PyEval_InitThreads acquires the GIL
+    // see https://docs.python.org/3.7/c-api/init.html#c.PyEval_InitThreads
+    PyThreadState *_save = PyEval_SaveThread();
+    // The lock should be released just before PyFinalize() using:
+    // PyEval_RestoreThread(_save);
 
     std::string err;
 #if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)

@@ -214,7 +214,7 @@ Node::makeDocumentation(bool genHTML) const
 
                 if (!isBtn && !isSep && !isParametric) {
                     // If this is a ChoiceParam and we are not generating live HTML doc,
-                    // only add the list of entries and their halp if this node should not be
+                    // only add the list of entries and their help if this node should not be
                     // ignored (eg. OCIO colorspace knobs).
                     if ( isChoice &&
                          (genHTML || !( knobScriptName == QString::fromUtf8(kOCIOParamInputSpaceChoice) ||

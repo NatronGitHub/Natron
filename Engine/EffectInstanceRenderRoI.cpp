@@ -167,12 +167,12 @@ EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPt
                     return eActionStatusFailed;
                 } else {
                     // Fetch the plane on the pass-through input
-                    
+
                     EffectInstancePtr ptInput = _publicInterface->getInputMainInstance(passThroughInputNb);
                     if (!ptInput) {
                         return eActionStatusInputDisconnected;
                     }
-                        
+
                     *isPassThrough = true;
 
                     FrameViewRequestPtr createdRequest;
@@ -384,7 +384,7 @@ EffectInstance::Implementation::handleConcatenation(const TreeRenderExecutionDat
         // Set the stack on the frame view request
         requestData->setDistorsionStack(distoStack);
     }
-    
+
     *concatenated = true;
 
     return eActionStatusOK;
@@ -518,7 +518,7 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
 {
     renderRects->clear();
 
-    
+
     // Compute the rectangle portion (renderWindow) left to render.
     TileStateHeader tilesState;
     bool hasUnRenderedTile;
@@ -563,7 +563,7 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
                 return stat;
             }
         }
-        
+
     }
 
     // The image is already computed
@@ -608,7 +608,7 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
                 if (it->status != eTileStatusNotRendered) {
                     continue;
                 }
-                
+
                 if ( !it->bounds.intersects(inputRodIntersectionPixel) ) {
                     TimeValue identityInputTime;
                     int identityInputNb;
@@ -676,7 +676,7 @@ EffectInstance::Implementation::checkRestToRender(bool updateTilesStateFromCache
         if (nCPUs > 1) {
             reducedRects = mainRenderRect.splitIntoSmallerRects(nCPUs);
         }
-        
+
     }
     for (std::list<RectI>::const_iterator it = reducedRects.begin(); it != reducedRects.end(); ++it) {
         if (!it->isNull()) {
@@ -731,7 +731,7 @@ EffectInstance::Implementation::createCachedImage(const RectI& roiPixels,
     // Mark the image as draft in the cache
     TreeRenderPtr render = _publicInterface->getCurrentRender();
     bool isDraftRender = render->isDraftRender();
-    
+
     // The node frame/view hash to identify the image in the cache
     U64 nodeFrameViewHash;
     {
@@ -765,7 +765,7 @@ EffectInstance::Implementation::createCachedImage(const RectI& roiPixels,
         initArgs.createTilesMapEvenIfNoCaching = true;
         initArgs.glContext = render->getGPUOpenGLContext();
         initArgs.textureTarget = GL_TEXTURE_2D;
-        
+
         // Do not allocate the image buffers yet, instead do it before rendering.
         // We need to create the image before because it does the cache look-up itself, and we don't want to got further if
         // there's something cached.
@@ -826,7 +826,7 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
         Q_UNUSED(locker);
     }
     releaser.reset();
-    
+
     TreeRenderPtr render = _publicInterface->getCurrentRender();
 
     OSGLContextPtr glContext;
@@ -875,7 +875,7 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
             }
         }
     }
- 
+
     return renderRetCode;
 } // launchInternalRender
 
@@ -944,7 +944,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const TreeRenderExecu
             }
             inputPlanesNeeded = &foundCompsNeeded->second;
         }
-        
+
         if (inputPlanesNeeded->empty()) {
             continue;
         }
@@ -1212,7 +1212,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
         }
         requestData->setRoDAtEachMipMapLevel(perMipMapLevelRoDCanonical, perMipMapLevelRoDPixel);
     }
-    
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Handle pass-through planes /////////////////////////////////////////////////////////////
     std::map<int, std::list<ImagePlaneDesc> > inputLayersNeeded;
@@ -1396,8 +1396,8 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
 
 
     requestData->setCachePolicy(cachePolicy);
-    
-    
+
+
 
     // Get the image on the FrameViewRequest
     // If this request was already rendered once in the tree,
@@ -1441,7 +1441,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
             }
         }
     }
-    
+
 
     // When accumulating, re-use the same buffer of previous steps and resize it if needed.
     // Note that in this mode only a single plane can be rendered at once and the plug-in render safety must
@@ -1547,7 +1547,7 @@ EffectInstance::requestRenderInternal(const RectD & roiCanonical,
     if (requestStatus == FrameViewRequest::eFrameViewRequestStatusNotRendered) {
 
         ActionRetCodeEnum upstreamRetCode = _imp->handleUpstreamFramesNeeded(requestPassSharedData, requestData, proxyScale, mappedMipMapLevel, roundedCanonicalRoI, inputLayersNeeded);
-        
+
         if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
         }
@@ -1735,7 +1735,7 @@ EffectInstance::launchRenderInternal(const TreeRenderExecutionDataPtr& requestPa
             // Re-fetch the tiles state from the cache which may have changed now
             renderRetCode = _imp->checkRestToRender(true /*updateTilesStateFromCache*/, requestData, renderMappedRoI, mappedCombinedScale, cachedImagePlanes, &renderRects, &hasPendingTiles);
         }
-        
+
     } // while there is still something not rendered
 
     if (isFailureRetCode(renderRetCode) || isRenderAborted()) {
@@ -1902,7 +1902,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
                                                                         const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes)
 {
     assert( !renderRects.empty() );
-    
+
     // Notify the gui we're rendering
     NotifyRenderingStarted_RAII renderingNotifier(_publicInterface->getNode().get());
 
@@ -1918,7 +1918,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
     }
 
     TreeRenderPtr render = _publicInterface->getCurrentRender();
-    
+
     // We only need to call begin if we've not already called it.
     bool callBeginSequenceRender = false;
     if ( !_publicInterface->isWriter() || (_publicInterface->getSequentialRenderSupport() == eSequentialPreferenceNotSequential) ) {
@@ -1941,7 +1941,7 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
                                                                               _publicInterface->getCurrentRenderView(),
                                                                               backendType,
                                                                               glContextData);
-        
+
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -2063,10 +2063,10 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
         if (isFailureRetCode(stat)) {
             return stat;
         }
-        
+
     }
     return eActionStatusOK;
-    
+
 } // launchPluginRenderAndHostFrameThreading
 
 NATRON_NAMESPACE_EXIT

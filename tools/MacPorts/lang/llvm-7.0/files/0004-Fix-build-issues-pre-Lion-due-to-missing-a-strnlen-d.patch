@@ -1,0 +1,92 @@
+From 129be7902cc13ee305724cd4e115b3a21d376fce Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Tue, 20 Dec 2016 12:41:21 -0800
+Subject: [PATCH 4/4] Fix build issues pre-Lion due to missing a strnlen
+ definition
+
+https://trac.macports.org/ticket/51520
+https://llvm.org/bugs/show_bug.cgi?id=27714
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+---
+ lib/ObjectYAML/MachOYAML.cpp  | 14 ++++++++++++++
+ tools/obj2yaml/macho2yaml.cpp | 16 +++++++++++++++-
+ 2 files changed, 29 insertions(+), 1 deletion(-)
+
+diff --git llvm_master/lib/ObjectYAML/MachOYAML.cpp macports_master/lib/ObjectYAML/MachOYAML.cpp
+index e00a4ea9307..0daba44573c 100644
+--- llvm_master/lib/ObjectYAML/MachOYAML.cpp
++++ macports_master/lib/ObjectYAML/MachOYAML.cpp
+@@ -22,6 +22,20 @@
+ #include <cstdint>
+ #include <cstring>
+ 
++#ifdef __APPLE__
++#include <Availability.h>
++#if __MAC_OS_X_VERSION_MIN_REQUIRED < 1070
++static size_t strnlen(const char *s, size_t maxlen) {
++  size_t l = 0;
++  while (l < maxlen && *s) {
++    l++;
++    s++;
++  }
++  return l;
++}
++#endif
++#endif
++
+ namespace llvm {
+ 
+ MachOYAML::LoadCommand::~LoadCommand() = default;
+diff --git llvm_master/tools/obj2yaml/macho2yaml.cpp macports_master/tools/obj2yaml/macho2yaml.cpp
+index fa81ce974ec..1e86f820437 100644
+--- llvm_master/tools/obj2yaml/macho2yaml.cpp
++++ macports_master/tools/obj2yaml/macho2yaml.cpp
+@@ -15,7 +15,21 @@
+ #include "llvm/Support/ErrorHandling.h"
+ #include "llvm/Support/LEB128.h"
+ 
+-#include <string.h> // for memcpy
++#include <string.h> // for memcpy abd strnlen
++
++#ifdef __APPLE__
++#include <Availability.h>
++#if __MAC_OS_X_VERSION_MIN_REQUIRED < 1070
++static size_t strnlen(const char *s, size_t maxlen) {
++  size_t l = 0;
++  while (l < maxlen && *s) {
++    l++;
++    s++;
++  }
++  return l;
++}
++#endif
++#endif
+ 
+ using namespace llvm;
+ 
+--- a/tools/llvm-readobj/ObjDumper.cpp.orig	2018-09-03 23:25:13.000000000 -0700
++++ b/tools/llvm-readobj/ObjDumper.cpp	2018-09-03 23:26:25.000000000 -0700
+@@ -27,6 +27,20 @@
+ ObjDumper::~ObjDumper() {
+ }
+ 
++#ifdef __APPLE__
++#include <Availability.h>
++#if __MAC_OS_X_VERSION_MIN_REQUIRED < 1070
++static size_t strnlen(const char *s, size_t maxlen) {
++  size_t l = 0;
++  while (l < maxlen && *s) {
++    l++;
++    s++;
++  }
++  return l;
++}
++#endif
++#endif
++
+ static void printAsPrintable(raw_ostream &W, const uint8_t *Start, size_t Len) {
+   for (size_t i = 0; i < Len; i++)
+     W << (isPrint(Start[i]) ? static_cast<char>(Start[i]) : '.');
+
+

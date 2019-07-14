@@ -86,7 +86,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 
-protected: 
+protected:
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     Node(const AppInstancePtr& app,
@@ -168,7 +168,7 @@ private:
 
     void createNodeGuiInternal(const CreateNodeArgsPtr& args);
 
-  
+
 
     void restoreUserKnob(const KnobGroupPtr& group,
                          const KnobPagePtr& page,
@@ -310,7 +310,7 @@ public:
      **/
     bool isDoingSequentialRender() const;
 
-  
+
 
     /**
      * @brief Forwarded to the live effect instance
@@ -377,7 +377,7 @@ public:
      * If the return value is a Group node, the return value will actually be the
      * input of the GroupOutput node itself.
      * If the return value is a GroupInput node, the return value will actually be the
-     * corresponding input of the GroupInput node 
+     * corresponding input of the GroupInput node
      *
      * MT-safe
      **/
@@ -623,7 +623,7 @@ public:
      * recursively on its inputs.
      **/
     void moveAbovePositionRecursively(const RectD & r);
-    
+
 
 
 
@@ -762,8 +762,8 @@ public:
     void destroyNode();
 
 private:
-    
-    
+
+
     void invalidateExpressionLinks();
 
 public:
@@ -806,7 +806,7 @@ public:
      * a dialog. The message can be of 4 types...
      * INFORMATION_MESSAGE : you just want to inform the user about something.
      * eMessageTypeWarning : you want to inform the user that something important happened.
-     * eMessageTypeError : you want to inform the user an error occured.
+     * eMessageTypeError : you want to inform the user an error occurred.
      * eMessageTypeQuestion : you want to ask the user about something.
      * The function will return true always except for a message of type eMessageTypeQuestion, in which
      * case the function may return false if the user pressed the 'No' button.
@@ -819,7 +819,7 @@ public:
      * node's graphical interface and on any connected viewer. The message can be of 3 types...
      * INFORMATION_MESSAGE : you just want to inform the user about something.
      * eMessageTypeWarning : you want to inform the user that something important happened.
-     * eMessageTypeError : you want to inform the user an error occured.
+     * eMessageTypeError : you want to inform the user an error occurred.
      * @param content The message you want to pass.
      **/
     void setPersistentMessage(MessageTypeEnum type, const std::string& messageID, const std::string & content);
@@ -902,7 +902,7 @@ public:
      **/
     bool checkIfConnectingInputIsOk(const NodePtr& input) const;
 
- 
+
 
     /**
      * @brief Declares to Python all parameters as attribute of the variable representing this node.
@@ -948,8 +948,8 @@ public:
 
     const std::string& getLabel() const;
     std::string getLabel_mt_safe() const;
-   
-    
+
+
     void runAfterTableItemsSelectionChangedCallback(const KnobItemsTablePtr& table, const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason);
 
 
@@ -1103,7 +1103,7 @@ public Q_SLOTS:
     void s_outputLayerChanged() { Q_EMIT outputLayerChanged(); }
 
     void s_mustRefreshPluginInfo() { Q_EMIT mustRefreshPluginInfo(); }
-    
+
 Q_SIGNALS:
 
     void keepInAnimationModuleKnobChanged();

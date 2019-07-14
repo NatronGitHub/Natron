@@ -2,7 +2,7 @@
 
 # Install glib
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html
-# We explicitely disable SElinux, see https://github.com/NatronGitHub/Natron/issues/265
+# We explicitly disable SElinux, see https://github.com/NatronGitHub/Natron/issues/265
 # versions after 2.54.3 and before 2.56.2 do not compile on CentOS6.
 # https://github.com/GNOME/glib/commit/0beb62f564072f3585762c9c55fe894485993b62#diff-6b790fb09bbee6ca6c8ee1a76c0f49be
 #GLIB_VERSION=2.54.3 # last version before 2.56

@@ -40,7 +40,7 @@ SERIALIZATION_NAMESPACE_ENTER
 
 
 /**
-   This class is completly deprecated do not use it.
+   This class is completely deprecated do not use it.
    We keep it for backward compatibility with old projects prior to Natron v1.1
  **/
 

@@ -85,7 +85,7 @@ OCIO_CONFIGS_URL=https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Nat
 OCIO_CONFIGS_DIR="$SRC_PATH/OpenColorIO-Configs-Natron-v${OCIO_CONFIGS_VERSION}"
 if [ ! -d "$OCIO_CONFIGS_DIR" ]; then
     mkdir -p "$SRC_PATH" || true
-    $WGET "$OCIO_CONFIGS_URL" -O "$SRC_PATH/OpenColorIO-Configs-Natron-v${OCIO_CONFIGS_VERSION}.tar.gz"
+    $CURL "$OCIO_CONFIGS_URL" --output "$SRC_PATH/OpenColorIO-Configs-Natron-v${OCIO_CONFIGS_VERSION}.tar.gz"
     tar xf "$SRC_PATH/OpenColorIO-Configs-Natron-v${OCIO_CONFIGS_VERSION}.tar.gz" -C "$SRC_PATH"/
     rm -rf "$OCIO_CONFIGS_DIR/aces_1.0.1/baked" || true
     rm -rf "$OCIO_CONFIGS_DIR/aces_1.0.1/python" || true
@@ -141,9 +141,16 @@ cat config.pri
 echo "========================================================================"
 
 # setup build dir
-rm -rf build || true
-mkdir build
-cd build
+if [ "${QMAKE_BUILD_SUBDIR:-}" = "1" ]; then
+    # disabled by default, because it does not always work right, eg for Info.plist creation on macOS
+    # Since we delete the sources after the build, we really don't care
+    rm -rf build || true
+    mkdir build
+    cd build
+    srcdir=..
+else
+    srcdir=.
+fi
 
 
 # Get extra qmake flags passed from command line
@@ -227,7 +234,7 @@ fi
 
 if [ "$COMPILE_TYPE" != "debug" ]; then
     # Let us benefit from maximum optimization for release builds,
-    # includng non-conformant IEEE floating-point computation.
+    # including non-conformant IEEE floating-point computation.
     QMAKE_FLAGS_EXTRA+=(CONFIG+=noassertions CONFIG+=fast)
 fi
 
@@ -235,7 +242,7 @@ fi
 if [ "$NO_BUILD" != "1" ]; then
     printStatusMessage "Building Natron..."
     echo "env CFLAGS=\"${BF:-}\" CXXFLAGS=\"${BF:-}\" \"$QMAKE\" -r CONFIG+=\"$COMPILE_TYPE\" QMAKE_CC=\"$CC\" QMAKE_CXX=\"$CXX\" QMAKE_LINK=\"$CXX\" QMAKE_OBJECTIVE_CC=\"$OBJECTIVE_CC\" QMAKE_OBJECTIVE_CXX=\"$OBJECTIVE_CXX\" ${QMAKE_FLAGS_EXTRA[*]} ${PYO:-} ../Project.pro"
-    env CFLAGS="${BF:-}" CXXFLAGS="${BF:-}" "$QMAKE" -r CONFIG+="$COMPILE_TYPE" QMAKE_CC="$CC" QMAKE_CXX="$CXX" QMAKE_LINK="$CXX" QMAKE_OBJECTIVE_CC="$OBJECTIVE_CC" QMAKE_OBJECTIVE_CXX="$OBJECTIVE_CXX" "${QMAKE_FLAGS_EXTRA[@]}" ${PYO:-} ../Project.pro
+    env CFLAGS="${BF:-}" CXXFLAGS="${BF:-}" "$QMAKE" -r CONFIG+="$COMPILE_TYPE" QMAKE_CC="$CC" QMAKE_CXX="$CXX" QMAKE_LINK="$CXX" QMAKE_OBJECTIVE_CC="$OBJECTIVE_CC" QMAKE_OBJECTIVE_CXX="$OBJECTIVE_CXX" "${QMAKE_FLAGS_EXTRA[@]}" ${PYO:-} "$srcdir"/Project.pro
     make -j"${MKJOBS}"
     make -j"${MKJOBS}" -C Tests
     if [ "$PKGOS" = "OSX" ]; then
@@ -287,28 +294,19 @@ if [ "$PKGOS" = "OSX" ]; then
 fi
 
 
-if [ -f "Tests/$NATRON_TEST" ]; then
-	cp Tests/$NATRON_TEST "$TMP_BINARIES_PATH/bin/"
-fi
-if [ -f "App${MAC_APP_PATH:-}/$NATRON_BIN" ]; then
-	cp App${MAC_APP_PATH:-}/$NATRON_BIN "$TMP_BINARIES_PATH/bin/"
+cp Tests/$NATRON_TEST "$TMP_BINARIES_PATH/bin/"
+cp App${MAC_APP_PATH:-}/$NATRON_BIN "$TMP_BINARIES_PATH/bin/"
 
-    # copy Info.plist and PkgInfo
-    if [ "$PKGOS" = "OSX" ]; then
-        ls -lR App/Natron.app
-        if [ -f "App${MAC_INFOPLIST}" ]; then
-            cp "App${MAC_INFOPLIST}" "$TMP_BINARIES_PATH/bin/"
-        fi
-        if [ -f "App${MAC_PKGINFO}" ]; then
-            cp App${MAC_PKGINFO} "$TMP_BINARIES_PATH/bin/"
-        fi
-    fi
+# copy Info.plist and PkgInfo
+if [ "$PKGOS" = "OSX" ]; then
+    ls -lR App/Natron.app
+    # Note: Info.plist generation only works if compiling in the sources,
+    # NOT in a "build" subdir (at least in qt4).
+    cp "App${MAC_INFOPLIST}" "$TMP_BINARIES_PATH/bin/"
+    cp "App${MAC_PKGINFO}" "$TMP_BINARIES_PATH/bin/"
 fi
 
-
-if [ -f "Renderer/$RENDERER_BIN" ]; then
-	cp Renderer/$RENDERER_BIN "$TMP_BINARIES_PATH/bin/"
-fi
+cp Renderer/$RENDERER_BIN "$TMP_BINARIES_PATH/bin/"
 
 if [ -f ProjectConverter/$NATRON_CONVERTER ]; then
     cp ProjectConverter/$NATRON_CONVERTER "${TMP_BINARIES_PATH}/bin/"
@@ -319,16 +317,12 @@ if [ -f PythonBin/$NATRON_PYTHON_BIN ]; then
 fi
 
 mkdir -p "$TMP_BINARIES_PATH/docs/natron" || true
-cp ../LICENSE.txt "$TMP_BINARIES_PATH/docs/natron/"
+cp "$srcdir"/LICENSE.txt "$TMP_BINARIES_PATH/docs/natron/"
 
 # install crashapp(s)
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    if [ -f CrashReporter${MAC_CRASH_PATH:-}/$CRASHGUI ]; then
- 	   cp CrashReporter${MAC_CRASH_PATH:-}/$CRASHGUI "$TMP_BINARIES_PATH/bin/"
-    fi
-    if [ -f CrashReporterCLI/$CRASHCLI ]; then
-        cp CrashReporterCLI/$CRASHCLI "$TMP_BINARIES_PATH/bin/"
-    fi
+    cp CrashReporter${MAC_CRASH_PATH:-}/$CRASHGUI "$TMP_BINARIES_PATH/bin/"
+    cp CrashReporterCLI/$CRASHCLI "$TMP_BINARIES_PATH/bin/"
 fi
 
 RES_DIR="$TMP_BINARIES_PATH/Resources"
@@ -360,33 +354,33 @@ echo "*** $RES_DIR/OpenColorIO-Configs now contains:"
 ls "$RES_DIR/OpenColorIO-Configs"
 
 mkdir -p "$RES_DIR/stylesheets"
-cp ../Gui/Resources/Stylesheets/mainstyle.qss "$TMP_BINARIES_PATH/Resources/stylesheets/"
+cp "$srcdir"/Gui/Resources/Stylesheets/mainstyle.qss "$TMP_BINARIES_PATH/Resources/stylesheets/"
 
 if [ "$PKGOS" != "OSX" ]; then
     mkdir -p "$RES_DIR/pixmaps" || true
 fi
 
 if [ "$PKGOS" = "Linux" ]; then
-    cp ../Gui/Resources/Images/natronIcon256_linux.png "$RES_DIR/pixmaps/"
-    cp ../Gui/Resources/Images/natronProjectIcon_linux.png "$RES_DIR/pixmaps/"
+    cp "$srcdir"/Gui/Resources/Images/natronIcon256_linux.png "$RES_DIR/pixmaps/"
+    cp "$srcdir"/Gui/Resources/Images/natronProjectIcon_linux.png "$RES_DIR/pixmaps/"
 elif [ "$PKGOS" = "Windows" ]; then
-    cp ../Gui/Resources/Images/natronProjectIcon_windows.ico "$RES_DIR/pixmaps/"
+    cp "$srcdir"/Gui/Resources/Images/natronProjectIcon_windows.ico "$RES_DIR/pixmaps/"
 elif [ "$PKGOS" = "OSX" ]; then
-    cp ../Gui/Resources/Images/*.icns "$RES_DIR/"
-    cp ../Gui/Resources/Images/splashscreen.* "$TMP_BINARIES_PATH/"
+    cp "$srcdir"/Gui/Resources/Images/*.icns "$RES_DIR/"
+    cp "$srcdir"/Gui/Resources/Images/splashscreen.* "$TMP_BINARIES_PATH/"
     #cp -a App/Natron.app/Contents/Resources/etc "$RES_DIR/"
     # quickfix
-    cp -a ../Gui/Resources/etc "$RES_DIR/"
+    cp -a "$srcdir"/Gui/Resources/etc "$RES_DIR/"
 fi
 
 rm -rf "$TMP_BINARIES_PATH/PyPlugs" || true
 mkdir -p "$TMP_BINARIES_PATH/PyPlugs"
-cp ../Gui/Resources/PyPlugs/* "$TMP_BINARIES_PATH/PyPlugs/"
+cp "$srcdir"/Gui/Resources/PyPlugs/* "$TMP_BINARIES_PATH/PyPlugs/"
 if [ "$PKGOS" = "Linux" ]; then
     mkdir -p "$RES_DIR/etc/fonts/conf.d"
-    cp ../Gui/Resources/etc/fonts/fonts.conf "$RES_DIR/etc/fonts/"
-    #cp ../Gui/Resources/share/fontconfig/conf.avail/* "$RES_DIR/etc/fonts/conf.d/"
-    cp ../Gui/Resources/etc/fonts/conf.d/* "$RES_DIR/etc/fonts/conf.d/"
+    cp "$srcdir"/Gui/Resources/etc/fonts/fonts.conf "$RES_DIR/etc/fonts/"
+    #cp "$srcdir"/Gui/Resources/share/fontconfig/conf.avail/* "$RES_DIR/etc/fonts/conf.d/"
+    cp "$srcdir"/Gui/Resources/etc/fonts/conf.d/* "$RES_DIR/etc/fonts/conf.d/"
 fi
 
 export NATRON_PLUGIN_PATH="$TMP_BINARIES_PATH/PyPlugs"

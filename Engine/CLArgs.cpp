@@ -267,7 +267,7 @@ CLArgs::printUsage(const std::string& programName)
         "  -h [ --help ]\n"
         "    Produce help message.\n"
         "  -v [ --version ]\n"
-        "    Print informations about %1 version.\n"
+        "    Print information about %1 version.\n"
         "  -b [ --background ]\n"
         "    Enable background rendering mode. No graphical interface is shown.\n"
         "    When using %1Renderer or the -t option, this argument is implicit\n"
@@ -280,7 +280,7 @@ CLArgs::printUsage(const std::string& programName)
         "    An optional Python script filename can be specified to source a script\n"
         "    before the interpreter is made accessible.\n"
         "    Note that %1 will not start rendering any Write node of the sourced\n"
-        "    script: it must be started explicitely.\n"
+        "    script: it must be started explicitly.\n"
         "    %1Renderer and %1 do the same thing in this mode, only the\n"
         "    init.py script is loaded.\n"
         "  --clear-cache\n"
@@ -340,7 +340,7 @@ CLArgs::printUsage(const std::string& programName)
         "     Enable render statistics that will be produced for\n"
         "     each frame in form of a file located next to the image produced by\n"
         "     the Writer node, with the same name and a -stats.txt extension. The\n"
-        "     breakdown contains informations about each nodes, render times etc...\n"
+        "     breakdown contains information about each nodes, render times etc...\n"
         "     This option is useful for debugging purposes or to control that a render\n"
         "     is working correctly.\n"
         "     **Please note** that it does not work when writing video files."
@@ -620,7 +620,7 @@ CLArgsPrivate::hasOutputToken(QString& indexStr)
                 indexStr.toInt(&ok);
                 if (!ok) {
                     error = 1;
-                    std::cout << tr("Wrong formating for the -o option").toStdString() << std::endl;
+                    std::cout << tr("Wrong formatting for the -o option").toStdString() << std::endl;
 
                     return args.end();
                 }
@@ -643,7 +643,7 @@ CLArgsPrivate::hasOutputToken(QString& indexStr)
                     indexStr.toInt(&ok);
                     if (!ok) {
                         error = 1;
-                        std::cout << tr("Wrong formating for the -o option").toStdString() << std::endl;
+                        std::cout << tr("Wrong formatting for the -o option").toStdString() << std::endl;
 
                         return args.end();
                     }

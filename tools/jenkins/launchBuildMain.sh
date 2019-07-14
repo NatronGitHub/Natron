@@ -4,7 +4,7 @@
 #
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
-set -x # Print commands and their arguments as they are executed.
+#set -x # Print commands and their arguments as they are executed.
 
 
 # Configurable Options:
@@ -38,11 +38,54 @@ set -x # Print commands and their arguments as they are executed.
 #
 # The options above are set by custom parameters in the build configuration
 # https://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin#GitPlugin-Jenkins,GITpluginandWindows
-
-
+#
 # GIT_URL, GIT_BRANCH, GIT_COMMIT are set from the git jenkins plug-in automatically
 # BUILD_NUMBER is also given by jenkins, see https://wiki.jenkins-ci.org/display/JENKINS/Building+a+software+project#Buildingasoftwareproject-JenkinsSetEnvironmentVariables
 # The above options must be set if calling this script manually. If GIT_COMMIT is omitted, the latest commit of GIT_BRANCH is actually built
+#
+#
+# Script debug parameters:
+#
+# BUILD_FROM: first step of the build
+# BUILD_TO: last step of the build
+#
+#### STEP 1: checkout sources
+if [ ${BUILD_FROM:-1} -le 1 ] && [ ${BUILD_TO:-99} -ge 1 ]; then
+    BUILD_1=true
+else
+    BUILD_1=false
+fi
+#### STEP2: build plugins
+if [ ${BUILD_FROM:-1} -le 2 ] && [ ${BUILD_TO:-99} -ge 2 ]; then
+    BUILD_2=true
+else
+    BUILD_2=false
+fi
+#### STEP3: build natron
+if [ ${BUILD_FROM:-1} -le 3 ] && [ ${BUILD_TO:-99} -ge 3 ]; then
+    BUILD_3=true
+else
+    BUILD_3=false
+fi
+#### STEP4: build installer
+if [ ${BUILD_FROM:-1} -le 4 ] && [ ${BUILD_TO:-99} -ge 4 ]; then
+    BUILD_4=true
+else
+    BUILD_4=false
+fi
+#### STEP5: unit tests
+if [ ${BUILD_FROM:-1} -le 5 ] && [ ${BUILD_TO:-99} -ge 5 ]; then
+    BUILD_5=true
+else
+    BUILD_5=false
+fi
+#### STEP6: archive artifacts and cleanup (which happens even if build fails)
+if [ ${BUILD_FROM:-1} -le 6 ] && [ ${BUILD_TO:-99} -ge 6 ]; then
+    BUILD_6=true
+else
+    BUILD_6=false
+fi
+
 echo "-----------------------------------------------------------------------"
 echo "NATRON JENKINS BUILDMASTER"
 echo "-----------------------------------------------------------------------"
@@ -65,9 +108,17 @@ echo "NATRON_EXTRA_QMAKE_FLAGS          : \"${NATRON_EXTRA_QMAKE_FLAGS:-}\""
 echo "DISABLE_RPM_DEB_PKGS              : \"${DISABLE_RPM_DEB_PKGS:-}\""
 echo "DISABLE_PORTABLE_ARCHIVE          : \"${DISABLE_PORTABLE_ARCHIVE:-}\""
 echo "EXTRA_PYTHON_MODULES_SCRIPT       : \"${EXTRA_PYTHON_MODULES_SCRIPT:-}\""
-echo "REMOTE_URL                        : \"${REMOTE_URL}\""
-echo "REMOTE_USER                       : \"${REMOTE_USER}\""
-echo "REMOTE_PREFIX                     : \"${REMOTE_PREFIX}\""
+echo "REMOTE_URL                        : \"${REMOTE_URL:-}\""
+echo "REMOTE_USER                       : \"${REMOTE_USER:-}\""
+echo "REMOTE_PREFIX                     : \"${REMOTE_PREFIX:-}\""
+echo "BUILD_FROM                        : \"${BUILD_FROM:-}\""
+echo "BUILD_TO                          : \"${BUILD_TO:-}\""
+echo "BUILD_1 (checkout sources)        : \"${BUILD_1:-}\""
+echo "BUILD_2 (plugins)                 : \"${BUILD_2:-}\""
+echo "BUILD_3 (natron)                  : \"${BUILD_3:-}\""
+echo "BUILD_4 (installer)               : \"${BUILD_4:-}\""
+echo "BUILD_5 (unit tests)              : \"${BUILD_5:-}\""
+echo "BUILD_6 (archive and cleanup)     : \"${BUILD_6:-}\""
 echo "-----------------------------------------------------------------------"
 
 if [ "${NATRON_LICENSE:-}" != "GPL" ] && [ "${NATRON_LICENSE:-}" != "COMMERCIAL" ]; then
@@ -77,6 +128,11 @@ fi
 
 if [ -z "${BUILD_NAME:-}" ] || [ -z "${BUILD_NUMBER:-}" ]; then
     echo "Must set BUILD_NAME and BUILD_NUMBER"
+    exit 1
+fi
+
+if [ -z "${WORKSPACE:-}" ] || [ ! -d "${WORKSPACE}" ]; then
+    echo "WORKSPACE must be set to an existing directory on the local filesystem."
     exit 1
 fi
 
@@ -101,6 +157,14 @@ if [ -f "$HOME/.ssh/id_rsa_build_master" ]; then
         eval `keychain --eval --agents ssh id_rsa_build_master`
     fi
 fi
+
+# check that TIMEOUT works
+$TIMEOUT 1 true && echo "$TIMEOUT works"
+#check that SED works
+echo "Testing $GSED"
+echo "$GSED does not work" | $GSED -e "s/does not work/works/"
+# check that curl works
+$CURL --silent --head http://www.google.com > /dev/null && echo "$CURL works"
 
 GIT_BRANCH=$(echo $GIT_BRANCH | sed 's#origin/##')
 BUILD_NATRON=0
@@ -185,7 +249,7 @@ setBuildOption "GIT_URL_OPENFX_ARENA" "$GIT_URL_OPENFX_ARENA"
 setBuildOption "GIT_URL_OPENFX_GMIC" "$GIT_URL_OPENFX_GMIC"
 setBuildOption "GIT_URL_OPENFX_OPENCV" "$GIT_URL_OPENFX_OPENCV"
 
-BUILDS_ARCHIVE_PATH="$CWD/builds_archive"
+BUILDS_ARCHIVE_PATH="$WORKSPACE/builds_archive"
 
 BUILD_ARCHIVE_DIRECTORY="$BUILDS_ARCHIVE_PATH/$BUILD_NAME/$BUILD_NUMBER"
 
@@ -353,7 +417,9 @@ source checkout-repository.sh
 
 # Checkout Natron git
 if [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
-    checkoutRepository "$GIT_URL_NATRON" "Natron" "$NATRON_GIT_BRANCH" "$NATRON_GIT_COMMIT" "NATRON_GIT_COMMIT" "$TAR_SOURCES" || FAIL=$?
+    if $BUILD_1; then
+        checkoutRepository "$GIT_URL_NATRON" "Natron" "$NATRON_GIT_BRANCH" "$NATRON_GIT_COMMIT" "NATRON_GIT_COMMIT" "$TAR_SOURCES" || FAIL=$?
+    fi
 
     if [ "$FAIL" != "1" ]; then
     NATRON_MAJOR=$(echo "NATRON_VERSION_MAJOR" | $CC -E -P -include "$TMP_PATH/Natron/Global/Macros.h" - | tail -1)
@@ -441,25 +507,25 @@ setBuildOption "TMP_PORTABLE_DIR" "${TMP_BINARIES_PATH}/$PORTABLE_DIRNAME"
 updateBuildOptions
 
 # Checkout plug-ins git
-if [ ! -z "$OPENFX_IO_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
+if $BUILD_1 && [ ! -z "$OPENFX_IO_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
     checkoutRepository "$GIT_URL_OPENFX_IO" "openfx-io" "$OPENFX_IO_GIT_BRANCH" "$OPENFX_IO_GIT_COMMIT" "OPENFX_IO_GIT_BRANCH" "$TAR_SOURCES" || FAIL=$?
 fi
 
-if [ ! -z "$OPENFX_MISC_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
+if $BUILD_1 && [ ! -z "$OPENFX_MISC_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
     checkoutRepository "$GIT_URL_OPENFX_MISC" "openfx-misc" "$OPENFX_MISC_GIT_BRANCH" "$OPENFX_MISC_GIT_COMMIT" "OPENFX_MISC_GIT_BRANCH" "$TAR_SOURCES" || FAIL=$?
 fi
 
-if [ ! -z "$OPENFX_ARENA_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
+if $BUILD_1 && [ ! -z "$OPENFX_ARENA_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
     checkoutRepository "$GIT_URL_OPENFX_ARENA" "openfx-arena" "$OPENFX_ARENA_GIT_BRANCH" "$OPENFX_ARENA_GIT_COMMIT" "OPENFX_ARENA_GIT_BRANCH" "$TAR_SOURCES" || FAIL=$?
 fi
 
-if [ ! -z "$OPENFX_GMIC_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
+if $BUILD_1 && [ ! -z "$OPENFX_GMIC_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
     checkoutRepository "$GIT_URL_OPENFX_GMIC" "openfx-gmic" "$OPENFX_GMIC_GIT_BRANCH" "$OPENFX_GMIC_GIT_COMMIT" "OPENFX_GMIC_GIT_BRANCH" "$TAR_SOURCES" || FAIL=$?
 fi
 
 # Force deactivate of openfx-opencv for now.
 OPENFX_OPENCV_GIT_BRANCH=""
-if [ ! -z "$OPENFX_OPENCV_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
+if $BUILD_1 && [ ! -z "$OPENFX_OPENCV_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
     checkoutRepository "$GIT_URL_OPENFX_OPENCV" "openfx-opencv" "$OPENFX_OPENCV_GIT_BRANCH" "$OPENFX_OPENCV_GIT_COMMIT" "OPENFX_OPENCV_GIT_BRANCH" "$TAR_SOURCES" || FAIL=$?
 fi
 
@@ -467,7 +533,7 @@ dumpBuildOptions
 
 
 # Build plug-ins
-if [ "$FAIL" = "0" ]; then
+if $BUILD_2 && [ "$FAIL" = "0" ]; then
     bash "build-plugins.sh" || FAIL=$?
 fi
 if [ "$FAIL" -ne "0" ]; then
@@ -476,7 +542,7 @@ if [ "$FAIL" -ne "0" ]; then
 fi
 
 # Build Natron
-if [ "$FAIL" = "0" ] && [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
+if $BUILD_3 && [ "$FAIL" = "0" ] && [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
     bash "build-natron.sh" || FAIL=$?
 fi
 if [ "$FAIL" -ne "0" ]; then
@@ -486,7 +552,7 @@ fi
 
 # build installer(s)
 #
-if [ "$FAIL" = "0" ] && [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
+if $BUILD_4 && [ "$FAIL" = "0" ] && [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
     printStatusMessage "Creating installer..."
     bash "build-${PKGOS}-installer.sh" || FAIL=$?
 fi
@@ -497,7 +563,7 @@ fi
 
 
 UNIT_TESTS_FAIL=0
-if [ "$FAIL" = "0" ]; then
+if $BUILD_5 && [ "$FAIL" = "0" ]; then
     echo "Build finished! Files are located in $BUILD_ARCHIVE_DIRECTORY"
     # unit tests
     if [ "$IS_GIT_URL_NATRON_REPO" = "1" ] && [ "$DO_UTEST" = "1" ]; then
@@ -511,6 +577,7 @@ if [ "$FAIL" = "0" ]; then
     fi
 fi
 
+if $BUILD_6; then
 if [ -f "$BUILD_OPTIONS_FILE" ]; then
     cp "$BUILD_OPTIONS_FILE" "$BUILD_ARCHIVE_DIRECTORY/"
 fi
@@ -529,7 +596,7 @@ fi
 
 # clean up
 "$INC_PATH/scripts/cleantmp.sh" > /dev/null 2>&1
-
+fi
 
 # Local variables:
 # mode: shell-script

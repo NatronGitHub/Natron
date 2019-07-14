@@ -966,7 +966,7 @@ OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
     } else {
         _imp->copyUnprocessedChannelsShader[index] = getOrCreateCopyUnprocessedChannelsShaderInternal<GL_CPU>(doR, doG, doB, doA);
     }
-    
+
     return _imp->copyUnprocessedChannelsShader[index];
 
 }

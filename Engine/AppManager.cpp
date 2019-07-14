@@ -621,7 +621,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
 
 
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
-    //otherwise it might crash with thread local storage
+    //otherwise it might crash with thread-local storage
 
 
     ///the QCoreApplication must have been created so far.
@@ -848,7 +848,7 @@ AppManager::setApplicationLocale()
     // https://github.com/cth103/dcpomatic/commit/b1dc9c3a2f7e55c9afc5bf2d5b465371b048e14f
     // stringstreams don't seem to be thread-safe on OSX because they change the locale.
 
-    // We also set explicitely the LC_NUMERIC locale to "C" to avoid juggling
+    // We also set explicitly the LC_NUMERIC locale to "C" to avoid juggling
     // between locales when using stringstreams.
     // See function __convert_from_v(...) in
     // /usr/include/c++/4.2.1/x86_64-apple-darwin10/bits/c++locale.h
@@ -1739,6 +1739,8 @@ AppManager::findAndRunScriptFile(const QString& path,
             if ( file.open(QIODevice::ReadOnly) ) {
                 QTextStream ts(&file);
                 QString content = ts.readAll();
+                PythonGILLocker pgl;
+
                 PyRun_SimpleString( content.toStdString().c_str() );
 
 
@@ -3190,9 +3192,20 @@ AppManager::tearDownPython()
     return;
 #endif
     ///See https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
+#if !defined(NDEBUG)
+    QThread* curThread = QThread::currentThread();
+    QString threadname = (qApp && qApp->thread() == curThread) ? QString::fromUtf8("Main") : curThread->objectName();
+    qDebug() << QString::fromUtf8("Thread '%1' is asking the Python GIL").arg(threadname);
+#endif
     PyGILState_Ensure();
+#if !defined(NDEBUG)
+    qDebug() << QString::fromUtf8("Thread '%1' got the Python GIL").arg(threadname);
+#endif
 
     Py_DECREF(_imp->mainModule);
+#if !defined(NDEBUG)
+    qDebug() << "Finalizing Python";
+#endif
     Py_Finalize();
 }
 
@@ -3912,24 +3925,55 @@ NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(const std::string& str)
     return makeNameScriptFriendlyInternal(str, false);
 }
 
+#if !defined(NDEBUG) && !defined(DEBUG_PYTHON_GIL)
+#pragma message WARN("define DEBUG_PYTHON_GIL in AppManager.h to debug Python GIL issues")
+#endif
+
+#ifdef DEBUG_PYTHON_GIL
+QMap<QString,int> PythonGILLocker::pythonCount;
+QMap<QString,int> PythonGILLocker::natronCount;
+#endif
+
 // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
 PythonGILLocker::PythonGILLocker()
     : state(PyGILState_UNLOCKED)
 {
+#ifdef DEBUG_PYTHON_GIL
     if (!Py_IsInitialized()) {
         throw std::runtime_error("Trying to execute python code, but Py_IsInitialized() returns false");
     }
-    // Take the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
-    if (appPTR) {
-        appPTR->takeNatronGIL();
-    }
+#endif
+    assert(Py_IsInitialized());
 
     // Also take the Python GIL, since not doing so seems to crash Natron during recursive Natron->Python->Natron->Python calls, see https://github.com/NatronGitHub/Natron/issues/379
     // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
     // Take the GIL for this thread
+#ifdef DEBUG_PYTHON_GIL
+    QThread* curThread = QThread::currentThread();
+    QString threadname = (qApp && qApp->thread() == curThread) ? QString::fromUtf8("Main") : curThread->objectName();
+    qDebug() << QString::fromUtf8("Thread '%1' is asking the Python GIL").arg(threadname);
+#endif
     state = PyGILState_Ensure();
+#ifdef DEBUG_PYTHON_GIL
+    ++pythonCount[threadname];
+    qDebug() << QString::fromUtf8("Thread '%1' got the Python GIL (%2)").arg(threadname).arg(pythonCount[threadname]);
+#endif
+    // Take the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
+    // We do this after we got the Python GIL, to avoid deadlocks:
+    // If we do it the other way, this thread may be waiting for the Python GIL while keeping the Natron GIL
+    // locked, thus preventing other threads from getting the Python GIL.
+    if (appPTR) {
+#ifdef DEBUG_PYTHON_GIL
+        qDebug() << QString::fromUtf8("Thread '%1' is asking the Natron GIL").arg(threadname);
+#endif
+        appPTR->takeNatronGIL();
+#ifdef DEBUG_PYTHON_GIL
+        ++natronCount[threadname];
+        qDebug() << QString::fromUtf8("Thread '%1' got the Natron GIL (%2)").arg(threadname).arg(natronCount[threadname]);
+#endif
+    }
     assert(PyThreadState_Get());
-#if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
+#if PY_VERSION_HEX >= 0x030400F0
     assert(PyGILState_Check()); // Not available prior to Python 3.4
 #endif
 }
@@ -3937,16 +3981,28 @@ PythonGILLocker::PythonGILLocker()
 PythonGILLocker::~PythonGILLocker()
 {
     // Release the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
+#ifdef DEBUG_PYTHON_GIL
+    QThread* curThread = QThread::currentThread();
+    QString threadname = (qApp && qApp->thread() == curThread) ? QString::fromUtf8("Main") : curThread->objectName();
+#endif
     if (appPTR) {
+#ifdef DEBUG_PYTHON_GIL
+        qDebug() << QString::fromUtf8("Thread '%1' is releasing the Natron GIL (%2)").arg(threadname).arg(natronCount[threadname]);
+        --natronCount[threadname];
+#endif
         appPTR->releaseNatronGIL();
     }
 
-    // We took the Python GIL too, so realease it here.
+    // We took the Python GIL too, so release it here.
     // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
-#if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
+#if PY_VERSION_HEX >= 0x030400F0
     assert(PyGILState_Check());  // Not available prior to Python 3.4
 #endif
     // Release the GIL, no thread will own it afterwards.
+#ifdef DEBUG_PYTHON_GIL
+    qDebug() << QString::fromUtf8("Thread '%1' is releasing the Python GIL (%2)").arg(threadname).arg(pythonCount[threadname]);
+    --pythonCount[threadname];
+#endif
     PyGILState_Release(state);
 }
 
@@ -4163,6 +4219,8 @@ NATRON_PYTHON_NAMESPACE::getFunctionArguments(const std::string& pyFunc,
     }
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
     PyObject* args_specObj = 0;
+    PythonGILLocker pgl;
+
     if ( PyObject_HasAttrString(mainModule, "args_spec") ) {
         args_specObj = PyObject_GetAttrString(mainModule, "args_spec");
     }
@@ -4213,10 +4271,12 @@ NATRON_PYTHON_NAMESPACE::getAttrRecursive(const std::string& fullyQualifiedName,
     std::size_t foundDot = fullyQualifiedName.find(".");
     std::string attrName = foundDot == std::string::npos ? fullyQualifiedName : fullyQualifiedName.substr(0, foundDot);
     PyObject* obj = 0;
-    if ( PyObject_HasAttrString( parentObj, attrName.c_str() ) ) {
-        obj = PyObject_GetAttrString( parentObj, attrName.c_str() );
+    {
+        PythonGILLocker pgl;
+        if ( PyObject_HasAttrString( parentObj, attrName.c_str() ) ) {
+            obj = PyObject_GetAttrString( parentObj, attrName.c_str() );
+        }
     }
-
     ///We either found the parent object or we are on the last object in which case we return the parent
     if (!obj) {
         //assert(fullyQualifiedName.find(".") == std::string::npos);

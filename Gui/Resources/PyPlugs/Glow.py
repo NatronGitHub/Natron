@@ -237,7 +237,7 @@ def createInstance(app,group):
     lastNode.glowEffect.addParam(param)
 
     # Set param properties
-    param.setHelp("This will rotate your streched glow. If \"Stretch\" is 0 it won\'t have any effect.")
+    param.setHelp("This will rotate your stretched glow. If \"Stretch\" is 0 it won\'t have any effect.")
     param.setAddNewLine(True)
     param.setAnimationEnabled(True)
     lastNode.rotate = param

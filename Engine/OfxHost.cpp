@@ -865,7 +865,7 @@ OfxHost::loadOFXPlugins()
             }
         }
     }
-    
+
     qDebug() << "Load OFX Plugins: plugin path is" << pluginCache->getPluginPath();
     qDebug() << "Load OFX Plugins: scan plugins...";
     pluginCache->scanPluginFiles();
@@ -1178,7 +1178,7 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
     if (!func) {
         return kOfxStatFailed;
     }
-    
+
     // Recover the effect calling multiThread using TLS
     OfxEffectInstancePtr effect = getCurrentEffect_TLS();
 
@@ -1271,7 +1271,7 @@ OfxHost::mutexCreate(OfxMutexHandle *mutex,
 }
 
 // Destroy a mutex
-//  Destroys a mutex intially created by mutexCreate.
+//  Destroys a mutex initially created by mutexCreate.
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_mutexDestroy
 OfxStatus
 OfxHost::mutexDestroy(const OfxMutexHandle mutex)
@@ -1312,8 +1312,8 @@ OfxHost::mutexDestroy(const OfxMutexHandle mutex)
 }
 
 // Blocking lock on the mutex
-//  This trys to lock a mutex and blocks the thread it is in until the lock suceeds.
-// A sucessful lock causes the mutex's lock count to be increased by one and to block any other calls to lock the mutex until it is unlocked.
+//  This tries to lock a mutex and blocks the thread it is in until the lock succeeds.
+// A successful lock causes the mutex's lock count to be increased by one and to block any other calls to lock the mutex until it is unlocked.
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_mutexLock
 OfxStatus
 OfxHost::mutexLock(const OfxMutexHandle mutex)
@@ -1372,7 +1372,7 @@ OfxHost::mutexUnLock(const OfxMutexHandle mutex)
 
 // Non blocking attempt to lock the mutex
 //  This attempts to lock a mutex, if it cannot, it returns and says so, rather than blocking.
-// A sucessful lock causes the mutex's lock count to be increased by one, if the lock did not suceed, the call returns immediately and the lock count remains unchanged.
+// A successful lock causes the mutex's lock count to be increased by one, if the lock did not succeed, the call returns immediately and the lock count remains unchanged.
 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_mutexTryLock
 OfxStatus
 OfxHost::mutexTryLock(const OfxMutexHandle mutex)
@@ -1446,4 +1446,3 @@ OfxHost::flushOpenGLResources() const
 #endif
 
 NATRON_NAMESPACE_EXIT
-

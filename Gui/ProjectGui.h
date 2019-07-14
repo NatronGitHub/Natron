@@ -90,7 +90,7 @@ public:
     void setPickersColor(ViewIdx view, double r, double g, double b, double a);
 
     /**
-     * @brief Retur
+     * @brief Return
      **/
     NodesGuiList getVisibleNodes() const;
     Gui* getGui() const

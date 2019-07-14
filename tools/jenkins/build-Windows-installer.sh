@@ -415,7 +415,7 @@ export PYDIR="$PYDIR"
 
 # Install pip
 if [ -x "${TMP_PORTABLE_DIR}"/bin/natron-python ]; then
-    wget --no-check-certificate http://bootstrap.pypa.io/get-pip.py
+    $CURL --remote-name --insecure http://bootstrap.pypa.io/get-pip.py
     "${TMP_PORTABLE_DIR}"/bin/natron-python get-pip.py
     rm get-pip.py
 fi
@@ -445,7 +445,7 @@ cp "$QS/$PKGOS/corelibs.qs" "$DLLS_PACKAGE_PATH/meta/installscript.qs"
 # on a software renderer if OpenGL driver is not good enough
 if [ ! -d "$SRC_PATH/natron-windows-mesa" ]; then
     ( cd "$SRC_PATH";
-      $WGET "$THIRD_PARTY_BIN_URL/natron-windows-mesa.tar" -O "$SRC_PATH/natron-windows-mesa.tar"
+      $CURL "$THIRD_PARTY_BIN_URL/natron-windows-mesa.tar" --output "$SRC_PATH/natron-windows-mesa.tar"
       tar xvf natron-windows-mesa.tar
     )
 fi

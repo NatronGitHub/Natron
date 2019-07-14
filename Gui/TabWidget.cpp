@@ -1418,7 +1418,7 @@ TabBar::leaveEvent(QEvent* e)
 }
 
 /**
- * @brief Given the widget w, tries to find reursively if a parent is a tabwidget and returns it
+ * @brief Given the widget w, tries to find recursively if a parent is a tabwidget and returns it
  **/
 static TabWidget*
 findTabWidgetRecursive(QWidget* w)
@@ -1549,7 +1549,7 @@ TabBar::makePixmapForDrag(int index)
     _tabWidget->getGui()->scaleImageToAdjustDPI(&currentTabImg);
 
 
-    //now we just put together the 2 pixmaps and set it with mid transparancy
+    //now we just put together the 2 pixmaps and set it with mid transparency
     QImage ret(currentTabImg.width(), currentTabImg.height() + tabBarImg.height(), QImage::Format_ARGB32_Premultiplied);
 
     for (int y = 0; y < tabBarImg.height(); ++y) {

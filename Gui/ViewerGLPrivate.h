@@ -173,7 +173,7 @@ struct ViewerGL::Implementation
     GLuint checkerboardTextureID;
     int checkerboardTileSize; // to avoid a call to getValue() of the settings at each draw
     GLuint savedTexture; // @see saveOpenGLContext/restoreOpenGLContext
-    GLuint prevBoundTexture; 
+    GLuint prevBoundTexture;
     QSize sizeH;
     PenType pointerTypeOnPress;
     double pressureOnPress, pressureOnRelease;

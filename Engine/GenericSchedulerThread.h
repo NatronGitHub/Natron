@@ -263,7 +263,7 @@ public Q_SLOTS:
 
     /**
      * @brief Requests to abort all computations.
-     * This function is not blocking and once returned you may NOT assume that the thread is completly aborted.
+     * This function is not blocking and once returned you may NOT assume that the thread is completely aborted.
      * @returns true if the thread was running and actively working and we did not post any abort request before, false otherwise
      **/
     bool abortThreadedTask(bool keepOldestRender = true);

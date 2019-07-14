@@ -62,7 +62,7 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER
 
 
-//The plug-in that is instanciated whenever this node is created and doesn't point to any valid or known extension
+//The plug-in that is instantiated whenever this node is created and doesn't point to any valid or known extension
 #define WRITE_NODE_DEFAULT_WRITER PLUGINID_OFX_WRITEOIIO
 #define kPluginSelectorParamEntryDefault "Default"
 
@@ -398,7 +398,7 @@ WriteNodePrivate::destroyWriteNode()
 
     {
         KnobsVec knobs = _publicInterface->getKnobs();
-        
+
         try {
 
 
@@ -455,11 +455,11 @@ WriteNodePrivate::destroyWriteNode()
                         _publicInterface->deleteKnob(*it, false);
 
                     } catch (...) {
-                        
+
                     }
                 }
             }
-            
+
         } catch (...) {
             assert(false);
         }
@@ -470,8 +470,8 @@ WriteNodePrivate::destroyWriteNode()
         }
         embeddedPlugin.reset();
     }
-    
-    
+
+
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
 
@@ -709,7 +709,7 @@ WriteNode::setupInitialSubGraphState()
     } else {
         outputNode->swapInput(inputNode, 0);
     }
-    
+
 
 } // setupInitialSubGraphState
 
@@ -875,7 +875,7 @@ WriteNodePrivate::refreshPluginSelectorKnob()
             try {
                 plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
             } catch (...) {
-                
+
             }
 
             QString tooltip = tr("Use %1 version %2.%3 to write this file format").arg(QString::fromUtf8(plugin->getPluginLabel().c_str())).arg( plugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0)).arg(plugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 1));
@@ -1153,7 +1153,7 @@ WriteNode::getFrameRange(double *first,
         }
     }
     return EffectInstance::getFrameRange(first, last);
-    
+
 }
 
 

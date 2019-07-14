@@ -10,7 +10,7 @@ PyModalDialog
 Synopsis
 -------------
 
-A modal dialog to ask informations to the user or to warn about something.
+A modal dialog to ask information to the user or to warn about something.
 See :ref:`detailed<modalDialog.details>` description...
 
 

@@ -448,7 +448,7 @@ EffectInstance::refreshMetadaWarnings(const NodeMetadata &metadata)
     }
 
     if (mustWarnPAR && nbConnectedInputs > 1) {
-        QString parWarnings = tr("One or multiple input have a pixel aspect ratio different of the output. It is not "
+        QString parWarnings = tr("One or multiple inputs have a pixel aspect ratio different of the output. It is not "
                                  "handled correctly by this node and may yield unwanted results. Please adjust the "
                                  "pixel aspect ratios of the inputs so that they match by using a Reformat node.");
         warnings[Node::eStreamWarningPixelAspectRatio] = parWarnings;

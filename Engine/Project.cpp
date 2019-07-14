@@ -249,7 +249,7 @@ Project::loadProject(const QString & path,
 
         return false;
     } catch (...) {
-        Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Unkown error while loading project.").toStdString() );
+        Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Unknown error while loading project.").toStdString() );
         if ( !getApp()->isBackground() ) {
             CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_VIEWER_GROUP, shared_from_this() ));
             args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
@@ -1838,7 +1838,7 @@ Project::removeLastAutosave()
     }
 
     /*
-     * Since we may have saved the project to an old project, overwritting the existing file, there might be
+     * Since we may have saved the project to an old project, overwriting the existing file, there might be
      * a oldProject.ntp.autosave file next to it that belonged to the old project, make sure it gets removed too
      */
     QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );

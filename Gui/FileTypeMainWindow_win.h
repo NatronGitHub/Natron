@@ -74,7 +74,7 @@ NATRON_NAMESPACE_ENTER
    }
 
  *
- * Aditionally, the actions must be performed by overwriting one or more of:
+ * Additionally, the actions must be performed by overwriting one or more of:
  * @li ddeOpenFile
  * @li ddeNewFile
  * @li ddePrintFile
@@ -208,7 +208,7 @@ protected:
                           DdeCommands commands = DDEOpen);
 
     /**
-     * registeres one command for a given file type. It is called for the pre defined DDE command
+     * registers one command for a given file type. It is called for the pre defined DDE command
      * types from registerFileType. if more then the normal commands are needed, it can be called
      * in addition to registerFileType.
      *

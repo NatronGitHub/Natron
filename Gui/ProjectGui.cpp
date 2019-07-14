@@ -354,7 +354,7 @@ ProjectGui::load(bool isAutosave,  const SERIALIZATION_NAMESPACE::ProjectSeriali
         loadNodeGuiSerialization(_gui, *it);
     }
 
-    // we have to give the tr() context explicitely due to a bug in lupdate
+    // we have to give the tr() context explicitly due to a bug in lupdate
     _gui->getApp()->updateProjectLoadStatus( QObject::tr("Restoring settings panels", "ProjectGui") );
 
     // Now restore opened settings panels
@@ -385,11 +385,11 @@ ProjectGui::load(bool isAutosave,  const SERIALIZATION_NAMESPACE::ProjectSeriali
         _panel->setClosed(true);
     }
 
-    // we have to give the tr() context explicitely due to a bug in lupdate
+    // we have to give the tr() context explicitly due to a bug in lupdate
     _gui->getApp()->updateProjectLoadStatus( QObject::tr("Restoring layout", "ProjectGui") );
 
 
-    
+
 
     // For auto-saves, always load the workspace
     bool loadWorkspace = isAutosave || appPTR->getCurrentSettings()->getLoadProjectWorkspce();

@@ -1,0 +1,49 @@
+From 7c0ed4903bda85727781bf383ec3b31e86a1b562 Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Wed, 27 Dec 2017 23:21:37 -0800
+Subject: [PATCH 2001/2002] xray: Define O_CLOEXEC for older SDKs that don't
+ have it
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+---
+ lib/xray/xray_utils.cc  | 6 ++++++
+ lib/xray/xray_x86_64.cc | 6 ++++++
+ 2 files changed, 12 insertions(+)
+
+diff --git llvm_release_70/projects/compiler-rt/lib/xray/xray_utils.cc macports_release_70/projects/compiler-rt/lib/xray/xray_utils.cc
+index 68f4e8c10..cbf27dc96 100644
+--- llvm_release_70/projects/compiler-rt/lib/xray/xray_utils.cc
++++ macports_release_70/projects/compiler-rt/lib/xray/xray_utils.cc
+@@ -25,6 +25,12 @@
+ #include <unistd.h>
+ #include <utility>
+ 
++#ifdef __APPLE__
++#ifndef O_CLOEXEC
++#define O_CLOEXEC 0x1000000
++#endif
++#endif
++
+ namespace __xray {
+ 
+ void printToStdErr(const char *Buffer) XRAY_NEVER_INSTRUMENT {
+diff --git llvm_release_70/projects/compiler-rt/lib/xray/xray_x86_64.cc macports_release_70/projects/compiler-rt/lib/xray/xray_x86_64.cc
+index 51dc4ce43..ea5a70d9f 100644
+--- llvm_release_70/projects/compiler-rt/lib/xray/xray_x86_64.cc
++++ macports_release_70/projects/compiler-rt/lib/xray/xray_x86_64.cc
+@@ -21,6 +21,12 @@
+ #include <tuple>
+ #include <unistd.h>
+ 
++#ifdef __APPLE__
++#ifndef O_CLOEXEC
++#define O_CLOEXEC 0x1000000
++#endif
++#endif
++
+ namespace __xray {
+ 
+ #if SANITIZER_LINUX
+-- 
+2.20.1 (Apple Git-116)
+

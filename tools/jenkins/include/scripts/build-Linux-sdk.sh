@@ -433,7 +433,7 @@ build gperf # (used by fontconfig) as well as assemblers (yasm and nasm)
 build autoconf
 build automake
 build yasm
-build nasm # (for x264, lame, ans others)
+build nasm # (for x264, lame, and others)
 build gmp # (used by ruby)
 build openssl
 build patchelf

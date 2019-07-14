@@ -79,7 +79,7 @@ To automatically enable the ssh key, you can add to your .bashrc the following l
 Online repository and database
 ===============================
 
-The buildmaster script works with a mysql database to fetch the build queue (and synchronize all instances of buildmaster accross build machines).
+The buildmaster script works with a mysql database to fetch the build queue (and synchronize all instances of buildmaster across build machines).
 It also needs to upload the logs and the resulting files to the webserver.
 
 All the server dependent stuff is setup in variables in common.sh. Make sure that everything is setup as needed.
@@ -93,7 +93,7 @@ Export the wanted variables, like MKJOBS, BITS, NATRON_LICENSE.
 
 Do **not** use env ..... ./buildmaster.sh or sh buildmaster.sh. Why? buildmaster.sh relaunches when needed and variables etc will get lost.
 
-**NOTE:** If you run mingw32+mingw64 on the same machine you will need to define seperate TMP's, I usually export TMP=/tmp64 for mingw64, this is important since the installer for each BITS uses TMP and you will get conflicts (and failed builds).
+**NOTE:** If you run mingw32+mingw64 on the same machine you will need to define separate TMP's, I usually export TMP=/tmp64 for mingw64, this is important since the installer for each BITS uses TMP and you will get conflicts (and failed builds).
 
 Snapshots and releases are now controlled from https://natron.fr/builds
 

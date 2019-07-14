@@ -65,7 +65,7 @@
 
 #include "Serialization/SerializationIO.h"
 
-// Don't forget to update glad.h and glad.c aswell when updating theses
+// Don't forget to update glad.h and glad.c as well when updating these
 #define NATRON_OPENGL_VERSION_REQUIRED_MAJOR 2
 #define NATRON_OPENGL_VERSION_REQUIRED_MINOR 0
 
@@ -127,7 +127,7 @@ AppManagerPrivate::AppManagerPrivate()
 
 AppManagerPrivate::~AppManagerPrivate()
 {
-    
+
 
     for (std::size_t i = 0; i < commandLineArgsUtf8Original.size(); ++i) {
         free(commandLineArgsUtf8Original[i]);
@@ -300,7 +300,7 @@ AppManagerPrivate::declareSettingsToPython()
 void
 AppManagerPrivate::setMaxCacheFiles()
 {
-    /*Default to something reasonnable if the code below would happen to not work for some reason*/
+    /*Default to something reasonable if the code below would happen to not work for some reason*/
     //size_t hardMax = NATRON_MAX_CACHE_FILES_OPENED;
 
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)

@@ -392,7 +392,7 @@ ReadNodePrivate::placeReadNodeKnobsInPage()
             } else {
                 separatorKnob.lock()->setSecret(true);
             }
-            
+
         } else {
             separatorKnob.lock()->setSecret(true);
         }
@@ -486,7 +486,7 @@ ReadNodePrivate::destroyReadNode()
                     try {
                         _publicInterface->deleteKnob(*it, false);
                     } catch (...) {
-                        
+
                     }
                 }
             }
@@ -681,7 +681,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             outputNode->swapInput(inputNode, 0);
         }
     }
-    
+
     if (defaultFallback) {
         createDefaultReadNode();
     }
@@ -753,7 +753,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
             try {
                 plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
             } catch (...) {
-                
+
             }
 
             QString tooltip = tr("Use %1 version %2.%3 to read this file format.").arg(QString::fromUtf8(plugin->getPluginLabel().c_str())).arg( plugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0)).arg(plugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 1));

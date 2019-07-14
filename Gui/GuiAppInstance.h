@@ -96,7 +96,7 @@ private:
     void deletePreviewProvider();
 
 
-    /** @brief Attemps to find an untitled autosave. If found one, prompts the user
+    /** @brief Attempts to find an untitled autosave. If found one, prompts the user
      * whether he/she wants to load it. If something was loaded this function
      * returns true,otherwise false.
      **/

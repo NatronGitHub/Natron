@@ -281,7 +281,7 @@ public:
 
         // The RGBA channels to process. This can optimize render times for un-needed channels.
         std::bitset<4> processChannels;
-        
+
     };
 
 
@@ -292,7 +292,7 @@ protected: // derives from KnobHolder, parent of JoinViewsNode, OneViewNode, Pre
     /**
      * @brief Constructor used once for each node created. Its purpose is to create the "live instance".
      * You shouldn't do any heavy processing here nor lengthy initialization as the constructor is often
-     * called just to be able to call a few virtuals fonctions.
+     * called just to be able to call a few virtuals functions.
      * The constructor is always called by the main thread of the application.
      **/
     explicit EffectInstance(const NodePtr& node);
@@ -432,7 +432,7 @@ public:
      * optionalBounds parameter that can be set to specify which portion of the input image is needed.
      *
      * Note that this is very important in the case 1) that all images that are accessed via getImage() are
-     * declared to Natron with getFramesNeeded otherwise Natron has to fallback to a less optimized pipeline 
+     * declared to Natron with getFramesNeeded otherwise Natron has to fallback to a less optimized pipeline
      * that keeps image longer in memory and it may risk to render twice an effect.
      *
      * @returns This function returns true if the image set in the outArgs is valid.
@@ -487,7 +487,7 @@ protected:
      * Must be implemented for an effect that returns true to isMultiPlanar().
      * Non multi-planar effects have a default implementation in the getLayersProducedAndNeeded_default() function.
      * Must return the layers needed for each input and the layers produced in output of the effect.
-     * If this effect allows some layers to be inherited from an upstram effect, it must indicate the time view 
+     * If this effect allows some layers to be inherited from an upstram effect, it must indicate the time view
      * and from which input to fetch them.
      **/
     virtual ActionRetCodeEnum getLayersProducedAndNeeded(TimeValue time,
@@ -538,8 +538,8 @@ private:
                                                     TimeValue time,
                                                     ViewIdx view,
                                                     std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded);
-    
-    
+
+
 
 public:
 
@@ -646,7 +646,7 @@ protected:
 public:
 
     /**
-     * @brief For effects that can return a distortion function (e.g an affine Transform), then they 
+     * @brief For effects that can return a distortion function (e.g an affine Transform), then they
      * may flag so with the getCanDistort() function. In this case this function will be called prior to
      * calling render. If possible, Natron will concatenate distortion effects and only the effect at
      * the bottom will do the final rendering.
@@ -668,7 +668,7 @@ protected:
                                             bool draftRender,
                                             ViewIdx view,
                                             DistortionFunction2D* distortion) WARN_UNUSED_RETURN;
-    
+
 public:
 
     /**
@@ -704,9 +704,9 @@ protected:
                                          ViewIdx* inputView,
                                          int* inputNb,
                                          ImagePlaneDesc* inputPlane) WARN_UNUSED_RETURN;
-    
+
 public:
-    
+
     /**
      * @brief Return the region that the plugin is capable of filling.
      * This is meaningful for plugins that generate images or transform images.
@@ -774,7 +774,7 @@ private:
                                                          const RectD & renderWindow,
                                                          ViewIdx view,
                                                          RectD* roi);
-    
+
 public:
 
     /**
@@ -813,7 +813,7 @@ public:
     virtual void endKnobsValuesChanged_public(ValueChangedReasonEnum reason) OVERRIDE FINAL;
 
     /**
-     * @breif Don't override this one, override onKnobValueChanged instead.
+     * @brief Don't override this one, override onKnobValueChanged instead.
      **/
     virtual bool onKnobValueChanged_public(const KnobIPtr& k, ValueChangedReasonEnum reason, TimeValue time, ViewSetSpec view) OVERRIDE FINAL;
 
@@ -941,7 +941,7 @@ public:
     //////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////
 
-    
+
     /**
      * @brief Returns a pointer to the node holding this effect.
      **/
@@ -1065,7 +1065,7 @@ public:
     /**
      * @brief Is this node an output node ? An output node means
      * that a RenderEngine can be created.
-     * If returning true, you may subclass createRenderEngine() to 
+     * If returning true, you may subclass createRenderEngine() to
      * create a custom render engine if needed. The basic render engine
      * handles writers & disk cache.
      **/
@@ -1093,7 +1093,7 @@ public:
 
     virtual bool getMakeSettingsPanel() const { return true; }
 
-    int getNInputs() const; 
+    int getNInputs() const;
 
     void onInputLabelChanged(int inputNb, const std::string& label);
 
@@ -1137,9 +1137,9 @@ private:
                                             const FrameViewRequestPtr& requestData,
                                             const FrameViewRequestPtr& requesterFrameViewRequest,
                                             const TreeRenderExecutionDataPtr& requestPassSharedData);
-    
+
 public:
-    
+
     /**
      * @brief Function that actually render a request. In output, the image corresponding to the request
      * is rendered. Only a single thread will be able to call launchRender on the same frame view request.
@@ -1155,7 +1155,7 @@ public:
     /**
      * @brief Effects are always copied throughout a render
      **/
-    virtual bool isRenderCloneNeeded() const OVERRIDE 
+    virtual bool isRenderCloneNeeded() const OVERRIDE
     {
         return true;
     }
@@ -1214,7 +1214,7 @@ public:
     bool isHostMaskEnabled() const;
 
     /**
-     * @brief Returns whether the effect wants the host to add a plane selector in output and for its inputs. 
+     * @brief Returns whether the effect wants the host to add a plane selector in output and for its inputs.
      * This is only relevant if isMultiPlanar() returns false.
      **/
     bool isHostPlaneSelectorEnabled() const;
@@ -1568,7 +1568,7 @@ public:
      **/
     virtual void onEffectCreated(const CreateNodeArgs& /*args*/) {}
 
-    
+
 
     /**
      * @brief Must return whether the plug-in handles concurrent OpenGL renders or not.
@@ -1712,7 +1712,7 @@ public:
     std::string getNodeExtraLabel() const;
 
     bool hasAtLeastOneChannelToProcess() const;
-    
+
     /**
      * @brief Returns the components and index of the channel to use to produce the mask.
      * None = -1
@@ -1737,7 +1737,7 @@ public:
                           ImagePlaneDesc *layer) const;
 
 
-    
+
     void refreshFormatParamChoice(const std::vector<ChoiceOption>& entries, int defValue, bool loadingProject);
 
     int getFrameStepKnobValue() const;
@@ -1755,7 +1755,7 @@ public:
     bool isKeepInAnimationModuleButtonDown() const;
 
     bool getHideInputsKnobValue() const;
-    
+
     void setHideInputsKnobValue(bool hidden);
 
     bool getDisabledKnobValue() const;
@@ -1814,7 +1814,7 @@ private:
 
 
 protected:
-    
+
 
     virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, TimeValue time)  OVERRIDE;
 
@@ -1832,8 +1832,8 @@ protected:
 
 private:
 
-    
-    
+
+
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 
     friend class ReadNode;

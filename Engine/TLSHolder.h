@@ -182,7 +182,7 @@ private:
 
 /**
  * @brief Use this class if you need to hold TLS data on an object.
- * @param T is the data type held in the thread local storage.
+ * @param T is the data type held in the thread-local storage.
  **/
 template <typename T>
 class TLSHolder

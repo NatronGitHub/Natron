@@ -4,7 +4,7 @@ Modal dialogs
 =============
 
 Modal dialogs are windows (or popup) that inform the user about something or ask for some
-informations and that does not allow any other action to be performed while the dialog is opened.
+information and that does not allow any other action to be performed while the dialog is opened.
 
 This can be used as a quick way to retrieve user inputs.
 
@@ -62,13 +62,13 @@ which basically just take some text in input and may return a reply from the use
 More refined dialogs
 ---------------------
 
-To create dialogs that may request some informations such as colors, frame range, coordinates
+To create dialogs that may request some information such as colors, frame range, coordinates
 or text input, you can create :ref:`modal dialogs<pyModalDialog>`.
 
 Basically you can add :ref:`user parameters<Param>`, and retrieve their value afterwards
 when the user pressed **OK**.
 
-You can start adding user parameters using all the :func:`createXParam<>` functions inherited from the :doc:`NatronEngine/UserParamHolder` class.
+You can start adding user parameters using all the :func:`createXParam<>` functions inherited from the :doc:`PythonReference/NatronEngine/UserParamHolder` class.
 See the documentation of the :ref:`PyModalDialog<pyModalDialog>` for more information:
 
     dialog = app.createModalDialog()

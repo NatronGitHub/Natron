@@ -60,7 +60,7 @@ NATRON_NAMESPACE_ENTER
  * and more details. At the very least the bounds must be specified.
  *
  * If the image fails to create, an std::bad_alloc exception will be thrown.
- * 
+ *
  * The image may use the cache to recover underlying tiles that were already computed. To specify whether this Image
  * should interact with the cache or not you may use the CacheAccessModeEnum.
  * By default an image does not use the cache.
@@ -69,7 +69,7 @@ NATRON_NAMESPACE_ENTER
  * to the cache so that other threads may re-use it.
  *
  * Since tiled mono-channel format may not be ideal for most processing formats, you may create a temporary image that takes in
- * parameter another image that itself is mono-channel and tiled. 
+ * parameter another image that itself is mono-channel and tiled.
  * When the temporary image is destroyed, it will update the other mirror image, which in turn when destroyed will update the cache.
  *
  **/
@@ -145,7 +145,7 @@ public:
         //
         // Default - eImageBufferLayoutRGBAPackedFullRect
         ImageBufferLayoutEnum bufferFormat;
-        
+
         // The scale of the image: This is the scale of the render: for a proxy render, this should be (1,1)
         // and for a proxy render, the scale to convert from the full format to proxy format
         //
@@ -200,7 +200,7 @@ public:
 public:
 
     /**
-     * @brief Make an image with the given storage parameters. 
+     * @brief Make an image with the given storage parameters.
      * This may fail, in which case a NULL image is returned.
      **/
     static ImagePtr create(const InitStorageArgs& args);
@@ -408,7 +408,7 @@ public:
      * @param y The y coordinate where to return channel pointers
      * @param bounds The bounds of the buffers pointed to by ptrs
      * @param outPtrs Pointers in output to the RGBA buffers at the (x,y) pixel
-     * @param pixelStride The number of steps to increment to a pointer in outPtrs to go to the next pixel. 
+     * @param pixelStride The number of steps to increment to a pointer in outPtrs to go to the next pixel.
      * This is in PIX unit.
      **/
     template <typename PIX, int nComps>
@@ -581,7 +581,7 @@ public:
     /**
      * @brief Ensures the image bounds can contain the given roi.
      * If it does not, a temporary image is created to the union of
-     * the existing bounds and the passed RoI. 
+     * the existing bounds and the passed RoI.
      * Data is copied over to the temporary image and then swaped with this image.
      * In output of this function, the image bounds contain at least the RoI.
      *
@@ -601,7 +601,7 @@ public:
 
 
     /**
-     * @brief Downscales by pow(2, downscaleLevels) a portion of this image and returns a new image with 
+     * @brief Downscales by pow(2, downscaleLevels) a portion of this image and returns a new image with
      * the downscaled data.
      * If downscaleLevels is 0, this will return this image.
      * The new image in output if created will have a packed RGBA full rect format.
@@ -678,7 +678,7 @@ public:
 private:
 
     friend struct ImagePrivate;
-    
+
     boost::scoped_ptr<ImagePrivate> _imp;
 };
 

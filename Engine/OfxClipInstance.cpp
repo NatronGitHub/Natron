@@ -232,9 +232,9 @@ OfxClipInstance::getUnmappedBitDepth() const
 const std::string &
 OfxClipInstance::getUnmappedComponents() const
 {
-    
+
     std::string ret;
-    
+
     if (isOutput()) {
         EffectInstancePtr effect = getEffectHolder();
 
@@ -293,7 +293,7 @@ OfxClipInstance::getUnmappedComponents() const
             }
         }
     }
-    
+
     ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     tls->unmappedComponents = ret;
     return tls->unmappedComponents;
@@ -412,7 +412,7 @@ OfxClipInstance::getComponents() const
     ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     tls->components = ret;
     return tls->components;
-    
+
 
 }
 
@@ -505,8 +505,8 @@ OfxClipInstance::getFrameRange(double &startFrame,
 /// Field Order - Which spatial field occurs temporally first in a frame.
 /// \returns
 ///  - kOfxImageFieldNone - the clip material is unfielded
-///  - kOfxImageFieldLower - the clip material is fielded, with image rows 0,2,4.... occuring first in a frame
-///  - kOfxImageFieldUpper - the clip material is fielded, with image rows line 1,3,5.... occuring first in a frame
+///  - kOfxImageFieldLower - the clip material is fielded, with image rows 0,2,4.... occurring first in a frame
+///  - kOfxImageFieldUpper - the clip material is fielded, with image rows line 1,3,5.... occurring first in a frame
 const std::string &
 OfxClipInstance::getFieldOrder() const
 {
@@ -924,7 +924,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
             componentsStr = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(metadataPlane);
         }
     }
-    
+
 
 #ifdef DEBUG
     // This will dump the image as seen from the plug-in
@@ -1314,7 +1314,7 @@ OfxClipInstance::natronFieldExtractionToOfxFieldExtraction(ImageFieldExtractionE
 
         return doubledFielding;
     }
-    
+
     return doubledFielding;
 }
 
@@ -1507,7 +1507,7 @@ OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
                     ofxImageBase->addProperties(propSpec);
                 }
 
-                
+
                 for (int i = 0; i < 3; ++i) {
                     for (int j = 0; j < 3; ++j) {
                         int index = i * 3 + j;
@@ -1673,7 +1673,7 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
         }
     }
 
-    /// wierd, must be some custom bit , if only one, choose that, otherwise no idea
+    /// weird, must be some custom bit , if only one, choose that, otherwise no idea
     /// how to map, you need to derive to do so.
     const std::vector<std::string> &supportedComps = getSupportedComponents();
     if (supportedComps.size() == 1) {
@@ -1684,4 +1684,3 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
 } // OfxClipInstance::findSupportedComp
 
 NATRON_NAMESPACE_EXIT
-

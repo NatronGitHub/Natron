@@ -183,7 +183,7 @@ private:
        the OFX plugin cache. (called by the destructor) */
     void writeOFXCache();
 
-    // get the virutals for viewport size, pixel scale, background colour
+    // get the virtuals for viewport size, pixel scale, background colour
     const std::string &getStringProperty(const std::string &name, int n) const OFX_EXCEPTION_SPEC OVERRIDE;
     boost::scoped_ptr<OfxHostPrivate> _imp;
 };

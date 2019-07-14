@@ -175,7 +175,7 @@ public:
 
     // Node label as visible in the GUI. Can be set to any-thing.
     std::string label;
-    
+
     // The plugin which stores the function to instantiate the effect
     PluginWPtr plugin;
 
@@ -204,7 +204,7 @@ public:
     // waits in this condition until the preview is aborted
     QWaitCondition mustQuitPreviewCond;
 
-    // When creating a Reader or Writer node, this is a pointer to the meta node that the user actually see.
+    // When creating a Reader or Writer node, this is a pointer to the meta node that the user actually sees.
     NodeWPtr ioContainer;
 
 

@@ -345,7 +345,7 @@ AboutWindow::AboutWindow(Gui* gui, QWidget* parent)
         }
 #endif
         QString gitStr = QString::fromUtf8("<p>%1</p>").arg(tr("This software was compiled from the source "
-                                                               "code branch %1 at version %2 using %3 targetting %4 for %5.")
+                                                               "code branch %1 at version %2 using %3 targeting %4 for %5.")
                                                             .arg( QString::fromUtf8("<a href=\"https://github.com/NatronGitHub/Natron/tree/" GIT_BRANCH "\">" GIT_BRANCH "</a>") ) // %1
                                                             .arg(argStr) // %2
                                                             .arg( QString::fromUtf8(BOOST_COMPILER OPENMP_STRING) ) // %3
@@ -420,7 +420,7 @@ AboutWindow::AboutWindow(Gui* gui, QWidget* parent)
                                                               .arg( QString::fromUtf8("<a href=\"%1\">%2</a>").arg(QString::fromUtf8(NATRON_ISSUE_TRACKER_URL)).arg(tr("issue tracker")) )); // %1
         aboutText.append(toAppend);
     } else if ( status == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE) ) {
-        QString toAppend = tr("The version of this sofware is a release candidate, which means it has the potential of becoming "
+        QString toAppend = tr("The version of this software is a release candidate, which means it has the potential of becoming "
                                              "the future stable release but might still have some bugs.");
         aboutText.append(toAppend);
     }

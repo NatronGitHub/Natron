@@ -912,7 +912,7 @@ SettingsPrivate::initializeKnobsGeneral()
     _knobsRequiringOFXCacheClear.insert(_customHostName);
     _customHostName->setHintToolTip( tr("This is the name of the OpenFX host (application) as it appears to the OpenFX plugins. "
                                         "Changing it to the name of another application can help loading some plugins which "
-                                        "restrict their usage to specific OpenFX hosts. You shoud leave "
+                                        "restrict their usage to specific OpenFX hosts. You should leave "
                                         "this to its default value, unless a specific plugin refuses to load or run. "
                                         "The default host name is: \n%1").arg( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME) ) +
                                      QLatin1Char('\n') +

@@ -52,7 +52,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 NATRON_NAMESPACE_ENTER
 
 /**
- * @brief A least-recently used container: it works as a map, execept that there's a evict() function to remove the least recently 
+ * @brief A least-recently used container: it works as a map, execept that there's a evict() function to remove the least recently
  * used key/value pair. A value is set to be the most recently used when it is used by the methods find() or insert()
  *
  * The implementation makes use of boost interprocess compatible containers.
@@ -140,7 +140,7 @@ public:
 
         // Insert the key at the end of the record
         v.historyIterator = _key_tracker.insert(_key_tracker.end(), key);
-        
+
         _key_to_value.insert(std::make_pair(key, v));
     }
 
@@ -166,7 +166,7 @@ public:
         iterator it  = _key_to_value.find( _key_tracker.front() );
 
         std::pair<key_type, value_type> ret = std::make_pair(it->first, it->second.value);
-        
+
         // Erase both elements to completely purge record
         _key_to_value.erase(it);
         _key_tracker.pop_front();

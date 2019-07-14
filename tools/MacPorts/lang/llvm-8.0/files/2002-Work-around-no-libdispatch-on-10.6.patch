@@ -1,0 +1,53 @@
+From 8e721ff306a2746c8ce5606cb5163119656f8003 Mon Sep 17 00:00:00 2001
+From: Ken Cunningham <kencu@macports.org>
+Date: Thu, 28 Mar 2019 21:26:26 -0700
+Subject: [PATCH 2002/2002] Work around no libdispatch on < 10.6
+
+---
+ lib/builtins/os_version_check.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git llvm_release_80/projects/compiler-rt/lib/builtins/os_version_check.c macports_release_80/projects/compiler-rt/lib/builtins/os_version_check.c
+index e0d40edc7..406dfaf16 100644
+--- llvm_release_80/projects/compiler-rt/lib/builtins/os_version_check.c
++++ macports_release_80/projects/compiler-rt/lib/builtins/os_version_check.c
+@@ -15,8 +15,11 @@
+ 
+ #ifdef __APPLE__
+ 
++#include <AvailabilityMacros.h>
+ #include <TargetConditionals.h>
++#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
+ #include <dispatch/dispatch.h>
++#endif
+ #include <dlfcn.h>
+ #include <stdint.h>
+ #include <stdio.h>
+@@ -25,7 +28,9 @@
+ 
+ /* These three variables hold the host's OS version. */
+ static int32_t GlobalMajor, GlobalMinor, GlobalSubminor;
+-static dispatch_once_t DispatchOnceCounter;
++#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
++ static dispatch_once_t DispatchOnceCounter;
++#endif
+ 
+ /* We can't include <CoreFoundation/CoreFoundation.h> directly from here, so
+  * just forward declare everything that we need from it. */
+@@ -205,7 +210,13 @@ Fail:
+ 
+ int32_t __isOSVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor) {
+   /* Populate the global version variables, if they haven't already. */
++#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
+   dispatch_once_f(&DispatchOnceCounter, NULL, parseSystemVersionPList);
++#else
++  /* expensive procedure, only do once. GlobalMajor will not be 0 once run. */
++  if (GlobalMajor == 0)
++    parseSystemVersionPList(NULL);
++#endif
+ 
+   if (Major < GlobalMajor)
+     return 1;
+-- 
+2.20.1 (Apple Git-116)
+

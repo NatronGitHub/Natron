@@ -713,7 +713,7 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
             //caught = false;
             break;
     }
- 
+
     TabWidget* tab = getParentPane() ;
     if (tab) {
         // If the Viewer is in a tab, send the tab widget the event directly
@@ -721,7 +721,7 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
     } else {
         QGLWidget::mouseMoveEvent(e);
     }
-    
+
 } // Histogram::mouseMoveEvent
 
 void
@@ -936,7 +936,7 @@ Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
             viewerName = selectedHistAction->text().toStdString();
         }
     }
-    
+
 
     ViewerTab* viewer = 0;
     if (index == 1) {

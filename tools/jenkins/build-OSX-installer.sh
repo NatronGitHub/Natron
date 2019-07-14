@@ -47,6 +47,21 @@ if [ "$COMPILER" = "clang" ] || [ "$COMPILER" = "clang-omp" ]; then
     if [ -x /opt/local/bin/llvm-dsymutil-mp-4.0 ]; then
         DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-4.0
     fi
+    if [ -x /opt/local/bin/llvm-dsymutil-mp-5.0 ]; then
+        DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-5.0
+    fi
+    if [ -x /opt/local/bin/llvm-dsymutil-mp-6.0 ]; then
+        DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-6.0
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-7.0 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-7.0
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-8.0 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-8.0
+    fi
+    if [ -x /opt/local/bin/dsymutil-mp-9.0 ]; then
+        DSYMUTIL=/opt/local/bin/dsymutil-mp-9.0
+    fi
 fi
 
 # the list of libs in /opt/local/lib/libgcc
@@ -60,6 +75,12 @@ omplibs="omp"
 BPAD_TAG=""
 if [ "${NATRON_BUILD_CONFIG:-}" != "" ] && [ "${NATRON_BUILD_CONFIG:-}" != "SNAPSHOT" ]; then
     BPAD_TAG="-release"
+    #if [ -f "$TMP_BINARIES_PATH/natron-fullversion.txt" ]; then
+    #    GET_VER=`cat "$TMP_BINARIES_PATH/natron-fullversion.txt"`
+    #    if [ "$GET_VER" != "" ]; then
+    #        TAG=$GET_VER
+    #    fi
+    #fi
 fi
 
 if [ ! -d "$TMP_BINARIES_PATH" ]; then
@@ -155,24 +176,23 @@ for bin in IO Misc CImg Arena GMIC Shadertoy Extra Magick OCL; do
         echo "* stripping $ofx_binary";
         # Retain the original binary for QA and use with the util 'atos'
         #mv -f "$ofx_binary" "${binary}_FULL";
-        ARCHS="x86_64 i386"
-        if [ "$BITS" = "Universal" ] && lipo "$ofx_binary" -verify_arch "$ARCHS"; then
+        if [ "$BITS" = "Universal" ] && lipo "$ofx_binary" -verify_arch i386 x86_64; then
             # Extract each arch into a "thin" binary for stripping
-            # Perform desired stripping on each thin binary.
-            for a in $ARCHS; do
-                lipo "$ofx_binary" -thin "$a" -output "${ofx_binary}_$a"
-                strip -S -x -r "${ofx_binary}_$a"
-            done
+            lipo "$ofx_binary" -thin x86_64 -output "${ofx_binary}_x86_64";
+            lipo "$ofx_binary" -thin i386   -output "${ofx_binary}_i386";
 
+            # Perform desired stripping on each thin binary.
+            strip -S -x -r "${ofx_binary}_i386";
+            strip -S -x -r "${ofx_binary}_x86_64";
             # Make the new universal binary from our stripped thin pieces.
-            lipo "-arch x86_64 ${ofx_binary}_x86_64 -arch i386 ${ofx_binary}_i386" -create -output "${ofx_binary}"
+            lipo -arch i386 "${ofx_binary}_i386" -arch x86_64 "${ofx_binary}_x86_64" -create -output "${ofx_binary}";
 
             # We're now done with the temp thin binaries, so chuck them.
-            rm -f "${ofx_binary}_i386"
-            rm -f "${ofx_binary}_x86_64"
-# Do not strip, otherwise we get the following error "the __LINKEDIT segment does not cover the end of the file"
-#else
-#           strip -S -x -r "${ofx_binary}"
+            rm -f "${ofx_binary}_i386";
+            rm -f "${ofx_binary}_x86_64";
+        # Do not strip, otherwise we get the following error "the __LINKEDIT segment does not cover the end of the file"
+        #else
+        #   strip -S -x -r "${ofx_binary}"
         fi
         #rm -f "${ofx_binary}_FULL";
     else
@@ -354,7 +374,7 @@ if [ ! -d "${package}/Contents/PlugIns" ] && [ -d "$QTDIR/share/plugins" ]; then
 fi
 # Now, because plugins were not installed (see see https://trac.macports.org/ticket/49344 ),
 # their dependencies were not installed either (e.g. QtSvg and QtXml for imageformats/libqsvg.dylib)
-# Besides, PySide may also load othe Qt Frameworks. We have to make sure they are all present
+# Besides, PySide may also load other Qt Frameworks. We have to make sure they are all present
 for qtlib in $QT_LIBS; do
     if [ ! -d "${package}/Contents/Frameworks/${qtlib}.framework" ]; then
         binary="${package}/Contents/Frameworks/${qtlib}.framework/Versions/4/${qtlib}"
@@ -621,7 +641,7 @@ for bin in $natronbins $otherbins; do
             IMAGEMAGICKMAJ=${IMAGEMAGICKVER%.*.*}
             IMAGEMAGICKLIB="$(pkg-config --variable=libdir ImageMagick)"
             IMAGEMAGICKSHARE="$(pkg-config --variable=prefix ImageMagick)/share"
-            # if I get this right, $GSED substitutes in the exe the occurences of IMAGEMAGICKVER
+            # if I get this right, $GSED substitutes in the exe the occurrences of IMAGEMAGICKVER
             # into the actual value retrieved from the package.
             # We don't need this because we use MAGICKCORE_PACKAGE_VERSION declared in the <magick/magick-config.h>
             # $GSED -e "s,IMAGEMAGICKVER,$IMAGEMAGICKVER,g" --in-place $pkgbin/DisparityKillerM
@@ -796,18 +816,18 @@ if [ "$STRIP" = 1 ]; then
             echo "* stripping $binary";
             # Retain the original binary for QA and use with the util 'atos'
             #mv -f "$binary" "${binary}_FULL";
-            ARCHS="x86_64 i386"
-            if [ "$BITS" = "Universal" ] && lipo "$binary" -verify_arch "$ARCHS"; then
+            if [ "$BITS" = "Universal" ] && lipo "$binary" -verify_arch x86_64 i386; then
                 # Extract each arch into a "thin" binary for stripping
-                for a in $ARCHS; do
-                    lipo "$binary" -thin "$a" -output "${binary}_$a"
-                    strip -S -x -r "${binary}_$a"
-                done
-                               # Perform desired stripping on each thin binary.
+                lipo "$binary" -thin x86_64 -output "${binary}_x86_64";
+                lipo "$binary" -thin i386   -output "${binary}_i386";
 
+                # Perform desired stripping on each thin binary.
+                strip -S -x -r "${binary}_i386";
+                strip -S -x -r "${binary}_x86_64";
 
                 # Make the new universal binary from our stripped thin pieces.
-                lipo "-arch x86_64 ${binary}_x86_64 -arch i386 ${binary}_i386" -create -output "${binary}";
+                lipo -arch i386 "${binary}_i386" -arch x86_64 "${binary}_x86_64" -create -output "${binary}";
+
 
                 # We're now done with the temp thin binaries, so chuck them.
                 rm -f "${binary}_i386";
@@ -866,7 +886,7 @@ export PYDIR="$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 
 # Install pip
 if [ -x "${TMP_PORTABLE_DIR}.app/Contents/MacOS"/natron-python ]; then
-    wget --no-check-certificate http://bootstrap.pypa.io/get-pip.py
+    $CURL --remote-name --insecure http://bootstrap.pypa.io/get-pip.py
     "${TMP_PORTABLE_DIR}.app/Contents/MacOS"/natron-python get-pip.py
     rm get-pip.py
 fi

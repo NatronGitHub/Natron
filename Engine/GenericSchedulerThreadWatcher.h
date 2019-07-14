@@ -49,7 +49,7 @@ NATRON_NAMESPACE_ENTER
  * and connect a slot to the threadFinished() signal. Whenever executing this slot, it is then safe to assume that the thread is finished and you can also
  * destroy the watcher.
  *
- * You should never use the GenericSchedulerThreadWatcher to perform multiple tasks, because it is then uncertain for which task, which slot you are going to be receving,
+ * You should never use the GenericSchedulerThreadWatcher to perform multiple tasks, because it is then uncertain for which task, which slot you are going to be receiving,
  * even though the class is safely implemented to support multiple tasks.
  *
  * Note: the GenericSchedulerThread object should live as long as this object lives.

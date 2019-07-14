@@ -253,7 +253,7 @@ KnobGuiTable::createWidget(QHBoxLayout* layout)
 
     _imp->editPathButton = new Button( tr("Edit..."), buttonsContainer);
     QObject::connect( _imp->editPathButton, SIGNAL(clicked()), this, SLOT(onEditButtonClicked()) );
-    _imp->editPathButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Click to edit seleted value."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    _imp->editPathButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Click to edit selected value."), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
 
     buttonsLayout->addWidget(_imp->addPathButton);

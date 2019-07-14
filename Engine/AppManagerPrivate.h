@@ -126,7 +126,7 @@ public:
     boost::scoped_ptr<ProcessInputChannel> _backgroundIPC; //< object used to communicate with the main app
 
     //if this app is background, see the ProcessInputChannel def
-    bool _loaded; //< true when the first instance is completly loaded.
+    bool _loaded; //< true when the first instance is completely loaded.
 
     std::string binaryPath;
 
@@ -136,7 +136,7 @@ public:
 
     std::string currentOCIOConfigPath; //< the currentOCIO config path
 
-    int hardwareThreadCount,physicalThreadCount; 
+    int hardwareThreadCount,physicalThreadCount;
 
     ///Python needs wide strings as from Python 3.x onwards everything is unicode based
 #if PY_MAJOR_VERSION >= 3
@@ -250,4 +250,3 @@ public:
 NATRON_NAMESPACE_EXIT
 
 #endif // Engine_AppManagerPrivate_h
-

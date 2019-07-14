@@ -238,6 +238,8 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename,
 
                 return filename;
             } else {
+                PythonGILLocker pgl;
+
                 PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
                 assert(mainModule);
                 PyObject* ret = PyObject_GetAttrString(mainModule, "ret");

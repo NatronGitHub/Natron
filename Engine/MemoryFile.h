@@ -72,7 +72,7 @@ public:
     ~MemoryFile();
 
     /**
-     * @brief Attemps to create the file if the file didn't exist already.
+     * @brief Attempts to create the file if the file didn't exist already.
      * If the file exists already, this function will also map the file to memory and the data
      * can be read using the pointer returned by data(). Otherwise data() returns NULL and you
      * explicitly need to call resize(...) to create the file mapping.

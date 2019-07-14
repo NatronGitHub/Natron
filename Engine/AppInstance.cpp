@@ -930,7 +930,7 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
             }
 
 
-            // If there's a serialization, restore the serialization of the group node because the Python script probably overriden any state
+            // If there's a serialization, restore the serialization of the group node because the Python script probably overridden any state
             if (serialization) {
                 containerNode->fromSerialization(*serialization);
             }

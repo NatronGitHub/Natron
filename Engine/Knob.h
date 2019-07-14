@@ -314,7 +314,7 @@ protected:
 
 public:
 
-   
+
 
     /**
      * @brief Do not call this. It is called right away after the constructor by the factory
@@ -430,7 +430,7 @@ public:
      **/
     virtual std::string getDimensionName(DimIdx dimension) const = 0;
     virtual void setDimensionName(DimIdx dim, const std::string & name) = 0;
-    
+
     /**
      * @brief When in-between a begin/endChanges bracket, evaluate (render) action will not be called
      * when issuing value changes. Internally it maintains a counter, when it reaches 0 the evaluation is unblocked.
@@ -632,7 +632,7 @@ public:
      * @param dimension The dimension index of the corresponding curve
      * @param view The view of the corresponding curve. If view is current, then the current view
      * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
-     * to a valid view index. 
+     * to a valid view index.
      **/
     virtual bool isAnimated( DimIdx dimension, ViewIdx view ) const = 0;
 
@@ -808,7 +808,7 @@ public:
     /**
      * @brief For a master knob in a KnobItemsTable, it indicates to the gui that multiple
      * items in the table are selected and the knob should be displayed with a specific state
-     * to reflect the user that modifying the value will impact all selected rows of the 
+     * to reflect the user that modifying the value will impact all selected rows of the
      * KnobItemsTable.
      **/
     virtual void setKnobSelectedMultipleTimes(bool d) = 0;
@@ -853,7 +853,7 @@ public:
 
     /**
      * @brief If a knob is evaluating on change, that means
-     * everytime a value changes, the knob will call the
+     * every time a value changes, the knob will call the
      * evaluate function on the KnobHolder holding it.
      * By default this is set to true.
      **/
@@ -1002,7 +1002,7 @@ protected:
 protected:
 
     virtual bool setHasModifications(DimIdx dimension, ViewIdx view, bool value, bool lock) = 0;
-    
+
 public:
 
 
@@ -1059,9 +1059,9 @@ public:
         eListenersTypeExpression = 0x1,
         eListenersTypeSharedValue = 0x2
     };
-    
+
     DECLARE_FLAGS(ListenersTypeFlags, ListenersTypeEnum)
-    
+
     /**
      * @brief Returns a list of all the knobs whose value depends upon this knob.
      **/
@@ -1155,7 +1155,7 @@ public:
 
         // A range of keyframes to copy
         const RangeD* keysToCopyRange;
-        
+
         // A offset to copy keyframes
         double keysToCopyOffset;
 
@@ -1167,35 +1167,35 @@ public:
         {
 
         }
-        
+
         CopyInArgs(const KnobDimViewBase& other)
         : other(&other)
         , otherCurve(0)
         , keysToCopyRange(0)
         , keysToCopyOffset(0)
         {
-            
+
         }
     };
-    
+
     struct CopyOutArgs
     {
-        
+
         // If the copy operation should report keyframes removed, this is a pointer
         // to the keyframes removed list
         KeyFrameSet* keysRemoved;
-        
+
         // If the copy operation should report keyframes added, this is a pointer
         // to the keyframes added list
         KeyFrameSet* keysAdded;
-        
+
         CopyOutArgs()
         : keysRemoved(0)
         , keysAdded(0)
         {
-            
+
         }
-        
+
     };
 
     /**
@@ -1215,7 +1215,7 @@ public:
     virtual void deleteValuesAtTime(const std::list<double>& times);
 
     /**
-     * @brief Remove all keyframes before or after the given timeline's time, excluding any keyframe at the 
+     * @brief Remove all keyframes before or after the given timeline's time, excluding any keyframe at the
      * given time.
      **/
     virtual void deleteAnimationConditional(TimeValue time, bool before);
@@ -1268,7 +1268,7 @@ public:
 
     virtual ~ValueKnobDimView()
     {
-        
+
     }
 
     virtual KeyFrame makeKeyFrame(TimeValue time, const T& value);
@@ -1443,7 +1443,7 @@ private:
 public:
 
 
-    
+
     virtual bool isAnimated( DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool checkInvalidLinks() OVERRIDE FINAL;
@@ -1500,7 +1500,7 @@ public:
 
 protected:
 
-  
+
     /*
      * @brief Callback called when linked or unlinked to refresh extra state
      */
@@ -1620,7 +1620,7 @@ private:
 
     bool cloneValueInternal(const KnobIPtr& other, ViewIdx view, ViewIdx otherView, DimIdx dimension, DimIdx otherDimension, const RangeD* range, double offset);
     bool cloneValues(const KnobIPtr& other, ViewSetSpec view, ViewSetSpec otherView, DimSpec dimension, DimSpec otherDimension, const RangeD* range, double offset);
-    
+
 protected:
 
     virtual bool setHasModifications(DimIdx dimension, ViewIdx view, bool value, bool lock) OVERRIDE FINAL;
@@ -1642,7 +1642,7 @@ public:
         eExpressionReturnValueTypeError
     };
 protected:
-    
+
     ExpressionReturnValueTypeEnum executeExprTkExpression(TimeValue time, ViewIdx view, DimIdx dimension, double* retValueIsScalar, std::string* retValueIsString, std::string* error);
 
     /// The return value must be Py_DECRREF
@@ -1813,7 +1813,7 @@ public:
 protected:
 
     virtual KnobDimViewBasePtr createDimViewData() const OVERRIDE;
-    
+
     virtual bool hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimension) const;
 
 public:
@@ -1903,8 +1903,8 @@ public:
      * If set to a view index and the view is split-off or it corresponds to the view 0 (main view) then only the view
      * at the given index will receive the change, otherwise no change occurs.
      * @param newKey If this knob has auto-keying enabled and its animation level is currently interpolated, then it may
-     * attempt to set a keyframe automatically. If this parameter is non NULL the new keyframe (or modified keyframe) will 
-     * contain it. 
+     * attempt to set a keyframe automatically. If this parameter is non NULL the new keyframe (or modified keyframe) will
+     * contain it.
      * @param forceHandlerEvenIfNoChange If true, even if the value of the knob did not change, the knobValueChanged handler of the
      * knob holder will be called and an evaluation will be triggered.
      * @return Returns the kind of changed that the knob has had
@@ -2063,7 +2063,7 @@ protected:
 
 private:
 
-    
+
     T getValueInternal(TimeValue currentTime,
                        DimIdx dimension,
                        ViewIdx view,
@@ -2352,7 +2352,7 @@ public:
     KnobIPtr getKnobByName(const std::string & name) const WARN_UNUSED_RETURN;
 
     template <typename K>
-    boost::shared_ptr<K> getKnobByNameAndType(const std::string& name) const 
+    boost::shared_ptr<K> getKnobByNameAndType(const std::string& name) const
     {
         KnobIPtr ret = getKnobByName(name);
         if (!ret) {
@@ -2398,11 +2398,11 @@ protected:
 public:
 
     /**
-     * @brief Calls beginChanges() and flags that all subsequent calls to setValue/setValueAtTime should be 
+     * @brief Calls beginChanges() and flags that all subsequent calls to setValue/setValueAtTime should be
      * gathered under the same undo/redo action in the GUI. To stop actions to be in this undo/redo action
-     * call endMultipleEdits(). 
+     * call endMultipleEdits().
      * Note that each beginMultipleEdits must have a corresponding call to endMultipleEdits. No render will be
-     * issued until endMultipleEdits is called. 
+     * issued until endMultipleEdits is called.
      * Note that however, the knobChanged handler IS called at each setValue/setValueAtTime call made in-between
      * the begin/endMultipleEdits.
      * If beginMultipleEdits is called while another call to beginMultipleEdits is on, then it will create a new
@@ -2427,7 +2427,7 @@ public:
 
     /**
      * @brief To be called when changes applied after a beginMultipleEdits group are finished. If this call
-     * to endMultipleEdits matches the last beginMultipleEdits function call in the recursion stack then 
+     * to endMultipleEdits matches the last beginMultipleEdits function call in the recursion stack then
      * if a significant knob was modified, a render is triggered.
      **/
     void endMultipleEdits();
@@ -2528,7 +2528,7 @@ public:
                                     TimeValue time,
                                     ViewSetSpec view,
                                     ValueChangedReasonEnum reason);
-    
+
     /**
      * @brief To implement if you need to make the hash vary at a specific time/view
      **/
@@ -2565,7 +2565,7 @@ public:
     virtual ViewIdx getCurrentRenderView() const;
 
     TreeRenderPtr getCurrentRender() const;
-    
+
 
 protected:
 
@@ -2632,7 +2632,7 @@ public:
     void getUserPages(std::list<KnobPagePtr>& userPages) const;
 
     /**
-     * @brief Return true if a clone of this knob holder is needed when rendering 
+     * @brief Return true if a clone of this knob holder is needed when rendering
      **/
     virtual bool isRenderCloneNeeded() const
     {
@@ -2714,7 +2714,7 @@ protected:
     virtual void initializeKnobs() = 0;
 
     /**
-     * @brief Create a shallow render copy of this holder. 
+     * @brief Create a shallow render copy of this holder.
      * If this is implemented, also implement isRenderCloneNeeded()
      **/
     virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& key) const
