@@ -162,7 +162,7 @@ fi
 $TIMEOUT 1 true && echo "$TIMEOUT works"
 #check that SED works
 echo "Testing $GSED"
-echo "$GSED dos not work" | $GSED -e "s/does not work/works/"
+echo "$GSED does not work" | $GSED -e "s/does not work/works/"
 # check that curl works
 $CURL --silent --head http://www.google.com > /dev/null && echo "$CURL works"
 
