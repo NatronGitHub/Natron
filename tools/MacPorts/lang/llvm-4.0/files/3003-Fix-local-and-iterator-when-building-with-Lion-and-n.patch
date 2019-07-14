@@ -1,0 +1,45 @@
+From f22ba463b19326ad65f52253c7fb51f548f77038 Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Fri, 16 Jan 2015 21:34:36 -0800
+Subject: [PATCH 3003/3005] Fix <local> and <iterator> when building with Lion
+ and newer Availability.h
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+---
+ include/iterator | 4 ++--
+ include/locale   | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git llvm_master/projects/libcxx/include/iterator macports_master/projects/libcxx/include/iterator
+index 731791b..3e1cf5e 100644
+--- llvm_master/projects/libcxx/include/iterator
++++ macports_master/projects/libcxx/include/iterator
+@@ -1020,8 +1020,8 @@ public:
+     _LIBCPP_INLINE_VISIBILITY bool failed() const _NOEXCEPT {return __sbuf_ == 0;}
+ 
+ #if !defined(__APPLE__) || \
+-    (defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED > __MAC_10_8) || \
+-    (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_6_0)
++    (defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && defined(__MAC_10_8) && __MAC_OS_X_VERSION_MIN_REQUIRED > __MAC_10_8) || \
++    (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && defined(__IPHONE_6_0) && __IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_6_0)
+ 
+     template <class _Ch, class _Tr>
+     friend
+diff --git llvm_master/projects/libcxx/include/locale macports_master/projects/libcxx/include/locale
+index adb03af..027de77 100644
+--- llvm_master/projects/libcxx/include/locale
++++ macports_master/projects/libcxx/include/locale
+@@ -1316,8 +1316,8 @@ __pad_and_output(_OutputIterator __s,
+ }
+ 
+ #if !defined(__APPLE__) || \
+-    (defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED > __MAC_10_8) || \
+-    (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_6_0)
++    (defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && defined(__MAC_10_8) && __MAC_OS_X_VERSION_MIN_REQUIRED > __MAC_10_8) || \
++    (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && defined(__IPHONE_6_0) && __IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_6_0)
+ 
+ template <class _CharT, class _Traits>
+ _LIBCPP_HIDDEN
+-- 
+2.10.1
+

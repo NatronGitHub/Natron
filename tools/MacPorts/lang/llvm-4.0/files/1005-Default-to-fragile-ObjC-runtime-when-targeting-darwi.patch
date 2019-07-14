@@ -1,0 +1,31 @@
+From 88ad936c1c8bc1b4c86e969e672f2a415208ac0d Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Tue, 20 Jan 2015 00:09:16 -0800
+Subject: [PATCH 1005/1008] Default to fragile ObjC runtime when targeting
+ darwin/ppc
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+---
+ lib/Driver/ToolChains.h | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git llvm_release_40/tools/clang/lib/Driver/ToolChains.h macports_release_40/tools/clang/lib/Driver/ToolChains.h
+index 3240357ba6..7e1277c6a4 100644
+--- llvm_release_40/tools/clang/lib/Driver/ToolChains.h
++++ macports_release_40/tools/clang/lib/Driver/ToolChains.h
+@@ -362,8 +362,10 @@ public:
+   bool IsEncodeExtendedBlockSignatureDefault() const override { return true; }
+ 
+   bool IsObjCNonFragileABIDefault() const override {
+-    // Non-fragile ABI is default for everything but i386.
+-    return getTriple().getArch() != llvm::Triple::x86;
++    // Non-fragile ABI is default for legacy architectures
++    return getTriple().getArch() != llvm::Triple::x86 &&
++           getTriple().getArch() != llvm::Triple::ppc &&
++           getTriple().getArch() != llvm::Triple::ppc64;
+   }
+ 
+   bool UseObjCMixedDispatch() const override { return true; }
+-- 
+2.13.3
+

@@ -1,0 +1,42 @@
+From 3bf845a2d6db3ad4ec5e884a9f432bb698930721 Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Tue, 20 Dec 2016 15:53:39 -0800
+Subject: [PATCH 1007/1008] Fix build issues pre-Lion due to missing a strnlen
+ definition
+
+https://trac.macports.org/ticket/51520
+https://llvm.org/bugs/show_bug.cgi?id=27714
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+---
+ lib/Lex/HeaderMap.cpp | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git llvm_release_40/tools/clang/lib/Lex/HeaderMap.cpp macports_release_40/tools/clang/lib/Lex/HeaderMap.cpp
+index 24a14b6cdb..c38986d46c 100644
+--- llvm_release_40/tools/clang/lib/Lex/HeaderMap.cpp
++++ macports_release_40/tools/clang/lib/Lex/HeaderMap.cpp
+@@ -26,6 +26,20 @@
+ #include <memory>
+ using namespace clang;
+ 
++#ifdef __APPLE__
++#include <Availability.h>
++#if __MAC_OS_X_VERSION_MIN_REQUIRED < 1070
++static size_t strnlen(const char *s, size_t maxlen) {
++  size_t l = 0;
++  while (l < maxlen && *s) {
++    l++;
++    s++;
++  }
++  return l;
++}
++#endif
++#endif
++
+ /// HashHMapKey - This is the 'well known' hash function required by the file
+ /// format, used to look up keys in the hash table.  The hash table uses simple
+ /// linear probing based on this function.
+-- 
+2.13.3
+

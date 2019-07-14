@@ -1,0 +1,53 @@
+--- orig/tools/clang/lib/Driver/Tools.cpp.orig	2016-10-31 22:23:57.000000000 -0700
++++ fixed/tools/clang/lib/Driver/Tools.cpp	2016-10-31 22:31:55.000000000 -0700
+@@ -3154,12 +3154,18 @@ static void addOpenMPRuntime(ArgStringLi
+ 
+   switch (TC.getDriver().getOpenMPRuntime(Args)) {
+   case Driver::OMPRT_OMP:
++    // Automatically find MacPorts' libomp
++    CmdArgs.push_back("-L@@PREFIX@@/lib/libomp");
+     CmdArgs.push_back("-lomp");
+     break;
+   case Driver::OMPRT_GOMP:
++    // Automatically find MacPorts' libomp
++    CmdArgs.push_back("-L@@PREFIX@@/lib/libomp");
+     CmdArgs.push_back("-lgomp");
+     break;
+   case Driver::OMPRT_IOMP5:
++    // Automatically find MacPorts' libomp
++    CmdArgs.push_back("-L@@PREFIX@@/lib/libomp");
+     CmdArgs.push_back("-liomp5");
+     break;
+   case Driver::OMPRT_Unknown:
+@@ -5283,6 +5289,8 @@ void Clang::ConstructJob(Compilation &C,
+     case Driver::OMPRT_OMP:
+     case Driver::OMPRT_IOMP5:
+       // Clang can generate useful OpenMP code for these two runtime libraries.
++      // Automatically find MacPorts' omp.h
++      CmdArgs.push_back("-I@@PREFIX@@/include/libomp");
+       CmdArgs.push_back("-fopenmp");
+ 
+       // If no option regarding the use of TLS in OpenMP codegeneration is
+@@ -10119,9 +10127,13 @@ void gnutools::Linker::ConstructJob(Comp
+         // Also link the particular OpenMP runtimes.
+         switch (ToolChain.getDriver().getOpenMPRuntime(Args)) {
+         case Driver::OMPRT_OMP:
++          // Automatically find MacPorts' libomp
++          CmdArgs.push_back("-L@@PREFIX@@/lib/libomp");
+           CmdArgs.push_back("-lomp");
+           break;
+         case Driver::OMPRT_GOMP:
++          // Automatically find MacPorts' libomp
++          CmdArgs.push_back("-L@@PREFIX@@/lib/libomp");
+           CmdArgs.push_back("-lgomp");
+ 
+           // FIXME: Exclude this for platforms with libgomp that don't require
+@@ -10129,6 +10141,8 @@ void gnutools::Linker::ConstructJob(Comp
+           CmdArgs.push_back("-lrt");
+           break;
+         case Driver::OMPRT_IOMP5:
++          // Automatically find MacPorts' libomp
++          CmdArgs.push_back("-L@@PREFIX@@/lib/libomp");
+           CmdArgs.push_back("-liomp5");
+           break;
+         case Driver::OMPRT_Unknown:

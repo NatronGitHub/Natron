@@ -1,0 +1,41 @@
+From 496523069ab6b4a280745a892cbe6f77064832b2 Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Mon, 31 Oct 2016 15:06:36 -0700
+Subject: [PATCH 1006/1008] Fixup libstdc++ header search paths for older
+ versions of Mac OS X
+
+The subpaths were removed in Lion.  Leopard and Snow Leopard had darwin8
+symlinks for compatibility.
+
+https://llvm.org/bugs/show_bug.cgi?id=30858
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+---
+ lib/Frontend/InitHeaderSearch.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git llvm_release_40/tools/clang/lib/Frontend/InitHeaderSearch.cpp macports_release_40/tools/clang/lib/Frontend/InitHeaderSearch.cpp
+index d50fb6d788..c8969b67bf 100644
+--- llvm_release_40/tools/clang/lib/Frontend/InitHeaderSearch.cpp
++++ macports_release_40/tools/clang/lib/Frontend/InitHeaderSearch.cpp
+@@ -365,7 +365,7 @@ AddDefaultCPlusPlusIncludePaths(const llvm::Triple &triple, const HeaderSearchOp
+                                   "powerpc-apple-darwin10", "", "ppc64",
+                                   triple);
+       AddGnuCPlusPlusIncludePaths("/usr/include/c++/4.0.0",
+-                                  "powerpc-apple-darwin10", "", "ppc64",
++                                  "powerpc-apple-darwin8", "", "ppc64",
+                                   triple);
+       break;
+ 
+@@ -374,7 +374,7 @@ AddDefaultCPlusPlusIncludePaths(const llvm::Triple &triple, const HeaderSearchOp
+       AddGnuCPlusPlusIncludePaths("/usr/include/c++/4.2.1",
+                                   "i686-apple-darwin10", "", "x86_64", triple);
+       AddGnuCPlusPlusIncludePaths("/usr/include/c++/4.0.0",
+-                                  "i686-apple-darwin8", "", "", triple);
++                                  "i686-apple-darwin8", "", "x86_64", triple);
+       break;
+ 
+     case llvm::Triple::arm:
+-- 
+2.13.3
+

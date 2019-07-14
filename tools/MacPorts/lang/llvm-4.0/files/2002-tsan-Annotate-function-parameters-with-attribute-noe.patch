@@ -1,0 +1,62 @@
+From cdac7de72e9815d90fc6efd5993e2625037d3715 Mon Sep 17 00:00:00 2001
+From: Akira Hatanaka <ahatanaka@apple.com>
+Date: Thu, 21 Sep 2017 22:16:50 +0000
+Subject: [PATCH 2002/2003] [tsan] Annotate function parameters with attribute
+ 'noescape'.
+
+This commit annotates the block parameters of the following functions
+declared in compiler-rt with 'noescape':
+
+- dispatch_sync
+- dispatch_barrier_sync
+- dispatch_once
+- dispatch_apply
+
+This is needed to commit the patch that adds support for 'noescape' in
+clang (see https://reviews.llvm.org/D32210) since these functions are
+annotated with 'noescape' in the SDK header files.
+
+Differential Revision: https://reviews.llvm.org/D32210
+
+git-svn-id: https://llvm.org/svn/llvm-project/compiler-rt/trunk@313929 91177308-0d34-0410-b5e6-96231b3b80d8
+(cherry picked from commit 0b01c05ec7545697a453b594f3b288e38d4c36cb)
+---
+ lib/tsan/rtl/tsan_libdispatch_mac.cc | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git llvm_release_40/projects/compiler-rt/lib/tsan/rtl/tsan_libdispatch_mac.cc macports_release_40/projects/compiler-rt/lib/tsan/rtl/tsan_libdispatch_mac.cc
+index d8c689ebb..1085c836e 100644
+--- llvm_release_40/projects/compiler-rt/lib/tsan/rtl/tsan_libdispatch_mac.cc
++++ macports_release_40/projects/compiler-rt/lib/tsan/rtl/tsan_libdispatch_mac.cc
+@@ -174,7 +174,8 @@ static void invoke_and_release_block(void *param) {
+   }
+ 
+ #define DISPATCH_INTERCEPT_SYNC_B(name, barrier)                             \
+-  TSAN_INTERCEPTOR(void, name, dispatch_queue_t q, dispatch_block_t block) { \
++  TSAN_INTERCEPTOR(void, name, dispatch_queue_t q,                           \
++                   DISPATCH_NOESCAPE dispatch_block_t block) {               \
+     SCOPED_TSAN_INTERCEPTOR(name, q, block);                                 \
+     SCOPED_TSAN_INTERCEPTOR_USER_CALLBACK_START();                           \
+     dispatch_block_t heap_block = Block_copy(block);                         \
+@@ -264,7 +265,7 @@ TSAN_INTERCEPTOR(void, dispatch_after_f, dispatch_time_t when,
+ // need to undefine the macro.
+ #undef dispatch_once
+ TSAN_INTERCEPTOR(void, dispatch_once, dispatch_once_t *predicate,
+-                 dispatch_block_t block) {
++                 DISPATCH_NOESCAPE dispatch_block_t block) {
+   SCOPED_INTERCEPTOR_RAW(dispatch_once, predicate, block);
+   atomic_uint32_t *a = reinterpret_cast<atomic_uint32_t *>(predicate);
+   u32 v = atomic_load(a, memory_order_acquire);
+@@ -474,7 +475,8 @@ TSAN_INTERCEPTOR(void, dispatch_source_set_registration_handler_f,
+ }
+ 
+ TSAN_INTERCEPTOR(void, dispatch_apply, size_t iterations,
+-                 dispatch_queue_t queue, void (^block)(size_t)) {
++                 dispatch_queue_t queue,
++                 DISPATCH_NOESCAPE void (^block)(size_t)) {
+   SCOPED_TSAN_INTERCEPTOR(dispatch_apply, iterations, queue, block);
+ 
+   void *parent_to_child_sync = nullptr;
+-- 
+2.18.0
+

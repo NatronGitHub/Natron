@@ -1,0 +1,55 @@
+From a0c10070b02b587bc667059b2418d1561000d3cd Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Sat, 17 Jan 2015 09:03:43 -0800
+Subject: [PATCH 1/4] Set the Mach-O CPU Subtype to ppc7400 when targeting
+ Leopard
+
+http://llvm.org/bugs/show_bug.cgi?id=18463
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+---
+ lib/Target/PowerPC/MCTargetDesc/PPCAsmBackend.cpp | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+diff --git llvm_master/lib/Target/PowerPC/MCTargetDesc/PPCAsmBackend.cpp macports_master/lib/Target/PowerPC/MCTargetDesc/PPCAsmBackend.cpp
+index 5847b3a52bf..8ada8541744 100644
+--- llvm_master/lib/Target/PowerPC/MCTargetDesc/PPCAsmBackend.cpp
++++ macports_master/lib/Target/PowerPC/MCTargetDesc/PPCAsmBackend.cpp
+@@ -201,16 +201,23 @@ public:
+ // FIXME: This should be in a separate file.
+ namespace {
+   class DarwinPPCAsmBackend : public PPCAsmBackend {
++    Triple TheTriple;
+   public:
+-    DarwinPPCAsmBackend(const Target &T) : PPCAsmBackend(T, false) { }
++    DarwinPPCAsmBackend(const Target &T, const Triple &TT) : PPCAsmBackend(T, false), TheTriple(TT) { }
+ 
+     MCObjectWriter *createObjectWriter(raw_pwrite_stream &OS) const override {
+       bool is64 = getPointerSize() == 8;
++      MachO::CPUSubTypePowerPC CS = MachO::CPU_SUBTYPE_POWERPC_ALL;
++
++      if (TheTriple.isOSDarwin() && !TheTriple.isMacOSXVersionLT(10,5)) {
++          CS = MachO::CPU_SUBTYPE_POWERPC_7400;
++      }
++
+       return createPPCMachObjectWriter(
+           OS,
+           /*Is64Bit=*/is64,
+           (is64 ? MachO::CPU_TYPE_POWERPC64 : MachO::CPU_TYPE_POWERPC),
+-          MachO::CPU_SUBTYPE_POWERPC_ALL);
++          CS);
+     }
+   };
+ 
+@@ -233,7 +240,7 @@ MCAsmBackend *llvm::createPPCAsmBackend(const Target &T,
+                                         const Triple &TT, StringRef CPU,
+                                         const MCTargetOptions &Options) {
+   if (TT.isOSDarwin())
+-    return new DarwinPPCAsmBackend(T);
++    return new DarwinPPCAsmBackend(T, TT);
+ 
+   uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(TT.getOS());
+   bool IsLittleEndian = TT.getArch() == Triple::ppc64le;
+-- 
+2.11.0
+

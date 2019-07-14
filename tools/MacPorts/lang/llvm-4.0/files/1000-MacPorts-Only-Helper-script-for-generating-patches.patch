@@ -1,0 +1,30 @@
+From 1e890634bb9efac93a1966f9b2e366290fe2fd7e Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Sat, 17 Jan 2015 17:48:39 -0800
+Subject: [PATCH 1000/1007] MacPorts Only: Helper script for generating patches
+
+---
+ create_macports_patches.sh | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+ create mode 100755 create_macports_patches.sh
+
+diff --git llvm_master/tools/clang/create_macports_patches.sh macports_master/tools/clang/create_macports_patches.sh
+new file mode 100755
+index 0000000000..e51c371004
+--- /dev/null
++++ macports_master/tools/clang/create_macports_patches.sh
+@@ -0,0 +1,11 @@
++#!/bin/bash
++
++parse_git_branch()
++{
++    ref=$(git symbolic-ref HEAD 2> /dev/null) || return;
++    echo ${ref#refs/heads/}
++}
++
++branch=$(parse_git_branch)
++
++git format-patch origin/${branch} --src-prefix=llvm_${branch}/tools/clang/ --dst-prefix=macports_${branch}/tools/clang/ --start-number=1000
+-- 
+2.11.0
+

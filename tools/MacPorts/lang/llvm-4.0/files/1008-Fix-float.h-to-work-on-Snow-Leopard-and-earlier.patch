@@ -1,0 +1,35 @@
+From 73070c78a8d1c994ad7afb73c66972225491fe77 Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Thu, 20 Jul 2017 17:15:35 -0700
+Subject: [PATCH 1008/1008] Fix float.h to work on Snow Leopard and earlier
+
+https://bugs.llvm.org/show_bug.cgi?id=31504
+https://trac.macports.org/ticket/54135
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+(cherry picked from commit 1756240a138dd99225bc1a4fa2f32606074456ad)
+---
+ lib/Headers/float.h | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git llvm_release_40/tools/clang/lib/Headers/float.h macports_release_40/tools/clang/lib/Headers/float.h
+index 0f453d87cb..1db2b28ed7 100644
+--- llvm_release_40/tools/clang/lib/Headers/float.h
++++ macports_release_40/tools/clang/lib/Headers/float.h
+@@ -31,7 +31,12 @@
+  * Also fall back on Darwin to allow additional definitions and
+  * implementation-defined values.
+  */
+-#if (defined(__APPLE__) || (defined(__MINGW32__) || defined(_MSC_VER))) && \
++
++#if defined(__APPLE__) && __has_include(<Availability.h>)
++#include <Availability.h>
++#endif
++
++#if ((defined(__APPLE__) && __has_include(<Availability.h>) && (!defined(__MAC_OS_X_VERSION_MAX_ALLOWED) || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101300)) || (defined(__MINGW32__) || defined(_MSC_VER))) && \
+     __STDC_HOSTED__ && __has_include_next(<float.h>)
+ #  include_next <float.h>
+ 
+-- 
+2.13.3
+

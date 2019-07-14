@@ -1,0 +1,29 @@
+From 62bfda50e50245543b00ad7f8ccd80fb95b1d217 Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Sat, 17 Jan 2015 16:41:30 -0800
+Subject: [PATCH 3/4] MacPorts Only: Don't embed the deployment target in the
+ asm when using -fno-integrated-as
+
+http://llvm.org/bugs/show_bug.cgi?id=21636
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+---
+ lib/CodeGen/AsmPrinter/AsmPrinter.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git llvm_master/lib/CodeGen/AsmPrinter/AsmPrinter.cpp macports_master/lib/CodeGen/AsmPrinter/AsmPrinter.cpp
+index 7adac4cbf94..fb47d6079a4 100644
+--- llvm_master/lib/CodeGen/AsmPrinter/AsmPrinter.cpp
++++ macports_master/lib/CodeGen/AsmPrinter/AsmPrinter.cpp
+@@ -193,7 +193,7 @@ bool AsmPrinter::doInitialization(Module &M) {
+   // anyway.
+   const Triple &TT = TM.getTargetTriple();
+   // If there is a version specified, Major will be non-zero.
+-  if (TT.isOSDarwin() && TT.getOSMajorVersion() != 0) {
++  if (TT.isOSDarwin() && TT.getOSMajorVersion() != 0 && MAI->useIntegratedAssembler()) {
+     unsigned Major, Minor, Update;
+     MCVersionMinType VersionType;
+     if (TT.isWatchOS()) {
+-- 
+2.11.0
+

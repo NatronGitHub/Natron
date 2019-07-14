@@ -1,0 +1,35 @@
+From cc6da8932689d4160804777b0fb5277f60089b27 Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Fri, 16 Jan 2015 21:10:35 -0800
+Subject: [PATCH 3001/3005] buildit build fix for Leopard
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+---
+ lib/buildit | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git llvm_master/projects/libcxx/lib/buildit macports_master/projects/libcxx/lib/buildit
+index 6451a9b..237e5a7 100755
+--- llvm_master/projects/libcxx/lib/buildit
++++ macports_master/projects/libcxx/lib/buildit
+@@ -50,7 +50,7 @@ case $TRIPLE in
+       RC_CFLAGS="-arch i386 -arch x86_64"
+     fi
+     SOEXT=dylib
+-    if [ "$MACOSX_DEPLOYMENT_TARGET" = "10.6" ]
++    if [ "$MACOSX_DEPLOYMENT_TARGET" = "10.5" ] || [ "$MACOSX_DEPLOYMENT_TARGET" = "10.6" ]
+     then
+         EXTRA_FLAGS="-nostdinc++ -std=c++11 -U__STRICT_ANSI__"
+         LDSHARED_FLAGS="-o libc++.1.dylib \
+@@ -59,7 +59,7 @@ case $TRIPLE in
+             -install_name /usr/lib/libc++.1.dylib \
+             -Wl,-reexport_library,/usr/lib/libc++abi.dylib \
+             -Wl,-unexported_symbols_list,libc++unexp.exp  \
+-            /usr/lib/libSystem.B.dylib"
++            /usr/lib/libSystem.B.dylib /usr/lib/libgcc_s.1.dylib"
+     else
+         if [ -n "$SDKROOT" ]
+         then
+-- 
+2.10.1
+

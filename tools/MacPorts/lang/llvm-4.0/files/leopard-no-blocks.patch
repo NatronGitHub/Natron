@@ -1,0 +1,26 @@
+From 2500edffc9f1f44983927351eb60d4fe1cee4bcd Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Wed, 7 Jan 2015 03:42:15 -0800
+Subject: [PATCH] Leopard: Default to -fno-blocks
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+---
+ lib/Driver/ToolChains.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/Driver/ToolChains.h b/lib/Driver/ToolChains.h
+index 876bb01..27aa2ee 100644
+--- a/tools/clang/lib/Driver/ToolChains.h
++++ b/tools/clang/lib/Driver/ToolChains.h
+@@ -257,7 +257,7 @@ public:
+   bool IsBlocksDefault() const override {
+     // Always allow blocks on Apple; users interested in versioning are
+     // expected to use /usr/include/Block.h.
+-    return true;
++    return false;
+   }
+   bool IsIntegratedAssemblerDefault() const override {
+     // Default integrated assembler to on for Apple's MachO targets.
+-- 
+2.2.1
+

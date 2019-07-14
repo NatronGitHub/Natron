@@ -1,0 +1,96 @@
+From adc969d25c40b21c469bad38d6ac3460b0ebd885 Mon Sep 17 00:00:00 2001
+From: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+Date: Tue, 20 Dec 2016 12:41:21 -0800
+Subject: [PATCH 4/4] Fix build issues pre-Lion due to missing a strnlen
+ definition
+
+https://trac.macports.org/ticket/51520
+https://llvm.org/bugs/show_bug.cgi?id=27714
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+---
+ lib/ObjectYAML/MachOYAML.cpp           | 11 +++++++++++
+ tools/llvm-pdbdump/LLVMOutputStyle.cpp | 11 +++++++++++
+ tools/obj2yaml/macho2yaml.cpp          | 13 ++++++++++++-
+ 3 files changed, 34 insertions(+), 1 deletion(-)
+
+diff --git llvm_master/lib/ObjectYAML/MachOYAML.cpp macports_master/lib/ObjectYAML/MachOYAML.cpp
+index 7ebb1bed088..a9f37a3a442 100644
+--- llvm_master/lib/ObjectYAML/MachOYAML.cpp
++++ macports_master/lib/ObjectYAML/MachOYAML.cpp
+@@ -18,6 +18,20 @@
+ 
+ #include <string.h> // For memcpy, memset and strnlen.
+ 
++#ifdef __APPLE__
++#include <Availability.h>
++#if __MAC_OS_X_VERSION_MIN_REQUIRED < 1070
++static size_t strnlen(const char *s, size_t maxlen) {
++  size_t l = 0;
++  while (l < maxlen && *s) {
++    l++;
++    s++;
++  }
++  return l;
++}
++#endif
++#endif
++
+ namespace llvm {
+ 
+ MachOYAML::LoadCommand::~LoadCommand() {}
+diff --git a/tools/llvm-pdbdump/LLVMOutputStyle.cpp b/tools/llvm-pdbdump/LLVMOutputStyle.cpp
+index 98c67ec9ef3..90f9129d5f1 100644
+--- a/tools/llvm-pdbdump/LLVMOutputStyle.cpp
++++ b/tools/llvm-pdbdump/LLVMOutputStyle.cpp
+@@ -31,6 +31,20 @@
+ 
+ #include <unordered_map>
+ 
++#ifdef __APPLE__
++#include <Availability.h>
++#if __MAC_OS_X_VERSION_MIN_REQUIRED < 1070
++static size_t strnlen(const char *s, size_t maxlen) {
++  size_t l = 0;
++  while (l < maxlen && *s) {
++    l++;
++    s++;
++  }
++  return l;
++}
++#endif
++#endif
++
+ using namespace llvm;
+ using namespace llvm::codeview;
+ using namespace llvm::msf;
+diff --git a/tools/obj2yaml/macho2yaml.cpp b/tools/obj2yaml/macho2yaml.cpp
+index 9cd05463edc..02678123d76 100644
+--- a/tools/obj2yaml/macho2yaml.cpp
++++ b/tools/obj2yaml/macho2yaml.cpp
+@@ -15,7 +15,21 @@
+ #include "llvm/Support/ErrorHandling.h"
+ #include "llvm/Support/LEB128.h"
+ 
+-#include <string.h> // for memcpy
++#include <string.h> // for memcpy abd strnlen
++
++#ifdef __APPLE__
++#include <Availability.h>
++#if __MAC_OS_X_VERSION_MIN_REQUIRED < 1070
++static size_t strnlen(const char *s, size_t maxlen) {
++  size_t l = 0;
++  while (l < maxlen && *s) {
++    l++;
++    s++;
++  }
++  return l;
++}
++#endif
++#endif
+ 
+ using namespace llvm;
+ 
+-- 
+2.11.0
+

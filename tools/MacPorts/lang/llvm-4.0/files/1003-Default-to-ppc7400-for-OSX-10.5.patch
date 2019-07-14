@@ -1,0 +1,26 @@
+From ae9a1bcaf7d1d2539711636543e93d6f118dd96c Mon Sep 17 00:00:00 2001
+From: Iain Sandoe <iain@codesourcery.com>
+Date: Sun, 27 Jul 2014 20:35:16 +0100
+Subject: [PATCH 1003/1008] Default to ppc7400 for OSX 10.5+
+
+---
+ lib/Driver/Tools.cpp | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git llvm_release_40/tools/clang/lib/Driver/Tools.cpp macports_release_40/tools/clang/lib/Driver/Tools.cpp
+index 4d4a8c2428..1f2046a177 100644
+--- llvm_release_40/tools/clang/lib/Driver/Tools.cpp
++++ macports_release_40/tools/clang/lib/Driver/Tools.cpp
+@@ -2124,6 +2124,9 @@ static std::string getCPUName(const ArgList &Args, const llvm::Triple &T,
+         TargetCPUName = "ppc64";
+       else if (T.getArch() == llvm::Triple::ppc64le)
+         TargetCPUName = "ppc64le";
++      else if (T.isOSDarwin() && !T.isMacOSXVersionLT(10,5))
++        // For 10.5+ Altivec is assumed available.
++        TargetCPUName = "7400";
+       else
+         TargetCPUName = "ppc";
+     }
+-- 
+2.13.3
+
