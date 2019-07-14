@@ -72,12 +72,12 @@ Now, use libjpeg-turbo instead of jpeg:
     
 And finally install the required packages:
 
-	sudo port -v -N install clang-8.0
+    sudo port -v -N install clang-8.0
     sudo port -v -N install opencolorio -quartz -python27
     sudo port -v -N install qt4-mac boost cairo expat
     sudo port -v -N install gsed gawk coreutils findutils
     sudo port -v -N install cmake keychain
-	sudo port -v -N install py27-pyside py27-sphinx py27-sphinx_rtd_theme
+    sudo port -v -N install py27-pyside py27-sphinx py27-sphinx_rtd_theme
     sudo port select --set python python27
     sudo port select --set python2 python27
 
@@ -105,22 +105,22 @@ EOF
 If you intend to build the [openfx-io](https://github.com/NatronGitHub/openfx-io) plugins too, you will need these additional packages:
 
     sudo port -v -N install x264
-	sudo port -v -N install libvpx +highbitdepth
-	sudo port -v -N install ffmpeg +gpl2 +highbitdepth +natronmini
-	sudo port -v -N install libraw +gpl2
-	sudo port -v -N install openexr
-	sudo port -v -N install opencolorio -quartz -python27
-	sudo port -v -N install openimageio +natron
-	sudo port -v -N install seexpr
+    sudo port -v -N install libvpx +highbitdepth
+    sudo port -v -N install ffmpeg +gpl2 +highbitdepth +natronmini
+    sudo port -v -N install libraw +gpl2
+    sudo port -v -N install openexr
+    sudo port -v -N install opencolorio -quartz -python27
+    sudo port -v -N install openimageio +natron
+    sudo port -v -N install seexpr
 
 and for [openfx-arena](https://github.com/NatronGitHub/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
     sudo port -v -N install librsvg
-	sudo port -v -N install ImageMagick +natron
-	sudo port -v -N install poppler
-	sudo port -v -N install librevenge
-	sudo port -v -N install libcdr-0.1
-	sudo port -v -N install libzip
+    sudo port -v -N install ImageMagick +natron
+    sudo port -v -N install poppler
+    sudo port -v -N install librevenge
+    sudo port -v -N install libcdr-0.1
+    sudo port -v -N install libzip
 
 and for [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic):
 
@@ -155,8 +155,8 @@ Install libraries:
     brew tap homebrew/python
     brew tap homebrew/science
     brew install cairo expat
-	brew install gnu-sed gawk coreutils findutils
-	brew install cmake keychain sphinx-doc
+    brew install gnu-sed gawk coreutils findutils
+    brew install cmake keychain sphinx-doc
     /usr/local/opt/sphinx-doc/libexec/bin/pip3 install sphinx_rtd_theme
     brew install --build-from-source qt --with-mysql
 
