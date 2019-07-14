@@ -885,7 +885,7 @@ export PYDIR="$pkglib/Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 
 # Install pip
 if [ -x "${TMP_PORTABLE_DIR}.app/Contents/MacOS"/natron-python ]; then
-    $CURL --remote-name --insecure --no-check-certificate http://bootstrap.pypa.io/get-pip.py
+    $CURL --remote-name --insecure http://bootstrap.pypa.io/get-pip.py
     "${TMP_PORTABLE_DIR}.app/Contents/MacOS"/natron-python get-pip.py
     rm get-pip.py
 fi
