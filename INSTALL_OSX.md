@@ -72,9 +72,10 @@ Now, if you want to use turbojpeg instead of jpeg:
     
 And finally install the required packages:
 
-    sudo port -v -N install cmake
     sudo port -v -N install opencolorio -quartz -python27
-    sudo port -v -N install qt4-mac boost cairo expat gsed coreutils
+    sudo port -v -N install qt4-mac boost cairo expat
+    sudo port -v -N install gsed gawk coreutils findutils
+    sudo port -v -N install cmake keychain
 	sudo port -v -N install py27-pyside py27-sphinx py27-sphinx_rtd_theme
     sudo port select --set python python27
     sudo port select --set python2 python27
@@ -152,7 +153,9 @@ Install libraries:
 
     brew tap homebrew/python
     brew tap homebrew/science
-    brew install expat cairo gnu-sed coreutils cmake wget keychain sphinx-doc
+    brew install cairo expat
+	brew install gnu-sed gawk coreutils findutils
+	brew install cmake keychain sphinx-doc
     /usr/local/opt/sphinx-doc/libexec/bin/pip3 install sphinx_rtd_theme
     brew install --build-from-source qt --with-mysql
 

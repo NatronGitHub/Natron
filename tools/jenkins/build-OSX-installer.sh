@@ -826,7 +826,8 @@ if [ "$STRIP" = 1 ]; then
                 strip -S -x -r "${binary}_x86_64";
 
                 # Make the new universal binary from our stripped thin pieces.
-                lipo "-arch x86_64 ${binary}_x86_64 -arch i386 ${binary}_i386" -create -output "${binary}";
+                lipo -arch i386 "${binary}_i386" -arch x86_64 "${binary}_x86_64" -create -output "${binary}";
+
 
                 # We're now done with the temp thin binaries, so chuck them.
                 rm -f "${binary}_i386";
