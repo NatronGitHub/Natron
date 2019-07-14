@@ -17,8 +17,6 @@ source manageBuildOptions.sh
 
 updateBuildOptions
 
-
-
 if [ "${TMP_PATH:-}" = "" ]; then
     echo "Failed to source common.sh, something is wrong!"
     exit 1
@@ -30,17 +28,17 @@ printStatusMessage "Clone/Fetch unit tests repo ..."
 
 TESTDIR="Natron-Tests${BITS}"
 # cleanup tests (TEMPORARY) the following lines should be commented most of the time
-if [ -d "$CWD/$TESTDIR" ]; then
+if [ -d "$TMP_PATH/$TESTDIR" ]; then
     printStatusMessage "*** CLEAN unit tests - please disable in the script"
-    rm -rf "${CWD:?}/$TESTDIR"
+    rm -rf "${TMP_PATH:?}/$TESTDIR"
 fi
 
-CACHEDIR="$CWD/NatronTmpCacheDir"
+CACHEDIR="$TMP_PATH/NatronTmpCacheDir"
 
-if [ ! -d "$CWD/$TESTDIR" ]; then
+if [ ! -d "$TMP_PATH/$TESTDIR" ]; then
     cd "$CWD" && $TIMEOUT 1800 $GIT clone "$GIT_UNIT" "$TESTDIR" && cd "$TESTDIR" || FAIL=$?
 else
-    cd "$CWD/$TESTDIR" && $TIMEOUT 1800 $GIT pull --rebase --autostash || FAIL=$?
+    cd "$TMP_PATH/$TESTDIR" && $TIMEOUT 1800 $GIT pull --rebase --autostash || FAIL=$?
 fi
 if [ "$FAIL" != "0" ]; then
     printStatusMessage "Failed to clone/update unit tests repository!"
@@ -65,7 +63,7 @@ if [ "$FAIL" = "0" ]; then
             tskill "$p" || true
         done
     fi
-    UNIT_TMP="$CWD"/unit_tmp_${BITS}
+    UNIT_TMP="$TMP_PATH"/unit_tmp_${BITS}
     if [ -d "$UNIT_TMP" ]; then
 	rm -rf "$UNIT_TMP"
     fi
@@ -87,7 +85,7 @@ if [ "$FAIL" = "0" ]; then
                 echo "*** Error: NatronRenderer binary $bin is missing" >> "$ULOG"
             fi
         fi
-        env NATRON_CACHE_PATH="$CACHEDIR" OCIO="$ocio" FFMPEG="$TMP_PORTABLE_DIR/bin/ffmpeg" COMPARE="$TMP_PORTABLE_DIR/bin/idiff"  $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
+        env SRCDIR="$SRC_PATH" NATRON_CACHE_PATH="$CACHEDIR" OCIO="$ocio" FFMPEG="$TMP_PORTABLE_DIR/bin/ffmpeg" COMPARE="$TMP_PORTABLE_DIR/bin/idiff"  $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
         FAIL=0
     elif [ "$PKGOS" = "Windows" ] && [ "${BITS}" = "64" ]; then
         cp -a "$TMP_BINARIES_PATH"/Natron-installer/packages/*/data/* "$UNIT_TMP"/
