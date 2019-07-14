@@ -74,7 +74,8 @@ And finally install the required packages:
 
     sudo port -v -N install cmake
     sudo port -v -N install opencolorio -quartz -python27
-    sudo port -v -N install qt4-mac boost cairo expat gsed py27-pyside py27-sphinx py27-sphinx_rtd_theme
+    sudo port -v -N install qt4-mac boost cairo expat gsed coreutils
+	sudo port -v -N install py27-pyside py27-sphinx py27-sphinx_rtd_theme
     sudo port select --set python python27
     sudo port select --set python2 python27
 
@@ -151,7 +152,7 @@ Install libraries:
 
     brew tap homebrew/python
     brew tap homebrew/science
-    brew install expat cairo gnu-sed cmake wget keychain sphinx-doc
+    brew install expat cairo gnu-sed coreutils cmake wget keychain sphinx-doc
     /usr/local/opt/sphinx-doc/libexec/bin/pip3 install sphinx_rtd_theme
     brew install --build-from-source qt --with-mysql
 
