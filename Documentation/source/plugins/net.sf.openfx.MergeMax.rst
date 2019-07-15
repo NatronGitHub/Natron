@@ -7,4 +7,4 @@
 Max node
 ========
 
-The *Max* node is a convenience node identical to :ref:`Merge <net.sf.openfx.MergePlugin>`, except that the operator is set to *max* by default.
+The *Max* node is a convenience node identical to the :ref:`net.sf.openfx.MergePlugin`, except that the operator is set to *max* by default.
