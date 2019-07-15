@@ -154,8 +154,8 @@ if [ "$FAIL" = "0" ]; then
 
     UNIT_TESTS_FAIL_DIR="$BUILD_ARCHIVE_DIRECTORY/unit_tests_failures"
     mkdir -p "$UNIT_TESTS_FAIL_DIR"
-    if [ ! -z "$UNIT_TESTS_FAIL_DIR:-}" ] && [ -d "failed" ] && [ "$(ls -A failed)" ]; then
-        cd failed && mv * "$UNIT_TESTS_FAIL_DIR/"
+    if [ -n "$UNIT_TESTS_FAIL_DIR:-}" ] && [ -d "failed" ] && [ "$(ls -A failed)" ]; then
+        cd failed && mv ./* "$UNIT_TESTS_FAIL_DIR/"
     fi
 fi
 cd "$CWD"

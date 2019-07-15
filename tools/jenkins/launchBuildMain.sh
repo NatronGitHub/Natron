@@ -50,37 +50,37 @@ set -u # Treat unset variables as an error when substituting.
 # BUILD_TO: last step of the build
 #
 #### STEP 1: checkout sources
-if [ ${BUILD_FROM:-1} -le 1 ] && [ ${BUILD_TO:-99} -ge 1 ]; then
+if [ "${BUILD_FROM:-1}" -le 1 ] && [ "${BUILD_TO:-99}" -ge 1 ]; then
     BUILD_1=true
 else
     BUILD_1=false
 fi
 #### STEP2: build plugins
-if [ ${BUILD_FROM:-1} -le 2 ] && [ ${BUILD_TO:-99} -ge 2 ]; then
+if [ "${BUILD_FROM:-1}" -le 2 ] && [ "${BUILD_TO:-99}" -ge 2 ]; then
     BUILD_2=true
 else
     BUILD_2=false
 fi
 #### STEP3: build natron
-if [ ${BUILD_FROM:-1} -le 3 ] && [ ${BUILD_TO:-99} -ge 3 ]; then
+if [ "${BUILD_FROM:-1}" -le 3 ] && [ "${BUILD_TO:-99}" -ge 3 ]; then
     BUILD_3=true
 else
     BUILD_3=false
 fi
 #### STEP4: build installer
-if [ ${BUILD_FROM:-1} -le 4 ] && [ ${BUILD_TO:-99} -ge 4 ]; then
+if [ "${BUILD_FROM:-1}" -le 4 ] && [ "${BUILD_TO:-99}" -ge 4 ]; then
     BUILD_4=true
 else
     BUILD_4=false
 fi
 #### STEP5: unit tests
-if [ ${BUILD_FROM:-1} -le 5 ] && [ ${BUILD_TO:-99} -ge 5 ]; then
+if [ "${BUILD_FROM:-1}" -le 5 ] && [ "${BUILD_TO:-99}" -ge 5 ]; then
     BUILD_5=true
 else
     BUILD_5=false
 fi
 #### STEP6: archive artifacts and cleanup (which happens even if build fails)
-if [ ${BUILD_FROM:-1} -le 6 ] && [ ${BUILD_TO:-99} -ge 6 ]; then
+if [ "${BUILD_FROM:-1}" -le 6 ] && [ "${BUILD_TO:-99}" -ge 6 ]; then
     BUILD_6=true
 else
     BUILD_6=false
@@ -150,11 +150,11 @@ source gitRepositories.sh
 # refresh credentials
 if [ -f "$HOME/.ssh/id_rsa_build_master" ]; then
     keychainstatus=0
-    eval `keychain -q --eval --agents ssh id_rsa_build_master` || keychainstatus=1
+    eval $(keychain -q --eval --agents ssh id_rsa_build_master) || keychainstatus=1
     if [ $keychainstatus != 0 ]; then
         echo "Restarting ssh-agent"
         keychain -k
-        eval `keychain --eval --agents ssh id_rsa_build_master`
+        eval $(keychain --eval --agents ssh id_rsa_build_master)
     fi
 fi
 
@@ -166,8 +166,7 @@ echo "$GSED does not work" | $GSED -e "s/does not work/works/"
 # check that curl works
 $CURL --silent --head http://www.google.com > /dev/null && echo "$CURL works"
 
-GIT_BRANCH=$(echo $GIT_BRANCH | sed 's#origin/##')
-BUILD_NATRON=0
+GIT_BRANCH=$(echo "$GIT_BRANCH" | sed 's#origin/##')
 DO_UTEST=0
 
 # Defaults to relwithdebinfo if not set
@@ -192,7 +191,7 @@ else
 fi
 
 # Remove any previous jenkins artifacts from previous builds
-if [ ! -z "${WORKSPACE:-}" ]; then
+if [ -n "${WORKSPACE:-}" ]; then
     if [ -d "${WORKSPACE}/jenkins_artifacts" ]; then
         rm -rf "${WORKSPACE}/jenkins_artifacts" || true
     fi
@@ -270,7 +269,7 @@ NATRON_BUILD_CONFIG=""
 if [ "$IS_GIT_URL_NATRON_REPO" != "1" ]; then
     TYPE="PLUGIN_CI"
 else
-    if [ ! -z "${RELEASE_TAG:-}" ]; then
+    if [ -n "${RELEASE_TAG:-}" ]; then
         TYPE="RELEASE"
         if [ "$NATRON_DEV_STATUS" != "ALPHA" ] && [ "$NATRON_DEV_STATUS" != "BETA" ] && [ "$NATRON_DEV_STATUS" != "RC" ] && [ "$NATRON_DEV_STATUS" != "CUSTOM" ] && [ "$NATRON_DEV_STATUS" != "STABLE" ]; then
             echo "Invalid NATRON_DEV_STATUS=$NATRON_DEV_STATUS, it must be either [ALPHA, BETA, RC, CUSTOM, STABLE]"
@@ -280,7 +279,7 @@ else
         setBuildOption "NATRON_BUILD_CONFIG" "$NATRON_DEV_STATUS"
         setBuildOption "NATRON_BUILD_NUMBER" "$NATRON_BUILD_NUMBER"
         setBuildOption "NATRON_CUSTOM_BUILD_USER_NAME" "${NATRON_CUSTOM_BUILD_USER_NAME:-}"
-    elif [ ! -z "${SNAPSHOT_COMMIT:-}" ] || [ ! -z "${SNAPSHOT_BRANCH:-}" ]; then
+    elif [ -n "${SNAPSHOT_COMMIT:-}" ] || [ -n "${SNAPSHOT_BRANCH:-}" ]; then
         TYPE="SNAPSHOT"
         NATRON_BUILD_CONFIG="SNAPSHOT"
         setBuildOption "NATRON_BUILD_CONFIG" "SNAPSHOT"
@@ -507,25 +506,25 @@ setBuildOption "TMP_PORTABLE_DIR" "${TMP_BINARIES_PATH}/$PORTABLE_DIRNAME"
 updateBuildOptions
 
 # Checkout plug-ins git
-if $BUILD_1 && [ ! -z "$OPENFX_IO_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
+if $BUILD_1 && [ -n "$OPENFX_IO_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
     checkoutRepository "$GIT_URL_OPENFX_IO" "openfx-io" "$OPENFX_IO_GIT_BRANCH" "$OPENFX_IO_GIT_COMMIT" "OPENFX_IO_GIT_BRANCH" "$TAR_SOURCES" || FAIL=$?
 fi
 
-if $BUILD_1 && [ ! -z "$OPENFX_MISC_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
+if $BUILD_1 && [ -n "$OPENFX_MISC_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
     checkoutRepository "$GIT_URL_OPENFX_MISC" "openfx-misc" "$OPENFX_MISC_GIT_BRANCH" "$OPENFX_MISC_GIT_COMMIT" "OPENFX_MISC_GIT_BRANCH" "$TAR_SOURCES" || FAIL=$?
 fi
 
-if $BUILD_1 && [ ! -z "$OPENFX_ARENA_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
+if $BUILD_1 && [ -n "$OPENFX_ARENA_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
     checkoutRepository "$GIT_URL_OPENFX_ARENA" "openfx-arena" "$OPENFX_ARENA_GIT_BRANCH" "$OPENFX_ARENA_GIT_COMMIT" "OPENFX_ARENA_GIT_BRANCH" "$TAR_SOURCES" || FAIL=$?
 fi
 
-if $BUILD_1 && [ ! -z "$OPENFX_GMIC_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
+if $BUILD_1 && [ -n "$OPENFX_GMIC_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
     checkoutRepository "$GIT_URL_OPENFX_GMIC" "openfx-gmic" "$OPENFX_GMIC_GIT_BRANCH" "$OPENFX_GMIC_GIT_COMMIT" "OPENFX_GMIC_GIT_BRANCH" "$TAR_SOURCES" || FAIL=$?
 fi
 
 # Force deactivate of openfx-opencv for now.
 OPENFX_OPENCV_GIT_BRANCH=""
-if $BUILD_1 && [ ! -z "$OPENFX_OPENCV_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
+if $BUILD_1 && [ -n "$OPENFX_OPENCV_GIT_BRANCH" ] && [ "$FAIL" != "1" ]; then
     checkoutRepository "$GIT_URL_OPENFX_OPENCV" "openfx-opencv" "$OPENFX_OPENCV_GIT_BRANCH" "$OPENFX_OPENCV_GIT_COMMIT" "OPENFX_OPENCV_GIT_BRANCH" "$TAR_SOURCES" || FAIL=$?
 fi
 
@@ -584,7 +583,7 @@ fi
 
 # Move files to Jenkins artifact directory
 if [ "$FAIL" = "0" ]; then
-    if [ ! -z "${WORKSPACE:-}" ]; then
+    if [ -n "${WORKSPACE:-}" ]; then
         [ -d "${WORKSPACE}" ] || mkdir -p "${WORKSPACE}"
         # Make a sym link of the build to the jenkins artifacts directory 
         ln -s "${BUILD_ARCHIVE_DIRECTORY}" "${WORKSPACE}/jenkins_artifacts"
