@@ -51,3 +51,10 @@ rm -rf "${PY_ZIP_FILES[@]}" || true
 # rm -rf tmp
 
 popd # pushd "$PYDIR"
+
+# Local variables:
+# mode: shell-script
+# sh-basic-offset: 4
+# sh-indent-comment: t
+# indent-tabs-mode: nil
+# End:

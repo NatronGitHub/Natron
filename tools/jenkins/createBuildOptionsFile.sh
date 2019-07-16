@@ -145,3 +145,10 @@ REMOTE_PREFIX=""
 
 EOF
 
+# Local variables:
+# mode: shell-script
+# sh-basic-offset: 4
+# sh-indent-comment: t
+# indent-tabs-mode: nil
+# End:
+

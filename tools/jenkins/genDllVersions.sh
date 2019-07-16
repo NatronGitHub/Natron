@@ -256,3 +256,10 @@ catDll libcurl-
 catDll libnghttp2-
 catDll libbrotlidec
 catDll libbrotlicommon
+
+# Local variables:
+# mode: shell-script
+# sh-basic-offset: 4
+# sh-indent-comment: t
+# indent-tabs-mode: nil
+# End:
