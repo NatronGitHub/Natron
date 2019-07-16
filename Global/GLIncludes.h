@@ -184,7 +184,7 @@ glErrorString(GLenum errorCode)
                 glError();                                              \
             } \
             else if (error == 0) {                                    \
-                std::cout << "an error occured determining the status of the framebuffer" <<  std::endl; \
+                std::cout << "an error occurred determining the status of the framebuffer" <<  std::endl; \
                 glError();                                              \
             } \
             else {                                                    \
