@@ -15,6 +15,7 @@ source common.sh
 source manageLog.sh
 source manageBuildOptions.sh
 source checkout-repository.sh
+source gitRepositories.sh
 
 updateBuildOptions
 
