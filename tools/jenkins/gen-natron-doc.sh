@@ -19,7 +19,7 @@ pushd "$NATRON_DOC_PATH"
 # For now, we regenerate the docs from a CI or SNAPSHOT build on Fred's mac, using:
 # cd Development/Natron/Documentation
 # env FONTCONFIG_FILE=/Applications/Natron.app/Contents/Resources/etc/fonts/fonts.conf OCIO=/Applications/Natron.app/Contents/Resources/OpenColorIO-Configs/nuke-default/config.ocio OFX_PLUGIN_PATH=/Applications/Natron.app/Contents/Plugins bash ../tools/genStaticDocs.sh /Applications/Natron.app/Contents/MacOS/NatronRenderer  $TMPDIR/natrondocs .
-GENDOCS=0
+GENDOCS=1
 if [ "$PKGOS" = "OSX" ]; then
     RES_DIR="${TMP_PORTABLE_DIR}.app/Contents/Resources"
 else
@@ -37,17 +37,21 @@ fi
 SPHINX_BIN=""
 if [ "$PKGOS" = "Linux" ]; then
     SPHINX_BIN="sphinx-build"
-    "$NATRON_DOC_PATH"/genStaticDocs.sh "$TMP_PORTABLE_DIR/bin/$NATRON_RENDERER_BIN" "$TMPDIR/natrondocs$$" .
+    export LD_LIBRARY_PATH="${SDK_HOME}/lib" # python3 depends on libs in SDK_HOME/lib
+    #"$NATRON_DOC_PATH"/../tools/genStaticDocs.sh "$TMP_PORTABLE_DIR/bin/$NATRON_RENDERER_BIN" "$TMPDIR/natrondocs$$" .
 elif [ "$PKGOS" = "Windows" ]; then
     #SPHINX_BIN="sphinx-build2.exe" # fails with 'failed to create process (\mingw64\bin\python2.exe "C:\msys64\mingw64\bin\sphinx-build2-script.py").'
     SPHINX_BIN="sphinx-build2-script.py"
-    "$NATRON_DOC_PATH"/genStaticDocs.sh "$TMP_PORTABLE_DIR/bin/${NATRON_RENDERER_BIN}.exe" "$TMPDIR/natrondocs$$" .
+    #"$NATRON_DOC_PATH"/../tools/genStaticDocs.sh "$TMP_PORTABLE_DIR/bin/${NATRON_RENDERER_BIN}.exe" "$TMPDIR/natrondocs$$" .
 elif [ "$PKGOS" = "OSX" ]; then
     RES_DIR="$TMP_PORTABLE_DIR/Contents/Resources"
     SPHINX_BIN="sphinx-build-${PYVER}"
-    "$NATRON_DOC_PATH"/genStaticDocs.sh "${TMP_PORTABLE_DIR}.app/Contents/MacOS/$NATRON_RENDERER_BIN" "$TMPDIR/natrondocs$$" .
+    #"$NATRON_DOC_PATH"/../tools/genStaticDocs.sh "${TMP_PORTABLE_DIR}.app/Contents/MacOS/$NATRON_RENDERER_BIN" "$TMPDIR/natrondocs$$" .
 fi
 $SPHINX_BIN -b html source html
+if [ ! -d "$RES_DIR/docs" ]; then
+    mkdir -p "$RES_DIR/docs"
+fi
 cp -a html "$RES_DIR/docs/"
 fi
 
