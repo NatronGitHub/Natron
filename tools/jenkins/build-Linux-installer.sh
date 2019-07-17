@@ -221,7 +221,7 @@ function installPlugin() {
 
     # Strip binary
     if [ "$COMPILE_TYPE" != "debug" ]; then
-        find "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" -type f \( -iname '*.so' -o -iname '*.ofx' \) -exec strip -s {} \; &>/dev/null
+        find "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" -type f \( -iname '*.so*' -o -iname '*.ofx' \) -exec strip -s {} \; &>/dev/null
     fi
 
     for location in "$PKG_PATH/data" "${TMP_PORTABLE_DIR}"; do
@@ -343,6 +343,9 @@ if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
     "${SDK_HOME}/bin"/dump_syms "${TMP_BINARIES_PATH}/bin/Natron" > "${BUILD_ARCHIVE_DIRECTORY}/symbols/Natron-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
     "${SDK_HOME}/bin"/dump_syms "${TMP_BINARIES_PATH}/bin/NatronRenderer" > "${BUILD_ARCHIVE_DIRECTORY}/symbols/NatronRenderer-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
 fi
+
+# strip binaries
+strip -s "$location/bin/"* &>/dev/null || true
 
 # Get all dependencies of the binaries
 CORE_DEPENDS="$(ldd $(find "${TMP_PORTABLE_DIR}/bin" -maxdepth 1 -type f) | grep /opt | awk '{print $3}'|sort|uniq)"
@@ -487,10 +490,13 @@ for location in "${COPY_LOCATIONS[@]}"; do
     # let Natron.sh handle gcc libs
     #mkdir "${location}/lib/compat"
     #mv "${location}/lib"/{libgomp*,libgcc*,libstdc*} "${location}/lib/compat/"
-    if [ ! -f "$SRC_PATH/strings${BITS}.tgz" ]; then
-        $CURL "$THIRD_PARTY_BIN_URL/strings${BITS}.tgz" --output "$SRC_PATH/strings${BITS}.tgz"
-    fi
-    tar xvf "$SRC_PATH/strings${BITS}.tgz" -C "${location}/bin/"
+    #if [ ! -f "$SRC_PATH/strings${BITS}.tgz" ]; then
+    #    $CURL "$THIRD_PARTY_BIN_URL/strings${BITS}.tgz" --output "$SRC_PATH/strings${BITS}.tgz"
+    #fi
+    #tar xvf "$SRC_PATH/strings${BITS}.tgz" -C "${location}/bin/"
+
+    # Use strings from host (CentOS6)
+    cp /usr/bin/strings "${location}/bin/"
 
     # end for all locations
 done
@@ -501,6 +507,10 @@ if [ -d "${TMP_PORTABLE_DIR}/lib/python${PYVER}" ]; then
     rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"
 fi
 cp -a "${SDK_HOME}/lib/python${PYVER}" "${TMP_PORTABLE_DIR}/lib/"
+
+if [ -d "${SDK_HOME}/qt4/lib/python${PYVER}/site-packages" ]; then
+    cp -a "${SDK_HOME}/qt4/lib/python${PYVER}/site-packages/"* "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/"
+fi
 
 # Move PySide to plug-ins directory and keep a symbolic link in site-packages
 mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide" "${TMP_PORTABLE_DIR}/Plugins/"
