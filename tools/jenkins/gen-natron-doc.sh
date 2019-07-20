@@ -37,22 +37,25 @@ if "$GENDOCS"; then
     fi
 
     # generate the plugins doc first
-    SPHINX_BIN=""
     if "$RUNPANDOC" && command -v pandoc >/dev/null 2>&1 && [ $(pandoc --version |head -1 |awk '{print $2}') == "2.3.1" ]; then
         if [ "$PKGOS" = "Linux" ]; then
-            SPHINX_BIN="sphinx-build"
             env LD_LIBRARY_PATH="${SDK_HOME}/lib" "$NATRON_DOC_PATH"/../tools/genStaticDocs.sh "$TMP_PORTABLE_DIR/bin/$NATRON_RENDERER_BIN" "$TMPDIR/natrondocs$$" .
         elif [ "$PKGOS" = "Windows" ]; then
-            #SPHINX_BIN="sphinx-build2.exe" # fails with 'failed to create process (\mingw64\bin\python2.exe "C:\msys64\mingw64\bin\sphinx-build2-script.py").'
-            SPHINX_BIN="sphinx-build2-script.py"
             "$NATRON_DOC_PATH"/../tools/genStaticDocs.sh "$TMP_PORTABLE_DIR/bin/${NATRON_RENDERER_BIN}.exe" "$TMPDIR/natrondocs$$" .
         elif [ "$PKGOS" = "OSX" ]; then
-            RES_DIR="$TMP_PORTABLE_DIR/Contents/Resources"
-            SPHINX_BIN="sphinx-build-${PYVER}"
             "$NATRON_DOC_PATH"/../tools/genStaticDocs.sh "${TMP_PORTABLE_DIR}.app/Contents/MacOS/$NATRON_RENDERER_BIN" "$TMPDIR/natrondocs$$" .
         fi
     fi
 
+    if [ "$PKGOS" = "Linux" ]; then
+        SPHINX_BIN="sphinx-build"
+    elif [ "$PKGOS" = "Windows" ]; then
+        #SPHINX_BIN="sphinx-build2.exe" # fails with 'failed to create process (\mingw64\bin\python2.exe "C:\msys64\mingw64\bin\sphinx-build2-script.py").'
+        SPHINX_BIN="sphinx-build2-script.py"
+    elif [ "$PKGOS" = "OSX" ]; then
+        RES_DIR="$TMP_PORTABLE_DIR/Contents/Resources"
+        SPHINX_BIN="sphinx-build-${PYVER}"
+    fi
     $SPHINX_BIN -b html source html
     cp -a html "$RES_DIR/docs/"
 fi
