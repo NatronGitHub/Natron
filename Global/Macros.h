@@ -171,7 +171,7 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_DEVELOPMENT_STATUS NATRON_DEVELOPMENT_DEVEL
 #endif
 
-///For example RC 1, RC 2 etc... This is to be defined from withing the qmake call, passing BUILD_NUMBER=X to the command line
+///For example RC 1, RC 2 etc... This is to be defined from within the qmake call, passing BUILD_NUMBER=X to the command line
 //#define NATRON_BUILD_NUMBER 0
 
 
