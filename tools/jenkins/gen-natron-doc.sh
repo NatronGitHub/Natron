@@ -28,6 +28,8 @@ if [ "$PKGOS" = "OSX" ]; then
 else
     RES_DIR="$TMP_PORTABLE_DIR/Resources"
 fi
+[ ! -d "$RES_DIR/docs" ] && mkdir -p "$RES_DIR/docs"
+
 if "$GENDOCS"; then
 
     if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
@@ -57,7 +59,7 @@ if "$GENDOCS"; then
         SPHINX_BIN="sphinx-build-${PYVER}"
     fi
     $SPHINX_BIN -b html source html
-    cp -a html "$RES_DIR/docs/"
+    cp -R html "$RES_DIR/docs/"
 fi
 
 
