@@ -54,7 +54,7 @@ in the compositing field:
 Blender is probably the most well known open-source software in the 3D-modeling and
 animation field. This is not so true for its compositing module. I see 2 reasons for this:
 - The graphical user interface is too complicated and is far from what industry software
-interfaces actually look like (i.e. The Foundry Nuke ,Adobe After Effects,eyeon Fusion,...)
+interfaces actually look like (i.e. The Foundry Nuke, Adobe After Effects, Blackmagic Fusion...)
 - This open-source solution doesn't implement the standard open-source solution for making
 visual effects plug-ins: OpenFX !
 This is really game breaking, more and more professional studios are developing plug-ins
