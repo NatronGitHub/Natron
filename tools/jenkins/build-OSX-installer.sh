@@ -19,7 +19,7 @@
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
-set -x # Print commands and their arguments as they are executed.
+#set -x # Print commands and their arguments as they are executed.
 #set -v # Prints shell input lines as they are read.
 
 echo "*** OSX installer..."
