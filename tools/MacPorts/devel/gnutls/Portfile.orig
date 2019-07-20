@@ -10,7 +10,7 @@ PortGroup       active_variants 1.1
 
 name            gnutls
 version         3.6.8
-revision        0
+revision        1
 set branch      [join [lrange [split ${version} .] 0 1] .]
 set major       [join [lrange [split ${version} .] 0 2] .]
 categories      devel security
@@ -149,6 +149,13 @@ if { ${build_arch} eq "i386" || ${build_arch} eq "x86_64" } {
     compiler.blacklist-append *gcc-4.0
     compiler.blacklist-append *gcc-4.2
     compiler.blacklist-append {clang < 400}
+}
+
+# Workaround for Darwin 19 (beta). To be reviewed come final release.
+# ld: warning: cannot export hidden symbol __gnutls_x86_cpuid_s from accelerated/.libs/libaccelerated.a(x86-common.o)
+# ld: weak import of symbol '____chkstk_darwin' not supported because of option: -no_weak_imports for architecture x86_64
+if { ${os.major} >= 19 } {
+    compiler.blacklist-append {clang > 1099}
 }
 
 # needs a TLS supporting compiler on older systems

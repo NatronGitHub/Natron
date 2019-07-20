@@ -1,6 +1,6 @@
 --- build/make/configure.sh.orig	2019-02-09 23:18:41.000000000 -0800
 +++ build/make/configure.sh	2019-02-09 23:29:38.000000000 -0800
-@@ -770,37 +770,9 @@
+@@ -767,37 +767,9 @@
  
      # detect tgt_os
      case "$gcctarget" in
@@ -40,7 +40,7 @@
          ;;
        x86_64*mingw32*)
          tgt_os=win64
-@@ -893,58 +865,6 @@
+@@ -890,58 +862,6 @@
        ;;
    esac
  
