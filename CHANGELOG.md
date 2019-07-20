@@ -12,6 +12,7 @@
 - macOS: fix version numbers in Finder information #372
 - Fix callbacks in PyPanel and PyModalDialog #379
 - Fix recursive Python calls and handle the Python GIL properly
+- Fix loading of Python Toolsets, and document how Toolsets are detected.
 
 ### Plugins
 
