@@ -2096,7 +2096,7 @@ AppManager::loadPythonGroups()
                 // Or we could check for the magic line that is in the doc.
                 // See https://natron.readthedocs.io/en/master/devel/groups.html#creating-a-group-by-hand
                 // and https://natron.readthedocs.io/en/master/devel/groups.html#toolsets
-                if ( line.startsWith( QString::fromUtf8("# Natron PyPlug") ) ) {
+                if ( line.startsWith( QString::fromUtf8(NATRON_PYPLUG_MAGIC) ) ) {
                     isPyPlug = true;
                 }
             }
