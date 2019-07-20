@@ -39,6 +39,7 @@ Natron multiple times on the same computer, the different processes will share t
 - macOS: fix version numbers in Finder information #372
 - Fix callbacks in PyPanel and PyModalDialog #379
 - Fix recursive Python calls and handle the Python GIL properly
+- Fix loading of Python Toolsets, and document how Toolsets are detected.
 
 ### Plugins
 

@@ -16,7 +16,7 @@ Description
 
 Read images using OpenImageIO.
 
-Ouput is always Premultiplied (alpha is associated).
+Output is always Premultiplied (alpha is associated).
 
 The “Image Premult” parameter controls the file premultiplication state, and can be used to fix wrong file metadata (see the help for that parameter).
 

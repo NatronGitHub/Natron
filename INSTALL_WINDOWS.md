@@ -135,7 +135,7 @@ the pre-compiled binaries we provide (see above).
 You can download boost from 
 (boost download)[http://www.boost.org/users/download/]
 For now only boost serialisation is required. Follow the build instructions to compile
-boost. You'll need to build a shared | multi-threaded version of the librairies.
+boost. You'll need to build a shared | multi-threaded version of the libraries.
 Pre-compiled binaries for boost are available here:
 http://boost.teeks99.com/
 

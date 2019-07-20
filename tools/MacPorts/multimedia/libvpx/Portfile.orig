@@ -5,7 +5,7 @@ PortGroup           compiler_blacklist_versions 1.0
 PortGroup           muniversal 1.0
 
 name                libvpx
-version             1.8.0
+version             1.8.1
 categories          multimedia
 maintainers         {devans @dbevans} openmaintainer
 platforms           darwin
@@ -21,7 +21,7 @@ long_description    The WebM VP8/VP9 codecs are being developed \
                     coding tools that have been added to improve coding efficiency. \
                     The VP9 encoder in this release is not, as yet, feature complete.
 
-homepage            http://webmproject.org
+homepage            http://webmproject.org/tools/
 
 # use git fetch rather than downloading a snapshot tarball
 # which delivers a different checksum and size on each download
@@ -38,8 +38,7 @@ depends_build-append port:yasm
 
 patchfiles          patch-build-make-configure.sh.diff \
                     patch-configure.diff \
-                    patch-Makefile.diff \
-                    patch-lib.mk.diff
+                    patch-Makefile.diff
 
 # clang 425.0.28 with libvpx-1.4.0:
 # vp9/common/x86/vp9_subpixel_8t_intrin_avx2.c:77:16: error: assigning to '__m256i' from incompatible type 'int'

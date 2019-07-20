@@ -7,4 +7,4 @@
 Plus node
 =========
 
-The *Plus* node is a convenience node identical to :ref:`Merge <net.sf.openfx.MergePlugin>`, except that the operator is set to *plus* by default.
+The *Plus* node is a convenience node identical to the :ref:`net.sf.openfx.MergePlugin`, except that the operator is set to *plus* by default.

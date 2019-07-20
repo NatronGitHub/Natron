@@ -654,7 +654,7 @@ for bin in $natronbins $otherbins; do
             cp -r "$IMAGEMAGICKSHARE/ImageMagick-$IMAGEMAGICKMAJ" "$pkglib/share/"
 
             # see http://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
-            LIBADD=(${LIBADD[@]+"${LIBADD[@]}"} $pkglib/ImageMagick-$IMAGEMAGICKVER/modules-*/*/*.so)
+            LIBADD=(${LIBADD[@]+"${LIBADD[@]}"} "$pkglib/ImageMagick-$IMAGEMAGICKVER"/modules-*/*/*.so)
             #WITH_IMAGEMAGICK=yes
         fi
 
@@ -700,7 +700,7 @@ for bin in $natronbins $otherbins; do
                 changes=( ${changes[@]+"${changes[@]}"} -change "$l" "@rpath/$(basename "$l")" )
             done
             if [ -n "${changes[*]-}" ]; then
-                for f in  $pkglib/* "${LIBADD[@]+${LIBADD[@]}}" "$binary"; do
+                for f in  "$pkglib"/* "${LIBADD[@]+${LIBADD[@]}}" "$binary"; do
                     # avoid directories
                     if [ -f "$f" ]; then
                         chmod +w "$f"

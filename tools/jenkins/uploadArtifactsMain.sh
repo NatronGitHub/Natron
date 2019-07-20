@@ -135,4 +135,10 @@ if [ -d "$BUILD_DIR/symbols" ]; then
 fi
 
 
+# Local variables:
+# mode: shell-script
+# sh-basic-offset: 4
+# sh-indent-comment: t
+# indent-tabs-mode: nil
+# End:
 

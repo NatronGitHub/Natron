@@ -81,7 +81,7 @@ Controls
 |                                   |         |           | | **Keys (keys)**: (Catmull-Rom / Hermite spline) Some smoothing, plus minor sharpening (*).                                                    |
 |                                   |         |           | | **Simon (simon)**: Some smoothing, plus medium sharpening (*).                                                                                |
 |                                   |         |           | | **Rifman (rifman)**: Some smoothing, plus significant sharpening (*).                                                                         |
-|                                   |         |           | | **Mitchell (mitchell)**: Some smoothing, plus blurring to hide pixelation (*+).                                                               |
+|                                   |         |           | | **Mitchell (mitchell)**: Some smoothing, plus blurring to hide pixelation (*)(+).                                                             |
 |                                   |         |           | | **Parzen (parzen)**: (cubic B-spline) Greatest smoothing of all filters (+).                                                                  |
 |                                   |         |           | | **Notch (notch)**: Flat smoothing (which tends to hide moire’ patterns) (+).                                                                  |
 +-----------------------------------+---------+-----------+-------------------------------------------------------------------------------------------------------------------------------------------------+

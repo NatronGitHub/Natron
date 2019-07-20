@@ -155,8 +155,8 @@ Install libraries:
     brew tap homebrew/python
     brew tap homebrew/science
     brew install cairo expat
-	brew install gnu-sed gawk coreutils findutils
-	brew install cmake keychain sphinx-doc
+    brew install gnu-sed gawk coreutils findutils
+    brew install cmake keychain sphinx-doc
     /usr/local/opt/sphinx-doc/libexec/bin/pip3 install sphinx_rtd_theme
     brew install --build-from-source qt --with-mysql
 

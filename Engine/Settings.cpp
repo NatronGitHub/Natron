@@ -856,7 +856,7 @@ SettingsPrivate::initializeKnobsGeneral()
     assert(visibleHostEntries.size() == (int)eKnownHostNameNuke);
     visibleHostEntries.push_back(ChoiceOption("uk.co.thefoundry.nuke", "Nuke", ""));
     assert(visibleHostEntries.size() == (int)eKnownHostNameFusion);
-    visibleHostEntries.push_back(ChoiceOption("com.eyeonline.Fusion", "Fusion", ""));
+    visibleHostEntries.push_back(ChoiceOption("com.eyeonline.Fusion", "Fusion", "")); // or com.blackmagicdesign.Fusion
     assert(visibleHostEntries.size() == (int)eKnownHostNameCatalyst);
     visibleHostEntries.push_back(ChoiceOption("com.sony.Catalyst.Edit", "Sony Catalyst Edit", ""));
     assert(visibleHostEntries.size() == (int)eKnownHostNameVegas);

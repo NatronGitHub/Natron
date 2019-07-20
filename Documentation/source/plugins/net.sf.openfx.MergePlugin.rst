@@ -18,7 +18,7 @@ Pixel-by-pixel merge operation between two or more inputs. Input A is first merg
 
 A complete explanation of the Porter-Duff compositing operators can be found in “Compositing Digital Images”, by T. Porter and T. Duff (Proc. SIGGRAPH 1984) http://keithp.com/~keithp/porterduff/p253-porter.pdf
 
-Note that if an input with only RGB components is connected to A or B, its alpha channel is considered to be transparent (zero) by default, and the “A” checkbox for the given input is automatically unchecked, unless it is set explicitely by the user. In fact, most of the time, RGB images without an alpha channel are only used as background images in the B input, and should be considered as transparent, since they should not occlude anything. That way, the alpha channel on output only contains the opacity of elements that are merged with this background. In some rare cases, though, one may want the RGB image to actually be opaque, and can check the “A” checkbox for the given input to do so.
+Note that if an input with only RGB components is connected to A or B, its alpha channel is considered to be transparent (zero) by default, and the “A” checkbox for the given input is automatically unchecked, unless it is set explicitly by the user. In fact, most of the time, RGB images without an alpha channel are only used as background images in the B input, and should be considered as transparent, since they should not occlude anything. That way, the alpha channel on output only contains the opacity of elements that are merged with this background. In some rare cases, though, one may want the RGB image to actually be opaque, and can check the “A” checkbox for the given input to do so.
 
 Operators
 ~~~~~~~~~
@@ -138,6 +138,8 @@ See also:
 -  “Primacy of the B Feed” by Martin Constable http://opticalenquiry.com/nuke/index.php?title=Primacy_of_the_B_Feed
 -  grain-extract and grain-merge are described in http://docs.gimp.org/en/gimp-concepts-layer-modes.html
 
+bla bla bla
+
 Inputs
 ------
 
@@ -243,8 +245,6 @@ Controls
 +---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Mix / ``mix``                   | Double  | 1       | Mix factor between the original and the transformed image.                                                                                                                                                                                                                     |
 +---------------------------------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-
-bla bla bla
 
 .. |pluginIcon| image:: net.sf.openfx.MergePlugin.png
    :width: 10.0%

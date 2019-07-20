@@ -23,8 +23,8 @@ if [ -z "${CWD:-}" ]; then
 fi
 
 # Set common paths used across scripts
-TMP_PATH="$WORKSPACE/tmp"
-SRC_PATH="$WORKSPACE/src"
+TMP_PATH="${WORKSPACE:-}/tmp"
+SRC_PATH="${WORKSPACE:-}/src"
 INC_PATH="$CWD/include"
 # posix name for temporary directory
 TMPDIR=${TMPDIR:-/tmp}
