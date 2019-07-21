@@ -1,7 +1,7 @@
 .. _nodes:
 
-Manipulating nodes
-==================
+Nodes
+=====
 
 This section provides basic and advanced tutorials on how manipulating nodes in Natron using python.
 
