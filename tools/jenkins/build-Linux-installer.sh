@@ -101,7 +101,7 @@ REMOTE_PROJECT_PATH="$REMOTE_PATH/$PKGOS/$BITS/$BUILD_NAME"
 REMOTE_ONLINE_PACKAGES_PATH="$REMOTE_PROJECT_PATH/packages"
 
 # The date passed to the ReleaseDate tag of the xml config file of the installer. This has a different format than CURRENT_DATE.
-INSTALLER_XML_DATE="$(date "+%Y-%m-%d")"
+INSTALLER_XML_DATE="$(date -u "+%Y-%m-%d")"
 
 # tag symbols we want to keep with 'release'
 VERSION_TAG="${CURRENT_DATE}"
@@ -368,7 +368,7 @@ OCIO_VERSION="20180327000000"
 # OCIO
 for c in blender natron nuke-default; do
     lib="${TMP_BINARIES_PATH}/Resources/OpenColorIO-Configs/${c}/config.ocio"
-    LAST_MODIFICATION_DATE="$(date -r "$lib" "+%Y%m%d%H%M%S")"
+    LAST_MODIFICATION_DATE="$(date -u -r "$lib" "+%Y%m%d%H%M%S")"
     if [ "$LAST_MODIFICATION_DATE" -gt "$OCIO_VERSION" ]; then
         OCIO_VERSION="$LAST_MODIFICATION_DATE"
     fi
@@ -585,7 +585,7 @@ installPlugin "GMIC" "fr.inria.openfx.gmic" "$XML/openfx-gmic.xml" "$QS/openfx-g
 # Configure the package date using the most recent library modification date
 CLIBS_VERSION="00000000000000"
 for lib in $ALL_NATRON_LIBS; do
-    LAST_MODIFICATION_DATE=$(date -r "$lib" "+%Y%m%d%H%M%S")
+    LAST_MODIFICATION_DATE=$(date -u -r "$lib" "+%Y%m%d%H%M%S")
     if [ "$LAST_MODIFICATION_DATE" -gt "$CLIBS_VERSION" ]; then
         CLIBS_VERSION="$LAST_MODIFICATION_DATE"
     fi
@@ -720,7 +720,7 @@ if ( [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABL
         DEB_ARCH=i386
     fi  
     DEB_VERSION=$(echo "$NATRON_VERSION_STRING" | $GSED 's/-/./g')
-    DEB_DATE=$(date +"%a, %d %b %Y %T %z")
+    DEB_DATE=$(date -u +"%a, %d %b %Y %T %z")
     DEB_SIZE=$(du -ks opt|cut -f 1)
     DEB_PKG="natron_${DEB_VERSION}_${DEB_ARCH}.deb"
     

@@ -189,7 +189,7 @@ QT_VERSION_MAJOR=4
 
 # Keep existing tag, else make a new one
 if [ -z "${CURRENT_DATE:-}" ]; then
-    CURRENT_DATE=$(date "+%Y%m%d%H%M")
+    CURRENT_DATE=$(date -u "+%Y%m%d%H%M")
 fi
 
 # Repo settings
