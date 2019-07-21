@@ -3,7 +3,7 @@
 Nodes
 =====
 
-This section provides basic and advanced tutorials on how manipulating nodes in Natron using python.
+This section provides basic and advanced tutorials on manipulating nodes in Natron using python.
 
 .. toctree::
     :maxdepth: 1
