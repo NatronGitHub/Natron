@@ -33,7 +33,7 @@ pushd () {
 }
 
 popd () {
-    command popd "$@" > /dev/null
+    command popd > /dev/null
 }
 
 updateBuildOptions
@@ -677,7 +677,6 @@ for bin in $natronbins $otherbins; do
                 # shellcheck disable=SC2012
                 alllibs=( $(ls "${alllibs[@]+${alllibs[@]}}" "${libs[@]}" | sort | uniq) )
             fi
-            let "a+=1"  
             # shellcheck disable=SC2012
             nnfiles="$(ls "$pkglib" | wc -l)"
             if [ "$nnfiles" = "$nfiles" ]; then
@@ -921,19 +920,19 @@ if [ "$NATRON_BUILD_CONFIG" = "SNAPSHOT" ]; then
     DMG_FINAL="${DMG_FINAL}-${NATRON_GIT_BRANCH}-${CURRENT_DATE}"
 fi
 
-DMG_FINAL="${DMG_FINAL}-${NATRON_VERSION_STRING}-${PKGOS}"
+DMG_FINAL="${DMG_FINAL}-${NATRON_VERSION_STRING}-${PKGOS}-${BITS}"
 if [ "$COMPILE_TYPE" = "debug" ]; then
     DMG_FINAL="${DMG_FINAL}-debug"
 fi
 
-DMG_FINAL=${DMG_FINAL}.dmg
-DMG_TMP=tmp${DMG_FINAL}
+DMG_FINAL="${DMG_FINAL}.dmg"
+DMG_TMP="tmp${DMG_FINAL}"
 
 
 if [ -f "$TMP_BINARIES_PATH/splashscreen.png" ]; then
-    DMG_BACK=$TMP_BINARIES_PATH/splashscreen.png
+    DMG_BACK="$TMP_BINARIES_PATH/splashscreen.png"
 else 
-    DMG_BACK=$TMP_BINARIES_PATH/splashscreen.jpg
+    DMG_BACK="$TMP_BINARIES_PATH/splashscreen.jpg"
 fi
 
 if [ ! -f "$DMG_BACK" ]; then
