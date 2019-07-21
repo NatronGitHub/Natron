@@ -2,9 +2,9 @@
 
 # Install bzip2
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter06/bzip2.html
-BZIP2_VERSION=1.0.6
+BZIP2_VERSION=1.0.8
 BZIP2_TAR="bzip2-${BZIP2_VERSION}.tar.gz"
-BZIP2_SITE="http://anduin.linuxfromscratch.org/LFS"
+BZIP2_SITE="https://sourceware.org/pub/bzip2"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libbz2.so.1" ]; }; }; then
     start_build
     download "$BZIP2_SITE" "$BZIP2_TAR"

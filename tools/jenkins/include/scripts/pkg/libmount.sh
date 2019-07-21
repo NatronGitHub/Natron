@@ -11,10 +11,10 @@
 #else
 #    UTILLINUX_VERSION=2.31.1
 #fi
-UTILLINUX_VERSION=2.33.2 # this was fixed in 2.32
-
+UTILLINUX_VERSION=2.34.0 # this was fixed in 2.32
+UTILLINUX_VERSION_NOZERO=${UTILLINUX_VERSION%.0}
 UTILLINUX_VERSION_SHORT=${UTILLINUX_VERSION%.*}
-UTILLINUX_TAR="util-linux-${UTILLINUX_VERSION}.tar.xz"
+UTILLINUX_TAR="util-linux-${UTILLINUX_VERSION_NOZERO}.tar.xz"
 UTILLINUX_SITE="https://www.kernel.org/pub/linux/utils/util-linux/v${UTILLINUX_VERSION_SHORT}"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/mount.pc" ] || [ "$(pkg-config --modversion mount)" != "$UTILLINUX_VERSION" ]; }; }; then
     start_build

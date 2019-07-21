@@ -2,7 +2,7 @@
 
 # Install FreeType2
 # see http://www.linuxfromscratch.org/blfs/view/cvs/general/freetype2.html
-FREETYPE_VERSION=2.10.0
+FREETYPE_VERSION=2.10.1
 FREETYPE_TAR="freetype-${FREETYPE_VERSION}.tar.gz"
 FREETYPE_SITE="http://download.savannah.gnu.org/releases/freetype"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/freetype2.pc" ]; }; }; then # || [ "$(pkg-config --modversion freetype2)" != "$FREETYPE_VERSION" ]; then
