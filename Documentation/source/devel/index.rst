@@ -17,3 +17,4 @@ Developers Guide
     introduction
     gettingstarted
     devel-faq
+    tutorials
