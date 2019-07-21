@@ -4,26 +4,27 @@ Get selected nodes class
 ========================
 
 ::
-  import os
-  import NatronEngine
-  from NatronGui import *
 
-  def getSelectedNodesClass():
+    import os
+    import NatronEngine
+    from NatronGui import *
 
-    # get current Natron instance running in memory
-    app = natron.getGuiInstance(0)
+    def getSelectedNodesClass():
 
-    # get selected nodes
-    selectedNodes = app.getSelectedNodes()
+        # get current Natron instance running in memory
+        app = natron.getGuiInstance(0)
 
-    # cycle through every selected node
-    for currentNode in selectedNodes:
+        # get selected nodes
+        selectedNodes = app.getSelectedNodes()
 
-      # get current node class
-      currentID = currentNode.getPluginID()
+        # cycle through every selected node
+        for currentNode in selectedNodes:
 
-      # write node class in console
-      os.write(1,'\n' + str(currentID) + '\n')
+            # get current node class
+            currentID = currentNode.getPluginID()
+
+            # write node class in console
+            os.write(1,'\n' + str(currentID) + '\n')
 
 This script can now be saved in a .py files and added to Natron using the :func:`addMenuCommand(grouping,function)<NatronGui.PyGuiApplication.addMenuCommand>` function in the initGuy.py file.
 It can also be can executed directly in Natron's script editor by adding::
