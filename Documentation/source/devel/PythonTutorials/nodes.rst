@@ -8,5 +8,5 @@ This section provides basic and advanced tutorials on manipulating nodes in Natr
 .. toctree::
     :maxdepth: 1
 
-    getSelectedNodesLabel.rst
-    getSelectedNodesClass.rst
+    nodes/getSelectedNodesLabel.rst
+    nodes/getSelectedNodesClass.rst
