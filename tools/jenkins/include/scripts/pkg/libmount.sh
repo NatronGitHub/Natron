@@ -20,7 +20,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/mount.pc" ] 
     start_build
     download "$UTILLINUX_SITE" "$UTILLINUX_TAR"
     untar "$SRC_PATH/$UTILLINUX_TAR"
-    pushd "util-linux-${UTILLINUX_VERSION}"
+    pushd "util-linux-${UTILLINUX_VERSION_NOZERO}"
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-chfn-chsh  \
             --disable-login      \
             --disable-nologin    \
@@ -38,6 +38,6 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/mount.pc" ] 
     make -j${MKJOBS}
     make install
     popd
-    rm -rf "util-linux-${UTILLINUX_VERSION}"
+    rm -rf "util-linux-${UTILLINUX_VERSION_NOZERO}"
     end_build
 fi
