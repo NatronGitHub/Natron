@@ -7,3 +7,5 @@ This section provides basic and advanced tutorials on manipulating the Roto/Roto
 
 .. toctree::
     :maxdepth: 1
+       
+    roto/getRotoItemsLabel.rst
