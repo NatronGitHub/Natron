@@ -38,10 +38,10 @@ Get items label in a Roto node
         # cycle every item in 'Base layer'
         for item in allBaseLayerItems:
 
-        # get current item label
-        itemName = item.getLabel()
+          # get current item label
+          itemName = item.getLabel()
 
-        os.write(1, '\n' + str(itemName) + '\n')
+          os.write(1, '\n' + str(itemName) + '\n')
 
 This script can now be saved in a .py file and added to Natron using the :func:`addMenuCommand(grouping,function)<NatronGui.PyGuiApplication.addMenuCommand>` function in the initGuy.py file.
 
