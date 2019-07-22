@@ -40,6 +40,9 @@ set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
 #set -x # Print commands and their arguments as they are executed.
 
+source common.sh
+
+
 if false; then
     # to update all linux SDKs, run the following
     alias ssh-natron-linux32='ssh -A -p 3232 natron@natron.inrialpes.fr' # centos32
@@ -73,17 +76,25 @@ EOF
         DOCKER_BASE="i386/centos:6"
         LINUX32="setarch i686"
         DOCKERFILE_I386='RUN echo "i686" > /etc/yum/vars/arch && echo "i386" > /etc/yum/vars/basearch'
+        ARCH=i686
     else
         DOCKER_BASE="centos:6"
         LINUX32=
         DOCKERFILE_I386=
+        ARCH=x86_64
     fi
     cat <<EOF
 FROM $DOCKER_BASE as intermediate
 MAINTAINER https://github.com/NatronGitHub/Natron
 WORKDIR /home
 $DOCKERFILE_I386
-RUN yum install -y util-linux git gcc gcc-c++ make tar wget patch libX11-devel mesa-libGL-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel
+ARG SDK=$SDK_HOME
+ARG QTDIR=\$SDK/qt4
+ARG GCC=\$SDK/gcc
+ARG FFMPEG=\$SDK/ffmpeg-gpl2
+ARG LIBRAW=\$SDK/libraw-gpl2
+ARG OSMESA=\$SDK/osmesa
+RUN yum install -y util-linux git gcc gcc-c++ make tar wget patch libX11-devel mesa-libGL-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && yum clean all
 COPY include/patches/ include/patches/
 COPY build-Linux-sdk.sh common.sh compiler-common.sh ./
 EOF
@@ -130,7 +141,7 @@ function checkpoint()
             checkpointstep="$s"
         done
         echo "$copyline pkg/"
-        echo "RUN $LINUX32 env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
+        echo "RUN $LINUX32 env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd /opt/Natron-sdk/var/log/Natron-Linux-$ARCH-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
         pkgs=()
     fi
     return 0
@@ -194,8 +205,6 @@ function force_build()
 }
 
 if dobuild; then
-    source common.sh
-
     if [ "${DEBUG:-}" = "1" ]; then
         CMAKE_BUILD_TYPE="Debug"
     else
@@ -661,7 +670,44 @@ if [ "${GEN_DOCKERFILE:-}" = "1" -o "${GEN_DOCKERFILE:-}" = "2" ]; then
     cat <<EOF
 RUN rm -rf /opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK
 FROM $DOCKER_BASE
+MAINTAINER https://github.com/NatronGitHub/Natron
+WORKDIR /home
 COPY --from=intermediate /opt/Natron-sdk /opt/Natron-sdk
+ARG SDK=$SDK_HOME
+ARG QTDIR=\$SDK/qt4
+ARG GCC=\$SDK/gcc
+ARG FFMPEG=\$SDK/ffmpeg-gpl2
+ARG LIBRAW=\$SDK/libraw-gpl2
+ARG OSMESA=\$SDK/osmesa
+RUN \
+    yum -y install glibc-devel patch mesa-libGL-devel libXrender-devel libSM-devel libICE-devel libX11-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && yum -y clean all
+ENV \
+    QTDIR="\$QTDIR" \
+    LIBRARY_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib:\$OSMESA/lib" \
+    LD_LIBRARY_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib" \
+    LD_RUN_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib" \
+    CPATH="\$SDK/include:\$QTDIR/include:\$GCC/include:\$FFMPEG/include:\$LIBRAW/include:\$OSMESA/include" \
+    PKG_CONFIG_PATH="\$SDK/lib/pkgconfig:\$OSMESA/lib/pkgconfig:\$QTDIR/lib/pkgconfig:\$GCC/lib/pkgconfig:\$FFMPEG/lib/pkgconfig:\$LIBRAW/lib/pkgconfig" \
+    PYTHONPATH="\$QTDIR/lib/python2.7/site-packages/" \
+    PATH="\$SDK/bin:\$QTDIR/bin:\$GCC/bin:\$FFMPEG/bin:\$LIBRAW_PATH:\$PATH"
+COPY \
+    common.sh \
+    compiler-common.sh \
+    linuxStartupJenkins.sh \
+    launchBuildMain.sh \
+    manageBuildOptions.sh \
+    manageLog.sh \
+    createBuildOptionsFile.sh \
+    gitRepositories.sh \
+    checkout-repository.sh \
+    build-plugins.sh \
+    build-natron.sh \
+    build-Linux-installer.sh \
+    gen-natron-doc.sh \
+    zip-python.sh \
+    runUnitTests.sh \
+    uploadArtifactsMain.sh \
+    ./
 #COPY --from=intermediate /home/src /opt/Natron-sdk/src
 ## retrieve sources using:
 ## docker run natrongithub/natron-sdk:latest tar -C /opt/Natron-sdk -cf - src | tar xvf -
