@@ -93,9 +93,11 @@ $DOCKERFILE_I386
 ARG SDK=$SDK_HOME
 ARG ARCH=$ARCH
 ARG SETARCH="$LINUX32"
-RUN ${PREYUM}yum -y install util-linux git gcc gcc-c++ make tar wget patch libX11-devel mesa-libGL-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && yum clean all
+RUN ${PREYUM} \\
+    yum -y install util-linux git gcc gcc-c++ make tar wget patch libX11-devel mesa-libGL-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && \\
+    yum clean all
 COPY include/patches/ include/patches/
-COPY build-Linux-sdk.sh common.sh compiler-common.sh ./
+COPY include/scripts/build-Linux-sdk.sh common.sh compiler-common.sh ./
 EOF
     BUILD_LINUX_SDK=./build-Linux-sdk.sh
     ## older version:
@@ -679,53 +681,55 @@ ARG FFMPEG=\$SDK/ffmpeg-gpl2
 ARG LIBRAW=\$SDK/libraw-gpl2
 ARG OSMESA=\$SDK/osmesa
 RUN ${PREYUM}yum -y install glibc-devel patch mesa-libGL-devel libXrender-devel libSM-devel libICE-devel libX11-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && yum -y clean all
-ENV QTDIR="\$QTDIR" \
-    LIBRARY_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib:\$OSMESA/lib" \
-    LD_LIBRARY_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib" \
-    LD_RUN_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib" \
-    CPATH="\$SDK/include:\$QTDIR/include:\$GCC/include:\$FFMPEG/include:\$LIBRAW/include:\$OSMESA/include" \
-    PKG_CONFIG_PATH="\$SDK/lib/pkgconfig:\$OSMESA/lib/pkgconfig:\$QTDIR/lib/pkgconfig:\$GCC/lib/pkgconfig:\$FFMPEG/lib/pkgconfig:\$LIBRAW/lib/pkgconfig" \
-    PYTHONPATH="\$QTDIR/lib/python2.7/site-packages/" \
-    PATH="\$SDK/bin:\$QTDIR/bin:\$GCC/bin:\$FFMPEG/bin:\$LIBRAW_PATH:\$PATH" \
-    GIT_URL=https://github.com/NatronGitHub/Natron.git \
-    GIT_BRANCH=RB-2.3 \
-    GIT_COMMIT= \
-    RELEASE_TAG=  \
-    SNAPSHOT_BRANCH= \
-    SNAPSHOT_COMMIT= \
-    UNIT_TESTS=true \
-    NATRON_LICENSE=GPL \
-    DISABLE_BREAKPAD=1 \
-    COMPILE_TYPE=release \
-    NATRON_DEV_STATUS=RC \
-    NATRON_CUSTOM_BUILD_USER_NAME= \
-    NATRON_EXTRA_QMAKE_FLAGS= \
-    BUILD_NAME=natron_github_RB2 \
-    DISABLE_RPM_DEB_PKGS=1 \
-    DISABLE_PORTABLE_ARCHIVE= \
-    BITS= \
-    DEBUG_SCRIPTS= \
-    EXTRA_PYTHON_MODULES_SCRIPT= \
+ENV QTDIR="\$QTDIR" \\
+    LIBRARY_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib:\$OSMESA/lib" \\
+    LD_LIBRARY_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib" \\
+    LD_RUN_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib" \\
+    CPATH="\$SDK/include:\$QTDIR/include:\$GCC/include:\$FFMPEG/include:\$LIBRAW/include:\$OSMESA/include" \\
+    PKG_CONFIG_PATH="\$SDK/lib/pkgconfig:\$OSMESA/lib/pkgconfig:\$QTDIR/lib/pkgconfig:\$GCC/lib/pkgconfig:\$FFMPEG/lib/pkgconfig:\$LIBRAW/lib/pkgconfig" \\
+    PYTHONPATH="\$QTDIR/lib/python2.7/site-packages/" \\
+    PATH="\$SDK/bin:\$QTDIR/bin:\$GCC/bin:\$FFMPEG/bin:\$LIBRAW_PATH:\$PATH" \\
+    WORKSPACE=/home \\
+    GIT_URL=https://github.com/NatronGitHub/Natron.git \\
+    GIT_BRANCH=RB-2.3 \\
+    GIT_COMMIT= \\
+    RELEASE_TAG=  \\
+    SNAPSHOT_BRANCH= \\
+    SNAPSHOT_COMMIT= \\
+    UNIT_TESTS=true \\
+    NATRON_LICENSE=GPL \\
+    DISABLE_BREAKPAD=1 \\
+    COMPILE_TYPE=release \\
+    NATRON_DEV_STATUS=RC \\
+    NATRON_CUSTOM_BUILD_USER_NAME= \\
+    NATRON_EXTRA_QMAKE_FLAGS= \\
+    BUILD_NAME=natron_github_RB2 \\
+    DISABLE_RPM_DEB_PKGS=1 \\
+    DISABLE_PORTABLE_ARCHIVE= \\
+    BITS= \\
+    DEBUG_SCRIPTS= \\
+    EXTRA_PYTHON_MODULES_SCRIPT= \\
     BUILD_NUMBER=0
 
-COPY \
-    common.sh \
-    compiler-common.sh \
-    linuxStartupJenkins.sh \
-    launchBuildMain.sh \
-    manageBuildOptions.sh \
-    manageLog.sh \
-    createBuildOptionsFile.sh \
-    gitRepositories.sh \
-    checkout-repository.sh \
-    build-plugins.sh \
-    build-natron.sh \
-    build-Linux-installer.sh \
-    gen-natron-doc.sh \
-    zip-python.sh \
-    runUnitTests.sh \
-    uploadArtifactsMain.sh \
+COPY \\
+    common.sh \\
+    compiler-common.sh \\
+    linuxStartupJenkins.sh \\
+    launchBuildMain.sh \\
+    manageBuildOptions.sh \\
+    manageLog.sh \\
+    createBuildOptionsFile.sh \\
+    gitRepositories.sh \\
+    checkout-repository.sh \\
+    build-plugins.sh \\
+    build-natron.sh \\
+    build-Linux-installer.sh \\
+    gen-natron-doc.sh \\
+    zip-python.sh \\
+    runUnitTests.sh \\
+    uploadArtifactsMain.sh \\
     ./
+COPY include/ include/
 #COPY --from=intermediate /home/src /opt/Natron-sdk/src
 ## retrieve sources using:
 ## docker run natrongithub/natron-sdk:latest tar -C /opt/Natron-sdk -cf - src | tar xvf -
