@@ -42,19 +42,19 @@ CURL="curl $curlopts"
 
 # Get OS
 #
-CHECK_OS="$(uname -s)"
-case "$CHECK_OS" in
+system="$(uname -s)"
+case "$system" in
 Linux)
-    PKGOS=Linux
+    PKGOS=${PKGOS:-Linux}
     ;;
 Msys|MINGW64_NT-*|MINGW32_NT-*)
-    PKGOS=Windows
+    PKGOS=${PKGOS:-Windows}
     ;;
 Darwin)
-    PKGOS=OSX
+    PKGOS=${PKGOS:-OSX}
     ;;
 *)
-    (>&2 echo "$CHECK_OS not supported!")
+    (>&2 echo "$system not supported!")
     exit 1
     ;;
 esac
