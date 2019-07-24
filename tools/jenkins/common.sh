@@ -338,7 +338,7 @@ elif [ "$PKGOS" = "Windows" ]; then
 elif [ "$PKGOS" = "OSX" ]; then
     PKG_CONFIG_PATH="$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 fi
-export PKG_CONFIG_PATH
+export LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH
 
 # Load compiler related stuff
 source $CWD/compiler-common.sh

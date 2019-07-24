@@ -500,7 +500,9 @@ done
 if [ -d "${TMP_PORTABLE_DIR}/lib/python${PYVER}" ]; then
     rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"
 fi
-cp -a "${SDK_HOME}/lib/python${PYVER}" "${TMP_PORTABLE_DIR}/lib/"
+for pydir in "${SDK_HOME}/lib" "${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib"; do
+    (cd "$pydir"; tar cf - "python${PYVER}")|(cd "${TMP_PORTABLE_DIR}/lib/"; tar xf -)
+done
 
 # Move PySide to plug-ins directory and keep a symbolic link in site-packages
 mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide" "${TMP_PORTABLE_DIR}/Plugins/"
@@ -509,8 +511,8 @@ mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide" "${TMP_PORTABLE
 # Remove unused stuff
 rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}m"}
 
-# Copy Pyside dependencies
-PYSIDE_DEPENDS=$(ldd $(find "${SDK_HOME}/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f) | grep /opt | awk '{print $3}'|sort|uniq)
+# Copy PySide dependencies
+PYSIDE_DEPENDS=$(ldd $(find "${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f) | grep /opt | awk '{print $3}'|sort|uniq)
 for y in $PYSIDE_DEPENDS; do
     dep=$(basename "$y")
     if [ ! -f "${TMP_PORTABLE_DIR}/lib/$dep" ]; then
