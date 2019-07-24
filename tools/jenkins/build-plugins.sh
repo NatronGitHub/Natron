@@ -12,7 +12,7 @@ source manageLog.sh
 
 updateBuildOptions
 
-MAKEFLAGS_VERBOSE="V=1" # verbose build
+#MAKEFLAGS_VERBOSE="V=1" # verbose build
 
 # Enable to use cmake to build instead of regular Makefiles. Untested for a while
 CMAKE_PLUGINS=0
