@@ -35,6 +35,7 @@ set -u # Treat unset variables as an error when substituting.
 # BITS: Windows only: Must indicate if this is a 64 or 32 bits build
 # DEBUG_SCRIPTS: If set to 1, binaries from previous build with same options are not cleaned so that the scripts can continue the same compilation
 # EXTRA_PYTHON_MODULES_SCRIPT: Path to a python script that should install extra modules with pip or easy_install.
+# MKJOBS: number of parallel build jobs
 #
 # The options above are set by custom parameters in the build configuration
 # https://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin#GitPlugin-Jenkins,GITpluginandWindows
@@ -119,6 +120,7 @@ echo "BUILD_3 (natron)                  : \"${BUILD_3:-}\""
 echo "BUILD_4 (installer)               : \"${BUILD_4:-}\""
 echo "BUILD_5 (unit tests)              : \"${BUILD_5:-}\""
 echo "BUILD_6 (archive and cleanup)     : \"${BUILD_6:-}\""
+echo "MKJOBS                            : \"${MKJOBS:-}\""
 echo "-----------------------------------------------------------------------"
 
 if [ "${NATRON_LICENSE:-}" != "GPL" ] && [ "${NATRON_LICENSE:-}" != "COMMERCIAL" ]; then

@@ -30,6 +30,12 @@ docker run -it --rm --mount src="$(pwd)/artifacts",target=/home/jenkins_artifact
 
 By default, this launches a snapshot build, but you may want to customize build variables, which appear when the build starts and are described at the top of `tools/jenkins/launchBuildMain.sh`. This can be done by adding the following options to the `docker run`command: `--env VAR1=value1 --env VAR2=value2 ...`.
 
+For example, to limit the number of parallel build jobs to 2:
+```
+docker run -it --rm --mount src="$(pwd)/artifacts",target=/home/jenkins_artifacts,type=bind --env MKJOBS=2 natrongithub/natron-sdk:latest
+```
+
+
 ## Debugging a build
 
 If something goes bad during a build, you may want to launch it from an interactive shell instead.
