@@ -89,7 +89,6 @@ EOF
 FROM $DOCKER_BASE as intermediate
 MAINTAINER https://github.com/NatronGitHub/Natron
 WORKDIR /home
-$DOCKERFILE_I386
 ARG SDK=$SDK_HOME
 ARG ARCH=$ARCH
 ARG SETARCH="$LINUX32"
