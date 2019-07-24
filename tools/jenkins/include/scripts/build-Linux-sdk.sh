@@ -94,7 +94,7 @@ ARG SDK=$SDK_HOME
 ARG ARCH=$ARCH
 ARG SETARCH="$LINUX32"
 RUN ${PREYUM} \\
-    yum -y install util-linux git gcc gcc-c++ make tar wget patch libX11-devel mesa-libGL-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && \\
+    yum -y install util-linux git gcc gcc-c++ make tar wget patch libX11-devel mesa-libGL-devel mesa-libGLU-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libSM-devel libICE-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && \\
     yum clean all
 COPY include/patches/ include/patches/
 COPY include/scripts/build-Linux-sdk.sh common.sh compiler-common.sh ./
@@ -222,7 +222,7 @@ if dobuild; then
     done
 
     if [ ! -f /usr/include/X11/Xlib.h ] && [ ! -f /usr/X11R6/include/X11/Xlib.h ]; then
-        (>&2 echo "Error: X11/Xlib.h not available (on CentOS, do 'yum install libICE-devel libSM-devel libX11-devel libXScrnSaver-devel libXcomposite-devel libXcursor-devel libXdamage-devel libXevie-devel libXfixes-devel libXi-devel libXinerama-devel libXp-devel libXp-devel libXpm-devel libXrandr-devel libXrender-devel libXres-devel libXv-devel libXvMC-devel libXxf86dga-devel libXxf86vm-devel libdmx-devel libxkbfile-devel mesa-libGL-devel')")
+        (>&2 echo "Error: X11/Xlib.h not available (on CentOS, do 'yum install libICE-devel libSM-devel libX11-devel libXScrnSaver-devel libXcomposite-devel libXcursor-devel libXdamage-devel libXevie-devel libXfixes-devel libXi-devel libXinerama-devel libXp-devel libXp-devel libXpm-devel libXrandr-devel libXrender-devel libXres-devel libXv-devel libXvMC-devel libXxf86dga-devel libXxf86vm-devel libdmx-devel libxkbfile-devel mesa-libGL-devel mesa-libGLU-devel')")
         error=true
     fi
 
@@ -680,7 +680,7 @@ ARG GCC=\$SDK/gcc
 ARG FFMPEG=\$SDK/ffmpeg-gpl2
 ARG LIBRAW=\$SDK/libraw-gpl2
 ARG OSMESA=\$SDK/osmesa
-RUN ${PREYUM}yum -y install glibc-devel patch mesa-libGL-devel libXrender-devel libSM-devel libICE-devel libX11-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && yum -y clean all
+RUN ${PREYUM}yum -y install glibc-devel patch mesa-libGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libX11-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXevie-devel libXres-devel xorg-x11-proto-devel libXxf86dga-devel libdmx-devel libXpm-devel && yum -y clean all
 ENV QTDIR="\$QTDIR" \\
     LIBRARY_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib:\$OSMESA/lib" \\
     LD_LIBRARY_PATH="\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib" \\
