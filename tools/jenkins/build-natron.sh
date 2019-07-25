@@ -157,7 +157,7 @@ fi
 QMAKE_FLAGS_EXTRA=($NATRON_EXTRA_QMAKE_FLAGS)
 
 # Do not make the build silent so we can check that all flags are correctly passed at compile time. Only useful to debug the build.
-#QMAKE_FLAGS_EXTRA+=(CONFIG-=silent)
+QMAKE_FLAGS_EXTRA+=(CONFIG+=silent)
 
 
 # setup version
