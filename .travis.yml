@@ -82,7 +82,7 @@ addons:
     #- libopenexr-dev
     #- libilmbase-dev
     - libopenjpeg-dev
-    - libtiff4-dev
+    - libtiff-dev
     - libjpeg-dev
     - libpng-dev
     - libwebp-dev

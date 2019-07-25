@@ -124,7 +124,8 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     #fi
     # - openimageio
     if [ "$CC" = "$TEST_CC" ]; then
-        PKGS="$PKGS libopenjp2-7-dev libtiff4-dev libjpeg-dev libpng-dev libraw-dev libboost-filesystem${BOOSTVER}-dev libboost-regex${BOOSTVER}-dev libboost-thread${BOOSTVER}-dev libboost-system${BOOSTVER}-dev libwebp-dev libfreetype6-dev libssl-dev"
+        #PKGS="$PKGS libopenjp2-7-dev libtiff-dev libjpeg-dev libpng-dev libraw-dev libboost-filesystem${BOOSTVER}-dev libboost-regex${BOOSTVER}-dev libboost-thread${BOOSTVER}-dev libboost-system${BOOSTVER}-dev libwebp-dev libfreetype6-dev libssl-dev"
+        PKGS="$PKGS libopenjp2-7-dev libtiff-dev libjpeg-dev libpng-dev libraw-dev libboost-filesystem-dev libboost-regex-dev libboost-thread-dev libboost-system-dev libwebp-dev libfreetype6-dev libssl-dev"
     fi
 
 
