@@ -45,7 +45,9 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
     ## we used the irie/boost ppa for that purpose
     #sudo add-apt-repository -y ppa:irie/boost
-    if [ `lsb_release -cs` = "trusty" ]; then
+    if [ `lsb_release -cs` = "xenial" ]; then
+        BOOSTVER=1.58
+    elif [ `lsb_release -cs` = "trusty" ]; then
         # samuel-bachmann/boost has a backport of boost 1.60
         sudo add-apt-repository -y ppa:samuel-bachmann/boost
         BOOSTVER=1.60
@@ -57,7 +59,8 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         BOOSTVER=1.55
         sudo add-apt-repository -y ppa:kalakris-cmake
     fi
-    PKGS="$PKGS libboost${BOOSTVER}-dev libboost-math${BOOSTVER}-dev libboost-serialization${BOOSTVER}-dev"
+    #PKGS="$PKGS libboost${BOOSTVER}-dev libboost-math${BOOSTVER}-dev libboost-serialization${BOOSTVER}-dev"
+    PKGS="$PKGS libboost-dev libboost-math-dev libboost-serialization-dev"
 
     # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
     sudo add-apt-repository -y ppa:xorg-edgers/ppa
@@ -104,9 +107,9 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # - ffmpeg
     if [ "$CC" = "$TEST_CC" ]; then
         if [ `lsb_release -cs` = "trusty" ]; then
-            PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev"
+            PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev libgl-dev"
         else
-            PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev"
+            PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev libgl-dev"
         fi
     fi
     # - opencolorio (available as libopencolorio-dev on trusty)

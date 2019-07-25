@@ -56,13 +56,13 @@ addons:
     - libqt4-dev
     - libqt4-opengl-dev
     - libglew-dev
-    #- libboost1.55-dev
-    #- libboost-math1.55-dev
-    #- libboost-serialization1.55-dev
-    #- libboost-filesystem1.55-dev
-    #- libboost-regex1.55-dev
-    #- libboost-thread1.55-dev
-    #- libboost-system1.55-dev
+    #- libboost-dev
+    #- libboost-math-dev
+    #- libboost-serialization-dev
+    #- libboost-filesystem-dev
+    #- libboost-regex-dev
+    #- libboost-thread-dev
+    #- libboost-system-dev
     - libexpat1-dev
     - gdb
     - libcairo2-dev
@@ -110,11 +110,9 @@ addons:
 matrix:
   include:
     - os: linux
-      dist: trusty
       sudo: required
       compiler: gcc
     - os: linux
-      dist: trusty
       sudo: required
       compiler: clang
     - os: osx
