@@ -84,9 +84,11 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi #2.5.1
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:pavlyshko/precise; fi #2.6.1
     if [ "$CC" = "$TEST_CC" ]; then
-        if [ `lsb_release -cs` = "trusty" ]; then
-            sudo add-apt-repository -y ppa:jonathonf/ffmpeg-3; #3.2.4
-        else
+        if [ `lsb_release -cs` = "xenial" ]; then
+            sudo add-apt-repository -y ppa:jonathonf/ffmpeg-3; #3.4.4
+        elif [ `lsb_release -cs` = "trusty" ]; then
+            sudo add-apt-repository -y ppa:jonathonf/ffmpeg-3; #3.4.4
+        elif [ `lsb_release -cs` = "precise" ]; then
             sudo add-apt-repository -y ppa:spvkgn/ffmpeg-dev; #2.8.6 (on precise)
         fi
     fi
@@ -108,8 +110,11 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "$TEST_CC" ]; then
         if [ `lsb_release -cs` = "trusty" ]; then
             PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev libgl-dev"
-        else
+        elif [ `lsb_release -cs` = "precise" ]; then
             PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev libgl-dev"
+        else
+            # xenial and more recent
+            PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev libgl-dev"
         fi
     fi
     # - opencolorio (available as libopencolorio-dev on trusty)
