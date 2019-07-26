@@ -386,6 +386,7 @@ checkpoint
 
 build qt-installer
 build qtifw
+build strings
 
 checkpoint
 
