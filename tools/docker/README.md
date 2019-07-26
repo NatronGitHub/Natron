@@ -21,18 +21,17 @@ docker pull natrongithub/natron-sdk-i386
 
 To launch a build:
 
-- create a directory when the build artifacts should be put (`$(pwd)/artifacts` in the following)
-- launch a build that binds that directory to `/home/jenkins_artifacts`:
+- create a directory when the build artifacts should be put (`$(pwd)/artifacts` in the following), another one for the builds (`$(pwd)/builds` in the following), and launch a build that binds these to directories to `/home/jenkins_artifacts` and `/home/builds_archive`:
 ```
-docker run -it --rm --mount src="$(pwd)/artifacts",target=/home/jenkins_artifacts,type=bind natrongithub/natron-sdk:latest
+mkdir artifacts; mkdir builds; docker run -it --rm --mount src="$(pwd)/artifacts",target=/home/jenkins_artifacts,type=bind --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind natrongithub/natron-sdk:latest
 ```
-(for the 32-bit version, use the `natrongithub/natron-sdk-i386:latest` image instead)
+(for the 32-bit version, use `natrongithub/natron-sdk-i386:latest` instead of `natrongithub/natron-sdk:latest`)
 
 By default, this launches a snapshot build, but you may want to customize build variables, which appear when the build starts and are described at the top of `tools/jenkins/launchBuildMain.sh`. This can be done by adding the following options to the `docker run`command: `--env VAR1=value1 --env VAR2=value2 ...`.
 
 For example, to limit the number of parallel build jobs to 2:
 ```
-docker run -it --rm --mount src="$(pwd)/artifacts",target=/home/jenkins_artifacts,type=bind --env MKJOBS=2 natrongithub/natron-sdk:latest
+docker run -it --rm --mount src="$(pwd)/artifacts",target=/home/jenkins_artifacts,type=bind --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind --env MKJOBS=2 natrongithub/natron-sdk:latest
 ```
 
 
@@ -40,7 +39,7 @@ docker run -it --rm --mount src="$(pwd)/artifacts",target=/home/jenkins_artifact
 
 If something goes bad during a build, you may want to launch it from an interactive shell instead.
 ```
-docker run -it --rm --mount src="$(pwd)/artifacts",target=/home/jenkins_artifacts,type=bind natrongithub/natron-sdk:latest bash
+docker run -it --rm --mount src="$(pwd)/artifacts",target=/home/jenkins_artifacts,type=bind --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind  natrongithub/natron-sdk:latest bash
 ```
 Then you can execute manually `launchBuildMain.sh` from the shell.
 
