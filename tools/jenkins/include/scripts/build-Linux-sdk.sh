@@ -57,7 +57,7 @@ if false; then
     ssh-natron-linux64-ci "cd data/natron-support/buildmaster;git pull;include/scripts/build-Linux-sdk.sh"
 fi
 
-scriptdir=`dirname "$0"`
+scriptdir="$(dirname "$0")"
 
 if [ "${GEN_DOCKERFILE32:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
     GEN_DOCKERFILE=1
@@ -136,7 +136,7 @@ function checkpoint()
         copyline="COPY "
         for s in in "${pkgs[@]}"; do
             if [ -f "$scriptdir/pkg/${s}.sh" ]; then
-                copyline="$copyline pkg/${s}.sh "
+                copyline="$copyline include/scripts/pkg/${s}.sh "
             fi
             checkpointstep="$s"
         done
