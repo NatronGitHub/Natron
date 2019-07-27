@@ -438,7 +438,7 @@ if [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
     # Update build scripts, except launchBuildMain.sh, which is being executed
     # That way, the SDK doesn't need to be updated when eg build-plugins.sh or buil-Linux-installer.sh is updated
     if [ "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" -nt "launchBuildMain.sh" ]; then
-        echo "Warning: launchBuildMain.sh has changed since the last SDK build. SDL may need to be rebuilt. Continuing anyway after a 5s pause."
+        echo "Warning: launchBuildMain.sh has changed since the last SDK build. SDK may need to be rebuilt. Continuing anyway after a 5s pause."
         sleep 5
     fi
     (cd "$TMP_PATH/Natron/tools/jenkins"; tar --exclude launchBuildMain.sh -cf - .) | tar xf -
