@@ -2,7 +2,7 @@
 
 # install strings 
 BINUTILS_VERSION=2.32
-BINUTILS_TAR="binutils-${BINUTILS_VERSION}.tar.xz"
+BINUTILS_TAR="binutils-${BINUTILS_VERSION}.tar.gz"
 BINUTILS_SITE="https://ftp.gnu.org/gnu/binutils"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/strings" ]; }; }; then
     start_build
