@@ -496,11 +496,15 @@ fi
 # The whitelist of python site-packages:
 python_site_packages=(easy_install.py pip PySide README shiboken.so)
 
-mkdir -p "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages"
+mkdir -p "${TMP_PORTABLE_DIR}/lib/python${PYVER}"
 
 for pydir in "${SDK_HOME}/lib/python${PYVER}" "${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib/python${PYVER}"; do
     (cd "$pydir"; tar cf - . --exclude site-packages)|(cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}"; tar xf -)
-    (cd "$pydir/site-packages"; tar cf - "${python_site_packages[@]}" &>/dev/null || true) | (cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages"; tar xf -)
+    for p in "${python_site_packages[@]}"; do
+        if [ -e "$pydir/site-packages/$p" ]; then
+            (cd "$pydir"; tar cf - "site-packages/$p") | (cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}"; tar xf -)
+        fi
+    done
 done
 
 # Move PySide to plug-ins directory and keep a symbolic link in site-packages
