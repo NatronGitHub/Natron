@@ -162,7 +162,7 @@ function installPlugin() {
 
 
     # Extract dependencies
-    OFX_DEPENDS="$(ldd $(find "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle/Contents/Linux-"* -maxdepth 1 -type f) | grep /opt | awk '{print $3}'|sort|uniq)"
+    OFX_DEPENDS="$(ldd $(find "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle/Contents/Linux-"* -maxdepth 1 -type f) | grep "${SDK_HOME}" | awk '{print $3}'|sort|uniq)"
     if [ ! -z "$OFX_DEPENDS" ]; then
 
 
@@ -202,7 +202,7 @@ function installPlugin() {
         done
 
         # Extract dependencies of the dependencies
-        OFX_LIB_DEP=$(ldd $(find "$LIBS_DIR" -maxdepth 1 -type f) |grep /opt | awk '{print $3}'|sort|uniq)
+        OFX_LIB_DEP=$(ldd $(find "$LIBS_DIR" -maxdepth 1 -type f) |grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
         for y in $OFX_LIB_DEP; do
             pluginlib="$(basename "$y")"
             if [ ! -f "$LIBS_DIR/$pluginlib" ] && [ ! -L "$LIBS_DIR/$pluginlib" ]; then
@@ -309,9 +309,9 @@ COPY_LOCATIONS=("${TMP_PORTABLE_DIR}" "$NATRON_PACKAGE_PATH/data")
 for location in "${COPY_LOCATIONS[@]}"; do
 
     mkdir -p "$location/docs" "$location/bin" "$location/Resources" "$location/Plugins/PyPlugs" "$location/Resources/stylesheets"
-    cp -a "${TMP_BINARIES_PATH}/docs/natron"/* "$location/docs/"
+    cp -pPR "${TMP_BINARIES_PATH}/docs/natron"/* "$location/docs/"
     [ -f "$location/docs/TuttleOFX-README.txt" ] && rm "$location/docs/TuttleOFX-README.txt"
-    cp -r "${TMP_BINARIES_PATH}/Resources/etc"  "$location/Resources/"
+    cp -R "${TMP_BINARIES_PATH}/Resources/etc"  "$location/Resources/"
     cp "${TMP_BINARIES_PATH}/Resources/stylesheets"/mainstyle.qss "$location/Resources/stylesheets/"
     cp "$INC_PATH/natron/natron-mime.sh" "$location/bin/"
     cp "${TMP_BINARIES_PATH}/PyPlugs"/* "$location/Plugins/PyPlugs/"
@@ -345,7 +345,7 @@ if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
 fi
 
 # Get all dependencies of the binaries
-CORE_DEPENDS="$(ldd $(find "${TMP_PORTABLE_DIR}/bin" -maxdepth 1 -type f) | grep /opt | awk '{print $3}'|sort|uniq)"
+CORE_DEPENDS="$(ldd $(find "${TMP_PORTABLE_DIR}/bin" -maxdepth 1 -type f) | grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)"
 
 # icu libraries don't seem to be picked up by this ldd call above
 pushd "${SDK_HOME}/lib"
@@ -410,7 +410,7 @@ function fixrpath() {
             if [ -f "$i" ]; then
                 chmod u+w $i
                 patchelf --force-rpath --set-rpath "\$ORIGIN${RPATH}" "$i" || true
-                optlibs="$(ldd "$i" | grep /opt | awk '{print $3}'|sort|uniq)"
+                optlibs="$(ldd "$i" | grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)"
                 if [ ! -z "$optlibs" ]; then
                     for r in $optlibs; do
                         echo "Warning: runtime path remaining to $r for $folder/$i"
@@ -431,8 +431,8 @@ for location in "${COPY_LOCATIONS[@]}"; do
     #cp "${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib/libQtDBus.so.4" "${location}/lib/"
     cp "${TMP_BINARIES_PATH}/Resources/pixmaps/natronIcon256_linux.png" "${location}/Resources/pixmaps/"
     cp "${TMP_BINARIES_PATH}/Resources/pixmaps/natronProjectIcon_linux.png" "${location}/Resources/pixmaps/"
-    cp -a "${SDK_HOME}/share/poppler" "${location}/Resources/"
-    cp -a "${SDK_HOME}/qt${QT_VERSION_MAJOR}/plugins"/* "${location}/bin/"
+    cp -pPR "${SDK_HOME}/share/poppler" "${location}/Resources/"
+    cp -pPR "${SDK_HOME}/qt${QT_VERSION_MAJOR}/plugins"/* "${location}/bin/"
 
     # Copy dependencies
     for i in $CORE_DEPENDS; do
@@ -443,7 +443,7 @@ for location in "${COPY_LOCATIONS[@]}"; do
     done
 
     # Copy dependencies of the libraries
-    LIB_DEPENDS=$(ldd $(find "${location}/lib" -maxdepth 1 -type f) |grep /opt | awk '{print $3}'|sort|uniq)
+    LIB_DEPENDS=$(ldd $(find "${location}/lib" -maxdepth 1 -type f) |grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
     for y in $LIB_DEPENDS; do
         dep=$(basename "$y")
         if [ ! -f "${location}/lib/$dep" ]; then
@@ -452,7 +452,7 @@ for location in "${COPY_LOCATIONS[@]}"; do
     done
 
     # Qt plug-in dependencies
-    QT_PLUG_DEPENDS=$(ldd $(find "${location}/bin" -maxdepth 2 -type f -name '*.so') | grep /opt | awk '{print $3}'|sort|uniq)
+    QT_PLUG_DEPENDS=$(ldd $(find "${location}/bin" -maxdepth 2 -type f -name '*.so') | grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
     for z in $QT_PLUG_DEPENDS; do
         dep=$(basename "$z")
         if [ ! -f "${location}/lib/$dep" ]; then
@@ -492,8 +492,15 @@ done
 if [ -d "${TMP_PORTABLE_DIR}/lib/python${PYVER}" ]; then
     rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"
 fi
-for pydir in "${SDK_HOME}/lib" "${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib"; do
-    (cd "$pydir"; tar cf - "python${PYVER}")|(cd "${TMP_PORTABLE_DIR}/lib/"; tar xf -)
+
+# The whitelist of python site-packages:
+python_site_packages=(easy_install.py pip PySide README shiboken.so)
+
+mkdir -p "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages"
+
+for pydir in "${SDK_HOME}/lib/python${PYVER}" "${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib/python${PYVER}"; do
+    (cd "$pydir"; tar cf - . --exclude site-packages)|(cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}"; tar xf -)
+    (cd "$pydir/site-packages"; tar cf - "${python_site_packages[@]}" &>/dev/null || true) | (cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages"; tar xf -)
 done
 
 # Move PySide to plug-ins directory and keep a symbolic link in site-packages
@@ -504,7 +511,7 @@ mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide" "${TMP_PORTABLE
 rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}m"}
 
 # Copy PySide dependencies
-PYSIDE_DEPENDS=$(ldd $(find "${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f) | grep /opt | awk '{print $3}'|sort|uniq)
+PYSIDE_DEPENDS=$(ldd $(find "${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f) | grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
 for y in $PYSIDE_DEPENDS; do
     dep=$(basename "$y")
     if [ ! -f "${TMP_PORTABLE_DIR}/lib/$dep" ]; then
@@ -551,7 +558,10 @@ fi
 
 
 # Copy Python distrib to installer package
-cp -r "$PYDIR" "$LIBS_PACKAGE_PATH/data/lib/"
+cp -pPR "$PYDIR" "$LIBS_PACKAGE_PATH/data/lib/"
+cp "${TMP_PORTABLE_DIR}"/lib/python*.zip "${LIBS_PACKAGE_PATH}/data/lib/"
+mkdir -p "$LIBS_PACKAGE_PATH/Plugins/"
+cp -pPR "${TMP_PORTABLE_DIR}/Plugins/PySide" "$LIBS_PACKAGE_PATH/Plugins/"
 
 # Fix RPATH (we don't want to link against system libraries when deployed)
 for location in "$LIBS_PACKAGE_PATH/data" "${TMP_PORTABLE_DIR}"; do
@@ -595,7 +605,7 @@ if [ -d "$NATRON_PACKAGE_PATH/data/Resources/docs" ]; then
     rm -rf "$NATRON_PACKAGE_PATH/data/Resources/docs"
 fi
 if [ -d "${TMP_PORTABLE_DIR}/Resources/docs" ]; then
-    cp -r "${TMP_PORTABLE_DIR}/Resources/docs" "$NATRON_PACKAGE_PATH/data/Resources/"
+    cp -R "${TMP_PORTABLE_DIR}/Resources/docs" "$NATRON_PACKAGE_PATH/data/Resources/"
 fi
 
 
@@ -634,7 +644,7 @@ if [ "$WITH_ONLINE_INSTALLER" = "1" ]; then
     "${SDK_HOME}/installer/bin"/repogen -v --update-new-components -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/packages"
 
     # Online installer
-    echo "*** Creating online installer ${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR/$INSTALLER_BASENAME"
+    echo "*** Creating online installer ${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/$INSTALLER_BASENAME"
     "${SDK_HOME}/installer/bin"/binarycreator -v -n -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/${INSTALLER_BASENAME}-online"
     (cd "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR" && tar zcf "${INSTALLER_BASENAME}-online.tgz" "${INSTALLER_BASENAME}-online" && rm "${INSTALLER_BASENAME}-online")
 fi
@@ -651,8 +661,8 @@ echo "*** Creating offline installer ${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL
 #    DEBUG_DIR=${INSTALLER_PATH}/Natron-$NATRON_VERSION_STRING-Linux${BITS}-Debug
 #    rm -rf "$DEBUG_DIR"
 #    mkdir "$DEBUG_DIR"
-#    cp -a "${SDK_HOME}/bin"/Natron* "$DEBUG_DIR/"
-#    cp -a "${SDK_HOME}/Plugins"/*.ofx.bundle/Contents/Linux*/*.ofx "$DEBUG_DIR/"
+#    cp -pPR "${SDK_HOME}/bin"/Natron* "$DEBUG_DIR/"
+#    cp -pPR "${SDK_HOME}/Plugins"/*.ofx.bundle/Contents/Linux*/*.ofx "$DEBUG_DIR/"
 #    ( cd "${INSTALLER_PATH}"; tar Jcf "Natron-$NATRON_VERSION_STRING-Linux${BITS}-Debug.tar.xz" "Natron-$NATRON_VERSION-Linux${BITS}-Debug" )
 #    mv "${DEBUG_DIR}.tar.xz" "$BUILD_ARCHIVE"/
 #fi
@@ -704,7 +714,7 @@ if ( [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABL
     cd "${INSTALLER_PATH}/natron"
     mkdir -p opt/Natron2 DEBIAN usr/share/doc/natron usr/share/{applications,pixmaps} usr/share/mime/packages usr/bin
 
-    cp -a "${INSTALLER_PATH}/packages"/fr.inria.*/data/* opt/Natron2/
+    cp -pPR "${INSTALLER_PATH}/packages"/fr.inria.*/data/* opt/Natron2/
     cp "$INC_PATH/debian"/post* DEBIAN/
     chmod +x DEBIAN/post*
 
