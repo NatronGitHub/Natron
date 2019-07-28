@@ -1,4 +1,4 @@
-.. _roto:
+.. _pythonroto:
 
 Roto/RotoPaint
 ==============

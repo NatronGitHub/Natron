@@ -1,4 +1,4 @@
-.. _tracker:
+.. _pythontracker:
 
 Tracker
 =======
