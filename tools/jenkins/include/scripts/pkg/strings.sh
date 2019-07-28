@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# strings is not needed anymore since the following commits from Natron-support:
+# f090ad15ff4efa64634c4e9b14409ea38a643d45 (May 12 2017) fix Natron linux launch script
+# c3f7f97350e1e0b4c543b68bd2c80c1eee803aff (Oct 24 2017) natron-linux: do not set LD_LIBRARY_PATH
+
 # install strings 
 BINUTILS_VERSION=2.32
 BINUTILS_TAR="binutils-${BINUTILS_VERSION}.tar.gz"

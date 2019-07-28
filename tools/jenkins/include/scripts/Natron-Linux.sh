@@ -95,9 +95,9 @@ elif [ -f "/usr/lib/${compat_arch}-linux-gnu/libstdc++.so.6" ]; then
 elif [ -f "/usr/lib/i386-linux-gnu/libstdc++.so.6" ]; then
     stdc_lib="/usr/lib/i386-linux-gnu/libstdc++.so.6"
 fi
-if [ -n "${stdc_lib+x}" ]; then
-    compat_gcc="$("$dir/bin/strings" "$stdc_lib" | grep GLIBCXX_${compat_version})"
-fi
+# if [ -n "${stdc_lib+x}" ]; then
+#     compat_gcc="$("$dir/bin/strings" "$stdc_lib" | grep GLIBCXX_${compat_version})"
+# fi
 ## Former version, which can only be executed by root... !!!
 # if [ -n "${compat_gcc+x}" ]; then
 #     if [ -f "$dir/lib/libstdc++.so.6" ]; then
@@ -121,14 +121,14 @@ fi
 #     fi
 # fi
 
-if [ -z "${compat_gcc+x}" ]; then
-    # never set LD_LIBRARY_PATH, because it breaks third-party plugins!
-    # normally, patchelf was used on every binary, so that the correct libraries should be found
-    #export LD_LIBRARY_PATH="$dir/lib/compat${LD_LIBRARY_PATH+:}${LD_LIBRARY_PATH:-}"
+# if [ -z "${compat_gcc+x}" ]; then
+#     # never set LD_LIBRARY_PATH, because it breaks third-party plugins!
+#     # normally, patchelf was used on every binary, so that the correct libraries should be found
+#     #export LD_LIBRARY_PATH="$dir/lib/compat${LD_LIBRARY_PATH+:}${LD_LIBRARY_PATH:-}"
 
-    # We don't care: always use the provided libraries
-    true
-fi
+#     # We don't care: always use the provided libraries
+#     true
+# fi
 
 # Check for updates
 if [ "$update" = 1 ] && [ -x "$dir/NatronSetup" ]; then

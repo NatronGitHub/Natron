@@ -484,15 +484,6 @@ for location in "${COPY_LOCATIONS[@]}"; do
         mkdir -p "${location}/Plugins"
     fi
 
-    # let Natron.sh handle gcc libs
-    #mkdir "${location}/lib/compat"
-    #mv "${location}/lib"/{libgomp*,libgcc*,libstdc*} "${location}/lib/compat/"
-    #if [ ! -f "$SRC_PATH/strings${BITS}.tgz" ]; then
-    #    $CURL "$THIRD_PARTY_BIN_URL/strings${BITS}.tgz" --output "$SRC_PATH/strings${BITS}.tgz"
-    #fi
-    #tar xvf "$SRC_PATH/strings${BITS}.tgz" -C "${location}/bin/"
-    cp "$SDK_HOME/bin/strings" "${location}/bin/"
-
     # end for all locations
 done
 
