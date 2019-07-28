@@ -121,6 +121,7 @@ echo "BUILD_4 (installer)               : \"${BUILD_4:-}\""
 echo "BUILD_5 (unit tests)              : \"${BUILD_5:-}\""
 echo "BUILD_6 (archive and cleanup)     : \"${BUILD_6:-}\""
 echo "MKJOBS                            : \"${MKJOBS:-}\""
+echo "NOUPDATE (disable scripts update) : \"${NOUPDATE:-}\""
 echo "-----------------------------------------------------------------------"
 
 if [ "${NATRON_LICENSE:-}" != "GPL" ] && [ "${NATRON_LICENSE:-}" != "COMMERCIAL" ]; then
@@ -441,7 +442,9 @@ if [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
         echo "Warning: launchBuildMain.sh has changed since the last SDK build. SDK may need to be rebuilt. Continuing anyway after a 5s pause."
         sleep 5
     fi
-    (cd "$TMP_PATH/Natron/tools/jenkins"; tar --exclude launchBuildMain.sh -cf - .) | tar xf -
+    if [ -z "${NOUPDATE:+x}" ]; then
+        (cd "$TMP_PATH/Natron/tools/jenkins"; tar --exclude launchBuildMain.sh -cf - .) | tar xf -
+    fi
 fi
 
 
