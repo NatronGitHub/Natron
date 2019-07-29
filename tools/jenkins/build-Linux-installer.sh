@@ -566,8 +566,8 @@ fi
 # Copy Python distrib to installer package
 cp -pPR "$PYDIR" "$LIBS_PACKAGE_PATH/data/lib/"
 cp "${TMP_PORTABLE_DIR}"/lib/python*.zip "${LIBS_PACKAGE_PATH}/data/lib/"
-mkdir -p "$LIBS_PACKAGE_PATH/Plugins/"
-cp -pPR "${TMP_PORTABLE_DIR}/Plugins/PySide" "$LIBS_PACKAGE_PATH/Plugins/"
+mkdir -p "$LIBS_PACKAGE_PATH/data/Plugins/"
+cp -pPR "${TMP_PORTABLE_DIR}/Plugins/PySide" "$LIBS_PACKAGE_PATH/data/Plugins/"
 
 # Fix RPATH (we don't want to link against system libraries when deployed)
 for location in "$LIBS_PACKAGE_PATH/data" "${TMP_PORTABLE_DIR}"; do
