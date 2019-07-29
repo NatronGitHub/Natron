@@ -223,8 +223,15 @@ KnobGuiColor::KnobGuiColor(const KnobGuiPtr& knobUI, ViewIdx view)
 {
     KnobColorPtr knob = _knob.lock();
     if (!knob) {
-        return;
+        throw std::logic_error(__func__);
     }
+    int nDims = knob->getNDimensions();
+
+    assert(nDims == 1 || nDims == 3 || nDims == 4);
+    if (nDims != 1 && nDims != 3 && nDims != 4) {
+        throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+    }
+
     _useSimplifiedUI = knob && knob->isSimplified();
     if (!_useSimplifiedUI) {
         DimIdx singleDim;
@@ -559,7 +566,13 @@ KnobGuiColor::showColorDialog()
     if (!knob) {
         return;
     }
+
     const int nDims = knob->getNDimensions();
+    assert(nDims == 1 || nDims == 3 || nDims == 4);
+    if (nDims != 1 && nDims != 3 && nDims != 4) {
+        throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+    }
+
     ViewIdx view = getView();
     double curR = knob->getValue(DimIdx(0), view, false /*clampToMinmax*/);
 
