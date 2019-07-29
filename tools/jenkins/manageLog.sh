@@ -1,6 +1,6 @@
 
 function printMessageWithDatePrefix() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') $1"
+    echo "$(date -u '+%Y-%m-%d %H:%M:%S') $1"
 }
 
 function printStatusMessage() {

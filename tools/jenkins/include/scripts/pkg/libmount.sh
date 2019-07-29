@@ -11,16 +11,16 @@
 #else
 #    UTILLINUX_VERSION=2.31.1
 #fi
-UTILLINUX_VERSION=2.33.2 # this was fixed in 2.32
-
+UTILLINUX_VERSION=2.34.0 # this was fixed in 2.32
+UTILLINUX_VERSION_NOZERO=${UTILLINUX_VERSION%.0}
 UTILLINUX_VERSION_SHORT=${UTILLINUX_VERSION%.*}
-UTILLINUX_TAR="util-linux-${UTILLINUX_VERSION}.tar.xz"
+UTILLINUX_TAR="util-linux-${UTILLINUX_VERSION_NOZERO}.tar.xz"
 UTILLINUX_SITE="https://www.kernel.org/pub/linux/utils/util-linux/v${UTILLINUX_VERSION_SHORT}"
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/mount.pc" ] || [ "$(pkg-config --modversion mount)" != "$UTILLINUX_VERSION" ]; }; }; then
     start_build
     download "$UTILLINUX_SITE" "$UTILLINUX_TAR"
     untar "$SRC_PATH/$UTILLINUX_TAR"
-    pushd "util-linux-${UTILLINUX_VERSION}"
+    pushd "util-linux-${UTILLINUX_VERSION_NOZERO}"
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-chfn-chsh  \
             --disable-login      \
             --disable-nologin    \
@@ -38,6 +38,6 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/mount.pc" ] 
     make -j${MKJOBS}
     make install
     popd
-    rm -rf "util-linux-${UTILLINUX_VERSION}"
+    rm -rf "util-linux-${UTILLINUX_VERSION_NOZERO}"
     end_build
 fi

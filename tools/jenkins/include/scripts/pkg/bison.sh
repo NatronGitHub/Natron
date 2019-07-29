@@ -16,7 +16,17 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/bison" ]; }; }; then
 	patch -Np1 -i "$INC_PATH"/patches/bison/0002-fflush-be-more-paranoid-about-libio.h-change.patch
     fi
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME"
-    make -j${MKJOBS}
+    # parallel build sometimes dies with:
+    # make[1]: Entering directory `/tmp/bison-3.4.1'
+    # make[1]: Entering directory `/tmp/bison-3.4.1'
+    #   LEX      examples/c/reccalc/scan.stamp
+    #   LEX      examples/c/reccalc/scan.stamp
+    # make[1]: Leaving directory `/tmp/bison-3.4.1'
+    # mv: cannot stat `examples/c/reccalc/scan.stamp.tmp': No such file or directory
+    # make[1]: *** [examples/c/reccalc/scan.stamp] Error 1
+    # make[1]: Leaving directory `/tmp/bison-3.4.1'
+    # make: *** [examples/c/reccalc/scan.h] Error 2
+    make # -j${MKJOBS}
     make install
     popd
     rm -rf "bison-${BISON_VERSION}"

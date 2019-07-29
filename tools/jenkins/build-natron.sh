@@ -19,7 +19,7 @@
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
-set -x # Print commands and their arguments as they are executed.
+#set -x # Print commands and their arguments as they are executed.
 
 # DISABLE_BREAKPAD=1: Disable automatic crash report
 
@@ -156,8 +156,8 @@ fi
 # Get extra qmake flags passed from command line
 QMAKE_FLAGS_EXTRA=($NATRON_EXTRA_QMAKE_FLAGS)
 
-# Do not make the build silent so we can check that all flags are correctly passed at compile time.
-QMAKE_FLAGS_EXTRA+=(CONFIG-=silent)
+# Do not make the build silent so we can check that all flags are correctly passed at compile time. Only useful to debug the build.
+QMAKE_FLAGS_EXTRA+=(CONFIG+=silent)
 
 
 # setup version

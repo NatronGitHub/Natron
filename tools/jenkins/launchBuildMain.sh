@@ -18,7 +18,7 @@ set -u # Treat unset variables as an error when substituting.
 # To launch a snapshot, you must set SNAPSHOT_BRANCH and SNAPSHOT_COMMIT and point GIT_URL to the Natron repo to build from.
 # To launch a CI (Natron or plug-in repo) you must set GIT_URL, GIT_BRANCH, GIT_COMMIT. GIT_URL may point to either a Natron repository or plug-in repository. The GIT_URL must be known by the script. List of repositories is maintained in gitRepositories.sh
 #
-# RELEASE_TAG: string "x.y.z" indicating the tag name of the repository to use. Do not add the prefix "tags/", it will be added automatically. Only indicate this to trigger a release.
+# RELEASE_TAG: string "x.y.z" indicating the release number. The corresponding tag is "vx.y.z" in the Natron repository and "Natron-x.y.z" in each of the plugins repository. Only indicate this to trigger a release.
 # SNAPSHOT_BRANCH: If set and RELEASE_TAG is not set, this describes a specific branch to build as a snapshot
 # SNAPSHOT_COMMIT: The commit to build for a snapshot on the given SNAPSHOT_BRANCH. If not set, the latest commit of the branch will be built
 # UNIT_TESTS: "false" or "true" (for compat with jenkins) to run the full unit tests suite after the build
@@ -35,6 +35,7 @@ set -u # Treat unset variables as an error when substituting.
 # BITS: Windows only: Must indicate if this is a 64 or 32 bits build
 # DEBUG_SCRIPTS: If set to 1, binaries from previous build with same options are not cleaned so that the scripts can continue the same compilation
 # EXTRA_PYTHON_MODULES_SCRIPT: Path to a python script that should install extra modules with pip or easy_install.
+# MKJOBS: number of parallel build jobs
 #
 # The options above are set by custom parameters in the build configuration
 # https://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin#GitPlugin-Jenkins,GITpluginandWindows
@@ -119,6 +120,8 @@ echo "BUILD_3 (natron)                  : \"${BUILD_3:-}\""
 echo "BUILD_4 (installer)               : \"${BUILD_4:-}\""
 echo "BUILD_5 (unit tests)              : \"${BUILD_5:-}\""
 echo "BUILD_6 (archive and cleanup)     : \"${BUILD_6:-}\""
+echo "MKJOBS                            : \"${MKJOBS:-}\""
+echo "NOUPDATE (disable scripts update) : \"${NOUPDATE:-}\""
 echo "-----------------------------------------------------------------------"
 
 if [ "${NATRON_LICENSE:-}" != "GPL" ] && [ "${NATRON_LICENSE:-}" != "COMMERCIAL" ]; then
@@ -329,7 +332,7 @@ if [ "$TYPE" = "RELEASE" ]; then
     fi
     setBuildOption "DISABLE_RPM_DEB_PKGS" "$DISABLE_RPM_DEB_PKGS"
     GIT_COMMIT=""
-    GIT_BRANCH="tags/${RELEASE_TAG:-}"
+    GIT_BRANCH="tags/v${RELEASE_TAG:-}"
     setBuildOption "NATRON_GIT_BRANCH" "$GIT_BRANCH"
     setBuildOption "NATRON_GIT_COMMIT" ""
     setBuildOption "OPENFX_IO_GIT_BRANCH" "tags/Natron-$RELEASE_TAG"
@@ -431,14 +434,17 @@ if [ "$IS_GIT_URL_NATRON_REPO" = "1" ]; then
 
     setBuildOption "NATRON_VERSION_SHORT" "${NATRON_MAJOR}.${NATRON_MINOR}"
     setBuildOption "NATRON_VERSION_FULL" "${NATRON_MAJOR}.${NATRON_MINOR}.${NATRON_REVISION}"
-
-
-    # add breakpad
-    #cd "$TMP_PATH/Natron"
-    #rm -rf CrashReporter* BreakpadClient google-breakpad || true
-    #cp -a "$CWD/../Breakpad/CrashReporter"* "$CWD/../Breakpad/BreakpadClient" "$CWD/../Breakpad/google-breakpad" "$CWD/../Breakpad/breakpadclient.pri" "$CWD/../Breakpad/breakpadpro.pri" .
     fi
     cd "$CWD"
+    # Update build scripts, except launchBuildMain.sh, which is being executed
+    # That way, the SDK doesn't need to be updated when eg build-plugins.sh or buil-Linux-installer.sh is updated
+    if [ "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" -nt "launchBuildMain.sh" ]; then
+        echo "Warning: launchBuildMain.sh has changed since the last SDK build. SDK may need to be rebuilt. Continuing anyway after a 5s pause."
+        sleep 5
+    fi
+    if [ -z "${NOUPDATE:+x}" ]; then
+        (cd "$TMP_PATH/Natron/tools/jenkins"; tar --exclude launchBuildMain.sh -cf - .) | tar xf -
+    fi
 fi
 
 

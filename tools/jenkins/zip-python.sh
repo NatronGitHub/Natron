@@ -2,7 +2,7 @@
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
-set -x # Print commands and their arguments as they are executed.
+#set -x # Print commands and their arguments as they are executed.
 
 # Options:
 # PY_BIN: Python binary path
@@ -12,8 +12,8 @@ echo "* Zipping Python..."
 
 pushd "$PYDIR"
 # remove pyc files
-find . -name '*.pyc' -print0 | xargs rm
-find . -name '*.py' -print0 | xargs chmod 644
+find . -name '*.pyc' -exec rm {} \;
+find . -name '*.py' -exec chmod 644 {} \;
 # generate pyo files
 "$PY_BIN" -O -m compileall -q . || true
 PY_ZIP_FILES=(*.py* bsddb compiler ctypes curses distutils email encodings hotshot idlelib importlib json logging multiprocessing pydoc_data sqlite3 unittest wsgiref xml)

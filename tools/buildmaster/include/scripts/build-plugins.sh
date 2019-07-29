@@ -244,20 +244,14 @@ if [ "$BUILD_MISC" = "1" ]; then
         mkdir build
         cd build
         CMAKE_LDFLAGS=""
-        if [ "$PKGOS" = "OSX" ]; then
+        if [ "$PKGOS" = "OSX" ] && [ "$BITS" = "Universal" ]; then
             UNIVERSAL='-DCMAKE_OSX_ARCHITECTURES="x86_64;i386"'
         elif [ "$PKGOS" = "Windows" ]; then
             MSYS='-G"MSYS Makefiles"'
             CMAKE_LDFLAGS="-static -Wl,--build-id"
         fi
         rm ../DenoiseSharpen/DenoiseWavelet.cpp || true
-        OMP=""
-        #if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
-        #    # compile DenoiseSharpen with OpenMP support
-        #    # see https://discuss.pixls.us/t/denoisesharpen-filter-is-crashing-natron/8564/2
-        #    OMP="OPENMP=1"
-        #fi
-        env CXX="$CXX" LDFLAGS="$CMAKE_LDFLAGS" cmake .. ${MSYS:-} -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX="$TMP_BINARIES_PATH" -DBITS="${BITS}" -DUSE_OSMESA=1 -DOSMESA_INCLUDES="${OSMESA_PATH}/include" -DOSMESA_LIBRARIES="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" ${UNIVERSAL:-} ${OMP:-}
+        env CXX="$CXX" LDFLAGS="$CMAKE_LDFLAGS" cmake .. ${MSYS:-} -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX="$TMP_BINARIES_PATH" -DBITS="${BITS}" -DUSE_OSMESA=1 -DOSMESA_INCLUDES="${OSMESA_PATH}/include" -DOSMESA_LIBRARIES="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" ${UNIVERSAL:-}
         make -j"${MKJOBS}"
         make install
     else
@@ -266,29 +260,60 @@ if [ "$BUILD_MISC" = "1" ]; then
         #make -C Shadertoy $MAKEFLAGS_VERBOSE CXXFLAGS_MESA="-DHAVE_OSMESA" OSMESA_PATH="${OSMESA_PATH}" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" CXX="$CXX" CONFIG="${BUILD_MODE}" OPTFLAG="${OPTFLAG}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" -j"${MKJOBS}" BITS="${BITS}" HAVE_CIMG=0
         #set +x
         # first, build everything except CImg (including OpenGL plugins)
-        make -j"${MKJOBS}" $MAKEFLAGS_VERBOSE CXXFLAGS_MESA="-DHAVE_OSMESA" OSMESA_PATH="${OSMESA_PATH}" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" HAVE_CIMG=0 \
-             CXX="$CXX" CONFIG="${BUILD_MODE}" BITS="${BITS}" OPTFLAG="${OPTFLAG}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}"
+        OMP=""
+        if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
+            # compile DenoiseSharpen and CImg with OpenMP support
+            OMP="OPENMP=1"
+        fi
+
+        env \
+            CXXFLAGS_MESA="-DHAVE_OSMESA" \
+            OSMESA_PATH="${OSMESA_PATH}" \
+            LDFLAGS_MESA="-L${OSMESA_PATH}/lib ${GLULIB} ${MESALIB} -lz -L${LLVM_PATH}/lib ${LLVM_LIB}" \
+            CXX="$CXX" \
+            CONFIG="${COMPILE_TYPE}" \
+            OPTFLAG="${OPTFLAG}" \
+            BITS="${BITS}" \
+            LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" \
+            HAVE_CIMG=0 \
+            ${OMP} \
+            CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
+            make -j"${MKJOBS}" "$MAKEFLAGS_VERBOSE"
 
         #ls -la  "$TMP_BINARIES_PATH" "$TMP_BINARIES_PATH/OFX/Plugins" "$TMP_BINARIES_PATH/Plugins"
+        
         # extract CImg.h
         make -C CImg CImg.h
+        
         # build CImg.ofx
-        #ls -la  "$TMP_BINARIES_PATH" "$TMP_BINARIES_PATH/OFX/Plugins" "$TMP_BINARIES_PATH/Plugins"
-        if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
-            # build CImg with OpenMP support (no OpenGL required)
-            make -j"${MKJOBS}" $MAKEFLAGS_VERBOSE -C CImg OPENMP=1 \
-                 CXX="$CXX" CONFIG="${BUILD_MODE}" BITS="${BITS}" OPTFLAG="${OPTFLAG}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}"
-        elif [ -n "${GXX:-}" ]; then
-            # Building with clang, but GCC is available too!
+        if [ "$COMPILER" = "clang" ] && [ -n "${GXX:-}" ]; then
+            # Building with Apple clang (no OpenMP available), but GCC is available too!
             # libSupport was compiled by clang, now clean it to build it again with gcc
-            make $MAKEFLAGS_VERBOSE CONFIG="${BUILD_MODE}" OPTFLAG="${OPTFLAG}" -j"${MKJOBS}" BITS="${BITS}" HAVE_CIMG=0 clean
+            make -j"${MKJOBS}" \
+                 CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" HAVE_CIMG=0 clean
             # build CImg with OpenMP support, but statically link libgomp (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=31400)
-            make -j"${MKJOBS}" $MAKEFLAGS_VERBOSE -C CImg OPENMP=1 \
-                 CXX="$GXX" CONFIG="${BUILD_MODE}" BITS="${BITS}" OPTFLAG="${OPTFLAG}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-} -static-libgcc" CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}"
+            env \
+                CXX="$CXX" \
+                CONFIG="${COMPILE_TYPE}" \
+                OPTFLAG="${OPTFLAG}" \
+                BITS="${BITS}" \
+                LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-} -static-libgcc" \
+                HAVE_CIMG=1 \
+                OPENMP=1 \
+                CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
+                make -j"${MKJOBS}" "$MAKEFLAGS_VERBOSE" -C CImg
         else
-            # build CImg without OpenMP
-            make -j"${MKJOBS}" $MAKEFLAGS_VERBOSE -C CImg \
-                 CXX="$CXX" CONFIG="${BUILD_MODE}" BITS="${BITS}" OPTFLAG="${OPTFLAG}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}"
+            # build CImg with OpenMP support (no OpenGL required)
+            env \
+                CXX="$CXX" \
+                CONFIG="${COMPILE_TYPE}" \
+                OPTFLAG="${OPTFLAG}" \
+                BITS="${BITS}" \
+                LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" \
+                HAVE_CIMG=1 \
+                ${OMP} \
+                CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
+                make -j"${MKJOBS}" "$MAKEFLAGS_VERBOSE" -C CImg
         fi
         #ls -la  "$TMP_BINARIES_PATH" "$TMP_BINARIES_PATH/OFX/Plugins" "$TMP_BINARIES_PATH/Plugins"
         cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"

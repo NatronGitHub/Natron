@@ -19,7 +19,7 @@
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
-set -x # Print commands and their arguments as they are executed.
+#set -x # Print commands and their arguments as they are executed.
 #set -v # Prints shell input lines as they are read.
 
 echo "*** OSX installer..."
@@ -33,7 +33,7 @@ pushd () {
 }
 
 popd () {
-    command popd "$@" > /dev/null
+    command popd > /dev/null
 }
 
 updateBuildOptions
@@ -258,9 +258,9 @@ LOCAL="/usr/local"
 SBKVER="1.2"
 QTDIR="${MACPORTS}/libexec/qt4"
 ## all Qt frameworks:
-QT_LIBS="Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtDesignerComponents QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns"
+qt_libs=(Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtDesignerComponents QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns)
 ## Qt frameworks used by Natron + PySide + Qt plugins:
-#QT_LIBS="Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns"
+#qt_libs=(Qt3Support QtCLucene QtCore QtDBus QtDeclarative QtDesigner QtGui QtHelp QtMultimedia QtNetwork QtOpenGL QtScript QtScriptTools QtSql QtSvg QtTest QtUiTools QtWebKit QtXml QtXmlPatterns)
 STRIP=1
 
 "$QTDIR"/bin/macdeployqt "${package}" -no-strip
@@ -362,7 +362,7 @@ if [ ! -d "${package}/Contents/PlugIns" ] && [ -d "$QTDIR/share/plugins" ]; then
             for lib in libjpeg.8.dylib libmng.2.dylib libtiff.5.dylib libQGLViewer.2.dylib; do
                 install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
             done
-            for f in $QT_LIBS; do
+            for f in "${qt_libs[@]}"; do
                 install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
             done
             if otool -L "$binary" | grep -F "${MACPORTS}"; then
@@ -375,14 +375,14 @@ fi
 # Now, because plugins were not installed (see see https://trac.macports.org/ticket/49344 ),
 # their dependencies were not installed either (e.g. QtSvg and QtXml for imageformats/libqsvg.dylib)
 # Besides, PySide may also load other Qt Frameworks. We have to make sure they are all present
-for qtlib in $QT_LIBS; do
+for qtlib in "${qt_libs[@]}"; do
     if [ ! -d "${package}/Contents/Frameworks/${qtlib}.framework" ]; then
         binary="${package}/Contents/Frameworks/${qtlib}.framework/Versions/4/${qtlib}"
         mkdir -p "$(dirname "${binary}")"
         cp "${QTDIR}/Library/Frameworks/${qtlib}.framework/Versions/4/${qtlib}" "${binary}"
         chmod +w "${binary}"
         install_name_tool -id "@executable_path/../Frameworks/${qtlib}.framework/Versions/4/${qtlib}" "$binary"
-        for f in $QT_LIBS; do
+        for f in "${qt_libs[@]}"; do
             install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
         done
         for lib in libcrypto.1.0.0.dylib libdbus-1.3.dylib libpng16.16.dylib libssl.1.0.0.dylib libz.1.dylib; do
@@ -467,13 +467,22 @@ echo "* installing PySide..."
 PYLIB="Frameworks/Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 PYSIDE="${PYLIB}/site-packages/PySide"
 rm -rf "${package}/Contents/${PYSIDE}"
-cp -r "${MACPORTS}/Library/${PYSIDE}" "${package}/Contents/${PYSIDE}"
+cp -pPR "${MACPORTS}/Library/${PYSIDE}" "${package}/Contents/${PYSIDE}"
+pyshiboken="${PYLIB}/site-packages/shiboken.so"
+rm -rf "${package}/Contents/${pyshiboken}"
+cp "${MACPORTS}/Library/${pyshiboken}" "${package}/Contents/${pyshiboken}"
+# fix shiboken.so
+l="shiboken-python${PYVER}.${SBKVER}"
+dylib="lib${l}.dylib"
+binary="${package}/Contents/${pyshiboken}"
+install_name_tool -change "${MACPORTS}/lib/$dylib" "@executable_path/../Frameworks/$dylib" "$binary"
+
 # install pyside and shiboken libs, and fix deps from Qt
 for l in  pyside-python${PYVER}.${SBKVER} shiboken-python${PYVER}.${SBKVER}; do
     dylib="lib${l}.dylib"
     binary="${package}/Contents/Frameworks/$dylib"
     cp "${MACPORTS}/lib/$dylib" "$binary"
-    for f in $QT_LIBS; do
+    for f in "${qt_libs[@]}"; do
         install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
     done
 done
@@ -496,11 +505,11 @@ popd # pushd "${package}/Contents/${PYLIB}/config"
 (cd "${package}/Contents/Frameworks/Python.framework/Versions/${PYVER}/lib"; ln -s ../Python "libpython${PYVER}.dylib")
 
 echo "* Fixing sonames in PySide..."
-for qtlib in $QT_LIBS ;do
+for qtlib in "${qt_libs[@]}" ;do
     binary="${package}/Contents/${PYSIDE}/${qtlib}.so"
     if [ -f "$binary" ]; then
         install_name_tool -id "@executable_path/../${PYSIDE}/${qtlib}.so" "$binary"
-        for f in $QT_LIBS; do
+        for f in "${qt_libs[@]}"; do
             install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
         done
 
@@ -562,7 +571,7 @@ for bin in $natronbins $otherbins; do
         ### FIX FRAMEWORKS (must be done before dylibs)
         
 	# maydeployqt only fixes the main binary, fix others too
-        for f in $QT_LIBS; do
+        for f in "${qt_libs[@]}"; do
             install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
 	done
 
@@ -677,7 +686,6 @@ for bin in $natronbins $otherbins; do
                 # shellcheck disable=SC2012
                 alllibs=( $(ls "${alllibs[@]+${alllibs[@]}}" "${libs[@]}" | sort | uniq) )
             fi
-            let "a+=1"  
             # shellcheck disable=SC2012
             nnfiles="$(ls "$pkglib" | wc -l)"
             if [ "$nnfiles" = "$nfiles" ]; then
@@ -921,19 +929,19 @@ if [ "$NATRON_BUILD_CONFIG" = "SNAPSHOT" ]; then
     DMG_FINAL="${DMG_FINAL}-${NATRON_GIT_BRANCH}-${CURRENT_DATE}"
 fi
 
-DMG_FINAL="${DMG_FINAL}-${NATRON_VERSION_STRING}-${PKGOS}"
+DMG_FINAL="${DMG_FINAL}-${NATRON_VERSION_STRING}-${PKGOS}-${BITS}"
 if [ "$COMPILE_TYPE" = "debug" ]; then
     DMG_FINAL="${DMG_FINAL}-debug"
 fi
 
-DMG_FINAL=${DMG_FINAL}.dmg
-DMG_TMP=tmp${DMG_FINAL}
+DMG_FINAL="${DMG_FINAL}.dmg"
+DMG_TMP="tmp${DMG_FINAL}"
 
 
 if [ -f "$TMP_BINARIES_PATH/splashscreen.png" ]; then
-    DMG_BACK=$TMP_BINARIES_PATH/splashscreen.png
+    DMG_BACK="$TMP_BINARIES_PATH/splashscreen.png"
 else 
-    DMG_BACK=$TMP_BINARIES_PATH/splashscreen.jpg
+    DMG_BACK="$TMP_BINARIES_PATH/splashscreen.jpg"
 fi
 
 if [ ! -f "$DMG_BACK" ]; then

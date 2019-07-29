@@ -42,19 +42,19 @@ CURL="curl $curlopts"
 
 # Get OS
 #
-CHECK_OS="$(uname -s)"
-case "$CHECK_OS" in
+system="$(uname -s)"
+case "$system" in
 Linux)
-    PKGOS=Linux
+    PKGOS=${PKGOS:-Linux}
     ;;
 Msys|MINGW64_NT-*|MINGW32_NT-*)
-    PKGOS=Windows
+    PKGOS=${PKGOS:-Windows}
     ;;
 Darwin)
-    PKGOS=OSX
+    PKGOS=${PKGOS:-OSX}
     ;;
 *)
-    (>&2 echo "$CHECK_OS not supported!")
+    (>&2 echo "$system not supported!")
     exit 1
     ;;
 esac
@@ -189,7 +189,7 @@ QT_VERSION_MAJOR=4
 
 # Keep existing tag, else make a new one
 if [ -z "${CURRENT_DATE:-}" ]; then
-    CURRENT_DATE=$(date "+%Y%m%d%H%M")
+    CURRENT_DATE=$(date -u "+%Y%m%d%H%M")
 fi
 
 # Repo settings
@@ -338,7 +338,7 @@ elif [ "$PKGOS" = "Windows" ]; then
 elif [ "$PKGOS" = "OSX" ]; then
     PKG_CONFIG_PATH="$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 fi
-export PKG_CONFIG_PATH
+export LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH
 
 # Load compiler related stuff
 source $CWD/compiler-common.sh

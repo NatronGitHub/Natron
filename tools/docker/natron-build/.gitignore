@@ -1,6 +1,4 @@
-Dockerfile
 build-Linux-installer.sh
-build-Linux-sdk.sh
 build-OSX-installer.sh
 build-Windows-installer.sh
 build-natron.sh
@@ -19,11 +17,6 @@ macStartupJenkins.sh
 manageBuildOptions.sh
 manageLog.sh
 msysStartupJenkins.sh
-push.sh
 runUnitTests.sh
 uploadArtifactsMain.sh
 zip-python.sh
-include
-pkg
-builds
-artifacts
