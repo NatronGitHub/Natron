@@ -25,3 +25,5 @@ uploadArtifactsMain.sh
 zip-python.sh
 include
 pkg
+builds
+artifacts
