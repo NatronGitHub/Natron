@@ -169,7 +169,7 @@ The following options can be passed to `launchBuildMain.sh` as environment varia
 
 `WORKSPACE`: The absolute path to a directory on the local filesystem were builds are done, external files are downloaded, and builds are archived.
 
-`RELEASE_TAG`: Make a release build. The version (x.y.z) must correspond with tags in Natron, openfx-io, openfx-misc, openfx-arena. Note that the plugins use "Natron-x.y.z" tags and Natron uses "x.y.z" tags. You do not have to prefix with "tags/"
+`RELEASE_TAG`: Make a release build. It should be a string "x.y.z" indicating the release number. The corresponding tag is "vx.y.z" in the Natron repository and "Natron-x.y.z" in each of the plugins repository (openfx-io, openfx-misc, openfx-arena, openfx-gmic). Only indicate this to trigger a release.
 
 `SNAPSHOT_BRANCH`: If set and `RELEASE_TAG` is not set, this indicates the branch on which to launch a snapshot from. If `SNAPSHOT_COMMIT` is also set, this will build this specific commit on that branch, otherwise it will build the latest commit on the branch. If `GIT_COMMIT` is set, `GIT_BRANCH` is ignored.
 
