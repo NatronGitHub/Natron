@@ -494,7 +494,9 @@ if [ -d "${TMP_PORTABLE_DIR}/lib/python${PYVER}" ]; then
 fi
 
 # The whitelist of python site-packages:
-python_site_packages=(easy_install.py pip PySide README shiboken.so)
+#python_site_packages=(easy_install.py easy_install.pyc pip pkg_resources PySide README setuptools wheel shiboken.so)
+# Note that pip and dependencies were already installed by get-pip.py
+python_site_packages=(PySide shiboken.so)
 
 mkdir -p "${TMP_PORTABLE_DIR}/lib/python${PYVER}"
 
