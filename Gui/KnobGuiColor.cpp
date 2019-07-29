@@ -207,13 +207,23 @@ KnobGuiColor::KnobGuiColor(KnobIPtr knob,
     , _knob( boost::dynamic_pointer_cast<KnobColor>(knob) )
     , _colorLabel(0)
     , _colorDialogButton(0)
-    , _lastColor( knob->getDimension() )
+    , _lastColor()
     , _useSimplifiedUI(true)
 {
-    if (knob) {
-        KnobColorPtr k = _knob.lock();
-        _useSimplifiedUI = isViewerUIKnob() || ( k && k->isSimplified() );
+    KnobColorPtr k = _knob.lock();
+    assert(k);
+    if (!k) {
+        throw std::logic_error(__func__);
     }
+    int nDims = k->getDimension();
+
+    assert(nDims == 1 || nDims == 3 || nDims == 4);
+    if (nDims != 1 && nDims != 3 && nDims != 4) {
+        throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+    }
+
+    _lastColor.resize(nDims);
+    _useSimplifiedUI = isViewerUIKnob() || ( k && k->isSimplified() );
 }
 
 void
@@ -234,6 +244,11 @@ KnobGuiColor::getIncrements(std::vector<double>* increments) const
     }
     int nDims = knob->getDimension();
 
+    assert(nDims == 1 || nDims == 3 || nDims == 4);
+    if (nDims != 1 && nDims != 3 && nDims != 4) {
+        throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+    }
+
     increments->resize(nDims);
     for (int i = 0; i < nDims; ++i) {
         (*increments)[i] = 0.001;
@@ -248,6 +263,11 @@ KnobGuiColor::getDecimals(std::vector<int>* decimals) const
         return;
     }
     int nDims = knob->getDimension();
+
+    assert(nDims == 1 || nDims == 3 || nDims == 4);
+    if (nDims != 1 && nDims != 3 && nDims != 4) {
+        throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+    }
 
     decimals->resize(nDims);
     for (int i = 0; i < nDims; ++i) {
@@ -391,6 +411,11 @@ KnobGuiColor::onDimensionsFolded()
     KnobColorPtr knob = _knob.lock();
     int nDims = knob->getDimension();
 
+    assert(nDims == 1 || nDims == 3 || nDims == 4);
+    if (nDims != 1 && nDims != 3 && nDims != 4) {
+        throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+    }
+
     for (int i = 0; i < nDims; ++i) {
         SpinBox* sb = 0;
         getSpinBox(i, &sb);
@@ -412,6 +437,12 @@ KnobGuiColor::onDimensionsExpanded()
 
     KnobColorPtr knob = _knob.lock();
     int nDims = knob->getDimension();
+
+    assert(nDims == 1 || nDims == 3 || nDims == 4);
+    if (nDims != 1 && nDims != 3 && nDims != 4) {
+        throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+    }
+
     for (int i = 0; i < nDims; ++i) {
         SpinBox* sb = 0;
         Label* label = 0;
@@ -435,6 +466,11 @@ KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
     KnobColorPtr knob = _knob.lock();
     bool isSimple = _useSimplifiedUI;
     int nDims = knob->getDimension();
+
+    assert(nDims == 1 || nDims == 3 || nDims == 4);
+    if (nDims != 1 && nDims != 3 && nDims != 4) {
+        throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+    }
 
     if (nDims == 1) {
         knob->setValue(color.redF(), ViewSpec::all(), 0);
@@ -466,6 +502,11 @@ KnobGuiColor::showColorDialog()
     KnobColorPtr knob = _knob.lock();
     const int nDims = knob->getDimension();
     double curR = knob->getValue(0);
+
+    assert(nDims == 1 || nDims == 3 || nDims == 4);
+    if (nDims != 1 && nDims != 3 && nDims != 4) {
+        throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+    }
 
     _lastColor[0] = curR;
     double curG = curR;
