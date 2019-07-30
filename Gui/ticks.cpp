@@ -50,7 +50,7 @@ ticks_size_10(double xmin,
     // first, compute the size of min_tick_size_units
     double min_tick_size = min_tick_size_units * (xmax - xmin) / range_units;
     int next_p10 = std::ceil( std::log10(min_tick_size) );
-    double tick_size = std::pow(10., next_p10);
+    double tick_size = std::pow(10, next_p10);
 
     assert(tick_size / 10 < min_tick_size);
     assert(tick_size >= min_tick_size);
@@ -75,7 +75,7 @@ ticks_size(double xmin,
     double min_tick_size = min_tick_size_units * (xmax - xmin) / range_units;
     int next_p10 = std::ceil( std::log10(min_tick_size) );
 
-    *t_size = std::pow(10., next_p10);
+    *t_size = std::pow(10, next_p10);
     assert(*t_size / 10 < min_tick_size);
     assert(*t_size >= min_tick_size);
     if (*t_size / 2 >= min_tick_size) {
