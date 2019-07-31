@@ -46,6 +46,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Settings.h"
 #include "Engine/AppManager.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Utils.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
@@ -557,7 +558,7 @@ SpinBox::increment(int delta,
         llval += inc_int;
     }
     // check that val and llval*10^llPowerOfTen are still close enough (relative error should be less than 1e-8)
-    assert(std::abs(val * std::pow(10., -llpowerOfTen) - llval) / std::max( qlonglong(1), std::abs(llval) ) < 1e-8);
+    assert(std::abs(val / ipow(10, llpowerOfTen) - llval) / std::max( qlonglong(1), std::abs(llval) ) < 1e-8);
 
     QString newStr;
     newStr.setNum(llval);
