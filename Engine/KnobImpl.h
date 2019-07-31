@@ -383,8 +383,8 @@ KnobHelper::pyObjectToType(PyObject* o)
 
         return ret;
     }
-    //assert( PyString_Check(o) );
-    return std::string( PyString_AsString(o) );
+    char* s = PyString_Check(o) ? PyString_AsString(o) : NULL;
+    return s != NULL ? std::string(s) : std::string();
 }
 
 inline unsigned int
