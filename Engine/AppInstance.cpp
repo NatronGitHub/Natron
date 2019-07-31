@@ -833,11 +833,9 @@ public:
         : _imp(imp)
         , _node(node)
     {
-        assert(node);
-        if (!node) {
-            throw std::logic_error(__func__);
+        if (node) {
+            _imp->_creatingNodeQueue.push_back(node);
         }
-        _imp->_creatingNodeQueue.push_back(node);
     }
 
     virtual ~AddCreateNode_RAII()
