@@ -833,6 +833,10 @@ public:
         : _imp(imp)
         , _node(node)
     {
+        assert(node);
+        if (!node) {
+            throw std::logic_error(__func__);
+        }
         _imp->_creatingNodeQueue.push_back(node);
     }
 
@@ -898,7 +902,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         QString modulePath;
         plugin->getPythonModuleNameAndPath(&moduleName, &modulePath);
 
-        if ( !moduleName.isEmpty() ) {
+        if ( containerNode && !moduleName.isEmpty() ) {
             setGroupLabelIDAndVersion(containerNode, modulePath, moduleName);
         }
 
@@ -949,6 +953,10 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
                                        const QString& pythonModulePath,
                                        const QString &pythonModule)
 {
+    assert(node);
+    if (!node) {
+        throw std::logic_error(__func__);
+    }
     std::string pluginID, pluginLabel, iconFilePath, pluginGrouping, description;
     unsigned int version;
     bool istoolset;
@@ -2192,6 +2200,9 @@ AppInstance::onGroupCreationFinished(const NodePtr& node,
                                      const NodeSerializationPtr& serialization, bool /*autoConnect*/)
 {
     assert(node);
+    if (!node) {
+        throw std::logic_error(__func__);
+    }
 
     // If the node is a PyPlug we might have set in the Python scripts the Mask and Optional knobs of the GroupInput
     // nodes, but nothing updated the inputs since we were loading the PyPlug, ensure they are up to date.
