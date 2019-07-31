@@ -1,5 +1,5 @@
---- Portfile.orig	2019-07-31 09:33:57.000000000 -0700
-+++ Portfile	2019-07-31 09:34:48.000000000 -0700
+--- Portfile.orig	2019-07-31 09:35:04.000000000 -0700
++++ Portfile	2019-07-31 09:48:59.000000000 -0700
 @@ -7,7 +7,7 @@
  
  name                x265
@@ -13,7 +13,7 @@
  
  compiler.blacklist  *llvm-gcc-4.2
  
-+configure.env-append CONFIGURE='${configure.cmd}'
++configure.env-append CONFIGURE='${configure.cmd}' BUILD='${build.cmd}'
 +build.env-append     BUILD='${build.cmd}'
 +destroot.env-append  BUILD='${build.cmd}' ARCH=none
 +configure.cmd        ${portpath}/${filesdir}/configure.sh
