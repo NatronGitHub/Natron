@@ -1106,8 +1106,8 @@ AnimationModuleViewPrivate::zoomView(const QPointF& evPos, int deltaX, int delta
     const double par_min = 0.0001;
     const double par_max = 10000.;
     double zoomFactor;
-    double scaleFactorX = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaX);
-    double scaleFactorY = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaY);
+    double scaleFactorX = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaX); // no need to use ipow() here, because the result is not cast to int
+    double scaleFactorY = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaY); // no need to use ipow() here, because the result is not cast to int
 
 
     if ( (zoomCtx.screenWidth() > 0) && (zoomCtx.screenHeight() > 0) ) {

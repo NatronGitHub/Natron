@@ -43,6 +43,7 @@
 #include "Engine/RectD.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/TimeValue.h"
+#include "Engine/Utils.h"
 
 #include "Engine/EngineFwd.h"
 
@@ -124,7 +125,7 @@ inline TimeValue roundImageTimeToEpsilon(TimeValue time)
 
 inline TimeValue roundImageTimeToEpsilon(TimeValue time)
 {
-    int exp = std::pow(10, NATRON_IMAGE_TIME_EQUALITY_DECIMALS);
+    int exp = ipow(10, NATRON_IMAGE_TIME_EQUALITY_DECIMALS);
     return TimeValue(std::floor(time * exp + 0.5) / exp);
 }
 #endif

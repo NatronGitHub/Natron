@@ -32,6 +32,7 @@
 #include "Engine/OverlaySupport.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Utils.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -224,7 +225,7 @@ inline double
 fround(double val,
        double pscale)
 {
-    double pscale10 = std::pow( 10., std::floor( std::log10(pscale) ) );
+    double pscale10 = ipow( 10, (int)std::floor( std::log10(pscale) ) );
 
     return pscale10 * std::floor(val / pscale10 + 0.5);
 }

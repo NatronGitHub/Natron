@@ -38,6 +38,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Image.h" // Image::clamp
 #include "Engine/OSGLFunctions.h"
+#include "Engine/Utils.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/AnimationModuleEditor.h"
@@ -375,7 +376,7 @@ AnimationModuleViewPrivate::isNearbySelectedTangentText(const QPoint & pt) const
         QPointF leftTanPos, rightTanPos;
         _publicInterface->getKeyTangentPoints(foundKey, curveKeys, &leftTanPos, &rightTanPos);
 
-        double rounding = std::pow(10., CURVEWIDGET_DERIVATIVE_ROUND_PRECISION);
+        double rounding = ipow(10, CURVEWIDGET_DERIVATIVE_ROUND_PRECISION);
         QPointF topLeft_LeftTanWidget = curveEditorZoomContext.toWidgetCoordinates( leftTanPos.x(), leftTanPos.y() );
         QPointF topLeft_RightTanWidget = curveEditorZoomContext.toWidgetCoordinates( rightTanPos.x(), rightTanPos.y() );
         topLeft_LeftTanWidget.ry() += yOffset;

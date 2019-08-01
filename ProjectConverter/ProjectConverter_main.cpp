@@ -785,7 +785,7 @@ static void cleanupCreatedFiles(const ProcessData& data)
  **/
 static void setNatronPathEnvVar(const QString& filePath)
 {
-    qputenv(NATRON_PATH_ENV_VAR, filePath.toStdString().c_str());
+    qputenv(NATRON_PLUGIN_PATH_ENV_VAR, filePath.toStdString().c_str());
 }
 
 #ifdef Q_OS_WIN

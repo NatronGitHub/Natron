@@ -1058,9 +1058,10 @@ ViewerNode::getMipMapLevelFromZoomFactor() const
     // Adjust the mipmap level (without taking draft into account yet) as the max of the closest mipmap level of the viewer zoom
     // and the requested user proxy mipmap level
     
-    double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
-    return std::log(closestPowerOf2) / M_LN2;
-
+    //double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
+    //return std::log(closestPowerOf2) / M_LN2;
+    //double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
+    return zoomFactor >= 1 ? 0 : (int)-std::ceil(std::log(zoomFactor) / M_LN2);
 }
 
 void

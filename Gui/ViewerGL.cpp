@@ -1951,8 +1951,9 @@ int
 ViewerGL::getMipMapLevelFromZoomFactor() const
 {
     double zoomFactor = getZoomFactor();
-    double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
-    return std::log(closestPowerOf2) / M_LN2;
+    //double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
+    //return std::log(closestPowerOf2) / M_LN2;
+    return zoomFactor >= 1 ? 0 : -std::ceil(std::log(zoomFactor) / M_LN2);
 }
 
 bool

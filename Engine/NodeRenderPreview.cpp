@@ -279,11 +279,11 @@ Node::makePreviewImage(TimeValue time,
     // Compute the mipmap level to pass to render
     double yZoomFactor = (double)height / (double)rod.height();
     double xZoomFactor = (double)width / (double)rod.width();
-    double closestPowerOf2X = xZoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil( std::log(xZoomFactor) / std::log(2.) ) );
-    double closestPowerOf2Y = yZoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil( std::log(yZoomFactor) / std::log(2.) ) );
+    int closestPowerOf2X = xZoomFactor >= 1 ? 0 : -std::ceil(std::log(xZoomFactor) / M_LN2);
+    int closestPowerOf2Y = yZoomFactor >= 1 ? 0 : -std::ceil(std::log(yZoomFactor) / M_LN2);
     int closestPowerOf2 = std::max(closestPowerOf2X, closestPowerOf2Y);
 
-    unsigned int mipMapLevel = std::min(std::log( (double)closestPowerOf2 ) / std::log(2.), 5.);
+    unsigned int mipMapLevel = std::min(closestPowerOf2, 5);
 
     TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
     {
