@@ -321,6 +321,18 @@ Effect::isWriterNode()
     return n->getEffectInstance()->isWriter();
 }
 
+bool
+Effect::isOutputNode()
+{
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        return false;
+    }
+
+    return n->getEffectInstance()->isOutput();
+}
+
 void
 Effect::destroy()
 {

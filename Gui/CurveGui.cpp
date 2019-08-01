@@ -40,6 +40,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Image.h"
 #include "Engine/OSGLFunctions.h"
+#include "Engine/Utils.h"
 #include "Engine/ViewIdx.h"
 
 #include "Gui/AnimItemBase.h"
@@ -511,7 +512,7 @@ CurveGui::drawCurve(int curveIndex,
     QPointF btmLeft = _imp->curveWidget->toZoomCoordinates(0, _imp->curveWidget->height() - 1);
     QPointF topRight = _imp->curveWidget->toZoomCoordinates(_imp->curveWidget->width() - 1, 0);
 
-    
+
 
 
     bool isPeriodic = false;
@@ -719,7 +720,7 @@ CurveGui::drawCurve(int curveIndex,
                 }
             }
 
-            
+
             // Draw tangents if not constant
             bool drawTangents = drawKeySelected && internalCurve->isYComponentMovable() && (key.getInterpolation() != eKeyframeTypeConstant);
             if (drawTangents) {
@@ -731,7 +732,7 @@ CurveGui::drawCurve(int curveIndex,
                     GL_GPU::LineStipple(2, 0xAAAA);
                     GL_GPU::Enable(GL_LINE_STIPPLE);
                 }
-                
+
                 QPointF leftTanPos, rightTanPos;
                 _imp->curveWidget->getKeyTangentPoints(k, keyframes, &leftTanPos, &rightTanPos);
 
@@ -756,7 +757,7 @@ CurveGui::drawCurve(int curveIndex,
 
                 // If only one keyframe is selected, also draw the coordinates
                 if (selectedKeys.size() == 1 && foundThisCurveSelectedKeys && foundThisCurveSelectedKeys->size() == 1) {
-                    double rounding = std::pow(10., CURVEWIDGET_DERIVATIVE_ROUND_PRECISION);
+                    double rounding = ipow(10, CURVEWIDGET_DERIVATIVE_ROUND_PRECISION);
                     QString leftDerivStr = QString::fromUtf8("l: %1").arg(std::floor( (key.getLeftDerivative() * rounding) + 0.5 ) / rounding);
                     QString rightDerivStr = QString::fromUtf8("r: %1").arg(std::floor( (key.getRightDerivative() * rounding) + 0.5 ) / rounding);
                     double yLeftWidgetCoord = _imp->curveWidget->toWidgetCoordinates(0, leftTanPos.y()).y();

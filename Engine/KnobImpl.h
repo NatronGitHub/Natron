@@ -408,9 +408,8 @@ KnobHelper::pyObjectToType(PyObject* o)
 
         return ret;
     }
-
-    //assert( PyString_Check(o) );
-    return std::string( PyString_AsString(o) );
+    char* s = PyString_Check(o) ? PyString_AsString(o) : NULL;
+    return s != NULL ? std::string(s) : std::string();
 }
 
 template <>
@@ -1264,7 +1263,7 @@ Knob<T>::areDimensionsEqual(ViewIdx view)
             }
         }
     }
-#endif 
+#endif
     ValueKnobDimView<T>* dim0Data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(0), view).get());
     CurvePtr curve0 = dim0Data->animationCurve;
     T val0 = getValue(DimIdx(0), view, true /*doClamp*/);
@@ -1291,7 +1290,7 @@ Knob<T>::areDimensionsEqual(ViewIdx view)
         if (val0 != val) {
             return false;
         }
-        
+
     }
     return true;
 } // areDimensionsEqual

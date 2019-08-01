@@ -6,12 +6,12 @@ PortGroup           muniversal 1.0
 PortGroup           cmake 1.1
 
 name                x265
-version             3.0
+version             3.1.1
 revision            0
 
-checksums           rmd160  6f866d290f0df0356f5a10a898fedf64fda53f0f \
-                    sha256  c5b9fc260cabbc4a81561a448f4ce9cad7218272b4011feabc3a6b751b2f0662 \
-                    size    1398519
+checksums           rmd160  680fdd3eedc00a8a10ffbd71b21c942bd4cfb809 \
+                    sha256  827900c7cc0a0105b8a96460fab7cd22b97afa7b2835b5cb979c44bddaa3c8d0 \
+                    size    1419826
 
 categories          multimedia
 platforms           darwin

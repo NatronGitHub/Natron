@@ -265,6 +265,11 @@ KnobGuiColor::getIncrements(std::vector<double>* increments) const
     }
     int nDims = knob->getNDimensions();
 
+    assert(nDims == 1 || nDims == 3 || nDims == 4);
+    if (nDims != 1 && nDims != 3 && nDims != 4) {
+        throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+    }
+
     increments->resize(nDims);
     for (int i = 0; i < nDims; ++i) {
         (*increments)[i] = 0.001;
@@ -279,6 +284,11 @@ KnobGuiColor::getDecimals(std::vector<int>* decimals) const
         return;
     }
     int nDims = knob->getNDimensions();
+
+    assert(nDims == 1 || nDims == 3 || nDims == 4);
+    if (nDims != 1 && nDims != 3 && nDims != 4) {
+        throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+    }
 
     decimals->resize(nDims);
     for (int i = 0; i < nDims; ++i) {
@@ -457,6 +467,11 @@ KnobGuiColor::onDimensionsMadeVisible(bool visible)
     }
     int nDims = knob->getNDimensions();
 
+    assert(nDims == 1 || nDims == 3 || nDims == 4);
+    if (nDims != 1 && nDims != 3 && nDims != 4) {
+        throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+    }
+
     QColor colors[4];
     colors[0].setRgbF(0.851643, 0.196936, 0.196936);
     colors[1].setRgbF(0, 0.654707, 0);
@@ -495,6 +510,10 @@ KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
         return;
     }
     int nDims = knob->getNDimensions();
+    assert(nDims == 1 || nDims == 3 || nDims == 4);
+    if (nDims != 1 && nDims != 3 && nDims != 4) {
+        throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+    }
 
     std::vector<double> values(nDims);
     values[0] = color.redF();

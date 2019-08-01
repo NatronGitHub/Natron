@@ -46,6 +46,37 @@ QString convertFromPlainText(const QString &plain, NATRON_NAMESPACE::WhiteSpaceM
 // use genHTML=true when generating markdown for hoedown. false for pandoc
 QString convertFromPlainTextToMarkdown(const QString &plain, bool genHTML, bool isTableElement);
 
+// Exponentiation by squaring
+// works with positive or negative integer exponents.
+template<typename T>
+double
+ipow(T base,
+     int exp)
+{
+    double result = 1.;
+
+    if (exp >= 0) {
+        while (exp) {
+            if (exp & 1) {
+                result *= base;
+            }
+            exp >>= 1;
+            base *= base;
+        }
+    } else {
+        exp = -exp;
+        while (exp) {
+            if (exp & 1) {
+                result /= base;
+            }
+            exp >>= 1;
+            base *= base;
+        }
+    }
+
+    return result;
+}
+
 NATRON_NAMESPACE_EXIT
 
 #endif // Natron_Gui_Utils_h

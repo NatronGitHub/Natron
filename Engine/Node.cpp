@@ -107,7 +107,6 @@
 #include "Engine/WriteNode.h"
 
 
-
 ///The flickering of edges/nodes in the nodegraph will be refreshed
 ///at most every...
 #define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 1

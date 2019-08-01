@@ -1440,6 +1440,32 @@ static PyObject* Sbk_EffectFunc_isWriterNode(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_EffectFunc_isOutputNode(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // isOutputNode()
+            bool cppResult = cppSelf->isOutputNode();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_EffectFunc_registerOverlay(PyObject* self, PyObject* args)
 {
     ::Effect* cppSelf = 0;
@@ -1977,6 +2003,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"isNodeSelected", (PyCFunction)Sbk_EffectFunc_isNodeSelected, METH_NOARGS},
     {"isReaderNode", (PyCFunction)Sbk_EffectFunc_isReaderNode, METH_NOARGS},
     {"isWriterNode", (PyCFunction)Sbk_EffectFunc_isWriterNode, METH_NOARGS},
+    {"isOutputNode", (PyCFunction)Sbk_EffectFunc_isOutputNode, METH_NOARGS},
     {"registerOverlay", (PyCFunction)Sbk_EffectFunc_registerOverlay, METH_VARARGS},
     {"removeOverlay", (PyCFunction)Sbk_EffectFunc_removeOverlay, METH_O},
     {"removeParamFromViewerUI", (PyCFunction)Sbk_EffectFunc_removeParamFromViewerUI, METH_O},

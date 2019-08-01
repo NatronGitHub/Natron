@@ -47,6 +47,7 @@ Natron multiple times on the same computer, the different processes will share t
 - Add support for chromatic aberration correction when reading RAW files #309
 - Update CImg and G'MIC to 2.6.7 and fix several issues in GMIC plugins (which are still beta)
 - Many new GMIC plugins, including GMIC Custom Code
+- FrameRange: New options "Loop" and "Bounce" #411
 
 
 ## Version 2.3.14

@@ -193,7 +193,7 @@ public:
 
     // For bw compat only
     FileParam* createOutputFileParam(const QString& name, const QString& label);
-    
+
     PathParam* createPathParam(const QString& name, const QString& label);
     ButtonParam* createButtonParam(const QString& name, const QString& label);
     SeparatorParam* createSeparatorParam(const QString& name, const QString& label);
@@ -228,7 +228,7 @@ class Effect
 {
 
     Q_DECLARE_TR_FUNCTIONS(Effect)
-    
+
     NodeWPtr _node;
 
 public:
@@ -242,6 +242,8 @@ public:
     bool isReaderNode();
 
     bool isWriterNode();
+
+    bool isOutputNode();
 
     Group* getContainerGroup() const;
 
@@ -419,8 +421,8 @@ public:
 private:
 
     EffectInstancePtr getCurrentEffectInstance() const;
-    
-    
+
+
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT

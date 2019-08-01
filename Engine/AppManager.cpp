@@ -149,6 +149,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/ThreadPool.h"
+#include "Engine/Utils.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h" // RenderStatsMap
 #include "Engine/ViewerNode.h"

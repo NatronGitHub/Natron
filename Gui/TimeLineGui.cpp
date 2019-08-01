@@ -1023,7 +1023,7 @@ TimeLineGui::wheelEvent(QWheelEvent* e)
     const double par_min = 0.0001;
     const double par_max = 10000.;
 
-    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
+    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() ); // no need to use ipow() here, because the result is not cast to int
 
     QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
 

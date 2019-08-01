@@ -108,7 +108,7 @@ KnobInt::KnobInt(const KnobHolderPtr& holder, const KnobIPtr& mainKnob)
 
 KnobInt::~KnobInt()
 {
-    
+
 }
 
 void
@@ -289,7 +289,7 @@ struct KnobDoublePrivate
     , valueIsNormalized(dimension, eValueIsNormalizedNone)
     , defaultValuesAreNormalized(false)
     {
-        
+
     }
 };
 
@@ -587,7 +587,7 @@ KnobButton::KnobButton(const KnobHolderPtr& holder, const KnobIPtr& mainKnob)
 
 KnobButton::~KnobButton()
 {
-    
+
 }
 
 void
@@ -1156,8 +1156,8 @@ KnobChoice::populateChoices(const std::vector<ChoiceOption> &entries)
                 defaultEntryID = entries[defValueIndex].id;
             }
         }
-        
-        
+
+
         QMutexLocker k(&data->valueMutex);
         sharedKnobs = data->sharedKnobs;
 
@@ -1531,7 +1531,7 @@ KnobChoice::setActiveEntries_multi(const std::vector<ChoiceOption>& entries, Vie
 
             Q_EMIT sharedKnob->populated();
         }
-        
+
     }
     computeHasModifications();
 } // setActiveEntries_multi
@@ -1693,7 +1693,7 @@ KnobChoice::choiceMatch(const std::string& choice,
 
         return -1;
     }
-    
+
     // try to match entry id first, then label
     for (int s = 0; s < 2; ++s) {
         // 2- try exact match, other index
@@ -2157,7 +2157,7 @@ struct KnobColorPrivate
     , uiColorspace(kColorKnobDefaultUIColorspaceName)
     , internalColorspace()
     {
-        
+
     }
 };
 
@@ -2168,19 +2168,27 @@ KnobColor::KnobColor(const KnobHolderPtr& holder,
 , _imp(new KnobColorPrivate())
 {
     //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
-    assert(dimension <= 4 && dimension != 2);
+    assert(dimension == 1 || dimension == 3 ||  dimension == 4);
+    if (dimension != 1 && dimension != 3 && dimension != 4) {
+        throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+    }
 }
 
 KnobColor::KnobColor(const KnobHolderPtr& holder, const KnobIPtr& mainInstance)
 : KnobDoubleBase(holder, mainInstance)
 , _imp(toKnobColor(mainInstance)->_imp)
 {
-
+  int dimension = getNDimensions();
+  //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
+  assert(dimension == 1 || dimension == 3 ||  dimension == 4);
+  if (dimension != 1 && dimension != 3 && dimension != 4) {
+      throw std::logic_error("A color Knob can only have dimension 1, 3 or 4");
+  }
 }
 
 KnobColor::~KnobColor()
 {
-    
+
 }
 
 bool
@@ -3209,7 +3217,7 @@ KnobParametric::KnobParametric(const KnobHolderPtr& holder, const KnobIPtr& main
 
 KnobParametric::~KnobParametric()
 {
-    
+
 }
 
 KnobDimViewBasePtr
@@ -3964,7 +3972,7 @@ KnobParametric::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec v
             signalCurveChanged(dimension, data);
 
         }
-        
+
     }
 
 
@@ -4042,7 +4050,7 @@ KnobParametric::removeAnimation(ViewSetSpec view, DimSpec dim, ValueChangedReaso
             curve->clearKeyFrames();
             signalCurveChanged(dim, data);
         }
-        
+
     }
 
 
@@ -4079,7 +4087,7 @@ KnobParametric::deleteAnimationBeforeTime(TimeValue time, ViewSetSpec view, DimS
             curve->removeKeyFramesAfterTime(time, 0);
             signalCurveChanged(dimension, data);
         }
-        
+
     }
 
     evaluateValueChange(dimension, getCurrentRenderTime(), view, eValueChangedReasonUserEdited);
@@ -4114,7 +4122,7 @@ KnobParametric::deleteAnimationAfterTime(TimeValue time, ViewSetSpec view, DimSp
             curve->removeKeyFramesAfterTime(time, 0);
             signalCurveChanged(dimension, data);
         }
-        
+
     }
 
 
@@ -4562,7 +4570,7 @@ KnobLayers::encodePlanesList(const std::list<ImagePlaneDesc>& planes)
 }
 
 std::list<ImagePlaneDesc>
-KnobLayers::decodePlanesList() 
+KnobLayers::decodePlanesList()
 {
     std::list<ImagePlaneDesc> ret;
 

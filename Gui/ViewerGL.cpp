@@ -69,6 +69,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Settings.h"
 #include "Engine/Timer.h" // for gettimeofday
 #include "Engine/Texture.h"
+#include "Engine/Utils.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
@@ -516,7 +517,7 @@ ViewerGL::paintGL()
                     GL_GPU::TexCoord2d(1, 0); GL_GPU::Vertex2d(canonicalTexRect.x2, canonicalTexRect.y1);
                     GL_GPU::End();
                     GL_GPU::BindTexture(GL_TEXTURE_2D, 0);
-                    
+
                     glCheckError(GL_GPU);
                 }
             }
@@ -630,7 +631,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel,
 
                 GL_GPU::Vertex3f(topRight.x(), topRight.y(), 1);
                 GL_GPU::Vertex3f(btmRight.x(), btmRight.y(), 1);
-                
+
                 GL_GPU::End();
                 glCheckErrorIgnoreOSXBug(GL_GPU);
             }
@@ -1040,7 +1041,7 @@ ViewerGL::isViewerUIVisible() const
 }
 
 void
-ViewerGL::refreshMetadata(int inputNb, const NodeMetadata& metadata) 
+ViewerGL::refreshMetadata(int inputNb, const NodeMetadata& metadata)
 {
 
     RectI inputFormat = metadata.getOutputFormat();
@@ -1094,7 +1095,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const TextureTransferArgs& args)
     // always running in the main thread
     OSGLContextAttacherPtr locker = OSGLContextAttacher::create(_imp->glContextWrapper);
     locker->attach();
-    
+
     assert(QGLContext::currentContext() == context());
 
     glCheckError(GL_GPU);
@@ -1667,7 +1668,7 @@ ViewerGL::penMotionInternal(int x,
         const double zoomFactor_max = 1024.;
         double zoomFactor;
         int delta = 2 * ( ( x - _imp->lastMousePosition.x() ) - ( y - _imp->lastMousePosition.y() ) );
-        double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, delta);
+        double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, delta); // no need to use ipow() here, because the result is not cast to int
         {
             QMutexLocker l(&_imp->zoomCtxMutex);
             zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
@@ -1749,7 +1750,7 @@ ViewerGL::penMotionInternal(int x,
         update();
     }
     _imp->lastMousePosition = newClick;
-    
+
     return mustRedraw;
 } // ViewerGL::penMotionInternal
 
@@ -2068,7 +2069,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     const double zoomFactor_min = 0.01;
     const double zoomFactor_max = 1024.;
     double zoomFactor;
-    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
+    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() ); // no need to use ipow() here, because the result is not cast to int
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
         QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
@@ -3244,7 +3245,7 @@ ViewerGL::getColorAt(double x,
                      double y,           // x and y in canonical coordinates
                      bool forceLinear,
                      int textureIndex,
-                     bool pickInput, 
+                     bool pickInput,
                      float* r,
                      float* g,
                      float* b,
@@ -3270,7 +3271,7 @@ ViewerGL::getColorAt(double x,
             return false;
         }
     }
-    
+
     ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth());
     const Color::Lut* dstColorSpace;
     const Color::Lut* srcColorSpace;
@@ -3478,7 +3479,7 @@ ViewerGL::getColorAtRect(const RectD &roi, // rectangle in canonical coordinates
 
     Image::CPUData imageData;
     image->getCPUData(&imageData);
-    
+
     ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth());
     const Color::Lut* dstColorSpace;
     const Color::Lut* srcColorSpace;
