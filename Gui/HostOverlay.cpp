@@ -42,6 +42,7 @@
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 #include "Engine/Transform.h"
+#include "Engine/Utils.h"
 #include "Engine/ViewIdx.h"
 
 #include "Global/KeySymbols.h"
@@ -810,7 +811,7 @@ inline double
 fround(double val,
        double pscale)
 {
-    double pscale10 = std::pow( 10., std::floor( std::log10(pscale) ) );
+    double pscale10 = ipow( 10, (int)std::floor( std::log10(pscale) ) );
 
     return pscale10 * std::floor(val / pscale10 + 0.5);
 }

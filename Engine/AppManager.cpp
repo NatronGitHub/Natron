@@ -131,6 +131,7 @@
 #include "Engine/StandardPaths.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/ThreadPool.h"
+#include "Engine/Utils.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h" // RenderStatsMap
 #include "Engine/WriteNode.h"
@@ -1198,7 +1199,7 @@ AppManagerPrivate::setViewerCacheTileSize()
     if (!_viewerCache) {
         return;
     }
-    std::size_t tileSize =  (std::size_t)std::pow( 2., (double)_settings->getViewerTilesPowerOf2() );
+    std::size_t tileSize =  (std::size_t)ipow( 2, _settings->getViewerTilesPowerOf2() );
 
     // Viewer tiles are always RGBA
     tileSize = tileSize * tileSize * 4;

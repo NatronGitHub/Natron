@@ -2485,13 +2485,13 @@ Settings::getRamMaximumPercent() const
 U64
 Settings::getMaximumViewerDiskCacheSize() const
 {
-    return (U64)( _maxViewerDiskCacheGB->getValue() ) * std::pow(1024., 3.);
+    return (U64)( _maxViewerDiskCacheGB->getValue() ) * 1024 * 1024 * 1024;
 }
 
 U64
 Settings::getMaximumDiskCacheNodeSize() const
 {
-    return (U64)( _maxDiskCacheNodeGB->getValue() ) * std::pow(1024., 3.);
+    return (U64)( _maxDiskCacheNodeGB->getValue() ) * 1024 * 1024 * 1024;
 }
 
 ///////////////////////////////////////////////////

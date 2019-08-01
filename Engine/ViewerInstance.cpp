@@ -70,6 +70,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
 #include "Engine/UpdateViewerParams.h"
+#include "Engine/Utils.h"
 #include "Engine/ViewIdx.h"
 
 
@@ -860,7 +861,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     } else {
         int zoomMipMapLevel;
         {
-            double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
+            double closestPowerOf2 = zoomFactor >= 1 ? 1 : ipow( 2, (int)-std::ceil(std::log(zoomFactor) / M_LN2) );
             zoomMipMapLevel = std::log(closestPowerOf2) / M_LN2;
         }
         outArgs->mipmapLevelWithoutDraft = (unsigned int)std::max( (int)outArgs->mipmapLevelWithoutDraft, (int)zoomMipMapLevel );
