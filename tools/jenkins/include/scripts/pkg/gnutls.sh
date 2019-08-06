@@ -2,7 +2,7 @@
 
 # Install gnutls (for ffmpeg)
 # see http://www.linuxfromscratch.org/blfs/view/cvs/postlfs/gnutls.html
-GNUTLS_VERSION=3.6.8
+GNUTLS_VERSION=3.6.9
 GNUTLS_VERSION_MICRO= #.1
 GNUTLS_VERSION_SHORT=${GNUTLS_VERSION%.*}
 GNUTLS_TAR="gnutls-${GNUTLS_VERSION}${GNUTLS_VERSION_MICRO}.tar.xz"
