@@ -3,7 +3,7 @@
 # x265
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/x265.html
 # and https://git.archlinux.org/svntogit/packages.git/tree/trunk/PKGBUILD?h=packages/x265
-X265_VERSION=3.1.1
+X265_VERSION=3.1.2
 X265_TAR="x265_${X265_VERSION}.tar.gz"
 X265_SITE="https://bitbucket.org/multicoreware/x265/downloads"
 if build_step && { force_build || { [ "${REBUILD_X265:-}" = "1" ]; }; }; then

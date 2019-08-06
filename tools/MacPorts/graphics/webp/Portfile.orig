@@ -3,11 +3,12 @@
 PortSystem              1.0
 
 name                    webp
-version                 1.0.2
+version                 1.0.3
 revision                0
-checksums               rmd160  71858bc4e858917f84278be9ab8b9808f0aca9cc \
-                        sha256  3d47b48c40ed6476e8047b2ddb81d93835e0ca1b8d3e8c679afbb3004dd564b1 \
-                        size    4036397
+
+checksums               rmd160  6f85f05dc1e97ddaae3066cfdd2be0787097d679 \
+                        sha256  e20a07865c8697bba00aebccc6f54912d6bc333bb4d604e6b07491c1a226b34f \
+                        size    4029909
 
 categories              graphics science devel
 platforms               darwin
