@@ -1267,17 +1267,20 @@ Settings::initializeKnobsCaching()
     _cachingTab->addKnob(_maxDiskCacheNodeGB);
 
 
-    _diskCachePath = AppManager::createKnob<KnobPath>( this, tr("Disk cache path (empty = default)") );
+    _diskCachePath = AppManager::createKnob<KnobPath>( this, tr("Disk cache path") );
     _diskCachePath->setName("diskCachePath");
     _diskCachePath->setMultiPath(false);
 
     QString defaultLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
     QString diskCacheTt( tr("WARNING: Changing this parameter requires a restart of the application. \n"
                             "This points to the location where %1 on-disk caches will be. "
-                            "This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, "
-                            "the default location will be used. The default location is: \n").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                            "This variable should point to your fastest disk. This parameter can be "
+                            "overriden by the value of the environment variable %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_DISK_CACHE_PATH_ENV_VAR) ) );
 
-    _diskCachePath->setHintToolTip( diskCacheTt + defaultLocation );
+    QString diskCacheTt2( tr("If the parameter is left empty or the location set is invalid, "
+                             "the default location will be used. The default location is: %1").arg(defaultLocation) );
+
+    _diskCachePath->setHintToolTip( diskCacheTt + diskCacheTt2 );
     _cachingTab->addKnob(_diskCachePath);
 
     _wipeDiskCache = AppManager::createKnob<KnobButton>( this, tr("Wipe Disk Cache") );

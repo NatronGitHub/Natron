@@ -362,6 +362,8 @@
 		1E70D1611CF33A0C000D2932 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		1E7698DA1D951A0B00AF3860 /* LATEST_VERSION_README.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LATEST_VERSION_README.txt; sourceTree = "<group>"; };
 		1E769A631D95563500AF3860 /* I18N-HOWTO.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "I18N-HOWTO.txt"; path = "Documentation/I18N-HOWTO.txt"; sourceTree = "<group>"; };
+		1E98F04222F6091600A71D2D /* _groupGMIC.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _groupGMIC.rst; sourceTree = "<group>"; };
+		1E98F04322F6091600A71D2D /* _environment.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = _environment.rst; sourceTree = "<group>"; };
 		1EADE5C118AA403700EF3180 /* Engine.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Engine.xcodeproj; path = Engine/Engine.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C418AA403700EF3180 /* Gui.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Gui.xcodeproj; path = Gui/Gui.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C718AA403700EF3180 /* Tests.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Tests.xcodeproj; path = Tests/Tests.xcodeproj; sourceTree = "<group>"; };
@@ -643,12 +645,14 @@
 			isa = PBXGroup;
 			children = (
 				1EB121721D87F6EE009646F7 /* conf.py */,
+				1E98F04322F6091600A71D2D /* _environment.rst */,
 				1EB121621D87F6EE009646F7 /* _group.rst */,
 				1EB121631D87F6EE009646F7 /* _groupChannel.rst */,
 				1EB121641D87F6EE009646F7 /* _groupColor.rst */,
 				1EB121651D87F6EE009646F7 /* _groupDraw.rst */,
 				1EB121661D87F6EE009646F7 /* _groupExtra.rst */,
 				1EB121671D87F6EE009646F7 /* _groupFilter.rst */,
+				1E98F04222F6091600A71D2D /* _groupGMIC.rst */,
 				1EB121681D87F6EE009646F7 /* _groupImage.rst */,
 				1EB121691D87F6EE009646F7 /* _groupKeyer.rst */,
 				1EB1216A1D87F6EE009646F7 /* _groupMerge.rst */,
@@ -783,6 +787,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = 1EADE5B718AA400B00EF3180;
