@@ -472,9 +472,11 @@ public:
 
     virtual void reloadStylesheets() {}
 
+#ifdef USE_NATRON_GIL
     void takeNatronGIL();
 
     void releaseNatronGIL();
+#endif
 
 #ifdef __NATRON_WIN32__
     void registerUNCPath(const QString& path, const QChar& driveLetter);
