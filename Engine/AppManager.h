@@ -811,7 +811,9 @@ class PythonGILLocker
     PyGILState_STATE state;
 #ifdef DEBUG_PYTHON_GIL
     static QMap<QString, int> pythonCount;
+#ifdef USE_NATRON_GIL
     static QMap<QString, int> natronCount;
+#endif
 #endif
 public:
     PythonGILLocker();
