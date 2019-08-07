@@ -184,7 +184,7 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
         env \
             OSMESA_PATH="${OSMESA_PATH}" \
             LLVM_PATH="${LLVM_PATH}" \
-            CXXFLAGS_MESA="-DHAVE_OSMESA -I${OSMESA_PATH}/include" \
+            CXXFLAGS_MESA="-I${OSMESA_PATH}/include" \
             LDFLAGS_MESA="-L${OSMESA_PATH}/lib ${GLULIB} ${MESALIB} -L${SDK_HOME}/lib -lz -L${LLVM_PATH}/lib ${LLVM_LIB}" \
             CXX="$CXX" \
             CONFIG="${COMPILE_TYPE}" \
@@ -193,7 +193,7 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
             LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" \
             HAVE_CIMG=0 \
             ${OMP} \
-            CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
+            CXXFLAGS_EXTRA="-DHAVE_OSMESA ${CXXFLAGS_EXTRA}" \
             make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
 
         echo "Info: make CImg."
@@ -235,6 +235,7 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
         fi
         cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
         echo "Info: build openfx-misc using make... done!"
+exit 1
     fi
     cd "$TMP_PATH"
     #rm -rf openfx-misc || true
