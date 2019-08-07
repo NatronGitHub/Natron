@@ -235,7 +235,6 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
         fi
         cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
         echo "Info: build openfx-misc using make... done!"
-exit 1
     fi
     cd "$TMP_PATH"
     #rm -rf openfx-misc || true
