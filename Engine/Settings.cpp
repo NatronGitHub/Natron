@@ -1280,7 +1280,7 @@ Settings::initializeKnobsCaching()
     QString diskCacheTt2( tr("If the parameter is left empty or the location set is invalid, "
                              "the default location will be used. The default location is: %1").arg(defaultLocation) );
 
-    _diskCachePath->setHintToolTip( diskCacheTt + diskCacheTt2 );
+    _diskCachePath->setHintToolTip( diskCacheTt + QLatin1Char('\n') + diskCacheTt2 );
     _cachingTab->addKnob(_diskCachePath);
 
     _wipeDiskCache = AppManager::createKnob<KnobButton>( this, tr("Wipe Disk Cache") );
