@@ -13,6 +13,7 @@
 - Fix callbacks in PyPanel and PyModalDialog #379
 - Fix recursive Python calls and handle the Python GIL properly
 - Fix loading of Python Toolsets, and document how Toolsets are detected.
+- Fix using Rotopaint with multiple layers #420 #205
 
 ### Plugins
 
