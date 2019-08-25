@@ -250,6 +250,7 @@ public:
      * @brief This must be called by the GUI whenever an item is selected. This is recursive for layers.
      **/
     void select(const RotoItemPtr & b, RotoItem::SelectionReasonEnum reason);
+    void selectFromLayer(const RotoItemPtr & b, RotoItem::SelectionReasonEnum reason);
 
     ///for convenience
     void select(const std::list<RotoDrawableItemPtr> & beziers, RotoItem::SelectionReasonEnum reason);
@@ -455,7 +456,7 @@ private:
 
     NodePtr getOrCreateGlobalMergeNode(int *availableInputIndex);
 
-    void selectInternal(const RotoItemPtr& b);
+    void selectInternal(const RotoItemPtr& b, bool slaveKnobs = true);
     void deselectInternal(RotoItemPtr b);
 
     void removeItemRecursively(const RotoItemPtr& item, RotoItem::SelectionReasonEnum reason);

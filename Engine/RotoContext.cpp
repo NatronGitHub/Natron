@@ -1060,6 +1060,14 @@ RotoContext::select(const RotoItemPtr & b,
 }
 
 void
+RotoContext::selectFromLayer(const RotoItemPtr & b,
+                    RotoItem::SelectionReasonEnum reason)
+{
+    selectInternal(b, false);
+    Q_EMIT selectionChanged( (int)reason );
+}
+
+void
 RotoContext::select(const std::list<RotoDrawableItemPtr> & beziers,
                     RotoItem::SelectionReasonEnum reason)
 {
@@ -1148,7 +1156,7 @@ RotoContext::clearSelection(RotoItem::SelectionReasonEnum reason)
 }
 
 void
-RotoContext::selectInternal(const RotoItemPtr & item)
+RotoContext::selectInternal(const RotoItemPtr & item, bool slaveKnobs)
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -1217,11 +1225,12 @@ RotoContext::selectInternal(const RotoItemPtr & item)
                     thisKnob->cloneAndUpdateGui( it->get() );
 
                     //Slave internal knobs of the bezier
-                    assert( (*it)->getDimension() == thisKnob->getDimension() );
-                    for (int i = 0; i < (*it)->getDimension(); ++i) {
-                        (*it)->slaveTo(i, thisKnob, i);
+                    if (slaveKnobs) {
+                        assert( (*it)->getDimension() == thisKnob->getDimension() );
+                        for (int i = 0; i < (*it)->getDimension(); ++i) {
+                            (*it)->slaveTo(i, thisKnob, i);
+                        }
                     }
-
                     QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)),
                                       this, SLOT(onSelectedKnobCurveChanged()) );
                     QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)),
@@ -1242,7 +1251,7 @@ RotoContext::selectInternal(const RotoItemPtr & item)
     } else if (isLayer) {
         const RotoItems & children = isLayer->getItems();
         for (RotoItems::const_iterator it = children.begin(); it != children.end(); ++it) {
-            selectInternal(*it);
+            selectInternal(*it, false);
         }
     }
 

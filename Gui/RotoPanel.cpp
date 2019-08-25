@@ -1797,7 +1797,7 @@ RotoPanelPrivate::insertSelectionRecursively(const RotoLayerPtr & layer)
         RotoLayerPtr l = boost::dynamic_pointer_cast<RotoLayer>(*it);
         SelectedItems::iterator found = std::find(selectedItems.begin(), selectedItems.end(), *it);
         if ( found == selectedItems.end() ) {
-            context->select(*it, RotoItem::eSelectionReasonSettingsPanel);
+            context->selectFromLayer(*it, RotoItem::eSelectionReasonSettingsPanel);
             selectedItems.push_back(*it);
         }
         if (l) {
