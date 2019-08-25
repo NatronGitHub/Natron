@@ -77,9 +77,11 @@ And finally install the required packages:
     sudo port -v -N install qt4-mac boost cairo expat
     sudo port -v -N install gsed gawk coreutils findutils
     sudo port -v -N install cmake keychain
-    sudo port -v -N install py27-pyside py27-sphinx py27-sphinx_rtd_theme
+    sudo port -v -N install py27-pyside py37-sphinx py37-sphinx_rtd_theme
     sudo port select --set python python27
     sudo port select --set python2 python27
+    sudo port select --set python3 python37
+    sudo port select --set sphinx py37-sphinx
 
 Create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
 configuration, for example using the following comands:

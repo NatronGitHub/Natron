@@ -7,6 +7,7 @@ Frédéric Devernay <devernay@github>
 Alexandre Gauthier-Foichat <MrKepzie@github>
 Ole-André Rodlie <rodlie@github> (Openfx-Arena Plug-Ins)
 Axel Airo-Farulla  <Eaknyt@github>
+Yves Lefebvre <Ivanohe73@github>
 
 #Artists:
 

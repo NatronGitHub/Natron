@@ -5,6 +5,8 @@ Please read carefully the [Troubleshooting](http://natron.readthedocs.io/en/rb-2
 Make concrete suggestions for fixing the code ("here is a patch") by filing
 a [pull request](https://github.com/MrKepzie/Natron/pull/new/master), not an issue.
 
+Finally, please follow the [Code of Conduct](https://github.com/NatronGitHub/Natron/blob/RB-2.3/CODE_OF_CONDUCT.md) when interacting with the Natron community (both users and developers).
+
 
 ### Problem
 

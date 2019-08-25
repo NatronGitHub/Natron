@@ -297,12 +297,6 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
     //_imp->mainThreadState = PyGILState_GetThisThreadState();
     //PyEval_ReleaseThread(_imp->mainThreadState);
 
-    // Release the GIL, because PyEval_InitThreads acquires the GIL
-    // see https://docs.python.org/3.7/c-api/init.html#c.PyEval_InitThreads
-    PyThreadState *_save = PyEval_SaveThread();
-    // The lock should be released just before PyFinalize() using:
-    // PyEval_RestoreThread(_save);
-
     std::string err;
 #if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
     /// print info about python lib
@@ -344,6 +338,12 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
         }
     }
 #endif
+
+    // Release the GIL, because PyEval_InitThreads acquires the GIL
+    // see https://docs.python.org/3.7/c-api/init.html#c.PyEval_InitThreads
+    PyThreadState *_save = PyEval_SaveThread();
+    // The lock should be released just before PyFinalize() using:
+    // PyEval_RestoreThread(_save);
 
     return mainModule;
 } // initializePython

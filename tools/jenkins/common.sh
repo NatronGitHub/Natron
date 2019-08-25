@@ -178,7 +178,7 @@ fi
 # If PYV is not set, set it to 2
 : "${PYV:=2}"
 if [ "$PYV" = "3" ]; then
-    PYVER=3.4
+    PYVER=3.7
 else
     PYVER=2.7
 fi

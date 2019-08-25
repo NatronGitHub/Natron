@@ -162,7 +162,9 @@ public:
     boost::shared_ptr<ExistenceCheckerThread> breakpadAliveThread;
 #endif
 
+#ifdef USE_NATRON_GIL
     QMutex natronPythonGIL;
+#endif
     int pythonGILRCount;
 
 #ifdef Q_OS_WIN32

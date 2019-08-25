@@ -9,8 +9,8 @@ PortGroup       legacysupport 1.0
 PortGroup       active_variants 1.1
 
 name            gnutls
-version         3.6.8
-revision        1
+version         3.6.9
+revision        0
 set branch      [join [lrange [split ${version} .] 0 1] .]
 set major       [join [lrange [split ${version} .] 0 2] .]
 categories      devel security
@@ -30,9 +30,9 @@ long_description \
 master_sites    https://www.gnupg.org/ftp/gcrypt/gnutls/v${branch}/ \
                 http://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
-checksums       rmd160  a834679524f95a38a8a1ea77394906db637d33fe \
-                sha256  aa81944e5635de981171772857e72be231a7e0f559ae0292d2737de475383e83 \
-                size    5712580
+checksums       rmd160  2771adabb5342b24fbebcb69b324924ee2b56513 \
+                sha256  4331fca55817ecdd74450b908a6c29b4f05bb24dd13144c6284aa34d872e1fcb \
+                size    5773928
 
 use_xz          yes
 
@@ -148,7 +148,12 @@ platform darwin 8 {
 if { ${build_arch} eq "i386" || ${build_arch} eq "x86_64" } {
     compiler.blacklist-append *gcc-4.0
     compiler.blacklist-append *gcc-4.2
-    compiler.blacklist-append {clang < 400}
+    # Undefined symbols for architecture x86_64:
+    # "___get_cpuid_count", referenced from:
+    #     _register_x86_crypto in libaccelerated.a(x86-common.o)
+    # ld: symbol(s) not found for architecture x86_64
+    compiler.blacklist-append {clang < 1000} {macports-clang-3.[0-9]} {macports-clang-[4-6].0}
+    compiler.fallback-append  macports-clang-8.0 macports-clang-7.0 
 }
 
 # Workaround for Darwin 19 (beta). To be reviewed come final release.

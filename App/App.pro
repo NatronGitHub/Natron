@@ -57,6 +57,7 @@ macx {
   # replace com.yourcompany with something more meaningful
   QMAKE_TARGET_BUNDLE_PREFIX = fr.inria
   QMAKE_PKGINFO_TYPEINFO = Ntrn
+  QMAKE_SUBSTITUTES += NatronInfo.plist.in
 }
 
 

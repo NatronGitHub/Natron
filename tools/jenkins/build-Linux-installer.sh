@@ -589,6 +589,7 @@ installPlugin "Shadertoy" "fr.inria.openfx.misc" "$XML/openfx-misc.xml" "$QS/ope
 PACKAGES="${PACKAGES},fr.inria.openfx.extra"
 installPlugin "Arena" "fr.inria.openfx.extra" "$XML/openfx-arena.xml" "$QS/openfx-arena.qs" "$ALL_NATRON_LIBS"
 installPlugin "ArenaCL" "fr.inria.openfx.extra" "$XML/openfx-arena.xml" "$QS/openfx-arena.qs" "$ALL_NATRON_LIBS"
+PACKAGES="${PACKAGES},fr.inria.openfx.gmic"
 installPlugin "GMIC" "fr.inria.openfx.gmic" "$XML/openfx-gmic.xml" "$QS/openfx-gmic.qs" "$ALL_NATRON_LIBS"
 
 

@@ -2183,15 +2183,15 @@ SettingsPrivate::initializeKnobsCaching()
     _diskCachePath->setMultiPath(false);
 
     QString defaultLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
-    QString diskCacheTt( tr("This is the location where the disk cache is. "
-                            "This variable should point to your fastest disk. "
-                            "You may override this setting by setting the NATRON_DISK_CACHE_PATH system environment variable when before launching Natron. "
-                            "If the location is not specified or does not exist on the filesystem, "
-                            "the default location will be used.\nThe default location is: %1\n").arg(defaultLocation) +
-                         QLatin1Char('\n') +
-                         tr("Changing this requires a restart of the application to take effect.") );
+    QString diskCacheTt( tr("WARNING: Changing this parameter requires a restart of the application. \n"
+                            "This points to the location where %1 on-disk caches will be. "
+                            "This variable should point to your fastest disk. This parameter can be "
+                            "overriden by the value of the environment variable %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_DISK_CACHE_PATH_ENV_VAR) ) );
 
-    _diskCachePath->setHintToolTip(diskCacheTt);
+    QString diskCacheTt2( tr("If the parameter is left empty or the location set is invalid, "
+                             "the default location will be used. The default location is: %1").arg(defaultLocation) );
+
+    _diskCachePath->setHintToolTip( diskCacheTt + QLatin1Char('\n') + diskCacheTt2 );
     _knobsRequiringRestart.insert(_diskCachePath);
 
     _cachingTab->addKnob(_diskCachePath);

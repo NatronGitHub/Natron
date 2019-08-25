@@ -776,7 +776,29 @@
 		1EDADF2B1D8B0C4D00D47689 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1EE90EF71DD79AB400FA7BFE /* libyaml-cpp-natron.a */,
+				1EB121721D87F6EE009646F7 /* conf.py */,
+				1E98F04322F6091600A71D2D /* _environment.rst */,
+				1EB121621D87F6EE009646F7 /* _group.rst */,
+				1EB121631D87F6EE009646F7 /* _groupChannel.rst */,
+				1EB121641D87F6EE009646F7 /* _groupColor.rst */,
+				1EB121651D87F6EE009646F7 /* _groupDraw.rst */,
+				1EB121661D87F6EE009646F7 /* _groupExtra.rst */,
+				1EB121671D87F6EE009646F7 /* _groupFilter.rst */,
+				1E98F04222F6091600A71D2D /* _groupGMIC.rst */,
+				1EB121681D87F6EE009646F7 /* _groupImage.rst */,
+				1EB121691D87F6EE009646F7 /* _groupKeyer.rst */,
+				1EB1216A1D87F6EE009646F7 /* _groupMerge.rst */,
+				1EB1216B1D87F6EE009646F7 /* _groupOther.rst */,
+				1EB1216C1D87F6EE009646F7 /* _groupTime.rst */,
+				1EB1216D1D87F6EE009646F7 /* _groupTransform.rst */,
+				1EB1216E1D87F6EE009646F7 /* _groupViews.rst */,
+				1EB1216F1D87F6EE009646F7 /* _prefs.rst */,
+				1EB121701D87F6EE009646F7 /* _static */,
+				1EB121711D87F6EE009646F7 /* _templates */,
+				1EB121731D87F6EE009646F7 /* devel */,
+				1EB121741D87F6EE009646F7 /* guide */,
+				1EB121751D87F6EE009646F7 /* index.rst */,
+				1EB121761D87F6EE009646F7 /* plugins */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -920,6 +942,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = 1EADE5B718AA400B00EF3180;

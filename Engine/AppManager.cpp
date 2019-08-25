@@ -433,6 +433,7 @@ AppManager::AppManager()
 #endif
 }
 
+#ifdef USE_NATRON_GIL
 void
 AppManager::takeNatronGIL()
 {
@@ -471,6 +472,7 @@ AppManager::loadProjectFromFileFunction(std::istream& ifile, const std::string& 
     }
 
 }
+#endif
 
 void
 StrUtils::ensureLastPathSeparator(QString& path)
@@ -2105,7 +2107,7 @@ AppManager::loadPythonGroups()
 
     return;
 #endif
-    PythonGILLocker pgl;
+    PythonGILLocker pgl; // useless?
     QStringList templatesSearchPath = getAllNonOFXPluginsPaths();
     std::string err;
     QStringList allPlugins;
@@ -3101,6 +3103,8 @@ AppManager::getPluginIDs(const std::string& filter)
 std::string
 NATRON_PYTHON_NAMESPACE::PyStringToStdString(PyObject* obj)
 {
+    ///Must be locked
+    assert( PyThreadState_Get() );
     std::string ret;
 
     if ( PyString_Check(obj) ) {
@@ -3948,7 +3952,9 @@ NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(const std::string& str)
 
 #ifdef DEBUG_PYTHON_GIL
 QMap<QString,int> PythonGILLocker::pythonCount;
+#ifdef USE_NATRON_GIL
 QMap<QString,int> PythonGILLocker::natronCount;
+#endif
 #endif
 
 // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
@@ -3975,6 +3981,8 @@ PythonGILLocker::PythonGILLocker()
     ++pythonCount[threadname];
     qDebug() << QString::fromUtf8("Thread '%1' got the Python GIL (%2)").arg(threadname).arg(pythonCount[threadname]);
 #endif
+
+#ifdef USE_NATRON_GIL
     // Take the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
     // We do this after we got the Python GIL, to avoid deadlocks:
     // If we do it the other way, this thread may be waiting for the Python GIL while keeping the Natron GIL
@@ -3989,6 +3997,8 @@ PythonGILLocker::PythonGILLocker()
         qDebug() << QString::fromUtf8("Thread '%1' got the Natron GIL (%2)").arg(threadname).arg(natronCount[threadname]);
 #endif
     }
+#endif
+
     assert(PyThreadState_Get());
 #if PY_VERSION_HEX >= 0x030400F0
     assert(PyGILState_Check()); // Not available prior to Python 3.4
@@ -4002,6 +4012,7 @@ PythonGILLocker::~PythonGILLocker()
     QThread* curThread = QThread::currentThread();
     QString threadname = (qApp && qApp->thread() == curThread) ? QString::fromUtf8("Main") : curThread->objectName();
 #endif
+#ifdef USE_NATRON_GIL
     if (appPTR) {
 #ifdef DEBUG_PYTHON_GIL
         qDebug() << QString::fromUtf8("Thread '%1' is releasing the Natron GIL (%2)").arg(threadname).arg(natronCount[threadname]);
@@ -4009,6 +4020,7 @@ PythonGILLocker::~PythonGILLocker()
 #endif
         appPTR->releaseNatronGIL();
     }
+#endif
 
     // We took the Python GIL too, so release it here.
     // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads

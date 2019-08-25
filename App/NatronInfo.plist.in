@@ -11,9 +11,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>@SHORT_VERSION@</string>
+	<string>$$VERSION</string>
 	<key>CFBundleVersion</key>
-	<string>@SHORT_VERSION@</string>	
+	<string>$$VERSION</string>	
 	<key>CFBundleSignature</key>
 	<string>@TYPEINFO@</string>
 	<key>CFBundleName</key>

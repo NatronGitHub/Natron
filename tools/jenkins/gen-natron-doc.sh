@@ -55,7 +55,8 @@ if "$GENDOCS"; then
         #SPHINX_BIN="sphinx-build2.exe" # fails with 'failed to create process (\mingw64\bin\python2.exe "C:\msys64\mingw64\bin\sphinx-build2-script.py").'
         SPHINX_BIN="sphinx-build2-script.py"
     elif [ "$PKGOS" = "OSX" ]; then
-        SPHINX_BIN="sphinx-build-${PYVER}"
+        #SPHINX_BIN="sphinx-build-${PYVER}"
+        SPHINX_BIN="sphinx-build" # select with 'sudo port select --set sphinx py37-sphinx'
     fi
     $SPHINX_BIN -b html source html
     cp -R html "$RES_DIR/docs/"
